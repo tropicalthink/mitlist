@@ -1,3 +1,5 @@
+import '../utils/json_int64.dart';
+
 class Expense {
   final String id;
   final String groupId;
@@ -19,7 +21,7 @@ class Expense {
     id: json['id'] as String,
     groupId: json['group_id'] as String,
     payerId: json['payer_id'] as String,
-    amount: json['amount'] as int,
+    amount: parseJsonInt64(json['amount'], fieldName: 'amount'),
     description: json['description'] as String,
     category: json['category'] as String? ?? 'other',
     currency: json['currency'] as String? ?? 'USD',
@@ -53,7 +55,7 @@ class Settlement {
     groupId: json['group_id'] as String,
     fromUserId: json['from_user_id'] as String,
     toUserId: json['to_user_id'] as String,
-    amount: json['amount'] as int,
+    amount: parseJsonInt64(json['amount'], fieldName: 'amount'),
     createdAt: DateTime.parse(json['created_at'] as String),
   );
 }

@@ -55,7 +55,8 @@ Severity definitions (per spec):
 - **INT-LOW-001 Finance `amount` uses `int64` backend vs `int` frontend**
   - **Impact**: range/precision mismatch risk (esp. Flutter web).
   - **Fix owner**: frontend (use 64-bit safe representation) and/or backend docs.
-  - **Status**: OPEN
+  - **Fix**: frontend now parses int64-like JSON values defensively and throws on unsafe JS number ranges on web.
+  - **Status**: FIXED (frontend guard; backend still returns JSON number)
 
 ### Newly verified in this batch
 
