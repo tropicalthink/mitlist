@@ -10,6 +10,8 @@ import '../models/group_models.dart';
 import '../models/template_models.dart';
 import '../models/finance_models.dart';
 import '../providers/finance_provider.dart';
+import '../providers/recipe_provider.dart';
+import '../models/recipe_models.dart';
 import '../theme/spacing.dart';
 import '../widgets/alert.dart';
 import '../widgets/app_button.dart';
@@ -280,6 +282,57 @@ class _IntegrationTestScreenState extends ConsumerState<IntegrationTestScreen> {
     }
   }
 
+  Future<void> _runRecipesCollectionsSmoke() async {
+    setState(() {
+      _isLoading = true;
+      _result = null;
+      _error = null;
+    });
+
+    try {
+      final recipeService = await ref.read(recipeServiceProviderAsync.future);
+
+      final recipe = await recipeService.createRecipe(
+        const CreateRecipeRequest(title: 'Integration recipe', description: 'hello'),
+      );
+      final updated = await recipeService.updateRecipe(
+        recipe.id,
+        const UpdateRecipeRequest(description: 'hello (updated)'),
+      );
+
+      final collection = await recipeService.createCollection(
+        const CreateCollectionRequest(name: 'Integration collection'),
+      );
+      final fetchedCollection = await recipeService.getCollection(collection.id);
+      final updatedCollection = await recipeService.updateCollection(
+        collection.id,
+        const UpdateCollectionRequest(name: 'Integration collection (updated)'),
+      );
+      await recipeService.addRecipeToCollection(
+        collection.id,
+        AddRecipeToCollectionRequest(recipeId: recipe.id),
+      );
+      await recipeService.removeRecipeFromCollection(collection.id, recipe.id);
+
+      // Share requires another valid user id; we can at least exercise the request path with our own user id.
+      final auth = await ref.read(authServiceProviderAsync.future);
+      final me = await auth.getMe();
+      await recipeService.shareRecipe(recipe.id, ShareRecipeRequest(sharedWithUserId: me.id, permission: 'read'));
+
+      await recipeService.deleteCollection(collection.id);
+      await recipeService.deleteRecipe(recipe.id);
+
+      setState(() {
+        _result =
+            'Recipes/Collections OK\nRecipe=${updated.id}\nCollection=${fetchedCollection.id} updated=${updatedCollection.name}';
+      });
+    } catch (e) {
+      setState(() => _error = 'Recipes/Collections failed: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _testLogout() async {
     setState(() {
       _isLoading = true;
@@ -377,6 +430,11 @@ class _IntegrationTestScreenState extends ConsumerState<IntegrationTestScreen> {
                   text: 'Finance smoke',
                   isLoading: _isLoading,
                   onPressed: _runFinanceSmoke,
+                ),
+                AppButton(
+                  text: 'Recipes/Collections smoke',
+                  isLoading: _isLoading,
+                  onPressed: _runRecipesCollectionsSmoke,
                 ),
               ],
             ),
