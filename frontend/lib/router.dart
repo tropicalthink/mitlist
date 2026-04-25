@@ -17,6 +17,7 @@ import 'screens/home/household_hub_screen.dart';
 import 'screens/lists/list_detail_screen.dart';
 import 'screens/share_target_screen.dart';
 import 'screens/integration_test_screen.dart';
+import 'screens/notifications/notifications_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -123,6 +124,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/you',
             name: 'you',
             builder: (context, state) => const AccountScreen(),
+            routes: [
+              GoRoute(
+                path: 'notifications',
+                name: 'notifications',
+                builder: (context, state) => const NotificationsScreen(),
+              ),
+            ],
           ),
         ],
       ),

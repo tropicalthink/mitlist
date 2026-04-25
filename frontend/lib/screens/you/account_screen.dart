@@ -308,6 +308,14 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           const Divider(),
           ListTile(
             contentPadding: EdgeInsets.zero,
+            leading: const AppIcon(name: 'inbox'),
+            title: const Text('Notification inbox'),
+            trailing: const AppIcon(name: 'chevronRight'),
+            onTap: () => context.goNamed('notifications'),
+          ),
+          const Divider(),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
             leading: const AppIcon(name: 'language'),
             title: const Text('Language'),
             subtitle: Text(_language),
