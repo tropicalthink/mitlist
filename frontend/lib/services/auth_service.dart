@@ -1,0 +1,304 @@
+import 'dart:convert';
+import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:logger/logger.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../config/api_config.dart';
+import '../models/auth_models.dart';
+import 'api_client.dart';
+
+/// Authentication service for managing user authentication.
+///
+/// This service handles:
+/// - User registration
+/// - User login
+/// - Token refresh
+/// - Logout
+/// - Password reset
+/// - User profile management
+class AuthService {
+  final Dio _dio;
+  final Logger _logger = Logger();
+  final SharedPreferences _prefs;
+
+  AuthService._(this._dio, this._prefs);
+
+  static Future<AuthService> create([Ref? ref]) async {
+    final prefs = await SharedPreferences.getInstance();
+    final dio = createApiClient(ref);
+    return AuthService._(dio, prefs);
+  }
+
+  /// Registers a new user.
+  ///
+  /// Returns a [TokenPair] with access and refresh tokens.
+  Future<TokenPair> register(RegisterRequest request) async {
+    try {
+      final response = await _dio.post(
+        '/auth/register',
+        data: request.toJson(),
+      );
+
+      final tokenPair = TokenPair.fromJson(response.data);
+      await _saveTokens(tokenPair);
+      return tokenPair;
+    } on DioException catch (e) {
+      _logger.e('Registration failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  /// Logs in a user.
+  ///
+  /// Returns a [TokenPair] with access and refresh tokens.
+  Future<TokenPair> login(LoginRequest request) async {
+    try {
+      final response = await _dio.post(
+        '/auth/login',
+        data: request.toJson(),
+      );
+
+      final tokenPair = TokenPair.fromJson(response.data);
+      await _saveTokens(tokenPair);
+      return tokenPair;
+    } on DioException catch (e) {
+      _logger.e('Login failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  /// Refreshes the access token using a refresh token.
+  ///
+  /// Returns a new [TokenPair] with updated tokens.
+  Future<TokenPair> refreshToken(String refreshToken) async {
+    try {
+      final response = await _dio.post(
+        '/auth/token/refresh',
+        data: {'refresh_token': refreshToken},
+      );
+
+      final tokenPair = TokenPair.fromJson(response.data);
+      await _saveTokens(tokenPair);
+      return tokenPair;
+    } on DioException catch (e) {
+      _logger.e('Token refresh failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  /// Logs out the current user.
+  ///
+  /// Clears all stored tokens and user data.
+  Future<void> logout() async {
+    try {
+      final refreshToken = _prefs.getString(ApiConfig.refreshTokenKey);
+      if (refreshToken != null) {
+        await _dio.post(
+          '/auth/logout',
+          data: {'refresh_token': refreshToken},
+        );
+      }
+    } on DioException catch (e) {
+      _logger.e('Logout failed: ${e.response?.data}');
+      // Continue to clear tokens even if logout API call fails
+    }
+
+    await _clearTokens();
+  }
+
+  /// Requests a password reset for the given email.
+  Future<void> requestPasswordReset(String email) async {
+    try {
+      await _dio.post(
+        '/auth/password-reset',
+        data: {'email': email},
+      );
+    } on DioException catch (e) {
+      _logger.e('Password reset request failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  /// Confirms a password reset with the given token and new password.
+  Future<void> confirmPasswordReset(String token, String newPassword) async {
+    try {
+      await _dio.post(
+        '/auth/password-reset/confirm',
+        data: {
+          'token': token,
+          'new_password': newPassword,
+        },
+      );
+    } on DioException catch (e) {
+      _logger.e('Password reset confirmation failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  /// Creates a guest account.
+  ///
+  /// Returns a [TokenPair] with access and refresh tokens.
+  Future<TokenPair> createGuest() async {
+    try {
+      final response = await _dio.post('/auth/guest');
+
+      final tokenPair = TokenPair.fromJson(response.data);
+      await _saveTokens(tokenPair);
+      return tokenPair;
+    } on DioException catch (e) {
+      _logger.e('Guest account creation failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  /// Gets the current user's profile.
+  Future<User> getMe() async {
+    try {
+      final response = await _dio.get('/auth/me');
+      return User.fromJson(response.data);
+    } on DioException catch (e) {
+      _logger.e('Get user failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  /// Updates the current user's profile.
+  Future<User> updateMe(UpdateUserRequest request) async {
+    try {
+      final response = await _dio.patch(
+        '/auth/me',
+        data: request.toJson(),
+      );
+      return User.fromJson(response.data);
+    } on DioException catch (e) {
+      _logger.e('Update user failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  /// Deletes the current user's account.
+  Future<void> deleteMe() async {
+    try {
+      await _dio.delete('/auth/me');
+      await _clearTokens();
+    } on DioException catch (e) {
+      _logger.e('Delete user failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  /// Changes the current user's password.
+  Future<void> changePassword(ChangePasswordRequest request) async {
+    try {
+      await _dio.post(
+        '/auth/change-password',
+        data: request.toJson(),
+      );
+    } on DioException catch (e) {
+      _logger.e('Change password failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  /// Converts a guest account to a full account.
+  Future<TokenPair> convertGuest(ConvertGuestRequest request) async {
+    try {
+      final response = await _dio.post(
+        '/auth/guest/convert',
+        data: request.toJson(),
+      );
+
+      final tokenPair = TokenPair.fromJson(response.data);
+      await _saveTokens(tokenPair);
+      return tokenPair;
+    } on DioException catch (e) {
+      _logger.e('Convert guest failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  /// Claims an account (for users who signed up with a different method).
+  Future<TokenPair> claimAccount(ClaimAccountRequest request) async {
+    try {
+      final response = await _dio.post(
+        '/auth/claim-account',
+        data: request.toJson(),
+      );
+
+      final tokenPair = TokenPair.fromJson(response.data);
+      await _saveTokens(tokenPair);
+      return tokenPair;
+    } on DioException catch (e) {
+      _logger.e('Claim account failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  /// Checks if the user is authenticated.
+  Future<bool> isAuthenticated() async {
+    final token = _prefs.getString(ApiConfig.accessTokenKey);
+    return token != null;
+  }
+
+  /// Gets the stored access token.
+  Future<String?> getAccessToken() async {
+    return _prefs.getString(ApiConfig.accessTokenKey);
+  }
+
+  Future<void> _saveTokens(TokenPair tokenPair) async {
+    await _prefs.setString(ApiConfig.accessTokenKey, tokenPair.accessToken);
+    await _prefs.setString(ApiConfig.refreshTokenKey, tokenPair.refreshToken);
+    if (tokenPair.user != null) {
+      await _prefs.setString(
+        ApiConfig.userDataKey,
+        jsonEncode(tokenPair.user!.toJson()),
+      );
+    }
+  }
+
+  /// Clears all stored tokens and user data.
+  Future<void> _clearTokens() async {
+    await _prefs.remove(ApiConfig.accessTokenKey);
+    await _prefs.remove(ApiConfig.refreshTokenKey);
+    await _prefs.remove(ApiConfig.userDataKey);
+  }
+
+  /// Handles Dio errors and converts them to user-friendly messages.
+  Exception _handleError(DioException e) {
+    if (e.response?.statusCode == 400) {
+      final data = e.response?.data;
+      if (data is Map<String, dynamic> && data.containsKey('error')) {
+        final error = data['error'];
+        if (error is Map<String, dynamic>) {
+          final message = error['message'] ?? 'Invalid request';
+          return Exception(message);
+        }
+      }
+      return Exception('Invalid request');
+    } else if (e.response?.statusCode == 401) {
+      return Exception('Invalid credentials or session expired');
+    } else if (e.response?.statusCode == 403) {
+      return Exception('Access denied');
+    } else if (e.response?.statusCode == 404) {
+      return Exception('Resource not found');
+    } else if (e.response?.statusCode == 409) {
+      return Exception('Resource already exists');
+    } else if (e.response?.statusCode == 422) {
+      return Exception('Validation error');
+    } else if (e.response?.statusCode == 429) {
+      return Exception('Too many requests. Please try again later.');
+    } else if (e.response?.statusCode == 500) {
+      return Exception('Server error. Please try again later.');
+    } else if (e.response?.statusCode == 503) {
+      return Exception('Service unavailable. Please try again later.');
+    } else if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.sendTimeout) {
+      return Exception('Request timeout. Please check your connection.');
+    } else if (e.type == DioExceptionType.connectionError) {
+      return Exception('Network error. Please check your connection.');
+    } else {
+      return Exception('An unexpected error occurred');
+    }
+  }
+}

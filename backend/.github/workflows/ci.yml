@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, ph5]
+  pull_request:
+    branches: [main, master, ph5]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: mitlist
+          POSTGRES_PASSWORD: mitlist
+          POSTGRES_DB: mitlist_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Install golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: --timeout=5m
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Run tests with race detector
+        env:
+          DATABASE_URL: postgres://mitlist:mitlist@localhost:5432/mitlist_test?sslmode=disable
+          REDIS_URL: redis://localhost:6379/0
+          SECRET_KEY: test-secret-key-at-least-32-characters-long
+          GEMINI_API_KEY: test-key
+        run: go test -race -coverprofile=coverage.out ./...
+
+      - name: Build
+        run: go build ./...
+
+      - name: Migration smoke test
+        env:
+          DATABASE_URL: postgres://mitlist:mitlist@localhost:5432/mitlist_test?sslmode=disable
+        run: go run ./cmd/migrate/main.go up
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.out

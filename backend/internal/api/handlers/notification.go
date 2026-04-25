@@ -1,0 +1,162 @@
+package handlers
+
+import (
+	"net/http"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/yourorg/mitlist/internal/models"
+	"github.com/yourorg/mitlist/internal/services"
+)
+
+// NotificationHandler exposes notification endpoints.
+type NotificationHandler struct {
+	service *services.NotificationService
+}
+
+// NewNotificationHandler creates a new NotificationHandler.
+func NewNotificationHandler(service *services.NotificationService) *NotificationHandler {
+	return &NotificationHandler{service: service}
+}
+
+func (h *NotificationHandler) RegisterRoutes(r chi.Router) {
+	r.Get("/notifications", h.ListNotifications)
+	r.Get("/notifications/{id}", h.GetNotification)
+	r.Patch("/notifications/{id}/read", h.MarkAsRead)
+	r.Patch("/notifications/read-all", h.MarkAllAsRead)
+	r.Delete("/notifications/{id}", h.DeleteNotification)
+	r.Get("/notifications/preferences", h.GetPreferences)
+	r.Patch("/notifications/preferences", h.UpdatePreferences)
+}
+
+func (h *NotificationHandler) ListNotifications(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
+	limit, offset := parsePagination(r)
+	notifications, err := h.service.ListNotifications(r.Context(), userID, limit, offset)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, notifications)
+}
+
+func (h *NotificationHandler) GetNotification(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
+	id, err := parseUUIDParam(r, "id")
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
+	n, err := h.service.GetNotification(r.Context(), userID, id)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, n)
+}
+
+func (h *NotificationHandler) MarkAsRead(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
+	id, err := parseUUIDParam(r, "id")
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
+	if err := h.service.MarkAsRead(r.Context(), userID, id); err != nil {
+		respondError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *NotificationHandler) MarkAllAsRead(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
+	if err := h.service.MarkAllAsRead(r.Context(), userID); err != nil {
+		respondError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *NotificationHandler) DeleteNotification(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
+	id, err := parseUUIDParam(r, "id")
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
+	if err := h.service.DeleteNotification(r.Context(), userID, id); err != nil {
+		respondError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *NotificationHandler) GetPreferences(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
+	prefs, err := h.service.GetPreferences(r.Context(), userID)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, prefs)
+}
+
+func (h *NotificationHandler) UpdatePreferences(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
+	var pref models.NotificationPreference
+	if err := decodeJSON(r, &pref); err != nil {
+		respondError(w, err)
+		return
+	}
+
+	if err := h.service.UpdatePreferences(r.Context(), userID, &pref); err != nil {
+		respondError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

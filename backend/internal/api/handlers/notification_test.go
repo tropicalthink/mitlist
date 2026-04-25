@@ -1,0 +1,151 @@
+package handlers
+
+import (
+	"context"
+	"net/http"
+	"testing"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/yourorg/mitlist/internal/models"
+)
+
+func TestNotification_ListNotifications(t *testing.T) {
+	clearTables(t)
+	router, _ := newNotificationRouter(t)
+	user := createTestUser(t, "notif@example.com", "password123")
+	token := generateTestToken(user.ID)
+
+	notificationRepo := newTestNotificationRepo()
+	require.NoError(t, notificationRepo.CreateNotification(context.Background(), &models.Notification{
+		ID:        uuid.New(),
+		UserID:    user.ID,
+		Type:      "test",
+		Title:     "Hello",
+		Body:      "World",
+		IsRead:    false,
+		CreatedAt: time.Now().UTC(),
+	}))
+
+	rec := execRequest(t, router, "GET", "/notifications?limit=10", nil, token)
+	requireStatus(t, rec, http.StatusOK)
+
+	var resp []map[string]any
+	parseJSONResponse(t, rec, &resp)
+	assert.Len(t, resp, 1)
+}
+
+func TestNotification_GetNotification(t *testing.T) {
+	clearTables(t)
+	router, _ := newNotificationRouter(t)
+	user := createTestUser(t, "getnotif@example.com", "password123")
+	token := generateTestToken(user.ID)
+
+	notificationRepo := newTestNotificationRepo()
+	n := &models.Notification{
+		ID:        uuid.New(),
+		UserID:    user.ID,
+		Type:      "test",
+		Title:     "Hello",
+		Body:      "World",
+		IsRead:    false,
+		CreatedAt: time.Now().UTC(),
+	}
+	require.NoError(t, notificationRepo.CreateNotification(context.Background(), n))
+
+	rec := execRequest(t, router, "GET", "/notifications/"+n.ID.String(), nil, token)
+	requireStatus(t, rec, http.StatusOK)
+
+	var resp map[string]any
+	parseJSONResponse(t, rec, &resp)
+	assert.Equal(t, "Hello", resp["title"])
+}
+
+func TestNotification_MarkAsRead(t *testing.T) {
+	clearTables(t)
+	router, _ := newNotificationRouter(t)
+	user := createTestUser(t, "readnotif@example.com", "password123")
+	token := generateTestToken(user.ID)
+
+	notificationRepo := newTestNotificationRepo()
+	n := &models.Notification{
+		ID:        uuid.New(),
+		UserID:    user.ID,
+		Type:      "test",
+		Title:     "Hello",
+		Body:      "World",
+		IsRead:    false,
+		CreatedAt: time.Now().UTC(),
+	}
+	require.NoError(t, notificationRepo.CreateNotification(context.Background(), n))
+
+	rec := execRequest(t, router, "PATCH", "/notifications/"+n.ID.String()+"/read", nil, token)
+	requireStatus(t, rec, http.StatusNoContent)
+}
+
+func TestNotification_MarkAllAsRead(t *testing.T) {
+	clearTables(t)
+	router, _ := newNotificationRouter(t)
+	user := createTestUser(t, "readall@example.com", "password123")
+	token := generateTestToken(user.ID)
+
+	notificationRepo := newTestNotificationRepo()
+	require.NoError(t, notificationRepo.CreateNotification(context.Background(), &models.Notification{
+		ID:        uuid.New(),
+		UserID:    user.ID,
+		Type:      "test",
+		Title:     "Hello",
+		Body:      "World",
+		IsRead:    false,
+		CreatedAt: time.Now().UTC(),
+	}))
+
+	rec := execRequest(t, router, "PATCH", "/notifications/read-all", nil, token)
+	requireStatus(t, rec, http.StatusNoContent)
+}
+
+func TestNotification_DeleteNotification(t *testing.T) {
+	clearTables(t)
+	router, _ := newNotificationRouter(t)
+	user := createTestUser(t, "delnotif@example.com", "password123")
+	token := generateTestToken(user.ID)
+
+	notificationRepo := newTestNotificationRepo()
+	n := &models.Notification{
+		ID:        uuid.New(),
+		UserID:    user.ID,
+		Type:      "test",
+		Title:     "Hello",
+		Body:      "World",
+		IsRead:    false,
+		CreatedAt: time.Now().UTC(),
+	}
+	require.NoError(t, notificationRepo.CreateNotification(context.Background(), n))
+
+	rec := execRequest(t, router, "DELETE", "/notifications/"+n.ID.String(), nil, token)
+	requireStatus(t, rec, http.StatusNoContent)
+}
+
+func TestNotification_GetPreferences(t *testing.T) {
+	clearTables(t)
+	router, _ := newNotificationRouter(t)
+	user := createTestUser(t, "pref@example.com", "password123")
+	token := generateTestToken(user.ID)
+
+	rec := execRequest(t, router, "GET", "/notifications/preferences", nil, token)
+	requireStatus(t, rec, http.StatusOK)
+}
+
+func TestNotification_UpdatePreferences(t *testing.T) {
+	clearTables(t)
+	router, _ := newNotificationRouter(t)
+	user := createTestUser(t, "uppref@example.com", "password123")
+	token := generateTestToken(user.ID)
+
+	body := map[string]any{"type": "test", "enabled": true, "channel": "push"}
+	rec := execRequest(t, router, "PATCH", "/notifications/preferences", body, token)
+	requireStatus(t, rec, http.StatusNoContent)
+}

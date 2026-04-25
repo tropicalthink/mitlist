@@ -1,0 +1,176 @@
+package repositories
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+
+	"github.com/yourorg/mitlist/internal/models"
+)
+
+// NotificationRepository provides data access for notifications and preferences.
+type NotificationRepository struct {
+	db DBTX
+}
+
+// NewNotificationRepository creates a new NotificationRepository.
+func NewNotificationRepository(db DBTX) *NotificationRepository {
+	return &NotificationRepository{db: db}
+}
+
+// CreateNotification inserts a new notification and returns it with generated fields.
+func (r *NotificationRepository) CreateNotification(ctx context.Context, n *models.Notification) error {
+	query := `
+		INSERT INTO notifications (id, user_id, type, title, body, data, is_read, read_at, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		RETURNING id, user_id, type, title, body, data, is_read, read_at, created_at
+	`
+	return r.db.QueryRow(ctx, query,
+		n.ID, n.UserID, n.Type, n.Title, n.Body, n.Data, n.IsRead, n.ReadAt, n.CreatedAt,
+	).Scan(&n.ID, &n.UserID, &n.Type, &n.Title, &n.Body, &n.Data, &n.IsRead, &n.ReadAt, &n.CreatedAt)
+}
+
+// GetNotificationByID retrieves a notification by its ID.
+func (r *NotificationRepository) GetNotificationByID(ctx context.Context, id uuid.UUID) (*models.Notification, error) {
+	query := `
+		SELECT id, user_id, type, title, body, data, is_read, read_at, created_at
+		FROM notifications
+		WHERE id = $1
+	`
+	var n models.Notification
+	err := r.db.QueryRow(ctx, query, id).Scan(
+		&n.ID, &n.UserID, &n.Type, &n.Title, &n.Body, &n.Data, &n.IsRead, &n.ReadAt, &n.CreatedAt,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, fmt.Errorf("notification not found: %w", err)
+		}
+		return nil, err
+	}
+	return &n, nil
+}
+
+// ListNotificationsByUser lists notifications for a user, newest first.
+func (r *NotificationRepository) ListNotificationsByUser(ctx context.Context, userID uuid.UUID, limit, offset int) ([]models.Notification, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 500 {
+		limit = 500
+	}
+	query := `
+		SELECT id, user_id, type, title, body, data, is_read, read_at, created_at
+		FROM notifications
+		WHERE user_id = $1
+		ORDER BY created_at DESC, id DESC
+		LIMIT $2 OFFSET $3
+	`
+	rows, err := r.db.Query(ctx, query, userID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var notifications []models.Notification
+	for rows.Next() {
+		var n models.Notification
+		if err := rows.Scan(
+			&n.ID, &n.UserID, &n.Type, &n.Title, &n.Body, &n.Data, &n.IsRead, &n.ReadAt, &n.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		notifications = append(notifications, n)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return notifications, nil
+}
+
+// MarkAsRead marks a single notification as read.
+func (r *NotificationRepository) MarkAsRead(ctx context.Context, id uuid.UUID) error {
+	query := `
+		UPDATE notifications
+		SET is_read = true, read_at = NOW()
+		WHERE id = $1
+	`
+	cmd, err := r.db.Exec(ctx, query, id)
+	if err != nil {
+		return err
+	}
+	if cmd.RowsAffected() == 0 {
+		return fmt.Errorf("notification not found")
+	}
+	return nil
+}
+
+// MarkAllAsRead marks all notifications for a user as read.
+func (r *NotificationRepository) MarkAllAsRead(ctx context.Context, userID uuid.UUID) error {
+	query := `
+		UPDATE notifications
+		SET is_read = true, read_at = NOW()
+		WHERE user_id = $1 AND is_read = false
+	`
+	_, err := r.db.Exec(ctx, query, userID)
+	return err
+}
+
+// DeleteNotification removes a notification by ID.
+func (r *NotificationRepository) DeleteNotification(ctx context.Context, id uuid.UUID) error {
+	query := `DELETE FROM notifications WHERE id = $1`
+	cmd, err := r.db.Exec(ctx, query, id)
+	if err != nil {
+		return err
+	}
+	if cmd.RowsAffected() == 0 {
+		return fmt.Errorf("notification not found")
+	}
+	return nil
+}
+
+// GetPreferences retrieves all notification preferences for a user.
+func (r *NotificationRepository) GetPreferences(ctx context.Context, userID uuid.UUID) ([]models.NotificationPreference, error) {
+	query := `
+		SELECT id, user_id, type, enabled, channel
+		FROM notification_preferences
+		WHERE user_id = $1
+		ORDER BY type ASC
+	`
+	rows, err := r.db.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var prefs []models.NotificationPreference
+	for rows.Next() {
+		var p models.NotificationPreference
+		if err := rows.Scan(&p.ID, &p.UserID, &p.Type, &p.Enabled, &p.Channel); err != nil {
+			return nil, err
+		}
+		prefs = append(prefs, p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return prefs, nil
+}
+
+// UpdatePreferences updates a notification preference.
+func (r *NotificationRepository) UpdatePreferences(ctx context.Context, pref *models.NotificationPreference) error {
+	query := `
+		UPDATE notification_preferences
+		SET type = $1, enabled = $2, channel = $3
+		WHERE id = $4
+	`
+	cmd, err := r.db.Exec(ctx, query, pref.Type, pref.Enabled, pref.Channel, pref.ID)
+	if err != nil {
+		return err
+	}
+	if cmd.RowsAffected() == 0 {
+		return fmt.Errorf("notification preference not found")
+	}
+	return nil
+}
