@@ -84,11 +84,11 @@ Auth alignment:
 - **PATCH** `/expenses/{id}` — **PARTIAL** (service method exists; UI not wired)
 - **DELETE** `/expenses/{id}` — **MATCHED**
 - **POST** `/expenses/{id}/splits` — **MATCHED (write-only)** (Flutter ignores response)
-- **PATCH** `/expenses/{id}/splits/{split_id}` — **MISSING**
-- **DELETE** `/expenses/{id}/splits/{split_id}` — **MISSING**
+- **PATCH** `/expenses/{id}/splits/{split_id}` — **PARTIAL** (service method exists; UI/tools wiring pending)
+- **DELETE** `/expenses/{id}/splits/{split_id}` — **PARTIAL** (service method exists; UI/tools wiring pending)
 - **POST** `/expenses/{id}/settle` — **MATCHED (write-only)** (Flutter ignores response)
-- **DELETE** `/expenses/{id}/settle/{settlement_id}` — **MISSING**
-- **ALL /recurring-expenses endpoints** — **MISSING**
+- **DELETE** `/expenses/{id}/settle/{settlement_id}` — **PARTIAL** (service method exists; UI/tools wiring pending)
+- **ALL /recurring-expenses endpoints** — **PARTIAL** (service methods exist; UI/tools wiring pending)
 
 ## Recipes & collections
 - **POST** `/recipes` — **MATCHED**
