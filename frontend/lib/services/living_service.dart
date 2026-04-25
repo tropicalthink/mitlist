@@ -71,11 +71,12 @@ class LivingService {
     }
   }
 
-  Future<void> createCareSchedule(
+  Future<CareSchedule> createCareSchedule(
       String livingThingId, CreateCareScheduleRequest req) async {
     try {
-      await _dio.post('/living-things/$livingThingId/care-schedule',
+      final r = await _dio.post('/living-things/$livingThingId/care-schedule',
           data: req.toJson());
+      return CareSchedule.fromJson((r.data as Map).cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Create care schedule failed: ${e.response?.data}');
       throw _handleError(e);

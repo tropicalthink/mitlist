@@ -12,6 +12,8 @@ import '../models/finance_models.dart';
 import '../providers/finance_provider.dart';
 import '../providers/recipe_provider.dart';
 import '../models/recipe_models.dart';
+import '../providers/living_provider.dart';
+import '../models/living_models.dart';
 import '../theme/spacing.dart';
 import '../widgets/alert.dart';
 import '../widgets/app_button.dart';
@@ -333,6 +335,53 @@ class _IntegrationTestScreenState extends ConsumerState<IntegrationTestScreen> {
     }
   }
 
+  Future<void> _runLivingCareSmoke() async {
+    setState(() {
+      _isLoading = true;
+      _result = null;
+      _error = null;
+    });
+
+    try {
+      await _ensureGroup();
+      final groupId = _groupId!;
+      final living = await ref.read(livingServiceProviderAsync.future);
+
+      final thing = await living.createLivingThing(
+        CreateLivingThingRequest(groupId: groupId, name: 'Integration plant', species: 'plant'),
+      );
+
+      final schedule = await living.createCareSchedule(
+        thing.id,
+        CreateCareScheduleRequest(
+          frequencyValue: 7,
+          frequencyUnit: 'day',
+          nextDue: DateTime.now().add(const Duration(days: 7)).toUtc(),
+        ),
+      );
+
+      final got = await living.getCareSchedule(thing.id);
+      final updated = await living.updateCareSchedule(
+        thing.id,
+        UpdateCareScheduleRequest(frequencyValue: 14),
+      );
+
+      await living.logCare(thing.id, const LogCareRequest(notes: 'watered'));
+      final logs = await living.listCareLogs(thing.id, limit: 10, offset: 0);
+
+      await living.deleteLivingThing(thing.id);
+
+      setState(() {
+        _result =
+            'Living care OK\nThing=${thing.id}\nSchedule=${schedule.id} got=${got.id} updatedEvery=${updated.frequencyValue}\nLogs=${logs.length}';
+      });
+    } catch (e) {
+      setState(() => _error = 'Living care failed: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _testLogout() async {
     setState(() {
       _isLoading = true;
@@ -435,6 +484,11 @@ class _IntegrationTestScreenState extends ConsumerState<IntegrationTestScreen> {
                   text: 'Recipes/Collections smoke',
                   isLoading: _isLoading,
                   onPressed: _runRecipesCollectionsSmoke,
+                ),
+                AppButton(
+                  text: 'Living care smoke',
+                  isLoading: _isLoading,
+                  onPressed: _runLivingCareSmoke,
                 ),
               ],
             ),
