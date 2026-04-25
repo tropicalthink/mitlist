@@ -43,7 +43,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       MitlistSpacing.md +
       MitlistSpacing.sm +
       MitlistSpacing.space8 +
-      MitlistSpacing.md;
+      MitlistSpacing.md +
+      MitlistSpacing.space1;
 
   static const double _sectionHeaderHeight =
       MitlistSpacing.sm + _labelMediumLineHeight + MitlistSpacing.sm;
