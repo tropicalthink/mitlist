@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/vault_models.dart';
+import '../providers/group_provider.dart';
+import '../providers/vault_provider.dart';
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
@@ -10,11 +14,11 @@ import '../widgets/chip.dart';
 
 enum _VaultCategory { wifi, paint, insurance, warranty, emergency, custom }
 
-class VaultItemFormSheet extends StatefulWidget {
+class VaultItemFormSheet extends ConsumerStatefulWidget {
   const VaultItemFormSheet({super.key});
 
-  static Future<void> show(BuildContext context) async {
-    return showAppBottomSheet(
+  static Future<bool?> show(BuildContext context) async {
+    return showAppBottomSheet<bool>(
       context: context,
       title: 'New Vault Item',
       body: const VaultItemFormSheet(),
@@ -22,17 +26,18 @@ class VaultItemFormSheet extends StatefulWidget {
   }
 
   @override
-  State<VaultItemFormSheet> createState() => _VaultItemFormSheetState();
+  ConsumerState<VaultItemFormSheet> createState() => _VaultItemFormSheetState();
 }
 
-class _VaultItemFormSheetState extends State<VaultItemFormSheet> {
+class _VaultItemFormSheetState extends ConsumerState<VaultItemFormSheet> {
   final TextEditingController _nameController = TextEditingController();
   final List<MapEntry<TextEditingController, TextEditingController>> _fields = [];
 
   _VaultCategory _category = _VaultCategory.wifi;
   DateTime? _expiryDate;
+  bool _isSaving = false;
 
-  bool get _canSave => _nameController.text.trim().isNotEmpty;
+  bool get _canSave => _nameController.text.trim().isNotEmpty && !_isSaving;
 
   void _addField() {
     setState(() {
@@ -61,9 +66,57 @@ class _VaultItemFormSheetState extends State<VaultItemFormSheet> {
     }
   }
 
-  void _onSave() {
+  Future<void> _onSave() async {
     if (!_canSave) return;
-    Navigator.of(context).pop();
+
+    setState(() => _isSaving = true);
+
+    try {
+      final groupService = await ref.read(groupServiceProviderAsync.future);
+      final vaultService = await ref.read(vaultServiceProviderAsync.future);
+      final groups = await groupService.listGroups(limit: 1);
+
+      if (!mounted) return;
+      if (groups.isEmpty) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Create or join a household first.')),
+        );
+        return;
+      }
+
+      await vaultService.createVaultItem(
+        CreateVaultItemRequest(
+          groupId: groups.first.id,
+          type: _category.name,
+          title: _nameController.text.trim(),
+          content: _buildContent(),
+          reminderDate: _expiryDate,
+        ),
+      );
+
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vault item saved')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to save item: $e')),
+      );
+    }
+  }
+
+  String _buildContent() {
+    final pairs = _fields
+        .map(
+          (entry) => MapEntry(entry.key.text.trim(), entry.value.text.trim()),
+        )
+        .where((entry) => entry.key.isNotEmpty || entry.value.isNotEmpty)
+        .toList();
+    return pairs.map((entry) => '${entry.key}: ${entry.value}').join('\n');
   }
 
   @override
@@ -225,7 +278,8 @@ class _VaultItemFormSheetState extends State<VaultItemFormSheet> {
             variant: AppButtonVariant.solid,
             color: AppButtonColor.primary,
             size: AppButtonSize.lg,
-            text: 'Save Item',
+            text: _isSaving ? 'Saving...' : 'Save Item',
+            isLoading: _isSaving,
             onPressed: _canSave ? _onSave : null,
           ),
         ),

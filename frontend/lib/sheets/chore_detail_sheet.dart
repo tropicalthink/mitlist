@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
@@ -9,13 +10,39 @@ import '../widgets/app_card.dart';
 import '../widgets/chip.dart';
 
 class ChoreDetailSheet extends StatelessWidget {
-  const ChoreDetailSheet({super.key});
+  const ChoreDetailSheet({
+    super.key,
+    required this.title,
+    required this.statusLabel,
+    required this.assignee,
+    required this.dueDate,
+    this.onMarkDone,
+  });
 
-  static Future<void> show(BuildContext context) async {
+  final String title;
+  final String statusLabel;
+  final String assignee;
+  final DateTime dueDate;
+  final VoidCallback? onMarkDone;
+
+  static Future<void> show(
+    BuildContext context, {
+    required String title,
+    required String statusLabel,
+    required String assignee,
+    required DateTime dueDate,
+    VoidCallback? onMarkDone,
+  }) async {
     return showAppBottomSheet(
       context: context,
       title: 'Chore Details',
-      body: const ChoreDetailSheet(),
+      body: ChoreDetailSheet(
+        title: title,
+        statusLabel: statusLabel,
+        assignee: assignee,
+        dueDate: dueDate,
+        onMarkDone: onMarkDone,
+      ),
     );
   }
 
@@ -27,23 +54,13 @@ class ChoreDetailSheet extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const AppChip(
-              label: 'Pending',
-              selected: true,
-            ),
-            const SizedBox(width: MitlistSpacing.sm),
-            AppChip(
-              label: 'Weekly',
-              selected: false,
-              onSelected: (_) {},
-            ),
-          ],
+        AppChip(
+          label: statusLabel,
+          selected: true,
         ),
         const SizedBox(height: MitlistSpacing.md),
         Text(
-          'Vacuum living room',
+          title,
           style: textTheme.headlineSmall,
         ),
         const SizedBox(height: MitlistSpacing.md),
@@ -52,49 +69,25 @@ class ChoreDetailSheet extends StatelessWidget {
           padding: AppCardPadding.md,
           child: Column(
             children: [
-              _DetailRow(label: 'Assignee', value: 'Alex'),
+              _DetailRow(label: 'Assignee', value: assignee),
               const Divider(),
-              _DetailRow(label: 'Due', value: '26 Apr 2026'),
-              const Divider(),
-              _DetailRow(label: 'Recurrence', value: 'Weekly'),
+              _DetailRow(label: 'Due', value: DateFormat.yMMMd().format(dueDate)),
             ],
           ),
         ),
-        const SizedBox(height: MitlistSpacing.lg),
-        SizedBox(
-          width: double.infinity,
-          child: AppButton(
-            variant: AppButtonVariant.solid,
-            color: AppButtonColor.success,
-            size: AppButtonSize.lg,
-            text: 'Mark Done',
-            onPressed: () => Navigator.of(context).pop(),
+        if (onMarkDone != null) ...[
+          const SizedBox(height: MitlistSpacing.lg),
+          SizedBox(
+            width: double.infinity,
+            child: AppButton(
+              variant: AppButtonVariant.solid,
+              color: AppButtonColor.success,
+              size: AppButtonSize.lg,
+              text: 'Mark Done',
+              onPressed: onMarkDone,
+            ),
           ),
-        ),
-        const SizedBox(height: MitlistSpacing.md),
-        Row(
-          children: [
-            Expanded(
-              child: AppButton(
-                variant: AppButtonVariant.outline,
-                color: AppButtonColor.primary,
-                size: AppButtonSize.lg,
-                text: 'Reassign',
-                onPressed: () {},
-              ),
-            ),
-            const SizedBox(width: MitlistSpacing.md),
-            Expanded(
-              child: AppButton(
-                variant: AppButtonVariant.soft,
-                color: AppButtonColor.error,
-                size: AppButtonSize.lg,
-                text: 'Delete',
-                onPressed: () {},
-              ),
-            ),
-          ],
-        ),
+        ],
       ],
     );
   }

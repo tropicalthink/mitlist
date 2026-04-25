@@ -7,6 +7,8 @@ import '../../providers/finance_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../models/finance_models.dart';
 import '../../services/group_id_validator.dart';
+import '../../sheets/expense_creation_sheet.dart';
+import '../../sheets/expense_detail_sheet.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
@@ -23,18 +25,22 @@ import '../../widgets/skeleton.dart';
 // ---------------------------------------------------------------------------
 
 class _Expense {
+  final String id;
   final String description;
   final double amount;
   final String payer;
   final String status;
   final DateTime date;
+  final DateTime createdAt;
 
   const _Expense({
+    required this.id,
     required this.description,
     required this.amount,
     required this.payer,
     required this.status,
     required this.date,
+    required this.createdAt,
   });
 }
 
@@ -223,11 +229,24 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
   _Expense _mapExpense(Expense exp) {
     return _Expense(
+      id: exp.id,
       description: exp.description,
       amount: exp.amount / 100.0,
       payer: exp.payerId,
       status: 'Pending',
       date: exp.date,
+      createdAt: exp.createdAt,
+    );
+  }
+
+  Future<void> _openExpenseDetail(_Expense expense) async {
+    await ExpenseDetailSheet.show(
+      context,
+      description: expense.description,
+      amountLabel: _formatCurrency(expense.amount),
+      payer: expense.payer,
+      statusLabel: expense.status,
+      createdAt: expense.createdAt,
     );
   }
 
@@ -277,6 +296,13 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     setState(() => _selectedTab = tab);
   }
 
+  Future<void> _openCreateExpense() async {
+    final created = await ExpenseCreationSheet.show(context);
+    if (created == true) {
+      await _loadData();
+    }
+  }
+
   void _maybePlayConfetti() {
     if (_selectedTab == 1 &&
         _hasHousehold &&
@@ -308,7 +334,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                   balance: _balance,
                   balanceColor: _balanceColor,
                   isLoading: _isLoading,
-                  onSettleUp: _balance < 0 ? () {} : null,
+                  onSettleUp: null,
                 ),
                 const SizedBox(height: MitlistSpacing.md),
                 _ChipBar(
@@ -335,6 +361,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                                 isLoadingMore: _isLoadingMore,
                                 hasPageError: _hasPageError,
                                 onRefresh: _loadData,
+                                onAddExpense: _openCreateExpense,
+                                onOpenExpense: _openExpenseDetail,
                               )
                             : _SettlementsBody(
                                 suggestions: _suggestions,
@@ -346,7 +374,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _hasHousehold ? () {} : () => context.goNamed('home'),
+        onPressed: _hasHousehold ? _openCreateExpense : () => context.goNamed('home'),
         label: Text(_hasHousehold ? 'Add expense' : 'Households'),
         icon: AppIcon(name: _hasHousehold ? 'plus' : 'home'),
       ),
@@ -577,6 +605,8 @@ class _TimelineBody extends StatelessWidget {
   final bool isLoadingMore;
   final bool hasPageError;
   final Future<void> Function() onRefresh;
+  final VoidCallback onAddExpense;
+  final ValueChanged<_Expense> onOpenExpense;
 
   const _TimelineBody({
     required this.groups,
@@ -584,6 +614,8 @@ class _TimelineBody extends StatelessWidget {
     required this.isLoadingMore,
     required this.hasPageError,
     required this.onRefresh,
+    required this.onAddExpense,
+    required this.onOpenExpense,
   });
 
   @override
@@ -609,7 +641,7 @@ class _TimelineBody extends StatelessWidget {
                     actions: [
                       AppButton(
                         text: 'Add first expense',
-                        onPressed: () {},
+                        onPressed: onAddExpense,
                       ),
                     ],
                   ),
@@ -657,7 +689,10 @@ class _TimelineBody extends StatelessWidget {
                       padding: const EdgeInsets.only(
                         bottom: MitlistSpacing.sm,
                       ),
-                      child: _ExpenseCard(expense: expense),
+                      child: _ExpenseCard(
+                        expense: expense,
+                        onTap: () => onOpenExpense(expense),
+                      ),
                     );
                   },
                   childCount: group.expenses.length,
@@ -723,15 +758,16 @@ class _StickyDateHeaderDelegate extends SliverPersistentHeaderDelegate {
 
 class _ExpenseCard extends StatelessWidget {
   final _Expense expense;
+  final VoidCallback onTap;
 
-  const _ExpenseCard({required this.expense});
+  const _ExpenseCard({required this.expense, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return AppCard(
       variant: AppCardVariant.outlined,
       interactive: true,
-      onTap: () {},
+      onTap: onTap,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [

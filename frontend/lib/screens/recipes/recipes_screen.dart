@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/recipe_provider.dart';
+import '../../sheets/recipe_creation_sheet.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
@@ -68,8 +69,11 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     }
   }
 
-  void _onAddRecipe() {
-    // TODO: show RecipeCreationSheet
+  Future<void> _onAddRecipe() async {
+    final created = await RecipeCreationSheet.show(context);
+    if (created == true) {
+      await _loadRecipes();
+    }
   }
 
   Future<void> _loadRecipes() async {

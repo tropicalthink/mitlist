@@ -6,6 +6,7 @@ import '../../providers/vault_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../models/vault_models.dart';
 import '../../services/group_id_validator.dart';
+import '../../sheets/vault_item_form_sheet.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
@@ -205,6 +206,13 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     return weeks >= 0 && weeks <= 30;
   }
 
+  Future<void> _openCreateVaultItem() async {
+    final created = await VaultItemFormSheet.show(context);
+    if (created == true) {
+      await _loadItems();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -219,7 +227,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
       ),
       body: _buildBody(),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _hasHousehold ? () {} : () => context.goNamed('home'),
+        onPressed: _hasHousehold ? _openCreateVaultItem : () => context.goNamed('home'),
         icon: Icon(_hasHousehold ? Icons.add : Icons.home),
         label: Text(_hasHousehold ? 'Add item' : 'Households'),
       ),

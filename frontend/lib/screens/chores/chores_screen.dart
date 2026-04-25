@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import '../../providers/chore_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../services/group_id_validator.dart';
+import '../../sheets/chore_creation_sheet.dart';
+import '../../sheets/chore_detail_sheet.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
@@ -106,12 +108,28 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
 
   Future<void> _onRefresh() => _loadChores();
 
-  void _addChore() {
-    // TODO: open ChoreCreationSheet
+  Future<void> _addChore() async {
+    final created = await ChoreCreationSheet.show(context);
+    if (created == true) {
+      await _loadChores();
+    }
   }
 
-  void _openChoreDetail(String id) {
-    // TODO: open ChoreDetailSheet
+  Future<void> _openChoreDetail(String id) async {
+    final chore = _chores.firstWhere((item) => item.id == id);
+    await ChoreDetailSheet.show(
+      context,
+      title: chore.title,
+      statusLabel: chore.completed ? 'Done' : 'Pending',
+      assignee: chore.assigneeInitials,
+      dueDate: chore.dueDate,
+      onMarkDone: chore.completed
+          ? null
+          : () async {
+              Navigator.of(context).pop();
+              await _toggleComplete(id);
+            },
+    );
   }
 
   Future<void> _toggleComplete(String id) async {

@@ -1,21 +1,47 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../widgets/app_bottom_sheet.dart';
-import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
 import '../widgets/chip.dart';
 
 class ExpenseDetailSheet extends StatelessWidget {
-  const ExpenseDetailSheet({super.key});
+  const ExpenseDetailSheet({
+    super.key,
+    required this.description,
+    required this.amountLabel,
+    required this.payer,
+    required this.statusLabel,
+    required this.createdAt,
+  });
 
-  static Future<void> show(BuildContext context) async {
+  final String description;
+  final String amountLabel;
+  final String payer;
+  final String statusLabel;
+  final DateTime createdAt;
+
+  static Future<void> show(
+    BuildContext context, {
+    required String description,
+    required String amountLabel,
+    required String payer,
+    required String statusLabel,
+    required DateTime createdAt,
+  }) async {
     return showAppBottomSheet(
       context: context,
       title: 'Expense Details',
-      body: const ExpenseDetailSheet(),
+      body: ExpenseDetailSheet(
+        description: description,
+        amountLabel: amountLabel,
+        payer: payer,
+        statusLabel: statusLabel,
+        createdAt: createdAt,
+      ),
     );
   }
 
@@ -27,129 +53,34 @@ class ExpenseDetailSheet extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const AppChip(
-              label: 'Unsettled',
-              selected: true,
-            ),
-            const SizedBox(width: MitlistSpacing.sm),
-            AppChip(
-              label: 'Shared',
-              selected: false,
-              onSelected: (_) {},
-            ),
-          ],
+        AppChip(
+          label: statusLabel,
+          selected: true,
         ),
         const SizedBox(height: MitlistSpacing.md),
         Text(
-          'Dinner at Luigi\'s',
+          description,
           style: textTheme.headlineSmall,
         ),
         const SizedBox(height: MitlistSpacing.sm),
         Text(
-          '€48.00',
+          amountLabel,
           style: MitlistTypography.monoBody(color: MitlistColors.textPrimary),
         ),
         const SizedBox(height: MitlistSpacing.md),
-        Text(
-          'Splits'.toUpperCase(),
-          style: MitlistTypography.labelXSmall(color: MitlistColors.textSecondary),
-        ),
-        const SizedBox(height: MitlistSpacing.sm),
-        AppCard(
-          variant: AppCardVariant.outlined,
-          padding: AppCardPadding.md,
-          child: Column(
-            children: [
-              _SplitRow(name: 'You', amount: '€16.00', isPayer: true),
-              const Divider(),
-              _SplitRow(name: 'Alex', amount: '€16.00'),
-              const Divider(),
-              _SplitRow(name: 'Jordan', amount: '€16.00'),
-            ],
-          ),
-        ),
-        const SizedBox(height: MitlistSpacing.md),
-        Text(
-          'History'.toUpperCase(),
-          style: MitlistTypography.labelXSmall(color: MitlistColors.textSecondary),
-        ),
-        const SizedBox(height: MitlistSpacing.sm),
         AppCard(
           variant: AppCardVariant.outlined,
           padding: AppCardPadding.md,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _HistoryRow(label: 'Created', value: '24 Apr 2026'),
+              _HistoryRow(label: 'Paid by', value: payer),
               const SizedBox(height: MitlistSpacing.sm),
-              _HistoryRow(label: 'Last edited', value: '24 Apr 2026'),
+              _HistoryRow(label: 'Created', value: DateFormat.yMMMd().format(createdAt)),
             ],
           ),
         ),
-        const SizedBox(height: MitlistSpacing.lg),
-        Row(
-          children: [
-            Expanded(
-              child: AppButton(
-                variant: AppButtonVariant.outline,
-                color: AppButtonColor.primary,
-                size: AppButtonSize.lg,
-                text: 'Edit',
-                onPressed: () {},
-              ),
-            ),
-            const SizedBox(width: MitlistSpacing.md),
-            Expanded(
-              child: AppButton(
-                variant: AppButtonVariant.soft,
-                color: AppButtonColor.error,
-                size: AppButtonSize.lg,
-                text: 'Delete',
-                onPressed: () {},
-              ),
-            ),
-          ],
-        ),
       ],
-    );
-  }
-}
-
-class _SplitRow extends StatelessWidget {
-  const _SplitRow({required this.name, required this.amount, this.isPayer = false});
-
-  final String name;
-  final String amount;
-  final bool isPayer;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              name,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ),
-          if (isPayer)
-            Padding(
-              padding: const EdgeInsets.only(right: MitlistSpacing.sm),
-              child: Text(
-                'Payer'.toUpperCase(),
-                style: MitlistTypography.labelXSmall(color: MitlistColors.primary600),
-              ),
-            ),
-          Text(
-            amount,
-            style: MitlistTypography.monoBody(color: MitlistColors.textPrimary),
-          ),
-        ],
-      ),
     );
   }
 }
