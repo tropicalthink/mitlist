@@ -54,6 +54,44 @@ class CareSchedule {
   );
 }
 
+class UpdateCareScheduleRequest {
+  final int? frequencyValue;
+  final String? frequencyUnit;
+  final DateTime? nextDue;
+
+  const UpdateCareScheduleRequest({this.frequencyValue, this.frequencyUnit, this.nextDue});
+
+  Map<String, dynamic> toJson() => {
+        if (frequencyValue != null) 'frequency_value': frequencyValue,
+        if (frequencyUnit != null) 'frequency_unit': frequencyUnit,
+        if (nextDue != null) 'next_due': nextDue!.toIso8601String(),
+      };
+}
+
+class CareLog {
+  final String id;
+  final String careScheduleId;
+  final String userId;
+  final String notes;
+  final DateTime createdAt;
+
+  const CareLog({
+    required this.id,
+    required this.careScheduleId,
+    required this.userId,
+    required this.notes,
+    required this.createdAt,
+  });
+
+  factory CareLog.fromJson(Map<String, dynamic> json) => CareLog(
+        id: json['id'] as String,
+        careScheduleId: json['care_schedule_id'] as String,
+        userId: json['user_id'] as String,
+        notes: json['notes'] as String? ?? '',
+        createdAt: DateTime.parse(json['created_at'] as String),
+      );
+}
+
 class CreateLivingThingRequest {
   final String groupId;
   final String name;

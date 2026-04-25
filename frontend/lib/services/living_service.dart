@@ -82,12 +82,44 @@ class LivingService {
     }
   }
 
+  Future<CareSchedule> getCareSchedule(String livingThingId) async {
+    try {
+      final r = await _dio.get('/living-things/$livingThingId/care-schedule');
+      return CareSchedule.fromJson((r.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Get care schedule failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<CareSchedule> updateCareSchedule(String livingThingId, UpdateCareScheduleRequest req) async {
+    try {
+      final r = await _dio.patch('/living-things/$livingThingId/care-schedule', data: req.toJson());
+      return CareSchedule.fromJson((r.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Update care schedule failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
   Future<void> logCare(String livingThingId, LogCareRequest req) async {
     try {
       await _dio.post('/living-things/$livingThingId/care-logs',
           data: req.toJson());
     } on DioException catch (e) {
       _logger.e('Log care failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<List<CareLog>> listCareLogs(String livingThingId, {int limit = 50, int offset = 0}) async {
+    try {
+      final r = await _dio.get('/living-things/$livingThingId/care-logs', queryParameters: {'limit': limit, 'offset': offset});
+      final data = r.data;
+      if (data is! List) return [];
+      return data.map((j) => CareLog.fromJson((j as Map).cast<String, dynamic>())).toList();
+    } on DioException catch (e) {
+      _logger.e('List care logs failed: ${e.response?.data}');
       throw _handleError(e);
     }
   }
