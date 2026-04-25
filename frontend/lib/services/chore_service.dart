@@ -52,6 +52,16 @@ class ChoreService {
     }
   }
 
+  Future<Chore> updateChore(String id, UpdateChoreRequest req) async {
+    try {
+      final r = await _dio.patch('/chores/$id', data: req.toJson());
+      return Chore.fromJson(r.data);
+    } on DioException catch (e) {
+      _logger.e('Update chore failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
   Future<void> deleteChore(String id) async {
     try {
       await _dio.delete('/chores/$id');

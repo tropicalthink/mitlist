@@ -36,6 +36,16 @@ class RecipeService {
     } on DioException catch (e) { _logger.e('Get recipe failed: ${e.response?.data}'); throw _handleError(e); }
   }
 
+  Future<Recipe> updateRecipe(String id, UpdateRecipeRequest req) async {
+    try {
+      final r = await _dio.patch('/recipes/$id', data: req.toJson());
+      return Recipe.fromJson(r.data);
+    } on DioException catch (e) {
+      _logger.e('Update recipe failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
   Future<void> deleteRecipe(String id) async {
     try { await _dio.delete('/recipes/$id'); }
     on DioException catch (e) { _logger.e('Delete recipe failed: ${e.response?.data}'); throw _handleError(e); }

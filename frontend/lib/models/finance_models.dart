@@ -83,6 +83,35 @@ class CreateExpenseRequest {
   };
 }
 
+class UpdateExpenseRequest {
+  final String? payerId;
+  final int? amount;
+  final String? description;
+  final String? category;
+  final String? currency;
+  final DateTime? date;
+
+  const UpdateExpenseRequest({
+    this.payerId,
+    this.amount,
+    this.description,
+    this.category,
+    this.currency,
+    this.date,
+  });
+
+  Map<String, dynamic> toJson() {
+    final m = <String, dynamic>{};
+    if (payerId != null) m['payer_id'] = payerId;
+    if (amount != null) m['amount'] = amount;
+    if (description != null) m['description'] = description;
+    if (category != null) m['category'] = category;
+    if (currency != null) m['currency'] = currency;
+    if (date != null) m['date'] = date!.toIso8601String();
+    return m;
+  }
+}
+
 class CreateSettlementRequest {
   final String fromUserId;
   final String toUserId;

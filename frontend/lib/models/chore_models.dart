@@ -53,6 +53,32 @@ class CreateChoreRequest {
   };
 }
 
+class UpdateChoreRequest {
+  final String? name;
+  final String? description;
+  final String? rotationType;
+  final String? frequency;
+  final bool? isActive;
+
+  const UpdateChoreRequest({
+    this.name,
+    this.description,
+    this.rotationType,
+    this.frequency,
+    this.isActive,
+  });
+
+  Map<String, dynamic> toJson() {
+    final m = <String, dynamic>{};
+    if (name != null) m['name'] = name;
+    if (description != null) m['description'] = description;
+    if (rotationType != null) m['rotation_type'] = rotationType;
+    if (frequency != null) m['frequency'] = frequency;
+    if (isActive != null) m['is_active'] = isActive;
+    return m;
+  }
+}
+
 class CompleteChoreRequest {
   final String? notes;
   const CompleteChoreRequest({this.notes});

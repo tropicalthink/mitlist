@@ -100,6 +100,20 @@ class CreateListRequest {
       {'group_id': groupId, 'name': name, 'type': type};
 }
 
+class UpdateListRequest {
+  final String? name;
+  final String? type;
+
+  const UpdateListRequest({this.name, this.type});
+
+  Map<String, dynamic> toJson() {
+    final m = <String, dynamic>{};
+    if (name != null) m['name'] = name;
+    if (type != null) m['type'] = type;
+    return m;
+  }
+}
+
 class CreateListItemRequest {
   final String name;
   final int quantity;

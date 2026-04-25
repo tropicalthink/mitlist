@@ -100,6 +100,38 @@ class CreateRecipeRequest {
       };
 }
 
+class UpdateRecipeRequest {
+  final String? title;
+  final String? description;
+  final int? prepTime;
+  final int? cookTime;
+  final int? servings;
+  final String? imageUrl;
+  final bool? isPublic;
+
+  const UpdateRecipeRequest({
+    this.title,
+    this.description,
+    this.prepTime,
+    this.cookTime,
+    this.servings,
+    this.imageUrl,
+    this.isPublic,
+  });
+
+  Map<String, dynamic> toJson() {
+    final m = <String, dynamic>{};
+    if (title != null) m['title'] = title;
+    if (description != null) m['description'] = description;
+    if (prepTime != null) m['prep_time'] = prepTime;
+    if (cookTime != null) m['cook_time'] = cookTime;
+    if (servings != null) m['servings'] = servings;
+    if (imageUrl != null) m['image_url'] = imageUrl;
+    if (isPublic != null) m['is_public'] = isPublic;
+    return m;
+  }
+}
+
 class CreateCollectionRequest {
   final String name;
   const CreateCollectionRequest({required this.name});

@@ -61,6 +61,16 @@ class ListService {
     }
   }
 
+  Future<ItemList> updateList(String id, UpdateListRequest req) async {
+    try {
+      final r = await _dio.patch('/lists/$id', data: req.toJson());
+      return ItemList.fromJson(r.data);
+    } on DioException catch (e) {
+      _logger.e('Update list failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
   Future<ListItem> createItem(String listId, CreateListItemRequest req) async {
     try {
       final r = await _dio.post('/lists/$listId/items', data: req.toJson());

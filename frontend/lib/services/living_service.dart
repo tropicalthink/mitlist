@@ -52,6 +52,16 @@ class LivingService {
     }
   }
 
+  Future<LivingThing> updateLivingThing(String id, UpdateLivingThingRequest req) async {
+    try {
+      final r = await _dio.patch('/living-things/$id', data: req.toJson());
+      return LivingThing.fromJson(r.data);
+    } on DioException catch (e) {
+      _logger.e('Update living thing failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
   Future<void> deleteLivingThing(String id) async {
     try {
       await _dio.delete('/living-things/$id');

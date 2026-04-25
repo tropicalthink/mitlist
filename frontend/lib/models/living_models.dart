@@ -71,6 +71,24 @@ class CreateLivingThingRequest {
   };
 }
 
+class UpdateLivingThingRequest {
+  final String? name;
+  final String? species;
+  final String? location;
+  final String? imageUrl;
+
+  const UpdateLivingThingRequest({this.name, this.species, this.location, this.imageUrl});
+
+  Map<String, dynamic> toJson() {
+    final m = <String, dynamic>{};
+    if (name != null) m['name'] = name;
+    if (species != null) m['species'] = species;
+    if (location != null) m['location'] = location;
+    if (imageUrl != null) m['image_url'] = imageUrl;
+    return m;
+  }
+}
+
 class CreateCareScheduleRequest {
   final int frequencyValue;
   final String frequencyUnit;

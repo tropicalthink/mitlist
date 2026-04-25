@@ -52,6 +52,16 @@ class FinanceService {
     }
   }
 
+  Future<Expense> updateExpense(String id, UpdateExpenseRequest req) async {
+    try {
+      final r = await _dio.patch('/expenses/$id', data: req.toJson());
+      return Expense.fromJson(r.data);
+    } on DioException catch (e) {
+      _logger.e('Update expense failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
   Future<void> deleteExpense(String id) async {
     try {
       await _dio.delete('/expenses/$id');
