@@ -80,6 +80,16 @@ class FinanceService {
     }
   }
 
+  Future<Split> createSplitReturn(String expenseId, CreateSplitRequest req) async {
+    try {
+      final r = await _dio.post('/expenses/$expenseId/splits', data: req.toJson());
+      return Split.fromJson((r.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Create split failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
   Future<Split> updateSplit(String expenseId, String splitId, UpdateSplitRequest req) async {
     try {
       final r = await _dio.patch('/expenses/$expenseId/splits/$splitId', data: req.toJson());
@@ -103,6 +113,16 @@ class FinanceService {
       String expenseId, CreateSettlementRequest req) async {
     try {
       await _dio.post('/expenses/$expenseId/settle', data: req.toJson());
+    } on DioException catch (e) {
+      _logger.e('Create settlement failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<Settlement> createSettlementReturn(String expenseId, CreateSettlementRequest req) async {
+    try {
+      final r = await _dio.post('/expenses/$expenseId/settle', data: req.toJson());
+      return Settlement.fromJson((r.data as Map).cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Create settlement failed: ${e.response?.data}');
       throw _handleError(e);

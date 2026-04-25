@@ -248,8 +248,25 @@ class _IntegrationTestScreenState extends ConsumerState<IntegrationTestScreen> {
         ),
       );
 
-      // Split: create (returns void in current service), then update/delete require ids.
-      // We can at least create and then list expenses and update the expense itself.
+      // Split full lifecycle
+      final split = await finance.createSplitReturn(
+        expense.id,
+        CreateSplitRequest(userId: me.id, amount: 100),
+      );
+      final splitUpdated = await finance.updateSplit(
+        expense.id,
+        split.id,
+        const UpdateSplitRequest(isSettled: true),
+      );
+      await finance.deleteSplit(expense.id, split.id);
+
+      // Settlement full lifecycle
+      final settlement = await finance.createSettlementReturn(
+        expense.id,
+        CreateSettlementRequest(fromUserId: me.id, toUserId: me.id, amount: 50),
+      );
+      await finance.deleteSettlement(expense.id, settlement.id);
+
       final updatedExpense = await finance.updateExpense(
         expense.id,
         const UpdateExpenseRequest(description: 'Integration expense (updated)'),
@@ -278,7 +295,7 @@ class _IntegrationTestScreenState extends ConsumerState<IntegrationTestScreen> {
 
       setState(() {
         _result =
-            'Finance OK\nExpense=${updatedExpense.id}\nRecurring(list=${listedRecurring.length}) fetched=${fetchedRecurring.id} updated=${updatedRecurring.description}';
+            'Finance OK\nExpense=${updatedExpense.id}\nSplit=${splitUpdated.id}\nSettlement=${settlement.id}\nRecurring(list=${listedRecurring.length}) fetched=${fetchedRecurring.id} updated=${updatedRecurring.description}';
       });
     } catch (e) {
       setState(() => _error = 'Finance failed: $e');
@@ -436,6 +453,33 @@ class _IntegrationTestScreenState extends ConsumerState<IntegrationTestScreen> {
     }
   }
 
+  Future<void> _runPushSubscriptionsSmoke() async {
+    setState(() {
+      _isLoading = true;
+      _result = null;
+      _error = null;
+    });
+
+    try {
+      final notif = await ref.read(notificationServiceProviderAsync.future);
+      final created = await notif.createPushSubscription(
+        endpoint: 'https://example.com/push/${DateTime.now().millisecondsSinceEpoch}',
+        p256dh: 'test_p256dh',
+        auth: 'test_auth',
+      );
+      final subs = await notif.listPushSubscriptions();
+      await notif.deletePushSubscription(created.id);
+
+      setState(() {
+        _result = 'Push subscriptions OK\nCreated=${created.id}\nListed=${subs.length}';
+      });
+    } catch (e) {
+      setState(() => _error = 'Push subscriptions failed: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _testLogout() async {
     setState(() {
       _isLoading = true;
@@ -553,6 +597,11 @@ class _IntegrationTestScreenState extends ConsumerState<IntegrationTestScreen> {
                   text: 'Activity smoke',
                   isLoading: _isLoading,
                   onPressed: _runActivitySmoke,
+                ),
+                AppButton(
+                  text: 'Push subs smoke',
+                  isLoading: _isLoading,
+                  onPressed: _runPushSubscriptionsSmoke,
                 ),
               ],
             ),
