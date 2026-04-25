@@ -32,7 +32,7 @@ Severity definitions (per spec):
   - **Backend**: validates `group_id` as UUID; returns validation error.
   - **Impact**: feature surfaces can fail even on happy path (fresh account/no groups).
   - **Fix owner**: frontend (require group selection / create-first flow / guard before calling).
-  - **Status**: OPEN
+  - **Status**: FIXED (LivingThings screen guarded; other screens still use fallbacks)
 
 #### MEDIUM
 
@@ -80,5 +80,9 @@ Severity definitions (per spec):
 
 - **INT-HIGH-001 Refresh-token rotation + concurrent 401s can log user out** — **FIXED**
   - **Fix**: added a single-flight refresh coordinator in `TokenRefreshInterceptor` so concurrent 401s await one refresh attempt instead of racing with a rotated refresh token.
+  - **Verification**: `flutter analyze` (no errors) and `flutter test` passed.
+
+- **INT-HIGH-003 Group-scoped list endpoints may be called with invalid empty `group_id`** — **PARTIALLY FIXED**
+  - **Fix**: `LivingThingsScreen` now loads groups first and does not call `/living-things` without a real group id.
   - **Verification**: `flutter analyze` (no errors) and `flutter test` passed.
 
