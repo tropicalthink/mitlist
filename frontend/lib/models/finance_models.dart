@@ -126,3 +126,147 @@ class CreateSplitRequest {
   const CreateSplitRequest({required this.userId, required this.amount});
   Map<String, dynamic> toJson() => {'user_id': userId, 'amount': amount};
 }
+
+class Split {
+  final String id;
+  final String expenseId;
+  final String userId;
+  final int amount;
+  final bool isSettled;
+  final DateTime createdAt;
+
+  const Split({
+    required this.id,
+    required this.expenseId,
+    required this.userId,
+    required this.amount,
+    required this.isSettled,
+    required this.createdAt,
+  });
+
+  factory Split.fromJson(Map<String, dynamic> json) => Split(
+        id: json['id'] as String,
+        expenseId: json['expense_id'] as String,
+        userId: json['user_id'] as String,
+        amount: parseJsonInt64(json['amount'], fieldName: 'amount'),
+        isSettled: json['is_settled'] as bool? ?? false,
+        createdAt: DateTime.parse(json['created_at'] as String),
+      );
+}
+
+class UpdateSplitRequest {
+  final String? userId;
+  final int? amount;
+  final bool? isSettled;
+  const UpdateSplitRequest({this.userId, this.amount, this.isSettled});
+  Map<String, dynamic> toJson() => {
+        if (userId != null) 'user_id': userId,
+        if (amount != null) 'amount': amount,
+        if (isSettled != null) 'is_settled': isSettled,
+      };
+}
+
+class RecurringExpense {
+  final String id;
+  final String groupId;
+  final String payerId;
+  final int amount;
+  final String description;
+  final String category;
+  final String currency;
+  final String frequency;
+  final DateTime nextDue;
+  final bool isActive;
+  final DateTime createdAt;
+
+  const RecurringExpense({
+    required this.id,
+    required this.groupId,
+    required this.payerId,
+    required this.amount,
+    required this.description,
+    required this.category,
+    required this.currency,
+    required this.frequency,
+    required this.nextDue,
+    required this.isActive,
+    required this.createdAt,
+  });
+
+  factory RecurringExpense.fromJson(Map<String, dynamic> json) => RecurringExpense(
+        id: json['id'] as String,
+        groupId: json['group_id'] as String,
+        payerId: json['payer_id'] as String,
+        amount: parseJsonInt64(json['amount'], fieldName: 'amount'),
+        description: json['description'] as String,
+        category: json['category'] as String? ?? 'other',
+        currency: json['currency'] as String? ?? 'USD',
+        frequency: json['frequency'] as String? ?? 'monthly',
+        nextDue: DateTime.parse(json['next_due'] as String),
+        isActive: json['is_active'] as bool? ?? true,
+        createdAt: DateTime.parse(json['created_at'] as String),
+      );
+}
+
+class CreateRecurringExpenseRequest {
+  final String groupId;
+  final String payerId;
+  final int amount;
+  final String description;
+  final String category;
+  final String frequency;
+  final DateTime nextDue;
+  final bool isActive;
+
+  const CreateRecurringExpenseRequest({
+    required this.groupId,
+    required this.payerId,
+    required this.amount,
+    required this.description,
+    this.category = 'other',
+    this.frequency = 'monthly',
+    required this.nextDue,
+    this.isActive = true,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'group_id': groupId,
+        'payer_id': payerId,
+        'amount': amount,
+        'description': description,
+        'category': category,
+        'frequency': frequency,
+        'next_due': nextDue.toIso8601String(),
+        'is_active': isActive,
+      };
+}
+
+class UpdateRecurringExpenseRequest {
+  final String? payerId;
+  final int? amount;
+  final String? description;
+  final String? category;
+  final String? frequency;
+  final DateTime? nextDue;
+  final bool? isActive;
+
+  const UpdateRecurringExpenseRequest({
+    this.payerId,
+    this.amount,
+    this.description,
+    this.category,
+    this.frequency,
+    this.nextDue,
+    this.isActive,
+  });
+
+  Map<String, dynamic> toJson() => {
+        if (payerId != null) 'payer_id': payerId,
+        if (amount != null) 'amount': amount,
+        if (description != null) 'description': description,
+        if (category != null) 'category': category,
+        if (frequency != null) 'frequency': frequency,
+        if (nextDue != null) 'next_due': nextDue!.toIso8601String(),
+        if (isActive != null) 'is_active': isActive,
+      };
+}

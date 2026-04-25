@@ -80,12 +80,93 @@ class FinanceService {
     }
   }
 
+  Future<Split> updateSplit(String expenseId, String splitId, UpdateSplitRequest req) async {
+    try {
+      final r = await _dio.patch('/expenses/$expenseId/splits/$splitId', data: req.toJson());
+      return Split.fromJson((r.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Update split failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> deleteSplit(String expenseId, String splitId) async {
+    try {
+      await _dio.delete('/expenses/$expenseId/splits/$splitId');
+    } on DioException catch (e) {
+      _logger.e('Delete split failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
   Future<void> createSettlement(
       String expenseId, CreateSettlementRequest req) async {
     try {
       await _dio.post('/expenses/$expenseId/settle', data: req.toJson());
     } on DioException catch (e) {
       _logger.e('Create settlement failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> deleteSettlement(String expenseId, String settlementId) async {
+    try {
+      await _dio.delete('/expenses/$expenseId/settle/$settlementId');
+    } on DioException catch (e) {
+      _logger.e('Delete settlement failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  // Recurring expenses
+  Future<RecurringExpense> createRecurringExpense(CreateRecurringExpenseRequest req) async {
+    try {
+      final r = await _dio.post('/recurring-expenses', data: req.toJson());
+      return RecurringExpense.fromJson((r.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Create recurring expense failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<List<RecurringExpense>> listRecurringExpenses(String groupId, {int limit = 50, int offset = 0}) async {
+    ensureValidGroupId(groupId);
+    try {
+      final r = await _dio.get('/recurring-expenses', queryParameters: {'group_id': groupId, 'limit': limit, 'offset': offset});
+      final data = r.data;
+      if (data is! List) return [];
+      return data.map((j) => RecurringExpense.fromJson((j as Map).cast<String, dynamic>())).toList();
+    } on DioException catch (e) {
+      _logger.e('List recurring expenses failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<RecurringExpense> getRecurringExpense(String id) async {
+    try {
+      final r = await _dio.get('/recurring-expenses/$id');
+      return RecurringExpense.fromJson((r.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Get recurring expense failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<RecurringExpense> updateRecurringExpense(String id, UpdateRecurringExpenseRequest req) async {
+    try {
+      final r = await _dio.patch('/recurring-expenses/$id', data: req.toJson());
+      return RecurringExpense.fromJson((r.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Update recurring expense failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> deleteRecurringExpense(String id) async {
+    try {
+      await _dio.delete('/recurring-expenses/$id');
+    } on DioException catch (e) {
+      _logger.e('Delete recurring expense failed: ${e.response?.data}');
       throw _handleError(e);
     }
   }
