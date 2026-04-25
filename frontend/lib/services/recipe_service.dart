@@ -51,6 +51,15 @@ class RecipeService {
     on DioException catch (e) { _logger.e('Delete recipe failed: ${e.response?.data}'); throw _handleError(e); }
   }
 
+  Future<void> shareRecipe(String id, ShareRecipeRequest req) async {
+    try {
+      await _dio.post('/recipes/$id/share', data: req.toJson());
+    } on DioException catch (e) {
+      _logger.e('Share recipe failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
   Future<List<RecipeCollection>> listCollections({int limit = 50, int offset = 0}) async {
     try {
       final r = await _dio.get('/collections', queryParameters: {'limit': limit, 'offset': offset});
@@ -58,6 +67,63 @@ class RecipeService {
       if (data is! List) return [];
       return data.map((j) => RecipeCollection.fromJson(j)).toList();
     } on DioException catch (e) { _logger.e('List collections failed: ${e.response?.data}'); throw _handleError(e); }
+  }
+
+  Future<RecipeCollection> createCollection(CreateCollectionRequest req) async {
+    try {
+      final r = await _dio.post('/collections', data: req.toJson());
+      return RecipeCollection.fromJson((r.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Create collection failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<RecipeCollection> getCollection(String id) async {
+    try {
+      final r = await _dio.get('/collections/$id');
+      return RecipeCollection.fromJson((r.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Get collection failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<RecipeCollection> updateCollection(String id, UpdateCollectionRequest req) async {
+    try {
+      final r = await _dio.patch('/collections/$id', data: req.toJson());
+      return RecipeCollection.fromJson((r.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Update collection failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> deleteCollection(String id) async {
+    try {
+      await _dio.delete('/collections/$id');
+    } on DioException catch (e) {
+      _logger.e('Delete collection failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> addRecipeToCollection(String collectionId, AddRecipeToCollectionRequest req) async {
+    try {
+      await _dio.post('/collections/$collectionId/recipes', data: req.toJson());
+    } on DioException catch (e) {
+      _logger.e('Add recipe to collection failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> removeRecipeFromCollection(String collectionId, String recipeId) async {
+    try {
+      await _dio.delete('/collections/$collectionId/recipes/$recipeId');
+    } on DioException catch (e) {
+      _logger.e('Remove recipe from collection failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
   }
 
   Exception _handleError(DioException e) {

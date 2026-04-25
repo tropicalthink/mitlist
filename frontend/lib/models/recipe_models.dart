@@ -138,6 +138,18 @@ class CreateCollectionRequest {
   Map<String, dynamic> toJson() => {'name': name};
 }
 
+class UpdateCollectionRequest {
+  final String? name;
+  const UpdateCollectionRequest({this.name});
+  Map<String, dynamic> toJson() => {if (name != null) 'name': name};
+}
+
+class AddRecipeToCollectionRequest {
+  final String recipeId;
+  const AddRecipeToCollectionRequest({required this.recipeId});
+  Map<String, dynamic> toJson() => {'recipe_id': recipeId};
+}
+
 class ShareRecipeRequest {
   final String sharedWithUserId;
   final String permission;
