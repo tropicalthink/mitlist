@@ -64,7 +64,7 @@ Auth alignment:
 - **POST** `/lists/{id}/reorder` — **MATCHED**
 
 ## Templates
-- **ALL /templates + /chore-templates endpoints** — **MISSING**
+- **ALL /templates + /chore-templates endpoints** — **PARTIAL** (Flutter client implemented; UI/tools wiring pending)
 
 ## Chores
 - **POST** `/chores` — **MATCHED**
