@@ -44,12 +44,12 @@ Auth alignment:
 - **PATCH** `/groups/{id}` — **MATCHED**
 - **DELETE** `/groups/{id}` — **MATCHED**
 - **POST** `/groups/join` — **MATCHED**
-- **POST** `/groups/{id}/members` — **MISSING**
-- **DELETE** `/groups/{id}/members/{user_id}` — **MISSING**
-- **PATCH** `/groups/{id}/members/{user_id}` — **MISSING**
-- **GET** `/groups/{id}/pending-claims` — **MISSING**
-- **POST** `/groups/{id}/pending-claims/{claim_id}/approve` — **MISSING**
-- **POST** `/groups/{id}/pending-claims/{claim_id}/reject` — **MISSING**
+- **POST** `/groups/{id}/members` — **PARTIAL** (service method exists; UI/tools wiring pending)
+- **DELETE** `/groups/{id}/members/{user_id}` — **PARTIAL** (service method exists; UI/tools wiring pending)
+- **PATCH** `/groups/{id}/members/{user_id}` — **PARTIAL** (service method exists; UI/tools wiring pending)
+- **GET** `/groups/{id}/pending-claims` — **PARTIAL** (service method exists; UI/tools wiring pending)
+- **POST** `/groups/{id}/pending-claims/{claim_id}/approve` — **PARTIAL** (service method exists; UI/tools wiring pending)
+- **POST** `/groups/{id}/pending-claims/{claim_id}/reject` — **PARTIAL** (service method exists; UI/tools wiring pending)
 
 ## Lists
 - **POST** `/lists` — **MATCHED** (Flutter expects `item_count`; see gaps)
