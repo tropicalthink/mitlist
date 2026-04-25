@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../models/auth_models.dart';
+import '../../models/notification_models.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/notification_provider.dart';
 import '../../theme/animations.dart';
 import '../../theme/colors.dart';
 import '../../theme/shadows.dart';
@@ -65,10 +67,15 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     try {
       final authService = await ref.read(authServiceProviderAsync.future);
       final user = await authService.getMe();
+      final notifService = await ref.read(notificationServiceProviderAsync.future);
+      final prefs = await notifService.getPreferences();
+      final pushPrefs = prefs.where((p) => p.channel == 'push').toList();
+      final notificationsEnabled = pushPrefs.isEmpty ? true : pushPrefs.every((p) => p.enabled);
       if (mounted) {
         setState(() {
           _name = user.fullName;
           _email = user.email;
+          _notificationsEnabled = notificationsEnabled;
           _isLoading = false;
         });
       }
@@ -269,7 +276,33 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             title: const Text('Notifications'),
             trailing: _NeoSwitch(
               value: _notificationsEnabled,
-              onChanged: (value) => setState(() => _notificationsEnabled = value),
+              onChanged: (value) async {
+                setState(() {
+                  _notificationsEnabled = value;
+                  _error = null;
+                });
+                try {
+                  final notifService = await ref.read(notificationServiceProviderAsync.future);
+                  final prefs = await notifService.getPreferences();
+                  final pushPrefs = prefs.where((p) => p.channel == 'push').toList();
+                  for (final p in pushPrefs) {
+                    await notifService.updatePreference(
+                      NotificationPreferenceModel(
+                        id: p.id,
+                        userId: p.userId,
+                        type: p.type,
+                        enabled: value,
+                        channel: p.channel,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (!mounted) return;
+                  setState(() {
+                    _error = 'Failed to update notification preferences.';
+                  });
+                }
+              },
             ),
           ),
           const Divider(),
