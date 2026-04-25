@@ -30,6 +30,9 @@ Auth alignment:
 - **POST** `/auth/change-password` — **MATCHED**
 - **POST** `/auth/guest/convert` — **MATCHED**
 - **POST** `/auth/claim-account` — **MATCHED**
+- **POST** `/auth/push-subscriptions` — **MISSING**
+- **GET** `/auth/push-subscriptions` — **MISSING**
+- **DELETE** `/auth/push-subscriptions/{id}` — **MISSING**
 
 ## Public config
 - **GET** `/vapid` — **MATCHED** (backend mounted; Flutter can fetch web-push key when implemented)

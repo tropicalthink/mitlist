@@ -69,6 +69,11 @@ Severity definitions (per spec):
   - **Frontend**: `ShareTargetScreen` now posts to both endpoints.
   - **Status**: FIXED
 
+- **INT-MED-007 Push subscription endpoints missing**
+  - **Backend**: added protected create/list/delete endpoints under `/auth/push-subscriptions` backed by `push_subscriptions`.
+  - **Frontend**: not yet wired (web push device registration still deferred).
+  - **Status**: FIXED (backend); frontend pending
+
 ### Fixed findings
 
 - **INT-CRIT-001 Vault feature unreachable (backend unmounted)** — **FIXED**
