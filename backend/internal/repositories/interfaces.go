@@ -174,35 +174,6 @@ type ActivityRepo interface {
 	DeleteActivityLog(ctx context.Context, id uuid.UUID) error
 }
 
-// VaultRepo is the interface for vault repository operations.
-type VaultRepo interface {
-	CreateVaultItem(ctx context.Context, item *models.VaultItem) error
-	GetVaultItemByID(ctx context.Context, id uuid.UUID) (*models.VaultItem, error)
-	ListVaultItemsByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.VaultItem, error)
-	UpdateVaultItem(ctx context.Context, item *models.VaultItem) error
-	DeleteVaultItem(ctx context.Context, id uuid.UUID) error
-	CreateShare(ctx context.Context, share *models.VaultShare) error
-	ListShares(ctx context.Context, vaultItemID uuid.UUID) ([]models.VaultShare, error)
-	DeleteShare(ctx context.Context, id uuid.UUID) error
-}
-
-// LivingRepo is the interface for living things repository operations.
-type LivingRepo interface {
-	CreateLivingThing(ctx context.Context, lt *models.LivingThing) (*models.LivingThing, error)
-	GetLivingThingByID(ctx context.Context, id uuid.UUID) (*models.LivingThing, error)
-	ListLivingThingsByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.LivingThing, error)
-	UpdateLivingThing(ctx context.Context, lt *models.LivingThing) (*models.LivingThing, error)
-	DeleteLivingThing(ctx context.Context, id uuid.UUID) error
-	CreateCareSchedule(ctx context.Context, cs *models.CareSchedule) (*models.CareSchedule, error)
-	GetCareSchedule(ctx context.Context, id uuid.UUID) (*models.CareSchedule, error)
-	GetCareScheduleByLivingThingID(ctx context.Context, livingThingID uuid.UUID) (*models.CareSchedule, error)
-	UpdateCareSchedule(ctx context.Context, cs *models.CareSchedule) (*models.CareSchedule, error)
-	CreateCareLog(ctx context.Context, cl *models.CareLog) (*models.CareLog, error)
-	ListCareLogs(ctx context.Context, careScheduleID uuid.UUID, limit, offset int) ([]models.CareLog, error)
-	CreateSpeciesWiki(ctx context.Context, sw *models.SpeciesWiki) (*models.SpeciesWiki, error)
-	GetSpeciesWiki(ctx context.Context, id uuid.UUID) (*models.SpeciesWiki, error)
-}
-
 // AssistantRepo is the interface for assistant repository operations.
 type AssistantRepo interface {
 	CreateSession(ctx context.Context, s *models.ChatSession) (*models.ChatSession, error)

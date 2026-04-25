@@ -177,10 +177,6 @@ func main() {
 			recipeHandler := handlers.NewRecipeHandler(cnt.RecipeService())
 			recipeHandler.RegisterRoutes(r)
 
-			// Living Things
-			livingHandler := handlers.NewLivingHandler(cnt.LivingService())
-			livingHandler.Routes(r)
-
 			// Assistant
 			assistantHandler := handlers.NewAssistantHandler(cnt.AssistantService())
 			assistantHandler.Routes(r)
@@ -188,11 +184,6 @@ func main() {
 			// Share Target
 			shareHandler := handlers.NewShareHandler(cnt.ShareService())
 			shareHandler.Routes(r)
-
-			// Vault
-			// Note: handler existed but was previously unmounted, which made the Flutter Vault feature unreachable.
-			vaultHandler := handlers.NewVaultHandler(cnt.VaultService())
-			vaultHandler.RegisterRoutes(r)
 		})
 	})
 

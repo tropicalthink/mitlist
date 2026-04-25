@@ -61,12 +61,6 @@ type Container struct {
 	recipeRepoOnce sync.Once
 	recipeRepo     *repositories.RecipeRepo
 
-	livingRepoOnce sync.Once
-	livingRepo     *repositories.LivingRepository
-
-	vaultRepoOnce sync.Once
-	vaultRepo     *repositories.VaultRepository
-
 	assistantRepoOnce sync.Once
 	assistantRepo     *repositories.AssistantRepository
 
@@ -108,12 +102,6 @@ type Container struct {
 
 	recipeServiceOnce sync.Once
 	recipeService     *services.RecipeService
-
-	livingServiceOnce sync.Once
-	livingService     *services.LivingService
-
-	vaultServiceOnce sync.Once
-	vaultService     *services.VaultService
 
 	assistantServiceOnce sync.Once
 	assistantService     *services.AssistantService
@@ -257,22 +245,6 @@ func (c *Container) RecipeRepo() *repositories.RecipeRepo {
 	return c.recipeRepo
 }
 
-// LivingRepo returns the singleton living things repository.
-func (c *Container) LivingRepo() *repositories.LivingRepository {
-	c.livingRepoOnce.Do(func() {
-		c.livingRepo = repositories.NewLivingRepository(c.db)
-	})
-	return c.livingRepo
-}
-
-// VaultRepo returns the singleton vault repository.
-func (c *Container) VaultRepo() *repositories.VaultRepository {
-	c.vaultRepoOnce.Do(func() {
-		c.vaultRepo = repositories.NewVaultRepository(c.db)
-	})
-	return c.vaultRepo
-}
-
 // AssistantRepo returns the singleton assistant repository.
 func (c *Container) AssistantRepo() *repositories.AssistantRepository {
 	c.assistantRepoOnce.Do(func() {
@@ -383,22 +355,6 @@ func (c *Container) RecipeService() *services.RecipeService {
 		c.recipeService = services.NewRecipeService(c.RecipeRepo())
 	})
 	return c.recipeService
-}
-
-// LivingService returns the singleton living things service.
-func (c *Container) LivingService() *services.LivingService {
-	c.livingServiceOnce.Do(func() {
-		c.livingService = services.NewLivingService(c.LivingRepo(), c.GroupRepo())
-	})
-	return c.livingService
-}
-
-// VaultService returns the singleton vault service.
-func (c *Container) VaultService() *services.VaultService {
-	c.vaultServiceOnce.Do(func() {
-		c.vaultService = services.NewVaultService(c.VaultRepo(), c.GroupRepo())
-	})
-	return c.vaultService
 }
 
 // AssistantService returns the singleton assistant service.

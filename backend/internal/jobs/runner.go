@@ -45,17 +45,9 @@ func (r *Runner) RegisterAll() {
 	cs := NewChoreScheduler(r.pool, r.log)
 	r.register("chore-scheduler", "1 0 * * *", cs.Run, true)
 
-	// T83: Living reminder — hourly
-	lr := NewLivingReminder(r.pool, r.push, r.log)
-	r.register("living-reminder", "0 * * * *", lr.Run, true)
-
 	// T84: Recurring expense — hourly
 	re := NewRecurringExpenseJob(r.pool, r.push, r.log)
 	r.register("recurring-expense", "0 * * * *", re.Run, true)
-
-	// T85: Vault reminder — hourly
-	vr := NewVaultReminder(r.pool, r.push, r.log)
-	r.register("vault-reminder", "0 * * * *", vr.Run, true)
 
 	// T86: Chore reminder — daily at 09:00
 	cr := NewChoreReminder(r.pool, r.push, r.log)

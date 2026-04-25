@@ -25,20 +25,9 @@ type choreReminderRepo interface {
 	GetChoreName(ctx context.Context, choreID uuid.UUID) (string, error)
 }
 
-type livingReminderRepo interface {
-	ListDueCareSchedules(ctx context.Context) ([]models.CareSchedule, error)
-	GetLivingThingNameAndGroupID(ctx context.Context, id uuid.UUID) (string, uuid.UUID, error)
-	UpdateCareScheduleNextDue(ctx context.Context, id uuid.UUID, nextDue time.Time) error
-}
-
 type recurringExpenseRepo interface {
 	ListDueRecurringExpenses(ctx context.Context) ([]models.RecurringExpense, error)
 	ProcessRecurringExpense(ctx context.Context, expense *models.Expense, split *models.Split, reID uuid.UUID, oldNextDue time.Time, nextDue time.Time) error
-}
-
-type vaultReminderRepo interface {
-	ListDueVaultItems(ctx context.Context) ([]models.VaultItem, error)
-	ClearVaultReminder(ctx context.Context, id uuid.UUID) error
 }
 
 type groupActivity struct {

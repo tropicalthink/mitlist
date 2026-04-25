@@ -164,8 +164,6 @@ func clearTables(t *testing.T) {
 		"chore_completions", "chore_assignments", "chore_rotation_states", "chores",
 		"chore_template_items", "chore_templates", "template_items", "templates",
 		"list_items", "lists",
-		"care_logs", "care_schedules", "species_wiki", "living_things",
-		"vault_shares", "vault_items",
 		"activity_logs", "notifications", "notification_preferences",
 		"chat_messages", "chat_sessions",
 		"pending_claims", "group_invites", "group_memberships", "groups",
@@ -198,8 +196,6 @@ func newTestNotificationRepo() *repositories.NotificationRepository {
 	return repositories.NewNotificationRepository(testDB)
 }
 func newTestActivityRepo() *repositories.ActivityRepository { return repositories.NewActivityRepository(testDB) }
-func newTestVaultRepo() *repositories.VaultRepository       { return repositories.NewVaultRepository(testDB) }
-func newTestLivingRepo() *repositories.LivingRepository     { return repositories.NewLivingRepository(testDB) }
 func newTestAssistantRepo() *repositories.AssistantRepository {
 	return repositories.NewAssistantRepository(testDB)
 }
@@ -520,30 +516,6 @@ func newActivityRouter(t *testing.T) (chi.Router, *ActivityHandler) {
 	r := chi.NewRouter()
 	r.Use(testAuthMiddleware)
 	h.RegisterRoutes(r)
-	return r, h
-}
-
-func newVaultRouter(t *testing.T) (chi.Router, *VaultHandler) {
-	vaultRepo := newTestVaultRepo()
-	groupRepo := newTestGroupRepo()
-	svc := services.NewVaultService(vaultRepo, groupRepo)
-	h := NewVaultHandler(svc)
-
-	r := chi.NewRouter()
-	r.Use(testAuthMiddleware)
-	h.RegisterRoutes(r)
-	return r, h
-}
-
-func newLivingRouter(t *testing.T) (chi.Router, *LivingHandler) {
-	livingRepo := newTestLivingRepo()
-	groupRepo := newTestGroupRepo()
-	svc := services.NewLivingService(livingRepo, groupRepo)
-	h := NewLivingHandler(svc)
-
-	r := chi.NewRouter()
-	r.Use(testAuthMiddleware)
-	h.Routes(r)
 	return r, h
 }
 
