@@ -86,3 +86,33 @@ class CompleteChoreRequest {
     if (notes != null) 'notes': notes,
   };
 }
+
+class ChoreAssignment {
+  final String id;
+  final String choreId;
+  final String userId;
+  final String status;
+  final DateTime? dueDate;
+  final DateTime assignedAt;
+  final DateTime? completedAt;
+
+  const ChoreAssignment({
+    required this.id,
+    required this.choreId,
+    required this.userId,
+    required this.status,
+    required this.dueDate,
+    required this.assignedAt,
+    required this.completedAt,
+  });
+
+  factory ChoreAssignment.fromJson(Map<String, dynamic> json) => ChoreAssignment(
+        id: json['id'] as String,
+        choreId: json['chore_id'] as String,
+        userId: json['user_id'] as String,
+        status: json['status'] as String? ?? 'pending',
+        dueDate: json['due_date'] != null ? DateTime.parse(json['due_date'] as String) : null,
+        assignedAt: DateTime.parse(json['assigned_at'] as String),
+        completedAt: json['completed_at'] != null ? DateTime.parse(json['completed_at'] as String) : null,
+      );
+}

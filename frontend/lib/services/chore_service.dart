@@ -62,6 +62,21 @@ class ChoreService {
     }
   }
 
+  Future<List<ChoreAssignment>> listAssignments(String choreId, {int limit = 50, int offset = 0}) async {
+    try {
+      final r = await _dio.get(
+        '/chores/$choreId/assignments',
+        queryParameters: {'limit': limit, 'offset': offset},
+      );
+      final data = r.data;
+      if (data is! List) return [];
+      return data.map((j) => ChoreAssignment.fromJson((j as Map).cast<String, dynamic>())).toList();
+    } on DioException catch (e) {
+      _logger.e('List assignments failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
   Future<void> deleteChore(String id) async {
     try {
       await _dio.delete('/chores/$id');
