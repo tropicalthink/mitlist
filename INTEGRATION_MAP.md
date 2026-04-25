@@ -96,14 +96,14 @@ Auth alignment:
 - **GET** `/recipes/{id}` — **MATCHED**
 - **PATCH** `/recipes/{id}` — **PARTIAL** (service method exists; UI not wired)
 - **DELETE** `/recipes/{id}` — **MATCHED**
-- **POST** `/recipes/{id}/share` — **MISSING**
-- **POST** `/collections` — **MISSING**
+- **POST** `/recipes/{id}/share` — **PARTIAL** (service method exists; UI/tools wiring pending)
+- **POST** `/collections` — **PARTIAL** (service method exists; UI/tools wiring pending)
 - **GET** `/collections?limit&offset` — **MATCHED**
-- **GET** `/collections/{id}` — **MISSING**
-- **PATCH** `/collections/{id}` — **MISSING**
-- **DELETE** `/collections/{id}` — **MISSING**
-- **POST** `/collections/{id}/recipes` — **MISSING**
-- **DELETE** `/collections/{id}/recipes/{recipe_id}` — **MISSING**
+- **GET** `/collections/{id}` — **PARTIAL** (service method exists; UI/tools wiring pending)
+- **PATCH** `/collections/{id}` — **PARTIAL** (service method exists; UI/tools wiring pending)
+- **DELETE** `/collections/{id}` — **PARTIAL** (service method exists; UI/tools wiring pending)
+- **POST** `/collections/{id}/recipes` — **PARTIAL** (service method exists; UI/tools wiring pending)
+- **DELETE** `/collections/{id}/recipes/{recipe_id}` — **PARTIAL** (service method exists; UI/tools wiring pending)
 
 ## Living things
 - **POST** `/living-things` — **MATCHED**
