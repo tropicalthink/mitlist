@@ -134,3 +134,63 @@ class InviteMemberRequest {
     };
   }
 }
+
+class GroupInvite {
+  final String id;
+  final String groupId;
+  final String code;
+  final DateTime expiresAt;
+  final String? usedBy;
+  final DateTime? usedAt;
+
+  const GroupInvite({
+    required this.id,
+    required this.groupId,
+    required this.code,
+    required this.expiresAt,
+    required this.usedBy,
+    required this.usedAt,
+  });
+
+  factory GroupInvite.fromJson(Map<String, dynamic> json) => GroupInvite(
+        id: json['id'] as String,
+        groupId: json['group_id'] as String,
+        code: json['code'] as String,
+        expiresAt: DateTime.parse(json['expires_at'] as String),
+        usedBy: json['used_by'] as String?,
+        usedAt: json['used_at'] != null ? DateTime.parse(json['used_at'] as String) : null,
+      );
+}
+
+class UpdateMemberRoleRequest {
+  final String role;
+  const UpdateMemberRoleRequest({required this.role});
+  Map<String, dynamic> toJson() => {'role': role};
+}
+
+class PendingClaim {
+  final String id;
+  final String groupId;
+  final String code;
+  final DateTime expiresAt;
+  final String? claimedBy;
+  final DateTime? claimedAt;
+
+  const PendingClaim({
+    required this.id,
+    required this.groupId,
+    required this.code,
+    required this.expiresAt,
+    required this.claimedBy,
+    required this.claimedAt,
+  });
+
+  factory PendingClaim.fromJson(Map<String, dynamic> json) => PendingClaim(
+        id: json['id'] as String,
+        groupId: json['group_id'] as String,
+        code: json['code'] as String,
+        expiresAt: DateTime.parse(json['expires_at'] as String),
+        claimedBy: json['claimed_by'] as String?,
+        claimedAt: json['claimed_at'] != null ? DateTime.parse(json['claimed_at'] as String) : null,
+      );
+}
