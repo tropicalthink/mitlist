@@ -126,9 +126,9 @@ Auth alignment:
 
 ## Unmounted backend handlers
 Not callable in production unless mounted:
-- Vault (`/vault*`) — **UNMOUNTED** (Flutter calls it anyway)
+- Vault (`/vault*`) — **MOUNTED**
 - Notifications (`/notifications*`) — **MOUNTED**
-- Activity logs (`/activity-logs*`) — **UNMOUNTED**
-- OAuth (`/oauth*` equivalent) — **UNMOUNTED**
+- Activity logs (`/activity-logs*`) — **MOUNTED**
+- OAuth (`/oauth*` equivalent) — **MOUNTED**
 - Metrics/VAPID/Debug/Pprof — **UNMOUNTED** (expected)
 
