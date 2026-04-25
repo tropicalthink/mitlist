@@ -82,6 +82,13 @@ func main() {
 		// Public configuration endpoints
 		r.Get("/vapid", handlers.NewVAPIDHandler(cfg).ServeHTTP)
 
+		// OAuth (public initiation + callback)
+		oauthHandler := handlers.NewOAuthHandler(cfg, cnt.OAuthService())
+		r.Get("/oauth/google", oauthHandler.GetGoogle)
+		r.Post("/oauth/google/callback", oauthHandler.PostGoogleCallback)
+		r.Get("/oauth/apple", oauthHandler.GetApple)
+		r.Post("/oauth/apple/callback", oauthHandler.PostAppleCallback)
+
 		// Protected feature routes
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.Auth(cnt.JWT(), cnt.UserService()))
@@ -89,6 +96,10 @@ func main() {
 			// Notifications
 			notificationHandler := handlers.NewNotificationHandler(cnt.NotificationService())
 			notificationHandler.RegisterRoutes(r)
+
+			// Activity logs
+			activityHandler := handlers.NewActivityHandler(cnt.ActivityService())
+			activityHandler.RegisterRoutes(r)
 
 			// Groups
 			groupHandler := handlers.NewGroupHandler(cnt.GroupService())
