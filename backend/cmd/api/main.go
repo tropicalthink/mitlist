@@ -79,9 +79,16 @@ func main() {
 	srv.Router().Route(cfg.APIPrefix+"/v1", func(r chi.Router) {
 		authHandler.RegisterRoutes(r)
 
+		// Public configuration endpoints
+		r.Get("/vapid", handlers.NewVAPIDHandler(cfg).ServeHTTP)
+
 		// Protected feature routes
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.Auth(cnt.JWT(), cnt.UserService()))
+
+			// Notifications
+			notificationHandler := handlers.NewNotificationHandler(cnt.NotificationService())
+			notificationHandler.RegisterRoutes(r)
 
 			// Groups
 			groupHandler := handlers.NewGroupHandler(cnt.GroupService())

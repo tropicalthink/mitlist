@@ -70,6 +70,9 @@ type Container struct {
 	assistantRepoOnce sync.Once
 	assistantRepo     *repositories.AssistantRepository
 
+	notificationRepoOnce sync.Once
+	notificationRepo     *repositories.NotificationRepository
+
 	userServiceOnce sync.Once
 	userService     *services.UserService
 
@@ -114,6 +117,9 @@ type Container struct {
 
 	shareServiceOnce sync.Once
 	shareService     *services.ShareService
+
+	notificationServiceOnce sync.Once
+	notificationService     *services.NotificationService
 
 	aiClientOnce sync.Once
 	aiClient     *aiservice.Client
@@ -269,6 +275,14 @@ func (c *Container) AssistantRepo() *repositories.AssistantRepository {
 	return c.assistantRepo
 }
 
+// NotificationRepo returns the singleton notification repository.
+func (c *Container) NotificationRepo() *repositories.NotificationRepository {
+	c.notificationRepoOnce.Do(func() {
+		c.notificationRepo = repositories.NewNotificationRepository(c.db)
+	})
+	return c.notificationRepo
+}
+
 // UserService returns the singleton user service.
 func (c *Container) UserService() *services.UserService {
 	c.userServiceOnce.Do(func() {
@@ -379,6 +393,14 @@ func (c *Container) AssistantService() *services.AssistantService {
 		c.assistantService = services.NewAssistantService(c.AssistantRepo(), c.AIClient())
 	})
 	return c.assistantService
+}
+
+// NotificationService returns the singleton notification service.
+func (c *Container) NotificationService() *services.NotificationService {
+	c.notificationServiceOnce.Do(func() {
+		c.notificationService = services.NewNotificationService(c.NotificationRepo(), c.Push())
+	})
+	return c.notificationService
 }
 
 // ShareService returns the singleton share target service.
