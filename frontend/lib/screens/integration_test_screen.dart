@@ -8,6 +8,8 @@ import '../providers/notification_provider.dart';
 import '../models/auth_models.dart';
 import '../models/group_models.dart';
 import '../models/template_models.dart';
+import '../models/finance_models.dart';
+import '../providers/finance_provider.dart';
 import '../theme/spacing.dart';
 import '../widgets/alert.dart';
 import '../widgets/app_button.dart';
@@ -213,6 +215,71 @@ class _IntegrationTestScreenState extends ConsumerState<IntegrationTestScreen> {
     }
   }
 
+  Future<void> _runFinanceSmoke() async {
+    setState(() {
+      _isLoading = true;
+      _result = null;
+      _error = null;
+    });
+
+    try {
+      await _ensureGroup();
+      final groupId = _groupId!;
+
+      final auth = await ref.read(authServiceProviderAsync.future);
+      final me = await auth.getMe();
+      final finance = await ref.read(financeServiceProviderAsync.future);
+
+      final expense = await finance.createExpense(
+        CreateExpenseRequest(
+          groupId: groupId,
+          payerId: me.id,
+          amount: 1234,
+          description: 'Integration expense',
+          date: DateTime.now().toUtc(),
+          splitUserIds: const [],
+        ),
+      );
+
+      // Split: create (returns void in current service), then update/delete require ids.
+      // We can at least create and then list expenses and update the expense itself.
+      final updatedExpense = await finance.updateExpense(
+        expense.id,
+        const UpdateExpenseRequest(description: 'Integration expense (updated)'),
+      );
+
+      // Recurring expense CRUD
+      final createdRecurring = await finance.createRecurringExpense(
+        CreateRecurringExpenseRequest(
+          groupId: groupId,
+          payerId: me.id,
+          amount: 500,
+          description: 'Integration recurring',
+          nextDue: DateTime.now().add(const Duration(days: 30)).toUtc(),
+        ),
+      );
+      final listedRecurring = await finance.listRecurringExpenses(groupId, limit: 10, offset: 0);
+      final fetchedRecurring = await finance.getRecurringExpense(createdRecurring.id);
+      final updatedRecurring = await finance.updateRecurringExpense(
+        createdRecurring.id,
+        const UpdateRecurringExpenseRequest(description: 'Integration recurring (updated)'),
+      );
+      await finance.deleteRecurringExpense(createdRecurring.id);
+
+      // Cleanup expense
+      await finance.deleteExpense(expense.id);
+
+      setState(() {
+        _result =
+            'Finance OK\nExpense=${updatedExpense.id}\nRecurring(list=${listedRecurring.length}) fetched=${fetchedRecurring.id} updated=${updatedRecurring.description}';
+      });
+    } catch (e) {
+      setState(() => _error = 'Finance failed: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _testLogout() async {
     setState(() {
       _isLoading = true;
@@ -305,6 +372,11 @@ class _IntegrationTestScreenState extends ConsumerState<IntegrationTestScreen> {
                   text: 'Group admin smoke',
                   isLoading: _isLoading,
                   onPressed: _runGroupAdminSmoke,
+                ),
+                AppButton(
+                  text: 'Finance smoke',
+                  isLoading: _isLoading,
+                  onPressed: _runFinanceSmoke,
                 ),
               ],
             ),
