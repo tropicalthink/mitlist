@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
 import '../models/notification_models.dart';
+import '../models/push_subscription_models.dart';
 import 'api_client.dart';
 
 class NotificationService {
@@ -52,6 +53,32 @@ class NotificationService {
 
   Future<void> updatePreference(NotificationPreferenceModel pref) async {
     await _dio.patch('/notifications/preferences', data: pref.toJson());
+  }
+
+  // ---------------------------------------------------------------------------
+  // Push subscriptions (web push)
+  // ---------------------------------------------------------------------------
+
+  Future<PushSubscriptionModel> createPushSubscription({
+    required String endpoint,
+    required String p256dh,
+    required String auth,
+  }) async {
+    final r = await _dio.post(
+      '/auth/push-subscriptions',
+      data: {'endpoint': endpoint, 'p256dh': p256dh, 'auth': auth},
+    );
+    return PushSubscriptionModel.fromJson((r.data as Map).cast<String, dynamic>());
+  }
+
+  Future<List<PushSubscriptionModel>> listPushSubscriptions() async {
+    final r = await _dio.get('/auth/push-subscriptions');
+    final data = (r.data as List).cast<dynamic>();
+    return data.map((e) => PushSubscriptionModel.fromJson((e as Map).cast<String, dynamic>())).toList();
+  }
+
+  Future<void> deletePushSubscription(String id) async {
+    await _dio.delete('/auth/push-subscriptions/$id');
   }
 }
 
