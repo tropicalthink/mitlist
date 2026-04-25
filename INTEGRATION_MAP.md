@@ -55,7 +55,7 @@ Auth alignment:
 - **POST** `/lists` — **MATCHED** (Flutter expects `item_count`; see gaps)
 - **GET** `/lists?group_id&limit&offset` — **MATCHED**
 - **GET** `/lists/{id}` — **MATCHED**
-- **PATCH** `/lists/{id}` — **MISSING**
+- **PATCH** `/lists/{id}` — **PARTIAL** (service method exists; UI not wired)
 - **DELETE** `/lists/{id}` — **MATCHED**
 - **POST** `/lists/{id}/items` — **MATCHED**
 - **GET** `/lists/{id}/items?limit&offset` — **MATCHED**
@@ -70,7 +70,7 @@ Auth alignment:
 - **POST** `/chores` — **MATCHED**
 - **GET** `/chores?group_id&limit&offset` — **MATCHED**
 - **GET** `/chores/{id}` — **MATCHED**
-- **PATCH** `/chores/{id}` — **MISSING**
+- **PATCH** `/chores/{id}` — **PARTIAL** (service method exists; UI not wired)
 - **DELETE** `/chores/{id}` — **MATCHED**
 - **POST** `/chores/{id}/rotate` — **MATCHED**
 - **POST** `/chores/{id}/complete` — **MATCHED**
@@ -81,7 +81,7 @@ Auth alignment:
 - **POST** `/expenses` — **MATCHED**
 - **GET** `/expenses?group_id&limit&offset` — **MATCHED**
 - **GET** `/expenses/{id}` — **MATCHED**
-- **PATCH** `/expenses/{id}` — **MISSING**
+- **PATCH** `/expenses/{id}` — **PARTIAL** (service method exists; UI not wired)
 - **DELETE** `/expenses/{id}` — **MATCHED**
 - **POST** `/expenses/{id}/splits` — **MATCHED (write-only)** (Flutter ignores response)
 - **PATCH** `/expenses/{id}/splits/{split_id}` — **MISSING**
@@ -94,7 +94,7 @@ Auth alignment:
 - **POST** `/recipes` — **MATCHED**
 - **GET** `/recipes?limit&offset` — **MATCHED**
 - **GET** `/recipes/{id}` — **MATCHED**
-- **PATCH** `/recipes/{id}` — **MISSING**
+- **PATCH** `/recipes/{id}` — **PARTIAL** (service method exists; UI not wired)
 - **DELETE** `/recipes/{id}` — **MATCHED**
 - **POST** `/recipes/{id}/share` — **MISSING**
 - **POST** `/collections` — **MISSING**
@@ -109,7 +109,7 @@ Auth alignment:
 - **POST** `/living-things` — **MATCHED**
 - **GET** `/living-things?group_id&limit&offset` — **MATCHED**
 - **GET** `/living-things/{id}` — **MATCHED**
-- **PATCH** `/living-things/{id}` — **MISSING**
+- **PATCH** `/living-things/{id}` — **PARTIAL** (service method exists; UI not wired)
 - **DELETE** `/living-things/{id}` — **MATCHED**
 - **POST** `/living-things/{id}/care-schedule` — **MATCHED (write-only)** (Flutter ignores response)
 - **GET** `/living-things/{id}/care-schedule` — **MISSING**
