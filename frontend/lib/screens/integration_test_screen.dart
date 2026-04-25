@@ -16,6 +16,7 @@ import '../providers/living_provider.dart';
 import '../models/living_models.dart';
 import '../providers/assistant_provider.dart';
 import '../models/assistant_models.dart';
+import '../providers/activity_provider.dart';
 import '../theme/spacing.dart';
 import '../widgets/alert.dart';
 import '../widgets/app_button.dart';
@@ -412,6 +413,29 @@ class _IntegrationTestScreenState extends ConsumerState<IntegrationTestScreen> {
     }
   }
 
+  Future<void> _runActivitySmoke() async {
+    setState(() {
+      _isLoading = true;
+      _result = null;
+      _error = null;
+    });
+
+    try {
+      await _ensureGroup();
+      final groupId = _groupId!;
+      final activity = await ref.read(activityServiceProviderAsync.future);
+      final logs = await activity.listActivityLogs(groupId, limit: 10, offset: 0);
+      final first = logs.isEmpty ? null : await activity.getActivityLog(logs.first.id);
+      setState(() {
+        _result = 'Activity OK\nLogs=${logs.length}\nFirst=${first?.id ?? "(none)"}';
+      });
+    } catch (e) {
+      setState(() => _error = 'Activity failed: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _testLogout() async {
     setState(() {
       _isLoading = true;
@@ -524,6 +548,11 @@ class _IntegrationTestScreenState extends ConsumerState<IntegrationTestScreen> {
                   text: 'Assistant smoke',
                   isLoading: _isLoading,
                   onPressed: _runAssistantSmoke,
+                ),
+                AppButton(
+                  text: 'Activity smoke',
+                  isLoading: _isLoading,
+                  onPressed: _runActivitySmoke,
                 ),
               ],
             ),
