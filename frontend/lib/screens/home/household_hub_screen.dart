@@ -150,16 +150,6 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                               onTap: () => context.pushNamed('money'),
                             ),
                             _QuickActionCard(
-                              iconName: 'safe',
-                              label: 'Vault',
-                              onTap: () => context.pushNamed('vault'),
-                            ),
-                            _QuickActionCard(
-                              iconName: 'paw',
-                              label: 'Pets & Plants',
-                              onTap: () => context.pushNamed('livingThings'),
-                            ),
-                            _QuickActionCard(
                               iconName: 'bookOpen',
                               label: 'Recipes',
                               onTap: () => context.pushNamed('recipes'),

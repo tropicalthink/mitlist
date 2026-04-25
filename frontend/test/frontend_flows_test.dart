@@ -7,34 +7,26 @@ import 'package:goflutter/models/auth_models.dart';
 import 'package:goflutter/models/chore_models.dart';
 import 'package:goflutter/models/finance_models.dart';
 import 'package:goflutter/models/group_models.dart';
-import 'package:goflutter/models/living_models.dart' as living_models;
 import 'package:goflutter/models/list_models.dart';
 import 'package:goflutter/models/recipe_models.dart';
-import 'package:goflutter/models/vault_models.dart';
 import 'package:goflutter/providers/auth_provider.dart';
 import 'package:goflutter/providers/chore_provider.dart';
 import 'package:goflutter/providers/finance_provider.dart';
 import 'package:goflutter/providers/group_provider.dart';
-import 'package:goflutter/providers/living_provider.dart';
 import 'package:goflutter/providers/list_provider.dart';
 import 'package:goflutter/providers/recipe_provider.dart';
-import 'package:goflutter/providers/vault_provider.dart';
 import 'package:goflutter/screens/chores/chores_screen.dart';
 import 'package:goflutter/screens/home/groups_list_screen.dart';
 import 'package:goflutter/screens/home/household_hub_screen.dart';
-import 'package:goflutter/screens/living_things/living_things_screen.dart';
 import 'package:goflutter/screens/lists/lists_screen.dart';
 import 'package:goflutter/screens/money/expenses_screen.dart';
 import 'package:goflutter/screens/recipes/recipes_screen.dart';
-import 'package:goflutter/screens/vault/vault_screen.dart';
 import 'package:goflutter/services/auth_service.dart';
 import 'package:goflutter/services/chore_service.dart';
 import 'package:goflutter/services/finance_service.dart';
 import 'package:goflutter/services/group_service.dart';
-import 'package:goflutter/services/living_service.dart';
 import 'package:goflutter/services/list_service.dart';
 import 'package:goflutter/services/recipe_service.dart';
-import 'package:goflutter/services/vault_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -247,110 +239,6 @@ void main() {
     expect(find.text('4'), findsOneWidget);
   });
 
-  testWidgets('vault item creation flow persists direct content and refreshes',
-      (tester) async {
-    await _setLargeSurface(tester);
-    final groupService = FakeGroupService(groups: [group], groupDetail: group);
-    final vaultService = FakeVaultService();
-
-    await _pumpScreen(
-      tester,
-      child: const VaultScreen(),
-      overrides: [
-        groupServiceProviderAsync.overrideWith((ref) async => groupService),
-        vaultServiceProviderAsync.overrideWith((ref) async => vaultService),
-      ],
-    );
-
-    await tester.tap(find.byType(FloatingActionButton));
-    await tester.pumpAndSettle();
-
-    await tester.enterText(find.byType(TextField).at(0), 'Home Wi-Fi');
-    await tester.enterText(find.byType(TextField).at(1), 'Password: hunter2');
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('SAVE ITEM'));
-    await tester.pumpAndSettle();
-
-    expect(vaultService.lastCreateRequest, isNotNull);
-    expect(vaultService.lastCreateRequest!.title, 'Home Wi-Fi');
-    expect(vaultService.lastCreateRequest!.content, 'Password: hunter2');
-    expect(find.text('Home Wi-Fi'), findsOneWidget);
-  });
-
-  testWidgets('vault item card opens a real detail sheet', (tester) async {
-    await _setLargeSurface(tester);
-    final groupService = FakeGroupService(groups: [group], groupDetail: group);
-    final vaultService = FakeVaultService(
-      items: [
-        VaultItem(
-          id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-          groupId: groupId,
-          type: 'document',
-          title: 'Insurance Policy',
-          content: 'Policy number: 12345',
-          reminderDate: DateTime.utc(2026, 6, 1),
-          createdAt: DateTime.utc(2026, 1, 1),
-          updatedAt: DateTime.utc(2026, 1, 2),
-        ),
-      ],
-    );
-
-    await _pumpScreen(
-      tester,
-      child: const VaultScreen(),
-      overrides: [
-        groupServiceProviderAsync.overrideWith((ref) async => groupService),
-        vaultServiceProviderAsync.overrideWith((ref) async => vaultService),
-      ],
-    );
-
-    await tester.tap(find.text('Insurance Policy'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Vault Item'), findsOneWidget);
-    expect(find.text('Policy number: 12345'), findsOneWidget);
-  });
-
-  testWidgets('living things flow creates and opens a detail sheet',
-      (tester) async {
-    await _setLargeSurface(tester);
-    final groupService = FakeGroupService(groups: [group], groupDetail: group);
-    final livingService = FakeLivingService();
-
-    await _pumpScreen(
-      tester,
-      child: const LivingThingsScreen(),
-      overrides: [
-        groupServiceProviderAsync.overrideWith((ref) async => groupService),
-        livingServiceProviderAsync.overrideWith((ref) async => livingService),
-      ],
-    );
-
-    await tester.tap(find.byType(FloatingActionButton));
-    await tester.pumpAndSettle();
-
-    await tester.enterText(find.byType(TextField).at(0), 'Miso');
-    await tester.tap(find.text('Pet'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Plant').last);
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).at(1), 'Kitchen window');
-    await tester.tap(find.text('ADD ITEM'));
-    await tester.pumpAndSettle();
-
-    expect(livingService.lastCreateRequest, isNotNull);
-    expect(livingService.lastCreateRequest!.name, 'Miso');
-    expect(livingService.lastCreateRequest!.species, 'plant');
-    expect(find.text('Kitchen window'), findsOneWidget);
-    expect(find.textContaining('Next care:'), findsNothing);
-
-    await tester.tap(find.text('Miso'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Pet or Plant'), findsOneWidget);
-    expect(find.text('Kitchen window'), findsWidgets);
-  });
-
   testWidgets('list creation flow submits and refreshes the grid',
       (tester) async {
     await _setLargeSurface(tester);
@@ -408,7 +296,7 @@ void main() {
   });
 
   testWidgets(
-      'household hub quick actions navigate to vault, living things, and recipes',
+      'household hub quick actions navigate to lists, chores, money, and recipes',
       (tester) async {
     await _setLargeSurface(tester);
     final groupService = FakeGroupService(groups: [group], groupDetail: group);
@@ -435,22 +323,28 @@ void main() {
               const HouseholdHubScreen(groupId: groupId),
         ),
         GoRoute(
-          path: '/vault',
-          name: 'vault',
-          builder: (context, state) =>
-              const Scaffold(body: Text('Vault route')),
-        ),
-        GoRoute(
-          path: '/living-things',
-          name: 'livingThings',
-          builder: (context, state) =>
-              const Scaffold(body: Text('Living route')),
-        ),
-        GoRoute(
           path: '/recipes',
           name: 'recipes',
           builder: (context, state) =>
               const Scaffold(body: Text('Recipes route')),
+        ),
+        GoRoute(
+          path: '/lists',
+          name: 'lists',
+          builder: (context, state) =>
+              const Scaffold(body: Text('Lists route')),
+        ),
+        GoRoute(
+          path: '/chores',
+          name: 'chores',
+          builder: (context, state) =>
+              const Scaffold(body: Text('Chores route')),
+        ),
+        GoRoute(
+          path: '/money',
+          name: 'money',
+          builder: (context, state) =>
+              const Scaffold(body: Text('Money route')),
         ),
       ],
     );
@@ -466,16 +360,26 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Vault'));
+    expect(find.text('Vault'), findsNothing);
+    expect(find.text('Pets & Plants'), findsNothing);
+
+    await tester.tap(find.text('Lists'));
     await tester.pumpAndSettle();
-    expect(find.text('Vault route'), findsOneWidget);
+    expect(find.text('Lists route'), findsOneWidget);
 
     router.go('/');
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Pets & Plants'));
-    await tester.tap(find.text('Pets & Plants'));
+    await tester.ensureVisible(find.text('Chores'));
+    await tester.tap(find.text('Chores'));
     await tester.pumpAndSettle();
-    expect(find.text('Living route'), findsOneWidget);
+    expect(find.text('Chores route'), findsOneWidget);
+
+    router.go('/');
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Money'));
+    await tester.tap(find.text('Money'));
+    await tester.pumpAndSettle();
+    expect(find.text('Money route'), findsOneWidget);
 
     router.go('/');
     await tester.pumpAndSettle();
@@ -664,76 +568,6 @@ class FakeRecipeService implements RecipeService {
     );
     _recipes.add(recipe);
     return recipe;
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
-}
-
-class FakeVaultService implements VaultService {
-  FakeVaultService({List<VaultItem>? items}) : _items = items ?? [];
-
-  final List<VaultItem> _items;
-  CreateVaultItemRequest? lastCreateRequest;
-
-  @override
-  Future<List<VaultItem>> listVaultItems(String groupId,
-          {int limit = 50, int offset = 0}) async =>
-      _items.skip(offset).take(limit).toList();
-
-  @override
-  Future<VaultItem> createVaultItem(CreateVaultItemRequest req) async {
-    lastCreateRequest = req;
-    final item = VaultItem(
-      id: '88888888-8888-8888-8888-888888888888',
-      groupId: req.groupId,
-      type: req.type,
-      title: req.title,
-      content: req.content,
-      reminderDate: req.reminderDate,
-      createdAt: DateTime.utc(2026, 1, 1),
-      updatedAt: DateTime.utc(2026, 1, 1),
-    );
-    _items.add(item);
-    return item;
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
-}
-
-class FakeLivingService implements LivingService {
-  FakeLivingService({List<living_models.LivingThing>? items})
-      : _items = items ?? [];
-
-  final List<living_models.LivingThing> _items;
-  living_models.CreateLivingThingRequest? lastCreateRequest;
-
-  @override
-  Future<List<living_models.LivingThing>> listLivingThings(
-    String groupId, {
-    int limit = 50,
-    int offset = 0,
-  }) async =>
-      _items.skip(offset).take(limit).toList();
-
-  @override
-  Future<living_models.LivingThing> createLivingThing(
-    living_models.CreateLivingThingRequest req,
-  ) async {
-    lastCreateRequest = req;
-    final item = living_models.LivingThing(
-      id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
-      groupId: req.groupId,
-      name: req.name,
-      species: req.species,
-      location: req.location,
-      imageUrl: req.imageUrl,
-      createdAt: DateTime.utc(2026, 1, 1),
-      updatedAt: DateTime.utc(2026, 1, 1),
-    );
-    _items.add(item);
-    return item;
   }
 
   @override

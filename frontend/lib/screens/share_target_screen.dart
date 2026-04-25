@@ -46,12 +46,6 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
       description: 'Save to a shopping or to-do list',
     ),
     _DestinationOption(
-      id: 'vault',
-      label: 'Vault',
-      icon: 'safe',
-      description: 'Store in the household vault',
-    ),
-    _DestinationOption(
       id: 'recipes',
       label: 'Recipes',
       icon: 'informationCircle',
@@ -98,14 +92,8 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
           return;
         }
         await shareService.createListFromShare(groupId: groups.first.id, text: text);
-      } else if (_selectedDestination == 'recipes') {
-        await shareService.createRecipeFromShare(text: text);
       } else {
-        setState(() {
-          _error = 'Vault share target is not implemented on the backend.';
-          _isSaving = false;
-        });
-        return;
+        await shareService.createRecipeFromShare(text: text);
       }
 
       if (!mounted) return;
