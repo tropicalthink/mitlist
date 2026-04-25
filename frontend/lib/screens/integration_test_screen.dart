@@ -1,8 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/auth_models.dart';
 import '../providers/auth_provider.dart';
+import '../providers/group_provider.dart';
+import '../providers/template_provider.dart';
+import '../providers/notification_provider.dart';
+import '../models/auth_models.dart';
+import '../models/group_models.dart';
+import '../models/template_models.dart';
 import '../theme/spacing.dart';
 import '../widgets/alert.dart';
 import '../widgets/app_button.dart';
@@ -25,6 +30,13 @@ class _IntegrationTestScreenState extends ConsumerState<IntegrationTestScreen> {
   bool _isLoading = false;
   String? _result;
   String? _error;
+
+  String? _groupId;
+  // Keep placeholders for future tool flows.
+  // ignore: unused_field
+  String? _listId;
+  // ignore: unused_field
+  String? _templateId;
 
   @override
   void dispose() {
@@ -110,6 +122,66 @@ class _IntegrationTestScreenState extends ConsumerState<IntegrationTestScreen> {
     }
   }
 
+  Future<void> _ensureGroup() async {
+    final groupService = await ref.read(groupServiceProviderAsync.future);
+    final groups = await groupService.listGroups(limit: 1);
+    if (groups.isNotEmpty) {
+      _groupId = groups.first.id;
+      return;
+    }
+    final g = await groupService.createGroup(CreateGroupRequest(name: 'Integration Household'));
+    _groupId = g.id;
+  }
+
+  Future<void> _runTemplatesSmoke() async {
+    setState(() {
+      _isLoading = true;
+      _result = null;
+      _error = null;
+    });
+    try {
+      await _ensureGroup();
+      final groupId = _groupId!;
+      final templateService = await ref.read(templateServiceProviderAsync.future);
+      final created = await templateService.createTemplate(CreateTemplateRequest(groupId: groupId, name: 'Weekly Groceries'));
+      _templateId = created.id;
+      final listed = await templateService.listTemplates(groupId, limit: 10, offset: 0);
+      final fetched = await templateService.getTemplate(created.id);
+      final updated = await templateService.updateTemplate(created.id, const UpdateTemplateRequest(name: 'Weekly Groceries (updated)'));
+      final applied = await templateService.applyTemplate(created.id, const ApplyTemplateRequest(listName: 'Groceries from template'));
+      await templateService.deleteTemplate(created.id);
+
+      setState(() {
+        _result =
+            'Templates OK\nCreated=${created.id}\nListed=${listed.length}\nFetched=${fetched.name}\nUpdated=${updated.name}\nApply keys=${applied.keys.toList()}';
+      });
+    } catch (e) {
+      setState(() => _error = 'Templates failed: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _runNotificationsSmoke() async {
+    setState(() {
+      _isLoading = true;
+      _result = null;
+      _error = null;
+    });
+    try {
+      final n = await ref.read(notificationServiceProviderAsync.future);
+      final prefs = await n.getPreferences();
+      final list = await n.listNotifications(limit: 10, offset: 0);
+      setState(() {
+        _result = 'Notifications OK\nPrefs=${prefs.length}\nInbox=${list.length}';
+      });
+    } catch (e) {
+      setState(() => _error = 'Notifications failed: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _testLogout() async {
     setState(() {
       _isLoading = true;
@@ -187,6 +259,16 @@ class _IntegrationTestScreenState extends ConsumerState<IntegrationTestScreen> {
                   text: 'Test Logout',
                   isLoading: _isLoading,
                   onPressed: _testLogout,
+                ),
+                AppButton(
+                  text: 'Templates smoke',
+                  isLoading: _isLoading,
+                  onPressed: _runTemplatesSmoke,
+                ),
+                AppButton(
+                  text: 'Notifications smoke',
+                  isLoading: _isLoading,
+                  onPressed: _runNotificationsSmoke,
                 ),
               ],
             ),
