@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/recipe_provider.dart';
+import '../../sheets/recipe_detail_sheet.dart';
 import '../../sheets/recipe_creation_sheet.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
@@ -22,12 +23,24 @@ class RecipesScreen extends ConsumerStatefulWidget {
 class _Recipe {
   final String id;
   final String title;
+  final String description;
   final List<String> tags;
+  final int prepTime;
+  final int cookTime;
+  final int servings;
+  final bool isPublic;
+  final DateTime updatedAt;
 
   const _Recipe({
     required this.id,
     required this.title,
+    required this.description,
     required this.tags,
+    required this.prepTime,
+    required this.cookTime,
+    required this.servings,
+    required this.isPublic,
+    required this.updatedAt,
   });
 }
 
@@ -76,6 +89,19 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     }
   }
 
+  Future<void> _openRecipeDetail(_Recipe recipe) async {
+    await RecipeDetailSheet.show(
+      context,
+      title: recipe.title,
+      description: recipe.description,
+      visibilityLabel: recipe.isPublic ? 'Public' : 'Private',
+      prepTimeMinutes: recipe.prepTime,
+      cookTimeMinutes: recipe.cookTime,
+      servings: recipe.servings,
+      updatedAt: recipe.updatedAt,
+    );
+  }
+
   Future<void> _loadRecipes() async {
     setState(() {
       _viewState = _ViewState.loading;
@@ -96,10 +122,16 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
           ..addAll(apiRecipes.map((api) => _Recipe(
                 id: api.id,
                 title: api.title,
+                description: api.description,
                 tags: [
                   if (api.description.isNotEmpty) api.description,
                   api.isPublic ? 'Public' : 'Private',
                 ],
+                prepTime: api.prepTime,
+                cookTime: api.cookTime,
+                servings: api.servings,
+                isPublic: api.isPublic,
+                updatedAt: api.updatedAt,
               )));
         _hasMore = apiRecipes.length == _pageLimit;
         _viewState = apiRecipes.isEmpty ? _ViewState.empty : _ViewState.loaded;
@@ -134,10 +166,16 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
         _recipes.addAll(apiRecipes.map((api) => _Recipe(
               id: api.id,
               title: api.title,
+              description: api.description,
               tags: [
                 if (api.description.isNotEmpty) api.description,
                 api.isPublic ? 'Public' : 'Private',
               ],
+              prepTime: api.prepTime,
+              cookTime: api.cookTime,
+              servings: api.servings,
+              isPublic: api.isPublic,
+              updatedAt: api.updatedAt,
             )));
         _hasMore = apiRecipes.length == _pageLimit;
         _isLoadingMore = false;
@@ -300,9 +338,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
           final _Recipe recipe = _recipes[index];
           return _RecipeCard(
             recipe: recipe,
-            onTap: () {
-              // TODO: navigate to RecipeDetailScreen
-            },
+            onTap: () => _openRecipeDetail(recipe),
           );
         },
       ),

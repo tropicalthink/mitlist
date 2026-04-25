@@ -231,8 +231,14 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     return bCount.compareTo(aCount);
   }
 
-  void _showCreateSheet() {
-    CreateListSheet.show(context);
+  Future<void> _showCreateSheet() async {
+    final created = await CreateListSheet.show(
+      context,
+      initialGroupId: widget.groupId,
+    );
+    if (created == true) {
+      await _loadLists();
+    }
   }
 
   @override

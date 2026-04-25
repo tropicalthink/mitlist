@@ -1,0 +1,4 @@
+DROP INDEX IF EXISTS idx_list_items_deleted_at;
+
+ALTER TABLE list_items
+  DROP COLUMN IF EXISTS deleted_at;

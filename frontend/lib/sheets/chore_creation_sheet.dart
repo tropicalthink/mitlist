@@ -31,13 +31,9 @@ class ChoreCreationSheet extends ConsumerStatefulWidget {
 
 class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
   final TextEditingController _nameController = TextEditingController();
-
-  String? _selectedAssignee;
-  DateTime? _dueDate;
+  final TextEditingController _descriptionController = TextEditingController();
   _Recurrence _recurrence = _Recurrence.none;
   bool _isSaving = false;
-
-  final List<String> _assignees = const ['You', 'Alex', 'Jordan', 'Sam', 'Unassigned'];
 
   bool get _canCreate => _nameController.text.trim().isNotEmpty && !_isSaving;
 
@@ -64,7 +60,9 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
         CreateChoreRequest(
           groupId: groups.first.id,
           name: _nameController.text.trim(),
-          description: _buildDescription(),
+          description: _descriptionController.text.trim().isEmpty
+              ? null
+              : _descriptionController.text.trim(),
           frequency: _frequencyValue(),
         ),
       );
@@ -83,23 +81,10 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
     }
   }
 
-  String? _buildDescription() {
-    final lines = <String>[];
-    if (_selectedAssignee != null) {
-      lines.add('Assignee: $_selectedAssignee');
-    }
-    if (_dueDate != null) {
-      final due = _dueDate!;
-      lines.add(
-        'Due: ${due.year}-${due.month.toString().padLeft(2, '0')}-${due.day.toString().padLeft(2, '0')}',
-      );
-    }
-    return lines.isEmpty ? null : lines.join('\n');
-  }
-
   String _frequencyValue() {
     switch (_recurrence) {
       case _Recurrence.none:
+        return 'none';
       case _Recurrence.daily:
         return 'daily';
       case _Recurrence.weekly:
@@ -109,22 +94,10 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
     }
   }
 
-  Future<void> _pickDueDate() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: now,
-      firstDate: now,
-      lastDate: DateTime(now.year + 2, 12, 31),
-    );
-    if (picked != null) {
-      setState(() => _dueDate = picked);
-    }
-  }
-
   @override
   void dispose() {
     _nameController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -142,66 +115,17 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: MitlistSpacing.md),
-        Text(
-          'Assignee'.toUpperCase(),
-          style: MitlistTypography.labelXSmall(color: MitlistColors.textSecondary),
-        ),
-        const SizedBox(height: MitlistSpacing.sm),
-        Wrap(
-          spacing: MitlistSpacing.sm,
-          runSpacing: MitlistSpacing.sm,
-          children: _assignees.map((assignee) {
-            return AppChip(
-              label: assignee,
-              selected: _selectedAssignee == assignee,
-              onSelected: (_) => setState(() => _selectedAssignee = assignee),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: MitlistSpacing.md),
-        Text(
-          'Due Date'.toUpperCase(),
-          style: MitlistTypography.labelXSmall(color: MitlistColors.textSecondary),
-        ),
-        const SizedBox(height: MitlistSpacing.sm),
-        InkWell(
-          onTap: _pickDueDate,
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: MitlistSpacing.md,
-              vertical: MitlistSpacing.sm,
-            ),
-            decoration: BoxDecoration(
-              color: MitlistColors.surfacePrimary,
-              border: Border.all(color: MitlistColors.borderPrimary, width: 2),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    _dueDate != null
-                        ? '${_dueDate!.day.toString().padLeft(2, '0')}/${_dueDate!.month.toString().padLeft(2, '0')}/${_dueDate!.year}'
-                        : 'Select a date',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: _dueDate != null
-                              ? MitlistColors.textPrimary
-                              : MitlistColors.textTertiary,
-                        ),
-                  ),
-                ),
-                const Icon(
-                  Icons.calendar_today,
-                  size: 20,
-                  color: MitlistColors.textPrimary,
-                ),
-              ],
-            ),
-          ),
+        AppInput(
+          label: 'Notes (optional)',
+          hint: 'Add any details for this chore',
+          controller: _descriptionController,
+          textInputAction: TextInputAction.done,
         ),
         const SizedBox(height: MitlistSpacing.md),
         Text(
           'Recurrence'.toUpperCase(),
-          style: MitlistTypography.labelXSmall(color: MitlistColors.textSecondary),
+          style:
+              MitlistTypography.labelXSmall(color: MitlistColors.textSecondary),
         ),
         const SizedBox(height: MitlistSpacing.sm),
         Wrap(
@@ -216,17 +140,20 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
             AppChip(
               label: 'Daily',
               selected: _recurrence == _Recurrence.daily,
-              onSelected: (_) => setState(() => _recurrence = _Recurrence.daily),
+              onSelected: (_) =>
+                  setState(() => _recurrence = _Recurrence.daily),
             ),
             AppChip(
               label: 'Weekly',
               selected: _recurrence == _Recurrence.weekly,
-              onSelected: (_) => setState(() => _recurrence = _Recurrence.weekly),
+              onSelected: (_) =>
+                  setState(() => _recurrence = _Recurrence.weekly),
             ),
             AppChip(
               label: 'Monthly',
               selected: _recurrence == _Recurrence.monthly,
-              onSelected: (_) => setState(() => _recurrence = _Recurrence.monthly),
+              onSelected: (_) =>
+                  setState(() => _recurrence = _Recurrence.monthly),
             ),
           ],
         ),

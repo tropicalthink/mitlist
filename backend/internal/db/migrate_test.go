@@ -99,6 +99,19 @@ func TestMigration_Rollback(t *testing.T) {
 		assert.True(t, exists, "table %s should exist after migration up", table)
 	}
 
+	var deletedAtExists bool
+	err = pool.QueryRow(ctx, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM information_schema.columns
+			WHERE table_schema = 'public'
+			  AND table_name = 'list_items'
+			  AND column_name = 'deleted_at'
+		)
+	`).Scan(&deletedAtExists)
+	require.NoError(t, err)
+	assert.True(t, deletedAtExists, "list_items.deleted_at should exist after migration up")
+
 	// Run migrations down.
 	err = m.Down()
 	require.NoError(t, err)

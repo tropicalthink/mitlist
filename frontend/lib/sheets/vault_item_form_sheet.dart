@@ -31,27 +31,13 @@ class VaultItemFormSheet extends ConsumerStatefulWidget {
 
 class _VaultItemFormSheetState extends ConsumerState<VaultItemFormSheet> {
   final TextEditingController _nameController = TextEditingController();
-  final List<MapEntry<TextEditingController, TextEditingController>> _fields = [];
+  final TextEditingController _contentController = TextEditingController();
 
   _VaultCategory _category = _VaultCategory.wifi;
   DateTime? _expiryDate;
   bool _isSaving = false;
 
   bool get _canSave => _nameController.text.trim().isNotEmpty && !_isSaving;
-
-  void _addField() {
-    setState(() {
-      _fields.add(MapEntry(TextEditingController(), TextEditingController()));
-    });
-  }
-
-  void _removeField(int index) {
-    setState(() {
-      _fields[index].key.dispose();
-      _fields[index].value.dispose();
-      _fields.removeAt(index);
-    });
-  }
 
   Future<void> _pickExpiryDate() async {
     final now = DateTime.now();
@@ -90,7 +76,7 @@ class _VaultItemFormSheetState extends ConsumerState<VaultItemFormSheet> {
           groupId: groups.first.id,
           type: _category.name,
           title: _nameController.text.trim(),
-          content: _buildContent(),
+          content: _contentController.text.trim(),
           reminderDate: _expiryDate,
         ),
       );
@@ -109,23 +95,10 @@ class _VaultItemFormSheetState extends ConsumerState<VaultItemFormSheet> {
     }
   }
 
-  String _buildContent() {
-    final pairs = _fields
-        .map(
-          (entry) => MapEntry(entry.key.text.trim(), entry.value.text.trim()),
-        )
-        .where((entry) => entry.key.isNotEmpty || entry.value.isNotEmpty)
-        .toList();
-    return pairs.map((entry) => '${entry.key}: ${entry.value}').join('\n');
-  }
-
   @override
   void dispose() {
     _nameController.dispose();
-    for (final field in _fields) {
-      field.key.dispose();
-      field.value.dispose();
-    }
+    _contentController.dispose();
     super.dispose();
   }
 
@@ -139,13 +112,24 @@ class _VaultItemFormSheetState extends ConsumerState<VaultItemFormSheet> {
           label: 'Item Name',
           hint: 'e.g. Home Wi-Fi',
           controller: _nameController,
-          textInputAction: TextInputAction.done,
+          textInputAction: TextInputAction.next,
           onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: MitlistSpacing.md),
+        TextField(
+          controller: _contentController,
+          minLines: 4,
+          maxLines: 6,
+          decoration: const InputDecoration(
+            labelText: 'Content',
+            hintText: 'Add the note, password, policy number, or details',
+          ),
         ),
         const SizedBox(height: MitlistSpacing.md),
         Text(
           'Category'.toUpperCase(),
-          style: MitlistTypography.labelXSmall(color: MitlistColors.textSecondary),
+          style:
+              MitlistTypography.labelXSmall(color: MitlistColors.textSecondary),
         ),
         const SizedBox(height: MitlistSpacing.sm),
         Wrap(
@@ -155,86 +139,46 @@ class _VaultItemFormSheetState extends ConsumerState<VaultItemFormSheet> {
             AppChip(
               label: 'Wi-Fi',
               selected: _category == _VaultCategory.wifi,
-              onSelected: (_) => setState(() => _category = _VaultCategory.wifi),
+              onSelected: (_) =>
+                  setState(() => _category = _VaultCategory.wifi),
             ),
             AppChip(
               label: 'Paint',
               selected: _category == _VaultCategory.paint,
-              onSelected: (_) => setState(() => _category = _VaultCategory.paint),
+              onSelected: (_) =>
+                  setState(() => _category = _VaultCategory.paint),
             ),
             AppChip(
               label: 'Insurance',
               selected: _category == _VaultCategory.insurance,
-              onSelected: (_) => setState(() => _category = _VaultCategory.insurance),
+              onSelected: (_) =>
+                  setState(() => _category = _VaultCategory.insurance),
             ),
             AppChip(
               label: 'Warranty',
               selected: _category == _VaultCategory.warranty,
-              onSelected: (_) => setState(() => _category = _VaultCategory.warranty),
+              onSelected: (_) =>
+                  setState(() => _category = _VaultCategory.warranty),
             ),
             AppChip(
               label: 'Emergency',
               selected: _category == _VaultCategory.emergency,
-              onSelected: (_) => setState(() => _category = _VaultCategory.emergency),
+              onSelected: (_) =>
+                  setState(() => _category = _VaultCategory.emergency),
             ),
             AppChip(
               label: 'Custom',
               selected: _category == _VaultCategory.custom,
-              onSelected: (_) => setState(() => _category = _VaultCategory.custom),
+              onSelected: (_) =>
+                  setState(() => _category = _VaultCategory.custom),
             ),
           ],
         ),
         const SizedBox(height: MitlistSpacing.md),
         Text(
-          'Fields'.toUpperCase(),
-          style: MitlistTypography.labelXSmall(color: MitlistColors.textSecondary),
-        ),
-        const SizedBox(height: MitlistSpacing.sm),
-        ..._fields.asMap().entries.map((entry) {
-          final index = entry.key;
-          final controllers = entry.value;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
-            child: Row(
-              children: [
-                Expanded(
-                  child: AppInput(
-                    hint: 'Label',
-                    controller: controllers.key,
-                    textInputAction: TextInputAction.next,
-                  ),
-                ),
-                const SizedBox(width: MitlistSpacing.sm),
-                Expanded(
-                  child: AppInput(
-                    hint: 'Value',
-                    controller: controllers.value,
-                    textInputAction: TextInputAction.done,
-                  ),
-                ),
-                const SizedBox(width: MitlistSpacing.sm),
-                AppButton(
-                  variant: AppButtonVariant.ghost,
-                  color: AppButtonColor.error,
-                  size: AppButtonSize.sm,
-                  icon: const Icon(Icons.close),
-                  onPressed: () => _removeField(index),
-                ),
-              ],
-            ),
-          );
-        }),
-        AppButton(
-          variant: AppButtonVariant.outline,
-          color: AppButtonColor.primary,
-          size: AppButtonSize.md,
-          text: 'Add Field',
-          onPressed: _addField,
-        ),
-        const SizedBox(height: MitlistSpacing.md),
-        Text(
           'Expiry Date (optional)'.toUpperCase(),
-          style: MitlistTypography.labelXSmall(color: MitlistColors.textSecondary),
+          style:
+              MitlistTypography.labelXSmall(color: MitlistColors.textSecondary),
         ),
         const SizedBox(height: MitlistSpacing.sm),
         InkWell(

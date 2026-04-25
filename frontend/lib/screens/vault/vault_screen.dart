@@ -6,6 +6,7 @@ import '../../providers/vault_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../models/vault_models.dart';
 import '../../services/group_id_validator.dart';
+import '../../sheets/vault_item_detail_sheet.dart';
 import '../../sheets/vault_item_form_sheet.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
@@ -28,7 +29,9 @@ class _VaultItem {
   final String id;
   final String name;
   final String category;
+  final String content;
   final DateTime? expiryDate;
+  final DateTime updatedAt;
   final int documentCount;
   final int tagCount;
 
@@ -36,7 +39,9 @@ class _VaultItem {
     required this.id,
     required this.name,
     required this.category,
+    required this.content,
     this.expiryDate,
+    required this.updatedAt,
     this.documentCount = 0,
     this.tagCount = 0,
   });
@@ -170,7 +175,9 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
       id: api.id,
       name: api.title,
       category: api.type,
+      content: api.content,
       expiryDate: api.reminderDate,
+      updatedAt: api.updatedAt,
       documentCount: api.content.isNotEmpty ? 1 : 0,
       tagCount: 0,
     );
@@ -213,21 +220,28 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     }
   }
 
+  Future<void> _openVaultItem(_VaultItem item) async {
+    await VaultItemDetailSheet.show(
+      context,
+      title: item.name,
+      category: item.category,
+      content: item.content,
+      expiryDate: item.expiryDate,
+      updatedAt: item.updatedAt,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Vault'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () => setState(() {}),
-          ),
-        ],
       ),
       body: _buildBody(),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _hasHousehold ? _openCreateVaultItem : () => context.goNamed('home'),
+        onPressed: _hasHousehold
+            ? _openCreateVaultItem
+            : () => context.goNamed('home'),
         icon: Icon(_hasHousehold ? Icons.add : Icons.home),
         label: Text(_hasHousehold ? 'Add item' : 'Households'),
       ),
@@ -341,7 +355,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
 
     return AppCard(
       interactive: true,
-      onTap: () {},
+      onTap: () => _openVaultItem(item),
       padding: AppCardPadding.none,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

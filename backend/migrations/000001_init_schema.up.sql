@@ -117,6 +117,7 @@ CREATE TABLE list_items (
     unit TEXT NOT NULL DEFAULT '',
     checked BOOLEAN NOT NULL DEFAULT false,
     position INTEGER NOT NULL DEFAULT 0,
+    deleted_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -451,6 +452,7 @@ CREATE INDEX idx_pending_claims_code ON pending_claims(code);
 CREATE INDEX idx_pending_claims_group_id ON pending_claims(group_id);
 CREATE INDEX idx_lists_group_id ON lists(group_id);
 CREATE INDEX idx_list_items_list_id ON list_items(list_id);
+CREATE INDEX idx_list_items_deleted_at ON list_items(deleted_at);
 CREATE INDEX idx_templates_group_id ON templates(group_id);
 CREATE INDEX idx_template_items_template_id ON template_items(template_id);
 CREATE INDEX idx_chore_templates_group_id ON chore_templates(group_id);

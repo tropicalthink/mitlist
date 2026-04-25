@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
-import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
@@ -14,6 +13,7 @@ import '../../widgets/skeleton.dart';
 import '../../models/group_models.dart';
 import '../../providers/group_provider.dart';
 import '../../sheets/create_household_sheet.dart';
+import '../../sheets/join_household_sheet.dart';
 
 class GroupsListScreen extends ConsumerStatefulWidget {
   const GroupsListScreen({super.key});
@@ -134,12 +134,11 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
     );
   }
 
-  void _openJoinSheet() {
-    showAppBottomSheet(
-      context: context,
-      title: 'Join household',
-      body: const Center(child: Text('Enter code to join...')),
-    );
+  Future<void> _openJoinSheet() async {
+    final joined = await JoinHouseholdSheet.show(context);
+    if (joined == true && mounted) {
+      await _loadInitialGroups();
+    }
   }
 
   Future<void> _openCreateSheet() async {

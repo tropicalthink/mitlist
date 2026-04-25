@@ -374,7 +374,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _hasHousehold ? _openCreateExpense : () => context.goNamed('home'),
+        onPressed:
+            _hasHousehold ? _openCreateExpense : () => context.goNamed('home'),
         label: Text(_hasHousehold ? 'Add expense' : 'Households'),
         icon: AppIcon(name: _hasHousehold ? 'plus' : 'home'),
       ),
@@ -904,10 +905,11 @@ class _SuggestionCard extends StatelessWidget {
               ],
             ),
           ),
-          AppButton(
-            text: 'Pay',
-            size: AppButtonSize.sm,
-            onPressed: () {},
+          Text(
+            'Record manually',
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: MitlistColors.textSecondary,
+                ),
           ),
         ],
       ),

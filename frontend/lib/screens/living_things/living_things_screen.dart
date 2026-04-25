@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../providers/living_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../services/group_id_validator.dart';
+import '../../sheets/living_thing_detail_sheet.dart';
+import '../../sheets/living_thing_form_sheet.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
@@ -21,14 +23,16 @@ class LivingThing {
   final String name;
   final LivingThingType type;
   final String? photoUrl;
-  final DateTime? nextCareDate;
+  final String? location;
+  final DateTime createdAt;
 
   const LivingThing({
     required this.id,
     required this.name,
     required this.type,
     this.photoUrl,
-    this.nextCareDate,
+    this.location,
+    required this.createdAt,
   });
 }
 
@@ -88,7 +92,8 @@ class _LivingThingsScreenState extends ConsumerState<LivingThingsScreen> {
                       ? LivingThingType.pet
                       : LivingThingType.plant,
                   photoUrl: t.imageUrl,
-                  nextCareDate: t.createdAt.add(const Duration(days: 1)),
+                  location: t.location,
+                  createdAt: t.createdAt,
                 ))
             .toList();
         _hasHousehold = true;
@@ -115,13 +120,28 @@ class _LivingThingsScreenState extends ConsumerState<LivingThingsScreen> {
       body: _buildBody(textTheme),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _hasHousehold
-            ? () {
-                // TODO: Navigate to LivingThingCreationSheet.
-              }
+            ? _openCreateLivingThing
             : () => context.goNamed('home'),
         label: Text(_hasHousehold ? 'Add' : 'Households'),
         icon: AppIcon(name: _hasHousehold ? 'plus' : 'home'),
       ),
+    );
+  }
+
+  Future<void> _openCreateLivingThing() async {
+    final created = await LivingThingFormSheet.show(context);
+    if (created == true) {
+      await _loadItems();
+    }
+  }
+
+  Future<void> _openLivingThingDetail(LivingThing item) async {
+    await LivingThingDetailSheet.show(
+      context,
+      name: item.name,
+      typeLabel: item.type == LivingThingType.pet ? 'Pet' : 'Plant',
+      location: item.location,
+      createdAt: item.createdAt,
     );
   }
 
@@ -176,9 +196,7 @@ class _LivingThingsScreenState extends ConsumerState<LivingThingsScreen> {
         final item = _items[index];
         return AppCard(
           interactive: true,
-          onTap: () {
-            // TODO: Navigate to LivingThingDetailScreen.
-          },
+          onTap: () => _openLivingThingDetail(item),
           child: Row(
             children: [
               _buildLeading(item),
@@ -191,9 +209,9 @@ class _LivingThingsScreenState extends ConsumerState<LivingThingsScreen> {
                       item.name,
                       style: textTheme.titleSmall,
                     ),
-                    if (item.nextCareDate != null)
+                    if (item.location != null && item.location!.isNotEmpty)
                       Text(
-                        _formatNextCareDate(item.nextCareDate!),
+                        item.location!,
                         style: textTheme.bodySmall,
                       ),
                   ],
@@ -244,10 +262,6 @@ class _LivingThingsScreenState extends ConsumerState<LivingThingsScreen> {
         ),
       ),
     );
-  }
-
-  String _formatNextCareDate(DateTime date) {
-    return 'Next care: ${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 }
 
