@@ -1,10 +1,15 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:flutter/material.dart';
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
+import '../providers/group_provider.dart';
+import '../providers/share_target_provider.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_icon.dart';
+// ShareTargetService is provided via `shareTargetServiceProviderAsync`.
 
 class _DestinationOption {
   final String id;
@@ -20,15 +25,18 @@ class _DestinationOption {
   });
 }
 
-class ShareTargetScreen extends StatefulWidget {
+class ShareTargetScreen extends ConsumerStatefulWidget {
   const ShareTargetScreen({super.key});
 
   @override
-  State<ShareTargetScreen> createState() => _ShareTargetScreenState();
+  ConsumerState<ShareTargetScreen> createState() => _ShareTargetScreenState();
 }
 
-class _ShareTargetScreenState extends State<ShareTargetScreen> {
+class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
   String? _selectedDestination;
+  final TextEditingController _textController = TextEditingController();
+  bool _isSaving = false;
+  String? _error;
 
   static const List<_DestinationOption> _options = [
     _DestinationOption(
@@ -57,9 +65,62 @@ class _ShareTargetScreenState extends State<ShareTargetScreen> {
     });
   }
 
-  void _onSave() {
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _onSave() async {
     if (_selectedDestination == null) return;
-    // TODO: wire up save logic and navigation.
+    final text = _textController.text.trim();
+    if (text.isEmpty) {
+      setState(() => _error = 'Paste or type something to save.');
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+      _error = null;
+    });
+
+    try {
+      final shareService = await ref.read(shareTargetServiceProviderAsync.future);
+
+      if (_selectedDestination == 'lists') {
+        final groupService = await ref.read(groupServiceProviderAsync.future);
+        final groups = await groupService.listGroups(limit: 1);
+        if (groups.isEmpty) {
+          setState(() {
+            _error = 'Create or join a household first.';
+            _isSaving = false;
+          });
+          return;
+        }
+        await shareService.createListFromShare(groupId: groups.first.id, text: text);
+      } else if (_selectedDestination == 'recipes') {
+        await shareService.createRecipeFromShare(text: text);
+      } else {
+        setState(() {
+          _error = 'Vault share target is not implemented on the backend.';
+          _isSaving = false;
+        });
+        return;
+      }
+
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Saved')),
+      );
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Failed to save. Please try again.';
+        _isSaving = false;
+      });
+    }
   }
 
   @override
@@ -73,6 +134,23 @@ class _ShareTargetScreenState extends State<ShareTargetScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            TextField(
+              controller: _textController,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                hintText: 'Paste or type the shared text here…',
+              ),
+            ),
+            const SizedBox(height: MitlistSpacing.md),
+            if (_error != null) ...[
+              Text(
+                _error!,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: MitlistColors.error500,
+                    ),
+              ),
+              const SizedBox(height: MitlistSpacing.md),
+            ],
             AppCard(
               variant: AppCardVariant.outlined,
               padding: AppCardPadding.md,
@@ -159,7 +237,7 @@ class _ShareTargetScreenState extends State<ShareTargetScreen> {
           padding: const EdgeInsets.all(MitlistSpacing.md),
           child: AppButton(
             text: 'Save',
-            onPressed: _selectedDestination != null ? _onSave : null,
+            onPressed: (_selectedDestination != null && !_isSaving) ? _onSave : null,
           ),
         ),
       ),
