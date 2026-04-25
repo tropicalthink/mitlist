@@ -35,5 +35,5 @@ Key resolved items include:
 ### Deferred / assumptions
 - **Finance amount type**: backend uses `int64`, Flutter uses `int`. This is safe on native runtimes but can be risky if the Flutter app is compiled to web and very large values appear; monitor and consider a 64-bit safe representation.
 - **Admin/member permissions UX**: backend enforces permissions; frontend now handles failures more consistently, but full role-aware UI gating would require an explicit membership/role contract.
-- **Notifications / realtime**: Flutter now has a notifications inbox screen and can manage notification preferences; push subscription device registration is still not integrated (only API client methods exist). See `INTEGRATION_GAPS_realtime-background.md`.
+- **Notifications / realtime**: Flutter has a notifications inbox screen and can manage notification preferences; push subscription device registration is still not integrated (only API client methods exist). See `INTEGRATION_GAPS_realtime-background.md`.
 

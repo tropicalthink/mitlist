@@ -40,6 +40,16 @@ After backend rebuild/restart, Vault routes are callable and functional:
 - **DELETE** `/api/v1/auth/push-subscriptions/{id}` (with auth)
   - **Expected**: `204`.
 
+### Integration Tools coverage (Flutter)
+In debug builds, `IntegrationTestScreen` now includes runnable smoke flows for:
+- templates + notifications
+- group admin (pending claims + invite attempt)
+- finance (expenses + recurring-expenses)
+- recipes + collections
+- living care (schedule + logs)
+- assistant sessions/messages
+- activity logs
+
 ### Frontend UI
 Flutter static checks passed (`flutter analyze`, `flutter test`). Full interactive UI walkthrough was not automated; the live backend verification above demonstrates the key auth + vault path wiring and confirms endpoints are reachable.
 
