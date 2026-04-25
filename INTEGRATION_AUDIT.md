@@ -16,34 +16,9 @@ Severity definitions (per spec):
 
 #### CRITICAL
 
-- **INT-CRIT-001 Vault feature unreachable (backend unmounted)**
-  - **Backend**: `vault.go` handler exists but is not mounted in `backend/cmd/api/main.go`.
-  - **Frontend**: `VaultScreen` calls `GET /vault?...` via `VaultService`.
-  - **Impact**: Entire Vault feature area is unreachable in production (systemic 404s).
-  - **Fix owner**: backend (mount routes) *or* frontend (remove/feature-flag screens); backend preferred if feature intended.
-  - **Status**: OPEN
-
-- **INT-CRIT-002 Error envelopes inconsistent; Flutter 400 parsing expects different shape**
-  - **Backend**: Mixed usage of `handlers.respondError`, `api.WriteError`, and `api.RespondError` yields incompatible JSON bodies (sometimes `error` is a string, sometimes message is suppressed).
-  - **Frontend**: `AuthService` and `GroupService` try to read `data['error']['message']` for `400`.
-  - **Impact**: Users receive generic errors; some validation failures may be misrepresented; debugging is impeded. (Also violates “every error response shape” completeness.)
-  - **Fix owner**: frontend (tolerant parsing) AND/OR backend (standardize). Source-of-truth is backend contract; recommend backend standardization with a single error envelope.
-  - **Status**: OPEN
-
-- **INT-CRIT-003 Session invalidation does not reliably force logout/redirect**
-  - **Frontend**: Many services create Dio clients without Riverpod `Ref`, so `TokenRefreshInterceptor` can clear tokens without setting `authStateProvider=false`.
-  - **Impact**: User can remain on protected screens with invalid session; behavior depends on which service triggers refresh failure. This is a “401 not handled (user stuck)” class issue.
-  - **Fix owner**: frontend (centralize client creation with `Ref` or global auth controller).
-  - **Status**: OPEN
+- (none)
 
 #### HIGH
-
-- **INT-HIGH-001 Refresh-token rotation + concurrent 401s can log user out**
-  - **Backend**: refresh token is rotated (revoked then re-issued).
-  - **Frontend**: per-request refresh attempt has no single-flight coordinator; concurrent 401s can cause one request to succeed then another to fail and clear tokens.
-  - **Impact**: sporadic forced logout under token expiry bursts; hard-to-reproduce auth flakiness.
-  - **Fix owner**: frontend (single-flight refresh queue).
-  - **Status**: OPEN
 
 - **INT-HIGH-002 Pagination not implemented in UI; lists truncate at 50**
   - **Backend**: most list endpoints support `limit/offset` with default `limit=50`.
@@ -91,5 +66,19 @@ Severity definitions (per spec):
 
 ### Fixed findings
 
-(none yet)
+- **INT-CRIT-001 Vault feature unreachable (backend unmounted)** — **FIXED**
+  - **Fix**: mounted vault routes in `backend/cmd/api/main.go` and wired `VaultService` into `backend/internal/container/container.go`.
+  - **Verification**: `go test ./...` and `go build ./...` passed.
+
+- **INT-CRIT-002 Error envelopes inconsistent; Flutter 400 parsing expects different shape** — **FIXED (backend-standardized)**
+  - **Fix**: `api.RespondError` now delegates to `api.WriteError`; `api.WriteError` now emits stable `error` codes (`validation_error`, `unauthorized`, etc.) and includes `message` consistently.
+  - **Verification**: `go test ./...` and `go build ./...` passed.
+
+- **INT-CRIT-003 Session invalidation does not reliably force logout/redirect** — **FIXED**
+  - **Fix**: all feature services now construct Dio via `createApiClient(ref)` so the refresh interceptor can always update `authStateProvider` on refresh failure.
+  - **Verification**: `flutter analyze` (no errors) and `flutter test` passed.
+
+- **INT-HIGH-001 Refresh-token rotation + concurrent 401s can log user out** — **FIXED**
+  - **Fix**: added a single-flight refresh coordinator in `TokenRefreshInterceptor` so concurrent 401s await one refresh attempt instead of racing with a rotated refresh token.
+  - **Verification**: `flutter analyze` (no errors) and `flutter test` passed.
 
