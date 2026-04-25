@@ -118,7 +118,7 @@ Auth alignment:
 - **GET** `/living-things/{id}/care-logs` — **PARTIAL** (service method exists; UI/tools wiring pending)
 
 ## Assistant
-- **ALL /assistant/* endpoints** — **MISSING**
+- **ALL /assistant/* endpoints** — **PARTIAL** (Flutter client implemented; UI/tools wiring pending)
 
 ## Share target
 - **POST** `/share-target/lists` — **MATCHED**
