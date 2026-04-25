@@ -112,10 +112,10 @@ Auth alignment:
 - **PATCH** `/living-things/{id}` — **PARTIAL** (service method exists; UI not wired)
 - **DELETE** `/living-things/{id}` — **MATCHED**
 - **POST** `/living-things/{id}/care-schedule` — **MATCHED (write-only)** (Flutter ignores response)
-- **GET** `/living-things/{id}/care-schedule` — **MISSING**
-- **PATCH** `/living-things/{id}/care-schedule` — **MISSING**
+- **GET** `/living-things/{id}/care-schedule` — **PARTIAL** (service method exists; UI/tools wiring pending)
+- **PATCH** `/living-things/{id}/care-schedule` — **PARTIAL** (service method exists; UI/tools wiring pending)
 - **POST** `/living-things/{id}/care-logs` — **MATCHED (write-only)** (Flutter ignores response)
-- **GET** `/living-things/{id}/care-logs` — **MISSING**
+- **GET** `/living-things/{id}/care-logs` — **PARTIAL** (service method exists; UI/tools wiring pending)
 
 ## Assistant
 - **ALL /assistant/* endpoints** — **MISSING**
