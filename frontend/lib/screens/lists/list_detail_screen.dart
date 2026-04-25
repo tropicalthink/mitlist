@@ -1,5 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../models/list_models.dart';
+import '../../providers/list_provider.dart';
+import '../../services/list_service.dart';
 import '../../theme/animations.dart';
 import '../../theme/colors.dart';
 import '../../theme/shadows.dart';
@@ -10,43 +14,29 @@ import '../../utils/haptics.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_icon.dart';
-import '../../widgets/chip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton.dart';
 
-class ListDetailScreen extends StatefulWidget {
+class ListDetailScreen extends ConsumerStatefulWidget {
   final String listId;
   const ListDetailScreen({super.key, required this.listId});
 
   @override
-  State<ListDetailScreen> createState() => _ListDetailScreenState();
+  ConsumerState<ListDetailScreen> createState() => _ListDetailScreenState();
 }
 
-class _ListItem {
-  final String id;
-  String name;
-  bool completed = false;
-  int quantity;
-
-  _ListItem({
-    required this.id,
-    required this.name,
-    this.quantity = 1,
-  });
-}
-
-class _ListDetailScreenState extends State<ListDetailScreen> {
+class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   bool _isLoading = true;
   String? _errorMessage;
   String _listName = '';
-  final List<_ListItem> _items = [];
-  final List<String> _suggestions = [];
+  final List<ListItem> _items = [];
   bool _showCompletionBanner = false;
   bool _showSearch = false;
   String _searchQuery = '';
   Timer? _bannerTimer;
   final TextEditingController _newItemController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
+  ListService? _service;
 
   @override
   void initState() {
@@ -68,42 +58,74 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
       _errorMessage = null;
     });
 
-    // Simulated async load
-    await Future.delayed(const Duration(milliseconds: 800));
+    try {
+      final service = await ref.read(listServiceProviderAsync.future);
+      _service = service;
+      final list = await service.getList(widget.listId);
+      final items = await service.listItems(widget.listId);
 
-    setState(() {
-      _isLoading = false;
-      _listName = 'Grocery List';
-      _suggestions.addAll(['Milk', 'Eggs', 'Bread', 'Butter']);
-      _items.addAll([
-        _ListItem(id: '1', name: 'Milk', quantity: 2),
-        _ListItem(id: '2', name: 'Eggs', quantity: 12),
-        _ListItem(id: '3', name: 'Bread'),
-        _ListItem(id: '4', name: 'Butter'),
-      ]);
-    });
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _listName = list.name;
+        _items
+          ..clear()
+          ..addAll(items);
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      });
+    }
   }
 
-  void _toggleItem(_ListItem item, bool value) {
+  Future<void> _toggleItem(ListItem item, bool value) async {
     Haptics.light();
-    setState(() {
-      item.completed = value;
-    });
-    _checkCompletionBanner();
+    final service = _service;
+    if (service == null) return;
+
+    try {
+      final updated = await service.updateItem(widget.listId, item.id,
+          UpdateListItemRequest(checked: value));
+      if (!mounted) return;
+      setState(() {
+        final idx = _items.indexWhere((i) => i.id == item.id);
+        if (idx >= 0) _items[idx] = updated;
+      });
+      _checkCompletionBanner();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update: $e')),
+      );
+    }
   }
 
-  void _completeAll() {
-    setState(() {
-      for (final item in _items) {
-        item.completed = true;
+  void _completeAll() async {
+    final service = _service;
+    if (service == null) return;
+
+    for (final item in _items.where((i) => !i.checked)) {
+      try {
+        final updated = await service.updateItem(widget.listId, item.id,
+            UpdateListItemRequest(checked: true));
+        if (!mounted) return;
+        setState(() {
+          final idx = _items.indexWhere((i) => i.id == item.id);
+          if (idx >= 0) _items[idx] = updated;
+        });
+      } catch (_) {
+        break;
       }
-    });
+    }
     _checkCompletionBanner();
   }
 
   void _checkCompletionBanner() {
     final total = _items.length;
-    final completed = _items.where((i) => i.completed).length;
+    final completed = _items.where((i) => i.checked).length;
 
     if (total > 0 && completed == total) {
       setState(() => _showCompletionBanner = true);
@@ -119,37 +141,52 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
     }
   }
 
-  void _addItem() {
+  Future<void> _addItem() async {
     final text = _newItemController.text.trim();
     if (text.isEmpty) return;
 
-    setState(() {
-      _items.add(_ListItem(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        name: text,
-      ));
-      _newItemController.clear();
-    });
-    _checkCompletionBanner();
+    final service = _service;
+    if (service == null) return;
+
+    try {
+      final item = await service.createItem(
+          widget.listId, CreateListItemRequest(name: text));
+      if (!mounted) return;
+      setState(() {
+        _items.add(item);
+        _newItemController.clear();
+      });
+      _checkCompletionBanner();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to add item: $e')),
+      );
+    }
   }
 
-  void _addSuggestion(String suggestion) {
-    setState(() {
-      _items.add(_ListItem(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        name: suggestion,
-      ));
-    });
-    _checkCompletionBanner();
-  }
+  Future<void> _deleteItem(ListItem item) async {
+    final service = _service;
+    if (service == null) return;
 
-  void _deleteItem(_ListItem item) {
     final index = _items.indexOf(item);
-    setState(() {
-      _items.remove(item);
-    });
-    _checkCompletionBanner();
 
+    try {
+      await service.deleteItem(widget.listId, item.id);
+      if (!mounted) return;
+      setState(() {
+        _items.remove(item);
+      });
+      _checkCompletionBanner();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete item')),
+      );
+      return;
+    }
+
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: Colors.transparent,
@@ -180,11 +217,20 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
                 ),
               ),
               TextButton(
-                onPressed: () {
-                  setState(() {
-                    _items.insert(index, item);
-                  });
-                  _checkCompletionBanner();
+                onPressed: () async {
+                  final service = _service;
+                  if (service == null) return;
+                  try {
+                    final restored = await service.createItem(
+                        widget.listId,
+                        CreateListItemRequest(
+                            name: item.name, quantity: item.quantity));
+                    if (!mounted) return;
+                    setState(() {
+                      _items.insert(index, restored);
+                    });
+                    _checkCompletionBanner();
+                  } catch (_) {}
                 },
                 style: TextButton.styleFrom(
                   foregroundColor: MitlistColors.primary400,
@@ -203,39 +249,13 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
 
   void _onMenuSelected(String value) {
     switch (value) {
-      case 'edit':
-        // TODO: Navigate to edit list
-        break;
       case 'complete_all':
         _completeAll();
         break;
-      case 'archive':
-        // TODO: Archive list
-        break;
-      case 'cost_summary':
-        // TODO: Show cost summary dialog
-        break;
-      case 'add_expense':
-        // TODO: Show expense creation sheet
-        break;
     }
   }
 
-  void _onItemMenuSelected(String value, _ListItem item) {
-    switch (value) {
-      case 'edit':
-        // TODO: Edit item
-        break;
-      case 'delete':
-        _deleteItem(item);
-        break;
-      case 'expense':
-        // TODO: Add expense for item
-        break;
-    }
-  }
-
-  List<_ListItem> get _filteredItems {
+  List<ListItem> get _filteredItems {
     if (_searchQuery.isEmpty) return List.unmodifiable(_items);
     final lower = _searchQuery.toLowerCase();
     return _items.where((i) => i.name.toLowerCase().contains(lower)).toList();
@@ -243,11 +263,11 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
 
   double get _progress {
     if (_items.isEmpty) return 0;
-    return _items.where((i) => i.completed).length / _items.length;
+    return _items.where((i) => i.checked).length / _items.length;
   }
 
   bool get _isComplete =>
-      _items.isNotEmpty && _items.every((i) => i.completed);
+      _items.isNotEmpty && _items.every((i) => i.checked);
 
   @override
   Widget build(BuildContext context) {
@@ -290,19 +310,9 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
             icon: const AppIcon(name: 'ellipsisVertical'),
             onSelected: _onMenuSelected,
             itemBuilder: (context) => [
-              const PopupMenuItem(value: 'edit', child: Text('Edit')),
               const PopupMenuItem(
                 value: 'complete_all',
                 child: Text('Complete all'),
-              ),
-              const PopupMenuItem(value: 'archive', child: Text('Archive')),
-              const PopupMenuItem(
-                value: 'cost_summary',
-                child: Text('Cost summary'),
-              ),
-              const PopupMenuItem(
-                value: 'add_expense',
-                child: Text('Add expense'),
               ),
             ],
           ),
@@ -310,7 +320,6 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
       ),
       body: Column(
         children: [
-          // Sticky progress bar
           Container(
             clipBehavior: Clip.hardEdge,
             decoration: const BoxDecoration(),
@@ -323,7 +332,6 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
               minHeight: MitlistSpacing.space1,
             ),
           ),
-          // Completion banner
           GestureDetector(
             onTap: () {
               _bannerTimer?.cancel();
@@ -348,38 +356,7 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
                   : const SizedBox.shrink(),
             ),
           ),
-          // Suggestion chips
-          if (_suggestions.isNotEmpty &&
-              !_isLoading &&
-              _errorMessage == null)
-            Padding(
-              padding: const EdgeInsets.only(
-                top: MitlistSpacing.md,
-                bottom: MitlistSpacing.sm,
-              ),
-              child: SizedBox(
-                height: MitlistSpacing.space8,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: MitlistSpacing.md,
-                  ),
-                  itemCount: _suggestions.length,
-                  separatorBuilder: (_, __) =>
-                      const SizedBox(width: MitlistSpacing.sm),
-                  itemBuilder: (context, index) {
-                    final s = _suggestions[index];
-                    return AppChip(
-                      label: s,
-                      onSelected: (_) => _addSuggestion(s),
-                    );
-                  },
-                ),
-              ),
-            ),
-          // Body content
           Expanded(child: _buildBody()),
-          // Sticky bottom bar
           if (!_isLoading && _errorMessage == null) _buildBottomBar(),
         ],
       ),
@@ -431,7 +408,7 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
             child: Row(
               children: [
                 Checkbox(
-                  value: item.completed,
+                  value: item.checked,
                   shape: const RoundedRectangleBorder(
                     borderRadius: BorderRadius.zero,
                   ),
@@ -442,10 +419,10 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
                   child: Text(
                     item.name,
                     style: textTheme.bodyMedium?.copyWith(
-                      decoration: item.completed
+                      decoration: item.checked
                           ? TextDecoration.lineThrough
                           : null,
-                      color: item.completed
+                      color: item.checked
                           ? MitlistColors.textTertiary
                           : MitlistColors.textPrimary,
                     ),
@@ -466,19 +443,13 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
                   ),
                   itemBuilder: (context) => [
                     const PopupMenuItem(
-                      value: 'edit',
-                      child: Text('Edit'),
-                    ),
-                    const PopupMenuItem(
                       value: 'delete',
                       child: Text('Delete'),
                     ),
-                    const PopupMenuItem(
-                      value: 'expense',
-                      child: Text('Add expense'),
-                    ),
                   ],
-                  onSelected: (value) => _onItemMenuSelected(value, item),
+                  onSelected: (value) {
+                    if (value == 'delete') _deleteItem(item);
+                  },
                 ),
               ],
             ),

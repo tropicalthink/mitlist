@@ -180,6 +180,9 @@ func (c *Config) Validate() error {
 	if !validEnvs[c.Environment] {
 		return fmt.Errorf("invalid ENVIRONMENT: must be development, staging, or production")
 	}
+	if c.Environment == "production" && (c.SecretKey == "dev-only-insecure-key-do-not-use-in-prod" || c.SessionSecretKey == "dev-only-insecure-key-do-not-use-in-prod") {
+		return fmt.Errorf("refusing to start in production with default dev secret keys — set SECRET_KEY and SESSION_SECRET_KEY in environment")
+	}
 	return nil
 }
 

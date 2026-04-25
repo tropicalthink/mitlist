@@ -373,24 +373,26 @@ func (s *ChoreService) RebuildMemberOrdersForGroup(ctx context.Context, groupID 
 		return fmt.Errorf("failed to list chores: %w", err)
 	}
 
+	var updatedStates []models.ChoreRotationState
 	for _, chore := range chores {
 		state, err := s.choreRepo.GetRotationState(ctx, chore.ID)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
-				// No rotation state yet; skip.
 				continue
 			}
 			return fmt.Errorf("failed to get rotation state for chore %s: %w", chore.ID, err)
 		}
 
-		// Maintain determinism: if the current assignee is still in the new order,
-		// keep current_index pointing to them if possible, otherwise reset to 0.
 		state.MemberOrder = memberOrder
 		if state.CurrentIndex >= len(state.MemberOrder) {
 			state.CurrentIndex = 0
 		}
-		if err := s.choreRepo.UpdateRotationState(ctx, state); err != nil {
-			return fmt.Errorf("failed to update rotation state for chore %s: %w", chore.ID, err)
+		updatedStates = append(updatedStates, *state)
+	}
+
+	if len(updatedStates) > 0 {
+		if err := s.choreRepo.BulkUpdateRotationStates(ctx, updatedStates); err != nil {
+			return fmt.Errorf("batch update rotation states: %w", err)
 		}
 	}
 	return nil

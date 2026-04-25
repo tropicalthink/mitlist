@@ -62,6 +62,11 @@ func (m *MockChoreRepo) UpdateRotationState(ctx context.Context, state *models.C
 	return args.Error(0)
 }
 
+func (m *MockChoreRepo) BulkUpdateRotationStates(ctx context.Context, states []models.ChoreRotationState) error {
+	args := m.Called(ctx, states)
+	return args.Error(0)
+}
+
 func (m *MockChoreRepo) CreateAssignment(ctx context.Context, assignment *models.ChoreAssignment) error {
 	args := m.Called(ctx, assignment)
 	return args.Error(0)

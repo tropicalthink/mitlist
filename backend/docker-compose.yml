@@ -17,12 +17,13 @@ services:
       - go-mod-cache:/go/pkg/mod
     environment:
       # Required defaults for local development.
-      # Override by creating a .env file from .env.example.
+      # SECRET_KEY and SESSION_SECRET_KEY MUST be overridden in .env for production.
+      # WARNING: The defaults below are INSECURE and must never be used in production.
       DATABASE_URL: postgres://mitlist:mitlist@db:5432/mitlist?sslmode=disable
       REDIS_URL: redis://redis:6379
       REDIS_PASSWORD: ""
-      SECRET_KEY: dev-secret-key-min-32-chars-long-12345
-      SESSION_SECRET_KEY: dev-session-secret-key-min-32-chars-12345
+      SECRET_KEY: dev-only-insecure-key-do-not-use-in-prod
+      SESSION_SECRET_KEY: dev-only-insecure-key-do-not-use-in-prod
       ENVIRONMENT: development
       FRONTEND_URL: http://localhost:5173
       API_PREFIX: /api

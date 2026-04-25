@@ -13,6 +13,7 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton.dart';
 import '../../models/group_models.dart';
 import '../../providers/group_provider.dart';
+import '../../sheets/create_household_sheet.dart';
 
 class GroupsListScreen extends ConsumerStatefulWidget {
   const GroupsListScreen({super.key});
@@ -141,12 +142,11 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
     );
   }
 
-  void _openCreateSheet() {
-    showAppBottomSheet(
-      context: context,
-      title: 'Create household',
-      body: const Center(child: Text('Placeholder')),
-    );
+  Future<void> _openCreateSheet() async {
+    final created = await CreateHouseholdSheet.show(context);
+    if (created == true && mounted) {
+      _loadInitialGroups();
+    }
   }
 
   @override

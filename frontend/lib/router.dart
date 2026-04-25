@@ -18,6 +18,9 @@ import 'screens/lists/list_detail_screen.dart';
 import 'screens/share_target_screen.dart';
 import 'screens/integration_test_screen.dart';
 import 'screens/notifications/notifications_screen.dart';
+import 'screens/vault/vault_screen.dart';
+import 'screens/living_things/living_things_screen.dart';
+import 'screens/recipes/recipes_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -121,6 +124,21 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const ExpensesScreen(),
           ),
           GoRoute(
+            path: '/vault',
+            name: 'vault',
+            builder: (context, state) => const VaultScreen(),
+          ),
+          GoRoute(
+            path: '/living-things',
+            name: 'livingThings',
+            builder: (context, state) => const LivingThingsScreen(),
+          ),
+          GoRoute(
+            path: '/recipes',
+            name: 'recipes',
+            builder: (context, state) => const RecipesScreen(),
+          ),
+          GoRoute(
             path: '/you',
             name: 'you',
             builder: (context, state) => const AccountScreen(),
@@ -157,6 +175,7 @@ class BottomNavScaffold extends StatelessWidget {
           BottomNavigationBarItem(icon: Icon(Icons.list_alt_outlined), label: 'Lists'),
           BottomNavigationBarItem(icon: Icon(Icons.check_box_outlined), label: 'Chores'),
           BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_outlined), label: 'Money'),
+          BottomNavigationBarItem(icon: Icon(Icons.inventory_2_outlined), label: 'Vault'),
           BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'You'),
         ],
       ),
@@ -168,7 +187,8 @@ class BottomNavScaffold extends StatelessWidget {
     if (location.startsWith('/lists')) return 1;
     if (location.startsWith('/chores')) return 2;
     if (location.startsWith('/money')) return 3;
-    if (location.startsWith('/you')) return 4;
+    if (location.startsWith('/vault')) return 4;
+    if (location.startsWith('/you')) return 5;
     return 0;
   }
 
@@ -183,6 +203,8 @@ class BottomNavScaffold extends StatelessWidget {
       case 3:
         context.goNamed('money');
       case 4:
+        context.goNamed('vault');
+      case 5:
         context.goNamed('you');
     }
   }

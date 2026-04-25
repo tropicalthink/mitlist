@@ -22,12 +22,12 @@ func TestFinanceService_CreateExpense(t *testing.T) {
 	groupID := uuid.New()
 	payerID := uuid.New()
 
-	t.Run("success with equal splits", func(t *testing.T) {
+	t.Run("success with equal splits as admin", func(t *testing.T) {
 		financeRepo := new(mocks.MockFinanceRepo)
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := NewFinanceService(financeRepo, groupRepo)
 
-		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "admin"}, nil)
 		financeRepo.On("CreateExpenseWithSplits", ctx, mock.AnythingOfType("*models.Expense"), mock.AnythingOfType("[]models.Split")).Return(nil)
 
 		splitUserIDs := []uuid.UUID{userID, payerID}
@@ -36,13 +36,37 @@ func TestFinanceService_CreateExpense(t *testing.T) {
 		require.NoError(t, err)
 	})
 
+	t.Run("success with own payer as member", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		financeRepo.On("CreateExpenseWithSplits", ctx, mock.AnythingOfType("*models.Expense"), mock.AnythingOfType("[]models.Split")).Return(nil)
+
+		expense := &models.Expense{GroupID: groupID, PayerID: userID, Amount: 100, Currency: "USD"}
+		err := svc.CreateExpense(ctx, userID, expense, nil)
+		require.NoError(t, err)
+	})
+
+	t.Run("member cannot set different payer", func(t *testing.T) {
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(nil, groupRepo)
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+
+		expense := &models.Expense{GroupID: groupID, PayerID: payerID, Amount: 100, Currency: "USD"}
+		err := svc.CreateExpense(ctx, userID, expense, nil)
+		require.Error(t, err)
+	})
+
 	t.Run("invalid amount", func(t *testing.T) {
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := NewFinanceService(nil, groupRepo)
 
 		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
 
-		err := svc.CreateExpense(ctx, userID, &models.Expense{GroupID: groupID, Amount: 0, Currency: "USD"}, nil)
+		err := svc.CreateExpense(ctx, userID, &models.Expense{GroupID: groupID, PayerID: userID, Amount: 0, Currency: "USD"}, nil)
 		require.Error(t, err)
 		assert.Equal(t, api.ErrValidation, err)
 	})
@@ -53,7 +77,7 @@ func TestFinanceService_CreateExpense(t *testing.T) {
 
 		groupRepo.On("GetMembership", ctx, groupID, userID).Return(nil, pgx.ErrNoRows)
 
-		err := svc.CreateExpense(ctx, userID, &models.Expense{GroupID: groupID, Amount: 100, Currency: "USD"}, nil)
+		err := svc.CreateExpense(ctx, userID, &models.Expense{GroupID: groupID, PayerID: userID, Amount: 100, Currency: "USD"}, nil)
 		require.Error(t, err)
 		assert.Equal(t, api.ErrPermissionDenied, err)
 	})

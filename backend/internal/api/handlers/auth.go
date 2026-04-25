@@ -223,12 +223,20 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
+
+	// Revoke the refresh token first.
 	claims, err := h.jwtService.ValidateRefreshToken(req.RefreshToken)
-	if err != nil {
-		w.WriteHeader(http.StatusNoContent)
-		return
+	if err == nil {
+		_ = h.jwtService.RevokeRefreshToken(claims.ID)
 	}
-	_ = h.jwtService.RevokeRefreshToken(claims.ID)
+
+	// Also revoke the access token if one is present in the request.
+	if accessToken := middleware.ExtractToken(r); accessToken != "" {
+		if accessClaims, err := h.jwtService.ParseAccessToken(accessToken); err == nil {
+			_ = h.jwtService.RevokeAccessToken(accessClaims.ID)
+		}
+	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 

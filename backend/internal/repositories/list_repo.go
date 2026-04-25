@@ -202,6 +202,26 @@ func (r *ListRepository) UpdateItem(ctx context.Context, item *models.ListItem) 
 	return err
 }
 
+// BatchUpdateItemPositions updates the position of multiple list items in a single batch.
+func (r *ListRepository) BatchUpdateItemPositions(ctx context.Context, items []models.ListItem) error {
+	if len(items) == 0 {
+		return nil
+	}
+	now := time.Now().UTC()
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+	for _, item := range items {
+		query := `UPDATE list_items SET position = $1, updated_at = $2 WHERE id = $3`
+		if _, err := tx.Exec(ctx, query, item.Position, now, item.ID); err != nil {
+			return fmt.Errorf("update item %s position: %w", item.ID, err)
+		}
+	}
+	return tx.Commit(ctx)
+}
+
 // HardDeleteItem permanently deletes a list item by ID.
 func (r *ListRepository) HardDeleteItem(ctx context.Context, id uuid.UUID) error {
 	query := `DELETE FROM list_items WHERE id = $1`

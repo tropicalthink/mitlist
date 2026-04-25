@@ -255,9 +255,8 @@ func (h *FinanceHandler) UpdateSplit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		UserID    *uuid.UUID `json:"user_id,omitempty"`
-		Amount   *int64     `json:"amount,omitempty"`
-		IsSettled *bool     `json:"is_settled,omitempty"`
+		UserID  *uuid.UUID `json:"user_id,omitempty"`
+		Amount *int64     `json:"amount,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
@@ -275,9 +274,6 @@ func (h *FinanceHandler) UpdateSplit(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Amount != nil {
 		existing.Amount = *req.Amount
-	}
-	if req.IsSettled != nil {
-		existing.IsSettled = *req.IsSettled
 	}
 
 	if err := h.service.UpdateSplit(r.Context(), userID, existing); err != nil {

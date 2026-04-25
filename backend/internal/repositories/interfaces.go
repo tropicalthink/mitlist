@@ -65,6 +65,7 @@ type ListRepo interface {
 	UpdateItem(ctx context.Context, item *models.ListItem) error
 	HardDeleteItem(ctx context.Context, id uuid.UUID) error
 	SoftDeleteItem(ctx context.Context, id uuid.UUID) error
+	BatchUpdateItemPositions(ctx context.Context, items []models.ListItem) error
 }
 
 // TemplateRepo is the interface for template repository operations.
@@ -95,6 +96,7 @@ type ChoreRepo interface {
 	CreateRotationState(ctx context.Context, state *models.ChoreRotationState) error
 	GetRotationState(ctx context.Context, choreID uuid.UUID) (*models.ChoreRotationState, error)
 	UpdateRotationState(ctx context.Context, state *models.ChoreRotationState) error
+	BulkUpdateRotationStates(ctx context.Context, states []models.ChoreRotationState) error
 	CreateAssignment(ctx context.Context, assignment *models.ChoreAssignment) error
 	ListAssignments(ctx context.Context, choreID uuid.UUID, limit, offset int) ([]models.ChoreAssignment, error)
 	UpdateAssignment(ctx context.Context, assignment *models.ChoreAssignment) error

@@ -136,6 +136,20 @@ func (s *Service) RevokeRefreshToken(jti string) error {
 	return nil
 }
 
+// RevokeAccessToken revokes an access token by JTI so that it can no longer be used.
+func (s *Service) RevokeAccessToken(jti string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), redisTimeout)
+	defer cancel()
+	// Keep revoked access token at least as long as the remaining token lifetime (max 1 hour).
+	return s.redis.Client().Set(ctx, revokedTokenKey(TokenTypeAccess, jti), "1", time.Hour).Err()
+}
+
+// ParseAccessToken parses and validates an access token without checking Redis revocation.
+// Returns the raw claims so the caller can extract the JTI for revocation.
+func (s *Service) ParseAccessToken(token string) (*Claims, error) {
+	return s.parse(token)
+}
+
 func (s *Service) newClaims(userID string, roles []string, tokenType string, issuedAt, expiresAt time.Time) *Claims {
 	return &Claims{
 		Roles:     append([]string(nil), roles...),

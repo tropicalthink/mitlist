@@ -174,6 +174,25 @@ func (r *ChoreRepository) UpdateRotationState(ctx context.Context, state *models
 	return nil
 }
 
+// BulkUpdateRotationStates updates member_order and current_index for multiple rotation states in a single batch.
+func (r *ChoreRepository) BulkUpdateRotationStates(ctx context.Context, states []models.ChoreRotationState) error {
+	if len(states) == 0 {
+		return nil
+	}
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+	for _, s := range states {
+		query := `UPDATE chore_rotation_states SET member_order = $1, current_index = $2 WHERE id = $3`
+		if _, err := tx.Exec(ctx, query, s.MemberOrder, s.CurrentIndex, s.ID); err != nil {
+			return fmt.Errorf("update rotation state %s: %w", s.ID, err)
+		}
+	}
+	return tx.Commit(ctx)
+}
+
 // CreateAssignment inserts a new chore assignment.
 func (r *ChoreRepository) CreateAssignment(ctx context.Context, assignment *models.ChoreAssignment) error {
 	assignment.ID = uuid.New()

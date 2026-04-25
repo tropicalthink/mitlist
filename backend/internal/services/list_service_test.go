@@ -275,7 +275,7 @@ func TestListService_ReorderItems(t *testing.T) {
 		listRepo.On("ListItemsByList", ctx, listID, 0, 0).Return([]models.ListItem{
 			{ID: item1}, {ID: item2},
 		}, nil)
-		listRepo.On("UpdateItem", ctx, mock.AnythingOfType("*models.ListItem")).Return(nil)
+		listRepo.On("BatchUpdateItemPositions", ctx, mock.AnythingOfType("[]models.ListItem")).Return(nil)
 
 		err := svc.ReorderItems(ctx, user, listID, []uuid.UUID{item2, item1})
 		require.NoError(t, err)

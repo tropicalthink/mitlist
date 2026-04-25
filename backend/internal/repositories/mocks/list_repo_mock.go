@@ -79,3 +79,8 @@ func (m *MockListRepo) SoftDeleteItem(ctx context.Context, id uuid.UUID) error {
 	args := m.Called(ctx, id)
 	return args.Error(0)
 }
+
+func (m *MockListRepo) BatchUpdateItemPositions(ctx context.Context, items []models.ListItem) error {
+	args := m.Called(ctx, items)
+	return args.Error(0)
+}

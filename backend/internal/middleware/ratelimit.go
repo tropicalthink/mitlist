@@ -16,6 +16,12 @@ const (
 
 	userCapacity   = 1000
 	userRefillRate = 1000.0 / 3600.0 // tokens per second
+
+	authIPCapacity   = 10
+	authIPRefillRate = 10.0 / 60.0 // 10 requests per minute per IP for auth endpoints
+
+	failedLoginCapacity   = 5
+	failedLoginRefillRate = 5.0 / 300.0 // 5 attempts per 5 minutes per account
 )
 
 type userContextKey struct{}
@@ -83,6 +89,19 @@ func RateLimit(client *redis.Client, apiPrefix string) func(next http.Handler) h
 			ip := ExtractIP(r)
 			now := float64(time.Now().UnixNano()) / 1e9
 
+			if isAuthEndpoint(r.URL.Path, apiPrefix) {
+				allowed, err := checkLimit(r.Context(), client, "ratelimit:auth:ip:"+ip, authIPCapacity, authIPRefillRate, now)
+				if err != nil {
+					log.Warn().Err(err).Str("ip", ip).Msg("auth rate limit check failed, allowing")
+				}
+				if !allowed {
+					http.Error(w, `{"error":"rate limit exceeded"}`, http.StatusTooManyRequests)
+					return
+				}
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			allowed, err := checkLimit(r.Context(), client, "ratelimit:ip:"+ip, ipCapacity, ipRefillRate, now)
 			if err != nil {
 				log.Warn().Err(err).Str("ip", ip).Msg("ip rate limit check failed, allowing")
@@ -108,11 +127,27 @@ func RateLimit(client *redis.Client, apiPrefix string) func(next http.Handler) h
 	}
 }
 
+func isAuthEndpoint(path string, apiPrefix string) bool {
+	authPaths := []string{
+		apiPrefix + "/v1/auth/login",
+		apiPrefix + "/v1/auth/register",
+		apiPrefix + "/v1/auth/password-reset",
+		apiPrefix + "/v1/auth/guest",
+		apiPrefix + "/v1/auth/token/refresh",
+	}
+	for _, p := range authPaths {
+		if strings.HasPrefix(path, p) {
+			return true
+		}
+	}
+	return false
+}
+
 func shouldSkip(path string, apiPrefix string) bool {
 	if path == "/health" {
 		return true
 	}
-	return strings.HasPrefix(path, apiPrefix+"/v1/auth/token")
+	return false
 }
 
 func checkLimit(ctx context.Context, client *redis.Client, key string, capacity int, refillRate float64, now float64) (bool, error) {

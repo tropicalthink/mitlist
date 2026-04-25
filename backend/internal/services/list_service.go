@@ -273,12 +273,9 @@ func (s *ListService) ReorderItems(ctx context.Context, user *models.User, listI
 			return &api.ValidationError{Field: "item_ids", Message: fmt.Sprintf("item %s does not belong to this list", id)}
 		}
 	}
-	// Update positions.
+	batch := make([]models.ListItem, len(itemIDs))
 	for pos, id := range itemIDs {
-		it := &models.ListItem{ID: id, Position: pos}
-		if err := s.listRepo.UpdateItem(ctx, it); err != nil {
-			return fmt.Errorf("failed to reorder item %s: %w", id, err)
-		}
+		batch[pos] = models.ListItem{ID: id, Position: pos}
 	}
-	return nil
+	return s.listRepo.BatchUpdateItemPositions(ctx, batch)
 }

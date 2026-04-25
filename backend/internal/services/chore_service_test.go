@@ -182,7 +182,7 @@ func TestChoreService_RebuildMemberOrdersForGroup(t *testing.T) {
 		choreRepo.On("GetRotationState", ctx, choreID).Return(&models.ChoreRotationState{
 			ID: uuid.New(), ChoreID: choreID, MemberOrder: []uuid.UUID{member1}, CurrentIndex: 0,
 		}, nil)
-		choreRepo.On("UpdateRotationState", ctx, mock.AnythingOfType("*models.ChoreRotationState")).Return(nil)
+		choreRepo.On("BulkUpdateRotationStates", ctx, mock.AnythingOfType("[]models.ChoreRotationState")).Return(nil)
 
 		err := svc.RebuildMemberOrdersForGroup(ctx, groupID)
 		require.NoError(t, err)

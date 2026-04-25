@@ -17,7 +17,7 @@ import (
 func Auth(jwt *jwtservice.Service, userSvc *services.UserService) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token := extractToken(r)
+			token := ExtractToken(r)
 			if token == "" {
 				api.WriteError(w, api.ErrUnauthorized)
 				return
@@ -47,7 +47,7 @@ func Auth(jwt *jwtservice.Service, userSvc *services.UserService) func(next http
 	}
 }
 
-func extractToken(r *http.Request) string {
+func ExtractToken(r *http.Request) string {
 	if cookie, err := r.Cookie("access_token"); err == nil && cookie.Value != "" {
 		return cookie.Value
 	}

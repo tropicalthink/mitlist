@@ -67,6 +67,12 @@ func (s *FinanceService) CreateExpense(ctx context.Context, userID uuid.UUID, ex
 	if err := s.requireMember(ctx, expense.GroupID, userID); err != nil {
 		return err
 	}
+	// Only allow setting a different payer if the user is an admin.
+	if expense.PayerID != userID {
+		if err := s.requireAdmin(ctx, expense.GroupID, userID); err != nil {
+			return &api.ValidationError{Message: "payer must be the current user or you must be an admin"}
+		}
+	}
 	if expense.Amount <= 0 {
 		return api.ErrValidation
 	}
