@@ -31,6 +31,9 @@ Auth alignment:
 - **POST** `/auth/guest/convert` — **MATCHED**
 - **POST** `/auth/claim-account` — **MATCHED**
 
+## Public config
+- **GET** `/vapid` — **MATCHED** (backend mounted; Flutter can fetch web-push key when implemented)
+
 ## Groups
 - **POST** `/groups` — **MATCHED** (Flutter expects extra fields; see gaps)
 - **GET** `/groups?limit&offset` — **MATCHED**
@@ -115,13 +118,13 @@ Auth alignment:
 - **ALL /assistant/* endpoints** — **MISSING**
 
 ## Share target
-- **POST** `/share-target/lists` — **MISSING**
-- **POST** `/share-target/recipes` — **MISSING**
+- **POST** `/share-target/lists` — **MATCHED**
+- **POST** `/share-target/recipes` — **MATCHED**
 
 ## Unmounted backend handlers
 Not callable in production unless mounted:
 - Vault (`/vault*`) — **UNMOUNTED** (Flutter calls it anyway)
-- Notifications (`/notifications*`) — **UNMOUNTED**
+- Notifications (`/notifications*`) — **MOUNTED**
 - Activity logs (`/activity-logs*`) — **UNMOUNTED**
 - OAuth (`/oauth*` equivalent) — **UNMOUNTED**
 - Metrics/VAPID/Debug/Pprof — **UNMOUNTED** (expected)

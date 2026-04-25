@@ -26,6 +26,12 @@ After backend rebuild/restart, Vault routes are callable and functional:
 - **GET** `/api/v1/vault?group_id=<id>&limit=50&offset=0` with guest token
   - **Observed**: `200` with JSON array containing the created item
 
+### Notifications + VAPID (mounted)
+- **GET** `/api/v1/vapid`
+  - **Observed**: `200` with JSON body `{ "public_key": "<...>" }` (may be empty if not configured).
+- **GET** `/api/v1/notifications/preferences` (with auth)
+  - **Observed**: `200` with JSON array of preferences (used by Flutter AccountScreen toggle).
+
 ### Frontend UI
 Flutter static checks passed (`flutter analyze`, `flutter test`). Full interactive UI walkthrough was not automated; the live backend verification above demonstrates the key auth + vault path wiring and confirms endpoints are reachable.
 

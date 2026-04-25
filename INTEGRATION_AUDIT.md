@@ -57,6 +57,18 @@ Severity definitions (per spec):
   - **Fix owner**: frontend (use 64-bit safe representation) and/or backend docs.
   - **Status**: OPEN
 
+### Newly verified in this batch
+
+- **INT-MED-005 Notifications endpoints were unmounted / preferences not wired**
+  - **Backend**: mounted `GET /vapid` and protected `/notifications/*` endpoints.
+  - **Frontend**: wired the “Notifications” toggle to `/notifications/preferences` and added a Notification service.
+  - **Status**: FIXED (push device registration still deferred)
+
+- **INT-MED-006 Share-target endpoints not wired in Flutter**
+  - **Backend**: `/share-target/lists` and `/share-target/recipes` already mounted.
+  - **Frontend**: `ShareTargetScreen` now posts to both endpoints.
+  - **Status**: FIXED
+
 ### Fixed findings
 
 - **INT-CRIT-001 Vault feature unreachable (backend unmounted)** — **FIXED**

@@ -35,5 +35,5 @@ Key resolved items include:
 ### Deferred / assumptions
 - **Finance amount type**: backend uses `int64`, Flutter uses `int`. This is safe on native runtimes but can be risky if the Flutter app is compiled to web and very large values appear; monitor and consider a 64-bit safe representation.
 - **Admin/member permissions UX**: backend enforces permissions; frontend now handles failures more consistently, but full role-aware UI gating would require an explicit membership/role contract.
-- **Notifications / realtime**: backend code contains notification/VAPID/push pieces that were not mounted/consumed as part of this integration hardening; see `INTEGRATION_GAPS_realtime-background.md` for the prior gap analysis.
+- **Notifications / realtime**: notification inbox + VAPID key endpoints are now mounted and minimally consumed (preferences toggle); push subscription endpoints + device registration are still not integrated. See `INTEGRATION_GAPS_realtime-background.md`.
 
