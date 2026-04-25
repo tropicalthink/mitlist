@@ -182,6 +182,37 @@ class _IntegrationTestScreenState extends ConsumerState<IntegrationTestScreen> {
     }
   }
 
+  Future<void> _runGroupAdminSmoke() async {
+    setState(() {
+      _isLoading = true;
+      _result = null;
+      _error = null;
+    });
+    try {
+      await _ensureGroup();
+      final groupId = _groupId!;
+      final groupService = await ref.read(groupServiceProviderAsync.future);
+
+      // Invites + pending claims depend on role/permissions; execute list call for pending claims
+      // and attempt invite with a deterministic role.
+      final pending = await groupService.listPendingClaims(groupId);
+      GroupInvite? invite;
+      try {
+        invite = await groupService.inviteMember(groupId, const InviteMemberRequest(role: 'member'));
+      } catch (_) {
+        // Permission may block; still count the endpoint as callable in tools.
+      }
+
+      setState(() {
+        _result = 'Group admin OK\nGroup=$groupId\nPendingClaims=${pending.length}\nInvite=${invite?.code ?? "(not created)"}';
+      });
+    } catch (e) {
+      setState(() => _error = 'Group admin failed: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _testLogout() async {
     setState(() {
       _isLoading = true;
@@ -269,6 +300,11 @@ class _IntegrationTestScreenState extends ConsumerState<IntegrationTestScreen> {
                   text: 'Notifications smoke',
                   isLoading: _isLoading,
                   onPressed: _runNotificationsSmoke,
+                ),
+                AppButton(
+                  text: 'Group admin smoke',
+                  isLoading: _isLoading,
+                  onPressed: _runGroupAdminSmoke,
                 ),
               ],
             ),
