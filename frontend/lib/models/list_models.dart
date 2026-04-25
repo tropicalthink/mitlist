@@ -3,7 +3,7 @@ class ItemList {
   final String groupId;
   final String name;
   final String type;
-  final int itemCount;
+  final int? itemCount;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -12,7 +12,7 @@ class ItemList {
     required this.groupId,
     required this.name,
     required this.type,
-    required this.itemCount,
+    this.itemCount,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -23,21 +23,21 @@ class ItemList {
       groupId: json['group_id'] as String,
       name: json['name'] as String,
       type: json['type'] as String? ?? 'shopping',
-      itemCount: json['item_count'] as int? ?? 0,
+      itemCount: json['item_count'] as int?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'group_id': groupId,
-    'name': name,
-    'type': type,
-    'item_count': itemCount,
-    'created_at': createdAt.toIso8601String(),
-    'updated_at': updatedAt.toIso8601String(),
-  };
+        'id': id,
+        'group_id': groupId,
+        'name': name,
+        'type': type,
+        if (itemCount != null) 'item_count': itemCount,
+        'created_at': createdAt.toIso8601String(),
+        'updated_at': updatedAt.toIso8601String(),
+      };
 }
 
 class ListItem {
@@ -78,32 +78,36 @@ class ListItem {
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'list_id': listId,
-    'name': name,
-    'quantity': quantity,
-    'unit': unit,
-    'checked': checked,
-    'position': position,
-    'created_at': createdAt.toIso8601String(),
-    'updated_at': updatedAt.toIso8601String(),
-  };
+        'id': id,
+        'list_id': listId,
+        'name': name,
+        'quantity': quantity,
+        'unit': unit,
+        'checked': checked,
+        'position': position,
+        'created_at': createdAt.toIso8601String(),
+        'updated_at': updatedAt.toIso8601String(),
+      };
 }
 
 class CreateListRequest {
   final String groupId;
   final String name;
   final String type;
-  const CreateListRequest({required this.groupId, required this.name, this.type = 'shopping'});
-  Map<String, dynamic> toJson() => {'group_id': groupId, 'name': name, 'type': type};
+  const CreateListRequest(
+      {required this.groupId, required this.name, this.type = 'shopping'});
+  Map<String, dynamic> toJson() =>
+      {'group_id': groupId, 'name': name, 'type': type};
 }
 
 class CreateListItemRequest {
   final String name;
   final int quantity;
   final String unit;
-  const CreateListItemRequest({required this.name, this.quantity = 1, this.unit = ''});
-  Map<String, dynamic> toJson() => {'name': name, 'quantity': quantity, 'unit': unit};
+  const CreateListItemRequest(
+      {required this.name, this.quantity = 1, this.unit = ''});
+  Map<String, dynamic> toJson() =>
+      {'name': name, 'quantity': quantity, 'unit': unit};
 }
 
 class UpdateListItemRequest {
@@ -112,7 +116,8 @@ class UpdateListItemRequest {
   final String? unit;
   final bool? checked;
   final int? position;
-  const UpdateListItemRequest({this.name, this.quantity, this.unit, this.checked, this.position});
+  const UpdateListItemRequest(
+      {this.name, this.quantity, this.unit, this.checked, this.position});
   Map<String, dynamic> toJson() {
     final m = <String, dynamic>{};
     if (name != null) m['name'] = name;

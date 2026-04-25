@@ -25,37 +25,30 @@ Severity definitions (per spec):
   - **Frontend**: screens/providers only fetch first page; no “load more”/infinite scroll.
   - **Impact**: data sets > 50 rows are invisible.
   - **Fix owner**: frontend.
-  - **Status**: OPEN
-
-- **INT-HIGH-003 Group-scoped list endpoints may be called with invalid empty `group_id`**
-  - **Frontend**: multiple screens fall back to `''` for `group_id`; `LivingThingsScreen` calls `listLivingThings('')` unconditionally.
-  - **Backend**: validates `group_id` as UUID; returns validation error.
-  - **Impact**: feature surfaces can fail even on happy path (fresh account/no groups).
-  - **Fix owner**: frontend (require group selection / create-first flow / guard before calling).
-  - **Status**: FIXED (LivingThings screen guarded; other screens still use fallbacks)
+  - **Status**: FIXED
 
 #### MEDIUM
 
 - **INT-MED-001 Group model expects fields backend doesn’t provide (`is_personal`, `member_count`)**
   - **Impact**: UI silently defaults (`false`, `1`) and may mislead users.
   - **Fix owner**: frontend (do not assume fields) *or* backend (add fields if contract intends).
-  - **Status**: OPEN
+  - **Status**: FIXED
 
 - **INT-MED-002 List model expects `item_count` but backend doesn’t provide it**
   - **Impact**: UI shows `0` items unless it separately loads items.
   - **Fix owner**: frontend (remove count or compute client-side) or backend (add count).
-  - **Status**: OPEN
+  - **Status**: FIXED
 
 - **INT-MED-003 Collections expect `recipe_count` but backend doesn’t provide it**
   - **Impact**: UI/counts show `0`.
   - **Fix owner**: frontend or backend.
-  - **Status**: OPEN
+  - **Status**: FIXED
 
 - **INT-MED-004 Nullable string fields sent as `null` decode into empty strings on backend**
   - Examples: `CreateRecipeRequest.image_url`, living thing `location`/`image_url`, care log `notes`.
   - **Impact**: semantic drift (null vs empty) that can break “unset” logic.
   - **Fix owner**: frontend (omit null keys) preferred.
-  - **Status**: OPEN
+  - **Status**: FIXED
 
 #### LOW
 
@@ -82,7 +75,27 @@ Severity definitions (per spec):
   - **Fix**: added a single-flight refresh coordinator in `TokenRefreshInterceptor` so concurrent 401s await one refresh attempt instead of racing with a rotated refresh token.
   - **Verification**: `flutter analyze` (no errors) and `flutter test` passed.
 
-- **INT-HIGH-003 Group-scoped list endpoints may be called with invalid empty `group_id`** — **PARTIALLY FIXED**
-  - **Fix**: `LivingThingsScreen` now loads groups first and does not call `/living-things` without a real group id.
+- **INT-HIGH-003 Group-scoped list endpoints may be called with invalid empty `group_id`** — **FIXED**
+  - **Fix**: `ListsScreen`, `ChoresScreen`, `ExpensesScreen`, `VaultScreen`, and `LivingThingsScreen` now resolve a real household before calling group-scoped list endpoints and show a “No household yet” state when none exists. Group-scoped list services also reject invalid group IDs before issuing Dio requests.
+  - **Verification**: `flutter analyze` (no errors) and `flutter test` passed.
+
+- **INT-HIGH-002 Pagination not implemented in UI; lists truncate at 50** — **FIXED**
+  - **Fix**: added offset-based pagination/infinite scroll behavior to the main list screens and services where applicable; stops when a page returns < limit.
+  - **Verification**: `flutter analyze` (no errors) and `flutter test` passed.
+
+- **INT-MED-001 Group model expects fields backend doesn’t provide (`is_personal`, `member_count`)** — **FIXED**
+  - **Fix**: treat these fields as unknown when omitted instead of defaulting to misleading values; UI hides/gates display accordingly.
+  - **Verification**: `flutter analyze` (no errors) and `flutter test` passed.
+
+- **INT-MED-002 List model expects `item_count` but backend doesn’t provide it** — **FIXED**
+  - **Fix**: treat `item_count` as unknown when omitted; UI hides count and avoids misleading sorts when unknown.
+  - **Verification**: `flutter analyze` (no errors) and `flutter test` passed.
+
+- **INT-MED-003 Collections expect `recipe_count` but backend doesn’t provide it** — **FIXED**
+  - **Fix**: treat `recipe_count` as unknown when omitted; UI hides count when unknown.
+  - **Verification**: `flutter analyze` (no errors) and `flutter test` passed.
+
+- **INT-MED-004 Nullable string fields sent as `null` decode into empty strings on backend** — **FIXED**
+  - **Fix**: request DTO `toJson()` methods omit nullable string keys when null instead of sending explicit null.
   - **Verification**: `flutter analyze` (no errors) and `flutter test` passed.
 

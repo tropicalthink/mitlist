@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../providers/vault_provider.dart';
 import '../../providers/group_provider.dart';
+import '../../models/vault_models.dart';
+import '../../services/group_id_validator.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
@@ -39,64 +42,81 @@ class _VaultItem {
 }
 
 class _VaultScreenState extends ConsumerState<VaultScreen> {
-  bool _isLoading = true;
-  String? _errorMessage;
-  String _searchQuery = '';
-  String _selectedCategory = 'All';
-  bool _filterExpired = false;
-  bool _filterSoon = false;
-  Timer? _searchDebounce;
+  static const int _pageLimit = 50;
 
-  final List<String> _categories = const [
-    'All',
-    'Wi-Fi',
-    'Paint',
-    'Insurance',
-    'Warranty',
-    'Emergency',
-    'Custom',
-  ];
+  bool _isLoading = true;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+  String? _errorMessage;
+  String? _pageErrorMessage;
+  final String _searchQuery = '';
+  final String _selectedCategory = 'All';
+  final bool _filterExpired = false;
+  final bool _filterSoon = false;
+  bool _hasHousehold = true;
+  Timer? _searchDebounce;
+  final ScrollController _scrollController = ScrollController();
+  String? _groupId;
 
   List<_VaultItem> _allItems = [];
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _loadItems();
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     _searchDebounce?.cancel();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients || _isLoadingMore || !_hasMore) {
+      return;
+    }
+
+    if (_scrollController.position.extentAfter < 400) {
+      _loadMoreItems();
+    }
   }
 
   Future<void> _loadItems() async {
     setState(() {
       _isLoading = true;
+      _isLoadingMore = false;
+      _hasMore = true;
       _errorMessage = null;
+      _pageErrorMessage = null;
     });
 
     try {
       final vaultService = await ref.read(vaultServiceProviderAsync.future);
       final groupService = await ref.read(groupServiceProviderAsync.future);
-      final groups = await groupService.listGroups();
-      final groupId = groups.isNotEmpty ? groups.first.id : '';
-      final apiItems = await vaultService.listVaultItems(groupId);
+      final groups = await groupService.listGroups(limit: 1);
+      final groupId = groups.isNotEmpty ? groups.first.id : null;
+      final validGroupId = isValidGroupId(groupId) ? groupId : null;
+      final apiItems = validGroupId == null
+          ? <VaultItem>[]
+          : await vaultService.listVaultItems(
+              validGroupId,
+              limit: _pageLimit,
+              offset: 0,
+            );
 
       if (!mounted) return;
 
-      final items = apiItems.map((api) => _VaultItem(
-        id: api.id,
-        name: api.title,
-        category: api.type,
-        expiryDate: api.reminderDate,
-        documentCount: api.content.isNotEmpty ? 1 : 0,
-        tagCount: 0,
-      )).toList();
+      final items = apiItems.map(_mapVaultItem).toList();
 
       setState(() {
+        _groupId = validGroupId;
         _allItems = items;
+        _hasHousehold = validGroupId != null;
+        _hasMore = apiItems.length == _pageLimit;
         _isLoading = false;
       });
     } catch (e) {
@@ -108,11 +128,60 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     }
   }
 
+  Future<void> _loadMoreItems() async {
+    final groupId = _groupId;
+    if (_isLoading || _isLoadingMore || !_hasMore || groupId == null) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingMore = true;
+      _pageErrorMessage = null;
+    });
+
+    try {
+      final vaultService = await ref.read(vaultServiceProviderAsync.future);
+      final apiItems = await vaultService.listVaultItems(
+        groupId,
+        limit: _pageLimit,
+        offset: _allItems.length,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _allItems.addAll(apiItems.map(_mapVaultItem));
+        _hasMore = apiItems.length == _pageLimit;
+        _isLoadingMore = false;
+        _pageErrorMessage = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _pageErrorMessage = 'Failed to load more vault items';
+        _isLoadingMore = false;
+      });
+    }
+  }
+
+  _VaultItem _mapVaultItem(VaultItem api) {
+    return _VaultItem(
+      id: api.id,
+      name: api.title,
+      category: api.type,
+      expiryDate: api.reminderDate,
+      documentCount: api.content.isNotEmpty ? 1 : 0,
+      tagCount: 0,
+    );
+  }
+
   bool _matchesFilter(_VaultItem item) {
     if (_selectedCategory != 'All' && item.category != _selectedCategory) {
       return false;
     }
-    if (_filterExpired && item.expiryDate != null && !_isExpired(item.expiryDate!)) {
+    if (_filterExpired &&
+        item.expiryDate != null &&
+        !_isExpired(item.expiryDate!)) {
       return false;
     }
     if (_filterSoon &&
@@ -150,9 +219,9 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
       ),
       body: _buildBody(),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {},
-        icon: const Icon(Icons.add),
-        label: const Text('Add item'),
+        onPressed: _hasHousehold ? () {} : () => context.goNamed('home'),
+        icon: Icon(_hasHousehold ? Icons.add : Icons.home),
+        label: Text(_hasHousehold ? 'Add item' : 'Households'),
       ),
     );
   }
@@ -160,6 +229,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
   Widget _buildBody() {
     if (_isLoading) return _buildSkeletonGrid();
     if (_errorMessage != null) return _buildError();
+    if (!_hasHousehold) return _buildNoHousehold();
     if (_filteredItems.isEmpty) return _buildEmpty();
     return _buildGrid(_filteredItems);
   }
@@ -195,7 +265,27 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
       child: AppEmptyState(
         icon: const AppIcon(name: 'folderOpen', size: 56),
         title: 'No items yet',
-        description: 'Add important documents and info to your household vault.',
+        description:
+            'Add important documents and info to your household vault.',
+      ),
+    );
+  }
+
+  Widget _buildNoHousehold() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(MitlistSpacing.md),
+        child: AppEmptyState(
+          icon: const AppIcon(name: 'home', size: 56),
+          title: 'No household yet',
+          description: 'Create or join a household before using the vault.',
+          actions: [
+            AppButton(
+              text: 'Go to households',
+              onPressed: () => context.goNamed('home'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -203,6 +293,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
   Widget _buildGrid(List<_VaultItem> items) {
     final textTheme = Theme.of(context).textTheme;
     return GridView.builder(
+      controller: _scrollController,
       padding: const EdgeInsets.all(MitlistSpacing.md),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
@@ -210,8 +301,22 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
         crossAxisSpacing: MitlistSpacing.md,
         childAspectRatio: 0.75,
       ),
-      itemCount: items.length,
-      itemBuilder: (context, index) => _buildCard(items[index], textTheme),
+      itemCount:
+          items.length + (_isLoadingMore || _pageErrorMessage != null ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index >= items.length) {
+          if (_pageErrorMessage != null) {
+            return AppAlert(
+              type: AppAlertType.error,
+              message: _pageErrorMessage!,
+            );
+          }
+
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        return _buildCard(items[index], textTheme);
+      },
     );
   }
 

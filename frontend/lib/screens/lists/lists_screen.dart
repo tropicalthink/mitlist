@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../models/list_models.dart';
+import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
+import '../../services/group_id_validator.dart';
 import '../../sheets/create_list_sheet.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
@@ -29,46 +31,94 @@ class ListsScreen extends ConsumerStatefulWidget {
 }
 
 class _ListsScreenState extends ConsumerState<ListsScreen> {
+  static const int _pageLimit = 50;
+
   bool _isLoading = true;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
   String? _error;
   final List<ItemList> _lists = [];
+  final ScrollController _scrollController = ScrollController();
   bool _isGrid = true;
   String _filter = 'All';
   String _searchQuery = '';
   bool _showSearch = false;
   _SortOption _sort = _SortOption.newest;
   Timer? _searchTimer;
+  bool _hasHousehold = true;
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _loadLists();
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     _searchTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(covariant ListsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.groupId != widget.groupId) {
+      _loadLists();
+    }
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients || _isLoadingMore || !_hasMore) {
+      return;
+    }
+
+    if (_scrollController.position.extentAfter < 400) {
+      _loadMoreLists();
+    }
+  }
+
+  Future<String?> _resolveGroupId() async {
+    final explicitGroupId = widget.groupId;
+    if (isValidGroupId(explicitGroupId)) {
+      return explicitGroupId;
+    }
+
+    final groupService = await ref.read(groupServiceProviderAsync.future);
+    final groups = await groupService.listGroups(limit: 1);
+    final groupId = groups.isEmpty ? null : groups.first.id;
+    return isValidGroupId(groupId) ? groupId : null;
+  }
+
   Future<void> _loadLists() async {
     setState(() {
       _isLoading = true;
-      if (_lists.isEmpty) _error = null;
+      _error = null;
+      _hasMore = true;
     });
 
     try {
       final listService = await ref.read(listServiceProviderAsync.future);
-      final effectiveGroupId = widget.groupId ?? '';
-      final data = await listService.listLists(effectiveGroupId);
+      final effectiveGroupId = await _resolveGroupId();
+      final data = effectiveGroupId == null
+          ? <ItemList>[]
+          : await listService.listLists(
+              effectiveGroupId,
+              limit: _pageLimit,
+              offset: 0,
+            );
 
       if (mounted) {
         setState(() {
           _lists
             ..clear()
             ..addAll(data);
+          _hasHousehold = effectiveGroupId != null;
+          _hasMore = data.length == _pageLimit;
           _isLoading = false;
           _error = null;
         });
@@ -78,6 +128,44 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         setState(() {
           _error = 'Failed to load lists';
           _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadMoreLists() async {
+    if (_isLoadingMore || !_hasMore || _isLoading) return;
+
+    setState(() {
+      _isLoadingMore = true;
+      _error = null;
+    });
+
+    try {
+      final listService = await ref.read(listServiceProviderAsync.future);
+      final effectiveGroupId = await _resolveGroupId();
+      final data = effectiveGroupId == null
+          ? <ItemList>[]
+          : await listService.listLists(
+              effectiveGroupId,
+              limit: _pageLimit,
+              offset: _lists.length,
+            );
+
+      if (mounted) {
+        setState(() {
+          _lists.addAll(data);
+          _hasHousehold = effectiveGroupId != null;
+          _hasMore = data.length == _pageLimit;
+          _isLoadingMore = false;
+          _error = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load more lists';
+          _isLoadingMore = false;
         });
       }
     }
@@ -103,7 +191,8 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     });
   }
 
-  String _capitalize(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1).toLowerCase();
+  String _capitalize(String s) =>
+      s.isEmpty ? s : s[0].toUpperCase() + s.substring(1).toLowerCase();
 
   List<ItemList> get _filteredLists {
     var result = List<ItemList>.from(_lists);
@@ -114,7 +203,8 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
 
     if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase();
-      result = result.where((l) => l.name.toLowerCase().contains(query)).toList();
+      result =
+          result.where((l) => l.name.toLowerCase().contains(query)).toList();
     }
 
     switch (_sort) {
@@ -123,12 +213,22 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
       case _SortOption.oldest:
         result.sort((a, b) => a.updatedAt.compareTo(b.updatedAt));
       case _SortOption.az:
-        result.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        result.sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
       case _SortOption.mostItems:
-        result.sort((a, b) => b.itemCount.compareTo(a.itemCount));
+        result.sort(_compareByItemCount);
     }
 
     return result;
+  }
+
+  int _compareByItemCount(ItemList a, ItemList b) {
+    final aCount = a.itemCount;
+    final bCount = b.itemCount;
+    if (aCount == null && bCount == null) return 0;
+    if (aCount == null) return 1;
+    if (bCount == null) return -1;
+    return bCount.compareTo(aCount);
   }
 
   void _showCreateSheet() {
@@ -172,7 +272,8 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                 PopupMenuItem(value: _SortOption.newest, child: Text('Newest')),
                 PopupMenuItem(value: _SortOption.oldest, child: Text('Oldest')),
                 PopupMenuItem(value: _SortOption.az, child: Text('A-Z')),
-                PopupMenuItem(value: _SortOption.mostItems, child: Text('Most items')),
+                PopupMenuItem(
+                    value: _SortOption.mostItems, child: Text('Most items')),
               ],
             ),
             IconButton(
@@ -191,9 +292,10 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
       ),
       body: _buildBody(),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showCreateSheet,
+        onPressed:
+            _hasHousehold ? _showCreateSheet : () => context.goNamed('home'),
         icon: const Icon(AppIcons.plus),
-        label: const Text('New list'),
+        label: Text(_hasHousehold ? 'New list' : 'Households'),
       ),
     );
   }
@@ -235,6 +337,10 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
           },
         ),
       );
+    }
+
+    if (!_hasHousehold) {
+      return _buildNoHouseholdState();
     }
 
     return Column(
@@ -287,24 +393,52 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   }
 
   Widget _buildGrid() {
-    return GridView.count(
+    final lists = _filteredLists;
+    final itemCount = lists.length + (_isLoadingMore || _error != null ? 1 : 0);
+
+    return GridView.builder(
+      controller: _scrollController,
       physics: const AlwaysScrollableScrollPhysics(),
-      crossAxisCount: 2,
       padding: const EdgeInsets.all(MitlistSpacing.md),
-      mainAxisSpacing: MitlistSpacing.md,
-      crossAxisSpacing: MitlistSpacing.md,
-      childAspectRatio: 0.95,
-      children: _filteredLists.map((list) => _ListCard(list: list)).toList(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: MitlistSpacing.md,
+        crossAxisSpacing: MitlistSpacing.md,
+        childAspectRatio: 0.95,
+      ),
+      itemCount: itemCount,
+      itemBuilder: (context, index) {
+        if (index >= lists.length) return _buildPaginationFooter();
+        return _ListCard(list: lists[index]);
+      },
     );
   }
 
   Widget _buildList() {
+    final lists = _filteredLists;
     return ListView.separated(
+      controller: _scrollController,
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(MitlistSpacing.md),
-      itemCount: _filteredLists.length,
+      itemCount: lists.length + (_isLoadingMore || _error != null ? 1 : 0),
       separatorBuilder: (_, __) => const SizedBox(height: MitlistSpacing.md),
-      itemBuilder: (_, index) => _ListCard(list: _filteredLists[index]),
+      itemBuilder: (_, index) {
+        if (index >= lists.length) return _buildPaginationFooter();
+        return _ListCard(list: lists[index]);
+      },
+    );
+  }
+
+  Widget _buildPaginationFooter() {
+    if (_error != null) {
+      return AppAlert(type: AppAlertType.error, message: _error!);
+    }
+
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(MitlistSpacing.md),
+        child: CircularProgressIndicator(),
+      ),
     );
   }
 
@@ -337,6 +471,25 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     );
   }
 
+  Widget _buildNoHouseholdState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(MitlistSpacing.md),
+        child: AppEmptyState(
+          icon: const Icon(AppIcons.home),
+          title: 'No household yet',
+          description: 'Create or join a household before adding lists.',
+          actions: [
+            AppButton(
+              text: 'Go to households',
+              onPressed: () => context.goNamed('home'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildSkeleton() {
     return GridView.count(
       crossAxisCount: 2,
@@ -356,6 +509,7 @@ class _ListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final itemCount = list.itemCount;
     return AppCard(
       interactive: true,
       onTap: () {
@@ -389,11 +543,13 @@ class _ListCard extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: MitlistSpacing.sm),
-          Text(
-            '${list.itemCount} items',
-            style: MitlistTypography.monoBody(),
-          ),
+          if (itemCount != null) ...[
+            const SizedBox(height: MitlistSpacing.sm),
+            Text(
+              '$itemCount items',
+              style: MitlistTypography.monoBody(),
+            ),
+          ],
         ],
       ),
     );

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../providers/chore_provider.dart';
 import '../../providers/group_provider.dart';
+import '../../services/group_id_validator.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
@@ -26,12 +28,12 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   String? _error;
   final List<_Chore> _chores = [];
   bool _filterMe = true;
+  bool _hasHousehold = true;
 
   static const double _displaySmallLineHeight = 36 * (44 / 36);
   static const double _labelMediumLineHeight = 12 * (16 / 12);
 
-  static const double _stickyHeaderHeight =
-      MitlistSpacing.md +
+  static const double _stickyHeaderHeight = MitlistSpacing.md +
       MitlistSpacing.md +
       _displaySmallLineHeight +
       MitlistSpacing.space1 +
@@ -42,9 +44,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       MitlistSpacing.md;
 
   static const double _sectionHeaderHeight =
-      MitlistSpacing.sm +
-      _labelMediumLineHeight +
-      MitlistSpacing.sm;
+      MitlistSpacing.sm + _labelMediumLineHeight + MitlistSpacing.sm;
 
   @override
   void initState() {
@@ -62,23 +62,37 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       final choreService = await ref.read(choreServiceProviderAsync.future);
       final groupService = await ref.read(groupServiceProviderAsync.future);
       final groups = await groupService.listGroups();
-      final groupId = groups.isNotEmpty ? groups.first.id : '';
-      final apiChores = await choreService.listChores(groupId);
+      final groupId = groups.isNotEmpty ? groups.first.id : null;
+      if (!isValidGroupId(groupId)) {
+        if (!mounted) return;
+        setState(() {
+          _chores.clear();
+          _hasHousehold = false;
+          _isLoading = false;
+        });
+        return;
+      }
+      final apiChores = await choreService.listChores(groupId!);
       if (!mounted) return;
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
-      final chores = apiChores.map((api) => _Chore(
-        id: api.id,
-        title: api.name,
-        assigneeInitials: api.name.isNotEmpty ? api.name.substring(0, 1).toUpperCase() : '?',
-        dueDate: today,
-        isMine: true,
-        completed: !api.isActive,
-      )).toList();
+      final chores = apiChores
+          .map((api) => _Chore(
+                id: api.id,
+                title: api.name,
+                assigneeInitials: api.name.isNotEmpty
+                    ? api.name.substring(0, 1).toUpperCase()
+                    : '?',
+                dueDate: today,
+                isMine: true,
+                completed: !api.isActive,
+              ))
+          .toList();
       setState(() {
         _chores
           ..clear()
           ..addAll(chores);
+        _hasHousehold = true;
         _isLoading = false;
       });
     } catch (e) {
@@ -210,12 +224,12 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         title: const Text('Chores'),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _addChore,
-        icon: const AppIcon(
-          name: 'plus',
+        onPressed: _hasHousehold ? _addChore : () => context.goNamed('home'),
+        icon: AppIcon(
+          name: _hasHousehold ? 'plus' : 'home',
           color: MitlistColors.textOnPrimary,
         ),
-        label: const Text('Add chore'),
+        label: Text(_hasHousehold ? 'Add chore' : 'Households'),
       ),
       body: RefreshIndicator(
         color: MitlistColors.primary500,
@@ -346,6 +360,31 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                   ),
                 ),
               ),
+            ] else if (!_hasHousehold) ...[
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(MitlistSpacing.md),
+                    child: AppEmptyState(
+                      icon: const AppIcon(
+                        name: 'home',
+                        size: 56,
+                        color: MitlistColors.textTertiary,
+                      ),
+                      title: 'No household yet',
+                      description:
+                          'Create or join a household before adding chores.',
+                      actions: [
+                        AppButton(
+                          text: 'Go to households',
+                          onPressed: () => context.goNamed('home'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ] else if (filtered.isEmpty) ...[
               SliverFillRemaining(
                 hasScrollBody: false,
@@ -395,12 +434,10 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                         alignment: Alignment.centerLeft,
                         child: Text(
                           section.toUpperCase(),
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelMedium
-                              ?.copyWith(
-                                color: MitlistColors.textSecondary,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.labelMedium?.copyWith(
+                                    color: MitlistColors.textSecondary,
+                                  ),
                         ),
                       ),
                     ),

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../providers/living_provider.dart';
 import '../../providers/group_provider.dart';
+import '../../services/group_id_validator.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
+import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/empty_state.dart';
@@ -39,6 +42,7 @@ class LivingThingsScreen extends ConsumerStatefulWidget {
 class _LivingThingsScreenState extends ConsumerState<LivingThingsScreen> {
   bool _isLoading = true;
   String? _errorMessage;
+  bool _hasHousehold = true;
   List<LivingThing> _items = const [];
 
   @override
@@ -59,27 +63,35 @@ class _LivingThingsScreenState extends ConsumerState<LivingThingsScreen> {
       final groups = await groupService.listGroups();
       if (!mounted) return;
 
-      if (groups.isEmpty) {
+      final groupId = groups.isNotEmpty ? groups.first.id : null;
+      if (!isValidGroupId(groupId)) {
         setState(() {
           _items = const [];
+          _hasHousehold = false;
           _isLoading = false;
           _errorMessage = null;
         });
         return;
       }
 
-      final items = await livingService.listLivingThings(groups.first.id);
+      final items = await livingService.listLivingThings(groupId!);
 
       if (!mounted) return;
 
       setState(() {
-        _items = items.where((t) => t.species == 'pet' || t.species == 'plant').map((t) => LivingThing(
-          id: t.id,
-          name: t.name,
-          type: t.species == 'pet' ? LivingThingType.pet : LivingThingType.plant,
-          photoUrl: t.imageUrl,
-          nextCareDate: t.createdAt.add(const Duration(days: 1)),
-        )).toList();
+        _items = items
+            .where((t) => t.species == 'pet' || t.species == 'plant')
+            .map((t) => LivingThing(
+                  id: t.id,
+                  name: t.name,
+                  type: t.species == 'pet'
+                      ? LivingThingType.pet
+                      : LivingThingType.plant,
+                  photoUrl: t.imageUrl,
+                  nextCareDate: t.createdAt.add(const Duration(days: 1)),
+                ))
+            .toList();
+        _hasHousehold = true;
         _isLoading = false;
       });
     } catch (e) {
@@ -102,11 +114,13 @@ class _LivingThingsScreenState extends ConsumerState<LivingThingsScreen> {
       ),
       body: _buildBody(textTheme),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // TODO: Navigate to LivingThingCreationSheet.
-        },
-        label: const Text('Add'),
-        icon: const AppIcon(name: 'plus'),
+        onPressed: _hasHousehold
+            ? () {
+                // TODO: Navigate to LivingThingCreationSheet.
+              }
+            : () => context.goNamed('home'),
+        label: Text(_hasHousehold ? 'Add' : 'Households'),
+        icon: AppIcon(name: _hasHousehold ? 'plus' : 'home'),
       ),
     );
   }
@@ -126,6 +140,24 @@ class _LivingThingsScreenState extends ConsumerState<LivingThingsScreen> {
       );
     }
 
+    if (!_hasHousehold) {
+      return Padding(
+        padding: const EdgeInsets.all(MitlistSpacing.md),
+        child: AppEmptyState(
+          icon: const AppIcon(name: 'home', size: 56),
+          title: 'No household yet',
+          description:
+              'Create or join a household before adding pets and plants.',
+          actions: [
+            AppButton(
+              text: 'Go to households',
+              onPressed: () => context.goNamed('home'),
+            ),
+          ],
+        ),
+      );
+    }
+
     if (_items.isEmpty) {
       return const Padding(
         padding: EdgeInsets.all(MitlistSpacing.md),
@@ -139,8 +171,7 @@ class _LivingThingsScreenState extends ConsumerState<LivingThingsScreen> {
     return ListView.separated(
       padding: const EdgeInsets.all(MitlistSpacing.md),
       itemCount: _items.length,
-      separatorBuilder: (_, __) =>
-          const SizedBox(height: MitlistSpacing.sm),
+      separatorBuilder: (_, __) => const SizedBox(height: MitlistSpacing.sm),
       itemBuilder: (context, index) {
         final item = _items[index];
         return AppCard(
@@ -226,8 +257,7 @@ class _SkeletonList extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsets.all(MitlistSpacing.md),
       itemCount: 4,
-      separatorBuilder: (_, __) =>
-          const SizedBox(height: MitlistSpacing.sm),
+      separatorBuilder: (_, __) => const SizedBox(height: MitlistSpacing.sm),
       itemBuilder: (context, index) {
         return const AppCard(
           child: Row(

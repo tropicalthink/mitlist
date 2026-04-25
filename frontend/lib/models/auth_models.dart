@@ -48,7 +48,7 @@ class User {
       'is_active': isActive,
       'is_verified': isVerified,
       'is_guest': isGuest,
-      'avatar_url': avatarUrl,
+      if (avatarUrl != null) 'avatar_url': avatarUrl,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -81,7 +81,7 @@ class TokenPair {
     return {
       'access_token': accessToken,
       'refresh_token': refreshToken,
-      'user': user?.toJson(),
+      if (user != null) 'user': user!.toJson(),
     };
   }
 }
@@ -233,9 +233,9 @@ class UpdateUserRequest {
 
   Map<String, dynamic> toJson() {
     return {
-      'first_name': firstName,
-      'last_name': lastName,
-      'avatar_url': avatarUrl,
+      if (firstName != null) 'first_name': firstName,
+      if (lastName != null) 'last_name': lastName,
+      if (avatarUrl != null) 'avatar_url': avatarUrl,
     };
   }
 }

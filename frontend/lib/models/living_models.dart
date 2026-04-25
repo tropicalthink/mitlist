@@ -27,7 +27,8 @@ class LivingThing {
 
   Map<String, dynamic> toJson() => {
     'id': id, 'group_id': groupId, 'name': name, 'species': species,
-    'location': location, 'image_url': imageUrl,
+    if (location != null) 'location': location,
+    if (imageUrl != null) 'image_url': imageUrl,
     'created_at': createdAt.toIso8601String(), 'updated_at': updatedAt.toIso8601String(),
   };
 }
@@ -65,7 +66,8 @@ class CreateLivingThingRequest {
   });
   Map<String, dynamic> toJson() => {
     'group_id': groupId, 'name': name, 'species': species,
-    'location': location, 'image_url': imageUrl,
+    if (location != null) 'location': location,
+    if (imageUrl != null) 'image_url': imageUrl,
   };
 }
 
@@ -84,5 +86,7 @@ class CreateCareScheduleRequest {
 class LogCareRequest {
   final String? notes;
   const LogCareRequest({this.notes});
-  Map<String, dynamic> toJson() => {'notes': notes};
+  Map<String, dynamic> toJson() => {
+    if (notes != null) 'notes': notes,
+  };
 }

@@ -28,7 +28,8 @@ class Chore {
   );
 
   Map<String, dynamic> toJson() => {
-    'id': id, 'group_id': groupId, 'name': name, 'description': description,
+    'id': id, 'group_id': groupId, 'name': name,
+    if (description != null) 'description': description,
     'rotation_type': rotationType, 'frequency': frequency, 'is_active': isActive,
     'created_at': createdAt.toIso8601String(), 'updated_at': updatedAt.toIso8601String(),
   };
@@ -46,7 +47,8 @@ class CreateChoreRequest {
     this.rotationType = 'none', this.frequency = 'daily', this.isActive = true,
   });
   Map<String, dynamic> toJson() => {
-    'group_id': groupId, 'name': name, 'description': description,
+    'group_id': groupId, 'name': name,
+    if (description != null) 'description': description,
     'rotation_type': rotationType, 'frequency': frequency, 'is_active': isActive,
   };
 }
@@ -54,5 +56,7 @@ class CreateChoreRequest {
 class CompleteChoreRequest {
   final String? notes;
   const CompleteChoreRequest({this.notes});
-  Map<String, dynamic> toJson() => {'notes': notes};
+  Map<String, dynamic> toJson() => {
+    if (notes != null) 'notes': notes,
+  };
 }

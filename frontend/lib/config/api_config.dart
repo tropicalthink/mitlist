@@ -1,8 +1,8 @@
-/// API configuration for the mitlist Flutter app.
-///
-/// This file defines the base URL for the API and other configuration
-/// values. In production, these values should be loaded from environment
-/// variables or a secure configuration service.
+// API configuration for the mitlist Flutter app.
+//
+// This file defines the base URL for the API and other configuration values.
+// In production, these values should be loaded from environment variables or a
+// secure configuration service.
 
 class ApiConfig {
   /// The base URL for the API.

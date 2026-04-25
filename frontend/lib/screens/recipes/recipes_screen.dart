@@ -33,16 +33,39 @@ class _Recipe {
 enum _ViewState { loading, error, empty, loaded }
 
 class _RecipesScreenState extends ConsumerState<RecipesScreen> {
+  static const int _pageLimit = 50;
+
   _ViewState _viewState = _ViewState.empty;
   String? _errorMessage;
   final List<_Recipe> _recipes = <_Recipe>[];
+  final ScrollController _scrollController = ScrollController();
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadRecipes();
     });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients || _isLoadingMore || !_hasMore) {
+      return;
+    }
+
+    if (_scrollController.position.extentAfter < 400) {
+      _loadMoreRecipes();
+    }
   }
 
   void _onAddRecipe() {
@@ -52,23 +75,29 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   Future<void> _loadRecipes() async {
     setState(() {
       _viewState = _ViewState.loading;
+      _errorMessage = null;
+      _hasMore = true;
     });
 
     try {
       final recipeService = await ref.read(recipeServiceProviderAsync.future);
-      final apiRecipes = await recipeService.listRecipes();
+      final apiRecipes = await recipeService.listRecipes(
+        limit: _pageLimit,
+        offset: 0,
+      );
       if (!mounted) return;
       setState(() {
         _recipes
           ..clear()
           ..addAll(apiRecipes.map((api) => _Recipe(
-            id: api.id,
-            title: api.title,
-            tags: [
-              if (api.description.isNotEmpty) api.description,
-              api.isPublic ? 'Public' : 'Private',
-            ],
-          )));
+                id: api.id,
+                title: api.title,
+                tags: [
+                  if (api.description.isNotEmpty) api.description,
+                  api.isPublic ? 'Public' : 'Private',
+                ],
+              )));
+        _hasMore = apiRecipes.length == _pageLimit;
         _viewState = apiRecipes.isEmpty ? _ViewState.empty : _ViewState.loaded;
       });
     } catch (e) {
@@ -76,6 +105,44 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       setState(() {
         _errorMessage = 'Failed to load recipes';
         _viewState = _ViewState.error;
+      });
+    }
+  }
+
+  Future<void> _loadMoreRecipes() async {
+    if (_isLoadingMore || !_hasMore || _viewState != _ViewState.loaded) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingMore = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final recipeService = await ref.read(recipeServiceProviderAsync.future);
+      final apiRecipes = await recipeService.listRecipes(
+        limit: _pageLimit,
+        offset: _recipes.length,
+      );
+      if (!mounted) return;
+      setState(() {
+        _recipes.addAll(apiRecipes.map((api) => _Recipe(
+              id: api.id,
+              title: api.title,
+              tags: [
+                if (api.description.isNotEmpty) api.description,
+                api.isPublic ? 'Public' : 'Private',
+              ],
+            )));
+        _hasMore = apiRecipes.length == _pageLimit;
+        _isLoadingMore = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Failed to load more recipes';
+        _isLoadingMore = false;
       });
     }
   }
@@ -206,6 +273,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       color: MitlistColors.primary500,
       onRefresh: _loadRecipes,
       child: GridView.builder(
+        controller: _scrollController,
         padding: const EdgeInsets.all(MitlistSpacing.md),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
@@ -213,8 +281,18 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
           crossAxisSpacing: MitlistSpacing.md,
           childAspectRatio: 0.7,
         ),
-        itemCount: _recipes.length,
+        itemCount:
+            _recipes.length + (_isLoadingMore || _errorMessage != null ? 1 : 0),
         itemBuilder: (BuildContext context, int index) {
+          if (index >= _recipes.length) {
+            return _errorMessage != null
+                ? AppAlert(
+                    type: AppAlertType.error,
+                    message: _errorMessage!,
+                  )
+                : const Center(child: CircularProgressIndicator());
+          }
+
           final _Recipe recipe = _recipes[index];
           return _RecipeCard(
             recipe: recipe,
@@ -271,9 +349,8 @@ class _RecipeCard extends StatelessWidget {
           Wrap(
             spacing: MitlistSpacing.sm,
             runSpacing: MitlistSpacing.sm,
-            children: recipe.tags
-                .map((String tag) => AppChip(label: tag))
-                .toList(),
+            children:
+                recipe.tags.map((String tag) => AppChip(label: tag)).toList(),
           ),
         ],
       ),

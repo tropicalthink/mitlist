@@ -22,15 +22,21 @@ class GroupsListScreen extends ConsumerStatefulWidget {
 }
 
 class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
-  late Future<List<Group>> _groupsFuture;
+  static const int _pageLimit = 50;
+
   final ScrollController _scrollController = ScrollController();
+  final List<Group> _groups = <Group>[];
   bool _isExtended = true;
+  bool _isLoading = true;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _groupsFuture = _fetchGroups();
     _scrollController.addListener(_onScroll);
+    _loadInitialGroups();
   }
 
   @override
@@ -47,18 +53,77 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
     } else if (!atTop && _isExtended) {
       setState(() => _isExtended = false);
     }
+
+    if (_scrollController.hasClients &&
+        !_isLoadingMore &&
+        _hasMore &&
+        _scrollController.position.extentAfter < 400) {
+      _loadMoreGroups();
+    }
   }
 
-  Future<List<Group>> _fetchGroups() async {
+  Future<List<Group>> _fetchGroups({required int offset}) async {
     final groupService = await ref.read(groupServiceProviderAsync.future);
-    final groups = await groupService.listGroups();
+    final groups = await groupService.listGroups(
+      limit: _pageLimit,
+      offset: offset,
+    );
     return groups;
   }
 
+  Future<void> _loadInitialGroups() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+      _hasMore = true;
+    });
+
+    try {
+      final groups = await _fetchGroups(offset: 0);
+      if (!mounted) return;
+      setState(() {
+        _groups
+          ..clear()
+          ..addAll(groups);
+        _hasMore = groups.length == _pageLimit;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Failed to load households';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadMoreGroups() async {
+    if (_isLoadingMore || !_hasMore || _isLoading) return;
+
+    setState(() {
+      _isLoadingMore = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final groups = await _fetchGroups(offset: _groups.length);
+      if (!mounted) return;
+      setState(() {
+        _groups.addAll(groups);
+        _hasMore = groups.length == _pageLimit;
+        _isLoadingMore = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Failed to load more households';
+        _isLoadingMore = false;
+      });
+    }
+  }
+
   Future<void> _handleRefresh() {
-    final future = _fetchGroups();
-    setState(() => _groupsFuture = future);
-    return future;
+    return _loadInitialGroups();
   }
 
   void _navigateToHub(String groupId) {
@@ -100,27 +165,7 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
       body: RefreshIndicator(
         color: MitlistColors.primary500,
         onRefresh: _handleRefresh,
-        child: Builder(
-          builder: (context) => FutureBuilder<List<Group>>(
-            future: _groupsFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return _buildSkeletonList();
-              }
-
-              if (snapshot.hasError) {
-                return _buildError(() => _handleRefresh());
-              }
-
-              final groups = snapshot.data ?? [];
-              if (groups.isEmpty) {
-                return _buildEmpty();
-              }
-
-              return _buildList(groups);
-            },
-          ),
-        ),
+        child: _buildBody(),
       ),
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
@@ -152,6 +197,22 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading && _groups.isEmpty) {
+      return _buildSkeletonList();
+    }
+
+    if (_errorMessage != null && _groups.isEmpty) {
+      return _buildError(() => _handleRefresh());
+    }
+
+    if (_groups.isEmpty) {
+      return _buildEmpty();
+    }
+
+    return _buildList(_groups);
   }
 
   Widget _buildSkeletonList() {
@@ -234,17 +295,36 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
 
   Widget _buildList(List<Group> groups) {
     final sorted = [...groups]..sort((a, b) {
-        if (a.isPersonal == b.isPersonal) return 0;
-        return a.isPersonal ? -1 : 1;
+        final aIsPersonal = a.isPersonal == true;
+        final bIsPersonal = b.isPersonal == true;
+        if (aIsPersonal == bIsPersonal) return 0;
+        return aIsPersonal ? -1 : 1;
       });
 
     return ListView.separated(
       controller: _scrollController,
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(MitlistSpacing.md),
-      itemCount: sorted.length,
+      itemCount:
+          sorted.length + (_isLoadingMore || _errorMessage != null ? 1 : 0),
       separatorBuilder: (_, __) => const SizedBox(height: MitlistSpacing.md),
       itemBuilder: (context, index) {
+        if (index >= sorted.length) {
+          if (_errorMessage != null) {
+            return AppAlert(
+              type: AppAlertType.error,
+              message: _errorMessage!,
+            );
+          }
+
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(MitlistSpacing.md),
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
         final group = sorted[index];
         return _GroupCard(
           group: group,
@@ -308,14 +388,15 @@ class _GroupCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isPersonal = group.isPersonal == true;
+    final memberCount = group.memberCount;
     final content = Row(
       children: [
         AppIcon(
-          name: group.isPersonal ? 'userCircle' : 'home',
+          name: isPersonal ? 'userCircle' : 'home',
           size: MitlistSpacing.space6,
-          color: group.isPersonal
-              ? MitlistColors.primary500
-              : MitlistColors.textPrimary,
+          color:
+              isPersonal ? MitlistColors.primary500 : MitlistColors.textPrimary,
         ),
         const SizedBox(width: MitlistSpacing.md),
         Expanded(
@@ -326,11 +407,13 @@ class _GroupCard extends StatelessWidget {
                 group.name,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
-              const SizedBox(height: MitlistSpacing.xs),
-              Text(
-                '${group.memberCount} member${group.memberCount == 1 ? '' : 's'}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+              if (memberCount != null) ...[
+                const SizedBox(height: MitlistSpacing.xs),
+                Text(
+                  '$memberCount member${memberCount == 1 ? '' : 's'}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
             ],
           ),
         ),
@@ -342,7 +425,7 @@ class _GroupCard extends StatelessWidget {
       ],
     );
 
-    if (group.isPersonal) {
+    if (isPersonal) {
       return AppCard(
         interactive: true,
         variant: AppCardVariant.elevated,

@@ -3,8 +3,8 @@ class Group {
   final String id;
   final String name;
   final String? description;
-  final bool isPersonal;
-  final int memberCount;
+  final bool? isPersonal;
+  final int? memberCount;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -12,8 +12,8 @@ class Group {
     required this.id,
     required this.name,
     this.description,
-    required this.isPersonal,
-    required this.memberCount,
+    this.isPersonal,
+    this.memberCount,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -23,8 +23,8 @@ class Group {
       id: json['id'] as String,
       name: json['name'] as String,
       description: json['description'] as String?,
-      isPersonal: json['is_personal'] as bool? ?? false,
-      memberCount: json['member_count'] as int? ?? 1,
+      isPersonal: json['is_personal'] as bool?,
+      memberCount: json['member_count'] as int?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -35,8 +35,8 @@ class Group {
       'id': id,
       'name': name,
       'description': description,
-      'is_personal': isPersonal,
-      'member_count': memberCount,
+      if (isPersonal != null) 'is_personal': isPersonal,
+      if (memberCount != null) 'member_count': memberCount,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };

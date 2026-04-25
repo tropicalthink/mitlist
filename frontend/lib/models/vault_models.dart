@@ -27,7 +27,8 @@ class VaultItem {
 
   Map<String, dynamic> toJson() => {
     'id': id, 'group_id': groupId, 'type': type, 'title': title,
-    'content': content, 'reminder_date': reminderDate?.toIso8601String(),
+    'content': content,
+    if (reminderDate != null) 'reminder_date': reminderDate!.toIso8601String(),
     'created_at': createdAt.toIso8601String(), 'updated_at': updatedAt.toIso8601String(),
   };
 }
@@ -44,7 +45,8 @@ class CreateVaultItemRequest {
   });
   Map<String, dynamic> toJson() => {
     'group_id': groupId, 'type': type, 'title': title,
-    'content': content, 'reminder_date': reminderDate?.toIso8601String(),
+    'content': content,
+    if (reminderDate != null) 'reminder_date': reminderDate!.toIso8601String(),
   };
 }
 
