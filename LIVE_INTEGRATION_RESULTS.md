@@ -32,6 +32,14 @@ After backend rebuild/restart, Vault routes are callable and functional:
 - **GET** `/api/v1/notifications/preferences` (with auth)
   - **Observed**: `200` with JSON array of preferences (used by Flutter AccountScreen toggle).
 
+### Push subscriptions (mounted)
+- **POST** `/api/v1/auth/push-subscriptions` (with auth)
+  - **Expected**: `201` with created subscription JSON `{id,user_id,endpoint,p256dh,auth,created_at}`.
+- **GET** `/api/v1/auth/push-subscriptions` (with auth)
+  - **Expected**: `200` with JSON array.
+- **DELETE** `/api/v1/auth/push-subscriptions/{id}` (with auth)
+  - **Expected**: `204`.
+
 ### Frontend UI
 Flutter static checks passed (`flutter analyze`, `flutter test`). Full interactive UI walkthrough was not automated; the live backend verification above demonstrates the key auth + vault path wiring and confirms endpoints are reachable.
 

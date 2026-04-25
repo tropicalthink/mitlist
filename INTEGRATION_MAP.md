@@ -30,9 +30,9 @@ Auth alignment:
 - **POST** `/auth/change-password` — **MATCHED**
 - **POST** `/auth/guest/convert` — **MATCHED**
 - **POST** `/auth/claim-account` — **MATCHED**
-- **POST** `/auth/push-subscriptions` — **MISSING**
-- **GET** `/auth/push-subscriptions` — **MISSING**
-- **DELETE** `/auth/push-subscriptions/{id}` — **MISSING**
+- **POST** `/auth/push-subscriptions` — **PARTIAL** (Flutter client implemented; platform registration not wired)
+- **GET** `/auth/push-subscriptions` — **PARTIAL** (Flutter client implemented; no UI flow)
+- **DELETE** `/auth/push-subscriptions/{id}` — **PARTIAL** (Flutter client implemented; no UI flow)
 
 ## Public config
 - **GET** `/vapid` — **MATCHED** (backend mounted; Flutter can fetch web-push key when implemented)

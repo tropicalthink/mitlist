@@ -71,8 +71,13 @@ Severity definitions (per spec):
 
 - **INT-MED-007 Push subscription endpoints missing**
   - **Backend**: added protected create/list/delete endpoints under `/auth/push-subscriptions` backed by `push_subscriptions`.
-  - **Frontend**: not yet wired (web push device registration still deferred).
-  - **Status**: FIXED (backend); frontend pending
+  - **Frontend**: client implemented (create/list/delete) but device registration is still deferred.
+  - **Status**: PARTIAL
+
+- **INT-MED-008 Notifications inbox not present in Flutter**
+  - **Backend**: `/notifications` list/get/read/read-all/delete are mounted.
+  - **Frontend**: added Notifications inbox screen with pagination + mark read + delete; reachable from AccountScreen.
+  - **Status**: FIXED
 
 ### Fixed findings
 
