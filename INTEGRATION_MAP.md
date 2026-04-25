@@ -75,7 +75,7 @@ Auth alignment:
 - **POST** `/chores/{id}/rotate` — **MATCHED**
 - **POST** `/chores/{id}/complete` — **MATCHED**
 - **POST** `/chores/{id}/skip` — **MATCHED**
-- **GET** `/chores/{id}/assignments` — **MISSING**
+- **GET** `/chores/{id}/assignments` — **PARTIAL** (service method exists; UI/tools wiring pending)
 
 ## Finance
 - **POST** `/expenses` — **MATCHED**
