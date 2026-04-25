@@ -326,6 +326,54 @@ func (s *UserService) ClaimAccount(ctx context.Context, userID uuid.UUID, input 
 	return user, nil
 }
 
+// CreatePushSubscription registers a web-push subscription for the current user.
+func (s *UserService) CreatePushSubscription(ctx context.Context, sub *models.PushSubscription) error {
+	if sub == nil {
+		return &api.ValidationError{Message: "subscription is required"}
+	}
+	if sub.UserID == uuid.Nil {
+		return &api.ValidationError{Message: "user_id is required"}
+	}
+	if sub.Endpoint == "" || sub.P256dh == "" || sub.Auth == "" {
+		return &api.ValidationError{Message: "endpoint, p256dh, and auth are required"}
+	}
+	if err := s.authRepo.CreatePushSubscription(ctx, sub); err != nil {
+		return err
+	}
+	return nil
+}
+
+// ListPushSubscriptions lists all web-push subscriptions for the current user.
+func (s *UserService) ListPushSubscriptions(ctx context.Context, userID uuid.UUID) ([]models.PushSubscription, error) {
+	if userID == uuid.Nil {
+		return nil, &api.ValidationError{Message: "user_id is required"}
+	}
+	return s.authRepo.ListPushSubscriptionsByUser(ctx, userID)
+}
+
+// DeletePushSubscription deletes a web-push subscription by ID.
+func (s *UserService) DeletePushSubscription(ctx context.Context, userID, subID uuid.UUID) error {
+	if userID == uuid.Nil || subID == uuid.Nil {
+		return &api.ValidationError{Message: "user_id and subscription id are required"}
+	}
+	// We don't currently enforce ownership in the repo layer; do a best-effort check first.
+	subs, err := s.authRepo.ListPushSubscriptionsByUser(ctx, userID)
+	if err != nil {
+		return err
+	}
+	owned := false
+	for _, s := range subs {
+		if s.ID == subID {
+			owned = true
+			break
+		}
+	}
+	if !owned {
+		return &api.NotFoundError{Resource: "push subscription", ID: subID.String()}
+	}
+	return s.authRepo.DeletePushSubscription(ctx, subID)
+}
+
 // isNotFound reports whether err indicates a missing resource from any repository.
 func isNotFound(err error) bool {
 	if err == nil {

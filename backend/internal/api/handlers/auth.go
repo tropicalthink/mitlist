@@ -55,6 +55,11 @@ func (h *AuthHandler) RegisterRoutes(r chi.Router) {
 			r.Post("/change-password", h.ChangePassword)
 			r.Post("/guest/convert", h.ConvertGuest)
 			r.Post("/claim-account", h.ClaimAccount)
+
+			// Push subscriptions (web push)
+			r.Post("/push-subscriptions", h.CreatePushSubscription)
+			r.Get("/push-subscriptions", h.ListPushSubscriptions)
+			r.Delete("/push-subscriptions/{id}", h.DeletePushSubscription)
 		})
 	})
 }
@@ -116,6 +121,12 @@ type tokenPairResp struct {
 	User         *models.User `json:"user,omitempty"`
 	AccessToken  string       `json:"access_token"`
 	RefreshToken string       `json:"refresh_token"`
+}
+
+type pushSubscriptionReq struct {
+	Endpoint string `json:"endpoint"`
+	P256dh   string `json:"p256dh"`
+	Auth     string `json:"auth"`
 }
 
 // ---------------------------------------------------------------------------
@@ -378,4 +389,64 @@ func (h *AuthHandler) ClaimAccount(w http.ResponseWriter, r *http.Request) {
 		AccessToken:  access,
 		RefreshToken: refresh,
 	})
+}
+
+// ---------------------------------------------------------------------------
+// Push subscriptions (web push)
+// ---------------------------------------------------------------------------
+
+func (h *AuthHandler) CreatePushSubscription(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	var req pushSubscriptionReq
+	if err := decodeJSON(r, &req); err != nil {
+		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
+		return
+	}
+	sub := &models.PushSubscription{
+		UserID:   userID,
+		Endpoint: req.Endpoint,
+		P256dh:   req.P256dh,
+		Auth:     req.Auth,
+	}
+	if err := h.userService.CreatePushSubscription(r.Context(), sub); err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	respondJSON(w, http.StatusCreated, sub)
+}
+
+func (h *AuthHandler) ListPushSubscriptions(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	subs, err := h.userService.ListPushSubscriptions(r.Context(), userID)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	respondJSON(w, http.StatusOK, subs)
+}
+
+func (h *AuthHandler) DeletePushSubscription(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	id, err := parseUUIDParam(r, "id")
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	if err := h.userService.DeletePushSubscription(r.Context(), userID, id); err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
