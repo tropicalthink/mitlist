@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/living_provider.dart';
+import '../../providers/group_provider.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
@@ -54,7 +55,20 @@ class _LivingThingsScreenState extends ConsumerState<LivingThingsScreen> {
 
     try {
       final livingService = await ref.read(livingServiceProviderAsync.future);
-      final items = await livingService.listLivingThings('');
+      final groupService = await ref.read(groupServiceProviderAsync.future);
+      final groups = await groupService.listGroups();
+      if (!mounted) return;
+
+      if (groups.isEmpty) {
+        setState(() {
+          _items = const [];
+          _isLoading = false;
+          _errorMessage = null;
+        });
+        return;
+      }
+
+      final items = await livingService.listLivingThings(groups.first.id);
 
       if (!mounted) return;
 
