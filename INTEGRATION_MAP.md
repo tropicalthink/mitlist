@@ -30,9 +30,9 @@ Auth alignment:
 - **POST** `/auth/change-password` — **MATCHED**
 - **POST** `/auth/guest/convert` — **MATCHED**
 - **POST** `/auth/claim-account` — **MATCHED**
-- **POST** `/auth/push-subscriptions` — **PARTIAL** (Flutter client implemented; platform registration not wired)
-- **GET** `/auth/push-subscriptions` — **PARTIAL** (Flutter client implemented; no UI flow)
-- **DELETE** `/auth/push-subscriptions/{id}` — **PARTIAL** (Flutter client implemented; no UI flow)
+- **POST** `/auth/push-subscriptions` — **MATCHED** (Integration Tools creates/list/deletes)
+- **GET** `/auth/push-subscriptions` — **MATCHED** (Integration Tools creates/list/deletes)
+- **DELETE** `/auth/push-subscriptions/{id}` — **MATCHED** (Integration Tools creates/list/deletes)
 
 ## Public config
 - **GET** `/vapid` — **MATCHED** (backend mounted; Flutter can fetch web-push key when implemented)
@@ -64,7 +64,7 @@ Auth alignment:
 - **POST** `/lists/{id}/reorder` — **MATCHED**
 
 ## Templates
-- **ALL /templates + /chore-templates endpoints** — **PARTIAL** (Flutter client implemented; UI/tools wiring pending)
+- **ALL /templates + /chore-templates endpoints** — **MATCHED** (Integration Tools smoke covers templates; chore-templates client present)
 
 ## Chores
 - **POST** `/chores` — **MATCHED**
@@ -75,7 +75,7 @@ Auth alignment:
 - **POST** `/chores/{id}/rotate` — **MATCHED**
 - **POST** `/chores/{id}/complete` — **MATCHED**
 - **POST** `/chores/{id}/skip` — **MATCHED**
-- **GET** `/chores/{id}/assignments` — **PARTIAL** (service method exists; UI/tools wiring pending)
+- **GET** `/chores/{id}/assignments` — **PARTIAL** (service method exists; tools wiring still pending)
 
 ## Finance
 - **POST** `/expenses` — **MATCHED**
@@ -84,11 +84,11 @@ Auth alignment:
 - **PATCH** `/expenses/{id}` — **PARTIAL** (service method exists; UI not wired)
 - **DELETE** `/expenses/{id}` — **MATCHED**
 - **POST** `/expenses/{id}/splits` — **MATCHED (write-only)** (Flutter ignores response)
-- **PATCH** `/expenses/{id}/splits/{split_id}` — **PARTIAL** (service method exists; UI/tools wiring pending)
-- **DELETE** `/expenses/{id}/splits/{split_id}` — **PARTIAL** (service method exists; UI/tools wiring pending)
+- **PATCH** `/expenses/{id}/splits/{split_id}` — **MATCHED** (Integration Tools creates/updates/deletes)
+- **DELETE** `/expenses/{id}/splits/{split_id}` — **MATCHED** (Integration Tools creates/updates/deletes)
 - **POST** `/expenses/{id}/settle` — **MATCHED (write-only)** (Flutter ignores response)
-- **DELETE** `/expenses/{id}/settle/{settlement_id}` — **PARTIAL** (service method exists; UI/tools wiring pending)
-- **ALL /recurring-expenses endpoints** — **PARTIAL** (service methods exist; UI/tools wiring pending)
+- **DELETE** `/expenses/{id}/settle/{settlement_id}` — **MATCHED** (Integration Tools creates/deletes)
+- **ALL /recurring-expenses endpoints** — **MATCHED** (Integration Tools smoke covers CRUD)
 
 ## Recipes & collections
 - **POST** `/recipes` — **MATCHED**
@@ -96,14 +96,14 @@ Auth alignment:
 - **GET** `/recipes/{id}` — **MATCHED**
 - **PATCH** `/recipes/{id}` — **PARTIAL** (service method exists; UI not wired)
 - **DELETE** `/recipes/{id}` — **MATCHED**
-- **POST** `/recipes/{id}/share` — **PARTIAL** (service method exists; UI/tools wiring pending)
-- **POST** `/collections` — **PARTIAL** (service method exists; UI/tools wiring pending)
+- **POST** `/recipes/{id}/share` — **MATCHED** (Integration Tools smoke covers)
+- **POST** `/collections` — **MATCHED** (Integration Tools smoke covers)
 - **GET** `/collections?limit&offset` — **MATCHED**
-- **GET** `/collections/{id}` — **PARTIAL** (service method exists; UI/tools wiring pending)
-- **PATCH** `/collections/{id}` — **PARTIAL** (service method exists; UI/tools wiring pending)
-- **DELETE** `/collections/{id}` — **PARTIAL** (service method exists; UI/tools wiring pending)
-- **POST** `/collections/{id}/recipes` — **PARTIAL** (service method exists; UI/tools wiring pending)
-- **DELETE** `/collections/{id}/recipes/{recipe_id}` — **PARTIAL** (service method exists; UI/tools wiring pending)
+- **GET** `/collections/{id}` — **MATCHED** (Integration Tools smoke covers)
+- **PATCH** `/collections/{id}` — **MATCHED** (Integration Tools smoke covers)
+- **DELETE** `/collections/{id}` — **MATCHED** (Integration Tools smoke covers)
+- **POST** `/collections/{id}/recipes` — **MATCHED** (Integration Tools smoke covers)
+- **DELETE** `/collections/{id}/recipes/{recipe_id}` — **MATCHED** (Integration Tools smoke covers)
 
 ## Living things
 - **POST** `/living-things` — **MATCHED**
@@ -112,13 +112,13 @@ Auth alignment:
 - **PATCH** `/living-things/{id}` — **PARTIAL** (service method exists; UI not wired)
 - **DELETE** `/living-things/{id}` — **MATCHED**
 - **POST** `/living-things/{id}/care-schedule` — **MATCHED (write-only)** (Flutter ignores response)
-- **GET** `/living-things/{id}/care-schedule` — **PARTIAL** (service method exists; UI/tools wiring pending)
-- **PATCH** `/living-things/{id}/care-schedule` — **PARTIAL** (service method exists; UI/tools wiring pending)
+- **GET** `/living-things/{id}/care-schedule` — **MATCHED** (Integration Tools smoke covers)
+- **PATCH** `/living-things/{id}/care-schedule` — **MATCHED** (Integration Tools smoke covers)
 - **POST** `/living-things/{id}/care-logs` — **MATCHED (write-only)** (Flutter ignores response)
-- **GET** `/living-things/{id}/care-logs` — **PARTIAL** (service method exists; UI/tools wiring pending)
+- **GET** `/living-things/{id}/care-logs` — **MATCHED** (Integration Tools smoke covers)
 
 ## Assistant
-- **ALL /assistant/* endpoints** — **PARTIAL** (Flutter client implemented; UI/tools wiring pending)
+- **ALL /assistant/* endpoints** — **MATCHED** (Integration Tools smoke covers)
 
 ## Share target
 - **POST** `/share-target/lists` — **MATCHED**
