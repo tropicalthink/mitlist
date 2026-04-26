@@ -9,7 +9,6 @@ import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/empty_state.dart';
-import '../../widgets/skeleton.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import '../../models/group_models.dart';
 import '../../providers/group_provider.dart';
@@ -204,7 +203,11 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
 
   Widget _buildBody() {
     if (_isLoading && _groups.isEmpty) {
-      return _buildSkeletonList();
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation(MitlistColors.primary500),
+        ),
+      );
     }
 
     if (_errorMessage != null && _groups.isEmpty) {
@@ -216,17 +219,6 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
     }
 
     return _buildList(_groups);
-  }
-
-  Widget _buildSkeletonList() {
-    return ListView.separated(
-      controller: _scrollController,
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(MitlistSpacing.md),
-      itemCount: 4,
-      separatorBuilder: (_, __) => const SizedBox(height: MitlistSpacing.md),
-      itemBuilder: (_, __) => const _SkeletonCard(),
-    );
   }
 
   Widget _buildError(VoidCallback onRetry) {
@@ -338,47 +330,7 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
   }
 }
 
-class _SkeletonCard extends StatelessWidget {
-  const _SkeletonCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      variant: AppCardVariant.outlined,
-      padding: AppCardPadding.md,
-      child: Row(
-        children: [
-          const AppSkeleton(
-            width: MitlistSpacing.space6,
-            height: MitlistSpacing.space6,
-          ),
-          const SizedBox(width: MitlistSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppSkeleton(
-                  width: MitlistSpacing.space20,
-                  height: MitlistSpacing.space4,
-                ),
-                const SizedBox(height: MitlistSpacing.sm),
-                AppSkeleton(
-                  width: MitlistSpacing.space14,
-                  height: MitlistSpacing.space3,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: MitlistSpacing.md),
-          const AppSkeleton(
-            width: MitlistSpacing.space5,
-            height: MitlistSpacing.space5,
-          ),
-        ],
-      ),
-    );
-  }
-}
+// Skeleton card removed: this screen now uses a spinner for loading.
 
 class _GroupCard extends StatelessWidget {
   final Group group;

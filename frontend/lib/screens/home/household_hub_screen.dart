@@ -189,11 +189,32 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                 )
               : RefreshIndicator(
                   onRefresh: () async {
-                    ref.invalidate(financeSummaryByGroupProvider(widget.groupId));
-                    ref.invalidate(listsByGroupProvider(widget.groupId));
-                    ref.invalidate(weeklyChoresProgressByGroupProvider(widget.groupId));
+                    ref.invalidate(cachedFinanceSummaryByGroupProvider(widget.groupId));
+                    ref.invalidate(cachedListsByGroupProvider(widget.groupId));
+                    ref.invalidate(cachedCurrentChoresByGroupProvider(widget.groupId));
                     ref.invalidate(pinwallPostsByGroupProvider(widget.groupId));
                     await _loadData();
+
+                    // Best-effort background refresh for cached sections.
+                    try {
+                      final financeRepo =
+                          await ref.read(financeRepositoryProvider.future);
+                      await financeRepo.refreshGroup(widget.groupId, limit: 50, offset: 0);
+                    } catch (_) {}
+                    try {
+                      final listRepo = await ref.read(listRepositoryProvider.future);
+                      await listRepo.refreshLists(widget.groupId, limit: 50, offset: 0);
+                    } catch (_) {}
+                    try {
+                      final choreRepo =
+                          await ref.read(choreRepositoryProvider.future);
+                      await choreRepo.refreshCurrentChores(widget.groupId);
+                    } catch (_) {}
+                    try {
+                      final pinRepo =
+                          await ref.read(pinwallRepositoryProvider.future);
+                      await pinRepo.refreshPosts(widget.groupId, limit: 20, offset: 0);
+                    } catch (_) {}
                   },
                   child: CustomScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -912,7 +933,7 @@ class _BalanceTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final summary = ref.watch(financeSummaryByGroupProvider(groupId));
+    final summary = ref.watch(cachedFinanceSummaryByGroupProvider(groupId));
 
     return summary.when(
       loading: () => const _StatTileSkeleton(),
@@ -924,6 +945,15 @@ class _BalanceTile extends ConsumerWidget {
         onTap: () => context.pushNamed('money'),
       ),
       data: (s) {
+        if (s == null) {
+          return _StatTile(
+            title: 'Current balance',
+            value: '—',
+            subtitle: 'No data yet',
+            tint: AppCardTint.primary,
+            onTap: () => context.pushNamed('money'),
+          );
+        }
         final myId = me?.id;
         final meEntry = myId == null ? null : s.balances.where((b) => b.userId == myId).firstOrNull;
         final totalCents = meEntry?.total ?? 0;
@@ -955,7 +985,7 @@ class _ShoppingTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final lists = ref.watch(listsByGroupProvider(groupId));
+    final lists = ref.watch(cachedListsByGroupProvider(groupId));
     return lists.when(
       loading: () => const _StatTileSkeleton(),
       error: (_, __) => _StatTile(
@@ -988,7 +1018,7 @@ class _ShoppingTile extends ConsumerWidget {
 
         shopping.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
         final listId = shopping.first.id;
-        final items = ref.watch(listItemsProvider(listId));
+        final items = ref.watch(cachedListItemsProvider(listId));
         return items.when(
           loading: () => _StatTile(
             title: 'Shopping',
@@ -1024,8 +1054,8 @@ class _WeeklyChoresTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final p = ref.watch(weeklyChoresProgressByGroupProvider(groupId));
-    return p.when(
+    final current = ref.watch(cachedCurrentChoresByGroupProvider(groupId));
+    return current.when(
       loading: () => const _StatTileSkeleton(),
       error: (_, __) => _StatTile(
         title: 'Weekly chores',
@@ -1033,11 +1063,20 @@ class _WeeklyChoresTile extends ConsumerWidget {
         subtitle: 'Unavailable',
         onTap: () => context.pushNamed('chores'),
       ),
-      data: (progress) {
-        final pct = (progress.progress * 100).round().clamp(0, 100);
-        final sub = progress.dueCount == 0
-            ? 'No chores due'
-            : '${progress.completedCount} of ${progress.dueCount}';
+      data: (rows) {
+        if (rows.isEmpty) {
+          return _StatTile(
+            title: 'Weekly chores',
+            value: '0%',
+            subtitle: 'No chores yet',
+            onTap: () => context.pushNamed('chores'),
+          );
+        }
+        final done = rows.where((c) => !c.chore.isActive || (c.pendingAssignment?.status.toLowerCase() == 'completed')).length;
+        final total = rows.length;
+        final progress = total == 0 ? 0.0 : done / total;
+        final pct = (progress * 100).round().clamp(0, 100);
+        final sub = '$done of $total';
         return _StatTile(
           title: 'Weekly chores',
           value: '$pct%',
@@ -1047,7 +1086,7 @@ class _WeeklyChoresTile extends ConsumerWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(999),
               child: LinearProgressIndicator(
-                value: progress.dueCount == 0 ? 0 : progress.progress.clamp(0, 1),
+                value: progress.clamp(0, 1),
                 minHeight: 6,
               ),
             ),

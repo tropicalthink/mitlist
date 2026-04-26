@@ -7,7 +7,6 @@ import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_card.dart';
-import '../../widgets/skeleton.dart';
 import '../../widgets/mitlist_app_bar.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
@@ -149,20 +148,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     }
   }
 
-  Widget _skeleton() {
-    return ListView.separated(
-      padding: const EdgeInsets.all(MitlistSpacing.md),
-      itemCount: 6,
-      separatorBuilder: (_, __) => const SizedBox(height: MitlistSpacing.sm),
-      itemBuilder: (_, __) => const AppCard(
-        child: Padding(
-          padding: EdgeInsets.all(MitlistSpacing.md),
-          child: AppSkeleton(width: double.infinity, height: MitlistSpacing.space10),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -175,14 +160,23 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           ),
         ],
       ),
-      body: _isLoading
-          ? _skeleton()
-          : RefreshIndicator(
+      body: RefreshIndicator(
               onRefresh: _load,
               child: ListView(
                 controller: _scrollController,
                 padding: const EdgeInsets.all(MitlistSpacing.md),
                 children: [
+                  if (_isLoading) ...[
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: MitlistSpacing.md),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          valueColor:
+                              AlwaysStoppedAnimation(MitlistColors.primary500),
+                        ),
+                      ),
+                    ),
+                  ],
                   if (_error != null) ...[
                     AppAlert(type: AppAlertType.error, message: _error!),
                     const SizedBox(height: MitlistSpacing.md),

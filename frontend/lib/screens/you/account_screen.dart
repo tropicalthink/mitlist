@@ -16,7 +16,6 @@ import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
-import '../../widgets/skeleton.dart';
 import '../../widgets/mitlist_app_bar.dart';
 
 const String _appVersion = '1.0.0';
@@ -261,25 +260,28 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     return AppCard(
       child: Row(
         children: [
-          const AppSkeleton(
-            width: MitlistSpacing.space12,
-            height: MitlistSpacing.space12,
-          ),
-          const SizedBox(width: MitlistSpacing.md),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const AppSkeleton(
-                  width: MitlistSpacing.space20,
-                  height: MitlistSpacing.space5,
-                ),
-                const SizedBox(height: MitlistSpacing.sm),
-                const AppSkeleton(
-                  width: MitlistSpacing.space14,
-                  height: MitlistSpacing.space4,
-                ),
-              ],
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
+              child: Row(
+                children: [
+                  const SizedBox(
+                    width: MitlistSpacing.space12,
+                    height: MitlistSpacing.space12,
+                    child: CircularProgressIndicator(
+                      valueColor:
+                          AlwaysStoppedAnimation(MitlistColors.primary500),
+                    ),
+                  ),
+                  const SizedBox(width: MitlistSpacing.md),
+                  Expanded(
+                    child: Text(
+                      'Loading profile…',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
