@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 import '../models/list_models.dart';
+import '../models/list_item_photo_models.dart';
 import 'api_client.dart';
 import 'group_id_validator.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -119,6 +120,62 @@ class ListService {
       await _dio.post('/lists/$listId/reorder', data: req.toJson());
     } on DioException catch (e) {
       _logger.e('Reorder items failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<List<ListItemPhoto>> listItemPhotos({
+    required String groupId,
+    required String itemId,
+  }) async {
+    ensureValidGroupId(groupId);
+    try {
+      final r = await _dio.get(
+        '/lists/items/$itemId/photos',
+        queryParameters: {'group_id': groupId},
+      );
+      final data = r.data;
+      if (data is! List) return [];
+      return data
+          .map((e) =>
+              ListItemPhoto.fromJson((e as Map).cast<String, dynamic>()))
+          .toList();
+    } on DioException catch (e) {
+      _logger.e('List item photos failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> attachItemPhoto({
+    required String groupId,
+    required String itemId,
+    required String attachmentId,
+  }) async {
+    ensureValidGroupId(groupId);
+    try {
+      await _dio.post(
+        '/lists/items/$itemId/photos',
+        data: {'group_id': groupId, 'attachment_id': attachmentId},
+      );
+    } on DioException catch (e) {
+      _logger.e('Attach item photo failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> detachItemPhoto({
+    required String groupId,
+    required String itemId,
+    required String attachmentId,
+  }) async {
+    ensureValidGroupId(groupId);
+    try {
+      await _dio.delete(
+        '/lists/items/$itemId/photos/$attachmentId',
+        queryParameters: {'group_id': groupId},
+      );
+    } on DioException catch (e) {
+      _logger.e('Detach item photo failed: ${e.response?.data}');
       throw _handleError(e);
     }
   }

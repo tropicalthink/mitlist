@@ -83,6 +83,12 @@ type Container struct {
 	expenseAttachmentRepoOnce sync.Once
 	expenseAttachmentRepo     *repositories.ExpenseAttachmentRepository
 
+	pinwallAttachmentRepoOnce sync.Once
+	pinwallAttachmentRepo     *repositories.PinwallAttachmentRepository
+
+	listItemAttachmentRepoOnce sync.Once
+	listItemAttachmentRepo     *repositories.ListItemAttachmentRepository
+
 	userServiceOnce sync.Once
 	userService     *services.UserService
 
@@ -136,6 +142,12 @@ type Container struct {
 
 	expenseReceiptServiceOnce sync.Once
 	expenseReceiptService     *services.ExpenseReceiptService
+
+	pinwallMediaServiceOnce sync.Once
+	pinwallMediaService     *services.PinwallMediaService
+
+	listItemPhotoServiceOnce sync.Once
+	listItemPhotoService     *services.ListItemPhotoService
 
 	aiClientOnce sync.Once
 	aiClient     *aiservice.Client
@@ -322,6 +334,20 @@ func (c *Container) ExpenseAttachmentRepo() *repositories.ExpenseAttachmentRepos
 	return c.expenseAttachmentRepo
 }
 
+func (c *Container) PinwallAttachmentRepo() *repositories.PinwallAttachmentRepository {
+	c.pinwallAttachmentRepoOnce.Do(func() {
+		c.pinwallAttachmentRepo = repositories.NewPinwallAttachmentRepository(c.db)
+	})
+	return c.pinwallAttachmentRepo
+}
+
+func (c *Container) ListItemAttachmentRepo() *repositories.ListItemAttachmentRepository {
+	c.listItemAttachmentRepoOnce.Do(func() {
+		c.listItemAttachmentRepo = repositories.NewListItemAttachmentRepository(c.db)
+	})
+	return c.listItemAttachmentRepo
+}
+
 // UserService returns the singleton user service.
 func (c *Container) UserService() *services.UserService {
 	c.userServiceOnce.Do(func() {
@@ -461,6 +487,32 @@ func (c *Container) ExpenseReceiptService() *services.ExpenseReceiptService {
 		)
 	})
 	return c.expenseReceiptService
+}
+
+func (c *Container) PinwallMediaService() *services.PinwallMediaService {
+	c.pinwallMediaServiceOnce.Do(func() {
+		c.pinwallMediaService = services.NewPinwallMediaService(
+			c.PinwallRepo(),
+			c.GroupRepo(),
+			c.AttachmentRepo(),
+			c.PinwallAttachmentRepo(),
+			c.Storage(),
+		)
+	})
+	return c.pinwallMediaService
+}
+
+func (c *Container) ListItemPhotoService() *services.ListItemPhotoService {
+	c.listItemPhotoServiceOnce.Do(func() {
+		c.listItemPhotoService = services.NewListItemPhotoService(
+			c.ListRepo(),
+			c.GroupRepo(),
+			c.AttachmentRepo(),
+			c.ListItemAttachmentRepo(),
+			c.Storage(),
+		)
+	})
+	return c.listItemPhotoService
 }
 
 // ShareService returns the singleton share target service.

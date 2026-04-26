@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../models/list_models.dart';
+import '../../models/list_item_photo_models.dart';
+import '../../providers/attachment_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../services/list_service.dart';
 import '../../theme/animations.dart';
@@ -55,6 +59,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   bool _dirty = false;
   final FocusNode _composerFocusNode = FocusNode();
   bool _doneSectionExpanded = true;
+  String? _groupId;
+  final Map<String, List<ListItemPhoto>> _photosByItemId = {};
 
   @override
   void initState() {
@@ -137,6 +143,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       setState(() {
         _isLoading = false;
         _listName = list.name;
+        _groupId = list.groupId;
       });
     } catch (e) {
       if (!mounted) return;
@@ -145,6 +152,70 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         _errorMessage = e.toString().replaceFirst('Exception: ', '');
       });
     }
+  }
+
+  Future<void> _addItemPhoto(ListItem item) async {
+    final groupId = _groupId;
+    if (groupId == null) return;
+    final picker = ImagePicker();
+    final file = await picker.pickImage(source: ImageSource.gallery);
+    if (file == null) return;
+
+    try {
+      final bytes = await file.readAsBytes();
+      final attachmentRepo = await ref.read(attachmentRepositoryProvider.future);
+      final attachment = await attachmentRepo.uploadAttachment(
+        groupId: groupId,
+        purpose: 'list_item_photo',
+        filename: file.name,
+        contentType: 'image/*',
+        bytes: Uint8List.fromList(bytes),
+      );
+      final svc = await ref.read(listServiceProviderAsync.future);
+      await svc.attachItemPhoto(
+        groupId: groupId,
+        itemId: item.id,
+        attachmentId: attachment.id,
+      );
+
+      final photos = await svc.listItemPhotos(groupId: groupId, itemId: item.id);
+      if (!mounted) return;
+      setState(() => _photosByItemId[item.id] = photos);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to add photo: $e')),
+      );
+    }
+  }
+
+  Future<void> _openPhotoViewer(String url) async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => Dialog.fullscreen(
+        backgroundColor: Colors.black,
+        child: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4,
+                child: Image.network(url, fit: BoxFit.contain),
+              ),
+            ),
+            SafeArea(
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _toggleItem(ListItem item, bool value) async {
@@ -596,6 +667,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Widget _buildItemRow(ListItem item, TextTheme textTheme) {
+    final photos = _photosByItemId[item.id];
+    final thumbUrl = (photos != null && photos.isNotEmpty) ? photos.first.url : null;
     return Material(
       color: Theme.of(context).colorScheme.surface,
       child: InkWell(
@@ -617,6 +690,20 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              if (thumbUrl != null) ...[
+                GestureDetector(
+                  onTap: () => _openPhotoViewer(thumbUrl),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: SizedBox(
+                      width: 28,
+                      height: 28,
+                      child: Image.network(thumbUrl, fit: BoxFit.cover),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: MitlistSpacing.sm),
+              ],
               Checkbox(
                 value: item.checked,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -648,6 +735,21 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     ),
                   ),
                 ),
+              PopupMenuButton<String>(
+                tooltip: 'Item options',
+                onSelected: (v) async {
+                  if (v == 'photo') await _addItemPhoto(item);
+                  if (v == 'delete') await _deleteItem(item);
+                },
+                itemBuilder: (context) => const [
+                  PopupMenuItem(value: 'photo', child: Text('Add photo')),
+                  PopupMenuItem(value: 'delete', child: Text('Delete')),
+                ],
+                child: const Padding(
+                  padding: EdgeInsets.all(6),
+                  child: Icon(Icons.more_horiz, size: 18),
+                ),
+              ),
             ],
           ),
         ),

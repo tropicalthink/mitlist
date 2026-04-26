@@ -6,10 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../models/activity_models.dart';
 import '../../models/auth_models.dart';
 import '../../models/group_models.dart';
+import '../../models/pinwall_media_models.dart';
 import '../../providers/activity_provider.dart';
 import '../../providers/attachment_provider.dart';
 import '../../providers/auth_provider.dart';
@@ -30,6 +32,13 @@ import '../../theme/spacing.dart';
 import '../../sheets/invite_household_sheet.dart';
 
 final _currencyFormat = NumberFormat.currency(symbol: '\$');
+
+final _pinwallMediaByPostProvider = FutureProvider.family<List<PinwallMediaItem>, ({String groupId, String postId})>(
+  (ref, args) async {
+    final svc = await ref.read(pinwallServiceProviderAsync.future);
+    return svc.listPostAttachments(groupId: args.groupId, postId: args.postId);
+  },
+);
 
 class _HubSnapshot {
   const _HubSnapshot({
@@ -504,6 +513,8 @@ class _PinwallSection extends ConsumerStatefulWidget {
 class _PinwallSectionState extends ConsumerState<_PinwallSection> {
   final TextEditingController _controller = TextEditingController();
   bool _isPosting = false;
+  bool _isUploadingMedia = false;
+  final List<XFile> _pendingMedia = [];
 
   @override
   void dispose() {
@@ -511,15 +522,53 @@ class _PinwallSectionState extends ConsumerState<_PinwallSection> {
     super.dispose();
   }
 
+  Future<void> _pickMedia() async {
+    if (_isUploadingMedia) return;
+    final picker = ImagePicker();
+    final files = await picker.pickMultiImage();
+    if (!mounted || files.isEmpty) return;
+    setState(() => _pendingMedia.addAll(files));
+  }
+
   Future<void> _post() async {
     final content = _controller.text.trim();
-    if (content.isEmpty || _isPosting) return;
+    if ((content.isEmpty && _pendingMedia.isEmpty) || _isPosting) return;
 
     setState(() => _isPosting = true);
     try {
       final svc = await ref.read(pinwallServiceProviderAsync.future);
-      await svc.createPost(widget.groupId, content: content);
+      final post = await svc.createPost(widget.groupId, content: content.isEmpty ? ' ' : content);
       if (!mounted) return;
+
+      if (_pendingMedia.isNotEmpty) {
+        setState(() => _isUploadingMedia = true);
+        try {
+          final attachmentRepo = await ref.read(attachmentRepositoryProvider.future);
+          for (final f in List<XFile>.from(_pendingMedia)) {
+            final bytes = await f.readAsBytes();
+            final a = await attachmentRepo.uploadAttachment(
+              groupId: widget.groupId,
+              purpose: 'pinwall_media',
+              filename: f.name,
+              contentType: 'image/*',
+              bytes: bytes,
+            );
+            await svc.attachPostAttachment(
+              groupId: widget.groupId,
+              postId: post.id,
+              attachmentId: a.id,
+            );
+          }
+        } finally {
+          if (mounted) {
+            setState(() {
+              _isUploadingMedia = false;
+              _pendingMedia.clear();
+            });
+          }
+        }
+      }
+
       _controller.clear();
       ref.invalidate(pinwallPostsByGroupProvider(widget.groupId));
     } finally {
@@ -570,6 +619,9 @@ class _PinwallSectionState extends ConsumerState<_PinwallSection> {
               _PinwallComposerNote(
                 controller: _controller,
                 isPosting: _isPosting,
+                isUploadingMedia: _isUploadingMedia,
+                pendingCount: _pendingMedia.length,
+                onPickMedia: _pickMedia,
                 onPost: _post,
               ),
               const SizedBox(height: MitlistSpacing.lg),
@@ -641,11 +693,17 @@ class _PinwallComposerNote extends StatelessWidget {
   const _PinwallComposerNote({
     required this.controller,
     required this.isPosting,
+    required this.isUploadingMedia,
+    required this.pendingCount,
+    required this.onPickMedia,
     required this.onPost,
   });
 
   final TextEditingController controller;
   final bool isPosting;
+  final bool isUploadingMedia;
+  final int pendingCount;
+  final Future<void> Function() onPickMedia;
   final Future<void> Function() onPost;
 
   @override
@@ -706,13 +764,22 @@ class _PinwallComposerNote extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: MitlistSpacing.sm),
-              Align(
-                alignment: Alignment.centerRight,
-                child: AppButton(
-                  text: isPosting ? 'Posting...' : 'Pin it',
-                  onPressed: isPosting ? null : onPost,
-                  size: AppButtonSize.sm,
-                ),
+              Row(
+                children: [
+                  TextButton.icon(
+                    onPressed: (isPosting || isUploadingMedia) ? null : onPickMedia,
+                    icon: const Icon(Icons.photo_outlined, size: 18),
+                    label: Text(pendingCount == 0 ? 'Photo' : '$pendingCount added'),
+                  ),
+                  const Spacer(),
+                  AppButton(
+                    text: isUploadingMedia
+                        ? 'Uploading...'
+                        : (isPosting ? 'Posting...' : 'Pin it'),
+                    onPressed: (isPosting || isUploadingMedia) ? null : onPost,
+                    size: AppButtonSize.sm,
+                  ),
+                ],
               ),
             ],
           ),
@@ -745,13 +812,150 @@ class _PinwallNoteCard extends ConsumerWidget {
   final User? me;
   final dynamic post;
 
+  void _showErrorSnack(BuildContext context, String message) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _openMediaViewer(BuildContext context, PinwallMediaItem m) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            foregroundColor: Colors.white,
+            elevation: 0,
+          ),
+          body: Center(
+            child: InteractiveViewer(
+              minScale: 0.8,
+              maxScale: 6,
+              child: Image.network(
+                m.url,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const Padding(
+                  padding: EdgeInsets.all(MitlistSpacing.md),
+                  child: Text(
+                    'Couldn’t load image.',
+                    style: TextStyle(color: Colors.white70),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showMediaActions(
+    BuildContext context,
+    WidgetRef ref, {
+    required PinwallMediaItem media,
+  }) async {
+    Haptics.light();
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(MitlistSpacing.md),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AppButton(
+                  text: 'View',
+                  onPressed: () => Navigator.of(ctx).pop('view'),
+                ),
+                const SizedBox(height: MitlistSpacing.sm),
+                AppButton(
+                  text: 'Remove from post',
+                  variant: AppButtonVariant.outline,
+                  onPressed: () => Navigator.of(ctx).pop('remove'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (action == 'view') {
+      _openMediaViewer(context, media);
+      return;
+    }
+    if (action == 'remove') {
+      try {
+        final svc = await ref.read(pinwallServiceProviderAsync.future);
+        await svc.detachPostAttachment(
+          groupId: groupId,
+          postId: post.id as String,
+          attachmentId: media.attachmentId,
+        );
+        ref.invalidate(
+          _pinwallMediaByPostProvider((groupId: groupId, postId: post.id as String)),
+        );
+      } catch (_) {
+        if (context.mounted) {
+          _showErrorSnack(context, 'Couldn’t remove photo.');
+        }
+      }
+    }
+  }
+
+  Future<void> _addMediaToPost(BuildContext context, WidgetRef ref) async {
+    Haptics.light();
+    final picker = ImagePicker();
+    final files = await picker.pickMultiImage();
+    if (files.isEmpty) return;
+
+    try {
+      final attachmentRepo = await ref.read(attachmentRepositoryProvider.future);
+      final svc = await ref.read(pinwallServiceProviderAsync.future);
+
+      for (final f in files) {
+        final bytes = await f.readAsBytes();
+        final a = await attachmentRepo.uploadAttachment(
+          groupId: groupId,
+          purpose: 'pinwall_media',
+          filename: f.name,
+          contentType: 'image/*',
+          bytes: bytes,
+        );
+        await svc.attachPostAttachment(
+          groupId: groupId,
+          postId: post.id as String,
+          attachmentId: a.id,
+        );
+      }
+
+      ref.invalidate(
+        _pinwallMediaByPostProvider((groupId: groupId, postId: post.id as String)),
+      );
+    } catch (_) {
+      if (context.mounted) {
+        _showErrorSnack(context, 'Couldn’t add photo.');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
 
     final userId = (post as dynamic).userId as String;
-    final content = post.content as String;
+    final content = (post.content as String).trim();
     final createdAt = post.createdAt as DateTime;
     final userLabel = _formatUserLabel(userId, me?.id);
     final when = _relativeDay(createdAt);
@@ -772,6 +976,10 @@ class _PinwallNoteCard extends ConsumerWidget {
       Color(0xFFDC2626), // red
     ];
     final pinColor = pinColors[index % pinColors.length];
+
+    final media = ref.watch(
+      _pinwallMediaByPostProvider((groupId: groupId, postId: post.id as String)),
+    );
 
     Future<void> onDelete() async {
       Haptics.light();
@@ -829,6 +1037,50 @@ class _PinwallNoteCard extends ConsumerWidget {
                   maxLines: 8,
                   overflow: TextOverflow.ellipsis,
                 ),
+                media.when(
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                  data: (items) {
+                    if (items.isEmpty) return const SizedBox.shrink();
+                    final show = items.length > 5 ? items.take(5).toList() : items;
+                    return Padding(
+                      padding: const EdgeInsets.only(top: MitlistSpacing.xs),
+                      child: SizedBox(
+                        height: 42,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: show.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 6),
+                          itemBuilder: (context, i) {
+                            final m = show[i];
+                            return GestureDetector(
+                              onTap: () => _openMediaViewer(context, m),
+                              onLongPress: () => _showMediaActions(context, ref, media: m),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: AspectRatio(
+                                  aspectRatio: 1,
+                                  child: Image.network(
+                                    m.url,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      color: MitlistColors.neutral100.withValues(alpha: 0.25),
+                                      alignment: Alignment.center,
+                                      child: const Icon(
+                                        Icons.image_not_supported_outlined,
+                                        size: 16,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
                 const SizedBox(height: MitlistSpacing.xs),
                 Row(
                   children: [
@@ -843,9 +1095,14 @@ class _PinwallNoteCard extends ConsumerWidget {
                     PopupMenuButton<String>(
                       tooltip: 'Post options',
                       onSelected: (v) async {
+                        if (v == 'photo') {
+                          await _addMediaToPost(context, ref);
+                          return;
+                        }
                         if (v == 'delete') await onDelete();
                       },
                       itemBuilder: (_) => const [
+                        PopupMenuItem(value: 'photo', child: Text('Add photo')),
                         PopupMenuItem(value: 'delete', child: Text('Delete')),
                       ],
                       child: Padding(

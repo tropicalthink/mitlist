@@ -107,6 +107,9 @@ func main() {
 			pinwallHandler := handlers.NewPinwallHandler(cnt.PinwallService())
 			pinwallHandler.RegisterRoutes(r)
 
+			pinwallMediaHandler := handlers.NewPinwallMediaHandler(cnt.PinwallMediaService())
+			pinwallMediaHandler.RegisterRoutes(r)
+
 			// Attachments
 			attachmentHandler := handlers.NewAttachmentHandler(cnt.AttachmentService())
 			attachmentHandler.RegisterRoutes(r)
@@ -129,6 +132,7 @@ func main() {
 
 			// Lists
 			listHandler := handlers.NewListHandler(cnt.ListService())
+			listItemPhotoHandler := handlers.NewListItemPhotoHandler(cnt.ListItemPhotoService())
 			r.Post("/lists", listHandler.CreateList)
 			r.Get("/lists", listHandler.ListLists)
 			r.Get("/lists/{id}", listHandler.GetList)
@@ -139,6 +143,7 @@ func main() {
 			r.Patch("/lists/{id}/items/{item_id}", listHandler.UpdateItem)
 			r.Delete("/lists/{id}/items/{item_id}", listHandler.DeleteItem)
 			r.Post("/lists/{id}/reorder", listHandler.ReorderItems)
+			listItemPhotoHandler.RegisterRoutes(r)
 
 			// Templates
 			templateHandler := handlers.NewTemplateHandler(cnt.TemplateService())
