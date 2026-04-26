@@ -298,13 +298,13 @@ void main() {
     await tester.tap(find.byTooltip('Join with code'));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField).first, 'abcd-1234');
+    await tester.enterText(find.byType(TextField).first, 'sunny-taco-42');
     await tester.pumpAndSettle();
     await tester.tap(find.text('JOIN HOUSEHOLD'));
     await tester.pumpAndSettle();
 
     expect(groupService.lastJoinRequest, isNotNull);
-    expect(groupService.lastJoinRequest!.code, 'ABCD-1234');
+    expect(groupService.lastJoinRequest!.code, 'SUNNY-TACO-42');
     expect(find.text('Joined Household'), findsOneWidget);
   });
 

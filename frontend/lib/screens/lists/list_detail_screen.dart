@@ -44,6 +44,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   String? _errorMessage;
   String _listName = '';
   final List<ListItem> _items = [];
+  StreamSubscription<List<ListItem>>? _itemsSub;
   bool _showCompletionBanner = false;
   bool _showSearch = false;
   String _searchQuery = '';
@@ -90,6 +91,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   @override
   void dispose() {
     _bannerTimer?.cancel();
+    _itemsSub?.cancel();
     _newItemController.dispose();
     _searchController.dispose();
     _composerFocusNode.dispose();
@@ -105,20 +107,36 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     try {
       final service = await ref.read(listServiceProviderAsync.future);
       _service = service;
-      final results = await Future.wait<Object>([
-        service.getList(widget.listId),
-        service.listItems(widget.listId, limit: 500, offset: 0),
-      ]);
-      final list = results[0] as ItemList;
-      final items = results[1] as List<ListItem>;
+      final repo = await ref.read(listRepositoryProvider.future);
+
+      await _itemsSub?.cancel();
+      _itemsSub = repo.watchItemsByList(widget.listId).listen((items) {
+        if (!mounted) return;
+        setState(() {
+          _items
+            ..clear()
+            ..addAll(items);
+        });
+        _checkCompletionBanner();
+      });
+
+      final cached = await repo.getItemsByListOnce(widget.listId);
+      if (!mounted) return;
+      setState(() {
+        _items
+          ..clear()
+          ..addAll(cached);
+        _isLoading = cached.isEmpty;
+      });
+
+      // Refresh list + items in background; stream will update.
+      await repo.refreshListDetail(widget.listId);
+      final list = await service.getList(widget.listId);
 
       if (!mounted) return;
       setState(() {
         _isLoading = false;
         _listName = list.name;
-        _items
-          ..clear()
-          ..addAll(items);
       });
     } catch (e) {
       if (!mounted) return;
@@ -135,14 +153,14 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     if (service == null) return;
 
     try {
-      final updated = await service.updateItem(widget.listId, item.id,
-          UpdateListItemRequest(checked: value));
+      final repo = await ref.read(listRepositoryProvider.future);
+      await repo.updateItemOfflineFirst(
+        widget.listId,
+        item.id,
+        UpdateListItemRequest(checked: value),
+      );
       if (!mounted) return;
-      setState(() {
-        final idx = _items.indexWhere((i) => i.id == item.id);
-        if (idx >= 0) _items[idx] = updated;
-        _dirty = true;
-      });
+      setState(() => _dirty = true);
       _checkCompletionBanner();
     } catch (e) {
       if (!mounted) return;
@@ -158,12 +176,14 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
     for (final item in _items.where((i) => !i.checked)) {
       try {
-        final updated = await service.updateItem(widget.listId, item.id,
-            UpdateListItemRequest(checked: true));
+        final repo = await ref.read(listRepositoryProvider.future);
+        await repo.updateItemOfflineFirst(
+          widget.listId,
+          item.id,
+          UpdateListItemRequest(checked: true),
+        );
         if (!mounted) return;
         setState(() {
-          final idx = _items.indexWhere((i) => i.id == item.id);
-          if (idx >= 0) _items[idx] = updated;
           _dirty = true;
         });
       } catch (_) {
@@ -199,11 +219,13 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     if (service == null) return;
 
     try {
-      final item = await service.createItem(
-          widget.listId, CreateListItemRequest(name: text));
+      final repo = await ref.read(listRepositoryProvider.future);
+      await repo.createItemOfflineFirst(
+        widget.listId,
+        CreateListItemRequest(name: text),
+      );
       if (!mounted) return;
       setState(() {
-        _items.add(item);
         _newItemController.clear();
         _dirty = true;
       });
@@ -221,10 +243,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     final service = _service;
     if (service == null) return;
 
-    final index = _items.indexOf(item);
-
     try {
-      await service.deleteItem(widget.listId, item.id);
+      final repo = await ref.read(listRepositoryProvider.future);
+      await repo.deleteItemOfflineFirst(widget.listId, item.id);
       if (!mounted) return;
       setState(() {
         _items.remove(item);
@@ -274,13 +295,17 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   final service = _service;
                   if (service == null) return;
                   try {
-                    final restored = await service.createItem(
-                        widget.listId,
-                        CreateListItemRequest(
-                            name: item.name, quantity: item.quantity));
+                    final repo = await ref.read(listRepositoryProvider.future);
+                    await repo.createItemOfflineFirst(
+                      widget.listId,
+                      CreateListItemRequest(
+                        name: item.name,
+                        quantity: item.quantity,
+                        unit: item.unit,
+                      ),
+                    );
                     if (!mounted) return;
                     setState(() {
-                      _items.insert(index, restored);
                       _dirty = true;
                     });
                     _checkCompletionBanner();

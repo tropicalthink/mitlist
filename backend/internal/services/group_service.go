@@ -2,13 +2,13 @@ package services
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"errors"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/yourorg/mitlist/internal/api"
 	"github.com/yourorg/mitlist/internal/models"
@@ -144,22 +144,30 @@ func (s *GroupService) InviteMember(ctx context.Context, userID, groupID uuid.UU
 		return nil, &api.ValidationError{Message: "role must be admin or member"}
 	}
 
-	codeBytes := make([]byte, 16)
-	if _, err := rand.Read(codeBytes); err != nil {
-		return nil, err
-	}
-	code := hex.EncodeToString(codeBytes)
+	// Generate short, human-friendly codes. Retry on rare uniqueness collisions.
+	for attempt := 0; attempt < 10; attempt++ {
+		code, err := generatePlayfulInviteCode()
+		if err != nil {
+			return nil, err
+		}
 
-	invite := &models.GroupInvite{
-		GroupID:   groupID,
-		Code:      code,
-		ExpiresAt: time.Now().UTC().Add(7 * 24 * time.Hour),
+		invite := &models.GroupInvite{
+			GroupID:   groupID,
+			Code:      code,
+			ExpiresAt: time.Now().UTC().Add(7 * 24 * time.Hour),
+		}
+
+		if err := s.groupRepo.CreateInvite(ctx, invite); err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+				continue
+			}
+			return nil, err
+		}
+		return invite, nil
 	}
 
-	if err := s.groupRepo.CreateInvite(ctx, invite); err != nil {
-		return nil, err
-	}
-	return invite, nil
+	return nil, &api.ValidationError{Message: "could not generate invite code, please try again"}
 }
 
 // JoinGroup allows a user to join a group using an invite code.

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../models/group_models.dart';
 import '../providers/group_provider.dart';
@@ -128,6 +129,51 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet> {
                   child: Text(
                     code.isEmpty ? '—' : code.trim(),
                     style: MitlistTypography.monoBody(),
+                  ),
+                ),
+                const SizedBox(height: MitlistSpacing.md),
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(MitlistSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(
+                        color: MitlistColors.borderSecondary,
+                        width: 2,
+                      ),
+                    ),
+                    child: code.isEmpty
+                        ? SizedBox(
+                            width: 196,
+                            height: 196,
+                            child: Center(
+                              child: Text(
+                                '—',
+                                style: MitlistTypography.monoBody(),
+                              ),
+                            ),
+                          )
+                        : QrImageView(
+                            data: code.trim(),
+                            version: QrVersions.auto,
+                            size: 196,
+                            backgroundColor: Colors.white,
+                            errorCorrectionLevel: QrErrorCorrectLevel.M,
+                            semanticsLabel: 'Household invite code QR',
+                            errorStateBuilder: (context, error) {
+                              return SizedBox(
+                                width: 196,
+                                height: 196,
+                                child: Center(
+                                  child: Text(
+                                    'QR unavailable',
+                                    style:
+                                        Theme.of(context).textTheme.bodySmall,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                   ),
                 ),
                 const SizedBox(height: MitlistSpacing.sm),

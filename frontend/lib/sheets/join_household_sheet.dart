@@ -82,7 +82,7 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet> {
         ],
         AppInput(
           label: 'Invite Code',
-          hint: 'XXXX-XXXX',
+          hint: 'SUNNY-TACO-42',
           controller: _codeController,
           enabled: !_isJoining,
           textInputAction: TextInputAction.done,
@@ -91,7 +91,7 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet> {
         ),
         const SizedBox(height: MitlistSpacing.sm),
         Text(
-          'Codes are uppercase and use a monospace font for readability.',
+          'Tip: codes are short words + numbers. Uppercase works best.',
           style:
               MitlistTypography.labelXSmall(color: MitlistColors.textTertiary),
         ),

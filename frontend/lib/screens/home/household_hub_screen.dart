@@ -456,13 +456,7 @@ class _PinwallSectionState extends ConsumerState<_PinwallSection> {
               ),
               const SizedBox(height: MitlistSpacing.lg),
               posts.when(
-                loading: () => Column(
-                  children: [
-                    _PinwallSkeletonNote(dark: dark),
-                    const SizedBox(height: MitlistSpacing.md),
-                    _PinwallSkeletonNote(dark: dark),
-                  ],
-                ),
+                loading: () => const SizedBox.shrink(),
                 error: (_, __) => Container(
                   padding: const EdgeInsets.all(MitlistSpacing.md),
                   decoration: BoxDecoration(
@@ -615,32 +609,6 @@ class _PinwallComposerNote extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-// Skeleton note for loading state
-class _PinwallSkeletonNote extends StatelessWidget {
-  const _PinwallSkeletonNote({required this.dark});
-  final bool dark;
-
-  @override
-  Widget build(BuildContext context) {
-    final bg = dark ? const Color(0xFF5D5000) : const Color(0xFFFFF9C4);
-    return Container(
-      height: 100,
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: dark ? 0.4 : 0.14),
-            blurRadius: 14,
-            offset: const Offset(2, 10),
-          ),
-        ],
-      ),
-      child: const Center(child: AppSkeleton(width: 120, height: 14)),
     );
   }
 }

@@ -58,6 +58,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   bool _hasMore = true;
   String? _error;
   final List<ItemList> _lists = [];
+  StreamSubscription<List<ItemList>>? _listsSub;
   final ScrollController _scrollController = ScrollController();
   bool _isGrid = true;
   _FilterOption _filter = _FilterOption.all;
@@ -79,6 +80,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _listsSub?.cancel();
     _searchTimer?.cancel();
     _searchController.dispose();
     super.dispose();
@@ -122,31 +124,72 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     });
 
     try {
-      final listService = await ref.read(listServiceProviderAsync.future);
+      final repo = await ref.read(listRepositoryProvider.future);
       final effectiveGroupId = await _resolveGroupId();
-      final data = effectiveGroupId == null
-          ? <ItemList>[]
-          : await listService.listLists(
-              effectiveGroupId,
-              limit: _pageLimit,
-              offset: 0,
-            );
+      if (effectiveGroupId == null) {
+        if (!mounted) return;
+        setState(() {
+          _lists.clear();
+          _hasHousehold = false;
+          _isLoading = false;
+        });
+        return;
+      }
 
-      if (mounted) {
+      // Subscribe to cached DB stream for instant paint.
+      await _listsSub?.cancel();
+      _listsSub = repo
+          .watchListsByGroup(effectiveGroupId)
+          .listen((List<ItemList> data) {
+        if (!mounted) return;
         setState(() {
           _lists
             ..clear()
             ..addAll(data);
-          _hasHousehold = effectiveGroupId != null;
-          _hasMore = data.length == _pageLimit;
+        });
+      });
+
+      final List<ItemList> cached =
+          await repo.getListsByGroupOnce(effectiveGroupId);
+      if (!mounted) return;
+      final hadCache = cached.isNotEmpty;
+      setState(() {
+        _lists
+          ..clear()
+          ..addAll(cached);
+        _hasHousehold = true;
+        // Only show skeleton on true first-load (no cache).
+        _isLoading = !hadCache;
+        _error = null;
+      });
+
+      int fetchedCount = 0;
+      try {
+        fetchedCount = await repo.refreshLists(
+          effectiveGroupId,
+          limit: _pageLimit,
+          offset: 0,
+        );
+      } catch (e) {
+        // If we have cached content, don't replace it with an error state.
+        if (!hadCache && mounted) {
+          setState(() {
+            _error = e.toString().replaceFirst('Exception: ', '');
+          });
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _hasMore = fetchedCount == _pageLimit;
           _isLoading = false;
-          _error = null;
+          _error = _lists.isEmpty ? _error : null;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = 'Failed to load lists';
+          _error = e.toString().replaceFirst('Exception: ', '');
           _isLoading = false;
         });
       }
@@ -162,21 +205,19 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     });
 
     try {
-      final listService = await ref.read(listServiceProviderAsync.future);
+      final repo = await ref.read(listRepositoryProvider.future);
       final effectiveGroupId = await _resolveGroupId();
-      final data = effectiveGroupId == null
-          ? <ItemList>[]
-          : await listService.listLists(
-              effectiveGroupId,
-              limit: _pageLimit,
-              offset: _lists.length,
-            );
+      if (effectiveGroupId == null) return;
+      final fetchedCount = await repo.refreshLists(
+        effectiveGroupId,
+        limit: _pageLimit,
+        offset: _lists.length,
+      );
 
       if (mounted) {
         setState(() {
-          _lists.addAll(data);
-          _hasHousehold = effectiveGroupId != null;
-          _hasMore = data.length == _pageLimit;
+          _hasHousehold = true;
+          _hasMore = fetchedCount == _pageLimit;
           _isLoadingMore = false;
           _error = null;
         });
