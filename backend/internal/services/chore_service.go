@@ -104,7 +104,7 @@ func (s *ChoreService) CreateChore(ctx context.Context, user *models.User, chore
 		return fmt.Errorf("failed to create rotation state: %w", err)
 	}
 
-	if len(memberOrder) > 0 {
+	if len(memberOrder) > 0 && chore.AssignmentType != "no-assignment" {
 		if err := s.createAssignmentForCurrentIndex(ctx, chore, state); err != nil {
 			return fmt.Errorf("failed to create initial assignment: %w", err)
 		}
@@ -254,6 +254,11 @@ func (s *ChoreService) RotateChore(ctx context.Context, user *models.User, chore
 	if err := s.requireAdmin(ctx, user.ID, chore.GroupID); err != nil {
 		return err
 	}
+	if _, err := s.choreRepo.GetPendingAssignmentByChore(ctx, choreID); err == nil {
+		return &api.ValidationError{Field: "pending_assignment", Message: "chore already has a pending assignment"}
+	} else if !errors.Is(err, pgx.ErrNoRows) {
+		return fmt.Errorf("failed to check pending assignment: %w", err)
+	}
 
 	state, err := s.choreRepo.GetRotationState(ctx, choreID)
 	if err != nil {
@@ -285,6 +290,9 @@ func (s *ChoreService) CompleteChore(ctx context.Context, user *models.User, cho
 	assignment, err := s.choreRepo.GetPendingAssignmentByChore(ctx, choreID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
+			if chore.AssignmentType == "no-assignment" {
+				return s.recordUnassignedExecution(ctx, user.ID, chore, notes, false)
+			}
 			return &api.NotFoundError{Resource: "pending assignment", ID: choreID.String()}
 		}
 		return fmt.Errorf("failed to get pending assignment: %w", err)
@@ -337,6 +345,9 @@ func (s *ChoreService) SkipChore(ctx context.Context, user *models.User, choreID
 	assignment, err := s.choreRepo.GetPendingAssignmentByChore(ctx, choreID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
+			if chore.AssignmentType == "no-assignment" {
+				return &api.ValidationError{Field: "assignment_type", Message: "unassigned chores cannot be skipped"}
+			}
 			return &api.NotFoundError{Resource: "pending assignment", ID: choreID.String()}
 		}
 		return fmt.Errorf("failed to get pending assignment: %w", err)
@@ -434,7 +445,9 @@ func (s *ChoreService) UndoLastChoreExecution(ctx context.Context, user *models.
 		return &api.NotFoundError{Resource: "finished assignment", ID: choreID.String()}
 	}
 
+	var successorUserID *uuid.UUID
 	if pending, err := s.choreRepo.GetPendingAssignmentByChore(ctx, choreID); err == nil && pending.ID != latestFinished.ID {
+		successorUserID = &pending.UserID
 		if err := s.choreRepo.DeleteAssignment(ctx, pending.ID); err != nil {
 			return fmt.Errorf("failed to delete successor pending assignment: %w", err)
 		}
@@ -446,6 +459,16 @@ func (s *ChoreService) UndoLastChoreExecution(ctx context.Context, user *models.
 	latestFinished.CompletedAt = nil
 	if err := s.choreRepo.UpdateAssignment(ctx, latestFinished); err != nil {
 		return fmt.Errorf("failed to restore assignment: %w", err)
+	}
+	if successorUserID != nil {
+		state, err := s.choreRepo.GetRotationState(ctx, choreID)
+		if err != nil {
+			return fmt.Errorf("failed to get rotation state: %w", err)
+		}
+		state.CurrentIndex = indexOfUUID(state.MemberOrder, *successorUserID)
+		if err := s.choreRepo.UpdateRotationState(ctx, state); err != nil {
+			return fmt.Errorf("failed to restore rotation state: %w", err)
+		}
 	}
 	return nil
 }
@@ -466,6 +489,37 @@ func (s *ChoreService) GetAssignments(ctx context.Context, user *models.User, ch
 		return nil, err
 	}
 	return s.choreRepo.ListAssignments(ctx, choreID, limit, offset)
+}
+
+func (s *ChoreService) recordUnassignedExecution(ctx context.Context, userID uuid.UUID, chore *models.Chore, notes *string, skipped bool) error {
+	now := time.Now().UTC()
+	status := "completed"
+	if skipped {
+		status = "skipped"
+	}
+	assignment := &models.ChoreAssignment{
+		ChoreID:     chore.ID,
+		UserID:      userID,
+		Status:      status,
+		DueDate:     nextDue(now, chore),
+		AssignedAt:  now,
+		CompletedAt: &now,
+	}
+	if err := s.choreRepo.CreateAssignment(ctx, assignment); err != nil {
+		return fmt.Errorf("failed to create unassigned execution: %w", err)
+	}
+	if !skipped {
+		completion := &models.ChoreCompletion{
+			AssignmentID: assignment.ID,
+			CompletedBy:  userID,
+			CompletedAt:  now,
+			Notes:        notes,
+		}
+		if err := s.choreRepo.CreateCompletion(ctx, completion); err != nil {
+			return fmt.Errorf("failed to record completion: %w", err)
+		}
+	}
+	return nil
 }
 
 // rotateAndAssign advances the rotation state and creates the next assignment.

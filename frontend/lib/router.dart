@@ -204,8 +204,6 @@ class BottomNavScaffold extends StatelessWidget {
               label: 'Money'),
           BottomNavigationBarItem(
               icon: Icon(Icons.restaurant_outlined), label: 'Kitchen'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline), label: 'You'),
         ],
       ),
     );
@@ -217,7 +215,6 @@ class BottomNavScaffold extends StatelessWidget {
     if (location.startsWith('/chores')) return 2;
     if (location.startsWith('/money')) return 3;
     if (location.startsWith('/recipes')) return 4;
-    if (location.startsWith('/you')) return 5;
     return 0;
   }
 
@@ -237,9 +234,6 @@ class BottomNavScaffold extends StatelessWidget {
         return;
       case 4:
         context.goNamed('recipes');
-        return;
-      case 5:
-        context.goNamed('you');
         return;
     }
   }

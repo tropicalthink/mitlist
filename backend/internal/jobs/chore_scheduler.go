@@ -59,6 +59,11 @@ func (s *ChoreScheduler) scheduleChore(ctx context.Context, chore models.Chore) 
 		return fmt.Errorf("get rotation state: %w", err)
 	}
 
+	if chore.AssignmentType == "no-assignment" {
+		s.log.Info().Str("chore_id", chore.ID.String()).Msg("unassigned chore, skipping assignment creation")
+		return nil
+	}
+
 	if len(state.MemberOrder) == 0 {
 		s.log.Warn().Str("chore_id", chore.ID.String()).Msg("empty member order, skipping")
 		return nil

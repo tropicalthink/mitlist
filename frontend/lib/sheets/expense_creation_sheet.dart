@@ -227,12 +227,6 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
           onValueChanged: () => setState(() {}),
         ),
         const SizedBox(height: MitlistSpacing.md),
-        Text(
-          'New expenses are recorded under your account and dated today. Split math is finalized on the server.',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: MitlistColors.textSecondary,
-              ),
-        ),
         const SizedBox(height: MitlistSpacing.lg),
         SizedBox(
           width: double.infinity,

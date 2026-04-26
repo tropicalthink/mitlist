@@ -148,6 +148,7 @@ func TestChoreService_RotateChore(t *testing.T) {
 
 		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "admin"}, nil)
 		choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{ID: choreID, GroupID: groupID}, nil)
+		choreRepo.On("GetPendingAssignmentByChore", ctx, choreID).Return(nil, pgx.ErrNoRows)
 		choreRepo.On("GetRotationState", ctx, choreID).Return(&models.ChoreRotationState{
 			ChoreID: choreID, MemberOrder: []uuid.UUID{member1}, CurrentIndex: 0,
 		}, nil)
