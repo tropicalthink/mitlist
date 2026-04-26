@@ -80,6 +80,9 @@ type Container struct {
 	attachmentRepoOnce sync.Once
 	attachmentRepo     *repositories.AttachmentRepository
 
+	expenseAttachmentRepoOnce sync.Once
+	expenseAttachmentRepo     *repositories.ExpenseAttachmentRepository
+
 	userServiceOnce sync.Once
 	userService     *services.UserService
 
@@ -130,6 +133,9 @@ type Container struct {
 
 	attachmentServiceOnce sync.Once
 	attachmentService     *services.AttachmentService
+
+	expenseReceiptServiceOnce sync.Once
+	expenseReceiptService     *services.ExpenseReceiptService
 
 	aiClientOnce sync.Once
 	aiClient     *aiservice.Client
@@ -309,6 +315,13 @@ func (c *Container) AttachmentRepo() *repositories.AttachmentRepository {
 	return c.attachmentRepo
 }
 
+func (c *Container) ExpenseAttachmentRepo() *repositories.ExpenseAttachmentRepository {
+	c.expenseAttachmentRepoOnce.Do(func() {
+		c.expenseAttachmentRepo = repositories.NewExpenseAttachmentRepository(c.db)
+	})
+	return c.expenseAttachmentRepo
+}
+
 // UserService returns the singleton user service.
 func (c *Container) UserService() *services.UserService {
 	c.userServiceOnce.Do(func() {
@@ -435,6 +448,19 @@ func (c *Container) AttachmentService() *services.AttachmentService {
 		c.attachmentService = services.NewAttachmentService(c.cfg, c.AttachmentRepo(), c.GroupRepo(), c.Storage())
 	})
 	return c.attachmentService
+}
+
+func (c *Container) ExpenseReceiptService() *services.ExpenseReceiptService {
+	c.expenseReceiptServiceOnce.Do(func() {
+		c.expenseReceiptService = services.NewExpenseReceiptService(
+			c.FinanceRepo(),
+			c.GroupRepo(),
+			c.AttachmentRepo(),
+			c.ExpenseAttachmentRepo(),
+			c.Storage(),
+		)
+	})
+	return c.expenseReceiptService
 }
 
 // ShareService returns the singleton share target service.

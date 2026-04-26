@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 import '../models/finance_models.dart';
+import '../models/expense_receipt_models.dart';
 import 'api_client.dart';
 import 'group_id_validator.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -105,6 +106,65 @@ class FinanceService {
       await _dio.delete('/expenses/$id');
     } on DioException catch (e) {
       _logger.e('Delete expense failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<List<ExpenseReceipt>> listExpenseReceipts({
+    required String groupId,
+    required String expenseId,
+  }) async {
+    ensureValidGroupId(groupId);
+    try {
+      final r = await _dio.get(
+        '/expenses/$expenseId/receipts',
+        queryParameters: {'group_id': groupId},
+      );
+      final data = r.data;
+      if (data is! List) return [];
+      return data
+          .map((e) =>
+              ExpenseReceipt.fromJson((e as Map).cast<String, dynamic>()))
+          .toList();
+    } on DioException catch (e) {
+      _logger.e('List expense receipts failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> attachExpenseReceipt({
+    required String groupId,
+    required String expenseId,
+    required String attachmentId,
+  }) async {
+    ensureValidGroupId(groupId);
+    try {
+      await _dio.post(
+        '/expenses/$expenseId/receipts',
+        data: {
+          'group_id': groupId,
+          'attachment_id': attachmentId,
+        },
+      );
+    } on DioException catch (e) {
+      _logger.e('Attach expense receipt failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> detachExpenseReceipt({
+    required String groupId,
+    required String expenseId,
+    required String attachmentId,
+  }) async {
+    ensureValidGroupId(groupId);
+    try {
+      await _dio.delete(
+        '/expenses/$expenseId/receipts/$attachmentId',
+        queryParameters: {'group_id': groupId},
+      );
+    } on DioException catch (e) {
+      _logger.e('Detach expense receipt failed: ${e.response?.data}');
       throw _handleError(e);
     }
   }

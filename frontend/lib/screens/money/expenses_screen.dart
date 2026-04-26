@@ -334,8 +334,12 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   }
 
   Future<void> _openExpenseDetail(_Expense expense) async {
+    final groupId = _groupId;
+    if (groupId == null) return;
     await ExpenseDetailSheet.show(
       context,
+      groupId: groupId,
+      expenseId: expense.id,
       description: expense.description,
       amountLabel: _formatCurrency(expense.amount, currency: expense.currency),
       payer: expense.payer,

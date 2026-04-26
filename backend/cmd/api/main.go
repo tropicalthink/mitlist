@@ -171,6 +171,7 @@ func main() {
 
 			// Finance
 			financeHandler := handlers.NewFinanceHandler(cnt.FinanceService())
+			receiptHandler := handlers.NewExpenseReceiptHandler(cnt.ExpenseReceiptService())
 			r.Get("/finance/summary", financeHandler.GetFinanceSummary)
 			r.Get("/finance/export/json", financeHandler.ExportExpensesJSON)
 			r.Get("/finance/export/csv", financeHandler.ExportExpensesCSV)
@@ -180,6 +181,7 @@ func main() {
 			r.Get("/expenses/{id}", financeHandler.GetExpense)
 			r.Patch("/expenses/{id}", financeHandler.UpdateExpense)
 			r.Delete("/expenses/{id}", financeHandler.DeleteExpense)
+			receiptHandler.RegisterRoutes(r)
 			r.Post("/expenses/{id}/splits", financeHandler.CreateSplit)
 			r.Patch("/expenses/{id}/splits/{split_id}", financeHandler.UpdateSplit)
 			r.Delete("/expenses/{id}/splits/{split_id}", financeHandler.DeleteSplit)
