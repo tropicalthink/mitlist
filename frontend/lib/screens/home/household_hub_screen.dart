@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +11,7 @@ import '../../models/activity_models.dart';
 import '../../models/auth_models.dart';
 import '../../models/group_models.dart';
 import '../../providers/activity_provider.dart';
+import '../../providers/attachment_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/finance_provider.dart';
 import '../../providers/list_provider.dart';
@@ -242,6 +245,51 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                               groupId: widget.groupId,
                             ),
                           ),
+                          if (!kReleaseMode)
+                            IconButton(
+                              tooltip: 'Upload test attachment',
+                              icon: const Icon(Icons.cloud_upload_outlined),
+                              onPressed: () async {
+                                try {
+                                  final repo = await ref.read(
+                                    attachmentRepositoryProvider.future,
+                                  );
+                                  final bytes = utf8.encode(
+                                    'mitlist attachment diagnostic\n'
+                                    'group=${widget.groupId}\n'
+                                    'ts=${DateTime.now().toIso8601String()}\n',
+                                  );
+                                  final a = await repo.uploadAttachment(
+                                    groupId: widget.groupId,
+                                    purpose: 'debug_diagnostic',
+                                    filename: 'diagnostic.txt',
+                                    contentType: 'text/plain; charset=utf-8',
+                                    bytes: Uint8List.fromList(bytes),
+                                  );
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Uploaded attachment ${a.id}',
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  );
+                                } catch (e) {
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Upload failed: $e',
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
                           IconButton(
                             tooltip: 'Notifications',
                             icon: const Icon(Icons.notifications_none_outlined),

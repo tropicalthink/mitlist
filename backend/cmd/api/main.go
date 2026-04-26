@@ -107,6 +107,10 @@ func main() {
 			pinwallHandler := handlers.NewPinwallHandler(cnt.PinwallService())
 			pinwallHandler.RegisterRoutes(r)
 
+			// Attachments
+			attachmentHandler := handlers.NewAttachmentHandler(cnt.AttachmentService())
+			attachmentHandler.RegisterRoutes(r)
+
 			// Groups
 			groupHandler := handlers.NewGroupHandler(cnt.GroupService())
 			r.Post("/groups", groupHandler.CreateGroup)

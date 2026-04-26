@@ -200,3 +200,13 @@ type PinwallRepo interface {
 	GetPostByID(ctx context.Context, id uuid.UUID) (*models.PinwallPost, error)
 	DeletePost(ctx context.Context, id uuid.UUID) error
 }
+
+// AttachmentRepo is the interface for attachment repository operations.
+type AttachmentRepo interface {
+	Create(ctx context.Context, a *models.Attachment) error
+	GetByID(ctx context.Context, id uuid.UUID) (*models.Attachment, error)
+	UpdateObjectKey(ctx context.Context, id uuid.UUID, objectKey string) error
+	UpdateStatus(ctx context.Context, id uuid.UUID, status models.AttachmentStatus) error
+	Delete(ctx context.Context, id uuid.UUID) error
+	SumReadyBytesByGroup(ctx context.Context, groupID uuid.UUID) (int64, error)
+}

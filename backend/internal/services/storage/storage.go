@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -28,8 +29,16 @@ func New(cfg *config.Config) *Service {
 		return &Service{bucket: ""}
 	}
 
+	region := cfg.AWSRegion
+	// Cloudflare R2 uses the S3-compatible API with region "auto".
+	// For compatibility, "us-east-1" aliases to "auto", but we prefer "auto"
+	// when we detect an R2 endpoint.
+	if cfg.S3EndpointURL != "" && strings.Contains(cfg.S3EndpointURL, ".r2.cloudflarestorage.com") {
+		region = "auto"
+	}
+
 	awsCfg, err := awsconfig.LoadDefaultConfig(context.Background(),
-		awsconfig.WithRegion(cfg.AWSRegion),
+		awsconfig.WithRegion(region),
 	)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to load AWS config; storage service may not work")
@@ -84,6 +93,35 @@ func (s *Service) Upload(key string, data []byte) error {
 		return fmt.Errorf("upload to s3: %w", err)
 	}
 	return nil
+}
+
+// GetUploadURL returns a presigned PUT URL for the given key.
+// The caller should upload bytes directly to the returned URL.
+func (s *Service) GetUploadURL(key string, contentType string, expires time.Duration) string {
+	if s.client == nil || s.bucket == "" {
+		return ""
+	}
+	if expires <= 0 {
+		expires = 15 * time.Minute
+	}
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	presignClient := s3.NewPresignClient(s.client)
+	req, err := presignClient.PresignPutObject(ctx, &s3.PutObjectInput{
+		Bucket:      aws.String(s.bucket),
+		Key:         aws.String(key),
+		ContentType: aws.String(contentType),
+	}, s3.WithPresignExpires(expires))
+	if err != nil {
+		log.Error().Err(err).Str("key", key).Msg("failed to generate presigned upload URL")
+		return ""
+	}
+	return req.URL
 }
 
 // GetURL returns a presigned URL for the given key.

@@ -15,6 +15,7 @@ import (
 	oauthclient "github.com/yourorg/mitlist/internal/services/oauth"
 	passwordservice "github.com/yourorg/mitlist/internal/services/password"
 	pushservice "github.com/yourorg/mitlist/internal/services/push"
+	storagesvc "github.com/yourorg/mitlist/internal/services/storage"
 	"github.com/yourorg/mitlist/pkg/logger"
 )
 
@@ -36,6 +37,9 @@ type Container struct {
 
 	pushOnce    sync.Once
 	pushService *pushservice.Service
+
+	storageOnce    sync.Once
+	storageService *storagesvc.Service
 
 	userRepoOnce sync.Once
 	userRepo     *repositories.UserRepository
@@ -72,6 +76,9 @@ type Container struct {
 
 	pinwallRepoOnce sync.Once
 	pinwallRepo     *repositories.PinwallRepository
+
+	attachmentRepoOnce sync.Once
+	attachmentRepo     *repositories.AttachmentRepository
 
 	userServiceOnce sync.Once
 	userService     *services.UserService
@@ -120,6 +127,9 @@ type Container struct {
 
 	pinwallServiceOnce sync.Once
 	pinwallService     *services.PinwallService
+
+	attachmentServiceOnce sync.Once
+	attachmentService     *services.AttachmentService
 
 	aiClientOnce sync.Once
 	aiClient     *aiservice.Client
@@ -185,6 +195,14 @@ func (c *Container) Push() *pushservice.Service {
 		c.pushService = pushservice.New(c.cfg, c.logger)
 	})
 	return c.pushService
+}
+
+// Storage returns the singleton S3-compatible storage service.
+func (c *Container) Storage() *storagesvc.Service {
+	c.storageOnce.Do(func() {
+		c.storageService = storagesvc.New(c.cfg)
+	})
+	return c.storageService
 }
 
 // UserRepo returns the singleton user repository.
@@ -281,6 +299,14 @@ func (c *Container) PinwallRepo() *repositories.PinwallRepository {
 		c.pinwallRepo = repositories.NewPinwallRepository(c.db)
 	})
 	return c.pinwallRepo
+}
+
+// AttachmentRepo returns the singleton attachment repository.
+func (c *Container) AttachmentRepo() *repositories.AttachmentRepository {
+	c.attachmentRepoOnce.Do(func() {
+		c.attachmentRepo = repositories.NewAttachmentRepository(c.db)
+	})
+	return c.attachmentRepo
 }
 
 // UserService returns the singleton user service.
@@ -401,6 +427,14 @@ func (c *Container) PinwallService() *services.PinwallService {
 		c.pinwallService = services.NewPinwallService(c.PinwallRepo(), c.GroupRepo())
 	})
 	return c.pinwallService
+}
+
+// AttachmentService returns the singleton attachment service.
+func (c *Container) AttachmentService() *services.AttachmentService {
+	c.attachmentServiceOnce.Do(func() {
+		c.attachmentService = services.NewAttachmentService(c.cfg, c.AttachmentRepo(), c.GroupRepo(), c.Storage())
+	})
+	return c.attachmentService
 }
 
 // ShareService returns the singleton share target service.
