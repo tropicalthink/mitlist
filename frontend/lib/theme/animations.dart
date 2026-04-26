@@ -6,7 +6,8 @@ class MitlistAnimations {
   static const Duration page = Duration(milliseconds: 300);
   static const Duration toast = Duration(milliseconds: 300);
 
-  static const Duration skeleton = Duration(milliseconds: 1500);
+  // Keep skeleton motion subtle and snappy; long shimmer cycles read as "slow".
+  static const Duration skeleton = Duration(milliseconds: 900);
 
   static const double fadeOffset = 10.0;
   static const double cardEnterOffset = 8.0;

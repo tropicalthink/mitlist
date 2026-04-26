@@ -196,14 +196,14 @@ class BottomNavScaffold extends StatelessWidget {
           BottomNavigationBarItem(
               icon: Icon(Icons.home_outlined), label: 'Home'),
           BottomNavigationBarItem(
-              icon: Icon(Icons.list_alt_outlined), label: 'Lists'),
-          BottomNavigationBarItem(
               icon: Icon(Icons.check_box_outlined), label: 'Chores'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.restaurant_outlined), label: 'Kitchen'),
           BottomNavigationBarItem(
               icon: Icon(Icons.account_balance_wallet_outlined),
               label: 'Money'),
           BottomNavigationBarItem(
-              icon: Icon(Icons.restaurant_outlined), label: 'Kitchen'),
+              icon: Icon(Icons.list_alt_outlined), label: 'Lists'),
         ],
       ),
     );
@@ -211,10 +211,10 @@ class BottomNavScaffold extends StatelessWidget {
 
   int _calculateIndex(String location) {
     if (location.startsWith('/home')) return 0;
-    if (location.startsWith('/lists')) return 1;
     if (location.startsWith('/chores')) return 2;
-    if (location.startsWith('/money')) return 3;
     if (location.startsWith('/recipes')) return 4;
+    if (location.startsWith('/money')) return 3;
+    if (location.startsWith('/lists')) return 1;
     return 0;
   }
 

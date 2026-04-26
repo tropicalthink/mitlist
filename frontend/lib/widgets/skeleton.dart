@@ -49,43 +49,47 @@ class _AppSkeletonState extends State<AppSkeleton>
     }
   }
 
+  (Color base, Color highlight) _colorsFor(Brightness brightness) {
+    if (brightness == Brightness.dark) {
+      return (MitlistColors.neutral800, MitlistColors.neutral700);
+    }
+    return (MitlistColors.neutral200, MitlistColors.neutral100);
+  }
+
   @override
   Widget build(BuildContext context) {
     final disableAnimations = MediaQuery.of(context).disableAnimations;
+    final brightness = Theme.of(context).brightness;
+    final (base, highlight) = _colorsFor(brightness);
 
-    final baseWidget = Container(
-      width: widget.width,
-      height: widget.height,
-      decoration: BoxDecoration(
-        color: MitlistColors.neutral200,
-        borderRadius: BorderRadius.all(Radius.circular(_radius)),
-      ),
-    );
-
-    if (disableAnimations) {
-      return baseWidget;
+    Widget box(Color color) {
+      return Container(
+        width: widget.width,
+        height: widget.height,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.all(Radius.circular(_radius)),
+        ),
+      );
     }
 
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return ShaderMask(
-          shaderCallback: (bounds) {
-            return LinearGradient(
-              colors: const [
-                MitlistColors.neutral200,
-                MitlistColors.neutral100,
-                MitlistColors.neutral200,
-              ],
-              stops: const [0.0, 0.5, 1.0],
-              begin: Alignment(-1.0 + _controller.value * 2, 0.0),
-              end: Alignment(1.0 + _controller.value * 2, 0.0),
-            ).createShader(bounds);
-          },
-          blendMode: BlendMode.srcATop,
-          child: baseWidget,
-        );
-      },
+    if (disableAnimations) {
+      return RepaintBoundary(child: box(base));
+    }
+
+    // Use a lightweight pulse instead of a shader-based shimmer to avoid
+    // "draggy" motion and reduce paint cost when many skeletons are on-screen.
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          // 0..1..0 triangle wave feels more "breathing" than constant sweep.
+          final t = _controller.value;
+          final pulse = 1.0 - (t - 0.5).abs() * 2.0;
+          final color = Color.lerp(base, highlight, pulse * 0.85)!;
+          return box(color);
+        },
+      ),
     );
   }
 }
