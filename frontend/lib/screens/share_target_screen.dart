@@ -1,10 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
+import '../providers/attachment_provider.dart';
 import '../providers/group_provider.dart';
+import '../providers/pinwall_provider.dart';
 import '../providers/share_target_provider.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
@@ -37,6 +40,7 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
   final TextEditingController _textController = TextEditingController();
   bool _isSaving = false;
   String? _error;
+  final List<XFile> _pendingMedia = [];
 
   static const List<_DestinationOption> _options = [
     _DestinationOption(
@@ -44,6 +48,12 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
       label: 'Lists',
       icon: 'queueList',
       description: 'Save to a shopping or to-do list',
+    ),
+    _DestinationOption(
+      id: 'pinwall',
+      label: 'Pinwall',
+      icon: 'share',
+      description: 'Post a note (and optional photos) to your household',
     ),
     _DestinationOption(
       id: 'recipes',
@@ -56,6 +66,7 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
   void _onDestinationTapped(String id) {
     setState(() {
       _selectedDestination = id;
+      _error = null;
     });
   }
 
@@ -65,11 +76,72 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
     super.dispose();
   }
 
+  Future<String?> _pickGroupId() async {
+    final groupService = await ref.read(groupServiceProviderAsync.future);
+    final groups = await groupService.listGroups(limit: 50);
+    if (!mounted) return null;
+    if (groups.isEmpty) return null;
+    if (groups.length == 1) return groups.first.id;
+
+    return showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) {
+        return SafeArea(
+          child: ListView.separated(
+            padding: const EdgeInsets.all(MitlistSpacing.md),
+            shrinkWrap: true,
+            itemCount: groups.length,
+            separatorBuilder: (_, __) => const SizedBox(height: MitlistSpacing.xs),
+            itemBuilder: (context, i) {
+              final g = groups[i];
+              return AppCard(
+                variant: AppCardVariant.outlined,
+                interactive: true,
+                onTap: () => Navigator.of(ctx).pop(g.id),
+                padding: AppCardPadding.md,
+                child: Row(
+                  children: [
+                    const AppIcon(name: 'userGroup'),
+                    const SizedBox(width: MitlistSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        g.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickMedia() async {
+    final picker = ImagePicker();
+    final files = await picker.pickMultiImage();
+    if (!mounted || files.isEmpty) return;
+    setState(() {
+      _pendingMedia.addAll(files);
+      _error = null;
+    });
+  }
+
   Future<void> _onSave() async {
     if (_selectedDestination == null) return;
     final text = _textController.text.trim();
-    if (text.isEmpty) {
+    final isPinwall = _selectedDestination == 'pinwall';
+    if (!isPinwall && text.isEmpty) {
       setState(() => _error = 'Paste or type something to save.');
+      return;
+    }
+    if (isPinwall && text.isEmpty && _pendingMedia.isEmpty) {
+      setState(() => _error = 'Add a note or at least one photo.');
       return;
     }
 
@@ -82,16 +154,49 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
       final shareService = await ref.read(shareTargetServiceProviderAsync.future);
 
       if (_selectedDestination == 'lists') {
-        final groupService = await ref.read(groupServiceProviderAsync.future);
-        final groups = await groupService.listGroups(limit: 1);
-        if (groups.isEmpty) {
+        final groupId = await _pickGroupId();
+        if (groupId == null) {
           setState(() {
             _error = 'Create or join a household first.';
             _isSaving = false;
           });
           return;
         }
-        await shareService.createListFromShare(groupId: groups.first.id, text: text);
+        await shareService.createListFromShare(groupId: groupId, text: text);
+      } else if (_selectedDestination == 'pinwall') {
+        final groupId = await _pickGroupId();
+        if (groupId == null) {
+          setState(() {
+            _error = 'Create or join a household first.';
+            _isSaving = false;
+          });
+          return;
+        }
+
+        final pinwallSvc = await ref.read(pinwallServiceProviderAsync.future);
+        final post = await pinwallSvc.createPost(
+          groupId,
+          content: text.isEmpty ? ' ' : text,
+        );
+
+        if (_pendingMedia.isNotEmpty) {
+          final attachmentRepo = await ref.read(attachmentRepositoryProvider.future);
+          for (final f in List<XFile>.from(_pendingMedia)) {
+            final bytes = await f.readAsBytes();
+            final a = await attachmentRepo.uploadAttachment(
+              groupId: groupId,
+              purpose: 'pinwall_media',
+              filename: f.name,
+              contentType: 'image/*',
+              bytes: bytes,
+            );
+            await pinwallSvc.attachPostAttachment(
+              groupId: groupId,
+              postId: post.id,
+              attachmentId: a.id,
+            );
+          }
+        }
       } else {
         await shareService.createRecipeFromShare(text: text);
       }
@@ -129,6 +234,29 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
                 hintText: 'Paste or type the shared text here…',
               ),
             ),
+            if (_selectedDestination == 'pinwall') ...[
+              const SizedBox(height: MitlistSpacing.sm),
+              Row(
+                children: [
+                  AppButton(
+                    size: AppButtonSize.sm,
+                    variant: AppButtonVariant.outline,
+                    text: _pendingMedia.isEmpty
+                        ? 'Add photos'
+                        : '${_pendingMedia.length} photo(s) added',
+                    onPressed: _isSaving ? null : _pickMedia,
+                  ),
+                  const Spacer(),
+                  if (_pendingMedia.isNotEmpty)
+                    TextButton(
+                      onPressed: _isSaving
+                          ? null
+                          : () => setState(() => _pendingMedia.clear()),
+                      child: const Text('Clear'),
+                    ),
+                ],
+              ),
+            ],
             const SizedBox(height: MitlistSpacing.md),
             if (_error != null) ...[
               Text(
