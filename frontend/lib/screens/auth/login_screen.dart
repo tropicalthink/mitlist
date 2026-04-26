@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../config/api_config.dart';
 import '../../models/auth_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/colors.dart';
 import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
+import '../../utils/browser_redirect.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
@@ -26,6 +28,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordFocus = FocusNode();
 
   bool _isLoading = false;
+  bool _rememberMe = true;
   String? _errorMessage;
   String? _emailError;
   String? _passwordError;
@@ -66,7 +69,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       
       // Make actual API call
       final request = LoginRequest(email: email, password: password);
-      await authService.login(request);
+      await authService.login(request, rememberMe: _rememberMe);
       
       // Update auth state
       ref.read(authStateProvider.notifier).state = true;
@@ -85,7 +88,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   void _showPasswordResetSheet() {
     final emailController = TextEditingController(text: _emailController.text.trim());
+    final tokenController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
     var isSubmitting = false;
+    var isResetting = false;
     String? error;
     String? successMessage;
 
@@ -124,6 +131,48 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             }
           }
 
+          Future<void> confirmReset() async {
+            final token = tokenController.text.trim();
+            final newPassword = newPasswordController.text.trim();
+            final confirmPassword = confirmPasswordController.text.trim();
+
+            if (token.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty) {
+              setSheetState(() => error = 'Fill out the reset code and both password fields.');
+              return;
+            }
+            if (newPassword.length < 6) {
+              setSheetState(
+                () => error = 'New password must be at least 6 characters.',
+              );
+              return;
+            }
+            if (newPassword != confirmPassword) {
+              setSheetState(() => error = 'New passwords do not match.');
+              return;
+            }
+
+            setSheetState(() {
+              isResetting = true;
+              error = null;
+              successMessage = null;
+            });
+
+            try {
+              final authService = await ref.read(authServiceProviderAsync.future);
+              await authService.confirmPasswordReset(token, newPassword);
+              if (!mounted) return;
+              setSheetState(() {
+                isResetting = false;
+                successMessage = 'Password reset successful. You can sign in now.';
+              });
+            } catch (e) {
+              setSheetState(() {
+                isResetting = false;
+                error = e.toString().replaceFirst('Exception: ', '');
+              });
+            }
+          }
+
           return Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -151,11 +200,82 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 onPressed: isSubmitting ? null : submit,
                 isLoading: isSubmitting,
               ),
+              const SizedBox(height: MitlistSpacing.lg),
+              AppInput(
+                label: 'Reset code',
+                hint: 'Paste the code from your email',
+                controller: tokenController,
+                textInputAction: TextInputAction.next,
+              ),
+              const SizedBox(height: MitlistSpacing.space3),
+              AppInput(
+                label: 'New password',
+                hint: '........',
+                controller: newPasswordController,
+                obscureText: true,
+                textInputAction: TextInputAction.next,
+              ),
+              const SizedBox(height: MitlistSpacing.space3),
+              AppInput(
+                label: 'Confirm new password',
+                hint: '........',
+                controller: confirmPasswordController,
+                obscureText: true,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => confirmReset(),
+              ),
+              const SizedBox(height: MitlistSpacing.lg),
+              AppButton(
+                text: 'Reset password',
+                onPressed: isResetting ? null : confirmReset,
+                isLoading: isResetting,
+              ),
             ],
           );
         },
       ),
     );
+  }
+
+  Future<void> _startOAuth(String provider) async {
+    if (!supportsBrowserRedirect) {
+      setState(() {
+        _errorMessage = '$provider sign-in is only available in browser builds right now.';
+      });
+      return;
+    }
+
+    final currentUri = browserCurrentUri();
+    final baseUri = Uri.parse(ApiConfig.baseUrl);
+    final redirectUri = Uri(
+      scheme: currentUri.scheme,
+      host: currentUri.host,
+      port: currentUri.hasPort ? currentUri.port : null,
+      path: '/auth/callback',
+      queryParameters: {'provider': provider},
+    ).toString();
+
+    final authService = await ref.read(authServiceProviderAsync.future);
+    try {
+      await authService.setPendingOAuthRememberMe(_rememberMe);
+
+      final authUrl = Uri(
+        scheme: baseUri.scheme,
+        host: baseUri.host,
+        port: baseUri.hasPort ? baseUri.port : null,
+        path: '${ApiConfig.apiPrefix}/v1/oauth/$provider',
+        queryParameters: {'redirect_uri': redirectUri},
+      ).toString();
+
+      redirectBrowser(authUrl);
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      });
+    }
   }
 
   @override
@@ -231,6 +351,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             isLoading: _isLoading,
                             onPressed: _isLoading ? null : _submit,
                           ),
+                        ),
+                        const SizedBox(height: MitlistSpacing.space3),
+                        CheckboxListTile(
+                          value: _rememberMe,
+                          onChanged: _isLoading
+                              ? null
+                              : (value) {
+                                  setState(() => _rememberMe = value ?? true);
+                                },
+                          title: const Text('Remember me'),
+                          contentPadding: EdgeInsets.zero,
+                          controlAffinity: ListTileControlAffinity.leading,
+                        ),
+                        const SizedBox(height: MitlistSpacing.space4),
+                        OutlinedButton.icon(
+                          onPressed: _isLoading ? null : () => _startOAuth('google'),
+                          icon: const Icon(Icons.login, size: 20),
+                          label: const Text('Continue with Google'),
+                        ),
+                        const SizedBox(height: MitlistSpacing.space3),
+                        OutlinedButton.icon(
+                          onPressed: _isLoading ? null : () => _startOAuth('apple'),
+                          icon: const Icon(Icons.apple, size: 20),
+                          label: const Text('Continue with Apple'),
                         ),
                         const SizedBox(height: MitlistSpacing.space4),
                         Row(

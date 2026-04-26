@@ -32,7 +32,10 @@ class AuthService {
   /// Registers a new user.
   ///
   /// Returns a [TokenPair] with access and refresh tokens.
-  Future<TokenPair> register(RegisterRequest request) async {
+  Future<TokenPair> register(
+    RegisterRequest request, {
+    bool rememberMe = true,
+  }) async {
     try {
       final response = await _dio.post(
         '/auth/register',
@@ -40,7 +43,7 @@ class AuthService {
       );
 
       final tokenPair = TokenPair.fromJson(response.data);
-      await _saveTokens(tokenPair);
+      await _saveTokens(tokenPair, persistSession: rememberMe);
       return tokenPair;
     } on DioException catch (e) {
       _logger.e('Registration failed: ${e.response?.data}');
@@ -51,7 +54,10 @@ class AuthService {
   /// Logs in a user.
   ///
   /// Returns a [TokenPair] with access and refresh tokens.
-  Future<TokenPair> login(LoginRequest request) async {
+  Future<TokenPair> login(
+    LoginRequest request, {
+    bool rememberMe = true,
+  }) async {
     try {
       final response = await _dio.post(
         '/auth/login',
@@ -59,7 +65,7 @@ class AuthService {
       );
 
       final tokenPair = TokenPair.fromJson(response.data);
-      await _saveTokens(tokenPair);
+      await _saveTokens(tokenPair, persistSession: rememberMe);
       return tokenPair;
     } on DioException catch (e) {
       _logger.e('Login failed: ${e.response?.data}');
@@ -78,7 +84,10 @@ class AuthService {
       );
 
       final tokenPair = TokenPair.fromJson(response.data);
-      await _saveTokens(tokenPair);
+      await _saveTokens(
+        tokenPair,
+        persistSession: _prefs.getBool(ApiConfig.persistSessionKey) ?? true,
+      );
       return tokenPair;
     } on DioException catch (e) {
       _logger.e('Token refresh failed: ${e.response?.data}');
@@ -135,15 +144,56 @@ class AuthService {
     }
   }
 
+  /// Completes an OAuth callback exchange and stores the issued session.
+  Future<TokenPair> completeOAuthCallback({
+    required String provider,
+    required String code,
+    required String redirectUri,
+    required String state,
+    String? idToken,
+    bool rememberMe = true,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/oauth/$provider/callback',
+        data: {
+          'code': code,
+          'redirect_uri': redirectUri,
+          'state': state,
+          if (idToken != null && idToken.isNotEmpty) 'id_token': idToken,
+        },
+      );
+      final tokenPair = TokenPair.fromJson(response.data);
+      await _saveTokens(tokenPair, persistSession: rememberMe);
+      return tokenPair;
+    } on DioException catch (e) {
+      _logger.e('OAuth callback failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  /// Persists the remember-me choice before handing off to a browser OAuth flow.
+  Future<void> setPendingOAuthRememberMe(bool rememberMe) async {
+    await _prefs.setBool(ApiConfig.pendingOAuthRememberMeKey, rememberMe);
+  }
+
+  /// Returns and clears the pending browser OAuth remember-me choice.
+  Future<bool> consumePendingOAuthRememberMe() async {
+    final rememberMe =
+        _prefs.getBool(ApiConfig.pendingOAuthRememberMeKey) ?? true;
+    await _prefs.remove(ApiConfig.pendingOAuthRememberMeKey);
+    return rememberMe;
+  }
+
   /// Creates a guest account.
   ///
   /// Returns a [TokenPair] with access and refresh tokens.
-  Future<TokenPair> createGuest() async {
+  Future<TokenPair> createGuest({bool rememberMe = true}) async {
     try {
       final response = await _dio.post('/auth/guest');
 
       final tokenPair = TokenPair.fromJson(response.data);
-      await _saveTokens(tokenPair);
+      await _saveTokens(tokenPair, persistSession: rememberMe);
       return tokenPair;
     } on DioException catch (e) {
       _logger.e('Guest account creation failed: ${e.response?.data}');
@@ -201,7 +251,10 @@ class AuthService {
   }
 
   /// Converts a guest account to a full account.
-  Future<TokenPair> convertGuest(ConvertGuestRequest request) async {
+  Future<TokenPair> convertGuest(
+    ConvertGuestRequest request, {
+    bool rememberMe = true,
+  }) async {
     try {
       final response = await _dio.post(
         '/auth/guest/convert',
@@ -209,7 +262,7 @@ class AuthService {
       );
 
       final tokenPair = TokenPair.fromJson(response.data);
-      await _saveTokens(tokenPair);
+      await _saveTokens(tokenPair, persistSession: rememberMe);
       return tokenPair;
     } on DioException catch (e) {
       _logger.e('Convert guest failed: ${e.response?.data}');
@@ -218,7 +271,10 @@ class AuthService {
   }
 
   /// Claims an account (for users who signed up with a different method).
-  Future<TokenPair> claimAccount(ClaimAccountRequest request) async {
+  Future<TokenPair> claimAccount(
+    ClaimAccountRequest request, {
+    bool rememberMe = true,
+  }) async {
     try {
       final response = await _dio.post(
         '/auth/claim-account',
@@ -226,7 +282,7 @@ class AuthService {
       );
 
       final tokenPair = TokenPair.fromJson(response.data);
-      await _saveTokens(tokenPair);
+      await _saveTokens(tokenPair, persistSession: rememberMe);
       return tokenPair;
     } on DioException catch (e) {
       _logger.e('Claim account failed: ${e.response?.data}');
@@ -240,14 +296,34 @@ class AuthService {
     return token != null;
   }
 
+  /// Restores a persisted session, clearing non-persistent sessions on restart.
+  Future<bool> bootstrapSession() async {
+    final token = _prefs.getString(ApiConfig.accessTokenKey);
+    if (token == null) {
+      return false;
+    }
+
+    final persistSession = _prefs.getBool(ApiConfig.persistSessionKey);
+    if (persistSession == false) {
+      await _clearTokens();
+      return false;
+    }
+
+    return true;
+  }
+
   /// Gets the stored access token.
   Future<String?> getAccessToken() async {
     return _prefs.getString(ApiConfig.accessTokenKey);
   }
 
-  Future<void> _saveTokens(TokenPair tokenPair) async {
+  Future<void> _saveTokens(
+    TokenPair tokenPair, {
+    required bool persistSession,
+  }) async {
     await _prefs.setString(ApiConfig.accessTokenKey, tokenPair.accessToken);
     await _prefs.setString(ApiConfig.refreshTokenKey, tokenPair.refreshToken);
+    await _prefs.setBool(ApiConfig.persistSessionKey, persistSession);
     if (tokenPair.user != null) {
       await _prefs.setString(
         ApiConfig.userDataKey,
@@ -261,6 +337,8 @@ class AuthService {
     await _prefs.remove(ApiConfig.accessTokenKey);
     await _prefs.remove(ApiConfig.refreshTokenKey);
     await _prefs.remove(ApiConfig.userDataKey);
+    await _prefs.remove(ApiConfig.persistSessionKey);
+    await _prefs.remove(ApiConfig.pendingOAuthRememberMeKey);
   }
 
   /// Handles Dio errors and converts them to user-friendly messages.

@@ -14,3 +14,11 @@ final authServiceProviderAsync = FutureProvider<AuthService>((ref) async {
 final authStateProvider = StateProvider<bool>((ref) {
   return false;
 });
+
+/// Bootstraps auth state from persisted session data on app start.
+final authBootstrapProvider = FutureProvider<bool>((ref) async {
+  final authService = await ref.read(authServiceProviderAsync.future);
+  final authenticated = await authService.bootstrapSession();
+  ref.read(authStateProvider.notifier).state = authenticated;
+  return authenticated;
+});

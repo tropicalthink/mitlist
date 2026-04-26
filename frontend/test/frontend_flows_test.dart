@@ -20,6 +20,7 @@ import 'package:goflutter/providers/list_provider.dart';
 import 'package:goflutter/providers/notification_provider.dart';
 import 'package:goflutter/providers/recipe_provider.dart';
 import 'package:goflutter/screens/auth/login_screen.dart';
+import 'package:goflutter/screens/auth/oauth_callback_screen.dart';
 import 'package:goflutter/screens/auth/signup_screen.dart';
 import 'package:goflutter/screens/chores/chores_screen.dart';
 import 'package:goflutter/screens/home/groups_list_screen.dart';
@@ -585,7 +586,7 @@ void main() {
     );
   });
 
-  testWidgets('login screen supports password reset and removes dead oauth',
+  testWidgets('login screen completes forgot-password confirm flow',
       (tester) async {
     await _setLargeSurface(tester);
     final authService = FakeAuthService(currentUser: user);
@@ -598,12 +599,13 @@ void main() {
       ],
     );
 
-    expect(find.text('Continue with Google'), findsNothing);
-    expect(find.text('Continue with Apple'), findsNothing);
+    expect(find.text('Continue with Google'), findsOneWidget);
+    expect(find.text('Continue with Apple'), findsOneWidget);
+    expect(find.text('Remember me'), findsOneWidget);
 
     await tester.tap(find.text('Forgot password?'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).last, 'reset@example.com');
+    await tester.enterText(find.byType(TextField).at(2), 'reset@example.com');
     await tester.tap(find.text('SEND RESET CODE'));
     await tester.pumpAndSettle();
 
@@ -612,6 +614,89 @@ void main() {
       find.text('If that email exists, a reset code has been sent.'),
       findsOneWidget,
     );
+
+    await tester.enterText(find.byType(TextField).at(3), 'reset-code-123');
+    await tester.enterText(find.byType(TextField).at(4), 'freshpassword');
+    await tester.enterText(find.byType(TextField).at(5), 'freshpassword');
+    await tester.tap(find.text('RESET PASSWORD'));
+    await tester.pumpAndSettle();
+
+    expect(authService.lastConfirmPasswordResetToken, 'reset-code-123');
+    expect(authService.lastConfirmPasswordResetPassword, 'freshpassword');
+    expect(
+      find.text('Password reset successful. You can sign in now.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('login screen forwards remember-me choice to auth login',
+      (tester) async {
+    await _setLargeSurface(tester);
+    final authService = FakeAuthService(currentUser: user);
+
+    await _pumpScreen(
+      tester,
+      child: const LoginScreen(),
+      overrides: [
+        authServiceProviderAsync.overrideWith((ref) async => authService),
+      ],
+    );
+
+    await tester.tap(find.text('Remember me'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).at(0), 'user@example.com');
+    await tester.enterText(find.byType(TextField).at(1), 'secret123');
+    await tester.tap(find.text('SIGN IN'));
+    await tester.pumpAndSettle();
+
+    expect(authService.lastLoginRequest, isNotNull);
+    expect(authService.lastLoginRequest!.email, 'user@example.com');
+    expect(authService.lastLoginRequest!.password, 'secret123');
+    expect(authService.lastLoginRememberMe, isFalse);
+  });
+
+  testWidgets('oauth callback screen completes session and routes home',
+      (tester) async {
+    await _setLargeSurface(tester);
+    final authService = FakeAuthService(currentUser: user)
+      ..pendingOAuthRememberMe = false;
+    final router = GoRouter(
+      initialLocation: '/auth/callback',
+      routes: [
+        GoRoute(
+          path: '/auth/callback',
+          builder: (context, state) => OAuthCallbackScreen(
+            queryParameters: const {
+              'provider': 'google',
+              'code': 'oauth-code',
+              'state': 'oauth-state',
+            },
+          ),
+        ),
+        GoRoute(
+          path: '/home',
+          name: 'home',
+          builder: (context, state) => const Scaffold(body: Text('Home route')),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          routerProvider.overrideWith((ref) => router),
+          authServiceProviderAsync.overrideWith((ref) async => authService),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await _pumpUi(tester);
+
+    expect(authService.lastOAuthProvider, 'google');
+    expect(authService.lastOAuthCode, 'oauth-code');
+    expect(authService.lastOAuthState, 'oauth-state');
+    expect(authService.lastOAuthRememberMe, isFalse);
+    expect(find.text('Home route'), findsOneWidget);
   });
 
   testWidgets('signup screen exposes actionable terms and privacy',
@@ -795,9 +880,34 @@ class FakeAuthService implements AuthService {
   final User currentUser;
   ChangePasswordRequest? lastChangePasswordRequest;
   String? lastPasswordResetEmail;
+  LoginRequest? lastLoginRequest;
+  bool? lastLoginRememberMe;
+  String? lastConfirmPasswordResetToken;
+  String? lastConfirmPasswordResetPassword;
+  String? lastOAuthProvider;
+  String? lastOAuthCode;
+  String? lastOAuthRedirectUri;
+  String? lastOAuthState;
+  String? lastOAuthIdToken;
+  bool? lastOAuthRememberMe;
+  bool pendingOAuthRememberMe = true;
 
   @override
   Future<User> getMe() async => currentUser;
+
+  @override
+  Future<TokenPair> login(
+    LoginRequest request, {
+    bool rememberMe = true,
+  }) async {
+    lastLoginRequest = request;
+    lastLoginRememberMe = rememberMe;
+    return TokenPair(
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+      user: currentUser,
+    );
+  }
 
   @override
   Future<void> changePassword(ChangePasswordRequest request) async {
@@ -807,6 +917,42 @@ class FakeAuthService implements AuthService {
   @override
   Future<void> requestPasswordReset(String email) async {
     lastPasswordResetEmail = email;
+  }
+
+  @override
+  Future<void> confirmPasswordReset(String token, String newPassword) async {
+    lastConfirmPasswordResetToken = token;
+    lastConfirmPasswordResetPassword = newPassword;
+  }
+
+  @override
+  Future<void> setPendingOAuthRememberMe(bool rememberMe) async {
+    pendingOAuthRememberMe = rememberMe;
+  }
+
+  @override
+  Future<bool> consumePendingOAuthRememberMe() async => pendingOAuthRememberMe;
+
+  @override
+  Future<TokenPair> completeOAuthCallback({
+    required String provider,
+    required String code,
+    required String redirectUri,
+    required String state,
+    String? idToken,
+    bool rememberMe = true,
+  }) async {
+    lastOAuthProvider = provider;
+    lastOAuthCode = code;
+    lastOAuthRedirectUri = redirectUri;
+    lastOAuthState = state;
+    lastOAuthIdToken = idToken;
+    lastOAuthRememberMe = rememberMe;
+    return TokenPair(
+      accessToken: 'oauth-access',
+      refreshToken: 'oauth-refresh',
+      user: currentUser,
+    );
   }
 
   @override

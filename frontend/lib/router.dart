@@ -15,6 +15,7 @@ import 'screens/auth/welcome_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/signup_screen.dart';
 import 'screens/auth/onboarding_screen.dart';
+import 'screens/auth/oauth_callback_screen.dart';
 import 'screens/home/household_hub_screen.dart';
 import 'screens/lists/list_detail_screen.dart';
 import 'screens/share_target_screen.dart';
@@ -25,10 +26,17 @@ import 'screens/recipes/recipes_screen.dart';
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
-final _authRoutePrefixes = ['/welcome', '/login', '/signup', '/onboarding'];
+final _authRoutePrefixes = [
+  '/welcome',
+  '/login',
+  '/signup',
+  '/onboarding',
+  '/auth/callback',
+];
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
+  final authBootstrap = ref.watch(authBootstrapProvider);
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
@@ -36,6 +44,16 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final location = state.uri.path;
       final isAuthRoute = _authRoutePrefixes.any((p) => location.startsWith(p));
+
+      if (authBootstrap.isLoading) {
+        if (location.startsWith('/auth/callback')) {
+          return null;
+        }
+        if (location != '/welcome') {
+          return '/welcome';
+        }
+        return null;
+      }
 
       if (!authState && !isAuthRoute) {
         return '/welcome';
@@ -67,6 +85,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/onboarding',
         name: 'onboarding',
         builder: (context, state) => const OnboardingScreen(),
+      ),
+      GoRoute(
+        path: '/auth/callback',
+        name: 'oauthCallback',
+        builder: (context, state) => OAuthCallbackScreen(
+          queryParameters: state.uri.queryParameters,
+        ),
       ),
       GoRoute(
         path: '/share-target',

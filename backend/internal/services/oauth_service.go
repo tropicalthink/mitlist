@@ -75,6 +75,15 @@ func (s *OAuthService) AppleLogin(ctx context.Context, code, redirectURI, idToke
 		return nil, "", "", fmt.Errorf("exchange code: %w", err)
 	}
 
+	if idToken == "" && token != nil {
+		if rawIDToken, ok := token.Extra("id_token").(string); ok {
+			idToken = rawIDToken
+		}
+	}
+	if idToken == "" {
+		return nil, "", "", &api.ValidationError{Field: "id_token", Message: "identity token is required"}
+	}
+
 	appleUser, err := s.appleClient.ValidateIdentityToken(idToken)
 	if err != nil {
 		return nil, "", "", fmt.Errorf("validate identity token: %w", err)

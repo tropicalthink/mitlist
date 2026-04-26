@@ -35,6 +35,12 @@ class ApiConfig {
   /// The key for the user data in shared preferences.
   static const String userDataKey = 'user_data';
 
+  /// Whether the current session should survive app restarts.
+  static const String persistSessionKey = 'persist_session';
+
+  /// Temporary remember-me choice saved across browser OAuth redirects.
+  static const String pendingOAuthRememberMeKey = 'pending_oauth_remember_me';
+
   /// Whether to verify SSL certificates.
   ///
   /// In production, this should be `true`.
