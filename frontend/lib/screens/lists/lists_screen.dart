@@ -22,6 +22,8 @@ import '../../widgets/skeleton.dart';
 
 enum _SortOption { newest, oldest, az, mostItems }
 
+enum _FilterOption { all, shopping, todo, custom }
+
 class ListsScreen extends ConsumerStatefulWidget {
   final String? groupId;
   const ListsScreen({super.key, this.groupId});
@@ -33,6 +35,13 @@ class ListsScreen extends ConsumerStatefulWidget {
 class _ListsScreenState extends ConsumerState<ListsScreen> {
   static const int _pageLimit = 50;
 
+  static const _filters = <_FilterOption, String>{
+    _FilterOption.all: 'All',
+    _FilterOption.shopping: 'Shopping',
+    _FilterOption.todo: 'To-do',
+    _FilterOption.custom: 'Custom',
+  };
+
   bool _isLoading = true;
   bool _isLoadingMore = false;
   bool _hasMore = true;
@@ -40,7 +49,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   final List<ItemList> _lists = [];
   final ScrollController _scrollController = ScrollController();
   bool _isGrid = true;
-  String _filter = 'All';
+  _FilterOption _filter = _FilterOption.all;
   String _searchQuery = '';
   bool _showSearch = false;
   _SortOption _sort = _SortOption.newest;
@@ -191,14 +200,17 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     });
   }
 
-  String _capitalize(String s) =>
-      s.isEmpty ? s : s[0].toUpperCase() + s.substring(1).toLowerCase();
-
   List<ItemList> get _filteredLists {
     var result = List<ItemList>.from(_lists);
 
-    if (_filter != 'All') {
-      result = result.where((l) => _capitalize(l.type) == _filter).toList();
+    if (_filter != _FilterOption.all) {
+      final wanted = switch (_filter) {
+        _FilterOption.shopping => 'shopping',
+        _FilterOption.todo => 'todo',
+        _FilterOption.custom => 'custom',
+        _FilterOption.all => '',
+      };
+      result = result.where((l) => l.type.toLowerCase() == wanted).toList();
     }
 
     if (_searchQuery.isNotEmpty) {
@@ -210,13 +222,17 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     switch (_sort) {
       case _SortOption.newest:
         result.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+        break;
       case _SortOption.oldest:
         result.sort((a, b) => a.updatedAt.compareTo(b.updatedAt));
+        break;
       case _SortOption.az:
         result.sort(
             (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        break;
       case _SortOption.mostItems:
         result.sort(_compareByItemCount);
+        break;
     }
 
     return result;
@@ -249,6 +265,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         leading: _showSearch
             ? IconButton(
                 icon: const Icon(AppIcons.arrowLeft),
+                tooltip: 'Back',
                 onPressed: _clearSearch,
               )
             : null,
@@ -257,7 +274,8 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                 controller: _searchController,
                 autofocus: true,
                 decoration: const InputDecoration(
-                  hintText: 'Search lists...',
+                  labelText: 'Search lists',
+                  hintText: 'Name, e.g. groceries',
                   border: InputBorder.none,
                 ),
                 onChanged: _onSearchChanged,
@@ -350,6 +368,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
       return _buildNoHouseholdState();
     }
 
+    final lists = _filteredLists;
     return Column(
       children: [
         if (_error != null)
@@ -367,9 +386,9 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
           child: RefreshIndicator(
             color: MitlistColors.primary500,
             onRefresh: _loadLists,
-            child: _filteredLists.isEmpty
+            child: lists.isEmpty
                 ? _buildEmptyState()
-                : (_isGrid ? _buildGrid() : _buildList()),
+                : (_isGrid ? _buildGrid(lists) : _buildList(lists)),
           ),
         ),
       ],
@@ -377,7 +396,6 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   }
 
   Widget _buildChipBar() {
-    const filters = ['All', 'Shopping', 'To-do', 'Custom'];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(
@@ -385,13 +403,15 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         vertical: MitlistSpacing.sm,
       ),
       child: Row(
-        children: filters.map((filter) {
+        children: _filters.entries.map((entry) {
+          final option = entry.key;
+          final label = entry.value;
           return Padding(
             padding: const EdgeInsets.only(right: MitlistSpacing.sm),
             child: AppChip(
-              label: filter,
-              selected: _filter == filter,
-              onSelected: (_) => setState(() => _filter = filter),
+              label: label,
+              selected: _filter == option,
+              onSelected: (_) => setState(() => _filter = option),
             ),
           );
         }).toList(),
@@ -399,30 +419,42 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     );
   }
 
-  Widget _buildGrid() {
-    final lists = _filteredLists;
+  Widget _buildGrid(List<ItemList> lists) {
     final itemCount = lists.length + (_isLoadingMore || _error != null ? 1 : 0);
 
-    return GridView.builder(
-      controller: _scrollController,
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(MitlistSpacing.md),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: MitlistSpacing.md,
-        crossAxisSpacing: MitlistSpacing.md,
-        childAspectRatio: 0.95,
-      ),
-      itemCount: itemCount,
-      itemBuilder: (context, index) {
-        if (index >= lists.length) return _buildPaginationFooter();
-        return _ListCard(list: lists[index]);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const minTileWidth = 190.0;
+        final maxWidth = constraints.maxWidth;
+        final columns = (maxWidth / minTileWidth).floor().clamp(2, 5);
+        final aspectRatio = MediaQuery.textScalerOf(context).scale(1.0) > 1.2
+            ? 0.88
+            : 0.95;
+
+        return GridView.builder(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(MitlistSpacing.md),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            mainAxisSpacing: MitlistSpacing.md,
+            crossAxisSpacing: MitlistSpacing.md,
+            childAspectRatio: aspectRatio,
+          ),
+          itemCount: itemCount,
+          itemBuilder: (context, index) {
+            if (index >= lists.length) return _buildPaginationFooter();
+            return _ListCard(
+              list: lists[index],
+              onChanged: () => unawaited(_loadLists()),
+            );
+          },
+        );
       },
     );
   }
 
-  Widget _buildList() {
-    final lists = _filteredLists;
+  Widget _buildList(List<ItemList> lists) {
     return ListView.separated(
       controller: _scrollController,
       physics: const AlwaysScrollableScrollPhysics(),
@@ -431,7 +463,10 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
       separatorBuilder: (_, __) => const SizedBox(height: MitlistSpacing.md),
       itemBuilder: (_, index) {
         if (index >= lists.length) return _buildPaginationFooter();
-        return _ListCard(list: lists[index]);
+        return _ListCard(
+          list: lists[index],
+          onChanged: () => unawaited(_loadLists()),
+        );
       },
     );
   }
@@ -444,7 +479,9 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     return const Center(
       child: Padding(
         padding: EdgeInsets.all(MitlistSpacing.md),
-        child: CircularProgressIndicator(),
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation(MitlistColors.primary500),
+        ),
       ),
     );
   }
@@ -511,19 +548,21 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
 
 class _ListCard extends StatelessWidget {
   final ItemList list;
+  final VoidCallback onChanged;
 
-  const _ListCard({required this.list});
+  const _ListCard({required this.list, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
     final itemCount = list.itemCount;
     return AppCard(
       interactive: true,
-      onTap: () {
-        context.pushNamed(
+      onTap: () async {
+        final changed = await context.pushNamed<bool>(
           'listDetail',
           pathParameters: {'listId': list.id},
         );
+        if (changed == true) onChanged();
       },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -37,6 +37,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   final TextEditingController _newItemController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
   ListService? _service;
+  bool _dirty = false;
 
   @override
   void initState() {
@@ -93,6 +94,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       setState(() {
         final idx = _items.indexWhere((i) => i.id == item.id);
         if (idx >= 0) _items[idx] = updated;
+        _dirty = true;
       });
       _checkCompletionBanner();
     } catch (e) {
@@ -115,6 +117,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         setState(() {
           final idx = _items.indexWhere((i) => i.id == item.id);
           if (idx >= 0) _items[idx] = updated;
+          _dirty = true;
         });
       } catch (_) {
         break;
@@ -155,6 +158,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       setState(() {
         _items.add(item);
         _newItemController.clear();
+        _dirty = true;
       });
       _checkCompletionBanner();
     } catch (e) {
@@ -176,6 +180,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       if (!mounted) return;
       setState(() {
         _items.remove(item);
+        _dirty = true;
       });
       _checkCompletionBanner();
     } catch (e) {
@@ -228,6 +233,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     if (!mounted) return;
                     setState(() {
                       _items.insert(index, restored);
+                      _dirty = true;
                     });
                     _checkCompletionBanner();
                   } catch (_) {}
@@ -277,14 +283,16 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const AppIcon(name: 'arrowLeft'),
-          onPressed: () => Navigator.of(context).pop(),
+          tooltip: 'Back',
+          onPressed: () => Navigator.of(context).pop(_dirty),
         ),
         title: _showSearch
             ? TextField(
                 controller: _searchController,
                 autofocus: true,
                 decoration: const InputDecoration(
-                  hintText: 'Search items...',
+                  labelText: 'Search items',
+                  hintText: 'Name, e.g. milk',
                   border: InputBorder.none,
                 ),
                 onChanged: (value) => setState(() => _searchQuery = value),
@@ -296,6 +304,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         actions: [
           IconButton(
             icon: const AppIcon(name: 'magnifyingGlass'),
+            tooltip: 'Search',
             onPressed: () {
               setState(() {
                 _showSearch = !_showSearch;

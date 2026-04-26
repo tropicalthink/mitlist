@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'providers/auth_provider.dart';
+import 'providers/group_provider.dart';
+import 'services/group_id_validator.dart';
 
 import 'screens/home/groups_list_screen.dart';
 import 'screens/lists/lists_screen.dart';
@@ -84,7 +86,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/home',
             name: 'home',
-            builder: (context, state) => const GroupsListScreen(),
+            builder: (context, state) => const _HomeEntryScreen(),
             routes: [
               GoRoute(
                 path: ':groupId/hub',
@@ -163,6 +165,7 @@ class BottomNavScaffold extends StatelessWidget {
           BottomNavigationBarItem(icon: Icon(Icons.list_alt_outlined), label: 'Lists'),
           BottomNavigationBarItem(icon: Icon(Icons.check_box_outlined), label: 'Chores'),
           BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_outlined), label: 'Money'),
+          BottomNavigationBarItem(icon: Icon(Icons.restaurant_outlined), label: 'Kitchen'),
           BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'You'),
         ],
       ),
@@ -174,7 +177,8 @@ class BottomNavScaffold extends StatelessWidget {
     if (location.startsWith('/lists')) return 1;
     if (location.startsWith('/chores')) return 2;
     if (location.startsWith('/money')) return 3;
-    if (location.startsWith('/you')) return 4;
+    if (location.startsWith('/recipes')) return 4;
+    if (location.startsWith('/you')) return 5;
     return 0;
   }
 
@@ -182,14 +186,68 @@ class BottomNavScaffold extends StatelessWidget {
     switch (index) {
       case 0:
         context.goNamed('home');
+        return;
       case 1:
         context.goNamed('lists');
+        return;
       case 2:
         context.goNamed('chores');
+        return;
       case 3:
         context.goNamed('money');
+        return;
       case 4:
+        context.goNamed('recipes');
+        return;
+      case 5:
         context.goNamed('you');
+        return;
     }
+  }
+}
+
+class _HomeEntryScreen extends ConsumerStatefulWidget {
+  const _HomeEntryScreen();
+
+  @override
+  ConsumerState<_HomeEntryScreen> createState() => _HomeEntryScreenState();
+}
+
+class _HomeEntryScreenState extends ConsumerState<_HomeEntryScreen> {
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+      future: ref.read(groupServiceProviderAsync.future),
+      builder: (context, serviceSnap) {
+        if (serviceSnap.connectionState != ConnectionState.done) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (serviceSnap.hasError || serviceSnap.data == null) {
+          return const GroupsListScreen();
+        }
+
+        return FutureBuilder(
+          future: serviceSnap.data!.listGroups(limit: 1),
+          builder: (context, groupsSnap) {
+            if (groupsSnap.connectionState != ConnectionState.done) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            final groups = groupsSnap.data ?? const [];
+            final groupId = groups.isEmpty ? null : groups.first.id;
+            if (!isValidGroupId(groupId)) {
+              return const GroupsListScreen();
+            }
+
+            return HouseholdHubScreen(groupId: groupId!);
+          },
+        );
+      },
+    );
   }
 }

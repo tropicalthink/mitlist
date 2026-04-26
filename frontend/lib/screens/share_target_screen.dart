@@ -156,8 +156,8 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
                       const SizedBox(width: MitlistSpacing.sm),
                       Expanded(
                         child: Text(
-                          'Shared content will appear here when integrated '
-                          'with the share extension.',
+                          'Paste text here now, or send content from the '
+                          'share extension when that integration is available.',
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ),

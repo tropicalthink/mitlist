@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:goflutter/app.dart';
+import 'package:goflutter/models/activity_models.dart';
 import 'package:goflutter/models/auth_models.dart';
 import 'package:goflutter/models/chore_models.dart';
 import 'package:goflutter/models/finance_models.dart';
@@ -12,18 +12,24 @@ import 'package:goflutter/models/list_models.dart';
 import 'package:goflutter/models/notification_models.dart';
 import 'package:goflutter/models/recipe_models.dart';
 import 'package:goflutter/providers/auth_provider.dart';
+import 'package:goflutter/providers/activity_provider.dart';
 import 'package:goflutter/providers/chore_provider.dart';
 import 'package:goflutter/providers/finance_provider.dart';
 import 'package:goflutter/providers/group_provider.dart';
 import 'package:goflutter/providers/list_provider.dart';
 import 'package:goflutter/providers/notification_provider.dart';
 import 'package:goflutter/providers/recipe_provider.dart';
+import 'package:goflutter/screens/auth/login_screen.dart';
+import 'package:goflutter/screens/auth/signup_screen.dart';
 import 'package:goflutter/screens/chores/chores_screen.dart';
 import 'package:goflutter/screens/home/groups_list_screen.dart';
 import 'package:goflutter/screens/home/household_hub_screen.dart';
 import 'package:goflutter/screens/lists/lists_screen.dart';
 import 'package:goflutter/screens/money/expenses_screen.dart';
 import 'package:goflutter/screens/recipes/recipes_screen.dart';
+import 'package:goflutter/screens/you/account_screen.dart';
+import 'package:goflutter/router.dart';
+import 'package:goflutter/services/activity_service.dart';
 import 'package:goflutter/services/auth_service.dart';
 import 'package:goflutter/services/chore_service.dart';
 import 'package:goflutter/services/finance_service.dart';
@@ -31,12 +37,14 @@ import 'package:goflutter/services/group_service.dart';
 import 'package:goflutter/services/list_service.dart';
 import 'package:goflutter/services/notification_service.dart';
 import 'package:goflutter/services/recipe_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() {
     GoogleFonts.config.allowRuntimeFetching = false;
+    SharedPreferences.setMockInitialValues({});
   });
 
   const groupId = '11111111-1111-1111-1111-111111111111';
@@ -358,38 +366,46 @@ void main() {
         overrides: [
           groupServiceProviderAsync.overrideWith((ref) async => groupService),
           listServiceProviderAsync.overrideWith((ref) async => listService),
+          choreServiceProviderAsync
+              .overrideWith((ref) async => FakeChoreService()),
+          financeServiceProviderAsync
+              .overrideWith((ref) async => FakeFinanceService()),
+          recipeServiceProviderAsync
+              .overrideWith((ref) async => FakeRecipeService()),
+          activityServiceProviderAsync
+              .overrideWith((ref) async => FakeActivityService()),
         ],
         child: MaterialApp.router(routerConfig: router),
       ),
     );
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
 
     expect(find.text('Vault'), findsNothing);
     expect(find.text('Pets & Plants'), findsNothing);
 
     await tester.tap(find.text('Lists'));
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
     expect(find.text('Lists route'), findsOneWidget);
 
     router.go('/');
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
     await tester.ensureVisible(find.text('Chores'));
     await tester.tap(find.text('Chores'));
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
     expect(find.text('Chores route'), findsOneWidget);
 
     router.go('/');
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
     await tester.ensureVisible(find.text('Money'));
     await tester.tap(find.text('Money'));
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
     expect(find.text('Money route'), findsOneWidget);
 
     router.go('/');
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Recipes'));
-    await tester.tap(find.text('Recipes'));
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
+    await tester.ensureVisible(find.text('Kitchen'));
+    await tester.tap(find.text('Kitchen'));
+    await _pumpUi(tester);
     expect(find.text('Recipes route'), findsOneWidget);
   });
 
@@ -413,53 +429,219 @@ void main() {
     final choreService = FakeChoreService();
     final financeService = FakeFinanceService();
     final recipeService = FakeRecipeService();
+    final activityService = FakeActivityService();
     final authService = FakeAuthService(currentUser: user);
     final notificationService = FakeNotificationService();
+
+    final router = GoRouter(
+      initialLocation: '/home',
+      routes: [
+        ShellRoute(
+          builder: (context, state, child) => BottomNavScaffold(child: child),
+          routes: [
+            GoRoute(
+              path: '/home',
+              name: 'home',
+              builder: (context, state) => const GroupsListScreen(),
+              routes: [
+                GoRoute(
+                  path: ':groupId/hub',
+                  name: 'householdHub',
+                  builder: (context, state) => HouseholdHubScreen(
+                    groupId: state.pathParameters['groupId']!,
+                  ),
+                ),
+              ],
+            ),
+            GoRoute(
+              path: '/lists',
+              name: 'lists',
+              builder: (context, state) => const ListsScreen(),
+            ),
+            GoRoute(
+              path: '/chores',
+              name: 'chores',
+              builder: (context, state) => const ChoresScreen(),
+            ),
+            GoRoute(
+              path: '/money',
+              name: 'money',
+              builder: (context, state) => const ExpensesScreen(),
+            ),
+            GoRoute(
+              path: '/recipes',
+              name: 'recipes',
+              builder: (context, state) => const RecipesScreen(),
+            ),
+            GoRoute(
+              path: '/you',
+              name: 'you',
+              builder: (context, state) => const AccountScreen(),
+            ),
+          ],
+        ),
+      ],
+    );
 
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          routerProvider.overrideWith((ref) => router),
           authStateProvider.overrideWith((ref) => true),
           groupServiceProviderAsync.overrideWith((ref) async => groupService),
           listServiceProviderAsync.overrideWith((ref) async => listService),
           choreServiceProviderAsync.overrideWith((ref) async => choreService),
           financeServiceProviderAsync.overrideWith((ref) async => financeService),
           recipeServiceProviderAsync.overrideWith((ref) async => recipeService),
+          activityServiceProviderAsync
+              .overrideWith((ref) async => activityService),
           authServiceProviderAsync.overrideWith((ref) async => authService),
           notificationServiceProviderAsync
               .overrideWith((ref) async => notificationService),
         ],
-        child: const MitlistApp(),
+        child: MaterialApp.router(routerConfig: router),
       ),
     );
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
 
     expect(find.text('My Households'), findsOneWidget);
     expect(find.text('Test Household'), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.list_alt_outlined));
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
     expect(find.text('New list'), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.check_box_outlined));
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
     expect(find.text('Add chore'), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.account_balance_wallet_outlined));
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
     expect(find.text('Add expense'), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.home_outlined));
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
     await tester.tap(find.text('Test Household'));
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
 
     expect(find.text('Home base'), findsOneWidget);
-    await tester.ensureVisible(find.text('Recipes'));
-    await tester.tap(find.text('Recipes'));
-    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Kitchen').first);
+    await tester.tap(find.text('Kitchen').first);
+    await _pumpUi(tester);
 
     expect(find.text('ADD RECIPE'), findsOneWidget);
+  });
+
+  testWidgets('account settings change password and show in-app terms',
+      (tester) async {
+    await _setLargeSurface(tester);
+    final authService = FakeAuthService(currentUser: user);
+    final notificationService = FakeNotificationService(
+      preferences: const [
+        NotificationPreferenceModel(
+          id: 'pref-1',
+          userId: userId,
+          type: 'household_updates',
+          enabled: true,
+          channel: 'push',
+        ),
+      ],
+    );
+
+    await _pumpScreen(
+      tester,
+      child: const AccountScreen(),
+      overrides: [
+        authServiceProviderAsync.overrideWith((ref) async => authService),
+        notificationServiceProviderAsync
+            .overrideWith((ref) async => notificationService),
+      ],
+    );
+
+    expect(find.text('Language'), findsNothing);
+
+    await tester.tap(find.text('Change Password'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).at(0), 'oldpassword');
+    await tester.enterText(find.byType(TextField).at(1), 'newpassword123');
+    await tester.enterText(find.byType(TextField).at(2), 'newpassword123');
+    await tester.tap(find.text('CHANGE PASSWORD'));
+    await tester.pumpAndSettle();
+
+    expect(authService.lastChangePasswordRequest, isNotNull);
+    expect(authService.lastChangePasswordRequest!.oldPassword, 'oldpassword');
+    expect(
+      authService.lastChangePasswordRequest!.newPassword,
+      'newpassword123',
+    );
+
+    await tester.tap(find.text('Terms of Service'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Terms of Service'), findsWidgets);
+    expect(
+      find.textContaining('Shared household content is visible'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('login screen supports password reset and removes dead oauth',
+      (tester) async {
+    await _setLargeSurface(tester);
+    final authService = FakeAuthService(currentUser: user);
+
+    await _pumpScreen(
+      tester,
+      child: const LoginScreen(),
+      overrides: [
+        authServiceProviderAsync.overrideWith((ref) async => authService),
+      ],
+    );
+
+    expect(find.text('Continue with Google'), findsNothing);
+    expect(find.text('Continue with Apple'), findsNothing);
+
+    await tester.tap(find.text('Forgot password?'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, 'reset@example.com');
+    await tester.tap(find.text('SEND RESET CODE'));
+    await tester.pumpAndSettle();
+
+    expect(authService.lastPasswordResetEmail, 'reset@example.com');
+    expect(
+      find.text('If that email exists, a reset code has been sent.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('signup screen exposes actionable terms and privacy',
+      (tester) async {
+    await _setLargeSurface(tester);
+
+    await _pumpScreen(
+      tester,
+      child: const SignupScreen(),
+      overrides: const [],
+    );
+
+    await tester.tap(find.text('Terms'));
+    await tester.pumpAndSettle();
+    expect(find.text('Terms of Service'), findsWidgets);
+    expect(
+      find.textContaining('Shared household content is visible'),
+      findsOneWidget,
+    );
+
+    Navigator.of(tester.element(find.text('Terms of Service').first)).pop();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Privacy Policy'));
+    await tester.pumpAndSettle();
+    expect(find.text('Privacy Policy'), findsWidgets);
+    expect(
+      find.textContaining('stores the account details'),
+      findsOneWidget,
+    );
   });
 }
 
@@ -480,6 +662,11 @@ Future<void> _pumpScreen(
 Future<void> _setLargeSurface(WidgetTester tester) async {
   await tester.binding.setSurfaceSize(const Size(1200, 1800));
   addTearDown(() => tester.binding.setSurfaceSize(null));
+}
+
+Future<void> _pumpUi(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(seconds: 3));
 }
 
 class FakeGroupService implements GroupService {
@@ -606,9 +793,39 @@ class FakeAuthService implements AuthService {
   FakeAuthService({required this.currentUser});
 
   final User currentUser;
+  ChangePasswordRequest? lastChangePasswordRequest;
+  String? lastPasswordResetEmail;
 
   @override
   Future<User> getMe() async => currentUser;
+
+  @override
+  Future<void> changePassword(ChangePasswordRequest request) async {
+    lastChangePasswordRequest = request;
+  }
+
+  @override
+  Future<void> requestPasswordReset(String email) async {
+    lastPasswordResetEmail = email;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class FakeActivityService implements ActivityService {
+  FakeActivityService({List<ActivityLogModel>? activities})
+      : _activities = activities ?? <ActivityLogModel>[];
+
+  final List<ActivityLogModel> _activities;
+
+  @override
+  Future<List<ActivityLogModel>> listActivityLogs(
+    String groupId, {
+    int limit = 50,
+    int offset = 0,
+  }) async =>
+      _activities.skip(offset).take(limit).toList();
 
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
@@ -679,8 +896,24 @@ class FakeListService implements ListService {
 }
 
 class FakeNotificationService implements NotificationService {
+  FakeNotificationService({List<NotificationPreferenceModel>? preferences})
+      : _preferences = preferences ?? <NotificationPreferenceModel>[];
+
+  final List<NotificationPreferenceModel> _preferences;
+
   @override
-  Future<List<NotificationPreferenceModel>> getPreferences() async => const [];
+  Future<List<NotificationPreferenceModel>> getPreferences() async =>
+      List<NotificationPreferenceModel>.from(_preferences);
+
+  @override
+  Future<void> updatePreference(NotificationPreferenceModel pref) async {
+    final index = _preferences.indexWhere((item) => item.id == pref.id);
+    if (index >= 0) {
+      _preferences[index] = pref;
+      return;
+    }
+    _preferences.add(pref);
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();

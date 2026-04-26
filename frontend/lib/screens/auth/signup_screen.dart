@@ -8,6 +8,7 @@ import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../widgets/alert.dart';
+import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_input.dart';
 
@@ -98,6 +99,27 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     } finally {
       setState(() => _isLoading = false);
     }
+  }
+
+  void _showLegalSheet({
+    required String title,
+    required List<String> paragraphs,
+  }) {
+    showAppBottomSheet(
+      context: context,
+      title: title,
+      body: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var i = 0; i < paragraphs.length; i++) ...[
+            Text(paragraphs[i]),
+            if (i < paragraphs.length - 1)
+              const SizedBox(height: MitlistSpacing.md),
+          ],
+        ],
+      ),
+    );
   }
 
   @override
@@ -194,8 +216,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                           ),
                         ),
                         const SizedBox(height: MitlistSpacing.space4),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             Text(
                               'Already have an account?',
@@ -216,13 +239,60 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                           ],
                         ),
                         const SizedBox(height: MitlistSpacing.space2),
-                        Text(
-                          'By creating an account, you agree to our Terms and Privacy Policy.',
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(
+                              'By creating an account, you agree to our ',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
                                     color: MitlistColors.textTertiary,
                                   ),
-                          textAlign: TextAlign.center,
+                            ),
+                            TextButton(
+                              onPressed: () => _showLegalSheet(
+                                title: 'Terms of Service',
+                                paragraphs: const [
+                                  'Use mitlist responsibly. Shared household content is visible to the members of that household.',
+                                  'Do not upload unlawful content, impersonate others, or abuse the service. Accounts and shared data may be removed for misuse.',
+                                  'The app is provided as-is while the product is still evolving. Keep your own backups for anything critical.',
+                                ],
+                              ),
+                              child: const Text('Terms'),
+                            ),
+                            Text(
+                              ' and ',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: MitlistColors.textTertiary,
+                                  ),
+                            ),
+                            TextButton(
+                              onPressed: () => _showLegalSheet(
+                                title: 'Privacy Policy',
+                                paragraphs: const [
+                                  'mitlist stores the account details and household content needed to operate the app.',
+                                  'Shared data such as lists, chores, expenses, and recipes is visible to other members of the same household.',
+                                  'Only provide information you are comfortable keeping in a shared household workspace.',
+                                ],
+                              ),
+                              child: const Text('Privacy Policy'),
+                            ),
+                            Text(
+                              '.',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: MitlistColors.textTertiary,
+                                  ),
+                            ),
+                          ],
                         ),
                       ],
                     ),

@@ -34,7 +34,6 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   String _name = '';
   String _email = '';
   bool _notificationsEnabled = true;
-  String _language = 'English';
   bool _isEditingName = false;
 
   late final TextEditingController _nameController;
@@ -113,53 +112,125 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     }
   }
 
-  void _showLanguagePicker() {
-    const languages = ['English', 'Spanish', 'French', 'German'];
+  void _showPasswordSheet() {
+    final currentPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    var isSaving = false;
+    String? error;
+
     showAppBottomSheet(
       context: context,
-      title: 'Select Language',
-      body: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: languages.asMap().entries.map((entry) {
-          final index = entry.key;
-          final lang = entry.value;
-          final isSelected = lang == _language;
-          return Column(
-            children: [
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  lang,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight:
-                            isSelected ? FontWeight.w700 : FontWeight.w400,
-                      ),
+      title: 'Change Password',
+      body: StatefulBuilder(
+        builder: (context, setSheetState) {
+          Future<void> submit() async {
+            final currentPassword = currentPasswordController.text.trim();
+            final newPassword = newPasswordController.text.trim();
+            final confirmPassword = confirmPasswordController.text.trim();
+
+            if (currentPassword.isEmpty ||
+                newPassword.isEmpty ||
+                confirmPassword.isEmpty) {
+              setSheetState(() => error = 'Fill out all password fields.');
+              return;
+            }
+            if (newPassword.length < 6) {
+              setSheetState(
+                  () => error = 'New password must be at least 6 characters.');
+              return;
+            }
+            if (newPassword != confirmPassword) {
+              setSheetState(() => error = 'New passwords do not match.');
+              return;
+            }
+
+            setSheetState(() {
+              isSaving = true;
+              error = null;
+            });
+
+            try {
+              final authService = await ref.read(authServiceProviderAsync.future);
+              await authService.changePassword(
+                ChangePasswordRequest(
+                  oldPassword: currentPassword,
+                  newPassword: newPassword,
                 ),
-                trailing: isSelected
-                    ? const AppIcon(
-                        name: 'check',
-                        size: 20,
-                        color: MitlistColors.primary500,
-                      )
-                    : null,
-                onTap: () {
-                  setState(() => _language = lang);
-                  Navigator.of(context).pop();
-                },
+              );
+              if (!mounted || !context.mounted) return;
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(this.context).showSnackBar(
+                const SnackBar(content: Text('Password changed')),
+              );
+            } catch (e) {
+              setSheetState(() {
+                isSaving = false;
+                error = e.toString().replaceFirst('Exception: ', '');
+              });
+            }
+          }
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (error != null) ...[
+                AppAlert(type: AppAlertType.error, message: error!),
+                const SizedBox(height: MitlistSpacing.md),
+              ],
+              TextField(
+                controller: currentPasswordController,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: 'Current password'),
               ),
-              if (index < languages.length - 1) const Divider(),
+              const SizedBox(height: MitlistSpacing.md),
+              TextField(
+                controller: newPasswordController,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: 'New password'),
+              ),
+              const SizedBox(height: MitlistSpacing.md),
+              TextField(
+                controller: confirmPasswordController,
+                obscureText: true,
+                decoration:
+                    const InputDecoration(labelText: 'Confirm new password'),
+                onSubmitted: (_) => submit(),
+              ),
+              const SizedBox(height: MitlistSpacing.lg),
+              AppButton(
+                text: isSaving ? 'Saving...' : 'Change password',
+                onPressed: isSaving ? null : submit,
+              ),
             ],
           );
-        }).toList(),
+        },
       ),
     );
   }
 
-  void _showPasswordSheet() {
+  void _showTermsSheet() {
     showAppBottomSheet(
       context: context,
-      title: 'Change Password',
-      body: const Text('Password change form placeholder'),
+      title: 'Terms of Service',
+      body: const Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Use mitlist responsibly. Shared household content is visible to the members of that household.',
+          ),
+          SizedBox(height: MitlistSpacing.md),
+          Text(
+            'Do not upload unlawful content, impersonate others, or abuse the service. Accounts and shared data may be removed for misuse.',
+          ),
+          SizedBox(height: MitlistSpacing.md),
+          Text(
+            'The app is provided as-is while the product is still evolving. Keep your own backups for anything critical.',
+          ),
+        ],
+      ),
     );
   }
 
@@ -313,15 +384,6 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             trailing: const AppIcon(name: 'chevronRight'),
             onTap: () => context.goNamed('notifications'),
           ),
-          const Divider(),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const AppIcon(name: 'language'),
-            title: const Text('Language'),
-            subtitle: Text(_language),
-            trailing: const AppIcon(name: 'chevronRight'),
-            onTap: _showLanguagePicker,
-          ),
         ],
       ),
     );
@@ -355,11 +417,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             leading: const AppIcon(name: 'identification'),
             title: const Text('Terms of Service'),
             trailing: const AppIcon(name: 'arrowRight'),
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Opening terms...')),
-              );
-            },
+            onTap: _showTermsSheet,
           ),
         ],
       ),

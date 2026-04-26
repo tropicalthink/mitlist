@@ -8,6 +8,7 @@ import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../widgets/alert.dart';
+import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_input.dart';
 
@@ -80,6 +81,81 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } finally {
       setState(() => _isLoading = false);
     }
+  }
+
+  void _showPasswordResetSheet() {
+    final emailController = TextEditingController(text: _emailController.text.trim());
+    var isSubmitting = false;
+    String? error;
+    String? successMessage;
+
+    showAppBottomSheet(
+      context: context,
+      title: 'Reset Password',
+      body: StatefulBuilder(
+        builder: (context, setSheetState) {
+          Future<void> submit() async {
+            final email = emailController.text.trim();
+            if (email.isEmpty) {
+              setSheetState(() => error = 'Email is required.');
+              return;
+            }
+
+            setSheetState(() {
+              isSubmitting = true;
+              error = null;
+              successMessage = null;
+            });
+
+            try {
+              final authService = await ref.read(authServiceProviderAsync.future);
+              await authService.requestPasswordReset(email);
+              if (!mounted) return;
+              setSheetState(() {
+                isSubmitting = false;
+                successMessage =
+                    'If that email exists, a reset code has been sent.';
+              });
+            } catch (e) {
+              setSheetState(() {
+                isSubmitting = false;
+                error = e.toString().replaceFirst('Exception: ', '');
+              });
+            }
+          }
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (error != null) ...[
+                AppAlert(type: AppAlertType.error, message: error!),
+                const SizedBox(height: MitlistSpacing.md),
+              ],
+              if (successMessage != null) ...[
+                AppAlert(type: AppAlertType.info, message: successMessage!),
+                const SizedBox(height: MitlistSpacing.md),
+              ],
+              AppInput(
+                label: 'Email',
+                hint: 'you@example.com',
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.done,
+                autofillHints: const [AutofillHints.email],
+                onSubmitted: (_) => submit(),
+              ),
+              const SizedBox(height: MitlistSpacing.lg),
+              AppButton(
+                text: 'Send reset code',
+                onPressed: isSubmitting ? null : submit,
+                isLoading: isSubmitting,
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -157,18 +233,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: MitlistSpacing.space4),
-                        OutlinedButton.icon(
-                          onPressed: () {},
-                          icon: const Icon(Icons.login, size: 20),
-                          label: const Text('Continue with Google'),
-                        ),
-                        const SizedBox(height: MitlistSpacing.space3),
-                        OutlinedButton.icon(
-                          onPressed: () {},
-                          icon: const Icon(Icons.apple, size: 20),
-                          label: const Text('Continue with Apple'),
-                        ),
-                        const SizedBox(height: MitlistSpacing.space4),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -190,14 +254,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              'Forgot password? Coming soon',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelMedium
-                                  ?.copyWith(
-                                    color: MitlistColors.textSecondary,
-                                  ),
+                            TextButton(
+                              onPressed: _showPasswordResetSheet,
+                              child: Text(
+                                'Forgot password?',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .labelMedium
+                                    ?.copyWith(
+                                      color: MitlistColors.primary600,
+                                    ),
+                              ),
                             ),
                           ],
                         ),
