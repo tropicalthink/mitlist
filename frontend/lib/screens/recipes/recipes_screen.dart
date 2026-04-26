@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../providers/recipe_provider.dart';
 import '../../models/recipe_models.dart';
 import '../../sheets/recipe_detail_sheet.dart';
@@ -297,7 +298,11 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                 tooltip: 'Back',
                 onPressed: _clearSearch,
               )
-            : null,
+            : IconButton(
+                icon: const Icon(AppIcons.userGroup),
+                tooltip: 'To households',
+                onPressed: () => context.goNamed('groupsList'),
+              ),
         title: _showSearch
             ? TextField(
                 controller: _searchController,

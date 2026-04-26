@@ -454,7 +454,14 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     final showSettlementsNudge = canSettle && (_suggestions.isNotEmpty);
 
     return Scaffold(
-      appBar: MitlistAppBar.titleText('Money'),
+      appBar: MitlistAppBar.titleText(
+        'Money',
+        leading: IconButton(
+          icon: const AppIcon(name: 'userGroup'),
+          tooltip: 'To households',
+          onPressed: () => context.goNamed('groupsList'),
+        ),
+      ),
       body: Column(
         children: [
           // Sticky top section
@@ -486,7 +493,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                     ? _ErrorBody(onRetry: _loadData)
                     : !_hasHousehold
                         ? _NoHouseholdBody(
-                            onOpenHouseholds: () => context.goNamed('home'),
+                            onOpenHouseholds: () => context.goNamed('groupsList'),
                           )
                         : _selectedTab == 0
                             ? _TimelineBody(

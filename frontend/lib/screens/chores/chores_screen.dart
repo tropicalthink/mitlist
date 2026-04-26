@@ -335,12 +335,19 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     final sections = _groupBySection(filtered);
 
     return Scaffold(
-      appBar: MitlistAppBar.titleText('Chores'),
+      appBar: MitlistAppBar.titleText(
+        'Chores',
+        leading: IconButton(
+          icon: const AppIcon(name: 'userGroup'),
+          tooltip: 'To households',
+          onPressed: () => context.goNamed('groupsList'),
+        ),
+      ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'chores_create_fab',
-        onPressed: _hasHousehold ? _addChore : () => context.goNamed('home'),
+        onPressed: _hasHousehold ? _addChore : () => context.goNamed('groupsList'),
         icon: AppIcon(
-          name: _hasHousehold ? 'plus' : 'home',
+          name: _hasHousehold ? 'plus' : 'userGroup',
           color: MitlistColors.textOnPrimary,
         ),
         label: Text(_hasHousehold ? 'Add chore' : 'Households'),
@@ -482,7 +489,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                     padding: const EdgeInsets.all(MitlistSpacing.md),
                     child: AppEmptyState(
                       icon: const AppIcon(
-                        name: 'home',
+                        name: 'userGroup',
                         size: 56,
                         color: MitlistColors.textTertiary,
                       ),
@@ -492,7 +499,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                       actions: [
                         AppButton(
                           text: 'Go to households',
-                          onPressed: () => context.goNamed('home'),
+                          onPressed: () => context.goNamed('groupsList'),
                         ),
                       ],
                     ),

@@ -456,7 +456,14 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: MitlistAppBar.titleText('You'),
+      appBar: MitlistAppBar.titleText(
+        'You',
+        leading: IconButton(
+          icon: const AppIcon(name: 'userGroup'),
+          tooltip: 'To households',
+          onPressed: () => context.goNamed('groupsList'),
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(MitlistSpacing.md),
         children: [

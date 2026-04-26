@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../models/notification_models.dart';
 import '../../providers/notification_provider.dart';
@@ -7,6 +8,7 @@ import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_card.dart';
+import '../../widgets/app_icon.dart';
 import '../../widgets/mitlist_app_bar.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
@@ -153,6 +155,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     return Scaffold(
       appBar: MitlistAppBar.titleText(
         'Notifications',
+        leading: IconButton(
+          icon: const AppIcon(name: 'userGroup'),
+          tooltip: 'To households',
+          onPressed: () => context.goNamed('groupsList'),
+        ),
         actions: [
           TextButton(
             onPressed: _isLoading ? null : _markAllRead,

@@ -323,7 +323,11 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                 tooltip: 'Back',
                 onPressed: _clearSearch,
               )
-            : null,
+            : IconButton(
+                icon: const Icon(AppIcons.userGroup),
+                tooltip: 'To households',
+                onPressed: () => context.goNamed('groupsList'),
+              ),
         title: _showSearch
             ? TextField(
                 controller: _searchController,
@@ -422,7 +426,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'lists_create_fab',
         onPressed:
-            _hasHousehold ? _showCreateSheet : () => context.goNamed('home'),
+            _hasHousehold ? _showCreateSheet : () => context.goNamed('groupsList'),
         icon: const Icon(AppIcons.plus),
         label: const Text('New list'),
       ),
@@ -680,13 +684,13 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
       child: Padding(
         padding: const EdgeInsets.all(MitlistSpacing.md),
         child: AppEmptyState(
-          icon: const Icon(AppIcons.home),
+          icon: const Icon(AppIcons.userGroup),
           title: 'No household yet',
           description: 'Create or join a household before adding lists.',
           actions: [
             AppButton(
               text: 'Go to households',
-              onPressed: () => context.goNamed('home'),
+              onPressed: () => context.goNamed('groupsList'),
             ),
           ],
         ),
