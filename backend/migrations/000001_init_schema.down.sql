@@ -1,11 +1,5 @@
 DROP TABLE IF EXISTS chat_messages;
 DROP TABLE IF EXISTS chat_sessions;
-DROP TABLE IF EXISTS species_wiki;
-DROP TABLE IF EXISTS care_logs;
-DROP TABLE IF EXISTS care_schedules;
-DROP TABLE IF EXISTS living_things;
-DROP TABLE IF EXISTS vault_shares;
-DROP TABLE IF EXISTS vault_items;
 DROP TABLE IF EXISTS activity_logs;
 DROP TABLE IF EXISTS notification_preferences;
 DROP TABLE IF EXISTS notifications;

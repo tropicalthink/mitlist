@@ -87,7 +87,7 @@ func TestMigration_Rollback(t *testing.T) {
 	// Verify schema: check some tables exist.
 	tables := []string{
 		"users", "groups", "lists", "expenses", "recipes",
-		"chores", "vault_items", "living_things", "chat_sessions",
+		"chores", "chat_sessions",
 	}
 	for _, table := range tables {
 		var exists bool

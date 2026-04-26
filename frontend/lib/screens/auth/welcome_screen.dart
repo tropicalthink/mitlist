@@ -95,7 +95,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   ),
                   const SizedBox(height: MitlistSpacing.space3),
                   Text(
-                    'Lists · Chores · Money · Vault',
+                    'Lists · Chores · Money',
                     style: MitlistTypography.labelXSmall(
                       color: MitlistColors.textTertiary,
                     ),
