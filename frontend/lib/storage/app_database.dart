@@ -68,7 +68,68 @@ class Conflicts extends Table {
   Set<Column<Object>>? get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [ListsTable, ListItemsTable, OutboxOps, Conflicts])
+class ExpensesTable extends Table {
+  TextColumn get id => text()();
+  TextColumn get groupId => text().named('group_id')();
+  TextColumn get payerId => text().named('payer_id')();
+  IntColumn get amount => integer()();
+  TextColumn get description => text()();
+  TextColumn get category => text()();
+  TextColumn get currency => text()();
+  TextColumn get notes => text()();
+  DateTimeColumn get date => dateTime()();
+  DateTimeColumn get createdAt => dateTime().named('created_at')();
+
+  @override
+  Set<Column<Object>>? get primaryKey => {id};
+}
+
+class FinanceSummaries extends Table {
+  TextColumn get groupId => text().named('group_id')();
+  TextColumn get summaryJson => text().named('summary_json')();
+  DateTimeColumn get updatedAt => dateTime().named('updated_at')();
+
+  @override
+  Set<Column<Object>>? get primaryKey => {groupId};
+}
+
+class CurrentChoresCaches extends Table {
+  TextColumn get groupId => text().named('group_id')();
+  TextColumn get choresJson => text().named('chores_json')();
+  DateTimeColumn get updatedAt => dateTime().named('updated_at')();
+
+  @override
+  Set<Column<Object>>? get primaryKey => {groupId};
+}
+
+class RecipesTable extends Table {
+  TextColumn get id => text()();
+  TextColumn get title => text()();
+  TextColumn get description => text()();
+  IntColumn get prepTime => integer().named('prep_time')();
+  IntColumn get cookTime => integer().named('cook_time')();
+  IntColumn get servings => integer()();
+  TextColumn get imageUrl => text().named('image_url').nullable()();
+  BoolColumn get isPublic => boolean().named('is_public')();
+  DateTimeColumn get createdAt => dateTime().named('created_at')();
+  DateTimeColumn get updatedAt => dateTime().named('updated_at')();
+
+  @override
+  Set<Column<Object>>? get primaryKey => {id};
+}
+
+@DriftDatabase(
+  tables: [
+    ListsTable,
+    ListItemsTable,
+    ExpensesTable,
+    FinanceSummaries,
+    CurrentChoresCaches,
+    RecipesTable,
+    OutboxOps,
+    Conflicts,
+  ],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
@@ -194,6 +255,101 @@ class AppDatabase extends _$AppDatabase {
       )
     ]);
   }
+
+  // ---------------------------------------------------------------------------
+  // Expenses + summary cache
+  // ---------------------------------------------------------------------------
+
+  Stream<List<ExpensesTableData>> watchExpensesByGroup(String groupId) {
+    return (select(expensesTable)
+          ..where((t) => t.groupId.equals(groupId))
+          ..orderBy([(t) => OrderingTerm.desc(t.date), (t) => OrderingTerm.desc(t.createdAt)]))
+        .watch();
+  }
+
+  Future<List<ExpensesTableData>> getExpensesByGroupOnce(String groupId) {
+    return (select(expensesTable)..where((t) => t.groupId.equals(groupId))).get();
+  }
+
+  Future<void> upsertExpensesRows(Iterable<ExpensesTableCompanion> rows) async {
+    await batch((b) {
+      b.insertAllOnConflictUpdate(expensesTable, rows.toList(growable: false));
+    });
+  }
+
+  Stream<FinanceSummary?> watchFinanceSummary(String groupId) {
+    return (select(financeSummaries)..where((t) => t.groupId.equals(groupId))).watchSingleOrNull();
+  }
+
+  Future<void> upsertFinanceSummary({
+    required String groupId,
+    required Map<String, dynamic> summaryJson,
+  }) async {
+    await into(financeSummaries).insert(
+      FinanceSummariesCompanion(
+        groupId: Value(groupId),
+        summaryJson: Value(jsonEncode(summaryJson)),
+        updatedAt: Value(DateTime.now()),
+      ),
+      mode: InsertMode.insertOrReplace,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Current chores cache
+  // ---------------------------------------------------------------------------
+
+  Stream<CurrentChoresCache?> watchCurrentChores(String groupId) {
+    return (select(currentChoresCaches)
+          ..where((t) => t.groupId.equals(groupId)))
+        .watchSingleOrNull();
+  }
+
+  Future<CurrentChoresCache?> getCurrentChoresOnce(String groupId) {
+    return (select(currentChoresCaches)
+          ..where((t) => t.groupId.equals(groupId)))
+        .getSingleOrNull();
+  }
+
+  Future<void> upsertCurrentChores({
+    required String groupId,
+    required String choresJson,
+  }) async {
+    await into(currentChoresCaches).insert(
+      CurrentChoresCachesCompanion(
+        groupId: Value(groupId),
+        choresJson: Value(choresJson),
+        updatedAt: Value(DateTime.now()),
+      ),
+      mode: InsertMode.insertOrReplace,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Recipes cache
+  // ---------------------------------------------------------------------------
+
+  Stream<List<RecipesTableData>> watchRecipes() {
+    return (select(recipesTable)
+          ..orderBy([
+            (t) => OrderingTerm.desc(t.updatedAt),
+          ]))
+        .watch();
+  }
+
+  Future<List<RecipesTableData>> getRecipesOnce() {
+    return (select(recipesTable)
+          ..orderBy([
+            (t) => OrderingTerm.desc(t.updatedAt),
+          ]))
+        .get();
+  }
+
+  Future<void> upsertRecipesRows(Iterable<RecipesTableCompanion> rows) async {
+    await batch((b) {
+      b.insertAllOnConflictUpdate(recipesTable, rows.toList(growable: false));
+    });
+  }
 }
 
 QueryExecutor _openConnection() {
@@ -204,9 +360,9 @@ QueryExecutor _openConnection() {
     ),
     web: DriftWebOptions(
       // Served from `web/sqlite3.wasm` (copied from pub cache).
-      sqlite3Wasm: Uri.parse('sqlite3.wasm'),
+      sqlite3Wasm: Uri.parse('/sqlite3.wasm'),
       // Compiled from `web/drift_worker.dart`.
-      driftWorker: Uri.parse('drift_worker.dart.js'),
+      driftWorker: Uri.parse('/drift_worker.dart.js'),
     ),
   );
 }

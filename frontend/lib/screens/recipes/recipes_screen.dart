@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/recipe_provider.dart';
+import '../../models/recipe_models.dart';
 import '../../sheets/recipe_detail_sheet.dart';
 import '../../sheets/recipe_creation_sheet.dart';
 import '../../theme/colors.dart';
@@ -67,6 +68,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _isLoadingMore = false;
   bool _hasMore = true;
+  StreamSubscription<List<Recipe>>? _sub;
 
   bool _showSearch = false;
   String _searchQuery = '';
@@ -88,6 +90,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _sub?.cancel();
     _searchTimer?.cancel();
     _searchController.dispose();
     super.dispose();
@@ -177,16 +180,36 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     });
 
     try {
-      final recipeService = await ref.read(recipeServiceProviderAsync.future);
-      final apiRecipes = await recipeService.listRecipes(
-        limit: _pageLimit,
-        offset: 0,
-      );
+      final repo = await ref.read(recipeRepositoryProvider.future);
+
+      await _sub?.cancel();
+      _sub = repo.watchRecipes().listen((apiRecipes) {
+        if (!mounted) return;
+        setState(() {
+          _recipes
+            ..clear()
+            ..addAll(apiRecipes.map((api) => _Recipe(
+                  id: api.id,
+                  title: api.title,
+                  description: api.description,
+                  prepTime: api.prepTime,
+                  cookTime: api.cookTime,
+                  servings: api.servings,
+                  imageUrl: api.imageUrl,
+                  isPublic: api.isPublic,
+                  updatedAt: api.updatedAt,
+                )));
+          _viewState = _recipes.isEmpty ? _ViewState.empty : _ViewState.loaded;
+        });
+      });
+
+      final cached = await repo.getRecipesOnce();
       if (!mounted) return;
+      final hadCache = cached.isNotEmpty;
       setState(() {
         _recipes
           ..clear()
-          ..addAll(apiRecipes.map((api) => _Recipe(
+          ..addAll(cached.map((api) => _Recipe(
                 id: api.id,
                 title: api.title,
                 description: api.description,
@@ -197,9 +220,33 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                 isPublic: api.isPublic,
                 updatedAt: api.updatedAt,
               )));
-        _hasMore = apiRecipes.length == _pageLimit;
-        _viewState = apiRecipes.isEmpty ? _ViewState.empty : _ViewState.loaded;
+        _viewState =
+            _recipes.isEmpty ? _ViewState.loading : _ViewState.loaded;
       });
+
+      try {
+        final fetchedCount = await repo.refreshRecipes(
+          limit: _pageLimit,
+          offset: 0,
+        );
+        if (!mounted) return;
+        setState(() {
+          _hasMore = fetchedCount == _pageLimit;
+          _viewState = _recipes.isEmpty ? _ViewState.empty : _ViewState.loaded;
+        });
+      } catch (e) {
+        if (!mounted) return;
+        if (!hadCache) {
+          setState(() {
+            _errorMessage = 'Failed to load recipes';
+            _viewState = _ViewState.error;
+          });
+        } else {
+          setState(() {
+            _viewState = _recipes.isEmpty ? _ViewState.empty : _ViewState.loaded;
+          });
+        }
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -220,25 +267,14 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     });
 
     try {
-      final recipeService = await ref.read(recipeServiceProviderAsync.future);
-      final apiRecipes = await recipeService.listRecipes(
+      final repo = await ref.read(recipeRepositoryProvider.future);
+      final fetchedCount = await repo.refreshRecipes(
         limit: _pageLimit,
         offset: _recipes.length,
       );
       if (!mounted) return;
       setState(() {
-        _recipes.addAll(apiRecipes.map((api) => _Recipe(
-              id: api.id,
-              title: api.title,
-              description: api.description,
-              prepTime: api.prepTime,
-              cookTime: api.cookTime,
-              servings: api.servings,
-              imageUrl: api.imageUrl,
-              isPublic: api.isPublic,
-              updatedAt: api.updatedAt,
-            )));
-        _hasMore = apiRecipes.length == _pageLimit;
+        _hasMore = fetchedCount == _pageLimit;
         _isLoadingMore = false;
       });
     } catch (e) {

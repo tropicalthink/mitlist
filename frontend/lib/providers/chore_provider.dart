@@ -1,9 +1,23 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/chore_service.dart';
 import '../models/chore_models.dart';
+import '../providers/list_provider.dart';
+import '../repositories/chore_repository.dart';
 
 final choreServiceProviderAsync = FutureProvider<ChoreService>((ref) async {
   return await ChoreService.create(ref);
+});
+
+final choreRepositoryProvider = FutureProvider<ChoreRepository>((ref) async {
+  final db = ref.read(appDatabaseProvider);
+  final service = await ref.read(choreServiceProviderAsync.future);
+  return ChoreRepository(db: db, remote: service);
+});
+
+final cachedCurrentChoresByGroupProvider =
+    StreamProvider.family<List<CurrentChore>, String>((ref, groupId) async* {
+  final repo = await ref.watch(choreRepositoryProvider.future);
+  yield* repo.watchCurrentChores(groupId);
 });
 
 final choresByGroupProvider = FutureProvider.family<List<Chore>, String>((ref, groupId) async {

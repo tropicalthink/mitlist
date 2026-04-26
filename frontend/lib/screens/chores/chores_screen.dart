@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:async';
+
 import 'package:intl/intl.dart';
+import '../../models/chore_models.dart';
 import '../../providers/chore_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../services/group_id_validator.dart';
@@ -30,6 +33,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   bool _isLoading = true;
   String? _error;
   final List<_Chore> _chores = [];
+  StreamSubscription<List<CurrentChore>>? _sub;
   bool _filterMe = true;
   bool _hasHousehold = true;
 
@@ -56,6 +60,12 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     _loadChores();
   }
 
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+
   Future<void> _loadChores() async {
     if (!mounted) return;
     setState(() {
@@ -63,7 +73,6 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       _error = null;
     });
     try {
-      final choreService = await ref.read(choreServiceProviderAsync.future);
       final groupService = await ref.read(groupServiceProviderAsync.future);
       final groups = await groupService.listGroups();
       final groupId = groups.isNotEmpty ? groups.first.id : null;
@@ -76,35 +85,21 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         });
         return;
       }
-      final currentChores = await choreService.listCurrentChores(groupId!);
-      if (!mounted) return;
-      final now = DateTime.now();
-      final chores = currentChores
-          .map((entry) => _Chore(
-                assignmentId: entry.pendingAssignment?.id,
-                id: entry.chore.id,
-                title: entry.chore.name,
-                assigneeInitials:
-                    entry.pendingAssignment?.userId.isNotEmpty == true
-                        ? entry.pendingAssignment!.userId
-                            .substring(0, 1)
-                            .toUpperCase()
-                        : '?',
-                dueDate: entry.pendingAssignment?.dueDate ??
-                    _fallbackDueDate(now, entry.chore.frequency),
-                isMine: entry.assignedToMe,
-                completed: !entry.chore.isActive ||
-                    entry.pendingAssignment?.status.toLowerCase() ==
-                        'completed',
-              ))
-          .toList();
-      setState(() {
-        _chores
-          ..clear()
-          ..addAll(chores);
-        _hasHousehold = true;
-        _isLoading = false;
+      final repo = await ref.read(choreRepositoryProvider.future);
+
+      await _sub?.cancel();
+      final gid = groupId!;
+      _sub = repo.watchCurrentChores(gid).listen((currentChores) {
+        if (!mounted) return;
+        _applyCurrentChores(currentChores);
       });
+
+      final cached = await repo.getCurrentChoresOnce(gid);
+      if (!mounted) return;
+      _applyCurrentChores(cached, allowSkeleton: cached.isEmpty);
+
+      // Background refresh; keep cache if it fails.
+      unawaited(repo.refreshCurrentChores(gid).catchError((_) {}));
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -112,6 +107,35 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  void _applyCurrentChores(List<CurrentChore> currentChores,
+      {bool allowSkeleton = false}) {
+    final now = DateTime.now();
+    final chores = currentChores
+        .map((entry) => _Chore(
+              assignmentId: entry.pendingAssignment?.id,
+              id: entry.chore.id,
+              title: entry.chore.name,
+              assigneeInitials: entry.pendingAssignment?.userId.isNotEmpty == true
+                  ? entry.pendingAssignment!.userId.substring(0, 1).toUpperCase()
+                  : '?',
+              dueDate: entry.pendingAssignment?.dueDate ??
+                  _fallbackDueDate(now, entry.chore.frequency),
+              isMine: entry.assignedToMe,
+              completed: !entry.chore.isActive ||
+                  entry.pendingAssignment?.status.toLowerCase() == 'completed',
+            ))
+        .toList();
+
+    setState(() {
+      _chores
+        ..clear()
+        ..addAll(chores);
+      _hasHousehold = true;
+      _isLoading = allowSkeleton && chores.isEmpty;
+      _error = null;
+    });
   }
 
   Future<void> _onRefresh() => _loadChores();
@@ -158,13 +182,13 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
 
   Future<void> _toggleComplete(String id) async {
     try {
-      final choreService = await ref.read(choreServiceProviderAsync.future);
       final chore = _chores.firstWhere((c) => c.id == id);
       if (chore.completed) {
         // Chore is already completed, can't un-complete through API
         return;
       }
-      await choreService.completeChore(id);
+      final repo = await ref.read(choreRepositoryProvider.future);
+      await repo.completeOfflineFirst(id);
       await _loadChores();
     } catch (e) {
       if (!mounted) return;
@@ -186,8 +210,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
 
   Future<void> _skipChore(String id) async {
     try {
-      final choreService = await ref.read(choreServiceProviderAsync.future);
-      await choreService.skipChore(id);
+      final repo = await ref.read(choreRepositoryProvider.future);
+      await repo.skipOfflineFirst(id);
       await _loadChores();
     } catch (e) {
       if (!mounted) return;
@@ -197,9 +221,9 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
 
   Future<void> _rescheduleTomorrow(String id) async {
     try {
-      final choreService = await ref.read(choreServiceProviderAsync.future);
       final tomorrow = DateTime.now().add(const Duration(days: 1));
-      await choreService.rescheduleChore(id, dueDate: tomorrow);
+      final repo = await ref.read(choreRepositoryProvider.future);
+      await repo.rescheduleOfflineFirst(id, tomorrow);
       await _loadChores();
     } catch (e) {
       if (!mounted) return;
@@ -209,8 +233,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
 
   Future<void> _undoLastExecution(String id) async {
     try {
-      final choreService = await ref.read(choreServiceProviderAsync.future);
-      await choreService.undoLastChoreExecution(id);
+      final repo = await ref.read(choreRepositoryProvider.future);
+      await repo.undoOfflineFirst(id);
       await _loadChores();
     } catch (e) {
       if (!mounted) return;

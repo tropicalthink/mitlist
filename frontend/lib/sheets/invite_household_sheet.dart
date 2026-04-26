@@ -18,10 +18,12 @@ class InviteHouseholdSheet extends ConsumerStatefulWidget {
 
   final String groupId;
 
+  static const double _qrSize = MitlistSpacing.space24 * 2;
+
   static Future<void> show(BuildContext context, {required String groupId}) {
     return showAppBottomSheet<void>(
       context: context,
-      title: 'Invite to household',
+      title: 'Invite to Household',
       body: InviteHouseholdSheet(groupId: groupId),
     );
   }
@@ -78,7 +80,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet> {
       await Clipboard.setData(ClipboardData(text: code.trim()));
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invite code copied')),
+        const SnackBar(content: Text('Copied invite code')),
       );
     } finally {
       if (mounted) setState(() => _isCopying = false);
@@ -126,55 +128,88 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet> {
                     color: MitlistColors.surfaceSoft,
                     border: Border.all(color: MitlistColors.borderSecondary, width: 2),
                   ),
-                  child: Text(
-                    code.isEmpty ? '—' : code.trim(),
-                    style: MitlistTypography.monoBody(),
+                  child: InkWell(
+                    onTap: (code.isEmpty || _isCopying) ? null : _copyCode,
+                    child: Padding(
+                      // Ensures a comfy touch target without changing layout too much.
+                      padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xs),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              code.isEmpty ? '—' : code.trim(),
+                              style: MitlistTypography.monoBody(),
+                            ),
+                          ),
+                          if (code.isNotEmpty) ...[
+                            const SizedBox(width: MitlistSpacing.sm),
+                            Icon(
+                              Icons.copy,
+                              size: 18,
+                              color: MitlistColors.textTertiary,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: MitlistSpacing.md),
                 Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(MitlistSpacing.sm),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(
-                        color: MitlistColors.borderSecondary,
-                        width: 2,
+                  child: InkWell(
+                    onTap: (code.isEmpty || _isCopying) ? null : _copyCode,
+                    child: Container(
+                      padding: const EdgeInsets.all(MitlistSpacing.sm),
+                      decoration: BoxDecoration(
+                        color: MitlistColors.surfacePrimary,
+                        border: Border.all(
+                          color: MitlistColors.borderSecondary,
+                          width: 2,
+                        ),
                       ),
-                    ),
-                    child: code.isEmpty
-                        ? SizedBox(
-                            width: 196,
-                            height: 196,
-                            child: Center(
-                              child: Text(
-                                '—',
-                                style: MitlistTypography.monoBody(),
-                              ),
-                            ),
-                          )
-                        : QrImageView(
-                            data: code.trim(),
-                            version: QrVersions.auto,
-                            size: 196,
-                            backgroundColor: Colors.white,
-                            errorCorrectionLevel: QrErrorCorrectLevel.M,
-                            semanticsLabel: 'Household invite code QR',
-                            errorStateBuilder: (context, error) {
-                              return SizedBox(
-                                width: 196,
-                                height: 196,
-                                child: Center(
-                                  child: Text(
-                                    'QR unavailable',
-                                    style:
-                                        Theme.of(context).textTheme.bodySmall,
-                                  ),
+                      child: code.isEmpty
+                          ? SizedBox(
+                              width: InviteHouseholdSheet._qrSize,
+                              height: InviteHouseholdSheet._qrSize,
+                              child: Center(
+                                child: Text(
+                                  '—',
+                                  style: MitlistTypography.monoBody(),
                                 ),
-                              );
-                            },
-                          ),
+                              ),
+                            )
+                          : QrImageView(
+                              data: code.trim(),
+                              version: QrVersions.auto,
+                              size: InviteHouseholdSheet._qrSize,
+                              backgroundColor: MitlistColors.surfacePrimary,
+                              errorCorrectionLevel: QrErrorCorrectLevel.M,
+                              semanticsLabel: 'Household invite code QR',
+                              errorStateBuilder: (context, error) {
+                                return SizedBox(
+                                  width: InviteHouseholdSheet._qrSize,
+                                  height: InviteHouseholdSheet._qrSize,
+                                  child: Center(
+                                    child: Text(
+                                      'QR unavailable',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
                   ),
+                ),
+                const SizedBox(height: MitlistSpacing.sm),
+                Text(
+                  code.isEmpty ? 'Generating QR…' : 'Scan to join',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: MitlistColors.textTertiary,
+                      ),
                 ),
                 const SizedBox(height: MitlistSpacing.sm),
                 Text(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -176,23 +178,17 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     });
 
     try {
-      final financeService = await ref.read(financeServiceProviderAsync.future);
       final authService = await ref.read(authServiceProviderAsync.future);
       final groupService = await ref.read(groupServiceProviderAsync.future);
       final groups = await groupService.listGroups(limit: 1);
       final groupId = groups.isNotEmpty ? groups.first.id : null;
       final validGroupId = isValidGroupId(groupId) ? groupId : null;
       final me = validGroupId == null ? null : await authService.getMe();
+      final repo = await ref.read(financeRepositoryProvider.future);
       final expenses = validGroupId == null
           ? <Expense>[]
-          : await financeService.listExpenses(
-              validGroupId,
-              limit: _pageLimit,
-              offset: 0,
-            );
-      final summary = validGroupId == null
-          ? null
-          : await financeService.getFinanceSummary(validGroupId);
+          : await repo.getExpensesByGroupOnce(validGroupId);
+      final summary = validGroupId == null ? null : await repo.watchSummaryByGroup(validGroupId).first;
 
       if (!mounted) return;
 
@@ -206,8 +202,33 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       setState(() {
         _hasHousehold = validGroupId != null;
         _hasMore = expenses.length == _pageLimit;
-        _isLoading = false;
+        _isLoading = expenses.isEmpty;
       });
+
+      // Background refresh; keep cached UI if this fails.
+      if (validGroupId != null) {
+        unawaited(repo.refreshGroup(validGroupId, limit: _pageLimit, offset: 0).catchError((_) {}));
+        ref.listenManual(cachedExpensesByGroupProvider(validGroupId), (prev, next) {
+          next.whenData((data) {
+            if (!mounted) return;
+            _timelineExpenses
+              ..clear()
+              ..addAll(data.map(_mapExpense));
+            _rebuildTimelineGroups();
+            setState(() => _isLoading = false);
+          });
+        });
+        ref.listenManual(cachedFinanceSummaryByGroupProvider(validGroupId), (prev, next) {
+          next.whenData((s) {
+            if (!mounted) return;
+            _applyFinanceSummary(s, me?.id);
+            setState(() {});
+          });
+        });
+      } else {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {

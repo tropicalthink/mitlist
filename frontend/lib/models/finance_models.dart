@@ -150,6 +150,27 @@ class FinanceSummary {
                 (j as Map).cast<String, dynamic>()))
             .toList(),
       );
+
+  Map<String, dynamic> toJson() => {
+        'balances': balances
+            .map((b) => {
+                  'user_id': b.userId,
+                  'display_name': b.displayName,
+                  'paid': b.paid,
+                  'owed': b.owed,
+                  'total': b.total,
+                })
+            .toList(),
+        'reimbursements': reimbursements
+            .map((r) => {
+                  'from_user_id': r.fromUserId,
+                  'from_display_name': r.fromDisplayName,
+                  'to_user_id': r.toUserId,
+                  'to_display_name': r.toDisplayName,
+                  'amount': r.amount,
+                })
+            .toList(),
+      };
 }
 
 class CreateExpenseRequest {
