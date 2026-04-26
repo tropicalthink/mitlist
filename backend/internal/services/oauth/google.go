@@ -33,8 +33,8 @@ type GoogleClient struct {
 // NewGoogleClient creates a Google OAuth client from application config.
 func NewGoogleClient(cfg *config.Config) *GoogleClient {
 	allowlist := parseAllowlist(cfg.OAuthRedirectAllowlist)
-	if len(allowlist) == 0 && cfg.GoogleRedirectURI != "" {
-		allowlist = []string{cfg.GoogleRedirectURI}
+	if len(allowlist) == 0 {
+		allowlist = defaultClientRedirectAllowlist(cfg.FrontendURL)
 	}
 
 	return &GoogleClient{
@@ -49,6 +49,14 @@ func NewGoogleClient(cfg *config.Config) *GoogleClient {
 	}
 }
 
+func defaultClientRedirectAllowlist(frontendURL string) []string {
+	allowlist := []string{"mitlist:///auth/callback"}
+	if trimmed := strings.TrimRight(frontendURL, "/"); trimmed != "" {
+		allowlist = append(allowlist, trimmed+"/auth/callback")
+	}
+	return allowlist
+}
+
 // GetAuthURL returns a Google authorization URL. The redirectURI is validated
 // against the configured allowlist; if invalid, an empty string is returned.
 func (c *GoogleClient) GetAuthURL(state, redirectURI string) string {
@@ -58,6 +66,11 @@ func (c *GoogleClient) GetAuthURL(state, redirectURI string) string {
 	conf := *c.config
 	conf.RedirectURL = redirectURI
 	return conf.AuthCodeURL(state, oauth2.AccessTypeOnline)
+}
+
+// RedirectURI returns the configured provider callback URI used for server-side exchanges.
+func (c *GoogleClient) RedirectURI() string {
+	return c.config.RedirectURL
 }
 
 // ExchangeCode exchanges an authorization code for an OAuth2 token.

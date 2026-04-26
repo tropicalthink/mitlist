@@ -85,8 +85,10 @@ func main() {
 		// OAuth (public initiation + callback)
 		oauthHandler := handlers.NewOAuthHandler(cfg, cnt.OAuthService())
 		r.Get("/oauth/google", oauthHandler.GetGoogle)
+		r.Get("/oauth/google/callback", oauthHandler.GetGoogleCallback)
 		r.Post("/oauth/google/callback", oauthHandler.PostGoogleCallback)
 		r.Get("/oauth/apple", oauthHandler.GetApple)
+		r.Get("/oauth/apple/callback", oauthHandler.GetAppleCallback)
 		r.Post("/oauth/apple/callback", oauthHandler.PostAppleCallback)
 
 		// Protected feature routes

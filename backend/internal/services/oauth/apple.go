@@ -54,8 +54,8 @@ type jwkCache struct {
 // NewAppleClient creates an Apple OAuth client from application config.
 func NewAppleClient(cfg *config.Config) *AppleClient {
 	allowlist := parseAllowlist(cfg.OAuthRedirectAllowlist)
-	if len(allowlist) == 0 && cfg.AppleRedirectURI != "" {
-		allowlist = []string{cfg.AppleRedirectURI}
+	if len(allowlist) == 0 {
+		allowlist = defaultClientRedirectAllowlist(cfg.FrontendURL)
 	}
 
 	return &AppleClient{
@@ -83,6 +83,11 @@ func (c *AppleClient) GetAuthURL(state, redirectURI string) string {
 		Scopes:      []string{"name", "email"},
 	}
 	return conf.AuthCodeURL(state, oauth2.AccessTypeOnline)
+}
+
+// RedirectURI returns the configured provider callback URI used for server-side exchanges.
+func (c *AppleClient) RedirectURI() string {
+	return c.redirectURI
 }
 
 // ExchangeCode exchanges an authorization code for an OAuth2 token.

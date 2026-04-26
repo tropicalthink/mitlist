@@ -9,6 +9,7 @@ import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/browser_redirect.dart';
+import '../../utils/native_oauth_launcher.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
@@ -238,22 +239,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _startOAuth(String provider) async {
-    if (!supportsBrowserRedirect) {
+    if (!supportsBrowserRedirect && !supportsNativeOAuthLaunch) {
       setState(() {
-        _errorMessage = '$provider sign-in is only available in browser builds right now.';
+        _errorMessage =
+            '$provider sign-in is only available on web, Android, and iOS right now.';
       });
       return;
     }
 
-    final currentUri = browserCurrentUri();
     final baseUri = Uri.parse(ApiConfig.baseUrl);
-    final redirectUri = Uri(
-      scheme: currentUri.scheme,
-      host: currentUri.host,
-      port: currentUri.hasPort ? currentUri.port : null,
-      path: '/auth/callback',
-      queryParameters: {'provider': provider},
-    ).toString();
+    final redirectUri = supportsBrowserRedirect
+        ? Uri(
+            scheme: browserCurrentUri().scheme,
+            host: browserCurrentUri().host,
+            port: browserCurrentUri().hasPort ? browserCurrentUri().port : null,
+            path: '/auth/callback',
+          ).toString()
+        : ApiConfig.nativeOAuthCallbackUri;
 
     final authService = await ref.read(authServiceProviderAsync.future);
     try {
@@ -267,7 +269,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         queryParameters: {'redirect_uri': redirectUri},
       ).toString();
 
-      redirectBrowser(authUrl);
+      if (supportsBrowserRedirect) {
+        redirectBrowser(authUrl);
+      } else {
+        await launchNativeOAuthUrl(authUrl);
+      }
     } catch (e) {
       if (!mounted) {
         return;

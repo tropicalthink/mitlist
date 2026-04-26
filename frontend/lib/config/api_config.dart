@@ -41,6 +41,9 @@ class ApiConfig {
   /// Temporary remember-me choice saved across browser OAuth redirects.
   static const String pendingOAuthRememberMeKey = 'pending_oauth_remember_me';
 
+  /// Native-app callback used for browser-based OAuth handoff on mobile.
+  static const String nativeOAuthCallbackUri = 'mitlist:///auth/callback';
+
   /// Whether to verify SSL certificates.
   ///
   /// In production, this should be `true`.

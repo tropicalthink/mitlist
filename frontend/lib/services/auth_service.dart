@@ -172,6 +172,14 @@ class AuthService {
     }
   }
 
+  /// Stores an already-issued token pair from a backend OAuth redirect handoff.
+  Future<void> saveTokenPair(
+    TokenPair tokenPair, {
+    required bool rememberMe,
+  }) async {
+    await _saveTokens(tokenPair, persistSession: rememberMe);
+  }
+
   /// Persists the remember-me choice before handing off to a browser OAuth flow.
   Future<void> setPendingOAuthRememberMe(bool rememberMe) async {
     await _prefs.setBool(ApiConfig.pendingOAuthRememberMeKey, rememberMe);

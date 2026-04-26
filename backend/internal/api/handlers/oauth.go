@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/yourorg/mitlist/internal/api"
 	"github.com/yourorg/mitlist/internal/config"
@@ -20,6 +22,11 @@ type OAuthHandler struct {
 	appleClient  *oauthclient.AppleClient
 	frontendURL  string
 }
+
+const (
+	oauthStateCookieName    = "oauth_state"
+	oauthRedirectCookieName = "oauth_redirect_uri"
+)
 
 // NewOAuthHandler creates a new OAuthHandler.
 func NewOAuthHandler(cfg *config.Config, service *services.OAuthService) *OAuthHandler {
@@ -38,33 +45,26 @@ func (h *OAuthHandler) GetGoogle(w http.ResponseWriter, r *http.Request) {
 		respondError(w, &api.ValidationError{Field: "redirect_uri", Message: "redirect_uri is required"})
 		return
 	}
+	if h.googleClient.GetAuthURL("state", redirectURI) == "" {
+		respondError(w, &api.ValidationError{Field: "redirect_uri", Message: "redirect URI not allowed"})
+		return
+	}
 
 	state, err := generateState()
 	if err != nil {
 		respondError(w, err)
 		return
 	}
-	url := h.googleClient.GetAuthURL(state, redirectURI)
-	if url == "" {
-		respondError(w, &api.ValidationError{Field: "redirect_uri", Message: "redirect URI not allowed"})
-		return
-	}
+	authURL := h.googleClient.GetAuthURL(state, h.googleClient.RedirectURI())
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     "oauth_state",
-		Value:    state,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-		MaxAge:   600,
-	})
-	http.Redirect(w, r, url, http.StatusFound)
+	h.setOAuthCookie(w, oauthStateCookieName, state, 600, r)
+	h.setOAuthCookie(w, oauthRedirectCookieName, base64.URLEncoding.EncodeToString([]byte(redirectURI)), 600, r)
+	http.Redirect(w, r, authURL, http.StatusFound)
 }
 
 func clearOAuthStateCookie(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     "oauth_state",
+		Name:     oauthStateCookieName,
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
@@ -72,6 +72,37 @@ func clearOAuthStateCookie(w http.ResponseWriter) {
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   -1,
 	})
+}
+
+func (h *OAuthHandler) clearOAuthCookie(w http.ResponseWriter, name string, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     name,
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   h.cookieSecure(r),
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   -1,
+	})
+}
+
+func (h *OAuthHandler) setOAuthCookie(w http.ResponseWriter, name, value string, maxAge int, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     name,
+		Value:    value,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   h.cookieSecure(r),
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   maxAge,
+	})
+}
+
+func (h *OAuthHandler) cookieSecure(r *http.Request) bool {
+	if r.TLS != nil {
+		return true
+	}
+	return strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
 }
 
 // PostGoogleCallback handles the Google OAuth callback.
@@ -86,13 +117,13 @@ func (h *OAuthHandler) PostGoogleCallback(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	cookie, err := r.Cookie("oauth_state")
+	cookie, err := r.Cookie(oauthStateCookieName)
 	if err != nil || cookie.Value == "" || cookie.Value != req.State {
-		clearOAuthStateCookie(w)
+		h.clearOAuthCookie(w, oauthStateCookieName, r)
 		respondError(w, &api.ValidationError{Message: "invalid oauth state"})
 		return
 	}
-	clearOAuthStateCookie(w)
+	h.clearOAuthCookie(w, oauthStateCookieName, r)
 
 	user, access, refresh, err := h.service.GoogleLogin(r.Context(), req.Code, req.RedirectURI)
 	if err != nil {
@@ -107,11 +138,27 @@ func (h *OAuthHandler) PostGoogleCallback(w http.ResponseWriter, r *http.Request
 	})
 }
 
+// GetGoogleCallback handles a provider redirect, completes login server-side,
+// and redirects back to the client callback URL with issued tokens.
+func (h *OAuthHandler) GetGoogleCallback(w http.ResponseWriter, r *http.Request) {
+	h.completeRedirectFlow(w, r, "google", func() (*servicesOAuthResult, error) {
+		user, access, refresh, err := h.service.GoogleLogin(r.Context(), r.URL.Query().Get("code"), "")
+		if err != nil {
+			return nil, err
+		}
+		return &servicesOAuthResult{user: user, access: access, refresh: refresh}, nil
+	})
+}
+
 // GetApple initiates Apple OAuth by redirecting to the provider.
 func (h *OAuthHandler) GetApple(w http.ResponseWriter, r *http.Request) {
 	redirectURI := r.URL.Query().Get("redirect_uri")
 	if redirectURI == "" {
 		respondError(w, &api.ValidationError{Field: "redirect_uri", Message: "redirect_uri is required"})
+		return
+	}
+	if h.appleClient.GetAuthURL("state", redirectURI) == "" {
+		respondError(w, &api.ValidationError{Field: "redirect_uri", Message: "redirect URI not allowed"})
 		return
 	}
 
@@ -120,22 +167,11 @@ func (h *OAuthHandler) GetApple(w http.ResponseWriter, r *http.Request) {
 		respondError(w, err)
 		return
 	}
-	url := h.appleClient.GetAuthURL(state, redirectURI)
-	if url == "" {
-		respondError(w, &api.ValidationError{Field: "redirect_uri", Message: "redirect URI not allowed"})
-		return
-	}
+	authURL := h.appleClient.GetAuthURL(state, h.appleClient.RedirectURI())
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     "oauth_state",
-		Value:    state,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-		MaxAge:   600,
-	})
-	http.Redirect(w, r, url, http.StatusFound)
+	h.setOAuthCookie(w, oauthStateCookieName, state, 600, r)
+	h.setOAuthCookie(w, oauthRedirectCookieName, base64.URLEncoding.EncodeToString([]byte(redirectURI)), 600, r)
+	http.Redirect(w, r, authURL, http.StatusFound)
 }
 
 // PostAppleCallback handles the Apple OAuth callback.
@@ -151,13 +187,13 @@ func (h *OAuthHandler) PostAppleCallback(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	cookie, err := r.Cookie("oauth_state")
+	cookie, err := r.Cookie(oauthStateCookieName)
 	if err != nil || cookie.Value == "" || cookie.Value != req.State {
-		clearOAuthStateCookie(w)
+		h.clearOAuthCookie(w, oauthStateCookieName, r)
 		respondError(w, &api.ValidationError{Message: "invalid oauth state"})
 		return
 	}
-	clearOAuthStateCookie(w)
+	h.clearOAuthCookie(w, oauthStateCookieName, r)
 
 	user, access, refresh, err := h.service.AppleLogin(r.Context(), req.Code, req.RedirectURI, req.IDToken)
 	if err != nil {
@@ -170,6 +206,112 @@ func (h *OAuthHandler) PostAppleCallback(w http.ResponseWriter, r *http.Request)
 		"access_token":  access,
 		"refresh_token": refresh,
 	})
+}
+
+// GetAppleCallback handles a provider redirect, completes login server-side,
+// and redirects back to the client callback URL with issued tokens.
+func (h *OAuthHandler) GetAppleCallback(w http.ResponseWriter, r *http.Request) {
+	h.completeRedirectFlow(w, r, "apple", func() (*servicesOAuthResult, error) {
+		user, access, refresh, err := h.service.AppleLogin(
+			r.Context(),
+			r.URL.Query().Get("code"),
+			"",
+			r.URL.Query().Get("id_token"),
+		)
+		if err != nil {
+			return nil, err
+		}
+		return &servicesOAuthResult{user: user, access: access, refresh: refresh}, nil
+	})
+}
+
+type servicesOAuthResult struct {
+	user    any
+	access  string
+	refresh string
+}
+
+func (h *OAuthHandler) completeRedirectFlow(
+	w http.ResponseWriter,
+	r *http.Request,
+	provider string,
+	login func() (*servicesOAuthResult, error),
+) {
+	finalRedirectURI, err := h.finalRedirectURI(r)
+	if err != nil {
+		h.clearOAuthCookie(w, oauthStateCookieName, r)
+		h.clearOAuthCookie(w, oauthRedirectCookieName, r)
+		respondError(w, err)
+		return
+	}
+
+	requestState := r.URL.Query().Get("state")
+	cookie, err := r.Cookie(oauthStateCookieName)
+	if err != nil || cookie.Value == "" || cookie.Value != requestState {
+		h.clearOAuthCookie(w, oauthStateCookieName, r)
+		h.clearOAuthCookie(w, oauthRedirectCookieName, r)
+		http.Redirect(w, r, h.redirectWithError(finalRedirectURI, provider, "invalid oauth state"), http.StatusFound)
+		return
+	}
+
+	h.clearOAuthCookie(w, oauthStateCookieName, r)
+	h.clearOAuthCookie(w, oauthRedirectCookieName, r)
+
+	if providerError := r.URL.Query().Get("error"); providerError != "" {
+		http.Redirect(w, r, h.redirectWithError(finalRedirectURI, provider, providerError), http.StatusFound)
+		return
+	}
+
+	result, err := login()
+	if err != nil {
+		http.Redirect(w, r, h.redirectWithError(finalRedirectURI, provider, err.Error()), http.StatusFound)
+		return
+	}
+
+	http.Redirect(
+		w,
+		r,
+		h.redirectWithTokens(finalRedirectURI, provider, result.access, result.refresh),
+		http.StatusFound,
+	)
+}
+
+func (h *OAuthHandler) finalRedirectURI(r *http.Request) (string, error) {
+	cookie, err := r.Cookie(oauthRedirectCookieName)
+	if err != nil || cookie.Value == "" {
+		return "", &api.ValidationError{Field: "redirect_uri", Message: "missing redirect URI"}
+	}
+
+	raw, err := base64.URLEncoding.DecodeString(cookie.Value)
+	if err != nil {
+		return "", &api.ValidationError{Field: "redirect_uri", Message: "invalid redirect URI"}
+	}
+	return string(raw), nil
+}
+
+func (h *OAuthHandler) redirectWithTokens(finalRedirectURI, provider, access, refresh string) string {
+	redirectURL, err := url.Parse(finalRedirectURI)
+	if err != nil {
+		return finalRedirectURI
+	}
+	query := redirectURL.Query()
+	query.Set("provider", provider)
+	query.Set("access_token", access)
+	query.Set("refresh_token", refresh)
+	redirectURL.RawQuery = query.Encode()
+	return redirectURL.String()
+}
+
+func (h *OAuthHandler) redirectWithError(finalRedirectURI, provider, message string) string {
+	redirectURL, err := url.Parse(finalRedirectURI)
+	if err != nil {
+		return finalRedirectURI
+	}
+	query := redirectURL.Query()
+	query.Set("provider", provider)
+	query.Set("error", message)
+	redirectURL.RawQuery = query.Encode()
+	return redirectURL.String()
 }
 
 func generateState() (string, error) {

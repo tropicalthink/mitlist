@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../models/auth_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
@@ -32,6 +33,8 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
     final code = widget.queryParameters['code'];
     final state = widget.queryParameters['state'];
     final idToken = widget.queryParameters['id_token'];
+    final accessToken = widget.queryParameters['access_token'];
+    final refreshToken = widget.queryParameters['refresh_token'];
     final oauthError = widget.queryParameters['error'];
 
     if (oauthError != null && oauthError.isNotEmpty) {
@@ -40,29 +43,40 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
     }
 
     if (provider == null || code == null || state == null) {
-      setState(() => _error = 'Missing OAuth callback parameters.');
-      return;
+      if (accessToken == null || refreshToken == null) {
+        setState(() => _error = 'Missing OAuth callback parameters.');
+        return;
+      }
     }
-
-    final redirectUri = Uri(
-      scheme: Uri.base.scheme,
-      host: Uri.base.host,
-      port: Uri.base.hasPort ? Uri.base.port : null,
-      path: '/auth/callback',
-      queryParameters: {'provider': provider},
-    ).toString();
 
     try {
       final authService = await ref.read(authServiceProviderAsync.future);
       final rememberMe = await authService.consumePendingOAuthRememberMe();
-      await authService.completeOAuthCallback(
-        provider: provider,
-        code: code,
-        redirectUri: redirectUri,
-        state: state,
-        idToken: idToken,
-        rememberMe: rememberMe,
-      );
+      if (accessToken != null && refreshToken != null) {
+        await authService.saveTokenPair(
+          TokenPair(
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+          ),
+          rememberMe: rememberMe,
+        );
+      } else {
+        final redirectUri = Uri(
+          scheme: Uri.base.scheme,
+          host: Uri.base.host,
+          port: Uri.base.hasPort ? Uri.base.port : null,
+          path: '/auth/callback',
+          queryParameters: {'provider': provider},
+        ).toString();
+        await authService.completeOAuthCallback(
+          provider: provider!,
+          code: code!,
+          redirectUri: redirectUri,
+          state: state!,
+          idToken: idToken,
+          rememberMe: rememberMe,
+        );
+      }
       ref.read(authStateProvider.notifier).state = true;
       if (!mounted) return;
       context.goNamed('home');
