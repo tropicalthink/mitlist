@@ -118,6 +118,34 @@ class RecipesTable extends Table {
   Set<Column<Object>>? get primaryKey => {id};
 }
 
+class PinwallPostsCaches extends Table {
+  TextColumn get groupId => text().named('group_id')();
+  TextColumn get postsJson => text().named('posts_json')();
+  DateTimeColumn get updatedAt => dateTime().named('updated_at')();
+
+  @override
+  Set<Column<Object>>? get primaryKey => {groupId};
+}
+
+class HubGroupCaches extends Table {
+  TextColumn get groupId => text().named('group_id')();
+  TextColumn get groupJson => text().named('group_json')();
+  DateTimeColumn get updatedAt => dateTime().named('updated_at')();
+
+  @override
+  Set<Column<Object>>? get primaryKey => {groupId};
+}
+
+class HubActivityCaches extends Table {
+  TextColumn get groupId => text().named('group_id')();
+  TextColumn get activitiesJson => text().named('activities_json')();
+  BoolColumn get hadError => boolean().named('had_error')();
+  DateTimeColumn get updatedAt => dateTime().named('updated_at')();
+
+  @override
+  Set<Column<Object>>? get primaryKey => {groupId};
+}
+
 @DriftDatabase(
   tables: [
     ListsTable,
@@ -126,6 +154,9 @@ class RecipesTable extends Table {
     FinanceSummaries,
     CurrentChoresCaches,
     RecipesTable,
+    PinwallPostsCaches,
+    HubGroupCaches,
+    HubActivityCaches,
     OutboxOps,
     Conflicts,
   ],
@@ -349,6 +380,88 @@ class AppDatabase extends _$AppDatabase {
     await batch((b) {
       b.insertAllOnConflictUpdate(recipesTable, rows.toList(growable: false));
     });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Pinwall cache
+  // ---------------------------------------------------------------------------
+
+  Stream<PinwallPostsCache?> watchPinwallPosts(String groupId) {
+    return (select(pinwallPostsCaches)..where((t) => t.groupId.equals(groupId)))
+        .watchSingleOrNull();
+  }
+
+  Future<PinwallPostsCache?> getPinwallPostsOnce(String groupId) {
+    return (select(pinwallPostsCaches)..where((t) => t.groupId.equals(groupId)))
+        .getSingleOrNull();
+  }
+
+  Future<void> upsertPinwallPosts({
+    required String groupId,
+    required String postsJson,
+  }) async {
+    await into(pinwallPostsCaches).insert(
+      PinwallPostsCachesCompanion(
+        groupId: Value(groupId),
+        postsJson: Value(postsJson),
+        updatedAt: Value(DateTime.now()),
+      ),
+      mode: InsertMode.insertOrReplace,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Hub caches (group + recent activity)
+  // ---------------------------------------------------------------------------
+
+  Stream<HubGroupCache?> watchHubGroup(String groupId) {
+    return (select(hubGroupCaches)..where((t) => t.groupId.equals(groupId)))
+        .watchSingleOrNull();
+  }
+
+  Future<HubGroupCache?> getHubGroupOnce(String groupId) {
+    return (select(hubGroupCaches)..where((t) => t.groupId.equals(groupId)))
+        .getSingleOrNull();
+  }
+
+  Future<void> upsertHubGroup({
+    required String groupId,
+    required String groupJson,
+  }) async {
+    await into(hubGroupCaches).insert(
+      HubGroupCachesCompanion(
+        groupId: Value(groupId),
+        groupJson: Value(groupJson),
+        updatedAt: Value(DateTime.now()),
+      ),
+      mode: InsertMode.insertOrReplace,
+    );
+  }
+
+  Stream<HubActivityCache?> watchHubActivities(String groupId) {
+    return (select(hubActivityCaches)..where((t) => t.groupId.equals(groupId)))
+        .watchSingleOrNull();
+  }
+
+  Future<HubActivityCache?> getHubActivitiesOnce(String groupId) {
+    return (select(hubActivityCaches)..where((t) => t.groupId.equals(groupId)))
+        .getSingleOrNull();
+  }
+
+  Future<void> upsertHubActivities({
+    required String groupId,
+    required String activitiesJson,
+    required bool hadError,
+  }) async {
+    await into(hubActivityCaches).insert(
+      HubActivityCachesCompanion(
+        groupId: Value(groupId),
+        activitiesJson: Value(activitiesJson),
+        hadError: Value(hadError),
+        updatedAt: Value(DateTime.now()),
+      ),
+      mode: InsertMode.insertOrReplace,
+    );
   }
 }
 

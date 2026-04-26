@@ -114,6 +114,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const _HomeEntryScreen(),
             routes: [
               GoRoute(
+                path: 'groups',
+                name: 'groupsList',
+                builder: (context, state) => const GroupsListScreen(),
+              ),
+              GoRoute(
                 path: ':groupId/hub',
                 name: 'householdHub',
                 builder: (context, state) {

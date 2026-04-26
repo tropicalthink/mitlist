@@ -2395,6 +2395,757 @@ class RecipesTableCompanion extends UpdateCompanion<RecipesTableData> {
   }
 }
 
+class $PinwallPostsCachesTable extends PinwallPostsCaches
+    with TableInfo<$PinwallPostsCachesTable, PinwallPostsCache> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PinwallPostsCachesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _groupIdMeta =
+      const VerificationMeta('groupId');
+  @override
+  late final GeneratedColumn<String> groupId = GeneratedColumn<String>(
+      'group_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _postsJsonMeta =
+      const VerificationMeta('postsJson');
+  @override
+  late final GeneratedColumn<String> postsJson = GeneratedColumn<String>(
+      'posts_json', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [groupId, postsJson, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pinwall_posts_caches';
+  @override
+  VerificationContext validateIntegrity(Insertable<PinwallPostsCache> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('group_id')) {
+      context.handle(_groupIdMeta,
+          groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta));
+    } else if (isInserting) {
+      context.missing(_groupIdMeta);
+    }
+    if (data.containsKey('posts_json')) {
+      context.handle(_postsJsonMeta,
+          postsJson.isAcceptableOrUnknown(data['posts_json']!, _postsJsonMeta));
+    } else if (isInserting) {
+      context.missing(_postsJsonMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {groupId};
+  @override
+  PinwallPostsCache map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PinwallPostsCache(
+      groupId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}group_id'])!,
+      postsJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}posts_json'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $PinwallPostsCachesTable createAlias(String alias) {
+    return $PinwallPostsCachesTable(attachedDatabase, alias);
+  }
+}
+
+class PinwallPostsCache extends DataClass
+    implements Insertable<PinwallPostsCache> {
+  final String groupId;
+  final String postsJson;
+  final DateTime updatedAt;
+  const PinwallPostsCache(
+      {required this.groupId,
+      required this.postsJson,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['group_id'] = Variable<String>(groupId);
+    map['posts_json'] = Variable<String>(postsJson);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  PinwallPostsCachesCompanion toCompanion(bool nullToAbsent) {
+    return PinwallPostsCachesCompanion(
+      groupId: Value(groupId),
+      postsJson: Value(postsJson),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory PinwallPostsCache.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PinwallPostsCache(
+      groupId: serializer.fromJson<String>(json['groupId']),
+      postsJson: serializer.fromJson<String>(json['postsJson']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'groupId': serializer.toJson<String>(groupId),
+      'postsJson': serializer.toJson<String>(postsJson),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  PinwallPostsCache copyWith(
+          {String? groupId, String? postsJson, DateTime? updatedAt}) =>
+      PinwallPostsCache(
+        groupId: groupId ?? this.groupId,
+        postsJson: postsJson ?? this.postsJson,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  PinwallPostsCache copyWithCompanion(PinwallPostsCachesCompanion data) {
+    return PinwallPostsCache(
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      postsJson: data.postsJson.present ? data.postsJson.value : this.postsJson,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PinwallPostsCache(')
+          ..write('groupId: $groupId, ')
+          ..write('postsJson: $postsJson, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(groupId, postsJson, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PinwallPostsCache &&
+          other.groupId == this.groupId &&
+          other.postsJson == this.postsJson &&
+          other.updatedAt == this.updatedAt);
+}
+
+class PinwallPostsCachesCompanion extends UpdateCompanion<PinwallPostsCache> {
+  final Value<String> groupId;
+  final Value<String> postsJson;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const PinwallPostsCachesCompanion({
+    this.groupId = const Value.absent(),
+    this.postsJson = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PinwallPostsCachesCompanion.insert({
+    required String groupId,
+    required String postsJson,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  })  : groupId = Value(groupId),
+        postsJson = Value(postsJson),
+        updatedAt = Value(updatedAt);
+  static Insertable<PinwallPostsCache> custom({
+    Expression<String>? groupId,
+    Expression<String>? postsJson,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (groupId != null) 'group_id': groupId,
+      if (postsJson != null) 'posts_json': postsJson,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PinwallPostsCachesCompanion copyWith(
+      {Value<String>? groupId,
+      Value<String>? postsJson,
+      Value<DateTime>? updatedAt,
+      Value<int>? rowid}) {
+    return PinwallPostsCachesCompanion(
+      groupId: groupId ?? this.groupId,
+      postsJson: postsJson ?? this.postsJson,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (groupId.present) {
+      map['group_id'] = Variable<String>(groupId.value);
+    }
+    if (postsJson.present) {
+      map['posts_json'] = Variable<String>(postsJson.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PinwallPostsCachesCompanion(')
+          ..write('groupId: $groupId, ')
+          ..write('postsJson: $postsJson, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $HubGroupCachesTable extends HubGroupCaches
+    with TableInfo<$HubGroupCachesTable, HubGroupCache> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $HubGroupCachesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _groupIdMeta =
+      const VerificationMeta('groupId');
+  @override
+  late final GeneratedColumn<String> groupId = GeneratedColumn<String>(
+      'group_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _groupJsonMeta =
+      const VerificationMeta('groupJson');
+  @override
+  late final GeneratedColumn<String> groupJson = GeneratedColumn<String>(
+      'group_json', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [groupId, groupJson, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'hub_group_caches';
+  @override
+  VerificationContext validateIntegrity(Insertable<HubGroupCache> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('group_id')) {
+      context.handle(_groupIdMeta,
+          groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta));
+    } else if (isInserting) {
+      context.missing(_groupIdMeta);
+    }
+    if (data.containsKey('group_json')) {
+      context.handle(_groupJsonMeta,
+          groupJson.isAcceptableOrUnknown(data['group_json']!, _groupJsonMeta));
+    } else if (isInserting) {
+      context.missing(_groupJsonMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {groupId};
+  @override
+  HubGroupCache map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return HubGroupCache(
+      groupId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}group_id'])!,
+      groupJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}group_json'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $HubGroupCachesTable createAlias(String alias) {
+    return $HubGroupCachesTable(attachedDatabase, alias);
+  }
+}
+
+class HubGroupCache extends DataClass implements Insertable<HubGroupCache> {
+  final String groupId;
+  final String groupJson;
+  final DateTime updatedAt;
+  const HubGroupCache(
+      {required this.groupId,
+      required this.groupJson,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['group_id'] = Variable<String>(groupId);
+    map['group_json'] = Variable<String>(groupJson);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  HubGroupCachesCompanion toCompanion(bool nullToAbsent) {
+    return HubGroupCachesCompanion(
+      groupId: Value(groupId),
+      groupJson: Value(groupJson),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory HubGroupCache.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return HubGroupCache(
+      groupId: serializer.fromJson<String>(json['groupId']),
+      groupJson: serializer.fromJson<String>(json['groupJson']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'groupId': serializer.toJson<String>(groupId),
+      'groupJson': serializer.toJson<String>(groupJson),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  HubGroupCache copyWith(
+          {String? groupId, String? groupJson, DateTime? updatedAt}) =>
+      HubGroupCache(
+        groupId: groupId ?? this.groupId,
+        groupJson: groupJson ?? this.groupJson,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  HubGroupCache copyWithCompanion(HubGroupCachesCompanion data) {
+    return HubGroupCache(
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      groupJson: data.groupJson.present ? data.groupJson.value : this.groupJson,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HubGroupCache(')
+          ..write('groupId: $groupId, ')
+          ..write('groupJson: $groupJson, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(groupId, groupJson, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is HubGroupCache &&
+          other.groupId == this.groupId &&
+          other.groupJson == this.groupJson &&
+          other.updatedAt == this.updatedAt);
+}
+
+class HubGroupCachesCompanion extends UpdateCompanion<HubGroupCache> {
+  final Value<String> groupId;
+  final Value<String> groupJson;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const HubGroupCachesCompanion({
+    this.groupId = const Value.absent(),
+    this.groupJson = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  HubGroupCachesCompanion.insert({
+    required String groupId,
+    required String groupJson,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  })  : groupId = Value(groupId),
+        groupJson = Value(groupJson),
+        updatedAt = Value(updatedAt);
+  static Insertable<HubGroupCache> custom({
+    Expression<String>? groupId,
+    Expression<String>? groupJson,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (groupId != null) 'group_id': groupId,
+      if (groupJson != null) 'group_json': groupJson,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  HubGroupCachesCompanion copyWith(
+      {Value<String>? groupId,
+      Value<String>? groupJson,
+      Value<DateTime>? updatedAt,
+      Value<int>? rowid}) {
+    return HubGroupCachesCompanion(
+      groupId: groupId ?? this.groupId,
+      groupJson: groupJson ?? this.groupJson,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (groupId.present) {
+      map['group_id'] = Variable<String>(groupId.value);
+    }
+    if (groupJson.present) {
+      map['group_json'] = Variable<String>(groupJson.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HubGroupCachesCompanion(')
+          ..write('groupId: $groupId, ')
+          ..write('groupJson: $groupJson, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $HubActivityCachesTable extends HubActivityCaches
+    with TableInfo<$HubActivityCachesTable, HubActivityCache> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $HubActivityCachesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _groupIdMeta =
+      const VerificationMeta('groupId');
+  @override
+  late final GeneratedColumn<String> groupId = GeneratedColumn<String>(
+      'group_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _activitiesJsonMeta =
+      const VerificationMeta('activitiesJson');
+  @override
+  late final GeneratedColumn<String> activitiesJson = GeneratedColumn<String>(
+      'activities_json', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _hadErrorMeta =
+      const VerificationMeta('hadError');
+  @override
+  late final GeneratedColumn<bool> hadError = GeneratedColumn<bool>(
+      'had_error', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("had_error" IN (0, 1))'));
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [groupId, activitiesJson, hadError, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'hub_activity_caches';
+  @override
+  VerificationContext validateIntegrity(Insertable<HubActivityCache> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('group_id')) {
+      context.handle(_groupIdMeta,
+          groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta));
+    } else if (isInserting) {
+      context.missing(_groupIdMeta);
+    }
+    if (data.containsKey('activities_json')) {
+      context.handle(
+          _activitiesJsonMeta,
+          activitiesJson.isAcceptableOrUnknown(
+              data['activities_json']!, _activitiesJsonMeta));
+    } else if (isInserting) {
+      context.missing(_activitiesJsonMeta);
+    }
+    if (data.containsKey('had_error')) {
+      context.handle(_hadErrorMeta,
+          hadError.isAcceptableOrUnknown(data['had_error']!, _hadErrorMeta));
+    } else if (isInserting) {
+      context.missing(_hadErrorMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {groupId};
+  @override
+  HubActivityCache map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return HubActivityCache(
+      groupId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}group_id'])!,
+      activitiesJson: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}activities_json'])!,
+      hadError: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}had_error'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $HubActivityCachesTable createAlias(String alias) {
+    return $HubActivityCachesTable(attachedDatabase, alias);
+  }
+}
+
+class HubActivityCache extends DataClass
+    implements Insertable<HubActivityCache> {
+  final String groupId;
+  final String activitiesJson;
+  final bool hadError;
+  final DateTime updatedAt;
+  const HubActivityCache(
+      {required this.groupId,
+      required this.activitiesJson,
+      required this.hadError,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['group_id'] = Variable<String>(groupId);
+    map['activities_json'] = Variable<String>(activitiesJson);
+    map['had_error'] = Variable<bool>(hadError);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  HubActivityCachesCompanion toCompanion(bool nullToAbsent) {
+    return HubActivityCachesCompanion(
+      groupId: Value(groupId),
+      activitiesJson: Value(activitiesJson),
+      hadError: Value(hadError),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory HubActivityCache.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return HubActivityCache(
+      groupId: serializer.fromJson<String>(json['groupId']),
+      activitiesJson: serializer.fromJson<String>(json['activitiesJson']),
+      hadError: serializer.fromJson<bool>(json['hadError']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'groupId': serializer.toJson<String>(groupId),
+      'activitiesJson': serializer.toJson<String>(activitiesJson),
+      'hadError': serializer.toJson<bool>(hadError),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  HubActivityCache copyWith(
+          {String? groupId,
+          String? activitiesJson,
+          bool? hadError,
+          DateTime? updatedAt}) =>
+      HubActivityCache(
+        groupId: groupId ?? this.groupId,
+        activitiesJson: activitiesJson ?? this.activitiesJson,
+        hadError: hadError ?? this.hadError,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  HubActivityCache copyWithCompanion(HubActivityCachesCompanion data) {
+    return HubActivityCache(
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      activitiesJson: data.activitiesJson.present
+          ? data.activitiesJson.value
+          : this.activitiesJson,
+      hadError: data.hadError.present ? data.hadError.value : this.hadError,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HubActivityCache(')
+          ..write('groupId: $groupId, ')
+          ..write('activitiesJson: $activitiesJson, ')
+          ..write('hadError: $hadError, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(groupId, activitiesJson, hadError, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is HubActivityCache &&
+          other.groupId == this.groupId &&
+          other.activitiesJson == this.activitiesJson &&
+          other.hadError == this.hadError &&
+          other.updatedAt == this.updatedAt);
+}
+
+class HubActivityCachesCompanion extends UpdateCompanion<HubActivityCache> {
+  final Value<String> groupId;
+  final Value<String> activitiesJson;
+  final Value<bool> hadError;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const HubActivityCachesCompanion({
+    this.groupId = const Value.absent(),
+    this.activitiesJson = const Value.absent(),
+    this.hadError = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  HubActivityCachesCompanion.insert({
+    required String groupId,
+    required String activitiesJson,
+    required bool hadError,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  })  : groupId = Value(groupId),
+        activitiesJson = Value(activitiesJson),
+        hadError = Value(hadError),
+        updatedAt = Value(updatedAt);
+  static Insertable<HubActivityCache> custom({
+    Expression<String>? groupId,
+    Expression<String>? activitiesJson,
+    Expression<bool>? hadError,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (groupId != null) 'group_id': groupId,
+      if (activitiesJson != null) 'activities_json': activitiesJson,
+      if (hadError != null) 'had_error': hadError,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  HubActivityCachesCompanion copyWith(
+      {Value<String>? groupId,
+      Value<String>? activitiesJson,
+      Value<bool>? hadError,
+      Value<DateTime>? updatedAt,
+      Value<int>? rowid}) {
+    return HubActivityCachesCompanion(
+      groupId: groupId ?? this.groupId,
+      activitiesJson: activitiesJson ?? this.activitiesJson,
+      hadError: hadError ?? this.hadError,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (groupId.present) {
+      map['group_id'] = Variable<String>(groupId.value);
+    }
+    if (activitiesJson.present) {
+      map['activities_json'] = Variable<String>(activitiesJson.value);
+    }
+    if (hadError.present) {
+      map['had_error'] = Variable<bool>(hadError.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HubActivityCachesCompanion(')
+          ..write('groupId: $groupId, ')
+          ..write('activitiesJson: $activitiesJson, ')
+          ..write('hadError: $hadError, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $OutboxOpsTable extends OutboxOps
     with TableInfo<$OutboxOpsTable, OutboxOp> {
   @override
@@ -3259,6 +4010,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CurrentChoresCachesTable currentChoresCaches =
       $CurrentChoresCachesTable(this);
   late final $RecipesTableTable recipesTable = $RecipesTableTable(this);
+  late final $PinwallPostsCachesTable pinwallPostsCaches =
+      $PinwallPostsCachesTable(this);
+  late final $HubGroupCachesTable hubGroupCaches = $HubGroupCachesTable(this);
+  late final $HubActivityCachesTable hubActivityCaches =
+      $HubActivityCachesTable(this);
   late final $OutboxOpsTable outboxOps = $OutboxOpsTable(this);
   late final $ConflictsTable conflicts = $ConflictsTable(this);
   @override
@@ -3272,6 +4028,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         financeSummaries,
         currentChoresCaches,
         recipesTable,
+        pinwallPostsCaches,
+        hubGroupCaches,
+        hubActivityCaches,
         outboxOps,
         conflicts
       ];
@@ -4517,6 +5276,457 @@ typedef $$RecipesTableTableProcessedTableManager = ProcessedTableManager<
     ),
     RecipesTableData,
     PrefetchHooks Function()>;
+typedef $$PinwallPostsCachesTableCreateCompanionBuilder
+    = PinwallPostsCachesCompanion Function({
+  required String groupId,
+  required String postsJson,
+  required DateTime updatedAt,
+  Value<int> rowid,
+});
+typedef $$PinwallPostsCachesTableUpdateCompanionBuilder
+    = PinwallPostsCachesCompanion Function({
+  Value<String> groupId,
+  Value<String> postsJson,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+
+class $$PinwallPostsCachesTableFilterComposer
+    extends Composer<_$AppDatabase, $PinwallPostsCachesTable> {
+  $$PinwallPostsCachesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get postsJson => $composableBuilder(
+      column: $table.postsJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$PinwallPostsCachesTableOrderingComposer
+    extends Composer<_$AppDatabase, $PinwallPostsCachesTable> {
+  $$PinwallPostsCachesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get postsJson => $composableBuilder(
+      column: $table.postsJson, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$PinwallPostsCachesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PinwallPostsCachesTable> {
+  $$PinwallPostsCachesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
+
+  GeneratedColumn<String> get postsJson =>
+      $composableBuilder(column: $table.postsJson, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$PinwallPostsCachesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $PinwallPostsCachesTable,
+    PinwallPostsCache,
+    $$PinwallPostsCachesTableFilterComposer,
+    $$PinwallPostsCachesTableOrderingComposer,
+    $$PinwallPostsCachesTableAnnotationComposer,
+    $$PinwallPostsCachesTableCreateCompanionBuilder,
+    $$PinwallPostsCachesTableUpdateCompanionBuilder,
+    (
+      PinwallPostsCache,
+      BaseReferences<_$AppDatabase, $PinwallPostsCachesTable, PinwallPostsCache>
+    ),
+    PinwallPostsCache,
+    PrefetchHooks Function()> {
+  $$PinwallPostsCachesTableTableManager(
+      _$AppDatabase db, $PinwallPostsCachesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PinwallPostsCachesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PinwallPostsCachesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PinwallPostsCachesTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> groupId = const Value.absent(),
+            Value<String> postsJson = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              PinwallPostsCachesCompanion(
+            groupId: groupId,
+            postsJson: postsJson,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String groupId,
+            required String postsJson,
+            required DateTime updatedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              PinwallPostsCachesCompanion.insert(
+            groupId: groupId,
+            postsJson: postsJson,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$PinwallPostsCachesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $PinwallPostsCachesTable,
+    PinwallPostsCache,
+    $$PinwallPostsCachesTableFilterComposer,
+    $$PinwallPostsCachesTableOrderingComposer,
+    $$PinwallPostsCachesTableAnnotationComposer,
+    $$PinwallPostsCachesTableCreateCompanionBuilder,
+    $$PinwallPostsCachesTableUpdateCompanionBuilder,
+    (
+      PinwallPostsCache,
+      BaseReferences<_$AppDatabase, $PinwallPostsCachesTable, PinwallPostsCache>
+    ),
+    PinwallPostsCache,
+    PrefetchHooks Function()>;
+typedef $$HubGroupCachesTableCreateCompanionBuilder = HubGroupCachesCompanion
+    Function({
+  required String groupId,
+  required String groupJson,
+  required DateTime updatedAt,
+  Value<int> rowid,
+});
+typedef $$HubGroupCachesTableUpdateCompanionBuilder = HubGroupCachesCompanion
+    Function({
+  Value<String> groupId,
+  Value<String> groupJson,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+
+class $$HubGroupCachesTableFilterComposer
+    extends Composer<_$AppDatabase, $HubGroupCachesTable> {
+  $$HubGroupCachesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get groupJson => $composableBuilder(
+      column: $table.groupJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$HubGroupCachesTableOrderingComposer
+    extends Composer<_$AppDatabase, $HubGroupCachesTable> {
+  $$HubGroupCachesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get groupJson => $composableBuilder(
+      column: $table.groupJson, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$HubGroupCachesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $HubGroupCachesTable> {
+  $$HubGroupCachesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
+
+  GeneratedColumn<String> get groupJson =>
+      $composableBuilder(column: $table.groupJson, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$HubGroupCachesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $HubGroupCachesTable,
+    HubGroupCache,
+    $$HubGroupCachesTableFilterComposer,
+    $$HubGroupCachesTableOrderingComposer,
+    $$HubGroupCachesTableAnnotationComposer,
+    $$HubGroupCachesTableCreateCompanionBuilder,
+    $$HubGroupCachesTableUpdateCompanionBuilder,
+    (
+      HubGroupCache,
+      BaseReferences<_$AppDatabase, $HubGroupCachesTable, HubGroupCache>
+    ),
+    HubGroupCache,
+    PrefetchHooks Function()> {
+  $$HubGroupCachesTableTableManager(
+      _$AppDatabase db, $HubGroupCachesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$HubGroupCachesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$HubGroupCachesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$HubGroupCachesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> groupId = const Value.absent(),
+            Value<String> groupJson = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              HubGroupCachesCompanion(
+            groupId: groupId,
+            groupJson: groupJson,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String groupId,
+            required String groupJson,
+            required DateTime updatedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              HubGroupCachesCompanion.insert(
+            groupId: groupId,
+            groupJson: groupJson,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$HubGroupCachesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $HubGroupCachesTable,
+    HubGroupCache,
+    $$HubGroupCachesTableFilterComposer,
+    $$HubGroupCachesTableOrderingComposer,
+    $$HubGroupCachesTableAnnotationComposer,
+    $$HubGroupCachesTableCreateCompanionBuilder,
+    $$HubGroupCachesTableUpdateCompanionBuilder,
+    (
+      HubGroupCache,
+      BaseReferences<_$AppDatabase, $HubGroupCachesTable, HubGroupCache>
+    ),
+    HubGroupCache,
+    PrefetchHooks Function()>;
+typedef $$HubActivityCachesTableCreateCompanionBuilder
+    = HubActivityCachesCompanion Function({
+  required String groupId,
+  required String activitiesJson,
+  required bool hadError,
+  required DateTime updatedAt,
+  Value<int> rowid,
+});
+typedef $$HubActivityCachesTableUpdateCompanionBuilder
+    = HubActivityCachesCompanion Function({
+  Value<String> groupId,
+  Value<String> activitiesJson,
+  Value<bool> hadError,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+
+class $$HubActivityCachesTableFilterComposer
+    extends Composer<_$AppDatabase, $HubActivityCachesTable> {
+  $$HubActivityCachesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get activitiesJson => $composableBuilder(
+      column: $table.activitiesJson,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get hadError => $composableBuilder(
+      column: $table.hadError, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$HubActivityCachesTableOrderingComposer
+    extends Composer<_$AppDatabase, $HubActivityCachesTable> {
+  $$HubActivityCachesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get activitiesJson => $composableBuilder(
+      column: $table.activitiesJson,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get hadError => $composableBuilder(
+      column: $table.hadError, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$HubActivityCachesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $HubActivityCachesTable> {
+  $$HubActivityCachesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
+
+  GeneratedColumn<String> get activitiesJson => $composableBuilder(
+      column: $table.activitiesJson, builder: (column) => column);
+
+  GeneratedColumn<bool> get hadError =>
+      $composableBuilder(column: $table.hadError, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$HubActivityCachesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $HubActivityCachesTable,
+    HubActivityCache,
+    $$HubActivityCachesTableFilterComposer,
+    $$HubActivityCachesTableOrderingComposer,
+    $$HubActivityCachesTableAnnotationComposer,
+    $$HubActivityCachesTableCreateCompanionBuilder,
+    $$HubActivityCachesTableUpdateCompanionBuilder,
+    (
+      HubActivityCache,
+      BaseReferences<_$AppDatabase, $HubActivityCachesTable, HubActivityCache>
+    ),
+    HubActivityCache,
+    PrefetchHooks Function()> {
+  $$HubActivityCachesTableTableManager(
+      _$AppDatabase db, $HubActivityCachesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$HubActivityCachesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$HubActivityCachesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$HubActivityCachesTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> groupId = const Value.absent(),
+            Value<String> activitiesJson = const Value.absent(),
+            Value<bool> hadError = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              HubActivityCachesCompanion(
+            groupId: groupId,
+            activitiesJson: activitiesJson,
+            hadError: hadError,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String groupId,
+            required String activitiesJson,
+            required bool hadError,
+            required DateTime updatedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              HubActivityCachesCompanion.insert(
+            groupId: groupId,
+            activitiesJson: activitiesJson,
+            hadError: hadError,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$HubActivityCachesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $HubActivityCachesTable,
+    HubActivityCache,
+    $$HubActivityCachesTableFilterComposer,
+    $$HubActivityCachesTableOrderingComposer,
+    $$HubActivityCachesTableAnnotationComposer,
+    $$HubActivityCachesTableCreateCompanionBuilder,
+    $$HubActivityCachesTableUpdateCompanionBuilder,
+    (
+      HubActivityCache,
+      BaseReferences<_$AppDatabase, $HubActivityCachesTable, HubActivityCache>
+    ),
+    HubActivityCache,
+    PrefetchHooks Function()>;
 typedef $$OutboxOpsTableCreateCompanionBuilder = OutboxOpsCompanion Function({
   required String id,
   required String type,
@@ -4946,6 +6156,12 @@ class $AppDatabaseManager {
       $$CurrentChoresCachesTableTableManager(_db, _db.currentChoresCaches);
   $$RecipesTableTableTableManager get recipesTable =>
       $$RecipesTableTableTableManager(_db, _db.recipesTable);
+  $$PinwallPostsCachesTableTableManager get pinwallPostsCaches =>
+      $$PinwallPostsCachesTableTableManager(_db, _db.pinwallPostsCaches);
+  $$HubGroupCachesTableTableManager get hubGroupCaches =>
+      $$HubGroupCachesTableTableManager(_db, _db.hubGroupCaches);
+  $$HubActivityCachesTableTableManager get hubActivityCaches =>
+      $$HubActivityCachesTableTableManager(_db, _db.hubActivityCaches);
   $$OutboxOpsTableTableManager get outboxOps =>
       $$OutboxOpsTableTableManager(_db, _db.outboxOps);
   $$ConflictsTableTableManager get conflicts =>

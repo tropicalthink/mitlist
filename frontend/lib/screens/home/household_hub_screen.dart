@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -13,6 +15,7 @@ import '../../providers/list_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/chore_provider.dart';
 import '../../providers/pinwall_provider.dart';
+import '../../repositories/hub_repository.dart';
 import '../../utils/haptics.dart';
 import '../../theme/colors.dart';
 import '../../widgets/alert.dart';
@@ -50,11 +53,20 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
   Group? _data;
   _HubSnapshot? _snapshot;
   User? _me;
+  StreamSubscription<Group?>? _groupSub;
+  StreamSubscription<(List<ActivityLogModel>, bool)>? _activitySub;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _groupSub?.cancel();
+    _activitySub?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -64,7 +76,6 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     });
     try {
       final groupService = await ref.read(groupServiceProviderAsync.future);
-      final group = await groupService.getGroup(widget.groupId);
 
       var activities = <ActivityLogModel>[];
       var activityError = false;
@@ -81,19 +92,57 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
       }
 
       final activityService = await actF;
+
+      final repo = HubRepository(
+        db: ref.read(appDatabaseProvider),
+        groups: groupService,
+        activity: activityService,
+      );
+
+      // Cache-first: show cached data immediately, refresh in background.
+      final cachedGroup = await repo.getGroupOnce(widget.groupId);
+      final cachedActivities = await repo.getActivitiesOnce(widget.groupId);
+      if (!mounted) return;
+      final hadCache = cachedGroup != null || cachedActivities.$1.isNotEmpty;
+      setState(() {
+        _data = cachedGroup;
+        _snapshot = _HubSnapshot(
+          activities: cachedActivities.$1,
+          activityError: cachedActivities.$2,
+        );
+        _me = me;
+        _isLoading = !hadCache;
+      });
+
+      await _groupSub?.cancel();
+      _groupSub = repo.watchGroup(widget.groupId).listen((g) {
+        if (!mounted || g == null) return;
+        setState(() => _data = g);
+      });
+
+      await _activitySub?.cancel();
+      _activitySub = repo.watchActivities(widget.groupId).listen((tuple) {
+        if (!mounted) return;
+        setState(() {
+          _snapshot = _HubSnapshot(
+            activities: tuple.$1,
+            activityError: tuple.$2,
+          );
+        });
+      });
+
+      // Background refresh; if it fails, keep cached view.
       try {
-        activities = await activityService.listActivityLogs(widget.groupId, limit: 10, offset: 0);
-      } catch (_) {
-        activityError = true;
-      }
+        await repo.refresh(widget.groupId, activityLimit: 10);
+        activities = (await repo.getActivitiesOnce(widget.groupId)).$1;
+        activityError = (await repo.getActivitiesOnce(widget.groupId)).$2;
+      } catch (_) {}
 
       if (!mounted) return;
       setState(() {
-        _data = group;
-        _snapshot = _HubSnapshot(
-          activities: activities,
-          activityError: activityError,
-        );
+        _data = _data;
+        _snapshot = _snapshot ??
+            _HubSnapshot(activities: activities, activityError: activityError);
         _me = me;
         _isLoading = false;
       });
@@ -154,9 +203,9 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                         elevation: 0,
                         backgroundColor: Theme.of(context).colorScheme.surface,
                         leading: IconButton(
-                          icon: const AppIcon(name: 'arrowLeft'),
-                          tooltip: 'Back to households',
-                          onPressed: () => context.goNamed('home'),
+                          icon: const AppIcon(name: 'userGroup'),
+                          tooltip: 'To households',
+                          onPressed: () => context.goNamed('groupsList'),
                         ),
                         title: Text(
                           _data?.name ?? 'Home',

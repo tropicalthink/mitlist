@@ -20,5 +20,13 @@ class PinwallPost {
         content: json['content'] as String,
         createdAt: DateTime.parse(json['created_at'] as String),
       );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'group_id': groupId,
+        'user_id': userId,
+        'content': content,
+        'created_at': createdAt.toIso8601String(),
+      };
 }
 
