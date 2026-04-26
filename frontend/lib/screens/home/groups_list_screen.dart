@@ -171,6 +171,7 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           FloatingActionButton.small(
+            heroTag: 'groups_join_fab',
             onPressed: _openJoinSheet,
             tooltip: 'Join with code',
             child: const AppIcon(name: 'qrCode'),
@@ -178,6 +179,7 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
           const SizedBox(height: MitlistSpacing.md),
           _isExtended
               ? FloatingActionButton.extended(
+                  heroTag: 'groups_create_fab',
                   onPressed: _openCreateSheet,
                   icon: const AppIcon(
                     name: 'plus',
@@ -186,6 +188,7 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
                   label: const Text('Create'),
                 )
               : FloatingActionButton(
+                  heroTag: 'groups_create_fab',
                   onPressed: _openCreateSheet,
                   mini: true,
                   child: const AppIcon(

@@ -374,6 +374,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'expenses_create_fab',
         onPressed:
             _hasHousehold ? _openCreateExpense : () => context.goNamed('home'),
         label: Text(_hasHousehold ? 'Add expense' : 'Households'),

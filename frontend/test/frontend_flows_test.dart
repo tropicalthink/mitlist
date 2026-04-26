@@ -3,17 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:goflutter/app.dart';
 import 'package:goflutter/models/auth_models.dart';
 import 'package:goflutter/models/chore_models.dart';
 import 'package:goflutter/models/finance_models.dart';
 import 'package:goflutter/models/group_models.dart';
 import 'package:goflutter/models/list_models.dart';
+import 'package:goflutter/models/notification_models.dart';
 import 'package:goflutter/models/recipe_models.dart';
 import 'package:goflutter/providers/auth_provider.dart';
 import 'package:goflutter/providers/chore_provider.dart';
 import 'package:goflutter/providers/finance_provider.dart';
 import 'package:goflutter/providers/group_provider.dart';
 import 'package:goflutter/providers/list_provider.dart';
+import 'package:goflutter/providers/notification_provider.dart';
 import 'package:goflutter/providers/recipe_provider.dart';
 import 'package:goflutter/screens/chores/chores_screen.dart';
 import 'package:goflutter/screens/home/groups_list_screen.dart';
@@ -26,6 +29,7 @@ import 'package:goflutter/services/chore_service.dart';
 import 'package:goflutter/services/finance_service.dart';
 import 'package:goflutter/services/group_service.dart';
 import 'package:goflutter/services/list_service.dart';
+import 'package:goflutter/services/notification_service.dart';
 import 'package:goflutter/services/recipe_service.dart';
 
 void main() {
@@ -388,6 +392,75 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Recipes route'), findsOneWidget);
   });
+
+  testWidgets('app shell supports the surviving household journey',
+      (tester) async {
+    await _setLargeSurface(tester);
+    final groupService = FakeGroupService(groups: [group], groupDetail: group);
+    final listService = FakeListService(
+      lists: [
+        ItemList(
+          id: '44444444-4444-4444-4444-444444444444',
+          groupId: groupId,
+          name: 'Groceries',
+          type: 'shopping',
+          itemCount: 3,
+          createdAt: DateTime.utc(2026, 1, 1),
+          updatedAt: DateTime.utc(2026, 1, 1),
+        ),
+      ],
+    );
+    final choreService = FakeChoreService();
+    final financeService = FakeFinanceService();
+    final recipeService = FakeRecipeService();
+    final authService = FakeAuthService(currentUser: user);
+    final notificationService = FakeNotificationService();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authStateProvider.overrideWith((ref) => true),
+          groupServiceProviderAsync.overrideWith((ref) async => groupService),
+          listServiceProviderAsync.overrideWith((ref) async => listService),
+          choreServiceProviderAsync.overrideWith((ref) async => choreService),
+          financeServiceProviderAsync.overrideWith((ref) async => financeService),
+          recipeServiceProviderAsync.overrideWith((ref) async => recipeService),
+          authServiceProviderAsync.overrideWith((ref) async => authService),
+          notificationServiceProviderAsync
+              .overrideWith((ref) async => notificationService),
+        ],
+        child: const MitlistApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('My Households'), findsOneWidget);
+    expect(find.text('Test Household'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.list_alt_outlined));
+    await tester.pumpAndSettle();
+    expect(find.text('New list'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.check_box_outlined));
+    await tester.pumpAndSettle();
+    expect(find.text('Add chore'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.account_balance_wallet_outlined));
+    await tester.pumpAndSettle();
+    expect(find.text('Add expense'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.home_outlined));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Test Household'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Home base'), findsOneWidget);
+    await tester.ensureVisible(find.text('Recipes'));
+    await tester.tap(find.text('Recipes'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ADD RECIPE'), findsOneWidget);
+  });
 }
 
 Future<void> _pumpScreen(
@@ -600,6 +673,14 @@ class FakeListService implements ListService {
     lists.add(list);
     return list;
   }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class FakeNotificationService implements NotificationService {
+  @override
+  Future<List<NotificationPreferenceModel>> getPreferences() async => const [];
 
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();

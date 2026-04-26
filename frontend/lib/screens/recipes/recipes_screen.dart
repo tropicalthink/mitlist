@@ -197,6 +197,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       ),
       body: _buildBody(),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'recipes_create_fab',
         onPressed: _onAddRecipe,
         icon: const AppIcon(name: 'plus'),
         label: Text(

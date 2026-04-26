@@ -243,6 +243,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         title: const Text('Chores'),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'chores_create_fab',
         onPressed: _hasHousehold ? _addChore : () => context.goNamed('home'),
         icon: AppIcon(
           name: _hasHousehold ? 'plus' : 'home',

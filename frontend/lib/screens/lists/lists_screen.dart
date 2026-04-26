@@ -298,6 +298,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
       ),
       body: _buildBody(),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'lists_create_fab',
         onPressed:
             _hasHousehold ? _showCreateSheet : () => context.goNamed('home'),
         icon: const Icon(AppIcons.plus),
