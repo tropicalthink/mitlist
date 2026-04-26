@@ -10,6 +10,7 @@ import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton.dart';
+import '../../widgets/mitlist_app_bar.dart';
 import '../../models/group_models.dart';
 import '../../providers/group_provider.dart';
 import '../../sheets/create_household_sheet.dart';
@@ -151,8 +152,8 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Households'),
+      appBar: MitlistAppBar.titleText(
+        'My Households',
         actions: [
           IconButton(
             tooltip: 'Settings',

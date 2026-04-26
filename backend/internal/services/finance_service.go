@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"sort"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -18,6 +19,14 @@ import (
 type FinanceService struct {
 	financeRepo repositories.FinanceRepoIface
 	groupRepo   repositories.GroupRepo
+}
+
+// ExpenseSplitInput describes one requested participant share for an expense.
+type ExpenseSplitInput struct {
+	UserID     uuid.UUID
+	Amount     int64
+	Shares     int64
+	Percentage int64
 }
 
 // NewFinanceService creates a new FinanceService.
@@ -64,6 +73,17 @@ func (s *FinanceService) requireAdmin(ctx context.Context, groupID, userID uuid.
 // It fixes the ZERO-SUM bug by auto-settling the payer's split and the
 // EQUAL split bug with deterministic penny distribution by user_id ASC.
 func (s *FinanceService) CreateExpense(ctx context.Context, userID uuid.UUID, expense *models.Expense, splitUserIDs []uuid.UUID) error {
+	inputs := make([]ExpenseSplitInput, 0, len(splitUserIDs))
+	for _, splitUserID := range splitUserIDs {
+		inputs = append(inputs, ExpenseSplitInput{UserID: splitUserID})
+	}
+	return s.CreateExpenseWithSplitMode(ctx, userID, expense, "equal", inputs)
+}
+
+// CreateExpenseWithSplitMode creates an expense using equal, exact amount,
+// percentage, or share-based splitting. Final split amounts are persisted so
+// balance math remains simple and deterministic.
+func (s *FinanceService) CreateExpenseWithSplitMode(ctx context.Context, userID uuid.UUID, expense *models.Expense, splitMode string, splitInputs []ExpenseSplitInput) error {
 	if err := s.requireMember(ctx, expense.GroupID, userID); err != nil {
 		return err
 	}
@@ -80,35 +100,10 @@ func (s *FinanceService) CreateExpense(ctx context.Context, userID uuid.UUID, ex
 		return api.ErrValidation
 	}
 
-	var splits []models.Split
-	if len(splitUserIDs) > 0 {
-		sorted := make([]uuid.UUID, len(splitUserIDs))
-		copy(sorted, splitUserIDs)
-		sort.Slice(sorted, func(i, j int) bool {
-			return sorted[i].String() < sorted[j].String()
-		})
-
-		n := int64(len(sorted))
-		base := expense.Amount / n
-		rem := expense.Amount % n
-
-		splits = make([]models.Split, 0, len(sorted))
-		for i, uid := range sorted {
-			amount := base
-			if int64(i) < rem {
-				amount++
-			}
-			s := models.Split{
-				UserID: uid,
-				Amount: amount,
-			}
-			if uid == expense.PayerID {
-				s.IsSettled = true // ZERO-SUM fix
-			}
-			splits = append(splits, s)
-		}
+	splits, err := buildSplits(expense.Amount, expense.PayerID, splitMode, splitInputs)
+	if err != nil {
+		return err
 	}
-
 	return s.financeRepo.CreateExpenseWithSplits(ctx, expense, splits)
 }
 
@@ -133,6 +128,45 @@ func (s *FinanceService) ListExpenses(ctx context.Context, userID, groupID uuid.
 		return nil, err
 	}
 	return s.financeRepo.ListExpensesByGroup(ctx, groupID, limit, offset)
+}
+
+// ListAllExpenses returns the full group expense ledger for exports.
+func (s *FinanceService) ListAllExpenses(ctx context.Context, userID, groupID uuid.UUID) ([]models.Expense, error) {
+	if err := s.requireMember(ctx, groupID, userID); err != nil {
+		return nil, err
+	}
+	return s.financeRepo.ListAllExpensesByGroup(ctx, groupID)
+}
+
+// GetFinanceSummary returns the canonical group balance and reimbursement view.
+func (s *FinanceService) GetFinanceSummary(ctx context.Context, userID, groupID uuid.UUID) (*models.FinanceSummary, error) {
+	if err := s.requireMember(ctx, groupID, userID); err != nil {
+		return nil, err
+	}
+
+	expenses, err := s.financeRepo.ListAllExpensesByGroup(ctx, groupID)
+	if err != nil {
+		return nil, err
+	}
+	splits, err := s.financeRepo.ListSplitsByGroup(ctx, groupID)
+	if err != nil {
+		return nil, err
+	}
+	settlements, err := s.financeRepo.ListAllSettlementsByGroup(ctx, groupID)
+	if err != nil {
+		return nil, err
+	}
+	profiles, err := s.groupRepo.ListMemberProfilesByGroup(ctx, groupID)
+	if err != nil {
+		return nil, err
+	}
+
+	balances := calculateBalances(expenses, splits, settlements)
+	applyDisplayNames(balances, profiles)
+	return &models.FinanceSummary{
+		Balances:       balances,
+		Reimbursements: suggestReimbursements(balances),
+	}, nil
 }
 
 // UpdateExpense updates an existing expense.
@@ -265,6 +299,15 @@ func (s *FinanceService) CreateSettlement(ctx context.Context, userID uuid.UUID,
 	if settlement.Amount <= 0 {
 		return api.ErrValidation
 	}
+	if settlement.FromUserID == settlement.ToUserID {
+		return &api.ValidationError{Message: "settlement must be between two different members"}
+	}
+	if err := s.requireMember(ctx, settlement.GroupID, settlement.FromUserID); err != nil {
+		return &api.ValidationError{Message: "from user must be a group member"}
+	}
+	if err := s.requireMember(ctx, settlement.GroupID, settlement.ToUserID); err != nil {
+		return &api.ValidationError{Message: "to user must be a group member"}
+	}
 	return s.financeRepo.CreateSettlement(ctx, settlement)
 }
 
@@ -350,4 +393,200 @@ func (s *FinanceService) DeleteRecurringExpense(ctx context.Context, userID, id 
 		return err
 	}
 	return s.financeRepo.DeleteRecurringExpense(ctx, id)
+}
+
+func calculateBalances(expenses []models.Expense, splits []models.Split, settlements []models.Settlement) []models.BalanceEntry {
+	byUser := map[uuid.UUID]*models.BalanceEntry{}
+	ensure := func(userID uuid.UUID) *models.BalanceEntry {
+		if _, ok := byUser[userID]; !ok {
+			byUser[userID] = &models.BalanceEntry{UserID: userID}
+		}
+		return byUser[userID]
+	}
+
+	for _, expense := range expenses {
+		balance := ensure(expense.PayerID)
+		balance.Paid += expense.Amount
+	}
+	for _, split := range splits {
+		balance := ensure(split.UserID)
+		balance.Owed += split.Amount
+	}
+	for _, settlement := range settlements {
+		from := ensure(settlement.FromUserID)
+		to := ensure(settlement.ToUserID)
+		from.Paid += settlement.Amount
+		to.Owed += settlement.Amount
+	}
+
+	balances := make([]models.BalanceEntry, 0, len(byUser))
+	for _, balance := range byUser {
+		balance.Total = balance.Paid - balance.Owed
+		balances = append(balances, *balance)
+	}
+	sort.Slice(balances, func(i, j int) bool {
+		return balances[i].UserID.String() < balances[j].UserID.String()
+	})
+	return balances
+}
+
+func applyDisplayNames(balances []models.BalanceEntry, profiles []models.GroupMemberProfile) {
+	names := map[uuid.UUID]string{}
+	for _, profile := range profiles {
+		names[profile.UserID] = profile.DisplayName
+	}
+	for i := range balances {
+		if name := strings.TrimSpace(names[balances[i].UserID]); name != "" {
+			balances[i].DisplayName = name
+		} else {
+			balances[i].DisplayName = balances[i].UserID.String()
+		}
+	}
+}
+
+func suggestReimbursements(balances []models.BalanceEntry) []models.ReimbursementSuggestion {
+	working := make([]models.BalanceEntry, 0, len(balances))
+	for _, balance := range balances {
+		if balance.Total != 0 {
+			working = append(working, balance)
+		}
+	}
+	sort.Slice(working, func(i, j int) bool {
+		left, right := working[i], working[j]
+		if left.Total > 0 && right.Total < 0 {
+			return true
+		}
+		if right.Total > 0 && left.Total < 0 {
+			return false
+		}
+		return left.UserID.String() < right.UserID.String()
+	})
+
+	reimbursements := []models.ReimbursementSuggestion{}
+	for len(working) > 1 {
+		first := &working[0]
+		last := &working[len(working)-1]
+		if first.Total <= 0 || last.Total >= 0 {
+			break
+		}
+
+		amount := first.Total
+		if -last.Total < amount {
+			amount = -last.Total
+		}
+		if amount > 0 {
+			reimbursements = append(reimbursements, models.ReimbursementSuggestion{
+				FromUserID:      last.UserID,
+				FromDisplayName: last.DisplayName,
+				ToUserID:        first.UserID,
+				ToDisplayName:   first.DisplayName,
+				Amount:          amount,
+			})
+		}
+
+		first.Total -= amount
+		last.Total += amount
+		if last.Total == 0 {
+			working = working[:len(working)-1]
+		}
+		if len(working) > 0 && working[0].Total == 0 {
+			working = working[1:]
+		}
+	}
+	return reimbursements
+}
+
+func buildSplits(total int64, payerID uuid.UUID, splitMode string, inputs []ExpenseSplitInput) ([]models.Split, error) {
+	if len(inputs) == 0 {
+		return nil, nil
+	}
+	mode := strings.ToLower(strings.TrimSpace(splitMode))
+	if mode == "" {
+		mode = "equal"
+	}
+
+	sort.Slice(inputs, func(i, j int) bool {
+		return inputs[i].UserID.String() < inputs[j].UserID.String()
+	})
+	seen := map[uuid.UUID]struct{}{}
+	for _, input := range inputs {
+		if input.UserID == uuid.Nil {
+			return nil, &api.ValidationError{Message: "split user is required"}
+		}
+		if _, ok := seen[input.UserID]; ok {
+			return nil, &api.ValidationError{Message: "duplicate split user"}
+		}
+		seen[input.UserID] = struct{}{}
+	}
+
+	amounts := make([]int64, len(inputs))
+	switch mode {
+	case "equal", "evenly":
+		base := total / int64(len(inputs))
+		rem := total % int64(len(inputs))
+		for i := range inputs {
+			amounts[i] = base
+			if int64(i) < rem {
+				amounts[i]++
+			}
+		}
+	case "amount", "exact":
+		var sum int64
+		for i, input := range inputs {
+			if input.Amount <= 0 {
+				return nil, &api.ValidationError{Message: "split amounts must be positive"}
+			}
+			amounts[i] = input.Amount
+			sum += input.Amount
+		}
+		if sum != total {
+			return nil, &api.ValidationError{Message: "split amounts must equal expense amount"}
+		}
+	case "shares":
+		var shareSum int64
+		for _, input := range inputs {
+			if input.Shares <= 0 {
+				return nil, &api.ValidationError{Message: "shares must be positive"}
+			}
+			shareSum += input.Shares
+		}
+		distributeByWeight(total, inputs, amounts, func(input ExpenseSplitInput) int64 { return input.Shares }, shareSum)
+	case "percentage":
+		var percentageSum int64
+		for _, input := range inputs {
+			if input.Percentage <= 0 {
+				return nil, &api.ValidationError{Message: "percentages must be positive basis points"}
+			}
+			percentageSum += input.Percentage
+		}
+		if percentageSum != 10000 {
+			return nil, &api.ValidationError{Message: "percentages must total 100%"}
+		}
+		distributeByWeight(total, inputs, amounts, func(input ExpenseSplitInput) int64 { return input.Percentage }, percentageSum)
+	default:
+		return nil, &api.ValidationError{Message: "unsupported split mode"}
+	}
+
+	splits := make([]models.Split, 0, len(inputs))
+	for i, input := range inputs {
+		split := models.Split{UserID: input.UserID, Amount: amounts[i]}
+		if input.UserID == payerID {
+			split.IsSettled = true
+		}
+		splits = append(splits, split)
+	}
+	return splits, nil
+}
+
+func distributeByWeight(total int64, inputs []ExpenseSplitInput, amounts []int64, weight func(ExpenseSplitInput) int64, weightSum int64) {
+	var assigned int64
+	for i, input := range inputs {
+		if i == len(inputs)-1 {
+			amounts[i] = total - assigned
+			break
+		}
+		amount := total * weight(input) / weightSum
+		amounts[i] = amount
+		assigned += amount
+	}
 }

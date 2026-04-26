@@ -103,6 +103,10 @@ func main() {
 			activityHandler := handlers.NewActivityHandler(cnt.ActivityService())
 			activityHandler.RegisterRoutes(r)
 
+			// Pinwall
+			pinwallHandler := handlers.NewPinwallHandler(cnt.PinwallService())
+			pinwallHandler.RegisterRoutes(r)
+
 			// Groups
 			groupHandler := handlers.NewGroupHandler(cnt.GroupService())
 			r.Post("/groups", groupHandler.CreateGroup)
@@ -110,6 +114,7 @@ func main() {
 			r.Get("/groups/{id}", groupHandler.GetGroup)
 			r.Patch("/groups/{id}", groupHandler.UpdateGroup)
 			r.Delete("/groups/{id}", groupHandler.DeleteGroup)
+			r.Get("/groups/{id}/members", groupHandler.ListMembers)
 			r.Post("/groups/{id}/members", groupHandler.InviteMember)
 			r.Post("/groups/join", groupHandler.JoinGroup)
 			r.Delete("/groups/{id}/members/{user_id}", groupHandler.RemoveMember)
@@ -149,16 +154,23 @@ func main() {
 			choreHandler := handlers.NewChoreHandler(cnt.ChoreService())
 			r.Post("/chores", choreHandler.CreateChore)
 			r.Get("/chores", choreHandler.ListChores)
+			r.Get("/chores/current", choreHandler.ListCurrentChores)
 			r.Get("/chores/{id}", choreHandler.GetChore)
 			r.Patch("/chores/{id}", choreHandler.UpdateChore)
 			r.Delete("/chores/{id}", choreHandler.DeleteChore)
 			r.Post("/chores/{id}/rotate", choreHandler.RotateChore)
 			r.Post("/chores/{id}/complete", choreHandler.CompleteChore)
 			r.Post("/chores/{id}/skip", choreHandler.SkipChore)
+			r.Patch("/chores/{id}/pending", choreHandler.RescheduleChore)
+			r.Post("/chores/{id}/undo", choreHandler.UndoLastChoreExecution)
 			r.Get("/chores/{id}/assignments", choreHandler.GetAssignments)
 
 			// Finance
 			financeHandler := handlers.NewFinanceHandler(cnt.FinanceService())
+			r.Get("/finance/summary", financeHandler.GetFinanceSummary)
+			r.Get("/finance/export/json", financeHandler.ExportExpensesJSON)
+			r.Get("/finance/export/csv", financeHandler.ExportExpensesCSV)
+			r.Post("/finance/settlements", financeHandler.CreateGroupSettlement)
 			r.Post("/expenses", financeHandler.CreateExpense)
 			r.Get("/expenses", financeHandler.ListExpenses)
 			r.Get("/expenses/{id}", financeHandler.GetExpense)

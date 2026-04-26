@@ -5,6 +5,7 @@ import '../../models/list_models.dart';
 import '../../providers/list_provider.dart';
 import '../../services/list_service.dart';
 import '../../theme/animations.dart';
+import '../../theme/list_tile_accent.dart';
 import '../../theme/colors.dart';
 import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
@@ -16,10 +17,23 @@ import '../../widgets/app_button.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton.dart';
+import '../../widgets/mitlist_app_bar.dart';
+
+/// Optional [GoRouter] `extra` when opening a list from the hub (title shows immediately).
+class ListDetailRouteArgs {
+  const ListDetailRouteArgs({this.listName});
+  final String? listName;
+}
 
 class ListDetailScreen extends ConsumerStatefulWidget {
   final String listId;
-  const ListDetailScreen({super.key, required this.listId});
+  final String? initialListName;
+
+  const ListDetailScreen({
+    super.key,
+    required this.listId,
+    this.initialListName,
+  });
 
   @override
   ConsumerState<ListDetailScreen> createState() => _ListDetailScreenState();
@@ -38,11 +52,39 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   final TextEditingController _searchController = TextEditingController();
   ListService? _service;
   bool _dirty = false;
+  final FocusNode _composerFocusNode = FocusNode();
+  bool _doneSectionExpanded = true;
 
   @override
   void initState() {
     super.initState();
+    if (widget.initialListName != null && widget.initialListName!.isNotEmpty) {
+      _listName = widget.initialListName!;
+    }
     _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant ListDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.listId != widget.listId) {
+      _service = null;
+      _items.clear();
+      _searchQuery = '';
+      _showSearch = false;
+      _searchController.clear();
+      _listName = (widget.initialListName != null &&
+              widget.initialListName!.isNotEmpty)
+          ? widget.initialListName!
+          : '';
+      _load();
+      return;
+    }
+    if (widget.initialListName != null &&
+        widget.initialListName!.isNotEmpty &&
+        widget.initialListName != oldWidget.initialListName) {
+      setState(() => _listName = widget.initialListName!);
+    }
   }
 
   @override
@@ -50,6 +92,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     _bannerTimer?.cancel();
     _newItemController.dispose();
     _searchController.dispose();
+    _composerFocusNode.dispose();
     super.dispose();
   }
 
@@ -62,8 +105,12 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     try {
       final service = await ref.read(listServiceProviderAsync.future);
       _service = service;
-      final list = await service.getList(widget.listId);
-      final items = await service.listItems(widget.listId);
+      final results = await Future.wait<Object>([
+        service.getList(widget.listId),
+        service.listItems(widget.listId, limit: 500, offset: 0),
+      ]);
+      final list = results[0] as ItemList;
+      final items = results[1] as List<ListItem>;
 
       if (!mounted) return;
       setState(() {
@@ -161,6 +208,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         _dirty = true;
       });
       _checkCompletionBanner();
+      _composerFocusNode.requestFocus();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -267,80 +315,103 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     return _items.where((i) => i.name.toLowerCase().contains(lower)).toList();
   }
 
-  double get _progress {
-    if (_items.isEmpty) return 0;
-    return _items.where((i) => i.checked).length / _items.length;
+  /// Unchecked first, then checked while searching.
+  List<ListItem> get _searchOrderedItems {
+    final list = List<ListItem>.from(_filteredItems);
+    list.sort((a, b) {
+      if (a.checked != b.checked) {
+        return a.checked ? 1 : -1;
+      }
+      return a.position.compareTo(b.position);
+    });
+    return list;
   }
 
-  bool get _isComplete =>
-      _items.isNotEmpty && _items.every((i) => i.checked);
+  List<ListItem> _openItemsSorted() {
+    final list = _items.where((i) => !i.checked).toList()
+      ..sort((a, b) => a.position.compareTo(b.position));
+    return list;
+  }
+
+  List<ListItem> _doneItemsSorted() {
+    final list = _items.where((i) => i.checked).toList()
+      ..sort((a, b) => a.position.compareTo(b.position));
+    return list;
+  }
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
+    final accent = ListTileAccent.fromSeed(
+      widget.listId,
+      Theme.of(context).brightness,
+    );
+
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const AppIcon(name: 'arrowLeft'),
-          tooltip: 'Back',
-          onPressed: () => Navigator.of(context).pop(_dirty),
-        ),
-        title: _showSearch
-            ? TextField(
-                controller: _searchController,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: 'Search items',
-                  hintText: 'Name, e.g. milk',
-                  border: InputBorder.none,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight + 6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            MitlistAppBar(
+              leading: IconButton(
+                icon: const AppIcon(name: 'arrowLeft'),
+                tooltip: 'Back',
+                onPressed: () => Navigator.of(context).pop(_dirty),
+              ),
+              title: _showSearch
+                  ? TextField(
+                      controller: _searchController,
+                      autofocus: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Search items',
+                        hintText: 'Name, e.g. milk',
+                        border: InputBorder.none,
+                      ),
+                      onChanged: (value) =>
+                          setState(() => _searchQuery = value),
+                    )
+                  : Text(
+                      _listName,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+              actions: [
+                IconButton(
+                  icon: const AppIcon(name: 'magnifyingGlass'),
+                  tooltip: 'Search',
+                  onPressed: () {
+                    setState(() {
+                      _showSearch = !_showSearch;
+                      if (!_showSearch) {
+                        _searchQuery = '';
+                        _searchController.clear();
+                      }
+                    });
+                  },
                 ),
-                onChanged: (value) => setState(() => _searchQuery = value),
-              )
-            : Text(
-                _listName,
-                overflow: TextOverflow.ellipsis,
-              ),
-        actions: [
-          IconButton(
-            icon: const AppIcon(name: 'magnifyingGlass'),
-            tooltip: 'Search',
-            onPressed: () {
-              setState(() {
-                _showSearch = !_showSearch;
-                if (!_showSearch) {
-                  _searchQuery = '';
-                  _searchController.clear();
-                }
-              });
-            },
-          ),
-          PopupMenuButton<String>(
-            icon: const AppIcon(name: 'ellipsisVertical'),
-            onSelected: _onMenuSelected,
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'complete_all',
-                child: Text('Complete all'),
-              ),
-            ],
-          ),
-        ],
+                PopupMenuButton<String>(
+                  icon: const AppIcon(name: 'ellipsisVertical'),
+                  onSelected: _onMenuSelected,
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'complete_all',
+                      child: Text('Check off all'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            Container(
+              height: 6,
+              width: double.infinity,
+              color: accent.stripe,
+            ),
+          ],
+        ),
       ),
       body: Column(
         children: [
-          Container(
-            clipBehavior: Clip.hardEdge,
-            decoration: const BoxDecoration(),
-            child: LinearProgressIndicator(
-              value: _items.isEmpty ? 0 : _progress,
-              color: _isComplete
-                  ? MitlistColors.success500
-                  : MitlistColors.primary500,
-              backgroundColor: MitlistColors.neutral200,
-              minHeight: MitlistSpacing.space1,
-            ),
-          ),
           GestureDetector(
             onTap: () {
               _bannerTimer?.cancel();
@@ -350,14 +421,14 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
               duration: MitlistAnimations.banner,
               curve: MitlistTheme.easeToast,
               height: _showCompletionBanner
-                  ? MitlistSpacing.space10
+                  ? MitlistSpacing.space8
                   : MitlistSpacing.space0,
               color: MitlistColors.success500,
               width: double.infinity,
               alignment: Alignment.center,
               child: _showCompletionBanner
                   ? Text(
-                      'All done!'.toUpperCase(),
+                      'All done!',
                       style: textTheme.labelMedium?.copyWith(
                         color: MitlistColors.textOnSuccess,
                       ),
@@ -378,93 +449,184 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     if (_isLoading) return _buildSkeleton();
     if (_errorMessage != null) return _buildError();
 
-    final filtered = _filteredItems;
-    if (filtered.isEmpty) return _buildEmpty();
+    if (_searchQuery.isNotEmpty) {
+      final ordered = _searchOrderedItems;
+      if (ordered.isEmpty) return _buildEmpty();
+      return _buildSearchResultItemList(ordered, textTheme);
+    }
 
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
-      itemCount: filtered.length,
-      separatorBuilder: (_, __) => const Divider(
-        color: MitlistColors.borderSecondary,
-        thickness: 2,
-        indent: MitlistSpacing.md,
-        endIndent: MitlistSpacing.md,
+    final open = _openItemsSorted();
+    final done = _doneItemsSorted();
+    if (open.isEmpty && done.isEmpty) return _buildEmpty();
+
+    return CheckboxTheme(
+      data: CheckboxThemeData(
+        shape: const CircleBorder(),
+        side: const BorderSide(
+          color: MitlistColors.borderPrimary,
+          width: 2,
+        ),
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return MitlistColors.primary500;
+          }
+          return Theme.of(context).colorScheme.surface;
+        }),
+        checkColor: WidgetStateProperty.all(Colors.white),
       ),
-      itemBuilder: (context, index) {
-        final item = filtered[index];
-        return Dismissible(
-          key: ValueKey(item.id),
-          direction: DismissDirection.endToStart,
-          background: Container(
-            color: MitlistColors.error500,
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.symmetric(
-              horizontal: MitlistSpacing.md,
+      child: ListView(
+        padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
+        children: [
+          ...open.map((item) => _buildDismissibleItemRow(item, textTheme)),
+          if (done.isNotEmpty) ...[
+            Material(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? MitlistColors.neutral800
+                  : MitlistColors.neutral100,
+              child: InkWell(
+                onTap: () => setState(
+                  () => _doneSectionExpanded = !_doneSectionExpanded,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: MitlistSpacing.md,
+                    vertical: MitlistSpacing.sm,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Checked off (${done.length})',
+                          style: textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        _doneSectionExpanded
+                            ? Icons.expand_less
+                            : Icons.expand_more,
+                        color: MitlistColors.textSecondary,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-            child: const AppIcon(
-              name: 'trash',
-              color: Colors.white,
+            if (_doneSectionExpanded)
+              ...done.map((item) => _buildDismissibleItemRow(item, textTheme)),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchResultItemList(List<ListItem> items, TextTheme textTheme) {
+    return CheckboxTheme(
+      data: CheckboxThemeData(
+        shape: const CircleBorder(),
+        side: const BorderSide(
+          color: MitlistColors.borderPrimary,
+          width: 2,
+        ),
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return MitlistColors.primary500;
+          }
+          return Theme.of(context).colorScheme.surface;
+        }),
+        checkColor: WidgetStateProperty.all(Colors.white),
+      ),
+      child: ListView.builder(
+        padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
+        itemCount: items.length,
+        itemBuilder: (context, index) {
+          return _buildDismissibleItemRow(items[index], textTheme);
+        },
+      ),
+    );
+  }
+
+  Widget _buildDismissibleItemRow(ListItem item, TextTheme textTheme) {
+    return Dismissible(
+      key: ValueKey(item.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        color: MitlistColors.error500,
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(
+          horizontal: MitlistSpacing.md,
+        ),
+        child: const AppIcon(
+          name: 'trash',
+          color: Colors.white,
+        ),
+      ),
+      onDismissed: (_) {
+        Haptics.medium();
+        _deleteItem(item);
+      },
+      child: _buildItemRow(item, textTheme),
+    );
+  }
+
+  Widget _buildItemRow(ListItem item, TextTheme textTheme) {
+    return Material(
+      color: Theme.of(context).colorScheme.surface,
+      child: InkWell(
+        onTap: () => _toggleItem(item, !item.checked),
+        child: Container(
+          decoration: const BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: MitlistColors.borderSecondary,
+                width: 2,
+              ),
             ),
           ),
-          onDismissed: (_) {
-            Haptics.medium();
-            _deleteItem(item);
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: MitlistSpacing.md,
-            ),
-            child: Row(
-              children: [
-                Checkbox(
-                  value: item.checked,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.zero,
+          padding: const EdgeInsets.symmetric(
+            horizontal: MitlistSpacing.md,
+            vertical: MitlistSpacing.sm,
+          ),
+          constraints: const BoxConstraints(minHeight: 52),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Checkbox(
+                value: item.checked,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+                onChanged: (val) => _toggleItem(item, val ?? false),
+              ),
+              const SizedBox(width: MitlistSpacing.sm),
+              Expanded(
+                child: Text(
+                  item.name,
+                  style: textTheme.bodyLarge?.copyWith(
+                    decoration: item.checked
+                        ? TextDecoration.lineThrough
+                        : null,
+                    color: item.checked
+                        ? MitlistColors.textTertiary
+                        : MitlistColors.textPrimary,
+                    height: 1.25,
                   ),
-                  onChanged: (val) => _toggleItem(item, val ?? false),
                 ),
-                const SizedBox(width: MitlistSpacing.sm),
-                Expanded(
+              ),
+              if (item.quantity > 1)
+                Padding(
+                  padding: const EdgeInsets.only(left: MitlistSpacing.sm),
                   child: Text(
-                    item.name,
-                    style: textTheme.bodyMedium?.copyWith(
-                      decoration: item.checked
-                          ? TextDecoration.lineThrough
-                          : null,
-                      color: item.checked
-                          ? MitlistColors.textTertiary
-                          : MitlistColors.textPrimary,
-                    ),
-                  ),
-                ),
-                if (item.quantity > 1)
-                  Text(
-                    '${item.quantity}x',
+                    '${item.quantity}×',
                     style: MitlistTypography.monoBody(
                       color: MitlistColors.textSecondary,
                     ),
                   ),
-                const SizedBox(width: MitlistSpacing.sm),
-                PopupMenuButton<String>(
-                  icon: const AppIcon(
-                    name: 'ellipsisVertical',
-                    size: 20,
-                  ),
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Text('Delete'),
-                    ),
-                  ],
-                  onSelected: (value) {
-                    if (value == 'delete') _deleteItem(item);
-                  },
                 ),
-              ],
-            ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -532,14 +694,19 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         padding: EdgeInsets.all(MitlistSpacing.md),
         child: AppEmptyState(
           icon: AppIcon(name: 'queueList'),
-          title: 'No items yet',
-          description: 'Add something using the bar below.',
+          title: 'Nothing on the list yet',
+          description:
+              'Add things below — milk, bread, whatever you need. Tap a row to check it off while you shop.',
         ),
       ),
     );
   }
 
   Widget _buildBottomBar() {
+    final fill = Theme.of(context).brightness == Brightness.dark
+        ? MitlistColors.neutral900
+        : MitlistColors.surfacePrimary;
+
     return SafeArea(
       child: Container(
         decoration: const BoxDecoration(
@@ -551,24 +718,41 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
             ),
           ),
         ),
-        padding: const EdgeInsets.all(MitlistSpacing.md),
+        padding: const EdgeInsets.fromLTRB(
+          MitlistSpacing.md,
+          MitlistSpacing.sm,
+          MitlistSpacing.md,
+          MitlistSpacing.md,
+        ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Expanded(
               child: TextField(
                 controller: _newItemController,
+                focusNode: _composerFocusNode,
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _addItem(),
-                decoration: const InputDecoration(
-                  hintText: 'Add item...',
+                minLines: 1,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText: 'e.g. Milk · Oats · 2 avocados',
+                  filled: true,
+                  fillColor: fill,
                 ),
               ),
             ),
-            const SizedBox(width: MitlistSpacing.md),
-            AppButton(
-              text: 'Add',
-              size: AppButtonSize.sm,
+            const SizedBox(width: MitlistSpacing.sm),
+            FilledButton(
               onPressed: _addItem,
+              style: FilledButton.styleFrom(
+                shape: const CircleBorder(),
+                padding: const EdgeInsets.all(MitlistSpacing.md),
+                backgroundColor: MitlistColors.primary500,
+                foregroundColor: Colors.white,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const AppIcon(name: 'plus', color: Colors.white),
             ),
           ],
         ),

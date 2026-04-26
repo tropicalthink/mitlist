@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -32,25 +33,43 @@ func (h *ChoreHandler) CreateChore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		GroupID      uuid.UUID `json:"group_id"`
-		Name         string    `json:"name"`
-		Description  *string   `json:"description"`
-		RotationType string    `json:"rotation_type"`
-		Frequency    string    `json:"frequency"`
-		IsActive     bool      `json:"is_active"`
+		GroupID          uuid.UUID   `json:"group_id"`
+		Name             string      `json:"name"`
+		Description      *string     `json:"description"`
+		RotationType     string      `json:"rotation_type"`
+		Frequency        string      `json:"frequency"`
+		PeriodInterval   int         `json:"period_interval"`
+		PeriodConfig     []string    `json:"period_config"`
+		StartDate        *time.Time  `json:"start_date"`
+		TrackDateOnly    bool        `json:"track_date_only"`
+		Rollover         bool        `json:"rollover"`
+		AssignmentType   string      `json:"assignment_type"`
+		AssignmentConfig []uuid.UUID `json:"assignment_config"`
+		IsActive         *bool       `json:"is_active"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
 
+	isActive := true
+	if req.IsActive != nil {
+		isActive = *req.IsActive
+	}
 	chore := &models.Chore{
-		GroupID:      req.GroupID,
-		Name:         req.Name,
-		Description:  req.Description,
-		RotationType: req.RotationType,
-		Frequency:    req.Frequency,
-		IsActive:     req.IsActive,
+		GroupID:          req.GroupID,
+		Name:             req.Name,
+		Description:      req.Description,
+		RotationType:     req.RotationType,
+		Frequency:        req.Frequency,
+		PeriodInterval:   req.PeriodInterval,
+		PeriodConfig:     req.PeriodConfig,
+		StartDate:        req.StartDate,
+		TrackDateOnly:    req.TrackDateOnly,
+		Rollover:         req.Rollover,
+		AssignmentType:   req.AssignmentType,
+		AssignmentConfig: req.AssignmentConfig,
+		IsActive:         isActive,
 	}
 	if err := h.service.CreateChore(r.Context(), user, chore); err != nil {
 		api.RespondError(w, err)
@@ -76,6 +95,34 @@ func (h *ChoreHandler) ListChores(w http.ResponseWriter, r *http.Request) {
 	limit, offset := parsePagination(r)
 
 	chores, err := h.service.ListChores(r.Context(), user, groupID, limit, offset)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	api.RespondJSON(w, http.StatusOK, chores)
+}
+
+// ListCurrentChores GET /api/v1/chores/current
+func (h *ChoreHandler) ListCurrentChores(w http.ResponseWriter, r *http.Request) {
+	user, ok := api.UserFromContext(r.Context())
+	if !ok {
+		api.RespondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	groupID, err := uuid.Parse(r.URL.Query().Get("group_id"))
+	if err != nil {
+		api.RespondError(w, &api.ValidationError{Field: "group_id", Message: "valid group_id required"})
+		return
+	}
+
+	limit, offset := parsePagination(r)
+	dueSoonDays, _ := strconv.Atoi(r.URL.Query().Get("due_soon_days"))
+	if dueSoonDays < 0 {
+		dueSoonDays = 0
+	}
+
+	chores, err := h.service.ListCurrentChores(r.Context(), user, groupID, limit, offset, dueSoonDays)
 	if err != nil {
 		api.RespondError(w, err)
 		return
@@ -120,24 +167,55 @@ func (h *ChoreHandler) UpdateChore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Name         string  `json:"name"`
-		Description  *string `json:"description"`
-		RotationType string  `json:"rotation_type"`
-		Frequency    string  `json:"frequency"`
-		IsActive     bool    `json:"is_active"`
+		Name             string      `json:"name"`
+		Description      *string     `json:"description"`
+		RotationType     string      `json:"rotation_type"`
+		Frequency        string      `json:"frequency"`
+		PeriodInterval   int         `json:"period_interval"`
+		PeriodConfig     []string    `json:"period_config"`
+		StartDate        *time.Time  `json:"start_date"`
+		TrackDateOnly    *bool       `json:"track_date_only"`
+		Rollover         *bool       `json:"rollover"`
+		AssignmentType   string      `json:"assignment_type"`
+		AssignmentConfig []uuid.UUID `json:"assignment_config"`
+		IsActive         *bool       `json:"is_active"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
 
+	existing, err := h.service.GetChore(r.Context(), user, id)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	trackDateOnly := existing.TrackDateOnly
+	if req.TrackDateOnly != nil {
+		trackDateOnly = *req.TrackDateOnly
+	}
+	rollover := existing.Rollover
+	if req.Rollover != nil {
+		rollover = *req.Rollover
+	}
+	isActive := existing.IsActive
+	if req.IsActive != nil {
+		isActive = *req.IsActive
+	}
 	chore := &models.Chore{
-		ID:           id,
-		Name:         req.Name,
-		Description:  req.Description,
-		RotationType: req.RotationType,
-		Frequency:    req.Frequency,
-		IsActive:     req.IsActive,
+		ID:               id,
+		Name:             req.Name,
+		Description:      req.Description,
+		RotationType:     req.RotationType,
+		Frequency:        req.Frequency,
+		PeriodInterval:   req.PeriodInterval,
+		PeriodConfig:     req.PeriodConfig,
+		StartDate:        req.StartDate,
+		TrackDateOnly:    trackDateOnly,
+		Rollover:         rollover,
+		AssignmentType:   req.AssignmentType,
+		AssignmentConfig: req.AssignmentConfig,
+		IsActive:         isActive,
 	}
 	chore, err = h.service.UpdateChore(r.Context(), user, chore)
 	if err != nil {
@@ -233,6 +311,57 @@ func (h *ChoreHandler) SkipChore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.SkipChore(r.Context(), user, id); err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	api.RespondJSON(w, http.StatusNoContent, nil)
+}
+
+// RescheduleChore PATCH /api/v1/chores/{id}/pending
+func (h *ChoreHandler) RescheduleChore(w http.ResponseWriter, r *http.Request) {
+	user, ok := api.UserFromContext(r.Context())
+	if !ok {
+		api.RespondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		api.RespondError(w, &api.ValidationError{Field: "id", Message: "invalid chore id"})
+		return
+	}
+
+	var req struct {
+		DueDate    *time.Time `json:"due_date"`
+		AssigneeID *uuid.UUID `json:"assignee_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
+		return
+	}
+
+	if err := h.service.RescheduleChore(r.Context(), user, id, req.DueDate, req.AssigneeID); err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	api.RespondJSON(w, http.StatusNoContent, nil)
+}
+
+// UndoLastChoreExecution POST /api/v1/chores/{id}/undo
+func (h *ChoreHandler) UndoLastChoreExecution(w http.ResponseWriter, r *http.Request) {
+	user, ok := api.UserFromContext(r.Context())
+	if !ok {
+		api.RespondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		api.RespondError(w, &api.ValidationError{Field: "id", Message: "invalid chore id"})
+		return
+	}
+
+	if err := h.service.UndoLastChoreExecution(r.Context(), user, id); err != nil {
 		api.RespondError(w, err)
 		return
 	}

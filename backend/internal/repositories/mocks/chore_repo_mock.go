@@ -34,6 +34,14 @@ func (m *MockChoreRepo) ListChoresByGroup(ctx context.Context, groupID uuid.UUID
 	return nil, args.Error(1)
 }
 
+func (m *MockChoreRepo) ListCurrentChoresByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.CurrentChore, error) {
+	args := m.Called(ctx, groupID, limit, offset)
+	if c := args.Get(0); c != nil {
+		return c.([]models.CurrentChore), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
 func (m *MockChoreRepo) UpdateChore(ctx context.Context, chore *models.Chore) error {
 	args := m.Called(ctx, chore)
 	return args.Error(0)
@@ -82,6 +90,11 @@ func (m *MockChoreRepo) ListAssignments(ctx context.Context, choreID uuid.UUID, 
 
 func (m *MockChoreRepo) UpdateAssignment(ctx context.Context, assignment *models.ChoreAssignment) error {
 	args := m.Called(ctx, assignment)
+	return args.Error(0)
+}
+
+func (m *MockChoreRepo) DeleteAssignment(ctx context.Context, id uuid.UUID) error {
+	args := m.Called(ctx, id)
 	return args.Error(0)
 }
 

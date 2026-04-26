@@ -158,7 +158,29 @@ class GroupInvite {
         code: json['code'] as String,
         expiresAt: DateTime.parse(json['expires_at'] as String),
         usedBy: json['used_by'] as String?,
-        usedAt: json['used_at'] != null ? DateTime.parse(json['used_at'] as String) : null,
+        usedAt: json['used_at'] != null
+            ? DateTime.parse(json['used_at'] as String)
+            : null,
+      );
+}
+
+class GroupMemberProfile {
+  final String userId;
+  final String displayName;
+  final String role;
+
+  const GroupMemberProfile({
+    required this.userId,
+    required this.displayName,
+    required this.role,
+  });
+
+  factory GroupMemberProfile.fromJson(Map<String, dynamic> json) =>
+      GroupMemberProfile(
+        userId: json['user_id'] as String,
+        displayName:
+            json['display_name'] as String? ?? json['user_id'] as String,
+        role: json['role'] as String? ?? 'member',
       );
 }
 
@@ -191,6 +213,8 @@ class PendingClaim {
         code: json['code'] as String,
         expiresAt: DateTime.parse(json['expires_at'] as String),
         claimedBy: json['claimed_by'] as String?,
-        claimedAt: json['claimed_at'] != null ? DateTime.parse(json['claimed_at'] as String) : null,
+        claimedAt: json['claimed_at'] != null
+            ? DateTime.parse(json['claimed_at'] as String)
+            : null,
       );
 }

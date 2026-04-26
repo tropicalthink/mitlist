@@ -8,15 +8,22 @@ import (
 
 // Chore represents a recurring chore within a group.
 type Chore struct {
-	ID           uuid.UUID `json:"id"`
-	GroupID      uuid.UUID `json:"group_id"`
-	Name         string    `json:"name"`
-	Description  *string   `json:"description,omitempty"`
-	RotationType string    `json:"rotation_type"`
-	Frequency    string    `json:"frequency"`
-	IsActive     bool      `json:"is_active"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID               uuid.UUID   `json:"id"`
+	GroupID          uuid.UUID   `json:"group_id"`
+	Name             string      `json:"name"`
+	Description      *string     `json:"description,omitempty"`
+	RotationType     string      `json:"rotation_type"`
+	Frequency        string      `json:"frequency"`
+	PeriodInterval   int         `json:"period_interval"`
+	PeriodConfig     []string    `json:"period_config,omitempty"`
+	StartDate        *time.Time  `json:"start_date,omitempty"`
+	TrackDateOnly    bool        `json:"track_date_only"`
+	Rollover         bool        `json:"rollover"`
+	AssignmentType   string      `json:"assignment_type"`
+	AssignmentConfig []uuid.UUID `json:"assignment_config,omitempty"`
+	IsActive         bool        `json:"is_active"`
+	CreatedAt        time.Time   `json:"created_at"`
+	UpdatedAt        time.Time   `json:"updated_at"`
 }
 
 // ChoreRotationState stores the deterministic rotation order for a chore.
@@ -40,9 +47,18 @@ type ChoreAssignment struct {
 
 // ChoreCompletion records the completion of a chore assignment.
 type ChoreCompletion struct {
-	ID            uuid.UUID  `json:"id"`
-	AssignmentID  uuid.UUID  `json:"assignment_id"`
-	CompletedBy   uuid.UUID  `json:"completed_by"`
-	CompletedAt   time.Time  `json:"completed_at"`
-	Notes         *string    `json:"notes,omitempty"`
+	ID           uuid.UUID `json:"id"`
+	AssignmentID uuid.UUID `json:"assignment_id"`
+	CompletedBy  uuid.UUID `json:"completed_by"`
+	CompletedAt  time.Time `json:"completed_at"`
+	Notes        *string   `json:"notes,omitempty"`
+}
+
+// CurrentChore is the overview shape used by the chores dashboard.
+type CurrentChore struct {
+	Chore             Chore            `json:"chore"`
+	PendingAssignment *ChoreAssignment `json:"pending_assignment,omitempty"`
+	LastAssignment    *ChoreAssignment `json:"last_assignment,omitempty"`
+	DueStatus         string           `json:"due_status"`
+	AssignedToMe      bool             `json:"assigned_to_me"`
 }

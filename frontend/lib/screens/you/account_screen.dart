@@ -17,6 +17,7 @@ import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/skeleton.dart';
+import '../../widgets/mitlist_app_bar.dart';
 
 const String _appVersion = '1.0.0';
 
@@ -63,29 +64,42 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   Future<void> _loadData() async {
+    User? user;
+    bool? notificationsEnabled;
+
     try {
       final authService = await ref.read(authServiceProviderAsync.future);
-      final user = await authService.getMe();
-      final notifService = await ref.read(notificationServiceProviderAsync.future);
+      user = await authService.getMe();
+    } catch (_) {
+      // If we can't load the user profile, the screen can't render meaningfully.
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _error = 'Failed to load profile. Please try again.';
+      });
+      return;
+    }
+
+    try {
+      final notifService =
+          await ref.read(notificationServiceProviderAsync.future);
       final prefs = await notifService.getPreferences();
       final pushPrefs = prefs.where((p) => p.channel == 'push').toList();
-      final notificationsEnabled = pushPrefs.isEmpty ? true : pushPrefs.every((p) => p.enabled);
-      if (mounted) {
-        setState(() {
-          _name = user.fullName;
-          _email = user.email;
-          _notificationsEnabled = notificationsEnabled;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _error = 'Failed to load profile. Please try again.';
-        });
-      }
+      notificationsEnabled =
+          pushPrefs.isEmpty ? true : pushPrefs.every((p) => p.enabled);
+    } catch (_) {
+      // Non-fatal: default to enabled. We'll still render the profile screen.
+      notificationsEnabled = true;
     }
+
+    if (!mounted) return;
+    setState(() {
+      _name = user!.fullName;
+      _email = user.email;
+      _notificationsEnabled = notificationsEnabled ?? true;
+      _isLoading = false;
+      _error = null;
+    });
   }
 
   void _startEditingName() {
@@ -440,9 +454,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('You'),
-      ),
+      appBar: MitlistAppBar.titleText('You'),
       body: ListView(
         padding: const EdgeInsets.all(MitlistSpacing.md),
         children: [

@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -32,6 +33,9 @@ func TestChoreService_CreateChore(t *testing.T) {
 		}, nil)
 		choreRepo.On("CreateRotationState", ctx, mock.AnythingOfType("*models.ChoreRotationState")).Return(nil)
 		choreRepo.On("CreateAssignment", ctx, mock.AnythingOfType("*models.ChoreAssignment")).Return(nil)
+		choreRepo.On("UpdateRotationState", ctx, mock.MatchedBy(func(state *models.ChoreRotationState) bool {
+			return state.CurrentIndex == 1
+		})).Return(nil)
 
 		chore := &models.Chore{GroupID: groupID, Name: "Clean"}
 		err := svc.CreateChore(ctx, user, chore)
@@ -79,6 +83,55 @@ func TestChoreService_GetChore(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, choreID, c.ID)
 	})
+}
+
+func TestChoreService_ListCurrentChores(t *testing.T) {
+	ctx := context.Background()
+	user := validUser()
+	groupID := uuid.New()
+	choreID := uuid.New()
+	assignmentID := uuid.New()
+	due := time.Now().UTC().Add(24 * time.Hour)
+
+	choreRepo := new(mocks.MockChoreRepo)
+	groupRepo := new(mocks.MockGroupRepo)
+	svc := NewChoreService(choreRepo, groupRepo)
+
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+	choreRepo.On("ListCurrentChoresByGroup", ctx, groupID, 50, 0).Return([]models.CurrentChore{
+		{
+			Chore: models.Chore{ID: choreID, GroupID: groupID, Name: "Vacuum"},
+			PendingAssignment: &models.ChoreAssignment{
+				ID:         assignmentID,
+				ChoreID:    choreID,
+				UserID:     user.ID,
+				Status:     "pending",
+				DueDate:    &due,
+				AssignedAt: time.Now().UTC(),
+			},
+		},
+	}, nil)
+
+	current, err := svc.ListCurrentChores(ctx, user, groupID, 50, 0, 7)
+	require.NoError(t, err)
+	require.Len(t, current, 1)
+	assert.True(t, current[0].AssignedToMe)
+	assert.NotEmpty(t, current[0].DueStatus)
+}
+
+func TestChoreService_ListCurrentChores_RequiresMembership(t *testing.T) {
+	ctx := context.Background()
+	user := validUser()
+	groupID := uuid.New()
+
+	groupRepo := new(mocks.MockGroupRepo)
+	svc := NewChoreService(nil, groupRepo)
+
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(nil, pgx.ErrNoRows)
+
+	_, err := svc.ListCurrentChores(ctx, user, groupID, 50, 0, 7)
+	require.Error(t, err)
+	assert.IsType(t, &api.PermissionDeniedError{}, err)
 }
 
 func TestChoreService_RotateChore(t *testing.T) {
@@ -161,6 +214,54 @@ func TestChoreService_SkipChore(t *testing.T) {
 		err := svc.SkipChore(ctx, user, choreID)
 		require.NoError(t, err)
 	})
+}
+
+func TestChoreService_RescheduleChore(t *testing.T) {
+	ctx := context.Background()
+	user := validUser()
+	choreID := uuid.New()
+	groupID := uuid.New()
+	assignID := uuid.New()
+	newDue := time.Now().UTC().Add(48 * time.Hour)
+
+	choreRepo := new(mocks.MockChoreRepo)
+	groupRepo := new(mocks.MockGroupRepo)
+	svc := NewChoreService(choreRepo, groupRepo)
+
+	choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{ID: choreID, GroupID: groupID}, nil)
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+	choreRepo.On("GetPendingAssignmentByChore", ctx, choreID).Return(&models.ChoreAssignment{
+		ID:         assignID,
+		ChoreID:    choreID,
+		UserID:     user.ID,
+		Status:     "pending",
+		AssignedAt: time.Now().UTC(),
+	}, nil)
+	choreRepo.On("UpdateAssignment", ctx, mock.MatchedBy(func(a *models.ChoreAssignment) bool {
+		return a.ID == assignID && a.DueDate != nil && a.DueDate.Equal(newDue)
+	})).Return(nil)
+
+	err := svc.RescheduleChore(ctx, user, choreID, &newDue, nil)
+	require.NoError(t, err)
+}
+
+func TestChoreService_RescheduleChore_RejectsPastDueDate(t *testing.T) {
+	ctx := context.Background()
+	user := validUser()
+	choreID := uuid.New()
+	groupID := uuid.New()
+	past := time.Now().UTC().Add(-2 * time.Hour)
+
+	choreRepo := new(mocks.MockChoreRepo)
+	groupRepo := new(mocks.MockGroupRepo)
+	svc := NewChoreService(choreRepo, groupRepo)
+
+	choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{ID: choreID, GroupID: groupID}, nil)
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+
+	err := svc.RescheduleChore(ctx, user, choreID, &past, nil)
+	require.Error(t, err)
+	assert.IsType(t, &api.ValidationError{}, err)
 }
 
 func TestChoreService_RebuildMemberOrdersForGroup(t *testing.T) {

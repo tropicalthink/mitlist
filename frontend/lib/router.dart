@@ -131,9 +131,16 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: ':listId',
                 name: 'listDetail',
+                parentNavigatorKey: _rootNavigatorKey,
                 builder: (context, state) {
                   final listId = state.pathParameters['listId']!;
-                  return ListDetailScreen(listId: listId);
+                  final extra = state.extra;
+                  final initialName =
+                      extra is ListDetailRouteArgs ? extra.listName : null;
+                  return ListDetailScreen(
+                    listId: listId,
+                    initialListName: initialName,
+                  );
                 },
               ),
             ],
@@ -186,12 +193,19 @@ class BottomNavScaffold extends StatelessWidget {
         currentIndex: index,
         onTap: (i) => _onTap(i, context),
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.list_alt_outlined), label: 'Lists'),
-          BottomNavigationBarItem(icon: Icon(Icons.check_box_outlined), label: 'Chores'),
-          BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_outlined), label: 'Money'),
-          BottomNavigationBarItem(icon: Icon(Icons.restaurant_outlined), label: 'Kitchen'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'You'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined), label: 'Home'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.list_alt_outlined), label: 'Lists'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.check_box_outlined), label: 'Chores'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.account_balance_wallet_outlined),
+              label: 'Money'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.restaurant_outlined), label: 'Kitchen'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline), label: 'You'),
         ],
       ),
     );

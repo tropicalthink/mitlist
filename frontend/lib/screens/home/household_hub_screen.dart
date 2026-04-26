@@ -2,52 +2,37 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/activity_models.dart';
-import '../../models/finance_models.dart';
+import '../../models/auth_models.dart';
 import '../../models/group_models.dart';
 import '../../providers/activity_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/finance_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/chore_provider.dart';
-import '../../providers/recipe_provider.dart';
+import '../../providers/pinwall_provider.dart';
 import '../../utils/haptics.dart';
+import '../../theme/colors.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/skeleton.dart';
-import '../../theme/animations.dart';
 import '../../theme/spacing.dart';
+import '../../sheets/invite_household_sheet.dart';
 
-const _kHubEntrancePrefsKey = 'mitlist.hubEntranceV1.';
+final _currencyFormat = NumberFormat.currency(symbol: '\$');
 
 class _HubSnapshot {
   const _HubSnapshot({
-    required this.listsCount,
-    required this.listsCountError,
-    required this.choreCount,
-    required this.choresError,
     required this.activities,
     required this.activityError,
-    this.lastExpense,
-    required this.expensesError,
-    required this.recipeCount,
-    required this.recipesError,
   });
 
-  final int listsCount;
-  final bool listsCountError;
-  final int choreCount;
-  final bool choresError;
   final List<ActivityLogModel> activities;
   final bool activityError;
-  final Expense? lastExpense;
-  final bool expensesError;
-  final int recipeCount;
-  final bool recipesError;
 }
 
 class HouseholdHubScreen extends ConsumerStatefulWidget {
@@ -64,7 +49,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
   Object? _error;
   Group? _data;
   _HubSnapshot? _snapshot;
-  bool _playEntrance = false;
+  User? _me;
 
   @override
   void initState() {
@@ -78,88 +63,38 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
       _error = null;
     });
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final entranceKey = '$_kHubEntrancePrefsKey${widget.groupId}';
-      final alreadyShown = prefs.getBool(entranceKey) ?? false;
-
       final groupService = await ref.read(groupServiceProviderAsync.future);
       final group = await groupService.getGroup(widget.groupId);
 
-      int listsCount = 0;
-      var listsCountError = false;
-      int choreCount = 0;
-      var choresError = false;
       var activities = <ActivityLogModel>[];
       var activityError = false;
-      Expense? lastExpense;
-      var expensesError = false;
-      var recipeCount = 0;
-      var recipesError = false;
+      User? me;
 
-      final listF = ref.read(listServiceProviderAsync.future);
-      final choreF = ref.read(choreServiceProviderAsync.future);
       final actF = ref.read(activityServiceProviderAsync.future);
-      final finF = ref.read(financeServiceProviderAsync.future);
-      final recipeF = ref.read(recipeServiceProviderAsync.future);
+      final authF = ref.read(authServiceProviderAsync.future);
 
-      final listService = await listF;
       try {
-        final lists = await listService.listLists(widget.groupId);
-        listsCount = lists.length;
+        final auth = await authF;
+        me = await auth.getMe();
       } catch (_) {
-        listsCountError = true;
-      }
-
-      final choreService = await choreF;
-      try {
-        final chores = await choreService.listChores(widget.groupId);
-        choreCount = chores.where((c) => c.isActive).length;
-      } catch (_) {
-        choresError = true;
+        me = null;
       }
 
       final activityService = await actF;
       try {
-        activities = await activityService.listActivityLogs(widget.groupId, limit: 5, offset: 0);
+        activities = await activityService.listActivityLogs(widget.groupId, limit: 10, offset: 0);
       } catch (_) {
         activityError = true;
-      }
-
-      final financeService = await finF;
-      try {
-        final ex = await financeService.listExpenses(widget.groupId, limit: 20, offset: 0);
-        if (ex.isNotEmpty) {
-          ex.sort((a, b) => b.date.compareTo(a.date));
-          lastExpense = ex.first;
-        }
-      } catch (_) {
-        expensesError = true;
-      }
-
-      final recipeService = await recipeF;
-      try {
-        final recipes = await recipeService.listRecipes(limit: 30, offset: 0);
-        recipeCount = recipes.length;
-      } catch (_) {
-        recipesError = true;
       }
 
       if (!mounted) return;
       setState(() {
         _data = group;
         _snapshot = _HubSnapshot(
-          listsCount: listsCount,
-          listsCountError: listsCountError,
-          choreCount: choreCount,
-          choresError: choresError,
           activities: activities,
           activityError: activityError,
-          lastExpense: lastExpense,
-          expensesError: expensesError,
-          recipeCount: recipeCount,
-          recipesError: recipesError,
         );
-        _playEntrance = !alreadyShown;
+        _me = me;
         _isLoading = false;
       });
     } catch (e) {
@@ -174,18 +109,12 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const AppIcon(name: 'arrowLeft'),
-          tooltip: 'Back to households',
-          onPressed: () => context.goNamed('home'),
-        ),
-        title: Text(
-          _data?.name ?? 'Household',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
+      floatingActionButton: _isLoading || _error != null
+          ? null
+          : FloatingActionButton(
+              onPressed: () => _openQuickAddSheet(context),
+              child: const Icon(Icons.add),
+            ),
       body: _isLoading
           ? const _SkeletonDashboard()
           : _error != null
@@ -197,7 +126,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                       children: [
                         const AppAlert(
                           type: AppAlertType.error,
-                          message: 'Couldn’t load this household. Check your connection and try again.',
+                          message:
+                              'Couldn’t load this household. Check your connection and try again.',
                         ),
                         const SizedBox(height: MitlistSpacing.md),
                         AppButton(
@@ -209,414 +139,80 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                   ),
                 )
               : RefreshIndicator(
-                  onRefresh: _loadData,
-                  child: _StaggeredHubContent(
-                    group: _data,
-                    snapshot: _snapshot!,
-                    shouldPlayEntrance: _playEntrance,
-                    onEntranceFinished: _markEntranceShown,
-                  ),
-                ),
-    );
-  }
-
-  Future<void> _markEntranceShown() async {
-    final p = await SharedPreferences.getInstance();
-    await p.setBool('$_kHubEntrancePrefsKey${widget.groupId}', true);
-  }
-}
-
-class _StaggeredHubContent extends StatefulWidget {
-  const _StaggeredHubContent({
-    required this.group,
-    required this.snapshot,
-    required this.shouldPlayEntrance,
-    required this.onEntranceFinished,
-  });
-
-  final Group? group;
-  final _HubSnapshot snapshot;
-  final bool shouldPlayEntrance;
-  final Future<void> Function() onEntranceFinished;
-
-  @override
-  State<_StaggeredHubContent> createState() => _StaggeredHubContentState();
-}
-
-class _StaggeredHubContentState extends State<_StaggeredHubContent>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _stagger;
-  static const int _kSegmentCount = 4;
-
-  late final List<Animation<double>> _entrances;
-
-  @override
-  void initState() {
-    super.initState();
-    _stagger = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-    _entrances = List<Animation<double>>.generate(_kSegmentCount, (i) {
-      final start = (i * 0.1).clamp(0.0, 0.75);
-      final end = (start + 0.4).clamp(0.0, 1.0);
-      if (end <= start) {
-        return const AlwaysStoppedAnimation<double>(1);
-      }
-      return Tween<double>(begin: 0, end: 1).animate(
-        CurvedAnimation(
-          parent: _stagger,
-          curve: Interval(
-            start,
-            end,
-            curve: Curves.easeOutCubic,
-          ),
-        ),
-      );
-    });
-    _stagger.addStatusListener(_onStaggerStatus);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _runEntrance());
-  }
-
-  void _onStaggerStatus(AnimationStatus status) {
-    if (status == AnimationStatus.completed && widget.shouldPlayEntrance) {
-      widget.onEntranceFinished();
-    }
-  }
-
-  void _runEntrance() {
-    if (!mounted) return;
-    if (MediaQuery.of(context).disableAnimations) {
-      _stagger.value = 1;
-      if (widget.shouldPlayEntrance) {
-        widget.onEntranceFinished();
-      }
-      return;
-    }
-    if (widget.shouldPlayEntrance) {
-      _stagger.forward();
-    } else {
-      _stagger.value = 1;
-    }
-  }
-
-  @override
-  void dispose() {
-    _stagger.removeStatusListener(_onStaggerStatus);
-    _stagger.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(MitlistSpacing.md),
-      child: Semantics(
-        label: 'Household home',
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _HouseholdContextLine(group: widget.group, snapshot: widget.snapshot),
-            const SizedBox(height: MitlistSpacing.lg),
-            _staggered(
-              0,
-              _GlanceHeroCard(
-                snapshot: widget.snapshot,
-              ),
-            ),
-            if (!widget.snapshot.activityError && widget.snapshot.activities.isNotEmpty) ...[
+                  onRefresh: () async {
+                    ref.invalidate(financeSummaryByGroupProvider(widget.groupId));
+                    ref.invalidate(listsByGroupProvider(widget.groupId));
+                    ref.invalidate(weeklyChoresProgressByGroupProvider(widget.groupId));
+                    ref.invalidate(pinwallPostsByGroupProvider(widget.groupId));
+                    await _loadData();
+                  },
+                  child: CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    slivers: [
+                      SliverAppBar(
+                        pinned: true,
+                        elevation: 0,
+                        backgroundColor: Theme.of(context).colorScheme.surface,
+                        leading: IconButton(
+                          icon: const AppIcon(name: 'arrowLeft'),
+                          tooltip: 'Back to households',
+                          onPressed: () => context.goNamed('home'),
+                        ),
+                        title: Text(
+                          _data?.name ?? 'Home',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        actions: [
+                          IconButton(
+                            tooltip: 'Invite',
+                            icon: const Icon(Icons.group_add_outlined),
+                            onPressed: () => InviteHouseholdSheet.show(
+                              context,
+                              groupId: widget.groupId,
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'Notifications',
+                            icon: const Icon(Icons.notifications_none_outlined),
+                            onPressed: () => context.pushNamed('notifications'),
+                          ),
+                          IconButton(
+                            tooltip: 'Account',
+                            icon: const Icon(Icons.person_outline),
+                            onPressed: () => context.pushNamed('you'),
+                          ),
+                          const SizedBox(width: MitlistSpacing.xs),
+                        ],
+                      ),
+                      SliverPadding(
+                        padding: const EdgeInsets.all(MitlistSpacing.md),
+                        sliver: SliverList(
+                          delegate: SliverChildListDelegate(
+                            [
+                              _GreetingHeader(
+                                me: _me,
+                                householdName: _data?.name,
+                              ),
+                              const SizedBox(height: MitlistSpacing.lg),
+                              _PinwallSection(groupId: widget.groupId, me: _me),
               const SizedBox(height: MitlistSpacing.md),
-              _staggered(
-                1,
-                _ActivityPreviewCard(activities: widget.snapshot.activities),
-              ),
-            ],
-            const SizedBox(height: MitlistSpacing.md),
-            _staggered(
-              2,
-              _RecipesCallout(
-                count: widget.snapshot.recipeCount,
-                countError: widget.snapshot.recipesError,
-              ),
-            ),
-            const SizedBox(height: MitlistSpacing.lg),
-            _staggered(
-              3,
-              _AppShortcuts(
-                listsSubtitle: _listsShortSubtitle(
-                  count: widget.snapshot.listsCount,
-                  countError: widget.snapshot.listsCountError,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _listsShortSubtitle({required int count, required bool countError}) {
-    if (countError) return 'Count unavailable';
-    if (count == 0) return 'None yet';
-    return '$count list${count == 1 ? '' : 's'}';
-  }
-
-  Widget _staggered(int index, Widget child) {
-    if (index >= _entrances.length) return child;
-    return AnimatedBuilder(
-      animation: _entrances[index],
-      builder: (context, child) {
-        final t = _entrances[index].value;
-        return Opacity(
-          opacity: t,
-          child: Transform.translate(
-            offset: Offset(0, MitlistAnimations.cardEnterOffset * (1 - t)),
-            child: child,
-          ),
-        );
-      },
-      child: child,
-    );
-  }
-}
-
-class _HouseholdContextLine extends StatelessWidget {
-  const _HouseholdContextLine({required this.group, required this.snapshot});
-
-  final Group? group;
-  final _HubSnapshot snapshot;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-    final desc = group?.description?.trim();
-
-    final members = group?.memberCount;
-    String? line;
-    if (members != null) {
-      line = members == 1 ? '1 person in this home' : '$members people in this home';
-    }
-
-    if (desc != null && desc.isNotEmpty) {
-      return SelectionArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (line != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
-                child: Text(
-                  line,
-                  style: textTheme.labelLarge?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w400,
+              _SectionLabel(label: 'At a glance'),
+              const SizedBox(height: MitlistSpacing.sm),
+              _StatsRow(groupId: widget.groupId, me: _me),
+                              const SizedBox(height: MitlistSpacing.lg),
+                              _WallSection(
+                                activities: _snapshot!.activities,
+                                activityError: _snapshot!.activityError,
+                              ),
+                              const SizedBox(height: MitlistSpacing.xl),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            Text(
-              desc,
-              style: textTheme.bodyLarge,
-              maxLines: 6,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      );
-    }
-    if (line != null) {
-      return Text(
-        line,
-        style: textTheme.bodyLarge,
-      );
-    }
-    if (!snapshot.listsCountError && !snapshot.choresError) {
-      final l = snapshot.listsCount;
-      final c = snapshot.choreCount;
-      return Text(
-        l + c == 0
-            ? 'Nothing here yet — add a list or a chore to get started.'
-            : 'This home has $l list${l == 1 ? '' : 's'} and $c active chore${c == 1 ? '' : 's'}.',
-        style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-      );
-    }
-    return Text(
-      'A shared place for this household on mitlist.',
-      style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-    );
-  }
-}
-
-class _GlanceHeroCard extends StatelessWidget {
-  const _GlanceHeroCard({required this.snapshot});
-
-  final _HubSnapshot snapshot;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    final primary = _heroPrimaryAction(snapshot);
-    void go() {
-      Haptics.light();
-      context.pushNamed(primary.route);
-    }
-
-    return AppCard(
-      variant: AppCardVariant.filled,
-      tint: AppCardTint.primary,
-      padding: AppCardPadding.lg,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Start here',
-            style: textTheme.labelLarge?.copyWith(
-              color: colorScheme.onPrimaryContainer.withValues(alpha: 0.9),
-            ),
-          ),
-          const SizedBox(height: MitlistSpacing.sm),
-          Text(
-            primary.headline,
-            style: textTheme.titleLarge?.copyWith(
-              color: colorScheme.onPrimaryContainer,
-            ),
-          ),
-          const SizedBox(height: MitlistSpacing.xs),
-          Text(
-            primary.caption,
-            style: textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onPrimaryContainer,
-            ),
-          ),
-          if (primary.statsLine != null) ...[
-            const SizedBox(height: MitlistSpacing.md),
-            Text(
-              primary.statsLine!,
-              style: textTheme.bodySmall?.copyWith(
-                color: colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
-              ),
-            ),
-          ],
-          const SizedBox(height: MitlistSpacing.md),
-          AppButton(
-            text: primary.buttonLabel,
-            onPressed: go,
-            size: AppButtonSize.lg,
-            semanticLabel: primary.buttonLabel,
-            tooltip: primary.buttonLabel,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PrimaryAction {
-  const _PrimaryAction({
-    required this.route,
-    required this.headline,
-    required this.caption,
-    required this.buttonLabel,
-    this.statsLine,
-  });
-
-  final String route;
-  final String headline;
-  final String caption;
-  final String buttonLabel;
-  final String? statsLine;
-}
-
-_PrimaryAction _heroPrimaryAction(_HubSnapshot s) {
-  String fmtList() {
-    if (s.listsCountError) return 'Lists unknown';
-    if (s.listsCount == 0) return 'No lists';
-    return '${s.listsCount} list${s.listsCount == 1 ? '' : 's'}';
-  }
-
-  String fmtChore() {
-    if (s.choresError) return 'Chores unknown';
-    if (s.choreCount == 0) return 'No active chores';
-    return '${s.choreCount} active chore${s.choreCount == 1 ? '' : 's'}';
-  }
-
-  final stats = '${fmtList()} · ${fmtChore()}';
-
-  if (!s.choresError && s.choreCount > 0) {
-    return _PrimaryAction(
-      route: 'chores',
-      headline: 'Chores are active',
-      caption: 'Keep the home running—see what’s due in this group.',
-      buttonLabel: 'Open chores',
-      statsLine: stats,
-    );
-  }
-  if (!s.listsCountError && s.listsCount > 0) {
-    return _PrimaryAction(
-      route: 'lists',
-      headline: 'Your shared lists',
-      caption: 'Pick up where you left off on groceries and to-dos.',
-      buttonLabel: 'Open lists',
-      statsLine: stats,
-    );
-  }
-  if (s.lastExpense != null && !s.expensesError) {
-    final d = DateFormat.MMMd().format(s.lastExpense!.date);
-    return _PrimaryAction(
-      route: 'money',
-      headline: 'Money activity',
-      caption: 'Last recorded: ${s.lastExpense!.description} ($d).',
-      buttonLabel: 'Open money',
-      statsLine: stats,
-    );
-  }
-  if (!s.listsCountError && !s.choresError) {
-    return _PrimaryAction(
-      route: 'lists',
-      headline: 'Set up this home',
-      caption: 'Add a list, a chore, or an expense to make this space yours.',
-      buttonLabel: 'Create a list',
-      statsLine: stats,
-    );
-  }
-  return _PrimaryAction(
-    route: 'lists',
-    headline: 'Welcome',
-    caption: 'Open lists to get started, or use the app tabs anytime.',
-    buttonLabel: 'Open lists',
-    statsLine: null,
-  );
-}
-
-class _ActivityPreviewCard extends StatelessWidget {
-  const _ActivityPreviewCard({required this.activities});
-
-  final List<ActivityLogModel> activities;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final show = activities.take(3).toList();
-
-    return AppCard(
-      padding: AppCardPadding.md,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Recent in this home',
-            style: textTheme.titleSmall,
-          ),
-          const SizedBox(height: MitlistSpacing.md),
-          for (var i = 0; i < show.length; i++) ...[
-            if (i > 0) const SizedBox(height: MitlistSpacing.sm),
-            _ActivityLine(item: show[i]),
-          ],
-        ],
-      ),
     );
   }
 }
@@ -647,84 +243,542 @@ String _relativeDay(DateTime t) {
   return DateFormat.MMMd().format(t);
 }
 
-class _ActivityLine extends StatelessWidget {
-  const _ActivityLine({required this.item});
+String _formatUserLabel(String id, String? currentUserId) {
+  if (id == currentUserId) return 'You';
+  return 'Member';
+}
 
-  final ActivityLogModel item;
+// Returns a 1–2 letter avatar string from a user label.
+String _avatarInitials(String label) {
+  final parts = label.trim().split(RegExp(r'\s+'));
+  if (parts.length >= 2) {
+    return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+  }
+  return label.isNotEmpty ? label[0].toUpperCase() : '?';
+}
+
+String _formatCurrency(double value) => _currencyFormat.format(value);
+
+String _timeGreeting() {
+  final h = DateTime.now().hour;
+  if (h < 12) return 'Morning';
+  if (h < 17) return 'Afternoon';
+  return 'Evening';
+}
+
+Future<void> _openQuickAddSheet(BuildContext context) async {
+  Haptics.light();
+  await showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (context) {
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(MitlistSpacing.md),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Quick add',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: MitlistSpacing.md),
+              AppButton(
+                text: 'Add expense',
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  context.pushNamed('money');
+                },
+              ),
+              const SizedBox(height: MitlistSpacing.sm),
+              AppButton(
+                text: 'Add to a list',
+                variant: AppButtonVariant.outline,
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  context.pushNamed('lists');
+                },
+              ),
+              const SizedBox(height: MitlistSpacing.sm),
+              AppButton(
+                text: 'Add chore',
+                variant: AppButtonVariant.outline,
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  context.pushNamed('chores');
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class _GreetingHeader extends StatelessWidget {
+  const _GreetingHeader({
+    required this.me,
+    required this.householdName,
+  });
+
+  final User? me;
+  final String? householdName;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-    return Text(
-      _formatActivityLine(item),
-      style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface),
+    final greeting = _timeGreeting();
+    final name = me?.firstName.trim();
+    final who = (name == null || name.isEmpty) ? '' : ', $name';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$greeting$who!',
+          style: textTheme.headlineSmall,
+        ),
+        const SizedBox(height: MitlistSpacing.xs),
+        Text(
+          householdName ?? 'Your household',
+          style: textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
   }
 }
 
-class _RecipesCallout extends StatelessWidget {
-  const _RecipesCallout({required this.count, required this.countError});
+// ─────────────────────────────────────────────────────────────────────────────
+// Pinwall section – a real corkboard with sticky notes
+// ─────────────────────────────────────────────────────────────────────────────
 
-  final int count;
-  final bool countError;
+// Per-note colour palette (warm sticky-note hues).
+const _kNotePalette = [
+  Color(0xFFFFF9C4), // pale yellow
+  Color(0xFFFFE0B2), // peach
+  Color(0xFFC8E6C9), // mint
+  Color(0xFFB3E5FC), // sky
+  Color(0xFFF8BBD0), // blush
+  Color(0xFFE1BEE7), // lavender
+];
+const _kNotePaletteDark = [
+  Color(0xFF5D5000), // dark yellow
+  Color(0xFF6D3000), // dark peach
+  Color(0xFF1B5E20), // dark mint
+  Color(0xFF01579B), // dark sky
+  Color(0xFF880E4F), // dark blush
+  Color(0xFF4A148C), // dark lavender
+];
+
+class _PinwallSection extends ConsumerStatefulWidget {
+  const _PinwallSection({required this.groupId, required this.me});
+
+  final String groupId;
+  final User? me;
+
+  @override
+  ConsumerState<_PinwallSection> createState() => _PinwallSectionState();
+}
+
+class _PinwallSectionState extends ConsumerState<_PinwallSection> {
+  final TextEditingController _controller = TextEditingController();
+  bool _isPosting = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _post() async {
+    final content = _controller.text.trim();
+    if (content.isEmpty || _isPosting) return;
+
+    setState(() => _isPosting = true);
+    try {
+      final svc = await ref.read(pinwallServiceProviderAsync.future);
+      await svc.createPost(widget.groupId, content: content);
+      if (!mounted) return;
+      _controller.clear();
+      ref.invalidate(pinwallPostsByGroupProvider(widget.groupId));
+    } finally {
+      if (mounted) setState(() => _isPosting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final posts = ref.watch(pinwallPostsByGroupProvider(widget.groupId));
+    final textTheme = Theme.of(context).textTheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+
+    // Cork board colours
+    final boardBg = dark ? const Color(0xFF2A211A) : const Color(0xFFC8A97A);
+    final boardBorder = dark ? const Color(0xFF4A3C2E) : const Color(0xFF8B5E3C);
+    final boardShadow = Colors.black.withValues(alpha: dark ? 0.5 : 0.22);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+          child: Text(
+            'Pinwall',
+            style: textTheme.titleMedium,
+          ),
+        ),
+        // One big board surface that holds the composer AND the notes
+        Container(
+          padding: const EdgeInsets.all(MitlistSpacing.md),
+          decoration: BoxDecoration(
+            color: boardBg,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: boardBorder, width: 3),
+            boxShadow: [
+              BoxShadow(
+                color: boardShadow,
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Composer note (always visible at the top of the board)
+              _PinwallComposerNote(
+                controller: _controller,
+                isPosting: _isPosting,
+                onPost: _post,
+              ),
+              const SizedBox(height: MitlistSpacing.lg),
+              posts.when(
+                loading: () => Column(
+                  children: [
+                    _PinwallSkeletonNote(dark: dark),
+                    const SizedBox(height: MitlistSpacing.md),
+                    _PinwallSkeletonNote(dark: dark),
+                  ],
+                ),
+                error: (_, __) => Container(
+                  padding: const EdgeInsets.all(MitlistSpacing.md),
+                  decoration: BoxDecoration(
+                    color: dark ? const Color(0xFF3A2A1A) : const Color(0xFFFFF9C4),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: boardBorder, width: 1.5),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, color: Color(0xFFF97316)),
+                      const SizedBox(width: MitlistSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          "Couldn't load the pinwall.",
+                          style: textTheme.bodySmall,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => ref.invalidate(pinwallPostsByGroupProvider(widget.groupId)),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+                data: (rows) {
+                  if (rows.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.md),
+                      child: Text(
+                        'No notes yet — be the first to post!',
+                        textAlign: TextAlign.center,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: dark ? const Color(0xFF8B7355) : const Color(0xFF5D4037),
+                        ),
+                      ),
+                    );
+                  }
+                  final show = rows.take(10).toList();
+                  return Wrap(
+                    spacing: MitlistSpacing.md,
+                    runSpacing: MitlistSpacing.lg,
+                    children: [
+                      for (var i = 0; i < show.length; i++)
+                        _PinwallNoteCard(
+                          index: i,
+                          groupId: widget.groupId,
+                          me: widget.me,
+                          post: show[i],
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// Composer sticky note (write + post)
+class _PinwallComposerNote extends StatelessWidget {
+  const _PinwallComposerNote({
+    required this.controller,
+    required this.isPosting,
+    required this.onPost,
+  });
+
+  final TextEditingController controller;
+  final bool isPosting;
+  final Future<void> Function() onPost;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
-    void open() {
-      Haptics.light();
-      context.goNamed('recipes');
-    }
-    final sub = countError
-        ? 'Open your cookbook to browse and save meals — also from the Kitchen tab.'
-        : count == 0
-            ? 'No recipes saved yet — add your first and build your book.'
-            : 'You have $count saved recipe${count == 1 ? '' : 's'}. Open from here or the Kitchen tab.';
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final bg = dark ? const Color(0xFF5D5000) : const Color(0xFFFFF9C4);
+    final border = dark ? const Color(0xFF8B7A00) : const Color(0xFFB8A800);
+    final pinColor = dark ? MitlistColors.primary300 : MitlistColors.primary600;
 
-    return AppCard(
-      variant: AppCardVariant.soft,
-      tint: AppCardTint.primary,
-      padding: AppCardPadding.lg,
-      interactive: true,
-      onTap: open,
-      semanticLabel: 'Recipes, open cookbook. $sub',
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.restaurant_outlined,
-            size: 32,
-            color: colorScheme.primary,
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          padding: const EdgeInsets.fromLTRB(
+            MitlistSpacing.md,
+            MitlistSpacing.lg + 4,
+            MitlistSpacing.md,
+            MitlistSpacing.md,
           ),
-          const SizedBox(width: MitlistSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Kitchen & recipes',
-                  style: textTheme.titleMedium,
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: border, width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: dark ? 0.5 : 0.2),
+                blurRadius: 18,
+                offset: const Offset(2, 12),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: dark ? 0.25 : 0.07),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                controller: controller,
+                minLines: 2,
+                maxLines: 6,
+                textInputAction: TextInputAction.newline,
+                style: textTheme.bodyMedium?.copyWith(
+                  color: dark ? Colors.white.withValues(alpha: 0.9) : MitlistColors.textPrimary,
                 ),
-                const SizedBox(height: MitlistSpacing.xs),
-                Text(
-                  sub,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                decoration: InputDecoration(
+                  hintText: 'Post a note to the household\u2026',
+                  hintStyle: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.65),
                   ),
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
                 ),
-                const SizedBox(height: MitlistSpacing.md),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: AppButton(
-                    text: 'Browse recipes',
-                    onPressed: open,
-                    variant: AppButtonVariant.outline,
-                    size: AppButtonSize.sm,
-                  ),
+              ),
+              const SizedBox(height: MitlistSpacing.sm),
+              Align(
+                alignment: Alignment.centerRight,
+                child: AppButton(
+                  text: isPosting ? 'Posting...' : 'Pin it',
+                  onPressed: isPosting ? null : onPost,
+                  size: AppButtonSize.sm,
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Pushpin centred at top
+        Positioned(
+          top: -14,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: _Pushpin(headColor: pinColor),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// Skeleton note for loading state
+class _PinwallSkeletonNote extends StatelessWidget {
+  const _PinwallSkeletonNote({required this.dark});
+  final bool dark;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = dark ? const Color(0xFF5D5000) : const Color(0xFFFFF9C4);
+    return Container(
+      height: 100,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: dark ? 0.4 : 0.14),
+            blurRadius: 14,
+            offset: const Offset(2, 10),
+          ),
+        ],
+      ),
+      child: const Center(child: AppSkeleton(width: 120, height: 14)),
+    );
+  }
+}
+
+// A single pinned note card
+class _PinwallNoteCard extends ConsumerWidget {
+  const _PinwallNoteCard({
+    required this.index,
+    required this.groupId,
+    required this.me,
+    required this.post,
+  });
+
+  final int index;
+  final String groupId;
+  final User? me;
+  final dynamic post;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final textTheme = Theme.of(context).textTheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+
+    final userId = (post as dynamic).userId as String;
+    final content = post.content as String;
+    final createdAt = post.createdAt as DateTime;
+    final userLabel = _formatUserLabel(userId, me?.id);
+    final when = _relativeDay(createdAt);
+
+    // deterministic but varied rotation: +-4deg
+    final idHash = (post.id as String).hashCode;
+    final rot = ((idHash % 13) - 6) * 0.012;
+
+    // pick sticky note colour deterministically from palette
+    final palette = dark ? _kNotePaletteDark : _kNotePalette;
+    final bg = palette[(idHash.abs()) % palette.length];
+    final border = bg.withValues(alpha: dark ? 0.3 : 0.6);
+
+    // pin colour cycles through orange/teal/red
+    const pinColors = [
+      MitlistColors.primary600,
+      Color(0xFF0D9488), // teal
+      Color(0xFFDC2626), // red
+    ];
+    final pinColor = pinColors[index % pinColors.length];
+
+    Future<void> onDelete() async {
+      Haptics.light();
+      final svc = await ref.read(pinwallServiceProviderAsync.future);
+      await svc.deletePost(groupId, post.id as String);
+      ref.invalidate(pinwallPostsByGroupProvider(groupId));
+    }
+
+    final textColor = dark ? Colors.white.withValues(alpha: 0.9) : MitlistColors.textPrimary;
+    final mutedColor = dark
+        ? Colors.white.withValues(alpha: 0.5)
+        : MitlistColors.textSecondary.withValues(alpha: 0.7);
+
+    return Transform.rotate(
+      angle: rot.toDouble(),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // The note itself
+          Container(
+            width: 160,
+            padding: const EdgeInsets.fromLTRB(
+              MitlistSpacing.sm + 4,
+              MitlistSpacing.lg,
+              MitlistSpacing.sm,
+              MitlistSpacing.sm,
+            ),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: border, width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: dark ? 0.5 : 0.18),
+                  blurRadius: 20,
+                  offset: const Offset(4, 14),
+                ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: dark ? 0.2 : 0.06),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
                 ),
               ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  content,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: textColor,
+                    height: 1.4,
+                  ),
+                  maxLines: 8,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: MitlistSpacing.xs),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '$userLabel · $when',
+                        style: textTheme.labelSmall?.copyWith(color: mutedColor),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    PopupMenuButton<String>(
+                      tooltip: 'Post options',
+                      onSelected: (v) async {
+                        if (v == 'delete') await onDelete();
+                      },
+                      itemBuilder: (_) => const [
+                        PopupMenuItem(value: 'delete', child: Text('Delete')),
+                      ],
+                      child: Padding(
+                        padding: const EdgeInsets.all(2),
+                        child: Icon(Icons.more_horiz, size: 16, color: mutedColor),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          // Pushpin at top-centre
+          Positioned(
+            top: -14,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: _Pushpin(headColor: pinColor),
             ),
           ),
         ],
@@ -733,125 +787,471 @@ class _RecipesCallout extends StatelessWidget {
   }
 }
 
-class _AppShortcuts extends StatelessWidget {
-  const _AppShortcuts({required this.listsSubtitle});
+// A realistic-looking pushpin drawn with CustomPainter
+class _Pushpin extends StatelessWidget {
+  const _Pushpin({required this.headColor});
 
-  final String listsSubtitle;
+  final Color headColor;
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Open elsewhere in the app',
-          style: textTheme.labelSmall?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-            letterSpacing: 0.4,
-          ),
-        ),
-        const SizedBox(height: MitlistSpacing.sm),
-        _TextShortcut(
-          label: 'Lists',
-          detail: listsSubtitle,
-          onTap: () {
-            Haptics.light();
-            context.pushNamed('lists');
-          },
-        ),
-        const Divider(height: 1),
-        _TextShortcut(
-          label: 'Chores',
-          detail: 'Shared tasks',
-          onTap: () {
-            Haptics.light();
-            context.pushNamed('chores');
-          },
-        ),
-        const Divider(height: 1),
-        _TextShortcut(
-          label: 'Money',
-          detail: 'Expenses & balances',
-          onTap: () {
-            Haptics.light();
-            context.pushNamed('money');
-          },
-        ),
-        const Divider(height: 1),
-        _TextShortcut(
-          label: 'Kitchen',
-          detail: 'Recipes & meal ideas',
-          onTap: () {
-            Haptics.light();
-            context.goNamed('recipes');
-          },
-        ),
-        const Divider(height: 1),
-        _TextShortcut(
-          label: 'You',
-          detail: 'Account & profile',
-          onTap: () {
-            Haptics.light();
-            context.pushNamed('you');
-          },
-        ),
-      ],
+    return CustomPaint(
+      size: const Size(22, 28),
+      painter: _PushpinPainter(headColor: headColor),
     );
   }
 }
 
-class _TextShortcut extends StatelessWidget {
-  const _TextShortcut({
-    required this.label,
-    required this.detail,
+class _PushpinPainter extends CustomPainter {
+  const _PushpinPainter({required this.headColor});
+
+  final Color headColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+
+    // Shadow under head
+    final shadowPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.28)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+    canvas.drawCircle(Offset(cx, 12), 10, shadowPaint);
+
+    // Pin head
+    final headPaint = Paint()..color = headColor;
+    canvas.drawCircle(Offset(cx, 10), 10, headPaint);
+
+    // Shine highlight
+    final shinePaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.45);
+    canvas.drawCircle(Offset(cx - 3.5, 6.5), 4, shinePaint);
+
+    // Pin needle
+    final needlePaint = Paint()..color = Colors.grey.shade600;
+    final needlePath = Path()
+      ..moveTo(cx - 2, 18)
+      ..lineTo(cx + 2, 18)
+      ..lineTo(cx + 0.5, size.height)
+      ..lineTo(cx - 0.5, size.height)
+      ..close();
+    canvas.drawPath(needlePath, needlePaint);
+
+    // Outline on head
+    final outlinePaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.25)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    canvas.drawCircle(Offset(cx, 10), 10, outlinePaint);
+  }
+
+  @override
+  bool shouldRepaint(_PushpinPainter old) => old.headColor != headColor;
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Text(label, style: textTheme.titleMedium);
+  }
+}
+
+class _StatsRow extends StatelessWidget {
+  const _StatsRow({required this.groupId, required this.me});
+
+  final String groupId;
+  final User? me;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, c) {
+        final minTile = 160.0;
+        final count = (c.maxWidth / minTile).floor().clamp(1, 3);
+        final tileWidth = (c.maxWidth - (MitlistSpacing.sm * (count - 1))) / count;
+
+        return Wrap(
+          spacing: MitlistSpacing.sm,
+          runSpacing: MitlistSpacing.sm,
+          children: [
+            SizedBox(width: tileWidth, child: _BalanceTile(groupId: groupId, me: me)),
+            SizedBox(width: tileWidth, child: _ShoppingTile(groupId: groupId)),
+            SizedBox(width: tileWidth, child: _WeeklyChoresTile(groupId: groupId)),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _BalanceTile extends ConsumerWidget {
+  const _BalanceTile({required this.groupId, required this.me});
+
+  final String groupId;
+  final User? me;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final summary = ref.watch(financeSummaryByGroupProvider(groupId));
+
+    return summary.when(
+      loading: () => const _StatTileSkeleton(),
+      error: (_, __) => _StatTile(
+        title: 'Current balance',
+        value: '—',
+        subtitle: 'Unavailable',
+        tint: AppCardTint.primary,
+        onTap: () => context.pushNamed('money'),
+      ),
+      data: (s) {
+        final myId = me?.id;
+        final meEntry = myId == null ? null : s.balances.where((b) => b.userId == myId).firstOrNull;
+        final totalCents = meEntry?.total ?? 0;
+        final amount = totalCents / 100.0;
+        final abs = amount.abs();
+        final value = _formatCurrency(abs);
+        final subtitle = amount == 0
+            ? 'Settled up'
+            : amount < 0
+                ? 'You owe'
+                : 'You’re owed';
+
+        return _StatTile(
+          title: 'Current balance',
+          value: value,
+          subtitle: subtitle,
+          tint: AppCardTint.primary,
+          onTap: () => context.pushNamed('money'),
+        );
+      },
+    );
+  }
+}
+
+class _ShoppingTile extends ConsumerWidget {
+  const _ShoppingTile({required this.groupId});
+
+  final String groupId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lists = ref.watch(listsByGroupProvider(groupId));
+    return lists.when(
+      loading: () => const _StatTileSkeleton(),
+      error: (_, __) => _StatTile(
+        title: 'Shopping',
+        value: '—',
+        subtitle: 'Unavailable',
+        onTap: () => context.pushNamed('lists'),
+      ),
+      data: (all) {
+        final shopping = all.where((l) => l.type == 'shopping').toList();
+        if (shopping.isEmpty) {
+          return _StatTile(
+            title: 'Shopping',
+            value: '0',
+            subtitle: 'Items',
+            onTap: () => context.pushNamed('lists'),
+          );
+        }
+
+        final anyCount = shopping.any((l) => l.itemCount != null);
+        if (anyCount) {
+          final items = shopping.fold<int>(0, (sum, l) => sum + (l.itemCount ?? 0));
+          return _StatTile(
+            title: 'Shopping',
+            value: '$items',
+            subtitle: 'Items',
+            onTap: () => context.pushNamed('lists'),
+          );
+        }
+
+        shopping.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+        final listId = shopping.first.id;
+        final items = ref.watch(listItemsProvider(listId));
+        return items.when(
+          loading: () => _StatTile(
+            title: 'Shopping',
+            value: '—',
+            subtitle: 'Items',
+            onTap: () => context.pushNamed('lists'),
+          ),
+          error: (_, __) => _StatTile(
+            title: 'Shopping',
+            value: '—',
+            subtitle: 'Items',
+            onTap: () => context.pushNamed('lists'),
+          ),
+          data: (rows) {
+            final unchecked = rows.where((i) => !i.checked).length;
+            return _StatTile(
+              title: 'Shopping',
+              value: '$unchecked',
+              subtitle: 'Items',
+              onTap: () => context.pushNamed('lists'),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _WeeklyChoresTile extends ConsumerWidget {
+  const _WeeklyChoresTile({required this.groupId});
+
+  final String groupId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final p = ref.watch(weeklyChoresProgressByGroupProvider(groupId));
+    return p.when(
+      loading: () => const _StatTileSkeleton(),
+      error: (_, __) => _StatTile(
+        title: 'Weekly chores',
+        value: '—',
+        subtitle: 'Unavailable',
+        onTap: () => context.pushNamed('chores'),
+      ),
+      data: (progress) {
+        final pct = (progress.progress * 100).round().clamp(0, 100);
+        final sub = progress.dueCount == 0
+            ? 'No chores due'
+            : '${progress.completedCount} of ${progress.dueCount}';
+        return _StatTile(
+          title: 'Weekly chores',
+          value: '$pct%',
+          subtitle: sub,
+          trailing: Padding(
+            padding: const EdgeInsets.only(top: MitlistSpacing.sm),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: progress.dueCount == 0 ? 0 : progress.progress.clamp(0, 1),
+                minHeight: 6,
+              ),
+            ),
+          ),
+          onTap: () => context.pushNamed('chores'),
+        );
+      },
+    );
+  }
+}
+
+class _StatTile extends StatelessWidget {
+  const _StatTile({
+    required this.title,
+    required this.value,
+    required this.subtitle,
+    this.trailing,
+    this.tint,
     required this.onTap,
   });
 
-  final String label;
-  final String detail;
+  final String title;
+  final String value;
+  final String subtitle;
+  final Widget? trailing;
+  final AppCardTint? tint;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
-          child: Row(
+    final titleColor = (tint == null ? colorScheme.onSurfaceVariant : colorScheme.onPrimaryContainer)
+        .withValues(alpha: 0.8);
+    final valueColor = tint == null ? colorScheme.onSurface : colorScheme.onPrimaryContainer;
+    final subtitleColor =
+        (tint == null ? colorScheme.onSurfaceVariant : colorScheme.onPrimaryContainer)
+            .withValues(alpha: 0.85);
+
+    final child = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title.toUpperCase(),
+          style: textTheme.labelSmall?.copyWith(
+            color: titleColor,
+            letterSpacing: 0.6,
+          ),
+        ),
+        const SizedBox(height: MitlistSpacing.sm),
+        Text(
+          value,
+          style: textTheme.headlineSmall?.copyWith(color: valueColor),
+        ),
+        const SizedBox(height: MitlistSpacing.xs),
+        Text(
+          subtitle,
+          style: textTheme.bodySmall?.copyWith(color: subtitleColor),
+        ),
+        if (trailing != null) trailing!,
+      ],
+    );
+
+    if (tint == null) {
+      return AppCard(
+        variant: AppCardVariant.soft,
+        padding: AppCardPadding.md,
+        interactive: true,
+        onTap: () {
+          Haptics.light();
+          onTap();
+        },
+        child: child,
+      );
+    }
+
+    return AppCard(
+      variant: AppCardVariant.filled,
+      tint: tint!,
+      padding: AppCardPadding.md,
+      interactive: true,
+      onTap: () {
+        Haptics.light();
+        onTap();
+      },
+      child: child,
+    );
+  }
+}
+
+class _StatTileSkeleton extends StatelessWidget {
+  const _StatTileSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const AppCard(
+      variant: AppCardVariant.soft,
+      padding: AppCardPadding.md,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppSkeleton(width: 110, height: 12),
+          SizedBox(height: MitlistSpacing.sm),
+          AppSkeleton(width: 120, height: 20),
+          SizedBox(height: MitlistSpacing.xs),
+          AppSkeleton(width: 80, height: 12),
+        ],
+      ),
+    );
+  }
+}
+
+class _WallSection extends StatelessWidget {
+  const _WallSection({required this.activities, required this.activityError});
+
+  final List<ActivityLogModel> activities;
+  final bool activityError;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Flat Wall',
+                style: textTheme.titleMedium,
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Wall details coming soon')),
+                );
+              },
+              child: const Text('See all'),
+            ),
+          ],
+        ),
+        const SizedBox(height: MitlistSpacing.sm),
+        if (activityError)
+          Text(
+            'Couldn’t load the wall right now.',
+            style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+          )
+        else if (activities.isEmpty)
+          Text(
+            'Nothing posted yet.',
+            style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+          )
+        else
+          AppCard(
+            padding: AppCardPadding.md,
+            child: Column(
+              children: [
+                for (var i = 0; i < activities.take(5).length; i++) ...[
+                  if (i > 0) const SizedBox(height: MitlistSpacing.sm),
+                  _WallItem(item: activities[i]),
+                ],
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _WallItem extends StatelessWidget {
+  const _WallItem({required this.item});
+
+  final ActivityLogModel item;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    final userLabel = _formatUserLabel(item.userId, null);
+    final when = _relativeDay(item.createdAt);
+    final message = _formatActivityLine(item);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: colorScheme.primaryContainer,
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            _avatarInitials(userLabel),
+            style: textTheme.labelMedium?.copyWith(color: colorScheme.onPrimaryContainer, fontWeight: FontWeight.w600),
+          ),
+        ),
+        const SizedBox(width: MitlistSpacing.sm),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: textTheme.titleSmall,
-                    ),
-                    const SizedBox(height: MitlistSpacing.xs),
-                    Text(
-                      detail,
-                      style: textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+              Text(
+                '$userLabel · $when',
+                style: textTheme.labelMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
-              AppIcon(
-                name: 'chevronRight',
-                size: 18,
-                color: colorScheme.onSurfaceVariant,
+              const SizedBox(height: MitlistSpacing.xs),
+              Text(
+                message,
+                style: textTheme.bodyMedium,
               ),
             ],
           ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -861,44 +1261,73 @@ class _SkeletonDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(MitlistSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const AppSkeleton(width: 200, height: 18),
-          const SizedBox(height: MitlistSpacing.lg),
-          AppCard(
-            variant: AppCardVariant.filled,
-            tint: AppCardTint.primary,
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppSkeleton(width: 80, height: 12),
-                SizedBox(height: MitlistSpacing.md),
-                AppSkeleton(width: 220, height: 22),
-                SizedBox(height: MitlistSpacing.sm),
-                AppSkeleton(width: 260, height: 16),
+    return CustomScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      slivers: [
+        SliverAppBar(
+          pinned: true,
+          elevation: 0,
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          title: const AppSkeleton(width: 140, height: 16),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.all(MitlistSpacing.md),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate(
+              const [
+                AppSkeleton(width: 240, height: 22),
+                SizedBox(height: MitlistSpacing.xs),
+                AppSkeleton(width: 180, height: 14),
                 SizedBox(height: MitlistSpacing.lg),
-                AppSkeleton(width: double.infinity, height: 44),
+                AppCard(
+                  variant: AppCardVariant.filled,
+                  tint: AppCardTint.primary,
+                  padding: AppCardPadding.lg,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppSkeleton(width: 120, height: 12),
+                      SizedBox(height: MitlistSpacing.md),
+                      AppSkeleton(width: 240, height: 22),
+                      SizedBox(height: MitlistSpacing.sm),
+                      AppSkeleton(width: 280, height: 16),
+                      SizedBox(height: MitlistSpacing.lg),
+                      AppSkeleton(width: 240, height: 40),
+                    ],
+                  ),
+                ),
+                SizedBox(height: MitlistSpacing.md),
+                Row(
+                  children: [
+                    Expanded(child: _StatTileSkeleton()),
+                    SizedBox(width: MitlistSpacing.sm),
+                    Expanded(child: _StatTileSkeleton()),
+                  ],
+                ),
+                SizedBox(height: MitlistSpacing.sm),
+                _StatTileSkeleton(),
+                SizedBox(height: MitlistSpacing.lg),
+                AppSkeleton(width: 120, height: 16),
+                SizedBox(height: MitlistSpacing.sm),
+                AppCard(
+                  padding: AppCardPadding.md,
+                  child: Column(
+                    children: [
+                      AppSkeleton(width: double.infinity, height: 44),
+                      SizedBox(height: MitlistSpacing.sm),
+                      AppSkeleton(width: double.infinity, height: 44),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
-          const SizedBox(height: MitlistSpacing.md),
-          const AppSkeleton(width: 160, height: 14),
-          const SizedBox(height: MitlistSpacing.md),
-          ...List.generate(3, (i) {
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: i == 2 ? 0 : MitlistSpacing.sm,
-              ),
-              child: const AppCard(
-                child: AppSkeleton(width: double.infinity, height: 40),
-              ),
-            );
-          }),
-        ],
-      ),
+        ),
+      ],
     );
   }
+}
+
+extension _FirstOrNull<T> on Iterable<T> {
+  T? get firstOrNull => isEmpty ? null : first;
 }

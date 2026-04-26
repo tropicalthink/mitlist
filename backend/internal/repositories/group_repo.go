@@ -286,6 +286,35 @@ func (r *GroupRepository) ListMembershipsByGroup(ctx context.Context, groupID uu
 	return memberships, nil
 }
 
+// ListMemberProfilesByGroup returns member display information for a group.
+func (r *GroupRepository) ListMemberProfilesByGroup(ctx context.Context, groupID uuid.UUID) ([]models.GroupMemberProfile, error) {
+	query := `
+		SELECT u.id, trim(u.first_name || ' ' || u.last_name) AS display_name, gm.role
+		FROM group_memberships gm
+		JOIN users u ON u.id = gm.user_id
+		WHERE gm.group_id = $1
+		ORDER BY display_name ASC, u.id ASC
+	`
+	rows, err := r.pool.Query(ctx, query, groupID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var profiles []models.GroupMemberProfile
+	for rows.Next() {
+		var p models.GroupMemberProfile
+		if err := rows.Scan(&p.UserID, &p.DisplayName, &p.Role); err != nil {
+			return nil, err
+		}
+		profiles = append(profiles, p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return profiles, nil
+}
+
 // GetPendingClaimByID retrieves a pending claim by its ID.
 func (r *GroupRepository) GetPendingClaimByID(ctx context.Context, id uuid.UUID) (*models.PendingClaim, error) {
 	query := `
@@ -335,4 +364,3 @@ func (r *GroupRepository) ListPendingClaimsByGroup(ctx context.Context, groupID 
 var (
 	_ = pgx.ErrNoRows
 )
-

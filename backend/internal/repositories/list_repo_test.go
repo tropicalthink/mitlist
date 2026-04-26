@@ -84,6 +84,26 @@ func TestListRepository_ListListsByGroup(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestListRepository_ListItemPreviewLinesByListIDs(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewListRepository(mock)
+	lid := fixedUUID()
+	ids := []uuid.UUID{lid}
+
+	rows := pgxmock.NewRows([]string{"list_id", "preview"}).
+		AddRow(lid, []string{"milk", "bread"})
+
+	mock.ExpectQuery("SELECT list_id, COALESCE").
+		WithArgs(ids, 4).
+		WillReturnRows(rows)
+
+	m, err := repo.ListItemPreviewLinesByListIDs(context.Background(), ids, 4)
+	require.NoError(t, err)
+	require.Len(t, m, 1)
+	assert.Equal(t, []string{"milk", "bread"}, m[lid])
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestListRepository_UpdateList(t *testing.T) {
 	mock := newMockDB(t)
 	repo := NewListRepository(mock)

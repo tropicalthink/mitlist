@@ -83,6 +83,14 @@ func (s *GroupService) ListGroups(ctx context.Context, userID uuid.UUID, limit, 
 	return s.groupRepo.ListGroupsByUser(ctx, userID, limit, offset)
 }
 
+// ListMemberProfiles returns display-ready members for a group.
+func (s *GroupService) ListMemberProfiles(ctx context.Context, userID, groupID uuid.UUID) ([]models.GroupMemberProfile, error) {
+	if _, err := s.requireMembership(ctx, userID, groupID); err != nil {
+		return nil, err
+	}
+	return s.groupRepo.ListMemberProfilesByGroup(ctx, groupID)
+}
+
 // UpdateGroupInput holds optional fields for updating a group.
 type UpdateGroupInput struct {
 	Name        *string

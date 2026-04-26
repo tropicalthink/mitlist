@@ -4,12 +4,28 @@
 // In production, these values should be loaded from environment variables or a
 // secure configuration service.
 
+import 'dart:io' show Platform;
+
+import 'package:flutter/foundation.dart';
+
 class ApiConfig {
   /// The base URL for the API.
   ///
   /// In development, this should point to the local Go backend.
   /// In production, this should point to the production API server.
-  static const String baseUrl = 'http://localhost:8000';
+  static const String _baseUrlOverride =
+      String.fromEnvironment('API_BASE_URL', defaultValue: '');
+
+  static String get baseUrl {
+    if (_baseUrlOverride.isNotEmpty) return _baseUrlOverride;
+
+    // On Android emulators, "localhost" points to the emulator itself.
+    if (!kIsWeb && Platform.isAndroid) {
+      return 'http://10.0.2.2:8000';
+    }
+
+    return 'http://localhost:8000';
+  }
 
   /// The API path prefix.
   static const String apiPrefix = '/api/v1';

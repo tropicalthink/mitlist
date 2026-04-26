@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/yourorg/mitlist/internal/choreschedule"
 	"github.com/yourorg/mitlist/internal/models"
 	"github.com/yourorg/mitlist/pkg/logger"
 )
@@ -76,10 +77,18 @@ func (s *ChoreScheduler) scheduleChore(ctx context.Context, chore models.Chore) 
 	now := time.Now().UTC()
 
 	assignment := models.ChoreAssignment{
-		ID:         uuid.New(),
-		ChoreID:    chore.ID,
-		UserID:     assigneeID,
-		Status:     "pending",
+		ID:      uuid.New(),
+		ChoreID: chore.ID,
+		UserID:  assigneeID,
+		Status:  "pending",
+		DueDate: choreschedule.NextDueForRule(now, choreschedule.Rule{
+			Frequency:     chore.Frequency,
+			Interval:      chore.PeriodInterval,
+			PeriodConfig:  chore.PeriodConfig,
+			StartDate:     chore.StartDate,
+			TrackDateOnly: chore.TrackDateOnly,
+			Rollover:      chore.Rollover,
+		}),
 		AssignedAt: now,
 	}
 
@@ -102,9 +111,18 @@ type choreSchedulerRepoImpl struct {
 
 func (r *choreSchedulerRepoImpl) ListActiveScheduledChores(ctx context.Context) ([]models.Chore, error) {
 	query := `
-		SELECT id, group_id, name, description, rotation_type, frequency, is_active, created_at, updated_at
+		SELECT id, group_id, name, description, rotation_type, frequency,
+			period_interval, period_config, start_date, track_date_only, rollover,
+			assignment_type, assignment_config, is_active, created_at, updated_at
 		FROM chores
-		WHERE is_active = true AND rotation_type = 'schedule'
+		WHERE is_active = true
+		  AND frequency <> 'none'
+		  AND NOT EXISTS (
+			SELECT 1
+			FROM chore_assignments
+			WHERE chore_assignments.chore_id = chores.id
+			  AND chore_assignments.status = 'pending'
+		  )
 	`
 	rows, err := r.pool.Query(ctx, query)
 	if err != nil {
@@ -117,7 +135,9 @@ func (r *choreSchedulerRepoImpl) ListActiveScheduledChores(ctx context.Context) 
 		var c models.Chore
 		if err := rows.Scan(
 			&c.ID, &c.GroupID, &c.Name, &c.Description,
-			&c.RotationType, &c.Frequency, &c.IsActive,
+			&c.RotationType, &c.Frequency, &c.PeriodInterval, &c.PeriodConfig,
+			&c.StartDate, &c.TrackDateOnly, &c.Rollover, &c.AssignmentType,
+			&c.AssignmentConfig, &c.IsActive,
 			&c.CreatedAt, &c.UpdatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan chore: %w", err)

@@ -9,7 +9,9 @@ import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../services/group_id_validator.dart';
 import '../../sheets/create_list_sheet.dart';
+import 'list_detail_screen.dart';
 import '../../theme/colors.dart';
+import '../../theme/list_tile_accent.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../widgets/alert.dart';
@@ -19,10 +21,19 @@ import '../../widgets/chip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/icons.dart';
 import '../../widgets/skeleton.dart';
+import '../../widgets/mitlist_app_bar.dart';
 
 enum _SortOption { newest, oldest, az, mostItems }
 
 enum _FilterOption { all, shopping, todo, custom }
+
+enum _ListMenuAction {
+  sortNewest,
+  sortOldest,
+  sortAz,
+  sortMostItems,
+  toggleView
+}
 
 class ListsScreen extends ConsumerStatefulWidget {
   final String? groupId;
@@ -215,8 +226,11 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
 
     if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase();
-      result =
-          result.where((l) => l.name.toLowerCase().contains(query)).toList();
+      result = result.where((l) {
+        if (l.name.toLowerCase().contains(query)) return true;
+        return l.itemPreview
+            .any((p) => p.toLowerCase().contains(query));
+      }).toList();
     }
 
     switch (_sort) {
@@ -260,7 +274,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: MitlistAppBar(
         centerTitle: false,
         leading: _showSearch
             ? IconButton(
@@ -280,7 +294,11 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                 ),
                 onChanged: _onSearchChanged,
               )
-            : const Text('Lists'),
+            : const Text(
+                'Lists',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
         actions: [
           if (!_showSearch) ...[
             IconButton(
@@ -288,22 +306,67 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
               tooltip: 'Search',
               onPressed: () => setState(() => _showSearch = true),
             ),
-            PopupMenuButton<_SortOption>(
-              icon: const Icon(AppIcons.funnel),
-              tooltip: 'Sort',
-              onSelected: (sort) => setState(() => _sort = sort),
-              itemBuilder: (context) => const [
-                PopupMenuItem(value: _SortOption.newest, child: Text('Newest')),
-                PopupMenuItem(value: _SortOption.oldest, child: Text('Oldest')),
-                PopupMenuItem(value: _SortOption.az, child: Text('A-Z')),
+            PopupMenuButton<_ListMenuAction>(
+              icon: const Icon(AppIcons.ellipsisVertical),
+              tooltip: 'Options',
+              onSelected: (action) {
+                setState(() {
+                  switch (action) {
+                    case _ListMenuAction.sortNewest:
+                      _sort = _SortOption.newest;
+                      break;
+                    case _ListMenuAction.sortOldest:
+                      _sort = _SortOption.oldest;
+                      break;
+                    case _ListMenuAction.sortAz:
+                      _sort = _SortOption.az;
+                      break;
+                    case _ListMenuAction.sortMostItems:
+                      _sort = _SortOption.mostItems;
+                      break;
+                    case _ListMenuAction.toggleView:
+                      _isGrid = !_isGrid;
+                      break;
+                  }
+                });
+              },
+              itemBuilder: (context) => [
                 PopupMenuItem(
-                    value: _SortOption.mostItems, child: Text('Most items')),
+                  enabled: false,
+                  child: Text(
+                    'Sort',
+                    style: MitlistTypography.labelXSmall().copyWith(
+                      color: MitlistColors.textSecondary,
+                    ),
+                  ),
+                ),
+                CheckedPopupMenuItem(
+                  value: _ListMenuAction.sortNewest,
+                  checked: _sort == _SortOption.newest,
+                  child: const Text('Newest'),
+                ),
+                CheckedPopupMenuItem(
+                  value: _ListMenuAction.sortOldest,
+                  checked: _sort == _SortOption.oldest,
+                  child: const Text('Oldest'),
+                ),
+                CheckedPopupMenuItem(
+                  value: _ListMenuAction.sortAz,
+                  checked: _sort == _SortOption.az,
+                  child: const Text('A–Z'),
+                ),
+                CheckedPopupMenuItem(
+                  value: _ListMenuAction.sortMostItems,
+                  checked: _sort == _SortOption.mostItems,
+                  child: const Text('Most items'),
+                ),
+                const PopupMenuDivider(),
+                CheckedPopupMenuItem(
+                  value: _ListMenuAction.toggleView,
+                  checked: _isGrid,
+                  child: const Text('Grid view'),
+                ),
               ],
-            ),
-            IconButton(
-              icon: Icon(_isGrid ? AppIcons.listBullet : AppIcons.squares2x2),
-              tooltip: _isGrid ? 'List view' : 'Grid view',
-              onPressed: () => setState(() => _isGrid = !_isGrid),
             ),
           ] else ...[
             IconButton(
@@ -320,7 +383,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         onPressed:
             _hasHousehold ? _showCreateSheet : () => context.goNamed('home'),
         icon: const Icon(AppIcons.plus),
-        label: Text(_hasHousehold ? 'New list' : 'Households'),
+        label: const Text('New list'),
       ),
     );
   }
@@ -381,6 +444,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
             ),
             child: AppAlert(type: AppAlertType.error, message: _error!),
           ),
+        _buildQuickCreateRow(),
         _buildChipBar(),
         Expanded(
           child: RefreshIndicator(
@@ -395,7 +459,61 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     );
   }
 
+  Widget _buildQuickCreateRow() {
+    if (!_hasHousehold) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        MitlistSpacing.md,
+        MitlistSpacing.md,
+        MitlistSpacing.md,
+        0,
+      ),
+      child: AppCard(
+        interactive: true,
+        onTap: _showCreateSheet,
+        variant: AppCardVariant.filled,
+        tint: AppCardTint.primary,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              AppIcons.plus,
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+            ),
+            const SizedBox(width: MitlistSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Start a new list',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color:
+                              Theme.of(context).colorScheme.onPrimaryContainer,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                  const SizedBox(height: MitlistSpacing.space1),
+                  Text(
+                    'Name it here; add lines after you open it.',
+                    style: MitlistTypography.labelXSmall().copyWith(
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildChipBar() {
+    if (!_hasHousehold) return const SizedBox.shrink();
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(
@@ -427,9 +545,8 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         const minTileWidth = 190.0;
         final maxWidth = constraints.maxWidth;
         final columns = (maxWidth / minTileWidth).floor().clamp(2, 5);
-        final aspectRatio = MediaQuery.textScalerOf(context).scale(1.0) > 1.2
-            ? 0.88
-            : 0.95;
+        final aspectRatio =
+            MediaQuery.textScalerOf(context).scale(1.0) > 1.2 ? 0.72 : 0.78;
 
         return GridView.builder(
           controller: _scrollController,
@@ -499,6 +616,8 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                 child: AppEmptyState(
                   icon: const Icon(AppIcons.queueList),
                   title: 'No lists yet',
+                  description:
+                      'Add lines inside a list; the first few appear as a snippet on its card.',
                   actions: [
                     AppButton(
                       text: 'Create your first list',
@@ -540,7 +659,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
       padding: const EdgeInsets.all(MitlistSpacing.md),
       mainAxisSpacing: MitlistSpacing.md,
       crossAxisSpacing: MitlistSpacing.md,
-      childAspectRatio: 0.95,
+      childAspectRatio: 0.78,
       children: List.generate(4, (_) => const _SkeletonCard()),
     );
   }
@@ -552,70 +671,92 @@ class _ListCard extends StatelessWidget {
 
   const _ListCard({required this.list, required this.onChanged});
 
+  String _semanticLabel() {
+    final parts = <String>[list.name];
+    final lines = list.itemPreview
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .take(3);
+    if (lines.isNotEmpty) {
+      parts.add(lines.join(', '));
+    }
+    return parts.join('. ');
+  }
+
   @override
   Widget build(BuildContext context) {
-    final itemCount = list.itemCount;
-    return AppCard(
-      interactive: true,
-      onTap: () async {
-        final changed = await context.pushNamed<bool>(
-          'listDetail',
-          pathParameters: {'listId': list.id},
-        );
-        if (changed == true) onChanged();
-      },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Icon(
-                _getTypeIcon(list.type),
-                size: MitlistSpacing.space5,
-                color: MitlistColors.textSecondary,
+    final accent = ListTileAccent.fromSeed(
+      list.id,
+      Theme.of(context).brightness,
+    );
+    final previewLines = list.itemPreview
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .take(3)
+        .toList();
+    final snippetColor = accent.snippetOnTile;
+
+    return Material(
+      color: accent.tileBackground,
+      child: Semantics(
+        button: true,
+        label: _semanticLabel(),
+        child: InkWell(
+          onTap: () async {
+            final changed = await context.pushNamed<bool>(
+              'listDetail',
+              pathParameters: {'listId': list.id},
+              extra: ListDetailRouteArgs(listName: list.name),
+            );
+            if (changed == true) onChanged();
+          },
+          child: Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: MitlistColors.borderPrimary,
+                width: 2,
               ),
-              const Spacer(),
-              Text(
-                _formatDate(list.updatedAt),
-                style: MitlistTypography.labelXSmall(),
-              ),
-            ],
-          ),
-          const SizedBox(height: MitlistSpacing.sm),
-          Text(
-            list.name,
-            style: Theme.of(context).textTheme.titleSmall,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          if (itemCount != null) ...[
-            const SizedBox(height: MitlistSpacing.sm),
-            Text(
-              '$itemCount items',
-              style: MitlistTypography.monoBody(),
             ),
-          ],
-        ],
+            padding: const EdgeInsets.all(MitlistSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  list.name,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: accent.titleColor,
+                        fontWeight: FontWeight.w600,
+                        height: 1.2,
+                      ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (previewLines.isNotEmpty) ...[
+                  const SizedBox(height: MitlistSpacing.sm),
+                  for (var i = 0; i < previewLines.length; i++)
+                    Padding(
+                      padding: EdgeInsets.only(
+                        top: i == 0 ? 0 : MitlistSpacing.xs,
+                      ),
+                      child: Text(
+                        previewLines[i],
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: snippetColor,
+                              height: 1.35,
+                            ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                ],
+              ],
+            ),
+          ),
+        ),
       ),
     );
-  }
-
-  IconData _getTypeIcon(String type) {
-    return switch (type) {
-      'shopping' => AppIcons.shoppingCart,
-      'todo' => AppIcons.check,
-      _ => AppIcons.queueList,
-    };
-  }
-
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final diff = now.difference(date);
-    if (diff.inDays > 0) return '${diff.inDays}d ago';
-    if (diff.inHours > 0) return '${diff.inHours}h ago';
-    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
-    return 'Just now';
   }
 }
 
@@ -624,32 +765,32 @@ class _SkeletonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const AppCard(
-      child: Column(
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border.all(
+          color: MitlistColors.borderPrimary,
+          width: 2,
+        ),
+      ),
+      padding: const EdgeInsets.all(MitlistSpacing.md),
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              AppSkeleton(
-                width: MitlistSpacing.space5,
-                height: MitlistSpacing.space5,
-              ),
-              Spacer(),
-              AppSkeleton(
-                width: MitlistSpacing.space8,
-                height: MitlistSpacing.space3,
-              ),
-            ],
-          ),
-          SizedBox(height: MitlistSpacing.sm),
           AppSkeleton(
             width: double.infinity,
             height: MitlistSpacing.space5,
           ),
           SizedBox(height: MitlistSpacing.sm),
           AppSkeleton(
+            width: double.infinity,
+            height: MitlistSpacing.space3,
+          ),
+          SizedBox(height: MitlistSpacing.xs),
+          AppSkeleton(
             width: MitlistSpacing.space10,
-            height: MitlistSpacing.space4,
+            height: MitlistSpacing.space3,
           ),
         ],
       ),

@@ -42,6 +42,31 @@ class ChoreService {
     }
   }
 
+  Future<List<CurrentChore>> listCurrentChores(
+    String groupId, {
+    int limit = 100,
+    int offset = 0,
+    int dueSoonDays = 7,
+  }) async {
+    ensureValidGroupId(groupId);
+    try {
+      final r = await _dio.get('/chores/current', queryParameters: {
+        'group_id': groupId,
+        'limit': limit,
+        'offset': offset,
+        'due_soon_days': dueSoonDays,
+      });
+      final data = r.data;
+      if (data is! List) return [];
+      return data
+          .map((j) => CurrentChore.fromJson((j as Map).cast<String, dynamic>()))
+          .toList();
+    } on DioException catch (e) {
+      _logger.e('List current chores failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
   Future<Chore> getChore(String id) async {
     try {
       final r = await _dio.get('/chores/$id');
@@ -62,7 +87,8 @@ class ChoreService {
     }
   }
 
-  Future<List<ChoreAssignment>> listAssignments(String choreId, {int limit = 50, int offset = 0}) async {
+  Future<List<ChoreAssignment>> listAssignments(String choreId,
+      {int limit = 50, int offset = 0}) async {
     try {
       final r = await _dio.get(
         '/chores/$choreId/assignments',
@@ -70,7 +96,10 @@ class ChoreService {
       );
       final data = r.data;
       if (data is! List) return [];
-      return data.map((j) => ChoreAssignment.fromJson((j as Map).cast<String, dynamic>())).toList();
+      return data
+          .map((j) =>
+              ChoreAssignment.fromJson((j as Map).cast<String, dynamic>()))
+          .toList();
     } on DioException catch (e) {
       _logger.e('List assignments failed: ${e.response?.data}');
       throw _handleError(e);
@@ -110,6 +139,34 @@ class ChoreService {
       await _dio.post('/chores/$id/skip');
     } on DioException catch (e) {
       _logger.e('Skip chore failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> rescheduleChore(
+    String id, {
+    DateTime? dueDate,
+    String? assigneeId,
+  }) async {
+    try {
+      await _dio.patch(
+        '/chores/$id/pending',
+        data: RescheduleChoreRequest(
+          dueDate: dueDate,
+          assigneeId: assigneeId,
+        ).toJson(),
+      );
+    } on DioException catch (e) {
+      _logger.e('Reschedule chore failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> undoLastChoreExecution(String id) async {
+    try {
+      await _dio.post('/chores/$id/undo');
+    } on DioException catch (e) {
+      _logger.e('Undo chore execution failed: ${e.response?.data}');
       throw _handleError(e);
     }
   }

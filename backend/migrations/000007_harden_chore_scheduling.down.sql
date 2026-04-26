@@ -1,0 +1,2 @@
+DROP INDEX IF EXISTS idx_chore_assignments_due_pending;
+DROP INDEX IF EXISTS idx_chore_assignments_one_pending_per_chore;

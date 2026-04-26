@@ -10,3 +10,9 @@ final expensesByGroupProvider = FutureProvider.family<List<Expense>, String>((re
   final service = await ref.read(financeServiceProviderAsync.future);
   return service.listExpenses(groupId);
 });
+
+final financeSummaryByGroupProvider =
+    FutureProvider.family<FinanceSummary, String>((ref, groupId) async {
+  final service = await ref.read(financeServiceProviderAsync.future);
+  return service.getFinanceSummary(groupId);
+});

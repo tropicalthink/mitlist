@@ -70,6 +70,9 @@ type Container struct {
 	activityRepoOnce sync.Once
 	activityRepo     *repositories.ActivityRepository
 
+	pinwallRepoOnce sync.Once
+	pinwallRepo     *repositories.PinwallRepository
+
 	userServiceOnce sync.Once
 	userService     *services.UserService
 
@@ -114,6 +117,9 @@ type Container struct {
 
 	activityServiceOnce sync.Once
 	activityService     *services.ActivityService
+
+	pinwallServiceOnce sync.Once
+	pinwallService     *services.PinwallService
 
 	aiClientOnce sync.Once
 	aiClient     *aiservice.Client
@@ -269,6 +275,14 @@ func (c *Container) ActivityRepo() *repositories.ActivityRepository {
 	return c.activityRepo
 }
 
+// PinwallRepo returns the singleton pinwall repository.
+func (c *Container) PinwallRepo() *repositories.PinwallRepository {
+	c.pinwallRepoOnce.Do(func() {
+		c.pinwallRepo = repositories.NewPinwallRepository(c.db)
+	})
+	return c.pinwallRepo
+}
+
 // UserService returns the singleton user service.
 func (c *Container) UserService() *services.UserService {
 	c.userServiceOnce.Do(func() {
@@ -379,6 +393,14 @@ func (c *Container) ActivityService() *services.ActivityService {
 		c.activityService = services.NewActivityService(c.ActivityRepo(), c.GroupRepo())
 	})
 	return c.activityService
+}
+
+// PinwallService returns the singleton pinwall service.
+func (c *Container) PinwallService() *services.PinwallService {
+	c.pinwallServiceOnce.Do(func() {
+		c.pinwallService = services.NewPinwallService(c.PinwallRepo(), c.GroupRepo())
+	})
+	return c.pinwallService
 }
 
 // ShareService returns the singleton share target service.

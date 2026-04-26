@@ -161,6 +161,28 @@ func (h *GroupHandler) InviteMember(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusCreated, invite)
 }
 
+// ListMembers handles GET /api/v1/groups/{id}/members.
+func (h *GroupHandler) ListMembers(w http.ResponseWriter, r *http.Request) {
+	user, ok := api.UserFromContext(r.Context())
+	if !ok {
+		respondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		respondError(w, &api.ValidationError{Field: "id", Message: "invalid UUID"})
+		return
+	}
+
+	members, err := h.service.ListMemberProfiles(r.Context(), user.ID, id)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	respondJSON(w, http.StatusOK, members)
+}
+
 // JoinGroup handles POST /api/v1/groups/join.
 func (h *GroupHandler) JoinGroup(w http.ResponseWriter, r *http.Request) {
 	user, ok := api.UserFromContext(r.Context())

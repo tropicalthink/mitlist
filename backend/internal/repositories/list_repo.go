@@ -89,6 +89,46 @@ func (r *ListRepository) ListListsByGroup(ctx context.Context, groupID uuid.UUID
 	return lists, nil
 }
 
+// ListItemPreviewLinesByListIDs returns the first perList item names per list_id (non-deleted, list order).
+func (r *ListRepository) ListItemPreviewLinesByListIDs(ctx context.Context, listIDs []uuid.UUID, perList int) (map[uuid.UUID][]string, error) {
+	out := make(map[uuid.UUID][]string)
+	if len(listIDs) == 0 {
+		return out, nil
+	}
+	if perList <= 0 {
+		perList = 4
+	}
+	query := `
+		SELECT list_id, COALESCE(array_agg(name ORDER BY rk), '{}') AS preview
+		FROM (
+			SELECT list_id, name,
+				row_number() OVER (PARTITION BY list_id ORDER BY position ASC, created_at ASC) AS rk
+			FROM list_items
+			WHERE deleted_at IS NULL AND list_id = ANY($1::uuid[])
+		) t
+		WHERE rk <= $2
+		GROUP BY list_id
+	`
+	rows, err := r.pool.Query(ctx, query, listIDs, perList)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var listID uuid.UUID
+		var preview []string
+		if err := rows.Scan(&listID, &preview); err != nil {
+			return nil, err
+		}
+		out[listID] = preview
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UpdateList updates an existing list.
 func (r *ListRepository) UpdateList(ctx context.Context, list *models.List) error {
 	list.UpdatedAt = time.Now().UTC()

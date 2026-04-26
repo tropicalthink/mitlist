@@ -17,6 +17,9 @@ class ChoreDetailSheet extends StatelessWidget {
     required this.assignee,
     required this.dueDate,
     this.onMarkDone,
+    this.onSkip,
+    this.onRescheduleTomorrow,
+    this.onUndo,
   });
 
   final String title;
@@ -24,6 +27,9 @@ class ChoreDetailSheet extends StatelessWidget {
   final String assignee;
   final DateTime dueDate;
   final VoidCallback? onMarkDone;
+  final VoidCallback? onSkip;
+  final VoidCallback? onRescheduleTomorrow;
+  final VoidCallback? onUndo;
 
   static Future<void> show(
     BuildContext context, {
@@ -32,6 +38,9 @@ class ChoreDetailSheet extends StatelessWidget {
     required String assignee,
     required DateTime dueDate,
     VoidCallback? onMarkDone,
+    VoidCallback? onSkip,
+    VoidCallback? onRescheduleTomorrow,
+    VoidCallback? onUndo,
   }) async {
     return showAppBottomSheet(
       context: context,
@@ -42,6 +51,9 @@ class ChoreDetailSheet extends StatelessWidget {
         assignee: assignee,
         dueDate: dueDate,
         onMarkDone: onMarkDone,
+        onSkip: onSkip,
+        onRescheduleTomorrow: onRescheduleTomorrow,
+        onUndo: onUndo,
       ),
     );
   }
@@ -71,22 +83,68 @@ class ChoreDetailSheet extends StatelessWidget {
             children: [
               _DetailRow(label: 'Assignee', value: assignee),
               const Divider(),
-              _DetailRow(label: 'Due', value: DateFormat.yMMMd().format(dueDate)),
+              _DetailRow(
+                label: 'Due',
+                value: DateFormat.yMMMd().format(dueDate),
+              ),
             ],
           ),
         ),
-        if (onMarkDone != null) ...[
+        if (onMarkDone != null ||
+            onSkip != null ||
+            onRescheduleTomorrow != null ||
+            onUndo != null) ...[
           const SizedBox(height: MitlistSpacing.lg),
-          SizedBox(
-            width: double.infinity,
-            child: AppButton(
-              variant: AppButtonVariant.solid,
-              color: AppButtonColor.success,
-              size: AppButtonSize.lg,
-              text: 'Mark Done',
-              onPressed: onMarkDone,
+          if (onMarkDone != null)
+            SizedBox(
+              width: double.infinity,
+              child: AppButton(
+                variant: AppButtonVariant.solid,
+                color: AppButtonColor.success,
+                size: AppButtonSize.lg,
+                text: 'Mark Done',
+                onPressed: onMarkDone,
+              ),
             ),
-          ),
+          if (onSkip != null) ...[
+            const SizedBox(height: MitlistSpacing.sm),
+            SizedBox(
+              width: double.infinity,
+              child: AppButton(
+                variant: AppButtonVariant.outline,
+                color: AppButtonColor.neutral,
+                size: AppButtonSize.lg,
+                text: 'Skip',
+                onPressed: onSkip,
+              ),
+            ),
+          ],
+          if (onRescheduleTomorrow != null) ...[
+            const SizedBox(height: MitlistSpacing.sm),
+            SizedBox(
+              width: double.infinity,
+              child: AppButton(
+                variant: AppButtonVariant.outline,
+                color: AppButtonColor.primary,
+                size: AppButtonSize.lg,
+                text: 'Move to Tomorrow',
+                onPressed: onRescheduleTomorrow,
+              ),
+            ),
+          ],
+          if (onUndo != null) ...[
+            const SizedBox(height: MitlistSpacing.sm),
+            SizedBox(
+              width: double.infinity,
+              child: AppButton(
+                variant: AppButtonVariant.ghost,
+                color: AppButtonColor.neutral,
+                size: AppButtonSize.lg,
+                text: 'Undo Last Execution',
+                onPressed: onUndo,
+              ),
+            ),
+          ],
         ],
       ],
     );

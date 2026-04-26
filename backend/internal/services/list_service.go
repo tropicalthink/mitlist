@@ -76,6 +76,8 @@ func (s *ListService) GetList(ctx context.Context, user *models.User, listID uui
 	return list, nil
 }
 
+const listHubPreviewLines = 4
+
 // ListLists returns all lists for a group the user belongs to.
 func (s *ListService) ListLists(ctx context.Context, user *models.User, groupID uuid.UUID, limit, offset int) ([]models.List, error) {
 	if err := s.requireActiveVerifiedUser(user); err != nil {
@@ -84,7 +86,27 @@ func (s *ListService) ListLists(ctx context.Context, user *models.User, groupID 
 	if err := s.requireMembership(ctx, user.ID, groupID); err != nil {
 		return nil, err
 	}
-	return s.listRepo.ListListsByGroup(ctx, groupID, limit, offset)
+	lists, err := s.listRepo.ListListsByGroup(ctx, groupID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	if len(lists) == 0 {
+		return lists, nil
+	}
+	ids := make([]uuid.UUID, len(lists))
+	for i := range lists {
+		ids[i] = lists[i].ID
+	}
+	previews, err := s.listRepo.ListItemPreviewLinesByListIDs(ctx, ids, listHubPreviewLines)
+	if err != nil {
+		return lists, nil
+	}
+	for i := range lists {
+		if p, ok := previews[lists[i].ID]; ok && len(p) > 0 {
+			lists[i].ItemPreview = p
+		}
+	}
+	return lists, nil
 }
 
 // UpdateList updates a list's name and type.

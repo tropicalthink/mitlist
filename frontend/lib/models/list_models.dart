@@ -4,6 +4,8 @@ class ItemList {
   final String name;
   final String type;
   final int? itemCount;
+  /// First lines from the list (hub card preview), from API `item_preview`.
+  final List<String> itemPreview;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -13,17 +15,24 @@ class ItemList {
     required this.name,
     required this.type,
     this.itemCount,
+    this.itemPreview = const [],
     required this.createdAt,
     required this.updatedAt,
   });
 
   factory ItemList.fromJson(Map<String, dynamic> json) {
+    final rawPreview = json['item_preview'];
+    List<String> preview = const [];
+    if (rawPreview is List) {
+      preview = rawPreview.map((e) => e.toString()).toList();
+    }
     return ItemList(
       id: json['id'] as String,
       groupId: json['group_id'] as String,
       name: json['name'] as String,
       type: json['type'] as String? ?? 'shopping',
       itemCount: json['item_count'] as int?,
+      itemPreview: preview,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -35,6 +44,7 @@ class ItemList {
         'name': name,
         'type': type,
         if (itemCount != null) 'item_count': itemCount,
+        if (itemPreview.isNotEmpty) 'item_preview': itemPreview,
         'created_at': createdAt.toIso8601String(),
         'updated_at': updatedAt.toIso8601String(),
       };

@@ -86,9 +86,7 @@ class ListService {
     try {
       final r = await _dio.get('/lists/$listId/items',
           queryParameters: {'limit': limit, 'offset': offset});
-      final data = r.data;
-      if (data is! List) return [];
-      return data.map((j) => ListItem.fromJson(j)).toList();
+      return _parseItemsResponse(r.data);
     } on DioException catch (e) {
       _logger.e('List items failed: ${e.response?.data}');
       throw _handleError(e);
@@ -123,6 +121,25 @@ class ListService {
       _logger.e('Reorder items failed: ${e.response?.data}');
       throw _handleError(e);
     }
+  }
+
+  static List<ListItem> _parseItemsResponse(dynamic data) {
+    if (data is List) {
+      return data.map((dynamic e) {
+        final m = Map<String, dynamic>.from(e as Map);
+        return ListItem.fromJson(m);
+      }).toList();
+    }
+    if (data is Map<String, dynamic>) {
+      final raw = data['items'] ?? data['data'];
+      if (raw is List) {
+        return raw.map((dynamic e) {
+          final m = Map<String, dynamic>.from(e as Map);
+          return ListItem.fromJson(m);
+        }).toList();
+      }
+    }
+    return [];
   }
 
   Exception _handleError(DioException e) {

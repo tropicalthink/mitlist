@@ -105,12 +105,16 @@ func TestListService_ListLists(t *testing.T) {
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := NewListService(listRepo, groupRepo)
 
+		lid := uuid.New()
 		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
-		listRepo.On("ListListsByGroup", ctx, groupID, 10, 0).Return([]models.List{{ID: uuid.New()}}, nil)
+		listRepo.On("ListListsByGroup", ctx, groupID, 10, 0).Return([]models.List{{ID: lid}}, nil)
+		listRepo.On("ListItemPreviewLinesByListIDs", ctx, []uuid.UUID{lid}, listHubPreviewLines).
+			Return(map[uuid.UUID][]string{lid: {"milk", "eggs"}}, nil)
 
 		lists, err := svc.ListLists(ctx, user, groupID, 10, 0)
 		require.NoError(t, err)
-		assert.Len(t, lists, 1)
+		require.Len(t, lists, 1)
+		assert.Equal(t, []string{"milk", "eggs"}, lists[0].ItemPreview)
 	})
 }
 

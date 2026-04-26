@@ -42,6 +42,44 @@ class FinanceService {
     }
   }
 
+  Future<FinanceSummary> getFinanceSummary(String groupId) async {
+    ensureValidGroupId(groupId);
+    try {
+      final r = await _dio
+          .get('/finance/summary', queryParameters: {'group_id': groupId});
+      return FinanceSummary.fromJson((r.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Get finance summary failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<List<Expense>> exportExpensesJson(String groupId) async {
+    ensureValidGroupId(groupId);
+    try {
+      final r = await _dio
+          .get('/finance/export/json', queryParameters: {'group_id': groupId});
+      final data = r.data;
+      if (data is! List) return [];
+      return data.map((j) => Expense.fromJson(j)).toList();
+    } on DioException catch (e) {
+      _logger.e('Export expenses JSON failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<String> exportExpensesCsv(String groupId) async {
+    ensureValidGroupId(groupId);
+    try {
+      final r = await _dio
+          .get('/finance/export/csv', queryParameters: {'group_id': groupId});
+      return r.data?.toString() ?? '';
+    } on DioException catch (e) {
+      _logger.e('Export expenses CSV failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
   Future<Expense> getExpense(String id) async {
     try {
       final r = await _dio.get('/expenses/$id');
@@ -80,9 +118,11 @@ class FinanceService {
     }
   }
 
-  Future<Split> createSplitReturn(String expenseId, CreateSplitRequest req) async {
+  Future<Split> createSplitReturn(
+      String expenseId, CreateSplitRequest req) async {
     try {
-      final r = await _dio.post('/expenses/$expenseId/splits', data: req.toJson());
+      final r =
+          await _dio.post('/expenses/$expenseId/splits', data: req.toJson());
       return Split.fromJson((r.data as Map).cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Create split failed: ${e.response?.data}');
@@ -90,9 +130,11 @@ class FinanceService {
     }
   }
 
-  Future<Split> updateSplit(String expenseId, String splitId, UpdateSplitRequest req) async {
+  Future<Split> updateSplit(
+      String expenseId, String splitId, UpdateSplitRequest req) async {
     try {
-      final r = await _dio.patch('/expenses/$expenseId/splits/$splitId', data: req.toJson());
+      final r = await _dio.patch('/expenses/$expenseId/splits/$splitId',
+          data: req.toJson());
       return Split.fromJson((r.data as Map).cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Update split failed: ${e.response?.data}');
@@ -119,9 +161,31 @@ class FinanceService {
     }
   }
 
-  Future<Settlement> createSettlementReturn(String expenseId, CreateSettlementRequest req) async {
+  Future<Settlement> createGroupSettlement(
+      String groupId, CreateSettlementRequest req) async {
+    ensureValidGroupId(groupId);
     try {
-      final r = await _dio.post('/expenses/$expenseId/settle', data: req.toJson());
+      final r = await _dio.post(
+        '/finance/settlements',
+        data: CreateSettlementRequest(
+          groupId: groupId,
+          fromUserId: req.fromUserId,
+          toUserId: req.toUserId,
+          amount: req.amount,
+        ).toJson(),
+      );
+      return Settlement.fromJson((r.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Create group settlement failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<Settlement> createSettlementReturn(
+      String expenseId, CreateSettlementRequest req) async {
+    try {
+      final r =
+          await _dio.post('/expenses/$expenseId/settle', data: req.toJson());
       return Settlement.fromJson((r.data as Map).cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Create settlement failed: ${e.response?.data}');
@@ -139,7 +203,8 @@ class FinanceService {
   }
 
   // Recurring expenses
-  Future<RecurringExpense> createRecurringExpense(CreateRecurringExpenseRequest req) async {
+  Future<RecurringExpense> createRecurringExpense(
+      CreateRecurringExpenseRequest req) async {
     try {
       final r = await _dio.post('/recurring-expenses', data: req.toJson());
       return RecurringExpense.fromJson((r.data as Map).cast<String, dynamic>());
@@ -149,13 +214,21 @@ class FinanceService {
     }
   }
 
-  Future<List<RecurringExpense>> listRecurringExpenses(String groupId, {int limit = 50, int offset = 0}) async {
+  Future<List<RecurringExpense>> listRecurringExpenses(String groupId,
+      {int limit = 50, int offset = 0}) async {
     ensureValidGroupId(groupId);
     try {
-      final r = await _dio.get('/recurring-expenses', queryParameters: {'group_id': groupId, 'limit': limit, 'offset': offset});
+      final r = await _dio.get('/recurring-expenses', queryParameters: {
+        'group_id': groupId,
+        'limit': limit,
+        'offset': offset
+      });
       final data = r.data;
       if (data is! List) return [];
-      return data.map((j) => RecurringExpense.fromJson((j as Map).cast<String, dynamic>())).toList();
+      return data
+          .map((j) =>
+              RecurringExpense.fromJson((j as Map).cast<String, dynamic>()))
+          .toList();
     } on DioException catch (e) {
       _logger.e('List recurring expenses failed: ${e.response?.data}');
       throw _handleError(e);
@@ -172,7 +245,8 @@ class FinanceService {
     }
   }
 
-  Future<RecurringExpense> updateRecurringExpense(String id, UpdateRecurringExpenseRequest req) async {
+  Future<RecurringExpense> updateRecurringExpense(
+      String id, UpdateRecurringExpenseRequest req) async {
     try {
       final r = await _dio.patch('/recurring-expenses/$id', data: req.toJson());
       return RecurringExpense.fromJson((r.data as Map).cast<String, dynamic>());

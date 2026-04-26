@@ -34,6 +34,14 @@ func (m *MockListRepo) ListListsByGroup(ctx context.Context, groupID uuid.UUID, 
 	return nil, args.Error(1)
 }
 
+func (m *MockListRepo) ListItemPreviewLinesByListIDs(ctx context.Context, listIDs []uuid.UUID, perList int) (map[uuid.UUID][]string, error) {
+	args := m.Called(ctx, listIDs, perList)
+	if v := args.Get(0); v != nil {
+		return v.(map[uuid.UUID][]string), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
 func (m *MockListRepo) UpdateList(ctx context.Context, list *models.List) error {
 	args := m.Called(ctx, list)
 	return args.Error(0)

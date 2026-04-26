@@ -99,12 +99,30 @@ class GroupService {
     }
   }
 
-  Future<GroupInvite> inviteMember(String groupId, InviteMemberRequest request) async {
+  Future<GroupInvite> inviteMember(
+      String groupId, InviteMemberRequest request) async {
     try {
-      final response = await _dio.post('/groups/$groupId/members', data: request.toJson());
-      return GroupInvite.fromJson((response.data as Map).cast<String, dynamic>());
+      final response =
+          await _dio.post('/groups/$groupId/members', data: request.toJson());
+      return GroupInvite.fromJson(
+          (response.data as Map).cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Invite member failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<List<GroupMemberProfile>> listMembers(String groupId) async {
+    try {
+      final response = await _dio.get('/groups/$groupId/members');
+      final data = response.data;
+      if (data is! List) return [];
+      return data
+          .map((json) => GroupMemberProfile.fromJson(
+              (json as Map).cast<String, dynamic>()))
+          .toList();
+    } on DioException catch (e) {
+      _logger.e('List members failed: ${e.response?.data}');
       throw _handleError(e);
     }
   }
@@ -118,9 +136,11 @@ class GroupService {
     }
   }
 
-  Future<void> updateMemberRole(String groupId, String userId, UpdateMemberRoleRequest request) async {
+  Future<void> updateMemberRole(
+      String groupId, String userId, UpdateMemberRoleRequest request) async {
     try {
-      await _dio.patch('/groups/$groupId/members/$userId', data: request.toJson());
+      await _dio.patch('/groups/$groupId/members/$userId',
+          data: request.toJson());
     } on DioException catch (e) {
       _logger.e('Update member role failed: ${e.response?.data}');
       throw _handleError(e);
@@ -132,7 +152,10 @@ class GroupService {
       final response = await _dio.get('/groups/$groupId/pending-claims');
       final data = response.data;
       if (data is! List) return [];
-      return data.map((json) => PendingClaim.fromJson((json as Map).cast<String, dynamic>())).toList();
+      return data
+          .map((json) =>
+              PendingClaim.fromJson((json as Map).cast<String, dynamic>()))
+          .toList();
     } on DioException catch (e) {
       _logger.e('List pending claims failed: ${e.response?.data}');
       throw _handleError(e);

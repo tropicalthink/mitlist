@@ -49,6 +49,7 @@ type GroupRepo interface {
 	GetPendingClaimByID(ctx context.Context, id uuid.UUID) (*models.PendingClaim, error)
 	DeletePendingClaim(ctx context.Context, id uuid.UUID) error
 	ListMembershipsByGroup(ctx context.Context, groupID uuid.UUID) ([]models.GroupMembership, error)
+	ListMemberProfilesByGroup(ctx context.Context, groupID uuid.UUID) ([]models.GroupMemberProfile, error)
 	ListPendingClaimsByGroup(ctx context.Context, groupID uuid.UUID) ([]models.PendingClaim, error)
 }
 
@@ -57,6 +58,8 @@ type ListRepo interface {
 	CreateList(ctx context.Context, list *models.List) error
 	GetListByID(ctx context.Context, id uuid.UUID) (*models.List, error)
 	ListListsByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.List, error)
+	// ListItemPreviewLinesByListIDs returns up to perList item names per list (by position), for hub previews.
+	ListItemPreviewLinesByListIDs(ctx context.Context, listIDs []uuid.UUID, perList int) (map[uuid.UUID][]string, error)
 	UpdateList(ctx context.Context, list *models.List) error
 	HardDeleteList(ctx context.Context, id uuid.UUID) error
 	CreateItem(ctx context.Context, item *models.ListItem) error
@@ -91,6 +94,7 @@ type ChoreRepo interface {
 	CreateChore(ctx context.Context, chore *models.Chore) error
 	GetChoreByID(ctx context.Context, id uuid.UUID) (*models.Chore, error)
 	ListChoresByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.Chore, error)
+	ListCurrentChoresByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.CurrentChore, error)
 	UpdateChore(ctx context.Context, chore *models.Chore) error
 	DeleteChore(ctx context.Context, id uuid.UUID) error
 	CreateRotationState(ctx context.Context, state *models.ChoreRotationState) error
@@ -100,6 +104,7 @@ type ChoreRepo interface {
 	CreateAssignment(ctx context.Context, assignment *models.ChoreAssignment) error
 	ListAssignments(ctx context.Context, choreID uuid.UUID, limit, offset int) ([]models.ChoreAssignment, error)
 	UpdateAssignment(ctx context.Context, assignment *models.ChoreAssignment) error
+	DeleteAssignment(ctx context.Context, id uuid.UUID) error
 	CreateCompletion(ctx context.Context, completion *models.ChoreCompletion) error
 	GetPendingAssignmentByChore(ctx context.Context, choreID uuid.UUID) (*models.ChoreAssignment, error)
 }
@@ -109,6 +114,7 @@ type FinanceRepoIface interface {
 	CreateExpense(ctx context.Context, e *models.Expense) error
 	GetExpenseByID(ctx context.Context, id uuid.UUID) (*models.Expense, error)
 	ListExpensesByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.Expense, error)
+	ListAllExpensesByGroup(ctx context.Context, groupID uuid.UUID) ([]models.Expense, error)
 	UpdateExpense(ctx context.Context, e *models.Expense) error
 	DeleteExpense(ctx context.Context, id uuid.UUID) error
 	CreateSplit(ctx context.Context, s *models.Split) error
@@ -117,7 +123,9 @@ type FinanceRepoIface interface {
 	DeleteSplit(ctx context.Context, id uuid.UUID) error
 	CreateSettlement(ctx context.Context, s *models.Settlement) error
 	ListSettlementsByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.Settlement, error)
+	ListAllSettlementsByGroup(ctx context.Context, groupID uuid.UUID) ([]models.Settlement, error)
 	DeleteSettlement(ctx context.Context, id uuid.UUID) error
+	ListSplitsByGroup(ctx context.Context, groupID uuid.UUID) ([]models.Split, error)
 	CreateRecurringExpense(ctx context.Context, re *models.RecurringExpense) error
 	GetRecurringExpenseByID(ctx context.Context, id uuid.UUID) (*models.RecurringExpense, error)
 	ListRecurringExpenses(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.RecurringExpense, error)
@@ -183,4 +191,12 @@ type AssistantRepo interface {
 	DeleteSession(ctx context.Context, id uuid.UUID) error
 	CreateMessage(ctx context.Context, m *models.ChatMessage) (*models.ChatMessage, error)
 	ListMessagesBySession(ctx context.Context, sessionID uuid.UUID, limit, offset int) ([]models.ChatMessage, error)
+}
+
+// PinwallRepo is the interface for pinwall repository operations.
+type PinwallRepo interface {
+	CreatePost(ctx context.Context, p *models.PinwallPost) error
+	ListPostsByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.PinwallPost, error)
+	GetPostByID(ctx context.Context, id uuid.UUID) (*models.PinwallPost, error)
+	DeletePost(ctx context.Context, id uuid.UUID) error
 }

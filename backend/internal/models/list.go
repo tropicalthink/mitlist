@@ -8,12 +8,13 @@ import (
 
 // List represents a list within a group.
 type List struct {
-	ID        uuid.UUID `json:"id"`
-	GroupID   uuid.UUID `json:"group_id"`
-	Name      string    `json:"name"`
-	Type      string    `json:"type"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID          uuid.UUID `json:"id"`
+	GroupID     uuid.UUID `json:"group_id"`
+	Name        string    `json:"name"`
+	Type        string    `json:"type"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	ItemPreview []string  `json:"item_preview,omitempty"`
 }
 
 // ListItem represents an item within a list.

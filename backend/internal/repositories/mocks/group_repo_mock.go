@@ -119,6 +119,14 @@ func (m *MockGroupRepo) ListMembershipsByGroup(ctx context.Context, groupID uuid
 	return nil, args.Error(1)
 }
 
+func (m *MockGroupRepo) ListMemberProfilesByGroup(ctx context.Context, groupID uuid.UUID) ([]models.GroupMemberProfile, error) {
+	args := m.Called(ctx, groupID)
+	if profiles := args.Get(0); profiles != nil {
+		return profiles.([]models.GroupMemberProfile), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
 func (m *MockGroupRepo) ListPendingClaimsByGroup(ctx context.Context, groupID uuid.UUID) ([]models.PendingClaim, error) {
 	args := m.Called(ctx, groupID)
 	if c := args.Get(0); c != nil {

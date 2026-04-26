@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/finance_models.dart';
+import '../models/group_models.dart';
 import '../providers/auth_provider.dart';
 import '../providers/finance_provider.dart';
 import '../providers/group_provider.dart';
@@ -23,13 +24,49 @@ class ExpenseCreationSheet extends ConsumerStatefulWidget {
   }
 
   @override
-  ConsumerState<ExpenseCreationSheet> createState() => _ExpenseCreationSheetState();
+  ConsumerState<ExpenseCreationSheet> createState() =>
+      _ExpenseCreationSheetState();
 }
 
 class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _notesController = TextEditingController();
+  final Map<String, TextEditingController> _splitControllers = {};
+  List<GroupMemberProfile> _members = [];
+  final Set<String> _selectedMemberIds = {};
+  String _splitMode = 'equal';
   bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMembers();
+  }
+
+  Future<void> _loadMembers() async {
+    try {
+      final groupService = await ref.read(groupServiceProviderAsync.future);
+      final groups = await groupService.listGroups(limit: 1);
+      if (!mounted || groups.isEmpty) return;
+      final members = await groupService.listMembers(groups.first.id);
+      if (!mounted) return;
+      setState(() {
+        _members = members;
+        _selectedMemberIds
+          ..clear()
+          ..addAll(members.map((m) => m.userId));
+        for (final member in members) {
+          _splitControllers.putIfAbsent(
+            member.userId,
+            () => TextEditingController(text: '1'),
+          );
+        }
+      });
+    } catch (_) {
+      // Member loading is optional; expense creation still works without splits.
+    }
+  }
 
   bool get _canCreate =>
       _descriptionController.text.trim().isNotEmpty &&
@@ -65,13 +102,19 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       }
 
       final me = await authService.getMe();
+      final splitUserIds = _selectedMemberIds.toList();
+      final splitRequests = _buildSplitRequests();
       await financeService.createExpense(
         CreateExpenseRequest(
           groupId: groups.first.id,
           payerId: me.id,
           amount: amount,
           description: _descriptionController.text.trim(),
+          notes: _notesController.text.trim(),
           date: DateTime.now().toUtc(),
+          splitMode: _splitMode,
+          splitUserIds: _splitMode == 'equal' ? splitUserIds : const [],
+          splits: _splitMode == 'equal' ? const [] : splitRequests,
         ),
       );
 
@@ -98,10 +141,40 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
     return (parsed * 100).round();
   }
 
+  List<CreateExpenseSplitRequest> _buildSplitRequests() {
+    return _selectedMemberIds.map((userId) {
+      final raw = _splitControllers[userId]?.text.trim() ?? '';
+      switch (_splitMode) {
+        case 'amount':
+          return CreateExpenseSplitRequest(
+            userId: userId,
+            amount: _parseAmountToCents(raw) ?? 0,
+          );
+        case 'percentage':
+          final value = double.tryParse(raw.replaceAll(',', '.')) ?? 0;
+          return CreateExpenseSplitRequest(
+            userId: userId,
+            percentage: (value * 100).round(),
+          );
+        case 'shares':
+          return CreateExpenseSplitRequest(
+            userId: userId,
+            shares: int.tryParse(raw) ?? 0,
+          );
+        default:
+          return CreateExpenseSplitRequest(userId: userId);
+      }
+    }).toList();
+  }
+
   @override
   void dispose() {
     _descriptionController.dispose();
     _amountController.dispose();
+    _notesController.dispose();
+    for (final controller in _splitControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -128,8 +201,34 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: MitlistSpacing.md),
+        AppInput(
+          label: 'Notes',
+          hint: 'Optional context, receipt note, or reimbursement detail',
+          controller: _notesController,
+          textInputAction: TextInputAction.done,
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: MitlistSpacing.md),
+        _SplitOptions(
+          members: _members,
+          selectedMemberIds: _selectedMemberIds,
+          splitMode: _splitMode,
+          controllers: _splitControllers,
+          onModeChanged: (mode) => setState(() => _splitMode = mode),
+          onMemberChanged: (memberId, selected) {
+            setState(() {
+              if (selected) {
+                _selectedMemberIds.add(memberId);
+              } else {
+                _selectedMemberIds.remove(memberId);
+              }
+            });
+          },
+          onValueChanged: () => setState(() {}),
+        ),
+        const SizedBox(height: MitlistSpacing.md),
         Text(
-          'New expenses are recorded under your account and dated today.',
+          'New expenses are recorded under your account and dated today. Split math is finalized on the server.',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: MitlistColors.textSecondary,
               ),
@@ -149,4 +248,112 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       ],
     );
   }
+}
+
+class _SplitOptions extends StatelessWidget {
+  final List<GroupMemberProfile> members;
+  final Set<String> selectedMemberIds;
+  final String splitMode;
+  final Map<String, TextEditingController> controllers;
+  final ValueChanged<String> onModeChanged;
+  final void Function(String memberId, bool selected) onMemberChanged;
+  final VoidCallback onValueChanged;
+
+  const _SplitOptions({
+    required this.members,
+    required this.selectedMemberIds,
+    required this.splitMode,
+    required this.controllers,
+    required this.onModeChanged,
+    required this.onMemberChanged,
+    required this.onValueChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (members.isEmpty) {
+      return Text(
+        'Members will be available for split selection after the household loads.',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: MitlistColors.textSecondary,
+            ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Split mode', style: Theme.of(context).textTheme.labelMedium),
+        const SizedBox(height: MitlistSpacing.sm),
+        Wrap(
+          spacing: MitlistSpacing.sm,
+          runSpacing: MitlistSpacing.sm,
+          children: [
+            for (final mode in const [
+              'equal',
+              'amount',
+              'shares',
+              'percentage'
+            ])
+              ChoiceChip(
+                label: Text(_modeLabel(mode)),
+                selected: splitMode == mode,
+                onSelected: (_) => onModeChanged(mode),
+              ),
+          ],
+        ),
+        const SizedBox(height: MitlistSpacing.md),
+        ...members.map((member) {
+          final selected = selectedMemberIds.contains(member.userId);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+            child: Row(
+              children: [
+                Checkbox(
+                  value: selected,
+                  onChanged: (value) =>
+                      onMemberChanged(member.userId, value ?? false),
+                ),
+                Expanded(
+                  child: Text(
+                    member.displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (splitMode != 'equal') ...[
+                  const SizedBox(width: MitlistSpacing.sm),
+                  SizedBox(
+                    width: 96,
+                    child: AppInput(
+                      label: _valueLabel(splitMode),
+                      hint: splitMode == 'percentage' ? '50' : '1',
+                      controller: controllers[member.userId],
+                      enabled: selected,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      onChanged: (_) => onValueChanged(),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  String _modeLabel(String mode) => switch (mode) {
+        'amount' => 'Exact',
+        'shares' => 'Shares',
+        'percentage' => 'Percent',
+        _ => 'Equal',
+      };
+
+  String _valueLabel(String mode) => switch (mode) {
+        'amount' => 'Amount',
+        'percentage' => '%',
+        _ => 'Shares',
+      };
 }

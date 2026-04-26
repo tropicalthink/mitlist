@@ -12,6 +12,7 @@ import '../../widgets/app_icon.dart';
 import '../../widgets/chip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton.dart';
+import '../../widgets/mitlist_app_bar.dart';
 
 class RecipesScreen extends ConsumerStatefulWidget {
   const RecipesScreen({super.key});
@@ -24,10 +25,10 @@ class _Recipe {
   final String id;
   final String title;
   final String description;
-  final List<String> tags;
   final int prepTime;
   final int cookTime;
   final int servings;
+  final String? imageUrl;
   final bool isPublic;
   final DateTime updatedAt;
 
@@ -35,10 +36,10 @@ class _Recipe {
     required this.id,
     required this.title,
     required this.description,
-    required this.tags,
     required this.prepTime,
     required this.cookTime,
     required this.servings,
+    this.imageUrl,
     required this.isPublic,
     required this.updatedAt,
   });
@@ -51,6 +52,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
 
   _ViewState _viewState = _ViewState.empty;
   String? _errorMessage;
+  String? _loadMoreErrorMessage;
   final List<_Recipe> _recipes = <_Recipe>[];
   final ScrollController _scrollController = ScrollController();
   bool _isLoadingMore = false;
@@ -106,6 +108,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     setState(() {
       _viewState = _ViewState.loading;
       _errorMessage = null;
+      _loadMoreErrorMessage = null;
       _hasMore = true;
     });
 
@@ -123,13 +126,10 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                 id: api.id,
                 title: api.title,
                 description: api.description,
-                tags: [
-                  if (api.description.isNotEmpty) api.description,
-                  api.isPublic ? 'Public' : 'Private',
-                ],
                 prepTime: api.prepTime,
                 cookTime: api.cookTime,
                 servings: api.servings,
+                imageUrl: api.imageUrl,
                 isPublic: api.isPublic,
                 updatedAt: api.updatedAt,
               )));
@@ -152,7 +152,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
 
     setState(() {
       _isLoadingMore = true;
-      _errorMessage = null;
+      _loadMoreErrorMessage = null;
     });
 
     try {
@@ -167,13 +167,10 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
               id: api.id,
               title: api.title,
               description: api.description,
-              tags: [
-                if (api.description.isNotEmpty) api.description,
-                api.isPublic ? 'Public' : 'Private',
-              ],
               prepTime: api.prepTime,
               cookTime: api.cookTime,
               servings: api.servings,
+              imageUrl: api.imageUrl,
               isPublic: api.isPublic,
               updatedAt: api.updatedAt,
             )));
@@ -183,7 +180,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to load more recipes';
+        _loadMoreErrorMessage = 'Failed to load more recipes';
         _isLoadingMore = false;
       });
     }
@@ -192,9 +189,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Recipes'),
-      ),
+      appBar: MitlistAppBar.titleText('Recipes'),
       body: _buildBody(),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'recipes_create_fab',
@@ -293,15 +288,23 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: const Center(
+            child: Center(
               child: Padding(
-                padding: EdgeInsets.all(MitlistSpacing.md),
+                padding: const EdgeInsets.all(MitlistSpacing.md),
                 child: AppEmptyState(
-                  icon: AppIcon(
-                    name: 'informationCircle',
+                  icon: const AppIcon(
+                    name: 'clipboardDocumentList',
                     size: 56,
                   ),
                   title: 'No recipes yet',
+                  description:
+                      'Save links, jot ingredients, or keep your household staples here.',
+                  actions: <Widget>[
+                    AppButton(
+                      text: 'Add recipe',
+                      onPressed: _onAddRecipe,
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -325,15 +328,17 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
           childAspectRatio: 0.7,
         ),
         itemCount:
-            _recipes.length + (_isLoadingMore || _errorMessage != null ? 1 : 0),
+            _recipes.length +
+                (_isLoadingMore || _loadMoreErrorMessage != null ? 1 : 0),
         itemBuilder: (BuildContext context, int index) {
           if (index >= _recipes.length) {
-            return _errorMessage != null
-                ? AppAlert(
-                    type: AppAlertType.error,
-                    message: _errorMessage!,
-                  )
-                : const Center(child: CircularProgressIndicator());
+            if (_loadMoreErrorMessage != null) {
+              return _LoadMoreErrorTile(
+                message: _loadMoreErrorMessage!,
+                onRetry: _loadMoreRecipes,
+              );
+            }
+            return const Center(child: CircularProgressIndicator());
           }
 
           final _Recipe recipe = _recipes[index];
@@ -356,42 +361,123 @@ class _RecipeCard extends StatelessWidget {
     this.onTap,
   });
 
+  String _metaLine() {
+    final int totalMinutes = recipe.prepTime + recipe.cookTime;
+    final List<String> parts = <String>[];
+    if (totalMinutes > 0) {
+      parts.add('$totalMinutes min');
+    }
+    if (recipe.servings > 0) {
+      parts.add('Serves ${recipe.servings}');
+    }
+    return parts.join(' • ');
+  }
+
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final meta = _metaLine();
+
     return AppCard(
       interactive: true,
       animated: true,
       onTap: onTap,
+      semanticLabel: 'Open recipe ${recipe.title}',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          AspectRatio(
-            aspectRatio: 16 / 9,
-            child: Container(
-              color: MitlistColors.neutral100,
-              child: const Center(
-                child: AppIcon(
-                  name: 'informationCircle',
-                  size: 32,
-                  color: MitlistColors.neutral400,
+          if (recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty) ...[
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(0),
+                child: Image.network(
+                  recipe.imageUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: colorScheme.surfaceContainerHighest,
+                      alignment: Alignment.center,
+                      child: Icon(
+                        Icons.image_not_supported_outlined,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: MitlistSpacing.sm),
+            const SizedBox(height: MitlistSpacing.sm),
+          ],
           Text(
             recipe.title,
             style: Theme.of(context).textTheme.titleSmall,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
+          if (meta.isNotEmpty) ...[
+            const SizedBox(height: MitlistSpacing.space6),
+            Text(
+              meta,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          if (recipe.description.trim().isNotEmpty) ...[
+            const SizedBox(height: MitlistSpacing.space6),
+            Text(
+              recipe.description.trim(),
+              style: Theme.of(context).textTheme.bodySmall,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
           const SizedBox(height: MitlistSpacing.sm),
           Wrap(
             spacing: MitlistSpacing.sm,
             runSpacing: MitlistSpacing.sm,
-            children:
-                recipe.tags.map((String tag) => AppChip(label: tag)).toList(),
+            children: <Widget>[
+              if (recipe.isPublic) const AppChip(label: 'Public'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoadMoreErrorTile extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _LoadMoreErrorTile({
+    required this.message,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      variant: AppCardVariant.outlined,
+      interactive: true,
+      semanticLabel: 'Retry loading more recipes',
+      onTap: onRetry,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          AppAlert(
+            type: AppAlertType.error,
+            message: message,
+          ),
+          const SizedBox(height: MitlistSpacing.sm),
+          AppButton(
+            text: 'Retry',
+            onPressed: onRetry,
           ),
         ],
       ),

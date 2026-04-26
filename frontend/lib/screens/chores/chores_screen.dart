@@ -17,6 +17,7 @@ import '../../widgets/app_icon.dart';
 import '../../widgets/chip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton.dart';
+import '../../widgets/mitlist_app_bar.dart';
 
 class ChoresScreen extends ConsumerStatefulWidget {
   const ChoresScreen({super.key});
@@ -75,20 +76,26 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         });
         return;
       }
-      final apiChores = await choreService.listChores(groupId!);
+      final currentChores = await choreService.listCurrentChores(groupId!);
       if (!mounted) return;
       final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final chores = apiChores
-          .map((api) => _Chore(
-                id: api.id,
-                title: api.name,
-                assigneeInitials: api.name.isNotEmpty
-                    ? api.name.substring(0, 1).toUpperCase()
-                    : '?',
-                dueDate: today,
-                isMine: true,
-                completed: !api.isActive,
+      final chores = currentChores
+          .map((entry) => _Chore(
+                assignmentId: entry.pendingAssignment?.id,
+                id: entry.chore.id,
+                title: entry.chore.name,
+                assigneeInitials:
+                    entry.pendingAssignment?.userId.isNotEmpty == true
+                        ? entry.pendingAssignment!.userId
+                            .substring(0, 1)
+                            .toUpperCase()
+                        : '?',
+                dueDate: entry.pendingAssignment?.dueDate ??
+                    _fallbackDueDate(now, entry.chore.frequency),
+                isMine: entry.assignedToMe,
+                completed: !entry.chore.isActive ||
+                    entry.pendingAssignment?.status.toLowerCase() ==
+                        'completed',
               ))
           .toList();
       setState(() {
@@ -130,6 +137,22 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
               Navigator.of(context).pop();
               await _toggleComplete(id);
             },
+      onSkip: chore.completed
+          ? null
+          : () async {
+              Navigator.of(context).pop();
+              await _skipChore(id);
+            },
+      onRescheduleTomorrow: chore.completed
+          ? null
+          : () async {
+              Navigator.of(context).pop();
+              await _rescheduleTomorrow(id);
+            },
+      onUndo: () async {
+        Navigator.of(context).pop();
+        await _undoLastExecution(id);
+      },
     );
   }
 
@@ -142,9 +165,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         return;
       }
       await choreService.completeChore(id);
-      setState(() {
-        chore.completed = true;
-      });
+      await _loadChores();
     } catch (e) {
       if (!mounted) return;
       showDialog(
@@ -161,6 +182,57 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         ),
       );
     }
+  }
+
+  Future<void> _skipChore(String id) async {
+    try {
+      final choreService = await ref.read(choreServiceProviderAsync.future);
+      await choreService.skipChore(id);
+      await _loadChores();
+    } catch (e) {
+      if (!mounted) return;
+      _showChoreActionError('Failed to skip chore. Please try again.');
+    }
+  }
+
+  Future<void> _rescheduleTomorrow(String id) async {
+    try {
+      final choreService = await ref.read(choreServiceProviderAsync.future);
+      final tomorrow = DateTime.now().add(const Duration(days: 1));
+      await choreService.rescheduleChore(id, dueDate: tomorrow);
+      await _loadChores();
+    } catch (e) {
+      if (!mounted) return;
+      _showChoreActionError('Failed to reschedule chore. Please try again.');
+    }
+  }
+
+  Future<void> _undoLastExecution(String id) async {
+    try {
+      final choreService = await ref.read(choreServiceProviderAsync.future);
+      await choreService.undoLastChoreExecution(id);
+      await _loadChores();
+    } catch (e) {
+      if (!mounted) return;
+      _showChoreActionError(
+          'Failed to undo chore execution. Please try again.');
+    }
+  }
+
+  void _showChoreActionError(String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   List<_Chore> get _filteredChores {
@@ -239,9 +311,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     final sections = _groupBySection(filtered);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Chores'),
-      ),
+      appBar: MitlistAppBar.titleText('Chores'),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'chores_create_fab',
         onPressed: _hasHousehold ? _addChore : () => context.goNamed('home'),
@@ -526,6 +596,7 @@ class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
 
 class _Chore {
   final String id;
+  final String? assignmentId;
   final String title;
   final String assigneeInitials;
   final DateTime dueDate;
@@ -534,6 +605,7 @@ class _Chore {
 
   _Chore({
     required this.id,
+    this.assignmentId,
     required this.title,
     required this.assigneeInitials,
     required this.dueDate,
@@ -714,4 +786,21 @@ class _ChoreSkeletonItem extends StatelessWidget {
 
 String _formatDate(DateTime date) {
   return DateFormat.MMMd().format(date);
+}
+
+DateTime _fallbackDueDate(DateTime now, String frequency) {
+  switch (frequency) {
+    case 'hourly':
+      return now.add(const Duration(hours: 1));
+    case 'daily':
+      return now.add(const Duration(days: 1));
+    case 'weekly':
+      return now.add(const Duration(days: 7));
+    case 'monthly':
+      return DateTime(now.year, now.month + 1, now.day);
+    case 'yearly':
+      return DateTime(now.year + 1, now.month, now.day);
+    default:
+      return DateTime(now.year, now.month, now.day);
+  }
 }

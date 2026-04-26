@@ -8,6 +8,7 @@ import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/skeleton.dart';
+import '../../widgets/mitlist_app_bar.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
@@ -165,8 +166,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Notifications'),
+      appBar: MitlistAppBar.titleText(
+        'Notifications',
         actions: [
           TextButton(
             onPressed: _isLoading ? null : _markAllRead,

@@ -863,6 +863,7 @@ class FakeFinanceService implements FinanceService {
       description: req.description,
       category: req.category,
       currency: req.currency,
+      notes: req.notes,
       date: req.date,
       createdAt: DateTime.utc(2026, 1, 1),
     );

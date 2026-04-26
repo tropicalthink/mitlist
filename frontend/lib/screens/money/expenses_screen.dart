@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/finance_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../models/finance_models.dart';
 import '../../services/group_id_validator.dart';
 import '../../sheets/expense_creation_sheet.dart';
 import '../../sheets/expense_detail_sheet.dart';
+import '../../sheets/settlement_confirmation_dialog.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
@@ -19,6 +21,7 @@ import '../../widgets/app_icon.dart';
 import '../../widgets/chip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton.dart';
+import '../../widgets/mitlist_app_bar.dart';
 
 // ---------------------------------------------------------------------------
 // Data models
@@ -29,7 +32,8 @@ class _Expense {
   final String description;
   final double amount;
   final String payer;
-  final String status;
+  final String currency;
+  final String category;
   final DateTime date;
   final DateTime createdAt;
 
@@ -38,7 +42,8 @@ class _Expense {
     required this.description,
     required this.amount,
     required this.payer,
-    required this.status,
+    required this.currency,
+    required this.category,
     required this.date,
     required this.createdAt,
   });
@@ -54,29 +59,45 @@ class _ExpenseGroup {
 class _SettlementSuggestion {
   final String from;
   final String to;
+  final String fromLabel;
+  final String toLabel;
   final double amount;
 
   const _SettlementSuggestion({
     required this.from,
     required this.to,
+    required this.fromLabel,
+    required this.toLabel,
     required this.amount,
   });
 }
 
 class _BalanceEntry {
+  final String userId;
   final String name;
   final double amount;
 
-  const _BalanceEntry({required this.name, required this.amount});
+  const _BalanceEntry({
+    required this.userId,
+    required this.name,
+    required this.amount,
+  });
 }
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-final _currencyFormat = NumberFormat.currency(symbol: '\$');
+final Map<String, NumberFormat> _currencyFormats = {};
 
-String _formatCurrency(double value) => _currencyFormat.format(value);
+String _formatCurrency(double value, {String currency = 'USD'}) {
+  final key = currency.trim().isEmpty ? 'USD' : currency.trim().toUpperCase();
+  final formatter = _currencyFormats.putIfAbsent(
+    key,
+    () => NumberFormat.simpleCurrency(name: key),
+  );
+  return formatter.format(value);
+}
 
 // ---------------------------------------------------------------------------
 // Screen
@@ -98,6 +119,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   bool _hasError = false;
   bool _hasPageError = false;
   bool _hasHousehold = true;
+  bool _isSettling = false;
   int _selectedTab = 0; // 0 = Timeline, 1 = Settlements
 
   late final ConfettiController _confettiController;
@@ -105,7 +127,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   bool _hasPlayedConfetti = false;
 
   double _balance = 0;
+  int _openBalanceCount = 0;
   String? _groupId;
+  Map<String, String> _userLabels = {};
   final List<_Expense> _timelineExpenses = [];
   List<_ExpenseGroup> _timelineGroups = [];
   List<_SettlementSuggestion> _suggestions = [];
@@ -153,10 +177,12 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
     try {
       final financeService = await ref.read(financeServiceProviderAsync.future);
+      final authService = await ref.read(authServiceProviderAsync.future);
       final groupService = await ref.read(groupServiceProviderAsync.future);
       final groups = await groupService.listGroups(limit: 1);
       final groupId = groups.isNotEmpty ? groups.first.id : null;
       final validGroupId = isValidGroupId(groupId) ? groupId : null;
+      final me = validGroupId == null ? null : await authService.getMe();
       final expenses = validGroupId == null
           ? <Expense>[]
           : await financeService.listExpenses(
@@ -164,17 +190,18 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
               limit: _pageLimit,
               offset: 0,
             );
+      final summary = validGroupId == null
+          ? null
+          : await financeService.getFinanceSummary(validGroupId);
 
       if (!mounted) return;
 
       _groupId = validGroupId;
-      _balance = 0;
+      _applyFinanceSummary(summary, me?.id);
       _timelineExpenses
         ..clear()
         ..addAll(expenses.map(_mapExpense));
       _rebuildTimelineGroups();
-      _suggestions = [];
-      _balances = [];
 
       setState(() {
         _hasHousehold = validGroupId != null;
@@ -188,6 +215,51 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  void _applyFinanceSummary(FinanceSummary? summary, String? currentUserId) {
+    if (summary == null) {
+      _balance = 0;
+      _openBalanceCount = 0;
+      _suggestions = [];
+      _balances = [];
+      _userLabels = {};
+      return;
+    }
+
+    final currentUserBalance = summary.balances
+        .where((balance) => balance.userId == currentUserId)
+        .toList();
+    _balance =
+        currentUserBalance.isEmpty ? 0 : currentUserBalance.first.total / 100.0;
+    _openBalanceCount =
+        summary.balances.where((balance) => balance.total != 0).length;
+    _suggestions = summary.reimbursements
+        .map((suggestion) => _SettlementSuggestion(
+              from: suggestion.fromUserId,
+              to: suggestion.toUserId,
+              fromLabel: suggestion.fromUserId == currentUserId
+                  ? 'You'
+                  : suggestion.fromDisplayName,
+              toLabel: suggestion.toUserId == currentUserId
+                  ? 'You'
+                  : suggestion.toDisplayName,
+              amount: suggestion.amount / 100.0,
+            ))
+        .toList();
+    _balances = summary.balances
+        .map((balance) => _BalanceEntry(
+              userId: balance.userId,
+              name:
+                  balance.userId == currentUserId ? 'You' : balance.displayName,
+              amount: balance.total / 100.0,
+            ))
+        .toList();
+
+    _userLabels = {
+      for (final b in summary.balances)
+        b.userId: b.userId == currentUserId ? 'You' : b.displayName,
+    };
   }
 
   Future<void> _loadMoreExpenses() async {
@@ -232,8 +304,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       id: exp.id,
       description: exp.description,
       amount: exp.amount / 100.0,
-      payer: exp.payerId,
-      status: 'Pending',
+      payer: _userLabels[exp.payerId] ?? exp.payerId,
+      currency: exp.currency,
+      category: exp.category,
       date: exp.date,
       createdAt: exp.createdAt,
     );
@@ -243,19 +316,14 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     await ExpenseDetailSheet.show(
       context,
       description: expense.description,
-      amountLabel: _formatCurrency(expense.amount),
+      amountLabel: _formatCurrency(expense.amount, currency: expense.currency),
       payer: expense.payer,
-      statusLabel: expense.status,
       createdAt: expense.createdAt,
     );
   }
 
   void _rebuildTimelineGroups() {
     final now = DateTime.now();
-    _balance = _timelineExpenses.fold<double>(
-      0,
-      (sum, exp) => sum + exp.amount,
-    );
 
     final timelineMap = <String, List<_Expense>>{};
     for (final exp in _timelineExpenses) {
@@ -303,6 +371,46 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     }
   }
 
+  Future<void> _recordSettlement(_SettlementSuggestion suggestion) async {
+    final groupId = _groupId;
+    if (groupId == null || _isSettling) return;
+
+    final confirmed = await SettlementConfirmationDialog.show(
+      context: context,
+      amount: _formatCurrency(suggestion.amount),
+      payer: suggestion.fromLabel,
+      payee: suggestion.toLabel,
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isSettling = true);
+    try {
+      final financeService = await ref.read(financeServiceProviderAsync.future);
+      await financeService.createGroupSettlement(
+        groupId,
+        CreateSettlementRequest(
+          fromUserId: suggestion.from,
+          toUserId: suggestion.to,
+          amount: (suggestion.amount * 100).round(),
+        ),
+      );
+      await _loadData();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Settlement recorded')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to record settlement: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSettling = false);
+      }
+    }
+  }
+
   void _maybePlayConfetti() {
     if (_selectedTab == 1 &&
         _hasHousehold &&
@@ -321,8 +429,11 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   Widget build(BuildContext context) {
     _maybePlayConfetti();
 
+    final canSettle = _hasHousehold && !_isLoading && !_hasError;
+    final showSettlementsNudge = canSettle && (_suggestions.isNotEmpty);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Money')),
+      appBar: MitlistAppBar.titleText('Money'),
       body: Column(
         children: [
           // Sticky top section
@@ -334,7 +445,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                   balance: _balance,
                   balanceColor: _balanceColor,
                   isLoading: _isLoading,
-                  onSettleUp: null,
+                  openBalanceCount: _openBalanceCount,
+                  suggestionCount: _suggestions.length,
+                  onTap: showSettlementsNudge ? () => _onTabChanged(1) : null,
                 ),
                 const SizedBox(height: MitlistSpacing.md),
                 _ChipBar(
@@ -367,19 +480,22 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                             : _SettlementsBody(
                                 suggestions: _suggestions,
                                 balances: _balances,
+                                isSettling: _isSettling,
                                 confettiController: _confettiController,
                                 onRefresh: _loadData,
+                                onRecordSettlement: _recordSettlement,
                               ),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'expenses_create_fab',
-        onPressed:
-            _hasHousehold ? _openCreateExpense : () => context.goNamed('home'),
-        label: Text(_hasHousehold ? 'Add expense' : 'Households'),
-        icon: AppIcon(name: _hasHousehold ? 'plus' : 'home'),
-      ),
+      floatingActionButton: !_hasHousehold
+          ? null
+          : FloatingActionButton.extended(
+              heroTag: 'expenses_create_fab',
+              onPressed: _openCreateExpense,
+              label: const Text('Add expense'),
+              icon: const AppIcon(name: 'plus'),
+            ),
     );
   }
 }
@@ -392,14 +508,34 @@ class _BalanceCard extends StatelessWidget {
   final double balance;
   final Color balanceColor;
   final bool isLoading;
-  final VoidCallback? onSettleUp;
+  final int openBalanceCount;
+  final int suggestionCount;
+  final VoidCallback? onTap;
 
   const _BalanceCard({
     required this.balance,
     required this.balanceColor,
     required this.isLoading,
-    this.onSettleUp,
+    required this.openBalanceCount,
+    required this.suggestionCount,
+    this.onTap,
   });
+
+  String get _headline {
+    if (balance > 0) return 'You are owed';
+    if (balance < 0) return 'You owe';
+    return 'All square';
+  }
+
+  String get _description {
+    if (suggestionCount > 0) {
+      return '$suggestionCount suggested payment${suggestionCount == 1 ? '' : 's'} to settle up';
+    }
+    if (openBalanceCount > 0) {
+      return '$openBalanceCount open balance${openBalanceCount == 1 ? '' : 's'} in the household';
+    }
+    return 'No one needs to pay anyone right now';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -438,32 +574,64 @@ class _BalanceCard extends StatelessWidget {
     );
 
     return AppCard(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
+      variant: AppCardVariant.soft,
+      interactive: onTap != null,
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'YOUR BALANCE',
-                  style: Theme.of(context).textTheme.labelMedium,
-                ),
-                const SizedBox(height: MitlistSpacing.sm),
-                Text(
-                  _formatCurrency(balance),
-                  style: balanceStyle,
-                ),
-              ],
-            ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 340;
+              final details = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(_headline,
+                      style: Theme.of(context).textTheme.titleSmall),
+                  const SizedBox(height: MitlistSpacing.xs),
+                  Text(
+                    _description,
+                    maxLines: compact ? 3 : 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              );
+              final amount = Text(
+                _formatCurrency(balance.abs()),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: compact ? TextAlign.start : TextAlign.end,
+                style: balanceStyle,
+              );
+
+              if (compact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    details,
+                    const SizedBox(height: MitlistSpacing.sm),
+                    amount,
+                  ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(child: details),
+                  const SizedBox(width: MitlistSpacing.md),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: amount,
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
-          if (onSettleUp != null)
-            AppButton(
-              text: 'Settle up',
-              size: AppButtonSize.sm,
-              onPressed: onSettleUp,
-            ),
+          // Settle-up action lives in the Settlements tab for now.
         ],
       ),
     );
@@ -485,14 +653,15 @@ class _ChipBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Wrap(
+      spacing: MitlistSpacing.sm,
+      runSpacing: MitlistSpacing.sm,
       children: [
         AppChip(
           label: 'Timeline',
           selected: selectedTab == 0,
           onSelected: (_) => onTabChanged(0),
         ),
-        const SizedBox(width: MitlistSpacing.sm),
         AppChip(
           label: 'Settlements',
           selected: selectedTab == 1,
@@ -672,9 +841,22 @@ class _TimelineBody extends StatelessWidget {
                     horizontal: MitlistSpacing.md,
                   ),
                   alignment: Alignment.centerLeft,
-                  child: Text(
-                    group.label.toUpperCase(),
-                    style: Theme.of(context).textTheme.labelMedium,
+                  child: DecoratedBox(
+                    decoration: const BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color: MitlistColors.borderSecondary,
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        group.label.toUpperCase(),
+                        style: Theme.of(context).textTheme.labelMedium,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -758,6 +940,37 @@ class _StickyDateHeaderDelegate extends SliverPersistentHeaderDelegate {
 // Expense card
 // ---------------------------------------------------------------------------
 
+class _PayerBadge extends StatelessWidget {
+  final String label;
+  const _PayerBadge({required this.label});
+
+  String get _initials {
+    final parts = label.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
+    final letters =
+        parts.take(2).map((p) => p.characters.first.toUpperCase()).join();
+    return letters.isEmpty ? '?' : letters;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: MitlistSpacing.space10,
+      height: MitlistSpacing.space10,
+      decoration: BoxDecoration(
+        color: MitlistColors.surfaceSoft,
+        border: Border.all(color: MitlistColors.borderSecondary, width: 2),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        _initials,
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: MitlistColors.textSecondary,
+            ),
+      ),
+    );
+  }
+}
+
 class _ExpenseCard extends StatelessWidget {
   final _Expense expense;
   final VoidCallback onTap;
@@ -773,10 +986,19 @@ class _ExpenseCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          _PayerBadge(label: expense.payer),
+          const SizedBox(width: MitlistSpacing.sm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(
+                  expense.category.toUpperCase(),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: MitlistColors.textTertiary,
+                      ),
+                ),
+                const SizedBox(height: MitlistSpacing.space1),
                 Text(
                   expense.description,
                   style: Theme.of(context).textTheme.titleSmall,
@@ -794,13 +1016,8 @@ class _ExpenseCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                _formatCurrency(expense.amount),
+                _formatCurrency(expense.amount, currency: expense.currency),
                 style: MitlistTypography.monoBody(),
-              ),
-              const SizedBox(height: MitlistSpacing.space1),
-              AppChip(
-                label: expense.status,
-                selected: expense.status.toLowerCase() == 'settled',
               ),
             ],
           ),
@@ -817,14 +1034,18 @@ class _ExpenseCard extends StatelessWidget {
 class _SettlementsBody extends StatelessWidget {
   final List<_SettlementSuggestion> suggestions;
   final List<_BalanceEntry> balances;
+  final bool isSettling;
   final ConfettiController confettiController;
   final Future<void> Function() onRefresh;
+  final ValueChanged<_SettlementSuggestion> onRecordSettlement;
 
   const _SettlementsBody({
     required this.suggestions,
     required this.balances,
+    required this.isSettling,
     required this.confettiController,
     required this.onRefresh,
+    required this.onRecordSettlement,
   });
 
   @override
@@ -838,11 +1059,25 @@ class _SettlementsBody extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text(
+              'Suggested payments',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: MitlistSpacing.xs),
+            Text(
+              'Calculated from every expense, split, and recorded settlement in this household.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: MitlistSpacing.md),
             if (suggestions.isNotEmpty)
               ...suggestions.map(
                 (s) => Padding(
                   padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
-                  child: _SuggestionCard(suggestion: s),
+                  child: _SuggestionCard(
+                    suggestion: s,
+                    isSettling: isSettling,
+                    onRecord: () => onRecordSettlement(s),
+                  ),
                 ),
               )
             else
@@ -880,37 +1115,140 @@ class _SettlementsBody extends StatelessWidget {
 
 class _SuggestionCard extends StatelessWidget {
   final _SettlementSuggestion suggestion;
+  final bool isSettling;
+  final VoidCallback onRecord;
 
-  const _SuggestionCard({required this.suggestion});
+  const _SuggestionCard({
+    required this.suggestion,
+    required this.isSettling,
+    required this.onRecord,
+  });
 
   @override
   Widget build(BuildContext context) {
     return AppCard(
       variant: AppCardVariant.elevated,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      animated: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${suggestion.from} → ${suggestion.to}',
-                  style: Theme.of(context).textTheme.titleSmall,
+          Row(
+            children: [
+              const Spacer(),
+              Text(
+                _formatCurrency(suggestion.amount),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: MitlistTypography.monoBody(
+                  color: MitlistColors.primary700,
                 ),
-                const SizedBox(height: MitlistSpacing.space1),
-                Text(
-                  _formatCurrency(suggestion.amount),
-                  style: MitlistTypography.monoBody(),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
+          const SizedBox(height: MitlistSpacing.md),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 360;
+              final from = _SettlementParty(
+                label: suggestion.fromLabel,
+                helper:
+                    suggestion.from == suggestion.to ? 'Same account' : 'From',
+                tone: MitlistColors.error700,
+              );
+              final to = _SettlementParty(
+                label: suggestion.toLabel,
+                helper: 'To',
+                tone: MitlistColors.success700,
+              );
+
+              if (compact) {
+                return Column(
+                  children: [
+                    from,
+                    const Padding(
+                      padding:
+                          EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
+                      child: AppIcon(name: 'arrowRight', size: 20),
+                    ),
+                    to,
+                  ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(child: from),
+                  const Padding(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: MitlistSpacing.sm),
+                    child: AppIcon(name: 'arrowRight', size: 20),
+                  ),
+                  Expanded(child: to),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: MitlistSpacing.md),
           Text(
-            'Record manually',
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            'Record this settlement after the payment is made.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: MitlistColors.textSecondary,
                 ),
+          ),
+          const SizedBox(height: MitlistSpacing.md),
+          SizedBox(
+            width: double.infinity,
+            child: AppButton(
+              variant: AppButtonVariant.solid,
+              color: AppButtonColor.success,
+              text: isSettling ? 'Recording...' : 'Record settlement',
+              isLoading: isSettling,
+              onPressed: isSettling ? null : onRecord,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SettlementParty extends StatelessWidget {
+  final String label;
+  final String helper;
+  final Color tone;
+
+  const _SettlementParty({
+    required this.label,
+    required this.helper,
+    required this.tone,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: MitlistSpacing.space14),
+      padding: const EdgeInsets.all(MitlistSpacing.sm),
+      decoration: BoxDecoration(
+        color: MitlistColors.surfaceSoft,
+        border: Border.all(color: MitlistColors.borderSecondary),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            helper.toUpperCase(),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: tone,
+                ),
+          ),
+          const SizedBox(height: MitlistSpacing.xs),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.titleSmall,
           ),
         ],
       ),
@@ -935,56 +1273,152 @@ class _BalancesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final sortedBalances = [...balances]
+      ..sort((a, b) => b.amount.abs().compareTo(a.amount.abs()));
+
     return AppCard(
       variant: AppCardVariant.outlined,
       padding: AppCardPadding.none,
-      child: Theme(
-        data: Theme.of(context).copyWith(
-          dividerColor: Colors.transparent,
-        ),
-        child: ExpansionTile(
-          iconColor: MitlistColors.textPrimary,
-          collapsedIconColor: MitlistColors.textPrimary,
-          tilePadding: const EdgeInsets.symmetric(
-            horizontal: MitlistSpacing.md,
-          ),
-          childrenPadding: const EdgeInsets.symmetric(
-            horizontal: MitlistSpacing.md,
-          ),
-          title: Text(
-            'BALANCES',
-            style: Theme.of(context).textTheme.labelMedium,
-          ),
-          children: [
-            const Divider(
-              height: 1,
-              color: MitlistColors.borderSecondary,
-            ),
-            const SizedBox(height: MitlistSpacing.sm),
-            ...balances.map((b) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      b.name,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    Text(
-                      _formatCurrency(b.amount),
-                      style: MitlistTypography.monoBody(
-                        color: _balanceColor(b.amount),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-            const SizedBox(height: MitlistSpacing.sm),
-          ],
-        ),
+      child: _BalancesExpandableBody(
+        sortedBalances: sortedBalances,
+        openCount: balances.where((b) => b.amount != 0).length,
+        balanceColor: _balanceColor,
       ),
+    );
+  }
+}
+
+class _BalancesExpandableBody extends StatefulWidget {
+  final List<_BalanceEntry> sortedBalances;
+  final int openCount;
+  final Color Function(double amount) balanceColor;
+
+  const _BalancesExpandableBody({
+    required this.sortedBalances,
+    required this.openCount,
+    required this.balanceColor,
+  });
+
+  @override
+  State<_BalancesExpandableBody> createState() =>
+      _BalancesExpandableBodyState();
+}
+
+class _BalancesExpandableBodyState extends State<_BalancesExpandableBody> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final disableAnimations = MediaQuery.of(context).disableAnimations;
+
+    return Column(
+      children: [
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => setState(() => _expanded = !_expanded),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: MitlistSpacing.md,
+              vertical: MitlistSpacing.sm,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'BALANCES',
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
+                ),
+                Text(
+                  '${widget.openCount} open',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(width: MitlistSpacing.sm),
+                AnimatedRotation(
+                  turns: _expanded ? 0.5 : 0,
+                  duration: disableAnimations
+                      ? Duration.zero
+                      : const Duration(milliseconds: 180),
+                  curve: Curves.easeOutCubic,
+                  child: const AppIcon(name: 'chevronDown', size: 18),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const Divider(height: 1, color: MitlistColors.borderSecondary),
+        AnimatedCrossFade(
+          firstChild: const SizedBox.shrink(),
+          secondChild: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              MitlistSpacing.md,
+              MitlistSpacing.sm,
+              MitlistSpacing.md,
+              MitlistSpacing.sm,
+            ),
+            child: widget.sortedBalances.isEmpty
+                ? Text(
+                    'No balances yet. Add an expense with splits to start the ledger.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  )
+                : Column(
+                    children: [
+                      for (final b in widget.sortedBalances)
+                        Padding(
+                          padding:
+                              const EdgeInsets.only(bottom: MitlistSpacing.sm),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      b.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium,
+                                    ),
+                                    Text(
+                                      b.amount > 0
+                                          ? 'is owed'
+                                          : b.amount < 0
+                                              ? 'owes'
+                                              : 'settled',
+                                      style:
+                                          Theme.of(context).textTheme.bodySmall,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: MitlistSpacing.md),
+                              Text(
+                                _formatCurrency(b.amount.abs()),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: MitlistTypography.monoBody(
+                                  color: widget.balanceColor(b.amount),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+          ),
+          crossFadeState:
+              _expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          duration: disableAnimations
+              ? Duration.zero
+              : const Duration(milliseconds: 180),
+          firstCurve: Curves.easeOutCubic,
+          secondCurve: Curves.easeOutCubic,
+          sizeCurve: Curves.easeOutCubic,
+        ),
+      ],
     );
   }
 }

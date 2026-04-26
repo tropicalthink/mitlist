@@ -6,7 +6,6 @@ import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_card.dart';
-import '../widgets/chip.dart';
 
 class ExpenseDetailSheet extends StatelessWidget {
   const ExpenseDetailSheet({
@@ -14,14 +13,12 @@ class ExpenseDetailSheet extends StatelessWidget {
     required this.description,
     required this.amountLabel,
     required this.payer,
-    required this.statusLabel,
     required this.createdAt,
   });
 
   final String description;
   final String amountLabel;
   final String payer;
-  final String statusLabel;
   final DateTime createdAt;
 
   static Future<void> show(
@@ -29,7 +26,6 @@ class ExpenseDetailSheet extends StatelessWidget {
     required String description,
     required String amountLabel,
     required String payer,
-    required String statusLabel,
     required DateTime createdAt,
   }) async {
     return showAppBottomSheet(
@@ -39,7 +35,6 @@ class ExpenseDetailSheet extends StatelessWidget {
         description: description,
         amountLabel: amountLabel,
         payer: payer,
-        statusLabel: statusLabel,
         createdAt: createdAt,
       ),
     );
@@ -53,11 +48,6 @@ class ExpenseDetailSheet extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppChip(
-          label: statusLabel,
-          selected: true,
-        ),
-        const SizedBox(height: MitlistSpacing.md),
         Text(
           description,
           style: textTheme.headlineSmall,

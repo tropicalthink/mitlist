@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -25,27 +26,37 @@ func NewChoreRepository(pool DBTX) *ChoreRepository {
 func (r *ChoreRepository) CreateChore(ctx context.Context, chore *models.Chore) error {
 	chore.ID = uuid.New()
 	query := `
-		INSERT INTO chores (id, group_id, name, description, rotation_type, frequency, is_active, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+		INSERT INTO chores (
+			id, group_id, name, description, rotation_type, frequency,
+			period_interval, period_config, start_date, track_date_only, rollover,
+			assignment_type, assignment_config, is_active, created_at, updated_at
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())
 		RETURNING created_at, updated_at
 	`
 	return r.pool.QueryRow(ctx, query,
 		chore.ID, chore.GroupID, chore.Name, chore.Description,
-		chore.RotationType, chore.Frequency, chore.IsActive,
+		chore.RotationType, chore.Frequency, chore.PeriodInterval, chore.PeriodConfig,
+		chore.StartDate, chore.TrackDateOnly, chore.Rollover, chore.AssignmentType,
+		chore.AssignmentConfig, chore.IsActive,
 	).Scan(&chore.CreatedAt, &chore.UpdatedAt)
 }
 
 // GetChoreByID retrieves a chore by ID.
 func (r *ChoreRepository) GetChoreByID(ctx context.Context, id uuid.UUID) (*models.Chore, error) {
 	query := `
-		SELECT id, group_id, name, description, rotation_type, frequency, is_active, created_at, updated_at
+		SELECT id, group_id, name, description, rotation_type, frequency,
+			period_interval, period_config, start_date, track_date_only, rollover,
+			assignment_type, assignment_config, is_active, created_at, updated_at
 		FROM chores
 		WHERE id = $1
 	`
 	var c models.Chore
 	err := r.pool.QueryRow(ctx, query, id).Scan(
 		&c.ID, &c.GroupID, &c.Name, &c.Description,
-		&c.RotationType, &c.Frequency, &c.IsActive,
+		&c.RotationType, &c.Frequency, &c.PeriodInterval, &c.PeriodConfig,
+		&c.StartDate, &c.TrackDateOnly, &c.Rollover, &c.AssignmentType,
+		&c.AssignmentConfig, &c.IsActive,
 		&c.CreatedAt, &c.UpdatedAt,
 	)
 	if err != nil {
@@ -60,7 +71,9 @@ func (r *ChoreRepository) GetChoreByID(ctx context.Context, id uuid.UUID) (*mode
 // ListChoresByGroup retrieves chores for a group with pagination.
 func (r *ChoreRepository) ListChoresByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.Chore, error) {
 	query := `
-		SELECT id, group_id, name, description, rotation_type, frequency, is_active, created_at, updated_at
+		SELECT id, group_id, name, description, rotation_type, frequency,
+			period_interval, period_config, start_date, track_date_only, rollover,
+			assignment_type, assignment_config, is_active, created_at, updated_at
 		FROM chores
 		WHERE group_id = $1
 		ORDER BY created_at DESC, id DESC
@@ -78,7 +91,9 @@ func (r *ChoreRepository) ListChoresByGroup(ctx context.Context, groupID uuid.UU
 		var c models.Chore
 		if err := rows.Scan(
 			&c.ID, &c.GroupID, &c.Name, &c.Description,
-			&c.RotationType, &c.Frequency, &c.IsActive,
+			&c.RotationType, &c.Frequency, &c.PeriodInterval, &c.PeriodConfig,
+			&c.StartDate, &c.TrackDateOnly, &c.Rollover, &c.AssignmentType,
+			&c.AssignmentConfig, &c.IsActive,
 			&c.CreatedAt, &c.UpdatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan chore: %w", err)
@@ -91,17 +106,109 @@ func (r *ChoreRepository) ListChoresByGroup(ctx context.Context, groupID uuid.UU
 	return chores, nil
 }
 
+// ListCurrentChoresByGroup returns chores with their latest pending and last finished assignment.
+func (r *ChoreRepository) ListCurrentChoresByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.CurrentChore, error) {
+	query := `
+		SELECT
+			c.id, c.group_id, c.name, c.description, c.rotation_type, c.frequency,
+			c.period_interval, c.period_config, c.start_date, c.track_date_only, c.rollover,
+			c.assignment_type, c.assignment_config, c.is_active, c.created_at, c.updated_at,
+			pa.id, pa.chore_id, pa.user_id, pa.status, pa.due_date, pa.assigned_at, pa.completed_at,
+			la.id, la.chore_id, la.user_id, la.status, la.due_date, la.assigned_at, la.completed_at
+		FROM chores c
+		LEFT JOIN LATERAL (
+			SELECT id, chore_id, user_id, status, due_date, assigned_at, completed_at
+			FROM chore_assignments
+			WHERE chore_id = c.id AND status = 'pending'
+			ORDER BY assigned_at DESC, id DESC
+			LIMIT 1
+		) pa ON true
+		LEFT JOIN LATERAL (
+			SELECT id, chore_id, user_id, status, due_date, assigned_at, completed_at
+			FROM chore_assignments
+			WHERE chore_id = c.id AND status <> 'pending'
+			ORDER BY completed_at DESC NULLS LAST, assigned_at DESC, id DESC
+			LIMIT 1
+		) la ON true
+		WHERE c.group_id = $1
+		ORDER BY pa.due_date ASC NULLS LAST, c.name ASC, c.id ASC
+		LIMIT $2 OFFSET $3
+	`
+	limit = clampLimit(limit)
+	rows, err := r.pool.Query(ctx, query, groupID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list current chores: %w", err)
+	}
+	defer rows.Close()
+
+	var current []models.CurrentChore
+	for rows.Next() {
+		var item models.CurrentChore
+		var pending nullableAssignment
+		var last nullableAssignment
+		if err := rows.Scan(
+			&item.Chore.ID, &item.Chore.GroupID, &item.Chore.Name, &item.Chore.Description,
+			&item.Chore.RotationType, &item.Chore.Frequency, &item.Chore.PeriodInterval,
+			&item.Chore.PeriodConfig, &item.Chore.StartDate, &item.Chore.TrackDateOnly,
+			&item.Chore.Rollover, &item.Chore.AssignmentType, &item.Chore.AssignmentConfig,
+			&item.Chore.IsActive,
+			&item.Chore.CreatedAt, &item.Chore.UpdatedAt,
+			&pending.ID, &pending.ChoreID, &pending.UserID, &pending.Status, &pending.DueDate, &pending.AssignedAt, &pending.CompletedAt,
+			&last.ID, &last.ChoreID, &last.UserID, &last.Status, &last.DueDate, &last.AssignedAt, &last.CompletedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan current chore: %w", err)
+		}
+		item.PendingAssignment = pending.assignment()
+		item.LastAssignment = last.assignment()
+		current = append(current, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("current chore rows error: %w", err)
+	}
+	return current, nil
+}
+
+type nullableAssignment struct {
+	ID          *uuid.UUID
+	ChoreID     *uuid.UUID
+	UserID      *uuid.UUID
+	Status      *string
+	DueDate     *time.Time
+	AssignedAt  *time.Time
+	CompletedAt *time.Time
+}
+
+func (a nullableAssignment) assignment() *models.ChoreAssignment {
+	if a.ID == nil || a.ChoreID == nil || a.UserID == nil || a.Status == nil || a.AssignedAt == nil {
+		return nil
+	}
+	return &models.ChoreAssignment{
+		ID:          *a.ID,
+		ChoreID:     *a.ChoreID,
+		UserID:      *a.UserID,
+		Status:      *a.Status,
+		DueDate:     a.DueDate,
+		AssignedAt:  *a.AssignedAt,
+		CompletedAt: a.CompletedAt,
+	}
+}
+
 // UpdateChore updates a chore.
 func (r *ChoreRepository) UpdateChore(ctx context.Context, chore *models.Chore) error {
 	query := `
 		UPDATE chores
-		SET name = $1, description = $2, rotation_type = $3, frequency = $4, is_active = $5, updated_at = NOW()
-		WHERE id = $6
+		SET name = $1, description = $2, rotation_type = $3, frequency = $4,
+			period_interval = $5, period_config = $6, start_date = $7,
+			track_date_only = $8, rollover = $9, assignment_type = $10,
+			assignment_config = $11, is_active = $12, updated_at = NOW()
+		WHERE id = $13
 		RETURNING updated_at
 	`
 	err := r.pool.QueryRow(ctx, query,
 		chore.Name, chore.Description, chore.RotationType,
-		chore.Frequency, chore.IsActive, chore.ID,
+		chore.Frequency, chore.PeriodInterval, chore.PeriodConfig, chore.StartDate,
+		chore.TrackDateOnly, chore.Rollover, chore.AssignmentType,
+		chore.AssignmentConfig, chore.IsActive, chore.ID,
 	).Scan(&chore.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -257,6 +364,18 @@ func (r *ChoreRepository) UpdateAssignment(ctx context.Context, assignment *mode
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update assignment: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("assignment not found")
+	}
+	return nil
+}
+
+// DeleteAssignment deletes an assignment by ID.
+func (r *ChoreRepository) DeleteAssignment(ctx context.Context, id uuid.UUID) error {
+	tag, err := r.pool.Exec(ctx, `DELETE FROM chore_assignments WHERE id = $1`, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete assignment: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
 		return fmt.Errorf("assignment not found")

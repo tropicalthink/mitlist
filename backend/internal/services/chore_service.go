@@ -2,14 +2,17 @@ package services
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/yourorg/mitlist/internal/api"
+	"github.com/yourorg/mitlist/internal/choreschedule"
 	"github.com/yourorg/mitlist/internal/models"
 	"github.com/yourorg/mitlist/internal/repositories"
 )
@@ -71,6 +74,9 @@ func (s *ChoreService) CreateChore(ctx context.Context, user *models.User, chore
 	if chore.Name == "" {
 		return &api.ValidationError{Field: "name", Message: "chore name is required"}
 	}
+	chore.Frequency = choreschedule.NormalizeFrequency(chore.Frequency)
+	chore.RotationType = choreschedule.NormalizeRotationType(chore.RotationType, chore.Frequency)
+	normalizeChoreDefaults(chore)
 
 	if err := s.choreRepo.CreateChore(ctx, chore); err != nil {
 		return fmt.Errorf("failed to create chore: %w", err)
@@ -82,8 +88,11 @@ func (s *ChoreService) CreateChore(ctx context.Context, user *models.User, chore
 	}
 
 	memberOrder := make([]uuid.UUID, 0, len(members))
+	allowedMembers := chore.AssignmentConfig
 	for _, m := range members {
-		memberOrder = append(memberOrder, m.UserID)
+		if len(allowedMembers) == 0 || containsUUID(allowedMembers, m.UserID) {
+			memberOrder = append(memberOrder, m.UserID)
+		}
 	}
 
 	state := &models.ChoreRotationState{
@@ -96,8 +105,12 @@ func (s *ChoreService) CreateChore(ctx context.Context, user *models.User, chore
 	}
 
 	if len(memberOrder) > 0 {
-		if err := s.createAssignmentForCurrentIndex(ctx, chore.ID, state); err != nil {
+		if err := s.createAssignmentForCurrentIndex(ctx, chore, state); err != nil {
 			return fmt.Errorf("failed to create initial assignment: %w", err)
+		}
+		state.CurrentIndex = 1 % len(memberOrder)
+		if err := s.choreRepo.UpdateRotationState(ctx, state); err != nil {
+			return fmt.Errorf("failed to advance initial rotation state: %w", err)
 		}
 	}
 
@@ -133,6 +146,26 @@ func (s *ChoreService) ListChores(ctx context.Context, user *models.User, groupI
 	return s.choreRepo.ListChoresByGroup(ctx, groupID, limit, offset)
 }
 
+// ListCurrentChores returns chores with pending/last assignments and due-state metadata.
+func (s *ChoreService) ListCurrentChores(ctx context.Context, user *models.User, groupID uuid.UUID, limit, offset, dueSoonDays int) ([]models.CurrentChore, error) {
+	if err := s.requireActiveVerifiedUser(user); err != nil {
+		return nil, err
+	}
+	if err := s.requireMembership(ctx, user.ID, groupID); err != nil {
+		return nil, err
+	}
+	current, err := s.choreRepo.ListCurrentChoresByGroup(ctx, groupID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	now := time.Now().UTC()
+	for i := range current {
+		current[i].DueStatus = dueStatus(current[i].PendingAssignment, now, dueSoonDays)
+		current[i].AssignedToMe = current[i].PendingAssignment != nil && current[i].PendingAssignment.UserID == user.ID
+	}
+	return current, nil
+}
+
 // UpdateChore updates a chore's details.
 func (s *ChoreService) UpdateChore(ctx context.Context, user *models.User, chore *models.Chore) (*models.Chore, error) {
 	if err := s.requireActiveVerifiedUser(user); err != nil {
@@ -149,9 +182,39 @@ func (s *ChoreService) UpdateChore(ctx context.Context, user *models.User, chore
 		return nil, err
 	}
 	if chore.Name == "" {
+		chore.Name = existing.Name
+	}
+	if chore.Description == nil {
+		chore.Description = existing.Description
+	}
+	if chore.RotationType == "" {
+		chore.RotationType = existing.RotationType
+	}
+	if chore.Frequency == "" {
+		chore.Frequency = existing.Frequency
+	}
+	if chore.PeriodInterval == 0 {
+		chore.PeriodInterval = existing.PeriodInterval
+	}
+	if chore.PeriodConfig == nil {
+		chore.PeriodConfig = existing.PeriodConfig
+	}
+	if chore.StartDate == nil {
+		chore.StartDate = existing.StartDate
+	}
+	if chore.AssignmentType == "" {
+		chore.AssignmentType = existing.AssignmentType
+	}
+	if chore.AssignmentConfig == nil {
+		chore.AssignmentConfig = existing.AssignmentConfig
+	}
+	if chore.Name == "" {
 		return nil, &api.ValidationError{Field: "name", Message: "chore name is required"}
 	}
 	chore.GroupID = existing.GroupID
+	chore.Frequency = choreschedule.NormalizeFrequency(chore.Frequency)
+	chore.RotationType = choreschedule.NormalizeRotationType(chore.RotationType, chore.Frequency)
+	normalizeChoreDefaults(chore)
 	if err := s.choreRepo.UpdateChore(ctx, chore); err != nil {
 		return nil, fmt.Errorf("failed to update chore: %w", err)
 	}
@@ -200,7 +263,7 @@ func (s *ChoreService) RotateChore(ctx context.Context, user *models.User, chore
 		return fmt.Errorf("failed to get rotation state: %w", err)
 	}
 
-	return s.rotateAndAssign(ctx, choreID, state)
+	return s.rotateAndAssign(ctx, chore, state)
 }
 
 // CompleteChore marks the current pending assignment as completed, records completion, and rotates.
@@ -252,7 +315,7 @@ func (s *ChoreService) CompleteChore(ctx context.Context, user *models.User, cho
 		return fmt.Errorf("failed to get rotation state: %w", err)
 	}
 
-	return s.rotateAndAssign(ctx, choreID, state)
+	return s.rotateAndAssign(ctx, chore, state)
 }
 
 // SkipChore marks the current pending assignment as skipped and rotates.
@@ -294,7 +357,97 @@ func (s *ChoreService) SkipChore(ctx context.Context, user *models.User, choreID
 		return fmt.Errorf("failed to get rotation state: %w", err)
 	}
 
-	return s.rotateAndAssign(ctx, choreID, state)
+	return s.rotateAndAssign(ctx, chore, state)
+}
+
+// RescheduleChore updates the current pending assignment's due date and assignee.
+func (s *ChoreService) RescheduleChore(ctx context.Context, user *models.User, choreID uuid.UUID, dueDate *time.Time, assigneeID *uuid.UUID) error {
+	if err := s.requireActiveVerifiedUser(user); err != nil {
+		return err
+	}
+	chore, err := s.choreRepo.GetChoreByID(ctx, choreID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return &api.NotFoundError{Resource: "chore", ID: choreID.String()}
+		}
+		return fmt.Errorf("failed to get chore: %w", err)
+	}
+	if err := s.requireMembership(ctx, user.ID, chore.GroupID); err != nil {
+		return err
+	}
+	if dueDate != nil && dueDate.Before(time.Now().UTC().Add(-time.Minute)) {
+		return &api.ValidationError{Field: "due_date", Message: "due date cannot be in the past"}
+	}
+
+	assignment, err := s.choreRepo.GetPendingAssignmentByChore(ctx, choreID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return &api.NotFoundError{Resource: "pending assignment", ID: choreID.String()}
+		}
+		return fmt.Errorf("failed to get pending assignment: %w", err)
+	}
+	if dueDate != nil {
+		normalized := dueDate.UTC()
+		assignment.DueDate = &normalized
+	}
+	if assigneeID != nil {
+		if err := s.requireMembership(ctx, *assigneeID, chore.GroupID); err != nil {
+			return err
+		}
+		assignment.UserID = *assigneeID
+	}
+	if err := s.choreRepo.UpdateAssignment(ctx, assignment); err != nil {
+		return fmt.Errorf("failed to reschedule assignment: %w", err)
+	}
+	return nil
+}
+
+// UndoLastChoreExecution restores the latest completed/skipped assignment as pending.
+func (s *ChoreService) UndoLastChoreExecution(ctx context.Context, user *models.User, choreID uuid.UUID) error {
+	if err := s.requireActiveVerifiedUser(user); err != nil {
+		return err
+	}
+	chore, err := s.choreRepo.GetChoreByID(ctx, choreID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return &api.NotFoundError{Resource: "chore", ID: choreID.String()}
+		}
+		return fmt.Errorf("failed to get chore: %w", err)
+	}
+	if err := s.requireMembership(ctx, user.ID, chore.GroupID); err != nil {
+		return err
+	}
+
+	assignments, err := s.choreRepo.ListAssignments(ctx, choreID, 100, 0)
+	if err != nil {
+		return fmt.Errorf("failed to list assignments: %w", err)
+	}
+
+	var latestFinished *models.ChoreAssignment
+	for i := range assignments {
+		if assignments[i].Status == "completed" || assignments[i].Status == "skipped" {
+			latestFinished = &assignments[i]
+			break
+		}
+	}
+	if latestFinished == nil {
+		return &api.NotFoundError{Resource: "finished assignment", ID: choreID.String()}
+	}
+
+	if pending, err := s.choreRepo.GetPendingAssignmentByChore(ctx, choreID); err == nil && pending.ID != latestFinished.ID {
+		if err := s.choreRepo.DeleteAssignment(ctx, pending.ID); err != nil {
+			return fmt.Errorf("failed to delete successor pending assignment: %w", err)
+		}
+	} else if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return fmt.Errorf("failed to get pending assignment: %w", err)
+	}
+
+	latestFinished.Status = "pending"
+	latestFinished.CompletedAt = nil
+	if err := s.choreRepo.UpdateAssignment(ctx, latestFinished); err != nil {
+		return fmt.Errorf("failed to restore assignment: %w", err)
+	}
+	return nil
 }
 
 // GetAssignments returns assignments for a chore.
@@ -316,23 +469,27 @@ func (s *ChoreService) GetAssignments(ctx context.Context, user *models.User, ch
 }
 
 // rotateAndAssign advances the rotation state and creates the next assignment.
-func (s *ChoreService) rotateAndAssign(ctx context.Context, choreID uuid.UUID, state *models.ChoreRotationState) error {
-	if len(state.MemberOrder) == 0 {
-		return &api.ValidationError{Field: "member_order", Message: "no members in rotation"}
+func (s *ChoreService) rotateAndAssign(ctx context.Context, chore *models.Chore, state *models.ChoreRotationState) error {
+	assigneeID, nextIndex, err := s.nextAssignee(ctx, chore, state)
+	if err != nil {
+		return err
+	}
+	if assigneeID == nil {
+		return nil
 	}
 
-	nextUserID := state.MemberOrder[state.CurrentIndex]
-	state.CurrentIndex = (state.CurrentIndex + 1) % len(state.MemberOrder)
-
+	state.CurrentIndex = nextIndex
 	if err := s.choreRepo.UpdateRotationState(ctx, state); err != nil {
 		return fmt.Errorf("failed to update rotation state: %w", err)
 	}
 
+	now := time.Now().UTC()
 	assignment := &models.ChoreAssignment{
-		ChoreID:    choreID,
-		UserID:     nextUserID,
+		ChoreID:    chore.ID,
+		UserID:     *assigneeID,
 		Status:     "pending",
-		AssignedAt: time.Now().UTC(),
+		DueDate:    nextDue(now, chore),
+		AssignedAt: now,
 	}
 	if err := s.choreRepo.CreateAssignment(ctx, assignment); err != nil {
 		return fmt.Errorf("failed to create assignment: %w", err)
@@ -340,18 +497,72 @@ func (s *ChoreService) rotateAndAssign(ctx context.Context, choreID uuid.UUID, s
 	return nil
 }
 
+func (s *ChoreService) nextAssignee(ctx context.Context, chore *models.Chore, state *models.ChoreRotationState) (*uuid.UUID, int, error) {
+	if chore.AssignmentType == "no-assignment" {
+		return nil, state.CurrentIndex, nil
+	}
+	if len(state.MemberOrder) == 0 {
+		return nil, state.CurrentIndex, &api.ValidationError{Field: "member_order", Message: "no members in rotation"}
+	}
+
+	switch chore.AssignmentType {
+	case "in-alphabetical-order", "round_robin", "round-robin", "random":
+		nextUserID := state.MemberOrder[state.CurrentIndex]
+		nextIndex := (state.CurrentIndex + 1) % len(state.MemberOrder)
+		if chore.AssignmentType == "random" {
+			randomIndex, err := rand.Int(rand.Reader, big.NewInt(int64(len(state.MemberOrder))))
+			if err != nil {
+				return nil, state.CurrentIndex, fmt.Errorf("failed to select random assignee: %w", err)
+			}
+			nextUserID = state.MemberOrder[randomIndex.Int64()]
+			nextIndex = state.CurrentIndex
+		}
+		return &nextUserID, nextIndex, nil
+	case "who-least-did-first":
+		assignments, err := s.choreRepo.ListAssignments(ctx, chore.ID, 500, 0)
+		if err != nil {
+			return nil, state.CurrentIndex, fmt.Errorf("failed to list assignments for least-done policy: %w", err)
+		}
+		counts := map[uuid.UUID]int{}
+		for _, userID := range state.MemberOrder {
+			counts[userID] = 0
+		}
+		for _, assignment := range assignments {
+			if assignment.Status == "completed" {
+				if _, ok := counts[assignment.UserID]; ok {
+					counts[assignment.UserID]++
+				}
+			}
+		}
+		chosen := state.MemberOrder[0]
+		for _, userID := range state.MemberOrder[1:] {
+			if counts[userID] < counts[chosen] {
+				chosen = userID
+			}
+		}
+		nextIndex := (indexOfUUID(state.MemberOrder, chosen) + 1) % len(state.MemberOrder)
+		return &chosen, nextIndex, nil
+	default:
+		nextUserID := state.MemberOrder[state.CurrentIndex]
+		nextIndex := (state.CurrentIndex + 1) % len(state.MemberOrder)
+		return &nextUserID, nextIndex, nil
+	}
+}
+
 // createAssignmentForCurrentIndex creates an assignment for the user at the current index without advancing.
-func (s *ChoreService) createAssignmentForCurrentIndex(ctx context.Context, choreID uuid.UUID, state *models.ChoreRotationState) error {
+func (s *ChoreService) createAssignmentForCurrentIndex(ctx context.Context, chore *models.Chore, state *models.ChoreRotationState) error {
 	if len(state.MemberOrder) == 0 {
 		return nil
 	}
 	userID := state.MemberOrder[state.CurrentIndex]
+	now := time.Now().UTC()
 	assignment := &models.ChoreAssignment{
-		ChoreID:    choreID,
+		ChoreID:    chore.ID,
 		UserID:     userID,
 		Status:     "pending",
-		AssignedAt: time.Now().UTC(),
+		AssignedAt: now,
 	}
+	assignment.DueDate = nextDue(now, chore)
 	return s.choreRepo.CreateAssignment(ctx, assignment)
 }
 
@@ -401,4 +612,70 @@ func (s *ChoreService) RebuildMemberOrdersForGroup(ctx context.Context, groupID 
 // SyncMemberOrderForGroup is an alias for RebuildMemberOrdersForGroup for external callers.
 func (s *ChoreService) SyncMemberOrderForGroup(ctx context.Context, groupID uuid.UUID) error {
 	return s.RebuildMemberOrdersForGroup(ctx, groupID)
+}
+
+func dueStatus(assignment *models.ChoreAssignment, now time.Time, dueSoonDays int) string {
+	if assignment == nil || assignment.DueDate == nil {
+		return "unscheduled"
+	}
+	due := assignment.DueDate.UTC()
+	todayEnd := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, int(time.Second-time.Nanosecond), time.UTC)
+	if due.Before(now) {
+		return "overdue"
+	}
+	if !due.After(todayEnd) {
+		return "due_today"
+	}
+	if dueSoonDays > 0 && !due.After(now.AddDate(0, 0, dueSoonDays)) {
+		return "due_soon"
+	}
+	return "later"
+}
+
+func normalizeChoreDefaults(chore *models.Chore) {
+	if chore.PeriodInterval <= 0 {
+		chore.PeriodInterval = 1
+	}
+	if chore.AssignmentType == "" {
+		chore.AssignmentType = "round-robin"
+	}
+	if chore.AssignmentType == "none" {
+		chore.AssignmentType = "no-assignment"
+	}
+	if chore.AssignmentType == "alphabetical" {
+		chore.AssignmentType = "in-alphabetical-order"
+	}
+	if chore.StartDate == nil {
+		now := time.Now().UTC()
+		chore.StartDate = &now
+	}
+}
+
+func nextDue(from time.Time, chore *models.Chore) *time.Time {
+	return choreschedule.NextDueForRule(from, choreschedule.Rule{
+		Frequency:     chore.Frequency,
+		Interval:      chore.PeriodInterval,
+		PeriodConfig:  chore.PeriodConfig,
+		StartDate:     chore.StartDate,
+		TrackDateOnly: chore.TrackDateOnly,
+		Rollover:      chore.Rollover,
+	})
+}
+
+func containsUUID(values []uuid.UUID, target uuid.UUID) bool {
+	for _, value := range values {
+		if value == target {
+			return true
+		}
+	}
+	return false
+}
+
+func indexOfUUID(values []uuid.UUID, target uuid.UUID) int {
+	for i, value := range values {
+		if value == target {
+			return i
+		}
+	}
+	return 0
 }

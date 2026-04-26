@@ -83,6 +83,45 @@ func TestFinanceService_CreateExpense(t *testing.T) {
 	})
 }
 
+func TestBuildSplitsAdvancedModes(t *testing.T) {
+	payerID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+	secondID := uuid.MustParse("00000000-0000-0000-0000-000000000002")
+	thirdID := uuid.MustParse("00000000-0000-0000-0000-000000000003")
+
+	t.Run("exact amounts must match total", func(t *testing.T) {
+		splits, err := buildSplits(1000, payerID, "amount", []ExpenseSplitInput{
+			{UserID: payerID, Amount: 250},
+			{UserID: secondID, Amount: 750},
+		})
+		require.NoError(t, err)
+		require.Len(t, splits, 2)
+		assert.Equal(t, int64(250), splits[0].Amount)
+		assert.True(t, splits[0].IsSettled)
+		assert.Equal(t, int64(750), splits[1].Amount)
+	})
+
+	t.Run("shares distribute deterministic remainder", func(t *testing.T) {
+		splits, err := buildSplits(100, payerID, "shares", []ExpenseSplitInput{
+			{UserID: thirdID, Shares: 1},
+			{UserID: payerID, Shares: 1},
+			{UserID: secondID, Shares: 1},
+		})
+		require.NoError(t, err)
+		require.Len(t, splits, 3)
+		assert.Equal(t, []int64{33, 33, 34}, []int64{splits[0].Amount, splits[1].Amount, splits[2].Amount})
+		assert.Equal(t, payerID, splits[0].UserID)
+		assert.True(t, splits[0].IsSettled)
+	})
+
+	t.Run("percentage must total one hundred percent", func(t *testing.T) {
+		_, err := buildSplits(1000, payerID, "percentage", []ExpenseSplitInput{
+			{UserID: payerID, Percentage: 5000},
+			{UserID: secondID, Percentage: 4999},
+		})
+		require.Error(t, err)
+	})
+}
+
 func TestFinanceService_GetExpense(t *testing.T) {
 	ctx := context.Background()
 	userID := uuid.New()
@@ -179,11 +218,15 @@ func TestFinanceService_CreateSettlement(t *testing.T) {
 		financeRepo := new(mocks.MockFinanceRepo)
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := NewFinanceService(financeRepo, groupRepo)
+		fromUserID := uuid.New()
+		toUserID := uuid.New()
 
 		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, fromUserID).Return(&models.GroupMembership{Role: "member"}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, toUserID).Return(&models.GroupMembership{Role: "member"}, nil)
 		financeRepo.On("CreateSettlement", ctx, mock.AnythingOfType("*models.Settlement")).Return(nil)
 
-		settlement := &models.Settlement{GroupID: groupID, Amount: 100}
+		settlement := &models.Settlement{GroupID: groupID, FromUserID: fromUserID, ToUserID: toUserID, Amount: 100}
 		err := svc.CreateSettlement(ctx, userID, settlement)
 		require.NoError(t, err)
 	})
@@ -198,6 +241,51 @@ func TestFinanceService_CreateSettlement(t *testing.T) {
 		require.Error(t, err)
 		assert.Equal(t, api.ErrValidation, err)
 	})
+}
+
+func TestFinanceService_GetFinanceSummary(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+	groupID := uuid.New()
+	payerID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+	secondID := uuid.MustParse("00000000-0000-0000-0000-000000000002")
+	thirdID := uuid.MustParse("00000000-0000-0000-0000-000000000003")
+	expenseID := uuid.New()
+
+	financeRepo := new(mocks.MockFinanceRepo)
+	groupRepo := new(mocks.MockGroupRepo)
+	svc := NewFinanceService(financeRepo, groupRepo)
+
+	groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+	financeRepo.On("ListAllExpensesByGroup", ctx, groupID).Return([]models.Expense{
+		{ID: expenseID, GroupID: groupID, PayerID: payerID, Amount: 10001},
+	}, nil)
+	financeRepo.On("ListSplitsByGroup", ctx, groupID).Return([]models.Split{
+		{ExpenseID: expenseID, UserID: payerID, Amount: 3334, IsSettled: true},
+		{ExpenseID: expenseID, UserID: secondID, Amount: 3334},
+		{ExpenseID: expenseID, UserID: thirdID, Amount: 3333},
+	}, nil)
+	financeRepo.On("ListAllSettlementsByGroup", ctx, groupID).Return([]models.Settlement{
+		{GroupID: groupID, FromUserID: secondID, ToUserID: payerID, Amount: 1000},
+	}, nil)
+	groupRepo.On("ListMemberProfilesByGroup", ctx, groupID).Return([]models.GroupMemberProfile{
+		{UserID: payerID, DisplayName: "Ada Lovelace", Role: "member"},
+		{UserID: secondID, DisplayName: "Grace Hopper", Role: "member"},
+		{UserID: thirdID, DisplayName: "Katherine Johnson", Role: "member"},
+	}, nil)
+
+	summary, err := svc.GetFinanceSummary(ctx, userID, groupID)
+	require.NoError(t, err)
+
+	assert.Equal(t, []models.BalanceEntry{
+		{UserID: payerID, DisplayName: "Ada Lovelace", Paid: 10001, Owed: 4334, Total: 5667},
+		{UserID: secondID, DisplayName: "Grace Hopper", Paid: 1000, Owed: 3334, Total: -2334},
+		{UserID: thirdID, DisplayName: "Katherine Johnson", Paid: 0, Owed: 3333, Total: -3333},
+	}, summary.Balances)
+	assert.Equal(t, []models.ReimbursementSuggestion{
+		{FromUserID: thirdID, FromDisplayName: "Katherine Johnson", ToUserID: payerID, ToDisplayName: "Ada Lovelace", Amount: 3333},
+		{FromUserID: secondID, FromDisplayName: "Grace Hopper", ToUserID: payerID, ToDisplayName: "Ada Lovelace", Amount: 2334},
+	}, summary.Reimbursements)
 }
 
 func TestFinanceService_CreateRecurringExpense(t *testing.T) {

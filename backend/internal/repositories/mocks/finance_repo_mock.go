@@ -34,6 +34,14 @@ func (m *MockFinanceRepo) ListExpensesByGroup(ctx context.Context, groupID uuid.
 	return nil, args.Error(1)
 }
 
+func (m *MockFinanceRepo) ListAllExpensesByGroup(ctx context.Context, groupID uuid.UUID) ([]models.Expense, error) {
+	args := m.Called(ctx, groupID)
+	if e := args.Get(0); e != nil {
+		return e.([]models.Expense), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
 func (m *MockFinanceRepo) UpdateExpense(ctx context.Context, e *models.Expense) error {
 	args := m.Called(ctx, e)
 	return args.Error(0)
@@ -57,6 +65,14 @@ func (m *MockFinanceRepo) ListSplitsByExpense(ctx context.Context, expenseID uui
 	return nil, args.Error(1)
 }
 
+func (m *MockFinanceRepo) ListSplitsByGroup(ctx context.Context, groupID uuid.UUID) ([]models.Split, error) {
+	args := m.Called(ctx, groupID)
+	if s := args.Get(0); s != nil {
+		return s.([]models.Split), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
 func (m *MockFinanceRepo) UpdateSplit(ctx context.Context, s *models.Split) error {
 	args := m.Called(ctx, s)
 	return args.Error(0)
@@ -74,6 +90,14 @@ func (m *MockFinanceRepo) CreateSettlement(ctx context.Context, s *models.Settle
 
 func (m *MockFinanceRepo) ListSettlementsByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.Settlement, error) {
 	args := m.Called(ctx, groupID, limit, offset)
+	if s := args.Get(0); s != nil {
+		return s.([]models.Settlement), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockFinanceRepo) ListAllSettlementsByGroup(ctx context.Context, groupID uuid.UUID) ([]models.Settlement, error) {
+	args := m.Called(ctx, groupID)
 	if s := args.Get(0); s != nil {
 		return s.([]models.Settlement), args.Error(1)
 	}

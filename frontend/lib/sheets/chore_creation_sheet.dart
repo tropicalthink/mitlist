@@ -12,7 +12,15 @@ import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
 import '../widgets/chip.dart';
 
-enum _Recurrence { none, daily, weekly, monthly }
+enum _Recurrence { none, hourly, daily, weekly, monthly, yearly, adaptive }
+
+enum _AssignmentPolicy {
+  roundRobin,
+  alphabetical,
+  leastDone,
+  random,
+  noAssignment,
+}
 
 class ChoreCreationSheet extends ConsumerStatefulWidget {
   const ChoreCreationSheet({super.key});
@@ -32,7 +40,13 @@ class ChoreCreationSheet extends ConsumerStatefulWidget {
 class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _intervalController =
+      TextEditingController(text: '1');
   _Recurrence _recurrence = _Recurrence.none;
+  _AssignmentPolicy _assignmentPolicy = _AssignmentPolicy.roundRobin;
+  final Set<String> _weekdays = {'monday'};
+  bool _trackDateOnly = false;
+  bool _rollover = false;
   bool _isSaving = false;
 
   bool get _canCreate => _nameController.text.trim().isNotEmpty && !_isSaving;
@@ -64,6 +78,12 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
               ? null
               : _descriptionController.text.trim(),
           frequency: _frequencyValue(),
+          periodInterval: _periodInterval,
+          periodConfig:
+              _recurrence == _Recurrence.weekly ? _weekdays.toList() : const [],
+          trackDateOnly: _trackDateOnly,
+          rollover: _rollover,
+          assignmentType: _assignmentTypeValue(),
         ),
       );
 
@@ -85,12 +105,38 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
     switch (_recurrence) {
       case _Recurrence.none:
         return 'none';
+      case _Recurrence.hourly:
+        return 'hourly';
       case _Recurrence.daily:
         return 'daily';
       case _Recurrence.weekly:
         return 'weekly';
       case _Recurrence.monthly:
         return 'monthly';
+      case _Recurrence.yearly:
+        return 'yearly';
+      case _Recurrence.adaptive:
+        return 'adaptive';
+    }
+  }
+
+  int get _periodInterval {
+    final parsed = int.tryParse(_intervalController.text.trim()) ?? 1;
+    return parsed < 1 ? 1 : parsed;
+  }
+
+  String _assignmentTypeValue() {
+    switch (_assignmentPolicy) {
+      case _AssignmentPolicy.roundRobin:
+        return 'round-robin';
+      case _AssignmentPolicy.alphabetical:
+        return 'in-alphabetical-order';
+      case _AssignmentPolicy.leastDone:
+        return 'who-least-did-first';
+      case _AssignmentPolicy.random:
+        return 'random';
+      case _AssignmentPolicy.noAssignment:
+        return 'no-assignment';
     }
   }
 
@@ -98,6 +144,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
+    _intervalController.dispose();
     super.dispose();
   }
 
@@ -138,6 +185,12 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
               onSelected: (_) => setState(() => _recurrence = _Recurrence.none),
             ),
             AppChip(
+              label: 'Hourly',
+              selected: _recurrence == _Recurrence.hourly,
+              onSelected: (_) =>
+                  setState(() => _recurrence = _Recurrence.hourly),
+            ),
+            AppChip(
               label: 'Daily',
               selected: _recurrence == _Recurrence.daily,
               onSelected: (_) =>
@@ -155,7 +208,129 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
               onSelected: (_) =>
                   setState(() => _recurrence = _Recurrence.monthly),
             ),
+            AppChip(
+              label: 'Yearly',
+              selected: _recurrence == _Recurrence.yearly,
+              onSelected: (_) =>
+                  setState(() => _recurrence = _Recurrence.yearly),
+            ),
+            AppChip(
+              label: 'Adaptive',
+              selected: _recurrence == _Recurrence.adaptive,
+              onSelected: (_) =>
+                  setState(() => _recurrence = _Recurrence.adaptive),
+            ),
           ],
+        ),
+        if (_recurrence != _Recurrence.none) ...[
+          const SizedBox(height: MitlistSpacing.md),
+          AppInput(
+            label: 'Interval',
+            hint: '1',
+            controller: _intervalController,
+            keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.done,
+          ),
+        ],
+        if (_recurrence == _Recurrence.weekly) ...[
+          const SizedBox(height: MitlistSpacing.md),
+          Text(
+            'Weekdays'.toUpperCase(),
+            style: MitlistTypography.labelXSmall(
+              color: MitlistColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: MitlistSpacing.sm),
+          Wrap(
+            spacing: MitlistSpacing.sm,
+            runSpacing: MitlistSpacing.sm,
+            children: const [
+              ('monday', 'Mon'),
+              ('tuesday', 'Tue'),
+              ('wednesday', 'Wed'),
+              ('thursday', 'Thu'),
+              ('friday', 'Fri'),
+              ('saturday', 'Sat'),
+              ('sunday', 'Sun'),
+            ].map((day) {
+              return AppChip(
+                label: day.$2,
+                selected: _weekdays.contains(day.$1),
+                onSelected: (_) {
+                  setState(() {
+                    if (_weekdays.contains(day.$1) && _weekdays.length > 1) {
+                      _weekdays.remove(day.$1);
+                    } else {
+                      _weekdays.add(day.$1);
+                    }
+                  });
+                },
+              );
+            }).toList(),
+          ),
+        ],
+        const SizedBox(height: MitlistSpacing.md),
+        Text(
+          'Assignment'.toUpperCase(),
+          style:
+              MitlistTypography.labelXSmall(color: MitlistColors.textSecondary),
+        ),
+        const SizedBox(height: MitlistSpacing.sm),
+        Wrap(
+          spacing: MitlistSpacing.sm,
+          runSpacing: MitlistSpacing.sm,
+          children: [
+            AppChip(
+              label: 'Rotation',
+              selected: _assignmentPolicy == _AssignmentPolicy.roundRobin,
+              onSelected: (_) => setState(
+                () => _assignmentPolicy = _AssignmentPolicy.roundRobin,
+              ),
+            ),
+            AppChip(
+              label: 'Alphabetical',
+              selected: _assignmentPolicy == _AssignmentPolicy.alphabetical,
+              onSelected: (_) => setState(
+                () => _assignmentPolicy = _AssignmentPolicy.alphabetical,
+              ),
+            ),
+            AppChip(
+              label: 'Least done',
+              selected: _assignmentPolicy == _AssignmentPolicy.leastDone,
+              onSelected: (_) => setState(
+                () => _assignmentPolicy = _AssignmentPolicy.leastDone,
+              ),
+            ),
+            AppChip(
+              label: 'Random',
+              selected: _assignmentPolicy == _AssignmentPolicy.random,
+              onSelected: (_) => setState(
+                () => _assignmentPolicy = _AssignmentPolicy.random,
+              ),
+            ),
+            AppChip(
+              label: 'No assignee',
+              selected: _assignmentPolicy == _AssignmentPolicy.noAssignment,
+              onSelected: (_) => setState(
+                () => _assignmentPolicy = _AssignmentPolicy.noAssignment,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: MitlistSpacing.md),
+        CheckboxListTile(
+          contentPadding: EdgeInsets.zero,
+          value: _trackDateOnly,
+          onChanged: (value) => setState(() => _trackDateOnly = value ?? false),
+          title: const Text('Track date only'),
+          dense: true,
+        ),
+        CheckboxListTile(
+          contentPadding: EdgeInsets.zero,
+          value: _rollover,
+          onChanged: (value) => setState(() => _rollover = value ?? false),
+          title: const Text('Rollover overdue due date'),
+          dense: true,
         ),
         const SizedBox(height: MitlistSpacing.lg),
         SizedBox(

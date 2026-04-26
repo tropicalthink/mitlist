@@ -182,27 +182,29 @@ func clearTables(t *testing.T) {
 // Repository / Service helpers
 // ---------------------------------------------------------------------------
 
-func newTestUserRepo() *repositories.UserRepository     { return repositories.NewUserRepository(testDB) }
-func newTestAuthRepo() *repositories.AuthRepository     { return repositories.NewAuthRepository(testDB) }
-func newTestGroupRepo() *repositories.GroupRepository   { return repositories.NewGroupRepository(testDB) }
-func newTestListRepo() *repositories.ListRepository     { return repositories.NewListRepository(testDB) }
+func newTestUserRepo() *repositories.UserRepository   { return repositories.NewUserRepository(testDB) }
+func newTestAuthRepo() *repositories.AuthRepository   { return repositories.NewAuthRepository(testDB) }
+func newTestGroupRepo() *repositories.GroupRepository { return repositories.NewGroupRepository(testDB) }
+func newTestListRepo() *repositories.ListRepository   { return repositories.NewListRepository(testDB) }
 func newTestTemplateRepo() *repositories.TemplateRepository {
 	return repositories.NewTemplateRepository(testDB)
 }
-func newTestChoreRepo() *repositories.ChoreRepository       { return repositories.NewChoreRepository(testDB) }
-func newTestFinanceRepo() *repositories.FinanceRepo         { return repositories.NewFinanceRepo(testDB) }
-func newTestRecipeRepo() *repositories.RecipeRepo           { return repositories.NewRecipeRepo(testDB) }
+func newTestChoreRepo() *repositories.ChoreRepository { return repositories.NewChoreRepository(testDB) }
+func newTestFinanceRepo() *repositories.FinanceRepo   { return repositories.NewFinanceRepo(testDB) }
+func newTestRecipeRepo() *repositories.RecipeRepo     { return repositories.NewRecipeRepo(testDB) }
 func newTestNotificationRepo() *repositories.NotificationRepository {
 	return repositories.NewNotificationRepository(testDB)
 }
-func newTestActivityRepo() *repositories.ActivityRepository { return repositories.NewActivityRepository(testDB) }
+func newTestActivityRepo() *repositories.ActivityRepository {
+	return repositories.NewActivityRepository(testDB)
+}
 func newTestAssistantRepo() *repositories.AssistantRepository {
 	return repositories.NewAssistantRepository(testDB)
 }
-func newTestPasswordService() *passwordservice.Service  { return passwordservice.New() }
-func newTestMailService() *mailservice.Service           { return mailservice.New(testCfg, logger.New("test")) }
-func newTestPushService() *pushservice.Service           { return pushservice.New(testCfg, logger.New("test")) }
-func newTestAIClient() *aiservice.Client                { return aiservice.New(testCfg) }
+func newTestPasswordService() *passwordservice.Service { return passwordservice.New() }
+func newTestMailService() *mailservice.Service         { return mailservice.New(testCfg, logger.New("test")) }
+func newTestPushService() *pushservice.Service         { return pushservice.New(testCfg, logger.New("test")) }
+func newTestAIClient() *aiservice.Client               { return aiservice.New(testCfg) }
 
 // ---------------------------------------------------------------------------
 // User / Auth helpers
@@ -372,6 +374,7 @@ func newGroupRouter(t *testing.T) (chi.Router, *GroupHandler) {
 	r.Get("/api/v1/groups/{id}", h.GetGroup)
 	r.Patch("/api/v1/groups/{id}", h.UpdateGroup)
 	r.Delete("/api/v1/groups/{id}", h.DeleteGroup)
+	r.Get("/api/v1/groups/{id}/members", h.ListMembers)
 	r.Post("/api/v1/groups/{id}/members", h.InviteMember)
 	r.Post("/api/v1/groups/join", h.JoinGroup)
 	r.Delete("/api/v1/groups/{id}/members/{user_id}", h.RemoveMember)
@@ -436,12 +439,15 @@ func newChoreRouter(t *testing.T) (chi.Router, *ChoreHandler) {
 	r.Use(testAuthMiddleware)
 	r.Post("/api/v1/chores", h.CreateChore)
 	r.Get("/api/v1/chores", h.ListChores)
+	r.Get("/api/v1/chores/current", h.ListCurrentChores)
 	r.Get("/api/v1/chores/{id}", h.GetChore)
 	r.Patch("/api/v1/chores/{id}", h.UpdateChore)
 	r.Delete("/api/v1/chores/{id}", h.DeleteChore)
 	r.Post("/api/v1/chores/{id}/rotate", h.RotateChore)
 	r.Post("/api/v1/chores/{id}/complete", h.CompleteChore)
 	r.Post("/api/v1/chores/{id}/skip", h.SkipChore)
+	r.Patch("/api/v1/chores/{id}/pending", h.RescheduleChore)
+	r.Post("/api/v1/chores/{id}/undo", h.UndoLastChoreExecution)
 	r.Get("/api/v1/chores/{id}/assignments", h.GetAssignments)
 	return r, h
 }
@@ -454,6 +460,9 @@ func newFinanceRouter(t *testing.T) (chi.Router, *FinanceHandler) {
 
 	r := chi.NewRouter()
 	r.Use(testAuthMiddleware)
+	r.Get("/api/v1/finance/summary", h.GetFinanceSummary)
+	r.Get("/api/v1/finance/export/json", h.ExportExpensesJSON)
+	r.Get("/api/v1/finance/export/csv", h.ExportExpensesCSV)
 	r.Post("/api/v1/expenses", h.CreateExpense)
 	r.Get("/api/v1/expenses", h.ListExpenses)
 	r.Get("/api/v1/expenses/{id}", h.GetExpense)

@@ -170,6 +170,13 @@ CREATE TABLE chores (
     description TEXT,
     rotation_type TEXT NOT NULL,
     frequency TEXT NOT NULL,
+    period_interval INTEGER NOT NULL DEFAULT 1,
+    period_config TEXT[] NOT NULL DEFAULT '{}',
+    start_date TIMESTAMPTZ,
+    track_date_only BOOLEAN NOT NULL DEFAULT false,
+    rollover BOOLEAN NOT NULL DEFAULT false,
+    assignment_type TEXT NOT NULL DEFAULT 'round-robin',
+    assignment_config UUID[] NOT NULL DEFAULT '{}',
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -220,6 +227,7 @@ CREATE TABLE expenses (
     description TEXT NOT NULL,
     category TEXT NOT NULL,
     currency TEXT NOT NULL DEFAULT 'USD',
+    notes TEXT NOT NULL DEFAULT '',
     date TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
