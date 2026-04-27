@@ -71,6 +71,10 @@ type ListRepo interface {
 	SoftDeleteItem(ctx context.Context, id uuid.UUID) error
 	SoftDeleteItemsByList(ctx context.Context, listID uuid.UUID, onlyChecked bool) (int64, error)
 	BatchUpdateItemPositions(ctx context.Context, items []models.ListItem) error
+	CreateShoppingLocation(ctx context.Context, location *models.ShoppingLocation) error
+	ListShoppingLocationsByGroup(ctx context.Context, groupID uuid.UUID) ([]models.ShoppingLocation, error)
+	CreateProduct(ctx context.Context, product *models.Product) error
+	ListProductsByGroup(ctx context.Context, groupID uuid.UUID) ([]models.Product, error)
 }
 
 // TemplateRepo is the interface for template repository operations.
@@ -97,6 +101,7 @@ type ChoreRepo interface {
 	GetChoreByID(ctx context.Context, id uuid.UUID) (*models.Chore, error)
 	ListChoresByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.Chore, error)
 	ListCurrentChoresByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.CurrentChore, error)
+	GetChoreStats(ctx context.Context, choreID uuid.UUID) (*models.ChoreStats, error)
 	UpdateChore(ctx context.Context, chore *models.Chore) error
 	DeleteChore(ctx context.Context, id uuid.UUID) error
 	CreateRotationState(ctx context.Context, state *models.ChoreRotationState) error

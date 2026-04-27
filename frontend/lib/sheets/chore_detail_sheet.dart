@@ -16,6 +16,10 @@ class ChoreDetailSheet extends StatelessWidget {
     required this.statusLabel,
     required this.assignee,
     required this.dueDate,
+    this.trackedCount,
+    this.lastTrackedAt,
+    this.lastDoneByLabel,
+    this.averageFrequencyHours,
     this.onMarkDone,
     this.onSkip,
     this.onRescheduleTomorrow,
@@ -26,6 +30,10 @@ class ChoreDetailSheet extends StatelessWidget {
   final String statusLabel;
   final String assignee;
   final DateTime dueDate;
+  final int? trackedCount;
+  final DateTime? lastTrackedAt;
+  final String? lastDoneByLabel;
+  final double? averageFrequencyHours;
   final VoidCallback? onMarkDone;
   final VoidCallback? onSkip;
   final VoidCallback? onRescheduleTomorrow;
@@ -37,6 +45,10 @@ class ChoreDetailSheet extends StatelessWidget {
     required String statusLabel,
     required String assignee,
     required DateTime dueDate,
+    int? trackedCount,
+    DateTime? lastTrackedAt,
+    String? lastDoneByLabel,
+    double? averageFrequencyHours,
     VoidCallback? onMarkDone,
     VoidCallback? onSkip,
     VoidCallback? onRescheduleTomorrow,
@@ -50,6 +62,10 @@ class ChoreDetailSheet extends StatelessWidget {
         statusLabel: statusLabel,
         assignee: assignee,
         dueDate: dueDate,
+        trackedCount: trackedCount,
+        lastTrackedAt: lastTrackedAt,
+        lastDoneByLabel: lastDoneByLabel,
+        averageFrequencyHours: averageFrequencyHours,
         onMarkDone: onMarkDone,
         onSkip: onSkip,
         onRescheduleTomorrow: onRescheduleTomorrow,
@@ -87,6 +103,28 @@ class ChoreDetailSheet extends StatelessWidget {
                 label: 'Due',
                 value: DateFormat.yMMMd().format(dueDate),
               ),
+              if (trackedCount != null) ...[
+                const Divider(),
+                _DetailRow(label: 'Tracked', value: trackedCount.toString()),
+              ],
+              if (lastTrackedAt != null) ...[
+                const Divider(),
+                _DetailRow(
+                  label: 'Last done',
+                  value: DateFormat.yMMMd().format(lastTrackedAt!),
+                ),
+              ],
+              if (lastDoneByLabel != null && lastDoneByLabel!.isNotEmpty) ...[
+                const Divider(),
+                _DetailRow(label: 'Last by', value: lastDoneByLabel!),
+              ],
+              if (averageFrequencyHours != null) ...[
+                const Divider(),
+                _DetailRow(
+                  label: 'Average',
+                  value: _formatAverageFrequency(averageFrequencyHours!),
+                ),
+              ],
             ],
           ),
         ),
@@ -148,6 +186,18 @@ class ChoreDetailSheet extends StatelessWidget {
         ],
       ],
     );
+  }
+
+  String _formatAverageFrequency(double hours) {
+    if (hours < 24) {
+      return '${hours.round()} h';
+    }
+    final days = hours / 24;
+    if (days < 14) {
+      return '${days.toStringAsFixed(days >= 10 ? 0 : 1)} d';
+    }
+    final weeks = days / 7;
+    return '${weeks.toStringAsFixed(weeks >= 10 ? 0 : 1)} wk';
   }
 }
 

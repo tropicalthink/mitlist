@@ -152,6 +152,32 @@ func (h *ChoreHandler) GetChore(w http.ResponseWriter, r *http.Request) {
 	api.RespondJSON(w, http.StatusOK, chore)
 }
 
+// GetChoreDetails GET /api/v1/chores/{id}/details
+func (h *ChoreHandler) GetChoreDetails(w http.ResponseWriter, r *http.Request) {
+	user, ok := api.UserFromContext(r.Context())
+	if !ok {
+		api.RespondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		api.RespondError(w, &api.ValidationError{Field: "id", Message: "invalid chore id"})
+		return
+	}
+	dueSoonDays, _ := strconv.Atoi(r.URL.Query().Get("due_soon_days"))
+	if dueSoonDays < 0 {
+		dueSoonDays = 0
+	}
+
+	details, err := h.service.GetChoreDetails(r.Context(), user, id, dueSoonDays)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	api.RespondJSON(w, http.StatusOK, details)
+}
+
 // UpdateChore PATCH /api/v1/chores/{id}
 func (h *ChoreHandler) UpdateChore(w http.ResponseWriter, r *http.Request) {
 	user, ok := api.UserFromContext(r.Context())

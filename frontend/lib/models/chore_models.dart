@@ -264,3 +264,63 @@ class CurrentChore {
         assignedToMe: json['assigned_to_me'] as bool? ?? false,
       );
 }
+
+class ChoreStats {
+  final int trackedCount;
+  final DateTime? lastTrackedAt;
+  final String? lastDoneByUserId;
+  final double? averageFrequencyHours;
+
+  const ChoreStats({
+    required this.trackedCount,
+    this.lastTrackedAt,
+    this.lastDoneByUserId,
+    this.averageFrequencyHours,
+  });
+
+  factory ChoreStats.fromJson(Map<String, dynamic> json) => ChoreStats(
+        trackedCount: json['tracked_count'] as int? ?? 0,
+        lastTrackedAt: json['last_tracked_at'] != null
+            ? DateTime.parse(json['last_tracked_at'] as String)
+            : null,
+        lastDoneByUserId: json['last_done_by_user_id'] as String?,
+        averageFrequencyHours:
+            (json['average_frequency_hours'] as num?)?.toDouble(),
+      );
+}
+
+class ChoreDetails {
+  final Chore chore;
+  final ChoreAssignment? pendingAssignment;
+  final ChoreAssignment? lastAssignment;
+  final ChoreStats stats;
+  final String dueStatus;
+  final bool assignedToMe;
+
+  const ChoreDetails({
+    required this.chore,
+    this.pendingAssignment,
+    this.lastAssignment,
+    required this.stats,
+    required this.dueStatus,
+    required this.assignedToMe,
+  });
+
+  factory ChoreDetails.fromJson(Map<String, dynamic> json) => ChoreDetails(
+        chore: Chore.fromJson((json['chore'] as Map).cast<String, dynamic>()),
+        pendingAssignment: json['pending_assignment'] != null
+            ? ChoreAssignment.fromJson(
+                (json['pending_assignment'] as Map).cast<String, dynamic>(),
+              )
+            : null,
+        lastAssignment: json['last_assignment'] != null
+            ? ChoreAssignment.fromJson(
+                (json['last_assignment'] as Map).cast<String, dynamic>(),
+              )
+            : null,
+        stats:
+            ChoreStats.fromJson((json['stats'] as Map).cast<String, dynamic>()),
+        dueStatus: json['due_status'] as String? ?? 'unscheduled',
+        assignedToMe: json['assigned_to_me'] as bool? ?? false,
+      );
+}

@@ -17,23 +17,33 @@ class RecipeService {
     try {
       final r = await _dio.post('/recipes', data: req.toJson());
       return Recipe.fromJson(r.data);
-    } on DioException catch (e) { _logger.e('Create recipe failed: ${e.response?.data}'); throw _handleError(e); }
+    } on DioException catch (e) {
+      _logger.e('Create recipe failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
   }
 
   Future<List<Recipe>> listRecipes({int limit = 50, int offset = 0}) async {
     try {
-      final r = await _dio.get('/recipes', queryParameters: {'limit': limit, 'offset': offset});
+      final r = await _dio
+          .get('/recipes', queryParameters: {'limit': limit, 'offset': offset});
       final data = r.data;
       if (data is! List) return [];
       return data.map((j) => Recipe.fromJson(j)).toList();
-    } on DioException catch (e) { _logger.e('List recipes failed: ${e.response?.data}'); throw _handleError(e); }
+    } on DioException catch (e) {
+      _logger.e('List recipes failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
   }
 
   Future<Recipe> getRecipe(String id) async {
     try {
       final r = await _dio.get('/recipes/$id');
       return Recipe.fromJson(r.data);
-    } on DioException catch (e) { _logger.e('Get recipe failed: ${e.response?.data}'); throw _handleError(e); }
+    } on DioException catch (e) {
+      _logger.e('Get recipe failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
   }
 
   Future<Recipe> updateRecipe(String id, UpdateRecipeRequest req) async {
@@ -47,8 +57,12 @@ class RecipeService {
   }
 
   Future<void> deleteRecipe(String id) async {
-    try { await _dio.delete('/recipes/$id'); }
-    on DioException catch (e) { _logger.e('Delete recipe failed: ${e.response?.data}'); throw _handleError(e); }
+    try {
+      await _dio.delete('/recipes/$id');
+    } on DioException catch (e) {
+      _logger.e('Delete recipe failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
   }
 
   Future<void> shareRecipe(String id, ShareRecipeRequest req) async {
@@ -60,13 +74,18 @@ class RecipeService {
     }
   }
 
-  Future<List<RecipeCollection>> listCollections({int limit = 50, int offset = 0}) async {
+  Future<List<RecipeCollection>> listCollections(
+      {int limit = 50, int offset = 0}) async {
     try {
-      final r = await _dio.get('/collections', queryParameters: {'limit': limit, 'offset': offset});
+      final r = await _dio.get('/collections',
+          queryParameters: {'limit': limit, 'offset': offset});
       final data = r.data;
       if (data is! List) return [];
       return data.map((j) => RecipeCollection.fromJson(j)).toList();
-    } on DioException catch (e) { _logger.e('List collections failed: ${e.response?.data}'); throw _handleError(e); }
+    } on DioException catch (e) {
+      _logger.e('List collections failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
   }
 
   Future<RecipeCollection> createCollection(CreateCollectionRequest req) async {
@@ -89,7 +108,8 @@ class RecipeService {
     }
   }
 
-  Future<RecipeCollection> updateCollection(String id, UpdateCollectionRequest req) async {
+  Future<RecipeCollection> updateCollection(
+      String id, UpdateCollectionRequest req) async {
     try {
       final r = await _dio.patch('/collections/$id', data: req.toJson());
       return RecipeCollection.fromJson((r.data as Map).cast<String, dynamic>());
@@ -108,7 +128,8 @@ class RecipeService {
     }
   }
 
-  Future<void> addRecipeToCollection(String collectionId, AddRecipeToCollectionRequest req) async {
+  Future<void> addRecipeToCollection(
+      String collectionId, AddRecipeToCollectionRequest req) async {
     try {
       await _dio.post('/collections/$collectionId/recipes', data: req.toJson());
     } on DioException catch (e) {
@@ -117,7 +138,8 @@ class RecipeService {
     }
   }
 
-  Future<void> removeRecipeFromCollection(String collectionId, String recipeId) async {
+  Future<void> removeRecipeFromCollection(
+      String collectionId, String recipeId) async {
     try {
       await _dio.delete('/collections/$collectionId/recipes/$recipeId');
     } on DioException catch (e) {
@@ -129,9 +151,24 @@ class RecipeService {
   Future<RecipeClipResponse> clipRecipeFromUrl(String url) async {
     try {
       final r = await _dio.post('/recipes/clip', data: {'url': url});
-      return RecipeClipResponse.fromJson((r.data as Map).cast<String, dynamic>());
+      return RecipeClipResponse.fromJson(
+          (r.data as Map).cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Clip recipe failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> addMissingToList(
+      String recipeId, String listId) async {
+    try {
+      final r = await _dio.post(
+        '/recipes/$recipeId/add-missing-to-list',
+        data: {'list_id': listId},
+      );
+      return Map<String, dynamic>.from(r.data as Map);
+    } on DioException catch (e) {
+      _logger.e('Add recipe missing products failed: ${e.response?.data}');
       throw _handleError(e);
     }
   }
@@ -140,7 +177,9 @@ class RecipeService {
     if (e.response?.statusCode == 401) return Exception('Session expired');
     if (e.response?.statusCode == 403) return Exception('Access denied');
     if (e.response?.statusCode == 404) return Exception('Not found');
-    if (e.type == DioExceptionType.connectionError) return Exception('Network error');
+    if (e.type == DioExceptionType.connectionError) {
+      return Exception('Network error');
+    }
     return Exception('An error occurred');
   }
 }

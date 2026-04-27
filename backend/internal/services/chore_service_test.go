@@ -106,6 +106,54 @@ func TestChoreService_GetChore(t *testing.T) {
 	})
 }
 
+func TestChoreService_GetChoreDetails(t *testing.T) {
+	ctx := context.Background()
+	user := validUser()
+	choreID := uuid.New()
+	groupID := uuid.New()
+	assignmentID := uuid.New()
+	now := time.Now().UTC()
+	averageHours := 36.0
+
+	choreRepo := new(mocks.MockChoreRepo)
+	groupRepo := new(mocks.MockGroupRepo)
+	svc := NewChoreService(choreRepo, groupRepo)
+
+	choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{
+		ID:      choreID,
+		GroupID: groupID,
+		Name:    "Clean counters",
+	}, nil)
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+	choreRepo.On("GetPendingAssignmentByChore", ctx, choreID).Return(&models.ChoreAssignment{
+		ID:         assignmentID,
+		ChoreID:    choreID,
+		UserID:     user.ID,
+		Status:     "pending",
+		DueDate:    &now,
+		AssignedAt: now.Add(-time.Hour),
+	}, nil)
+	choreRepo.On("ListAssignments", ctx, choreID, 100, 0).Return([]models.ChoreAssignment{
+		{ID: assignmentID, ChoreID: choreID, UserID: user.ID, Status: "pending", DueDate: &now, AssignedAt: now.Add(-time.Hour)},
+		{ID: uuid.New(), ChoreID: choreID, UserID: user.ID, Status: "completed", AssignedAt: now.Add(-48 * time.Hour), CompletedAt: ptrTime(now.Add(-47 * time.Hour))},
+	}, nil)
+	choreRepo.On("GetChoreStats", ctx, choreID).Return(&models.ChoreStats{
+		TrackedCount:          3,
+		LastTrackedAt:         ptrTime(now.Add(-47 * time.Hour)),
+		LastDoneByUserID:      &user.ID,
+		AverageFrequencyHours: &averageHours,
+	}, nil)
+
+	details, err := svc.GetChoreDetails(ctx, user, choreID, 7)
+	require.NoError(t, err)
+	assert.Equal(t, choreID, details.Chore.ID)
+	assert.Equal(t, 3, details.Stats.TrackedCount)
+	assert.Equal(t, "due_today", details.DueStatus)
+	assert.True(t, details.AssignedToMe)
+	require.NotNil(t, details.LastAssignment)
+	assert.Equal(t, "completed", details.LastAssignment.Status)
+}
+
 func TestChoreService_ListCurrentChores(t *testing.T) {
 	ctx := context.Background()
 	user := validUser()
@@ -376,4 +424,8 @@ func TestChoreService_RebuildMemberOrdersForGroup(t *testing.T) {
 		err := svc.RebuildMemberOrdersForGroup(ctx, groupID)
 		require.NoError(t, err)
 	})
+}
+
+func ptrTime(t time.Time) *time.Time {
+	return &t
 }

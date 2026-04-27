@@ -77,6 +77,19 @@ class ChoreService {
     }
   }
 
+  Future<ChoreDetails> getChoreDetails(String id, {int dueSoonDays = 7}) async {
+    try {
+      final r = await _dio.get(
+        '/chores/$id/details',
+        queryParameters: {'due_soon_days': dueSoonDays},
+      );
+      return ChoreDetails.fromJson((r.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Get chore details failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
   Future<Chore> updateChore(String id, UpdateChoreRequest req) async {
     try {
       final r = await _dio.patch('/chores/$id', data: req.toJson());

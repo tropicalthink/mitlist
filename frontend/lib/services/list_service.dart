@@ -43,6 +43,64 @@ class ListService {
     }
   }
 
+  Future<ShoppingLocation> createShoppingLocation(
+    CreateShoppingLocationRequest req,
+  ) async {
+    try {
+      final r = await _dio.post('/shopping-locations', data: req.toJson());
+      return ShoppingLocation.fromJson(r.data);
+    } on DioException catch (e) {
+      _logger.e('Create shopping location failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<List<ShoppingLocation>> listShoppingLocations(String groupId) async {
+    ensureValidGroupId(groupId);
+    try {
+      final r = await _dio.get(
+        '/shopping-locations',
+        queryParameters: {'group_id': groupId},
+      );
+      final data = r.data;
+      if (data is! List) return [];
+      return data
+          .map((e) =>
+              ShoppingLocation.fromJson((e as Map).cast<String, dynamic>()))
+          .toList();
+    } on DioException catch (e) {
+      _logger.e('List shopping locations failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<Product> createProduct(CreateProductRequest req) async {
+    try {
+      final r = await _dio.post('/products', data: req.toJson());
+      return Product.fromJson(r.data);
+    } on DioException catch (e) {
+      _logger.e('Create product failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<List<Product>> listProducts(String groupId) async {
+    ensureValidGroupId(groupId);
+    try {
+      final r = await _dio.get('/products', queryParameters: {
+        'group_id': groupId,
+      });
+      final data = r.data;
+      if (data is! List) return [];
+      return data
+          .map((e) => Product.fromJson((e as Map).cast<String, dynamic>()))
+          .toList();
+    } on DioException catch (e) {
+      _logger.e('List products failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
   Future<ItemList> getList(String id) async {
     try {
       final r = await _dio.get('/lists/$id');

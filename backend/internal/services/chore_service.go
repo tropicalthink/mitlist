@@ -135,6 +135,49 @@ func (s *ChoreService) GetChore(ctx context.Context, user *models.User, choreID 
 	return chore, nil
 }
 
+// GetChoreDetails returns a Grocy-style detail payload with current assignment and history stats.
+func (s *ChoreService) GetChoreDetails(ctx context.Context, user *models.User, choreID uuid.UUID, dueSoonDays int) (*models.ChoreDetails, error) {
+	chore, err := s.GetChore(ctx, user, choreID)
+	if err != nil {
+		return nil, err
+	}
+
+	pending, err := s.choreRepo.GetPendingAssignmentByChore(ctx, choreID)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("failed to get pending assignment: %w", err)
+	}
+	if errors.Is(err, pgx.ErrNoRows) {
+		pending = nil
+	}
+
+	assignments, err := s.choreRepo.ListAssignments(ctx, choreID, 100, 0)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list assignments: %w", err)
+	}
+	var last *models.ChoreAssignment
+	for i := range assignments {
+		if assignments[i].Status != "pending" {
+			last = &assignments[i]
+			break
+		}
+	}
+
+	stats, err := s.choreRepo.GetChoreStats(ctx, choreID)
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now().UTC()
+	return &models.ChoreDetails{
+		Chore:             *chore,
+		PendingAssignment: pending,
+		LastAssignment:    last,
+		Stats:             *stats,
+		DueStatus:         dueStatus(pending, now, dueSoonDays),
+		AssignedToMe:      pending != nil && pending.UserID == user.ID,
+	}, nil
+}
+
 // ListChores returns all chores for a group.
 func (s *ChoreService) ListChores(ctx context.Context, user *models.User, groupID uuid.UUID, limit, offset int) ([]models.Chore, error) {
 	if err := s.requireActiveVerifiedUser(user); err != nil {

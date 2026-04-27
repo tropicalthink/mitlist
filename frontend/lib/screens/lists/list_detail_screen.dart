@@ -29,6 +29,18 @@ class ListDetailRouteArgs {
   final String? listName;
 }
 
+class _ParsedComposerItem {
+  const _ParsedComposerItem({
+    required this.name,
+    this.quantity = 1,
+    this.unit = '',
+  });
+
+  final String name;
+  final double quantity;
+  final String unit;
+}
+
 class ListDetailScreen extends ConsumerStatefulWidget {
   final String listId;
   final String? initialListName;
@@ -329,10 +341,23 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
     try {
       final repo = await ref.read(listRepositoryProvider.future);
-      await repo.createItemOfflineFirst(
-        widget.listId,
-        CreateListItemRequest(name: text),
-      );
+      final parsed = _parseComposerItem(text);
+      if (parsed.quantity == 1 && parsed.unit.isEmpty) {
+        await repo.createItemOfflineFirst(
+          widget.listId,
+          CreateListItemRequest(name: parsed.name),
+        );
+      } else {
+        await service.addItemAmount(
+          widget.listId,
+          AddListItemAmountRequest(
+            name: parsed.name,
+            amount: parsed.quantity,
+            unit: parsed.unit,
+          ),
+        );
+        await repo.refreshItems(widget.listId);
+      }
       if (!mounted) return;
       setState(() {
         _newItemController.clear();
@@ -344,6 +369,44 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to add item: $e')),
+      );
+    }
+  }
+
+  _ParsedComposerItem _parseComposerItem(String text) {
+    final parts = text.trim().split(RegExp(r'\s+'));
+    if (parts.length < 2) return _ParsedComposerItem(name: text.trim());
+    final quantity = double.tryParse(parts.first.replaceAll(',', '.'));
+    if (quantity == null || quantity <= 0) {
+      return _ParsedComposerItem(name: text.trim());
+    }
+    var unit = '';
+    var nameStart = 1;
+    if (parts.length >= 3 &&
+        parts[1].length <= 12 &&
+        !RegExp(r'\d').hasMatch(parts[1])) {
+      unit = parts[1];
+      nameStart = 2;
+    }
+    final name = parts.skip(nameStart).join(' ').trim();
+    if (name.isEmpty) return _ParsedComposerItem(name: text.trim());
+    return _ParsedComposerItem(name: name, quantity: quantity, unit: unit);
+  }
+
+  Future<void> _clearItems({required bool onlyChecked}) async {
+    final service = _service;
+    if (service == null) return;
+    try {
+      await service.clearItems(widget.listId, onlyChecked: onlyChecked);
+      final repo = await ref.read(listRepositoryProvider.future);
+      await repo.refreshItems(widget.listId);
+      if (!mounted) return;
+      setState(() => _dirty = true);
+      _checkCompletionBanner();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to clear items: $e')),
       );
     }
   }
@@ -441,6 +504,12 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       case 'complete_all':
         _completeAll();
         break;
+      case 'clear_checked':
+        _clearItems(onlyChecked: true);
+        break;
+      case 'clear_all':
+        _clearItems(onlyChecked: false);
+        break;
     }
   }
 
@@ -532,6 +601,14 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     const PopupMenuItem(
                       value: 'complete_all',
                       child: Text('Check off all'),
+                    ),
+                    const PopupMenuItem(
+                      value: 'clear_checked',
+                      child: Text('Clear checked'),
+                    ),
+                    const PopupMenuItem(
+                      value: 'clear_all',
+                      child: Text('Clear list'),
                     ),
                   ],
                 ),

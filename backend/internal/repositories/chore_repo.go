@@ -168,6 +168,55 @@ func (r *ChoreRepository) ListCurrentChoresByGroup(ctx context.Context, groupID 
 	return current, nil
 }
 
+// GetChoreStats returns tracked execution count, last execution, and average spacing.
+func (r *ChoreRepository) GetChoreStats(ctx context.Context, choreID uuid.UUID) (*models.ChoreStats, error) {
+	query := `
+		WITH completions AS (
+			SELECT cc.completed_at, cc.completed_by
+			FROM chore_completions cc
+			INNER JOIN chore_assignments ca ON ca.id = cc.assignment_id
+			WHERE ca.chore_id = $1
+		),
+		ordered AS (
+			SELECT
+				completed_at,
+				completed_by,
+				LAG(completed_at) OVER (ORDER BY completed_at ASC, completed_by ASC) AS previous_completed_at
+			FROM completions
+		),
+		rollup AS (
+			SELECT
+				COUNT(*)::INTEGER AS tracked_count,
+				MAX(completed_at) AS last_tracked_at,
+				AVG(EXTRACT(EPOCH FROM (completed_at - previous_completed_at)) / 3600.0)
+					FILTER (WHERE previous_completed_at IS NOT NULL) AS average_frequency_hours
+			FROM ordered
+		)
+		SELECT
+			rollup.tracked_count,
+			rollup.last_tracked_at,
+			(
+				SELECT completed_by
+				FROM completions
+				ORDER BY completed_at DESC, completed_by ASC
+				LIMIT 1
+			) AS last_done_by_user_id,
+			rollup.average_frequency_hours
+		FROM rollup
+	`
+	var stats models.ChoreStats
+	err := r.pool.QueryRow(ctx, query, choreID).Scan(
+		&stats.TrackedCount,
+		&stats.LastTrackedAt,
+		&stats.LastDoneByUserID,
+		&stats.AverageFrequencyHours,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get chore stats: %w", err)
+	}
+	return &stats, nil
+}
+
 type nullableAssignment struct {
 	ID          *uuid.UUID
 	ChoreID     *uuid.UUID

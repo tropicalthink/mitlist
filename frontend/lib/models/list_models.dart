@@ -214,3 +214,115 @@ class ReorderItemsRequest {
   const ReorderItemsRequest({required this.itemIds});
   Map<String, dynamic> toJson() => {'item_ids': itemIds};
 }
+
+class ShoppingLocation {
+  final String id;
+  final String groupId;
+  final String name;
+  final int sortOrder;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  const ShoppingLocation({
+    required this.id,
+    required this.groupId,
+    required this.name,
+    required this.sortOrder,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory ShoppingLocation.fromJson(Map<String, dynamic> json) =>
+      ShoppingLocation(
+        id: json['id'] as String,
+        groupId: json['group_id'] as String,
+        name: json['name'] as String,
+        sortOrder: json['sort_order'] as int? ?? 0,
+        createdAt: DateTime.parse(json['created_at'] as String),
+        updatedAt: DateTime.parse(json['updated_at'] as String),
+      );
+}
+
+class Product {
+  final String id;
+  final String groupId;
+  final String name;
+  final String barcode;
+  final String unit;
+  final String? storeId;
+  final double minStock;
+  final double inStock;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  const Product({
+    required this.id,
+    required this.groupId,
+    required this.name,
+    this.barcode = '',
+    this.unit = '',
+    this.storeId,
+    this.minStock = 0,
+    this.inStock = 0,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory Product.fromJson(Map<String, dynamic> json) => Product(
+        id: json['id'] as String,
+        groupId: json['group_id'] as String,
+        name: json['name'] as String,
+        barcode: json['barcode'] as String? ?? '',
+        unit: json['unit'] as String? ?? '',
+        storeId: json['store_id'] as String?,
+        minStock: (json['min_stock'] as num?)?.toDouble() ?? 0,
+        inStock: (json['in_stock'] as num?)?.toDouble() ?? 0,
+        createdAt: DateTime.parse(json['created_at'] as String),
+        updatedAt: DateTime.parse(json['updated_at'] as String),
+      );
+}
+
+class CreateShoppingLocationRequest {
+  final String groupId;
+  final String name;
+  final int sortOrder;
+
+  const CreateShoppingLocationRequest({
+    required this.groupId,
+    required this.name,
+    this.sortOrder = 0,
+  });
+
+  Map<String, dynamic> toJson() =>
+      {'group_id': groupId, 'name': name, 'sort_order': sortOrder};
+}
+
+class CreateProductRequest {
+  final String groupId;
+  final String name;
+  final String barcode;
+  final String unit;
+  final String? storeId;
+  final double minStock;
+  final double inStock;
+
+  const CreateProductRequest({
+    required this.groupId,
+    required this.name,
+    this.barcode = '',
+    this.unit = '',
+    this.storeId,
+    this.minStock = 0,
+    this.inStock = 0,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'group_id': groupId,
+        'name': name,
+        'barcode': barcode,
+        'unit': unit,
+        if (storeId != null) 'store_id': storeId,
+        'min_stock': minStock,
+        'in_stock': inStock,
+      };
+}

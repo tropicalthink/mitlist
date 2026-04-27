@@ -424,3 +424,56 @@ func (s *ListService) ReorderItems(ctx context.Context, user *models.User, listI
 	}
 	return s.listRepo.BatchUpdateItemPositions(ctx, batch)
 }
+
+func (s *ListService) CreateShoppingLocation(ctx context.Context, user *models.User, location *models.ShoppingLocation) error {
+	if err := s.requireActiveVerifiedUser(user); err != nil {
+		return err
+	}
+	location.Name = strings.TrimSpace(location.Name)
+	if location.Name == "" {
+		return &api.ValidationError{Field: "name", Message: "location name is required"}
+	}
+	if err := s.requireMembership(ctx, user.ID, location.GroupID); err != nil {
+		return err
+	}
+	return s.listRepo.CreateShoppingLocation(ctx, location)
+}
+
+func (s *ListService) ListShoppingLocations(ctx context.Context, user *models.User, groupID uuid.UUID) ([]models.ShoppingLocation, error) {
+	if err := s.requireActiveVerifiedUser(user); err != nil {
+		return nil, err
+	}
+	if err := s.requireMembership(ctx, user.ID, groupID); err != nil {
+		return nil, err
+	}
+	return s.listRepo.ListShoppingLocationsByGroup(ctx, groupID)
+}
+
+func (s *ListService) CreateProduct(ctx context.Context, user *models.User, product *models.Product) error {
+	if err := s.requireActiveVerifiedUser(user); err != nil {
+		return err
+	}
+	product.Name = strings.TrimSpace(product.Name)
+	product.Barcode = strings.TrimSpace(product.Barcode)
+	product.Unit = strings.TrimSpace(product.Unit)
+	if product.Name == "" {
+		return &api.ValidationError{Field: "name", Message: "product name is required"}
+	}
+	if product.MinStock < 0 || product.InStock < 0 {
+		return &api.ValidationError{Field: "stock", Message: "stock amounts cannot be negative"}
+	}
+	if err := s.requireMembership(ctx, user.ID, product.GroupID); err != nil {
+		return err
+	}
+	return s.listRepo.CreateProduct(ctx, product)
+}
+
+func (s *ListService) ListProducts(ctx context.Context, user *models.User, groupID uuid.UUID) ([]models.Product, error) {
+	if err := s.requireActiveVerifiedUser(user); err != nil {
+		return nil, err
+	}
+	if err := s.requireMembership(ctx, user.ID, groupID); err != nil {
+		return nil, err
+	}
+	return s.listRepo.ListProductsByGroup(ctx, groupID)
+}

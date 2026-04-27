@@ -42,6 +42,14 @@ func (m *MockChoreRepo) ListCurrentChoresByGroup(ctx context.Context, groupID uu
 	return nil, args.Error(1)
 }
 
+func (m *MockChoreRepo) GetChoreStats(ctx context.Context, choreID uuid.UUID) (*models.ChoreStats, error) {
+	args := m.Called(ctx, choreID)
+	if s := args.Get(0); s != nil {
+		return s.(*models.ChoreStats), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
 func (m *MockChoreRepo) UpdateChore(ctx context.Context, chore *models.Chore) error {
 	args := m.Called(ctx, chore)
 	return args.Error(0)

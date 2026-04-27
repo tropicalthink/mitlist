@@ -302,7 +302,7 @@ func TestListService_AddItemAmount_IncrementsExisting(t *testing.T) {
 
 	item, err := svc.AddItemAmount(ctx, user, listID, " Milk ", 3, " L ", " whole ")
 	require.NoError(t, err)
-	assert.Equal(t, 5, item.Quantity)
+	assert.Equal(t, 5.0, item.Quantity)
 }
 
 func TestListService_AddItemAmount_CreatesWhenMissing(t *testing.T) {

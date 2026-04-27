@@ -105,3 +105,29 @@ func (m *MockListRepo) BatchUpdateItemPositions(ctx context.Context, items []mod
 	args := m.Called(ctx, items)
 	return args.Error(0)
 }
+
+func (m *MockListRepo) CreateShoppingLocation(ctx context.Context, location *models.ShoppingLocation) error {
+	args := m.Called(ctx, location)
+	return args.Error(0)
+}
+
+func (m *MockListRepo) ListShoppingLocationsByGroup(ctx context.Context, groupID uuid.UUID) ([]models.ShoppingLocation, error) {
+	args := m.Called(ctx, groupID)
+	if v := args.Get(0); v != nil {
+		return v.([]models.ShoppingLocation), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockListRepo) CreateProduct(ctx context.Context, product *models.Product) error {
+	args := m.Called(ctx, product)
+	return args.Error(0)
+}
+
+func (m *MockListRepo) ListProductsByGroup(ctx context.Context, groupID uuid.UUID) ([]models.Product, error) {
+	args := m.Called(ctx, groupID)
+	if v := args.Get(0); v != nil {
+		return v.([]models.Product), args.Error(1)
+	}
+	return nil, args.Error(1)
+}

@@ -318,6 +318,80 @@ func (r *ListRepository) SoftDeleteItemsByList(ctx context.Context, listID uuid.
 	return res.RowsAffected(), nil
 }
 
+func (r *ListRepository) CreateShoppingLocation(ctx context.Context, location *models.ShoppingLocation) error {
+	if location.ID == uuid.Nil {
+		location.ID = uuid.New()
+	}
+	now := time.Now().UTC()
+	location.CreatedAt = now
+	location.UpdatedAt = now
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO shopping_locations (id, group_id, name, sort_order, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6)
+	`, location.ID, location.GroupID, location.Name, location.SortOrder, location.CreatedAt, location.UpdatedAt)
+	return err
+}
+
+func (r *ListRepository) ListShoppingLocationsByGroup(ctx context.Context, groupID uuid.UUID) ([]models.ShoppingLocation, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, group_id, name, sort_order, created_at, updated_at
+		FROM shopping_locations
+		WHERE group_id = $1
+		ORDER BY sort_order ASC, name ASC
+	`, groupID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var locations []models.ShoppingLocation
+	for rows.Next() {
+		var location models.ShoppingLocation
+		if err := rows.Scan(&location.ID, &location.GroupID, &location.Name, &location.SortOrder, &location.CreatedAt, &location.UpdatedAt); err != nil {
+			return nil, err
+		}
+		locations = append(locations, location)
+	}
+	return locations, rows.Err()
+}
+
+func (r *ListRepository) CreateProduct(ctx context.Context, product *models.Product) error {
+	if product.ID == uuid.Nil {
+		product.ID = uuid.New()
+	}
+	now := time.Now().UTC()
+	product.CreatedAt = now
+	product.UpdatedAt = now
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO products (id, group_id, name, barcode, unit, store_id, min_stock, in_stock, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	`, product.ID, product.GroupID, product.Name, product.Barcode, product.Unit, product.StoreID, product.MinStock, product.InStock, product.CreatedAt, product.UpdatedAt)
+	return err
+}
+
+func (r *ListRepository) ListProductsByGroup(ctx context.Context, groupID uuid.UUID) ([]models.Product, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, group_id, name, barcode, unit, store_id, min_stock, in_stock, created_at, updated_at
+		FROM products
+		WHERE group_id = $1
+		ORDER BY name ASC
+	`, groupID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var products []models.Product
+	for rows.Next() {
+		var product models.Product
+		if err := rows.Scan(&product.ID, &product.GroupID, &product.Name, &product.Barcode, &product.Unit, &product.StoreID, &product.MinStock, &product.InStock, &product.CreatedAt, &product.UpdatedAt); err != nil {
+			return nil, err
+		}
+		products = append(products, product)
+	}
+	return products, rows.Err()
+}
+
 // compile-time interface check helpers
 var (
 	_ = pgx.ErrNoRows

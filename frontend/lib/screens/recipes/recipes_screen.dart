@@ -224,6 +224,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   bool _isLoadingMore = false;
   bool _hasMore = true;
   bool _isGeneratingList = false;
+  String? _addingRecipeToListId;
   bool _showSearch = false;
   String _searchQuery = '';
   Timer? _searchTimer;
@@ -278,6 +279,85 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       servings: recipe.servings,
       updatedAt: recipe.updatedAt,
     );
+  }
+
+  Future<void> _addRecipeMissingToList(_Recipe recipe) async {
+    if (_addingRecipeToListId != null) return;
+    setState(() => _addingRecipeToListId = recipe.id);
+
+    try {
+      final groupId = await _resolveGroupId();
+      if (groupId == null) {
+        throw Exception('Create or join a household first');
+      }
+
+      final listService = await ref.read(listServiceProviderAsync.future);
+      final recipeService = await ref.read(recipeServiceProviderAsync.future);
+      final lists = await listService.listLists(groupId, limit: 100);
+      final shoppingLists = lists
+          .where((list) => list.type == 'shopping')
+          .toList()
+        ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+
+      String? selectedListId;
+      if (shoppingLists.isEmpty) {
+        final list = await listService.createList(
+          CreateListRequest(
+            groupId: groupId,
+            name: '${recipe.title} shopping',
+            type: 'shopping',
+          ),
+        );
+        selectedListId = list.id;
+      } else {
+        if (!mounted) return;
+        selectedListId = await showDialog<String>(
+          context: context,
+          builder: (context) => SimpleDialog(
+            title: const Text('Add missing ingredients'),
+            children: [
+              for (final list in shoppingLists)
+                SimpleDialogOption(
+                  onPressed: () => Navigator.of(context).pop(list.id),
+                  child: Text(list.name),
+                ),
+              const Divider(),
+              SimpleDialogOption(
+                onPressed: () => Navigator.of(context).pop('__new__'),
+                child: const Text('New shopping list'),
+              ),
+            ],
+          ),
+        );
+        if (selectedListId == '__new__') {
+          final list = await listService.createList(
+            CreateListRequest(
+              groupId: groupId,
+              name: '${recipe.title} shopping',
+              type: 'shopping',
+            ),
+          );
+          selectedListId = list.id;
+        }
+      }
+
+      if (selectedListId == null) return;
+      await recipeService.addMissingToList(recipe.id, selectedListId);
+      final repo = await ref.read(listRepositoryProvider.future);
+      await repo.refreshItems(selectedListId);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Added ${recipe.title} ingredients')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) setState(() => _addingRecipeToListId = null);
+    }
   }
 
   void _onSearchChanged(String value) {
@@ -953,6 +1033,8 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
             recipe: recipe,
             onTap: () => _openRecipeDetail(recipe),
             onPlan: () => _planRecipe(recipe, _weekDays.first, 'Dinner'),
+            onAddToList: () => _addRecipeMissingToList(recipe),
+            isAddingToList: _addingRecipeToListId == recipe.id,
           ),
         );
       },
@@ -1350,12 +1432,16 @@ class _RecipeCard extends StatelessWidget {
   final _Recipe recipe;
   final VoidCallback? onTap;
   final VoidCallback? onPlan;
+  final VoidCallback? onAddToList;
+  final bool isAddingToList;
   final bool compact;
 
   const _RecipeCard({
     required this.recipe,
     this.onTap,
     this.onPlan,
+    this.onAddToList,
+    this.isAddingToList = false,
     this.compact = false,
   });
 
@@ -1457,10 +1543,26 @@ class _RecipeCard extends StatelessWidget {
             ),
           ),
           if (!compact)
-            IconButton(
-              tooltip: 'Plan for dinner',
-              icon: const Icon(AppIcons.calendarDays),
-              onPressed: onPlan,
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  tooltip: 'Add missing ingredients',
+                  icon: isAddingToList
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(AppIcons.shoppingCart),
+                  onPressed: isAddingToList ? null : onAddToList,
+                ),
+                IconButton(
+                  tooltip: 'Plan for dinner',
+                  icon: const Icon(AppIcons.calendarDays),
+                  onPressed: onPlan,
+                ),
+              ],
             ),
         ],
       ),

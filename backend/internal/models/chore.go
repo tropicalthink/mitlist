@@ -62,3 +62,21 @@ type CurrentChore struct {
 	DueStatus         string           `json:"due_status"`
 	AssignedToMe      bool             `json:"assigned_to_me"`
 }
+
+// ChoreStats summarizes tracked execution history for a chore.
+type ChoreStats struct {
+	TrackedCount          int        `json:"tracked_count"`
+	LastTrackedAt         *time.Time `json:"last_tracked_at,omitempty"`
+	LastDoneByUserID      *uuid.UUID `json:"last_done_by_user_id,omitempty"`
+	AverageFrequencyHours *float64   `json:"average_frequency_hours,omitempty"`
+}
+
+// ChoreDetails combines editable chore data, assignment context, and history stats.
+type ChoreDetails struct {
+	Chore             Chore            `json:"chore"`
+	PendingAssignment *ChoreAssignment `json:"pending_assignment,omitempty"`
+	LastAssignment    *ChoreAssignment `json:"last_assignment,omitempty"`
+	Stats             ChoreStats       `json:"stats"`
+	DueStatus         string           `json:"due_status"`
+	AssignedToMe      bool             `json:"assigned_to_me"`
+}

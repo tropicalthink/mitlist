@@ -86,6 +86,97 @@ func (h *ListHandler) ListLists(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, lists)
 }
 
+func (h *ListHandler) CreateShoppingLocation(w http.ResponseWriter, r *http.Request) {
+	user, ok := userFromContext(r)
+	if !ok {
+		respondError(w, api.ErrUnauthorized)
+		return
+	}
+	var req struct {
+		GroupID   uuid.UUID `json:"group_id"`
+		Name      string    `json:"name"`
+		SortOrder int       `json:"sort_order"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, &api.ValidationError{Message: "invalid request body"})
+		return
+	}
+	location := &models.ShoppingLocation{GroupID: req.GroupID, Name: req.Name, SortOrder: req.SortOrder}
+	if err := h.service.CreateShoppingLocation(r.Context(), user, location); err != nil {
+		respondError(w, err)
+		return
+	}
+	respondJSON(w, http.StatusCreated, location)
+}
+
+func (h *ListHandler) ListShoppingLocations(w http.ResponseWriter, r *http.Request) {
+	user, ok := userFromContext(r)
+	if !ok {
+		respondError(w, api.ErrUnauthorized)
+		return
+	}
+	groupID, err := uuid.Parse(r.URL.Query().Get("group_id"))
+	if err != nil {
+		respondError(w, &api.ValidationError{Field: "group_id", Message: "invalid UUID"})
+		return
+	}
+	locations, err := h.service.ListShoppingLocations(r.Context(), user, groupID)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	respondJSON(w, http.StatusOK, locations)
+}
+
+func (h *ListHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
+	user, ok := userFromContext(r)
+	if !ok {
+		respondError(w, api.ErrUnauthorized)
+		return
+	}
+	var req struct {
+		GroupID  uuid.UUID  `json:"group_id"`
+		Name     string     `json:"name"`
+		Barcode  string     `json:"barcode"`
+		Unit     string     `json:"unit"`
+		StoreID  *uuid.UUID `json:"store_id"`
+		MinStock float64    `json:"min_stock"`
+		InStock  float64    `json:"in_stock"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, &api.ValidationError{Message: "invalid request body"})
+		return
+	}
+	product := &models.Product{
+		GroupID: req.GroupID, Name: req.Name, Barcode: req.Barcode, Unit: req.Unit,
+		StoreID: req.StoreID, MinStock: req.MinStock, InStock: req.InStock,
+	}
+	if err := h.service.CreateProduct(r.Context(), user, product); err != nil {
+		respondError(w, err)
+		return
+	}
+	respondJSON(w, http.StatusCreated, product)
+}
+
+func (h *ListHandler) ListProducts(w http.ResponseWriter, r *http.Request) {
+	user, ok := userFromContext(r)
+	if !ok {
+		respondError(w, api.ErrUnauthorized)
+		return
+	}
+	groupID, err := uuid.Parse(r.URL.Query().Get("group_id"))
+	if err != nil {
+		respondError(w, &api.ValidationError{Field: "group_id", Message: "invalid UUID"})
+		return
+	}
+	products, err := h.service.ListProducts(r.Context(), user, groupID)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	respondJSON(w, http.StatusOK, products)
+}
+
 // GetList handles GET /api/v1/lists/{id}.
 func (h *ListHandler) GetList(w http.ResponseWriter, r *http.Request) {
 	user, ok := userFromContext(r)

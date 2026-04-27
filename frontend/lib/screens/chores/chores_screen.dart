@@ -117,9 +117,12 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
               assignmentId: entry.pendingAssignment?.id,
               id: entry.chore.id,
               title: entry.chore.name,
-              assigneeInitials: entry.pendingAssignment?.userId.isNotEmpty == true
-                  ? entry.pendingAssignment!.userId.substring(0, 1).toUpperCase()
-                  : '?',
+              assigneeInitials:
+                  entry.pendingAssignment?.userId.isNotEmpty == true
+                      ? entry.pendingAssignment!.userId
+                          .substring(0, 1)
+                          .toUpperCase()
+                      : '?',
               dueDate: entry.pendingAssignment?.dueDate ??
                   _fallbackDueDate(now, entry.chore.frequency),
               isMine: entry.assignedToMe,
@@ -149,12 +152,28 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
 
   Future<void> _openChoreDetail(String id) async {
     final chore = _chores.firstWhere((item) => item.id == id);
+    ChoreDetails? details;
+    try {
+      final service = await ref.read(choreServiceProviderAsync.future);
+      details = await service.getChoreDetails(id);
+    } catch (_) {
+      // Keep the sheet available when an older API does not expose details yet.
+    }
+    if (!mounted) return;
     await ChoreDetailSheet.show(
       context,
-      title: chore.title,
-      statusLabel: chore.completed ? 'Done' : 'Pending',
-      assignee: chore.assigneeInitials,
-      dueDate: chore.dueDate,
+      title: details?.chore.name ?? chore.title,
+      statusLabel: _statusLabel(details?.dueStatus, chore.completed),
+      assignee: details?.pendingAssignment?.userId != null
+          ? _shortUserLabel(details!.pendingAssignment!.userId)
+          : chore.assigneeInitials,
+      dueDate: details?.pendingAssignment?.dueDate ?? chore.dueDate,
+      trackedCount: details?.stats.trackedCount,
+      lastTrackedAt: details?.stats.lastTrackedAt,
+      lastDoneByLabel: details?.stats.lastDoneByUserId != null
+          ? _shortUserLabel(details!.stats.lastDoneByUserId!)
+          : null,
+      averageFrequencyHours: details?.stats.averageFrequencyHours,
       onMarkDone: chore.completed
           ? null
           : () async {
@@ -178,6 +197,22 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         await _undoLastExecution(id);
       },
     );
+  }
+
+  String _statusLabel(String? dueStatus, bool completed) {
+    if (completed) return 'Done';
+    return switch (dueStatus) {
+      'overdue' => 'Overdue',
+      'due_today' => 'Due today',
+      'due_soon' => 'Due soon',
+      'later' => 'Scheduled',
+      _ => 'Pending',
+    };
+  }
+
+  String _shortUserLabel(String userId) {
+    if (userId.length <= 8) return userId;
+    return userId.substring(0, 8);
   }
 
   Future<void> _toggleComplete(String id) async {
@@ -345,7 +380,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'chores_create_fab',
-        onPressed: _hasHousehold ? _addChore : () => context.goNamed('groupsList'),
+        onPressed:
+            _hasHousehold ? _addChore : () => context.goNamed('groupsList'),
         icon: AppIcon(
           name: _hasHousehold ? 'plus' : 'userGroup',
           color: MitlistColors.textOnPrimary,
