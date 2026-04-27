@@ -79,6 +79,13 @@ func (s *RecipeService) ListRecipes(ctx context.Context, userID uuid.UUID, limit
 	return s.recipeRepo.ListRecipesByUser(ctx, userID, limit, offset)
 }
 
+func (s *RecipeService) ListIngredientsForRecipe(ctx context.Context, userID, recipeID uuid.UUID) ([]models.RecipeIngredient, error) {
+	if _, err := s.GetRecipe(ctx, userID, recipeID); err != nil {
+		return nil, err
+	}
+	return s.recipeRepo.ListIngredients(ctx, recipeID)
+}
+
 // UpdateRecipe updates a recipe (owner only).
 func (s *RecipeService) UpdateRecipe(ctx context.Context, userID uuid.UUID, recipe *models.Recipe) error {
 	existing, err := s.recipeRepo.GetRecipeByID(ctx, recipe.ID)

@@ -289,7 +289,7 @@ func (s *ListService) ClearItems(ctx context.Context, user *models.User, listID 
 }
 
 // AddItemAmount adds an amount to an existing matching item or creates it.
-func (s *ListService) AddItemAmount(ctx context.Context, user *models.User, listID uuid.UUID, name string, amount int, unit, note string) (*models.ListItem, error) {
+func (s *ListService) AddItemAmount(ctx context.Context, user *models.User, listID uuid.UUID, name string, amount float64, unit, note string) (*models.ListItem, error) {
 	if err := s.requireActiveVerifiedUser(user); err != nil {
 		return nil, err
 	}
@@ -343,7 +343,7 @@ func (s *ListService) AddItemAmount(ctx context.Context, user *models.User, list
 }
 
 // RemoveItemAmount removes an amount from a matching item, deleting it at zero.
-func (s *ListService) RemoveItemAmount(ctx context.Context, user *models.User, listID uuid.UUID, name string, amount int, unit string) (*models.ListItem, bool, error) {
+func (s *ListService) RemoveItemAmount(ctx context.Context, user *models.User, listID uuid.UUID, name string, amount float64, unit string) (*models.ListItem, bool, error) {
 	if err := s.requireActiveVerifiedUser(user); err != nil {
 		return nil, false, err
 	}

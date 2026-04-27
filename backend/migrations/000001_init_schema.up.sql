@@ -109,13 +109,39 @@ CREATE TABLE lists (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE shopping_locations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (group_id, name)
+);
+
+CREATE TABLE products (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    barcode TEXT NOT NULL DEFAULT '',
+    unit TEXT NOT NULL DEFAULT '',
+    store_id UUID REFERENCES shopping_locations(id) ON DELETE SET NULL,
+    min_stock NUMERIC(12,3) NOT NULL DEFAULT 0,
+    in_stock NUMERIC(12,3) NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (group_id, name)
+);
+
 CREATE TABLE list_items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     list_id UUID NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
-    quantity INTEGER NOT NULL DEFAULT 1,
+    quantity NUMERIC(12,3) NOT NULL DEFAULT 1,
     unit TEXT NOT NULL DEFAULT '',
     note TEXT NOT NULL DEFAULT '',
+    product_id UUID REFERENCES products(id) ON DELETE SET NULL,
+    store_id UUID REFERENCES shopping_locations(id) ON DELETE SET NULL,
     checked BOOLEAN NOT NULL DEFAULT false,
     position INTEGER NOT NULL DEFAULT 0,
     deleted_at TIMESTAMPTZ,

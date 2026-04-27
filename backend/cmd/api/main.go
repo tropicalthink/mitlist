@@ -204,7 +204,7 @@ func main() {
 
 			// Recipes
 			recipeScrapeSvc := services.NewRecipeScrapingService()
-			recipeHandler := handlers.NewRecipeHandler(cnt.RecipeService(), recipeScrapeSvc)
+			recipeHandler := handlers.NewRecipeHandler(cnt.RecipeService(), recipeScrapeSvc, cnt.ListService())
 			recipeHandler.RegisterRoutes(r)
 
 			// Assistant

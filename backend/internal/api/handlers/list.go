@@ -175,10 +175,12 @@ func (h *ListHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Name     string `json:"name"`
-		Quantity int    `json:"quantity"`
-		Unit     string `json:"unit"`
-		Note     string `json:"note"`
+		Name      string     `json:"name"`
+		Quantity  float64    `json:"quantity"`
+		Unit      string     `json:"unit"`
+		Note      string     `json:"note"`
+		ProductID *uuid.UUID `json:"product_id"`
+		StoreID   *uuid.UUID `json:"store_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondError(w, &api.ValidationError{Message: "invalid request body"})
@@ -186,11 +188,13 @@ func (h *ListHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	item := &models.ListItem{
-		ListID:   listID,
-		Name:     req.Name,
-		Quantity: req.Quantity,
-		Unit:     req.Unit,
-		Note:     req.Note,
+		ListID:    listID,
+		Name:      req.Name,
+		Quantity:  req.Quantity,
+		Unit:      req.Unit,
+		Note:      req.Note,
+		ProductID: req.ProductID,
+		StoreID:   req.StoreID,
 	}
 	if err := h.service.CreateItem(r.Context(), user, item); err != nil {
 		respondError(w, err)
@@ -237,12 +241,14 @@ func (h *ListHandler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Name     *string `json:"name,omitempty"`
-		Quantity *int    `json:"quantity,omitempty"`
-		Unit     *string `json:"unit,omitempty"`
-		Note     *string `json:"note,omitempty"`
-		Checked  *bool   `json:"checked,omitempty"`
-		Position *int    `json:"position,omitempty"`
+		Name      *string    `json:"name,omitempty"`
+		Quantity  *float64   `json:"quantity,omitempty"`
+		Unit      *string    `json:"unit,omitempty"`
+		Note      *string    `json:"note,omitempty"`
+		ProductID *uuid.UUID `json:"product_id,omitempty"`
+		StoreID   *uuid.UUID `json:"store_id,omitempty"`
+		Checked   *bool      `json:"checked,omitempty"`
+		Position  *int       `json:"position,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondError(w, &api.ValidationError{Message: "invalid request body"})
@@ -266,6 +272,12 @@ func (h *ListHandler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Note != nil {
 		existing.Note = *req.Note
+	}
+	if req.ProductID != nil {
+		existing.ProductID = req.ProductID
+	}
+	if req.StoreID != nil {
+		existing.StoreID = req.StoreID
 	}
 	if req.Checked != nil {
 		existing.Checked = *req.Checked
@@ -325,10 +337,10 @@ func (h *ListHandler) AddItemAmount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Name   string `json:"name"`
-		Amount int    `json:"amount"`
-		Unit   string `json:"unit"`
-		Note   string `json:"note"`
+		Name   string  `json:"name"`
+		Amount float64 `json:"amount"`
+		Unit   string  `json:"unit"`
+		Note   string  `json:"note"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondError(w, &api.ValidationError{Message: "invalid request body"})
@@ -358,9 +370,9 @@ func (h *ListHandler) RemoveItemAmount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Name   string `json:"name"`
-		Amount int    `json:"amount"`
-		Unit   string `json:"unit"`
+		Name   string  `json:"name"`
+		Amount float64 `json:"amount"`
+		Unit   string  `json:"unit"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondError(w, &api.ValidationError{Message: "invalid request body"})

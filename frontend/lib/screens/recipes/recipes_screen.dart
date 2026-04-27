@@ -149,7 +149,7 @@ class _PlannedMeal {
 
 class _ShoppingIngredient {
   final String name;
-  final int quantity;
+  final double quantity;
   final String unit;
   final String section;
 
@@ -162,12 +162,13 @@ class _ShoppingIngredient {
 
   static _ShoppingIngredient parse(String value) {
     final section = _sectionFor(value);
-    final match = RegExp(r'^(\d+)\s*([A-Za-z]+)?\s+(.+)$').firstMatch(value);
+    final match =
+        RegExp(r'^(\d+(?:\.\d+)?)\s*([A-Za-z]+)?\s+(.+)$').firstMatch(value);
     if (match == null) {
       return _ShoppingIngredient(name: value, section: section);
     }
     return _ShoppingIngredient(
-      quantity: int.tryParse(match.group(1) ?? '') ?? 1,
+      quantity: double.tryParse(match.group(1) ?? '') ?? 1,
       unit: match.group(2) ?? '',
       name: match.group(3)?.trim() ?? value,
       section: section,

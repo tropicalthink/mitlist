@@ -55,7 +55,7 @@ class ListItem {
   final String id;
   final String listId;
   final String name;
-  final int quantity;
+  final double quantity;
   final String unit;
   final String note;
   final bool checked;
@@ -81,7 +81,7 @@ class ListItem {
       id: json['id'] as String,
       listId: json['list_id'] as String,
       name: json['name'] as String,
-      quantity: json['quantity'] as int? ?? 1,
+      quantity: (json['quantity'] as num?)?.toDouble() ?? 1,
       unit: json['unit'] as String? ?? '',
       note: json['note'] as String? ?? '',
       checked: json['checked'] as bool? ?? false,
@@ -131,7 +131,7 @@ class UpdateListRequest {
 
 class CreateListItemRequest {
   final String name;
-  final int quantity;
+  final double quantity;
   final String unit;
   final String note;
   const CreateListItemRequest(
@@ -146,7 +146,7 @@ class CreateListItemRequest {
 
 class UpdateListItemRequest {
   final String? name;
-  final int? quantity;
+  final double? quantity;
   final String? unit;
   final String? note;
   final bool? checked;
@@ -172,7 +172,7 @@ class UpdateListItemRequest {
 
 class AddListItemAmountRequest {
   final String name;
-  final int amount;
+  final double amount;
   final String unit;
   final String note;
 
@@ -193,7 +193,7 @@ class AddListItemAmountRequest {
 
 class RemoveListItemAmountRequest {
   final String name;
-  final int amount;
+  final double amount;
   final String unit;
 
   const RemoveListItemAmountRequest({

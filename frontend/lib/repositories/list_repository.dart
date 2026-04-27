@@ -219,7 +219,7 @@ class ListRepository {
       listId,
       CreateListItemRequest(
         name: name,
-        quantity: payload['quantity'] as int? ?? 1,
+      quantity: (payload['quantity'] as num?)?.toDouble() ?? 1,
         unit: payload['unit'] as String? ?? '',
         note: payload['note'] as String? ?? '',
       ),
@@ -245,7 +245,7 @@ class ListRepository {
       itemId,
       UpdateListItemRequest(
         name: patch['name'] as String?,
-        quantity: patch['quantity'] as int?,
+        quantity: (patch['quantity'] as num?)?.toDouble(),
         unit: patch['unit'] as String?,
         note: patch['note'] as String?,
         checked: patch['checked'] as bool?,

@@ -172,7 +172,7 @@ func (s *TemplateService) ApplyTemplate(ctx context.Context, user *models.User, 
 		item := &models.ListItem{
 			ListID:   list.ID,
 			Name:     ti.Name,
-			Quantity: ti.Quantity,
+			Quantity: float64(ti.Quantity),
 			Unit:     ti.Unit,
 			Position: i,
 		}

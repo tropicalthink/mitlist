@@ -170,11 +170,11 @@ func (r *ListRepository) CreateItem(ctx context.Context, item *models.ListItem) 
 	item.UpdatedAt = now
 
 	query := `
-		INSERT INTO list_items (id, list_id, name, quantity, unit, note, checked, position, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		INSERT INTO list_items (id, list_id, name, quantity, unit, note, product_id, store_id, checked, position, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 	`
 	_, err := r.pool.Exec(ctx, query,
-		item.ID, item.ListID, item.Name, item.Quantity, item.Unit, item.Note, item.Checked, item.Position, item.CreatedAt, item.UpdatedAt,
+		item.ID, item.ListID, item.Name, item.Quantity, item.Unit, item.Note, item.ProductID, item.StoreID, item.Checked, item.Position, item.CreatedAt, item.UpdatedAt,
 	)
 	return err
 }
@@ -182,14 +182,14 @@ func (r *ListRepository) CreateItem(ctx context.Context, item *models.ListItem) 
 // GetItemByID retrieves a list item by its ID.
 func (r *ListRepository) GetItemByID(ctx context.Context, id uuid.UUID) (*models.ListItem, error) {
 	query := `
-		SELECT id, list_id, name, quantity, unit, COALESCE(note, ''), checked, position, created_at, updated_at
+		SELECT id, list_id, name, quantity, unit, COALESCE(note, ''), product_id, store_id, checked, position, created_at, updated_at
 		FROM list_items
 		WHERE id = $1 AND deleted_at IS NULL
 	`
 	row := r.pool.QueryRow(ctx, query, id)
 
 	var i models.ListItem
-	err := row.Scan(&i.ID, &i.ListID, &i.Name, &i.Quantity, &i.Unit, &i.Note, &i.Checked, &i.Position, &i.CreatedAt, &i.UpdatedAt)
+	err := row.Scan(&i.ID, &i.ListID, &i.Name, &i.Quantity, &i.Unit, &i.Note, &i.ProductID, &i.StoreID, &i.Checked, &i.Position, &i.CreatedAt, &i.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +199,7 @@ func (r *ListRepository) GetItemByID(ctx context.Context, id uuid.UUID) (*models
 // GetItemByListNameUnit retrieves an active item by normalized name and unit.
 func (r *ListRepository) GetItemByListNameUnit(ctx context.Context, listID uuid.UUID, name, unit string) (*models.ListItem, error) {
 	query := `
-		SELECT id, list_id, name, quantity, unit, COALESCE(note, ''), checked, position, created_at, updated_at
+		SELECT id, list_id, name, quantity, unit, COALESCE(note, ''), product_id, store_id, checked, position, created_at, updated_at
 		FROM list_items
 		WHERE list_id = $1
 			AND lower(trim(name)) = lower(trim($2))
@@ -211,7 +211,7 @@ func (r *ListRepository) GetItemByListNameUnit(ctx context.Context, listID uuid.
 	row := r.pool.QueryRow(ctx, query, listID, name, unit)
 
 	var i models.ListItem
-	err := row.Scan(&i.ID, &i.ListID, &i.Name, &i.Quantity, &i.Unit, &i.Note, &i.Checked, &i.Position, &i.CreatedAt, &i.UpdatedAt)
+	err := row.Scan(&i.ID, &i.ListID, &i.Name, &i.Quantity, &i.Unit, &i.Note, &i.ProductID, &i.StoreID, &i.Checked, &i.Position, &i.CreatedAt, &i.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +224,7 @@ func (r *ListRepository) ListItemsByList(ctx context.Context, listID uuid.UUID, 
 		limit = 50
 	}
 	query := `
-		SELECT id, list_id, name, quantity, unit, COALESCE(note, ''), checked, position, created_at, updated_at
+		SELECT id, list_id, name, quantity, unit, COALESCE(note, ''), product_id, store_id, checked, position, created_at, updated_at
 		FROM list_items
 		WHERE list_id = $1 AND deleted_at IS NULL
 		ORDER BY position ASC, created_at ASC
@@ -239,7 +239,7 @@ func (r *ListRepository) ListItemsByList(ctx context.Context, listID uuid.UUID, 
 	var items []models.ListItem
 	for rows.Next() {
 		var i models.ListItem
-		if err := rows.Scan(&i.ID, &i.ListID, &i.Name, &i.Quantity, &i.Unit, &i.Note, &i.Checked, &i.Position, &i.CreatedAt, &i.UpdatedAt); err != nil {
+		if err := rows.Scan(&i.ID, &i.ListID, &i.Name, &i.Quantity, &i.Unit, &i.Note, &i.ProductID, &i.StoreID, &i.Checked, &i.Position, &i.CreatedAt, &i.UpdatedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -255,11 +255,11 @@ func (r *ListRepository) UpdateItem(ctx context.Context, item *models.ListItem) 
 	item.UpdatedAt = time.Now().UTC()
 	query := `
 		UPDATE list_items
-		SET name = $1, quantity = $2, unit = $3, note = $4, checked = $5, position = $6, updated_at = $7
-		WHERE id = $8
+		SET name = $1, quantity = $2, unit = $3, note = $4, product_id = $5, store_id = $6, checked = $7, position = $8, updated_at = $9
+		WHERE id = $10
 	`
 	_, err := r.pool.Exec(ctx, query,
-		item.Name, item.Quantity, item.Unit, item.Note, item.Checked, item.Position, item.UpdatedAt, item.ID,
+		item.Name, item.Quantity, item.Unit, item.Note, item.ProductID, item.StoreID, item.Checked, item.Position, item.UpdatedAt, item.ID,
 	)
 	return err
 }

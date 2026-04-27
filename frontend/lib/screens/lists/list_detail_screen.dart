@@ -768,7 +768,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                 Padding(
                   padding: const EdgeInsets.only(left: MitlistSpacing.sm),
                   child: Text(
-                    '${item.quantity}×',
+                    '${_formatQuantity(item.quantity)}x',
                     style: MitlistTypography.monoBody(
                       color: MitlistColors.textSecondary,
                     ),
@@ -800,6 +800,14 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         ),
       ),
     );
+  }
+
+  String _formatQuantity(double value) {
+    if (value == value.roundToDouble()) return value.toInt().toString();
+    return value
+        .toStringAsFixed(2)
+        .replaceFirst(RegExp(r'0+$'), '')
+        .replaceFirst(RegExp(r'\.$'), '');
   }
 
   Widget _buildSkeleton() {

@@ -458,9 +458,9 @@ class $ListItemsTableTable extends ListItemsTable
   static const VerificationMeta _quantityMeta =
       const VerificationMeta('quantity');
   @override
-  late final GeneratedColumn<int> quantity = GeneratedColumn<int>(
+  late final GeneratedColumn<double> quantity = GeneratedColumn<double>(
       'quantity', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
+      type: DriftSqlType.double, requiredDuringInsert: true);
   static const VerificationMeta _unitMeta = const VerificationMeta('unit');
   @override
   late final GeneratedColumn<String> unit = GeneratedColumn<String>(
@@ -584,7 +584,7 @@ class $ListItemsTableTable extends ListItemsTable
       name: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
       quantity: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}quantity'])!,
+          .read(DriftSqlType.double, data['${effectivePrefix}quantity'])!,
       unit: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}unit'])!,
       checked: attachedDatabase.typeMapping
@@ -609,7 +609,7 @@ class ListItemsTableData extends DataClass
   final String id;
   final String listId;
   final String name;
-  final int quantity;
+  final double quantity;
   final String unit;
   final bool checked;
   final int position;
@@ -631,7 +631,7 @@ class ListItemsTableData extends DataClass
     map['id'] = Variable<String>(id);
     map['list_id'] = Variable<String>(listId);
     map['name'] = Variable<String>(name);
-    map['quantity'] = Variable<int>(quantity);
+    map['quantity'] = Variable<double>(quantity);
     map['unit'] = Variable<String>(unit);
     map['checked'] = Variable<bool>(checked);
     map['position'] = Variable<int>(position);
@@ -661,7 +661,7 @@ class ListItemsTableData extends DataClass
       id: serializer.fromJson<String>(json['id']),
       listId: serializer.fromJson<String>(json['listId']),
       name: serializer.fromJson<String>(json['name']),
-      quantity: serializer.fromJson<int>(json['quantity']),
+      quantity: serializer.fromJson<double>(json['quantity']),
       unit: serializer.fromJson<String>(json['unit']),
       checked: serializer.fromJson<bool>(json['checked']),
       position: serializer.fromJson<int>(json['position']),
@@ -676,7 +676,7 @@ class ListItemsTableData extends DataClass
       'id': serializer.toJson<String>(id),
       'listId': serializer.toJson<String>(listId),
       'name': serializer.toJson<String>(name),
-      'quantity': serializer.toJson<int>(quantity),
+      'quantity': serializer.toJson<double>(quantity),
       'unit': serializer.toJson<String>(unit),
       'checked': serializer.toJson<bool>(checked),
       'position': serializer.toJson<int>(position),
@@ -689,7 +689,7 @@ class ListItemsTableData extends DataClass
           {String? id,
           String? listId,
           String? name,
-          int? quantity,
+          double? quantity,
           String? unit,
           bool? checked,
           int? position,
@@ -758,7 +758,7 @@ class ListItemsTableCompanion extends UpdateCompanion<ListItemsTableData> {
   final Value<String> id;
   final Value<String> listId;
   final Value<String> name;
-  final Value<int> quantity;
+  final Value<double> quantity;
   final Value<String> unit;
   final Value<bool> checked;
   final Value<int> position;
@@ -781,7 +781,7 @@ class ListItemsTableCompanion extends UpdateCompanion<ListItemsTableData> {
     required String id,
     required String listId,
     required String name,
-    required int quantity,
+    required double quantity,
     required String unit,
     required bool checked,
     required int position,
@@ -801,7 +801,7 @@ class ListItemsTableCompanion extends UpdateCompanion<ListItemsTableData> {
     Expression<String>? id,
     Expression<String>? listId,
     Expression<String>? name,
-    Expression<int>? quantity,
+    Expression<double>? quantity,
     Expression<String>? unit,
     Expression<bool>? checked,
     Expression<int>? position,
@@ -827,7 +827,7 @@ class ListItemsTableCompanion extends UpdateCompanion<ListItemsTableData> {
       {Value<String>? id,
       Value<String>? listId,
       Value<String>? name,
-      Value<int>? quantity,
+      Value<double>? quantity,
       Value<String>? unit,
       Value<bool>? checked,
       Value<int>? position,
@@ -861,7 +861,7 @@ class ListItemsTableCompanion extends UpdateCompanion<ListItemsTableData> {
       map['name'] = Variable<String>(name.value);
     }
     if (quantity.present) {
-      map['quantity'] = Variable<int>(quantity.value);
+      map['quantity'] = Variable<double>(quantity.value);
     }
     if (unit.present) {
       map['unit'] = Variable<String>(unit.value);
@@ -4259,7 +4259,7 @@ typedef $$ListItemsTableTableCreateCompanionBuilder = ListItemsTableCompanion
   required String id,
   required String listId,
   required String name,
-  required int quantity,
+  required double quantity,
   required String unit,
   required bool checked,
   required int position,
@@ -4272,7 +4272,7 @@ typedef $$ListItemsTableTableUpdateCompanionBuilder = ListItemsTableCompanion
   Value<String> id,
   Value<String> listId,
   Value<String> name,
-  Value<int> quantity,
+  Value<double> quantity,
   Value<String> unit,
   Value<bool> checked,
   Value<int> position,
@@ -4299,7 +4299,7 @@ class $$ListItemsTableTableFilterComposer
   ColumnFilters<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<int> get quantity => $composableBuilder(
+  ColumnFilters<double> get quantity => $composableBuilder(
       column: $table.quantity, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get unit => $composableBuilder(
@@ -4336,7 +4336,7 @@ class $$ListItemsTableTableOrderingComposer
   ColumnOrderings<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<int> get quantity => $composableBuilder(
+  ColumnOrderings<double> get quantity => $composableBuilder(
       column: $table.quantity, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get unit => $composableBuilder(
@@ -4373,7 +4373,7 @@ class $$ListItemsTableTableAnnotationComposer
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
 
-  GeneratedColumn<int> get quantity =>
+  GeneratedColumn<double> get quantity =>
       $composableBuilder(column: $table.quantity, builder: (column) => column);
 
   GeneratedColumn<String> get unit =>
@@ -4422,7 +4422,7 @@ class $$ListItemsTableTableTableManager extends RootTableManager<
             Value<String> id = const Value.absent(),
             Value<String> listId = const Value.absent(),
             Value<String> name = const Value.absent(),
-            Value<int> quantity = const Value.absent(),
+            Value<double> quantity = const Value.absent(),
             Value<String> unit = const Value.absent(),
             Value<bool> checked = const Value.absent(),
             Value<int> position = const Value.absent(),
@@ -4446,7 +4446,7 @@ class $$ListItemsTableTableTableManager extends RootTableManager<
             required String id,
             required String listId,
             required String name,
-            required int quantity,
+            required double quantity,
             required String unit,
             required bool checked,
             required int position,

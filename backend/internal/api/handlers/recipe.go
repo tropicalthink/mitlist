@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -12,13 +14,18 @@ import (
 
 // RecipeHandler exposes recipe and collection endpoints.
 type RecipeHandler struct {
-	service      *services.RecipeService
-	scrapeSvc    *services.RecipeScrapingService
+	service   *services.RecipeService
+	scrapeSvc *services.RecipeScrapingService
+	listSvc   *services.ListService
 }
 
 // NewRecipeHandler creates a new RecipeHandler.
-func NewRecipeHandler(service *services.RecipeService, scrapeSvc *services.RecipeScrapingService) *RecipeHandler {
-	return &RecipeHandler{service: service, scrapeSvc: scrapeSvc}
+func NewRecipeHandler(service *services.RecipeService, scrapeSvc *services.RecipeScrapingService, listSvc ...*services.ListService) *RecipeHandler {
+	h := &RecipeHandler{service: service, scrapeSvc: scrapeSvc}
+	if len(listSvc) > 0 {
+		h.listSvc = listSvc[0]
+	}
+	return h
 }
 
 func (h *RecipeHandler) RegisterRoutes(r chi.Router) {
@@ -28,6 +35,7 @@ func (h *RecipeHandler) RegisterRoutes(r chi.Router) {
 	r.Patch("/recipes/{id}", h.UpdateRecipe)
 	r.Delete("/recipes/{id}", h.DeleteRecipe)
 	r.Post("/recipes/{id}/share", h.ShareRecipe)
+	r.Post("/recipes/{id}/add-missing-to-list", h.AddMissingToList)
 	r.Post("/recipes/clip", h.ClipRecipe)
 
 	r.Post("/collections", h.CreateCollection)
@@ -239,6 +247,67 @@ func (h *RecipeHandler) ShareRecipe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+type addMissingToListRequest struct {
+	ListID uuid.UUID `json:"list_id"`
+}
+
+func (h *RecipeHandler) AddMissingToList(w http.ResponseWriter, r *http.Request) {
+	user, ok := userFromContext(r)
+	if !ok {
+		respondError(w, api.ErrUnauthorized)
+		return
+	}
+	if h.listSvc == nil {
+		respondError(w, &api.ValidationError{Message: "list integration is not configured"})
+		return
+	}
+	recipeID, err := parseUUIDParam(r, "id")
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	var req addMissingToListRequest
+	if err := decodeJSON(r, &req); err != nil {
+		respondError(w, err)
+		return
+	}
+	if req.ListID == uuid.Nil {
+		respondError(w, &api.ValidationError{Field: "list_id", Message: "list_id is required"})
+		return
+	}
+	ingredients, err := h.service.ListIngredientsForRecipe(r.Context(), user.ID, recipeID)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	added := make([]models.ListItem, 0, len(ingredients))
+	for _, ing := range ingredients {
+		item, err := h.listSvc.AddItemAmount(r.Context(), user, req.ListID, ing.Name, parseIngredientAmount(ing.Quantity), ing.Unit, "From recipe")
+		if err != nil {
+			respondError(w, err)
+			return
+		}
+		added = append(added, *item)
+	}
+	respondJSON(w, http.StatusOK, map[string]any{"added": added})
+}
+
+func parseIngredientAmount(raw string) float64 {
+	raw = strings.TrimSpace(strings.ReplaceAll(raw, ",", "."))
+	if raw == "" {
+		return 1
+	}
+	for _, field := range strings.Fields(raw) {
+		if n, err := strconv.ParseFloat(field, 64); err == nil && n > 0 {
+			return n
+		}
+	}
+	if n, err := strconv.ParseFloat(raw, 64); err == nil && n > 0 {
+		return n
+	}
+	return 1
 }
 
 type recipeClipRequest struct {

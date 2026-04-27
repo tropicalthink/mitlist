@@ -27,7 +27,7 @@ class ListItemsTable extends Table {
   TextColumn get id => text()();
   TextColumn get listId => text().named('list_id')();
   TextColumn get name => text()();
-  IntColumn get quantity => integer()();
+  RealColumn get quantity => real()();
   TextColumn get unit => text()();
   BoolColumn get checked => boolean()();
   IntColumn get position => integer()();
@@ -165,11 +165,42 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) async => m.createAll(),
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            // SQLite can't change column types in-place; rebuild list_items_table.
+            await customStatement('''
+CREATE TABLE list_items_table__new (
+  id TEXT NOT NULL PRIMARY KEY,
+  list_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  quantity REAL NOT NULL,
+  unit TEXT NOT NULL,
+  checked INTEGER NOT NULL,
+  position INTEGER NOT NULL,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+''');
+
+            await customStatement('''
+INSERT INTO list_items_table__new (
+  id, list_id, name, quantity, unit, checked, position, created_at, updated_at
+)
+SELECT
+  id, list_id, name, CAST(quantity AS REAL), unit, checked, position, created_at, updated_at
+FROM list_items_table;
+''');
+
+            await customStatement('DROP TABLE list_items_table;');
+            await customStatement(
+                'ALTER TABLE list_items_table__new RENAME TO list_items_table;');
+          }
+        },
         beforeOpen: (details) async {
           await customStatement('pragma foreign_keys = ON;');
         },
