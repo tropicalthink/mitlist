@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -171,6 +172,9 @@ func (s *ListService) CreateItem(ctx context.Context, user *models.User, item *m
 	if item.Name == "" {
 		return &api.ValidationError{Field: "name", Message: "item name is required"}
 	}
+	if item.Quantity <= 0 {
+		item.Quantity = 1
+	}
 	return s.listRepo.CreateItem(ctx, item)
 }
 
@@ -218,6 +222,9 @@ func (s *ListService) UpdateItem(ctx context.Context, user *models.User, item *m
 	if item.Name == "" {
 		return &api.ValidationError{Field: "name", Message: "item name is required"}
 	}
+	if item.Quantity <= 0 {
+		return &api.ValidationError{Field: "quantity", Message: "quantity must be greater than zero"}
+	}
 	// Preserve list_id from existing record to prevent moving between lists.
 	item.ListID = existing.ListID
 	return s.listRepo.UpdateItem(ctx, item)
@@ -261,6 +268,122 @@ func (s *ListService) ListItems(ctx context.Context, user *models.User, listID u
 		return nil, err
 	}
 	return s.listRepo.ListItemsByList(ctx, listID, limit, offset)
+}
+
+// ClearItems removes all active items, or only checked items, from a list.
+func (s *ListService) ClearItems(ctx context.Context, user *models.User, listID uuid.UUID, onlyChecked bool) (int64, error) {
+	if err := s.requireActiveVerifiedUser(user); err != nil {
+		return 0, err
+	}
+	list, err := s.listRepo.GetListByID(ctx, listID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return 0, &api.NotFoundError{Resource: "list", ID: listID.String()}
+		}
+		return 0, fmt.Errorf("failed to get list: %w", err)
+	}
+	if err := s.requireMembership(ctx, user.ID, list.GroupID); err != nil {
+		return 0, err
+	}
+	return s.listRepo.SoftDeleteItemsByList(ctx, listID, onlyChecked)
+}
+
+// AddItemAmount adds an amount to an existing matching item or creates it.
+func (s *ListService) AddItemAmount(ctx context.Context, user *models.User, listID uuid.UUID, name string, amount int, unit, note string) (*models.ListItem, error) {
+	if err := s.requireActiveVerifiedUser(user); err != nil {
+		return nil, err
+	}
+	name = strings.TrimSpace(name)
+	unit = strings.TrimSpace(unit)
+	note = strings.TrimSpace(note)
+	if name == "" {
+		return nil, &api.ValidationError{Field: "name", Message: "item name is required"}
+	}
+	if amount <= 0 {
+		return nil, &api.ValidationError{Field: "amount", Message: "amount must be greater than zero"}
+	}
+	list, err := s.listRepo.GetListByID(ctx, listID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, &api.NotFoundError{Resource: "list", ID: listID.String()}
+		}
+		return nil, fmt.Errorf("failed to get list: %w", err)
+	}
+	if err := s.requireMembership(ctx, user.ID, list.GroupID); err != nil {
+		return nil, err
+	}
+
+	item, err := s.listRepo.GetItemByListNameUnit(ctx, listID, name, unit)
+	if err != nil && err != pgx.ErrNoRows {
+		return nil, fmt.Errorf("failed to find item: %w", err)
+	}
+	if err == nil {
+		item.Quantity += amount
+		item.Checked = false
+		if note != "" {
+			item.Note = note
+		}
+		if err := s.listRepo.UpdateItem(ctx, item); err != nil {
+			return nil, fmt.Errorf("failed to update item: %w", err)
+		}
+		return item, nil
+	}
+
+	item = &models.ListItem{
+		ListID:   listID,
+		Name:     name,
+		Quantity: amount,
+		Unit:     unit,
+		Note:     note,
+	}
+	if err := s.listRepo.CreateItem(ctx, item); err != nil {
+		return nil, fmt.Errorf("failed to create item: %w", err)
+	}
+	return item, nil
+}
+
+// RemoveItemAmount removes an amount from a matching item, deleting it at zero.
+func (s *ListService) RemoveItemAmount(ctx context.Context, user *models.User, listID uuid.UUID, name string, amount int, unit string) (*models.ListItem, bool, error) {
+	if err := s.requireActiveVerifiedUser(user); err != nil {
+		return nil, false, err
+	}
+	name = strings.TrimSpace(name)
+	unit = strings.TrimSpace(unit)
+	if name == "" {
+		return nil, false, &api.ValidationError{Field: "name", Message: "item name is required"}
+	}
+	if amount <= 0 {
+		return nil, false, &api.ValidationError{Field: "amount", Message: "amount must be greater than zero"}
+	}
+	list, err := s.listRepo.GetListByID(ctx, listID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, false, &api.NotFoundError{Resource: "list", ID: listID.String()}
+		}
+		return nil, false, fmt.Errorf("failed to get list: %w", err)
+	}
+	if err := s.requireMembership(ctx, user.ID, list.GroupID); err != nil {
+		return nil, false, err
+	}
+
+	item, err := s.listRepo.GetItemByListNameUnit(ctx, listID, name, unit)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, false, nil
+		}
+		return nil, false, fmt.Errorf("failed to find item: %w", err)
+	}
+	if item.Quantity <= amount {
+		if err := s.listRepo.SoftDeleteItem(ctx, item.ID); err != nil {
+			return nil, false, fmt.Errorf("failed to remove item: %w", err)
+		}
+		return item, true, nil
+	}
+	item.Quantity -= amount
+	if err := s.listRepo.UpdateItem(ctx, item); err != nil {
+		return nil, false, fmt.Errorf("failed to update item: %w", err)
+	}
+	return item, false, nil
 }
 
 // ReorderItems updates the position of items within a list to match the provided order.

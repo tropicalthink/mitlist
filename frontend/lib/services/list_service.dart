@@ -124,6 +124,49 @@ class ListService {
     }
   }
 
+  Future<Map<String, dynamic>> clearItems(
+    String listId, {
+    bool onlyChecked = false,
+  }) async {
+    try {
+      final r = await _dio.post(
+        '/lists/$listId/items/clear',
+        data: {'only_checked': onlyChecked},
+      );
+      return Map<String, dynamic>.from(r.data as Map);
+    } on DioException catch (e) {
+      _logger.e('Clear list items failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<ListItem> addItemAmount(
+    String listId,
+    AddListItemAmountRequest req,
+  ) async {
+    try {
+      final r = await _dio.post('/lists/$listId/items/add', data: req.toJson());
+      return ListItem.fromJson(r.data);
+    } on DioException catch (e) {
+      _logger.e('Add item amount failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> removeItemAmount(
+    String listId,
+    RemoveListItemAmountRequest req,
+  ) async {
+    try {
+      final r =
+          await _dio.post('/lists/$listId/items/remove', data: req.toJson());
+      return Map<String, dynamic>.from(r.data as Map);
+    } on DioException catch (e) {
+      _logger.e('Remove item amount failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
   Future<List<ListItemPhoto>> listItemPhotos({
     required String groupId,
     required String itemId,
@@ -137,8 +180,8 @@ class ListService {
       final data = r.data;
       if (data is! List) return [];
       return data
-          .map((e) =>
-              ListItemPhoto.fromJson((e as Map).cast<String, dynamic>()))
+          .map(
+              (e) => ListItemPhoto.fromJson((e as Map).cast<String, dynamic>()))
           .toList();
     } on DioException catch (e) {
       _logger.e('List item photos failed: ${e.response?.data}');

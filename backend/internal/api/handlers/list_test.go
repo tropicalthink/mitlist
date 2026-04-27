@@ -323,6 +323,57 @@ func TestList_DeleteItem(t *testing.T) {
 	requireStatus(t, rec, http.StatusNoContent)
 }
 
+func TestList_AddRemoveAndClearItems(t *testing.T) {
+	clearTables(t)
+	router, _ := newListRouter(t)
+	user := createTestUser(t, "listops@example.com", "password123")
+	token := generateTestToken(user.ID)
+
+	groupRepo := newTestGroupRepo()
+	group := &models.Group{
+		ID:        uuid.New(),
+		Name:      "G",
+		CreatedBy: user.ID,
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+	}
+	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	listRepo := newTestListRepo()
+	list := &models.List{
+		ID:        uuid.New(),
+		GroupID:   group.ID,
+		Name:      "Shopping",
+		Type:      "shopping",
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+	}
+	require.NoError(t, listRepo.CreateList(context.Background(), list))
+
+	addBody := map[string]any{"name": "Milk", "amount": 2, "unit": "L", "note": "whole"}
+	rec := execRequest(t, router, "POST", "/api/v1/lists/"+list.ID.String()+"/items/add", addBody, token)
+	requireStatus(t, rec, http.StatusOK)
+
+	rec = execRequest(t, router, "POST", "/api/v1/lists/"+list.ID.String()+"/items/add", addBody, token)
+	requireStatus(t, rec, http.StatusOK)
+	var added map[string]any
+	parseJSONResponse(t, rec, &added)
+	assert.EqualValues(t, 4, added["quantity"])
+	assert.Equal(t, "whole", added["note"])
+
+	removeBody := map[string]any{"name": "Milk", "amount": 1, "unit": "L"}
+	rec = execRequest(t, router, "POST", "/api/v1/lists/"+list.ID.String()+"/items/remove", removeBody, token)
+	requireStatus(t, rec, http.StatusOK)
+	var removed map[string]any
+	parseJSONResponse(t, rec, &removed)
+	assert.Equal(t, false, removed["removed"])
+
+	rec = execRequest(t, router, "POST", "/api/v1/lists/"+list.ID.String()+"/items/clear", map[string]any{"only_checked": false}, token)
+	requireStatus(t, rec, http.StatusOK)
+	var cleared map[string]any
+	parseJSONResponse(t, rec, &cleared)
+	assert.EqualValues(t, 1, cleared["deleted"])
+}
+
 func TestList_ReorderItems(t *testing.T) {
 	clearTables(t)
 	router, _ := newListRouter(t)

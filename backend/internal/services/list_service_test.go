@@ -233,7 +233,7 @@ func TestListService_UpdateItem(t *testing.T) {
 		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
 		listRepo.On("UpdateItem", ctx, mock.AnythingOfType("*models.ListItem")).Return(nil)
 
-		item := &models.ListItem{ID: itemID, Name: "Updated"}
+		item := &models.ListItem{ID: itemID, Name: "Updated", Quantity: 1}
 		err := svc.UpdateItem(ctx, user, item)
 		require.NoError(t, err)
 	})
@@ -259,6 +259,96 @@ func TestListService_DeleteItem(t *testing.T) {
 		err := svc.DeleteItem(ctx, user, itemID)
 		require.NoError(t, err)
 	})
+}
+
+func TestListService_ClearItems(t *testing.T) {
+	ctx := context.Background()
+	user := validUser()
+	listID := uuid.New()
+	groupID := uuid.New()
+
+	listRepo := new(mocks.MockListRepo)
+	groupRepo := new(mocks.MockGroupRepo)
+	svc := NewListService(listRepo, groupRepo)
+
+	listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+	listRepo.On("SoftDeleteItemsByList", ctx, listID, true).Return(2, nil)
+
+	deleted, err := svc.ClearItems(ctx, user, listID, true)
+	require.NoError(t, err)
+	assert.EqualValues(t, 2, deleted)
+}
+
+func TestListService_AddItemAmount_IncrementsExisting(t *testing.T) {
+	ctx := context.Background()
+	user := validUser()
+	listID := uuid.New()
+	groupID := uuid.New()
+	itemID := uuid.New()
+
+	listRepo := new(mocks.MockListRepo)
+	groupRepo := new(mocks.MockGroupRepo)
+	svc := NewListService(listRepo, groupRepo)
+
+	listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+	listRepo.On("GetItemByListNameUnit", ctx, listID, "Milk", "L").Return(&models.ListItem{
+		ID: itemID, ListID: listID, Name: "Milk", Quantity: 2, Unit: "L", Checked: true,
+	}, nil)
+	listRepo.On("UpdateItem", ctx, mock.MatchedBy(func(item *models.ListItem) bool {
+		return item.ID == itemID && item.Quantity == 5 && !item.Checked && item.Note == "whole"
+	})).Return(nil)
+
+	item, err := svc.AddItemAmount(ctx, user, listID, " Milk ", 3, " L ", " whole ")
+	require.NoError(t, err)
+	assert.Equal(t, 5, item.Quantity)
+}
+
+func TestListService_AddItemAmount_CreatesWhenMissing(t *testing.T) {
+	ctx := context.Background()
+	user := validUser()
+	listID := uuid.New()
+	groupID := uuid.New()
+
+	listRepo := new(mocks.MockListRepo)
+	groupRepo := new(mocks.MockGroupRepo)
+	svc := NewListService(listRepo, groupRepo)
+
+	listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+	listRepo.On("GetItemByListNameUnit", ctx, listID, "Milk", "").Return(nil, pgx.ErrNoRows)
+	listRepo.On("CreateItem", ctx, mock.MatchedBy(func(item *models.ListItem) bool {
+		return item.ListID == listID && item.Name == "Milk" && item.Quantity == 2
+	})).Return(nil)
+
+	item, err := svc.AddItemAmount(ctx, user, listID, "Milk", 2, "", "")
+	require.NoError(t, err)
+	assert.Equal(t, "Milk", item.Name)
+}
+
+func TestListService_RemoveItemAmount_DecrementsOrDeletes(t *testing.T) {
+	ctx := context.Background()
+	user := validUser()
+	listID := uuid.New()
+	groupID := uuid.New()
+	itemID := uuid.New()
+
+	listRepo := new(mocks.MockListRepo)
+	groupRepo := new(mocks.MockGroupRepo)
+	svc := NewListService(listRepo, groupRepo)
+
+	listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+	listRepo.On("GetItemByListNameUnit", ctx, listID, "Milk", "").Return(&models.ListItem{
+		ID: itemID, ListID: listID, Name: "Milk", Quantity: 2,
+	}, nil)
+	listRepo.On("SoftDeleteItem", ctx, itemID).Return(nil)
+
+	item, removed, err := svc.RemoveItemAmount(ctx, user, listID, "Milk", 2, "")
+	require.NoError(t, err)
+	assert.True(t, removed)
+	assert.Equal(t, itemID, item.ID)
 }
 
 func TestListService_ReorderItems(t *testing.T) {

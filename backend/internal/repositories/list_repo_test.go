@@ -142,12 +142,13 @@ func TestListRepository_CreateItem(t *testing.T) {
 		Name:     "Milk",
 		Quantity: 2,
 		Unit:     "liters",
+		Note:     "organic",
 		Checked:  false,
 		Position: 1,
 	}
 
 	mock.ExpectExec("INSERT INTO list_items").
-		WithArgs(pgxmock.AnyArg(), item.ListID, item.Name, item.Quantity, item.Unit, item.Checked, item.Position, pgxmock.AnyArg(), pgxmock.AnyArg()).
+		WithArgs(pgxmock.AnyArg(), item.ListID, item.Name, item.Quantity, item.Unit, item.Note, item.Checked, item.Position, pgxmock.AnyArg(), pgxmock.AnyArg()).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
 	err := repo.CreateItem(context.Background(), item)
@@ -161,8 +162,8 @@ func TestListRepository_GetItemByID(t *testing.T) {
 	repo := NewListRepository(mock)
 	id := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "list_id", "name", "quantity", "unit", "checked", "position", "created_at", "updated_at"}).
-		AddRow(id, fixedUUID(), "Milk", 2, "liters", false, 1, fixedTime(), fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "list_id", "name", "quantity", "unit", "note", "checked", "position", "created_at", "updated_at"}).
+		AddRow(id, fixedUUID(), "Milk", 2, "liters", "organic", false, 1, fixedTime(), fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM list_items WHERE id = .* AND deleted_at IS NULL").
 		WithArgs(id).
@@ -171,6 +172,7 @@ func TestListRepository_GetItemByID(t *testing.T) {
 	item, err := repo.GetItemByID(context.Background(), id)
 	require.NoError(t, err)
 	assert.Equal(t, id, item.ID)
+	assert.Equal(t, "organic", item.Note)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -194,8 +196,8 @@ func TestListRepository_ListItemsByList(t *testing.T) {
 	repo := NewListRepository(mock)
 	listID := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "list_id", "name", "quantity", "unit", "checked", "position", "created_at", "updated_at"}).
-		AddRow(fixedUUID(), listID, "Milk", 2, "liters", false, 1, fixedTime(), fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "list_id", "name", "quantity", "unit", "note", "checked", "position", "created_at", "updated_at"}).
+		AddRow(fixedUUID(), listID, "Milk", 2, "liters", "", false, 1, fixedTime(), fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM list_items WHERE list_id = .* AND deleted_at IS NULL").
 		WithArgs(listID, 50, 0).
@@ -213,10 +215,10 @@ func TestListRepository_UpdateItem(t *testing.T) {
 	id := fixedUUID()
 
 	mock.ExpectExec("UPDATE list_items SET").
-		WithArgs("Eggs", 12, "pcs", true, 2, pgxmock.AnyArg(), id).
+		WithArgs("Eggs", 12, "pcs", "large", true, 2, pgxmock.AnyArg(), id).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
-	item := &models.ListItem{ID: id, Name: "Eggs", Quantity: 12, Unit: "pcs", Checked: true, Position: 2}
+	item := &models.ListItem{ID: id, Name: "Eggs", Quantity: 12, Unit: "pcs", Note: "large", Checked: true, Position: 2}
 	err := repo.UpdateItem(context.Background(), item)
 	require.NoError(t, err)
 	assert.NoError(t, mock.ExpectationsWereMet())
@@ -236,6 +238,25 @@ func TestListRepository_HardDeleteItem(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestListRepository_GetItemByListNameUnit(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewListRepository(mock)
+	listID := fixedUUID()
+	id := uuid.New()
+
+	rows := pgxmock.NewRows([]string{"id", "list_id", "name", "quantity", "unit", "note", "checked", "position", "created_at", "updated_at"}).
+		AddRow(id, listID, "Milk", 2, "liters", "", false, 0, fixedTime(), fixedTime())
+
+	mock.ExpectQuery("SELECT .* FROM list_items").
+		WithArgs(listID, "milk", "liters").
+		WillReturnRows(rows)
+
+	item, err := repo.GetItemByListNameUnit(context.Background(), listID, "milk", "liters")
+	require.NoError(t, err)
+	assert.Equal(t, id, item.ID)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestListRepository_SoftDeleteItem(t *testing.T) {
 	mock := newMockDB(t)
 	repo := NewListRepository(mock)
@@ -247,5 +268,20 @@ func TestListRepository_SoftDeleteItem(t *testing.T) {
 
 	err := repo.SoftDeleteItem(context.Background(), id)
 	require.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestListRepository_SoftDeleteItemsByList(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewListRepository(mock)
+	listID := fixedUUID()
+
+	mock.ExpectExec("UPDATE list_items SET deleted_at = .* WHERE list_id = .*").
+		WithArgs(pgxmock.AnyArg(), pgxmock.AnyArg(), listID, true).
+		WillReturnResult(pgxmock.NewResult("UPDATE", 3))
+
+	deleted, err := repo.SoftDeleteItemsByList(context.Background(), listID, true)
+	require.NoError(t, err)
+	assert.EqualValues(t, 3, deleted)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }

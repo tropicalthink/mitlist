@@ -16,7 +16,6 @@ import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
-import '../../widgets/app_card.dart';
 import '../../widgets/chip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/icons.dart';
@@ -489,7 +488,6 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
             ),
             child: AppAlert(type: AppAlertType.error, message: _error!),
           ),
-        _buildQuickCreateRow(),
         _buildChipBar(),
         Expanded(
           child: RefreshIndicator(
@@ -501,58 +499,6 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildQuickCreateRow() {
-    if (!_hasHousehold) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        MitlistSpacing.md,
-        MitlistSpacing.md,
-        MitlistSpacing.md,
-        0,
-      ),
-      child: AppCard(
-        interactive: true,
-        onTap: _showCreateSheet,
-        variant: AppCardVariant.filled,
-        tint: AppCardTint.primary,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              AppIcons.plus,
-              color: Theme.of(context).colorScheme.onPrimaryContainer,
-            ),
-            const SizedBox(width: MitlistSpacing.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Start a new list',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color:
-                              Theme.of(context).colorScheme.onPrimaryContainer,
-                          fontWeight: FontWeight.w600,
-                        ),
-                  ),
-                  const SizedBox(height: MitlistSpacing.space1),
-                  Text(
-                    'Name it here; add lines after you open it.',
-                    style: MitlistTypography.labelXSmall().copyWith(
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 

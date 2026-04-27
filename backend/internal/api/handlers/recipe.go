@@ -5,18 +5,20 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/yourorg/mitlist/internal/api"
 	"github.com/yourorg/mitlist/internal/models"
 	"github.com/yourorg/mitlist/internal/services"
 )
 
 // RecipeHandler exposes recipe and collection endpoints.
 type RecipeHandler struct {
-	service *services.RecipeService
+	service      *services.RecipeService
+	scrapeSvc    *services.RecipeScrapingService
 }
 
 // NewRecipeHandler creates a new RecipeHandler.
-func NewRecipeHandler(service *services.RecipeService) *RecipeHandler {
-	return &RecipeHandler{service: service}
+func NewRecipeHandler(service *services.RecipeService, scrapeSvc *services.RecipeScrapingService) *RecipeHandler {
+	return &RecipeHandler{service: service, scrapeSvc: scrapeSvc}
 }
 
 func (h *RecipeHandler) RegisterRoutes(r chi.Router) {
@@ -26,6 +28,7 @@ func (h *RecipeHandler) RegisterRoutes(r chi.Router) {
 	r.Patch("/recipes/{id}", h.UpdateRecipe)
 	r.Delete("/recipes/{id}", h.DeleteRecipe)
 	r.Post("/recipes/{id}/share", h.ShareRecipe)
+	r.Post("/recipes/clip", h.ClipRecipe)
 
 	r.Post("/collections", h.CreateCollection)
 	r.Get("/collections", h.ListCollections)
@@ -236,6 +239,37 @@ func (h *RecipeHandler) ShareRecipe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+type recipeClipRequest struct {
+	URL string `json:"url"`
+}
+
+func (h *RecipeHandler) ClipRecipe(w http.ResponseWriter, r *http.Request) {
+	_ = RequireUser(w, r) // authentication only; clip data is not user-specific
+
+	if h.scrapeSvc == nil {
+		respondError(w, &api.ValidationError{Field: "url", Message: "recipe scraping is not configured"})
+		return
+	}
+
+	var req recipeClipRequest
+	if err := decodeJSON(r, &req); err != nil {
+		respondError(w, err)
+		return
+	}
+	if req.URL == "" {
+		respondError(w, &api.ValidationError{Field: "url", Message: "url is required"})
+		return
+	}
+
+	clip, err := h.scrapeSvc.ScrapeRecipe(r.Context(), req.URL)
+	if err != nil {
+		respondError(w, &api.ValidationError{Field: "url", Message: err.Error()})
+		return
+	}
+
+	respondJSON(w, http.StatusOK, clip)
 }
 
 // ------------------------------------------------------------------

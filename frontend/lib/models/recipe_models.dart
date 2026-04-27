@@ -158,3 +158,65 @@ class ShareRecipeRequest {
   Map<String, dynamic> toJson() =>
       {'shared_with_user_id': sharedWithUserId, 'permission': permission};
 }
+
+class RecipeClipIngredient {
+  final String rawText;
+  const RecipeClipIngredient({required this.rawText});
+
+  factory RecipeClipIngredient.fromJson(Map<String, dynamic> json) =>
+      RecipeClipIngredient(
+        rawText: json['raw_text'] as String? ?? '',
+      );
+}
+
+class RecipeClipResponse {
+  final String title;
+  final String sourceUrl;
+  final String instructionsMd;
+  final int? prepTimeMinutes;
+  final int? cookTimeMinutes;
+  final String? servings;
+  final List<RecipeClipIngredient> ingredients;
+  final String? imageUrl;
+  final List<String> imageOptions;
+  final List<String> tags;
+
+  const RecipeClipResponse({
+    required this.title,
+    required this.sourceUrl,
+    required this.instructionsMd,
+    required this.prepTimeMinutes,
+    required this.cookTimeMinutes,
+    required this.servings,
+    required this.ingredients,
+    required this.imageUrl,
+    required this.imageOptions,
+    required this.tags,
+  });
+
+  factory RecipeClipResponse.fromJson(Map<String, dynamic> json) {
+    final ing = json['ingredients'];
+    return RecipeClipResponse(
+      title: json['title'] as String? ?? 'Untitled Recipe',
+      sourceUrl: json['source_url'] as String? ?? '',
+      instructionsMd: json['instructions_md'] as String? ?? '',
+      prepTimeMinutes: json['prep_time_minutes'] as int?,
+      cookTimeMinutes: json['cook_time_minutes'] as int?,
+      servings: json['servings'] as String?,
+      ingredients: (ing is List)
+          ? ing
+              .whereType<Map>()
+              .map((e) => RecipeClipIngredient.fromJson(
+                  e.cast<String, dynamic>()))
+              .toList()
+          : const [],
+      imageUrl: json['image_url'] as String?,
+      imageOptions: (json['image_options'] is List)
+          ? (json['image_options'] as List).whereType<String>().toList()
+          : const [],
+      tags: (json['tags'] is List)
+          ? (json['tags'] as List).whereType<String>().toList()
+          : const [],
+    );
+  }
+}

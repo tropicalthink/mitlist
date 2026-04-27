@@ -178,6 +178,7 @@ func (h *ListHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 		Name     string `json:"name"`
 		Quantity int    `json:"quantity"`
 		Unit     string `json:"unit"`
+		Note     string `json:"note"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondError(w, &api.ValidationError{Message: "invalid request body"})
@@ -189,6 +190,7 @@ func (h *ListHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 		Name:     req.Name,
 		Quantity: req.Quantity,
 		Unit:     req.Unit,
+		Note:     req.Note,
 	}
 	if err := h.service.CreateItem(r.Context(), user, item); err != nil {
 		respondError(w, err)
@@ -238,6 +240,7 @@ func (h *ListHandler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 		Name     *string `json:"name,omitempty"`
 		Quantity *int    `json:"quantity,omitempty"`
 		Unit     *string `json:"unit,omitempty"`
+		Note     *string `json:"note,omitempty"`
 		Checked  *bool   `json:"checked,omitempty"`
 		Position *int    `json:"position,omitempty"`
 	}
@@ -261,6 +264,9 @@ func (h *ListHandler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 	if req.Unit != nil {
 		existing.Unit = *req.Unit
 	}
+	if req.Note != nil {
+		existing.Note = *req.Note
+	}
 	if req.Checked != nil {
 		existing.Checked = *req.Checked
 	}
@@ -273,6 +279,104 @@ func (h *ListHandler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respondJSON(w, http.StatusOK, existing)
+}
+
+// ClearItems handles POST /api/v1/lists/{id}/items/clear.
+func (h *ListHandler) ClearItems(w http.ResponseWriter, r *http.Request) {
+	user, ok := userFromContext(r)
+	if !ok {
+		respondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	listID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		respondError(w, &api.ValidationError{Field: "id", Message: "invalid UUID"})
+		return
+	}
+
+	var req struct {
+		OnlyChecked bool `json:"only_checked"`
+	}
+	if r.Body != nil {
+		_ = json.NewDecoder(r.Body).Decode(&req)
+	}
+
+	deleted, err := h.service.ClearItems(r.Context(), user, listID, req.OnlyChecked)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	respondJSON(w, http.StatusOK, map[string]any{"deleted": deleted})
+}
+
+// AddItemAmount handles POST /api/v1/lists/{id}/items/add.
+func (h *ListHandler) AddItemAmount(w http.ResponseWriter, r *http.Request) {
+	user, ok := userFromContext(r)
+	if !ok {
+		respondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	listID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		respondError(w, &api.ValidationError{Field: "id", Message: "invalid UUID"})
+		return
+	}
+
+	var req struct {
+		Name   string `json:"name"`
+		Amount int    `json:"amount"`
+		Unit   string `json:"unit"`
+		Note   string `json:"note"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, &api.ValidationError{Message: "invalid request body"})
+		return
+	}
+
+	item, err := h.service.AddItemAmount(r.Context(), user, listID, req.Name, req.Amount, req.Unit, req.Note)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	respondJSON(w, http.StatusOK, item)
+}
+
+// RemoveItemAmount handles POST /api/v1/lists/{id}/items/remove.
+func (h *ListHandler) RemoveItemAmount(w http.ResponseWriter, r *http.Request) {
+	user, ok := userFromContext(r)
+	if !ok {
+		respondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	listID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		respondError(w, &api.ValidationError{Field: "id", Message: "invalid UUID"})
+		return
+	}
+
+	var req struct {
+		Name   string `json:"name"`
+		Amount int    `json:"amount"`
+		Unit   string `json:"unit"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, &api.ValidationError{Message: "invalid request body"})
+		return
+	}
+
+	item, removed, err := h.service.RemoveItemAmount(r.Context(), user, listID, req.Name, req.Amount, req.Unit)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	if item == nil {
+		respondJSON(w, http.StatusOK, map[string]any{"removed": false, "item": nil})
+		return
+	}
+	respondJSON(w, http.StatusOK, map[string]any{"removed": removed, "item": item})
 }
 
 // DeleteItem handles DELETE /api/v1/lists/{id}/items/{item_id}.

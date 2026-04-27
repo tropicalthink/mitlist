@@ -80,10 +80,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       _searchQuery = '';
       _showSearch = false;
       _searchController.clear();
-      _listName = (widget.initialListName != null &&
-              widget.initialListName!.isNotEmpty)
-          ? widget.initialListName!
-          : '';
+      _listName =
+          (widget.initialListName != null && widget.initialListName!.isNotEmpty)
+              ? widget.initialListName!
+              : '';
       _load();
       return;
     }
@@ -163,7 +163,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
     try {
       final bytes = await file.readAsBytes();
-      final attachmentRepo = await ref.read(attachmentRepositoryProvider.future);
+      final attachmentRepo =
+          await ref.read(attachmentRepositoryProvider.future);
       final attachment = await attachmentRepo.uploadAttachment(
         groupId: groupId,
         purpose: 'list_item_photo',
@@ -178,7 +179,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         attachmentId: attachment.id,
       );
 
-      final photos = await svc.listItemPhotos(groupId: groupId, itemId: item.id);
+      final photos =
+          await svc.listItemPhotos(groupId: groupId, itemId: item.id);
       if (!mounted) return;
       setState(() => _photosByItemId[item.id] = photos);
     } catch (e) {
@@ -242,7 +244,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         );
       } catch (_) {}
 
-      final updated = await svc.listItemPhotos(groupId: groupId, itemId: item.id);
+      final updated =
+          await svc.listItemPhotos(groupId: groupId, itemId: item.id);
       if (!mounted) return;
       setState(() => _photosByItemId[item.id] = updated);
     } catch (e) {
@@ -408,6 +411,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                         name: item.name,
                         quantity: item.quantity,
                         unit: item.unit,
+                        note: item.note,
                       ),
                     );
                     if (!mounted) return;
@@ -703,7 +707,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
   Widget _buildItemRow(ListItem item, TextTheme textTheme) {
     final photos = _photosByItemId[item.id];
-    final thumbUrl = (photos != null && photos.isNotEmpty) ? photos.first.url : null;
+    final thumbUrl =
+        (photos != null && photos.isNotEmpty) ? photos.first.url : null;
     return Material(
       color: Theme.of(context).colorScheme.surface,
       child: InkWell(
@@ -750,9 +755,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                 child: Text(
                   item.name,
                   style: textTheme.bodyLarge?.copyWith(
-                    decoration: item.checked
-                        ? TextDecoration.lineThrough
-                        : null,
+                    decoration:
+                        item.checked ? TextDecoration.lineThrough : null,
                     color: item.checked
                         ? MitlistColors.textTertiary
                         : MitlistColors.textPrimary,

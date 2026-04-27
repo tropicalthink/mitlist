@@ -126,6 +126,16 @@ class RecipeService {
     }
   }
 
+  Future<RecipeClipResponse> clipRecipeFromUrl(String url) async {
+    try {
+      final r = await _dio.post('/recipes/clip', data: {'url': url});
+      return RecipeClipResponse.fromJson((r.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Clip recipe failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
   Exception _handleError(DioException e) {
     if (e.response?.statusCode == 401) return Exception('Session expired');
     if (e.response?.statusCode == 403) return Exception('Access denied');

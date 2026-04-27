@@ -229,16 +229,16 @@ class BottomNavScaffold extends StatelessWidget {
         context.goNamed('home');
         return;
       case 1:
-        context.goNamed('lists');
+        context.goNamed('chores');
         return;
       case 2:
-        context.goNamed('chores');
+        context.goNamed('recipes');
         return;
       case 3:
         context.goNamed('money');
         return;
       case 4:
-        context.goNamed('recipes');
+        context.goNamed('lists');
         return;
     }
   }

@@ -818,7 +818,6 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
               message: _loadMoreErrorMessage!,
             ),
           ),
-        _buildQuickAddRow(),
         _buildChipBar(),
         Expanded(
           child: RefreshIndicator(
@@ -830,46 +829,6 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildQuickAddRow() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        MitlistSpacing.md,
-        MitlistSpacing.md,
-        MitlistSpacing.md,
-        0,
-      ),
-      child: AppCard(
-        interactive: true,
-        onTap: _onAddRecipe,
-        variant: AppCardVariant.filled,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Icon(AppIcons.plus),
-            const SizedBox(width: MitlistSpacing.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Import or write a recipe',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: MitlistSpacing.space1),
-                  Text(
-                    'Paste a URL, add nutrition notes, tag it, then drag it into the plan.',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 

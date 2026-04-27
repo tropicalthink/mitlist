@@ -24,6 +24,7 @@ type ListItem struct {
 	Name      string    `json:"name"`
 	Quantity  int       `json:"quantity"`
 	Unit      string    `json:"unit"`
+	Note      string    `json:"note,omitempty"`
 	Checked   bool      `json:"checked"`
 	Position  int       `json:"position"`
 	CreatedAt time.Time `json:"created_at"`

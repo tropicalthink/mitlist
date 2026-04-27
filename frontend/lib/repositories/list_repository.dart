@@ -42,14 +42,18 @@ class ListRepository {
     return rows.map(_toListItem).toList();
   }
 
-  Future<int> refreshLists(String groupId, {int limit = 200, int offset = 0}) async {
-    final remote = await _remote.listLists(groupId, limit: limit, offset: offset);
+  Future<int> refreshLists(String groupId,
+      {int limit = 200, int offset = 0}) async {
+    final remote =
+        await _remote.listLists(groupId, limit: limit, offset: offset);
     await _db.upsertListsRows(remote.map(_toListsRow));
     return remote.length;
   }
 
-  Future<int> refreshItems(String listId, {int limit = 500, int offset = 0}) async {
-    final remote = await _remote.listItems(listId, limit: limit, offset: offset);
+  Future<int> refreshItems(String listId,
+      {int limit = 500, int offset = 0}) async {
+    final remote =
+        await _remote.listItems(listId, limit: limit, offset: offset);
     await _db.deleteItemsForList(listId);
     await _db.upsertListItemsRows(remote.map(_toListItemsRow));
     return remote.length;
@@ -71,7 +75,8 @@ class ListRepository {
   // Offline-first writes (optimistic local + outbox)
   // ---------------------------------------------------------------------------
 
-  Future<ListItem> createItemOfflineFirst(String listId, CreateListItemRequest req) async {
+  Future<ListItem> createItemOfflineFirst(
+      String listId, CreateListItemRequest req) async {
     final tempId = _uuid.v4();
     final now = DateTime.now();
 
@@ -81,6 +86,7 @@ class ListRepository {
       name: req.name,
       quantity: req.quantity,
       unit: req.unit,
+      note: req.note,
       checked: false,
       position: 0,
       createdAt: now,
@@ -97,6 +103,7 @@ class ListRepository {
         'name': req.name,
         'quantity': req.quantity,
         'unit': req.unit,
+        'note': req.note,
       },
       idempotencyKey: 'createItem:$tempId',
     );
@@ -112,8 +119,8 @@ class ListRepository {
     UpdateListItemRequest req,
   ) async {
     // Optimistic local patch
-    final existingRow =
-        (await _db.getItemsByListOnce(listId)).firstWhere((e) => e.id == itemId);
+    final existingRow = (await _db.getItemsByListOnce(listId))
+        .firstWhere((e) => e.id == itemId);
     final existing = _toListItem(existingRow);
     final patched = ListItem(
       id: existing.id,
@@ -121,6 +128,7 @@ class ListRepository {
       name: req.name ?? existing.name,
       quantity: req.quantity ?? existing.quantity,
       unit: req.unit ?? existing.unit,
+      note: req.note ?? existing.note,
       checked: req.checked ?? existing.checked,
       position: req.position ?? existing.position,
       createdAt: existing.createdAt,
@@ -136,7 +144,8 @@ class ListRepository {
         'itemId': itemId,
         'patch': req.toJson(),
       },
-      idempotencyKey: 'updateItem:$itemId:${patched.updatedAt.toIso8601String()}',
+      idempotencyKey:
+          'updateItem:$itemId:${patched.updatedAt.toIso8601String()}',
     );
 
     await drainOutboxOnce();
@@ -196,7 +205,8 @@ class ListRepository {
     }
   }
 
-  Future<void> _syncCreateItem(String opId, Map<String, dynamic> payload) async {
+  Future<void> _syncCreateItem(
+      String opId, Map<String, dynamic> payload) async {
     final listId = payload['listId'] as String?;
     final tempId = payload['tempId'] as String?;
     final name = payload['name'] as String?;
@@ -211,6 +221,7 @@ class ListRepository {
         name: name,
         quantity: payload['quantity'] as int? ?? 1,
         unit: payload['unit'] as String? ?? '',
+        note: payload['note'] as String? ?? '',
       ),
     );
 
@@ -219,7 +230,8 @@ class ListRepository {
     await _db.deleteOutboxOp(opId);
   }
 
-  Future<void> _syncUpdateItem(String opId, Map<String, dynamic> payload) async {
+  Future<void> _syncUpdateItem(
+      String opId, Map<String, dynamic> payload) async {
     final listId = payload['listId'] as String?;
     final itemId = payload['itemId'] as String?;
     final patch = payload['patch'];
@@ -235,6 +247,7 @@ class ListRepository {
         name: patch['name'] as String?,
         quantity: patch['quantity'] as int?,
         unit: patch['unit'] as String?,
+        note: patch['note'] as String?,
         checked: patch['checked'] as bool?,
         position: patch['position'] as int?,
       ),
@@ -244,7 +257,8 @@ class ListRepository {
     await _db.deleteOutboxOp(opId);
   }
 
-  Future<void> _syncDeleteItem(String opId, Map<String, dynamic> payload) async {
+  Future<void> _syncDeleteItem(
+      String opId, Map<String, dynamic> payload) async {
     final listId = payload['listId'] as String?;
     final itemId = payload['itemId'] as String?;
     if (listId == null || itemId == null) {
@@ -308,6 +322,7 @@ class ListRepository {
       name: row.name,
       quantity: row.quantity,
       unit: row.unit,
+      note: '',
       checked: row.checked,
       position: row.position,
       createdAt: row.createdAt,

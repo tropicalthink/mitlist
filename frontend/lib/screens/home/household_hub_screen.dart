@@ -890,6 +890,7 @@ class _PinwallNoteCard extends ConsumerWidget {
       },
     );
 
+    if (!context.mounted) return;
     if (action == 'view') {
       _openMediaViewer(context, media);
       return;

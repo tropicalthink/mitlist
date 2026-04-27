@@ -115,6 +115,7 @@ CREATE TABLE list_items (
     name TEXT NOT NULL,
     quantity INTEGER NOT NULL DEFAULT 1,
     unit TEXT NOT NULL DEFAULT '',
+    note TEXT NOT NULL DEFAULT '',
     checked BOOLEAN NOT NULL DEFAULT false,
     position INTEGER NOT NULL DEFAULT 0,
     deleted_at TIMESTAMPTZ,

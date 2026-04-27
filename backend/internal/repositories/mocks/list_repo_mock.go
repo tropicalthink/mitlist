@@ -65,6 +65,14 @@ func (m *MockListRepo) GetItemByID(ctx context.Context, id uuid.UUID) (*models.L
 	return nil, args.Error(1)
 }
 
+func (m *MockListRepo) GetItemByListNameUnit(ctx context.Context, listID uuid.UUID, name, unit string) (*models.ListItem, error) {
+	args := m.Called(ctx, listID, name, unit)
+	if i := args.Get(0); i != nil {
+		return i.(*models.ListItem), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
 func (m *MockListRepo) ListItemsByList(ctx context.Context, listID uuid.UUID, limit, offset int) ([]models.ListItem, error) {
 	args := m.Called(ctx, listID, limit, offset)
 	if i := args.Get(0); i != nil {
@@ -86,6 +94,11 @@ func (m *MockListRepo) HardDeleteItem(ctx context.Context, id uuid.UUID) error {
 func (m *MockListRepo) SoftDeleteItem(ctx context.Context, id uuid.UUID) error {
 	args := m.Called(ctx, id)
 	return args.Error(0)
+}
+
+func (m *MockListRepo) SoftDeleteItemsByList(ctx context.Context, listID uuid.UUID, onlyChecked bool) (int64, error) {
+	args := m.Called(ctx, listID, onlyChecked)
+	return int64(args.Int(0)), args.Error(1)
 }
 
 func (m *MockListRepo) BatchUpdateItemPositions(ctx context.Context, items []models.ListItem) error {

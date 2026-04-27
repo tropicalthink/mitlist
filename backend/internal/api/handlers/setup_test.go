@@ -400,6 +400,9 @@ func newListRouter(t *testing.T) (chi.Router, *ListHandler) {
 	r.Delete("/api/v1/lists/{id}", h.DeleteList)
 	r.Post("/api/v1/lists/{id}/items", h.CreateItem)
 	r.Get("/api/v1/lists/{id}/items", h.ListItems)
+	r.Post("/api/v1/lists/{id}/items/clear", h.ClearItems)
+	r.Post("/api/v1/lists/{id}/items/add", h.AddItemAmount)
+	r.Post("/api/v1/lists/{id}/items/remove", h.RemoveItemAmount)
 	r.Patch("/api/v1/lists/{id}/items/{item_id}", h.UpdateItem)
 	r.Delete("/api/v1/lists/{id}/items/{item_id}", h.DeleteItem)
 	r.Post("/api/v1/lists/{id}/reorder", h.ReorderItems)
@@ -484,7 +487,7 @@ func newFinanceRouter(t *testing.T) (chi.Router, *FinanceHandler) {
 func newRecipeRouter(t *testing.T) (chi.Router, *RecipeHandler) {
 	recipeRepo := newTestRecipeRepo()
 	svc := services.NewRecipeService(recipeRepo)
-	h := NewRecipeHandler(svc)
+	h := NewRecipeHandler(svc, services.NewRecipeScrapingService())
 
 	r := chi.NewRouter()
 	r.Use(testAuthMiddleware)
@@ -494,6 +497,7 @@ func newRecipeRouter(t *testing.T) (chi.Router, *RecipeHandler) {
 	r.Patch("/api/v1/recipes/{id}", h.UpdateRecipe)
 	r.Delete("/api/v1/recipes/{id}", h.DeleteRecipe)
 	r.Post("/api/v1/recipes/{id}/share", h.ShareRecipe)
+	r.Post("/api/v1/recipes/clip", h.ClipRecipe)
 	r.Post("/api/v1/collections", h.CreateCollection)
 	r.Get("/api/v1/collections", h.ListCollections)
 	r.Get("/api/v1/collections/{id}", h.GetCollection)

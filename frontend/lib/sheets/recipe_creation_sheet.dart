@@ -41,12 +41,77 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
       TextEditingController(text: '1');
   bool _isPublic = false;
   bool _isSaving = false;
+  bool _isScraping = false;
   _RecipeEntryMode _mode = _RecipeEntryMode.manual;
 
   bool get _hasTitle => _titleController.text.trim().isNotEmpty;
   bool get _hasUrl => _urlController.text.trim().isNotEmpty;
   bool get _canCreate =>
       !_isSaving && (_mode == _RecipeEntryMode.url ? _hasUrl : _hasTitle);
+
+  bool get _canScrape => _mode == _RecipeEntryMode.url && _hasUrl && !_isSaving;
+
+  Future<void> _onScrape() async {
+    if (_isScraping || _isSaving) return;
+    final url = _urlController.text.trim();
+    if (url.isEmpty) return;
+
+    setState(() => _isScraping = true);
+    try {
+      final recipeService = await ref.read(recipeServiceProviderAsync.future);
+      final clip = await recipeService.clipRecipeFromUrl(url);
+
+      if (!mounted) return;
+
+      if (_titleController.text.trim().isEmpty && clip.title.trim().isNotEmpty) {
+        _titleController.text = clip.title.trim();
+      }
+
+      if (clip.prepTimeMinutes != null && clip.prepTimeMinutes! > 0) {
+        _prepTimeController.text = clip.prepTimeMinutes.toString();
+      }
+      if (clip.cookTimeMinutes != null && clip.cookTimeMinutes! > 0) {
+        _cookTimeController.text = clip.cookTimeMinutes.toString();
+      }
+      final servings = (clip.servings ?? '').trim();
+      if (servings.isNotEmpty) {
+        final parsed = int.tryParse(servings);
+        if (parsed != null && parsed > 0 && _servingsController.text.trim() == '1') {
+          _servingsController.text = parsed.toString();
+        }
+      }
+
+      if (_ingredientsController.text.trim().isEmpty &&
+          clip.ingredients.isNotEmpty) {
+        _ingredientsController.text =
+            clip.ingredients.map((i) => i.rawText).join('\n');
+      }
+
+      if (_stepsController.text.trim().isEmpty &&
+          clip.instructionsMd.trim().isNotEmpty) {
+        _stepsController.text = clip.instructionsMd
+            .split('\n\n')
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty)
+            .join('\n');
+      }
+
+      if (_tagsController.text.trim().isEmpty && clip.tags.isNotEmpty) {
+        _tagsController.text = clip.tags.join(', ');
+      }
+
+      setState(() => _isScraping = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Details fetched')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isScraping = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Couldn’t fetch details from that link.')),
+      );
+    }
+  }
 
   Future<void> _onCreate() async {
     if (!_canCreate) return;
@@ -184,6 +249,19 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
               keyboardType: TextInputType.url,
               textInputAction: TextInputAction.next,
               onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: MitlistSpacing.sm),
+            Row(
+              children: [
+                AppButton(
+                  size: AppButtonSize.sm,
+                  variant: AppButtonVariant.outline,
+                  color: AppButtonColor.neutral,
+                  text: _isScraping ? 'Fetching…' : 'Fetch details',
+                  isLoading: _isScraping,
+                  onPressed: _canScrape ? _onScrape : null,
+                ),
+              ],
             ),
             const SizedBox(height: MitlistSpacing.md),
           ],

@@ -16,6 +16,7 @@ import (
 	"github.com/yourorg/mitlist/internal/middleware"
 	"github.com/yourorg/mitlist/internal/redis"
 	"github.com/yourorg/mitlist/internal/server"
+	"github.com/yourorg/mitlist/internal/services"
 	"github.com/yourorg/mitlist/pkg/logger"
 )
 
@@ -140,6 +141,9 @@ func main() {
 			r.Delete("/lists/{id}", listHandler.DeleteList)
 			r.Post("/lists/{id}/items", listHandler.CreateItem)
 			r.Get("/lists/{id}/items", listHandler.ListItems)
+			r.Post("/lists/{id}/items/clear", listHandler.ClearItems)
+			r.Post("/lists/{id}/items/add", listHandler.AddItemAmount)
+			r.Post("/lists/{id}/items/remove", listHandler.RemoveItemAmount)
 			r.Patch("/lists/{id}/items/{item_id}", listHandler.UpdateItem)
 			r.Delete("/lists/{id}/items/{item_id}", listHandler.DeleteItem)
 			r.Post("/lists/{id}/reorder", listHandler.ReorderItems)
@@ -199,7 +203,8 @@ func main() {
 			r.Delete("/recurring-expenses/{id}", financeHandler.DeleteRecurringExpense)
 
 			// Recipes
-			recipeHandler := handlers.NewRecipeHandler(cnt.RecipeService())
+			recipeScrapeSvc := services.NewRecipeScrapingService()
+			recipeHandler := handlers.NewRecipeHandler(cnt.RecipeService(), recipeScrapeSvc)
 			recipeHandler.RegisterRoutes(r)
 
 			// Assistant

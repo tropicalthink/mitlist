@@ -64,10 +64,12 @@ type ListRepo interface {
 	HardDeleteList(ctx context.Context, id uuid.UUID) error
 	CreateItem(ctx context.Context, item *models.ListItem) error
 	GetItemByID(ctx context.Context, id uuid.UUID) (*models.ListItem, error)
+	GetItemByListNameUnit(ctx context.Context, listID uuid.UUID, name, unit string) (*models.ListItem, error)
 	ListItemsByList(ctx context.Context, listID uuid.UUID, limit, offset int) ([]models.ListItem, error)
 	UpdateItem(ctx context.Context, item *models.ListItem) error
 	HardDeleteItem(ctx context.Context, id uuid.UUID) error
 	SoftDeleteItem(ctx context.Context, id uuid.UUID) error
+	SoftDeleteItemsByList(ctx context.Context, listID uuid.UUID, onlyChecked bool) (int64, error)
 	BatchUpdateItemPositions(ctx context.Context, items []models.ListItem) error
 }
 

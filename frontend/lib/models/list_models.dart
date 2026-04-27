@@ -4,6 +4,7 @@ class ItemList {
   final String name;
   final String type;
   final int? itemCount;
+
   /// First lines from the list (hub card preview), from API `item_preview`.
   final List<String> itemPreview;
   final DateTime createdAt;
@@ -56,6 +57,7 @@ class ListItem {
   final String name;
   final int quantity;
   final String unit;
+  final String note;
   final bool checked;
   final int position;
   final DateTime createdAt;
@@ -67,6 +69,7 @@ class ListItem {
     required this.name,
     required this.quantity,
     required this.unit,
+    this.note = '',
     required this.checked,
     required this.position,
     required this.createdAt,
@@ -80,6 +83,7 @@ class ListItem {
       name: json['name'] as String,
       quantity: json['quantity'] as int? ?? 1,
       unit: json['unit'] as String? ?? '',
+      note: json['note'] as String? ?? '',
       checked: json['checked'] as bool? ?? false,
       position: json['position'] as int? ?? 0,
       createdAt: DateTime.parse(json['created_at'] as String),
@@ -93,6 +97,7 @@ class ListItem {
         'name': name,
         'quantity': quantity,
         'unit': unit,
+        if (note.isNotEmpty) 'note': note,
         'checked': checked,
         'position': position,
         'created_at': createdAt.toIso8601String(),
@@ -128,29 +133,80 @@ class CreateListItemRequest {
   final String name;
   final int quantity;
   final String unit;
+  final String note;
   const CreateListItemRequest(
-      {required this.name, this.quantity = 1, this.unit = ''});
-  Map<String, dynamic> toJson() =>
-      {'name': name, 'quantity': quantity, 'unit': unit};
+      {required this.name, this.quantity = 1, this.unit = '', this.note = ''});
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'quantity': quantity,
+        'unit': unit,
+        if (note.isNotEmpty) 'note': note
+      };
 }
 
 class UpdateListItemRequest {
   final String? name;
   final int? quantity;
   final String? unit;
+  final String? note;
   final bool? checked;
   final int? position;
   const UpdateListItemRequest(
-      {this.name, this.quantity, this.unit, this.checked, this.position});
+      {this.name,
+      this.quantity,
+      this.unit,
+      this.note,
+      this.checked,
+      this.position});
   Map<String, dynamic> toJson() {
     final m = <String, dynamic>{};
     if (name != null) m['name'] = name;
     if (quantity != null) m['quantity'] = quantity;
     if (unit != null) m['unit'] = unit;
+    if (note != null) m['note'] = note;
     if (checked != null) m['checked'] = checked;
     if (position != null) m['position'] = position;
     return m;
   }
+}
+
+class AddListItemAmountRequest {
+  final String name;
+  final int amount;
+  final String unit;
+  final String note;
+
+  const AddListItemAmountRequest({
+    required this.name,
+    this.amount = 1,
+    this.unit = '',
+    this.note = '',
+  });
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'amount': amount,
+        'unit': unit,
+        if (note.isNotEmpty) 'note': note,
+      };
+}
+
+class RemoveListItemAmountRequest {
+  final String name;
+  final int amount;
+  final String unit;
+
+  const RemoveListItemAmountRequest({
+    required this.name,
+    this.amount = 1,
+    this.unit = '',
+  });
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'amount': amount,
+        'unit': unit,
+      };
 }
 
 class ReorderItemsRequest {
