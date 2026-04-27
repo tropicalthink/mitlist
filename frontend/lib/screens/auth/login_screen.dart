@@ -235,7 +235,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           );
         },
       ),
-    );
+    ).whenComplete(() {
+      emailController.dispose();
+      tokenController.dispose();
+      newPasswordController.dispose();
+      confirmPasswordController.dispose();
+    });
   }
 
   Future<void> _startOAuth(String provider) async {

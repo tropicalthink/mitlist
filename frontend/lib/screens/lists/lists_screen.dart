@@ -316,17 +316,14 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     return Scaffold(
       appBar: MitlistAppBar(
         centerTitle: false,
+        showStandardActions: false,
         leading: _showSearch
             ? IconButton(
                 icon: const Icon(AppIcons.arrowLeft),
                 tooltip: 'Back',
                 onPressed: _clearSearch,
               )
-            : IconButton(
-                icon: const Icon(AppIcons.userGroup),
-                tooltip: 'To households',
-                onPressed: () => context.goNamed('groupsList'),
-              ),
+            : null,
         title: _showSearch
             ? TextField(
                 controller: _searchController,

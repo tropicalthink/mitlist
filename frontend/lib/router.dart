@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'providers/auth_provider.dart';
 import 'providers/group_provider.dart';
 import 'services/group_id_validator.dart';
+import 'services/group_service.dart';
+import 'models/group_models.dart';
 
 import 'screens/home/groups_list_screen.dart';
 import 'screens/lists/lists_screen.dart';
@@ -216,10 +218,10 @@ class BottomNavScaffold extends StatelessWidget {
 
   int _calculateIndex(String location) {
     if (location.startsWith('/home')) return 0;
-    if (location.startsWith('/chores')) return 2;
-    if (location.startsWith('/recipes')) return 4;
+    if (location.startsWith('/chores')) return 1;
+    if (location.startsWith('/recipes')) return 2;
     if (location.startsWith('/money')) return 3;
-    if (location.startsWith('/lists')) return 1;
+    if (location.startsWith('/lists')) return 4;
     return 0;
   }
 
@@ -252,10 +254,18 @@ class _HomeEntryScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeEntryScreenState extends ConsumerState<_HomeEntryScreen> {
+  late final Future<GroupService> _groupServiceFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _groupServiceFuture = ref.read(groupServiceProviderAsync.future);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: ref.read(groupServiceProviderAsync.future),
+    return FutureBuilder<GroupService>(
+      future: _groupServiceFuture,
       builder: (context, serviceSnap) {
         if (serviceSnap.connectionState != ConnectionState.done) {
           return const Scaffold(
@@ -267,24 +277,47 @@ class _HomeEntryScreenState extends ConsumerState<_HomeEntryScreen> {
           return const GroupsListScreen();
         }
 
-        return FutureBuilder(
-          future: serviceSnap.data!.listGroups(limit: 1),
-          builder: (context, groupsSnap) {
-            if (groupsSnap.connectionState != ConnectionState.done) {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              );
-            }
+        return _GroupResolver(service: serviceSnap.data!);
+      },
+    );
+  }
+}
 
-            final groups = groupsSnap.data ?? const [];
-            final groupId = groups.isEmpty ? null : groups.first.id;
-            if (!isValidGroupId(groupId)) {
-              return const GroupsListScreen();
-            }
+class _GroupResolver extends StatefulWidget {
+  final GroupService service;
+  const _GroupResolver({required this.service});
 
-            return HouseholdHubScreen(groupId: groupId!);
-          },
-        );
+  @override
+  State<_GroupResolver> createState() => _GroupResolverState();
+}
+
+class _GroupResolverState extends State<_GroupResolver> {
+  late final Future<List<Group>> _groupsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _groupsFuture = widget.service.listGroups(limit: 1);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<Group>>(
+      future: _groupsFuture,
+      builder: (context, groupsSnap) {
+        if (groupsSnap.connectionState != ConnectionState.done) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final groups = groupsSnap.data ?? const [];
+        final groupId = groups.isEmpty ? null : groups.first.id;
+        if (!isValidGroupId(groupId)) {
+          return const GroupsListScreen();
+        }
+
+        return HouseholdHubScreen(groupId: groupId!);
       },
     );
   }

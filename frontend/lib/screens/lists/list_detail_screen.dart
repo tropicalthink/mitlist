@@ -315,6 +315,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   void _checkCompletionBanner() {
+    if (!mounted) return;
     final total = _items.length;
     final completed = _items.where((i) => i.checked).length;
 
@@ -594,14 +595,14 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     });
                   },
                 ),
+                TextButton(
+                  onPressed: _completeAll,
+                  child: const Text('Check all'),
+                ),
                 PopupMenuButton<String>(
                   icon: const AppIcon(name: 'ellipsisVertical'),
                   onSelected: _onMenuSelected,
                   itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'complete_all',
-                      child: Text('Check off all'),
-                    ),
                     const PopupMenuItem(
                       value: 'clear_checked',
                       child: Text('Clear checked'),
@@ -946,14 +947,20 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Widget _buildEmpty() {
-    return const Center(
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(MitlistSpacing.md),
+        padding: const EdgeInsets.all(MitlistSpacing.md),
         child: AppEmptyState(
-          icon: AppIcon(name: 'queueList'),
+          icon: const AppIcon(name: 'queueList'),
           title: 'Nothing on the list yet',
           description:
-              'Add things below — milk, bread, whatever you need. Tap a row to check it off while you shop.',
+              'Add milk, bread, eggs — whatever you need. Tap the + below to get started.',
+          actions: [
+            AppButton(
+              text: 'Add first item',
+              onPressed: () => _composerFocusNode.requestFocus(),
+            ),
+          ],
         ),
       ),
     );

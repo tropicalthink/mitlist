@@ -220,7 +220,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           );
         },
       ),
-    );
+    ).whenComplete(() {
+      currentPasswordController.dispose();
+      newPasswordController.dispose();
+      confirmPasswordController.dispose();
+    });
   }
 
   void _showTermsSheet() {
@@ -458,11 +462,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     return Scaffold(
       appBar: MitlistAppBar.titleText(
         'You',
-        leading: IconButton(
-          icon: const AppIcon(name: 'userGroup'),
-          tooltip: 'To households',
-          onPressed: () => context.goNamed('groupsList'),
-        ),
+        showStandardActions: false,
       ),
       body: ListView(
         padding: const EdgeInsets.all(MitlistSpacing.md),

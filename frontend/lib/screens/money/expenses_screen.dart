@@ -460,11 +460,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     return Scaffold(
       appBar: MitlistAppBar.titleText(
         'Money',
-        leading: IconButton(
-          icon: const AppIcon(name: 'userGroup'),
-          tooltip: 'To households',
-          onPressed: () => context.goNamed('groupsList'),
-        ),
+        showStandardActions: false,
       ),
       body: Column(
         children: [

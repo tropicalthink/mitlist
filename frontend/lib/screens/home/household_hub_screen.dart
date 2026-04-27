@@ -26,14 +26,14 @@ import '../../theme/colors.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
-import '../../widgets/app_icon.dart';
 import '../../widgets/skeleton.dart';
 import '../../theme/spacing.dart';
 import '../../sheets/invite_household_sheet.dart';
 
 final _currencyFormat = NumberFormat.currency(symbol: '\$');
 
-final _pinwallMediaByPostProvider = FutureProvider.family<List<PinwallMediaItem>, ({String groupId, String postId})>(
+final _pinwallMediaByPostProvider = FutureProvider.family<
+    List<PinwallMediaItem>, ({String groupId, String postId})>(
   (ref, args) async {
     final svc = await ref.read(pinwallServiceProviderAsync.future);
     return svc.listPostAttachments(groupId: args.groupId, postId: args.postId);
@@ -167,14 +167,56 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     }
   }
 
+  Future<void> _uploadDiagnosticAttachment() async {
+    try {
+      final repo = await ref.read(
+        attachmentRepositoryProvider.future,
+      );
+      final bytes = utf8.encode(
+        'mitlist attachment diagnostic\n'
+        'group=${widget.groupId}\n'
+        'ts=${DateTime.now().toIso8601String()}\n',
+      );
+      final a = await repo.uploadAttachment(
+        groupId: widget.groupId,
+        purpose: 'debug_diagnostic',
+        filename: 'diagnostic.txt',
+        contentType: 'text/plain; charset=utf-8',
+        bytes: Uint8List.fromList(bytes),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Uploaded diagnostic ${a.id}',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Diagnostic upload failed: $e',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       floatingActionButton: _isLoading || _error != null
           ? null
-          : FloatingActionButton(
+          : FloatingActionButton.extended(
               onPressed: () => _openQuickAddSheet(context),
-              child: const Icon(Icons.add),
+              icon: const Icon(Icons.add),
+              label: const Text('Quick add'),
             ),
       body: _isLoading
           ? const _SkeletonDashboard()
@@ -201,9 +243,11 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                 )
               : RefreshIndicator(
                   onRefresh: () async {
-                    ref.invalidate(cachedFinanceSummaryByGroupProvider(widget.groupId));
+                    ref.invalidate(
+                        cachedFinanceSummaryByGroupProvider(widget.groupId));
                     ref.invalidate(cachedListsByGroupProvider(widget.groupId));
-                    ref.invalidate(cachedCurrentChoresByGroupProvider(widget.groupId));
+                    ref.invalidate(
+                        cachedCurrentChoresByGroupProvider(widget.groupId));
                     ref.invalidate(pinwallPostsByGroupProvider(widget.groupId));
                     await _loadData();
 
@@ -211,11 +255,14 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                     try {
                       final financeRepo =
                           await ref.read(financeRepositoryProvider.future);
-                      await financeRepo.refreshGroup(widget.groupId, limit: 50, offset: 0);
+                      await financeRepo.refreshGroup(widget.groupId,
+                          limit: 50, offset: 0);
                     } catch (_) {}
                     try {
-                      final listRepo = await ref.read(listRepositoryProvider.future);
-                      await listRepo.refreshLists(widget.groupId, limit: 50, offset: 0);
+                      final listRepo =
+                          await ref.read(listRepositoryProvider.future);
+                      await listRepo.refreshLists(widget.groupId,
+                          limit: 50, offset: 0);
                     } catch (_) {}
                     try {
                       final choreRepo =
@@ -225,7 +272,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                     try {
                       final pinRepo =
                           await ref.read(pinwallRepositoryProvider.future);
-                      await pinRepo.refreshPosts(widget.groupId, limit: 20, offset: 0);
+                      await pinRepo.refreshPosts(widget.groupId,
+                          limit: 20, offset: 0);
                     } catch (_) {}
                   },
                   child: CustomScrollView(
@@ -235,11 +283,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                         pinned: true,
                         elevation: 0,
                         backgroundColor: Theme.of(context).colorScheme.surface,
-                        leading: IconButton(
-                          icon: const AppIcon(name: 'userGroup'),
-                          tooltip: 'To households',
-                          onPressed: () => context.goNamed('groupsList'),
-                        ),
+                        leading: null,
                         title: Text(
                           _data?.name ?? 'Home',
                           maxLines: 1,
@@ -254,51 +298,6 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                               groupId: widget.groupId,
                             ),
                           ),
-                          if (!kReleaseMode)
-                            IconButton(
-                              tooltip: 'Upload test attachment',
-                              icon: const Icon(Icons.cloud_upload_outlined),
-                              onPressed: () async {
-                                try {
-                                  final repo = await ref.read(
-                                    attachmentRepositoryProvider.future,
-                                  );
-                                  final bytes = utf8.encode(
-                                    'mitlist attachment diagnostic\n'
-                                    'group=${widget.groupId}\n'
-                                    'ts=${DateTime.now().toIso8601String()}\n',
-                                  );
-                                  final a = await repo.uploadAttachment(
-                                    groupId: widget.groupId,
-                                    purpose: 'debug_diagnostic',
-                                    filename: 'diagnostic.txt',
-                                    contentType: 'text/plain; charset=utf-8',
-                                    bytes: Uint8List.fromList(bytes),
-                                  );
-                                  if (!context.mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Uploaded attachment ${a.id}',
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  );
-                                } catch (e) {
-                                  if (!context.mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Upload failed: $e',
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  );
-                                }
-                              },
-                            ),
                           IconButton(
                             tooltip: 'Notifications',
                             icon: const Icon(Icons.notifications_none_outlined),
@@ -309,6 +308,22 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                             icon: const Icon(Icons.person_outline),
                             onPressed: () => context.pushNamed('you'),
                           ),
+                          if (!kReleaseMode)
+                            PopupMenuButton<String>(
+                              tooltip: 'Developer tools',
+                              icon: const Icon(Icons.more_horiz),
+                              onSelected: (value) {
+                                if (value == 'diagnostic') {
+                                  _uploadDiagnosticAttachment();
+                                }
+                              },
+                              itemBuilder: (_) => const [
+                                PopupMenuItem(
+                                  value: 'diagnostic',
+                                  child: Text('Upload diagnostic file'),
+                                ),
+                              ],
+                            ),
                           const SizedBox(width: MitlistSpacing.xs),
                         ],
                       ),
@@ -319,14 +334,13 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                             [
                               _GreetingHeader(
                                 me: _me,
-                                householdName: _data?.name,
                               ),
                               const SizedBox(height: MitlistSpacing.lg),
                               _PinwallSection(groupId: widget.groupId, me: _me),
-              const SizedBox(height: MitlistSpacing.md),
-              _SectionLabel(label: 'At a glance'),
-              const SizedBox(height: MitlistSpacing.sm),
-              _StatsRow(groupId: widget.groupId, me: _me),
+                              const SizedBox(height: MitlistSpacing.md),
+                              _SectionLabel(label: 'At a glance'),
+                              const SizedBox(height: MitlistSpacing.sm),
+                              _StatsRow(groupId: widget.groupId, me: _me),
                               const SizedBox(height: MitlistSpacing.lg),
                               _WallSection(
                                 activities: _snapshot!.activities,
@@ -447,11 +461,9 @@ Future<void> _openQuickAddSheet(BuildContext context) async {
 class _GreetingHeader extends StatelessWidget {
   const _GreetingHeader({
     required this.me,
-    required this.householdName,
   });
 
   final User? me;
-  final String? householdName;
 
   @override
   Widget build(BuildContext context) {
@@ -465,13 +477,6 @@ class _GreetingHeader extends StatelessWidget {
         Text(
           '$greeting$who!',
           style: textTheme.headlineSmall,
-        ),
-        const SizedBox(height: MitlistSpacing.xs),
-        Text(
-          householdName ?? 'Your household',
-          style: textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
         ),
       ],
     );
@@ -492,12 +497,12 @@ const _kNotePalette = [
   Color(0xFFE1BEE7), // lavender
 ];
 const _kNotePaletteDark = [
-  Color(0xFF5D5000), // dark yellow
-  Color(0xFF6D3000), // dark peach
-  Color(0xFF1B5E20), // dark mint
-  Color(0xFF01579B), // dark sky
-  Color(0xFF880E4F), // dark blush
-  Color(0xFF4A148C), // dark lavender
+  Color(0xFF6B5D3A), // warm dark yellow
+  Color(0xFF7A5A3A), // warm dark peach
+  Color(0xFF3A5A40), // muted dark mint
+  Color(0xFF3A5A6B), // muted dark sky
+  Color(0xFF6B3A4A), // muted dark blush
+  Color(0xFF5A4A6B), // muted dark lavender
 ];
 
 class _PinwallSection extends ConsumerStatefulWidget {
@@ -537,13 +542,15 @@ class _PinwallSectionState extends ConsumerState<_PinwallSection> {
     setState(() => _isPosting = true);
     try {
       final svc = await ref.read(pinwallServiceProviderAsync.future);
-      final post = await svc.createPost(widget.groupId, content: content.isEmpty ? ' ' : content);
+      final post = await svc.createPost(widget.groupId,
+          content: content.isEmpty ? ' ' : content);
       if (!mounted) return;
 
       if (_pendingMedia.isNotEmpty) {
         setState(() => _isUploadingMedia = true);
         try {
-          final attachmentRepo = await ref.read(attachmentRepositoryProvider.future);
+          final attachmentRepo =
+              await ref.read(attachmentRepositoryProvider.future);
           for (final f in List<XFile>.from(_pendingMedia)) {
             final bytes = await f.readAsBytes();
             final a = await attachmentRepo.uploadAttachment(
@@ -571,6 +578,11 @@ class _PinwallSectionState extends ConsumerState<_PinwallSection> {
 
       _controller.clear();
       ref.invalidate(pinwallPostsByGroupProvider(widget.groupId));
+      if (!mounted) return;
+      Haptics.light();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pinned to the wall')),
+      );
     } finally {
       if (mounted) setState(() => _isPosting = false);
     }
@@ -582,10 +594,10 @@ class _PinwallSectionState extends ConsumerState<_PinwallSection> {
     final textTheme = Theme.of(context).textTheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
 
-    // Cork board colours
     final boardBg = dark ? const Color(0xFF2A211A) : const Color(0xFFC8A97A);
-    final boardBorder = dark ? const Color(0xFF4A3C2E) : const Color(0xFF8B5E3C);
-    final boardShadow = Colors.black.withValues(alpha: dark ? 0.5 : 0.22);
+    final boardBorder =
+        dark ? const Color(0xFF4A3C2E) : const Color(0xFF8B5E3C);
+    final boardShadow = Colors.black.withValues(alpha: dark ? 0.38 : 0.16);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -597,25 +609,23 @@ class _PinwallSectionState extends ConsumerState<_PinwallSection> {
             style: textTheme.titleMedium,
           ),
         ),
-        // One big board surface that holds the composer AND the notes
         Container(
-          padding: const EdgeInsets.all(MitlistSpacing.md),
+          padding: const EdgeInsets.all(MitlistSpacing.sm),
           decoration: BoxDecoration(
             color: boardBg,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: boardBorder, width: 3),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: boardBorder, width: 2),
             boxShadow: [
               BoxShadow(
                 color: boardShadow,
-                blurRadius: 18,
-                offset: const Offset(0, 8),
+                blurRadius: 10,
+                offset: const Offset(4, 5),
               ),
             ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Composer note (always visible at the top of the board)
               _PinwallComposerNote(
                 controller: _controller,
                 isPosting: _isPosting,
@@ -630,13 +640,16 @@ class _PinwallSectionState extends ConsumerState<_PinwallSection> {
                 error: (_, __) => Container(
                   padding: const EdgeInsets.all(MitlistSpacing.md),
                   decoration: BoxDecoration(
-                    color: dark ? const Color(0xFF3A2A1A) : const Color(0xFFFFF9C4),
+                    color: dark
+                        ? const Color(0xFF3A2A1A)
+                        : const Color(0xFFFFF9C4),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: boardBorder, width: 1.5),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.warning_amber_rounded, color: Color(0xFFF97316)),
+                      const Icon(Icons.warning_amber_rounded,
+                          color: Color(0xFFF97316)),
                       const SizedBox(width: MitlistSpacing.sm),
                       Expanded(
                         child: Text(
@@ -645,7 +658,8 @@ class _PinwallSectionState extends ConsumerState<_PinwallSection> {
                         ),
                       ),
                       TextButton(
-                        onPressed: () => ref.invalidate(pinwallPostsByGroupProvider(widget.groupId)),
+                        onPressed: () => ref.invalidate(
+                            pinwallPostsByGroupProvider(widget.groupId)),
                         child: const Text('Retry'),
                       ),
                     ],
@@ -654,12 +668,15 @@ class _PinwallSectionState extends ConsumerState<_PinwallSection> {
                 data: (rows) {
                   if (rows.isEmpty) {
                     return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.md),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: MitlistSpacing.md),
                       child: Text(
-                        'No notes yet — be the first to post!',
+                        'The wall is clear. Pin a note, photo, or reminder for everyone.',
                         textAlign: TextAlign.center,
                         style: textTheme.bodySmall?.copyWith(
-                          color: dark ? const Color(0xFF8B7355) : const Color(0xFF5D4037),
+                          color: dark
+                              ? const Color(0xFF8B7355)
+                              : const Color(0xFF5D4037),
                         ),
                       ),
                     );
@@ -731,14 +748,9 @@ class _PinwallComposerNote extends StatelessWidget {
             border: Border.all(color: border, width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: dark ? 0.5 : 0.2),
-                blurRadius: 18,
-                offset: const Offset(2, 12),
-              ),
-              BoxShadow(
-                color: Colors.black.withValues(alpha: dark ? 0.25 : 0.07),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
+                color: Colors.black.withValues(alpha: dark ? 0.42 : 0.16),
+                blurRadius: 0,
+                offset: const Offset(4, 5),
               ),
             ],
           ),
@@ -751,7 +763,9 @@ class _PinwallComposerNote extends StatelessWidget {
                 maxLines: 6,
                 textInputAction: TextInputAction.newline,
                 style: textTheme.bodyMedium?.copyWith(
-                  color: dark ? Colors.white.withValues(alpha: 0.9) : MitlistColors.textPrimary,
+                  color: dark
+                      ? Colors.white.withValues(alpha: 0.9)
+                      : MitlistColors.textPrimary,
                 ),
                 decoration: InputDecoration(
                   hintText: 'Post a note to the household\u2026',
@@ -767,16 +781,20 @@ class _PinwallComposerNote extends StatelessWidget {
               Row(
                 children: [
                   TextButton.icon(
-                    onPressed: (isPosting || isUploadingMedia) ? null : onPickMedia,
+                    onPressed:
+                        (isPosting || isUploadingMedia) ? null : onPickMedia,
                     icon: const Icon(Icons.photo_outlined, size: 18),
-                    label: Text(pendingCount == 0 ? 'Photo' : '$pendingCount added'),
+                    label: Text(
+                        pendingCount == 0 ? 'Photo' : '$pendingCount added'),
                   ),
                   const Spacer(),
                   AppButton(
                     text: isUploadingMedia
                         ? 'Uploading...'
                         : (isPosting ? 'Posting...' : 'Pin it'),
+                    icon: const Icon(Icons.push_pin_outlined),
                     onPressed: (isPosting || isUploadingMedia) ? null : onPost,
+                    variant: AppButtonVariant.soft,
                     size: AppButtonSize.sm,
                   ),
                 ],
@@ -784,7 +802,6 @@ class _PinwallComposerNote extends StatelessWidget {
             ],
           ),
         ),
-        // Pushpin centred at top
         Positioned(
           top: -14,
           left: 0,
@@ -905,14 +922,16 @@ class _PinwallNoteCard extends ConsumerWidget {
         );
         // Best-effort cleanup: avoid orphaned attachments.
         try {
-          final attachSvc = await ref.read(attachmentServiceProviderAsync.future);
+          final attachSvc =
+              await ref.read(attachmentServiceProviderAsync.future);
           await attachSvc.deleteAttachment(
             groupId: groupId,
             attachmentId: media.attachmentId,
           );
         } catch (_) {}
         ref.invalidate(
-          _pinwallMediaByPostProvider((groupId: groupId, postId: post.id as String)),
+          _pinwallMediaByPostProvider(
+              (groupId: groupId, postId: post.id as String)),
         );
       } catch (_) {
         if (context.mounted) {
@@ -929,7 +948,8 @@ class _PinwallNoteCard extends ConsumerWidget {
     if (files.isEmpty) return;
 
     try {
-      final attachmentRepo = await ref.read(attachmentRepositoryProvider.future);
+      final attachmentRepo =
+          await ref.read(attachmentRepositoryProvider.future);
       final svc = await ref.read(pinwallServiceProviderAsync.future);
 
       for (final f in files) {
@@ -949,7 +969,8 @@ class _PinwallNoteCard extends ConsumerWidget {
       }
 
       ref.invalidate(
-        _pinwallMediaByPostProvider((groupId: groupId, postId: post.id as String)),
+        _pinwallMediaByPostProvider(
+            (groupId: groupId, postId: post.id as String)),
       );
     } catch (_) {
       if (context.mounted) {
@@ -987,7 +1008,8 @@ class _PinwallNoteCard extends ConsumerWidget {
     final pinColor = pinColors[index % pinColors.length];
 
     final media = ref.watch(
-      _pinwallMediaByPostProvider((groupId: groupId, postId: post.id as String)),
+      _pinwallMediaByPostProvider(
+          (groupId: groupId, postId: post.id as String)),
     );
 
     Future<void> onDelete() async {
@@ -997,7 +1019,8 @@ class _PinwallNoteCard extends ConsumerWidget {
       ref.invalidate(pinwallPostsByGroupProvider(groupId));
     }
 
-    final textColor = dark ? Colors.white.withValues(alpha: 0.9) : MitlistColors.textPrimary;
+    final textColor =
+        dark ? Colors.white.withValues(alpha: 0.9) : MitlistColors.textPrimary;
     final mutedColor = dark
         ? Colors.white.withValues(alpha: 0.5)
         : MitlistColors.textSecondary.withValues(alpha: 0.7);
@@ -1022,14 +1045,9 @@ class _PinwallNoteCard extends ConsumerWidget {
               border: Border.all(color: border, width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: dark ? 0.5 : 0.18),
-                  blurRadius: 20,
-                  offset: const Offset(4, 14),
-                ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: dark ? 0.2 : 0.06),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
+                  color: Colors.black.withValues(alpha: dark ? 0.42 : 0.16),
+                  blurRadius: 0,
+                  offset: const Offset(4, 5),
                 ),
               ],
             ),
@@ -1051,7 +1069,8 @@ class _PinwallNoteCard extends ConsumerWidget {
                   error: (_, __) => const SizedBox.shrink(),
                   data: (items) {
                     if (items.isEmpty) return const SizedBox.shrink();
-                    final show = items.length > 5 ? items.take(5).toList() : items;
+                    final show =
+                        items.length > 5 ? items.take(5).toList() : items;
                     return Padding(
                       padding: const EdgeInsets.only(top: MitlistSpacing.xs),
                       child: SizedBox(
@@ -1064,7 +1083,8 @@ class _PinwallNoteCard extends ConsumerWidget {
                             final m = show[i];
                             return GestureDetector(
                               onTap: () => _openMediaViewer(context, m),
-                              onLongPress: () => _showMediaActions(context, ref, media: m),
+                              onLongPress: () =>
+                                  _showMediaActions(context, ref, media: m),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(6),
                                 child: AspectRatio(
@@ -1073,7 +1093,8 @@ class _PinwallNoteCard extends ConsumerWidget {
                                     m.url,
                                     fit: BoxFit.cover,
                                     errorBuilder: (_, __, ___) => Container(
-                                      color: MitlistColors.neutral100.withValues(alpha: 0.25),
+                                      color: MitlistColors.neutral100
+                                          .withValues(alpha: 0.25),
                                       alignment: Alignment.center,
                                       child: const Icon(
                                         Icons.image_not_supported_outlined,
@@ -1096,7 +1117,8 @@ class _PinwallNoteCard extends ConsumerWidget {
                     Expanded(
                       child: Text(
                         '$userLabel · $when',
-                        style: textTheme.labelSmall?.copyWith(color: mutedColor),
+                        style:
+                            textTheme.labelSmall?.copyWith(color: mutedColor),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -1116,7 +1138,8 @@ class _PinwallNoteCard extends ConsumerWidget {
                       ],
                       child: Padding(
                         padding: const EdgeInsets.all(2),
-                        child: Icon(Icons.more_horiz, size: 16, color: mutedColor),
+                        child:
+                            Icon(Icons.more_horiz, size: 16, color: mutedColor),
                       ),
                     ),
                   ],
@@ -1139,7 +1162,7 @@ class _PinwallNoteCard extends ConsumerWidget {
   }
 }
 
-// A realistic-looking pushpin drawn with CustomPainter
+// Flat pushpin that matches the app's hard-edged illustration style.
 class _Pushpin extends StatelessWidget {
   const _Pushpin({required this.headColor});
 
@@ -1163,34 +1186,24 @@ class _PushpinPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final cx = size.width / 2;
 
-    // Shadow under head
-    final shadowPaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.28)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
-    canvas.drawCircle(Offset(cx, 12), 10, shadowPaint);
-
-    // Pin head
     final headPaint = Paint()..color = headColor;
     canvas.drawCircle(Offset(cx, 10), 10, headPaint);
 
-    // Shine highlight
-    final shinePaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.45);
-    canvas.drawCircle(Offset(cx - 3.5, 6.5), 4, shinePaint);
+    final capPaint = Paint()..color = Colors.black.withValues(alpha: 0.18);
+    canvas.drawRect(
+        Rect.fromCenter(center: Offset(cx, 18), width: 14, height: 5),
+        capPaint);
 
-    // Pin needle
-    final needlePaint = Paint()..color = Colors.grey.shade600;
+    final needlePaint = Paint()..color = Colors.black.withValues(alpha: 0.72);
     final needlePath = Path()
-      ..moveTo(cx - 2, 18)
-      ..lineTo(cx + 2, 18)
-      ..lineTo(cx + 0.5, size.height)
-      ..lineTo(cx - 0.5, size.height)
+      ..moveTo(cx - 1.5, 19)
+      ..lineTo(cx + 1.5, 19)
+      ..lineTo(cx, size.height)
       ..close();
     canvas.drawPath(needlePath, needlePaint);
 
-    // Outline on head
     final outlinePaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.25)
+      ..color = Colors.black.withValues(alpha: 0.72)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
     canvas.drawCircle(Offset(cx, 10), 10, outlinePaint);
@@ -1223,15 +1236,19 @@ class _StatsRow extends StatelessWidget {
       builder: (context, c) {
         final minTile = 160.0;
         final count = (c.maxWidth / minTile).floor().clamp(1, 3);
-        final tileWidth = (c.maxWidth - (MitlistSpacing.sm * (count - 1))) / count;
+        final tileWidth =
+            (c.maxWidth - (MitlistSpacing.sm * (count - 1))) / count;
 
         return Wrap(
           spacing: MitlistSpacing.sm,
           runSpacing: MitlistSpacing.sm,
           children: [
-            SizedBox(width: tileWidth, child: _BalanceTile(groupId: groupId, me: me)),
+            SizedBox(
+                width: tileWidth,
+                child: _BalanceTile(groupId: groupId, me: me)),
             SizedBox(width: tileWidth, child: _ShoppingTile(groupId: groupId)),
-            SizedBox(width: tileWidth, child: _WeeklyChoresTile(groupId: groupId)),
+            SizedBox(
+                width: tileWidth, child: _WeeklyChoresTile(groupId: groupId)),
           ],
         );
       },
@@ -1269,7 +1286,9 @@ class _BalanceTile extends ConsumerWidget {
           );
         }
         final myId = me?.id;
-        final meEntry = myId == null ? null : s.balances.where((b) => b.userId == myId).firstOrNull;
+        final meEntry = myId == null
+            ? null
+            : s.balances.where((b) => b.userId == myId).firstOrNull;
         final totalCents = meEntry?.total ?? 0;
         final amount = totalCents / 100.0;
         final abs = amount.abs();
@@ -1321,7 +1340,8 @@ class _ShoppingTile extends ConsumerWidget {
 
         final anyCount = shopping.any((l) => l.itemCount != null);
         if (anyCount) {
-          final items = shopping.fold<int>(0, (sum, l) => sum + (l.itemCount ?? 0));
+          final items =
+              shopping.fold<int>(0, (sum, l) => sum + (l.itemCount ?? 0));
           return _StatTile(
             title: 'Shopping',
             value: '$items',
@@ -1386,7 +1406,11 @@ class _WeeklyChoresTile extends ConsumerWidget {
             onTap: () => context.pushNamed('chores'),
           );
         }
-        final done = rows.where((c) => !c.chore.isActive || (c.pendingAssignment?.status.toLowerCase() == 'completed')).length;
+        final done = rows
+            .where((c) =>
+                !c.chore.isActive ||
+                (c.pendingAssignment?.status.toLowerCase() == 'completed'))
+            .length;
         final total = rows.length;
         final progress = total == 0 ? 0.0 : done / total;
         final pct = (progress * 100).round().clamp(0, 100);
@@ -1433,12 +1457,16 @@ class _StatTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
-    final titleColor = (tint == null ? colorScheme.onSurfaceVariant : colorScheme.onPrimaryContainer)
+    final titleColor = (tint == null
+            ? colorScheme.onSurfaceVariant
+            : colorScheme.onPrimaryContainer)
         .withValues(alpha: 0.8);
-    final valueColor = tint == null ? colorScheme.onSurface : colorScheme.onPrimaryContainer;
-    final subtitleColor =
-        (tint == null ? colorScheme.onSurfaceVariant : colorScheme.onPrimaryContainer)
-            .withValues(alpha: 0.85);
+    final valueColor =
+        tint == null ? colorScheme.onSurface : colorScheme.onPrimaryContainer;
+    final subtitleColor = (tint == null
+            ? colorScheme.onSurfaceVariant
+            : colorScheme.onPrimaryContainer)
+        .withValues(alpha: 0.85);
 
     final child = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1549,12 +1577,14 @@ class _WallSection extends StatelessWidget {
         if (activityError)
           Text(
             'Couldn’t load the wall right now.',
-            style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+            style: textTheme.bodySmall
+                ?.copyWith(color: colorScheme.onSurfaceVariant),
           )
         else if (activities.isEmpty)
           Text(
             'Nothing posted yet.',
-            style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+            style: textTheme.bodySmall
+                ?.copyWith(color: colorScheme.onSurfaceVariant),
           )
         else
           AppCard(
@@ -1599,7 +1629,9 @@ class _WallItem extends StatelessWidget {
           alignment: Alignment.center,
           child: Text(
             _avatarInitials(userLabel),
-            style: textTheme.labelMedium?.copyWith(color: colorScheme.onPrimaryContainer, fontWeight: FontWeight.w600),
+            style: textTheme.labelMedium?.copyWith(
+                color: colorScheme.onPrimaryContainer,
+                fontWeight: FontWeight.w600),
           ),
         ),
         const SizedBox(width: MitlistSpacing.sm),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../models/notification_models.dart';
 import '../../providers/notification_provider.dart';
@@ -9,6 +8,7 @@ import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
+import '../../widgets/empty_state.dart';
 import '../../widgets/mitlist_app_bar.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
@@ -155,10 +155,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     return Scaffold(
       appBar: MitlistAppBar.titleText(
         'Notifications',
+        showStandardActions: false,
         leading: IconButton(
-          icon: const AppIcon(name: 'userGroup'),
-          tooltip: 'To households',
-          onPressed: () => context.goNamed('groupsList'),
+          icon: const AppIcon(name: 'arrowLeft'),
+          tooltip: 'Back',
+          onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
           TextButton(
@@ -189,11 +190,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                     const SizedBox(height: MitlistSpacing.md),
                   ],
                   if (_items.isEmpty && _error == null)
-                    const AppCard(
-                      child: Padding(
-                        padding: EdgeInsets.all(MitlistSpacing.md),
-                        child: Text('No notifications yet.'),
-                      ),
+                    AppEmptyState(
+                      icon: const Icon(Icons.notifications_none_outlined, size: 56),
+                      title: 'No notifications yet',
+                      description:
+                          'When someone adds a chore, splits a bill, or mentions you, it will show up here.',
                     )
                   else
                     ..._items.map((n) {

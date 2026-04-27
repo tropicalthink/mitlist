@@ -36,6 +36,7 @@ class MitlistAppBar extends ConsumerWidget implements PreferredSizeWidget {
     Widget? leading,
     List<Widget>? actions,
     bool? centerTitle,
+    bool showStandardActions = true,
   }) {
     return MitlistAppBar(
       key: key,
@@ -47,6 +48,7 @@ class MitlistAppBar extends ConsumerWidget implements PreferredSizeWidget {
       leading: leading,
       actions: actions,
       centerTitle: centerTitle,
+      showStandardActions: showStandardActions,
     );
   }
 

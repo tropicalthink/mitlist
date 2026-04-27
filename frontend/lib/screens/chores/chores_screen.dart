@@ -372,11 +372,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     return Scaffold(
       appBar: MitlistAppBar.titleText(
         'Chores',
-        leading: IconButton(
-          icon: const AppIcon(name: 'userGroup'),
-          tooltip: 'To households',
-          onPressed: () => context.goNamed('groupsList'),
-        ),
+        showStandardActions: false,
       ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'chores_create_fab',

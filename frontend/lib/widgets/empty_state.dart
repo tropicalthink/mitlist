@@ -86,7 +86,7 @@ class AppEmptyState extends StatelessWidget {
             const SizedBox(height: MitlistSpacing.md),
           if (title.isNotEmpty)
             Text(
-              title.toUpperCase(),
+              title,
               style: Theme.of(context).textTheme.headlineSmall,
               textAlign: TextAlign.center,
             ),

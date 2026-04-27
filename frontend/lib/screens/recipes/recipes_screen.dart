@@ -3,7 +3,6 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../models/list_models.dart';
 import '../../models/recipe_models.dart';
@@ -111,8 +110,6 @@ class _Recipe {
 
 enum _ViewState { loading, error, empty, loaded }
 
-enum _KitchenTab { recipes, planner, shopping, cookbooks }
-
 enum _SortOption { newest, oldest, az }
 
 enum _FilterOption { all, public, private }
@@ -214,7 +211,6 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   static const int _pageLimit = 50;
 
   _ViewState _viewState = _ViewState.empty;
-  _KitchenTab _tab = _KitchenTab.recipes;
   String? _errorMessage;
   String? _loadMoreErrorMessage;
   final List<_Recipe> _recipes = <_Recipe>[];
@@ -255,8 +251,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       return;
     }
 
-    if (_tab == _KitchenTab.recipes &&
-        _scrollController.position.extentAfter < 400) {
+    if (_scrollController.position.extentAfter < 400) {
       _loadMoreRecipes();
     }
   }
@@ -304,7 +299,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
         final list = await listService.createList(
           CreateListRequest(
             groupId: groupId,
-            name: '${recipe.title} shopping',
+            name: ' shopping',
             type: 'shopping',
           ),
         );
@@ -333,7 +328,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
           final list = await listService.createList(
             CreateListRequest(
               groupId: groupId,
-              name: '${recipe.title} shopping',
+              name: ' shopping',
               type: 'shopping',
             ),
           );
@@ -348,7 +343,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Added ${recipe.title} ingredients')),
+        SnackBar(content: Text('Added  ingredients')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -445,7 +440,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
             ..addAll(collections);
         });
       } catch (_) {
-        // Cookbook support is optional for older fakes and partially deployed APIs.
+        // Cookbook support is optional.
       }
     } catch (_) {
       if (!mounted) return;
@@ -503,14 +498,13 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     setState(() {
       _plan.add(
         _PlannedMeal(
-          id: '${recipe.id}-$day-$slot-${DateTime.now().microsecondsSinceEpoch}',
+          id: '---',
           day: day,
           slot: slot,
           recipe: recipe,
           servings: max(1, recipe.servings),
         ),
       );
-      _tab = _KitchenTab.planner;
     });
   }
 
@@ -529,7 +523,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       for (final ingredient in meal.recipe.ingredients) {
         final section = grouped.putIfAbsent(
             ingredient.section, () => <String, _ShoppingIngredient>{});
-        final key = '${ingredient.name.toLowerCase()}|${ingredient.unit}';
+        final key = '|';
         final existing = section[key];
         section[key] = _ShoppingIngredient(
           name: ingredient.name,
@@ -575,13 +569,11 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
         ),
       );
 
-      var position = 0;
       for (final section in _shoppingSections.entries) {
         await listService.createItem(
           list.id,
           CreateListItemRequest(name: section.key, quantity: 1, unit: ''),
         );
-        position++;
         for (final ingredient in section.value) {
           await listService.createItem(
             list.id,
@@ -591,13 +583,12 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
               unit: ingredient.unit,
             ),
           );
-          position++;
         }
       }
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Shopping list created with $position lines')),
+        SnackBar(content: Text('Shopping list created with  lines')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -609,45 +600,159 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     }
   }
 
-  Future<void> _createCookbook() async {
-    final controller = TextEditingController();
-    final name = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('New cookbook'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(
-            labelText: 'Cookbook name',
-            hintText: 'Weeknight wins',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-            child: const Text('Create'),
-          ),
-        ],
-      ),
-    );
-    controller.dispose();
-    if (name == null || name.isEmpty) return;
+  Future<void> _showPlanSheet(_Recipe recipe) async {
+    final dayController = ValueNotifier<String>(_weekDays[0]);
+    final slotController = ValueNotifier<String>('Dinner');
 
-    try {
-      final service = await ref.read(recipeServiceProviderAsync.future);
-      await service.createCollection(CreateCollectionRequest(name: name));
-      await _loadKitchen();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to create cookbook: $e')),
-      );
-    }
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(MitlistSpacing.md),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Plan ',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: MitlistSpacing.md),
+                Text(
+                  'Day',
+                  style: Theme.of(context).textTheme.labelMedium,
+                ),
+                const SizedBox(height: MitlistSpacing.sm),
+                ValueListenableBuilder<String>(
+                  valueListenable: dayController,
+                  builder: (context, day, _) {
+                    return Wrap(
+                      spacing: MitlistSpacing.sm,
+                      runSpacing: MitlistSpacing.sm,
+                      children: _weekDays.map((d) {
+                        return AppChip(
+                          label: d,
+                          selected: day == d,
+                          onSelected: (_) => dayController.value = d,
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
+                const SizedBox(height: MitlistSpacing.md),
+                Text(
+                  'Meal',
+                  style: Theme.of(context).textTheme.labelMedium,
+                ),
+                const SizedBox(height: MitlistSpacing.sm),
+                ValueListenableBuilder<String>(
+                  valueListenable: slotController,
+                  builder: (context, slot, _) {
+                    return Wrap(
+                      spacing: MitlistSpacing.sm,
+                      runSpacing: MitlistSpacing.sm,
+                      children: _mealSlots.map((s) {
+                        return AppChip(
+                          label: s,
+                          selected: slot == s,
+                          onSelected: (_) => slotController.value = s,
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
+                const SizedBox(height: MitlistSpacing.lg),
+                AppButton(
+                  text: 'Add to plan',
+                  onPressed: () {
+                    _planRecipe(recipe, dayController.value, slotController.value);
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showDayMeals(String day) async {
+    final meals = _plan.where((m) => m.day == day).toList();
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(MitlistSpacing.md),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  ' plan',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: MitlistSpacing.md),
+                if (meals.isEmpty)
+                  Text(
+                    'No meals planned yet.',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  )
+                else
+                  ...meals.map((meal) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+                      child: AppCard(
+                        variant: AppCardVariant.outlined,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    meal.recipe.title,
+                                    style: Theme.of(context).textTheme.titleSmall,
+                                  ),
+                                  const SizedBox(height: MitlistSpacing.xs),
+                                  Text(
+                                    meal.slot,
+                                    style: Theme.of(context).textTheme.bodySmall,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(AppIcons.trash, size: 18),
+                              onPressed: () {
+                                _removePlannedMeal(meal.id);
+                                Navigator.of(context).pop();
+                                if (_plan.where((m) => m.day == day).isNotEmpty) {
+                                  _showDayMeals(day);
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                const SizedBox(height: MitlistSpacing.md),
+                AppButton(
+                  variant: AppButtonVariant.ghost,
+                  text: 'Close',
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -655,17 +760,14 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     return Scaffold(
       appBar: MitlistAppBar(
         centerTitle: false,
+        showStandardActions: false,
         leading: _showSearch
             ? IconButton(
                 icon: const Icon(AppIcons.arrowLeft),
                 tooltip: 'Back',
                 onPressed: _clearSearch,
               )
-            : IconButton(
-                icon: const Icon(AppIcons.userGroup),
-                tooltip: 'To households',
-                onPressed: () => context.goNamed('groupsList'),
-              ),
+            : null,
         title: _showSearch
             ? TextField(
                 controller: _searchController,
@@ -744,148 +846,34 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
         ],
       ),
       body: _buildBody(),
-      floatingActionButton: _buildFab(),
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'kitchen_create_recipe_fab',
+        onPressed: _onAddRecipe,
+        icon: const Icon(AppIcons.plus),
+        label: const Text('ADD RECIPE'),
+      ),
     );
-  }
-
-  Widget? _buildFab() {
-    return switch (_tab) {
-      _KitchenTab.recipes => FloatingActionButton.extended(
-          heroTag: 'kitchen_create_recipe_fab',
-          onPressed: _onAddRecipe,
-          icon: const Icon(AppIcons.plus),
-          label: Text(
-            'ADD RECIPE',
-            style: Theme.of(context).textTheme.labelLarge,
-          ),
-        ),
-      _KitchenTab.shopping => FloatingActionButton.extended(
-          heroTag: 'kitchen_shopping_fab',
-          onPressed: _shoppingSections.isEmpty ? null : _createShoppingList,
-          icon: const Icon(AppIcons.shoppingCart),
-          label: Text(_isGeneratingList ? 'Creating' : 'Create list'),
-        ),
-      _KitchenTab.cookbooks => FloatingActionButton.extended(
-          heroTag: 'kitchen_cookbook_fab',
-          onPressed: _createCookbook,
-          icon: const Icon(Icons.menu_book_outlined),
-          label: const Text('Cookbook'),
-        ),
-      _KitchenTab.planner => null,
-    };
   }
 
   Widget _buildBody() {
     switch (_viewState) {
       case _ViewState.loading:
-        return _buildLoadingScaffold();
+        return const _LoadingListBody();
       case _ViewState.error:
         return _buildErrorState();
       case _ViewState.empty:
-        return _buildKitchenFrame(child: _buildEmptyState());
+        return _buildEmptyState();
       case _ViewState.loaded:
-        return _buildKitchenFrame(child: _buildTabBody());
+        return _buildLoadedBody();
     }
   }
 
-  Widget _buildKitchenFrame({required Widget child}) {
-    return Column(
-      children: [
-        _buildSummaryBand(),
-        _buildTabBar(),
-        Expanded(child: child),
-      ],
-    );
-  }
-
-  Widget _buildSummaryBand() {
-    final planned = _plan.length;
-    final ingredientCount = _shoppingSections.values.fold<int>(
-      0,
-      (sum, items) => sum + items.length,
-    );
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        MitlistSpacing.md,
-        MitlistSpacing.md,
-        MitlistSpacing.md,
-        MitlistSpacing.sm,
-      ),
-      child: AppCard(
-        variant: AppCardVariant.filled,
-        tint: AppCardTint.primary,
-        child: Row(
-          children: [
-            Expanded(
-              child: _MetricBlock(
-                label: 'Recipes',
-                value: _recipes.length.toString(),
-              ),
-            ),
-            Expanded(
-              child: _MetricBlock(
-                label: 'Planned',
-                value: planned.toString(),
-              ),
-            ),
-            Expanded(
-              child: _MetricBlock(
-                label: 'Groceries',
-                value: ingredientCount.toString(),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTabBar() {
-    final tabs = <_KitchenTab, ({IconData icon, String label})>{
-      _KitchenTab.recipes: (icon: Icons.restaurant_menu, label: 'Recipes'),
-      _KitchenTab.planner: (icon: AppIcons.calendarDays, label: 'Plan'),
-      _KitchenTab.shopping: (icon: AppIcons.shoppingCart, label: 'Shopping'),
-      _KitchenTab.cookbooks: (icon: Icons.menu_book_outlined, label: 'Books'),
-    };
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
-      child: Row(
-        children: tabs.entries.map((entry) {
-          final selected = _tab == entry.key;
-          return Padding(
-            padding: const EdgeInsets.only(right: MitlistSpacing.sm),
-            child: ChoiceChip(
-              selected: selected,
-              avatar: Icon(entry.value.icon, size: MitlistSpacing.space4),
-              label: Text(entry.value.label),
-              onSelected: (_) => setState(() => _tab = entry.key),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildLoadingScaffold() {
-    return _buildKitchenFrame(child: const _LoadingListBody());
-  }
-
-  Widget _buildTabBody() {
-    return switch (_tab) {
-      _KitchenTab.recipes => _buildRecipesTab(),
-      _KitchenTab.planner => _buildPlannerTab(),
-      _KitchenTab.shopping => _buildShoppingTab(),
-      _KitchenTab.cookbooks => _buildCookbooksTab(),
-    };
-  }
-
-  Widget _buildRecipesTab() {
+  Widget _buildLoadedBody() {
     final visible = _filteredRecipes;
     return Column(
       children: [
+        _buildWeekStrip(),
+        _buildChipBar(),
         if (_loadMoreErrorMessage != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(
@@ -899,7 +887,6 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
               message: _loadMoreErrorMessage!,
             ),
           ),
-        _buildChipBar(),
         Expanded(
           child: RefreshIndicator(
             color: MitlistColors.primary500,
@@ -910,6 +897,105 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildWeekStrip() {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: MitlistSpacing.md,
+        vertical: MitlistSpacing.sm,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _weekDays.map((day) {
+                  final meals = _plan.where((m) => m.day == day).toList();
+                  final hasMeals = meals.isNotEmpty;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: MitlistSpacing.sm),
+                    child: InkWell(
+                      onTap: () => _showDayMeals(day),
+                      borderRadius: BorderRadius.zero,
+                      child: Container(
+                        width: 48,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: hasMeals
+                              ? MitlistColors.primary100
+                              : Theme.of(context).colorScheme.surface,
+                          border: Border.all(
+                            color: hasMeals
+                                ? MitlistColors.primary500
+                                : MitlistColors.borderPrimary,
+                            width: 2,
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              day,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                    color: hasMeals
+                                        ? MitlistColors.primary700
+                                        : MitlistColors.textSecondary,
+                                  ),
+                            ),
+                            const SizedBox(height: 4),
+                            if (hasMeals)
+                              Container(
+                                width: 20,
+                                height: 20,
+                                decoration: const BoxDecoration(
+                                  color: MitlistColors.primary500,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.copyWith(color: Colors.white),
+                                  ),
+                                ),
+                              )
+                            else
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: MitlistColors.borderSecondary,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          if (_plan.isNotEmpty) ...[
+            const SizedBox(width: MitlistSpacing.sm),
+            AppButton(
+              size: AppButtonSize.sm,
+              text: _isGeneratingList ? '...' : 'List',
+              icon: const Icon(AppIcons.shoppingCart, size: 16),
+              isLoading: _isGeneratingList,
+              onPressed: _isGeneratingList ? null : _createShoppingList,
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -1016,367 +1102,14 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
         }
 
         final recipe = visible[index];
-        return LongPressDraggable<_Recipe>(
-          data: recipe,
-          feedback: Material(
-            elevation: 6,
-            child: SizedBox(
-              width: 260,
-              child: _RecipeCard(recipe: recipe, compact: true),
-            ),
-          ),
-          childWhenDragging: Opacity(
-            opacity: 0.45,
-            child: _RecipeCard(recipe: recipe, compact: true),
-          ),
-          child: _RecipeCard(
-            recipe: recipe,
-            onTap: () => _openRecipeDetail(recipe),
-            onPlan: () => _planRecipe(recipe, _weekDays.first, 'Dinner'),
-            onAddToList: () => _addRecipeMissingToList(recipe),
-            isAddingToList: _addingRecipeToListId == recipe.id,
-          ),
+        return _RecipeCard(
+          recipe: recipe,
+          onTap: () => _openRecipeDetail(recipe),
+          onPlan: () => _showPlanSheet(recipe),
+          onAddToList: () => _addRecipeMissingToList(recipe),
+          isAddingToList: _addingRecipeToListId == recipe.id,
         );
       },
-    );
-  }
-
-  Widget _buildPlannerTab() {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(MitlistSpacing.md),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Drag recipes onto meals. Multiple recipes can sit in the same slot.',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-              AppButton(
-                variant: AppButtonVariant.soft,
-                text: 'Clear',
-                onPressed: _plan.isEmpty ? null : () => setState(_plan.clear),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(
-              MitlistSpacing.md,
-              0,
-              MitlistSpacing.md,
-              MitlistSpacing.md,
-            ),
-            child: Column(
-              children: [
-                for (final day in _weekDays)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
-                    child: _DayPlanner(
-                      day: day,
-                      meals: _plan.where((meal) => meal.day == day).toList(),
-                      onAccept: (slot, recipe) =>
-                          _planRecipe(recipe, day, slot),
-                      onRemove: _removePlannedMeal,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildShoppingTab() {
-    final sections = _shoppingSections;
-    if (sections.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(MitlistSpacing.md),
-          child: AppEmptyState(
-            icon: const Icon(AppIcons.shoppingCart, size: 56),
-            title: 'No shopping list yet',
-            description:
-                'Plan recipes first; ingredients are grouped into supermarket sections here.',
-            actions: [
-              AppButton(
-                text: 'Open planner',
-                icon: const Icon(AppIcons.calendarDays),
-                onPressed: () => setState(() => _tab = _KitchenTab.planner),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return ListView(
-      padding: const EdgeInsets.all(MitlistSpacing.md),
-      children: [
-        AppCard(
-          variant: AppCardVariant.filled,
-          child: Row(
-            children: [
-              const Icon(AppIcons.shoppingCart),
-              const SizedBox(width: MitlistSpacing.sm),
-              Expanded(
-                child: Text(
-                  'Generated from ${_plan.length} planned meals',
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-              ),
-              AppButton(
-                size: AppButtonSize.sm,
-                text: _isGeneratingList ? 'Creating' : 'Create list',
-                isLoading: _isGeneratingList,
-                onPressed: _isGeneratingList ? null : _createShoppingList,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: MitlistSpacing.md),
-        for (final section in sections.entries) ...[
-          Text(
-            section.key,
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
-          const SizedBox(height: MitlistSpacing.sm),
-          AppCard(
-            variant: AppCardVariant.outlined,
-            child: Column(
-              children: [
-                for (var i = 0; i < section.value.length; i++) ...[
-                  _ShoppingRow(ingredient: section.value[i]),
-                  if (i != section.value.length - 1) const Divider(),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: MitlistSpacing.md),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildCookbooksTab() {
-    if (_collections.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(MitlistSpacing.md),
-          child: AppEmptyState(
-            icon: const Icon(Icons.menu_book_outlined, size: 56),
-            title: 'No cookbooks yet',
-            description:
-                'Collect recipes by season, diet, household favorite, or occasion.',
-            actions: [
-              AppButton(
-                text: 'Create cookbook',
-                icon: const Icon(AppIcons.plus),
-                onPressed: _createCookbook,
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadKitchen,
-      child: ListView.separated(
-        padding: const EdgeInsets.all(MitlistSpacing.md),
-        itemCount: _collections.length,
-        separatorBuilder: (_, __) => const SizedBox(height: MitlistSpacing.sm),
-        itemBuilder: (context, index) {
-          final cookbook = _collections[index];
-          return AppCard(
-            variant: AppCardVariant.outlined,
-            child: Row(
-              children: [
-                const Icon(Icons.menu_book_outlined),
-                const SizedBox(width: MitlistSpacing.sm),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        cookbook.name,
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
-                      const SizedBox(height: MitlistSpacing.space1),
-                      Text(
-                        '${cookbook.recipeCount ?? 0} recipes',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(AppIcons.chevronRight),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _MetricBlock extends StatelessWidget {
-  const _MetricBlock({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.onPrimaryContainer;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: color,
-                fontWeight: FontWeight.w700,
-              ),
-        ),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: color),
-        ),
-      ],
-    );
-  }
-}
-
-class _DayPlanner extends StatelessWidget {
-  const _DayPlanner({
-    required this.day,
-    required this.meals,
-    required this.onAccept,
-    required this.onRemove,
-  });
-
-  final String day;
-  final List<_PlannedMeal> meals;
-  final void Function(String slot, _Recipe recipe) onAccept;
-  final void Function(String id) onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      variant: AppCardVariant.outlined,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(day, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: MitlistSpacing.sm),
-          for (final slot in _mealSlots)
-            Padding(
-              padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
-              child: _MealDropSlot(
-                label: slot,
-                meals: meals.where((meal) => meal.slot == slot).toList(),
-                onAccept: (recipe) => onAccept(slot, recipe),
-                onRemove: onRemove,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MealDropSlot extends StatelessWidget {
-  const _MealDropSlot({
-    required this.label,
-    required this.meals,
-    required this.onAccept,
-    required this.onRemove,
-  });
-
-  final String label;
-  final List<_PlannedMeal> meals;
-  final ValueChanged<_Recipe> onAccept;
-  final void Function(String id) onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    return DragTarget<_Recipe>(
-      onAcceptWithDetails: (details) => onAccept(details.data),
-      builder: (context, candidates, rejected) {
-        final active = candidates.isNotEmpty;
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          width: double.infinity,
-          constraints: const BoxConstraints(minHeight: 72),
-          padding: const EdgeInsets.all(MitlistSpacing.sm),
-          decoration: BoxDecoration(
-            color: active
-                ? Theme.of(context).colorScheme.primaryContainer
-                : Theme.of(context).colorScheme.surfaceContainerLow,
-            border: Border.all(color: Theme.of(context).colorScheme.outline),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: MitlistTypography.labelXSmall().copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: MitlistSpacing.xs),
-              if (meals.isEmpty)
-                Text(
-                  'Drop recipe',
-                  style: Theme.of(context).textTheme.bodySmall,
-                )
-              else
-                Wrap(
-                  spacing: MitlistSpacing.sm,
-                  runSpacing: MitlistSpacing.sm,
-                  children: [
-                    for (final meal in meals)
-                      InputChip(
-                        label: Text(meal.recipe.title),
-                        avatar: const Icon(Icons.restaurant_menu, size: 18),
-                        onDeleted: () => onRemove(meal.id),
-                      ),
-                  ],
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _ShoppingRow extends StatelessWidget {
-  const _ShoppingRow({required this.ingredient});
-
-  final _ShoppingIngredient ingredient;
-
-  @override
-  Widget build(BuildContext context) {
-    final amount = ingredient.unit.isEmpty
-        ? ingredient.quantity.toString()
-        : '${ingredient.quantity} ${ingredient.unit}';
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
-      child: Row(
-        children: [
-          Expanded(child: Text(ingredient.name)),
-          Text(
-            amount,
-            style: MitlistTypography.monoBody(color: MitlistColors.textPrimary),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -1434,7 +1167,6 @@ class _RecipeCard extends StatelessWidget {
   final VoidCallback? onPlan;
   final VoidCallback? onAddToList;
   final bool isAddingToList;
-  final bool compact;
 
   const _RecipeCard({
     required this.recipe,
@@ -1442,7 +1174,6 @@ class _RecipeCard extends StatelessWidget {
     this.onPlan,
     this.onAddToList,
     this.isAddingToList = false,
-    this.compact = false,
   });
 
   Widget _thumbnail(BuildContext context) {
@@ -1485,12 +1216,12 @@ class _RecipeCard extends StatelessWidget {
   String _metaLine() {
     final parts = <String>[];
     if (recipe.totalMinutes > 0) {
-      parts.add('${recipe.totalMinutes} min');
+      parts.add(' min');
     }
     if (recipe.servings > 0) {
-      parts.add('Serves ${recipe.servings}');
+      parts.add('Serves ');
     }
-    parts.add('${recipe.ingredients.length} items');
+    parts.add(' items');
     return parts.join(' | ');
   }
 
@@ -1500,10 +1231,10 @@ class _RecipeCard extends StatelessWidget {
     final tags = recipe.tags;
 
     return AppCard(
-      interactive: !compact,
-      animated: !compact,
+      interactive: true,
+      animated: true,
       onTap: onTap,
-      semanticLabel: 'Open recipe ${recipe.title}',
+      semanticLabel: 'Open recipe ',
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -1517,7 +1248,7 @@ class _RecipeCard extends StatelessWidget {
                 Text(
                   recipe.title,
                   style: Theme.of(context).textTheme.titleSmall,
-                  maxLines: compact ? 2 : 1,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: MitlistSpacing.space6),
@@ -1529,7 +1260,7 @@ class _RecipeCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (!compact && tags.isNotEmpty) ...[
+                if (tags.isNotEmpty) ...[
                   const SizedBox(height: MitlistSpacing.space6),
                   Wrap(
                     spacing: MitlistSpacing.xs,
@@ -1542,28 +1273,27 @@ class _RecipeCard extends StatelessWidget {
               ],
             ),
           ),
-          if (!compact)
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  tooltip: 'Add missing ingredients',
-                  icon: isAddingToList
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(AppIcons.shoppingCart),
-                  onPressed: isAddingToList ? null : onAddToList,
-                ),
-                IconButton(
-                  tooltip: 'Plan for dinner',
-                  icon: const Icon(AppIcons.calendarDays),
-                  onPressed: onPlan,
-                ),
-              ],
-            ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                tooltip: 'Add missing ingredients',
+                icon: isAddingToList
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(AppIcons.shoppingCart),
+                onPressed: isAddingToList ? null : onAddToList,
+              ),
+              IconButton(
+                tooltip: 'Plan for dinner',
+                icon: const Icon(AppIcons.calendarDays),
+                onPressed: onPlan,
+              ),
+            ],
+          ),
         ],
       ),
     );
