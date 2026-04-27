@@ -42,6 +42,27 @@ func TestChoreService_CreateChore(t *testing.T) {
 		require.NoError(t, err)
 	})
 
+	t.Run("no assignment creates no initial assignment", func(t *testing.T) {
+		choreRepo := new(mocks.MockChoreRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewChoreService(choreRepo, groupRepo)
+
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "admin"}, nil)
+		choreRepo.On("CreateChore", ctx, mock.AnythingOfType("*models.Chore")).Return(nil)
+		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return([]models.GroupMembership{
+			{UserID: uuid.New()}, {UserID: uuid.New()},
+		}, nil)
+		choreRepo.On("CreateRotationState", ctx, mock.AnythingOfType("*models.ChoreRotationState")).Return(nil)
+
+		err := svc.CreateChore(ctx, user, &models.Chore{
+			GroupID:        groupID,
+			Name:           "Clean",
+			AssignmentType: "no-assignment",
+		})
+		require.NoError(t, err)
+		choreRepo.AssertNotCalled(t, "CreateAssignment", mock.Anything, mock.Anything)
+	})
+
 	t.Run("not admin", func(t *testing.T) {
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := NewChoreService(nil, groupRepo)
@@ -263,6 +284,59 @@ func TestChoreService_RescheduleChore_RejectsPastDueDate(t *testing.T) {
 	err := svc.RescheduleChore(ctx, user, choreID, &past, nil)
 	require.Error(t, err)
 	assert.IsType(t, &api.ValidationError{}, err)
+}
+
+func TestChoreService_UndoLastChoreExecution_RestoresSuccessorRotation(t *testing.T) {
+	ctx := context.Background()
+	user := validUser()
+	choreID := uuid.New()
+	groupID := uuid.New()
+	member1 := uuid.New()
+	member2 := uuid.New()
+	finishedID := uuid.New()
+	pendingID := uuid.New()
+	stateID := uuid.New()
+	completedAt := time.Now().UTC()
+
+	choreRepo := new(mocks.MockChoreRepo)
+	groupRepo := new(mocks.MockGroupRepo)
+	svc := NewChoreService(choreRepo, groupRepo)
+
+	choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{ID: choreID, GroupID: groupID}, nil)
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+	choreRepo.On("ListAssignments", ctx, choreID, 100, 0).Return([]models.ChoreAssignment{
+		{
+			ID:          finishedID,
+			ChoreID:     choreID,
+			UserID:      member1,
+			Status:      "completed",
+			AssignedAt:  completedAt.Add(-time.Hour),
+			CompletedAt: &completedAt,
+		},
+	}, nil)
+	choreRepo.On("GetPendingAssignmentByChore", ctx, choreID).Return(&models.ChoreAssignment{
+		ID:         pendingID,
+		ChoreID:    choreID,
+		UserID:     member2,
+		Status:     "pending",
+		AssignedAt: completedAt,
+	}, nil)
+	choreRepo.On("DeleteAssignment", ctx, pendingID).Return(nil)
+	choreRepo.On("UpdateAssignment", ctx, mock.MatchedBy(func(a *models.ChoreAssignment) bool {
+		return a.ID == finishedID && a.Status == "pending" && a.CompletedAt == nil
+	})).Return(nil)
+	choreRepo.On("GetRotationState", ctx, choreID).Return(&models.ChoreRotationState{
+		ID:           stateID,
+		ChoreID:      choreID,
+		MemberOrder:  []uuid.UUID{member1, member2},
+		CurrentIndex: 0,
+	}, nil)
+	choreRepo.On("UpdateRotationState", ctx, mock.MatchedBy(func(state *models.ChoreRotationState) bool {
+		return state.ID == stateID && state.CurrentIndex == 1
+	})).Return(nil)
+
+	err := svc.UndoLastChoreExecution(ctx, user, choreID)
+	require.NoError(t, err)
 }
 
 func TestChoreService_RebuildMemberOrdersForGroup(t *testing.T) {

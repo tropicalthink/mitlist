@@ -218,6 +218,41 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     );
   }
 
+  Future<void> _removeItemPhoto(ListItem item) async {
+    final groupId = _groupId;
+    if (groupId == null) return;
+    final photos = _photosByItemId[item.id];
+    if (photos == null || photos.isEmpty) return;
+    final attachmentId = photos.first.attachmentId;
+
+    try {
+      final svc = await ref.read(listServiceProviderAsync.future);
+      await svc.detachItemPhoto(
+        groupId: groupId,
+        itemId: item.id,
+        attachmentId: attachmentId,
+      );
+
+      // Best-effort cleanup: avoid orphaned attachments.
+      try {
+        final attachSvc = await ref.read(attachmentServiceProviderAsync.future);
+        await attachSvc.deleteAttachment(
+          groupId: groupId,
+          attachmentId: attachmentId,
+        );
+      } catch (_) {}
+
+      final updated = await svc.listItemPhotos(groupId: groupId, itemId: item.id);
+      if (!mounted) return;
+      setState(() => _photosByItemId[item.id] = updated);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to remove photo: $e')),
+      );
+    }
+  }
+
   Future<void> _toggleItem(ListItem item, bool value) async {
     Haptics.light();
     final service = _service;
@@ -739,11 +774,17 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                 tooltip: 'Item options',
                 onSelected: (v) async {
                   if (v == 'photo') await _addItemPhoto(item);
+                  if (v == 'remove_photo') await _removeItemPhoto(item);
                   if (v == 'delete') await _deleteItem(item);
                 },
-                itemBuilder: (context) => const [
-                  PopupMenuItem(value: 'photo', child: Text('Add photo')),
-                  PopupMenuItem(value: 'delete', child: Text('Delete')),
+                itemBuilder: (context) => [
+                  const PopupMenuItem(value: 'photo', child: Text('Add photo')),
+                  if (thumbUrl != null)
+                    const PopupMenuItem(
+                      value: 'remove_photo',
+                      child: Text('Remove photo'),
+                    ),
+                  const PopupMenuItem(value: 'delete', child: Text('Delete')),
                 ],
                 child: const Padding(
                   padding: EdgeInsets.all(6),

@@ -902,6 +902,14 @@ class _PinwallNoteCard extends ConsumerWidget {
           postId: post.id as String,
           attachmentId: media.attachmentId,
         );
+        // Best-effort cleanup: avoid orphaned attachments.
+        try {
+          final attachSvc = await ref.read(attachmentServiceProviderAsync.future);
+          await attachSvc.deleteAttachment(
+            groupId: groupId,
+            attachmentId: media.attachmentId,
+          );
+        } catch (_) {}
         ref.invalidate(
           _pinwallMediaByPostProvider((groupId: groupId, postId: post.id as String)),
         );
