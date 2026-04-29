@@ -131,3 +131,16 @@ func (m *MockListRepo) ListProductsByGroup(ctx context.Context, groupID uuid.UUI
 	}
 	return nil, args.Error(1)
 }
+
+func (m *MockListRepo) SearchProducts(ctx context.Context, groupID uuid.UUID, query string, limit int) ([]models.Product, error) {
+	args := m.Called(ctx, groupID, query, limit)
+	if v := args.Get(0); v != nil {
+		return v.([]models.Product), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockListRepo) CostSummary(ctx context.Context, listID uuid.UUID) (int, int, map[uuid.UUID]int, error) {
+	args := m.Called(ctx, listID)
+	return args.Int(0), args.Int(1), args.Get(2).(map[uuid.UUID]int), args.Error(3)
+}

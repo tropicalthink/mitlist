@@ -389,7 +389,7 @@ func newListRouter(t *testing.T) (chi.Router, *ListHandler) {
 	listRepo := newTestListRepo()
 	groupRepo := newTestGroupRepo()
 	svc := services.NewListService(listRepo, groupRepo)
-	h := NewListHandler(svc)
+	h := NewListHandler(svc, nil)
 
 	r := chi.NewRouter()
 	r.Use(testAuthMiddleware)

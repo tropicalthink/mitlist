@@ -65,6 +65,9 @@ type Container struct {
 	recipeRepoOnce sync.Once
 	recipeRepo     *repositories.RecipeRepo
 
+	mealPlanRepoOnce sync.Once
+	mealPlanRepo     *repositories.MealPlanRepo
+
 	assistantRepoOnce sync.Once
 	assistantRepo     *repositories.AssistantRepository
 
@@ -121,6 +124,9 @@ type Container struct {
 
 	recipeServiceOnce sync.Once
 	recipeService     *services.RecipeService
+
+	mealPlanServiceOnce sync.Once
+	mealPlanService     *services.MealPlanService
 
 	assistantServiceOnce sync.Once
 	assistantService     *services.AssistantService
@@ -287,6 +293,14 @@ func (c *Container) RecipeRepo() *repositories.RecipeRepo {
 	return c.recipeRepo
 }
 
+// MealPlanRepo returns the singleton meal plan repository.
+func (c *Container) MealPlanRepo() *repositories.MealPlanRepo {
+	c.mealPlanRepoOnce.Do(func() {
+		c.mealPlanRepo = repositories.NewMealPlanRepo(c.db)
+	})
+	return c.mealPlanRepo
+}
+
 // AssistantRepo returns the singleton assistant repository.
 func (c *Container) AssistantRepo() *repositories.AssistantRepository {
 	c.assistantRepoOnce.Do(func() {
@@ -434,6 +448,14 @@ func (c *Container) RecipeService() *services.RecipeService {
 		c.recipeService = services.NewRecipeService(c.RecipeRepo())
 	})
 	return c.recipeService
+}
+
+// MealPlanService returns the singleton meal plan service.
+func (c *Container) MealPlanService() *services.MealPlanService {
+	c.mealPlanServiceOnce.Do(func() {
+		c.mealPlanService = services.NewMealPlanService(c.MealPlanRepo(), c.GroupRepo())
+	})
+	return c.mealPlanService
 }
 
 // AssistantService returns the singleton assistant service.

@@ -19,18 +19,19 @@ type List struct {
 
 // ListItem represents an item within a list.
 type ListItem struct {
-	ID        uuid.UUID  `json:"id"`
-	ListID    uuid.UUID  `json:"list_id"`
-	Name      string     `json:"name"`
-	Quantity  float64    `json:"quantity"`
-	Unit      string     `json:"unit"`
-	Note      string     `json:"note,omitempty"`
-	ProductID *uuid.UUID `json:"product_id,omitempty"`
-	StoreID   *uuid.UUID `json:"store_id,omitempty"`
-	Checked   bool       `json:"checked"`
-	Position  int        `json:"position"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
+	ID         uuid.UUID  `json:"id"`
+	ListID     uuid.UUID  `json:"list_id"`
+	Name       string     `json:"name"`
+	Quantity   float64    `json:"quantity"`
+	Unit       string     `json:"unit"`
+	Note       string     `json:"note,omitempty"`
+	PriceCents *int       `json:"price_cents,omitempty"`
+	ProductID  *uuid.UUID `json:"product_id,omitempty"`
+	StoreID    *uuid.UUID `json:"store_id,omitempty"`
+	Checked    bool       `json:"checked"`
+	Position   int        `json:"position"`
+	CreatedAt  time.Time  `json:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at"`
 }
 
 type ShoppingLocation struct {

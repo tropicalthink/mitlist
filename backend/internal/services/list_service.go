@@ -477,3 +477,106 @@ func (s *ListService) ListProducts(ctx context.Context, user *models.User, group
 	}
 	return s.listRepo.ListProductsByGroup(ctx, groupID)
 }
+
+// SearchProducts searches products by name within a group.
+func (s *ListService) SearchProducts(ctx context.Context, user *models.User, groupID uuid.UUID, query string) ([]models.Product, error) {
+	if err := s.requireActiveVerifiedUser(user); err != nil {
+		return nil, err
+	}
+	if err := s.requireMembership(ctx, user.ID, groupID); err != nil {
+		return nil, err
+	}
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return s.listRepo.ListProductsByGroup(ctx, groupID)
+	}
+	return s.listRepo.SearchProducts(ctx, groupID, query, 20)
+}
+
+// CostSummary represents the cost breakdown for a list.
+type CostSummary struct {
+	TotalCents      int `json:"total_cents"`
+	EqualShareCents int `json:"equal_share_cents"`
+}
+
+// GetCostSummary returns the cost summary for a list.
+func (s *ListService) GetCostSummary(ctx context.Context, user *models.User, listID uuid.UUID) (*CostSummary, error) {
+	if err := s.requireActiveVerifiedUser(user); err != nil {
+		return nil, err
+	}
+	list, err := s.listRepo.GetListByID(ctx, listID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, &api.NotFoundError{Resource: "list", ID: listID.String()}
+		}
+		return nil, fmt.Errorf("failed to get list: %w", err)
+	}
+	if err := s.requireMembership(ctx, user.ID, list.GroupID); err != nil {
+		return nil, err
+	}
+
+	totalCents, _, _, err := s.listRepo.CostSummary(ctx, listID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get cost summary: %w", err)
+	}
+
+	// Get group members for equal share calculation
+	memberships, err := s.groupRepo.ListMembershipsByGroup(ctx, list.GroupID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get members: %w", err)
+	}
+
+	memberCount := len(memberships)
+	if memberCount == 0 {
+		memberCount = 1
+	}
+
+	equalShare := totalCents / memberCount
+	if totalCents%memberCount != 0 {
+		equalShare++ // round up
+	}
+
+	return &CostSummary{
+		TotalCents:      totalCents,
+		EqualShareCents: equalShare,
+	}, nil
+}
+
+// GenerateExpenseFromList creates an expense from a list's cost summary.
+func (s *ListService) GenerateExpenseFromList(ctx context.Context, user *models.User, listID uuid.UUID, description string) (*models.Expense, error) {
+	if err := s.requireActiveVerifiedUser(user); err != nil {
+		return nil, err
+	}
+	list, err := s.listRepo.GetListByID(ctx, listID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, &api.NotFoundError{Resource: "list", ID: listID.String()}
+		}
+		return nil, fmt.Errorf("failed to get list: %w", err)
+	}
+	if err := s.requireMembership(ctx, user.ID, list.GroupID); err != nil {
+		return nil, err
+	}
+
+	totalCents, _, _, err := s.listRepo.CostSummary(ctx, listID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get cost summary: %w", err)
+	}
+	if totalCents == 0 {
+		return nil, &api.ValidationError{Field: "list", Message: "list has no priced items"}
+	}
+
+	expense := &models.Expense{
+		GroupID:     list.GroupID,
+		PayerID:     user.ID,
+		Amount:      int64(totalCents),
+		Currency:    "USD",
+		Description: description,
+		Category:    "groceries",
+	}
+	if expense.Description == "" {
+		expense.Description = "Shopping: " + list.Name
+	}
+
+	return expense, nil
+}

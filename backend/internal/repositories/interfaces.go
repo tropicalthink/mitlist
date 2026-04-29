@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/yourorg/mitlist/internal/models"
@@ -75,6 +76,17 @@ type ListRepo interface {
 	ListShoppingLocationsByGroup(ctx context.Context, groupID uuid.UUID) ([]models.ShoppingLocation, error)
 	CreateProduct(ctx context.Context, product *models.Product) error
 	ListProductsByGroup(ctx context.Context, groupID uuid.UUID) ([]models.Product, error)
+	SearchProducts(ctx context.Context, groupID uuid.UUID, query string, limit int) ([]models.Product, error)
+	CostSummary(ctx context.Context, listID uuid.UUID) (totalCents int, equalShareCents int, userContributions map[uuid.UUID]int, err error)
+}
+
+// MealPlanRepo is the interface for meal plan repository operations.
+type MealPlanRepoIface interface {
+	CreateMealPlan(ctx context.Context, mp *models.MealPlan) error
+	GetMealPlanByID(ctx context.Context, id uuid.UUID) (*models.MealPlan, error)
+	ListMealPlansByGroup(ctx context.Context, groupID uuid.UUID, from, to time.Time) ([]models.MealPlan, error)
+	UpdateMealPlan(ctx context.Context, mp *models.MealPlan) error
+	DeleteMealPlan(ctx context.Context, id uuid.UUID) error
 }
 
 // TemplateRepo is the interface for template repository operations.

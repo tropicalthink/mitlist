@@ -132,7 +132,7 @@ func main() {
 			r.Post("/groups/{id}/pending-claims/{claim_id}/reject", groupHandler.RejectClaim)
 
 			// Lists
-			listHandler := handlers.NewListHandler(cnt.ListService())
+			listHandler := handlers.NewListHandler(cnt.ListService(), cnt.FinanceService())
 			listItemPhotoHandler := handlers.NewListItemPhotoHandler(cnt.ListItemPhotoService())
 			r.Post("/lists", listHandler.CreateList)
 			r.Get("/lists", listHandler.ListLists)
@@ -151,6 +151,8 @@ func main() {
 			r.Patch("/lists/{id}/items/{item_id}", listHandler.UpdateItem)
 			r.Delete("/lists/{id}/items/{item_id}", listHandler.DeleteItem)
 			r.Post("/lists/{id}/reorder", listHandler.ReorderItems)
+			r.Get("/lists/{id}/cost-summary", listHandler.GetCostSummary)
+			r.Post("/lists/{id}/generate-expense", listHandler.GenerateExpense)
 			listItemPhotoHandler.RegisterRoutes(r)
 
 			// Templates
@@ -211,6 +213,10 @@ func main() {
 			recipeScrapeSvc := services.NewRecipeScrapingService()
 			recipeHandler := handlers.NewRecipeHandler(cnt.RecipeService(), recipeScrapeSvc, cnt.ListService())
 			recipeHandler.RegisterRoutes(r)
+
+			// Meal Plans
+			mealPlanHandler := handlers.NewMealPlanHandler(cnt.MealPlanService())
+			mealPlanHandler.RegisterRoutes(r)
 
 			// Assistant
 			assistantHandler := handlers.NewAssistantHandler(cnt.AssistantService())

@@ -35,6 +35,7 @@ func (h *RecipeHandler) RegisterRoutes(r chi.Router) {
 	r.Patch("/recipes/{id}", h.UpdateRecipe)
 	r.Delete("/recipes/{id}", h.DeleteRecipe)
 	r.Post("/recipes/{id}/share", h.ShareRecipe)
+	r.Post("/recipes/{id}/add-to-list", h.AddToList)
 	r.Post("/recipes/{id}/add-missing-to-list", h.AddMissingToList)
 	r.Post("/recipes/clip", h.ClipRecipe)
 
@@ -52,13 +53,23 @@ func (h *RecipeHandler) RegisterRoutes(r chi.Router) {
 // ------------------------------------------------------------------
 
 type createRecipeRequest struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	PrepTime    int    `json:"prep_time"`
-	CookTime    int    `json:"cook_time"`
-	Servings    int    `json:"servings"`
-	ImageURL    string `json:"image_url"`
-	IsPublic    bool   `json:"is_public"`
+	Title            string   `json:"title"`
+	Description      string   `json:"description"`
+	DescriptionShort string   `json:"description_short"`
+	Author           string   `json:"author"`
+	RatingValue      float64  `json:"rating_value"`
+	RatingCount      int      `json:"rating_count"`
+	NutritionJSON    string   `json:"nutrition_json"`
+	VideoURL         string   `json:"video_url"`
+	EquipmentJSON    string   `json:"equipment_json"`
+	SourceURL        string   `json:"source_url"`
+	ImageURL         string   `json:"image_url"`
+	ImageOptions     []string `json:"image_options"`
+	Tags             []string `json:"tags"`
+	PrepTime         int      `json:"prep_time"`
+	CookTime         int      `json:"cook_time"`
+	Servings         int      `json:"servings"`
+	IsPublic         bool     `json:"is_public"`
 }
 
 func (h *RecipeHandler) CreateRecipe(w http.ResponseWriter, r *http.Request) {
@@ -75,13 +86,23 @@ func (h *RecipeHandler) CreateRecipe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	recipe := &models.Recipe{
-		Title:       req.Title,
-		Description: req.Description,
-		PrepTime:    req.PrepTime,
-		CookTime:    req.CookTime,
-		Servings:    req.Servings,
-		ImageURL:    req.ImageURL,
-		IsPublic:    req.IsPublic,
+		Title:            req.Title,
+		Description:      req.Description,
+		DescriptionShort: req.DescriptionShort,
+		Author:           req.Author,
+		RatingValue:      req.RatingValue,
+		RatingCount:      req.RatingCount,
+		NutritionJSON:    req.NutritionJSON,
+		VideoURL:         req.VideoURL,
+		EquipmentJSON:    req.EquipmentJSON,
+		SourceURL:        req.SourceURL,
+		ImageURL:         req.ImageURL,
+		ImageOptions:     req.ImageOptions,
+		Tags:             req.Tags,
+		PrepTime:         req.PrepTime,
+		CookTime:         req.CookTime,
+		Servings:         req.Servings,
+		IsPublic:         req.IsPublic,
 	}
 
 	if err := h.service.CreateRecipe(r.Context(), userID, recipe); err != nil {
@@ -132,13 +153,23 @@ func (h *RecipeHandler) GetRecipe(w http.ResponseWriter, r *http.Request) {
 }
 
 type updateRecipeRequest struct {
-	Title       *string `json:"title,omitempty"`
-	Description *string `json:"description,omitempty"`
-	PrepTime    *int    `json:"prep_time,omitempty"`
-	CookTime    *int    `json:"cook_time,omitempty"`
-	Servings    *int    `json:"servings,omitempty"`
-	ImageURL    *string `json:"image_url,omitempty"`
-	IsPublic    *bool   `json:"is_public,omitempty"`
+	Title            *string   `json:"title,omitempty"`
+	Description      *string   `json:"description,omitempty"`
+	DescriptionShort *string   `json:"description_short,omitempty"`
+	Author           *string   `json:"author,omitempty"`
+	RatingValue      *float64  `json:"rating_value,omitempty"`
+	RatingCount      *int      `json:"rating_count,omitempty"`
+	NutritionJSON    *string   `json:"nutrition_json,omitempty"`
+	VideoURL         *string   `json:"video_url,omitempty"`
+	EquipmentJSON    *string   `json:"equipment_json,omitempty"`
+	SourceURL        *string   `json:"source_url,omitempty"`
+	ImageURL         *string   `json:"image_url,omitempty"`
+	ImageOptions     []string  `json:"image_options,omitempty"`
+	Tags             []string  `json:"tags,omitempty"`
+	PrepTime         *int      `json:"prep_time,omitempty"`
+	CookTime         *int      `json:"cook_time,omitempty"`
+	Servings         *int      `json:"servings,omitempty"`
+	IsPublic         *bool     `json:"is_public,omitempty"`
 }
 
 func (h *RecipeHandler) UpdateRecipe(w http.ResponseWriter, r *http.Request) {
@@ -172,6 +203,39 @@ func (h *RecipeHandler) UpdateRecipe(w http.ResponseWriter, r *http.Request) {
 	if req.Description != nil {
 		existing.Description = *req.Description
 	}
+	if req.DescriptionShort != nil {
+		existing.DescriptionShort = *req.DescriptionShort
+	}
+	if req.Author != nil {
+		existing.Author = *req.Author
+	}
+	if req.RatingValue != nil {
+		existing.RatingValue = *req.RatingValue
+	}
+	if req.RatingCount != nil {
+		existing.RatingCount = *req.RatingCount
+	}
+	if req.NutritionJSON != nil {
+		existing.NutritionJSON = *req.NutritionJSON
+	}
+	if req.VideoURL != nil {
+		existing.VideoURL = *req.VideoURL
+	}
+	if req.EquipmentJSON != nil {
+		existing.EquipmentJSON = *req.EquipmentJSON
+	}
+	if req.SourceURL != nil {
+		existing.SourceURL = *req.SourceURL
+	}
+	if req.ImageURL != nil {
+		existing.ImageURL = *req.ImageURL
+	}
+	if req.ImageOptions != nil {
+		existing.ImageOptions = req.ImageOptions
+	}
+	if req.Tags != nil {
+		existing.Tags = req.Tags
+	}
 	if req.PrepTime != nil {
 		existing.PrepTime = *req.PrepTime
 	}
@@ -180,9 +244,6 @@ func (h *RecipeHandler) UpdateRecipe(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Servings != nil {
 		existing.Servings = *req.Servings
-	}
-	if req.ImageURL != nil {
-		existing.ImageURL = *req.ImageURL
 	}
 	if req.IsPublic != nil {
 		existing.IsPublic = *req.IsPublic
@@ -247,6 +308,86 @@ func (h *RecipeHandler) ShareRecipe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+type addToListRequest struct {
+	ListID        uuid.UUID   `json:"list_id"`
+	Servings      *int        `json:"servings,omitempty"`
+	IngredientIDs []uuid.UUID `json:"ingredient_ids,omitempty"`
+}
+
+func (h *RecipeHandler) AddToList(w http.ResponseWriter, r *http.Request) {
+	user, ok := userFromContext(r)
+	if !ok {
+		respondError(w, api.ErrUnauthorized)
+		return
+	}
+	if h.listSvc == nil {
+		respondError(w, &api.ValidationError{Message: "list integration is not configured"})
+		return
+	}
+	recipeID, err := parseUUIDParam(r, "id")
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	var req addToListRequest
+	if err := decodeJSON(r, &req); err != nil {
+		respondError(w, err)
+		return
+	}
+	if req.ListID == uuid.Nil {
+		respondError(w, &api.ValidationError{Field: "list_id", Message: "list_id is required"})
+		return
+	}
+
+	recipe, err := h.service.GetRecipe(r.Context(), user.ID, recipeID)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
+	ingredients, err := h.service.ListIngredientsForRecipe(r.Context(), user.ID, recipeID)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
+	// Filter to selected ingredients if specified
+	selected := ingredients
+	if len(req.IngredientIDs) > 0 {
+		idSet := make(map[uuid.UUID]struct{}, len(req.IngredientIDs))
+		for _, id := range req.IngredientIDs {
+			idSet[id] = struct{}{}
+		}
+		selected = make([]models.RecipeIngredient, 0, len(req.IngredientIDs))
+		for _, ing := range ingredients {
+			if _, ok := idSet[ing.ID]; ok {
+				selected = append(selected, ing)
+			}
+		}
+	}
+
+	// Calculate scaling factor
+	scale := 1.0
+	if req.Servings != nil && recipe.Servings > 0 {
+		scale = float64(*req.Servings) / float64(recipe.Servings)
+	}
+
+	added := make([]models.ListItem, 0, len(selected))
+	for _, ing := range selected {
+		qty := parseIngredientAmount(ing.Quantity) * scale
+		if qty <= 0 {
+			qty = 1 * scale
+		}
+		item, err := h.listSvc.AddItemAmount(r.Context(), user, req.ListID, ing.Name, qty, ing.Unit, "From recipe: "+recipe.Title)
+		if err != nil {
+			respondError(w, err)
+			return
+		}
+		added = append(added, *item)
+	}
+	respondJSON(w, http.StatusOK, map[string]any{"added": added})
 }
 
 type addMissingToListRequest struct {

@@ -58,6 +58,7 @@ class ListItem {
   final double quantity;
   final String unit;
   final String note;
+  final int? priceCents;
   final bool checked;
   final int position;
   final DateTime createdAt;
@@ -70,6 +71,7 @@ class ListItem {
     required this.quantity,
     required this.unit,
     this.note = '',
+    this.priceCents,
     required this.checked,
     required this.position,
     required this.createdAt,
@@ -84,6 +86,7 @@ class ListItem {
       quantity: (json['quantity'] as num?)?.toDouble() ?? 1,
       unit: json['unit'] as String? ?? '',
       note: json['note'] as String? ?? '',
+      priceCents: json['price_cents'] as int?,
       checked: json['checked'] as bool? ?? false,
       position: json['position'] as int? ?? 0,
       createdAt: DateTime.parse(json['created_at'] as String),
@@ -98,6 +101,7 @@ class ListItem {
         'quantity': quantity,
         'unit': unit,
         if (note.isNotEmpty) 'note': note,
+        if (priceCents != null) 'price_cents': priceCents,
         'checked': checked,
         'position': position,
         'created_at': createdAt.toIso8601String(),
@@ -134,13 +138,15 @@ class CreateListItemRequest {
   final double quantity;
   final String unit;
   final String note;
+  final int? priceCents;
   const CreateListItemRequest(
-      {required this.name, this.quantity = 1, this.unit = '', this.note = ''});
+      {required this.name, this.quantity = 1, this.unit = '', this.note = '', this.priceCents});
   Map<String, dynamic> toJson() => {
         'name': name,
         'quantity': quantity,
         'unit': unit,
-        if (note.isNotEmpty) 'note': note
+        if (note.isNotEmpty) 'note': note,
+        if (priceCents != null) 'price_cents': priceCents,
       };
 }
 
@@ -149,6 +155,7 @@ class UpdateListItemRequest {
   final double? quantity;
   final String? unit;
   final String? note;
+  final int? priceCents;
   final bool? checked;
   final int? position;
   const UpdateListItemRequest(
@@ -156,6 +163,7 @@ class UpdateListItemRequest {
       this.quantity,
       this.unit,
       this.note,
+      this.priceCents,
       this.checked,
       this.position});
   Map<String, dynamic> toJson() {
@@ -164,6 +172,7 @@ class UpdateListItemRequest {
     if (quantity != null) m['quantity'] = quantity;
     if (unit != null) m['unit'] = unit;
     if (note != null) m['note'] = note;
+    if (priceCents != null) m['price_cents'] = priceCents;
     if (checked != null) m['checked'] = checked;
     if (position != null) m['position'] = position;
     return m;

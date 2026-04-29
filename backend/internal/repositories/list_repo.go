@@ -170,11 +170,11 @@ func (r *ListRepository) CreateItem(ctx context.Context, item *models.ListItem) 
 	item.UpdatedAt = now
 
 	query := `
-		INSERT INTO list_items (id, list_id, name, quantity, unit, note, product_id, store_id, checked, position, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		INSERT INTO list_items (id, list_id, name, quantity, unit, note, price_cents, product_id, store_id, checked, position, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 	`
 	_, err := r.pool.Exec(ctx, query,
-		item.ID, item.ListID, item.Name, item.Quantity, item.Unit, item.Note, item.ProductID, item.StoreID, item.Checked, item.Position, item.CreatedAt, item.UpdatedAt,
+		item.ID, item.ListID, item.Name, item.Quantity, item.Unit, item.Note, item.PriceCents, item.ProductID, item.StoreID, item.Checked, item.Position, item.CreatedAt, item.UpdatedAt,
 	)
 	return err
 }
@@ -182,14 +182,14 @@ func (r *ListRepository) CreateItem(ctx context.Context, item *models.ListItem) 
 // GetItemByID retrieves a list item by its ID.
 func (r *ListRepository) GetItemByID(ctx context.Context, id uuid.UUID) (*models.ListItem, error) {
 	query := `
-		SELECT id, list_id, name, quantity, unit, COALESCE(note, ''), product_id, store_id, checked, position, created_at, updated_at
+		SELECT id, list_id, name, quantity, unit, COALESCE(note, ''), price_cents, product_id, store_id, checked, position, created_at, updated_at
 		FROM list_items
 		WHERE id = $1 AND deleted_at IS NULL
 	`
 	row := r.pool.QueryRow(ctx, query, id)
 
 	var i models.ListItem
-	err := row.Scan(&i.ID, &i.ListID, &i.Name, &i.Quantity, &i.Unit, &i.Note, &i.ProductID, &i.StoreID, &i.Checked, &i.Position, &i.CreatedAt, &i.UpdatedAt)
+	err := row.Scan(&i.ID, &i.ListID, &i.Name, &i.Quantity, &i.Unit, &i.Note, &i.PriceCents, &i.ProductID, &i.StoreID, &i.Checked, &i.Position, &i.CreatedAt, &i.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +199,7 @@ func (r *ListRepository) GetItemByID(ctx context.Context, id uuid.UUID) (*models
 // GetItemByListNameUnit retrieves an active item by normalized name and unit.
 func (r *ListRepository) GetItemByListNameUnit(ctx context.Context, listID uuid.UUID, name, unit string) (*models.ListItem, error) {
 	query := `
-		SELECT id, list_id, name, quantity, unit, COALESCE(note, ''), product_id, store_id, checked, position, created_at, updated_at
+		SELECT id, list_id, name, quantity, unit, COALESCE(note, ''), price_cents, product_id, store_id, checked, position, created_at, updated_at
 		FROM list_items
 		WHERE list_id = $1
 			AND lower(trim(name)) = lower(trim($2))
@@ -211,7 +211,7 @@ func (r *ListRepository) GetItemByListNameUnit(ctx context.Context, listID uuid.
 	row := r.pool.QueryRow(ctx, query, listID, name, unit)
 
 	var i models.ListItem
-	err := row.Scan(&i.ID, &i.ListID, &i.Name, &i.Quantity, &i.Unit, &i.Note, &i.ProductID, &i.StoreID, &i.Checked, &i.Position, &i.CreatedAt, &i.UpdatedAt)
+	err := row.Scan(&i.ID, &i.ListID, &i.Name, &i.Quantity, &i.Unit, &i.Note, &i.PriceCents, &i.ProductID, &i.StoreID, &i.Checked, &i.Position, &i.CreatedAt, &i.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +224,7 @@ func (r *ListRepository) ListItemsByList(ctx context.Context, listID uuid.UUID, 
 		limit = 50
 	}
 	query := `
-		SELECT id, list_id, name, quantity, unit, COALESCE(note, ''), product_id, store_id, checked, position, created_at, updated_at
+		SELECT id, list_id, name, quantity, unit, COALESCE(note, ''), price_cents, product_id, store_id, checked, position, created_at, updated_at
 		FROM list_items
 		WHERE list_id = $1 AND deleted_at IS NULL
 		ORDER BY position ASC, created_at ASC
@@ -239,7 +239,7 @@ func (r *ListRepository) ListItemsByList(ctx context.Context, listID uuid.UUID, 
 	var items []models.ListItem
 	for rows.Next() {
 		var i models.ListItem
-		if err := rows.Scan(&i.ID, &i.ListID, &i.Name, &i.Quantity, &i.Unit, &i.Note, &i.ProductID, &i.StoreID, &i.Checked, &i.Position, &i.CreatedAt, &i.UpdatedAt); err != nil {
+		if err := rows.Scan(&i.ID, &i.ListID, &i.Name, &i.Quantity, &i.Unit, &i.Note, &i.PriceCents, &i.ProductID, &i.StoreID, &i.Checked, &i.Position, &i.CreatedAt, &i.UpdatedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -255,11 +255,11 @@ func (r *ListRepository) UpdateItem(ctx context.Context, item *models.ListItem) 
 	item.UpdatedAt = time.Now().UTC()
 	query := `
 		UPDATE list_items
-		SET name = $1, quantity = $2, unit = $3, note = $4, product_id = $5, store_id = $6, checked = $7, position = $8, updated_at = $9
-		WHERE id = $10
+		SET name = $1, quantity = $2, unit = $3, note = $4, price_cents = $5, product_id = $6, store_id = $7, checked = $8, position = $9, updated_at = $10
+		WHERE id = $11
 	`
 	_, err := r.pool.Exec(ctx, query,
-		item.Name, item.Quantity, item.Unit, item.Note, item.ProductID, item.StoreID, item.Checked, item.Position, item.UpdatedAt, item.ID,
+		item.Name, item.Quantity, item.Unit, item.Note, item.PriceCents, item.ProductID, item.StoreID, item.Checked, item.Position, item.UpdatedAt, item.ID,
 	)
 	return err
 }
@@ -390,6 +390,57 @@ func (r *ListRepository) ListProductsByGroup(ctx context.Context, groupID uuid.U
 		products = append(products, product)
 	}
 	return products, rows.Err()
+}
+
+// SearchProducts searches products by name within a group.
+func (r *ListRepository) SearchProducts(ctx context.Context, groupID uuid.UUID, query string, limit int) ([]models.Product, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, group_id, name, barcode, unit, store_id, min_stock, in_stock, created_at, updated_at
+		FROM products
+		WHERE group_id = $1 AND lower(name) LIKE lower($2)
+		ORDER BY name ASC
+		LIMIT $3
+	`, groupID, "%"+query+"%", limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var products []models.Product
+	for rows.Next() {
+		var product models.Product
+		if err := rows.Scan(&product.ID, &product.GroupID, &product.Name, &product.Barcode, &product.Unit, &product.StoreID, &product.MinStock, &product.InStock, &product.CreatedAt, &product.UpdatedAt); err != nil {
+			return nil, err
+		}
+		products = append(products, product)
+	}
+	return products, rows.Err()
+}
+
+// CostSummary returns total cost, equal share, and per-user contributions for a list.
+func (r *ListRepository) CostSummary(ctx context.Context, listID uuid.UUID) (totalCents int, equalShareCents int, userContributions map[uuid.UUID]int, err error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT COALESCE(SUM(price_cents), 0) AS total
+		FROM list_items
+		WHERE list_id = $1 AND deleted_at IS NULL AND price_cents IS NOT NULL
+	`, listID)
+	if err != nil {
+		return 0, 0, nil, err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		if err := rows.Scan(&totalCents); err != nil {
+			return 0, 0, nil, err
+		}
+	}
+
+	// For now, equal share among active group members would require group membership query
+	// Simplified: return total and zero equal share (caller can compute based on group size)
+	return totalCents, 0, make(map[uuid.UUID]int), nil
 }
 
 // compile-time interface check helpers

@@ -35,22 +35,22 @@ func (r *RecipeRepo) CreateRecipe(ctx context.Context, rec *models.Recipe) error
 	rec.UpdatedAt = now
 
 	_, err := r.pool.Exec(ctx, `
-		INSERT INTO recipes (id, user_id, title, description, prep_time, cook_time, servings, image_url, is_public, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-	`, rec.ID, rec.UserID, rec.Title, rec.Description, rec.PrepTime, rec.CookTime, rec.Servings, rec.ImageURL, rec.IsPublic, rec.CreatedAt, rec.UpdatedAt)
+		INSERT INTO recipes (id, user_id, title, description, description_short, author, rating_value, rating_count, nutrition_json, video_url, equipment_json, source_url, image_url, image_options, tags, prep_time, cook_time, servings, is_public, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+	`, rec.ID, rec.UserID, rec.Title, rec.Description, rec.DescriptionShort, rec.Author, rec.RatingValue, rec.RatingCount, rec.NutritionJSON, rec.VideoURL, rec.EquipmentJSON, rec.SourceURL, rec.ImageURL, rec.ImageOptions, rec.Tags, rec.PrepTime, rec.CookTime, rec.Servings, rec.IsPublic, rec.CreatedAt, rec.UpdatedAt)
 	return err
 }
 
 // GetRecipeByID retrieves a recipe by its ID.
 func (r *RecipeRepo) GetRecipeByID(ctx context.Context, id uuid.UUID) (*models.Recipe, error) {
 	row := r.pool.QueryRow(ctx, `
-		SELECT id, user_id, title, description, prep_time, cook_time, servings, image_url, is_public, created_at, updated_at
+		SELECT id, user_id, title, description, description_short, author, rating_value, rating_count, nutrition_json, video_url, equipment_json, source_url, image_url, image_options, tags, prep_time, cook_time, servings, is_public, created_at, updated_at
 		FROM recipes
 		WHERE id = $1
 	`, id)
 
 	var rec models.Recipe
-	err := row.Scan(&rec.ID, &rec.UserID, &rec.Title, &rec.Description, &rec.PrepTime, &rec.CookTime, &rec.Servings, &rec.ImageURL, &rec.IsPublic, &rec.CreatedAt, &rec.UpdatedAt)
+	err := row.Scan(&rec.ID, &rec.UserID, &rec.Title, &rec.Description, &rec.DescriptionShort, &rec.Author, &rec.RatingValue, &rec.RatingCount, &rec.NutritionJSON, &rec.VideoURL, &rec.EquipmentJSON, &rec.SourceURL, &rec.ImageURL, &rec.ImageOptions, &rec.Tags, &rec.PrepTime, &rec.CookTime, &rec.Servings, &rec.IsPublic, &rec.CreatedAt, &rec.UpdatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, fmt.Errorf("recipe not found")
@@ -65,7 +65,7 @@ func (r *RecipeRepo) ListRecipesByUser(ctx context.Context, userID uuid.UUID, li
 	limit = clampLimit(limit)
 
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, user_id, title, description, prep_time, cook_time, servings, image_url, is_public, created_at, updated_at
+		SELECT id, user_id, title, description, description_short, author, rating_value, rating_count, nutrition_json, video_url, equipment_json, source_url, image_url, image_options, tags, prep_time, cook_time, servings, is_public, created_at, updated_at
 		FROM recipes
 		WHERE user_id = $1
 		ORDER BY created_at DESC
@@ -85,9 +85,9 @@ func (r *RecipeRepo) UpdateRecipe(ctx context.Context, rec *models.Recipe) error
 
 	cmd, err := r.pool.Exec(ctx, `
 		UPDATE recipes
-		SET title = $1, description = $2, prep_time = $3, cook_time = $4, servings = $5, image_url = $6, is_public = $7, updated_at = $8
-		WHERE id = $9
-	`, rec.Title, rec.Description, rec.PrepTime, rec.CookTime, rec.Servings, rec.ImageURL, rec.IsPublic, rec.UpdatedAt, rec.ID)
+		SET title = $1, description = $2, description_short = $3, author = $4, rating_value = $5, rating_count = $6, nutrition_json = $7, video_url = $8, equipment_json = $9, source_url = $10, image_url = $11, image_options = $12, tags = $13, prep_time = $14, cook_time = $15, servings = $16, is_public = $17, updated_at = $18
+		WHERE id = $19
+	`, rec.Title, rec.Description, rec.DescriptionShort, rec.Author, rec.RatingValue, rec.RatingCount, rec.NutritionJSON, rec.VideoURL, rec.EquipmentJSON, rec.SourceURL, rec.ImageURL, rec.ImageOptions, rec.Tags, rec.PrepTime, rec.CookTime, rec.Servings, rec.IsPublic, rec.UpdatedAt, rec.ID)
 	if err != nil {
 		return err
 	}
@@ -137,16 +137,16 @@ func (r *RecipeRepo) CreateIngredient(ctx context.Context, ing *models.RecipeIng
 	}
 
 	_, err := r.pool.Exec(ctx, `
-		INSERT INTO recipe_ingredients (id, recipe_id, name, quantity, unit, position)
-		VALUES ($1, $2, $3, $4, $5, $6)
-	`, ing.ID, ing.RecipeID, ing.Name, ing.Quantity, ing.Unit, ing.Position)
+		INSERT INTO recipe_ingredients (id, recipe_id, name, quantity, unit, raw_text, position)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+	`, ing.ID, ing.RecipeID, ing.Name, ing.Quantity, ing.Unit, ing.RawText, ing.Position)
 	return err
 }
 
 // ListIngredients returns all ingredients for a recipe ordered by position.
 func (r *RecipeRepo) ListIngredients(ctx context.Context, recipeID uuid.UUID) ([]models.RecipeIngredient, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, recipe_id, name, quantity, unit, position
+		SELECT id, recipe_id, name, quantity, unit, raw_text, position
 		FROM recipe_ingredients
 		WHERE recipe_id = $1
 		ORDER BY position ASC, id ASC
@@ -163,9 +163,9 @@ func (r *RecipeRepo) ListIngredients(ctx context.Context, recipeID uuid.UUID) ([
 func (r *RecipeRepo) UpdateIngredient(ctx context.Context, ing *models.RecipeIngredient) error {
 	cmd, err := r.pool.Exec(ctx, `
 		UPDATE recipe_ingredients
-		SET name = $1, quantity = $2, unit = $3, position = $4
-		WHERE id = $5
-	`, ing.Name, ing.Quantity, ing.Unit, ing.Position, ing.ID)
+		SET name = $1, quantity = $2, unit = $3, raw_text = $4, position = $5
+		WHERE id = $6
+	`, ing.Name, ing.Quantity, ing.Unit, ing.RawText, ing.Position, ing.ID)
 	if err != nil {
 		return err
 	}
@@ -198,16 +198,16 @@ func (r *RecipeRepo) CreateStep(ctx context.Context, step *models.RecipeStep) er
 	}
 
 	_, err := r.pool.Exec(ctx, `
-		INSERT INTO recipe_steps (id, recipe_id, description, position)
-		VALUES ($1, $2, $3, $4)
-	`, step.ID, step.RecipeID, step.Description, step.Position)
+		INSERT INTO recipe_steps (id, recipe_id, name, description, position)
+		VALUES ($1, $2, $3, $4, $5)
+	`, step.ID, step.RecipeID, step.Name, step.Description, step.Position)
 	return err
 }
 
 // ListSteps returns all steps for a recipe ordered by position.
 func (r *RecipeRepo) ListSteps(ctx context.Context, recipeID uuid.UUID) ([]models.RecipeStep, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, recipe_id, description, position
+		SELECT id, recipe_id, name, description, position
 		FROM recipe_steps
 		WHERE recipe_id = $1
 		ORDER BY position ASC, id ASC
@@ -224,9 +224,9 @@ func (r *RecipeRepo) ListSteps(ctx context.Context, recipeID uuid.UUID) ([]model
 func (r *RecipeRepo) UpdateStep(ctx context.Context, step *models.RecipeStep) error {
 	cmd, err := r.pool.Exec(ctx, `
 		UPDATE recipe_steps
-		SET description = $1, position = $2
-		WHERE id = $3
-	`, step.Description, step.Position, step.ID)
+		SET name = $1, description = $2, position = $3
+		WHERE id = $4
+	`, step.Name, step.Description, step.Position, step.ID)
 	if err != nil {
 		return err
 	}

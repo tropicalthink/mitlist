@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -44,6 +46,17 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
   bool _isScraping = false;
   _RecipeEntryMode _mode = _RecipeEntryMode.manual;
 
+  // Scraped metadata
+  String _scrapedAuthor = '';
+  double _scrapedRatingValue = 0;
+  int _scrapedRatingCount = 0;
+  String _scrapedSourceUrl = '';
+  String _scrapedVideoUrl = '';
+  List<String> _scrapedImageOptions = [];
+  String? _selectedImageUrl;
+  List<String> _scrapedEquipment = [];
+  Map<String, dynamic>? _scrapedNutrition;
+
   bool get _hasTitle => _titleController.text.trim().isNotEmpty;
   bool get _hasUrl => _urlController.text.trim().isNotEmpty;
   bool get _canCreate =>
@@ -65,6 +78,10 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
 
       if (_titleController.text.trim().isEmpty && clip.title.trim().isNotEmpty) {
         _titleController.text = clip.title.trim();
+      }
+
+      if (clip.description.trim().isNotEmpty && _descriptionController.text.trim().isEmpty) {
+        _descriptionController.text = clip.description.trim();
       }
 
       if (clip.prepTimeMinutes != null && clip.prepTimeMinutes! > 0) {
@@ -100,6 +117,17 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
         _tagsController.text = clip.tags.join(', ');
       }
 
+      // Store scraped metadata
+      _scrapedAuthor = clip.author;
+      _scrapedRatingValue = clip.ratingValue;
+      _scrapedRatingCount = clip.ratingCount;
+      _scrapedSourceUrl = clip.sourceUrl;
+      _scrapedVideoUrl = clip.videoUrl;
+      _scrapedImageOptions = clip.imageOptions;
+      _selectedImageUrl = clip.imageUrl;
+      _scrapedEquipment = clip.equipment;
+      _scrapedNutrition = clip.nutrition;
+
       setState(() => _isScraping = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Details fetched')),
@@ -108,7 +136,7 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
       if (!mounted) return;
       setState(() => _isScraping = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Couldn’t fetch details from that link.')),
+        const SnackBar(content: Text('Couldn\u2019t fetch details from that link.')),
       );
     }
   }
@@ -129,9 +157,22 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
         CreateRecipeRequest(
           title: title,
           description: _buildDescription(url),
+          descriptionShort: _descriptionController.text.trim(),
+          author: _scrapedAuthor,
+          ratingValue: _scrapedRatingValue,
+          ratingCount: _scrapedRatingCount,
+          nutritionJson: _scrapedNutrition != null ? jsonEncode(_scrapedNutrition) : '',
+          videoUrl: _scrapedVideoUrl,
+          equipmentJson: _scrapedEquipment.isNotEmpty ? jsonEncode(_scrapedEquipment) : '',
+          sourceUrl: url.isNotEmpty ? url : _scrapedSourceUrl,
           prepTime: _parsePositiveInt(_prepTimeController.text) ?? 0,
           cookTime: _parsePositiveInt(_cookTimeController.text) ?? 0,
           servings: _parsePositiveInt(_servingsController.text) ?? 1,
+          imageUrl: _selectedImageUrl,
+          imageOptions: _scrapedImageOptions,
+          tags: _tagsController.text.trim().isNotEmpty
+              ? _tagsController.text.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty).toList()
+              : const [],
           isPublic: _isPublic,
         ),
       );
@@ -263,6 +304,52 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
                 ),
               ],
             ),
+            if (_scrapedImageOptions.length > 1) ...[
+              const SizedBox(height: MitlistSpacing.md),
+              Text('Choose an image', style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: MitlistSpacing.sm),
+              SizedBox(
+                height: 80,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _scrapedImageOptions.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: MitlistSpacing.sm),
+                  itemBuilder: (context, index) {
+                    final imgUrl = _scrapedImageOptions[index];
+                    final isSelected = imgUrl == _selectedImageUrl;
+                    return GestureDetector(
+                      onTap: () => setState(() => _selectedImageUrl = imgUrl),
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: isSelected ? MitlistColors.primary500 : Colors.transparent,
+                            width: 3,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                          image: DecorationImage(
+                            image: NetworkImage(imgUrl),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ] else if (_selectedImageUrl != null) ...[
+              const SizedBox(height: MitlistSpacing.md),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  _selectedImageUrl!,
+                  height: 120,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ],
             const SizedBox(height: MitlistSpacing.md),
           ],
           AppInput(

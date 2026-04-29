@@ -19,12 +19,13 @@ func userFromContext(r *http.Request) (*models.User, bool) {
 
 // ListHandler handles list-related HTTP endpoints.
 type ListHandler struct {
-	service *services.ListService
+	service         *services.ListService
+	financeService  *services.FinanceService
 }
 
 // NewListHandler creates a new ListHandler.
-func NewListHandler(service *services.ListService) *ListHandler {
-	return &ListHandler{service: service}
+func NewListHandler(service *services.ListService, financeService *services.FinanceService) *ListHandler {
+	return &ListHandler{service: service, financeService: financeService}
 }
 
 // CreateList handles POST /api/v1/lists.
@@ -169,7 +170,13 @@ func (h *ListHandler) ListProducts(w http.ResponseWriter, r *http.Request) {
 		respondError(w, &api.ValidationError{Field: "group_id", Message: "invalid UUID"})
 		return
 	}
-	products, err := h.service.ListProducts(r.Context(), user, groupID)
+	searchQuery := r.URL.Query().Get("search")
+	var products []models.Product
+	if searchQuery != "" {
+		products, err = h.service.SearchProducts(r.Context(), user, groupID, searchQuery)
+	} else {
+		products, err = h.service.ListProducts(r.Context(), user, groupID)
+	}
 	if err != nil {
 		respondError(w, err)
 		return
@@ -266,12 +273,13 @@ func (h *ListHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Name      string     `json:"name"`
-		Quantity  float64    `json:"quantity"`
-		Unit      string     `json:"unit"`
-		Note      string     `json:"note"`
-		ProductID *uuid.UUID `json:"product_id"`
-		StoreID   *uuid.UUID `json:"store_id"`
+		Name       string     `json:"name"`
+		Quantity   float64    `json:"quantity"`
+		Unit       string     `json:"unit"`
+		Note       string     `json:"note"`
+		PriceCents *int       `json:"price_cents"`
+		ProductID  *uuid.UUID `json:"product_id"`
+		StoreID    *uuid.UUID `json:"store_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondError(w, &api.ValidationError{Message: "invalid request body"})
@@ -279,13 +287,14 @@ func (h *ListHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	item := &models.ListItem{
-		ListID:    listID,
-		Name:      req.Name,
-		Quantity:  req.Quantity,
-		Unit:      req.Unit,
-		Note:      req.Note,
-		ProductID: req.ProductID,
-		StoreID:   req.StoreID,
+		ListID:     listID,
+		Name:       req.Name,
+		Quantity:   req.Quantity,
+		Unit:       req.Unit,
+		Note:       req.Note,
+		PriceCents: req.PriceCents,
+		ProductID:  req.ProductID,
+		StoreID:    req.StoreID,
 	}
 	if err := h.service.CreateItem(r.Context(), user, item); err != nil {
 		respondError(w, err)
@@ -332,14 +341,15 @@ func (h *ListHandler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Name      *string    `json:"name,omitempty"`
-		Quantity  *float64   `json:"quantity,omitempty"`
-		Unit      *string    `json:"unit,omitempty"`
-		Note      *string    `json:"note,omitempty"`
-		ProductID *uuid.UUID `json:"product_id,omitempty"`
-		StoreID   *uuid.UUID `json:"store_id,omitempty"`
-		Checked   *bool      `json:"checked,omitempty"`
-		Position  *int       `json:"position,omitempty"`
+		Name       *string    `json:"name,omitempty"`
+		Quantity   *float64   `json:"quantity,omitempty"`
+		Unit       *string    `json:"unit,omitempty"`
+		Note       *string    `json:"note,omitempty"`
+		PriceCents *int       `json:"price_cents,omitempty"`
+		ProductID  *uuid.UUID `json:"product_id,omitempty"`
+		StoreID    *uuid.UUID `json:"store_id,omitempty"`
+		Checked    *bool      `json:"checked,omitempty"`
+		Position   *int       `json:"position,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondError(w, &api.ValidationError{Message: "invalid request body"})
@@ -363,6 +373,9 @@ func (h *ListHandler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Note != nil {
 		existing.Note = *req.Note
+	}
+	if req.PriceCents != nil {
+		existing.PriceCents = req.PriceCents
 	}
 	if req.ProductID != nil {
 		existing.ProductID = req.ProductID
@@ -530,4 +543,55 @@ func (h *ListHandler) ReorderItems(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// GetCostSummary handles GET /api/v1/lists/{id}/cost-summary.
+func (h *ListHandler) GetCostSummary(w http.ResponseWriter, r *http.Request) {
+	user, ok := userFromContext(r)
+	if !ok {
+		respondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	listID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		respondError(w, &api.ValidationError{Field: "id", Message: "invalid UUID"})
+		return
+	}
+
+	summary, err := h.service.GetCostSummary(r.Context(), user, listID)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, summary)
+}
+
+// GenerateExpense handles POST /api/v1/lists/{id}/generate-expense.
+func (h *ListHandler) GenerateExpense(w http.ResponseWriter, r *http.Request) {
+	user, ok := userFromContext(r)
+	if !ok {
+		respondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	listID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		respondError(w, &api.ValidationError{Field: "id", Message: "invalid UUID"})
+		return
+	}
+
+	var req struct {
+		Description string `json:"description"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&req)
+
+	expense, err := h.service.GenerateExpenseFromList(r.Context(), user, listID, req.Description)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
+	respondJSON(w, http.StatusCreated, expense)
 }

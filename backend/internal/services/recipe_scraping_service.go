@@ -22,20 +22,30 @@ import (
 const maxRecipeResponseBytes = 5 * 1024 * 1024
 
 type RecipeClipIngredient struct {
-	RawText string `json:"raw_text"`
+	RawText  string  `json:"raw_text"`
+	Name     string  `json:"name"`
+	Quantity float64 `json:"quantity"`
+	Unit     string  `json:"unit"`
 }
 
 type RecipeClipResponse struct {
-	Title           string               `json:"title"`
-	SourceURL       string               `json:"source_url"`
-	InstructionsMD  string               `json:"instructions_md"`
-	PrepTimeMinutes *int                 `json:"prep_time_minutes,omitempty"`
-	CookTimeMinutes *int                 `json:"cook_time_minutes,omitempty"`
-	Servings        *string              `json:"servings,omitempty"`
+	Title           string                 `json:"title"`
+	SourceURL       string                 `json:"source_url"`
+	Description     string                 `json:"description,omitempty"`
+	Author          string                 `json:"author,omitempty"`
+	RatingValue     float64                `json:"rating_value,omitempty"`
+	RatingCount     int                    `json:"rating_count,omitempty"`
+	Nutrition       map[string]string      `json:"nutrition,omitempty"`
+	VideoURL        string                 `json:"video_url,omitempty"`
+	Equipment       []string               `json:"equipment,omitempty"`
+	InstructionsMD  string                 `json:"instructions_md"`
+	PrepTimeMinutes *int                   `json:"prep_time_minutes,omitempty"`
+	CookTimeMinutes *int                   `json:"cook_time_minutes,omitempty"`
+	Servings        *string                `json:"servings,omitempty"`
 	Ingredients     []RecipeClipIngredient `json:"ingredients,omitempty"`
-	ImageURL        *string              `json:"image_url,omitempty"`
-	ImageOptions    []string             `json:"image_options,omitempty"`
-	Tags            []string             `json:"tags,omitempty"`
+	ImageURL        *string                `json:"image_url,omitempty"`
+	ImageOptions    []string               `json:"image_options,omitempty"`
+	Tags            []string               `json:"tags,omitempty"`
 }
 
 // RecipeScrapingService scrapes a URL into a "clip" payload suitable for prefill.
@@ -559,9 +569,24 @@ func convertStructuredData(data map[string]any, pageURL string) RecipeClipRespon
 
 	tags := extractTags(data)
 
+	// Extract new fields
+	description := strings.TrimSpace(getString(data["description"]))
+	author := extractAuthor(data["author"])
+	ratingValue, ratingCount := extractRating(data["aggregateRating"])
+	nutrition := extractNutrition(data["nutrition"])
+	videoURL := extractVideoURL(data["video"])
+	equipment := extractEquipment(data["tool"])
+
 	return RecipeClipResponse{
 		Title:           title,
 		SourceURL:       pageURL,
+		Description:     description,
+		Author:          author,
+		RatingValue:     ratingValue,
+		RatingCount:     ratingCount,
+		Nutrition:       nutrition,
+		VideoURL:        videoURL,
+		Equipment:       equipment,
 		InstructionsMD:  strings.Join(dedupeStrings(instructionsParts), "\n\n"),
 		PrepTimeMinutes: prep,
 		CookTimeMinutes: cook,
@@ -658,6 +683,89 @@ func getString(v any) string {
 	}
 }
 
+func extractAuthor(v any) string {
+	switch vv := v.(type) {
+	case string:
+		return strings.TrimSpace(vv)
+	case map[string]any:
+		if name := getString(vv["name"]); name != "" {
+			return strings.TrimSpace(name)
+		}
+		return strings.TrimSpace(getString(vv["@id"]))
+	}
+	return ""
+}
+
+func extractRating(v any) (float64, int) {
+	m, ok := v.(map[string]any)
+	if !ok {
+		return 0, 0
+	}
+	var val float64
+	if s := getString(m["ratingValue"]); s != "" {
+		val, _ = strconv.ParseFloat(s, 64)
+	}
+	var count int
+	if s := getString(m["ratingCount"]); s != "" {
+		count, _ = strconv.Atoi(s)
+	} else if s := getString(m["reviewCount"]); s != "" {
+		count, _ = strconv.Atoi(s)
+	}
+	return val, count
+}
+
+func extractNutrition(v any) map[string]string {
+	m, ok := v.(map[string]any)
+	if !ok {
+		return nil
+	}
+	out := make(map[string]string)
+	for _, key := range []string{"calories", "proteinContent", "fatContent", "carbohydrateContent", "sodiumContent", "fiberContent", "sugarContent"} {
+		if s := getString(m[key]); s != "" {
+			out[key] = s
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+func extractVideoURL(v any) string {
+	switch vv := v.(type) {
+	case string:
+		return strings.TrimSpace(vv)
+	case map[string]any:
+		if url := getString(vv["contentUrl"]); url != "" {
+			return strings.TrimSpace(url)
+		}
+		if url := getString(vv["url"]); url != "" {
+			return strings.TrimSpace(url)
+		}
+		if embed := getString(vv["embedUrl"]); embed != "" {
+			return strings.TrimSpace(embed)
+		}
+	}
+	return ""
+}
+
+func extractEquipment(v any) []string {
+	out := []string{}
+	for _, it := range asAnySlice(v) {
+		switch vv := it.(type) {
+		case string:
+			if t := strings.TrimSpace(vv); t != "" {
+				out = append(out, t)
+			}
+		case map[string]any:
+			if name := getString(vv["name"]); name != "" {
+				out = append(out, strings.TrimSpace(name))
+			}
+		}
+	}
+	return dedupeStrings(out)
+}
+
 func asAnySlice(v any) []any {
 	switch vv := v.(type) {
 	case nil:
@@ -693,9 +801,123 @@ func dedupeIngredients(in []RecipeClipIngredient) []RecipeClipIngredient {
 			continue
 		}
 		seen[t] = struct{}{}
-		out = append(out, RecipeClipIngredient{RawText: t})
+		parsed := ParseIngredient(t)
+		out = append(out, parsed)
 	}
 	return out
+}
+
+// ParseIngredient extracts quantity, unit, and name from raw ingredient text.
+// It handles common formats like "2 cups flour", "1/2 tsp salt", "3 eggs".
+func ParseIngredient(raw string) RecipeClipIngredient {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return RecipeClipIngredient{RawText: raw}
+	}
+
+	result := RecipeClipIngredient{RawText: raw}
+
+	// Common units to match
+	units := []string{
+		"cups", "cup", "tbsp", "tsp", "tablespoons", "tablespoon", "teaspoons", "teaspoon",
+		"oz", "ounces", "ounce", "lbs", "lb", "pounds", "pound",
+		"g", "grams", "gram", "kg", "kilograms", "kilogram",
+		"ml", "milliliters", "milliliter", "l", "liters", "liter",
+		"cloves", "clove", "slices", "slice", "pieces", "piece", "pinches", "pinch",
+		"bunches", "bunch", "sprigs", "sprig", "leaves", "leaf", "stalks", "stalk",
+		"cans", "can", "packages", "package", "packs", "pack", "containers", "container",
+		"heads", "head", "bulbs", "bulb", "ears", "ear", "strips", "strip",
+	}
+
+	// Build regex: optional quantity (number/fraction) + optional unit + rest = name
+	// Pattern: ^(\d+(?:\.\d+)?\s*(?:/\s*\d+)?|\d+\/\d+|¼|½|¾|⅓|⅔|⅛|⅜|⅝|⅞)?\s*(\w+)?\s*(.*)$
+	re := regexp.MustCompile(`^(?i)(\d+(?:\.\d+)?\s*(?:/\s*\d+)?|\d+\/\d+|¼|½|¾|⅓|⅔|⅛|⅜|⅝|⅞)?\s*(` + strings.Join(units, `|`) + `)?\s*(.*)$`)
+
+	matches := re.FindStringSubmatch(raw)
+	if len(matches) == 4 {
+		qtyStr := strings.TrimSpace(matches[1])
+		unitStr := strings.TrimSpace(matches[2])
+		nameStr := strings.TrimSpace(matches[3])
+
+		if qtyStr != "" {
+			result.Quantity = parseFraction(qtyStr)
+		}
+		if unitStr != "" {
+			result.Unit = unitStr
+		}
+		if nameStr != "" {
+			result.Name = nameStr
+		}
+	}
+
+	// Fallback: if no name parsed, use the whole raw text
+	if result.Name == "" {
+		result.Name = raw
+	}
+
+	return result
+}
+
+// parseFraction converts strings like "1/2", "¼", "2 1/2" to float64.
+func parseFraction(s string) float64 {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return 0
+	}
+
+	// Unicode fractions
+	fractions := map[rune]float64{
+		'¼': 0.25, '½': 0.5, '¾': 0.75,
+		'⅓': 1.0 / 3.0, '⅔': 2.0 / 3.0,
+		'⅛': 0.125, '⅜': 0.375, '⅝': 0.625, '⅞': 0.875,
+	}
+	for r, v := range fractions {
+		if strings.ContainsRune(s, r) {
+			// Check for mixed number like "1½"
+			before := strings.TrimSpace(strings.Split(s, string(r))[0])
+			if before != "" {
+				if whole, err := strconv.ParseFloat(before, 64); err == nil {
+					return whole + v
+				}
+			}
+			return v
+		}
+	}
+
+	// Mixed fraction like "1 1/2" or "1-1/2"
+	s = strings.ReplaceAll(s, "-", " ")
+	parts := strings.Fields(s)
+	if len(parts) == 2 {
+		whole, err1 := strconv.ParseFloat(parts[0], 64)
+		frac, err2 := parseSimpleFraction(parts[1])
+		if err1 == nil && err2 == nil {
+			return whole + frac
+		}
+	}
+
+	// Simple fraction like "1/2"
+	if v, err := parseSimpleFraction(s); err == nil {
+		return v
+	}
+
+	// Plain number
+	if v, err := strconv.ParseFloat(s, 64); err == nil {
+		return v
+	}
+
+	return 0
+}
+
+func parseSimpleFraction(s string) (float64, error) {
+	parts := strings.Split(s, "/")
+	if len(parts) == 2 {
+		num, err1 := strconv.ParseFloat(strings.TrimSpace(parts[0]), 64)
+		den, err2 := strconv.ParseFloat(strings.TrimSpace(parts[1]), 64)
+		if err1 == nil && err2 == nil && den != 0 {
+			return num / den, nil
+		}
+	}
+	return 0, fmt.Errorf("not a fraction")
 }
 
 func dedupeStrings(in []string) []string {

@@ -41,6 +41,11 @@ class _Recipe {
   final String? imageUrl;
   final bool isPublic;
   final DateTime updatedAt;
+  final String author;
+  final double ratingValue;
+  final int ratingCount;
+  final String sourceUrl;
+  final List<String> tags;
 
   const _Recipe({
     required this.id,
@@ -52,22 +57,14 @@ class _Recipe {
     this.imageUrl,
     required this.isPublic,
     required this.updatedAt,
+    this.author = '',
+    this.ratingValue = 0,
+    this.ratingCount = 0,
+    this.sourceUrl = '',
+    this.tags = const [],
   });
 
   int get totalMinutes => prepTime + cookTime;
-
-  List<String> get tags {
-    final marker = RegExp(r'(^|\n)Tags:\s*(.+)', caseSensitive: false)
-        .firstMatch(description);
-    if (marker == null) return const [];
-    return marker
-        .group(2)!
-        .split(',')
-        .map((tag) => tag.trim())
-        .where((tag) => tag.isNotEmpty)
-        .take(5)
-        .toList();
-  }
 
   List<_ShoppingIngredient> get ingredients {
     final lines = description.split('\n');
@@ -98,13 +95,6 @@ class _Recipe {
 
     if (parsed.isNotEmpty) return parsed;
     return [_ShoppingIngredient(name: title, section: 'Prepared food')];
-  }
-
-  String get sourceUrl {
-    final marker =
-        RegExp(r'(^|\n)Source:\s*(https?://\S+)', caseSensitive: false)
-            .firstMatch(description);
-    return marker?.group(2) ?? '';
   }
 }
 
@@ -273,6 +263,12 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       cookTimeMinutes: recipe.cookTime,
       servings: recipe.servings,
       updatedAt: recipe.updatedAt,
+      author: recipe.author,
+      ratingValue: recipe.ratingValue,
+      ratingCount: recipe.ratingCount,
+      sourceUrl: recipe.sourceUrl,
+      imageUrl: recipe.imageUrl,
+      tags: recipe.tags,
     );
   }
 
@@ -461,6 +457,11 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
         imageUrl: api.imageUrl,
         isPublic: api.isPublic,
         updatedAt: api.updatedAt,
+        author: api.author,
+        ratingValue: api.ratingValue,
+        ratingCount: api.ratingCount,
+        sourceUrl: api.sourceUrl,
+        tags: api.tags.take(5).toList(),
       );
 
   Future<void> _loadMoreRecipes() async {
@@ -1216,12 +1217,14 @@ class _RecipeCard extends StatelessWidget {
   String _metaLine() {
     final parts = <String>[];
     if (recipe.totalMinutes > 0) {
-      parts.add(' min');
+      parts.add('${recipe.totalMinutes} min');
     }
     if (recipe.servings > 0) {
-      parts.add('Serves ');
+      parts.add('Serves ${recipe.servings}');
     }
-    parts.add(' items');
+    if (recipe.ratingValue > 0) {
+      parts.add('${recipe.ratingValue.toStringAsFixed(1)} ${recipe.ratingCount > 0 ? '(${recipe.ratingCount})' : ''}');
+    }
     return parts.join(' | ');
   }
 

@@ -18,6 +18,13 @@ class RecipeDetailSheet extends StatelessWidget {
     required this.cookTimeMinutes,
     required this.servings,
     required this.updatedAt,
+    this.author = '',
+    this.ratingValue = 0,
+    this.ratingCount = 0,
+    this.sourceUrl = '',
+    this.videoUrl = '',
+    this.imageUrl,
+    this.tags = const [],
   });
 
   final String title;
@@ -27,6 +34,13 @@ class RecipeDetailSheet extends StatelessWidget {
   final int cookTimeMinutes;
   final int servings;
   final DateTime updatedAt;
+  final String author;
+  final double ratingValue;
+  final int ratingCount;
+  final String sourceUrl;
+  final String videoUrl;
+  final String? imageUrl;
+  final List<String> tags;
 
   static Future<void> show(
     BuildContext context, {
@@ -37,6 +51,13 @@ class RecipeDetailSheet extends StatelessWidget {
     required int cookTimeMinutes,
     required int servings,
     required DateTime updatedAt,
+    String author = '',
+    double ratingValue = 0,
+    int ratingCount = 0,
+    String sourceUrl = '',
+    String videoUrl = '',
+    String? imageUrl,
+    List<String> tags = const [],
   }) async {
     return showAppBottomSheet(
       context: context,
@@ -49,6 +70,13 @@ class RecipeDetailSheet extends StatelessWidget {
         cookTimeMinutes: cookTimeMinutes,
         servings: servings,
         updatedAt: updatedAt,
+        author: author,
+        ratingValue: ratingValue,
+        ratingCount: ratingCount,
+        sourceUrl: sourceUrl,
+        videoUrl: videoUrl,
+        imageUrl: imageUrl,
+        tags: tags,
       ),
     );
   }
@@ -68,6 +96,53 @@ class RecipeDetailSheet extends StatelessWidget {
           title,
           style: Theme.of(context).textTheme.headlineSmall,
         ),
+        if (author.isNotEmpty) ...[
+          const SizedBox(height: MitlistSpacing.xs),
+          Text(
+            'By $author',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: MitlistColors.neutral500,
+                ),
+          ),
+        ],
+        if (ratingValue > 0) ...[
+          const SizedBox(height: MitlistSpacing.xs),
+          Row(
+            children: [
+              Icon(Icons.star, size: 16, color: MitlistColors.primary500),
+              const SizedBox(width: 4),
+              Text(
+                '${ratingValue.toStringAsFixed(1)}${ratingCount > 0 ? ' ($ratingCount)' : ''}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ],
+        if (imageUrl != null && imageUrl!.isNotEmpty) ...[
+          const SizedBox(height: MitlistSpacing.md),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              imageUrl!,
+              height: 160,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            ),
+          ),
+        ],
+        if (tags.isNotEmpty) ...[
+          const SizedBox(height: MitlistSpacing.md),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: tags
+                .map((tag) => AppChip(
+                      label: tag,
+                      selected: false,
+                    ))
+                .toList(),
+          ),
+        ],
         if (description.isNotEmpty) ...[
           const SizedBox(height: MitlistSpacing.md),
           Text(
@@ -103,6 +178,27 @@ class RecipeDetailSheet extends StatelessWidget {
             ],
           ),
         ),
+        if (sourceUrl.isNotEmpty) ...[
+          const SizedBox(height: MitlistSpacing.md),
+          InkWell(
+            onTap: () {/* TODO: launch URL */},
+            child: Row(
+              children: [
+                Icon(Icons.open_in_new, size: 16, color: MitlistColors.primary500),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    'View original recipe',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: MitlistColors.primary500,
+                        ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }

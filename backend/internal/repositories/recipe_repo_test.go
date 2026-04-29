@@ -29,7 +29,7 @@ func TestRecipeRepo_CreateRecipe(t *testing.T) {
 	}
 
 	mock.ExpectExec("INSERT INTO recipes").
-		WithArgs(pgxmock.AnyArg(), rec.UserID, rec.Title, rec.Description, rec.PrepTime, rec.CookTime, rec.Servings, rec.ImageURL, rec.IsPublic, pgxmock.AnyArg(), pgxmock.AnyArg()).
+		WithArgs(pgxmock.AnyArg(), rec.UserID, rec.Title, rec.Description, rec.DescriptionShort, rec.Author, rec.RatingValue, rec.RatingCount, rec.NutritionJSON, rec.VideoURL, rec.EquipmentJSON, rec.SourceURL, rec.ImageURL, rec.ImageOptions, rec.Tags, rec.PrepTime, rec.CookTime, rec.Servings, rec.IsPublic, pgxmock.AnyArg(), pgxmock.AnyArg()).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
 	err := repo.CreateRecipe(context.Background(), rec)
@@ -43,8 +43,8 @@ func TestRecipeRepo_GetRecipeByID(t *testing.T) {
 	repo := NewRecipeRepo(mock)
 	id := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "user_id", "title", "description", "prep_time", "cook_time", "servings", "image_url", "is_public", "created_at", "updated_at"}).
-		AddRow(id, fixedUUID(), "Pasta", "Italian", 10, 20, 4, "url", true, fixedTime(), fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "user_id", "title", "description", "description_short", "author", "rating_value", "rating_count", "nutrition_json", "video_url", "equipment_json", "source_url", "image_url", "image_options", "tags", "prep_time", "cook_time", "servings", "is_public", "created_at", "updated_at"}).
+		AddRow(id, fixedUUID(), "Pasta", "Italian", "", "", 0, 0, "", "", "", "", "url", nil, nil, 10, 20, 4, true, fixedTime(), fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM recipes WHERE id = .*").
 		WithArgs(id).
@@ -77,8 +77,8 @@ func TestRecipeRepo_ListRecipesByUser(t *testing.T) {
 	repo := NewRecipeRepo(mock)
 	uid := fixedUUID()
 
-	cols := []string{"id", "user_id", "title", "description", "prep_time", "cook_time", "servings", "image_url", "is_public", "created_at", "updated_at"}
-	rows := pgxmock.NewRows(cols).AddRow(fixedUUID(), uid, "Pasta", "Italian", 10, 20, 4, "url", true, fixedTime(), fixedTime())
+	cols := []string{"id", "user_id", "title", "description", "description_short", "author", "rating_value", "rating_count", "nutrition_json", "video_url", "equipment_json", "source_url", "image_url", "image_options", "tags", "prep_time", "cook_time", "servings", "is_public", "created_at", "updated_at"}
+	rows := pgxmock.NewRows(cols).AddRow(fixedUUID(), uid, "Pasta", "Italian", "", "", 0, 0, "", "", "", "", "url", nil, nil, 10, 20, 4, true, fixedTime(), fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM recipes WHERE user_id = .*").
 		WithArgs(uid, 50, 0).
@@ -96,7 +96,7 @@ func TestRecipeRepo_UpdateRecipe(t *testing.T) {
 	id := fixedUUID()
 
 	mock.ExpectExec("UPDATE recipes SET").
-		WithArgs("New Title", "New Desc", 5, 15, 2, "newurl", false, pgxmock.AnyArg(), id).
+		WithArgs("New Title", "New Desc", "", "", 0.0, 0, "", "", "", "", "newurl", []string(nil), []string(nil), 5, 15, 2, false, pgxmock.AnyArg(), id).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
 	rec := &models.Recipe{ID: id, Title: "New Title", Description: "New Desc", PrepTime: 5, CookTime: 15, Servings: 2, ImageURL: "newurl", IsPublic: false}
@@ -111,7 +111,7 @@ func TestRecipeRepo_UpdateRecipe_NotFound(t *testing.T) {
 	id := fixedUUID()
 
 	mock.ExpectExec("UPDATE recipes SET").
-		WithArgs("New Title", "New Desc", 5, 15, 2, "newurl", false, pgxmock.AnyArg(), id).
+		WithArgs("New Title", "New Desc", "", "", 0.0, 0, "", "", "", "", "newurl", []string(nil), []string(nil), 5, 15, 2, false, pgxmock.AnyArg(), id).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 0))
 
 	rec := &models.Recipe{ID: id, Title: "New Title", Description: "New Desc", PrepTime: 5, CookTime: 15, Servings: 2, ImageURL: "newurl", IsPublic: false}
@@ -179,7 +179,7 @@ func TestRecipeRepo_CreateIngredient(t *testing.T) {
 	}
 
 	mock.ExpectExec("INSERT INTO recipe_ingredients").
-		WithArgs(pgxmock.AnyArg(), ing.RecipeID, ing.Name, ing.Quantity, ing.Unit, ing.Position).
+		WithArgs(pgxmock.AnyArg(), ing.RecipeID, ing.Name, ing.Quantity, ing.Unit, ing.RawText, ing.Position).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
 	err := repo.CreateIngredient(context.Background(), ing)
@@ -193,8 +193,8 @@ func TestRecipeRepo_ListIngredients(t *testing.T) {
 	repo := NewRecipeRepo(mock)
 	rid := fixedUUID()
 
-	cols := []string{"id", "recipe_id", "name", "quantity", "unit", "position"}
-	rows := pgxmock.NewRows(cols).AddRow(fixedUUID(), rid, "Flour", "200", "g", 1)
+	cols := []string{"id", "recipe_id", "name", "quantity", "unit", "raw_text", "position"}
+	rows := pgxmock.NewRows(cols).AddRow(fixedUUID(), rid, "Flour", "200", "g", "200 g flour", 1)
 
 	mock.ExpectQuery("SELECT .* FROM recipe_ingredients WHERE recipe_id = .*").
 		WithArgs(rid).
@@ -212,7 +212,7 @@ func TestRecipeRepo_UpdateIngredient(t *testing.T) {
 	id := fixedUUID()
 
 	mock.ExpectExec("UPDATE recipe_ingredients SET").
-		WithArgs("Sugar", "100", "g", 2, id).
+		WithArgs("Sugar", "100", "g", "", 2, id).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
 	ing := &models.RecipeIngredient{ID: id, Name: "Sugar", Quantity: "100", Unit: "g", Position: 2}
@@ -227,7 +227,7 @@ func TestRecipeRepo_UpdateIngredient_NotFound(t *testing.T) {
 	id := fixedUUID()
 
 	mock.ExpectExec("UPDATE recipe_ingredients SET").
-		WithArgs("Sugar", "100", "g", 2, id).
+		WithArgs("Sugar", "100", "g", "", 2, id).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 0))
 
 	ing := &models.RecipeIngredient{ID: id, Name: "Sugar", Quantity: "100", Unit: "g", Position: 2}
@@ -277,7 +277,7 @@ func TestRecipeRepo_CreateStep(t *testing.T) {
 	}
 
 	mock.ExpectExec("INSERT INTO recipe_steps").
-		WithArgs(pgxmock.AnyArg(), step.RecipeID, step.Description, step.Position).
+		WithArgs(pgxmock.AnyArg(), step.RecipeID, step.Name, step.Description, step.Position).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
 	err := repo.CreateStep(context.Background(), step)
@@ -291,8 +291,8 @@ func TestRecipeRepo_ListSteps(t *testing.T) {
 	repo := NewRecipeRepo(mock)
 	rid := fixedUUID()
 
-	cols := []string{"id", "recipe_id", "description", "position"}
-	rows := pgxmock.NewRows(cols).AddRow(fixedUUID(), rid, "Boil water", 1)
+	cols := []string{"id", "recipe_id", "name", "description", "position"}
+	rows := pgxmock.NewRows(cols).AddRow(fixedUUID(), rid, "", "Boil water", 1)
 
 	mock.ExpectQuery("SELECT .* FROM recipe_steps WHERE recipe_id = .*").
 		WithArgs(rid).
@@ -310,7 +310,7 @@ func TestRecipeRepo_UpdateStep(t *testing.T) {
 	id := fixedUUID()
 
 	mock.ExpectExec("UPDATE recipe_steps SET").
-		WithArgs("Simmer", 2, id).
+		WithArgs("", "Simmer", 2, id).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
 	step := &models.RecipeStep{ID: id, Description: "Simmer", Position: 2}
@@ -325,7 +325,7 @@ func TestRecipeRepo_UpdateStep_NotFound(t *testing.T) {
 	id := fixedUUID()
 
 	mock.ExpectExec("UPDATE recipe_steps SET").
-		WithArgs("Simmer", 2, id).
+		WithArgs("", "Simmer", 2, id).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 0))
 
 	step := &models.RecipeStep{ID: id, Description: "Simmer", Position: 2}
