@@ -336,7 +336,12 @@ func (h *ChoreHandler) SkipChore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.SkipChore(r.Context(), user, id); err != nil {
+	var req struct {
+		SkipReason *string `json:"skip_reason"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&req)
+
+	if err := h.service.SkipChore(r.Context(), user, id, req.SkipReason); err != nil {
 		api.RespondError(w, err)
 		return
 	}
@@ -420,4 +425,184 @@ func (h *ChoreHandler) GetAssignments(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	api.RespondJSON(w, http.StatusOK, assignments)
+}
+
+// ListSubtasks GET /api/v1/chores/{id}/subtasks
+func (h *ChoreHandler) ListSubtasks(w http.ResponseWriter, r *http.Request) {
+	user, ok := api.UserFromContext(r.Context())
+	if !ok {
+		api.RespondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		api.RespondError(w, &api.ValidationError{Field: "id", Message: "invalid chore id"})
+		return
+	}
+
+	subtasks, err := h.service.ListSubtasks(r.Context(), user, id)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	api.RespondJSON(w, http.StatusOK, subtasks)
+}
+
+// CreateSubtask POST /api/v1/chores/{id}/subtasks
+func (h *ChoreHandler) CreateSubtask(w http.ResponseWriter, r *http.Request) {
+	user, ok := api.UserFromContext(r.Context())
+	if !ok {
+		api.RespondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	choreID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		api.RespondError(w, &api.ValidationError{Field: "id", Message: "invalid chore id"})
+		return
+	}
+
+	var req struct {
+		Title string `json:"title"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
+		return
+	}
+
+	subtask := &models.ChoreSubtask{
+		ChoreID: choreID,
+		Title:   req.Title,
+	}
+	subtask, err = h.service.CreateSubtask(r.Context(), user, subtask)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	api.RespondJSON(w, http.StatusCreated, subtask)
+}
+
+// UpdateSubtask PATCH /api/v1/chores/subtasks/{subtask_id}
+func (h *ChoreHandler) UpdateSubtask(w http.ResponseWriter, r *http.Request) {
+	user, ok := api.UserFromContext(r.Context())
+	if !ok {
+		api.RespondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	subtaskID, err := uuid.Parse(chi.URLParam(r, "subtask_id"))
+	if err != nil {
+		api.RespondError(w, &api.ValidationError{Field: "subtask_id", Message: "invalid subtask id"})
+		return
+	}
+
+	var req struct {
+		Title     *string `json:"title"`
+		Completed *bool   `json:"completed"`
+		Position  *int    `json:"position"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
+		return
+	}
+
+	subtask := &models.ChoreSubtask{
+		ID: subtaskID,
+	}
+	if req.Title != nil {
+		subtask.Title = *req.Title
+	}
+	if req.Completed != nil {
+		subtask.Completed = *req.Completed
+	}
+	if req.Position != nil {
+		subtask.Position = *req.Position
+	}
+
+	subtask, err = h.service.UpdateSubtask(r.Context(), user, subtask)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	api.RespondJSON(w, http.StatusOK, subtask)
+}
+
+// DeleteSubtask DELETE /api/v1/chores/subtasks/{subtask_id}
+func (h *ChoreHandler) DeleteSubtask(w http.ResponseWriter, r *http.Request) {
+	user, ok := api.UserFromContext(r.Context())
+	if !ok {
+		api.RespondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	subtaskID, err := uuid.Parse(chi.URLParam(r, "subtask_id"))
+	if err != nil {
+		api.RespondError(w, &api.ValidationError{Field: "subtask_id", Message: "invalid subtask id"})
+		return
+	}
+
+	if err := h.service.DeleteSubtask(r.Context(), user, subtaskID); err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	api.RespondJSON(w, http.StatusNoContent, nil)
+}
+
+// ReorderSubtasks PUT /api/v1/chores/{id}/subtasks/reorder
+func (h *ChoreHandler) ReorderSubtasks(w http.ResponseWriter, r *http.Request) {
+	user, ok := api.UserFromContext(r.Context())
+	if !ok {
+		api.RespondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	choreID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		api.RespondError(w, &api.ValidationError{Field: "id", Message: "invalid chore id"})
+		return
+	}
+
+	var req struct {
+		SubtaskIDs []uuid.UUID `json:"subtask_ids"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
+		return
+	}
+
+	if err := h.service.ReorderSubtasks(r.Context(), user, choreID, req.SubtaskIDs); err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	api.RespondJSON(w, http.StatusNoContent, nil)
+}
+
+// AddSuppliesToList POST /api/v1/chores/{id}/add-supplies-to-list
+func (h *ChoreHandler) AddSuppliesToList(w http.ResponseWriter, r *http.Request) {
+	user, ok := api.UserFromContext(r.Context())
+	if !ok {
+		api.RespondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	choreID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		api.RespondError(w, &api.ValidationError{Field: "id", Message: "invalid chore id"})
+		return
+	}
+
+	var req struct {
+		ListID uuid.UUID `json:"list_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
+		return
+	}
+
+	if err := h.service.AddSuppliesToList(r.Context(), user, choreID, req.ListID); err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	api.RespondJSON(w, http.StatusNoContent, nil)
 }

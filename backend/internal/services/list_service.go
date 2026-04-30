@@ -580,3 +580,95 @@ func (s *ListService) GenerateExpenseFromList(ctx context.Context, user *models.
 
 	return expense, nil
 }
+
+// ShoppingTripItem represents a projected shopping trip item.
+type ShoppingTripItem struct {
+	ID       string  `json:"id"`
+	Name     string  `json:"name"`
+	Quantity float64 `json:"quantity"`
+	Unit     string  `json:"unit"`
+	ListID   string  `json:"list_id"`
+	ListName string  `json:"list_name"`
+	StoreID  *string `json:"store_id,omitempty"`
+	Checked  bool    `json:"checked"`
+}
+
+// GetShoppingTrip combines unchecked items from multiple lists into a shopping trip.
+func (s *ListService) GetShoppingTrip(ctx context.Context, user *models.User, listIDs []uuid.UUID) ([]ShoppingTripItem, error) {
+	if err := s.requireActiveVerifiedUser(user); err != nil {
+		return nil, err
+	}
+
+	var allItems []ShoppingTripItem
+	for _, listID := range listIDs {
+		list, err := s.listRepo.GetListByID(ctx, listID)
+		if err != nil {
+			if err == pgx.ErrNoRows {
+				return nil, &api.NotFoundError{Resource: "list", ID: listID.String()}
+			}
+			return nil, fmt.Errorf("failed to get list: %w", err)
+		}
+		if err := s.requireMembership(ctx, user.ID, list.GroupID); err != nil {
+			return nil, err
+		}
+
+		items, err := s.listRepo.ListItemsByList(ctx, listID, 0, 0)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list items: %w", err)
+		}
+
+		for _, item := range items {
+			var storeID *string
+			if item.StoreID != nil {
+				s := item.StoreID.String()
+				storeID = &s
+			}
+			allItems = append(allItems, ShoppingTripItem{
+				ID:       item.ID.String(),
+				Name:     item.Name,
+				Quantity: item.Quantity,
+				Unit:     item.Unit,
+				ListID:   listID.String(),
+				ListName: list.Name,
+				StoreID:  storeID,
+				Checked:  item.Checked,
+			})
+		}
+	}
+
+	return allItems, nil
+}
+
+// BulkCompleteItems marks multiple list items as checked.
+func (s *ListService) BulkCompleteItems(ctx context.Context, user *models.User, itemIDs []uuid.UUID) (int, error) {
+	if err := s.requireActiveVerifiedUser(user); err != nil {
+		return 0, err
+	}
+
+	completed := 0
+	for _, itemID := range itemIDs {
+		item, err := s.listRepo.GetItemByID(ctx, itemID)
+		if err != nil {
+			if err == pgx.ErrNoRows {
+				continue
+			}
+			return completed, fmt.Errorf("failed to get item: %w", err)
+		}
+
+		list, err := s.listRepo.GetListByID(ctx, item.ListID)
+		if err != nil {
+			return completed, fmt.Errorf("failed to get list: %w", err)
+		}
+		if err := s.requireMembership(ctx, user.ID, list.GroupID); err != nil {
+			return completed, err
+		}
+
+		item.Checked = true
+		if err := s.listRepo.UpdateItem(ctx, item); err != nil {
+			return completed, fmt.Errorf("failed to update item: %w", err)
+		}
+		completed++
+	}
+
+	return completed, nil
+}

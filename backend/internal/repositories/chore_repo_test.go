@@ -34,7 +34,7 @@ func TestChoreRepository_CreateChore(t *testing.T) {
 			pgxmock.AnyArg(), chore.GroupID, chore.Name, chore.Description,
 			chore.RotationType, chore.Frequency, chore.PeriodInterval, chore.PeriodConfig,
 			chore.StartDate, chore.TrackDateOnly, chore.Rollover, chore.AssignmentType,
-			chore.AssignmentConfig, chore.IsActive,
+			chore.AssignmentConfig, chore.IsActive, chore.Supplies,
 		).
 		WillReturnRows(rows)
 
@@ -106,7 +106,7 @@ func TestChoreRepository_UpdateChore(t *testing.T) {
 	mock.ExpectQuery("UPDATE chores SET").
 		WithArgs(
 			"Mop", pgxmock.AnyArg(), "schedule", "daily", 0, []string(nil),
-			pgxmock.AnyArg(), false, false, "", []uuid.UUID(nil), false, id,
+			pgxmock.AnyArg(), false, false, "", []uuid.UUID(nil), false, []string(nil), id,
 		).
 		WillReturnRows(rows)
 
@@ -124,7 +124,7 @@ func TestChoreRepository_UpdateChore_NotFound(t *testing.T) {
 	mock.ExpectQuery("UPDATE chores SET").
 		WithArgs(
 			"Mop", pgxmock.AnyArg(), "schedule", "daily", 0, []string(nil),
-			pgxmock.AnyArg(), false, false, "", []uuid.UUID(nil), false, id,
+			pgxmock.AnyArg(), false, false, "", []uuid.UUID(nil), false, []string(nil), id,
 		).
 		WillReturnError(pgx.ErrNoRows)
 
@@ -261,7 +261,7 @@ func TestChoreRepository_CreateAssignment(t *testing.T) {
 	}
 
 	mock.ExpectExec("INSERT INTO chore_assignments").
-		WithArgs(pgxmock.AnyArg(), assignment.ChoreID, assignment.UserID, assignment.Status, pgxmock.AnyArg(), assignment.AssignedAt, pgxmock.AnyArg()).
+		WithArgs(pgxmock.AnyArg(), assignment.ChoreID, assignment.UserID, assignment.Status, pgxmock.AnyArg(), assignment.AssignedAt, pgxmock.AnyArg(), pgxmock.AnyArg()).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
 	err := repo.CreateAssignment(context.Background(), assignment)
@@ -275,8 +275,8 @@ func TestChoreRepository_ListAssignments(t *testing.T) {
 	repo := NewChoreRepository(mock)
 	choreID := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "chore_id", "user_id", "status", "due_date", "assigned_at", "completed_at"}).
-		AddRow(fixedUUID(), choreID, fixedUUID(), "pending", nil, fixedTime(), nil)
+	rows := pgxmock.NewRows([]string{"id", "chore_id", "user_id", "status", "due_date", "assigned_at", "completed_at", "skip_reason"}).
+		AddRow(fixedUUID(), choreID, fixedUUID(), "pending", nil, fixedTime(), nil, nil)
 
 	mock.ExpectQuery("SELECT .* FROM chore_assignments WHERE chore_id = .*").
 		WithArgs(choreID, 50, 0).
@@ -294,7 +294,7 @@ func TestChoreRepository_UpdateAssignment(t *testing.T) {
 	id := fixedUUID()
 
 	mock.ExpectExec("UPDATE chore_assignments SET").
-		WithArgs(fixedUUID(), "completed", pgxmock.AnyArg(), pgxmock.AnyArg(), id).
+		WithArgs(fixedUUID(), "completed", pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), id).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
 	assignment := &models.ChoreAssignment{ID: id, UserID: fixedUUID(), Status: "completed"}
@@ -309,7 +309,7 @@ func TestChoreRepository_UpdateAssignment_NotFound(t *testing.T) {
 	id := fixedUUID()
 
 	mock.ExpectExec("UPDATE chore_assignments SET").
-		WithArgs(fixedUUID(), "completed", pgxmock.AnyArg(), pgxmock.AnyArg(), id).
+		WithArgs(fixedUUID(), "completed", pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), id).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 0))
 
 	assignment := &models.ChoreAssignment{ID: id, UserID: fixedUUID(), Status: "completed"}
@@ -359,8 +359,8 @@ func TestChoreRepository_GetPendingAssignmentByChore(t *testing.T) {
 	repo := NewChoreRepository(mock)
 	choreID := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "chore_id", "user_id", "status", "due_date", "assigned_at", "completed_at"}).
-		AddRow(fixedUUID(), choreID, fixedUUID(), "pending", nil, fixedTime(), nil)
+	rows := pgxmock.NewRows([]string{"id", "chore_id", "user_id", "status", "due_date", "assigned_at", "completed_at", "skip_reason"}).
+		AddRow(fixedUUID(), choreID, fixedUUID(), "pending", nil, fixedTime(), nil, nil)
 
 	mock.ExpectQuery("SELECT .* FROM chore_assignments WHERE chore_id = .* AND status = 'pending'").
 		WithArgs(choreID).
@@ -392,7 +392,7 @@ func choreColumns() []string {
 	return []string{
 		"id", "group_id", "name", "description", "rotation_type", "frequency",
 		"period_interval", "period_config", "start_date", "track_date_only", "rollover",
-		"assignment_type", "assignment_config", "is_active", "created_at", "updated_at",
+		"assignment_type", "assignment_config", "is_active", "supplies", "created_at", "updated_at",
 	}
 }
 
@@ -400,6 +400,6 @@ func choreRowValues(id, groupID uuid.UUID, name string, description any, rotatio
 	return []any{
 		id, groupID, name, description, rotationType, frequency,
 		1, []string{}, nil, false, false,
-		"round-robin", []uuid.UUID{}, isActive, fixedTime(), fixedTime(),
+		"round-robin", []uuid.UUID{}, isActive, []string(nil), fixedTime(), fixedTime(),
 	}
 }

@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
@@ -117,4 +118,48 @@ func (m *MockChoreRepo) GetPendingAssignmentByChore(ctx context.Context, choreID
 		return a.(*models.ChoreAssignment), args.Error(1)
 	}
 	return nil, args.Error(1)
+}
+
+func (m *MockChoreRepo) ListDueAssignments(ctx context.Context, from, to time.Time) ([]models.ChoreAssignment, error) {
+	args := m.Called(ctx, from, to)
+	if a := args.Get(0); a != nil {
+		return a.([]models.ChoreAssignment), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockChoreRepo) CreateSubtask(ctx context.Context, subtask *models.ChoreSubtask) error {
+	args := m.Called(ctx, subtask)
+	return args.Error(0)
+}
+
+func (m *MockChoreRepo) GetSubtaskByID(ctx context.Context, id uuid.UUID) (*models.ChoreSubtask, error) {
+	args := m.Called(ctx, id)
+	if s := args.Get(0); s != nil {
+		return s.(*models.ChoreSubtask), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockChoreRepo) ListSubtasksByChore(ctx context.Context, choreID uuid.UUID) ([]models.ChoreSubtask, error) {
+	args := m.Called(ctx, choreID)
+	if s := args.Get(0); s != nil {
+		return s.([]models.ChoreSubtask), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockChoreRepo) UpdateSubtask(ctx context.Context, subtask *models.ChoreSubtask) error {
+	args := m.Called(ctx, subtask)
+	return args.Error(0)
+}
+
+func (m *MockChoreRepo) DeleteSubtask(ctx context.Context, id uuid.UUID) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
+func (m *MockChoreRepo) DeleteSubtasksByChore(ctx context.Context, choreID uuid.UUID) error {
+	args := m.Called(ctx, choreID)
+	return args.Error(0)
 }

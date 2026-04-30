@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
+	"github.com/yourorg/mitlist/internal/api"
 	"github.com/yourorg/mitlist/internal/models"
 	"github.com/yourorg/mitlist/internal/services"
 )
@@ -128,6 +130,22 @@ func (h *NotificationHandler) GetPreferences(w http.ResponseWriter, r *http.Requ
 	userID, err := currentUserID(r)
 	if err != nil {
 		respondError(w, err)
+		return
+	}
+
+	groupIDStr := r.URL.Query().Get("group_id")
+	if groupIDStr != "" {
+		groupID, err := uuid.Parse(groupIDStr)
+		if err != nil {
+			respondError(w, &api.ValidationError{Field: "group_id", Message: "invalid group_id"})
+			return
+		}
+		pref, err := h.service.GetGroupPreference(r.Context(), userID, groupID)
+		if err != nil {
+			respondError(w, err)
+			return
+		}
+		respondJSON(w, http.StatusOK, pref)
 		return
 	}
 

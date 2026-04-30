@@ -36,11 +36,4 @@ type PushSubscription struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// NotificationPreference stores user preferences for notifications.
-type NotificationPreference struct {
-	ID      uuid.UUID `json:"id"`
-	UserID  uuid.UUID `json:"user_id"`
-	Type    string    `json:"type"`
-	Enabled bool      `json:"enabled"`
-	Channel string    `json:"channel"`
-}
+

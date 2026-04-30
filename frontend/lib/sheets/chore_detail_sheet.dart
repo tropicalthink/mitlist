@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../models/chore_models.dart';
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
@@ -9,7 +10,7 @@ import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
 import '../widgets/chip.dart';
 
-class ChoreDetailSheet extends StatelessWidget {
+class ChoreDetailSheet extends StatefulWidget {
   const ChoreDetailSheet({
     super.key,
     required this.title,
@@ -20,10 +21,17 @@ class ChoreDetailSheet extends StatelessWidget {
     this.lastTrackedAt,
     this.lastDoneByLabel,
     this.averageFrequencyHours,
+    this.subtasks = const [],
+    this.supplies = const [],
     this.onMarkDone,
     this.onSkip,
     this.onRescheduleTomorrow,
     this.onUndo,
+    this.onToggleSubtask,
+    this.onAddSubtask,
+    this.onDeleteSubtask,
+    this.onReorderSubtasks,
+    this.onAddSuppliesToList,
   });
 
   final String title;
@@ -34,10 +42,17 @@ class ChoreDetailSheet extends StatelessWidget {
   final DateTime? lastTrackedAt;
   final String? lastDoneByLabel;
   final double? averageFrequencyHours;
+  final List<ChoreSubtask> subtasks;
+  final List<String> supplies;
   final VoidCallback? onMarkDone;
   final VoidCallback? onSkip;
   final VoidCallback? onRescheduleTomorrow;
   final VoidCallback? onUndo;
+  final ValueChanged<String>? onToggleSubtask;
+  final Future<String?> Function()? onAddSubtask;
+  final ValueChanged<String>? onDeleteSubtask;
+  final ValueChanged<List<String>>? onReorderSubtasks;
+  final VoidCallback? onAddSuppliesToList;
 
   static Future<void> show(
     BuildContext context, {
@@ -49,10 +64,17 @@ class ChoreDetailSheet extends StatelessWidget {
     DateTime? lastTrackedAt,
     String? lastDoneByLabel,
     double? averageFrequencyHours,
+    List<ChoreSubtask> subtasks = const [],
+    List<String> supplies = const [],
     VoidCallback? onMarkDone,
     VoidCallback? onSkip,
     VoidCallback? onRescheduleTomorrow,
     VoidCallback? onUndo,
+    ValueChanged<String>? onToggleSubtask,
+    Future<String?> Function()? onAddSubtask,
+    ValueChanged<String>? onDeleteSubtask,
+    ValueChanged<List<String>>? onReorderSubtasks,
+    VoidCallback? onAddSuppliesToList,
   }) async {
     return showAppBottomSheet(
       context: context,
@@ -66,12 +88,115 @@ class ChoreDetailSheet extends StatelessWidget {
         lastTrackedAt: lastTrackedAt,
         lastDoneByLabel: lastDoneByLabel,
         averageFrequencyHours: averageFrequencyHours,
+        subtasks: subtasks,
+        supplies: supplies,
         onMarkDone: onMarkDone,
         onSkip: onSkip,
         onRescheduleTomorrow: onRescheduleTomorrow,
         onUndo: onUndo,
+        onToggleSubtask: onToggleSubtask,
+        onAddSubtask: onAddSubtask,
+        onDeleteSubtask: onDeleteSubtask,
+        onReorderSubtasks: onReorderSubtasks,
+        onAddSuppliesToList: onAddSuppliesToList,
       ),
     );
+  }
+
+  @override
+  State<ChoreDetailSheet> createState() => _ChoreDetailSheetState();
+}
+
+class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
+  late List<ChoreSubtask> _subtasks;
+  final TextEditingController _subtaskController = TextEditingController();
+  bool _showAddSubtask = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _subtasks = List.from(widget.subtasks);
+  }
+
+  @override
+  void dispose() {
+    _subtaskController.dispose();
+    super.dispose();
+  }
+
+  void _handleSkip() async {
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Skip chore'),
+        content: TextField(
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Reason (optional)',
+            hintText: 'e.g. Away this week',
+          ),
+          onSubmitted: (value) => Navigator.of(ctx).pop(value),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(''),
+            child: const Text('Skip'),
+          ),
+        ],
+      ),
+    );
+    if (reason != null && widget.onSkip != null) {
+      widget.onSkip!();
+    }
+  }
+
+  void _handleToggleSubtask(String subtaskId) {
+    setState(() {
+      final idx = _subtasks.indexWhere((s) => s.id == subtaskId);
+      if (idx != -1) {
+        _subtasks[idx] = _subtasks[idx].copyWith(
+          completed: !_subtasks[idx].completed,
+        );
+      }
+    });
+    widget.onToggleSubtask?.call(subtaskId);
+  }
+
+  void _handleAddSubtask() async {
+    if (!_showAddSubtask) {
+      setState(() => _showAddSubtask = true);
+      return;
+    }
+    final title = _subtaskController.text.trim();
+    if (title.isEmpty) return;
+    final newSubtask = await widget.onAddSubtask?.call();
+    if (newSubtask != null) {
+      setState(() {
+        _subtasks.add(
+          ChoreSubtask(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            choreId: '',
+            title: title,
+            completed: false,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+        _subtaskController.clear();
+        _showAddSubtask = false;
+      });
+    }
+  }
+
+  void _handleDeleteSubtask(String subtaskId) {
+    setState(() {
+      _subtasks.removeWhere((s) => s.id == subtaskId);
+    });
+    widget.onDeleteSubtask?.call(subtaskId);
   }
 
   @override
@@ -83,12 +208,12 @@ class ChoreDetailSheet extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppChip(
-          label: statusLabel,
+          label: widget.statusLabel,
           selected: true,
         ),
         const SizedBox(height: MitlistSpacing.md),
         Text(
-          title,
+          widget.title,
           style: textTheme.headlineSmall,
         ),
         const SizedBox(height: MitlistSpacing.md),
@@ -97,43 +222,104 @@ class ChoreDetailSheet extends StatelessWidget {
           padding: AppCardPadding.md,
           child: Column(
             children: [
-              _DetailRow(label: 'Assignee', value: assignee),
+              _DetailRow(label: 'Assignee', value: widget.assignee),
               const Divider(),
               _DetailRow(
                 label: 'Due',
-                value: DateFormat.yMMMd().format(dueDate),
+                value: DateFormat.yMMMd().format(widget.dueDate),
               ),
-              if (trackedCount != null) ...[
+              if (widget.trackedCount != null) ...[
                 const Divider(),
-                _DetailRow(label: 'Tracked', value: trackedCount.toString()),
+                _DetailRow(label: 'Tracked', value: widget.trackedCount.toString()),
               ],
-              if (lastTrackedAt != null) ...[
+              if (widget.lastTrackedAt != null) ...[
                 const Divider(),
                 _DetailRow(
                   label: 'Last done',
-                  value: DateFormat.yMMMd().format(lastTrackedAt!),
+                  value: DateFormat.yMMMd().format(widget.lastTrackedAt!),
                 ),
               ],
-              if (lastDoneByLabel != null && lastDoneByLabel!.isNotEmpty) ...[
+              if (widget.lastDoneByLabel != null && widget.lastDoneByLabel!.isNotEmpty) ...[
                 const Divider(),
-                _DetailRow(label: 'Last by', value: lastDoneByLabel!),
+                _DetailRow(label: 'Last by', value: widget.lastDoneByLabel!),
               ],
-              if (averageFrequencyHours != null) ...[
+              if (widget.averageFrequencyHours != null) ...[
                 const Divider(),
                 _DetailRow(
                   label: 'Average',
-                  value: _formatAverageFrequency(averageFrequencyHours!),
+                  value: _formatAverageFrequency(widget.averageFrequencyHours!),
                 ),
               ],
             ],
           ),
         ),
-        if (onMarkDone != null ||
-            onSkip != null ||
-            onRescheduleTomorrow != null ||
-            onUndo != null) ...[
+        if (_subtasks.isNotEmpty || widget.onAddSubtask != null) ...[
           const SizedBox(height: MitlistSpacing.lg),
-          if (onMarkDone != null)
+          Text('Subtasks', style: textTheme.titleMedium),
+          const SizedBox(height: MitlistSpacing.sm),
+          ..._subtasks.map((subtask) => _SubtaskRow(
+                subtask: subtask,
+                onToggle: () => _handleToggleSubtask(subtask.id),
+                onDelete: widget.onDeleteSubtask != null
+                    ? () => _handleDeleteSubtask(subtask.id)
+                    : null,
+              )),
+          if (_showAddSubtask) ...[
+            const SizedBox(height: MitlistSpacing.sm),
+            TextField(
+              controller: _subtaskController,
+              autofocus: true,
+              decoration: const InputDecoration(
+                hintText: 'New subtask',
+                isDense: true,
+                contentPadding: EdgeInsets.all(MitlistSpacing.sm),
+              ),
+              onSubmitted: (_) => _handleAddSubtask(),
+            ),
+          ],
+          if (widget.onAddSubtask != null) ...[
+            const SizedBox(height: MitlistSpacing.sm),
+            TextButton.icon(
+              onPressed: _handleAddSubtask,
+              icon: const Icon(Icons.add, size: 18),
+              label: Text(_showAddSubtask ? 'Save' : 'Add subtask'),
+            ),
+          ],
+        ],
+        if (widget.supplies.isNotEmpty || widget.onAddSuppliesToList != null) ...[
+          const SizedBox(height: MitlistSpacing.lg),
+          Text('Supplies', style: textTheme.titleMedium),
+          const SizedBox(height: MitlistSpacing.sm),
+          Wrap(
+            spacing: MitlistSpacing.sm,
+            runSpacing: MitlistSpacing.sm,
+            children: [
+              ...widget.supplies.map((s) => Chip(
+                    label: Text(s),
+                    visualDensity: VisualDensity.compact,
+                  )),
+            ],
+          ),
+          if (widget.onAddSuppliesToList != null) ...[
+            const SizedBox(height: MitlistSpacing.sm),
+            SizedBox(
+              width: double.infinity,
+              child: AppButton(
+                variant: AppButtonVariant.outline,
+                color: AppButtonColor.primary,
+                size: AppButtonSize.md,
+                text: 'Add supplies to list',
+                onPressed: widget.onAddSuppliesToList,
+              ),
+            ),
+          ],
+        ],
+        if (widget.onMarkDone != null ||
+            widget.onSkip != null ||
+            widget.onRescheduleTomorrow != null ||
+            widget.onUndo != null) ...[
+          const SizedBox(height: MitlistSpacing.lg),
+          if (widget.onMarkDone != null)
             SizedBox(
               width: double.infinity,
               child: AppButton(
@@ -141,10 +327,10 @@ class ChoreDetailSheet extends StatelessWidget {
                 color: AppButtonColor.success,
                 size: AppButtonSize.lg,
                 text: 'Mark Done',
-                onPressed: onMarkDone,
+                onPressed: widget.onMarkDone,
               ),
             ),
-          if (onSkip != null) ...[
+          if (widget.onSkip != null) ...[
             const SizedBox(height: MitlistSpacing.sm),
             SizedBox(
               width: double.infinity,
@@ -153,11 +339,11 @@ class ChoreDetailSheet extends StatelessWidget {
                 color: AppButtonColor.neutral,
                 size: AppButtonSize.lg,
                 text: 'Skip',
-                onPressed: onSkip,
+                onPressed: _handleSkip,
               ),
             ),
           ],
-          if (onRescheduleTomorrow != null) ...[
+          if (widget.onRescheduleTomorrow != null) ...[
             const SizedBox(height: MitlistSpacing.sm),
             SizedBox(
               width: double.infinity,
@@ -166,11 +352,11 @@ class ChoreDetailSheet extends StatelessWidget {
                 color: AppButtonColor.primary,
                 size: AppButtonSize.lg,
                 text: 'Move to Tomorrow',
-                onPressed: onRescheduleTomorrow,
+                onPressed: widget.onRescheduleTomorrow,
               ),
             ),
           ],
-          if (onUndo != null) ...[
+          if (widget.onUndo != null) ...[
             const SizedBox(height: MitlistSpacing.sm),
             SizedBox(
               width: double.infinity,
@@ -179,7 +365,7 @@ class ChoreDetailSheet extends StatelessWidget {
                 color: AppButtonColor.neutral,
                 size: AppButtonSize.lg,
                 text: 'Undo Last Execution',
-                onPressed: onUndo,
+                onPressed: widget.onUndo,
               ),
             ),
           ],
@@ -223,6 +409,53 @@ class _DetailRow extends StatelessWidget {
             value,
             style: MitlistTypography.monoBody(color: MitlistColors.textPrimary),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SubtaskRow extends StatelessWidget {
+  const _SubtaskRow({
+    required this.subtask,
+    required this.onToggle,
+    this.onDelete,
+  });
+
+  final ChoreSubtask subtask;
+  final VoidCallback onToggle;
+  final VoidCallback? onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xs),
+      child: Row(
+        children: [
+          Checkbox(
+            value: subtask.completed,
+            onChanged: (_) => onToggle(),
+            visualDensity: VisualDensity.compact,
+          ),
+          Expanded(
+            child: Text(
+              subtask.title,
+              style: TextStyle(
+                decoration: subtask.completed
+                    ? TextDecoration.lineThrough
+                    : null,
+                color: subtask.completed
+                    ? MitlistColors.textSecondary
+                    : MitlistColors.textPrimary,
+              ),
+            ),
+          ),
+          if (onDelete != null)
+            IconButton(
+              icon: const Icon(Icons.close, size: 18),
+              visualDensity: VisualDensity.compact,
+              onPressed: onDelete,
+            ),
         ],
       ),
     );

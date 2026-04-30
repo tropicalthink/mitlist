@@ -418,21 +418,55 @@ func (h *RecipeHandler) AddMissingToList(w http.ResponseWriter, r *http.Request)
 		respondError(w, &api.ValidationError{Field: "list_id", Message: "list_id is required"})
 		return
 	}
+
+	recipe, err := h.service.GetRecipe(r.Context(), user.ID, recipeID)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
 	ingredients, err := h.service.ListIngredientsForRecipe(r.Context(), user.ID, recipeID)
 	if err != nil {
 		respondError(w, err)
 		return
 	}
-	added := make([]models.ListItem, 0, len(ingredients))
+
+	// Get existing list items for deduplication
+	existingItems, err := h.listSvc.ListItems(r.Context(), user, req.ListID, 0, 0)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
+	// Build set of existing item names (normalized)
+	existingNames := make(map[string]struct{}, len(existingItems))
+	for _, item := range existingItems {
+		existingNames[normalizeName(item.Name)] = struct{}{}
+	}
+
+	added := make([]models.ListItem, 0)
+	skipped := make([]string, 0)
 	for _, ing := range ingredients {
-		item, err := h.listSvc.AddItemAmount(r.Context(), user, req.ListID, ing.Name, parseIngredientAmount(ing.Quantity), ing.Unit, "From recipe")
+		if _, exists := existingNames[normalizeName(ing.Name)]; exists {
+			skipped = append(skipped, ing.Name)
+			continue
+		}
+		qty := parseIngredientAmount(ing.Quantity)
+		if qty <= 0 {
+			qty = 1
+		}
+		item, err := h.listSvc.AddItemAmount(r.Context(), user, req.ListID, ing.Name, qty, ing.Unit, "From recipe: "+recipe.Title)
 		if err != nil {
 			respondError(w, err)
 			return
 		}
 		added = append(added, *item)
 	}
-	respondJSON(w, http.StatusOK, map[string]any{"added": added})
+	respondJSON(w, http.StatusOK, map[string]any{"added": added, "skipped": skipped})
+}
+
+func normalizeName(name string) string {
+	return strings.ToLower(strings.TrimSpace(name))
 }
 
 func parseIngredientAmount(raw string) float64 {

@@ -219,3 +219,45 @@ func (h *MealPlanHandler) DeleteMealPlan(w http.ResponseWriter, r *http.Request)
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// GenerateShoppingList handles POST /api/v1/meal-plans/generate-shopping-list.
+func (h *MealPlanHandler) GenerateShoppingList(w http.ResponseWriter, r *http.Request) {
+	user, ok := userFromContext(r)
+	if !ok {
+		respondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	var req struct {
+		GroupID uuid.UUID  `json:"group_id"`
+		From    string     `json:"from"`
+		To      string     `json:"to"`
+		ListID  *uuid.UUID `json:"list_id,omitempty"`
+	}
+	if err := decodeJSON(r, &req); err != nil {
+		respondError(w, err)
+		return
+	}
+
+	from, err := time.Parse("2006-01-02", req.From)
+	if err != nil {
+		respondError(w, &api.ValidationError{Field: "from", Message: "invalid date format, expected YYYY-MM-DD"})
+		return
+	}
+	to, err := time.Parse("2006-01-02", req.To)
+	if err != nil {
+		respondError(w, &api.ValidationError{Field: "to", Message: "invalid date format, expected YYYY-MM-DD"})
+		return
+	}
+
+	list, items, err := h.service.GenerateShoppingList(r.Context(), user, req.GroupID, from, to, req.ListID)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]any{
+		"list":  list,
+		"items": items,
+	})
+}

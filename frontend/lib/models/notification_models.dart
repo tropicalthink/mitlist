@@ -39,34 +39,54 @@ class NotificationModel {
 class NotificationPreferenceModel {
   final String id;
   final String userId;
-  final String type;
-  final bool enabled;
-  final String channel;
+  final String groupId;
+  final bool choreDue;
+  final bool choreDueDayOf;
+  final bool listItemAdded;
+  final bool expenseCreated;
+  final bool mealPlanChanged;
+  final bool weeklyDigest;
+  final bool pushEnabled;
 
   const NotificationPreferenceModel({
     required this.id,
     required this.userId,
-    required this.type,
-    required this.enabled,
-    required this.channel,
+    required this.groupId,
+    this.choreDue = true,
+    this.choreDueDayOf = true,
+    this.listItemAdded = true,
+    this.expenseCreated = true,
+    this.mealPlanChanged = true,
+    this.weeklyDigest = true,
+    this.pushEnabled = true,
   });
 
   factory NotificationPreferenceModel.fromJson(Map<String, dynamic> json) {
     return NotificationPreferenceModel(
       id: json['id'] as String,
       userId: json['user_id'] as String,
-      type: json['type'] as String,
-      enabled: json['enabled'] as bool? ?? false,
-      channel: json['channel'] as String,
+      groupId: json['group_id'] as String,
+      choreDue: json['chore_due'] as bool? ?? true,
+      choreDueDayOf: json['chore_due_day_of'] as bool? ?? true,
+      listItemAdded: json['list_item_added'] as bool? ?? true,
+      expenseCreated: json['expense_created'] as bool? ?? true,
+      mealPlanChanged: json['meal_plan_changed'] as bool? ?? true,
+      weeklyDigest: json['weekly_digest'] as bool? ?? true,
+      pushEnabled: json['push_enabled'] as bool? ?? true,
     );
   }
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'user_id': userId,
-        'type': type,
-        'enabled': enabled,
-        'channel': channel,
+        'group_id': groupId,
+        'chore_due': choreDue,
+        'chore_due_day_of': choreDueDayOf,
+        'list_item_added': listItemAdded,
+        'expense_created': expenseCreated,
+        'meal_plan_changed': mealPlanChanged,
+        'weekly_digest': weeklyDigest,
+        'push_enabled': pushEnabled,
       };
 }
 

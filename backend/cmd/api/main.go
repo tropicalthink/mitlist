@@ -155,6 +155,10 @@ func main() {
 			r.Post("/lists/{id}/generate-expense", listHandler.GenerateExpense)
 			listItemPhotoHandler.RegisterRoutes(r)
 
+			// Shopping trip
+			r.Get("/shopping/trip", listHandler.GetShoppingTrip)
+			r.Post("/shopping/complete", listHandler.BulkCompleteItems)
+
 			// Templates
 			templateHandler := handlers.NewTemplateHandler(cnt.TemplateService())
 			r.Post("/templates", templateHandler.CreateTemplate)
@@ -184,6 +188,12 @@ func main() {
 			r.Patch("/chores/{id}/pending", choreHandler.RescheduleChore)
 			r.Post("/chores/{id}/undo", choreHandler.UndoLastChoreExecution)
 			r.Get("/chores/{id}/assignments", choreHandler.GetAssignments)
+			r.Get("/chores/{id}/subtasks", choreHandler.ListSubtasks)
+			r.Post("/chores/{id}/subtasks", choreHandler.CreateSubtask)
+			r.Put("/chores/{id}/subtasks/reorder", choreHandler.ReorderSubtasks)
+			r.Patch("/chores/subtasks/{subtask_id}", choreHandler.UpdateSubtask)
+			r.Delete("/chores/subtasks/{subtask_id}", choreHandler.DeleteSubtask)
+			r.Post("/chores/{id}/add-supplies-to-list", choreHandler.AddSuppliesToList)
 
 			// Finance
 			financeHandler := handlers.NewFinanceHandler(cnt.FinanceService())
@@ -217,6 +227,7 @@ func main() {
 			// Meal Plans
 			mealPlanHandler := handlers.NewMealPlanHandler(cnt.MealPlanService())
 			mealPlanHandler.RegisterRoutes(r)
+			r.Post("/meal-plans/generate-shopping-list", mealPlanHandler.GenerateShoppingList)
 
 			// Assistant
 			assistantHandler := handlers.NewAssistantHandler(cnt.AssistantService())

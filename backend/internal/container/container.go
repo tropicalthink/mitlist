@@ -429,7 +429,7 @@ func (c *Container) TemplateService() *services.TemplateService {
 // ChoreService returns the singleton chore service.
 func (c *Container) ChoreService() *services.ChoreService {
 	c.choreServiceOnce.Do(func() {
-		c.choreService = services.NewChoreService(c.ChoreRepo(), c.GroupRepo())
+		c.choreService = services.NewChoreService(c.ChoreRepo(), c.GroupRepo(), c.ListRepo())
 	})
 	return c.choreService
 }
@@ -453,7 +453,7 @@ func (c *Container) RecipeService() *services.RecipeService {
 // MealPlanService returns the singleton meal plan service.
 func (c *Container) MealPlanService() *services.MealPlanService {
 	c.mealPlanServiceOnce.Do(func() {
-		c.mealPlanService = services.NewMealPlanService(c.MealPlanRepo(), c.GroupRepo())
+		c.mealPlanService = services.NewMealPlanService(c.MealPlanRepo(), c.GroupRepo(), c.RecipeRepo(), c.ListRepo())
 	})
 	return c.mealPlanService
 }

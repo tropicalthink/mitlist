@@ -19,6 +19,7 @@ import '../../utils/haptics.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_icon.dart';
+import '../../sheets/cost_summary_sheet.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/mitlist_app_bar.dart';
@@ -511,6 +512,52 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       case 'clear_all':
         _clearItems(onlyChecked: false);
         break;
+      case 'cost_summary':
+        _showCostSummary();
+        break;
+    }
+  }
+
+  Future<void> _showCostSummary() async {
+    if (_service == null) return;
+    try {
+      final summary = await _service!.getCostSummary(widget.listId);
+      final totalCents = summary['total_cents'] as int? ?? 0;
+      final equalShareCents = summary['equal_share_cents'] as int? ?? 0;
+      final pricedItems = _items.where((i) => i.priceCents != null).length;
+
+      if (!mounted) return;
+      await CostSummarySheet.show(
+        context,
+        listName: _listName,
+        totalCents: totalCents,
+        equalShareCents: equalShareCents,
+        itemCount: pricedItems,
+        onGenerateExpense: totalCents > 0
+            ? () async {
+                try {
+                  await _service!.generateExpense(widget.listId);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Expense generated')),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed: $e')),
+                    );
+                  }
+                }
+              }
+            : null,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load cost summary: $e')),
+        );
+      }
     }
   }
 
@@ -603,6 +650,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   icon: const AppIcon(name: 'ellipsisVertical'),
                   onSelected: _onMenuSelected,
                   itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'cost_summary',
+                      child: Text('Cost summary'),
+                    ),
                     const PopupMenuItem(
                       value: 'clear_checked',
                       child: Text('Clear checked'),

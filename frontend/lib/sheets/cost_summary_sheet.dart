@@ -1,0 +1,165 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../theme/colors.dart';
+import '../theme/spacing.dart';
+import '../widgets/app_bottom_sheet.dart';
+import '../widgets/app_button.dart';
+
+class CostSummarySheet extends ConsumerWidget {
+  const CostSummarySheet({
+    super.key,
+    required this.listName,
+    required this.totalCents,
+    required this.equalShareCents,
+    required this.itemCount,
+    required this.onGenerateExpense,
+  });
+
+  final String listName;
+  final int totalCents;
+  final int equalShareCents;
+  final int itemCount;
+  final VoidCallback? onGenerateExpense;
+
+  static Future<void> show(
+    BuildContext context, {
+    required String listName,
+    required int totalCents,
+    required int equalShareCents,
+    required int itemCount,
+    required VoidCallback? onGenerateExpense,
+  }) async {
+    return showAppBottomSheet(
+      context: context,
+      title: 'Cost Summary',
+      body: CostSummarySheet(
+        listName: listName,
+        totalCents: totalCents,
+        equalShareCents: equalShareCents,
+        itemCount: itemCount,
+        onGenerateExpense: onGenerateExpense,
+      ),
+    );
+  }
+
+  String _formatCents(int cents) {
+    return '\$${(cents / 100).toStringAsFixed(2)}';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hasPrices = totalCents > 0;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          listName,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: MitlistSpacing.md),
+        if (!hasPrices) ...[
+          _InfoRow(
+            icon: Icons.info_outline,
+            message:
+                'No items have prices yet. Tap an item and add a price to see the cost summary.',
+          ),
+        ] else ...[
+          _CostRow(
+            label: 'Total cost',
+            value: _formatCents(totalCents),
+            isTotal: true,
+          ),
+          const SizedBox(height: MitlistSpacing.sm),
+          _CostRow(
+            label: 'Equal share per person',
+            value: _formatCents(equalShareCents),
+            isTotal: false,
+          ),
+          const SizedBox(height: MitlistSpacing.sm),
+          _CostRow(
+            label: 'Items with prices',
+            value: '$itemCount',
+            isTotal: false,
+          ),
+          const SizedBox(height: MitlistSpacing.md),
+          if (onGenerateExpense != null)
+            SizedBox(
+              width: double.infinity,
+              child: AppButton(
+                variant: AppButtonVariant.solid,
+                color: AppButtonColor.primary,
+                text: 'Generate Expense',
+                onPressed: onGenerateExpense,
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+}
+
+class _CostRow extends StatelessWidget {
+  const _CostRow({
+    required this.label,
+    required this.value,
+    required this.isTotal,
+  });
+
+  final String label;
+  final String value;
+  final bool isTotal;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: isTotal
+                ? Theme.of(context).textTheme.titleSmall
+                : Theme.of(context).textTheme.bodyMedium,
+          ),
+        ),
+        Text(
+          value,
+          style: isTotal
+              ? Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: MitlistColors.primary500,
+                    fontWeight: FontWeight.bold,
+                  )
+              : Theme.of(context).textTheme.bodyMedium,
+        ),
+      ],
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.icon, required this.message});
+
+  final IconData icon;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 20, color: MitlistColors.neutral500),
+        const SizedBox(width: MitlistSpacing.sm),
+        Expanded(
+          child: Text(
+            message,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: MitlistColors.neutral500,
+                ),
+          ),
+        ),
+      ],
+    );
+  }
+}

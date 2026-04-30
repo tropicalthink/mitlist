@@ -22,6 +22,7 @@ type Chore struct {
 	AssignmentType   string      `json:"assignment_type"`
 	AssignmentConfig []uuid.UUID `json:"assignment_config,omitempty"`
 	IsActive         bool        `json:"is_active"`
+	Supplies         []string    `json:"supplies,omitempty"`
 	CreatedAt        time.Time   `json:"created_at"`
 	UpdatedAt        time.Time   `json:"updated_at"`
 }
@@ -43,6 +44,7 @@ type ChoreAssignment struct {
 	DueDate     *time.Time `json:"due_date,omitempty"`
 	AssignedAt  time.Time  `json:"assigned_at"`
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
+	SkipReason  *string    `json:"skip_reason,omitempty"`
 }
 
 // ChoreCompletion records the completion of a chore assignment.
@@ -61,6 +63,17 @@ type CurrentChore struct {
 	LastAssignment    *ChoreAssignment `json:"last_assignment,omitempty"`
 	DueStatus         string           `json:"due_status"`
 	AssignedToMe      bool             `json:"assigned_to_me"`
+}
+
+// ChoreSubtask represents a subtask within a chore.
+type ChoreSubtask struct {
+	ID        uuid.UUID `json:"id"`
+	ChoreID   uuid.UUID `json:"chore_id"`
+	Title     string    `json:"title"`
+	Completed bool      `json:"completed"`
+	Position  int       `json:"position"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // ChoreStats summarizes tracked execution history for a chore.

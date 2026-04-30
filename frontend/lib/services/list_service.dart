@@ -84,12 +84,14 @@ class ListService {
     }
   }
 
-  Future<List<Product>> listProducts(String groupId) async {
+  Future<List<Product>> listProducts(String groupId, {String? search}) async {
     ensureValidGroupId(groupId);
     try {
-      final r = await _dio.get('/products', queryParameters: {
-        'group_id': groupId,
-      });
+      final params = <String, dynamic>{'group_id': groupId};
+      if (search != null && search.isNotEmpty) {
+        params['search'] = search;
+      }
+      final r = await _dio.get('/products', queryParameters: params);
       final data = r.data;
       if (data is! List) return [];
       return data
@@ -178,6 +180,32 @@ class ListService {
       await _dio.post('/lists/$listId/reorder', data: req.toJson());
     } on DioException catch (e) {
       _logger.e('Reorder items failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> getCostSummary(String listId) async {
+    try {
+      final r = await _dio.get('/lists/$listId/cost-summary');
+      return Map<String, dynamic>.from(r.data as Map);
+    } on DioException catch (e) {
+      _logger.e('Get cost summary failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> generateExpense(
+    String listId, {
+    String? description,
+  }) async {
+    try {
+      final r = await _dio.post(
+        '/lists/$listId/generate-expense',
+        data: {if (description != null) 'description': description},
+      );
+      return Map<String, dynamic>.from(r.data as Map);
+    } on DioException catch (e) {
+      _logger.e('Generate expense failed: ${e.response?.data}');
       throw _handleError(e);
     }
   }

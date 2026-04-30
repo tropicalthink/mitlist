@@ -24,7 +24,7 @@ func TestChoreService_CreateChore(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		choreRepo := new(mocks.MockChoreRepo)
 		groupRepo := new(mocks.MockGroupRepo)
-		svc := NewChoreService(choreRepo, groupRepo)
+		svc := NewChoreService(choreRepo, groupRepo, nil)
 
 		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "admin"}, nil)
 		choreRepo.On("CreateChore", ctx, mock.AnythingOfType("*models.Chore")).Return(nil)
@@ -45,7 +45,7 @@ func TestChoreService_CreateChore(t *testing.T) {
 	t.Run("no assignment creates no initial assignment", func(t *testing.T) {
 		choreRepo := new(mocks.MockChoreRepo)
 		groupRepo := new(mocks.MockGroupRepo)
-		svc := NewChoreService(choreRepo, groupRepo)
+		svc := NewChoreService(choreRepo, groupRepo, nil)
 
 		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "admin"}, nil)
 		choreRepo.On("CreateChore", ctx, mock.AnythingOfType("*models.Chore")).Return(nil)
@@ -65,7 +65,7 @@ func TestChoreService_CreateChore(t *testing.T) {
 
 	t.Run("not admin", func(t *testing.T) {
 		groupRepo := new(mocks.MockGroupRepo)
-		svc := NewChoreService(nil, groupRepo)
+		svc := NewChoreService(nil, groupRepo, nil)
 
 		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 
@@ -76,7 +76,7 @@ func TestChoreService_CreateChore(t *testing.T) {
 
 	t.Run("missing name", func(t *testing.T) {
 		groupRepo := new(mocks.MockGroupRepo)
-		svc := NewChoreService(nil, groupRepo)
+		svc := NewChoreService(nil, groupRepo, nil)
 
 		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "admin"}, nil)
 
@@ -95,7 +95,7 @@ func TestChoreService_GetChore(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		choreRepo := new(mocks.MockChoreRepo)
 		groupRepo := new(mocks.MockGroupRepo)
-		svc := NewChoreService(choreRepo, groupRepo)
+		svc := NewChoreService(choreRepo, groupRepo, nil)
 
 		choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{ID: choreID, GroupID: groupID}, nil)
 		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
@@ -117,7 +117,7 @@ func TestChoreService_GetChoreDetails(t *testing.T) {
 
 	choreRepo := new(mocks.MockChoreRepo)
 	groupRepo := new(mocks.MockGroupRepo)
-	svc := NewChoreService(choreRepo, groupRepo)
+	svc := NewChoreService(choreRepo, groupRepo, nil)
 
 	choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{
 		ID:      choreID,
@@ -125,16 +125,17 @@ func TestChoreService_GetChoreDetails(t *testing.T) {
 		Name:    "Clean counters",
 	}, nil)
 	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+	dueSoon := now.Add(24 * time.Hour)
 	choreRepo.On("GetPendingAssignmentByChore", ctx, choreID).Return(&models.ChoreAssignment{
 		ID:         assignmentID,
 		ChoreID:    choreID,
 		UserID:     user.ID,
 		Status:     "pending",
-		DueDate:    &now,
+		DueDate:    &dueSoon,
 		AssignedAt: now.Add(-time.Hour),
 	}, nil)
 	choreRepo.On("ListAssignments", ctx, choreID, 100, 0).Return([]models.ChoreAssignment{
-		{ID: assignmentID, ChoreID: choreID, UserID: user.ID, Status: "pending", DueDate: &now, AssignedAt: now.Add(-time.Hour)},
+		{ID: assignmentID, ChoreID: choreID, UserID: user.ID, Status: "pending", DueDate: &dueSoon, AssignedAt: now.Add(-time.Hour)},
 		{ID: uuid.New(), ChoreID: choreID, UserID: user.ID, Status: "completed", AssignedAt: now.Add(-48 * time.Hour), CompletedAt: ptrTime(now.Add(-47 * time.Hour))},
 	}, nil)
 	choreRepo.On("GetChoreStats", ctx, choreID).Return(&models.ChoreStats{
@@ -148,7 +149,7 @@ func TestChoreService_GetChoreDetails(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, choreID, details.Chore.ID)
 	assert.Equal(t, 3, details.Stats.TrackedCount)
-	assert.Equal(t, "due_today", details.DueStatus)
+	assert.Equal(t, "due_soon", details.DueStatus)
 	assert.True(t, details.AssignedToMe)
 	require.NotNil(t, details.LastAssignment)
 	assert.Equal(t, "completed", details.LastAssignment.Status)
@@ -164,7 +165,7 @@ func TestChoreService_ListCurrentChores(t *testing.T) {
 
 	choreRepo := new(mocks.MockChoreRepo)
 	groupRepo := new(mocks.MockGroupRepo)
-	svc := NewChoreService(choreRepo, groupRepo)
+	svc := NewChoreService(choreRepo, groupRepo, nil)
 
 	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
 	choreRepo.On("ListCurrentChoresByGroup", ctx, groupID, 50, 0).Return([]models.CurrentChore{
@@ -194,7 +195,7 @@ func TestChoreService_ListCurrentChores_RequiresMembership(t *testing.T) {
 	groupID := uuid.New()
 
 	groupRepo := new(mocks.MockGroupRepo)
-	svc := NewChoreService(nil, groupRepo)
+	svc := NewChoreService(nil, groupRepo, nil)
 
 	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(nil, pgx.ErrNoRows)
 
@@ -213,7 +214,7 @@ func TestChoreService_RotateChore(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		choreRepo := new(mocks.MockChoreRepo)
 		groupRepo := new(mocks.MockGroupRepo)
-		svc := NewChoreService(choreRepo, groupRepo)
+		svc := NewChoreService(choreRepo, groupRepo, nil)
 
 		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "admin"}, nil)
 		choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{ID: choreID, GroupID: groupID}, nil)
@@ -240,7 +241,7 @@ func TestChoreService_CompleteChore(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		choreRepo := new(mocks.MockChoreRepo)
 		groupRepo := new(mocks.MockGroupRepo)
-		svc := NewChoreService(choreRepo, groupRepo)
+		svc := NewChoreService(choreRepo, groupRepo, nil)
 
 		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
 		choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{ID: choreID, GroupID: groupID}, nil)
@@ -269,7 +270,7 @@ func TestChoreService_SkipChore(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		choreRepo := new(mocks.MockChoreRepo)
 		groupRepo := new(mocks.MockGroupRepo)
-		svc := NewChoreService(choreRepo, groupRepo)
+		svc := NewChoreService(choreRepo, groupRepo, nil)
 
 		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
 		choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{ID: choreID, GroupID: groupID}, nil)
@@ -281,7 +282,7 @@ func TestChoreService_SkipChore(t *testing.T) {
 		choreRepo.On("UpdateRotationState", ctx, mock.AnythingOfType("*models.ChoreRotationState")).Return(nil)
 		choreRepo.On("CreateAssignment", ctx, mock.AnythingOfType("*models.ChoreAssignment")).Return(nil)
 
-		err := svc.SkipChore(ctx, user, choreID)
+		err := svc.SkipChore(ctx, user, choreID, nil)
 		require.NoError(t, err)
 	})
 }
@@ -296,7 +297,7 @@ func TestChoreService_RescheduleChore(t *testing.T) {
 
 	choreRepo := new(mocks.MockChoreRepo)
 	groupRepo := new(mocks.MockGroupRepo)
-	svc := NewChoreService(choreRepo, groupRepo)
+	svc := NewChoreService(choreRepo, groupRepo, nil)
 
 	choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{ID: choreID, GroupID: groupID}, nil)
 	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
@@ -324,7 +325,7 @@ func TestChoreService_RescheduleChore_RejectsPastDueDate(t *testing.T) {
 
 	choreRepo := new(mocks.MockChoreRepo)
 	groupRepo := new(mocks.MockGroupRepo)
-	svc := NewChoreService(choreRepo, groupRepo)
+	svc := NewChoreService(choreRepo, groupRepo, nil)
 
 	choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{ID: choreID, GroupID: groupID}, nil)
 	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
@@ -348,7 +349,7 @@ func TestChoreService_UndoLastChoreExecution_RestoresSuccessorRotation(t *testin
 
 	choreRepo := new(mocks.MockChoreRepo)
 	groupRepo := new(mocks.MockGroupRepo)
-	svc := NewChoreService(choreRepo, groupRepo)
+	svc := NewChoreService(choreRepo, groupRepo, nil)
 
 	choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{ID: choreID, GroupID: groupID}, nil)
 	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
@@ -397,7 +398,7 @@ func TestChoreService_RebuildMemberOrdersForGroup(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		choreRepo := new(mocks.MockChoreRepo)
 		groupRepo := new(mocks.MockGroupRepo)
-		svc := NewChoreService(choreRepo, groupRepo)
+		svc := NewChoreService(choreRepo, groupRepo, nil)
 
 		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return([]models.GroupMembership{
 			{UserID: member1}, {UserID: member2},
@@ -415,7 +416,7 @@ func TestChoreService_RebuildMemberOrdersForGroup(t *testing.T) {
 	t.Run("no rotation state skips", func(t *testing.T) {
 		choreRepo := new(mocks.MockChoreRepo)
 		groupRepo := new(mocks.MockGroupRepo)
-		svc := NewChoreService(choreRepo, groupRepo)
+		svc := NewChoreService(choreRepo, groupRepo, nil)
 
 		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return([]models.GroupMembership{{UserID: member1}}, nil)
 		choreRepo.On("ListChoresByGroup", ctx, groupID, 0, 0).Return([]models.Chore{{ID: choreID}}, nil)

@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -130,13 +131,37 @@ func (r *NotificationRepository) DeleteNotification(ctx context.Context, id uuid
 	return nil
 }
 
-// GetPreferences retrieves all notification preferences for a user.
-func (r *NotificationRepository) GetPreferences(ctx context.Context, userID uuid.UUID) ([]models.NotificationPreference, error) {
+// GetPreference retrieves notification preferences for a user and group.
+func (r *NotificationRepository) GetPreference(ctx context.Context, userID, groupID uuid.UUID) (*models.NotificationPreference, error) {
 	query := `
-		SELECT id, user_id, type, enabled, channel
+		SELECT id, user_id, group_id, chore_due, chore_due_day_of, list_item_added,
+			expense_created, meal_plan_changed, weekly_digest, push_enabled, created_at, updated_at
+		FROM notification_preferences
+		WHERE user_id = $1 AND group_id = $2
+	`
+	var p models.NotificationPreference
+	err := r.db.QueryRow(ctx, query, userID, groupID).Scan(
+		&p.ID, &p.UserID, &p.GroupID, &p.ChoreDue, &p.ChoreDueDayOf, &p.ListItemAdded,
+		&p.ExpenseCreated, &p.MealPlanChanged, &p.WeeklyDigest, &p.PushEnabled,
+		&p.CreatedAt, &p.UpdatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("notification preference not found: %w", err)
+		}
+		return nil, err
+	}
+	return &p, nil
+}
+
+// GetPreferencesByUser retrieves all notification preferences for a user across groups.
+func (r *NotificationRepository) GetPreferencesByUser(ctx context.Context, userID uuid.UUID) ([]models.NotificationPreference, error) {
+	query := `
+		SELECT id, user_id, group_id, chore_due, chore_due_day_of, list_item_added,
+			expense_created, meal_plan_changed, weekly_digest, push_enabled, created_at, updated_at
 		FROM notification_preferences
 		WHERE user_id = $1
-		ORDER BY type ASC
+		ORDER BY group_id ASC
 	`
 	rows, err := r.db.Query(ctx, query, userID)
 	if err != nil {
@@ -147,7 +172,11 @@ func (r *NotificationRepository) GetPreferences(ctx context.Context, userID uuid
 	var prefs []models.NotificationPreference
 	for rows.Next() {
 		var p models.NotificationPreference
-		if err := rows.Scan(&p.ID, &p.UserID, &p.Type, &p.Enabled, &p.Channel); err != nil {
+		if err := rows.Scan(
+			&p.ID, &p.UserID, &p.GroupID, &p.ChoreDue, &p.ChoreDueDayOf, &p.ListItemAdded,
+			&p.ExpenseCreated, &p.MealPlanChanged, &p.WeeklyDigest, &p.PushEnabled,
+			&p.CreatedAt, &p.UpdatedAt,
+		); err != nil {
 			return nil, err
 		}
 		prefs = append(prefs, p)
@@ -158,19 +187,29 @@ func (r *NotificationRepository) GetPreferences(ctx context.Context, userID uuid
 	return prefs, nil
 }
 
-// UpdatePreferences updates a notification preference.
-func (r *NotificationRepository) UpdatePreferences(ctx context.Context, pref *models.NotificationPreference) error {
+// UpsertPreference inserts or updates notification preferences for a user/group.
+func (r *NotificationRepository) UpsertPreference(ctx context.Context, pref *models.NotificationPreference) error {
 	query := `
-		UPDATE notification_preferences
-		SET type = $1, enabled = $2, channel = $3
-		WHERE id = $4
+		INSERT INTO notification_preferences (
+			id, user_id, group_id, chore_due, chore_due_day_of, list_item_added,
+			expense_created, meal_plan_changed, weekly_digest, push_enabled, created_at, updated_at
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+		ON CONFLICT (user_id, group_id)
+		DO UPDATE SET
+			chore_due = EXCLUDED.chore_due,
+			chore_due_day_of = EXCLUDED.chore_due_day_of,
+			list_item_added = EXCLUDED.list_item_added,
+			expense_created = EXCLUDED.expense_created,
+			meal_plan_changed = EXCLUDED.meal_plan_changed,
+			weekly_digest = EXCLUDED.weekly_digest,
+			push_enabled = EXCLUDED.push_enabled,
+			updated_at = NOW()
+		RETURNING id, created_at, updated_at
 	`
-	cmd, err := r.db.Exec(ctx, query, pref.Type, pref.Enabled, pref.Channel, pref.ID)
-	if err != nil {
-		return err
-	}
-	if cmd.RowsAffected() == 0 {
-		return fmt.Errorf("notification preference not found")
-	}
-	return nil
+	pref.ID = uuid.New()
+	return r.db.QueryRow(ctx, query,
+		pref.ID, pref.UserID, pref.GroupID, pref.ChoreDue, pref.ChoreDueDayOf, pref.ListItemAdded,
+		pref.ExpenseCreated, pref.MealPlanChanged, pref.WeeklyDigest, pref.PushEnabled,
+	).Scan(&pref.ID, &pref.CreatedAt, &pref.UpdatedAt)
 }

@@ -126,6 +126,13 @@ type ChoreRepo interface {
 	DeleteAssignment(ctx context.Context, id uuid.UUID) error
 	CreateCompletion(ctx context.Context, completion *models.ChoreCompletion) error
 	GetPendingAssignmentByChore(ctx context.Context, choreID uuid.UUID) (*models.ChoreAssignment, error)
+	ListDueAssignments(ctx context.Context, from, to time.Time) ([]models.ChoreAssignment, error)
+	CreateSubtask(ctx context.Context, subtask *models.ChoreSubtask) error
+	GetSubtaskByID(ctx context.Context, id uuid.UUID) (*models.ChoreSubtask, error)
+	ListSubtasksByChore(ctx context.Context, choreID uuid.UUID) ([]models.ChoreSubtask, error)
+	UpdateSubtask(ctx context.Context, subtask *models.ChoreSubtask) error
+	DeleteSubtask(ctx context.Context, id uuid.UUID) error
+	DeleteSubtasksByChore(ctx context.Context, choreID uuid.UUID) error
 }
 
 // FinanceRepoIface is the interface for finance repository operations.
@@ -189,8 +196,9 @@ type NotificationRepo interface {
 	MarkAsRead(ctx context.Context, id uuid.UUID) error
 	MarkAllAsRead(ctx context.Context, userID uuid.UUID) error
 	DeleteNotification(ctx context.Context, id uuid.UUID) error
-	GetPreferences(ctx context.Context, userID uuid.UUID) ([]models.NotificationPreference, error)
-	UpdatePreferences(ctx context.Context, pref *models.NotificationPreference) error
+	GetPreference(ctx context.Context, userID, groupID uuid.UUID) (*models.NotificationPreference, error)
+	GetPreferencesByUser(ctx context.Context, userID uuid.UUID) ([]models.NotificationPreference, error)
+	UpsertPreference(ctx context.Context, pref *models.NotificationPreference) error
 }
 
 // ActivityRepo is the interface for activity repository operations.

@@ -165,51 +165,62 @@ func TestNotificationRepository_DeleteNotification_NotFound(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestNotificationRepository_GetPreferences(t *testing.T) {
+func TestNotificationRepository_GetPreference(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewNotificationRepository(mock)
+	uid := fixedUUID()
+	gid := fixedUUID()
+
+	rows := pgxmock.NewRows([]string{
+		"id", "user_id", "group_id", "chore_due", "chore_due_day_of", "list_item_added",
+		"expense_created", "meal_plan_changed", "weekly_digest", "push_enabled", "created_at", "updated_at",
+	}).AddRow(fixedUUID(), uid, gid, true, true, true, true, true, true, true, fixedTime(), fixedTime())
+
+	mock.ExpectQuery("SELECT .* FROM notification_preferences WHERE user_id = .* AND group_id = .*").
+		WithArgs(uid, gid).
+		WillReturnRows(rows)
+
+	pref, err := repo.GetPreference(context.Background(), uid, gid)
+	require.NoError(t, err)
+	assert.Equal(t, uid, pref.UserID)
+	assert.Equal(t, gid, pref.GroupID)
+	assert.True(t, pref.PushEnabled)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestNotificationRepository_GetPreferencesByUser(t *testing.T) {
 	mock := newMockDB(t)
 	repo := NewNotificationRepository(mock)
 	uid := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "user_id", "type", "enabled", "channel"}).
-		AddRow(fixedUUID(), uid, "push", true, "web")
+	rows := pgxmock.NewRows([]string{
+		"id", "user_id", "group_id", "chore_due", "chore_due_day_of", "list_item_added",
+		"expense_created", "meal_plan_changed", "weekly_digest", "push_enabled", "created_at", "updated_at",
+	}).AddRow(fixedUUID(), uid, fixedUUID(), true, true, true, true, true, true, true, fixedTime(), fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM notification_preferences WHERE user_id = .*").
 		WithArgs(uid).
 		WillReturnRows(rows)
 
-	prefs, err := repo.GetPreferences(context.Background(), uid)
+	prefs, err := repo.GetPreferencesByUser(context.Background(), uid)
 	require.NoError(t, err)
 	assert.Len(t, prefs, 1)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestNotificationRepository_UpdatePreferences(t *testing.T) {
+func TestNotificationRepository_UpsertPreference(t *testing.T) {
 	mock := newMockDB(t)
 	repo := NewNotificationRepository(mock)
-	id := fixedUUID()
+	uid := fixedUUID()
+	gid := fixedUUID()
 
-	mock.ExpectExec("UPDATE notification_preferences SET").
-		WithArgs("push", true, "web", id).
-		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+	mock.ExpectQuery("INSERT INTO notification_preferences").
+		WithArgs(pgxmock.AnyArg(), uid, gid, true, true, true, true, true, true, true).
+		WillReturnRows(pgxmock.NewRows([]string{"id", "created_at", "updated_at"}).
+			AddRow(fixedUUID(), fixedTime(), fixedTime()))
 
-	pref := &models.NotificationPreference{ID: id, Type: "push", Enabled: true, Channel: "web"}
-	err := repo.UpdatePreferences(context.Background(), pref)
+	pref := &models.NotificationPreference{UserID: uid, GroupID: gid, ChoreDue: true, ChoreDueDayOf: true, ListItemAdded: true, ExpenseCreated: true, MealPlanChanged: true, WeeklyDigest: true, PushEnabled: true}
+	err := repo.UpsertPreference(context.Background(), pref)
 	require.NoError(t, err)
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestNotificationRepository_UpdatePreferences_NotFound(t *testing.T) {
-	mock := newMockDB(t)
-	repo := NewNotificationRepository(mock)
-	id := fixedUUID()
-
-	mock.ExpectExec("UPDATE notification_preferences SET").
-		WithArgs("push", true, "web", id).
-		WillReturnResult(pgxmock.NewResult("UPDATE", 0))
-
-	pref := &models.NotificationPreference{ID: id, Type: "push", Enabled: true, Channel: "web"}
-	err := repo.UpdatePreferences(context.Background(), pref)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "not found")
 	assert.NoError(t, mock.ExpectationsWereMet())
 }

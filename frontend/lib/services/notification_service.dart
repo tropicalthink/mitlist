@@ -51,6 +51,11 @@ class NotificationService {
     return data.map((e) => NotificationPreferenceModel.fromJson((e as Map).cast<String, dynamic>())).toList();
   }
 
+  Future<NotificationPreferenceModel> getGroupPreference(String groupId) async {
+    final r = await _dio.get('/notifications/preferences', queryParameters: {'group_id': groupId});
+    return NotificationPreferenceModel.fromJson((r.data as Map).cast<String, dynamic>());
+  }
+
   Future<void> updatePreference(NotificationPreferenceModel pref) async {
     await _dio.patch('/notifications/preferences', data: pref.toJson());
   }

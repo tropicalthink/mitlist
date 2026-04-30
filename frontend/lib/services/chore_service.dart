@@ -147,9 +147,10 @@ class ChoreService {
     }
   }
 
-  Future<void> skipChore(String id) async {
+  Future<void> skipChore(String id, {String? skipReason}) async {
     try {
-      await _dio.post('/chores/$id/skip');
+      await _dio.post('/chores/$id/skip',
+          data: SkipChoreRequest(skipReason: skipReason).toJson());
     } on DioException catch (e) {
       _logger.e('Skip chore failed: ${e.response?.data}');
       throw _handleError(e);
@@ -180,6 +181,81 @@ class ChoreService {
       await _dio.post('/chores/$id/undo');
     } on DioException catch (e) {
       _logger.e('Undo chore execution failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<List<ChoreSubtask>> listSubtasks(String choreId) async {
+    try {
+      final r = await _dio.get('/chores/$choreId/subtasks');
+      final data = r.data;
+      if (data is! List) return [];
+      return data
+          .map((j) =>
+              ChoreSubtask.fromJson((j as Map).cast<String, dynamic>()))
+          .toList();
+    } on DioException catch (e) {
+      _logger.e('List subtasks failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<ChoreSubtask> createSubtask(String choreId, String title) async {
+    try {
+      final r = await _dio.post('/chores/$choreId/subtasks',
+          data: CreateSubtaskRequest(title: title).toJson());
+      return ChoreSubtask.fromJson((r.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Create subtask failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<ChoreSubtask> updateSubtask(
+    String subtaskId, {
+    String? title,
+    bool? completed,
+    int? position,
+  }) async {
+    try {
+      final r = await _dio.patch('/chores/subtasks/$subtaskId',
+          data: UpdateSubtaskRequest(
+            title: title,
+            completed: completed,
+            position: position,
+          ).toJson());
+      return ChoreSubtask.fromJson((r.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Update subtask failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> deleteSubtask(String subtaskId) async {
+    try {
+      await _dio.delete('/chores/subtasks/$subtaskId');
+    } on DioException catch (e) {
+      _logger.e('Delete subtask failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> reorderSubtasks(String choreId, List<String> subtaskIds) async {
+    try {
+      await _dio.put('/chores/$choreId/subtasks/reorder',
+          data: ReorderSubtasksRequest(subtaskIds: subtaskIds).toJson());
+    } on DioException catch (e) {
+      _logger.e('Reorder subtasks failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> addSuppliesToList(String choreId, String listId) async {
+    try {
+      await _dio.post('/chores/$choreId/add-supplies-to-list',
+          data: AddSuppliesToListRequest(listId: listId).toJson());
+    } on DioException catch (e) {
+      _logger.e('Add supplies to list failed: ${e.response?.data}');
       throw _handleError(e);
     }
   }

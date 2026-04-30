@@ -29,16 +29,16 @@ func (r *ChoreRepository) CreateChore(ctx context.Context, chore *models.Chore) 
 		INSERT INTO chores (
 			id, group_id, name, description, rotation_type, frequency,
 			period_interval, period_config, start_date, track_date_only, rollover,
-			assignment_type, assignment_config, is_active, created_at, updated_at
+			assignment_type, assignment_config, is_active, supplies, created_at, updated_at
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW())
 		RETURNING created_at, updated_at
 	`
 	return r.pool.QueryRow(ctx, query,
 		chore.ID, chore.GroupID, chore.Name, chore.Description,
 		chore.RotationType, chore.Frequency, chore.PeriodInterval, chore.PeriodConfig,
 		chore.StartDate, chore.TrackDateOnly, chore.Rollover, chore.AssignmentType,
-		chore.AssignmentConfig, chore.IsActive,
+		chore.AssignmentConfig, chore.IsActive, chore.Supplies,
 	).Scan(&chore.CreatedAt, &chore.UpdatedAt)
 }
 
@@ -47,7 +47,7 @@ func (r *ChoreRepository) GetChoreByID(ctx context.Context, id uuid.UUID) (*mode
 	query := `
 		SELECT id, group_id, name, description, rotation_type, frequency,
 			period_interval, period_config, start_date, track_date_only, rollover,
-			assignment_type, assignment_config, is_active, created_at, updated_at
+			assignment_type, assignment_config, is_active, supplies, created_at, updated_at
 		FROM chores
 		WHERE id = $1
 	`
@@ -56,7 +56,7 @@ func (r *ChoreRepository) GetChoreByID(ctx context.Context, id uuid.UUID) (*mode
 		&c.ID, &c.GroupID, &c.Name, &c.Description,
 		&c.RotationType, &c.Frequency, &c.PeriodInterval, &c.PeriodConfig,
 		&c.StartDate, &c.TrackDateOnly, &c.Rollover, &c.AssignmentType,
-		&c.AssignmentConfig, &c.IsActive,
+		&c.AssignmentConfig, &c.IsActive, &c.Supplies,
 		&c.CreatedAt, &c.UpdatedAt,
 	)
 	if err != nil {
@@ -73,7 +73,7 @@ func (r *ChoreRepository) ListChoresByGroup(ctx context.Context, groupID uuid.UU
 	query := `
 		SELECT id, group_id, name, description, rotation_type, frequency,
 			period_interval, period_config, start_date, track_date_only, rollover,
-			assignment_type, assignment_config, is_active, created_at, updated_at
+			assignment_type, assignment_config, is_active, supplies, created_at, updated_at
 		FROM chores
 		WHERE group_id = $1
 		ORDER BY created_at DESC, id DESC
@@ -93,7 +93,7 @@ func (r *ChoreRepository) ListChoresByGroup(ctx context.Context, groupID uuid.UU
 			&c.ID, &c.GroupID, &c.Name, &c.Description,
 			&c.RotationType, &c.Frequency, &c.PeriodInterval, &c.PeriodConfig,
 			&c.StartDate, &c.TrackDateOnly, &c.Rollover, &c.AssignmentType,
-			&c.AssignmentConfig, &c.IsActive,
+			&c.AssignmentConfig, &c.IsActive, &c.Supplies,
 			&c.CreatedAt, &c.UpdatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan chore: %w", err)
@@ -113,8 +113,8 @@ func (r *ChoreRepository) ListCurrentChoresByGroup(ctx context.Context, groupID 
 			c.id, c.group_id, c.name, c.description, c.rotation_type, c.frequency,
 			c.period_interval, c.period_config, c.start_date, c.track_date_only, c.rollover,
 			c.assignment_type, c.assignment_config, c.is_active, c.created_at, c.updated_at,
-			pa.id, pa.chore_id, pa.user_id, pa.status, pa.due_date, pa.assigned_at, pa.completed_at,
-			la.id, la.chore_id, la.user_id, la.status, la.due_date, la.assigned_at, la.completed_at
+			pa.id, pa.chore_id, pa.user_id, pa.status, pa.due_date, pa.assigned_at, pa.completed_at, pa.skip_reason,
+			la.id, la.chore_id, la.user_id, la.status, la.due_date, la.assigned_at, la.completed_at, la.skip_reason
 		FROM chores c
 		LEFT JOIN LATERAL (
 			SELECT id, chore_id, user_id, status, due_date, assigned_at, completed_at
@@ -153,8 +153,8 @@ func (r *ChoreRepository) ListCurrentChoresByGroup(ctx context.Context, groupID 
 			&item.Chore.Rollover, &item.Chore.AssignmentType, &item.Chore.AssignmentConfig,
 			&item.Chore.IsActive,
 			&item.Chore.CreatedAt, &item.Chore.UpdatedAt,
-			&pending.ID, &pending.ChoreID, &pending.UserID, &pending.Status, &pending.DueDate, &pending.AssignedAt, &pending.CompletedAt,
-			&last.ID, &last.ChoreID, &last.UserID, &last.Status, &last.DueDate, &last.AssignedAt, &last.CompletedAt,
+			&pending.ID, &pending.ChoreID, &pending.UserID, &pending.Status, &pending.DueDate, &pending.AssignedAt, &pending.CompletedAt, &pending.SkipReason,
+			&last.ID, &last.ChoreID, &last.UserID, &last.Status, &last.DueDate, &last.AssignedAt, &last.CompletedAt, &last.SkipReason,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan current chore: %w", err)
 		}
@@ -225,6 +225,7 @@ type nullableAssignment struct {
 	DueDate     *time.Time
 	AssignedAt  *time.Time
 	CompletedAt *time.Time
+	SkipReason  *string
 }
 
 func (a nullableAssignment) assignment() *models.ChoreAssignment {
@@ -239,6 +240,7 @@ func (a nullableAssignment) assignment() *models.ChoreAssignment {
 		DueDate:     a.DueDate,
 		AssignedAt:  *a.AssignedAt,
 		CompletedAt: a.CompletedAt,
+		SkipReason:  a.SkipReason,
 	}
 }
 
@@ -249,15 +251,15 @@ func (r *ChoreRepository) UpdateChore(ctx context.Context, chore *models.Chore) 
 		SET name = $1, description = $2, rotation_type = $3, frequency = $4,
 			period_interval = $5, period_config = $6, start_date = $7,
 			track_date_only = $8, rollover = $9, assignment_type = $10,
-			assignment_config = $11, is_active = $12, updated_at = NOW()
-		WHERE id = $13
+			assignment_config = $11, is_active = $12, supplies = $13, updated_at = NOW()
+		WHERE id = $14
 		RETURNING updated_at
 	`
 	err := r.pool.QueryRow(ctx, query,
 		chore.Name, chore.Description, chore.RotationType,
 		chore.Frequency, chore.PeriodInterval, chore.PeriodConfig, chore.StartDate,
 		chore.TrackDateOnly, chore.Rollover, chore.AssignmentType,
-		chore.AssignmentConfig, chore.IsActive, chore.ID,
+		chore.AssignmentConfig, chore.IsActive, chore.Supplies, chore.ID,
 	).Scan(&chore.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -353,13 +355,13 @@ func (r *ChoreRepository) BulkUpdateRotationStates(ctx context.Context, states [
 func (r *ChoreRepository) CreateAssignment(ctx context.Context, assignment *models.ChoreAssignment) error {
 	assignment.ID = uuid.New()
 	query := `
-		INSERT INTO chore_assignments (id, chore_id, user_id, status, due_date, assigned_at, completed_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO chore_assignments (id, chore_id, user_id, status, due_date, assigned_at, completed_at, skip_reason)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 	_, err := r.pool.Exec(ctx, query,
 		assignment.ID, assignment.ChoreID, assignment.UserID,
 		assignment.Status, assignment.DueDate, assignment.AssignedAt,
-		assignment.CompletedAt,
+		assignment.CompletedAt, assignment.SkipReason,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create assignment: %w", err)
@@ -370,7 +372,7 @@ func (r *ChoreRepository) CreateAssignment(ctx context.Context, assignment *mode
 // ListAssignments retrieves assignments for a chore with pagination.
 func (r *ChoreRepository) ListAssignments(ctx context.Context, choreID uuid.UUID, limit, offset int) ([]models.ChoreAssignment, error) {
 	query := `
-		SELECT id, chore_id, user_id, status, due_date, assigned_at, completed_at
+		SELECT id, chore_id, user_id, status, due_date, assigned_at, completed_at, skip_reason
 		FROM chore_assignments
 		WHERE chore_id = $1
 		ORDER BY assigned_at DESC
@@ -388,7 +390,7 @@ func (r *ChoreRepository) ListAssignments(ctx context.Context, choreID uuid.UUID
 		var a models.ChoreAssignment
 		if err := rows.Scan(
 			&a.ID, &a.ChoreID, &a.UserID, &a.Status,
-			&a.DueDate, &a.AssignedAt, &a.CompletedAt,
+			&a.DueDate, &a.AssignedAt, &a.CompletedAt, &a.SkipReason,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan assignment: %w", err)
 		}
@@ -404,12 +406,12 @@ func (r *ChoreRepository) ListAssignments(ctx context.Context, choreID uuid.UUID
 func (r *ChoreRepository) UpdateAssignment(ctx context.Context, assignment *models.ChoreAssignment) error {
 	query := `
 		UPDATE chore_assignments
-		SET user_id = $1, status = $2, due_date = $3, completed_at = $4
-		WHERE id = $5
+		SET user_id = $1, status = $2, due_date = $3, completed_at = $4, skip_reason = $5
+		WHERE id = $6
 	`
 	tag, err := r.pool.Exec(ctx, query,
 		assignment.UserID, assignment.Status, assignment.DueDate,
-		assignment.CompletedAt, assignment.ID,
+		assignment.CompletedAt, assignment.SkipReason, assignment.ID,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update assignment: %w", err)
@@ -452,7 +454,7 @@ func (r *ChoreRepository) CreateCompletion(ctx context.Context, completion *mode
 // GetPendingAssignmentByChore retrieves the most recent pending assignment for a chore.
 func (r *ChoreRepository) GetPendingAssignmentByChore(ctx context.Context, choreID uuid.UUID) (*models.ChoreAssignment, error) {
 	query := `
-		SELECT id, chore_id, user_id, status, due_date, assigned_at, completed_at
+		SELECT id, chore_id, user_id, status, due_date, assigned_at, completed_at, skip_reason
 		FROM chore_assignments
 		WHERE chore_id = $1 AND status = 'pending'
 		ORDER BY assigned_at DESC
@@ -461,7 +463,7 @@ func (r *ChoreRepository) GetPendingAssignmentByChore(ctx context.Context, chore
 	var a models.ChoreAssignment
 	err := r.pool.QueryRow(ctx, query, choreID).Scan(
 		&a.ID, &a.ChoreID, &a.UserID, &a.Status,
-		&a.DueDate, &a.AssignedAt, &a.CompletedAt,
+		&a.DueDate, &a.AssignedAt, &a.CompletedAt, &a.SkipReason,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -470,4 +472,141 @@ func (r *ChoreRepository) GetPendingAssignmentByChore(ctx context.Context, chore
 		return nil, fmt.Errorf("failed to get pending assignment: %w", err)
 	}
 	return &a, nil
+}
+
+// ListDueAssignments returns pending assignments due within the given window.
+func (r *ChoreRepository) ListDueAssignments(ctx context.Context, from, to time.Time) ([]models.ChoreAssignment, error) {
+	query := `
+		SELECT id, chore_id, user_id, status, due_date, assigned_at, completed_at, skip_reason
+		FROM chore_assignments
+		WHERE status = 'pending' AND due_date >= $1 AND due_date <= $2
+		ORDER BY due_date ASC
+	`
+	rows, err := r.pool.Query(ctx, query, from, to)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list due assignments: %w", err)
+	}
+	defer rows.Close()
+
+	var assignments []models.ChoreAssignment
+	for rows.Next() {
+		var a models.ChoreAssignment
+		if err := rows.Scan(
+			&a.ID, &a.ChoreID, &a.UserID, &a.Status,
+			&a.DueDate, &a.AssignedAt, &a.CompletedAt, &a.SkipReason,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan due assignment: %w", err)
+		}
+		assignments = append(assignments, a)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("due assignment rows error: %w", err)
+	}
+	return assignments, nil
+}
+
+// CreateSubtask inserts a new chore subtask.
+func (r *ChoreRepository) CreateSubtask(ctx context.Context, subtask *models.ChoreSubtask) error {
+	subtask.ID = uuid.New()
+	query := `
+		INSERT INTO chore_subtasks (id, chore_id, title, completed, position, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+		RETURNING created_at, updated_at
+	`
+	return r.pool.QueryRow(ctx, query,
+		subtask.ID, subtask.ChoreID, subtask.Title, subtask.Completed, subtask.Position,
+	).Scan(&subtask.CreatedAt, &subtask.UpdatedAt)
+}
+
+// GetSubtaskByID retrieves a subtask by ID.
+func (r *ChoreRepository) GetSubtaskByID(ctx context.Context, id uuid.UUID) (*models.ChoreSubtask, error) {
+	query := `
+		SELECT id, chore_id, title, completed, position, created_at, updated_at
+		FROM chore_subtasks
+		WHERE id = $1
+	`
+	var s models.ChoreSubtask
+	err := r.pool.QueryRow(ctx, query, id).Scan(
+		&s.ID, &s.ChoreID, &s.Title, &s.Completed, &s.Position,
+		&s.CreatedAt, &s.UpdatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("subtask not found: %w", err)
+		}
+		return nil, fmt.Errorf("failed to get subtask: %w", err)
+	}
+	return &s, nil
+}
+
+// ListSubtasksByChore retrieves subtasks for a chore ordered by position.
+func (r *ChoreRepository) ListSubtasksByChore(ctx context.Context, choreID uuid.UUID) ([]models.ChoreSubtask, error) {
+	query := `
+		SELECT id, chore_id, title, completed, position, created_at, updated_at
+		FROM chore_subtasks
+		WHERE chore_id = $1
+		ORDER BY position ASC, created_at ASC
+	`
+	rows, err := r.pool.Query(ctx, query, choreID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list subtasks: %w", err)
+	}
+	defer rows.Close()
+
+	var subtasks []models.ChoreSubtask
+	for rows.Next() {
+		var s models.ChoreSubtask
+		if err := rows.Scan(
+			&s.ID, &s.ChoreID, &s.Title, &s.Completed, &s.Position,
+			&s.CreatedAt, &s.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan subtask: %w", err)
+		}
+		subtasks = append(subtasks, s)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("subtask rows error: %w", err)
+	}
+	return subtasks, nil
+}
+
+// UpdateSubtask updates a subtask.
+func (r *ChoreRepository) UpdateSubtask(ctx context.Context, subtask *models.ChoreSubtask) error {
+	query := `
+		UPDATE chore_subtasks
+		SET title = $1, completed = $2, position = $3, updated_at = NOW()
+		WHERE id = $4
+		RETURNING updated_at
+	`
+	err := r.pool.QueryRow(ctx, query,
+		subtask.Title, subtask.Completed, subtask.Position, subtask.ID,
+	).Scan(&subtask.UpdatedAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return fmt.Errorf("subtask not found: %w", err)
+		}
+		return fmt.Errorf("failed to update subtask: %w", err)
+	}
+	return nil
+}
+
+// DeleteSubtask deletes a subtask by ID.
+func (r *ChoreRepository) DeleteSubtask(ctx context.Context, id uuid.UUID) error {
+	tag, err := r.pool.Exec(ctx, `DELETE FROM chore_subtasks WHERE id = $1`, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete subtask: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("subtask not found")
+	}
+	return nil
+}
+
+// DeleteSubtasksByChore deletes all subtasks for a chore.
+func (r *ChoreRepository) DeleteSubtasksByChore(ctx context.Context, choreID uuid.UUID) error {
+	_, err := r.pool.Exec(ctx, `DELETE FROM chore_subtasks WHERE chore_id = $1`, choreID)
+	if err != nil {
+		return fmt.Errorf("failed to delete subtasks by chore: %w", err)
+	}
+	return nil
 }

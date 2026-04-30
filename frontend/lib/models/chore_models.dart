@@ -13,6 +13,7 @@ class Chore {
   final String assignmentType;
   final List<String> assignmentConfig;
   final bool isActive;
+  final List<String> supplies;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -31,6 +32,7 @@ class Chore {
     this.assignmentType = 'round-robin',
     this.assignmentConfig = const [],
     required this.isActive,
+    this.supplies = const [],
     required this.createdAt,
     required this.updatedAt,
   });
@@ -57,6 +59,9 @@ class Chore {
                 .map((v) => v as String)
                 .toList(),
         isActive: json['is_active'] as bool? ?? true,
+        supplies: (json['supplies'] as List<dynamic>? ?? const [])
+            .map((v) => v as String)
+            .toList(),
         createdAt: DateTime.parse(json['created_at'] as String),
         updatedAt: DateTime.parse(json['updated_at'] as String),
       );
@@ -77,6 +82,7 @@ class Chore {
         'assignment_type': assignmentType,
         'assignment_config': assignmentConfig,
         'is_active': isActive,
+        'supplies': supplies,
         'created_at': createdAt.toIso8601String(),
         'updated_at': updatedAt.toIso8601String(),
       };
@@ -96,6 +102,7 @@ class CreateChoreRequest {
   final String assignmentType;
   final List<String> assignmentConfig;
   final bool isActive;
+  final List<String> supplies;
   const CreateChoreRequest({
     required this.groupId,
     required this.name,
@@ -110,6 +117,7 @@ class CreateChoreRequest {
     this.assignmentType = 'round-robin',
     this.assignmentConfig = const [],
     this.isActive = true,
+    this.supplies = const [],
   });
   Map<String, dynamic> toJson() => {
         'group_id': groupId,
@@ -126,6 +134,7 @@ class CreateChoreRequest {
         'assignment_type': assignmentType,
         'assignment_config': assignmentConfig,
         'is_active': isActive,
+        'supplies': supplies,
       };
 }
 
@@ -142,6 +151,7 @@ class UpdateChoreRequest {
   final String? assignmentType;
   final List<String>? assignmentConfig;
   final bool? isActive;
+  final List<String>? supplies;
 
   const UpdateChoreRequest({
     this.name,
@@ -156,6 +166,7 @@ class UpdateChoreRequest {
     this.assignmentType,
     this.assignmentConfig,
     this.isActive,
+    this.supplies,
   });
 
   Map<String, dynamic> toJson() {
@@ -174,6 +185,7 @@ class UpdateChoreRequest {
     if (assignmentType != null) m['assignment_type'] = assignmentType;
     if (assignmentConfig != null) m['assignment_config'] = assignmentConfig;
     if (isActive != null) m['is_active'] = isActive;
+    if (supplies != null) m['supplies'] = supplies;
     return m;
   }
 }
@@ -206,6 +218,7 @@ class ChoreAssignment {
   final DateTime? dueDate;
   final DateTime assignedAt;
   final DateTime? completedAt;
+  final String? skipReason;
 
   const ChoreAssignment({
     required this.id,
@@ -215,6 +228,7 @@ class ChoreAssignment {
     required this.dueDate,
     required this.assignedAt,
     required this.completedAt,
+    this.skipReason,
   });
 
   factory ChoreAssignment.fromJson(Map<String, dynamic> json) =>
@@ -230,6 +244,7 @@ class ChoreAssignment {
         completedAt: json['completed_at'] != null
             ? DateTime.parse(json['completed_at'] as String)
             : null,
+        skipReason: json['skip_reason'] as String?,
       );
 }
 
@@ -323,4 +338,93 @@ class ChoreDetails {
         dueStatus: json['due_status'] as String? ?? 'unscheduled',
         assignedToMe: json['assigned_to_me'] as bool? ?? false,
       );
+}
+
+class SkipChoreRequest {
+  final String? skipReason;
+  const SkipChoreRequest({this.skipReason});
+  Map<String, dynamic> toJson() => {
+        if (skipReason != null) 'skip_reason': skipReason,
+      };
+}
+
+class ChoreSubtask {
+  final String id;
+  final String choreId;
+  final String title;
+  final bool completed;
+  final int position;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  const ChoreSubtask({
+    required this.id,
+    required this.choreId,
+    required this.title,
+    this.completed = false,
+    this.position = 0,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory ChoreSubtask.fromJson(Map<String, dynamic> json) => ChoreSubtask(
+        id: json['id'] as String,
+        choreId: json['chore_id'] as String,
+        title: json['title'] as String,
+        completed: json['completed'] as bool? ?? false,
+        position: json['position'] as int? ?? 0,
+        createdAt: DateTime.parse(json['created_at'] as String),
+        updatedAt: DateTime.parse(json['updated_at'] as String),
+      );
+
+  ChoreSubtask copyWith({
+    String? id,
+    String? choreId,
+    String? title,
+    bool? completed,
+    int? position,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) =>
+      ChoreSubtask(
+        id: id ?? this.id,
+        choreId: choreId ?? this.choreId,
+        title: title ?? this.title,
+        completed: completed ?? this.completed,
+        position: position ?? this.position,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+}
+
+class CreateSubtaskRequest {
+  final String title;
+  const CreateSubtaskRequest({required this.title});
+  Map<String, dynamic> toJson() => {'title': title};
+}
+
+class UpdateSubtaskRequest {
+  final String? title;
+  final bool? completed;
+  final int? position;
+  const UpdateSubtaskRequest({this.title, this.completed, this.position});
+  Map<String, dynamic> toJson() {
+    final m = <String, dynamic>{};
+    if (title != null) m['title'] = title;
+    if (completed != null) m['completed'] = completed;
+    if (position != null) m['position'] = position;
+    return m;
+  }
+}
+
+class ReorderSubtasksRequest {
+  final List<String> subtaskIds;
+  const ReorderSubtasksRequest({required this.subtaskIds});
+  Map<String, dynamic> toJson() => {'subtask_ids': subtaskIds};
+}
+
+class AddSuppliesToListRequest {
+  final String listId;
+  const AddSuppliesToListRequest({required this.listId});
+  Map<String, dynamic> toJson() => {'list_id': listId};
 }

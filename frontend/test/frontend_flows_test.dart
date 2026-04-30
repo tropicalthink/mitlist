@@ -542,9 +542,8 @@ void main() {
         NotificationPreferenceModel(
           id: 'pref-1',
           userId: userId,
-          type: 'household_updates',
-          enabled: true,
-          channel: 'push',
+          groupId: 'group-1',
+          pushEnabled: true,
         ),
       ],
     );

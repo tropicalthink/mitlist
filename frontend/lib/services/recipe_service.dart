@@ -159,6 +159,26 @@ class RecipeService {
     }
   }
 
+  Future<Map<String, dynamic>> addToList(
+    String recipeId,
+    String listId, {
+    int? servings,
+    List<String>? ingredientIds,
+  }) async {
+    try {
+      final data = <String, dynamic>{'list_id': listId};
+      if (servings != null) data['servings'] = servings;
+      if (ingredientIds != null && ingredientIds.isNotEmpty) {
+        data['ingredient_ids'] = ingredientIds;
+      }
+      final r = await _dio.post('/recipes/$recipeId/add-to-list', data: data);
+      return Map<String, dynamic>.from(r.data as Map);
+    } on DioException catch (e) {
+      _logger.e('Add recipe to list failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
   Future<Map<String, dynamic>> addMissingToList(
       String recipeId, String listId) async {
     try {

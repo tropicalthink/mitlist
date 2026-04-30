@@ -439,7 +439,8 @@ func newTemplateRouter(t *testing.T) (chi.Router, *TemplateHandler) {
 func newChoreRouter(t *testing.T) (chi.Router, *ChoreHandler) {
 	choreRepo := newTestChoreRepo()
 	groupRepo := newTestGroupRepo()
-	svc := services.NewChoreService(choreRepo, groupRepo)
+	listRepo := newTestListRepo()
+	svc := services.NewChoreService(choreRepo, groupRepo, listRepo)
 	h := NewChoreHandler(svc)
 
 	r := chi.NewRouter()

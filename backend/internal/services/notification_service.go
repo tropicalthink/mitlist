@@ -44,15 +44,8 @@ func (s *NotificationService) CreateNotification(ctx context.Context, n *models.
 	}
 
 	// Trigger push if enabled for this notification type.
-	prefs, err := s.notificationRepo.GetPreferences(ctx, n.UserID)
-	if err == nil {
-		for _, pref := range prefs {
-			if pref.Type == n.Type && pref.Enabled && pref.Channel == "push" {
-				_ = s.pushService.SendToUser(n.UserID, n.Title)
-				break
-			}
-		}
-	}
+	// TODO: map n.Type to preference flag and check push_enabled.
+	// Push delivery requires Firebase/APNS setup (Slice 7 placeholder).
 
 	return nil
 }
@@ -112,29 +105,53 @@ func (s *NotificationService) DeleteNotification(ctx context.Context, userID, no
 	return s.notificationRepo.DeleteNotification(ctx, notificationID)
 }
 
-// GetPreferences retrieves notification preferences for a user.
+// GetPreferences retrieves notification preferences for a user across all groups.
 func (s *NotificationService) GetPreferences(ctx context.Context, userID uuid.UUID) ([]models.NotificationPreference, error) {
-	return s.notificationRepo.GetPreferences(ctx, userID)
+	return s.notificationRepo.GetPreferencesByUser(ctx, userID)
 }
 
-// UpdatePreferences updates a notification preference.
-func (s *NotificationService) UpdatePreferences(ctx context.Context, userID uuid.UUID, pref *models.NotificationPreference) error {
-	existing, err := s.notificationRepo.GetPreferences(ctx, userID)
+// GetGroupPreference retrieves notification preferences for a user in a specific group.
+func (s *NotificationService) GetGroupPreference(ctx context.Context, userID, groupID uuid.UUID) (*models.NotificationPreference, error) {
+	pref, err := s.notificationRepo.GetPreference(ctx, userID, groupID)
 	if err != nil {
-		return fmt.Errorf("get preferences: %w", err)
-	}
-	found := false
-	for _, p := range existing {
-		if p.ID == pref.ID {
-			found = true
-			break
+		if errors.Is(err, pgx.ErrNoRows) {
+			// Return defaults
+			return &models.NotificationPreference{
+				UserID:          userID,
+				GroupID:         groupID,
+				ChoreDue:        true,
+				ChoreDueDayOf:   true,
+				ListItemAdded:   true,
+				ExpenseCreated:  true,
+				MealPlanChanged: true,
+				WeeklyDigest:    true,
+				PushEnabled:     true,
+			}, nil
 		}
+		return nil, fmt.Errorf("get preference: %w", err)
 	}
-	if !found {
-		return &api.NotFoundError{Resource: "notification preference", ID: pref.ID.String()}
-	}
+	return pref, nil
+}
+
+// UpdatePreferences upserts notification preferences for a user/group.
+func (s *NotificationService) UpdatePreferences(ctx context.Context, userID uuid.UUID, pref *models.NotificationPreference) error {
 	if pref.UserID != uuid.Nil && pref.UserID != userID {
 		return &api.PermissionDeniedError{Action: "update notification preference"}
 	}
-	return s.notificationRepo.UpdatePreferences(ctx, pref)
+	pref.UserID = userID
+	return s.notificationRepo.UpsertPreference(ctx, pref)
+}
+
+// WeeklyDigest aggregates household activity for the past week.
+// This is a skeleton; delivery via email/push requires external provider setup.
+func (s *NotificationService) WeeklyDigest(ctx context.Context, groupID uuid.UUID) (map[string]interface{}, error) {
+	// TODO: aggregate chores done, expenses added, lists updated, meal plans changed
+	return map[string]interface{}{
+		"group_id":   groupID,
+		"period":     "last_7_days",
+		"chores":     0,
+		"expenses":   0,
+		"lists":      0,
+		"meal_plans": 0,
+	}, nil
 }

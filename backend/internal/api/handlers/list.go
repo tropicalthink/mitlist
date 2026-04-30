@@ -28,6 +28,25 @@ func NewListHandler(service *services.ListService, financeService *services.Fina
 	return &ListHandler{service: service, financeService: financeService}
 }
 
+// ShoppingTripItem represents an item in a shopping trip projection.
+type ShoppingTripItem struct {
+	ID       string  `json:"id"`
+	Name     string  `json:"name"`
+	Quantity float64 `json:"quantity"`
+	Unit     string  `json:"unit"`
+	ListID   string  `json:"list_id"`
+	ListName string  `json:"list_name"`
+	StoreID  *string `json:"store_id,omitempty"`
+	Checked  bool    `json:"checked"`
+}
+
+// ShoppingTripResponse represents a grouped shopping trip.
+type ShoppingTripResponse struct {
+	Items      []ShoppingTripItem `json:"items"`
+	TotalItems int                `json:"total_items"`
+	Unchecked  int                `json:"unchecked"`
+}
+
 // CreateList handles POST /api/v1/lists.
 func (h *ListHandler) CreateList(w http.ResponseWriter, r *http.Request) {
 	user, ok := userFromContext(r)
@@ -594,4 +613,67 @@ func (h *ListHandler) GenerateExpense(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondJSON(w, http.StatusCreated, expense)
+}
+
+// GetShoppingTrip handles GET /api/v1/shopping/trip.
+func (h *ListHandler) GetShoppingTrip(w http.ResponseWriter, r *http.Request) {
+	user, ok := userFromContext(r)
+	if !ok {
+		respondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	listIDsStr := r.URL.Query()["list_id"]
+	if len(listIDsStr) == 0 {
+		respondError(w, &api.ValidationError{Field: "list_id", Message: "at least one list_id is required"})
+		return
+	}
+
+	listIDs := make([]uuid.UUID, 0, len(listIDsStr))
+	for _, idStr := range listIDsStr {
+		id, err := uuid.Parse(idStr)
+		if err != nil {
+			respondError(w, &api.ValidationError{Field: "list_id", Message: "invalid UUID: " + idStr})
+			return
+		}
+		listIDs = append(listIDs, id)
+	}
+
+	items, err := h.service.GetShoppingTrip(r.Context(), user, listIDs)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, items)
+}
+
+// BulkCompleteItems handles POST /api/v1/shopping/complete.
+func (h *ListHandler) BulkCompleteItems(w http.ResponseWriter, r *http.Request) {
+	user, ok := userFromContext(r)
+	if !ok {
+		respondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	var req struct {
+		ItemIDs []uuid.UUID `json:"item_ids"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, &api.ValidationError{Message: "invalid request body"})
+		return
+	}
+
+	if len(req.ItemIDs) == 0 {
+		respondError(w, &api.ValidationError{Field: "item_ids", Message: "item_ids is required"})
+		return
+	}
+
+	completed, err := h.service.BulkCompleteItems(r.Context(), user, req.ItemIDs)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]any{"completed": completed})
 }

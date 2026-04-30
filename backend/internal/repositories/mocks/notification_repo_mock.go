@@ -49,7 +49,15 @@ func (m *MockNotificationRepo) DeleteNotification(ctx context.Context, id uuid.U
 	return args.Error(0)
 }
 
-func (m *MockNotificationRepo) GetPreferences(ctx context.Context, userID uuid.UUID) ([]models.NotificationPreference, error) {
+func (m *MockNotificationRepo) GetPreference(ctx context.Context, userID, groupID uuid.UUID) (*models.NotificationPreference, error) {
+	args := m.Called(ctx, userID, groupID)
+	if p := args.Get(0); p != nil {
+		return p.(*models.NotificationPreference), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockNotificationRepo) GetPreferencesByUser(ctx context.Context, userID uuid.UUID) ([]models.NotificationPreference, error) {
 	args := m.Called(ctx, userID)
 	if p := args.Get(0); p != nil {
 		return p.([]models.NotificationPreference), args.Error(1)
@@ -57,7 +65,7 @@ func (m *MockNotificationRepo) GetPreferences(ctx context.Context, userID uuid.U
 	return nil, args.Error(1)
 }
 
-func (m *MockNotificationRepo) UpdatePreferences(ctx context.Context, pref *models.NotificationPreference) error {
+func (m *MockNotificationRepo) UpsertPreference(ctx context.Context, pref *models.NotificationPreference) error {
 	args := m.Called(ctx, pref)
 	return args.Error(0)
 }

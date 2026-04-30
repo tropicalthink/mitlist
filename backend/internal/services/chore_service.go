@@ -21,13 +21,15 @@ import (
 type ChoreService struct {
 	choreRepo repositories.ChoreRepo
 	groupRepo repositories.GroupRepo
+	listRepo  repositories.ListRepo
 }
 
 // NewChoreService creates a new ChoreService.
-func NewChoreService(choreRepo repositories.ChoreRepo, groupRepo repositories.GroupRepo) *ChoreService {
+func NewChoreService(choreRepo repositories.ChoreRepo, groupRepo repositories.GroupRepo, listRepo repositories.ListRepo) *ChoreService {
 	return &ChoreService{
 		choreRepo: choreRepo,
 		groupRepo: groupRepo,
+		listRepo:  listRepo,
 	}
 }
 
@@ -370,7 +372,7 @@ func (s *ChoreService) CompleteChore(ctx context.Context, user *models.User, cho
 }
 
 // SkipChore marks the current pending assignment as skipped and rotates.
-func (s *ChoreService) SkipChore(ctx context.Context, user *models.User, choreID uuid.UUID) error {
+func (s *ChoreService) SkipChore(ctx context.Context, user *models.User, choreID uuid.UUID, skipReason *string) error {
 	if err := s.requireActiveVerifiedUser(user); err != nil {
 		return err
 	}
@@ -399,6 +401,7 @@ func (s *ChoreService) SkipChore(ctx context.Context, user *models.User, choreID
 	now := time.Now().UTC()
 	assignment.Status = "skipped"
 	assignment.CompletedAt = &now
+	assignment.SkipReason = skipReason
 	if err := s.choreRepo.UpdateAssignment(ctx, assignment); err != nil {
 		return fmt.Errorf("failed to update assignment: %w", err)
 	}
@@ -775,4 +778,186 @@ func indexOfUUID(values []uuid.UUID, target uuid.UUID) int {
 		}
 	}
 	return 0
+}
+
+// ListSubtasks returns subtasks for a chore.
+func (s *ChoreService) ListSubtasks(ctx context.Context, user *models.User, choreID uuid.UUID) ([]models.ChoreSubtask, error) {
+	if err := s.requireActiveVerifiedUser(user); err != nil {
+		return nil, err
+	}
+	chore, err := s.choreRepo.GetChoreByID(ctx, choreID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, &api.NotFoundError{Resource: "chore", ID: choreID.String()}
+		}
+		return nil, fmt.Errorf("failed to get chore: %w", err)
+	}
+	if err := s.requireMembership(ctx, user.ID, chore.GroupID); err != nil {
+		return nil, err
+	}
+	return s.choreRepo.ListSubtasksByChore(ctx, choreID)
+}
+
+// CreateSubtask creates a subtask for a chore.
+func (s *ChoreService) CreateSubtask(ctx context.Context, user *models.User, subtask *models.ChoreSubtask) (*models.ChoreSubtask, error) {
+	if err := s.requireActiveVerifiedUser(user); err != nil {
+		return nil, err
+	}
+	chore, err := s.choreRepo.GetChoreByID(ctx, subtask.ChoreID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, &api.NotFoundError{Resource: "chore", ID: subtask.ChoreID.String()}
+		}
+		return nil, fmt.Errorf("failed to get chore: %w", err)
+	}
+	if err := s.requireMembership(ctx, user.ID, chore.GroupID); err != nil {
+		return nil, err
+	}
+	if subtask.Title == "" {
+		return nil, &api.ValidationError{Field: "title", Message: "subtask title is required"}
+	}
+	subtasks, err := s.choreRepo.ListSubtasksByChore(ctx, subtask.ChoreID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list subtasks: %w", err)
+	}
+	subtask.Position = len(subtasks)
+	if err := s.choreRepo.CreateSubtask(ctx, subtask); err != nil {
+		return nil, fmt.Errorf("failed to create subtask: %w", err)
+	}
+	return subtask, nil
+}
+
+// UpdateSubtask updates a subtask.
+func (s *ChoreService) UpdateSubtask(ctx context.Context, user *models.User, subtask *models.ChoreSubtask) (*models.ChoreSubtask, error) {
+	if err := s.requireActiveVerifiedUser(user); err != nil {
+		return nil, err
+	}
+	existing, err := s.choreRepo.GetSubtaskByID(ctx, subtask.ID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, &api.NotFoundError{Resource: "subtask", ID: subtask.ID.String()}
+		}
+		return nil, fmt.Errorf("failed to get subtask: %w", err)
+	}
+	chore, err := s.choreRepo.GetChoreByID(ctx, existing.ChoreID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get chore: %w", err)
+	}
+	if err := s.requireMembership(ctx, user.ID, chore.GroupID); err != nil {
+		return nil, err
+	}
+	if subtask.Title != "" {
+		existing.Title = subtask.Title
+	}
+	existing.Completed = subtask.Completed
+	if subtask.Position >= 0 {
+		existing.Position = subtask.Position
+	}
+	if err := s.choreRepo.UpdateSubtask(ctx, existing); err != nil {
+		return nil, fmt.Errorf("failed to update subtask: %w", err)
+	}
+	return existing, nil
+}
+
+// DeleteSubtask deletes a subtask.
+func (s *ChoreService) DeleteSubtask(ctx context.Context, user *models.User, subtaskID uuid.UUID) error {
+	if err := s.requireActiveVerifiedUser(user); err != nil {
+		return err
+	}
+	existing, err := s.choreRepo.GetSubtaskByID(ctx, subtaskID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return &api.NotFoundError{Resource: "subtask", ID: subtaskID.String()}
+		}
+		return fmt.Errorf("failed to get subtask: %w", err)
+	}
+	chore, err := s.choreRepo.GetChoreByID(ctx, existing.ChoreID)
+	if err != nil {
+		return fmt.Errorf("failed to get chore: %w", err)
+	}
+	if err := s.requireMembership(ctx, user.ID, chore.GroupID); err != nil {
+		return err
+	}
+	return s.choreRepo.DeleteSubtask(ctx, subtaskID)
+}
+
+// FindDueChores returns pending assignments due within the given window.
+// This is the foundation for the due reminder job (Slice 7 will wire push delivery).
+func (s *ChoreService) FindDueChores(ctx context.Context, window time.Duration) ([]models.ChoreAssignment, error) {
+	now := time.Now().UTC()
+	until := now.Add(window)
+	return s.choreRepo.ListDueAssignments(ctx, now, until)
+}
+
+// ReorderSubtasks updates positions for subtasks of a chore.
+func (s *ChoreService) ReorderSubtasks(ctx context.Context, user *models.User, choreID uuid.UUID, subtaskIDs []uuid.UUID) error {
+	if err := s.requireActiveVerifiedUser(user); err != nil {
+		return err
+	}
+	chore, err := s.choreRepo.GetChoreByID(ctx, choreID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return &api.NotFoundError{Resource: "chore", ID: choreID.String()}
+		}
+		return fmt.Errorf("failed to get chore: %w", err)
+	}
+	if err := s.requireMembership(ctx, user.ID, chore.GroupID); err != nil {
+		return err
+	}
+	for i, id := range subtaskIDs {
+		subtask, err := s.choreRepo.GetSubtaskByID(ctx, id)
+		if err != nil {
+			return fmt.Errorf("subtask %s not found: %w", id, err)
+		}
+		if subtask.ChoreID != choreID {
+			return &api.ValidationError{Field: "subtask_ids", Message: "subtask does not belong to chore"}
+		}
+		subtask.Position = i
+		if err := s.choreRepo.UpdateSubtask(ctx, subtask); err != nil {
+			return fmt.Errorf("failed to update subtask position: %w", err)
+		}
+	}
+	return nil
+}
+
+// AddSuppliesToList creates list items from a chore's supplies on a specified list.
+func (s *ChoreService) AddSuppliesToList(ctx context.Context, user *models.User, choreID uuid.UUID, listID uuid.UUID) error {
+	if err := s.requireActiveVerifiedUser(user); err != nil {
+		return err
+	}
+	chore, err := s.choreRepo.GetChoreByID(ctx, choreID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return &api.NotFoundError{Resource: "chore", ID: choreID.String()}
+		}
+		return fmt.Errorf("failed to get chore: %w", err)
+	}
+	if err := s.requireMembership(ctx, user.ID, chore.GroupID); err != nil {
+		return err
+	}
+	list, err := s.listRepo.GetListByID(ctx, listID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return &api.NotFoundError{Resource: "list", ID: listID.String()}
+		}
+		return fmt.Errorf("failed to get list: %w", err)
+	}
+	if list.GroupID != chore.GroupID {
+		return &api.ValidationError{Field: "list_id", Message: "list does not belong to same group"}
+	}
+
+	for _, supply := range chore.Supplies {
+		if supply == "" {
+			continue
+		}
+		item := &models.ListItem{
+			ListID:  listID,
+			Name:    supply,
+			Checked: false,
+		}
+		if err := s.listRepo.CreateItem(ctx, item); err != nil {
+			return fmt.Errorf("failed to create list item for supply %s: %w", supply, err)
+		}
+	}
+	return nil
 }

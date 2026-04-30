@@ -19,4 +19,20 @@ type Notification struct {
 	CreatedAt time.Time       `json:"created_at"`
 }
 
+// NotificationPreference controls which push/in-app notifications a user receives for a group.
+type NotificationPreference struct {
+	ID              uuid.UUID `json:"id"`
+	UserID          uuid.UUID `json:"user_id"`
+	GroupID         uuid.UUID `json:"group_id"`
+	ChoreDue        bool      `json:"chore_due"`
+	ChoreDueDayOf   bool      `json:"chore_due_day_of"`
+	ListItemAdded   bool      `json:"list_item_added"`
+	ExpenseCreated  bool      `json:"expense_created"`
+	MealPlanChanged bool      `json:"meal_plan_changed"`
+	WeeklyDigest    bool      `json:"weekly_digest"`
+	PushEnabled     bool      `json:"push_enabled"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+}
+
 

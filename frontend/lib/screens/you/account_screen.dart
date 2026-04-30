@@ -83,9 +83,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       final notifService =
           await ref.read(notificationServiceProviderAsync.future);
       final prefs = await notifService.getPreferences();
-      final pushPrefs = prefs.where((p) => p.channel == 'push').toList();
       notificationsEnabled =
-          pushPrefs.isEmpty ? true : pushPrefs.every((p) => p.enabled);
+          prefs.isEmpty ? true : prefs.every((p) => p.pushEnabled);
     } catch (_) {
       // Non-fatal: default to enabled. We'll still render the profile screen.
       notificationsEnabled = true;
@@ -375,15 +374,19 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 try {
                   final notifService = await ref.read(notificationServiceProviderAsync.future);
                   final prefs = await notifService.getPreferences();
-                  final pushPrefs = prefs.where((p) => p.channel == 'push').toList();
-                  for (final p in pushPrefs) {
+                  for (final p in prefs) {
                     await notifService.updatePreference(
                       NotificationPreferenceModel(
                         id: p.id,
                         userId: p.userId,
-                        type: p.type,
-                        enabled: value,
-                        channel: p.channel,
+                        groupId: p.groupId,
+                        pushEnabled: value,
+                        choreDue: p.choreDue,
+                        choreDueDayOf: p.choreDueDayOf,
+                        listItemAdded: p.listItemAdded,
+                        expenseCreated: p.expenseCreated,
+                        mealPlanChanged: p.mealPlanChanged,
+                        weeklyDigest: p.weeklyDigest,
                       ),
                     );
                   }
