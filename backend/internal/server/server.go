@@ -11,11 +11,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 
-	"github.com/yourorg/mitlist/internal/config"
-	"github.com/yourorg/mitlist/internal/container"
-	"github.com/yourorg/mitlist/internal/jobs"
-	"github.com/yourorg/mitlist/internal/middleware"
-	"github.com/yourorg/mitlist/pkg/logger"
+	"github.com/mitlist-app/mitlist/internal/config"
+	"github.com/mitlist-app/mitlist/internal/container"
+	"github.com/mitlist-app/mitlist/internal/jobs"
+	"github.com/mitlist-app/mitlist/internal/middleware"
+	"github.com/mitlist-app/mitlist/pkg/logger"
 )
 
 // Server wraps the chi router and HTTP server with graceful shutdown.

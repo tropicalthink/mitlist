@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/yourorg/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/models"
 )
 
 func TestAuthRepository_CreateOAuthAccount(t *testing.T) {

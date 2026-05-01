@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/yourorg/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/models"
 )
 
 // UserRepo is the interface for user repository operations.

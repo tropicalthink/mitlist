@@ -2,7 +2,7 @@ package services
 
 import (
 	"github.com/google/uuid"
-	"github.com/yourorg/mitlist/internal/services/jwt"
+	"github.com/mitlist-app/mitlist/internal/services/jwt"
 )
 
 // JWTService defines the interface for JWT operations.

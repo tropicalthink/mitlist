@@ -6,13 +6,13 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
-	"github.com/yourorg/mitlist/internal/api"
-	"github.com/yourorg/mitlist/internal/config"
-	"github.com/yourorg/mitlist/internal/container"
-	"github.com/yourorg/mitlist/internal/middleware"
-	"github.com/yourorg/mitlist/internal/models"
-	"github.com/yourorg/mitlist/internal/services"
-	jwtservice "github.com/yourorg/mitlist/internal/services/jwt"
+	"github.com/mitlist-app/mitlist/internal/api"
+	"github.com/mitlist-app/mitlist/internal/config"
+	"github.com/mitlist-app/mitlist/internal/container"
+	"github.com/mitlist-app/mitlist/internal/middleware"
+	"github.com/mitlist-app/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/services"
+	jwtservice "github.com/mitlist-app/mitlist/internal/services/jwt"
 )
 
 // AuthHandler exposes authentication and user management endpoints.

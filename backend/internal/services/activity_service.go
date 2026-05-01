@@ -5,8 +5,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/yourorg/mitlist/internal/api"
-	"github.com/yourorg/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/api"
+	"github.com/mitlist-app/mitlist/internal/models"
 )
 
 // ActivityRepo is the interface for activity repository operations.

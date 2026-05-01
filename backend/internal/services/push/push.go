@@ -2,8 +2,8 @@ package push
 
 import (
 	"github.com/google/uuid"
-	"github.com/yourorg/mitlist/internal/config"
-	"github.com/yourorg/mitlist/pkg/logger"
+	"github.com/mitlist-app/mitlist/internal/config"
+	"github.com/mitlist-app/mitlist/pkg/logger"
 )
 
 // Service provides push notification operations.

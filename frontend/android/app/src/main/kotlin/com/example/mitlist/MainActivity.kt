@@ -1,4 +1,4 @@
-package com.example.goflutter
+package com.example.mitlist
 
 import android.content.ActivityNotFoundException
 import android.content.Intent

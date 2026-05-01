@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -167,47 +165,6 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     }
   }
 
-  Future<void> _uploadDiagnosticAttachment() async {
-    try {
-      final repo = await ref.read(
-        attachmentRepositoryProvider.future,
-      );
-      final bytes = utf8.encode(
-        'mitlist attachment diagnostic\n'
-        'group=${widget.groupId}\n'
-        'ts=${DateTime.now().toIso8601String()}\n',
-      );
-      final a = await repo.uploadAttachment(
-        groupId: widget.groupId,
-        purpose: 'debug_diagnostic',
-        filename: 'diagnostic.txt',
-        contentType: 'text/plain; charset=utf-8',
-        bytes: Uint8List.fromList(bytes),
-      );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Uploaded diagnostic ${a.id}',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Diagnostic upload failed: $e',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -313,22 +270,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                             icon: const Icon(Icons.person_outline),
                             onPressed: () => context.pushNamed('you'),
                           ),
-                          if (!kReleaseMode)
-                            PopupMenuButton<String>(
-                              tooltip: 'Developer tools',
-                              icon: const Icon(Icons.more_horiz),
-                              onSelected: (value) {
-                                if (value == 'diagnostic') {
-                                  _uploadDiagnosticAttachment();
-                                }
-                              },
-                              itemBuilder: (_) => const [
-                                PopupMenuItem(
-                                  value: 'diagnostic',
-                                  child: Text('Upload diagnostic file'),
-                                ),
-                              ],
-                            ),
+
                           const SizedBox(width: MitlistSpacing.xs),
                         ],
                       ),
@@ -1564,17 +1506,9 @@ class _WallSection extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                'Flat Wall',
+                'Activity',
                 style: textTheme.titleMedium,
               ),
-            ),
-            TextButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Wall details coming soon')),
-                );
-              },
-              child: const Text('See all'),
             ),
           ],
         ),

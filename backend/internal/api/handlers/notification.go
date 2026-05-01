@@ -5,9 +5,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/yourorg/mitlist/internal/api"
-	"github.com/yourorg/mitlist/internal/models"
-	"github.com/yourorg/mitlist/internal/services"
+	"github.com/mitlist-app/mitlist/internal/api"
+	"github.com/mitlist-app/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/services"
 )
 
 // NotificationHandler exposes notification endpoints.

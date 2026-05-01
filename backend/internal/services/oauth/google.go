@@ -10,7 +10,7 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 
-	"github.com/yourorg/mitlist/internal/config"
+	"github.com/mitlist-app/mitlist/internal/config"
 )
 
 // GoogleUser represents the userinfo response from Google.

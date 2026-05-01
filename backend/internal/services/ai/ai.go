@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/yourorg/mitlist/internal/config"
+	"github.com/mitlist-app/mitlist/internal/config"
 )
 
 const (

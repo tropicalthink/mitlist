@@ -16,7 +16,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/oauth2"
 
-	"github.com/yourorg/mitlist/internal/config"
+	"github.com/mitlist-app/mitlist/internal/config"
 )
 
 // AppleUser represents the claims extracted from an Apple identity token.

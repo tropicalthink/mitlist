@@ -2,7 +2,7 @@ package mocks
 
 import (
 	"github.com/stretchr/testify/mock"
-	"github.com/yourorg/mitlist/internal/services/jwt"
+	"github.com/mitlist-app/mitlist/internal/services/jwt"
 )
 
 // MockJWTService is a mock implementation of the JWT service.

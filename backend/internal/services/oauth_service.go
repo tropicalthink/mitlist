@@ -7,10 +7,10 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
 
-	"github.com/yourorg/mitlist/internal/api"
-	"github.com/yourorg/mitlist/internal/models"
-	"github.com/yourorg/mitlist/internal/repositories"
-	oauthclient "github.com/yourorg/mitlist/internal/services/oauth"
+	"github.com/mitlist-app/mitlist/internal/api"
+	"github.com/mitlist-app/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/repositories"
+	oauthclient "github.com/mitlist-app/mitlist/internal/services/oauth"
 )
 
 // OAuthService handles OAuth login flows.

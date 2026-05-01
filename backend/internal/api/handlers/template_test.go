@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/yourorg/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/models"
 )
 
 func TestTemplate_CreateTemplate(t *testing.T) {

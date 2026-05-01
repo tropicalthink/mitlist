@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/yourorg/mitlist/internal/config"
+	"github.com/mitlist-app/mitlist/internal/config"
 )
 
 // VAPIDHandler returns the VAPID public key.

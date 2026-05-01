@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/yourorg/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/models"
 )
 
 // MealPlanRepo handles raw SQL operations for meal plans.

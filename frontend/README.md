@@ -1,4 +1,4 @@
-# goflutter
+# mitlist
 
 A new Flutter project.
 

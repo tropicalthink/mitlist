@@ -7,8 +7,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
-	"github.com/yourorg/mitlist/internal/api"
-	"github.com/yourorg/mitlist/internal/services"
+	"github.com/mitlist-app/mitlist/internal/api"
+	"github.com/mitlist-app/mitlist/internal/services"
 )
 
 // GroupHandler handles group-related HTTP endpoints.

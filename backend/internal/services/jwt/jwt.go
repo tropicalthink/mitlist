@@ -10,8 +10,8 @@ import (
 	golangjwt "github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 
-	"github.com/yourorg/mitlist/internal/config"
-	"github.com/yourorg/mitlist/internal/redis"
+	"github.com/mitlist-app/mitlist/internal/config"
+	"github.com/mitlist-app/mitlist/internal/redis"
 )
 
 const (

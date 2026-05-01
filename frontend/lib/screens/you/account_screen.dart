@@ -3,14 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../models/auth_models.dart';
-import '../../models/notification_models.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/notification_provider.dart';
-import '../../theme/animations.dart';
 import '../../theme/colors.dart';
-import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
-import '../../theme/theme.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
@@ -33,7 +28,6 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
 
   String _name = '';
   String _email = '';
-  bool _notificationsEnabled = true;
   bool _isEditingName = false;
 
   late final TextEditingController _nameController;
@@ -64,7 +58,6 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
 
   Future<void> _loadData() async {
     User? user;
-    bool? notificationsEnabled;
 
     try {
       final authService = await ref.read(authServiceProviderAsync.future);
@@ -79,22 +72,10 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       return;
     }
 
-    try {
-      final notifService =
-          await ref.read(notificationServiceProviderAsync.future);
-      final prefs = await notifService.getPreferences();
-      notificationsEnabled =
-          prefs.isEmpty ? true : prefs.every((p) => p.pushEnabled);
-    } catch (_) {
-      // Non-fatal: default to enabled. We'll still render the profile screen.
-      notificationsEnabled = true;
-    }
-
     if (!mounted) return;
     setState(() {
       _name = user!.fullName;
       _email = user.email;
-      _notificationsEnabled = notificationsEnabled ?? true;
       _isLoading = false;
       _error = null;
     });
@@ -356,46 +337,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     return AppCard(
       child: Column(
         children: [
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const AppIcon(name: 'bell'),
-            title: const Text('Notifications'),
-            trailing: _NeoSwitch(
-              value: _notificationsEnabled,
-              onChanged: (value) async {
-                setState(() {
-                  _notificationsEnabled = value;
-                  _error = null;
-                });
-                try {
-                  final notifService = await ref.read(notificationServiceProviderAsync.future);
-                  final prefs = await notifService.getPreferences();
-                  for (final p in prefs) {
-                    await notifService.updatePreference(
-                      NotificationPreferenceModel(
-                        id: p.id,
-                        userId: p.userId,
-                        groupId: p.groupId,
-                        pushEnabled: value,
-                        choreDue: p.choreDue,
-                        choreDueDayOf: p.choreDueDayOf,
-                        listItemAdded: p.listItemAdded,
-                        expenseCreated: p.expenseCreated,
-                        mealPlanChanged: p.mealPlanChanged,
-                        weeklyDigest: p.weeklyDigest,
-                      ),
-                    );
-                  }
-                } catch (e) {
-                  if (!mounted) return;
-                  setState(() {
-                    _error = 'Failed to update notification preferences.';
-                  });
-                }
-              },
-            ),
-          ),
-          const Divider(),
+
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const AppIcon(name: 'inbox'),
@@ -485,58 +427,6 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           const SizedBox(height: MitlistSpacing.md),
           _buildDangerZone(),
         ],
-      ),
-    );
-  }
-}
-
-/// A neobrutalist toggle switch with a square track and 2dp border.
-class _NeoSwitch extends StatelessWidget {
-  final bool value;
-  final ValueChanged<bool>? onChanged;
-
-  const _NeoSwitch({required this.value, this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = onChanged != null;
-
-    return GestureDetector(
-      onTap: enabled ? () => onChanged!(!value) : null,
-      child: AnimatedContainer(
-        duration: MitlistAnimations.micro,
-        width: MitlistSpacing.space12,
-        height: MitlistSpacing.space7,
-        decoration: BoxDecoration(
-          color: value ? MitlistColors.primary500 : MitlistColors.surfacePrimary,
-          border: Border.all(
-            color: MitlistColors.borderPrimary,
-            width: MitlistSpacing.space1 / 2,
-          ),
-          boxShadow:
-              enabled ? MitlistShadows.shadowSoft : MitlistShadows.shadowNone,
-        ),
-        child: Stack(
-          children: [
-            AnimatedPositioned(
-              duration: MitlistAnimations.micro,
-              curve: MitlistTheme.easeMicro,
-              left: value ? MitlistSpacing.space6 : MitlistSpacing.space1,
-              top: MitlistSpacing.space1,
-              child: Container(
-                width: MitlistSpacing.space5,
-                height: MitlistSpacing.space5,
-                decoration: BoxDecoration(
-                  color: MitlistColors.surfacePrimary,
-                  border: Border.all(
-                    color: MitlistColors.borderPrimary,
-                    width: MitlistSpacing.space1 / 2,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

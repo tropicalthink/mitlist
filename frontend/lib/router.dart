@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,7 +22,6 @@ import 'screens/auth/oauth_callback_screen.dart';
 import 'screens/home/household_hub_screen.dart';
 import 'screens/lists/list_detail_screen.dart';
 import 'screens/share_target_screen.dart';
-import 'screens/integration_test_screen.dart';
 import 'screens/notifications/notifications_screen.dart';
 import 'screens/recipes/recipes_screen.dart';
 import 'screens/meal_plans/meal_plan_screen.dart';
@@ -104,12 +102,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'shareTarget',
         builder: (context, state) => const ShareTargetScreen(),
       ),
-      if (!kReleaseMode)
-        GoRoute(
-          path: '/integration-test',
-          name: 'integrationTest',
-          builder: (context, state) => const IntegrationTestScreen(),
-        ),
+
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
         builder: (context, state, child) => BottomNavScaffold(child: child),

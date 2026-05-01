@@ -16,7 +16,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 
-	"github.com/yourorg/mitlist/internal/security"
+	"github.com/mitlist-app/mitlist/internal/security"
 )
 
 const maxRecipeResponseBytes = 5 * 1024 * 1024

@@ -1,4 +1,4 @@
-module github.com/yourorg/mitlist
+module github.com/mitlist-app/mitlist
 
 go 1.25.1
 

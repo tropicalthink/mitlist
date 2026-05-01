@@ -8,8 +8,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/yourorg/mitlist/internal/config"
-	"github.com/yourorg/mitlist/pkg/logger"
+	"github.com/mitlist-app/mitlist/internal/config"
+	"github.com/mitlist-app/mitlist/pkg/logger"
 )
 
 const (

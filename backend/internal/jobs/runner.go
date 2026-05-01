@@ -8,7 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/robfig/cron/v3"
-	"github.com/yourorg/mitlist/pkg/logger"
+	"github.com/mitlist-app/mitlist/pkg/logger"
 )
 
 // Runner manages all background jobs using robfig/cron/v3.

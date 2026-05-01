@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/yourorg/mitlist/pkg/logger"
+	"github.com/mitlist-app/mitlist/pkg/logger"
 )
 
 // LoggingMiddleware logs structured request details using zerolog.

@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/yourorg/mitlist/internal/config"
+	"github.com/mitlist-app/mitlist/internal/config"
 )
 
 // DebugHandler exposes administrative debug endpoints.

@@ -9,10 +9,10 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/yourorg/mitlist/internal/api"
-	"github.com/yourorg/mitlist/internal/config"
-	"github.com/yourorg/mitlist/internal/services"
-	oauthclient "github.com/yourorg/mitlist/internal/services/oauth"
+	"github.com/mitlist-app/mitlist/internal/api"
+	"github.com/mitlist-app/mitlist/internal/config"
+	"github.com/mitlist-app/mitlist/internal/services"
+	oauthclient "github.com/mitlist-app/mitlist/internal/services/oauth"
 )
 
 // OAuthHandler handles OAuth initiation and callback endpoints.

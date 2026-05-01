@@ -7,8 +7,8 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"github.com/yourorg/mitlist/internal/config"
-	"github.com/yourorg/mitlist/pkg/logger"
+	"github.com/mitlist-app/mitlist/internal/config"
+	"github.com/mitlist-app/mitlist/pkg/logger"
 )
 
 // RedisClient wraps go-redis/v9 with application-level conveniences.

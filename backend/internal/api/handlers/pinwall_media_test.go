@@ -9,11 +9,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
-	"github.com/yourorg/mitlist/internal/config"
-	"github.com/yourorg/mitlist/internal/models"
-	"github.com/yourorg/mitlist/internal/repositories"
-	"github.com/yourorg/mitlist/internal/services"
-	storagesvc "github.com/yourorg/mitlist/internal/services/storage"
+	"github.com/mitlist-app/mitlist/internal/config"
+	"github.com/mitlist-app/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/repositories"
+	"github.com/mitlist-app/mitlist/internal/services"
+	storagesvc "github.com/mitlist-app/mitlist/internal/services/storage"
 )
 
 func TestPinwallMedia_AttachAndList(t *testing.T) {

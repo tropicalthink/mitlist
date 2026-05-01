@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
-	"github.com/yourorg/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/models"
 )
 
 // MockFinanceRepo is a mock implementation of repositories.FinanceRepoIface.

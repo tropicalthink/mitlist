@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/yourorg/mitlist/internal/models"
-	"github.com/yourorg/mitlist/internal/services"
+	"github.com/mitlist-app/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/services"
 )
 
 // TestE2E_ListToExpenseFlow verifies the happy path: create list → add items with prices → cost summary → generate expense.

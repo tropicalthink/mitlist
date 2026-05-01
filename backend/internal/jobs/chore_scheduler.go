@@ -10,9 +10,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/yourorg/mitlist/internal/choreschedule"
-	"github.com/yourorg/mitlist/internal/models"
-	"github.com/yourorg/mitlist/pkg/logger"
+	"github.com/mitlist-app/mitlist/internal/choreschedule"
+	"github.com/mitlist-app/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/pkg/logger"
 )
 
 // ChoreScheduler queries active scheduled chores and creates assignments

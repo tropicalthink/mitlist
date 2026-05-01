@@ -8,16 +8,16 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/yourorg/mitlist/internal/api/handlers"
-	"github.com/yourorg/mitlist/internal/config"
-	"github.com/yourorg/mitlist/internal/container"
-	"github.com/yourorg/mitlist/internal/db"
-	"github.com/yourorg/mitlist/internal/jobs"
-	"github.com/yourorg/mitlist/internal/middleware"
-	"github.com/yourorg/mitlist/internal/redis"
-	"github.com/yourorg/mitlist/internal/server"
-	"github.com/yourorg/mitlist/internal/services"
-	"github.com/yourorg/mitlist/pkg/logger"
+	"github.com/mitlist-app/mitlist/internal/api/handlers"
+	"github.com/mitlist-app/mitlist/internal/config"
+	"github.com/mitlist-app/mitlist/internal/container"
+	"github.com/mitlist-app/mitlist/internal/db"
+	"github.com/mitlist-app/mitlist/internal/jobs"
+	"github.com/mitlist-app/mitlist/internal/middleware"
+	"github.com/mitlist-app/mitlist/internal/redis"
+	"github.com/mitlist-app/mitlist/internal/server"
+	"github.com/mitlist-app/mitlist/internal/services"
+	"github.com/mitlist-app/mitlist/pkg/logger"
 )
 
 func main() {

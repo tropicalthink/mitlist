@@ -12,8 +12,8 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 
-	"github.com/yourorg/mitlist/internal/config"
-	"github.com/yourorg/mitlist/pkg/logger"
+	"github.com/mitlist-app/mitlist/internal/config"
+	"github.com/mitlist-app/mitlist/pkg/logger"
 )
 
 // RunMigrations applies all pending database migrations before the API starts

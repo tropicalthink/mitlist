@@ -8,7 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/yourorg/mitlist/internal/redis"
+	"github.com/mitlist-app/mitlist/internal/redis"
 )
 
 // Metrics holds Prometheus metric collectors.

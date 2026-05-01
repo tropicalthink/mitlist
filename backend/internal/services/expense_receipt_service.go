@@ -8,10 +8,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/yourorg/mitlist/internal/api"
-	"github.com/yourorg/mitlist/internal/models"
-	"github.com/yourorg/mitlist/internal/repositories"
-	storagesvc "github.com/yourorg/mitlist/internal/services/storage"
+	"github.com/mitlist-app/mitlist/internal/api"
+	"github.com/mitlist-app/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/repositories"
+	storagesvc "github.com/mitlist-app/mitlist/internal/services/storage"
 )
 
 type ExpenseReceiptService struct {

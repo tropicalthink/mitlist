@@ -13,7 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/rs/zerolog/log"
 
-	"github.com/yourorg/mitlist/internal/config"
+	"github.com/mitlist-app/mitlist/internal/config"
 )
 
 // Service provides file storage backed by S3-compatible object storage.

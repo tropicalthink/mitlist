@@ -8,9 +8,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/yourorg/mitlist/internal/api"
-	"github.com/yourorg/mitlist/internal/services"
-	jwtservice "github.com/yourorg/mitlist/internal/services/jwt"
+	"github.com/mitlist-app/mitlist/internal/api"
+	"github.com/mitlist-app/mitlist/internal/services"
+	jwtservice "github.com/mitlist-app/mitlist/internal/services/jwt"
 )
 
 // Auth validates the access token from either an "access_token" cookie or the

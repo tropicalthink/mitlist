@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"runtime/debug"
 
-	"github.com/yourorg/mitlist/pkg/logger"
+	"github.com/mitlist-app/mitlist/pkg/logger"
 )
 
 // Recovery recovers from panics and logs the stack trace.

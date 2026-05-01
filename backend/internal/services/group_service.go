@@ -10,10 +10,10 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"github.com/yourorg/mitlist/internal/api"
-	"github.com/yourorg/mitlist/internal/models"
-	"github.com/yourorg/mitlist/internal/repositories"
-	"github.com/yourorg/mitlist/pkg/validation"
+	"github.com/mitlist-app/mitlist/internal/api"
+	"github.com/mitlist-app/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/repositories"
+	"github.com/mitlist-app/mitlist/pkg/validation"
 )
 
 // GroupService provides business logic for group and membership management.

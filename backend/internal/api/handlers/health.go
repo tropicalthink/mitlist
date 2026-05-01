@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/yourorg/mitlist/internal/redis"
+	"github.com/mitlist-app/mitlist/internal/redis"
 )
 
 // HealthHandler provides the health check endpoint.

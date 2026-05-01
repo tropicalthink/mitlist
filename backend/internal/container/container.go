@@ -5,18 +5,18 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/yourorg/mitlist/internal/config"
-	"github.com/yourorg/mitlist/internal/redis"
-	"github.com/yourorg/mitlist/internal/repositories"
-	"github.com/yourorg/mitlist/internal/services"
-	aiservice "github.com/yourorg/mitlist/internal/services/ai"
-	jwtservice "github.com/yourorg/mitlist/internal/services/jwt"
-	mailservice "github.com/yourorg/mitlist/internal/services/mail"
-	oauthclient "github.com/yourorg/mitlist/internal/services/oauth"
-	passwordservice "github.com/yourorg/mitlist/internal/services/password"
-	pushservice "github.com/yourorg/mitlist/internal/services/push"
-	storagesvc "github.com/yourorg/mitlist/internal/services/storage"
-	"github.com/yourorg/mitlist/pkg/logger"
+	"github.com/mitlist-app/mitlist/internal/config"
+	"github.com/mitlist-app/mitlist/internal/redis"
+	"github.com/mitlist-app/mitlist/internal/repositories"
+	"github.com/mitlist-app/mitlist/internal/services"
+	aiservice "github.com/mitlist-app/mitlist/internal/services/ai"
+	jwtservice "github.com/mitlist-app/mitlist/internal/services/jwt"
+	mailservice "github.com/mitlist-app/mitlist/internal/services/mail"
+	oauthclient "github.com/mitlist-app/mitlist/internal/services/oauth"
+	passwordservice "github.com/mitlist-app/mitlist/internal/services/password"
+	pushservice "github.com/mitlist-app/mitlist/internal/services/push"
+	storagesvc "github.com/mitlist-app/mitlist/internal/services/storage"
+	"github.com/mitlist-app/mitlist/pkg/logger"
 )
 
 // Container owns application infrastructure and lazily-created singletons.

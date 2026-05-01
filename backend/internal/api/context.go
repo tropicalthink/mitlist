@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 
-	"github.com/yourorg/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/models"
 )
 
 type ctxKey int
