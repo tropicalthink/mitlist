@@ -34,6 +34,26 @@ func NewNotificationService(
 	}
 }
 
+// preferenceForType maps a notification type to the corresponding preference flag.
+func preferenceForType(pref *models.NotificationPreference, nType string) bool {
+	switch nType {
+	case "chore_due":
+		return pref.ChoreDue
+	case "chore_due_day_of":
+		return pref.ChoreDueDayOf
+	case "list_item_added":
+		return pref.ListItemAdded
+	case "expense_created":
+		return pref.ExpenseCreated
+	case "meal_plan_changed":
+		return pref.MealPlanChanged
+	case "weekly_digest":
+		return pref.WeeklyDigest
+	default:
+		return pref.PushEnabled // default to global push toggle for unknown types
+	}
+}
+
 // CreateNotification creates a notification and triggers push if enabled.
 func (s *NotificationService) CreateNotification(ctx context.Context, n *models.Notification) error {
 	if n.ID == uuid.Nil {
@@ -47,8 +67,20 @@ func (s *NotificationService) CreateNotification(ctx context.Context, n *models.
 	}
 
 	// Trigger push if enabled for this notification type.
-	// TODO: map n.Type to preference flag and check push_enabled.
+	// When GroupID is provided, we look up the user's preference for that group.
 	// Push delivery requires Firebase/APNS setup (Slice 7 placeholder).
+	if n.GroupID != uuid.Nil && s.pushService != nil {
+		pref, err := s.notificationRepo.GetPreference(ctx, n.UserID, n.GroupID)
+		if err != nil {
+			// Silently skip push on preference lookup failure.
+			return nil
+		}
+		if !pref.PushEnabled || !preferenceForType(pref, n.Type) {
+			return nil
+		}
+		payload := fmt.Sprintf(`{"title":%q,"body":%q}`, n.Title, n.Body)
+		_ = s.pushService.SendToUser(n.UserID, payload)
+	}
 
 	return nil
 }

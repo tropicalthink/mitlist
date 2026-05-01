@@ -40,6 +40,7 @@ func New(cfg *config.Config, cnt *container.Container, runner *jobs.Runner) *Ser
 	// Custom middleware stack
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Recovery)
+	r.Use(middleware.SecurityHeaders)
 	r.Use(middleware.CorsMiddleware(cfg.FrontendURL, cfg.Environment))
 	r.Use(middleware.RateLimit(cnt.Redis().Client(), cfg.APIPrefix))
 	r.Use(middleware.LoggingMiddleware())

@@ -10,6 +10,7 @@ import (
 type Notification struct {
 	ID        uuid.UUID       `json:"id"`
 	UserID    uuid.UUID       `json:"user_id"`
+	GroupID   uuid.UUID       `json:"group_id,omitempty"`
 	Type      string          `json:"type"`
 	Title     string          `json:"title"`
 	Body      string          `json:"body"`

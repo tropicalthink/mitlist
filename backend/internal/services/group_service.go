@@ -13,6 +13,7 @@ import (
 	"github.com/yourorg/mitlist/internal/api"
 	"github.com/yourorg/mitlist/internal/models"
 	"github.com/yourorg/mitlist/internal/repositories"
+	"github.com/yourorg/mitlist/pkg/validation"
 )
 
 // GroupService provides business logic for group and membership management.
@@ -37,8 +38,16 @@ type CreateGroupInput struct {
 
 // CreateGroup creates a new group and makes the creator an admin.
 func (s *GroupService) CreateGroup(ctx context.Context, userID uuid.UUID, input CreateGroupInput) (*models.Group, error) {
-	if input.Name == "" {
-		return nil, &api.ValidationError{Message: "group name is required"}
+	if err := validation.RequiredString(input.Name, "name"); err != nil {
+		return nil, &api.ValidationError{Field: "name", Message: err.Error()}
+	}
+	if err := validation.MaxLength(input.Name, validation.MaxGroupNameLength, "name"); err != nil {
+		return nil, &api.ValidationError{Field: "name", Message: err.Error()}
+	}
+	if input.Description != nil && *input.Description != "" {
+		if err := validation.MaxLength(*input.Description, validation.MaxDescriptionLength, "description"); err != nil {
+			return nil, &api.ValidationError{Field: "description", Message: err.Error()}
+		}
 	}
 
 	group := &models.Group{
@@ -112,9 +121,20 @@ func (s *GroupService) UpdateGroup(ctx context.Context, userID, groupID uuid.UUI
 	}
 
 	if input.Name != nil {
+		if err := validation.RequiredString(*input.Name, "name"); err != nil {
+			return nil, &api.ValidationError{Field: "name", Message: err.Error()}
+		}
+		if err := validation.MaxLength(*input.Name, validation.MaxGroupNameLength, "name"); err != nil {
+			return nil, &api.ValidationError{Field: "name", Message: err.Error()}
+		}
 		group.Name = *input.Name
 	}
 	if input.Description != nil {
+		if *input.Description != "" {
+			if err := validation.MaxLength(*input.Description, validation.MaxDescriptionLength, "description"); err != nil {
+				return nil, &api.ValidationError{Field: "description", Message: err.Error()}
+			}
+		}
 		group.Description = input.Description
 	}
 

@@ -11,6 +11,7 @@ import (
 	"github.com/yourorg/mitlist/internal/api"
 	"github.com/yourorg/mitlist/internal/models"
 	"github.com/yourorg/mitlist/internal/repositories"
+	"github.com/yourorg/mitlist/pkg/validation"
 )
 
 // ListService provides business logic for lists and list items.
@@ -53,8 +54,11 @@ func (s *ListService) CreateList(ctx context.Context, user *models.User, list *m
 	if err := s.requireMembership(ctx, user.ID, list.GroupID); err != nil {
 		return err
 	}
-	if list.Name == "" {
-		return &api.ValidationError{Field: "name", Message: "name is required"}
+	if err := validation.RequiredString(list.Name, "name"); err != nil {
+		return &api.ValidationError{Field: "name", Message: err.Error()}
+	}
+	if err := validation.MaxLength(list.Name, validation.MaxListNameLength, "name"); err != nil {
+		return &api.ValidationError{Field: "name", Message: err.Error()}
 	}
 	return s.listRepo.CreateList(ctx, list)
 }
@@ -125,8 +129,11 @@ func (s *ListService) UpdateList(ctx context.Context, user *models.User, listID 
 	if err := s.requireMembership(ctx, user.ID, list.GroupID); err != nil {
 		return nil, err
 	}
-	if name == "" {
-		return nil, &api.ValidationError{Field: "name", Message: "name is required"}
+	if err := validation.RequiredString(name, "name"); err != nil {
+		return nil, &api.ValidationError{Field: "name", Message: err.Error()}
+	}
+	if err := validation.MaxLength(name, validation.MaxListNameLength, "name"); err != nil {
+		return nil, &api.ValidationError{Field: "name", Message: err.Error()}
 	}
 	list.Name = name
 	list.Type = listType
@@ -169,8 +176,16 @@ func (s *ListService) CreateItem(ctx context.Context, user *models.User, item *m
 	if err := s.requireMembership(ctx, user.ID, list.GroupID); err != nil {
 		return err
 	}
-	if item.Name == "" {
-		return &api.ValidationError{Field: "name", Message: "item name is required"}
+	if err := validation.RequiredString(item.Name, "name"); err != nil {
+		return &api.ValidationError{Field: "name", Message: err.Error()}
+	}
+	if err := validation.MaxLength(item.Name, validation.MaxItemNameLength, "name"); err != nil {
+		return &api.ValidationError{Field: "name", Message: err.Error()}
+	}
+	if item.Note != "" {
+		if err := validation.MaxLength(item.Note, validation.MaxDescriptionLength, "note"); err != nil {
+			return &api.ValidationError{Field: "note", Message: err.Error()}
+		}
 	}
 	if item.Quantity <= 0 {
 		item.Quantity = 1
@@ -219,8 +234,16 @@ func (s *ListService) UpdateItem(ctx context.Context, user *models.User, item *m
 	if err := s.requireMembership(ctx, user.ID, list.GroupID); err != nil {
 		return err
 	}
-	if item.Name == "" {
-		return &api.ValidationError{Field: "name", Message: "item name is required"}
+	if err := validation.RequiredString(item.Name, "name"); err != nil {
+		return &api.ValidationError{Field: "name", Message: err.Error()}
+	}
+	if err := validation.MaxLength(item.Name, validation.MaxItemNameLength, "name"); err != nil {
+		return &api.ValidationError{Field: "name", Message: err.Error()}
+	}
+	if item.Note != "" {
+		if err := validation.MaxLength(item.Note, validation.MaxDescriptionLength, "note"); err != nil {
+			return &api.ValidationError{Field: "note", Message: err.Error()}
+		}
 	}
 	if item.Quantity <= 0 {
 		return &api.ValidationError{Field: "quantity", Message: "quantity must be greater than zero"}

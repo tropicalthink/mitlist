@@ -14,6 +14,7 @@ import (
 	"github.com/yourorg/mitlist/internal/api"
 	"github.com/yourorg/mitlist/internal/models"
 	"github.com/yourorg/mitlist/internal/repositories"
+	"github.com/yourorg/mitlist/pkg/validation"
 )
 
 // UserService provides business logic for user authentication and management.
@@ -52,11 +53,21 @@ type RegisterInput struct {
 
 // Register creates a new verified user account with a hashed password.
 func (s *UserService) Register(ctx context.Context, input RegisterInput) (*models.User, error) {
-	if input.Email == "" || input.Password == "" {
-		return nil, &api.ValidationError{Message: "email and password are required"}
+	if err := validation.Email(input.Email); err != nil {
+		return nil, &api.ValidationError{Field: "email", Message: err.Error()}
 	}
-	if len(input.Password) < 6 {
-		return nil, &api.ValidationError{Message: "password must be at least 6 characters"}
+	if err := validation.Password(input.Password); err != nil {
+		return nil, &api.ValidationError{Field: "password", Message: err.Error()}
+	}
+	if input.FirstName != "" {
+		if err := validation.Name(input.FirstName, "first_name"); err != nil {
+			return nil, &api.ValidationError{Field: "first_name", Message: err.Error()}
+		}
+	}
+	if input.LastName != "" {
+		if err := validation.Name(input.LastName, "last_name"); err != nil {
+			return nil, &api.ValidationError{Field: "last_name", Message: err.Error()}
+		}
 	}
 
 	existing, err := s.userRepo.GetByEmail(ctx, input.Email)
@@ -161,12 +172,21 @@ func (s *UserService) UpdateMe(ctx context.Context, userID uuid.UUID, input Upda
 	}
 
 	if input.FirstName != nil {
+		if err := validation.Name(*input.FirstName, "first_name"); err != nil {
+			return nil, &api.ValidationError{Field: "first_name", Message: err.Error()}
+		}
 		user.FirstName = *input.FirstName
 	}
 	if input.LastName != nil {
+		if err := validation.Name(*input.LastName, "last_name"); err != nil {
+			return nil, &api.ValidationError{Field: "last_name", Message: err.Error()}
+		}
 		user.LastName = *input.LastName
 	}
 	if input.AvatarURL != nil {
+		if err := validation.MaxLength(*input.AvatarURL, 500, "avatar_url"); err != nil {
+			return nil, &api.ValidationError{Field: "avatar_url", Message: err.Error()}
+		}
 		user.AvatarURL = input.AvatarURL
 	}
 
@@ -196,8 +216,8 @@ func (s *UserService) DeleteMe(ctx context.Context, userID uuid.UUID) error {
 
 // ChangePassword updates the user's password after verifying the current one.
 func (s *UserService) ChangePassword(ctx context.Context, userID uuid.UUID, oldPassword, newPassword string) error {
-	if len(newPassword) < 6 {
-		return &api.ValidationError{Message: "password must be at least 6 characters"}
+	if err := validation.Password(newPassword); err != nil {
+		return &api.ValidationError{Field: "new_password", Message: err.Error()}
 	}
 
 	user, err := s.userRepo.GetByID(ctx, userID)
@@ -259,8 +279,8 @@ func (s *UserService) RequestPasswordReset(ctx context.Context, email string) er
 
 // ConfirmPasswordReset validates a reset token and updates the user's password.
 func (s *UserService) ConfirmPasswordReset(ctx context.Context, token, newPassword string) error {
-	if len(newPassword) < 6 {
-		return &api.ValidationError{Message: "password must be at least 6 characters"}
+	if err := validation.Password(newPassword); err != nil {
+		return &api.ValidationError{Field: "new_password", Message: err.Error()}
 	}
 
 	resetToken, err := s.authRepo.GetPasswordResetToken(ctx, token)
@@ -308,8 +328,18 @@ type ClaimAccountInput struct {
 
 // ClaimAccount allows a user to set a password and claim their account.
 func (s *UserService) ClaimAccount(ctx context.Context, userID uuid.UUID, input ClaimAccountInput) (*models.User, error) {
-	if len(input.Password) < 6 {
-		return nil, &api.ValidationError{Message: "password must be at least 6 characters"}
+	if err := validation.Password(input.Password); err != nil {
+		return nil, &api.ValidationError{Field: "password", Message: err.Error()}
+	}
+	if input.FirstName != "" {
+		if err := validation.Name(input.FirstName, "first_name"); err != nil {
+			return nil, &api.ValidationError{Field: "first_name", Message: err.Error()}
+		}
+	}
+	if input.LastName != "" {
+		if err := validation.Name(input.LastName, "last_name"); err != nil {
+			return nil, &api.ValidationError{Field: "last_name", Message: err.Error()}
+		}
 	}
 
 	user, err := s.userRepo.GetByID(ctx, userID)
