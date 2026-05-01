@@ -6,6 +6,8 @@ import 'providers/group_provider.dart';
 import 'services/group_id_validator.dart';
 import 'services/group_service.dart';
 import 'models/group_models.dart';
+import 'theme/colors.dart';
+import 'widgets/app_icon.dart';
 
 import 'screens/home/groups_list_screen.dart';
 import 'screens/lists/lists_screen.dart';
@@ -136,6 +138,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const ListsScreen(),
             routes: [
               GoRoute(
+                path: 'shopping-trip',
+                name: 'shoppingTrip',
+                parentNavigatorKey: _rootNavigatorKey,
+                builder: (context, state) => const ShoppingTripScreen(),
+              ),
+              GoRoute(
                 path: ':listId',
                 name: 'listDetail',
                 parentNavigatorKey: _rootNavigatorKey,
@@ -149,12 +157,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                     initialListName: initialName,
                   );
                 },
-              ),
-              GoRoute(
-                path: 'shopping-trip',
-                name: 'shoppingTrip',
-                parentNavigatorKey: _rootNavigatorKey,
-                builder: (context, state) => const ShoppingTripScreen(),
               ),
             ],
           ),
@@ -249,22 +251,32 @@ class BottomNavScaffold extends StatelessWidget {
 
     return Scaffold(
       body: child,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: index,
-        onTap: (i) => _onTap(i, context),
-        items: const [
-          BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined), label: 'Home'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.check_box_outlined), label: 'Chores'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.restaurant_outlined), label: 'Kitchen'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.account_balance_wallet_outlined),
-              label: 'Money'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.list_alt_outlined), label: 'Lists'),
-        ],
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          border: Border(
+            top: BorderSide(
+              color: MitlistColors.borderPrimary,
+              width: 2,
+            ),
+          ),
+        ),
+        child: BottomNavigationBar(
+          currentIndex: index,
+          onTap: (i) => _onTap(i, context),
+          items: const [
+            BottomNavigationBarItem(
+                icon: AppIcon(name: 'home'), label: 'Home'),
+            BottomNavigationBarItem(
+                icon: AppIcon(name: 'clipboardDocumentList'),
+                label: 'Chores'),
+            BottomNavigationBarItem(
+                icon: AppIcon(name: 'queueList'), label: 'Kitchen'),
+            BottomNavigationBarItem(
+                icon: AppIcon(name: 'banknotes'), label: 'Money'),
+            BottomNavigationBarItem(
+                icon: AppIcon(name: 'listBullet'), label: 'Lists'),
+          ],
+        ),
       ),
     );
   }

@@ -955,8 +955,6 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
               ],
               Checkbox(
                 value: item.checked,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                visualDensity: VisualDensity.compact,
                 onChanged: (val) => _toggleItem(item, val ?? false),
               ),
               const SizedBox(width: MitlistSpacing.sm),
@@ -1012,8 +1010,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   const PopupMenuItem(value: 'delete', child: Text('Delete')),
                 ],
                 child: const Padding(
-                  padding: EdgeInsets.all(6),
-                  child: Icon(Icons.more_horiz, size: 18),
+                  padding: EdgeInsets.all(MitlistSpacing.sm),
+                  child: AppIcon(name: 'dotsHorizontal', size: MitlistSpacing.space5),
                 ),
               ),
             ],
@@ -1110,15 +1108,16 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Widget _buildBottomBar() {
-    final fill = Theme.of(context).brightness == Brightness.dark
+    final brightness = Theme.of(context).brightness;
+    final fill = brightness == Brightness.dark
         ? MitlistColors.neutral900
         : MitlistColors.surfacePrimary;
 
     return SafeArea(
       child: Container(
-        decoration: const BoxDecoration(
-          color: MitlistColors.surfacePrimary,
-          border: Border(
+        decoration: BoxDecoration(
+          color: fill,
+          border: const Border(
             top: BorderSide(
               color: MitlistColors.borderPrimary,
               width: 2,
@@ -1176,16 +1175,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   ),
                 ),
                 const SizedBox(width: MitlistSpacing.sm),
-                FilledButton(
+                AppButton(
+                  icon: const AppIcon(name: 'plus', color: MitlistColors.textOnPrimary),
                   onPressed: _addItem,
-                  style: FilledButton.styleFrom(
-                    shape: const CircleBorder(),
-                    padding: const EdgeInsets.all(MitlistSpacing.md),
-                    backgroundColor: MitlistColors.primary500,
-                    foregroundColor: Colors.white,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: const AppIcon(name: 'plus', color: Colors.white),
+                  size: AppButtonSize.lg,
                 ),
               ],
             ),

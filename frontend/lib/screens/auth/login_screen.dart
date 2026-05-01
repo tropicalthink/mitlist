@@ -376,16 +376,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           controlAffinity: ListTileControlAffinity.leading,
                         ),
                         const SizedBox(height: MitlistSpacing.space4),
-                        OutlinedButton.icon(
-                          onPressed: _isLoading ? null : () => _startOAuth('google'),
+                        AppButton(
+                          text: 'Continue with Google',
                           icon: const Icon(Icons.login, size: 20),
-                          label: const Text('Continue with Google'),
+                          variant: AppButtonVariant.outline,
+                          color: AppButtonColor.neutral,
+                          onPressed: _isLoading ? null : () => _startOAuth('google'),
                         ),
                         const SizedBox(height: MitlistSpacing.space3),
-                        OutlinedButton.icon(
-                          onPressed: _isLoading ? null : () => _startOAuth('apple'),
+                        AppButton(
+                          text: 'Continue with Apple',
                           icon: const Icon(Icons.apple, size: 20),
-                          label: const Text('Continue with Apple'),
+                          variant: AppButtonVariant.outline,
+                          color: AppButtonColor.neutral,
+                          onPressed: _isLoading ? null : () => _startOAuth('apple'),
                         ),
                         const SizedBox(height: MitlistSpacing.space4),
                         Row(

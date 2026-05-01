@@ -405,22 +405,8 @@ Future<void> _openQuickAddSheet(BuildContext context) async {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Per-note colour palette (warm sticky-note hues).
-const _kNotePalette = [
-  Color(0xFFFFF9C4), // pale yellow
-  Color(0xFFFFE0B2), // peach
-  Color(0xFFC8E6C9), // mint
-  Color(0xFFB3E5FC), // sky
-  Color(0xFFF8BBD0), // blush
-  Color(0xFFE1BEE7), // lavender
-];
-const _kNotePaletteDark = [
-  Color(0xFF6B5D3A), // warm dark yellow
-  Color(0xFF7A5A3A), // warm dark peach
-  Color(0xFF3A5A40), // muted dark mint
-  Color(0xFF3A5A6B), // muted dark sky
-  Color(0xFF6B3A4A), // muted dark blush
-  Color(0xFF5A4A6B), // muted dark lavender
-];
+const _kNotePalette = MitlistColors.notePalette;
+const _kNotePaletteDark = MitlistColors.notePaletteDark;
 
 class _PinwallSection extends ConsumerStatefulWidget {
   const _PinwallSection({required this.groupId, required this.me});
@@ -511,9 +497,9 @@ class _PinwallSectionState extends ConsumerState<_PinwallSection> {
     final textTheme = Theme.of(context).textTheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
 
-    final boardBg = dark ? const Color(0xFF2A211A) : const Color(0xFFC8A97A);
+    final boardBg = dark ? MitlistColors.pinwallBoardDark : MitlistColors.pinwallBoard;
     final boardBorder =
-        dark ? const Color(0xFF4A3C2E) : const Color(0xFF8B5E3C);
+        dark ? MitlistColors.pinwallBoardBorderDark : MitlistColors.pinwallBoardBorder;
     final boardShadow = Colors.black.withValues(alpha: dark ? 0.38 : 0.16);
 
     return Column(
@@ -777,8 +763,8 @@ class _PinwallNoteCard extends ConsumerWidget {
                 errorBuilder: (_, __, ___) => const Padding(
                   padding: EdgeInsets.all(MitlistSpacing.md),
                   child: Text(
-                    'Couldn’t load image.',
-                    style: TextStyle(color: Colors.white70),
+                    'Couldn\u2019t load image.',
+                    style: TextStyle(color: Colors.white),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -1002,7 +988,10 @@ class _PinwallNoteCard extends ConsumerWidget {
                               onTap: () => _openMediaViewer(context, m),
                               onLongPress: () =>
                                   _showMediaActions(context, ref, media: m),
-                              child: ClipRRect(
+                              child: Semantics(
+                                button: true,
+                                label: 'View photo',
+                                child: ClipRRect(
                                 borderRadius: BorderRadius.circular(6),
                                 child: AspectRatio(
                                   aspectRatio: 1,
@@ -1021,6 +1010,7 @@ class _PinwallNoteCard extends ConsumerWidget {
                                   ),
                                 ),
                               ),
+                            ),
                             );
                           },
                         ),
@@ -1054,9 +1044,9 @@ class _PinwallNoteCard extends ConsumerWidget {
                         PopupMenuItem(value: 'delete', child: Text('Delete')),
                       ],
                       child: Padding(
-                        padding: const EdgeInsets.all(2),
+                        padding: const EdgeInsets.all(MitlistSpacing.sm),
                         child:
-                            Icon(Icons.more_horiz, size: 16, color: mutedColor),
+                            Icon(Icons.more_horiz, size: MitlistSpacing.space5, color: mutedColor),
                       ),
                     ),
                   ],

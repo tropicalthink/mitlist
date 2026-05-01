@@ -441,7 +441,6 @@ class _SubtaskRow extends StatelessWidget {
           Checkbox(
             value: subtask.completed,
             onChanged: (_) => onToggle(),
-            visualDensity: VisualDensity.compact,
           ),
           Expanded(
             child: Text(
@@ -458,8 +457,8 @@ class _SubtaskRow extends StatelessWidget {
           ),
           if (onDelete != null)
             IconButton(
-              icon: const Icon(Icons.close, size: 18),
-              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.close, size: 20),
+              tooltip: 'Delete subtask',
               onPressed: onDelete,
             ),
         ],

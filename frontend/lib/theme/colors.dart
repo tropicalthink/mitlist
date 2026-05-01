@@ -77,4 +77,38 @@ class MitlistColors {
   static const Color borderPrimary = Color(0xFF1A1714);
   static const Color borderSecondary = Color(0xFFEDE8DC);
   static const Color borderSubtle = Color(0xFFDCD6C7);
+
+  static const Color noteYellow = Color(0xFFFFF9C4);
+  static const Color notePeach = Color(0xFFFFE0B2);
+  static const Color noteMint = Color(0xFFC8E6C9);
+  static const Color noteSky = Color(0xFFB3E5FC);
+  static const Color noteBlush = Color(0xFFF8BBD0);
+  static const Color noteLavender = Color(0xFFE1BEE7);
+  static const Color noteYellowDark = Color(0xFF6B5D3A);
+  static const Color notePeachDark = Color(0xFF7A5A3A);
+  static const Color noteMintDark = Color(0xFF3A5A40);
+  static const Color noteSkyDark = Color(0xFF3A5A6B);
+  static const Color noteBlushDark = Color(0xFF6B3A4A);
+  static const Color noteLavenderDark = Color(0xFF5A4A6B);
+  static const List<Color> notePalette = [
+    noteYellow,
+    notePeach,
+    noteMint,
+    noteSky,
+    noteBlush,
+    noteLavender,
+  ];
+  static const List<Color> notePaletteDark = [
+    noteYellowDark,
+    notePeachDark,
+    noteMintDark,
+    noteSkyDark,
+    noteBlushDark,
+    noteLavenderDark,
+  ];
+
+  static const Color pinwallBoard = Color(0xFFC8A97A);
+  static const Color pinwallBoardDark = Color(0xFF2A211A);
+  static const Color pinwallBoardBorder = Color(0xFF8B5E3C);
+  static const Color pinwallBoardBorderDark = Color(0xFF4A3C2E);
 }

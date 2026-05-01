@@ -880,6 +880,8 @@ class _ChoreItem extends StatelessWidget {
                     Text(
                       chore.title,
                       style: Theme.of(context).textTheme.bodyMedium,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     if (chore.lastActionLabel != null &&
                         chore.lastActionLabel!.isNotEmpty)
@@ -888,6 +890,8 @@ class _ChoreItem extends StatelessWidget {
                         style: MitlistTypography.labelXSmall(
                           color: MitlistColors.textTertiary,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                   ],
                 ),

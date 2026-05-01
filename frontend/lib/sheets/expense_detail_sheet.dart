@@ -323,28 +323,32 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
                 return GestureDetector(
                   onTap: () => _openReceiptViewer(r),
                   onLongPress: () => _showReceiptActions(r),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: AspectRatio(
-                      aspectRatio: 1,
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          Image.network(
-                            r.url,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                              color: MitlistColors.neutral100,
-                              alignment: Alignment.center,
-                              child: const Icon(Icons.receipt_long_outlined),
+                  child: Semantics(
+                    button: true,
+                    label: 'View receipt',
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: AspectRatio(
+                        aspectRatio: 1,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            Image.network(
+                              r.url,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: MitlistColors.neutral100,
+                                alignment: Alignment.center,
+                                child: const Icon(Icons.receipt_long_outlined),
+                              ),
                             ),
-                          ),
-                          if (_removing)
-                            const Align(
-                              alignment: Alignment.bottomCenter,
-                              child: LinearProgressIndicator(minHeight: 2),
-                            ),
-                        ],
+                            if (_removing)
+                              const Align(
+                                alignment: Alignment.bottomCenter,
+                                child: LinearProgressIndicator(minHeight: 2),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

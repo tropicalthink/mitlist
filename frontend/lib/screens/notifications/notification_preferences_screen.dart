@@ -10,6 +10,7 @@ import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
+import '../../widgets/empty_state.dart';
 import '../../widgets/mitlist_app_bar.dart';
 
 class NotificationPreferencesScreen extends ConsumerStatefulWidget {
@@ -247,10 +248,11 @@ class _NotificationPreferencesScreenState
                   if (_preferences.isNotEmpty)
                     ..._preferences.map(_buildPreferenceCard)
                   else
-                    const Padding(
-                      padding: EdgeInsets.symmetric(
-                          vertical: MitlistSpacing.md),
-                      child: Center(child: Text('No preferences found')),
+                    const AppEmptyState(
+                      icon: Icon(Icons.tune, size: 56),
+                      title: 'No preferences yet',
+                      description:
+                          'Preferences are created when you join a household. If you just joined, they should appear shortly.',
                     ),
                 ],
               ),
