@@ -13,13 +13,27 @@ import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
 
 class ExpenseCreationSheet extends ConsumerStatefulWidget {
-  const ExpenseCreationSheet({super.key});
+  final String? initialDescription;
+  final String? initialAmount;
 
-  static Future<bool?> show(BuildContext context) async {
+  const ExpenseCreationSheet({
+    super.key,
+    this.initialDescription,
+    this.initialAmount,
+  });
+
+  static Future<bool?> show(
+    BuildContext context, {
+    String? initialDescription,
+    String? initialAmount,
+  }) async {
     return showAppBottomSheet<bool>(
       context: context,
       title: 'Add Expense',
-      body: const ExpenseCreationSheet(),
+      body: ExpenseCreationSheet(
+        initialDescription: initialDescription,
+        initialAmount: initialAmount,
+      ),
     );
   }
 
@@ -41,6 +55,15 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialDescription != null) {
+      _descriptionController.text = widget.initialDescription!;
+    }
+    if (widget.initialAmount != null) {
+      _amountController.text = widget.initialAmount!;
+      _amountController.selection = TextSelection.fromPosition(
+        TextPosition(offset: widget.initialAmount!.length),
+      );
+    }
     _loadMembers();
   }
 

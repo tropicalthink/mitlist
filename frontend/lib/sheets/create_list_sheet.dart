@@ -19,18 +19,24 @@ class CreateListSheet extends ConsumerStatefulWidget {
   const CreateListSheet({
     super.key,
     this.initialGroupId,
+    this.initialName,
   });
 
   final String? initialGroupId;
+  final String? initialName;
 
   static Future<bool?> show(
     BuildContext context, {
     String? initialGroupId,
+    String? initialName,
   }) async {
     return showAppBottomSheet<bool>(
       context: context,
       title: 'New List',
-      body: CreateListSheet(initialGroupId: initialGroupId),
+      body: CreateListSheet(
+        initialGroupId: initialGroupId,
+        initialName: initialName,
+      ),
     );
   }
 
@@ -50,6 +56,9 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialName != null) {
+      _nameController.text = widget.initialName!;
+    }
     _loadGroups();
   }
 

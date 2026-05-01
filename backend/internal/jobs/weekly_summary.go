@@ -100,7 +100,10 @@ func (r *weeklySummaryRepoImpl) ListWeeklyActivity(ctx context.Context, since ti
 			UNION ALL
 			SELECT group_id FROM meal_plans WHERE created_at >= $1
 			UNION ALL
-			SELECT group_id FROM recipes WHERE created_at >= $1
+			SELECT gm.group_id
+			FROM recipes rcp
+			JOIN group_memberships gm ON gm.user_id = rcp.user_id
+			WHERE rcp.created_at >= $1
 		) events
 		GROUP BY group_id
 	`, since)

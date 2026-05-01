@@ -23,13 +23,27 @@ enum _AssignmentPolicy {
 }
 
 class ChoreCreationSheet extends ConsumerStatefulWidget {
-  const ChoreCreationSheet({super.key});
+  final String? initialTitle;
+  final String? initialDescription;
 
-  static Future<bool?> show(BuildContext context) async {
+  const ChoreCreationSheet({
+    super.key,
+    this.initialTitle,
+    this.initialDescription,
+  });
+
+  static Future<bool?> show(
+    BuildContext context, {
+    String? initialTitle,
+    String? initialDescription,
+  }) async {
     return showAppBottomSheet<bool>(
       context: context,
       title: 'Add Chore',
-      body: const ChoreCreationSheet(),
+      body: ChoreCreationSheet(
+        initialTitle: initialTitle,
+        initialDescription: initialDescription,
+      ),
     );
   }
 
@@ -48,6 +62,17 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
   bool _trackDateOnly = false;
   bool _rollover = false;
   bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialTitle != null) {
+      _nameController.text = widget.initialTitle!;
+    }
+    if (widget.initialDescription != null) {
+      _descriptionController.text = widget.initialDescription!;
+    }
+  }
 
   bool get _canCreate => _nameController.text.trim().isNotEmpty && !_isSaving;
 

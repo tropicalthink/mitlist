@@ -14,6 +14,10 @@ import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/mitlist_app_bar.dart';
+import '../../sheets/expense_creation_sheet.dart';
+import '../../sheets/create_list_sheet.dart';
+import '../../sheets/recipe_creation_sheet.dart';
+import '../../sheets/chore_creation_sheet.dart';
 
 class ScannerScreen extends ConsumerStatefulWidget {
   const ScannerScreen({super.key});
@@ -79,20 +83,63 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     }
   }
 
-  void _openListCreation() {
-    context.pop();
+  void _openListCreation() async {
+    final r = _result!;
+    final created = await CreateListSheet.show(
+      context,
+      initialName: r.title,
+    );
+    if (mounted && (created == true)) {
+      context.pop();
+    }
   }
 
-  void _openExpenseCreation() {
-    context.pop();
+  void _openExpenseCreation() async {
+    final r = _result!;
+    String? amountStr;
+    if (r.amount != null && r.amount! > 0) {
+      amountStr = (r.amount! / 100).toStringAsFixed(2);
+    }
+    final created = await ExpenseCreationSheet.show(
+      context,
+      initialDescription: r.title,
+      initialAmount: amountStr,
+    );
+    if (mounted && (created == true)) {
+      context.pop();
+    }
   }
 
-  void _openRecipeCreation() {
-    context.pop();
+  void _openRecipeCreation() async {
+    final r = _result!;
+    final ingredients = r.items.isNotEmpty
+        ? r.items.map((i) => i.name).join('\n')
+        : null;
+    final steps = r.steps.isNotEmpty ? r.steps.join('\n') : null;
+    final created = await RecipeCreationSheet.show(
+      context,
+      initialTitle: r.title,
+      initialIngredients: ingredients,
+      initialSteps: steps,
+    );
+    if (mounted && (created == true)) {
+      context.pop();
+    }
   }
 
-  void _openChoreCreation() {
-    context.pop();
+  void _openChoreCreation() async {
+    final r = _result!;
+    final description = r.steps.isNotEmpty
+        ? r.steps.join('\n')
+        : null;
+    final created = await ChoreCreationSheet.show(
+      context,
+      initialTitle: r.title,
+      initialDescription: description,
+    );
+    if (mounted && (created == true)) {
+      context.pop();
+    }
   }
 
   void _showSourcePicker() {

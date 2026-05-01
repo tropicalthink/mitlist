@@ -12,13 +12,31 @@ import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
 
 class RecipeCreationSheet extends ConsumerStatefulWidget {
-  const RecipeCreationSheet({super.key});
+  final String? initialTitle;
+  final String? initialIngredients;
+  final String? initialSteps;
 
-  static Future<bool?> show(BuildContext context) async {
+  const RecipeCreationSheet({
+    super.key,
+    this.initialTitle,
+    this.initialIngredients,
+    this.initialSteps,
+  });
+
+  static Future<bool?> show(
+    BuildContext context, {
+    String? initialTitle,
+    String? initialIngredients,
+    String? initialSteps,
+  }) async {
     return showAppBottomSheet<bool>(
       context: context,
       title: 'New Recipe',
-      body: const RecipeCreationSheet(),
+      body: RecipeCreationSheet(
+        initialTitle: initialTitle,
+        initialIngredients: initialIngredients,
+        initialSteps: initialSteps,
+      ),
     );
   }
 
@@ -45,6 +63,20 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
   bool _isSaving = false;
   bool _isScraping = false;
   _RecipeEntryMode _mode = _RecipeEntryMode.manual;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialTitle != null) {
+      _titleController.text = widget.initialTitle!;
+    }
+    if (widget.initialIngredients != null) {
+      _ingredientsController.text = widget.initialIngredients!;
+    }
+    if (widget.initialSteps != null) {
+      _stepsController.text = widget.initialSteps!;
+    }
+  }
 
   // Scraped metadata
   String _scrapedAuthor = '';

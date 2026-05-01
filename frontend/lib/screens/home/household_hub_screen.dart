@@ -309,17 +309,20 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
 
 String _formatActivityLine(ActivityLogModel a) {
   final when = _relativeDay(a.createdAt);
-  final kind = a.entityType.toLowerCase();
-  if (kind.contains('expense') || kind.contains('split')) {
-    return 'Money update · $when';
+  switch (a.action) {
+    case 'list_item_added':
+      return 'Added an item to a list · $when';
+    case 'expense_created':
+      return 'Logged an expense · $when';
+    case 'chore_completed':
+      return 'Completed a chore · $when';
+    case 'recipe_added':
+      return 'Saved a recipe · $when';
+    case 'meal_plan_created':
+      return 'Updated meal plan · $when';
+    default:
+      return '${a.action} · $when';
   }
-  if (kind.contains('chore') || kind.contains('assignment')) {
-    return 'Chore activity · $when';
-  }
-  if (kind.contains('list')) {
-    return 'List update · $when';
-  }
-  return 'Activity ${a.action} · $when';
 }
 
 String _relativeDay(DateTime t) {
@@ -1507,6 +1510,27 @@ class _WallItem extends StatelessWidget {
 
   final ActivityLogModel item;
 
+  void _onTap(BuildContext context) {
+    final groupId = item.groupId;
+
+    switch (item.action) {
+      case 'list_item_added':
+        // groupId IS the list ID for list items (backend quirk)
+        context.pushNamed('listDetail',
+            pathParameters: {'listId': groupId});
+      case 'expense_created':
+        context.pushNamed('money');
+      case 'chore_completed':
+        context.pushNamed('chores');
+      case 'recipe_added':
+        context.pushNamed('recipes');
+      case 'meal_plan_created':
+        context.pushNamed('mealPlan', extra: groupId);
+      default:
+        return;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -1514,47 +1538,64 @@ class _WallItem extends StatelessWidget {
     final userLabel = _formatUserLabel(item.userId ?? '', null);
     final when = _relativeDay(item.createdAt);
     final message = _formatActivityLine(item);
+    final isTappable = _isNavigableAction(item.action);
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: colorScheme.primaryContainer,
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            _avatarInitials(userLabel),
-            style: textTheme.labelMedium?.copyWith(
-                color: colorScheme.onPrimaryContainer,
-                fontWeight: FontWeight.w600),
-          ),
-        ),
-        const SizedBox(width: MitlistSpacing.sm),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '$userLabel · $when',
+    return InkWell(
+      onTap: isTappable ? () => _onTap(context) : null,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: colorScheme.primaryContainer,
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                _avatarInitials(userLabel),
                 style: textTheme.labelMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
+                    color: colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w600),
               ),
-              const SizedBox(height: MitlistSpacing.xs),
-              Text(
-                message,
-                style: textTheme.bodyMedium,
+            ),
+            const SizedBox(width: MitlistSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$userLabel · $when',
+                    style: textTheme.labelMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: MitlistSpacing.xs),
+                  Text(
+                    message,
+                    style: textTheme.bodyMedium,
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
+}
+
+bool _isNavigableAction(String action) {
+  return const {
+    'list_item_added',
+    'expense_created',
+    'chore_completed',
+    'recipe_added',
+    'meal_plan_created',
+  }.contains(action);
 }
 
 class _SkeletonDashboard extends StatelessWidget {

@@ -28,9 +28,10 @@ func (r *ActivityRepository) ListRecentActivity(ctx context.Context, groupID uui
 	}
 	query := `
 		SELECT id, type, title, created_at, user_id, group_id FROM (
-			SELECT id::text, 'list_item_added' as type, name as title, created_at, added_by as user_id, list_id as group_id
-			FROM list_items
-			WHERE list_id IN (SELECT id FROM lists WHERE group_id = $1)
+			SELECT li.id::text, 'list_item_added' as type, li.name as title, li.created_at, li.added_by as user_id, l.group_id
+			FROM list_items li
+			JOIN lists l ON l.id = li.list_id
+			WHERE l.group_id = $1
 			UNION ALL
 			SELECT id::text, 'expense_created', description, created_at, payer_id, group_id
 			FROM expenses
@@ -46,9 +47,10 @@ func (r *ActivityRepository) ListRecentActivity(ctx context.Context, groupID uui
 			FROM meal_plans
 			WHERE group_id = $1
 			UNION ALL
-			SELECT id::text, 'recipe_added', title, created_at, user_id, group_id
-			FROM recipes
-			WHERE group_id = $1
+			SELECT rcp.id::text, 'recipe_added', rcp.title, rcp.created_at, rcp.user_id, gm.group_id
+			FROM recipes rcp
+			JOIN group_memberships gm ON gm.user_id = rcp.user_id
+			WHERE gm.group_id = $1
 		) events
 		ORDER BY created_at DESC
 		LIMIT $2
@@ -84,7 +86,7 @@ func (r *ActivityRepository) CountWeeklyActivity(ctx context.Context, groupID uu
 			(SELECT COUNT(*) FROM expenses WHERE group_id = $1 AND created_at >= $2) AS expenses,
 			(SELECT COUNT(*) FROM chore_completions cc JOIN chore_assignments ca ON ca.id = cc.assignment_id JOIN chores ch ON ch.id = ca.chore_id WHERE ch.group_id = $1 AND cc.completed_at >= $2) AS chores,
 			(SELECT COUNT(*) FROM meal_plans WHERE group_id = $1 AND created_at >= $2) AS meal_plans,
-			(SELECT COUNT(*) FROM recipes WHERE group_id = $1 AND created_at >= $2) AS recipes
+			(SELECT COUNT(*) FROM recipes rcp JOIN group_memberships gm ON gm.user_id = rcp.user_id WHERE gm.group_id = $1 AND rcp.created_at >= $2) AS recipes
 	`
 	var lists, expenses, chores, mealPlans, recipes int
 	if err := r.pool.QueryRow(ctx, query, groupID, cutoff).Scan(&lists, &expenses, &chores, &mealPlans, &recipes); err != nil {
