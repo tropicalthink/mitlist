@@ -14,6 +14,8 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/mitlist_app_bar.dart';
 
+enum _CalendarView { week, month, agenda }
+
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
 
@@ -26,14 +28,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   String? _error;
   bool _hasHousehold = true;
   final List<CalendarEvent> _events = [];
+  _CalendarView _viewMode = _CalendarView.week;
 
   late DateTime _weekStart;
+  late DateTime _monthStart;
 
   @override
   void initState() {
     super.initState();
     final now = DateTime.now();
     _weekStart = now.subtract(Duration(days: now.weekday - 1));
+    _monthStart = DateTime(now.year, now.month, 1);
     _load();
   }
 
@@ -53,10 +58,23 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         });
         return;
       }
-      final calendarService = await ref.read(calendarServiceProviderAsync.future);
-      final from = DateTime(_weekStart.year, _weekStart.month, _weekStart.day);
-      final to = from.add(const Duration(days: 6));
-      final events = await calendarService.getCalendar(groupId!, from, to);
+
+      DateTime from, to;
+      if (_viewMode == _CalendarView.month) {
+        from = DateTime(_monthStart.year, _monthStart.month, 1);
+        to = DateTime(_monthStart.year, _monthStart.month + 1, 0);
+      } else if (_viewMode == _CalendarView.agenda) {
+        from = DateTime.now().subtract(const Duration(days: 7));
+        to = DateTime.now().add(const Duration(days: 30));
+      } else {
+        from = DateTime(_weekStart.year, _weekStart.month, _weekStart.day);
+        to = from.add(const Duration(days: 6));
+      }
+
+      final calendarService =
+          await ref.read(calendarServiceProviderAsync.future);
+      final events =
+          await calendarService.getCalendar(groupId!, from, to);
       setState(() {
         _events
           ..clear()
@@ -81,10 +99,46 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     _load();
   }
 
+  void _prevMonth() {
+    setState(() {
+      _monthStart =
+          DateTime(_monthStart.year, _monthStart.month - 1, 1);
+    });
+    _load();
+  }
+
+  void _nextMonth() {
+    setState(() {
+      _monthStart =
+          DateTime(_monthStart.year, _monthStart.month + 1, 1);
+    });
+    _load();
+  }
+
+  void _setViewMode(_CalendarView mode) {
+    if (mode == _viewMode) return;
+    setState(() => _viewMode = mode);
+    _load();
+  }
+
   String _weekLabel() {
     final end = _weekStart.add(const Duration(days: 6));
-    return '${_weekStart.day}.${_weekStart.month}. – ${end.day}.${end.month}.${end.year}';
+    return '${_weekStart.day}.${_weekStart.month}.'
+        ' – ${end.day}.${end.month}.${end.year}';
   }
+
+  String _monthLabel() {
+    return '${_months[_monthStart.month - 1]} ${_monthStart.year}';
+  }
+
+  static const _months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+  ];
+
+  static const _weekdayHeaders = [
+    'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun',
+  ];
 
   Map<DateTime, List<CalendarEvent>> get _eventsByDay {
     final map = <DateTime, List<CalendarEvent>>{};
@@ -145,8 +199,117 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
     return Column(
       children: [
+        _buildViewToggle(),
+        if (_viewMode == _CalendarView.week) _buildWeekView(),
+        if (_viewMode == _CalendarView.month) _buildMonthView(),
+        if (_viewMode == _CalendarView.agenda) _buildAgendaView(),
+      ],
+    );
+  }
+
+  Widget _buildViewToggle() {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Padding(
+      padding: const EdgeInsets.all(MitlistSpacing.md),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _setViewMode(_CalendarView.week),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    vertical: MitlistSpacing.sm),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: _viewMode == _CalendarView.week
+                          ? MitlistColors.primary500
+                          : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                ),
+                child: Text(
+                  'Week',
+                  textAlign: TextAlign.center,
+                  style: textTheme.labelMedium?.copyWith(
+                    color: _viewMode == _CalendarView.week
+                        ? MitlistColors.primary500
+                        : MitlistColors.textTertiary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _setViewMode(_CalendarView.month),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    vertical: MitlistSpacing.sm),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: _viewMode == _CalendarView.month
+                          ? MitlistColors.primary500
+                          : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                ),
+                child: Text(
+                  'Month',
+                  textAlign: TextAlign.center,
+                  style: textTheme.labelMedium?.copyWith(
+                    color: _viewMode == _CalendarView.month
+                        ? MitlistColors.primary500
+                        : MitlistColors.textTertiary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _setViewMode(_CalendarView.agenda),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    vertical: MitlistSpacing.sm),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: _viewMode == _CalendarView.agenda
+                          ? MitlistColors.primary500
+                          : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                ),
+                child: Text(
+                  'Agenda',
+                  textAlign: TextAlign.center,
+                  style: textTheme.labelMedium?.copyWith(
+                    color: _viewMode == _CalendarView.agenda
+                        ? MitlistColors.primary500
+                        : MitlistColors.textTertiary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Week View ───────────────────────────────────────────────────────────
+
+  Widget _buildWeekView() {
+    return Column(
+      children: [
         Padding(
-          padding: const EdgeInsets.all(MitlistSpacing.md),
+          padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
           child: Row(
             children: [
               IconButton(
@@ -171,7 +334,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         ),
         Expanded(
           child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
+            padding:
+                const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
             itemCount: 7,
             itemBuilder: (context, index) {
               final day = _weekStart.add(Duration(days: index));
@@ -188,9 +352,320 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
+  // ── Month View ──────────────────────────────────────────────────────────
+
+  Widget _buildMonthView() {
+    final daysInMonth =
+        DateTime(_monthStart.year, _monthStart.month + 1, 0).day;
+    final firstWeekday = _monthStart.weekday;
+    final totalCells = ((firstWeekday - 1 + daysInMonth) / 7).ceil() * 7;
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.chevron_left),
+                tooltip: 'Previous month',
+                onPressed: _prevMonth,
+              ),
+              Expanded(
+                child: Text(
+                  _monthLabel(),
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.chevron_right),
+                tooltip: 'Next month',
+                onPressed: _nextMonth,
+              ),
+            ],
+          ),
+        ),
+        // Weekday headers
+        Padding(
+          padding:
+              const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
+          child: Row(
+            children: _weekdayHeaders
+                .map((h) => Expanded(
+                      child: Center(
+                        child: Text(
+                          h,
+                          style: MitlistTypography.labelXSmall(
+                            color: MitlistColors.textTertiary,
+                          ),
+                        ),
+                      ),
+                    ))
+                .toList(),
+          ),
+        ),
+        const SizedBox(height: MitlistSpacing.sm),
+        Expanded(
+          child: Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: MitlistSpacing.sm),
+            child: GridView.builder(
+              gridDelegate:
+                  const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 7,
+                childAspectRatio: 0.9,
+              ),
+              itemCount: totalCells,
+              itemBuilder: (context, index) {
+                final dayNum = index - (firstWeekday - 1) + 1;
+                if (dayNum < 1 || dayNum > daysInMonth) {
+                  return const SizedBox.shrink();
+                }
+
+                final day = DateTime(
+                    _monthStart.year, _monthStart.month, dayNum);
+                final dayEvents = _eventsByDay[day] ?? [];
+                final isToday = _isToday(day);
+
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _weekStart = _weekStartForDay(day);
+                      _viewMode = _CalendarView.week;
+                    });
+                    _load();
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: isToday
+                          ? MitlistColors.primary50
+                          : Colors.transparent,
+                      border: Border.all(
+                        color: isToday
+                            ? MitlistColors.primary500
+                            : MitlistColors.borderSubtle,
+                        width: isToday ? 2 : 1,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: MitlistSpacing.xs),
+                        Text(
+                          '$dayNum',
+                          style:
+                              MitlistTypography.labelXSmall(
+                            color: isToday
+                                ? MitlistColors.primary500
+                                : MitlistColors.textPrimary,
+                          ),
+                        ),
+                        if (dayEvents.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: dayEvents
+                                .take(3)
+                                .map((e) => Container(
+                                      width: 6,
+                                      height: 6,
+                                      margin: const EdgeInsets.symmetric(
+                                          horizontal: 1),
+                                      decoration: BoxDecoration(
+                                        color: _dotColor(e.type),
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ))
+                                .toList(),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  DateTime _weekStartForDay(DateTime day) {
+    return day.subtract(Duration(days: day.weekday - 1));
+  }
+
+  Color _dotColor(CalendarEventType type) {
+    return switch (type) {
+      CalendarEventType.mealPlan => MitlistColors.primary500,
+      CalendarEventType.chore => MitlistColors.warning500,
+      CalendarEventType.recurringExpense => MitlistColors.success500,
+    };
+  }
+
+  // ── Agenda View ─────────────────────────────────────────────────────────
+
+  Widget _buildAgendaView() {
+    final sortedDays = _eventsByDay.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+
+    if (sortedDays.isEmpty) {
+      return Expanded(
+        child: Center(
+          child: AppEmptyState(
+            icon: const Icon(Icons.event_note, size: 56),
+            title: 'Nothing ahead',
+            description:
+                'Upcoming chores, meal plans, and recurring expenses will appear here.',
+            actions: [
+              AppButton(
+                text: 'Chores',
+                variant: AppButtonVariant.outline,
+                onPressed: () {
+                  // Navigate handled by caller context
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Expanded(
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
+        itemCount: sortedDays.length,
+        itemBuilder: (context, index) {
+          final entry = sortedDays[index];
+          final day = entry.key;
+          final dayEvents = entry.value;
+          final isToday = _isToday(day);
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    if (isToday)
+                      Container(
+                        width: MitlistSpacing.space2,
+                        height: MitlistSpacing.space2,
+                        decoration: const BoxDecoration(
+                          color: MitlistColors.primary500,
+                          shape: BoxShape.circle,
+                        ),
+                        margin:
+                            const EdgeInsets.only(right: MitlistSpacing.sm),
+                      ),
+                    Text(
+                      _formatAgendaDate(day),
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleSmall
+                          ?.copyWith(
+                            color: isToday
+                                ? MitlistColors.primary500
+                                : MitlistColors.textPrimary,
+                          ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: MitlistSpacing.sm),
+                ..._agendaDayEvents(dayEvents),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  String _formatAgendaDate(DateTime day) {
+    if (_isToday(day)) return 'Today';
+    final tomorrow = DateTime.now().add(const Duration(days: 1));
+    if (day.year == tomorrow.year &&
+        day.month == tomorrow.month &&
+        day.day == tomorrow.day) {
+      return 'Tomorrow';
+    }
+    return '${_weekdayName(day.weekday)}, ${day.day}.${day.month}.';
+  }
+
+  String _weekdayName(int weekday) {
+    return const [
+      'Monday', 'Tuesday', 'Wednesday', 'Thursday',
+      'Friday', 'Saturday', 'Sunday'
+    ][weekday - 1];
+  }
+
+  List<Widget> _agendaDayEvents(List<CalendarEvent> events) {
+    return events.map((e) {
+      final (icon, color, label) = _eventMeta(e);
+      return Padding(
+        padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(width: MitlistSpacing.sm),
+            Expanded(
+              child: Text(
+                e.title.isNotEmpty ? e.title : label,
+                style: Theme.of(context).textTheme.bodyMedium,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (e.type == CalendarEventType.mealPlan &&
+                e.mealPlan != null)
+              Text(
+                '${e.mealPlan!.servings} ppl ',
+                style: MitlistTypography.labelXSmall(
+                  color: MitlistColors.textTertiary,
+                ),
+              ),
+            if (e.type == CalendarEventType.recurringExpense &&
+                e.recurringExpense != null)
+              Text(
+                (e.recurringExpense!.amount / 100).toStringAsFixed(2),
+                style: MitlistTypography.monoBody(
+                  color: MitlistColors.textTertiary,
+                ),
+              ),
+          ],
+        ),
+      );
+    }).toList();
+  }
+
+  (IconData, Color, String) _eventMeta(CalendarEvent event) {
+    return switch (event.type) {
+      CalendarEventType.mealPlan => (
+          Icons.restaurant,
+          MitlistColors.primary500,
+          event.mealPlan?.slot ?? 'Meal'
+        ),
+      CalendarEventType.chore => (
+          Icons.cleaning_services,
+          MitlistColors.warning500,
+          'Chore'
+        ),
+      CalendarEventType.recurringExpense => (
+          Icons.repeat,
+          MitlistColors.success500,
+          'Recurring'
+        ),
+    };
+  }
+
   bool _isToday(DateTime d) {
     final now = DateTime.now();
-    return d.year == now.year && d.month == now.month && d.day == now.day;
+    return d.year == now.year &&
+        d.month == now.month &&
+        d.day == now.day;
   }
 }
 
@@ -334,7 +809,7 @@ class _EventRow extends StatelessWidget {
           if (event.type == CalendarEventType.recurringExpense &&
               event.recurringExpense != null)
             Text(
-              '€${(event.recurringExpense!.amount / 100).toStringAsFixed(2)}',
+              (event.recurringExpense!.amount / 100).toStringAsFixed(2),
               style: MitlistTypography.labelXSmall(),
             ),
         ],
