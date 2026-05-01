@@ -2,7 +2,9 @@ package repositories
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -10,6 +12,28 @@ import (
 
 	"github.com/mitlist-app/mitlist/internal/models"
 )
+
+func normalizeJSONText(s string, fallback string) string {
+	trimmed := strings.TrimSpace(s)
+	if trimmed == "" {
+		return fallback
+	}
+	if json.Valid([]byte(trimmed)) {
+		return trimmed
+	}
+	return fallback
+}
+
+func mustJSONArrayText(v []string) string {
+	if v == nil {
+		return "[]"
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		return "[]"
+	}
+	return string(b)
+}
 
 // RecipeRepo handles raw SQL operations for recipe domain entities.
 type RecipeRepo struct {
@@ -34,29 +58,68 @@ func (r *RecipeRepo) CreateRecipe(ctx context.Context, rec *models.Recipe) error
 	rec.CreatedAt = now
 	rec.UpdatedAt = now
 
+	nutrition := normalizeJSONText(rec.NutritionJSON, "{}")
+	equipment := normalizeJSONText(rec.EquipmentJSON, "{}")
+	imageOptions := mustJSONArrayText(rec.ImageOptions)
+	tags := mustJSONArrayText(rec.Tags)
+
 	_, err := r.pool.Exec(ctx, `
 		INSERT INTO recipes (id, user_id, title, description, description_short, author, rating_value, rating_count, nutrition_json, video_url, equipment_json, source_url, image_url, image_options, tags, prep_time, cook_time, servings, is_public, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
-	`, rec.ID, rec.UserID, rec.Title, rec.Description, rec.DescriptionShort, rec.Author, rec.RatingValue, rec.RatingCount, rec.NutritionJSON, rec.VideoURL, rec.EquipmentJSON, rec.SourceURL, rec.ImageURL, rec.ImageOptions, rec.Tags, rec.PrepTime, rec.CookTime, rec.Servings, rec.IsPublic, rec.CreatedAt, rec.UpdatedAt)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11::jsonb, $12, $13, $14::jsonb, $15::jsonb, $16, $17, $18, $19, $20, $21)
+	`, rec.ID, rec.UserID, rec.Title, rec.Description, rec.DescriptionShort, rec.Author, rec.RatingValue, rec.RatingCount, nutrition, rec.VideoURL, equipment, rec.SourceURL, rec.ImageURL, imageOptions, tags, rec.PrepTime, rec.CookTime, rec.Servings, rec.IsPublic, rec.CreatedAt, rec.UpdatedAt)
 	return err
 }
 
 // GetRecipeByID retrieves a recipe by its ID.
 func (r *RecipeRepo) GetRecipeByID(ctx context.Context, id uuid.UUID) (*models.Recipe, error) {
 	row := r.pool.QueryRow(ctx, `
-		SELECT id, user_id, title, description, description_short, author, rating_value, rating_count, nutrition_json, video_url, equipment_json, source_url, image_url, image_options, tags, prep_time, cook_time, servings, is_public, created_at, updated_at
+		SELECT id, user_id, title, description, description_short, author, rating_value, rating_count,
+		       COALESCE(nutrition_json, '{}'::jsonb)::text AS nutrition_json,
+		       video_url,
+		       COALESCE(equipment_json, '{}'::jsonb)::text AS equipment_json,
+		       source_url,
+		       image_url,
+		       COALESCE(image_options, '[]'::jsonb)::text AS image_options,
+		       COALESCE(tags, '[]'::jsonb)::text AS tags,
+		       prep_time, cook_time, servings, is_public, created_at, updated_at
 		FROM recipes
 		WHERE id = $1
 	`, id)
 
 	var rec models.Recipe
-	err := row.Scan(&rec.ID, &rec.UserID, &rec.Title, &rec.Description, &rec.DescriptionShort, &rec.Author, &rec.RatingValue, &rec.RatingCount, &rec.NutritionJSON, &rec.VideoURL, &rec.EquipmentJSON, &rec.SourceURL, &rec.ImageURL, &rec.ImageOptions, &rec.Tags, &rec.PrepTime, &rec.CookTime, &rec.Servings, &rec.IsPublic, &rec.CreatedAt, &rec.UpdatedAt)
+	var imageOptionsJSON, tagsJSON string
+	err := row.Scan(
+		&rec.ID,
+		&rec.UserID,
+		&rec.Title,
+		&rec.Description,
+		&rec.DescriptionShort,
+		&rec.Author,
+		&rec.RatingValue,
+		&rec.RatingCount,
+		&rec.NutritionJSON,
+		&rec.VideoURL,
+		&rec.EquipmentJSON,
+		&rec.SourceURL,
+		&rec.ImageURL,
+		&imageOptionsJSON,
+		&tagsJSON,
+		&rec.PrepTime,
+		&rec.CookTime,
+		&rec.Servings,
+		&rec.IsPublic,
+		&rec.CreatedAt,
+		&rec.UpdatedAt,
+	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, fmt.Errorf("recipe not found")
 		}
 		return nil, err
 	}
+
+	_ = json.Unmarshal([]byte(imageOptionsJSON), &rec.ImageOptions)
+	_ = json.Unmarshal([]byte(tagsJSON), &rec.Tags)
 	return &rec, nil
 }
 
@@ -65,7 +128,15 @@ func (r *RecipeRepo) ListRecipesByUser(ctx context.Context, userID uuid.UUID, li
 	limit = clampLimit(limit)
 
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, user_id, title, description, description_short, author, rating_value, rating_count, nutrition_json, video_url, equipment_json, source_url, image_url, image_options, tags, prep_time, cook_time, servings, is_public, created_at, updated_at
+		SELECT id, user_id, title, description, description_short, author, rating_value, rating_count,
+		       COALESCE(nutrition_json, '{}'::jsonb)::text AS nutrition_json,
+		       video_url,
+		       COALESCE(equipment_json, '{}'::jsonb)::text AS equipment_json,
+		       source_url,
+		       image_url,
+		       COALESCE(image_options, '[]'::jsonb)::text AS image_options,
+		       COALESCE(tags, '[]'::jsonb)::text AS tags,
+		       prep_time, cook_time, servings, is_public, created_at, updated_at
 		FROM recipes
 		WHERE user_id = $1
 		ORDER BY created_at DESC
@@ -76,18 +147,60 @@ func (r *RecipeRepo) ListRecipesByUser(ctx context.Context, userID uuid.UUID, li
 	}
 	defer rows.Close()
 
-	return pgx.CollectRows(rows, pgx.RowToStructByName[models.Recipe])
+	out := make([]models.Recipe, 0)
+	for rows.Next() {
+		var rec models.Recipe
+		var imageOptionsJSON, tagsJSON string
+		err := rows.Scan(
+			&rec.ID,
+			&rec.UserID,
+			&rec.Title,
+			&rec.Description,
+			&rec.DescriptionShort,
+			&rec.Author,
+			&rec.RatingValue,
+			&rec.RatingCount,
+			&rec.NutritionJSON,
+			&rec.VideoURL,
+			&rec.EquipmentJSON,
+			&rec.SourceURL,
+			&rec.ImageURL,
+			&imageOptionsJSON,
+			&tagsJSON,
+			&rec.PrepTime,
+			&rec.CookTime,
+			&rec.Servings,
+			&rec.IsPublic,
+			&rec.CreatedAt,
+			&rec.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		_ = json.Unmarshal([]byte(imageOptionsJSON), &rec.ImageOptions)
+		_ = json.Unmarshal([]byte(tagsJSON), &rec.Tags)
+		out = append(out, rec)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // UpdateRecipe updates an existing recipe.
 func (r *RecipeRepo) UpdateRecipe(ctx context.Context, rec *models.Recipe) error {
 	rec.UpdatedAt = time.Now().UTC()
 
+	nutrition := normalizeJSONText(rec.NutritionJSON, "{}")
+	equipment := normalizeJSONText(rec.EquipmentJSON, "{}")
+	imageOptions := mustJSONArrayText(rec.ImageOptions)
+	tags := mustJSONArrayText(rec.Tags)
+
 	cmd, err := r.pool.Exec(ctx, `
 		UPDATE recipes
-		SET title = $1, description = $2, description_short = $3, author = $4, rating_value = $5, rating_count = $6, nutrition_json = $7, video_url = $8, equipment_json = $9, source_url = $10, image_url = $11, image_options = $12, tags = $13, prep_time = $14, cook_time = $15, servings = $16, is_public = $17, updated_at = $18
+		SET title = $1, description = $2, description_short = $3, author = $4, rating_value = $5, rating_count = $6, nutrition_json = $7::jsonb, video_url = $8, equipment_json = $9::jsonb, source_url = $10, image_url = $11, image_options = $12::jsonb, tags = $13::jsonb, prep_time = $14, cook_time = $15, servings = $16, is_public = $17, updated_at = $18
 		WHERE id = $19
-	`, rec.Title, rec.Description, rec.DescriptionShort, rec.Author, rec.RatingValue, rec.RatingCount, rec.NutritionJSON, rec.VideoURL, rec.EquipmentJSON, rec.SourceURL, rec.ImageURL, rec.ImageOptions, rec.Tags, rec.PrepTime, rec.CookTime, rec.Servings, rec.IsPublic, rec.UpdatedAt, rec.ID)
+	`, rec.Title, rec.Description, rec.DescriptionShort, rec.Author, rec.RatingValue, rec.RatingCount, nutrition, rec.VideoURL, equipment, rec.SourceURL, rec.ImageURL, imageOptions, tags, rec.PrepTime, rec.CookTime, rec.Servings, rec.IsPublic, rec.UpdatedAt, rec.ID)
 	if err != nil {
 		return err
 	}

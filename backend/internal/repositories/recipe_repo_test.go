@@ -29,7 +29,7 @@ func TestRecipeRepo_CreateRecipe(t *testing.T) {
 	}
 
 	mock.ExpectExec("INSERT INTO recipes").
-		WithArgs(pgxmock.AnyArg(), rec.UserID, rec.Title, rec.Description, rec.DescriptionShort, rec.Author, rec.RatingValue, rec.RatingCount, rec.NutritionJSON, rec.VideoURL, rec.EquipmentJSON, rec.SourceURL, rec.ImageURL, rec.ImageOptions, rec.Tags, rec.PrepTime, rec.CookTime, rec.Servings, rec.IsPublic, pgxmock.AnyArg(), pgxmock.AnyArg()).
+		WithArgs(pgxmock.AnyArg(), rec.UserID, rec.Title, rec.Description, rec.DescriptionShort, rec.Author, rec.RatingValue, rec.RatingCount, "{}", rec.VideoURL, "{}", rec.SourceURL, rec.ImageURL, "[]", "[]", rec.PrepTime, rec.CookTime, rec.Servings, rec.IsPublic, pgxmock.AnyArg(), pgxmock.AnyArg()).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
 	err := repo.CreateRecipe(context.Background(), rec)
@@ -96,7 +96,7 @@ func TestRecipeRepo_UpdateRecipe(t *testing.T) {
 	id := fixedUUID()
 
 	mock.ExpectExec("UPDATE recipes SET").
-		WithArgs("New Title", "New Desc", "", "", 0.0, 0, "", "", "", "", "newurl", []string(nil), []string(nil), 5, 15, 2, false, pgxmock.AnyArg(), id).
+		WithArgs("New Title", "New Desc", "", "", 0.0, 0, "{}", "", "{}", "", "newurl", "[]", "[]", 5, 15, 2, false, pgxmock.AnyArg(), id).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
 	rec := &models.Recipe{ID: id, Title: "New Title", Description: "New Desc", PrepTime: 5, CookTime: 15, Servings: 2, ImageURL: "newurl", IsPublic: false}
@@ -111,7 +111,7 @@ func TestRecipeRepo_UpdateRecipe_NotFound(t *testing.T) {
 	id := fixedUUID()
 
 	mock.ExpectExec("UPDATE recipes SET").
-		WithArgs("New Title", "New Desc", "", "", 0.0, 0, "", "", "", "", "newurl", []string(nil), []string(nil), 5, 15, 2, false, pgxmock.AnyArg(), id).
+		WithArgs("New Title", "New Desc", "", "", 0.0, 0, "{}", "", "{}", "", "newurl", "[]", "[]", 5, 15, 2, false, pgxmock.AnyArg(), id).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 0))
 
 	rec := &models.Recipe{ID: id, Title: "New Title", Description: "New Desc", PrepTime: 5, CookTime: 15, Servings: 2, ImageURL: "newurl", IsPublic: false}

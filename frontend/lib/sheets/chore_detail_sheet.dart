@@ -13,6 +13,7 @@ import '../widgets/chip.dart';
 class ChoreDetailSheet extends StatefulWidget {
   const ChoreDetailSheet({
     super.key,
+    required this.choreId,
     required this.title,
     required this.statusLabel,
     required this.assignee,
@@ -34,6 +35,7 @@ class ChoreDetailSheet extends StatefulWidget {
     this.onAddSuppliesToList,
   });
 
+  final String choreId;
   final String title;
   final String statusLabel;
   final String assignee;
@@ -56,6 +58,7 @@ class ChoreDetailSheet extends StatefulWidget {
 
   static Future<void> show(
     BuildContext context, {
+    required String choreId,
     required String title,
     required String statusLabel,
     required String assignee,
@@ -80,6 +83,7 @@ class ChoreDetailSheet extends StatefulWidget {
       context: context,
       title: 'Chore Details',
       body: ChoreDetailSheet(
+        choreId: choreId,
         title: title,
         statusLabel: statusLabel,
         assignee: assignee,

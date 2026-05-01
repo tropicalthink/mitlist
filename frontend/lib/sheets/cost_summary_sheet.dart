@@ -64,7 +64,7 @@ class CostSummarySheet extends ConsumerWidget {
           _InfoRow(
             icon: Icons.info_outline,
             message:
-                'No items have prices yet. Tap an item and add a price to see the cost summary.',
+                'No items have prices yet. Open the item options (⋯) and choose Set price to see the cost summary.',
           ),
         ] else ...[
           _CostRow(

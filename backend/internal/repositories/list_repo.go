@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/mitlist-app/mitlist/internal/models"
 )
@@ -170,11 +171,11 @@ func (r *ListRepository) CreateItem(ctx context.Context, item *models.ListItem) 
 	item.UpdatedAt = now
 
 	query := `
-		INSERT INTO list_items (id, list_id, name, quantity, unit, note, price_cents, product_id, store_id, checked, position, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		INSERT INTO list_items (id, list_id, name, quantity, unit, note, price_cents, product_id, store_id, added_by, checked, position, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 	`
 	_, err := r.pool.Exec(ctx, query,
-		item.ID, item.ListID, item.Name, item.Quantity, item.Unit, item.Note, item.PriceCents, item.ProductID, item.StoreID, item.Checked, item.Position, item.CreatedAt, item.UpdatedAt,
+		item.ID, item.ListID, item.Name, item.Quantity, item.Unit, item.Note, item.PriceCents, item.ProductID, item.StoreID, item.AddedBy, item.Checked, item.Position, item.CreatedAt, item.UpdatedAt,
 	)
 	return err
 }
@@ -182,16 +183,21 @@ func (r *ListRepository) CreateItem(ctx context.Context, item *models.ListItem) 
 // GetItemByID retrieves a list item by its ID.
 func (r *ListRepository) GetItemByID(ctx context.Context, id uuid.UUID) (*models.ListItem, error) {
 	query := `
-		SELECT id, list_id, name, quantity, unit, COALESCE(note, ''), price_cents, product_id, store_id, checked, position, created_at, updated_at
+		SELECT id, list_id, name, quantity, unit, COALESCE(note, ''), price_cents, product_id, store_id, added_by, checked, position, created_at, updated_at
 		FROM list_items
 		WHERE id = $1 AND deleted_at IS NULL
 	`
 	row := r.pool.QueryRow(ctx, query, id)
 
 	var i models.ListItem
-	err := row.Scan(&i.ID, &i.ListID, &i.Name, &i.Quantity, &i.Unit, &i.Note, &i.PriceCents, &i.ProductID, &i.StoreID, &i.Checked, &i.Position, &i.CreatedAt, &i.UpdatedAt)
+	var addedBy pgtype.UUID
+	err := row.Scan(&i.ID, &i.ListID, &i.Name, &i.Quantity, &i.Unit, &i.Note, &i.PriceCents, &i.ProductID, &i.StoreID, &addedBy, &i.Checked, &i.Position, &i.CreatedAt, &i.UpdatedAt)
 	if err != nil {
 		return nil, err
+	}
+	if addedBy.Valid {
+		u := uuid.UUID(addedBy.Bytes)
+		i.AddedBy = &u
 	}
 	return &i, nil
 }
@@ -199,7 +205,7 @@ func (r *ListRepository) GetItemByID(ctx context.Context, id uuid.UUID) (*models
 // GetItemByListNameUnit retrieves an active item by normalized name and unit.
 func (r *ListRepository) GetItemByListNameUnit(ctx context.Context, listID uuid.UUID, name, unit string) (*models.ListItem, error) {
 	query := `
-		SELECT id, list_id, name, quantity, unit, COALESCE(note, ''), price_cents, product_id, store_id, checked, position, created_at, updated_at
+		SELECT id, list_id, name, quantity, unit, COALESCE(note, ''), price_cents, product_id, store_id, added_by, checked, position, created_at, updated_at
 		FROM list_items
 		WHERE list_id = $1
 			AND lower(trim(name)) = lower(trim($2))
@@ -211,9 +217,14 @@ func (r *ListRepository) GetItemByListNameUnit(ctx context.Context, listID uuid.
 	row := r.pool.QueryRow(ctx, query, listID, name, unit)
 
 	var i models.ListItem
-	err := row.Scan(&i.ID, &i.ListID, &i.Name, &i.Quantity, &i.Unit, &i.Note, &i.PriceCents, &i.ProductID, &i.StoreID, &i.Checked, &i.Position, &i.CreatedAt, &i.UpdatedAt)
+	var addedBy pgtype.UUID
+	err := row.Scan(&i.ID, &i.ListID, &i.Name, &i.Quantity, &i.Unit, &i.Note, &i.PriceCents, &i.ProductID, &i.StoreID, &addedBy, &i.Checked, &i.Position, &i.CreatedAt, &i.UpdatedAt)
 	if err != nil {
 		return nil, err
+	}
+	if addedBy.Valid {
+		u := uuid.UUID(addedBy.Bytes)
+		i.AddedBy = &u
 	}
 	return &i, nil
 }
@@ -224,7 +235,7 @@ func (r *ListRepository) ListItemsByList(ctx context.Context, listID uuid.UUID, 
 		limit = 50
 	}
 	query := `
-		SELECT id, list_id, name, quantity, unit, COALESCE(note, ''), price_cents, product_id, store_id, checked, position, created_at, updated_at
+		SELECT id, list_id, name, quantity, unit, COALESCE(note, ''), price_cents, product_id, store_id, added_by, checked, position, created_at, updated_at
 		FROM list_items
 		WHERE list_id = $1 AND deleted_at IS NULL
 		ORDER BY position ASC, created_at ASC
@@ -239,8 +250,13 @@ func (r *ListRepository) ListItemsByList(ctx context.Context, listID uuid.UUID, 
 	var items []models.ListItem
 	for rows.Next() {
 		var i models.ListItem
-		if err := rows.Scan(&i.ID, &i.ListID, &i.Name, &i.Quantity, &i.Unit, &i.Note, &i.PriceCents, &i.ProductID, &i.StoreID, &i.Checked, &i.Position, &i.CreatedAt, &i.UpdatedAt); err != nil {
+		var addedBy pgtype.UUID
+		if err := rows.Scan(&i.ID, &i.ListID, &i.Name, &i.Quantity, &i.Unit, &i.Note, &i.PriceCents, &i.ProductID, &i.StoreID, &addedBy, &i.Checked, &i.Position, &i.CreatedAt, &i.UpdatedAt); err != nil {
 			return nil, err
+		}
+		if addedBy.Valid {
+			u := uuid.UUID(addedBy.Bytes)
+			i.AddedBy = &u
 		}
 		items = append(items, i)
 	}

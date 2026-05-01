@@ -131,6 +131,7 @@ class ListRepository {
       note: req.note ?? existing.note,
       checked: req.checked ?? existing.checked,
       position: req.position ?? existing.position,
+      priceCents: req.priceCents ?? existing.priceCents,
       createdAt: existing.createdAt,
       updatedAt: DateTime.now(),
     );
@@ -311,6 +312,7 @@ class ListRepository {
       unit: Value(item.unit),
       checked: Value(item.checked),
       position: Value(item.position),
+      priceCents: Value(item.priceCents),
       createdAt: Value(item.createdAt),
       updatedAt: Value(item.updatedAt),
     );
@@ -326,6 +328,7 @@ class ListRepository {
       note: '',
       checked: row.checked,
       position: row.position,
+      priceCents: row.priceCents,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     );

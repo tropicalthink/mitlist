@@ -527,6 +527,60 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     );
   }
 
+  Future<void> _setItemPrice(ListItem item) async {
+    final controller = TextEditingController(
+      text: item.priceCents != null
+          ? (item.priceCents! / 100).toStringAsFixed(2)
+          : '',
+    );
+    final priceStr = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Set price'),
+        content: TextField(
+          controller: controller,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          autofocus: true,
+          decoration: const InputDecoration(
+            prefixText: '\$',
+            hintText: '0.00',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (priceStr == null || priceStr.isEmpty) return;
+    final price = double.tryParse(priceStr.replaceAll(',', '.'));
+    if (price == null || price < 0) return;
+    final cents = (price * 100).round();
+
+    try {
+      final repo = await ref.read(listRepositoryProvider.future);
+      await repo.updateItemOfflineFirst(
+        widget.listId,
+        item.id,
+        UpdateListItemRequest(priceCents: cents),
+      );
+      if (!mounted) return;
+      setState(() => _dirty = true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to set price: \$e')),
+      );
+    }
+  }
+
   void _onMenuSelected(String value) {
     switch (value) {
       case 'complete_all':
@@ -929,11 +983,22 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     ),
                   ),
                 ),
+              if (item.priceCents != null && item.priceCents! > 0)
+                Padding(
+                  padding: const EdgeInsets.only(left: MitlistSpacing.sm),
+                  child: Text(
+                    '\$${(item.priceCents! / 100).toStringAsFixed(2)}',
+                    style: MitlistTypography.monoBody(
+                      color: MitlistColors.primary500,
+                    ),
+                  ),
+                ),
               PopupMenuButton<String>(
                 tooltip: 'Item options',
                 onSelected: (v) async {
                   if (v == 'photo') await _addItemPhoto(item);
                   if (v == 'remove_photo') await _removeItemPhoto(item);
+                  if (v == 'price') await _setItemPrice(item);
                   if (v == 'delete') await _deleteItem(item);
                 },
                 itemBuilder: (context) => [
@@ -943,6 +1008,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                       value: 'remove_photo',
                       child: Text('Remove photo'),
                     ),
+                  const PopupMenuItem(value: 'price', child: Text('Set price')),
                   const PopupMenuItem(value: 'delete', child: Text('Delete')),
                 ],
                 child: const Padding(

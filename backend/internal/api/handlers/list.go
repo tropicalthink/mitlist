@@ -297,6 +297,7 @@ func (h *ListHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 		PriceCents: req.PriceCents,
 		ProductID:  req.ProductID,
 		StoreID:    req.StoreID,
+		AddedBy:    &user.ID,
 	}
 	if err := h.service.CreateItem(r.Context(), user, item); err != nil {
 		respondError(w, err)

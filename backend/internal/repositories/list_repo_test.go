@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/pashagolub/pgxmock/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -148,7 +149,7 @@ func TestListRepository_CreateItem(t *testing.T) {
 	}
 
 	mock.ExpectExec("INSERT INTO list_items").
-		WithArgs(pgxmock.AnyArg(), item.ListID, item.Name, item.Quantity, item.Unit, item.Note, item.PriceCents, item.ProductID, item.StoreID, item.Checked, item.Position, pgxmock.AnyArg(), pgxmock.AnyArg()).
+		WithArgs(pgxmock.AnyArg(), item.ListID, item.Name, item.Quantity, item.Unit, item.Note, item.PriceCents, item.ProductID, item.StoreID, item.AddedBy, item.Checked, item.Position, pgxmock.AnyArg(), pgxmock.AnyArg()).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
 	err := repo.CreateItem(context.Background(), item)
@@ -162,8 +163,8 @@ func TestListRepository_GetItemByID(t *testing.T) {
 	repo := NewListRepository(mock)
 	id := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "list_id", "name", "quantity", "unit", "note", "price_cents", "product_id", "store_id", "checked", "position", "created_at", "updated_at"}).
-		AddRow(id, fixedUUID(), "Milk", 2.0, "liters", "organic", nil, nil, nil, false, 1, fixedTime(), fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "list_id", "name", "quantity", "unit", "note", "price_cents", "product_id", "store_id", "added_by", "checked", "position", "created_at", "updated_at"}).
+		AddRow(id, fixedUUID(), "Milk", 2.0, "liters", "organic", nil, nil, nil, pgtype.UUID{Bytes: fixedUUID(), Valid: true}, false, 1, fixedTime(), fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM list_items WHERE id = .* AND deleted_at IS NULL").
 		WithArgs(id).
@@ -196,8 +197,8 @@ func TestListRepository_ListItemsByList(t *testing.T) {
 	repo := NewListRepository(mock)
 	listID := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "list_id", "name", "quantity", "unit", "note", "price_cents", "product_id", "store_id", "checked", "position", "created_at", "updated_at"}).
-		AddRow(fixedUUID(), listID, "Milk", 2.0, "liters", "", nil, nil, nil, false, 1, fixedTime(), fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "list_id", "name", "quantity", "unit", "note", "price_cents", "product_id", "store_id", "added_by", "checked", "position", "created_at", "updated_at"}).
+		AddRow(fixedUUID(), listID, "Milk", 2.0, "liters", "", nil, nil, nil, pgtype.UUID{Bytes: fixedUUID(), Valid: true}, false, 1, fixedTime(), fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM list_items WHERE list_id = .* AND deleted_at IS NULL").
 		WithArgs(listID, 50, 0).
@@ -244,8 +245,8 @@ func TestListRepository_GetItemByListNameUnit(t *testing.T) {
 	listID := fixedUUID()
 	id := uuid.New()
 
-	rows := pgxmock.NewRows([]string{"id", "list_id", "name", "quantity", "unit", "note", "price_cents", "product_id", "store_id", "checked", "position", "created_at", "updated_at"}).
-		AddRow(id, listID, "Milk", 2.0, "liters", "", nil, nil, nil, false, 0, fixedTime(), fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "list_id", "name", "quantity", "unit", "note", "price_cents", "product_id", "store_id", "added_by", "checked", "position", "created_at", "updated_at"}).
+		AddRow(id, listID, "Milk", 2.0, "liters", "", nil, nil, nil, nil, false, 0, fixedTime(), fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM list_items").
 		WithArgs(listID, "milk", "liters").

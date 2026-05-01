@@ -28,6 +28,7 @@ type ListItem struct {
 	PriceCents *int       `json:"price_cents,omitempty"`
 	ProductID  *uuid.UUID `json:"product_id,omitempty"`
 	StoreID    *uuid.UUID `json:"store_id,omitempty"`
+	AddedBy    *uuid.UUID `json:"added_by,omitempty"`
 	Checked    bool       `json:"checked"`
 	Position   int        `json:"position"`
 	CreatedAt  time.Time  `json:"created_at"`

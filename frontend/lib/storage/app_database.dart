@@ -31,6 +31,7 @@ class ListItemsTable extends Table {
   TextColumn get unit => text()();
   BoolColumn get checked => boolean()();
   IntColumn get position => integer()();
+  IntColumn get priceCents => integer().named('price_cents').nullable()();
   DateTimeColumn get createdAt => dateTime().named('created_at')();
   DateTimeColumn get updatedAt => dateTime().named('updated_at')();
 

@@ -1,3 +1,24 @@
+import 'dart:convert';
+
+String _normalizeJsonForApi(String value, {String emptyFallback = '{}'}) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) return emptyFallback;
+
+  // If it already looks like JSON, validate it so we don't send invalid JSON
+  // into json/jsonb columns.
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    try {
+      jsonDecode(trimmed);
+      return trimmed;
+    } catch (_) {
+      // fall through to wrapping as safe JSON
+    }
+  }
+
+  // For freeform user-entered text, store it as valid JSON.
+  return jsonEncode({'text': trimmed});
+}
+
 class Recipe {
   final String id;
   final String title;
@@ -141,9 +162,9 @@ class CreateRecipeRequest {
     this.author = '',
     this.ratingValue = 0,
     this.ratingCount = 0,
-    this.nutritionJson = '',
+    this.nutritionJson = '{}',
     this.videoUrl = '',
-    this.equipmentJson = '',
+    this.equipmentJson = '{}',
     this.sourceUrl = '',
     this.prepTime = 0,
     this.cookTime = 0,
@@ -160,9 +181,9 @@ class CreateRecipeRequest {
         'author': author,
         'rating_value': ratingValue,
         'rating_count': ratingCount,
-        'nutrition_json': nutritionJson,
+        'nutrition_json': _normalizeJsonForApi(nutritionJson),
         'video_url': videoUrl,
-        'equipment_json': equipmentJson,
+        'equipment_json': _normalizeJsonForApi(equipmentJson),
         'source_url': sourceUrl,
         'prep_time': prepTime,
         'cook_time': cookTime,
@@ -221,9 +242,13 @@ class UpdateRecipeRequest {
     if (author != null) m['author'] = author;
     if (ratingValue != null) m['rating_value'] = ratingValue;
     if (ratingCount != null) m['rating_count'] = ratingCount;
-    if (nutritionJson != null) m['nutrition_json'] = nutritionJson;
+    if (nutritionJson != null) {
+      m['nutrition_json'] = _normalizeJsonForApi(nutritionJson!);
+    }
     if (videoUrl != null) m['video_url'] = videoUrl;
-    if (equipmentJson != null) m['equipment_json'] = equipmentJson;
+    if (equipmentJson != null) {
+      m['equipment_json'] = _normalizeJsonForApi(equipmentJson!);
+    }
     if (sourceUrl != null) m['source_url'] = sourceUrl;
     if (prepTime != null) m['prep_time'] = prepTime;
     if (cookTime != null) m['cook_time'] = cookTime;

@@ -31,7 +31,7 @@ class HubRepository {
   Stream<(List<ActivityLogModel> activities, bool hadError)> watchActivities(
       String groupId) {
     return _db.watchHubActivities(groupId).map((row) {
-      if (row == null) return (const <ActivityLogModel>[], true);
+      if (row == null) return (const <ActivityLogModel>[], false);
       return (_decodeActivities(row.activitiesJson), row.hadError);
     });
   }
@@ -39,7 +39,7 @@ class HubRepository {
   Future<(List<ActivityLogModel> activities, bool hadError)> getActivitiesOnce(
       String groupId) async {
     final row = await _db.getHubActivitiesOnce(groupId);
-    if (row == null) return (const <ActivityLogModel>[], true);
+    if (row == null) return (const <ActivityLogModel>[], false);
     return (_decodeActivities(row.activitiesJson), row.hadError);
   }
 

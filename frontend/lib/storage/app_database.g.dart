@@ -481,6 +481,12 @@ class $ListItemsTableTable extends ListItemsTable
   late final GeneratedColumn<int> position = GeneratedColumn<int>(
       'position', aliasedName, false,
       type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _priceCentsMeta =
+      const VerificationMeta('priceCents');
+  @override
+  late final GeneratedColumn<int> priceCents = GeneratedColumn<int>(
+      'price_cents', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -502,6 +508,7 @@ class $ListItemsTableTable extends ListItemsTable
         unit,
         checked,
         position,
+        priceCents,
         createdAt,
         updatedAt
       ];
@@ -556,6 +563,12 @@ class $ListItemsTableTable extends ListItemsTable
     } else if (isInserting) {
       context.missing(_positionMeta);
     }
+    if (data.containsKey('price_cents')) {
+      context.handle(
+          _priceCentsMeta,
+          priceCents.isAcceptableOrUnknown(
+              data['price_cents']!, _priceCentsMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -591,6 +604,8 @@ class $ListItemsTableTable extends ListItemsTable
           .read(DriftSqlType.bool, data['${effectivePrefix}checked'])!,
       position: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}position'])!,
+      priceCents: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}price_cents']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -613,6 +628,7 @@ class ListItemsTableData extends DataClass
   final String unit;
   final bool checked;
   final int position;
+  final int? priceCents;
   final DateTime createdAt;
   final DateTime updatedAt;
   const ListItemsTableData(
@@ -623,6 +639,7 @@ class ListItemsTableData extends DataClass
       required this.unit,
       required this.checked,
       required this.position,
+      this.priceCents,
       required this.createdAt,
       required this.updatedAt});
   @override
@@ -635,6 +652,9 @@ class ListItemsTableData extends DataClass
     map['unit'] = Variable<String>(unit);
     map['checked'] = Variable<bool>(checked);
     map['position'] = Variable<int>(position);
+    if (!nullToAbsent || priceCents != null) {
+      map['price_cents'] = Variable<int>(priceCents);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -649,6 +669,9 @@ class ListItemsTableData extends DataClass
       unit: Value(unit),
       checked: Value(checked),
       position: Value(position),
+      priceCents: priceCents == null && nullToAbsent
+          ? const Value.absent()
+          : Value(priceCents),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -665,6 +688,7 @@ class ListItemsTableData extends DataClass
       unit: serializer.fromJson<String>(json['unit']),
       checked: serializer.fromJson<bool>(json['checked']),
       position: serializer.fromJson<int>(json['position']),
+      priceCents: serializer.fromJson<int?>(json['priceCents']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -680,6 +704,7 @@ class ListItemsTableData extends DataClass
       'unit': serializer.toJson<String>(unit),
       'checked': serializer.toJson<bool>(checked),
       'position': serializer.toJson<int>(position),
+      'priceCents': serializer.toJson<int?>(priceCents),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -693,6 +718,7 @@ class ListItemsTableData extends DataClass
           String? unit,
           bool? checked,
           int? position,
+          Value<int?> priceCents = const Value.absent(),
           DateTime? createdAt,
           DateTime? updatedAt}) =>
       ListItemsTableData(
@@ -703,6 +729,7 @@ class ListItemsTableData extends DataClass
         unit: unit ?? this.unit,
         checked: checked ?? this.checked,
         position: position ?? this.position,
+        priceCents: priceCents.present ? priceCents.value : this.priceCents,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
       );
@@ -715,6 +742,8 @@ class ListItemsTableData extends DataClass
       unit: data.unit.present ? data.unit.value : this.unit,
       checked: data.checked.present ? data.checked.value : this.checked,
       position: data.position.present ? data.position.value : this.position,
+      priceCents:
+          data.priceCents.present ? data.priceCents.value : this.priceCents,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -730,6 +759,7 @@ class ListItemsTableData extends DataClass
           ..write('unit: $unit, ')
           ..write('checked: $checked, ')
           ..write('position: $position, ')
+          ..write('priceCents: $priceCents, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -738,7 +768,7 @@ class ListItemsTableData extends DataClass
 
   @override
   int get hashCode => Object.hash(id, listId, name, quantity, unit, checked,
-      position, createdAt, updatedAt);
+      position, priceCents, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -750,6 +780,7 @@ class ListItemsTableData extends DataClass
           other.unit == this.unit &&
           other.checked == this.checked &&
           other.position == this.position &&
+          other.priceCents == this.priceCents &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -762,6 +793,7 @@ class ListItemsTableCompanion extends UpdateCompanion<ListItemsTableData> {
   final Value<String> unit;
   final Value<bool> checked;
   final Value<int> position;
+  final Value<int?> priceCents;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -773,6 +805,7 @@ class ListItemsTableCompanion extends UpdateCompanion<ListItemsTableData> {
     this.unit = const Value.absent(),
     this.checked = const Value.absent(),
     this.position = const Value.absent(),
+    this.priceCents = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -785,6 +818,7 @@ class ListItemsTableCompanion extends UpdateCompanion<ListItemsTableData> {
     required String unit,
     required bool checked,
     required int position,
+    this.priceCents = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -805,6 +839,7 @@ class ListItemsTableCompanion extends UpdateCompanion<ListItemsTableData> {
     Expression<String>? unit,
     Expression<bool>? checked,
     Expression<int>? position,
+    Expression<int>? priceCents,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -817,6 +852,7 @@ class ListItemsTableCompanion extends UpdateCompanion<ListItemsTableData> {
       if (unit != null) 'unit': unit,
       if (checked != null) 'checked': checked,
       if (position != null) 'position': position,
+      if (priceCents != null) 'price_cents': priceCents,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -831,6 +867,7 @@ class ListItemsTableCompanion extends UpdateCompanion<ListItemsTableData> {
       Value<String>? unit,
       Value<bool>? checked,
       Value<int>? position,
+      Value<int?>? priceCents,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt,
       Value<int>? rowid}) {
@@ -842,6 +879,7 @@ class ListItemsTableCompanion extends UpdateCompanion<ListItemsTableData> {
       unit: unit ?? this.unit,
       checked: checked ?? this.checked,
       position: position ?? this.position,
+      priceCents: priceCents ?? this.priceCents,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -872,6 +910,9 @@ class ListItemsTableCompanion extends UpdateCompanion<ListItemsTableData> {
     if (position.present) {
       map['position'] = Variable<int>(position.value);
     }
+    if (priceCents.present) {
+      map['price_cents'] = Variable<int>(priceCents.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -894,6 +935,7 @@ class ListItemsTableCompanion extends UpdateCompanion<ListItemsTableData> {
           ..write('unit: $unit, ')
           ..write('checked: $checked, ')
           ..write('position: $position, ')
+          ..write('priceCents: $priceCents, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -4263,6 +4305,7 @@ typedef $$ListItemsTableTableCreateCompanionBuilder = ListItemsTableCompanion
   required String unit,
   required bool checked,
   required int position,
+  Value<int?> priceCents,
   required DateTime createdAt,
   required DateTime updatedAt,
   Value<int> rowid,
@@ -4276,6 +4319,7 @@ typedef $$ListItemsTableTableUpdateCompanionBuilder = ListItemsTableCompanion
   Value<String> unit,
   Value<bool> checked,
   Value<int> position,
+  Value<int?> priceCents,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<int> rowid,
@@ -4310,6 +4354,9 @@ class $$ListItemsTableTableFilterComposer
 
   ColumnFilters<int> get position => $composableBuilder(
       column: $table.position, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get priceCents => $composableBuilder(
+      column: $table.priceCents, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -4348,6 +4395,9 @@ class $$ListItemsTableTableOrderingComposer
   ColumnOrderings<int> get position => $composableBuilder(
       column: $table.position, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get priceCents => $composableBuilder(
+      column: $table.priceCents, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 
@@ -4384,6 +4434,9 @@ class $$ListItemsTableTableAnnotationComposer
 
   GeneratedColumn<int> get position =>
       $composableBuilder(column: $table.position, builder: (column) => column);
+
+  GeneratedColumn<int> get priceCents => $composableBuilder(
+      column: $table.priceCents, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -4426,6 +4479,7 @@ class $$ListItemsTableTableTableManager extends RootTableManager<
             Value<String> unit = const Value.absent(),
             Value<bool> checked = const Value.absent(),
             Value<int> position = const Value.absent(),
+            Value<int?> priceCents = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -4438,6 +4492,7 @@ class $$ListItemsTableTableTableManager extends RootTableManager<
             unit: unit,
             checked: checked,
             position: position,
+            priceCents: priceCents,
             createdAt: createdAt,
             updatedAt: updatedAt,
             rowid: rowid,
@@ -4450,6 +4505,7 @@ class $$ListItemsTableTableTableManager extends RootTableManager<
             required String unit,
             required bool checked,
             required int position,
+            Value<int?> priceCents = const Value.absent(),
             required DateTime createdAt,
             required DateTime updatedAt,
             Value<int> rowid = const Value.absent(),
@@ -4462,6 +4518,7 @@ class $$ListItemsTableTableTableManager extends RootTableManager<
             unit: unit,
             checked: checked,
             position: position,
+            priceCents: priceCents,
             createdAt: createdAt,
             updatedAt: updatedAt,
             rowid: rowid,

@@ -172,6 +172,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     if (!mounted) return;
     await ChoreDetailSheet.show(
       context,
+      choreId: id,
       title: details?.chore.name ?? chore.title,
       statusLabel: _statusLabel(details?.dueStatus, chore.completed),
       assignee: details?.pendingAssignment?.userId != null
