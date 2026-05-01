@@ -13,6 +13,8 @@ import '../../widgets/app_card.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/mitlist_app_bar.dart';
+import '../../sheets/expense_creation_sheet.dart';
+import '../../sheets/chore_creation_sheet.dart';
 
 enum _CalendarView { week, month, agenda }
 
@@ -429,6 +431,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 final isToday = _isToday(day);
 
                 return GestureDetector(
+                  onTapDown: (details) => _showDayMenu(
+                      context, day, dayEvents, details.globalPosition),
                   onTap: () {
                     setState(() {
                       _weekStart = _weekStartForDay(day);
@@ -503,6 +507,70 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       CalendarEventType.chore => MitlistColors.warning500,
       CalendarEventType.recurringExpense => MitlistColors.success500,
     };
+  }
+
+  void _showDayMenu(
+    BuildContext ctx,
+    DateTime day,
+    List<CalendarEvent> events,
+    Offset position,
+  ) {
+    final dayLabel =
+        '${_weekdayName(day.weekday)}, ${day.day}.${day.month}.${day.year}';
+
+    showMenu<String>(
+      context: ctx,
+      position: RelativeRect.fromLTRB(
+          position.dx, position.dy, position.dx, position.dy),
+      items: [
+        PopupMenuItem(
+          enabled: false,
+          height: 28,
+          child: Text(
+            dayLabel,
+            style: Theme.of(ctx).textTheme.labelSmall?.copyWith(
+                  color: MitlistColors.textTertiary,
+                ),
+          ),
+        ),
+        if (events.isNotEmpty)
+          ...events.map((e) {
+            final label = e.title.isNotEmpty ? e.title : e.type.name;
+            return PopupMenuItem<String>(
+              value: 'view_${e.type.name}',
+              child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+            );
+          }),
+        const PopupMenuDivider(),
+        PopupMenuItem<String>(
+          value: 'add_chore',
+          child: const Text('Add chore'),
+        ),
+        PopupMenuItem<String>(
+          value: 'add_expense',
+          child: const Text('Add expense'),
+        ),
+        PopupMenuItem<String>(
+          value: 'view_week',
+          child: const Text('View in week'),
+        ),
+      ],
+    ).then((value) {
+      if (value == null || !mounted) return;
+      switch (value) {
+        case 'view_week':
+          setState(() {
+            _weekStart = _weekStartForDay(day);
+            _viewMode = _CalendarView.week;
+          });
+          _load();
+        case 'add_chore':
+          ChoreCreationSheet.show(ctx,
+              initialTitle: '${day.day}.${day.month}.');
+        case 'add_expense':
+          ExpenseCreationSheet.show(ctx);
+      }
+    });
   }
 
   // ── Agenda View ─────────────────────────────────────────────────────────
