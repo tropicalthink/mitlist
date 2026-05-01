@@ -73,6 +73,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   final FocusNode _composerFocusNode = FocusNode();
   bool _doneSectionExpanded = true;
   String? _groupId;
+  List<Product> _productSuggestions = [];
+  bool _showProductSuggestions = false;
   final Map<String, List<ListItemPhoto>> _photosByItemId = {};
 
   @override
@@ -81,7 +83,29 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     if (widget.initialListName != null && widget.initialListName!.isNotEmpty) {
       _listName = widget.initialListName!;
     }
+    _composerFocusNode.addListener(_onComposerFocusChanged);
     _load();
+  }
+
+  void _onComposerFocusChanged() {
+    if (_composerFocusNode.hasFocus) {
+      _loadProductSuggestions();
+      setState(() => _showProductSuggestions = true);
+    } else {
+      setState(() => _showProductSuggestions = false);
+    }
+  }
+
+  Future<void> _loadProductSuggestions() async {
+    if (_groupId == null) return;
+    try {
+      final service = await ref.read(listServiceProviderAsync.future);
+      final products = await service.listProducts(_groupId!, search: _newItemController.text.isEmpty ? null : _newItemController.text);
+      if (!mounted) return;
+      setState(() => _productSuggestions = products.take(8).toList());
+    } catch (_) {
+      // Silently fail — suggestions are optional.
+    }
   }
 
   @override
@@ -109,6 +133,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
   @override
   void dispose() {
+    _composerFocusNode.removeListener(_onComposerFocusChanged);
     _bannerTimer?.cancel();
     _itemsSub?.cancel();
     _newItemController.dispose();
@@ -223,6 +248,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                 alignment: Alignment.topLeft,
                 child: IconButton(
                   icon: const Icon(Icons.close, color: Colors.white),
+                  tooltip: 'Close',
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ),
@@ -1039,35 +1065,63 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           MitlistSpacing.md,
           MitlistSpacing.md,
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: TextField(
-                controller: _newItemController,
-                focusNode: _composerFocusNode,
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => _addItem(),
-                minLines: 1,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  hintText: 'e.g. Milk · Oats · 2 avocados',
-                  filled: true,
-                  fillColor: fill,
+            if (_showProductSuggestions && _productSuggestions.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+                child: SizedBox(
+                  height: 32,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _productSuggestions.length,
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(width: MitlistSpacing.sm),
+                    itemBuilder: (context, index) {
+                      final product = _productSuggestions[index];
+                      return ActionChip(
+                        label: Text(product.name),
+                        onPressed: () {
+                          _newItemController.text = product.name;
+                          _addItem();
+                        },
+                      );
+                    },
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: MitlistSpacing.sm),
-            FilledButton(
-              onPressed: _addItem,
-              style: FilledButton.styleFrom(
-                shape: const CircleBorder(),
-                padding: const EdgeInsets.all(MitlistSpacing.md),
-                backgroundColor: MitlistColors.primary500,
-                foregroundColor: Colors.white,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: const AppIcon(name: 'plus', color: Colors.white),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _newItemController,
+                    focusNode: _composerFocusNode,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) => _addItem(),
+                    minLines: 1,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      hintText: 'e.g. Milk · Oats · 2 avocados',
+                      filled: true,
+                      fillColor: fill,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: MitlistSpacing.sm),
+                FilledButton(
+                  onPressed: _addItem,
+                  style: FilledButton.styleFrom(
+                    shape: const CircleBorder(),
+                    padding: const EdgeInsets.all(MitlistSpacing.md),
+                    backgroundColor: MitlistColors.primary500,
+                    foregroundColor: Colors.white,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const AppIcon(name: 'plus', color: Colors.white),
+                ),
+              ],
             ),
           ],
         ),

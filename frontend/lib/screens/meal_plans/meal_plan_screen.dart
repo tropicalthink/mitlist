@@ -176,6 +176,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
       appBar: MitlistAppBar(
         leading: IconButton(
           icon: const AppIcon(name: 'arrowLeft'),
+          tooltip: 'Back',
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text('Meal Plan'),
@@ -195,6 +196,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.chevron_left),
+                  tooltip: 'Previous week',
                   onPressed: _prevWeek,
                 ),
                 Expanded(
@@ -206,6 +208,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.chevron_right),
+                  tooltip: 'Next week',
                   onPressed: _nextWeek,
                 ),
               ],
@@ -441,6 +444,7 @@ class _SlotRow extends StatelessWidget {
                 const SizedBox(width: MitlistSpacing.xs),
                 IconButton(
                   icon: const Icon(Icons.close, size: 18),
+                  tooltip: 'Remove',
                   visualDensity: VisualDensity.compact,
                   onPressed: onRemove,
                 ),
@@ -592,6 +596,7 @@ class _ServingsPickerSheetState extends State<_ServingsPickerSheet> {
           children: [
             IconButton(
               icon: const Icon(Icons.remove_circle_outline),
+              tooltip: 'Fewer servings',
               onPressed: _servings > 1
                   ? () => setState(() => _servings--)
                   : null,
@@ -602,6 +607,7 @@ class _ServingsPickerSheetState extends State<_ServingsPickerSheet> {
             ),
             IconButton(
               icon: const Icon(Icons.add_circle_outline),
+              tooltip: 'More servings',
               onPressed: () => setState(() => _servings++),
             ),
           ],

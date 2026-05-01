@@ -355,6 +355,22 @@ func (r *FinanceRepo) ListRecurringExpenses(ctx context.Context, groupID uuid.UU
 	return pgx.CollectRows(rows, pgx.RowToStructByName[models.RecurringExpense])
 }
 
+// ListRecurringExpensesByDateRange returns active recurring expenses for a group with next_due in range.
+func (r *FinanceRepo) ListRecurringExpensesByDateRange(ctx context.Context, groupID uuid.UUID, from, to time.Time) ([]models.RecurringExpense, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, group_id, payer_id, amount, description, category, frequency, next_due, is_active, created_at, currency
+		FROM recurring_expenses
+		WHERE group_id = $1 AND is_active = true AND next_due >= $2 AND next_due <= $3
+		ORDER BY next_due ASC, created_at ASC
+	`, groupID, from, to)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return pgx.CollectRows(rows, pgx.RowToStructByName[models.RecurringExpense])
+}
+
 // UpdateRecurringExpense updates an existing recurring expense.
 func (r *FinanceRepo) UpdateRecurringExpense(ctx context.Context, re *models.RecurringExpense) error {
 	cmd, err := r.pool.Exec(ctx, `

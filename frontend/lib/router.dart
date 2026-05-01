@@ -12,6 +12,8 @@ import 'screens/home/groups_list_screen.dart';
 import 'screens/lists/lists_screen.dart';
 import 'screens/chores/chores_screen.dart';
 import 'screens/money/expenses_screen.dart';
+import 'screens/money/recurring_expenses_screen.dart';
+import 'screens/calendar/calendar_screen.dart';
 import 'screens/you/account_screen.dart';
 import 'screens/auth/welcome_screen.dart';
 import 'screens/auth/login_screen.dart';
@@ -169,6 +171,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/money',
             name: 'money',
             builder: (context, state) => const ExpensesScreen(),
+            routes: [
+              GoRoute(
+                path: 'recurring',
+                name: 'recurringExpenses',
+                parentNavigatorKey: _rootNavigatorKey,
+                builder: (context, state) => const RecurringExpensesScreen(),
+              ),
+            ],
           ),
           GoRoute(
             path: '/recipes',
@@ -186,6 +196,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                 },
               ),
             ],
+          ),
+          GoRoute(
+            path: '/calendar',
+            name: 'calendar',
+            builder: (context, state) => const CalendarScreen(),
           ),
           GoRoute(
             path: '/you',

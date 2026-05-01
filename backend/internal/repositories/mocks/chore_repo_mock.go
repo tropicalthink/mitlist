@@ -128,6 +128,14 @@ func (m *MockChoreRepo) ListDueAssignments(ctx context.Context, from, to time.Ti
 	return nil, args.Error(1)
 }
 
+func (m *MockChoreRepo) ListDueAssignmentsByGroup(ctx context.Context, groupID uuid.UUID, from, to time.Time) ([]models.ChoreAssignment, error) {
+	args := m.Called(ctx, groupID, from, to)
+	if a := args.Get(0); a != nil {
+		return a.([]models.ChoreAssignment), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
 func (m *MockChoreRepo) CreateSubtask(ctx context.Context, subtask *models.ChoreSubtask) error {
 	args := m.Called(ctx, subtask)
 	return args.Error(0)

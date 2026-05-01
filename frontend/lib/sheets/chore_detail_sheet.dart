@@ -45,10 +45,10 @@ class ChoreDetailSheet extends StatefulWidget {
   final List<ChoreSubtask> subtasks;
   final List<String> supplies;
   final VoidCallback? onMarkDone;
-  final VoidCallback? onSkip;
+  final ValueChanged<String?>? onSkip;
   final VoidCallback? onRescheduleTomorrow;
   final VoidCallback? onUndo;
-  final ValueChanged<String>? onToggleSubtask;
+  final void Function(String subtaskId, bool completed)? onToggleSubtask;
   final Future<String?> Function()? onAddSubtask;
   final ValueChanged<String>? onDeleteSubtask;
   final ValueChanged<List<String>>? onReorderSubtasks;
@@ -67,10 +67,10 @@ class ChoreDetailSheet extends StatefulWidget {
     List<ChoreSubtask> subtasks = const [],
     List<String> supplies = const [],
     VoidCallback? onMarkDone,
-    VoidCallback? onSkip,
+    ValueChanged<String?>? onSkip,
     VoidCallback? onRescheduleTomorrow,
     VoidCallback? onUndo,
-    ValueChanged<String>? onToggleSubtask,
+    void Function(String subtaskId, bool completed)? onToggleSubtask,
     Future<String?> Function()? onAddSubtask,
     ValueChanged<String>? onDeleteSubtask,
     ValueChanged<List<String>>? onReorderSubtasks,
@@ -150,20 +150,22 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
       ),
     );
     if (reason != null && widget.onSkip != null) {
-      widget.onSkip!();
+      widget.onSkip!(reason.isEmpty ? null : reason);
     }
   }
 
   void _handleToggleSubtask(String subtaskId) {
+    bool newCompleted = false;
     setState(() {
       final idx = _subtasks.indexWhere((s) => s.id == subtaskId);
       if (idx != -1) {
+        newCompleted = !_subtasks[idx].completed;
         _subtasks[idx] = _subtasks[idx].copyWith(
-          completed: !_subtasks[idx].completed,
+          completed: newCompleted,
         );
       }
     });
-    widget.onToggleSubtask?.call(subtaskId);
+    widget.onToggleSubtask?.call(subtaskId, newCompleted);
   }
 
   void _handleAddSubtask() async {

@@ -5,99 +5,71 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/yourorg/mitlist/internal/models"
 )
 
-// ActivityRepository provides data access for activity logs.
+// ActivityRepository aggregates recent events from multiple tables.
 type ActivityRepository struct {
-	db DBTX
+	pool *pgxpool.Pool
 }
 
 // NewActivityRepository creates a new ActivityRepository.
-func NewActivityRepository(db DBTX) *ActivityRepository {
-	return &ActivityRepository{db: db}
+func NewActivityRepository(pool *pgxpool.Pool) *ActivityRepository {
+	return &ActivityRepository{pool: pool}
 }
 
-// LogActivity inserts a new activity log and returns it with generated fields.
-func (r *ActivityRepository) LogActivity(ctx context.Context, a *models.ActivityLog) error {
-	query := `
-		INSERT INTO activity_logs (id, group_id, user_id, action, entity_type, entity_id, metadata, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		RETURNING id, group_id, user_id, action, entity_type, entity_id, metadata, created_at
-	`
-	return r.db.QueryRow(ctx, query,
-		a.ID, a.GroupID, a.UserID, a.Action, a.EntityType, a.EntityID, a.Metadata, a.CreatedAt,
-	).Scan(&a.ID, &a.GroupID, &a.UserID, &a.Action, &a.EntityType, &a.EntityID, &a.Metadata, &a.CreatedAt)
-}
-
-// GetActivityLogByID retrieves an activity log by its ID.
-func (r *ActivityRepository) GetActivityLogByID(ctx context.Context, id uuid.UUID) (*models.ActivityLog, error) {
-	query := `
-		SELECT id, group_id, user_id, action, entity_type, entity_id, metadata, created_at
-		FROM activity_logs
-		WHERE id = $1
-	`
-	var a models.ActivityLog
-	err := r.db.QueryRow(ctx, query, id).Scan(
-		&a.ID, &a.GroupID, &a.UserID, &a.Action, &a.EntityType, &a.EntityID, &a.Metadata, &a.CreatedAt,
-	)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, fmt.Errorf("activity log not found: %w", err)
-		}
-		return nil, err
-	}
-	return &a, nil
-}
-
-// ListActivityLogsByGroup lists activity logs for a group, newest first.
-func (r *ActivityRepository) ListActivityLogsByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.ActivityLog, error) {
+// ListRecentActivity returns the most recent household events across lists, expenses, chores, meal plans, and recipes.
+func (r *ActivityRepository) ListRecentActivity(ctx context.Context, groupID uuid.UUID, limit int) ([]models.ActivityEvent, error) {
 	if limit <= 0 {
-		limit = 50
-	}
-	if limit > 500 {
-		limit = 500
+		limit = 10
 	}
 	query := `
-		SELECT id, group_id, user_id, action, entity_type, entity_id, metadata, created_at
-		FROM activity_logs
-		WHERE group_id = $1
-		ORDER BY created_at DESC, id DESC
-		LIMIT $2 OFFSET $3
+		SELECT id, type, title, created_at, user_id, group_id FROM (
+			SELECT id::text, 'list_item_added' as type, name as title, created_at, added_by as user_id, list_id as group_id
+			FROM list_items
+			WHERE list_id IN (SELECT id FROM lists WHERE group_id = $1)
+			UNION ALL
+			SELECT id::text, 'expense_created', description, created_at, payer_id, group_id
+			FROM expenses
+			WHERE group_id = $1
+			UNION ALL
+			SELECT c.id::text, 'chore_completed', ch.name, c.completed_at as created_at, c.completed_by as user_id, ch.group_id
+			FROM chore_completions c
+			JOIN chore_assignments a ON a.id = c.assignment_id
+			JOIN chores ch ON ch.id = a.chore_id
+			WHERE ch.group_id = $1
+			UNION ALL
+			SELECT id::text, 'meal_plan_created', 'Meal planned', created_at, cook_user_id, group_id
+			FROM meal_plans
+			WHERE group_id = $1
+			UNION ALL
+			SELECT id::text, 'recipe_added', title, created_at, user_id, group_id
+			FROM recipes
+			WHERE group_id = $1
+		) events
+		ORDER BY created_at DESC
+		LIMIT $2
 	`
-	rows, err := r.db.Query(ctx, query, groupID, limit, offset)
+	rows, err := r.pool.Query(ctx, query, groupID, limit)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list recent activity: %w", err)
 	}
 	defer rows.Close()
 
-	var logs []models.ActivityLog
+	var events []models.ActivityEvent
 	for rows.Next() {
-		var a models.ActivityLog
-		if err := rows.Scan(
-			&a.ID, &a.GroupID, &a.UserID, &a.Action, &a.EntityType, &a.EntityID, &a.Metadata, &a.CreatedAt,
-		); err != nil {
-			return nil, err
+		var e models.ActivityEvent
+		var userID *uuid.UUID
+		if err := rows.Scan(&e.ID, &e.Type, &e.Title, &e.CreatedAt, &userID, &e.GroupID); err != nil {
+			return nil, fmt.Errorf("scan activity event: %w", err)
 		}
-		logs = append(logs, a)
+		e.UserID = userID
+		events = append(events, e)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("activity rows error: %w", err)
 	}
-	return logs, nil
-}
-
-// DeleteActivityLog removes an activity log by ID.
-func (r *ActivityRepository) DeleteActivityLog(ctx context.Context, id uuid.UUID) error {
-	query := `DELETE FROM activity_logs WHERE id = $1`
-	cmd, err := r.db.Exec(ctx, query, id)
-	if err != nil {
-		return err
-	}
-	if cmd.RowsAffected() == 0 {
-		return fmt.Errorf("activity log not found")
-	}
-	return nil
+	return events, nil
 }

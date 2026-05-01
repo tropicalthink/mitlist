@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
@@ -124,6 +125,14 @@ func (m *MockFinanceRepo) GetRecurringExpenseByID(ctx context.Context, id uuid.U
 
 func (m *MockFinanceRepo) ListRecurringExpenses(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.RecurringExpense, error) {
 	args := m.Called(ctx, groupID, limit, offset)
+	if re := args.Get(0); re != nil {
+		return re.([]models.RecurringExpense), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockFinanceRepo) ListRecurringExpensesByDateRange(ctx context.Context, groupID uuid.UUID, from, to time.Time) ([]models.RecurringExpense, error) {
+	args := m.Called(ctx, groupID, from, to)
 	if re := args.Get(0); re != nil {
 		return re.([]models.RecurringExpense), args.Error(1)
 	}

@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../models/chore_models.dart';
 import '../../providers/chore_provider.dart';
 import '../../providers/group_provider.dart';
+import '../../providers/list_provider.dart';
 import '../../services/group_id_validator.dart';
 import '../../sheets/chore_creation_sheet.dart';
 import '../../sheets/chore_detail_sheet.dart';
@@ -128,6 +129,9 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
               isMine: entry.assignedToMe,
               completed: !entry.chore.isActive ||
                   entry.pendingAssignment?.status.toLowerCase() == 'completed',
+              lastActionLabel: entry.lastAssignment != null
+                  ? _formatLastAction(entry.lastAssignment!)
+                  : null,
             ))
         .toList();
 
@@ -153,9 +157,11 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   Future<void> _openChoreDetail(String id) async {
     final chore = _chores.firstWhere((item) => item.id == id);
     ChoreDetails? details;
+    List<ChoreSubtask> subtasks = [];
     try {
       final service = await ref.read(choreServiceProviderAsync.future);
       details = await service.getChoreDetails(id);
+      subtasks = await service.listSubtasks(id);
     } catch (_) {
       // Keep the sheet available when an older API does not expose details yet.
     }
@@ -174,6 +180,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
           ? _shortUserLabel(details!.stats.lastDoneByUserId!)
           : null,
       averageFrequencyHours: details?.stats.averageFrequencyHours,
+      subtasks: subtasks,
+      supplies: details?.chore.supplies ?? [],
       onMarkDone: chore.completed
           ? null
           : () async {
@@ -182,9 +190,9 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
             },
       onSkip: chore.completed
           ? null
-          : () async {
+          : (reason) async {
               Navigator.of(context).pop();
-              await _skipChore(id);
+              await _skipChore(id, reason: reason);
             },
       onRescheduleTomorrow: chore.completed
           ? null
@@ -195,6 +203,38 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       onUndo: () async {
         Navigator.of(context).pop();
         await _undoLastExecution(id);
+      },
+      onToggleSubtask: (subtaskId, completed) async {
+        try {
+          final service = await ref.read(choreServiceProviderAsync.future);
+          await service.updateSubtask(subtaskId, completed: completed);
+        } catch (e) {
+          if (!mounted) return;
+          _showChoreActionError('Failed to update subtask. Please try again.');
+        }
+      },
+      onAddSubtask: () async {
+        try {
+          final service = await ref.read(choreServiceProviderAsync.future);
+          final created = await service.createSubtask(id, '');
+          return created.id;
+        } catch (e) {
+          if (!mounted) return null;
+          _showChoreActionError('Failed to add subtask. Please try again.');
+          return null;
+        }
+      },
+      onDeleteSubtask: (subtaskId) async {
+        try {
+          final service = await ref.read(choreServiceProviderAsync.future);
+          await service.deleteSubtask(subtaskId);
+        } catch (e) {
+          if (!mounted) return;
+          _showChoreActionError('Failed to delete subtask. Please try again.');
+        }
+      },
+      onAddSuppliesToList: () async {
+        await _addSuppliesToList(id);
       },
     );
   }
@@ -243,14 +283,73 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     }
   }
 
-  Future<void> _skipChore(String id) async {
+  Future<void> _skipChore(String id, {String? reason}) async {
     try {
-      final repo = await ref.read(choreRepositoryProvider.future);
-      await repo.skipOfflineFirst(id);
+      if (reason != null && reason.isNotEmpty) {
+        final service = await ref.read(choreServiceProviderAsync.future);
+        await service.skipChore(id, skipReason: reason);
+      } else {
+        final repo = await ref.read(choreRepositoryProvider.future);
+        await repo.skipOfflineFirst(id);
+      }
       await _loadChores();
     } catch (e) {
       if (!mounted) return;
       _showChoreActionError('Failed to skip chore. Please try again.');
+    }
+  }
+
+  Future<void> _addSuppliesToList(String choreId) async {
+    try {
+      final listSvc = await ref.read(listServiceProviderAsync.future);
+      final groupSvc = await ref.read(groupServiceProviderAsync.future);
+      final groups = await groupSvc.listGroups();
+      final groupId = groups.isNotEmpty ? groups.first.id : null;
+      if (groupId == null) return;
+      final lists = await listSvc.listLists(groupId, limit: 50);
+      final shoppingLists = lists.where((l) => l.type == 'shopping' || l.type == 'general').toList();
+      if (shoppingLists.isEmpty) {
+        if (!mounted) return;
+        _showChoreActionError('Create a shopping list first.');
+        return;
+      }
+      if (!mounted) return;
+      final selectedList = await showDialog<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Add supplies to list'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: shoppingLists.length,
+              itemBuilder: (_, idx) {
+                final list = shoppingLists[idx];
+                return ListTile(
+                  title: Text(list.name),
+                  onTap: () => Navigator.of(ctx).pop(list.id),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancel'),
+            ),
+          ],
+        ),
+      );
+      if (selectedList == null) return;
+      final choreSvc = await ref.read(choreServiceProviderAsync.future);
+      await choreSvc.addSuppliesToList(choreId, selectedList);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Supplies added to list')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _showChoreActionError('Failed to add supplies. Please try again.');
     }
   }
 
@@ -665,6 +764,7 @@ class _Chore {
   final DateTime dueDate;
   final bool isMine;
   bool completed;
+  final String? lastActionLabel;
 
   _Chore({
     required this.id,
@@ -674,6 +774,7 @@ class _Chore {
     required this.dueDate,
     this.isMine = true,
     this.completed = false,
+    this.lastActionLabel,
   });
 }
 
@@ -765,9 +866,22 @@ class _ChoreItem extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(
                   vertical: MitlistSpacing.sm,
                 ),
-                child: Text(
-                  chore.title,
-                  style: Theme.of(context).textTheme.bodyMedium,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      chore.title,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    if (chore.lastActionLabel != null &&
+                        chore.lastActionLabel!.isNotEmpty)
+                      Text(
+                        chore.lastActionLabel!,
+                        style: MitlistTypography.labelXSmall(
+                          color: MitlistColors.textTertiary,
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
@@ -849,6 +963,19 @@ class _ChoreSkeletonItem extends StatelessWidget {
 
 String _formatDate(DateTime date) {
   return DateFormat.MMMd().format(date);
+}
+
+String _formatLastAction(ChoreAssignment assignment) {
+  if (assignment.completedAt != null) {
+    final diff = DateTime.now().difference(assignment.completedAt!);
+    if (diff.inDays == 0) return 'Done today';
+    if (diff.inDays == 1) return 'Done yesterday';
+    return 'Done ${diff.inDays}d ago';
+  }
+  if (assignment.skipReason != null && assignment.skipReason!.isNotEmpty) {
+    return 'Skipped';
+  }
+  return '';
 }
 
 DateTime _fallbackDueDate(DateTime now, String frequency) {

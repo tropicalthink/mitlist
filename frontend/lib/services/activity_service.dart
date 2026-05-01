@@ -4,7 +4,6 @@ import 'package:logger/logger.dart';
 
 import '../models/activity_models.dart';
 import 'api_client.dart';
-import 'group_id_validator.dart';
 
 class ActivityService {
   final Dio _dio;
@@ -17,15 +16,21 @@ class ActivityService {
     return ActivityService._(dio);
   }
 
-  Future<List<ActivityLogModel>> listActivityLogs(String groupId, {int limit = 50, int offset = 0}) async {
-    ensureValidGroupId(groupId);
+  Future<List<ActivityLogModel>> listActivityLogs(String groupId,
+      {int limit = 50, int offset = 0}) async {
     try {
-      final r = await _dio.get('/activity-logs', queryParameters: {'group_id': groupId, 'limit': limit, 'offset': offset});
-      final data = r.data;
-      if (data is! List) return [];
-      return data.map((e) => ActivityLogModel.fromJson((e as Map).cast<String, dynamic>())).toList();
+      final r = await _dio.get('/activity', queryParameters: {
+        'group_id': groupId,
+        'limit': limit,
+      });
+      final data = r.data as Map<String, dynamic>;
+      final rawEvents = data['events'] as List<dynamic>? ?? [];
+      return rawEvents
+          .map((e) => ActivityLogModel.fromJson(
+              (e as Map).cast<String, dynamic>()))
+          .toList();
     } on DioException catch (e) {
-      _logger.e('List activity logs failed: ${e.response?.data}');
+      _logger.e('List activity failed: ${e.response?.data}');
       rethrow;
     }
   }
@@ -39,4 +44,3 @@ class ActivityService {
     await _dio.delete('/activity-logs/$id');
   }
 }
-

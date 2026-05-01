@@ -128,17 +128,20 @@ type Container struct {
 	mealPlanServiceOnce sync.Once
 	mealPlanService     *services.MealPlanService
 
+	calendarServiceOnce sync.Once
+	calendarService     *services.CalendarService
+
 	assistantServiceOnce sync.Once
 	assistantService     *services.AssistantService
 
 	shareServiceOnce sync.Once
 	shareService     *services.ShareService
 
-	notificationServiceOnce sync.Once
-	notificationService     *services.NotificationService
-
 	activityServiceOnce sync.Once
 	activityService     *services.ActivityService
+
+	notificationServiceOnce sync.Once
+	notificationService     *services.NotificationService
 
 	pinwallServiceOnce sync.Once
 	pinwallService     *services.PinwallService
@@ -456,6 +459,14 @@ func (c *Container) MealPlanService() *services.MealPlanService {
 		c.mealPlanService = services.NewMealPlanService(c.MealPlanRepo(), c.GroupRepo(), c.RecipeRepo(), c.ListRepo())
 	})
 	return c.mealPlanService
+}
+
+// CalendarService returns the singleton calendar service.
+func (c *Container) CalendarService() *services.CalendarService {
+	c.calendarServiceOnce.Do(func() {
+		c.calendarService = services.NewCalendarService(c.MealPlanRepo(), c.ChoreRepo(), c.FinanceRepo(), c.GroupRepo())
+	})
+	return c.calendarService
 }
 
 // AssistantService returns the singleton assistant service.

@@ -2,14 +2,16 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+
 	"github.com/yourorg/mitlist/internal/api"
 	"github.com/yourorg/mitlist/internal/services"
 )
 
-// ActivityHandler exposes activity log endpoints.
+// ActivityHandler exposes activity endpoints.
 type ActivityHandler struct {
 	service *services.ActivityService
 }
@@ -19,79 +21,36 @@ func NewActivityHandler(service *services.ActivityService) *ActivityHandler {
 	return &ActivityHandler{service: service}
 }
 
+// RegisterRoutes mounts activity routes.
 func (h *ActivityHandler) RegisterRoutes(r chi.Router) {
-	r.Get("/activity-logs", h.ListActivityLogs)
-	r.Get("/activity-logs/{id}", h.GetActivityLog)
-	r.Delete("/activity-logs/{id}", h.DeleteActivityLog)
+	r.Get("/activity", h.ListActivity)
 }
 
-func (h *ActivityHandler) ListActivityLogs(w http.ResponseWriter, r *http.Request) {
-	userID, err := currentUserID(r)
+func (h *ActivityHandler) ListActivity(w http.ResponseWriter, r *http.Request) {
+	user, ok := userFromContext(r)
+	if !ok {
+		respondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	groupID, err := uuid.Parse(r.URL.Query().Get("group_id"))
+	if err != nil {
+		respondError(w, &api.ValidationError{Field: "group_id", Message: "invalid UUID"})
+		return
+	}
+
+	limit := 10
+	if l := r.URL.Query().Get("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 {
+			limit = parsed
+		}
+	}
+
+	events, err := h.service.ListRecentActivity(r.Context(), user, groupID, limit)
 	if err != nil {
 		respondError(w, err)
 		return
 	}
 
-	groupIDStr := r.URL.Query().Get("group_id")
-	if groupIDStr == "" {
-		respondError(w, api.ErrValidation)
-		return
-	}
-	groupID, err := uuid.Parse(groupIDStr)
-	if err != nil {
-		respondError(w, api.ErrValidation)
-		return
-	}
-
-	limit, offset := parsePagination(r)
-	logs, err := h.service.ListActivityLogs(r.Context(), userID, groupID, limit, offset)
-	if err != nil {
-		respondError(w, err)
-		return
-	}
-
-	respondJSON(w, http.StatusOK, logs)
-}
-
-func (h *ActivityHandler) GetActivityLog(w http.ResponseWriter, r *http.Request) {
-	userID, err := currentUserID(r)
-	if err != nil {
-		respondError(w, err)
-		return
-	}
-
-	id, err := parseUUIDParam(r, "id")
-	if err != nil {
-		respondError(w, err)
-		return
-	}
-
-	logEntry, err := h.service.GetActivityLog(r.Context(), userID, id)
-	if err != nil {
-		respondError(w, err)
-		return
-	}
-
-	respondJSON(w, http.StatusOK, logEntry)
-}
-
-func (h *ActivityHandler) DeleteActivityLog(w http.ResponseWriter, r *http.Request) {
-	userID, err := currentUserID(r)
-	if err != nil {
-		respondError(w, err)
-		return
-	}
-
-	id, err := parseUUIDParam(r, "id")
-	if err != nil {
-		respondError(w, err)
-		return
-	}
-
-	if err := h.service.DeleteActivityLog(r.Context(), userID, id); err != nil {
-		respondError(w, err)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
+	respondJSON(w, http.StatusOK, map[string]any{"events": events})
 }

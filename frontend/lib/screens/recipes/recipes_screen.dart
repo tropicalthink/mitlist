@@ -651,6 +651,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                             ),
                             IconButton(
                               icon: const Icon(AppIcons.trash, size: 18),
+                              tooltip: 'Delete',
                               onPressed: () {
                                 _removePlannedMeal(meal.id);
                                 Navigator.of(context).pop();

@@ -127,6 +127,7 @@ type ChoreRepo interface {
 	CreateCompletion(ctx context.Context, completion *models.ChoreCompletion) error
 	GetPendingAssignmentByChore(ctx context.Context, choreID uuid.UUID) (*models.ChoreAssignment, error)
 	ListDueAssignments(ctx context.Context, from, to time.Time) ([]models.ChoreAssignment, error)
+	ListDueAssignmentsByGroup(ctx context.Context, groupID uuid.UUID, from, to time.Time) ([]models.ChoreAssignment, error)
 	CreateSubtask(ctx context.Context, subtask *models.ChoreSubtask) error
 	GetSubtaskByID(ctx context.Context, id uuid.UUID) (*models.ChoreSubtask, error)
 	ListSubtasksByChore(ctx context.Context, choreID uuid.UUID) ([]models.ChoreSubtask, error)
@@ -155,6 +156,7 @@ type FinanceRepoIface interface {
 	CreateRecurringExpense(ctx context.Context, re *models.RecurringExpense) error
 	GetRecurringExpenseByID(ctx context.Context, id uuid.UUID) (*models.RecurringExpense, error)
 	ListRecurringExpenses(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.RecurringExpense, error)
+	ListRecurringExpensesByDateRange(ctx context.Context, groupID uuid.UUID, from, to time.Time) ([]models.RecurringExpense, error)
 	UpdateRecurringExpense(ctx context.Context, re *models.RecurringExpense) error
 	DeleteRecurringExpense(ctx context.Context, id uuid.UUID) error
 	GetSplitByID(ctx context.Context, id uuid.UUID) (*models.Split, error)
@@ -201,14 +203,6 @@ type NotificationRepo interface {
 	UpsertPreference(ctx context.Context, pref *models.NotificationPreference) error
 }
 
-// ActivityRepo is the interface for activity repository operations.
-type ActivityRepo interface {
-	LogActivity(ctx context.Context, a *models.ActivityLog) error
-	GetActivityLogByID(ctx context.Context, id uuid.UUID) (*models.ActivityLog, error)
-	ListActivityLogsByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.ActivityLog, error)
-	DeleteActivityLog(ctx context.Context, id uuid.UUID) error
-}
-
 // AssistantRepo is the interface for assistant repository operations.
 type AssistantRepo interface {
 	CreateSession(ctx context.Context, s *models.ChatSession) (*models.ChatSession, error)
@@ -218,6 +212,11 @@ type AssistantRepo interface {
 	DeleteSession(ctx context.Context, id uuid.UUID) error
 	CreateMessage(ctx context.Context, m *models.ChatMessage) (*models.ChatMessage, error)
 	ListMessagesBySession(ctx context.Context, sessionID uuid.UUID, limit, offset int) ([]models.ChatMessage, error)
+}
+
+// ActivityRepo is the interface for activity repository operations.
+type ActivityRepo interface {
+	ListRecentActivity(ctx context.Context, groupID uuid.UUID, limit int) ([]models.ActivityEvent, error)
 }
 
 // PinwallRepo is the interface for pinwall repository operations.

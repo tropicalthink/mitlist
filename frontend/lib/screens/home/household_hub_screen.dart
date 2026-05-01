@@ -1612,7 +1612,7 @@ class _WallItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
-    final userLabel = _formatUserLabel(item.userId, null);
+    final userLabel = _formatUserLabel(item.userId ?? '', null);
     final when = _relativeDay(item.createdAt);
     final message = _formatActivityLine(item);
 

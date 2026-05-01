@@ -461,6 +461,13 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       appBar: MitlistAppBar.titleText(
         'Money',
         showStandardActions: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.repeat),
+            tooltip: 'Recurring',
+            onPressed: () => context.pushNamed('recurringExpenses'),
+          ),
+        ],
       ),
       body: Column(
         children: [

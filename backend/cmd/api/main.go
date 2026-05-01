@@ -229,6 +229,10 @@ func main() {
 			mealPlanHandler.RegisterRoutes(r)
 			r.Post("/meal-plans/generate-shopping-list", mealPlanHandler.GenerateShoppingList)
 
+			// Calendar
+			calendarHandler := handlers.NewCalendarHandler(cnt.CalendarService())
+			calendarHandler.RegisterRoutes(r)
+
 			// Assistant
 			assistantHandler := handlers.NewAssistantHandler(cnt.AssistantService())
 			assistantHandler.Routes(r)

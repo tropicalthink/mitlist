@@ -505,6 +505,38 @@ func (r *ChoreRepository) ListDueAssignments(ctx context.Context, from, to time.
 	return assignments, nil
 }
 
+// ListDueAssignmentsByGroup returns pending assignments for a group due within the window.
+func (r *ChoreRepository) ListDueAssignmentsByGroup(ctx context.Context, groupID uuid.UUID, from, to time.Time) ([]models.ChoreAssignment, error) {
+	query := `
+		SELECT a.id, a.chore_id, a.user_id, a.status, a.due_date, a.assigned_at, a.completed_at, a.skip_reason
+		FROM chore_assignments a
+		JOIN chores c ON c.id = a.chore_id
+		WHERE c.group_id = $1 AND a.status = 'pending' AND a.due_date >= $2 AND a.due_date <= $3
+		ORDER BY a.due_date ASC
+	`
+	rows, err := r.pool.Query(ctx, query, groupID, from, to)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list due assignments by group: %w", err)
+	}
+	defer rows.Close()
+
+	var assignments []models.ChoreAssignment
+	for rows.Next() {
+		var a models.ChoreAssignment
+		if err := rows.Scan(
+			&a.ID, &a.ChoreID, &a.UserID, &a.Status,
+			&a.DueDate, &a.AssignedAt, &a.CompletedAt, &a.SkipReason,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan due assignment: %w", err)
+		}
+		assignments = append(assignments, a)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("due assignment rows error: %w", err)
+	}
+	return assignments, nil
+}
+
 // CreateSubtask inserts a new chore subtask.
 func (r *ChoreRepository) CreateSubtask(ctx context.Context, subtask *models.ChoreSubtask) error {
 	subtask.ID = uuid.New()

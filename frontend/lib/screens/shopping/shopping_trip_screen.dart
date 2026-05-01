@@ -157,6 +157,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
       appBar: MitlistAppBar(
         leading: IconButton(
           icon: const AppIcon(name: 'arrowLeft'),
+          tooltip: 'Back',
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text('Shopping Trip'),
