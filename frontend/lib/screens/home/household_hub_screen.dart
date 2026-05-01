@@ -26,6 +26,7 @@ import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/skeleton.dart';
 import '../../theme/spacing.dart';
+import '../../theme/theme.dart';
 import '../../sheets/invite_household_sheet.dart';
 
 final _currencyFormat = NumberFormat.currency(symbol: '\$');
@@ -519,7 +520,7 @@ class _PinwallSectionState extends ConsumerState<_PinwallSection> {
           padding: const EdgeInsets.all(MitlistSpacing.sm),
           decoration: BoxDecoration(
             color: boardBg,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(MitlistTheme.radiusLg),
             border: Border.all(color: boardBorder, width: 2),
             boxShadow: [
               BoxShadow(
@@ -549,7 +550,7 @@ class _PinwallSectionState extends ConsumerState<_PinwallSection> {
                     color: dark
                         ? const Color(0xFF3A2A1A)
                         : const Color(0xFFFFF9C4),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(MitlistTheme.radiusLg),
                     border: Border.all(color: boardBorder, width: 1.5),
                   ),
                   child: Row(
@@ -650,7 +651,7 @@ class _PinwallComposerNote extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             color: bg,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(MitlistTheme.radiusMd),
             border: Border.all(color: border, width: 1.5),
             boxShadow: [
               BoxShadow(
@@ -1332,7 +1333,7 @@ class _WeeklyChoresTile extends ConsumerWidget {
           trailing: Padding(
             padding: const EdgeInsets.only(top: MitlistSpacing.sm),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: BorderRadius.circular(MitlistTheme.radiusFull),
               child: LinearProgressIndicator(
                 value: progress.clamp(0, 1),
                 minHeight: 6,

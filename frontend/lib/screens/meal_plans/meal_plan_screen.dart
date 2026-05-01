@@ -10,6 +10,7 @@ import '../../providers/recipe_provider.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
+import '../../theme/theme.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
@@ -371,7 +372,7 @@ class _SlotRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
       child: InkWell(
         onTap: plan == null ? onAdd : null,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
         child: Container(
           padding: const EdgeInsets.all(MitlistSpacing.sm),
           decoration: BoxDecoration(
@@ -381,7 +382,7 @@ class _SlotRow extends StatelessWidget {
                   : MitlistColors.borderSubtle,
               width: 1.5,
             ),
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
             color: plan != null
                 ? MitlistColors.primary50.withValues(alpha: 0.3)
                 : null,
@@ -434,7 +435,7 @@ class _SlotRow extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.xs, vertical: 2),
                   decoration: BoxDecoration(
                     border: Border.all(color: MitlistColors.borderSubtle),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
                   ),
                   child: Text(
                     '${plan!.servings}p',
@@ -539,7 +540,7 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
             contentPadding: EdgeInsets.zero,
             leading: r.imageUrl != null
                 ? ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
                     child: Image.network(
                       r.imageUrl!,
                       width: 48,

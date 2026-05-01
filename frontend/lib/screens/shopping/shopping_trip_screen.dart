@@ -8,6 +8,7 @@ import '../../providers/list_provider.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
+import '../../theme/theme.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
@@ -269,7 +270,7 @@ class _ListSection extends StatelessWidget {
           children: [
             InkWell(
               onTap: onTapList,
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
               child: Row(
                 children: [
                   Expanded(

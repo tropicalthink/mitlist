@@ -18,6 +18,7 @@ import '../../theme/typography.dart';
 import '../../utils/haptics.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
 import '../../sheets/cost_summary_sheet.dart';
 import '../../widgets/empty_state.dart';
@@ -533,27 +534,30 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           ? (item.priceCents! / 100).toStringAsFixed(2)
           : '',
     );
-    final priceStr = await showDialog<String>(
+    final priceStr = await showAppDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Set price'),
-        content: TextField(
-          controller: controller,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          autofocus: true,
-          decoration: const InputDecoration(
-            prefixText: '\$',
-            hintText: '0.00',
+      title: 'Set price',
+      body: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: controller,
+            keyboardType:
+                const TextInputType.numberWithOptions(decimal: true),
+            autofocus: true,
+            decoration: const InputDecoration(
+              prefixText: '\$',
+              hintText: '0.00',
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-            child: const Text('Save'),
+          const SizedBox(height: MitlistSpacing.sm),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(controller.text.trim()),
+              child: const Text('Save'),
+            ),
           ),
         ],
       ),

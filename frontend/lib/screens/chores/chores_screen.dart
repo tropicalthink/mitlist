@@ -18,6 +18,7 @@ import '../../theme/typography.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
+import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/chip.dart';
 import '../../widgets/empty_state.dart';
@@ -272,18 +273,10 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       await _loadChores();
     } catch (e) {
       if (!mounted) return;
-      showDialog(
+      showAppDialog(
         context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Error'),
-          content: const Text('Failed to complete chore. Please try again.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
+        title: 'Error',
+        body: const Text('Failed to complete chore. Please try again.'),
       );
     }
   }
@@ -319,30 +312,22 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         return;
       }
       if (!mounted) return;
-      final selectedList = await showDialog<String>(
+      final selectedList = await showAppDialog<String>(
         context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Add supplies to list'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: shoppingLists.length,
-              itemBuilder: (_, idx) {
-                final list = shoppingLists[idx];
-                return ListTile(
-                  title: Text(list.name),
-                  onTap: () => Navigator.of(ctx).pop(list.id),
-                );
-              },
-            ),
+        title: 'Add supplies to list',
+        body: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: shoppingLists.length,
+            itemBuilder: (_, idx) {
+              final list = shoppingLists[idx];
+              return ListTile(
+                title: Text(list.name),
+                onTap: () => Navigator.of(context).pop(list.id),
+              );
+            },
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel'),
-            ),
-          ],
         ),
       );
       if (selectedList == null) return;
@@ -383,18 +368,10 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   }
 
   void _showChoreActionError(String message) {
-    showDialog(
+    showAppDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Error'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
+      title: 'Error',
+      body: Text(message),
     );
   }
 

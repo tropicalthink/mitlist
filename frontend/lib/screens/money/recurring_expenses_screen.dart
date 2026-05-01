@@ -10,6 +10,7 @@ import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
+import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/mitlist_app_bar.dart';
@@ -211,9 +212,10 @@ class _RecurringExpensesScreenState
     if (!isValidGroupId(groupId)) return;
     if (!mounted) return;
 
-    final result = await showDialog<_CreateRecurringResult>(
+    final result = await showAppDialog<_CreateRecurringResult>(
       context: context,
-      builder: (ctx) => _CreateRecurringDialog(
+      title: 'Add recurring expense',
+      body: _CreateRecurringForm(
         userLabels: _userLabels,
         groupId: groupId!,
       ),
@@ -325,20 +327,31 @@ class _RecurringCard extends StatelessWidget {
                 icon: const Icon(Icons.delete_outline),
                 tooltip: 'Delete',
                 onPressed: () async {
-                  final confirmed = await showDialog<bool>(
+                  final confirmed = await showAppDialog<bool>(
                     context: context,
-                    builder: (ctx) => AlertDialog(
-                      title: const Text('Delete recurring expense'),
-                      content: const Text(
+                    title: 'Delete recurring expense',
+                    body: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
                           'This will stop future expenses from being created.'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(ctx).pop(false),
-                          child: const Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.of(ctx).pop(true),
-                          child: const Text('Delete'),
+                        const SizedBox(height: MitlistSpacing.md),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: () =>
+                                  Navigator.of(context).pop(false),
+                              child: const Text('Cancel'),
+                            ),
+                            const SizedBox(width: MitlistSpacing.sm),
+                            TextButton(
+                              onPressed: () =>
+                                  Navigator.of(context).pop(true),
+                              child: const Text('Delete'),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -385,19 +398,19 @@ class _CreateRecurringResult {
   });
 }
 
-class _CreateRecurringDialog extends StatefulWidget {
+class _CreateRecurringForm extends StatefulWidget {
   final Map<String, String> userLabels;
   final String groupId;
-  const _CreateRecurringDialog({
+  const _CreateRecurringForm({
     required this.userLabels,
     required this.groupId,
   });
 
   @override
-  State<_CreateRecurringDialog> createState() => _CreateRecurringDialogState();
+  State<_CreateRecurringForm> createState() => _CreateRecurringFormState();
 }
 
-class _CreateRecurringDialogState extends State<_CreateRecurringDialog> {
+class _CreateRecurringFormState extends State<_CreateRecurringForm> {
   final _descriptionController = TextEditingController();
   final _amountController = TextEditingController();
   String _frequency = 'monthly';
@@ -420,68 +433,70 @@ class _CreateRecurringDialogState extends State<_CreateRecurringDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Add recurring expense'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(labelText: 'Description'),
-              textCapitalization: TextCapitalization.sentences,
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _descriptionController,
+            decoration: const InputDecoration(labelText: 'Description'),
+            textCapitalization: TextCapitalization.sentences,
+          ),
+          const SizedBox(height: MitlistSpacing.sm),
+          TextField(
+            controller: _amountController,
+            decoration: const InputDecoration(
+              labelText: 'Amount',
+              prefixText: '€ ',
             ),
-            const SizedBox(height: MitlistSpacing.sm),
-            TextField(
-              controller: _amountController,
-              decoration: const InputDecoration(
-                labelText: 'Amount',
-                prefixText: '€ ',
-              ),
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-            ),
-            const SizedBox(height: MitlistSpacing.sm),
+            keyboardType:
+                const TextInputType.numberWithOptions(decimal: true),
+          ),
+          const SizedBox(height: MitlistSpacing.sm),
+          DropdownButtonFormField<String>(
+            value: _frequency,
+            decoration: const InputDecoration(labelText: 'Frequency'),
+            items: const [
+              DropdownMenuItem(value: 'daily', child: Text('Daily')),
+              DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
+              DropdownMenuItem(
+                  value: 'biweekly', child: Text('Every 2 weeks')),
+              DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
+              DropdownMenuItem(value: 'quarterly', child: Text('Quarterly')),
+              DropdownMenuItem(value: 'yearly', child: Text('Yearly')),
+            ],
+            onChanged: (v) => setState(() => _frequency = v!),
+          ),
+          const SizedBox(height: MitlistSpacing.sm),
+          if (widget.userLabels.isNotEmpty)
             DropdownButtonFormField<String>(
-              value: _frequency,
-              decoration: const InputDecoration(labelText: 'Frequency'),
-              items: const [
-                DropdownMenuItem(value: 'daily', child: Text('Daily')),
-                DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
-                DropdownMenuItem(
-                    value: 'biweekly', child: Text('Every 2 weeks')),
-                DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
-                DropdownMenuItem(value: 'quarterly', child: Text('Quarterly')),
-                DropdownMenuItem(value: 'yearly', child: Text('Yearly')),
-              ],
-              onChanged: (v) => setState(() => _frequency = v!),
+              value: _payerId,
+              decoration: const InputDecoration(labelText: 'Payer'),
+              items: widget.userLabels.entries
+                  .map((e) => DropdownMenuItem(
+                        value: e.key,
+                        child: Text(e.value),
+                      ))
+                  .toList(),
+              onChanged: (v) => setState(() => _payerId = v),
             ),
-            const SizedBox(height: MitlistSpacing.sm),
-            if (widget.userLabels.isNotEmpty)
-              DropdownButtonFormField<String>(
-                value: _payerId,
-                decoration: const InputDecoration(labelText: 'Payer'),
-                items: widget.userLabels.entries
-                    .map((e) => DropdownMenuItem(
-                          value: e.key,
-                          child: Text(e.value),
-                        ))
-                    .toList(),
-                onChanged: (v) => setState(() => _payerId = v),
+          const SizedBox(height: MitlistSpacing.md),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
               ),
-          ],
-        ),
+              const SizedBox(width: MitlistSpacing.sm),
+              TextButton(
+                onPressed: _submit,
+                child: const Text('Save'),
+              ),
+            ],
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        TextButton(
-          onPressed: _submit,
-          child: const Text('Save'),
-        ),
-      ],
     );
   }
 

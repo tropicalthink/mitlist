@@ -8,6 +8,7 @@ import '../theme/typography.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
+import '../widgets/app_dialog.dart';
 import '../widgets/chip.dart';
 
 class ChoreDetailSheet extends StatefulWidget {
@@ -129,26 +130,34 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
   }
 
   void _handleSkip() async {
-    final reason = await showDialog<String>(
+    final reason = await showAppDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Skip chore'),
-        content: TextField(
-          autofocus: true,
-          decoration: const InputDecoration(
-            labelText: 'Reason (optional)',
-            hintText: 'e.g. Away this week',
+      title: 'Skip chore',
+      body: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'Reason (optional)',
+              hintText: 'e.g. Away this week',
+            ),
+            onSubmitted: (value) => Navigator.of(context).pop(value),
           ),
-          onSubmitted: (value) => Navigator.of(ctx).pop(value),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(''),
-            child: const Text('Skip'),
+          const SizedBox(height: MitlistSpacing.md),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+              const SizedBox(width: MitlistSpacing.sm),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(''),
+                child: const Text('Skip'),
+              ),
+            ],
           ),
         ],
       ),

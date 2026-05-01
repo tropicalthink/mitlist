@@ -5,6 +5,7 @@ import '../../models/notification_models.dart';
 import '../../providers/notification_provider.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
+import '../../theme/theme.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
@@ -213,7 +214,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
                             decoration: BoxDecoration(
                               color: MitlistColors.error500.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(MitlistTheme.radiusLg),
                             ),
                             child: const Icon(Icons.delete_outline, color: MitlistColors.error500),
                           ),

@@ -8,6 +8,7 @@ import '../../services/group_id_validator.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
+import '../../theme/theme.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/empty_state.dart';
@@ -783,7 +784,7 @@ class _DayCard extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: MitlistColors.primary500,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
                     ),
                     child: Text(
                       'Today',
