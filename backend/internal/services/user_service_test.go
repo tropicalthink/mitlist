@@ -98,6 +98,22 @@ func TestUserService_Login(t *testing.T) {
 		_, _, _, err := svc.Login(ctx, "test@example.com", "password123")
 		require.Error(t, err)
 		assert.IsType(t, &api.ValidationError{}, err)
+		assert.Equal(t, "invalid email or password", err.Error())
+	})
+
+	t.Run("wrong password", func(t *testing.T) {
+		userRepo := new(mocks.MockUserRepo)
+		passSvc := new(mocks.MockPasswordService)
+		svc := NewUserService(userRepo, nil, nil, passSvc, nil)
+
+		user := &models.User{ID: userID, Email: "test@example.com", PasswordHash: "hash", IsActive: true, IsVerified: true}
+		userRepo.On("GetByEmail", ctx, "test@example.com").Return(user, nil)
+		passSvc.On("Compare", "hash", "wrongpassword").Return(false)
+
+		_, _, _, err := svc.Login(ctx, "test@example.com", "wrongpassword")
+		require.Error(t, err)
+		assert.IsType(t, &api.ValidationError{}, err)
+		assert.Equal(t, "invalid email or password", err.Error())
 	})
 
 	t.Run("inactive user", func(t *testing.T) {
@@ -112,6 +128,22 @@ func TestUserService_Login(t *testing.T) {
 		_, _, _, err := svc.Login(ctx, "test@example.com", "password123")
 		require.Error(t, err)
 		assert.IsType(t, &api.ValidationError{}, err)
+		assert.Equal(t, "account is inactive", err.Error())
+	})
+
+	t.Run("unverified user", func(t *testing.T) {
+		userRepo := new(mocks.MockUserRepo)
+		passSvc := new(mocks.MockPasswordService)
+		svc := NewUserService(userRepo, nil, nil, passSvc, nil)
+
+		user := &models.User{ID: userID, Email: "test@example.com", PasswordHash: "hash", IsActive: true, IsVerified: false}
+		userRepo.On("GetByEmail", ctx, "test@example.com").Return(user, nil)
+		passSvc.On("Compare", "hash", "password123").Return(true)
+
+		_, _, _, err := svc.Login(ctx, "test@example.com", "password123")
+		require.Error(t, err)
+		assert.IsType(t, &api.ValidationError{}, err)
+		assert.Equal(t, "account is not verified", err.Error())
 	})
 }
 
@@ -152,6 +184,20 @@ func TestUserService_GetMe(t *testing.T) {
 		_, err := svc.GetMe(ctx, userID)
 		require.Error(t, err)
 		assert.IsType(t, &api.ValidationError{}, err)
+		assert.Equal(t, "account is inactive", err.Error())
+	})
+
+	t.Run("unverified user", func(t *testing.T) {
+		userRepo := new(mocks.MockUserRepo)
+		svc := NewUserService(userRepo, nil, nil, nil, nil)
+
+		user := &models.User{ID: userID, IsActive: true, IsVerified: false}
+		userRepo.On("GetByID", ctx, userID).Return(user, nil)
+
+		_, err := svc.GetMe(ctx, userID)
+		require.Error(t, err)
+		assert.IsType(t, &api.ValidationError{}, err)
+		assert.Equal(t, "account is not verified", err.Error())
 	})
 }
 

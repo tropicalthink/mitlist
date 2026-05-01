@@ -369,6 +369,13 @@ func max(a, b int) int {
 	return b
 }
 
+func stripHTMLComments(s string) string {
+	s = strings.TrimSpace(s)
+	s = strings.TrimPrefix(s, "<!--")
+	s = strings.TrimSuffix(s, "-->")
+	return strings.TrimSpace(s)
+}
+
 // ------------------------------------------------------------------
 // Tier 1: JSON-LD extraction
 // ------------------------------------------------------------------
@@ -381,6 +388,7 @@ func (s *RecipeScrapingService) tryJSONLD(doc *goquery.Document, pageURL string)
 		if raw == "" {
 			return true
 		}
+		raw = stripHTMLComments(raw)
 
 		var data any
 		if err := json.Unmarshal([]byte(raw), &data); err != nil {
@@ -564,13 +572,18 @@ func convertStructuredData(data map[string]any, pageURL string) RecipeClipRespon
 	for _, inst := range asAnySlice(data["recipeInstructions"]) {
 		switch vv := inst.(type) {
 		case string:
-			if t := strings.TrimSpace(vv); t != "" {
-				instructionsParts = append(instructionsParts, t)
+			for _, line := range strings.Split(vv, "\n") {
+				if t := strings.TrimSpace(line); t != "" {
+					instructionsParts = append(instructionsParts, t)
+				}
 			}
 		case map[string]any:
 			t := strings.TrimSpace(getString(vv["text"]))
 			if t == "" {
 				t = strings.TrimSpace(getString(vv["name"]))
+			}
+			if t == "" {
+				t = strings.TrimSpace(getString(vv["description"]))
 			}
 			if t != "" {
 				instructionsParts = append(instructionsParts, t)
@@ -581,6 +594,9 @@ func convertStructuredData(data map[string]any, pageURL string) RecipeClipRespon
 						st := strings.TrimSpace(getString(m["text"]))
 						if st == "" {
 							st = strings.TrimSpace(getString(m["name"]))
+						}
+						if st == "" {
+							st = strings.TrimSpace(getString(m["description"]))
 						}
 						if st != "" {
 							instructionsParts = append(instructionsParts, st)
@@ -595,6 +611,9 @@ func convertStructuredData(data map[string]any, pageURL string) RecipeClipRespon
 					if st == "" {
 						st = strings.TrimSpace(getString(m["name"]))
 					}
+					if st == "" {
+						st = strings.TrimSpace(getString(m["description"]))
+					}
 					if st != "" {
 						instructionsParts = append(instructionsParts, st)
 					}
@@ -605,6 +624,10 @@ func convertStructuredData(data map[string]any, pageURL string) RecipeClipRespon
 
 	prep := parseDurationMinutes(getString(data["prepTime"]))
 	cook := parseDurationMinutes(getString(data["cookTime"]))
+	perform := parseDurationMinutes(getString(data["performTime"]))
+	if cook == nil && perform != nil {
+		cook = perform
+	}
 	total := parseDurationMinutes(getString(data["totalTime"]))
 	if total != nil && prep == nil && cook == nil {
 		p := max(5, *total/4)
@@ -1030,6 +1053,9 @@ func (s *RecipeScrapingService) extractHeuristic(doc *goquery.Document, pageURL 
 	instructions := extractInstructionsFromSelections(instructionNodes)
 	servings := extractServingsHeuristic(doc)
 	description := extractDescriptionHeuristic(doc)
+	author := extractAuthorHeuristic(doc)
+	ratingValue, ratingCount := extractRatingHeuristic(doc)
+	prep, cook := extractTimesHeuristic(doc)
 
 	var imageURL *string
 	if len(imageOptions) > 0 {
@@ -1037,36 +1063,49 @@ func (s *RecipeScrapingService) extractHeuristic(doc *goquery.Document, pageURL 
 	}
 
 	return RecipeClipResponse{
-		Title:          title,
-		SourceURL:      pageURL,
-		Description:    description,
-		InstructionsMD: instructions,
-		Servings:       servings,
-		Ingredients:    ingredients,
-		ImageURL:       imageURL,
-		ImageOptions:   imageOptions,
-		Tags:           nil,
+		Title:           title,
+		SourceURL:       pageURL,
+		Description:     description,
+		Author:          author,
+		RatingValue:     ratingValue,
+		RatingCount:     ratingCount,
+		InstructionsMD:  instructions,
+		PrepTimeMinutes: prep,
+		CookTimeMinutes: cook,
+		Servings:        servings,
+		Ingredients:     ingredients,
+		ImageURL:        imageURL,
+		ImageOptions:    imageOptions,
+		Tags:            nil,
 	}
 }
 
 func extractDescriptionHeuristic(doc *goquery.Document) string {
-	if v, ok := doc.Find(`meta[property="og:description"]`).Attr("content"); ok {
-		if t := strings.TrimSpace(v); t != "" {
-			return t
-		}
-	}
-	if v, ok := doc.Find(`meta[name="description"]`).Attr("content"); ok {
-		if t := strings.TrimSpace(v); t != "" {
-			return t
+	for _, sel := range []string{
+		`meta[property="og:description"]`,
+		`meta[name="twitter:description"]`,
+		`meta[property="twitter:description"]`,
+		`meta[name="description"]`,
+	} {
+		if v, ok := doc.Find(sel).Attr("content"); ok {
+			if t := strings.TrimSpace(v); t != "" {
+				return t
+			}
 		}
 	}
 	return ""
 }
 
 func extractTitleHeuristic(doc *goquery.Document) string {
-	if v, ok := doc.Find(`meta[property="og:title"]`).Attr("content"); ok {
-		if t := strings.TrimSpace(v); t != "" {
-			return t
+	for _, sel := range []string{
+		`meta[property="og:title"]`,
+		`meta[name="twitter:title"]`,
+		`meta[property="twitter:title"]`,
+	} {
+		if v, ok := doc.Find(sel).Attr("content"); ok {
+			if t := strings.TrimSpace(v); t != "" {
+				return t
+			}
 		}
 	}
 	if t := strings.TrimSpace(doc.Find("h1").First().Text()); t != "" {
@@ -1080,9 +1119,20 @@ func extractTitleHeuristic(doc *goquery.Document) string {
 
 func extractImageHeuristic(doc *goquery.Document, pageURL string) []string {
 	out := []string{}
-	if v, ok := doc.Find(`meta[property="og:image"]`).Attr("content"); ok {
-		if t := strings.TrimSpace(v); t != "" {
-			out = append(out, resolveURL(pageURL, t))
+	for _, sel := range []string{
+		`meta[property="og:image"]`,
+		`meta[name="twitter:image"]`,
+		`meta[property="twitter:image"]`,
+		`meta[name="twitter:image:src"]`,
+		`meta[property="twitter:image:src"]`,
+	} {
+		if v, ok := doc.Find(sel).Attr("content"); ok {
+			if t := strings.TrimSpace(v); t != "" {
+				u := resolveURL(pageURL, t)
+				if !containsString(out, u) {
+					out = append(out, u)
+				}
+			}
 		}
 	}
 
@@ -1270,6 +1320,102 @@ func extractInstructionsFromSelections(nodes []*goquery.Selection) string {
 		parts = append(parts, t)
 	}
 	return strings.Join(parts, "\n\n")
+}
+
+func extractAuthorHeuristic(doc *goquery.Document) string {
+	for _, sel := range []string{
+		`meta[property="article:author"]`,
+		`meta[name="twitter:creator"]`,
+		`meta[property="twitter:creator"]`,
+		`meta[name="author"]`,
+	} {
+		if v, ok := doc.Find(sel).Attr("content"); ok {
+			if t := strings.TrimSpace(v); t != "" {
+				return t
+			}
+		}
+	}
+	// Try common author class/id patterns
+	doc.Find("[class*='author'],[class*='byline'],[id*='author'],[id*='byline']").EachWithBreak(func(_ int, sel *goquery.Selection) bool {
+		t := strings.TrimSpace(sel.Text())
+		if t != "" && len(t) < 100 {
+			return false
+		}
+		return true
+	})
+	return ""
+}
+
+func extractRatingHeuristic(doc *goquery.Document) (float64, int) {
+	text := doc.Text()
+	// Look for patterns like "4.5 stars", "Rating: 4.5 (123 votes)", "4.5/5"
+	patterns := []string{
+		`(?i)(?:rating|rated?)[:\s]*(\d+(?:\.\d+)?)\s*(?:/\s*5)?\s*(?:stars?)?\s*\(?\s*(\d+)\s*(?:votes?|reviews?|ratings?)?\s*\)?`,
+		`(?i)(\d+(?:\.\d+)?)\s*(?:out of|\/)\s*5\s*(?:stars?)?\s*\(?\s*(\d+)\s*(?:votes?|reviews?|ratings?)?\s*\)?`,
+		`(?i)(\d+(?:\.\d+)?)\s*\/?\s*5\s*stars?`,
+	}
+	for _, p := range patterns {
+		re := regexp.MustCompile(p)
+		if m := re.FindStringSubmatch(text); len(m) >= 2 {
+			val, _ := strconv.ParseFloat(strings.TrimSpace(m[1]), 64)
+			count := 0
+			if len(m) >= 3 {
+				count, _ = strconv.Atoi(strings.TrimSpace(m[2]))
+			}
+			if val > 0 {
+				return val, count
+			}
+		}
+	}
+	return 0, 0
+}
+
+func extractTimesHeuristic(doc *goquery.Document) (*int, *int) {
+	text := doc.Text()
+	var prep, cook *int
+
+	// ISO-like in text: PT15M
+	isoRe := regexp.MustCompile(`(?i)prep(?:aration)?\s*time[:\s]*PT(?:(\d+)H)?(?:(\d+)M)?`)
+	if m := isoRe.FindStringSubmatch(text); len(m) >= 3 {
+		h := atoi0(m[1])
+		mins := atoi0(m[2])
+		if h > 0 || mins > 0 {
+			v := h*60 + mins
+			prep = &v
+		}
+	}
+
+	isoCookRe := regexp.MustCompile(`(?i)cook(?:ing)?\s*time[:\s]*PT(?:(\d+)H)?(?:(\d+)M)?`)
+	if m := isoCookRe.FindStringSubmatch(text); len(m) >= 3 {
+		h := atoi0(m[1])
+		mins := atoi0(m[2])
+		if h > 0 || mins > 0 {
+			v := h*60 + mins
+			cook = &v
+		}
+	}
+
+	// Plain text: "Prep: 15 mins", "Cook time: 30 minutes"
+	if prep == nil {
+		re := regexp.MustCompile(`(?i)(?:prep(?:aration)?\s*time|prep)[:\s]*(\d+)(?:\s*-\s*\d+)?\s*(?:min|mins|minutes?)`)
+		if m := re.FindStringSubmatch(text); len(m) >= 2 {
+			v := atoi0(m[1])
+			if v > 0 {
+				prep = &v
+			}
+		}
+	}
+	if cook == nil {
+		re := regexp.MustCompile(`(?i)(?:cook(?:ing)?\s*time|cook)[:\s]*(\d+)(?:\s*-\s*\d+)?\s*(?:min|mins|minutes?)`)
+		if m := re.FindStringSubmatch(text); len(m) >= 2 {
+			v := atoi0(m[1])
+			if v > 0 {
+				cook = &v
+			}
+		}
+	}
+
+	return prep, cook
 }
 
 func extractServingsHeuristic(doc *goquery.Document) *string {

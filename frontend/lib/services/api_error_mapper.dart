@@ -1,18 +1,31 @@
 import 'package:dio/dio.dart';
 
+/// Exception that carries a clean, user-facing message.
+class ApiException implements Exception {
+  final String message;
+  const ApiException(this.message);
+  @override
+  String toString() => message;
+}
+
 /// Maps backend error responses and network failures into stable,
 /// user-facing error messages.
 class ApiErrorMapper {
   static String fromDio(DioException e) {
-    // 1. Try backend error code first.
+    // 1. Try backend error response first.
     final data = e.response?.data;
     if (data is Map<String, dynamic>) {
       final code = data['error']?.toString();
       final message = data['message']?.toString();
+
+      // Prefer the backend's specific plain-language message when available.
+      if (message != null && message.isNotEmpty) {
+        return message;
+      }
+
       if (code != null && code != 'ok') {
         final mapped = _codeMessages[code];
         if (mapped != null) return mapped;
-        if (message != null && message.isNotEmpty) return message;
       }
     }
 

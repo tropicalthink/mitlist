@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -92,6 +94,9 @@ class RecipeDetailSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nutritionMap = _parseNutrition(nutritionJson);
+    final equipmentList = _parseEquipment(equipmentJson);
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -187,19 +192,22 @@ class RecipeDetailSheet extends StatelessWidget {
             ],
           ),
         ),
-        if (nutritionJson.isNotEmpty) ...[
+        if (nutritionMap.isNotEmpty) ...[
           const SizedBox(height: MitlistSpacing.md),
           Text(
             'Nutrition',
             style: Theme.of(context).textTheme.titleSmall,
           ),
           const SizedBox(height: MitlistSpacing.xs),
-          Text(
-            nutritionJson,
-            style: Theme.of(context).textTheme.bodySmall,
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: nutritionMap.entries.map((e) {
+              return AppChip(label: '${e.key}: ${e.value}', selected: false);
+            }).toList(),
           ),
         ],
-        if (equipmentJson.isNotEmpty) ...[
+        if (equipmentList.isNotEmpty) ...[
           const SizedBox(height: MitlistSpacing.md),
           Text(
             'Equipment',
@@ -209,10 +217,7 @@ class RecipeDetailSheet extends StatelessWidget {
           Wrap(
             spacing: 6,
             runSpacing: 6,
-            children: equipmentJson
-                .split(',')
-                .map((e) => e.trim())
-                .where((e) => e.isNotEmpty)
+            children: equipmentList
                 .map((e) => AppChip(label: e, selected: false))
                 .toList(),
           ),
@@ -268,6 +273,28 @@ class RecipeDetailSheet extends StatelessWidget {
       return 'Not set';
     }
     return '$minutes min';
+  }
+
+  static Map<String, String> _parseNutrition(String jsonStr) {
+    if (jsonStr.trim().isEmpty) return {};
+    try {
+      final decoded = jsonDecode(jsonStr);
+      if (decoded is Map) {
+        return decoded.map((k, v) => MapEntry(k.toString(), v.toString()));
+      }
+    } catch (_) {}
+    return {};
+  }
+
+  static List<String> _parseEquipment(String jsonStr) {
+    if (jsonStr.trim().isEmpty) return [];
+    try {
+      final decoded = jsonDecode(jsonStr);
+      if (decoded is List) {
+        return decoded.whereType<String>().toList();
+      }
+    } catch (_) {}
+    return [];
   }
 }
 

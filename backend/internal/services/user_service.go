@@ -100,8 +100,11 @@ func (s *UserService) Login(ctx context.Context, email, password string) (*model
 		return nil, "", "", err
 	}
 
-	if !user.IsActive || !user.IsVerified {
-		return nil, "", "", &api.ValidationError{Message: "account is not active or verified"}
+	if !user.IsActive {
+		return nil, "", "", &api.ValidationError{Message: "account is inactive"}
+	}
+	if !user.IsVerified {
+		return nil, "", "", &api.ValidationError{Message: "account is not verified"}
 	}
 
 	if !s.password.Compare(user.PasswordHash, password) {
@@ -125,8 +128,11 @@ func (s *UserService) GetMe(ctx context.Context, userID uuid.UUID) (*models.User
 		}
 		return nil, err
 	}
-	if !user.IsActive || !user.IsVerified {
-		return nil, &api.ValidationError{Message: "account is not active or verified"}
+	if !user.IsActive {
+		return nil, &api.ValidationError{Message: "account is inactive"}
+	}
+	if !user.IsVerified {
+		return nil, &api.ValidationError{Message: "account is not verified"}
 	}
 	return user, nil
 }
@@ -147,8 +153,11 @@ func (s *UserService) UpdateMe(ctx context.Context, userID uuid.UUID, input Upda
 		}
 		return nil, err
 	}
-	if !user.IsActive || !user.IsVerified {
-		return nil, &api.ValidationError{Message: "account is not active or verified"}
+	if !user.IsActive {
+		return nil, &api.ValidationError{Message: "account is inactive"}
+	}
+	if !user.IsVerified {
+		return nil, &api.ValidationError{Message: "account is not verified"}
 	}
 
 	if input.FirstName != nil {
@@ -176,8 +185,11 @@ func (s *UserService) DeleteMe(ctx context.Context, userID uuid.UUID) error {
 		}
 		return err
 	}
-	if !user.IsActive || !user.IsVerified {
-		return &api.ValidationError{Message: "account is not active or verified"}
+	if !user.IsActive {
+		return &api.ValidationError{Message: "account is inactive"}
+	}
+	if !user.IsVerified {
+		return &api.ValidationError{Message: "account is not verified"}
 	}
 	return s.userRepo.SoftDelete(ctx, userID)
 }
@@ -195,8 +207,11 @@ func (s *UserService) ChangePassword(ctx context.Context, userID uuid.UUID, oldP
 		}
 		return err
 	}
-	if !user.IsActive || !user.IsVerified {
-		return &api.ValidationError{Message: "account is not active or verified"}
+	if !user.IsActive {
+		return &api.ValidationError{Message: "account is inactive"}
+	}
+	if !user.IsVerified {
+		return &api.ValidationError{Message: "account is not verified"}
 	}
 
 	if !s.password.Compare(user.PasswordHash, oldPassword) {
