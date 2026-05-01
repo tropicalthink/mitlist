@@ -337,13 +337,20 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     return AppCard(
       child: Column(
         children: [
-
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const AppIcon(name: 'inbox'),
             title: const Text('Notification inbox'),
             trailing: const AppIcon(name: 'chevronRight'),
             onTap: () => context.goNamed('notifications'),
+          ),
+          const Divider(),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const AppIcon(name: 'cog6Tooth'),
+            title: const Text('Notification preferences'),
+            trailing: const AppIcon(name: 'chevronRight'),
+            onTap: () => context.goNamed('notificationPreferences'),
           ),
         ],
       ),

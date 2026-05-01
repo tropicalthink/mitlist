@@ -23,9 +23,12 @@ import 'screens/home/household_hub_screen.dart';
 import 'screens/lists/list_detail_screen.dart';
 import 'screens/share_target_screen.dart';
 import 'screens/notifications/notifications_screen.dart';
+import 'screens/notifications/notification_preferences_screen.dart';
 import 'screens/recipes/recipes_screen.dart';
 import 'screens/meal_plans/meal_plan_screen.dart';
 import 'screens/shopping/shopping_trip_screen.dart';
+import 'screens/assistant/assistant_sessions_screen.dart';
+import 'screens/assistant/assistant_chat_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -205,7 +208,29 @@ final routerProvider = Provider<GoRouter>((ref) {
                 name: 'notifications',
                 builder: (context, state) => const NotificationsScreen(),
               ),
+              GoRoute(
+                path: 'notification-preferences',
+                name: 'notificationPreferences',
+                builder: (context, state) =>
+                    const NotificationPreferencesScreen(),
+              ),
             ],
+          ),
+        ],
+      ),
+
+      GoRoute(
+        path: '/assistant',
+        name: 'assistantSessions',
+        builder: (context, state) => const AssistantSessionsScreen(),
+        routes: [
+          GoRoute(
+            path: ':sessionId',
+            name: 'assistantChat',
+            builder: (context, state) {
+              final sessionId = state.pathParameters['sessionId']!;
+              return AssistantChatScreen(sessionId: sessionId);
+            },
           ),
         ],
       ),
