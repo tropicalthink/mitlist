@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/connectivity_service.dart';
@@ -36,4 +38,68 @@ final outboxCoordinatorProvider = FutureProvider<OutboxCoordinator>((ref) async 
   coordinator.start();
   ref.onDispose(coordinator.dispose);
   return coordinator;
+});
+
+/// Status of the offline outbox queue.
+enum OutboxStatus { online, syncing, offline, error }
+
+class OutboxState {
+  final OutboxStatus status;
+  final int pendingCount;
+  final int failedCount;
+
+  const OutboxState({
+    required this.status,
+    this.pendingCount = 0,
+    this.failedCount = 0,
+  });
+
+  bool get isOffline => status == OutboxStatus.offline;
+  bool get isSyncing => status == OutboxStatus.syncing;
+  bool get hasErrors => status == OutboxStatus.error || failedCount > 0;
+}
+
+/// Watches connectivity and outbox queue to produce a unified sync status.
+final outboxStateProvider = StreamProvider<OutboxState>((ref) async* {
+  final db = ref.watch(appDatabaseProvider);
+  final connectivity = ref.watch(connectivityServiceProvider);
+
+  Future<OutboxState> computeState() async {
+    final online = await connectivity.isOnline();
+    final pending = await db.outboxPendingCount();
+    final failed = await db.outboxFailedCount();
+
+    if (!online) {
+      return OutboxState(
+        status: OutboxStatus.offline,
+        pendingCount: pending + failed,
+        failedCount: failed,
+      );
+    }
+    if (failed > 0) {
+      return OutboxState(
+        status: OutboxStatus.error,
+        pendingCount: pending,
+        failedCount: failed,
+      );
+    }
+    if (pending > 0) {
+      return OutboxState(
+        status: OutboxStatus.syncing,
+        pendingCount: pending,
+        failedCount: 0,
+      );
+    }
+    return const OutboxState(status: OutboxStatus.online);
+  }
+
+  // Yield immediately, then poll every 3 seconds.
+  // This is lightweight (a COUNT query) and keeps the banner responsive
+  // as the outbox drains or fails.
+  yield await computeState();
+
+  await for (final _ in Stream.periodic(const Duration(seconds: 3))) {
+    if (ref.state.hasError) break;
+    yield await computeState();
+  }
 });

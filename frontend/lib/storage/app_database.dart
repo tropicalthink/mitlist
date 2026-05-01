@@ -306,6 +306,22 @@ FROM list_items_table;
     return (result.data['c'] as int?) ?? 0;
   }
 
+  Future<int> outboxPendingCount({int maxAttempts = 10}) async {
+    final result = await customSelect(
+      'SELECT COUNT(*) AS c FROM outbox_ops WHERE attempt_count < ?',
+      variables: [Variable.withInt(maxAttempts)],
+    ).getSingle();
+    return (result.data['c'] as int?) ?? 0;
+  }
+
+  Future<int> outboxFailedCount({int maxAttempts = 10}) async {
+    final result = await customSelect(
+      'SELECT COUNT(*) AS c FROM outbox_ops WHERE attempt_count >= ?',
+      variables: [Variable.withInt(maxAttempts)],
+    ).getSingle();
+    return (result.data['c'] as int?) ?? 0;
+  }
+
   Future<void> rewriteOutboxPayloadIds({
     required String oldId,
     required String newId,

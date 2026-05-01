@@ -23,6 +23,8 @@ type choreSchedulerRepo interface {
 type choreReminderRepo interface {
 	ListPendingAssignmentsDueSoon(ctx context.Context, cutoff time.Time) ([]models.ChoreAssignment, error)
 	GetChoreName(ctx context.Context, choreID uuid.UUID) (string, error)
+	GetChoreGroupID(ctx context.Context, choreID uuid.UUID) (uuid.UUID, error)
+	GetUserPreference(ctx context.Context, userID, groupID uuid.UUID) (*models.NotificationPreference, error)
 }
 
 type recurringExpenseRepo interface {
@@ -37,5 +39,6 @@ type groupActivity struct {
 
 type weeklySummaryRepo interface {
 	ListWeeklyActivity(ctx context.Context, since time.Time) ([]groupActivity, error)
-	ListGroupAdmins(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error)
+	ListGroupMembers(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error)
+	GetUserPreference(ctx context.Context, userID, groupID uuid.UUID) (*models.NotificationPreference, error)
 }

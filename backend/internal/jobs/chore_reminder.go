@@ -3,10 +3,12 @@ package jobs
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/yourorg/mitlist/internal/models"
@@ -55,6 +57,25 @@ func (r *ChoreReminder) Run() {
 }
 
 func (r *ChoreReminder) remindAssignment(ctx context.Context, a models.ChoreAssignment) error {
+	groupID, err := r.repo.GetChoreGroupID(ctx, a.ChoreID)
+	if err != nil {
+		return fmt.Errorf("get chore group: %w", err)
+	}
+
+	pref, err := r.repo.GetUserPreference(ctx, a.UserID, groupID)
+	if err != nil {
+		r.log.Warn().Err(err).Str("user_id", a.UserID.String()).Msg("failed to load notification preference")
+		// Conservative: skip push if we can't verify preferences.
+		return nil
+	}
+	if !pref.PushEnabled || !pref.ChoreDue {
+		r.log.Debug().
+			Str("user_id", a.UserID.String()).
+			Str("chore_id", a.ChoreID.String()).
+			Msg("skipping chore reminder: user opted out")
+		return nil
+	}
+
 	choreName, err := r.repo.GetChoreName(ctx, a.ChoreID)
 	if err != nil {
 		return fmt.Errorf("get chore name: %w", err)
@@ -111,4 +132,42 @@ func (r *choreReminderRepoImpl) GetChoreName(ctx context.Context, choreID uuid.U
 		return "", err
 	}
 	return name, nil
+}
+
+func (r *choreReminderRepoImpl) GetChoreGroupID(ctx context.Context, choreID uuid.UUID) (uuid.UUID, error) {
+	var groupID uuid.UUID
+	err := r.pool.QueryRow(ctx, `SELECT group_id FROM chores WHERE id = $1`, choreID).Scan(&groupID)
+	return groupID, err
+}
+
+func (r *choreReminderRepoImpl) GetUserPreference(ctx context.Context, userID, groupID uuid.UUID) (*models.NotificationPreference, error) {
+	var p models.NotificationPreference
+	err := r.pool.QueryRow(ctx, `
+		SELECT id, user_id, group_id, chore_due, chore_due_day_of, list_item_added,
+			expense_created, meal_plan_changed, weekly_digest, push_enabled, created_at, updated_at
+		FROM notification_preferences
+		WHERE user_id = $1 AND group_id = $2
+	`, userID, groupID).Scan(
+		&p.ID, &p.UserID, &p.GroupID, &p.ChoreDue, &p.ChoreDueDayOf, &p.ListItemAdded,
+		&p.ExpenseCreated, &p.MealPlanChanged, &p.WeeklyDigest, &p.PushEnabled,
+		&p.CreatedAt, &p.UpdatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			// Return defaults when no preference row exists.
+			return &models.NotificationPreference{
+				UserID:          userID,
+				GroupID:         groupID,
+				ChoreDue:        true,
+				ChoreDueDayOf:   true,
+				ListItemAdded:   true,
+				ExpenseCreated:  true,
+				MealPlanChanged: true,
+				WeeklyDigest:    true,
+				PushEnabled:     true,
+			}, nil
+		}
+		return nil, err
+	}
+	return &p, nil
 }
