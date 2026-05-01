@@ -17,16 +17,19 @@ import (
 // NotificationService provides business logic for notifications.
 type NotificationService struct {
 	notificationRepo repositories.NotificationRepo
+	activityRepo     repositories.ActivityRepo
 	pushService      PushService
 }
 
 // NewNotificationService creates a new NotificationService.
 func NewNotificationService(
 	notificationRepo repositories.NotificationRepo,
+	activityRepo repositories.ActivityRepo,
 	pushService PushService,
 ) *NotificationService {
 	return &NotificationService{
 		notificationRepo: notificationRepo,
+		activityRepo:     activityRepo,
 		pushService:      pushService,
 	}
 }
@@ -143,15 +146,19 @@ func (s *NotificationService) UpdatePreferences(ctx context.Context, userID uuid
 }
 
 // WeeklyDigest aggregates household activity for the past week.
-// This is a skeleton; delivery via email/push requires external provider setup.
+// Delivery via email/push requires external provider setup.
 func (s *NotificationService) WeeklyDigest(ctx context.Context, groupID uuid.UUID) (map[string]interface{}, error) {
-	// TODO: aggregate chores done, expenses added, lists updated, meal plans changed
+	counts, err := s.activityRepo.CountWeeklyActivity(ctx, groupID)
+	if err != nil {
+		return nil, fmt.Errorf("weekly digest: %w", err)
+	}
 	return map[string]interface{}{
 		"group_id":   groupID,
 		"period":     "last_7_days",
-		"chores":     0,
-		"expenses":   0,
-		"lists":      0,
-		"meal_plans": 0,
+		"chores":     counts["chores"],
+		"expenses":   counts["expenses"],
+		"lists":      counts["lists"],
+		"meal_plans": counts["meal_plans"],
+		"recipes":    counts["recipes"],
 	}, nil
 }

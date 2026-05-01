@@ -196,6 +196,13 @@ func mergeTierResults(results []tierResult) RecipeClipResponse {
 	if title == "" || title == "Untitled Recipe" {
 		title = ""
 	}
+	description := strings.TrimSpace(base.Description)
+	author := strings.TrimSpace(base.Author)
+	ratingValue := base.RatingValue
+	ratingCount := base.RatingCount
+	nutrition := base.Nutrition
+	videoURL := strings.TrimSpace(base.VideoURL)
+	equipment := append([]string(nil), base.Equipment...)
 	instructions := strings.TrimSpace(base.InstructionsMD)
 	ingredients := append([]RecipeClipIngredient(nil), base.Ingredients...)
 	prep := base.PrepTimeMinutes
@@ -208,6 +215,30 @@ func mergeTierResults(results []tierResult) RecipeClipResponse {
 	for _, o := range others {
 		if title == "" && o.Title != "" && o.Title != "Untitled Recipe" {
 			title = o.Title
+		}
+		if description == "" && strings.TrimSpace(o.Description) != "" {
+			description = strings.TrimSpace(o.Description)
+		}
+		if author == "" && strings.TrimSpace(o.Author) != "" {
+			author = strings.TrimSpace(o.Author)
+		}
+		if ratingValue == 0 && o.RatingValue > 0 {
+			ratingValue = o.RatingValue
+		}
+		if ratingCount == 0 && o.RatingCount > 0 {
+			ratingCount = o.RatingCount
+		}
+		if len(nutrition) == 0 && len(o.Nutrition) > 0 {
+			nutrition = make(map[string]string, len(o.Nutrition))
+			for k, v := range o.Nutrition {
+				nutrition[k] = v
+			}
+		}
+		if videoURL == "" && strings.TrimSpace(o.VideoURL) != "" {
+			videoURL = strings.TrimSpace(o.VideoURL)
+		}
+		if len(equipment) == 0 && len(o.Equipment) > 0 {
+			equipment = append([]string(nil), o.Equipment...)
 		}
 
 		otherInstr := strings.TrimSpace(o.InstructionsMD)
@@ -264,6 +295,13 @@ func mergeTierResults(results []tierResult) RecipeClipResponse {
 	return RecipeClipResponse{
 		Title:           title,
 		SourceURL:       base.SourceURL,
+		Description:     description,
+		Author:          author,
+		RatingValue:     ratingValue,
+		RatingCount:     ratingCount,
+		Nutrition:       nutrition,
+		VideoURL:        videoURL,
+		Equipment:       equipment,
 		InstructionsMD:  instructions,
 		PrepTimeMinutes: prep,
 		CookTimeMinutes: cook,
@@ -444,9 +482,27 @@ func (s *RecipeScrapingService) tryMicrodata(doc *goquery.Document, pageURL stri
 		case "prepTime", "cookTime", "totalTime":
 			if dt, ok := sel.Attr("datetime"); ok && strings.TrimSpace(dt) != "" {
 				data[prop] = strings.TrimSpace(dt)
+			} else if c, ok := sel.Attr("content"); ok && strings.TrimSpace(c) != "" {
+				data[prop] = strings.TrimSpace(c)
 			} else {
 				data[prop] = strings.TrimSpace(sel.Text())
 			}
+		case "author":
+			data["author"] = strings.TrimSpace(sel.Text())
+		case "aggregateRating":
+			if s := strings.TrimSpace(sel.Text()); s != "" {
+				data["aggregateRating"] = s
+			}
+		case "nutrition":
+			if s := strings.TrimSpace(sel.Text()); s != "" {
+				data["nutrition"] = s
+			}
+		case "video":
+			if src, ok := sel.Attr("src"); ok && src != "" {
+				data["video"] = src
+			}
+		case "tool":
+			data["tool"] = appendAnyString(data["tool"], strings.TrimSpace(sel.Text()))
 		case "recipeYield", "yield", "servings", "servingSize":
 			data["recipeYield"] = strings.TrimSpace(sel.Text())
 		case "image":
@@ -973,6 +1029,7 @@ func (s *RecipeScrapingService) extractHeuristic(doc *goquery.Document, pageURL 
 	ingredients := extractIngredientsFromSelections(ingredientNodes)
 	instructions := extractInstructionsFromSelections(instructionNodes)
 	servings := extractServingsHeuristic(doc)
+	description := extractDescriptionHeuristic(doc)
 
 	var imageURL *string
 	if len(imageOptions) > 0 {
@@ -982,6 +1039,7 @@ func (s *RecipeScrapingService) extractHeuristic(doc *goquery.Document, pageURL 
 	return RecipeClipResponse{
 		Title:          title,
 		SourceURL:      pageURL,
+		Description:    description,
 		InstructionsMD: instructions,
 		Servings:       servings,
 		Ingredients:    ingredients,
@@ -991,11 +1049,28 @@ func (s *RecipeScrapingService) extractHeuristic(doc *goquery.Document, pageURL 
 	}
 }
 
+func extractDescriptionHeuristic(doc *goquery.Document) string {
+	if v, ok := doc.Find(`meta[property="og:description"]`).Attr("content"); ok {
+		if t := strings.TrimSpace(v); t != "" {
+			return t
+		}
+	}
+	if v, ok := doc.Find(`meta[name="description"]`).Attr("content"); ok {
+		if t := strings.TrimSpace(v); t != "" {
+			return t
+		}
+	}
+	return ""
+}
+
 func extractTitleHeuristic(doc *goquery.Document) string {
 	if v, ok := doc.Find(`meta[property="og:title"]`).Attr("content"); ok {
 		if t := strings.TrimSpace(v); t != "" {
 			return t
 		}
+	}
+	if t := strings.TrimSpace(doc.Find("h1").First().Text()); t != "" {
+		return t
 	}
 	if t := strings.TrimSpace(doc.Find("title").First().Text()); t != "" {
 		return t

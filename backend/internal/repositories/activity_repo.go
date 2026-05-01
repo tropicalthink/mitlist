@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -72,4 +73,28 @@ func (r *ActivityRepository) ListRecentActivity(ctx context.Context, groupID uui
 		return nil, fmt.Errorf("activity rows error: %w", err)
 	}
 	return events, nil
+}
+
+// CountWeeklyActivity returns counts of household activity over the past 7 days.
+func (r *ActivityRepository) CountWeeklyActivity(ctx context.Context, groupID uuid.UUID) (map[string]int, error) {
+	cutoff := time.Now().UTC().AddDate(0, 0, -7)
+	query := `
+		SELECT
+			(SELECT COUNT(*) FROM list_items li JOIN lists l ON l.id = li.list_id WHERE l.group_id = $1 AND li.created_at >= $2) AS lists,
+			(SELECT COUNT(*) FROM expenses WHERE group_id = $1 AND created_at >= $2) AS expenses,
+			(SELECT COUNT(*) FROM chore_completions cc JOIN chore_assignments ca ON ca.id = cc.assignment_id JOIN chores ch ON ch.id = ca.chore_id WHERE ch.group_id = $1 AND cc.completed_at >= $2) AS chores,
+			(SELECT COUNT(*) FROM meal_plans WHERE group_id = $1 AND created_at >= $2) AS meal_plans,
+			(SELECT COUNT(*) FROM recipes WHERE group_id = $1 AND created_at >= $2) AS recipes
+	`
+	var lists, expenses, chores, mealPlans, recipes int
+	if err := r.pool.QueryRow(ctx, query, groupID, cutoff).Scan(&lists, &expenses, &chores, &mealPlans, &recipes); err != nil {
+		return nil, fmt.Errorf("count weekly activity: %w", err)
+	}
+	return map[string]int{
+		"lists":      lists,
+		"expenses":   expenses,
+		"chores":     chores,
+		"meal_plans": mealPlans,
+		"recipes":    recipes,
+	}, nil
 }

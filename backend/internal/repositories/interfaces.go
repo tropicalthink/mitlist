@@ -217,6 +217,7 @@ type AssistantRepo interface {
 // ActivityRepo is the interface for activity repository operations.
 type ActivityRepo interface {
 	ListRecentActivity(ctx context.Context, groupID uuid.UUID, limit int) ([]models.ActivityEvent, error)
+	CountWeeklyActivity(ctx context.Context, groupID uuid.UUID) (map[string]int, error)
 }
 
 // PinwallRepo is the interface for pinwall repository operations.

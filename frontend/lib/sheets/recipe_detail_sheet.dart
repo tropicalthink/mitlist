@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
@@ -219,7 +220,7 @@ class RecipeDetailSheet extends StatelessWidget {
         if (videoUrl.isNotEmpty) ...[
           const SizedBox(height: MitlistSpacing.md),
           InkWell(
-            onTap: () {/* TODO: launch URL */},
+            onTap: () => _launchUrl(videoUrl),
             child: Row(
               children: [
                 Icon(Icons.play_circle_outline, size: 16, color: MitlistColors.primary500),
@@ -240,7 +241,7 @@ class RecipeDetailSheet extends StatelessWidget {
         if (sourceUrl.isNotEmpty) ...[
           const SizedBox(height: MitlistSpacing.md),
           InkWell(
-            onTap: () {/* TODO: launch URL */},
+            onTap: () => _launchUrl(sourceUrl),
             child: Row(
               children: [
                 Icon(Icons.open_in_new, size: 16, color: MitlistColors.primary500),
@@ -267,6 +268,13 @@ class RecipeDetailSheet extends StatelessWidget {
       return 'Not set';
     }
     return '$minutes min';
+  }
+}
+
+Future<void> _launchUrl(String url) async {
+  final uri = Uri.parse(url);
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 }
 

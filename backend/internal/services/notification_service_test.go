@@ -20,7 +20,7 @@ func TestNotificationService_CreateNotification(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		notificationRepo := new(mocks.MockNotificationRepo)
-		svc := NewNotificationService(notificationRepo, nil)
+		svc := NewNotificationService(notificationRepo, nil, nil)
 
 		notificationRepo.On("CreateNotification", ctx, mock.AnythingOfType("*models.Notification")).Return(nil)
 
@@ -37,7 +37,7 @@ func TestNotificationService_GetNotification(t *testing.T) {
 
 	t.Run("success owner", func(t *testing.T) {
 		notificationRepo := new(mocks.MockNotificationRepo)
-		svc := NewNotificationService(notificationRepo, nil)
+		svc := NewNotificationService(notificationRepo, nil, nil)
 
 		notificationRepo.On("GetNotificationByID", ctx, notificationID).Return(&models.Notification{ID: notificationID, UserID: userID}, nil)
 
@@ -48,7 +48,7 @@ func TestNotificationService_GetNotification(t *testing.T) {
 
 	t.Run("wrong owner", func(t *testing.T) {
 		notificationRepo := new(mocks.MockNotificationRepo)
-		svc := NewNotificationService(notificationRepo, nil)
+		svc := NewNotificationService(notificationRepo, nil, nil)
 
 		notificationRepo.On("GetNotificationByID", ctx, notificationID).Return(&models.Notification{ID: notificationID, UserID: uuid.New()}, nil)
 
@@ -65,7 +65,7 @@ func TestNotificationService_MarkAsRead(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		notificationRepo := new(mocks.MockNotificationRepo)
-		svc := NewNotificationService(notificationRepo, nil)
+		svc := NewNotificationService(notificationRepo, nil, nil)
 
 		notificationRepo.On("GetNotificationByID", ctx, notificationID).Return(&models.Notification{ID: notificationID, UserID: userID}, nil)
 		notificationRepo.On("MarkAsRead", ctx, notificationID).Return(nil)
@@ -82,7 +82,7 @@ func TestNotificationService_DeleteNotification(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		notificationRepo := new(mocks.MockNotificationRepo)
-		svc := NewNotificationService(notificationRepo, nil)
+		svc := NewNotificationService(notificationRepo, nil, nil)
 
 		notificationRepo.On("GetNotificationByID", ctx, notificationID).Return(&models.Notification{ID: notificationID, UserID: userID}, nil)
 		notificationRepo.On("DeleteNotification", ctx, notificationID).Return(nil)
@@ -99,7 +99,7 @@ func TestNotificationService_UpdatePreferences(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		notificationRepo := new(mocks.MockNotificationRepo)
-		svc := NewNotificationService(notificationRepo, nil)
+		svc := NewNotificationService(notificationRepo, nil, nil)
 
 		notificationRepo.On("UpsertPreference", ctx, mock.AnythingOfType("*models.NotificationPreference")).Return(nil)
 
@@ -110,7 +110,7 @@ func TestNotificationService_UpdatePreferences(t *testing.T) {
 
 	t.Run("wrong user", func(t *testing.T) {
 		notificationRepo := new(mocks.MockNotificationRepo)
-		svc := NewNotificationService(notificationRepo, nil)
+		svc := NewNotificationService(notificationRepo, nil, nil)
 
 		pref := &models.NotificationPreference{UserID: uuid.New(), GroupID: groupID}
 		err := svc.UpdatePreferences(ctx, userID, pref)

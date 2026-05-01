@@ -480,7 +480,7 @@ func (c *Container) AssistantService() *services.AssistantService {
 // NotificationService returns the singleton notification service.
 func (c *Container) NotificationService() *services.NotificationService {
 	c.notificationServiceOnce.Do(func() {
-		c.notificationService = services.NewNotificationService(c.NotificationRepo(), c.Push())
+		c.notificationService = services.NewNotificationService(c.NotificationRepo(), c.ActivityRepo(), c.Push())
 	})
 	return c.notificationService
 }
