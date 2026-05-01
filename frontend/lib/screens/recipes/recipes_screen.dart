@@ -522,8 +522,13 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       }
 
       if (!mounted) return;
+      final totalLines = _shoppingSections.values.fold<int>(
+            0,
+            (sum, list) => sum + list.length,
+          ) +
+          _shoppingSections.length;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Shopping list created with  lines')),
+        SnackBar(content: Text('Shopping list created with $totalLines lines')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -628,7 +633,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  ' plan',
+                  '$day plan',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: MitlistSpacing.md),
@@ -863,6 +868,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                 children: _weekDays.map((day) {
                   final meals = _plan.where((m) => m.day == day).toList();
                   final hasMeals = meals.isNotEmpty;
+                  final colorScheme = Theme.of(context).colorScheme;
                   return Padding(
                     padding: const EdgeInsets.only(right: MitlistSpacing.sm),
                     child: InkWell(
@@ -873,12 +879,12 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                         height: 56,
                         decoration: BoxDecoration(
                           color: hasMeals
-                              ? MitlistColors.primary100
-                              : Theme.of(context).colorScheme.surface,
+                              ? colorScheme.primaryContainer
+                              : colorScheme.surface,
                           border: Border.all(
                             color: hasMeals
-                                ? MitlistColors.primary500
-                                : MitlistColors.borderPrimary,
+                                ? colorScheme.primary
+                                : colorScheme.outline,
                             width: 2,
                           ),
                         ),
@@ -892,8 +898,8 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                                   .labelSmall
                                   ?.copyWith(
                                     color: hasMeals
-                                        ? MitlistColors.primary700
-                                        : MitlistColors.textSecondary,
+                                        ? colorScheme.onPrimaryContainer
+                                        : colorScheme.onSurfaceVariant,
                                   ),
                             ),
                             const SizedBox(height: 4),
@@ -901,16 +907,16 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                               Container(
                                 width: 20,
                                 height: 20,
-                                decoration: const BoxDecoration(
-                                  color: MitlistColors.primary500,
+                                decoration: BoxDecoration(
+                                  color: colorScheme.primary,
                                 ),
                                 child: Center(
                                   child: Text(
-                                    '',
+                                    meals.length.toString(),
                                     style: Theme.of(context)
                                         .textTheme
                                         .labelSmall
-                                        ?.copyWith(color: Colors.white),
+                                        ?.copyWith(color: colorScheme.onPrimary),
                                   ),
                                 ),
                               )
@@ -919,7 +925,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                                 width: 8,
                                 height: 8,
                                 decoration: BoxDecoration(
-                                  color: MitlistColors.borderSecondary,
+                                  color: colorScheme.outlineVariant,
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -1186,7 +1192,7 @@ class _RecipeCard extends StatelessWidget {
       interactive: true,
       animated: true,
       onTap: onTap,
-      semanticLabel: 'Open recipe ',
+      semanticLabel: 'Open recipe ${recipe.title}',
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[

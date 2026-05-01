@@ -311,22 +311,22 @@ func (r *FinanceRepo) CreateRecurringExpense(ctx context.Context, re *models.Rec
 	re.CreatedAt = time.Now().UTC()
 
 	_, err := r.pool.Exec(ctx, `
-		INSERT INTO recurring_expenses (id, group_id, payer_id, amount, description, category, frequency, next_due, is_active, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-	`, re.ID, re.GroupID, re.PayerID, re.Amount, re.Description, re.Category, re.Frequency, re.NextDue, re.IsActive, re.CreatedAt)
+		INSERT INTO recurring_expenses (id, group_id, payer_id, amount, description, category, currency, frequency, next_due, is_active, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+	`, re.ID, re.GroupID, re.PayerID, re.Amount, re.Description, re.Category, re.Currency, re.Frequency, re.NextDue, re.IsActive, re.CreatedAt)
 	return err
 }
 
 // GetRecurringExpenseByID retrieves a recurring expense by its ID.
 func (r *FinanceRepo) GetRecurringExpenseByID(ctx context.Context, id uuid.UUID) (*models.RecurringExpense, error) {
 	row := r.pool.QueryRow(ctx, `
-		SELECT id, group_id, payer_id, amount, description, category, frequency, next_due, is_active, created_at
+		SELECT id, group_id, payer_id, amount, description, category, currency, frequency, next_due, is_active, created_at
 		FROM recurring_expenses
 		WHERE id = $1
 	`, id)
 
 	var re models.RecurringExpense
-	err := row.Scan(&re.ID, &re.GroupID, &re.PayerID, &re.Amount, &re.Description, &re.Category, &re.Frequency, &re.NextDue, &re.IsActive, &re.CreatedAt)
+	err := row.Scan(&re.ID, &re.GroupID, &re.PayerID, &re.Amount, &re.Description, &re.Category, &re.Currency, &re.Frequency, &re.NextDue, &re.IsActive, &re.CreatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, fmt.Errorf("recurring expense not found")
@@ -375,9 +375,9 @@ func (r *FinanceRepo) ListRecurringExpensesByDateRange(ctx context.Context, grou
 func (r *FinanceRepo) UpdateRecurringExpense(ctx context.Context, re *models.RecurringExpense) error {
 	cmd, err := r.pool.Exec(ctx, `
 		UPDATE recurring_expenses
-		SET payer_id = $1, amount = $2, description = $3, category = $4, frequency = $5, next_due = $6, is_active = $7
-		WHERE id = $8
-	`, re.PayerID, re.Amount, re.Description, re.Category, re.Frequency, re.NextDue, re.IsActive, re.ID)
+		SET payer_id = $1, amount = $2, description = $3, category = $4, currency = $5, frequency = $6, next_due = $7, is_active = $8
+		WHERE id = $9
+	`, re.PayerID, re.Amount, re.Description, re.Category, re.Currency, re.Frequency, re.NextDue, re.IsActive, re.ID)
 	if err != nil {
 		return err
 	}

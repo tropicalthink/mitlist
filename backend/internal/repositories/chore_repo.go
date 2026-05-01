@@ -117,14 +117,14 @@ func (r *ChoreRepository) ListCurrentChoresByGroup(ctx context.Context, groupID 
 			la.id, la.chore_id, la.user_id, la.status, la.due_date, la.assigned_at, la.completed_at, la.skip_reason
 		FROM chores c
 		LEFT JOIN LATERAL (
-			SELECT id, chore_id, user_id, status, due_date, assigned_at, completed_at
+			SELECT id, chore_id, user_id, status, due_date, assigned_at, completed_at, skip_reason
 			FROM chore_assignments
 			WHERE chore_id = c.id AND status = 'pending'
 			ORDER BY assigned_at DESC, id DESC
 			LIMIT 1
 		) pa ON true
 		LEFT JOIN LATERAL (
-			SELECT id, chore_id, user_id, status, due_date, assigned_at, completed_at
+			SELECT id, chore_id, user_id, status, due_date, assigned_at, completed_at, skip_reason
 			FROM chore_assignments
 			WHERE chore_id = c.id AND status <> 'pending'
 			ORDER BY completed_at DESC NULLS LAST, assigned_at DESC, id DESC

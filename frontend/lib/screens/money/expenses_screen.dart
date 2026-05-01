@@ -119,7 +119,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   bool _isLoading = true;
   bool _isLoadingMore = false;
   bool _hasMore = true;
-  bool _hasError = false;
+  String? _errorMessage;
   bool _hasPageError = false;
   bool _hasHousehold = true;
   bool _isSettling = false;
@@ -173,7 +173,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
-      _hasError = false;
+      _errorMessage = null;
       _hasPageError = false;
       _hasMore = true;
       _isLoadingMore = false;
@@ -236,7 +236,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _hasError = true;
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
         _isLoading = false;
       });
     }
@@ -445,7 +445,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         _hasHousehold &&
         _suggestions.isEmpty &&
         !_isLoading &&
-        !_hasError &&
+        _errorMessage == null &&
         !_hasPlayedConfetti) {
       _hasPlayedConfetti = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -458,7 +458,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   Widget build(BuildContext context) {
     _maybePlayConfetti();
 
-    final canSettle = _hasHousehold && !_isLoading && !_hasError;
+    final canSettle = _hasHousehold && !_isLoading && _errorMessage == null;
     final showSettlementsNudge = canSettle && (_suggestions.isNotEmpty);
 
     return Scaffold(
@@ -500,8 +500,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
           Expanded(
             child: _isLoading
                 ? const _LoadingBody()
-                : _hasError
-                    ? _ErrorBody(onRetry: _loadData)
+                : _errorMessage != null
+                    ? _ErrorBody(message: _errorMessage, onRetry: _loadData)
                     : !_hasHousehold
                         ? _NoHouseholdBody(
                             onOpenHouseholds: () => context.goNamed('groupsList'),
@@ -754,9 +754,10 @@ class _LoadingBody extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _ErrorBody extends StatelessWidget {
+  final String? message;
   final VoidCallback onRetry;
 
-  const _ErrorBody({required this.onRetry});
+  const _ErrorBody({this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -764,9 +765,9 @@ class _ErrorBody extends StatelessWidget {
       padding: const EdgeInsets.all(MitlistSpacing.md),
       child: Column(
         children: [
-          const AppAlert(
+          AppAlert(
             type: AppAlertType.error,
-            message: 'Failed to load expenses. Please try again.',
+            message: message ?? 'Failed to load expenses. Please try again.',
           ),
           const SizedBox(height: MitlistSpacing.md),
           AppButton(
@@ -875,7 +876,7 @@ class _TimelineBody extends StatelessWidget {
               delegate: _StickyDateHeaderDelegate(
                 height: MitlistSpacing.space10,
                 child: Container(
-                  color: MitlistColors.surfaceSoft,
+                  color: Theme.of(context).colorScheme.surface,
                   padding: const EdgeInsets.symmetric(
                     horizontal: MitlistSpacing.md,
                   ),
@@ -932,7 +933,13 @@ class _TimelineBody extends StatelessWidget {
                         type: AppAlertType.error,
                         message: 'Failed to load more expenses.',
                       )
-                    : const Center(child: CircularProgressIndicator()),
+                    : Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation(
+                            Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
               ),
             ),
           const SliverPadding(
@@ -996,8 +1003,8 @@ class _PayerBadge extends StatelessWidget {
       width: MitlistSpacing.space10,
       height: MitlistSpacing.space10,
       decoration: BoxDecoration(
-        color: MitlistColors.surfaceSoft,
-        border: Border.all(color: MitlistColors.borderSecondary, width: 2),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant, width: 2),
       ),
       alignment: Alignment.center,
       child: Text(
@@ -1022,6 +1029,7 @@ class _ExpenseCard extends StatelessWidget {
       variant: AppCardVariant.outlined,
       interactive: true,
       onTap: onTap,
+      semanticLabel: '${expense.description}, ${_formatCurrency(expense.amount, currency: expense.currency)}',
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -1034,7 +1042,7 @@ class _ExpenseCard extends StatelessWidget {
                 Text(
                   expense.category.toUpperCase(),
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: MitlistColors.textTertiary,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                 ),
                 const SizedBox(height: MitlistSpacing.space1),
@@ -1269,8 +1277,8 @@ class _SettlementParty extends StatelessWidget {
       constraints: const BoxConstraints(minHeight: MitlistSpacing.space14),
       padding: const EdgeInsets.all(MitlistSpacing.sm),
       decoration: BoxDecoration(
-        color: MitlistColors.surfaceSoft,
-        border: Border.all(color: MitlistColors.borderSecondary),
+        color: Theme.of(context).colorScheme.surfaceContainerHigh,
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

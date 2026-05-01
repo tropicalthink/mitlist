@@ -1,3 +1,16 @@
+-- If the old notification_preferences table exists (from 000001_init_schema),
+-- drop it because the schema changed completely and old data can't be migrated
+-- (old table lacks group_id and has different columns).
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'notification_preferences' AND column_name = 'type'
+    ) THEN
+        DROP TABLE notification_preferences;
+    END IF;
+END $$;
+
 CREATE TABLE IF NOT EXISTS notification_preferences (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,

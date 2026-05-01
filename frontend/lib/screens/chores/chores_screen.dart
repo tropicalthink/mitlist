@@ -749,7 +749,7 @@ class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
     bool overlapsContent,
   ) {
     return Container(
-      color: MitlistColors.surfaceSoft,
+      color: Theme.of(context).colorScheme.surface,
       child: child,
     );
   }
@@ -858,9 +858,12 @@ class _ChoreItem extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Checkbox(
-            value: chore.completed,
-            onChanged: (_) => onToggle(),
+          Semantics(
+            label: 'Mark ${chore.title} as done',
+            child: Checkbox(
+              value: chore.completed,
+              onChanged: (_) => onToggle(),
+            ),
           ),
           Expanded(
             child: GestureDetector(
@@ -896,11 +899,11 @@ class _ChoreItem extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: MitlistSpacing.space3,
-                backgroundColor: MitlistColors.primary100,
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                 child: Text(
                   chore.assigneeInitials,
                   style: MitlistTypography.labelXSmall(
-                    color: MitlistColors.primary900,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
                   ),
                 ),
               ),

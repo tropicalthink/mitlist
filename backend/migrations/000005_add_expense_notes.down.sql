@@ -1,2 +1,2 @@
 ALTER TABLE expenses
-DROP COLUMN notes;
+DROP COLUMN IF EXISTS notes;

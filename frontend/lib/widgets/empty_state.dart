@@ -54,12 +54,13 @@ class AppEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: _padding,
       decoration: BoxDecoration(
-        color: isError ? MitlistColors.error50 : MitlistColors.surfacePrimary,
-        border: const Border.fromBorderSide(
-          BorderSide(color: MitlistColors.borderPrimary, width: 2),
+        color: isError ? MitlistColors.error50 : colorScheme.surface,
+        border: Border.fromBorderSide(
+          BorderSide(color: colorScheme.outline, width: 2),
         ),
         boxShadow: MitlistShadows.shadowSoft,
       ),

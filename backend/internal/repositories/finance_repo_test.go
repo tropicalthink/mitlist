@@ -347,7 +347,7 @@ func TestFinanceRepo_CreateRecurringExpense(t *testing.T) {
 	}
 
 	mock.ExpectExec("INSERT INTO recurring_expenses").
-		WithArgs(pgxmock.AnyArg(), re.GroupID, re.PayerID, re.Amount, re.Description, re.Category, re.Frequency, re.NextDue, re.IsActive, pgxmock.AnyArg()).
+		WithArgs(pgxmock.AnyArg(), re.GroupID, re.PayerID, re.Amount, re.Description, re.Category, re.Currency, re.Frequency, re.NextDue, re.IsActive, pgxmock.AnyArg()).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
 	err := repo.CreateRecurringExpense(context.Background(), re)
@@ -361,8 +361,8 @@ func TestFinanceRepo_GetRecurringExpenseByID(t *testing.T) {
 	repo := NewFinanceRepo(mock)
 	id := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "group_id", "payer_id", "amount", "description", "category", "frequency", "next_due", "is_active", "created_at"}).
-		AddRow(id, fixedUUID(), fixedUUID(), 1000, "Rent", "housing", "monthly", fixedTime(), true, fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "group_id", "payer_id", "amount", "description", "category", "currency", "frequency", "next_due", "is_active", "created_at"}).
+		AddRow(id, fixedUUID(), fixedUUID(), 1000, "Rent", "housing", "USD", "monthly", fixedTime(), true, fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM recurring_expenses WHERE id = .*").
 		WithArgs(id).
@@ -414,10 +414,10 @@ func TestFinanceRepo_UpdateRecurringExpense(t *testing.T) {
 	id := fixedUUID()
 
 	mock.ExpectExec("UPDATE recurring_expenses SET").
-		WithArgs(fixedUUID(), int64(2000), "New Rent", "housing", "monthly", fixedTime(), true, id).
+		WithArgs(fixedUUID(), int64(2000), "New Rent", "housing", "USD", "monthly", fixedTime(), true, id).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
-	re := &models.RecurringExpense{ID: id, PayerID: fixedUUID(), Amount: 2000, Description: "New Rent", Category: "housing", Frequency: "monthly", NextDue: fixedTime(), IsActive: true}
+	re := &models.RecurringExpense{ID: id, PayerID: fixedUUID(), Amount: 2000, Description: "New Rent", Category: "housing", Currency: "USD", Frequency: "monthly", NextDue: fixedTime(), IsActive: true}
 	err := repo.UpdateRecurringExpense(context.Background(), re)
 	require.NoError(t, err)
 	assert.NoError(t, mock.ExpectationsWereMet())
@@ -429,10 +429,10 @@ func TestFinanceRepo_UpdateRecurringExpense_NotFound(t *testing.T) {
 	id := fixedUUID()
 
 	mock.ExpectExec("UPDATE recurring_expenses SET").
-		WithArgs(fixedUUID(), int64(2000), "New Rent", "housing", "monthly", fixedTime(), true, id).
+		WithArgs(fixedUUID(), int64(2000), "New Rent", "housing", "USD", "monthly", fixedTime(), true, id).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 0))
 
-	re := &models.RecurringExpense{ID: id, PayerID: fixedUUID(), Amount: 2000, Description: "New Rent", Category: "housing", Frequency: "monthly", NextDue: fixedTime(), IsActive: true}
+	re := &models.RecurringExpense{ID: id, PayerID: fixedUUID(), Amount: 2000, Description: "New Rent", Category: "housing", Currency: "USD", Frequency: "monthly", NextDue: fixedTime(), IsActive: true}
 	err := repo.UpdateRecurringExpense(context.Background(), re)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not found")

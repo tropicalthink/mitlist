@@ -546,6 +546,7 @@ func (h *FinanceHandler) CreateRecurringExpense(w http.ResponseWriter, r *http.R
 		Amount      int64     `json:"amount"`
 		Description string    `json:"description"`
 		Category    string    `json:"category"`
+		Currency    string    `json:"currency"`
 		Frequency   string    `json:"frequency"`
 		NextDue     time.Time `json:"next_due"`
 		IsActive    bool      `json:"is_active"`
@@ -561,6 +562,7 @@ func (h *FinanceHandler) CreateRecurringExpense(w http.ResponseWriter, r *http.R
 		Amount:      req.Amount,
 		Description: req.Description,
 		Category:    req.Category,
+		Currency:    req.Currency,
 		Frequency:   req.Frequency,
 		NextDue:     req.NextDue,
 		IsActive:    req.IsActive,
@@ -641,6 +643,7 @@ func (h *FinanceHandler) UpdateRecurringExpense(w http.ResponseWriter, r *http.R
 		Amount      *int64     `json:"amount,omitempty"`
 		Description *string    `json:"description,omitempty"`
 		Category    *string    `json:"category,omitempty"`
+		Currency    *string    `json:"currency,omitempty"`
 		Frequency   *string    `json:"frequency,omitempty"`
 		NextDue     *time.Time `json:"next_due,omitempty"`
 		IsActive    *bool      `json:"is_active,omitempty"`
@@ -668,6 +671,9 @@ func (h *FinanceHandler) UpdateRecurringExpense(w http.ResponseWriter, r *http.R
 	if req.Category != nil {
 		existing.Category = *req.Category
 	}
+	if req.Currency != nil {
+		existing.Currency = *req.Currency
+	}
 	if req.Frequency != nil {
 		existing.Frequency = *req.Frequency
 	}
@@ -684,6 +690,7 @@ func (h *FinanceHandler) UpdateRecurringExpense(w http.ResponseWriter, r *http.R
 		Amount:      existing.Amount,
 		Description: existing.Description,
 		Category:    existing.Category,
+		Currency:    existing.Currency,
 		Frequency:   existing.Frequency,
 		NextDue:     existing.NextDue,
 		IsActive:    existing.IsActive,

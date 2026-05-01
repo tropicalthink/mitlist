@@ -586,11 +586,11 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
       return AppAlert(type: AppAlertType.error, message: _error!);
     }
 
-    return const Center(
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(MitlistSpacing.md),
+        padding: const EdgeInsets.all(MitlistSpacing.md),
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation(MitlistColors.primary500),
+          valueColor: AlwaysStoppedAnimation(Theme.of(context).colorScheme.primary),
         ),
       ),
     );
@@ -707,7 +707,7 @@ class _ListCard extends StatelessWidget {
             width: double.infinity,
             decoration: BoxDecoration(
               border: Border.all(
-                color: MitlistColors.borderPrimary,
+                color: Theme.of(context).colorScheme.outline,
                 width: 2,
               ),
             ),
@@ -762,7 +762,7 @@ class _SkeletonCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         border: Border.all(
-          color: MitlistColors.borderPrimary,
+          color: Theme.of(context).colorScheme.outline,
           width: 2,
         ),
       ),
