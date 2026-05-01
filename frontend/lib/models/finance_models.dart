@@ -406,7 +406,7 @@ class CreateRecurringExpenseRequest {
         'description': description,
         'category': category,
         'frequency': frequency,
-        'next_due': nextDue.toIso8601String(),
+        'next_due': nextDue.toUtc().toIso8601String(),
         'is_active': isActive,
       };
 }
@@ -436,7 +436,7 @@ class UpdateRecurringExpenseRequest {
         if (description != null) 'description': description,
         if (category != null) 'category': category,
         if (frequency != null) 'frequency': frequency,
-        if (nextDue != null) 'next_due': nextDue!.toIso8601String(),
+        if (nextDue != null) 'next_due': nextDue!.toUtc().toIso8601String(),
         if (isActive != null) 'is_active': isActive,
       };
 }

@@ -28,24 +28,7 @@ func NewListHandler(service *services.ListService, financeService *services.Fina
 	return &ListHandler{service: service, financeService: financeService}
 }
 
-// ShoppingTripItem represents an item in a shopping trip projection.
-type ShoppingTripItem struct {
-	ID       string  `json:"id"`
-	Name     string  `json:"name"`
-	Quantity float64 `json:"quantity"`
-	Unit     string  `json:"unit"`
-	ListID   string  `json:"list_id"`
-	ListName string  `json:"list_name"`
-	StoreID  *string `json:"store_id,omitempty"`
-	Checked  bool    `json:"checked"`
-}
 
-// ShoppingTripResponse represents a grouped shopping trip.
-type ShoppingTripResponse struct {
-	Items      []ShoppingTripItem `json:"items"`
-	TotalItems int                `json:"total_items"`
-	Unchecked  int                `json:"unchecked"`
-}
 
 // CreateList handles POST /api/v1/lists.
 func (h *ListHandler) CreateList(w http.ResponseWriter, r *http.Request) {
@@ -639,13 +622,13 @@ func (h *ListHandler) GetShoppingTrip(w http.ResponseWriter, r *http.Request) {
 		listIDs = append(listIDs, id)
 	}
 
-	items, err := h.service.GetShoppingTrip(r.Context(), user, listIDs)
+	trip, err := h.service.GetShoppingTrip(r.Context(), user, listIDs)
 	if err != nil {
 		respondError(w, err)
 		return
 	}
 
-	respondJSON(w, http.StatusOK, items)
+	respondJSON(w, http.StatusOK, map[string]any{"lists": trip})
 }
 
 // BulkCompleteItems handles POST /api/v1/shopping/complete.

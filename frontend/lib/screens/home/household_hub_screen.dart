@@ -279,10 +279,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                         sliver: SliverList(
                           delegate: SliverChildListDelegate(
                             [
-                              _GreetingHeader(
-                                me: _me,
-                              ),
-                              const SizedBox(height: MitlistSpacing.lg),
+                              const SizedBox(height: MitlistSpacing.md),
                               _PinwallSection(groupId: widget.groupId, me: _me),
                               const SizedBox(height: MitlistSpacing.md),
                               _SectionLabel(label: 'At a glance'),
@@ -347,13 +344,6 @@ String _avatarInitials(String label) {
 
 String _formatCurrency(double value) => _currencyFormat.format(value);
 
-String _timeGreeting() {
-  final h = DateTime.now().hour;
-  if (h < 12) return 'Morning';
-  if (h < 17) return 'Afternoon';
-  return 'Evening';
-}
-
 Future<void> _openQuickAddSheet(BuildContext context) async {
   Haptics.light();
   await showModalBottomSheet<void>(
@@ -403,31 +393,6 @@ Future<void> _openQuickAddSheet(BuildContext context) async {
       );
     },
   );
-}
-
-class _GreetingHeader extends StatelessWidget {
-  const _GreetingHeader({
-    required this.me,
-  });
-
-  final User? me;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final greeting = _timeGreeting();
-    final name = me?.firstName.trim();
-    final who = (name == null || name.isEmpty) ? '' : ', $name';
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '$greeting$who!',
-          style: textTheme.headlineSmall,
-        ),
-      ],
-    );
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

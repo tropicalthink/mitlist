@@ -217,10 +217,10 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
           _showChoreActionError('Failed to update subtask. Please try again.');
         }
       },
-      onAddSubtask: () async {
+      onAddSubtask: (title) async {
         try {
           final service = await ref.read(choreServiceProviderAsync.future);
-          final created = await service.createSubtask(id, '');
+          final created = await service.createSubtask(id, title);
           return created.id;
         } catch (e) {
           if (!mounted) return null;

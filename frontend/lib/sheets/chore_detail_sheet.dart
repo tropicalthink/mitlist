@@ -49,7 +49,7 @@ class ChoreDetailSheet extends StatefulWidget {
   final VoidCallback? onRescheduleTomorrow;
   final VoidCallback? onUndo;
   final void Function(String subtaskId, bool completed)? onToggleSubtask;
-  final Future<String?> Function()? onAddSubtask;
+  final Future<String?> Function(String title)? onAddSubtask;
   final ValueChanged<String>? onDeleteSubtask;
   final ValueChanged<List<String>>? onReorderSubtasks;
   final VoidCallback? onAddSuppliesToList;
@@ -71,7 +71,7 @@ class ChoreDetailSheet extends StatefulWidget {
     VoidCallback? onRescheduleTomorrow,
     VoidCallback? onUndo,
     void Function(String subtaskId, bool completed)? onToggleSubtask,
-    Future<String?> Function()? onAddSubtask,
+    Future<String?> Function(String title)? onAddSubtask,
     ValueChanged<String>? onDeleteSubtask,
     ValueChanged<List<String>>? onReorderSubtasks,
     VoidCallback? onAddSuppliesToList,
@@ -175,13 +175,13 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
     }
     final title = _subtaskController.text.trim();
     if (title.isEmpty) return;
-    final newSubtask = await widget.onAddSubtask?.call();
-    if (newSubtask != null) {
+    final newSubtaskId = await widget.onAddSubtask?.call(title);
+    if (newSubtaskId != null) {
       setState(() {
         _subtasks.add(
           ChoreSubtask(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
-            choreId: '',
+            id: newSubtaskId,
+            choreId: widget.choreId,
             title: title,
             completed: false,
             createdAt: DateTime.now(),

@@ -607,25 +607,20 @@ func (s *ListService) GenerateExpenseFromList(ctx context.Context, user *models.
 	return expense, nil
 }
 
-// ShoppingTripItem represents a projected shopping trip item.
-type ShoppingTripItem struct {
-	ID       string  `json:"id"`
-	Name     string  `json:"name"`
-	Quantity float64 `json:"quantity"`
-	Unit     string  `json:"unit"`
-	ListID   string  `json:"list_id"`
-	ListName string  `json:"list_name"`
-	StoreID  *string `json:"store_id,omitempty"`
-	Checked  bool    `json:"checked"`
+// ShoppingTripList groups full list items by list for a shopping trip.
+type ShoppingTripList struct {
+	ListID   uuid.UUID         `json:"list_id"`
+	ListName string            `json:"list_name"`
+	Items    []models.ListItem `json:"items"`
 }
 
-// GetShoppingTrip combines unchecked items from multiple lists into a shopping trip.
-func (s *ListService) GetShoppingTrip(ctx context.Context, user *models.User, listIDs []uuid.UUID) ([]ShoppingTripItem, error) {
+// GetShoppingTrip combines items from multiple lists into a grouped shopping trip.
+func (s *ListService) GetShoppingTrip(ctx context.Context, user *models.User, listIDs []uuid.UUID) ([]ShoppingTripList, error) {
 	if err := s.requireActiveVerifiedUser(user); err != nil {
 		return nil, err
 	}
 
-	var allItems []ShoppingTripItem
+	var result []ShoppingTripList
 	for _, listID := range listIDs {
 		list, err := s.listRepo.GetListByID(ctx, listID)
 		if err != nil {
@@ -643,26 +638,14 @@ func (s *ListService) GetShoppingTrip(ctx context.Context, user *models.User, li
 			return nil, fmt.Errorf("failed to list items: %w", err)
 		}
 
-		for _, item := range items {
-			var storeID *string
-			if item.StoreID != nil {
-				s := item.StoreID.String()
-				storeID = &s
-			}
-			allItems = append(allItems, ShoppingTripItem{
-				ID:       item.ID.String(),
-				Name:     item.Name,
-				Quantity: item.Quantity,
-				Unit:     item.Unit,
-				ListID:   listID.String(),
-				ListName: list.Name,
-				StoreID:  storeID,
-				Checked:  item.Checked,
-			})
-		}
+		result = append(result, ShoppingTripList{
+			ListID:   list.ID,
+			ListName: list.Name,
+			Items:    items,
+		})
 	}
 
-	return allItems, nil
+	return result, nil
 }
 
 // BulkCompleteItems marks multiple list items as checked.

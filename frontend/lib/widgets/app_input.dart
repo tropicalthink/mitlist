@@ -65,8 +65,10 @@ class AppInput extends StatefulWidget {
 
 class _AppInputState extends State<AppInput>
     with SingleTickerProviderStateMixin {
-  late final TextEditingController _controller;
-  late final FocusNode _focusNode;
+  late TextEditingController _controller;
+  late FocusNode _focusNode;
+  late bool _ownsController;
+  late bool _ownsFocusNode;
   late final AnimationController _shakeController;
   Animation<Offset>? _shakeAnimation;
 
@@ -91,7 +93,9 @@ class _AppInputState extends State<AppInput>
   void initState() {
     super.initState();
     _controller = widget.controller ?? TextEditingController();
+    _ownsController = widget.controller == null;
     _focusNode = widget.focusNode ?? FocusNode();
+    _ownsFocusNode = widget.focusNode == null;
     _obscure = widget.obscureText;
 
     _shakeController = AnimationController(
@@ -141,19 +145,21 @@ class _AppInputState extends State<AppInput>
 
     if (widget.controller != oldWidget.controller) {
       _controller.removeListener(_handleTextChange);
-      if (oldWidget.controller == null) {
+      if (_ownsController) {
         _controller.dispose();
       }
       _controller = widget.controller ?? TextEditingController();
+      _ownsController = widget.controller == null;
       _controller.addListener(_handleTextChange);
     }
 
     if (widget.focusNode != oldWidget.focusNode) {
       _focusNode.removeListener(_handleFocusChange);
-      if (oldWidget.focusNode == null) {
+      if (_ownsFocusNode) {
         _focusNode.dispose();
       }
       _focusNode = widget.focusNode ?? FocusNode();
+      _ownsFocusNode = widget.focusNode == null;
       _focusNode.addListener(_handleFocusChange);
       _focused = _focusNode.hasFocus;
     }
@@ -193,10 +199,10 @@ class _AppInputState extends State<AppInput>
     _controller.removeListener(_handleTextChange);
     _shakeController.dispose();
 
-    if (widget.focusNode == null) {
+    if (_ownsFocusNode) {
       _focusNode.dispose();
     }
-    if (widget.controller == null) {
+    if (_ownsController) {
       _controller.dispose();
     }
 

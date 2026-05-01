@@ -67,14 +67,18 @@ class AppBottomSheet extends StatelessWidget {
             ),
           ),
           SizedBox(height: MitlistSpacing.md),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              MitlistSpacing.lg,
-              MitlistSpacing.space0,
-              MitlistSpacing.lg,
-              MitlistSpacing.lg,
+          Flexible(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                MitlistSpacing.lg,
+                MitlistSpacing.space0,
+                MitlistSpacing.lg,
+                MitlistSpacing.lg,
+              ),
+              child: SingleChildScrollView(
+                child: body,
+              ),
             ),
-            child: body,
           ),
         ],
       ),
