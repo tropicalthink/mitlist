@@ -81,6 +81,11 @@ func (s *RecipeScrapingService) ScrapeRecipe(ctx context.Context, rawURL string)
 		return nil, err
 	}
 
+	return s.scrapeHTML(html, finalURL)
+}
+
+// scrapeHTML parses raw HTML into a recipe clip. Used internally and in tests.
+func (s *RecipeScrapingService) scrapeHTML(html, finalURL string) (*RecipeClipResponse, error) {
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse html")
@@ -106,7 +111,6 @@ func (s *RecipeScrapingService) ScrapeRecipe(ctx context.Context, rawURL string)
 	}
 
 	merged := mergeTierResults(results)
-	merged.SourceURL = finalURL
 	return &merged, nil
 }
 

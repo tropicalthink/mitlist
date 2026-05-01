@@ -1,7 +1,6 @@
 package services
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -41,7 +40,7 @@ func TestRecipeScraping_JSONLD_ExtractsAllFields(t *testing.T) {
 </body>
 </html>`
 
-	r, err := svc.ScrapeRecipe(context.Background(), "data:text/html,"+html)
+	r, err := svc.scrapeHTML(html, "https://example.com/recipe")
 	require.NoError(t, err)
 	assert.Equal(t, "Chocolate Cake", r.Title)
 	assert.Equal(t, "Alice Baker", r.Author)
@@ -84,7 +83,7 @@ func TestRecipeScraping_Microdata_ExtractsFields(t *testing.T) {
 </body>
 </html>`
 
-	r, err := svc.ScrapeRecipe(context.Background(), "data:text/html,"+html)
+	r, err := svc.scrapeHTML(html, "https://example.com/recipe")
 	require.NoError(t, err)
 	assert.Equal(t, "Vanilla Cupcakes", r.Title)
 	assert.Equal(t, "Bob Baker", r.Author)
@@ -119,7 +118,7 @@ func TestRecipeScraping_OpenGraph_Fallback(t *testing.T) {
 </body>
 </html>`
 
-	r, err := svc.ScrapeRecipe(context.Background(), "data:text/html,"+html)
+	r, err := svc.scrapeHTML(html, "https://example.com/recipe")
 	require.NoError(t, err)
 	assert.Equal(t, "OG Pancakes", r.Title)
 	assert.Equal(t, "Fluffy pancakes recipe", r.Description)
@@ -152,7 +151,7 @@ func TestRecipeScraping_MergeTiers(t *testing.T) {
 </body>
 </html>`
 
-	r, err := svc.ScrapeRecipe(context.Background(), "data:text/html,"+html)
+	r, err := svc.scrapeHTML(html, "https://example.com/recipe")
 	require.NoError(t, err)
 	// JSON-LD title should win over OG and heuristic.
 	assert.Equal(t, "JSON-LD Title", r.Title)
@@ -179,7 +178,7 @@ func TestRecipeScraping_MalformedJSONLD_HandledGracefully(t *testing.T) {
 </body>
 </html>`
 
-	r, err := svc.ScrapeRecipe(context.Background(), "data:text/html,"+html)
+	r, err := svc.scrapeHTML(html, "https://example.com/recipe")
 	require.NoError(t, err)
 	assert.Equal(t, "Fallback Soup", r.Title)
 	assert.Len(t, r.Ingredients, 2)
@@ -206,7 +205,7 @@ func TestRecipeScraping_IngredientParser(t *testing.T) {
 </body>
 </html>`
 
-	r, err := svc.ScrapeRecipe(context.Background(), "data:text/html,"+html)
+	r, err := svc.scrapeHTML(html, "https://example.com/recipe")
 	require.NoError(t, err)
 	require.Len(t, r.Ingredients, 4)
 	assert.Equal(t, "1 1/2 cups flour", r.Ingredients[0].RawText)
