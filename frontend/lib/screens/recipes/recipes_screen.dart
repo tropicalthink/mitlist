@@ -1263,26 +1263,20 @@ class _LoadMoreErrorTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      variant: AppCardVariant.outlined,
-      interactive: true,
-      semanticLabel: 'Retry loading more recipes',
-      onTap: onRetry,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          AppAlert(
-            type: AppAlertType.error,
-            message: message,
-          ),
-          const SizedBox(height: MitlistSpacing.sm),
-          AppButton(
-            text: 'Retry',
-            onPressed: onRetry,
-          ),
-        ],
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        AppAlert(
+          type: AppAlertType.error,
+          message: message,
+        ),
+        const SizedBox(height: MitlistSpacing.sm),
+        AppButton(
+          text: 'Retry',
+          onPressed: onRetry,
+        ),
+      ],
     );
   }
 }

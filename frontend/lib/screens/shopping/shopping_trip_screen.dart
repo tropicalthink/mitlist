@@ -214,7 +214,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
         child: AppEmptyState(
           icon: Icon(Icons.check_circle_outline),
           title: 'All caught up',
-          description: 'No open items across your lists',
+          description: 'No open items across your lists. Add items to a list to see them here.',
         ),
       );
     }
@@ -327,7 +327,6 @@ class _ItemRow extends StatelessWidget {
           Checkbox(
             value: isChecked,
             onChanged: (_) => onToggle(),
-            visualDensity: VisualDensity.compact,
           ),
           Expanded(
             child: Text(

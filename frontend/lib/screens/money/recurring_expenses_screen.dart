@@ -178,12 +178,19 @@ class _RecurringExpensesScreenState
       );
     }
     if (_items.isEmpty) {
-      return const Center(
+      return Center(
         child: AppEmptyState(
-          icon: Icon(Icons.repeat),
+          icon: const Icon(Icons.repeat),
           title: 'No recurring expenses',
           description: 'Add a recurring expense to track regular payments',
-          actions: [],
+          actions: [
+            AppButton(
+              text: 'Add expense',
+              variant: AppButtonVariant.outline,
+              size: AppButtonSize.sm,
+              onPressed: _openCreateSheet,
+            ),
+          ],
         ),
       );
     }

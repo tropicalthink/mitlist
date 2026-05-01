@@ -1490,8 +1490,12 @@ class _WallSection extends StatelessWidget {
                 ?.copyWith(color: colorScheme.onSurfaceVariant),
           )
         else
-          AppCard(
-            padding: AppCardPadding.md,
+          Container(
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              border: Border.all(color: colorScheme.outline, width: 2),
+            ),
+            padding: const EdgeInsets.all(MitlistSpacing.md),
             child: Column(
               children: [
                 for (var i = 0; i < activities.take(5).length; i++) ...[

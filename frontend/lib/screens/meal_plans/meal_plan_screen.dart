@@ -446,7 +446,6 @@ class _SlotRow extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.close, size: 18),
                   tooltip: 'Remove',
-                  visualDensity: VisualDensity.compact,
                   onPressed: onRemove,
                 ),
               ] else

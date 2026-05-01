@@ -364,16 +364,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: MitlistSpacing.space3),
-                        CheckboxListTile(
-                          value: _rememberMe,
-                          onChanged: _isLoading
-                              ? null
-                              : (value) {
-                                  setState(() => _rememberMe = value ?? true);
-                                },
+                        ListTile(
+                          leading: Checkbox(
+                            value: _rememberMe,
+                            onChanged: _isLoading
+                                ? null
+                                : (value) {
+                                    setState(() => _rememberMe = value ?? true);
+                                  },
+                          ),
                           title: const Text('Remember me'),
                           contentPadding: EdgeInsets.zero,
-                          controlAffinity: ListTileControlAffinity.leading,
                         ),
                         const SizedBox(height: MitlistSpacing.space4),
                         AppButton(
