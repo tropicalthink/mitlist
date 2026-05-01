@@ -219,11 +219,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           );
         },
       ),
-    ).whenComplete(() {
-      currentPasswordController.dispose();
-      newPasswordController.dispose();
-      confirmPasswordController.dispose();
-    });
+    );
   }
 
   void _showTermsSheet() {

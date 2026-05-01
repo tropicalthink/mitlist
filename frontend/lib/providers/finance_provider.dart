@@ -9,7 +9,7 @@ final financeServiceProviderAsync = FutureProvider<FinanceService>((ref) async {
 });
 
 final financeRepositoryProvider = FutureProvider<FinanceRepository>((ref) async {
-  final db = ref.read(appDatabaseProvider);
+  final db = ref.watch(appDatabaseProvider);
   final service = await ref.read(financeServiceProviderAsync.future);
   return FinanceRepository(db: db, remote: service);
 });

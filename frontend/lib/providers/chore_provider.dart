@@ -9,7 +9,7 @@ final choreServiceProviderAsync = FutureProvider<ChoreService>((ref) async {
 });
 
 final choreRepositoryProvider = FutureProvider<ChoreRepository>((ref) async {
-  final db = ref.read(appDatabaseProvider);
+  final db = ref.watch(appDatabaseProvider);
   final service = await ref.read(choreServiceProviderAsync.future);
   return ChoreRepository(db: db, remote: service);
 });

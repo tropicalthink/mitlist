@@ -17,8 +17,8 @@ final connectivityServiceProvider = Provider<ConnectivityService>((ref) {
 });
 
 final outboxCoordinatorProvider = FutureProvider<OutboxCoordinator>((ref) async {
-  final db = ref.read(appDatabaseProvider);
-  final connectivity = ref.read(connectivityServiceProvider);
+  final db = ref.watch(appDatabaseProvider);
+  final connectivity = ref.watch(connectivityServiceProvider);
   final listRepo = await ref.watch(listRepositoryProvider.future);
   final financeRepo = await ref.watch(financeRepositoryProvider.future);
   final recipeRepo = await ref.watch(recipeRepositoryProvider.future);

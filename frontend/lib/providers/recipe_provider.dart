@@ -9,7 +9,7 @@ final recipeServiceProviderAsync = FutureProvider<RecipeService>((ref) async {
 });
 
 final recipeRepositoryProvider = FutureProvider<RecipeRepository>((ref) async {
-  final db = ref.read(appDatabaseProvider);
+  final db = ref.watch(appDatabaseProvider);
   final service = await ref.read(recipeServiceProviderAsync.future);
   return RecipeRepository(db: db, remote: service);
 });

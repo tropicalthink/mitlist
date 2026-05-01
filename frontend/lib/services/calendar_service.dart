@@ -44,6 +44,6 @@ class CalendarService {
   }
 
   Exception _handleError(DioException e) {
-    return Exception(ApiErrorMapper.fromDio(e));
+    return ApiException(ApiErrorMapper.fromDio(e));
   }
 }

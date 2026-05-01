@@ -41,6 +41,9 @@ func (s *TemplateService) requireMembership(ctx context.Context, userID, groupID
 }
 
 func (s *TemplateService) requireActiveVerifiedUser(u *models.User) error {
+	if u == nil {
+		return api.ErrUnauthorized
+	}
 	if !u.IsActive || !u.IsVerified {
 		return &api.PermissionDeniedError{Message: "user is not active or verified"}
 	}

@@ -151,8 +151,8 @@ func mapError(err error) (int, errorResponse) {
 	}
 
 	if errors.Is(err, api.ErrUnauthorized) {
-		return http.StatusUnauthorized, errorResponse{Error: "unauthorized", Message: "unauthorized"}
+		return http.StatusUnauthorized, errorResponse{Error: "unauthorized", Message: err.Error()}
 	}
 
-	return http.StatusInternalServerError, errorResponse{Error: "internal_error", Message: "internal server error"}
+	return http.StatusInternalServerError, errorResponse{Error: "internal_error", Message: err.Error()}
 }

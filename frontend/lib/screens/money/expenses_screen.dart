@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -123,6 +124,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   bool _hasHousehold = true;
   bool _isSettling = false;
   int _selectedTab = 0; // 0 = Timeline, 1 = Settlements
+  final Logger _logger = Logger();
 
   late final ConfettiController _confettiController;
   final ScrollController _timelineScrollController = ScrollController();
@@ -207,7 +209,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
       // Background refresh; keep cached UI if this fails.
       if (validGroupId != null) {
-        unawaited(repo.refreshGroup(validGroupId, limit: _pageLimit, offset: 0).catchError((_) {}));
+        unawaited(repo.refreshGroup(validGroupId, limit: _pageLimit, offset: 0).catchError((e) {
+          _logger.w('Background expenses refresh failed', error: e);
+        }));
         ref.listenManual(cachedExpensesByGroupProvider(validGroupId), (prev, next) {
           next.whenData((data) {
             if (!mounted) return;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:logger/logger.dart';
 import 'dart:async';
 
 import 'package:intl/intl.dart';
@@ -37,6 +38,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   StreamSubscription<List<CurrentChore>>? _sub;
   bool _filterMe = true;
   bool _hasHousehold = true;
+  final Logger _logger = Logger();
 
   static const double _displaySmallLineHeight = 36 * (44 / 36);
   static const double _labelMediumLineHeight = 12 * (16 / 12);
@@ -100,7 +102,9 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       _applyCurrentChores(cached, allowSkeleton: cached.isEmpty);
 
       // Background refresh; keep cache if it fails.
-      unawaited(repo.refreshCurrentChores(gid).catchError((_) {}));
+      unawaited(repo.refreshCurrentChores(gid).catchError((e) {
+        _logger.w('Background chores refresh failed', error: e);
+      }));
     } catch (e) {
       if (!mounted) return;
       setState(() {

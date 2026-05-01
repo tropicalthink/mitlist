@@ -40,6 +40,9 @@ func (s *ListService) requireMembership(ctx context.Context, userID, groupID uui
 }
 
 func (s *ListService) requireActiveVerifiedUser(u *models.User) error {
+	if u == nil {
+		return api.ErrUnauthorized
+	}
 	if !u.IsActive || !u.IsVerified {
 		return &api.PermissionDeniedError{Message: "user is not active or verified"}
 	}

@@ -15,7 +15,7 @@ final appDatabaseProvider = Provider<AppDatabase>((ref) {
 });
 
 final listRepositoryProvider = FutureProvider<ListRepository>((ref) async {
-  final db = ref.read(appDatabaseProvider);
+  final db = ref.watch(appDatabaseProvider);
   final service = await ref.read(listServiceProviderAsync.future);
   return ListRepository(db: db, remote: service);
 });

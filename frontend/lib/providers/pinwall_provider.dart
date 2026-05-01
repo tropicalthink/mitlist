@@ -10,7 +10,7 @@ final pinwallServiceProviderAsync = FutureProvider<PinwallService>((ref) async {
 });
 
 final pinwallRepositoryProvider = FutureProvider<PinwallRepository>((ref) async {
-  final db = ref.read(appDatabaseProvider);
+  final db = ref.watch(appDatabaseProvider);
   final service = await ref.read(pinwallServiceProviderAsync.future);
   return PinwallRepository(db: db, remote: service);
 });
