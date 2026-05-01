@@ -35,6 +35,7 @@ func (h *RecipeHandler) RegisterRoutes(r chi.Router) {
 	r.Patch("/recipes/{id}", h.UpdateRecipe)
 	r.Delete("/recipes/{id}", h.DeleteRecipe)
 	r.Post("/recipes/{id}/share", h.ShareRecipe)
+	r.Get("/recipes/{id}/ingredients", h.GetRecipeIngredients)
 	r.Post("/recipes/{id}/add-to-list", h.AddToList)
 	r.Post("/recipes/{id}/add-missing-to-list", h.AddMissingToList)
 	r.Post("/recipes/clip", h.ClipRecipe)
@@ -487,6 +488,28 @@ func parseIngredientAmount(raw string) float64 {
 
 type recipeClipRequest struct {
 	URL string `json:"url"`
+}
+
+func (h *RecipeHandler) GetRecipeIngredients(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
+	id, err := parseUUIDParam(r, "id")
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
+	ingredients, err := h.service.ListIngredientsForRecipe(r.Context(), userID, id)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, ingredients)
 }
 
 func (h *RecipeHandler) ClipRecipe(w http.ResponseWriter, r *http.Request) {

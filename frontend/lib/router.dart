@@ -24,6 +24,8 @@ import 'screens/share_target_screen.dart';
 import 'screens/integration_test_screen.dart';
 import 'screens/notifications/notifications_screen.dart';
 import 'screens/recipes/recipes_screen.dart';
+import 'screens/meal_plans/meal_plan_screen.dart';
+import 'screens/shopping/shopping_trip_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -150,6 +152,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                   );
                 },
               ),
+              GoRoute(
+                path: 'shopping-trip',
+                name: 'shoppingTrip',
+                parentNavigatorKey: _rootNavigatorKey,
+                builder: (context, state) => const ShoppingTripScreen(),
+              ),
             ],
           ),
           GoRoute(
@@ -166,6 +174,18 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/recipes',
             name: 'recipes',
             builder: (context, state) => const RecipesScreen(),
+            routes: [
+              GoRoute(
+                path: 'meal-plan',
+                name: 'mealPlan',
+                parentNavigatorKey: _rootNavigatorKey,
+                builder: (context, state) {
+                  final extra = state.extra;
+                  final groupId = extra is String ? extra : '';
+                  return MealPlanScreen(groupId: groupId);
+                },
+              ),
+            ],
           ),
           GoRoute(
             path: '/you',

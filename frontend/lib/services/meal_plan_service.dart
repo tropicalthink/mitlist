@@ -74,6 +74,28 @@ class MealPlanService {
     }
   }
 
+  Future<Map<String, dynamic>> generateShoppingList(
+    String groupId, {
+    required String from,
+    required String to,
+    String? listId,
+  }) async {
+    ensureValidGroupId(groupId);
+    try {
+      final data = <String, dynamic>{
+        'group_id': groupId,
+        'from': from,
+        'to': to,
+      };
+      if (listId != null) data['list_id'] = listId;
+      final r = await _dio.post('/meal-plans/generate-shopping-list', data: data);
+      return Map<String, dynamic>.from(r.data as Map);
+    } on DioException catch (e) {
+      _logger.e('Generate shopping list failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
   Exception _handleError(DioException e) {
     if (e.response?.statusCode == 401) return Exception('Session expired');
     if (e.response?.statusCode == 403) return Exception('Access denied');

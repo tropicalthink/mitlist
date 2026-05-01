@@ -358,3 +358,33 @@ class RecipeClipResponse {
     );
   }
 }
+
+class RecipeIngredient {
+  final String id;
+  final String recipeId;
+  final String name;
+  final double quantity;
+  final String unit;
+  final String rawText;
+  final int position;
+
+  const RecipeIngredient({
+    required this.id,
+    required this.recipeId,
+    required this.name,
+    this.quantity = 0,
+    this.unit = '',
+    this.rawText = '',
+    this.position = 0,
+  });
+
+  factory RecipeIngredient.fromJson(Map<String, dynamic> json) => RecipeIngredient(
+        id: json['id'] as String,
+        recipeId: json['recipe_id'] as String,
+        name: json['name'] as String? ?? '',
+        quantity: (json['quantity'] as num?)?.toDouble() ?? 0,
+        unit: json['unit'] as String? ?? '',
+        rawText: json['raw_text'] as String? ?? '',
+        position: json['position'] as int? ?? 0,
+      );
+}

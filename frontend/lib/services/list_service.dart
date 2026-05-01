@@ -210,6 +210,32 @@ class ListService {
     }
   }
 
+  Future<Map<String, dynamic>> getShoppingTrip(
+    List<String> listIds, {
+    String? groupId,
+  }) async {
+    try {
+      final params = <String, dynamic>{
+        'list_id': listIds,
+      };
+      if (groupId != null) params['group_id'] = groupId;
+      final r = await _dio.get('/shopping/trip', queryParameters: params);
+      return Map<String, dynamic>.from(r.data as Map);
+    } on DioException catch (e) {
+      _logger.e('Get shopping trip failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> completeShoppingItems(List<String> itemIds) async {
+    try {
+      await _dio.post('/shopping/complete', data: {'item_ids': itemIds});
+    } on DioException catch (e) {
+      _logger.e('Complete shopping items failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
   Future<Map<String, dynamic>> clearItems(
     String listId, {
     bool onlyChecked = false,

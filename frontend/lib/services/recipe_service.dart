@@ -193,6 +193,18 @@ class RecipeService {
     }
   }
 
+  Future<List<RecipeIngredient>> getRecipeIngredients(String recipeId) async {
+    try {
+      final r = await _dio.get('/recipes/$recipeId/ingredients');
+      final data = r.data;
+      if (data is! List) return [];
+      return data.map((j) => RecipeIngredient.fromJson((j as Map).cast<String, dynamic>())).toList();
+    } on DioException catch (e) {
+      _logger.e('Get recipe ingredients failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
   Exception _handleError(DioException e) {
     if (e.response?.statusCode == 401) return Exception('Session expired');
     if (e.response?.statusCode == 403) return Exception('Access denied');
