@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,6 +38,12 @@ final _pinwallMediaByPostProvider = FutureProvider.family<
     return svc.listPostAttachments(groupId: args.groupId, postId: args.postId);
   },
 );
+
+final _groupMembersByGroupProvider =
+    FutureProvider.family<List<GroupMemberProfile>, String>((ref, groupId) async {
+  final svc = await ref.read(groupServiceProviderAsync.future);
+  return svc.listMembers(groupId);
+});
 
 class _HubSnapshot {
   const _HubSnapshot({
@@ -167,6 +174,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final members = ref.watch(_groupMembersByGroupProvider(widget.groupId));
     return Scaffold(
       floatingActionButton: _isLoading || _error != null
           ? null
@@ -206,6 +214,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                     ref.invalidate(
                         cachedCurrentChoresByGroupProvider(widget.groupId));
                     ref.invalidate(pinwallPostsByGroupProvider(widget.groupId));
+                    ref.invalidate(_groupMembersByGroupProvider(widget.groupId));
                     await _loadData();
 
                     // Best-effort background refresh for cached sections.
@@ -280,7 +289,11 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                           delegate: SliverChildListDelegate(
                             [
                               const SizedBox(height: MitlistSpacing.md),
-                              _PinwallSection(groupId: widget.groupId, me: _me),
+                              _PinwallSection(
+                                groupId: widget.groupId,
+                                me: _me,
+                                members: members.valueOrNull ?? const [],
+                              ),
                               const SizedBox(height: MitlistSpacing.md),
                               _SectionLabel(label: 'At a glance'),
                               const SizedBox(height: MitlistSpacing.sm),
@@ -289,6 +302,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                               _WallSection(
                                 activities: _snapshot!.activities,
                                 activityError: _snapshot!.activityError,
+                                members: members.valueOrNull ?? const [],
+                                me: _me,
                               ),
                               const SizedBox(height: MitlistSpacing.xl),
                             ],
@@ -328,9 +343,16 @@ String _relativeDay(DateTime t) {
   return DateFormat.MMMd().format(t);
 }
 
-String _formatUserLabel(String id, String? currentUserId) {
+String _formatUserLabel(
+  String id,
+  String? currentUserId,
+  Map<String, String> memberNames,
+) {
+  if (id.isEmpty) return 'Someone';
   if (id == currentUserId) return 'You';
-  return 'Member';
+  final name = memberNames[id];
+  if (name != null && name.trim().isNotEmpty) return name.trim();
+  return 'Someone';
 }
 
 // Returns a 1–2 letter avatar string from a user label.
@@ -343,6 +365,16 @@ String _avatarInitials(String label) {
 }
 
 String _formatCurrency(double value) => _currencyFormat.format(value);
+
+Color _avatarBgColor(String userId, ColorScheme scheme) {
+  final options = <Color>[
+    scheme.primaryContainer,
+    scheme.secondaryContainer,
+    scheme.tertiaryContainer,
+  ];
+  if (userId.isEmpty) return options.first;
+  return options[userId.hashCode.abs() % options.length];
+}
 
 Future<void> _openQuickAddSheet(BuildContext context) async {
   Haptics.light();
@@ -418,10 +450,15 @@ const _kNotePaletteDark = [
 ];
 
 class _PinwallSection extends ConsumerStatefulWidget {
-  const _PinwallSection({required this.groupId, required this.me});
+  const _PinwallSection({
+    required this.groupId,
+    required this.me,
+    required this.members,
+  });
 
   final String groupId;
   final User? me;
+  final List<GroupMemberProfile> members;
 
   @override
   ConsumerState<_PinwallSection> createState() => _PinwallSectionState();
@@ -506,6 +543,10 @@ class _PinwallSectionState extends ConsumerState<_PinwallSection> {
     final textTheme = Theme.of(context).textTheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
 
+    final memberNames = {
+      for (final m in widget.members) m.userId: m.displayName,
+    };
+
     final boardBg = dark ? const Color(0xFF2A211A) : const Color(0xFFC8A97A);
     final boardBorder =
         dark ? const Color(0xFF4A3C2E) : const Color(0xFF8B5E3C);
@@ -543,6 +584,9 @@ class _PinwallSectionState extends ConsumerState<_PinwallSection> {
                 isPosting: _isPosting,
                 isUploadingMedia: _isUploadingMedia,
                 pendingCount: _pendingMedia.length,
+                pendingMedia: List<XFile>.unmodifiable(_pendingMedia),
+                onRemovePending: (f) =>
+                    setState(() => _pendingMedia.removeWhere((x) => x.path == f.path)),
                 onPickMedia: _pickMedia,
                 onPost: _post,
               ),
@@ -603,6 +647,7 @@ class _PinwallSectionState extends ConsumerState<_PinwallSection> {
                           index: i,
                           groupId: widget.groupId,
                           me: widget.me,
+                          memberNames: memberNames,
                           post: show[i],
                         ),
                     ],
@@ -624,6 +669,8 @@ class _PinwallComposerNote extends StatelessWidget {
     required this.isPosting,
     required this.isUploadingMedia,
     required this.pendingCount,
+    required this.pendingMedia,
+    required this.onRemovePending,
     required this.onPickMedia,
     required this.onPost,
   });
@@ -632,17 +679,20 @@ class _PinwallComposerNote extends StatelessWidget {
   final bool isPosting;
   final bool isUploadingMedia;
   final int pendingCount;
+  final List<XFile> pendingMedia;
+  final void Function(XFile file) onRemovePending;
   final Future<void> Function() onPickMedia;
   final Future<void> Function() onPost;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final bg = dark ? const Color(0xFF5D5000) : const Color(0xFFFFF9C4);
     final border = dark ? const Color(0xFF8B7A00) : const Color(0xFFB8A800);
     final pinColor = dark ? MitlistColors.primary300 : MitlistColors.primary600;
+    final hintColor =
+        dark ? Colors.white.withValues(alpha: 0.55) : MitlistColors.textSecondary;
 
     return Stack(
       clipBehavior: Clip.none,
@@ -682,22 +732,78 @@ class _PinwallComposerNote extends StatelessWidget {
                 decoration: InputDecoration(
                   hintText: 'Post a note to the household\u2026',
                   hintStyle: textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.65),
+                    color: hintColor,
                   ),
                   border: InputBorder.none,
                   isDense: true,
                   contentPadding: EdgeInsets.zero,
                 ),
               ),
+              if (pendingMedia.isNotEmpty) ...[
+                const SizedBox(height: MitlistSpacing.sm),
+                SizedBox(
+                  height: 44,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: pendingMedia.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (context, i) {
+                      final f = pendingMedia[i];
+                      return GestureDetector(
+                        onTap: () => onRemovePending(f),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Stack(
+                            children: [
+                              AspectRatio(
+                                aspectRatio: 1,
+                                child: Image.file(
+                                  File(f.path),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    color: Colors.black.withValues(alpha: 0.08),
+                                    alignment: Alignment.center,
+                                    child: const Icon(
+                                      Icons.image_not_supported_outlined,
+                                      size: 18,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                right: 4,
+                                top: 4,
+                                child: Container(
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.55),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: const Icon(
+                                    Icons.close,
+                                    size: 12,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
               const SizedBox(height: MitlistSpacing.sm),
               Row(
                 children: [
-                  TextButton.icon(
+                  AppButton(
+                    text: pendingCount == 0 ? 'Add photos' : '$pendingCount ready',
+                    icon: const Icon(Icons.photo_outlined),
                     onPressed:
                         (isPosting || isUploadingMedia) ? null : onPickMedia,
-                    icon: const Icon(Icons.photo_outlined, size: 18),
-                    label: Text(
-                        pendingCount == 0 ? 'Photo' : '$pendingCount added'),
+                    variant: AppButtonVariant.outline,
+                    size: AppButtonSize.sm,
                   ),
                   const Spacer(),
                   AppButton(
@@ -733,12 +839,14 @@ class _PinwallNoteCard extends ConsumerWidget {
     required this.index,
     required this.groupId,
     required this.me,
+    required this.memberNames,
     required this.post,
   });
 
   final int index;
   final String groupId;
   final User? me;
+  final Map<String, String> memberNames;
   final dynamic post;
 
   void _showErrorSnack(BuildContext context, String message) {
@@ -899,7 +1007,7 @@ class _PinwallNoteCard extends ConsumerWidget {
     final userId = (post as dynamic).userId as String;
     final content = (post.content as String).trim();
     final createdAt = post.createdAt as DateTime;
-    final userLabel = _formatUserLabel(userId, me?.id);
+    final userLabel = _formatUserLabel(userId, me?.id, memberNames);
     final when = _relativeDay(createdAt);
 
     // deterministic but varied rotation: +-4deg
@@ -1144,27 +1252,37 @@ class _StatsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, c) {
-        final minTile = 160.0;
-        final count = (c.maxWidth / minTile).floor().clamp(1, 3);
-        final tileWidth =
-            (c.maxWidth - (MitlistSpacing.sm * (count - 1))) / count;
-
-        return Wrap(
-          spacing: MitlistSpacing.sm,
-          runSpacing: MitlistSpacing.sm,
+    return LayoutBuilder(builder: (context, c) {
+      // Rhythm > perfect grid: let Balance lead, then two quieter tiles.
+      if (c.maxWidth < 360) {
+        return Column(
           children: [
-            SizedBox(
-                width: tileWidth,
-                child: _BalanceTile(groupId: groupId, me: me)),
-            SizedBox(width: tileWidth, child: _ShoppingTile(groupId: groupId)),
-            SizedBox(
-                width: tileWidth, child: _WeeklyChoresTile(groupId: groupId)),
+            _BalanceTile(groupId: groupId, me: me),
+            const SizedBox(height: MitlistSpacing.sm),
+            _ShoppingTile(groupId: groupId),
+            const SizedBox(height: MitlistSpacing.sm),
+            _WeeklyChoresTile(groupId: groupId),
           ],
         );
-      },
-    );
+      }
+
+      final half =
+          (c.maxWidth - MitlistSpacing.sm) / 2; // 2-up row with one gap
+      return Column(
+        children: [
+          _BalanceTile(groupId: groupId, me: me),
+          const SizedBox(height: MitlistSpacing.sm),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(width: half, child: _ShoppingTile(groupId: groupId)),
+              const SizedBox(width: MitlistSpacing.sm),
+              SizedBox(width: half, child: _WeeklyChoresTile(groupId: groupId)),
+            ],
+          ),
+        ],
+      );
+    });
   }
 }
 
@@ -1384,10 +1502,10 @@ class _StatTile extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          title.toUpperCase(),
+          title,
           style: textTheme.labelSmall?.copyWith(
             color: titleColor,
-            letterSpacing: 0.6,
+            letterSpacing: 0.2,
           ),
         ),
         const SizedBox(height: MitlistSpacing.sm),
@@ -1454,15 +1572,26 @@ class _StatTileSkeleton extends StatelessWidget {
 }
 
 class _WallSection extends StatelessWidget {
-  const _WallSection({required this.activities, required this.activityError});
+  const _WallSection({
+    required this.activities,
+    required this.activityError,
+    required this.members,
+    required this.me,
+  });
 
   final List<ActivityLogModel> activities;
   final bool activityError;
+  final List<GroupMemberProfile> members;
+  final User? me;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
+
+    final memberNames = {
+      for (final m in members) m.userId: m.displayName,
+    };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1497,7 +1626,11 @@ class _WallSection extends StatelessWidget {
               children: [
                 for (var i = 0; i < activities.take(5).length; i++) ...[
                   if (i > 0) const SizedBox(height: MitlistSpacing.sm),
-                  _WallItem(item: activities[i]),
+                  _WallItem(
+                    item: activities[i],
+                    memberNames: memberNames,
+                    currentUserId: me?.id,
+                  ),
                 ],
               ],
             ),
@@ -1508,17 +1641,29 @@ class _WallSection extends StatelessWidget {
 }
 
 class _WallItem extends StatelessWidget {
-  const _WallItem({required this.item});
+  const _WallItem({
+    required this.item,
+    required this.memberNames,
+    required this.currentUserId,
+  });
 
   final ActivityLogModel item;
+  final Map<String, String> memberNames;
+  final String? currentUserId;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
-    final userLabel = _formatUserLabel(item.userId ?? '', null);
+    final userId = item.userId ?? '';
+    final userLabel = _formatUserLabel(userId, currentUserId, memberNames);
     final when = _relativeDay(item.createdAt);
     final message = _formatActivityLine(item);
+    final avatarBg = _avatarBgColor(userId, colorScheme);
+    final avatarFg = ThemeData.estimateBrightnessForColor(avatarBg) ==
+            Brightness.dark
+        ? Colors.white
+        : Colors.black;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1528,13 +1673,13 @@ class _WallItem extends StatelessWidget {
           height: 36,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: colorScheme.primaryContainer,
+            color: avatarBg,
           ),
           alignment: Alignment.center,
           child: Text(
             _avatarInitials(userLabel),
             style: textTheme.labelMedium?.copyWith(
-                color: colorScheme.onPrimaryContainer,
+                color: avatarFg,
                 fontWeight: FontWeight.w600),
           ),
         ),
