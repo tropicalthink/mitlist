@@ -84,6 +84,16 @@ Brand: warm, punchy, organized. Orange primary (`MitlistColors.primary500` = `#F
 | `/you/notification-preferences` | notificationPreferences | Preference toggles |
 | `/assistant` | assistantSessions | AI chat sessions |
 | `/assistant/:sessionId` | assistantChat | AI chat thread |
+| `/scanner` | scanner | OCR scanner for receipts, lists, recipes, chores |
+
+## AI / OCR
+
+The scanner uses **CrofAI** (`https://crof.ai/v1`) via OpenAI-compatible API. Set `CROFAI_API_KEY` in backend `.env`. The vision model `kimi-k2.5` processes images and returns structured JSON with type classification and extracted items/steps/amounts.
+
+- Endpoint: `POST /assistant/scan` (multipart file upload)
+- Service: `frontend/lib/services/scan_service.dart`
+- Screen: `frontend/lib/screens/scanner/scanner_screen.dart`
+- The old chat-based assistant has been removed.
 
 ## Testing
 

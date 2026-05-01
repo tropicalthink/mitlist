@@ -3,6 +3,7 @@ package ai
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,23 +15,21 @@ import (
 )
 
 const (
-	geminiBaseURL = "https://generativelanguage.googleapis.com/v1beta"
-	timeout       = 30 * time.Second
-	maxRetries    = 3
+	timeout    = 60 * time.Second
+	maxRetries = 3
 )
 
 var (
-	// ErrGenerationFailed is returned when the AI response cannot be parsed.
 	ErrGenerationFailed = errors.New("ai generation failed")
 )
 
-// Client provides access to the Google Gemini REST API.
+// Client provides access to the CrofAI OpenAI-compatible API.
 type Client struct {
 	cfg        *config.Config
 	httpClient *http.Client
 }
 
-// New creates a new Gemini AI client.
+// New creates a new AI client for CrofAI.
 func New(cfg *config.Config) *Client {
 	return &Client{
 		cfg: cfg,
@@ -40,53 +39,48 @@ func New(cfg *config.Config) *Client {
 	}
 }
 
-// Generate sends a prompt to the specified model and returns the generated text.
-func (c *Client) Generate(prompt string, model string) (string, error) {
+// GenerateImage sends an image + prompt to the vision model and returns structured JSON.
+func (c *Client) GenerateImage(imageBytes []byte, mimeType string, prompt string, model string, schema map[string]any) (map[string]any, error) {
+	encoded := base64.StdEncoding.EncodeToString(imageBytes)
+	dataURL := fmt.Sprintf("data:%s;base64,%s", mimeType, encoded)
+
+	schemaName := "scan_result"
+	if name, ok := schema["name"].(string); ok {
+		schemaName = name
+	}
+
 	reqBody := map[string]any{
-		"contents": []map[string]any{
+		"model": model,
+		"messages": []map[string]any{
 			{
-				"parts": []map[string]any{
-					{"text": prompt},
+				"role": "user",
+				"content": []map[string]any{
+					{"type": "text", "text": prompt},
+					{
+						"type": "image_url",
+						"image_url": map[string]any{
+							"url": dataURL,
+						},
+					},
 				},
+			},
+		},
+		"response_format": map[string]any{
+			"type": "json_schema",
+			"json_schema": map[string]any{
+				"name":   schemaName,
+				"strict": true,
+				"schema": schema,
 			},
 		},
 	}
 
-	respBody, err := c.doRequest(model, reqBody)
-	if err != nil {
-		return "", err
-	}
-
-	text, err := extractText(respBody)
-	if err != nil {
-		return "", err
-	}
-
-	return text, nil
-}
-
-// GenerateStructured sends a prompt with a JSON schema and returns the parsed JSON response.
-func (c *Client) GenerateStructured(prompt string, model string, schema map[string]any) (map[string]any, error) {
-	reqBody := map[string]any{
-		"contents": []map[string]any{
-			{
-				"parts": []map[string]any{
-					{"text": prompt},
-				},
-			},
-		},
-		"generationConfig": map[string]any{
-			"responseMimeType": "application/json",
-			"responseSchema":   schema,
-		},
-	}
-
-	respBody, err := c.doRequest(model, reqBody)
+	respBody, err := c.doRequest(reqBody)
 	if err != nil {
 		return nil, err
 	}
 
-	text, err := extractText(respBody)
+	text, err := extractContent(respBody)
 	if err != nil {
 		return nil, err
 	}
@@ -99,8 +93,12 @@ func (c *Client) GenerateStructured(prompt string, model string, schema map[stri
 	return result, nil
 }
 
-func (c *Client) doRequest(model string, reqBody map[string]any) (map[string]any, error) {
-	url := fmt.Sprintf("%s/models/%s:generateContent?key=%s", geminiBaseURL, model, c.cfg.GeminiAPIKey)
+func (c *Client) doRequest(reqBody map[string]any) (map[string]any, error) {
+	baseURL := c.cfg.CrofAIBaseURL
+	if baseURL == "" {
+		baseURL = "https://crof.ai/v1"
+	}
+	url := baseURL + "/chat/completions"
 
 	body, err := json.Marshal(reqBody)
 	if err != nil {
@@ -121,6 +119,7 @@ func (c *Client) doRequest(model string, reqBody map[string]any) (map[string]any
 			return nil, fmt.Errorf("create request: %w", err)
 		}
 		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+c.cfg.CrofAIAPIKey)
 
 		resp, err := c.httpClient.Do(req)
 		cancel()
@@ -142,7 +141,7 @@ func (c *Client) doRequest(model string, reqBody map[string]any) (map[string]any
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("gemini API error %d: %s", resp.StatusCode, string(respData))
+			return nil, fmt.Errorf("crofai API error %d: %s", resp.StatusCode, string(respData))
 		}
 
 		var result map[string]any
@@ -153,39 +152,29 @@ func (c *Client) doRequest(model string, reqBody map[string]any) (map[string]any
 		return result, nil
 	}
 
-	return nil, fmt.Errorf("gemini request failed after %d attempts: %w", maxRetries, lastErr)
+	return nil, fmt.Errorf("crofai request failed after %d attempts: %w", maxRetries, lastErr)
 }
 
-func extractText(respBody map[string]any) (string, error) {
-	candidates, ok := respBody["candidates"].([]any)
-	if !ok || len(candidates) == 0 {
-		return "", fmt.Errorf("%w: no candidates in response", ErrGenerationFailed)
+func extractContent(respBody map[string]any) (string, error) {
+	choices, ok := respBody["choices"].([]any)
+	if !ok || len(choices) == 0 {
+		return "", fmt.Errorf("%w: no choices in response", ErrGenerationFailed)
 	}
 
-	first, ok := candidates[0].(map[string]any)
+	first, ok := choices[0].(map[string]any)
 	if !ok {
-		return "", fmt.Errorf("%w: invalid candidate format", ErrGenerationFailed)
+		return "", fmt.Errorf("%w: invalid choice format", ErrGenerationFailed)
 	}
 
-	content, ok := first["content"].(map[string]any)
+	message, ok := first["message"].(map[string]any)
 	if !ok {
-		return "", fmt.Errorf("%w: missing content in candidate", ErrGenerationFailed)
+		return "", fmt.Errorf("%w: missing message in choice", ErrGenerationFailed)
 	}
 
-	parts, ok := content["parts"].([]any)
-	if !ok || len(parts) == 0 {
-		return "", fmt.Errorf("%w: no parts in content", ErrGenerationFailed)
+	content, ok := message["content"].(string)
+	if !ok || content == "" {
+		return "", fmt.Errorf("%w: empty content in message", ErrGenerationFailed)
 	}
 
-	part, ok := parts[0].(map[string]any)
-	if !ok {
-		return "", fmt.Errorf("%w: invalid part format", ErrGenerationFailed)
-	}
-
-	text, ok := part["text"].(string)
-	if !ok {
-		return "", fmt.Errorf("%w: missing text in part", ErrGenerationFailed)
-	}
-
-	return text, nil
+	return content, nil
 }

@@ -94,6 +94,7 @@ func mustLoadTestConfig() *config.Config {
 		APIPrefix:                "/api",
 		AccessTokenExpireMinutes: 60,
 		GeminiAPIKey:             "test-gemini-key",
+		CrofAIAPIKey:             "test-crofai-key",
 	}
 }
 
@@ -197,9 +198,6 @@ func newTestNotificationRepo() *repositories.NotificationRepository {
 }
 func newTestActivityRepo() *repositories.ActivityRepository {
 	return repositories.NewActivityRepository(testDB)
-}
-func newTestAssistantRepo() *repositories.AssistantRepository {
-	return repositories.NewAssistantRepository(testDB)
 }
 func newTestPasswordService() *passwordservice.Service { return passwordservice.New() }
 func newTestMailService() *mailservice.Service         { return mailservice.New(testCfg, logger.New("test")) }
@@ -539,9 +537,8 @@ func newActivityRouter(t *testing.T) (chi.Router, *ActivityHandler) {
 }
 
 func newAssistantRouter(t *testing.T) (chi.Router, *AssistantHandler) {
-	assistantRepo := newTestAssistantRepo()
 	aiClient := newTestAIClient()
-	svc := services.NewAssistantService(assistantRepo, aiClient)
+	svc := services.NewScanService(aiClient)
 	h := NewAssistantHandler(svc)
 
 	r := chi.NewRouter()

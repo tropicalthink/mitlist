@@ -203,17 +203,6 @@ type NotificationRepo interface {
 	UpsertPreference(ctx context.Context, pref *models.NotificationPreference) error
 }
 
-// AssistantRepo is the interface for assistant repository operations.
-type AssistantRepo interface {
-	CreateSession(ctx context.Context, s *models.ChatSession) (*models.ChatSession, error)
-	GetSessionByID(ctx context.Context, id uuid.UUID) (*models.ChatSession, error)
-	ListSessionsByUser(ctx context.Context, userID uuid.UUID, limit, offset int) ([]models.ChatSession, error)
-	UpdateSession(ctx context.Context, s *models.ChatSession) (*models.ChatSession, error)
-	DeleteSession(ctx context.Context, id uuid.UUID) error
-	CreateMessage(ctx context.Context, m *models.ChatMessage) (*models.ChatMessage, error)
-	ListMessagesBySession(ctx context.Context, sessionID uuid.UUID, limit, offset int) ([]models.ChatMessage, error)
-}
-
 // ActivityRepo is the interface for activity repository operations.
 type ActivityRepo interface {
 	ListRecentActivity(ctx context.Context, groupID uuid.UUID, limit int) ([]models.ActivityEvent, error)

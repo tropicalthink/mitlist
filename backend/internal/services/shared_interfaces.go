@@ -33,6 +33,5 @@ type PushService interface {
 
 // AIClient defines the interface for AI generation.
 type AIClient interface {
-	Generate(prompt string, model string) (string, error)
-	GenerateStructured(prompt string, model string, schema map[string]any) (map[string]any, error)
+	GenerateImage(imageBytes []byte, mimeType string, prompt string, model string, schema map[string]any) (map[string]any, error)
 }

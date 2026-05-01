@@ -21,7 +21,7 @@ func TestRunner_RegisterAll(t *testing.T) {
 		"chore-scheduler":   {"1 0 * * *", true},
 		"recurring-expense": {"0 * * * *", true},
 		"chore-reminder":    {"0 9 * * *", true},
-		"weekly-summary":    {"0 9 * * 1", false},
+		"weekly-summary":    {"0 9 * * 1", true},
 	}
 
 	for _, j := range r.jobs {

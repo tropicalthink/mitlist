@@ -21,6 +21,10 @@ type Config struct {
 	RedisURL         string `env:"REDIS_URL" required:"true" default:"redis://localhost:6379"`
 	GeminiAPIKey string `env:"GEMINI_API_KEY"`
 
+	// CrofAI (OpenAI-compatible)
+	CrofAIAPIKey  string `env:"CROFAI_API_KEY"`
+	CrofAIBaseURL string `env:"CROFAI_BASE_URL" default:"https://crof.ai/v1"`
+
 	// Database & Cache
 	RedisPassword string `env:"REDIS_PASSWORD" default:""`
 
@@ -157,6 +161,7 @@ func (c Config) MaskSecrets() Config {
 	masked.SecretKey = mask(masked.SecretKey)
 	masked.SessionSecretKey = mask(masked.SessionSecretKey)
 	masked.GeminiAPIKey = mask(masked.GeminiAPIKey)
+	masked.CrofAIAPIKey = mask(masked.CrofAIAPIKey)
 	masked.RedisPassword = mask(masked.RedisPassword)
 	masked.GoogleClientSecret = mask(masked.GoogleClientSecret)
 	masked.ApplePrivateKey = mask(masked.ApplePrivateKey)

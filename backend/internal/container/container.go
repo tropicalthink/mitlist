@@ -68,9 +68,6 @@ type Container struct {
 	mealPlanRepoOnce sync.Once
 	mealPlanRepo     *repositories.MealPlanRepo
 
-	assistantRepoOnce sync.Once
-	assistantRepo     *repositories.AssistantRepository
-
 	notificationRepoOnce sync.Once
 	notificationRepo     *repositories.NotificationRepository
 
@@ -132,7 +129,7 @@ type Container struct {
 	calendarService     *services.CalendarService
 
 	assistantServiceOnce sync.Once
-	assistantService     *services.AssistantService
+	assistantService     *services.ScanService
 
 	shareServiceOnce sync.Once
 	shareService     *services.ShareService
@@ -304,14 +301,6 @@ func (c *Container) MealPlanRepo() *repositories.MealPlanRepo {
 	return c.mealPlanRepo
 }
 
-// AssistantRepo returns the singleton assistant repository.
-func (c *Container) AssistantRepo() *repositories.AssistantRepository {
-	c.assistantRepoOnce.Do(func() {
-		c.assistantRepo = repositories.NewAssistantRepository(c.db)
-	})
-	return c.assistantRepo
-}
-
 // NotificationRepo returns the singleton notification repository.
 func (c *Container) NotificationRepo() *repositories.NotificationRepository {
 	c.notificationRepoOnce.Do(func() {
@@ -469,10 +458,10 @@ func (c *Container) CalendarService() *services.CalendarService {
 	return c.calendarService
 }
 
-// AssistantService returns the singleton assistant service.
-func (c *Container) AssistantService() *services.AssistantService {
+// AssistantService returns the singleton scan service.
+func (c *Container) AssistantService() *services.ScanService {
 	c.assistantServiceOnce.Do(func() {
-		c.assistantService = services.NewAssistantService(c.AssistantRepo(), c.AIClient())
+		c.assistantService = services.NewScanService(c.AIClient())
 	})
 	return c.assistantService
 }

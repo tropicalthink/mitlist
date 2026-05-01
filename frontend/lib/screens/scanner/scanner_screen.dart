@@ -1,0 +1,400 @@
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../providers/scan_provider.dart';
+import '../../services/scan_service.dart';
+import '../../theme/colors.dart';
+import '../../theme/spacing.dart';
+import '../../theme/typography.dart';
+import '../../widgets/app_button.dart';
+import '../../widgets/app_card.dart';
+import '../../widgets/app_icon.dart';
+import '../../widgets/mitlist_app_bar.dart';
+
+class ScannerScreen extends ConsumerStatefulWidget {
+  const ScannerScreen({super.key});
+
+  @override
+  ConsumerState<ScannerScreen> createState() => _ScannerScreenState();
+}
+
+class _ScannerScreenState extends ConsumerState<ScannerScreen> {
+  File? _imageFile;
+  bool _isAnalyzing = false;
+  String? _error;
+  ScanResult? _result;
+
+  final ImagePicker _picker = ImagePicker();
+
+  Future<void> _pickImage(ImageSource source) async {
+    final picked = await _picker.pickImage(
+      source: source,
+      maxWidth: 2048,
+      maxHeight: 2048,
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() {
+      _imageFile = File(picked.path);
+      _isAnalyzing = true;
+      _error = null;
+      _result = null;
+    });
+
+    try {
+      final service = await ref.read(scanServiceProviderAsync.future);
+      final bytes = await _imageFile!.readAsBytes();
+      final result = await service.scanImage(bytes, 'image/jpeg');
+
+      if (!mounted) return;
+      setState(() {
+        _result = result;
+        _isAnalyzing = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Couldn\u2019t analyze the image. Make sure your API key is configured and try again.';
+        _isAnalyzing = false;
+      });
+    }
+  }
+
+  void _useResult() {
+    if (_result == null) return;
+
+    switch (_result!.type) {
+      case 'list':
+        _openListCreation();
+      case 'receipt':
+        _openExpenseCreation();
+      case 'recipe':
+        _openRecipeCreation();
+      case 'chore':
+        _openChoreCreation();
+    }
+  }
+
+  void _openListCreation() {
+    context.pop();
+  }
+
+  void _openExpenseCreation() {
+    context.pop();
+  }
+
+  void _openRecipeCreation() {
+    context.pop();
+  }
+
+  void _openChoreCreation() {
+    context.pop();
+  }
+
+  void _showSourcePicker() {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(MitlistSpacing.md),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const AppIcon(name: 'devicePhoneMobile'),
+                title: const Text('Take a photo'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const AppIcon(name: 'eye'),
+                title: const Text('Choose from gallery'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Scaffold(
+      appBar: MitlistAppBar.titleText(
+        'Scanner',
+        showStandardActions: false,
+        leading: IconButton(
+          icon: const AppIcon(name: 'arrowLeft'),
+          tooltip: 'Back',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(MitlistSpacing.md),
+        children: [
+          // Image preview area
+          if (_imageFile != null)
+            AppCard(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(MitlistSpacing.sm),
+                child: Image.file(
+                  _imageFile!,
+                  fit: BoxFit.contain,
+                  height: 256,
+                  width: double.infinity,
+                ),
+              ),
+            )
+          else
+            AppCard(
+              variant: AppCardVariant.outlined,
+              padding: AppCardPadding.xl,
+              child: Column(
+                children: [
+                  const AppIcon(
+                    name: 'eye',
+                    size: MitlistSpacing.space12,
+                    color: MitlistColors.textTertiary,
+                  ),
+                  const SizedBox(height: MitlistSpacing.md),
+                  Text(
+                    'Scan a receipt, list, recipe,\nor chore reminder',
+                    textAlign: TextAlign.center,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: MitlistColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: MitlistSpacing.md),
+
+          // Analyze / pick buttons
+          if (_isAnalyzing)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: MitlistSpacing.lg),
+                child: Column(
+                  children: [
+                    CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation(
+                          MitlistColors.primary500),
+                    ),
+                    SizedBox(height: MitlistSpacing.md),
+                    Text('Analyzing…'),
+                  ],
+                ),
+              ),
+            )
+          else if (_result == null)
+            AppButton(
+              text: _imageFile != null ? 'Analyze this image' : 'Take a photo or choose one',
+              icon: _imageFile == null
+                  ? const AppIcon(name: 'devicePhoneMobile',
+                      color: MitlistColors.textOnPrimary)
+                  : const AppIcon(name: 'magnifyingGlass',
+                      color: MitlistColors.textOnPrimary),
+              onPressed: _imageFile != null
+                  ? () => _pickImage(ImageSource.gallery)
+                  : _showSourcePicker,
+            ),
+
+          if (_imageFile != null && _result == null && !_isAnalyzing) ...[
+            const SizedBox(height: MitlistSpacing.sm),
+            AppButton(
+              text: 'Pick different image',
+              variant: AppButtonVariant.outline,
+              color: AppButtonColor.neutral,
+              onPressed: _showSourcePicker,
+            ),
+          ],
+
+          if (_error != null) ...[
+            const SizedBox(height: MitlistSpacing.md),
+            Text(
+              _error!,
+              style: textTheme.bodySmall?.copyWith(
+                color: MitlistColors.error500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+
+          // Result preview
+          if (_result != null) ...[
+            const SizedBox(height: MitlistSpacing.md),
+            _buildResultCard(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResultCard() {
+    final r = _result!;
+    final textTheme = Theme.of(context).textTheme;
+    final typeLabel = switch (r.type) {
+      'receipt' => 'Receipt',
+      'list' => 'Shopping list',
+      'recipe' => 'Recipe',
+      'chore' => 'Chore',
+      _ => r.type,
+    };
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const AppIcon(
+                name: 'checkCircle',
+                size: MitlistSpacing.space6,
+                color: MitlistColors.success500,
+              ),
+              const SizedBox(width: MitlistSpacing.sm),
+              Text(
+                'Detected: $typeLabel',
+                style: textTheme.titleMedium,
+              ),
+            ],
+          ),
+          if (r.title != null) ...[
+            const SizedBox(height: MitlistSpacing.sm),
+            Text(
+              r.title!,
+              style: textTheme.headlineSmall,
+            ),
+          ],
+          if (r.items.isNotEmpty) ...[
+            const SizedBox(height: MitlistSpacing.md),
+            Text(
+              '${r.items.length} item${r.items.length == 1 ? '' : 's'}',
+              style: textTheme.labelMedium?.copyWith(
+                color: MitlistColors.textTertiary,
+              ),
+            ),
+            const SizedBox(height: MitlistSpacing.sm),
+            ...r.items.take(8).map((item) {
+              var label = item.name;
+              if (item.quantity != null && item.quantity!.isNotEmpty) {
+                label = '${item.quantity}${item.unit != null ? ' ${item.unit}' : ''} $label';
+              }
+              String? priceLabel;
+              if (item.priceCents != null && item.priceCents! > 0) {
+                priceLabel =
+                    '\$${(item.priceCents! / 100).toStringAsFixed(2)}';
+              }
+              return Padding(
+                padding:
+                    const EdgeInsets.only(bottom: MitlistSpacing.xs),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        label,
+                        style: textTheme.bodyMedium,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (priceLabel != null)
+                      Text(
+                        priceLabel,
+                        style: MitlistTypography.monoBody(
+                          color: MitlistColors.primary500,
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            }),
+            if (r.items.length > 8)
+              Text(
+                '…and ${r.items.length - 8} more',
+                style: textTheme.bodySmall?.copyWith(
+                  color: MitlistColors.textTertiary,
+                ),
+              ),
+          ],
+          if (r.steps.isNotEmpty) ...[
+            const SizedBox(height: MitlistSpacing.md),
+            Text(
+              '${r.steps.length} step${r.steps.length == 1 ? '' : 's'}',
+              style: textTheme.labelMedium?.copyWith(
+                color: MitlistColors.textTertiary,
+              ),
+            ),
+            const SizedBox(height: MitlistSpacing.sm),
+            ...r.steps.take(5).map((step) => Padding(
+                  padding: const EdgeInsets.only(
+                      bottom: MitlistSpacing.xs),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${r.steps.indexOf(step) + 1}. ',
+                        style: MitlistTypography.labelXSmall(
+                          color: MitlistColors.textTertiary,
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          step,
+                          style: textTheme.bodyMedium,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+          ],
+          if (r.amount != null && r.amount! > 0) ...[
+            const SizedBox(height: MitlistSpacing.sm),
+            Text(
+              'Total: \$${(r.amount! / 100).toStringAsFixed(2)}',
+              style: textTheme.titleMedium?.copyWith(
+                color: MitlistColors.primary500,
+              ),
+            ),
+          ],
+          const SizedBox(height: MitlistSpacing.lg),
+          AppButton(
+            text: switch (r.type) {
+              'list' => 'Add to lists',
+              'receipt' => 'Create expense',
+              'recipe' => 'Create recipe',
+              'chore' => 'Create chore',
+              _ => 'Use this',
+            },
+            onPressed: _useResult,
+          ),
+          const SizedBox(height: MitlistSpacing.sm),
+          AppButton(
+            text: 'Scan again',
+            variant: AppButtonVariant.outline,
+            color: AppButtonColor.neutral,
+            onPressed: () => setState(() {
+              _imageFile = null;
+              _result = null;
+              _error = null;
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+}

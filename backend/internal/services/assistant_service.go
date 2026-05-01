@@ -2,138 +2,89 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-
-	"github.com/google/uuid"
-
-	"github.com/mitlist-app/mitlist/internal/api"
-	"github.com/mitlist-app/mitlist/internal/models"
-	"github.com/mitlist-app/mitlist/internal/repositories"
 )
 
-// AssistantService provides business logic for AI assistant chat sessions.
-type AssistantService struct {
-	assistantRepo repositories.AssistantRepo
-	aiClient      AIClient
+// ScanResult is the structured output from scanning an image.
+type ScanResult struct {
+	Type   string     `json:"type"` // "receipt", "list", "recipe", "chore"
+	Title  string     `json:"title,omitempty"`
+	Items  []ScanItem `json:"items,omitempty"`
+	Steps  []string   `json:"steps,omitempty"`
+	Amount int        `json:"amount,omitempty"` // in cents
 }
 
-// NewAssistantService creates a new AssistantService.
-func NewAssistantService(assistantRepo repositories.AssistantRepo, aiClient AIClient) *AssistantService {
-	return &AssistantService{
-		assistantRepo: assistantRepo,
-		aiClient:      aiClient,
+// ScanItem is a single line item extracted from a scanned image.
+type ScanItem struct {
+	Name       string `json:"name"`
+	Quantity   string `json:"quantity,omitempty"`
+	Unit       string `json:"unit,omitempty"`
+	PriceCents int    `json:"price_cents,omitempty"`
+}
+
+// ScanService provides OCR/image scanning via CrofAI Vision.
+type ScanService struct {
+	aiClient AIClient
+}
+
+// NewScanService creates a new ScanService.
+func NewScanService(aiClient AIClient) *ScanService {
+	return &ScanService{aiClient: aiClient}
+}
+
+// ScanImage processes an image through CrofAI Vision and returns structured data.
+func (s *ScanService) ScanImage(ctx context.Context, imageBytes []byte, mimeType string) (*ScanResult, error) {
+	schema := map[string]any{
+		"name": "scan_result",
+		"type": "object",
+		"properties": map[string]any{
+			"type":  map[string]any{"type": "string", "enum": []string{"receipt", "list", "recipe", "chore"}},
+			"title": map[string]any{"type": "string"},
+			"items": map[string]any{
+				"type": "array",
+				"items": map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"name":        map[string]any{"type": "string"},
+						"quantity":    map[string]any{"type": "string"},
+						"unit":        map[string]any{"type": "string"},
+						"price_cents": map[string]any{"type": "integer"},
+					},
+					"required":             []string{"name"},
+					"additionalProperties": false,
+				},
+			},
+			"steps": map[string]any{
+				"type":  "array",
+				"items": map[string]any{"type": "string"},
+			},
+			"amount": map[string]any{"type": "integer"},
+		},
+		"required":             []string{"type"},
+		"additionalProperties": false,
 	}
-}
 
-// CreateSession creates a new chat session for a user.
-func (s *AssistantService) CreateSession(ctx context.Context, userID uuid.UUID, title string) (*models.ChatSession, error) {
-	session := &models.ChatSession{
-		UserID: userID,
-		Title:  title,
-	}
-	return s.assistantRepo.CreateSession(ctx, session)
-}
+	prompt := `Analyze this image. It could be a receipt, a shopping list, a recipe, or a chore reminder.
+Return a JSON object with:
+- "type": one of "receipt", "list", "recipe", "chore"
+- "title": a short title for what was scanned
+- "items": array of objects with "name" (required), "quantity", "unit", "price_cents" (for receipts/lists)
+- "steps": array of instruction strings (for recipes/chores)
+- "amount": total amount in cents (for receipts only)
 
-// GetSession retrieves a session by ID, enforcing ownership.
-func (s *AssistantService) GetSession(ctx context.Context, userID, sessionID uuid.UUID) (*models.ChatSession, error) {
-	session, err := s.assistantRepo.GetSessionByID(ctx, sessionID)
+Extract as much detail as possible. For receipts, parse each line item with prices in cents. For lists, extract items with optional quantities. For recipes, extract ingredients as items and instructions as steps. For chores, title + steps.`
+
+	result, err := s.aiClient.GenerateImage(imageBytes, mimeType, prompt, "kimi-k2.5", schema)
 	if err != nil {
-		if err == repositories.ErrSessionNotFound {
-			return nil, &api.NotFoundError{Resource: "chat session", ID: sessionID.String()}
-		}
-		return nil, err
-	}
-	if session.UserID != userID {
-		return nil, &api.PermissionDeniedError{Action: "view session"}
-	}
-	return session, nil
-}
-
-// ListSessions returns paginated sessions for a user.
-func (s *AssistantService) ListSessions(ctx context.Context, userID uuid.UUID, limit, offset int) ([]models.ChatSession, error) {
-	return s.assistantRepo.ListSessionsByUser(ctx, userID, limit, offset)
-}
-
-// UpdateSession updates a session title, enforcing ownership.
-func (s *AssistantService) UpdateSession(ctx context.Context, userID, sessionID uuid.UUID, title string) (*models.ChatSession, error) {
-	session, err := s.assistantRepo.GetSessionByID(ctx, sessionID)
-	if err != nil {
-		if err == repositories.ErrSessionNotFound {
-			return nil, &api.NotFoundError{Resource: "chat session", ID: sessionID.String()}
-		}
-		return nil, err
-	}
-	if session.UserID != userID {
-		return nil, &api.PermissionDeniedError{Action: "update session"}
-	}
-	session.Title = title
-	return s.assistantRepo.UpdateSession(ctx, session)
-}
-
-// DeleteSession deletes a session and its messages, enforcing ownership.
-func (s *AssistantService) DeleteSession(ctx context.Context, userID, sessionID uuid.UUID) error {
-	session, err := s.assistantRepo.GetSessionByID(ctx, sessionID)
-	if err != nil {
-		if err == repositories.ErrSessionNotFound {
-			return &api.NotFoundError{Resource: "chat session", ID: sessionID.String()}
-		}
-		return err
-	}
-	if session.UserID != userID {
-		return &api.PermissionDeniedError{Action: "delete session"}
-	}
-	return s.assistantRepo.DeleteSession(ctx, sessionID)
-}
-
-// SendMessage sends a user message, gets an AI response, and stores both.
-func (s *AssistantService) SendMessage(ctx context.Context, userID, sessionID uuid.UUID, content string) (*models.ChatMessage, error) {
-	session, err := s.assistantRepo.GetSessionByID(ctx, sessionID)
-	if err != nil {
-		if err == repositories.ErrSessionNotFound {
-			return nil, &api.NotFoundError{Resource: "chat session", ID: sessionID.String()}
-		}
-		return nil, err
-	}
-	if session.UserID != userID {
-		return nil, &api.PermissionDeniedError{Action: "send message to session"}
+		return nil, fmt.Errorf("scan image: %w", err)
 	}
 
-	// Store user message.
-	userMsg := &models.ChatMessage{
-		SessionID: sessionID,
-		Role:      "user",
-		Content:   content,
-	}
-	if _, err := s.assistantRepo.CreateMessage(ctx, userMsg); err != nil {
-		return nil, fmt.Errorf("create user message: %w", err)
+	var scan ScanResult
+	b, _ := json.Marshal(result)
+	if err := json.Unmarshal(b, &scan); err != nil {
+		return nil, fmt.Errorf("parse scan result: %w", err)
 	}
 
-	// Generate AI response.
-	aiContent, err := s.aiClient.Generate(content, "gemini-1.5-flash")
-	if err != nil {
-		return nil, fmt.Errorf("ai generation: %w", err)
-	}
-
-	// Store AI message.
-	aiMsg := &models.ChatMessage{
-		SessionID: sessionID,
-		Role:      "assistant",
-		Content:   aiContent,
-	}
-	return s.assistantRepo.CreateMessage(ctx, aiMsg)
-}
-
-// ListMessages returns paginated messages for a session, enforcing ownership.
-func (s *AssistantService) ListMessages(ctx context.Context, userID, sessionID uuid.UUID, limit, offset int) ([]models.ChatMessage, error) {
-	session, err := s.assistantRepo.GetSessionByID(ctx, sessionID)
-	if err != nil {
-		if err == repositories.ErrSessionNotFound {
-			return nil, &api.NotFoundError{Resource: "chat session", ID: sessionID.String()}
-		}
-		return nil, err
-	}
-	if session.UserID != userID {
-		return nil, &api.PermissionDeniedError{Action: "list messages"}
-	}
-	return s.assistantRepo.ListMessagesBySession(ctx, sessionID, limit, offset)
+	return &scan, nil
 }

@@ -508,19 +508,19 @@ void main() {
     expect(find.text('My Households'), findsOneWidget);
     expect(find.text('Test Household'), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.list_alt_outlined));
+    await tester.tap(find.text('Lists'));
     await _pumpUi(tester);
     expect(find.text('New list'), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.check_box_outlined));
+    await tester.tap(find.text('Chores'));
     await _pumpUi(tester);
     expect(find.text('Add chore'), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.account_balance_wallet_outlined));
+    await tester.tap(find.text('Money'));
     await _pumpUi(tester);
     expect(find.text('Add expense'), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.home_outlined));
+    await tester.tap(find.text('Home'));
     await _pumpUi(tester);
     await tester.tap(find.text('Test Household'));
     await _pumpUi(tester);
@@ -598,8 +598,8 @@ void main() {
       ],
     );
 
-    expect(find.text('Continue with Google'), findsOneWidget);
-    expect(find.text('Continue with Apple'), findsOneWidget);
+    expect(find.text('CONTINUE WITH GOOGLE'), findsOneWidget);
+    expect(find.text('CONTINUE WITH APPLE'), findsOneWidget);
     expect(find.text('Remember me'), findsOneWidget);
 
     await tester.tap(find.text('Forgot password?'));

@@ -266,9 +266,9 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                             onPressed: () => context.pushNamed('notifications'),
                           ),
                           IconButton(
-                            tooltip: 'Assistant',
-                            icon: const Icon(Icons.auto_awesome_outlined),
-                            onPressed: () => context.pushNamed('assistantSessions'),
+                            tooltip: 'Scanner',
+                            icon: const Icon(Icons.document_scanner_outlined),
+                            onPressed: () => context.pushNamed('scanner'),
                           ),
                           IconButton(
                             tooltip: 'Account',

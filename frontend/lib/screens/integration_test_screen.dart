@@ -12,8 +12,6 @@ import '../models/finance_models.dart';
 import '../providers/finance_provider.dart';
 import '../providers/recipe_provider.dart';
 import '../models/recipe_models.dart';
-import '../providers/assistant_provider.dart';
-import '../models/assistant_models.dart';
 import '../providers/activity_provider.dart';
 import '../theme/spacing.dart';
 import '../widgets/alert.dart';
@@ -353,34 +351,6 @@ class _IntegrationTestScreenState extends ConsumerState<IntegrationTestScreen> {
     }
   }
 
-  Future<void> _runAssistantSmoke() async {
-    setState(() {
-      _isLoading = true;
-      _result = null;
-      _error = null;
-    });
-
-    try {
-      final assistant = await ref.read(assistantServiceProviderAsync.future);
-      final session = await assistant.createSession(const CreateSessionRequest(title: 'Integration chat'));
-      final listed = await assistant.listSessions(limit: 10, offset: 0);
-      final fetched = await assistant.getSession(session.id);
-      final updated = await assistant.updateSession(session.id, const UpdateSessionRequest(title: 'Integration chat (updated)'));
-      final msg = await assistant.sendMessage(session.id, const SendMessageRequest(content: 'Hello from integration tools'));
-      final messages = await assistant.listMessages(session.id, limit: 10, offset: 0);
-      await assistant.deleteSession(session.id);
-
-      setState(() {
-        _result =
-            'Assistant OK\nSession=${fetched.id}\nUpdatedTitle=${updated.title}\nSessionsListed=${listed.length}\nMsg=${msg.id}\nMessagesListed=${messages.length}';
-      });
-    } catch (e) {
-      setState(() => _error = 'Assistant failed: $e');
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
   Future<void> _runActivitySmoke() async {
     setState(() {
       _isLoading = true;
@@ -533,11 +503,6 @@ class _IntegrationTestScreenState extends ConsumerState<IntegrationTestScreen> {
                   text: 'Recipes/Collections smoke',
                   isLoading: _isLoading,
                   onPressed: _runRecipesCollectionsSmoke,
-                ),
-                AppButton(
-                  text: 'Assistant smoke',
-                  isLoading: _isLoading,
-                  onPressed: _runAssistantSmoke,
                 ),
                 AppButton(
                   text: 'Activity smoke',
