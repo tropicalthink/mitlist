@@ -143,7 +143,10 @@ class FinanceRepository {
   }
 
   Future<void> drainOutboxOnce() async {
-    final batch = await _db.getOutboxBatch(limit: 25);
+    final batch = await _db.getOutboxBatchByTypes(
+      ['createExpense', 'updateExpense', 'deleteExpense'],
+      limit: 25,
+    );
     if (batch.isEmpty) return;
 
     for (final op in batch) {
@@ -165,9 +168,6 @@ class FinanceRepository {
             break;
           case 'deleteExpense':
             await _syncDeleteExpense(op.id, payload);
-            break;
-          default:
-            // Leave list outbox types to the list repository for now.
             break;
         }
       } catch (e) {

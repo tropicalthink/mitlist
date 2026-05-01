@@ -14,6 +14,7 @@ import (
 // CalendarService aggregates meal plans, chores, and recurring expenses into calendar events.
 type CalendarService struct {
 	mealPlanRepo repositories.MealPlanRepoIface
+	recipeRepo   repositories.RecipeRepoIface
 	choreRepo    repositories.ChoreRepo
 	financeRepo  repositories.FinanceRepoIface
 	groupRepo    repositories.GroupRepo
@@ -22,12 +23,14 @@ type CalendarService struct {
 // NewCalendarService creates a new CalendarService.
 func NewCalendarService(
 	mealPlanRepo repositories.MealPlanRepoIface,
+	recipeRepo repositories.RecipeRepoIface,
 	choreRepo repositories.ChoreRepo,
 	financeRepo repositories.FinanceRepoIface,
 	groupRepo repositories.GroupRepo,
 ) *CalendarService {
 	return &CalendarService{
 		mealPlanRepo: mealPlanRepo,
+		recipeRepo:   recipeRepo,
 		choreRepo:    choreRepo,
 		financeRepo:  financeRepo,
 		groupRepo:    groupRepo,
@@ -59,10 +62,14 @@ func (s *CalendarService) GetCalendar(ctx context.Context, user *models.User, gr
 		return nil, err
 	}
 	for _, p := range plans {
+		title := "Meal"
+		if recipe, err := s.recipeRepo.GetRecipeByID(ctx, p.RecipeID); err == nil && recipe != nil {
+			title = recipe.Title
+		}
 		events = append(events, models.CalendarEvent{
 			ID:      p.ID.String(),
 			Type:    models.EventTypeMealPlan,
-			Title:   "", // filled by handler with recipe name if available
+			Title:   title,
 			Date:    p.Date,
 			GroupID: p.GroupID,
 			MealPlan: &models.CalendarMealPlan{

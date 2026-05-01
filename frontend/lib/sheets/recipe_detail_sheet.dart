@@ -23,6 +23,8 @@ class RecipeDetailSheet extends StatelessWidget {
     this.ratingCount = 0,
     this.sourceUrl = '',
     this.videoUrl = '',
+    this.nutritionJson = '',
+    this.equipmentJson = '',
     this.imageUrl,
     this.tags = const [],
   });
@@ -39,6 +41,8 @@ class RecipeDetailSheet extends StatelessWidget {
   final int ratingCount;
   final String sourceUrl;
   final String videoUrl;
+  final String nutritionJson;
+  final String equipmentJson;
   final String? imageUrl;
   final List<String> tags;
 
@@ -56,6 +60,8 @@ class RecipeDetailSheet extends StatelessWidget {
     int ratingCount = 0,
     String sourceUrl = '',
     String videoUrl = '',
+    String nutritionJson = '',
+    String equipmentJson = '',
     String? imageUrl,
     List<String> tags = const [],
   }) async {
@@ -75,6 +81,8 @@ class RecipeDetailSheet extends StatelessWidget {
         ratingCount: ratingCount,
         sourceUrl: sourceUrl,
         videoUrl: videoUrl,
+        nutritionJson: nutritionJson,
+        equipmentJson: equipmentJson,
         imageUrl: imageUrl,
         tags: tags,
       ),
@@ -178,6 +186,57 @@ class RecipeDetailSheet extends StatelessWidget {
             ],
           ),
         ),
+        if (nutritionJson.isNotEmpty) ...[
+          const SizedBox(height: MitlistSpacing.md),
+          Text(
+            'Nutrition',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: MitlistSpacing.xs),
+          Text(
+            nutritionJson,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+        if (equipmentJson.isNotEmpty) ...[
+          const SizedBox(height: MitlistSpacing.md),
+          Text(
+            'Equipment',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: MitlistSpacing.xs),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: equipmentJson
+                .split(',')
+                .map((e) => e.trim())
+                .where((e) => e.isNotEmpty)
+                .map((e) => AppChip(label: e, selected: false))
+                .toList(),
+          ),
+        ],
+        if (videoUrl.isNotEmpty) ...[
+          const SizedBox(height: MitlistSpacing.md),
+          InkWell(
+            onTap: () {/* TODO: launch URL */},
+            child: Row(
+              children: [
+                Icon(Icons.play_circle_outline, size: 16, color: MitlistColors.primary500),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    'Watch video',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: MitlistColors.primary500,
+                        ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         if (sourceUrl.isNotEmpty) ...[
           const SizedBox(height: MitlistSpacing.md),
           InkWell(

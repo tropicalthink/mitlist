@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 import '../models/chore_models.dart';
 import 'api_client.dart';
+import 'api_error_mapper.dart';
 import 'group_id_validator.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -261,12 +262,6 @@ class ChoreService {
   }
 
   Exception _handleError(DioException e) {
-    if (e.response?.statusCode == 401) return Exception('Session expired');
-    if (e.response?.statusCode == 403) return Exception('Access denied');
-    if (e.response?.statusCode == 404) return Exception('Not found');
-    if (e.type == DioExceptionType.connectionError) {
-      return Exception('Network error');
-    }
-    return Exception('An error occurred');
+    return Exception(ApiErrorMapper.fromDio(e));
   }
 }

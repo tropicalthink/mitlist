@@ -263,6 +263,23 @@ FROM list_items_table;
         .get();
   }
 
+  Future<List<OutboxOp>> getOutboxBatchByTypes(
+    List<String> types, {
+    int limit = 50,
+    Duration minBackoff = const Duration(seconds: 5),
+    int maxAttempts = 10,
+  }) {
+    final cutoff = DateTime.now().subtract(minBackoff);
+    return (select(outboxOps)
+          ..where((t) =>
+              t.type.isIn(types) &
+              t.attemptCount.isSmallerThanValue(maxAttempts) &
+              (t.lastAttemptAt.isNull() | t.lastAttemptAt.isSmallerThanValue(cutoff)))
+          ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
+          ..limit(limit))
+        .get();
+  }
+
   Future<void> markOutboxAttempt(String id, {String? error}) async {
     await (update(outboxOps)..where((t) => t.id.equals(id))).write(
       OutboxOpsCompanion(
@@ -280,6 +297,13 @@ FROM list_items_table;
 
   Future<void> deleteOutboxOp(String id) async {
     await (delete(outboxOps)..where((t) => t.id.equals(id))).go();
+  }
+
+  Future<int> outboxCount() async {
+    final result = await customSelect(
+      'SELECT COUNT(*) AS c FROM outbox_ops',
+    ).getSingle();
+    return (result.data['c'] as int?) ?? 0;
   }
 
   Future<void> rewriteOutboxPayloadIds({

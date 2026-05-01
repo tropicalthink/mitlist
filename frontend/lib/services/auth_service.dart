@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/api_config.dart';
 import '../models/auth_models.dart';
 import 'api_client.dart';
+import 'api_error_mapper.dart';
 
 /// Authentication service for managing user authentication.
 ///
@@ -349,42 +350,7 @@ class AuthService {
     await _prefs.remove(ApiConfig.pendingOAuthRememberMeKey);
   }
 
-  /// Handles Dio errors and converts them to user-friendly messages.
   Exception _handleError(DioException e) {
-    if (e.response?.statusCode == 400) {
-      final data = e.response?.data;
-      if (data is Map<String, dynamic> && data.containsKey('error')) {
-        final error = data['error'];
-        if (error is Map<String, dynamic>) {
-          final message = error['message'] ?? 'Invalid request';
-          return Exception(message);
-        }
-      }
-      return Exception('Invalid request');
-    } else if (e.response?.statusCode == 401) {
-      return Exception('Invalid credentials or session expired');
-    } else if (e.response?.statusCode == 403) {
-      return Exception('Access denied');
-    } else if (e.response?.statusCode == 404) {
-      return Exception('Resource not found');
-    } else if (e.response?.statusCode == 409) {
-      return Exception('Resource already exists');
-    } else if (e.response?.statusCode == 422) {
-      return Exception('Validation error');
-    } else if (e.response?.statusCode == 429) {
-      return Exception('Too many requests. Please try again later.');
-    } else if (e.response?.statusCode == 500) {
-      return Exception('Server error. Please try again later.');
-    } else if (e.response?.statusCode == 503) {
-      return Exception('Service unavailable. Please try again later.');
-    } else if (e.type == DioExceptionType.connectionTimeout ||
-        e.type == DioExceptionType.receiveTimeout ||
-        e.type == DioExceptionType.sendTimeout) {
-      return Exception('Request timeout. Please check your connection.');
-    } else if (e.type == DioExceptionType.connectionError) {
-      return Exception('Network error. Please check your connection.');
-    } else {
-      return Exception('An unexpected error occurred');
-    }
+    return Exception(ApiErrorMapper.fromDio(e));
   }
 }

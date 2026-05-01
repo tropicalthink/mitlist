@@ -4,6 +4,7 @@ import 'package:logger/logger.dart';
 
 import '../models/calendar_models.dart';
 import 'api_client.dart';
+import 'api_error_mapper.dart';
 
 class CalendarService {
   final Dio _dio;
@@ -43,8 +44,6 @@ class CalendarService {
   }
 
   Exception _handleError(DioException e) {
-    final status = e.response?.statusCode;
-    final message = e.response?.data?['message']?.toString() ?? e.message;
-    return Exception('Calendar request failed ($status): $message');
+    return Exception(ApiErrorMapper.fromDio(e));
   }
 }

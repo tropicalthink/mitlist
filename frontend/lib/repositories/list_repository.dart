@@ -171,7 +171,10 @@ class ListRepository {
   }
 
   Future<void> drainOutboxOnce() async {
-    final batch = await _db.getOutboxBatch(limit: 25);
+    final batch = await _db.getOutboxBatchByTypes(
+      ['createItem', 'updateItem', 'deleteItem'],
+      limit: 25,
+    );
     if (batch.isEmpty) return;
 
     for (final op in batch) {
@@ -194,8 +197,6 @@ class ListRepository {
           case 'deleteItem':
             await _syncDeleteItem(op.id, payload);
             break;
-          default:
-            await _db.deleteOutboxOp(op.id);
         }
       } catch (e) {
         await _db.markOutboxAttempt(op.id, error: e.toString());

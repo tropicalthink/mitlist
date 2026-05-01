@@ -118,7 +118,10 @@ class RecipeRepository {
   }
 
   Future<void> drainOutboxOnce() async {
-    final batch = await _db.getOutboxBatch(limit: 25);
+    final batch = await _db.getOutboxBatchByTypes(
+      ['createRecipe', 'updateRecipe', 'deleteRecipe'],
+      limit: 25,
+    );
     if (batch.isEmpty) return;
 
     for (final op in batch) {
@@ -141,9 +144,6 @@ class RecipeRepository {
           case 'deleteRecipe':
             await _syncDelete(op.id, payload);
             break;
-          default:
-            // Other repositories own other op types.
-            continue;
         }
       } catch (e) {
         await _db.markOutboxAttempt(op.id, error: e.toString());

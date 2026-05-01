@@ -47,6 +47,9 @@ class _Recipe {
   final double ratingValue;
   final int ratingCount;
   final String sourceUrl;
+  final String videoUrl;
+  final String nutritionJson;
+  final String equipmentJson;
   final List<String> tags;
 
   const _Recipe({
@@ -63,6 +66,9 @@ class _Recipe {
     this.ratingValue = 0,
     this.ratingCount = 0,
     this.sourceUrl = '',
+    this.videoUrl = '',
+    this.nutritionJson = '',
+    this.equipmentJson = '',
     this.tags = const [],
   });
 
@@ -268,6 +274,9 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       ratingValue: recipe.ratingValue,
       ratingCount: recipe.ratingCount,
       sourceUrl: recipe.sourceUrl,
+      videoUrl: recipe.videoUrl,
+      nutritionJson: recipe.nutritionJson,
+      equipmentJson: recipe.equipmentJson,
       imageUrl: recipe.imageUrl,
       tags: recipe.tags,
     );
@@ -383,6 +392,9 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
         ratingValue: api.ratingValue,
         ratingCount: api.ratingCount,
         sourceUrl: api.sourceUrl,
+        videoUrl: api.videoUrl,
+        nutritionJson: api.nutritionJson,
+        equipmentJson: api.equipmentJson,
         tags: api.tags.take(5).toList(),
       );
 

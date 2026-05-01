@@ -298,6 +298,11 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                               groupId: widget.groupId,
                             ),
                           ),
+                           IconButton(
+                            tooltip: 'Calendar',
+                            icon: const Icon(Icons.calendar_month_outlined),
+                            onPressed: () => context.pushNamed('calendar'),
+                          ),
                           IconButton(
                             tooltip: 'Notifications',
                             icon: const Icon(Icons.notifications_none_outlined),
