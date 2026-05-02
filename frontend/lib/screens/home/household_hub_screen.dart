@@ -649,22 +649,22 @@ class _PinwallComposerNote extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final bg = dark ? MitlistColors.composerBgDark : MitlistColors.composerBgLight;
     final border = dark ? MitlistColors.composerBorderDark : MitlistColors.composerBorderLight;
     final pinColor = dark ? MitlistColors.primary300 : MitlistColors.primary600;
+    final textColor = dark
+        ? Colors.white.withValues(alpha: 0.9)
+        : MitlistColors.pinwallNoteTextLight;
+    final hintColor = dark
+        ? Colors.white.withValues(alpha: 0.38)
+        : MitlistColors.pinwallNoteTextLight.withValues(alpha: 0.45);
+    final dividerColor = border.withValues(alpha: dark ? 0.5 : 0.4);
 
     return Stack(
       clipBehavior: Clip.none,
       children: [
         Container(
-          padding: const EdgeInsets.fromLTRB(
-            MitlistSpacing.md,
-            MitlistSpacing.lg + 4,
-            MitlistSpacing.md,
-            MitlistSpacing.md,
-          ),
           decoration: BoxDecoration(
             color: bg,
             borderRadius: BorderRadius.circular(MitlistTheme.radiusMd),
@@ -680,47 +680,82 @@ class _PinwallComposerNote extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              TextField(
-                controller: controller,
-                minLines: 2,
-                maxLines: 6,
-                textInputAction: TextInputAction.newline,
-                style: textTheme.bodyMedium?.copyWith(
-                  color: dark
-                      ? Colors.white.withValues(alpha: 0.9)
-                      : MitlistColors.textPrimary,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  MitlistSpacing.md,
+                  MitlistSpacing.lg + 6,
+                  MitlistSpacing.md,
+                  MitlistSpacing.sm,
                 ),
-                decoration: InputDecoration(
-                  hintText: 'Post a note to the household\u2026',
-                  hintStyle: textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.65),
+                child: TextField(
+                  controller: controller,
+                  minLines: 3,
+                  maxLines: 6,
+                  textInputAction: TextInputAction.newline,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: textColor,
+                    height: 1.5,
                   ),
-                  border: InputBorder.none,
-                  isDense: true,
-                  contentPadding: EdgeInsets.zero,
+                  decoration: InputDecoration(
+                    hintText: 'Post a note to the household\u2026',
+                    hintStyle: textTheme.bodyMedium?.copyWith(
+                      color: hintColor,
+                      height: 1.5,
+                    ),
+                    filled: true,
+                    fillColor: bg,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
                 ),
               ),
-              const SizedBox(height: MitlistSpacing.sm),
-              Row(
-                children: [
-                  TextButton.icon(
-                    onPressed:
-                        (isPosting || isUploadingMedia) ? null : onPickMedia,
-                    icon: const Icon(Icons.photo_outlined, size: 18),
-                    label: Text(
-                        pendingCount == 0 ? 'Photo' : '$pendingCount added'),
-                  ),
-                  const Spacer(),
-                  AppButton(
-                    text: isUploadingMedia
-                        ? 'Uploading...'
-                        : (isPosting ? 'Posting...' : 'Pin it'),
-                    icon: const Icon(Icons.push_pin_outlined),
-                    onPressed: (isPosting || isUploadingMedia) ? null : onPost,
-                    variant: AppButtonVariant.soft,
-                    size: AppButtonSize.sm,
-                  ),
-                ],
+              Divider(height: 1, thickness: 1, color: dividerColor),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: MitlistSpacing.sm,
+                  vertical: MitlistSpacing.xs,
+                ),
+                child: Row(
+                  children: [
+                    IconButton(
+                      tooltip: pendingCount == 0
+                          ? 'Attach photo'
+                          : '$pendingCount photo${pendingCount == 1 ? '' : 's'} added',
+                      icon: Icon(
+                        pendingCount > 0
+                            ? Icons.photo_library_outlined
+                            : Icons.photo_outlined,
+                        size: 20,
+                        color: pendingCount > 0
+                            ? pinColor
+                            : textColor.withValues(alpha: 0.55),
+                      ),
+                      onPressed:
+                          (isPosting || isUploadingMedia) ? null : onPickMedia,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    if (pendingCount > 0)
+                      Text(
+                        '$pendingCount',
+                        style: textTheme.labelSmall?.copyWith(color: pinColor),
+                      ),
+                    const Spacer(),
+                    AppButton(
+                      text: isUploadingMedia
+                          ? 'Uploading\u2026'
+                          : (isPosting ? 'Posting\u2026' : 'Pin it'),
+                      icon: const Icon(Icons.push_pin_outlined),
+                      onPressed:
+                          (isPosting || isUploadingMedia) ? null : onPost,
+                      variant: AppButtonVariant.ghost,
+                      color: AppButtonColor.primary,
+                      size: AppButtonSize.sm,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

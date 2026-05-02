@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/pinwall_models.dart';
@@ -21,8 +23,22 @@ final pinwallPostsByGroupProvider =
   final cached = await repo.getPostsOnce(groupId);
   if (cached.isNotEmpty) {
     yield cached;
+    // Best-effort background refresh.
+    unawaited(
+      repo.refreshPosts(groupId).catchError((_) {}),
+    );
+    // Keep yielding cache updates.
+    yield* repo.watchPosts(groupId);
+    return;
   }
-  // Keep yielding cache updates.
+
+  // No cache yet (fresh group / fresh install): fetch once so we don't render
+  // an empty wall forever.
+  try {
+    await repo.refreshPosts(groupId);
+  } catch (_) {
+    // If refresh fails, still fall back to watching cache (may remain empty).
+  }
   yield* repo.watchPosts(groupId);
 });
 
