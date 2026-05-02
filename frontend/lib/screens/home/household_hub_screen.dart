@@ -23,12 +23,14 @@ import '../../repositories/hub_repository.dart';
 import '../../utils/haptics.dart';
 import '../../theme/colors.dart';
 import '../../widgets/alert.dart';
+import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/skeleton.dart';
 import '../../theme/spacing.dart';
 import '../../theme/theme.dart';
-import '../../sheets/invite_household_sheet.dart';
+import '../../sheets/create_household_sheet.dart';
+import '../../sheets/join_household_sheet.dart';
 import '../../sheets/group_settings_sheet.dart';
 
 final _pinwallMediaByPostProvider = FutureProvider.family<
@@ -62,6 +64,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
   bool _isLoading = true;
   Object? _error;
   Group? _data;
+  List<Group> _households = [];
   _HubSnapshot? _snapshot;
   User? _me;
   StreamSubscription<Group?>? _groupSub;
@@ -80,6 +83,18 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(covariant HouseholdHubScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.groupId != widget.groupId) {
+      _groupSub?.cancel();
+      _groupSub = null;
+      _activitySub?.cancel();
+      _activitySub = null;
+      _loadData();
+    }
+  }
+
   Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
@@ -87,6 +102,13 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     });
     try {
       final groupService = await ref.read(groupServiceProviderAsync.future);
+
+      var households = <Group>[];
+      try {
+        households = await groupService.listGroups();
+      } catch (_) {
+        // Switcher is optional; hub still loads for current group.
+      }
 
       var activities = <ActivityLogModel>[];
       var activityError = false;
@@ -117,6 +139,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
       final hadCache = cachedGroup != null || cachedActivities.$1.isNotEmpty;
       setState(() {
         _data = cachedGroup;
+        _households = households;
         _snapshot = _HubSnapshot(
           activities: cachedActivities.$1,
           activityError: cachedActivities.$2,
@@ -148,12 +171,14 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
         activities = (await repo.getActivitiesOnce(widget.groupId)).$1;
         activityError = (await repo.getActivitiesOnce(widget.groupId)).$2;
       } catch (_) {
-        debugPrint('[HouseholdHub] Activity refresh failed for ${widget.groupId}');
+        debugPrint(
+            '[HouseholdHub] Activity refresh failed for ${widget.groupId}');
       }
 
       if (!mounted) return;
       setState(() {
         _data = _data;
+        _households = households;
         _snapshot = _snapshot ??
             _HubSnapshot(activities: activities, activityError: activityError);
         _me = me;
@@ -166,6 +191,241 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _openHouseholdSwitcher(BuildContext context) async {
+    await Haptics.light();
+    var groups = _households;
+    try {
+      final svc = await ref.read(groupServiceProviderAsync.future);
+      groups = await svc.listGroups();
+      if (mounted) setState(() => _households = groups);
+    } catch (_) {}
+    if (!context.mounted) return;
+
+    final hubContext = context;
+    final idsBefore = groups.map((g) => g.id).toSet();
+    final rowStyle = Theme.of(hubContext).textTheme.bodyMedium;
+    final iconColor =
+        rowStyle?.color ?? Theme.of(hubContext).colorScheme.onSurface;
+
+    late BuildContext sheetContext;
+
+    Future<void> onCreateJoinResult(bool? success) async {
+      if (success != true || !mounted) return;
+      try {
+        final svc = await ref.read(groupServiceProviderAsync.future);
+        final after = await svc.listGroups();
+        if (!mounted) return;
+        setState(() => _households = after);
+        Group? newGroup;
+        for (final g in after) {
+          if (!idsBefore.contains(g.id)) {
+            newGroup = g;
+            break;
+          }
+        }
+        if (newGroup != null && hubContext.mounted) {
+          hubContext.goNamed(
+            'householdHub',
+            pathParameters: {'groupId': newGroup.id},
+          );
+        } else {
+          await _loadData();
+        }
+      } catch (_) {
+        if (mounted) await _loadData();
+      }
+    }
+
+    await showAppBottomSheet<void>(
+      context: hubContext,
+      title: 'Households',
+      body: Builder(
+        builder: (ctx) {
+          sheetContext = ctx;
+          final displayGroups = groups.isNotEmpty
+              ? groups
+              : (_data != null
+                  ? <Group>[_data!]
+                  : const <Group>[]);
+
+          Widget actionTile({
+            required IconData icon,
+            required String label,
+            required VoidCallback onTap,
+          }) {
+            return InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.zero,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: MitlistSpacing.sm,
+                ),
+                child: Row(
+                  children: [
+                    Icon(icon, size: 22, color: iconColor),
+                    const SizedBox(width: MitlistSpacing.md),
+                    Expanded(
+                      child: Text(
+                        label,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: rowStyle?.copyWith(fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (displayGroups.isNotEmpty) ...[
+                for (final h in displayGroups)
+                  InkWell(
+                    onTap: groups.length >= 2
+                        ? () {
+                            Navigator.of(sheetContext).pop();
+                            if (h.id != widget.groupId) {
+                              hubContext.goNamed(
+                                'householdHub',
+                                pathParameters: {'groupId': h.id},
+                              );
+                            }
+                          }
+                        : null,
+                    borderRadius: BorderRadius.zero,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: MitlistSpacing.sm,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              h.name,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: rowStyle?.copyWith(
+                                fontWeight: h.id == widget.groupId
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          if (h.id == widget.groupId)
+                            Icon(
+                              Icons.check,
+                              size: 18,
+                              color: MitlistColors.primary500,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: MitlistSpacing.sm),
+                Container(
+                  height: 2,
+                  color: MitlistColors.borderPrimary,
+                ),
+                const SizedBox(height: MitlistSpacing.sm),
+              ],
+              actionTile(
+                icon: Icons.add_home_outlined,
+                label: 'Create household',
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  WidgetsBinding.instance.addPostFrameCallback((_) async {
+                    if (!hubContext.mounted) return;
+                    final created =
+                        await CreateHouseholdSheet.show(hubContext);
+                    await onCreateJoinResult(created);
+                  });
+                },
+              ),
+              actionTile(
+                icon: Icons.vpn_key_outlined,
+                label: 'Join household',
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  WidgetsBinding.instance.addPostFrameCallback((_) async {
+                    if (!hubContext.mounted) return;
+                    final joined = await JoinHouseholdSheet.show(hubContext);
+                    await onCreateJoinResult(joined);
+                  });
+                },
+              ),
+              actionTile(
+                icon: Icons.settings_outlined,
+                label: 'Household settings',
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  WidgetsBinding.instance.addPostFrameCallback((_) async {
+                    if (!hubContext.mounted) return;
+                    await GroupSettingsSheet.show(
+                      hubContext,
+                      groupId: widget.groupId,
+                    );
+                  });
+                },
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildAppBarTitle(BuildContext context) {
+    final name = _data?.name ?? 'Home';
+    final titleTextStyle = Theme.of(context).appBarTheme.titleTextStyle ??
+        Theme.of(context).textTheme.titleLarge;
+    final screenW = MediaQuery.sizeOf(context).width;
+    final padding = MediaQuery.paddingOf(context).horizontal;
+    // ~4 toolbar icons at 48dp + padding; leave room for chevron.
+    final actionsReserve =
+        MitlistSpacing.space12 * 4 + MitlistSpacing.md + MitlistSpacing.sm;
+    final textMax = (screenW - padding - actionsReserve - MitlistSpacing.space6)
+        .clamp(MitlistSpacing.space20, screenW);
+
+    return Semantics(
+      button: true,
+      label: 'Households, current $name',
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: InkWell(
+          onTap: () => _openHouseholdSwitcher(context),
+          borderRadius: BorderRadius.zero,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xs),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: textMax),
+                  child: Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: titleTextStyle,
+                  ),
+                ),
+                const SizedBox(width: MitlistSpacing.xs),
+                Icon(
+                  Icons.expand_more,
+                  size: 24,
+                  color: titleTextStyle?.color ??
+                      Theme.of(context).colorScheme.onSurface,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -254,29 +514,9 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                         elevation: 0,
                         backgroundColor: Theme.of(context).colorScheme.surface,
                         leading: null,
-                        title: Text(
-                          _data?.name ?? 'Home',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        title: _buildAppBarTitle(context),
                         actions: [
                           IconButton(
-                            tooltip: 'Invite',
-                            icon: const Icon(Icons.group_add_outlined),
-                            onPressed: () => InviteHouseholdSheet.show(
-                              context,
-                              groupId: widget.groupId,
-                            ),
-                          ),
-                           IconButton(
-                            tooltip: 'Settings',
-                            icon: const Icon(Icons.settings_outlined),
-                            onPressed: () => GroupSettingsSheet.show(
-                              context,
-                              groupId: widget.groupId,
-                            ),
-                          ),
-                        IconButton(
                             tooltip: 'Calendar',
                             icon: const Icon(Icons.calendar_month_outlined),
                             onPressed: () => context.pushNamed('calendar'),
@@ -287,16 +527,10 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                             onPressed: () => context.pushNamed('notifications'),
                           ),
                           IconButton(
-                            tooltip: 'Scanner',
-                            icon: const Icon(Icons.document_scanner_outlined),
-                            onPressed: () => context.pushNamed('scanner'),
-                          ),
-                          IconButton(
                             tooltip: 'Account',
                             icon: const Icon(Icons.person_outline),
                             onPressed: () => context.pushNamed('you'),
                           ),
-
                           const SizedBox(width: MitlistSpacing.xs),
                         ],
                       ),
@@ -305,8 +539,6 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                         sliver: SliverList(
                           delegate: SliverChildListDelegate(
                             [
-                              const SizedBox(height: MitlistSpacing.md),
-                              _GreetingHeader(me: _me),
                               const SizedBox(height: MitlistSpacing.md),
                               _PinwallSection(groupId: widget.groupId, me: _me),
                               const SizedBox(height: MitlistSpacing.lg),
@@ -561,9 +793,11 @@ class _PinwallSectionState extends ConsumerState<_PinwallSection> {
     final textTheme = Theme.of(context).textTheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
 
-    final boardBg = dark ? MitlistColors.pinwallBoardDark : MitlistColors.pinwallBoard;
-    final boardBorder =
-        dark ? MitlistColors.pinwallBoardBorderDark : MitlistColors.pinwallBoardBorder;
+    final boardBg =
+        dark ? MitlistColors.pinwallBoardDark : MitlistColors.pinwallBoard;
+    final boardBorder = dark
+        ? MitlistColors.pinwallBoardBorderDark
+        : MitlistColors.pinwallBoardBorder;
     final boardShadow = Colors.black.withValues(alpha: dark ? 0.38 : 0.16);
 
     return Column(
@@ -703,8 +937,11 @@ class _PinwallComposerNote extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final bg = dark ? MitlistColors.composerBgDark : MitlistColors.composerBgLight;
-    final border = dark ? MitlistColors.composerBorderDark : MitlistColors.composerBorderLight;
+    final bg =
+        dark ? MitlistColors.composerBgDark : MitlistColors.composerBgLight;
+    final border = dark
+        ? MitlistColors.composerBorderDark
+        : MitlistColors.composerBorderLight;
     final pinColor = dark ? MitlistColors.primary300 : MitlistColors.primary600;
     final textColor = dark
         ? Colors.white.withValues(alpha: 0.9)
@@ -713,8 +950,9 @@ class _PinwallComposerNote extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.38)
         : MitlistColors.pinwallNoteTextLight.withValues(alpha: 0.45);
     final dividerColor = border.withValues(alpha: dark ? 0.5 : 0.4);
-    final reminderLabel =
-        remindAt == null ? null : DateFormat('MMM d \u00b7 h:mm a').format(remindAt!);
+    final reminderLabel = remindAt == null
+        ? null
+        : DateFormat('MMM d \u00b7 h:mm a').format(remindAt!);
 
     return Stack(
       clipBehavior: Clip.none,
@@ -788,8 +1026,9 @@ class _PinwallComposerNote extends StatelessWidget {
                             ? textColor.withValues(alpha: 0.55)
                             : pinColor,
                       ),
-                      onPressed:
-                          (isPosting || isUploadingMedia) ? null : onPickReminder,
+                      onPressed: (isPosting || isUploadingMedia)
+                          ? null
+                          : onPickReminder,
                       visualDensity: VisualDensity.compact,
                     ),
                     if (remindAt != null)
@@ -800,13 +1039,15 @@ class _PinwallComposerNote extends StatelessWidget {
                           size: 18,
                           color: textColor.withValues(alpha: 0.55),
                         ),
-                        onPressed:
-                            (isPosting || isUploadingMedia) ? null : onClearReminder,
+                        onPressed: (isPosting || isUploadingMedia)
+                            ? null
+                            : onClearReminder,
                         visualDensity: VisualDensity.compact,
                       ),
                     if (reminderLabel != null)
                       Padding(
-                        padding: const EdgeInsets.only(right: MitlistSpacing.xs),
+                        padding:
+                            const EdgeInsets.only(right: MitlistSpacing.xs),
                         child: Text(
                           reminderLabel,
                           style: textTheme.labelSmall?.copyWith(
@@ -983,11 +1224,11 @@ class _PinwallNoteCard extends ConsumerWidget {
             attachmentId: media.attachmentId,
           );
         } catch (_) {
-          debugPrint('[HouseholdHub] Pinwall media cleanup failed for ${media.attachmentId}');
+          debugPrint(
+              '[HouseholdHub] Pinwall media cleanup failed for ${media.attachmentId}');
         }
         ref.invalidate(
-          _pinwallMediaByPostProvider(
-              (groupId: groupId, postId: post.id)),
+          _pinwallMediaByPostProvider((groupId: groupId, postId: post.id)),
         );
       } catch (_) {
         if (context.mounted) {
@@ -1025,8 +1266,7 @@ class _PinwallNoteCard extends ConsumerWidget {
       }
 
       ref.invalidate(
-        _pinwallMediaByPostProvider(
-            (groupId: groupId, postId: post.id)),
+        _pinwallMediaByPostProvider((groupId: groupId, postId: post.id)),
       );
     } catch (_) {
       if (context.mounted) {
@@ -1064,8 +1304,7 @@ class _PinwallNoteCard extends ConsumerWidget {
     final pinColor = pinColors[index % pinColors.length];
 
     final media = ref.watch(
-      _pinwallMediaByPostProvider(
-          (groupId: groupId, postId: post.id)),
+      _pinwallMediaByPostProvider((groupId: groupId, postId: post.id)),
     );
 
     Future<void> onDelete() async {
@@ -1151,25 +1390,25 @@ class _PinwallNoteCard extends ConsumerWidget {
                                 button: true,
                                 label: 'View photo',
                                 child: ClipRRect(
-                                borderRadius: BorderRadius.circular(6),
-                                child: AspectRatio(
-                                  aspectRatio: 1,
-                                  child: Image.network(
-                                    m.url,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => Container(
-                                      color: MitlistColors.neutral100
-                                          .withValues(alpha: 0.25),
-                                      alignment: Alignment.center,
-                                      child: const Icon(
-                                        Icons.image_not_supported_outlined,
-                                        size: 16,
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: AspectRatio(
+                                    aspectRatio: 1,
+                                    child: Image.network(
+                                      m.url,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Container(
+                                        color: MitlistColors.neutral100
+                                            .withValues(alpha: 0.25),
+                                        alignment: Alignment.center,
+                                        child: const Icon(
+                                          Icons.image_not_supported_outlined,
+                                          size: 16,
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
                               ),
-                            ),
                             );
                           },
                         ),
@@ -1196,8 +1435,8 @@ class _PinwallNoteCard extends ConsumerWidget {
                             reminderSentAt == null
                                 ? 'Reminder · $reminderText'
                                 : 'Reminded · $reminderText',
-                            style:
-                                textTheme.labelSmall?.copyWith(color: mutedColor),
+                            style: textTheme.labelSmall
+                                ?.copyWith(color: mutedColor),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -1231,8 +1470,8 @@ class _PinwallNoteCard extends ConsumerWidget {
                       ],
                       child: Padding(
                         padding: const EdgeInsets.all(MitlistSpacing.sm),
-                        child:
-                            Icon(Icons.more_horiz, size: MitlistSpacing.space5, color: mutedColor),
+                        child: Icon(Icons.more_horiz,
+                            size: MitlistSpacing.space5, color: mutedColor),
                       ),
                     ),
                   ],
@@ -1306,34 +1545,6 @@ class _PushpinPainter extends CustomPainter {
   bool shouldRepaint(_PushpinPainter old) => old.headColor != headColor;
 }
 
-class _GreetingHeader extends StatelessWidget {
-  const _GreetingHeader({this.me});
-  final User? me;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final name = me?.fullName ?? 'there';
-    final hour = DateTime.now().hour;
-    final greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('$greeting, $name',
-            style: textTheme.headlineSmall?.copyWith(
-              color: MitlistColors.primary500,
-            )),
-        const SizedBox(height: MitlistSpacing.xs),
-        Text('Here\'s what\'s happening today',
-            style: textTheme.bodySmall?.copyWith(
-              color: MitlistColors.textTertiary,
-            )),
-      ],
-    );
-  }
-}
-
 class _WallSection extends StatelessWidget {
   const _WallSection({required this.activities, required this.activityError});
 
@@ -1403,8 +1614,7 @@ class _WallItem extends StatelessWidget {
 
     switch (entityType) {
       case 'list':
-        context.pushNamed('listDetail',
-            pathParameters: {'listId': entityId});
+        context.pushNamed('listDetail', pathParameters: {'listId': entityId});
       case 'expense':
         context.pushNamed('money');
       case 'chore':

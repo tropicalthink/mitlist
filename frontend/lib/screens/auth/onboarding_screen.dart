@@ -81,7 +81,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   Widget build(BuildContext context) {
     final disableAnimations = MediaQuery.of(context).disableAnimations;
 
-    Widget house = DotLottie.asset(
+    Widget house = Lottie.asset(
       'assets/animations/lottie/House.lottie',
       width: 120,
       height: 120,

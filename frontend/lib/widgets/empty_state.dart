@@ -58,6 +58,21 @@ class AppEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+
+    Future<LottieComposition?> dotLottieDecoder(List<int> bytes) {
+      return LottieComposition.decodeZip(
+        bytes,
+        filePicker: (files) {
+          for (final f in files) {
+            if (f.name.startsWith('animations/') && f.name.endsWith('.json')) {
+              return f;
+            }
+          }
+          return null;
+        },
+      );
+    }
+
     return Container(
       padding: _padding,
       decoration: BoxDecoration(
@@ -71,16 +86,14 @@ class AppEmptyState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (lottieAsset != null)
-            DotLottie.asset(
+            Lottie.asset(
               lottieAsset!,
+              decoder: lottieAsset!.toLowerCase().endsWith('.lottie')
+                  ? dotLottieDecoder
+                  : null,
               width: 56,
               height: 56,
               fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => Icon(
-                Icons.animation,
-                size: 56,
-                color: MitlistColors.textTertiary,
-              ),
             )
           else if (icon != null && animatedIcon)
             BobbingIcon(
