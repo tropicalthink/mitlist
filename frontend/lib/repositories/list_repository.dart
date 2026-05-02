@@ -338,7 +338,9 @@ class ListRepository {
     try {
       final decoded = jsonDecode(json);
       if (decoded is List) return decoded.map((e) => e.toString()).toList();
-    } catch (_) {}
+    } catch (_) {
+      // Failed to parse JSON string list; return empty.
+    }
     return const [];
   }
 }

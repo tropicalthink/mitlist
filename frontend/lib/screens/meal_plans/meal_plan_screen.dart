@@ -17,6 +17,7 @@ import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/mitlist_app_bar.dart';
+import '../../exceptions.dart';
 
 class MealPlanScreen extends ConsumerStatefulWidget {
   final String groupId;
@@ -129,6 +130,34 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to remove: $e')),
+        );
+      }
+    }
+  }
+
+  void _editPlan(String planId) async {
+    final plan = _plans.firstWhere(
+      (p) => p.id == planId,
+      orElse: () => throw const NotFoundException('Meal plan not found'),
+    );
+
+    final recipe = await _RecipePickerSheet.show(context, selectedRecipeId: plan.recipeId);
+    if (recipe == null || !mounted) return;
+
+    final servings = await _ServingsPickerSheet.show(context, defaultServings: recipe.servings);
+    if (servings == null || !mounted) return;
+
+    try {
+      final svc = await ref.read(mealPlanServiceProviderAsync.future);
+      await svc.updateMealPlan(planId, UpdateMealPlanRequest(
+        recipeId: recipe.id,
+        servings: servings,
+      ));
+      await _load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update: $e')),
         );
       }
     }
@@ -249,6 +278,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
                     recipeCache: _recipeCache,
                     onAdd: (slot) => _showRecipePicker(date, slot),
                     onRemove: _removePlan,
+                    onEdit: _editPlan,
                   );
                 },
               ),
@@ -265,6 +295,7 @@ class _DayCard extends StatelessWidget {
   final Map<String, Recipe> recipeCache;
   final ValueChanged<String> onAdd;
   final ValueChanged<String> onRemove;
+  final ValueChanged<String> onEdit;
 
   const _DayCard({
     required this.date,
@@ -272,6 +303,7 @@ class _DayCard extends StatelessWidget {
     required this.recipeCache,
     required this.onAdd,
     required this.onRemove,
+    required this.onEdit,
   });
 
   static const _slots = ['breakfast', 'lunch', 'dinner'];
@@ -327,6 +359,7 @@ class _DayCard extends StatelessWidget {
                 recipe: plan != null ? recipeCache[plan.recipeId] : null,
                 onAdd: () => onAdd(slot),
                 onRemove: plan != null ? () => onRemove(plan.id) : null,
+                onEdit: plan != null ? () => onEdit(plan.id) : null,
               );
             }),
           ],
@@ -342,6 +375,7 @@ class _SlotRow extends StatelessWidget {
   final Recipe? recipe;
   final VoidCallback onAdd;
   final VoidCallback? onRemove;
+  final VoidCallback? onEdit;
 
   const _SlotRow({
     required this.slot,
@@ -349,6 +383,7 @@ class _SlotRow extends StatelessWidget {
     this.recipe,
     required this.onAdd,
     this.onRemove,
+    this.onEdit,
   });
 
   String get _slotLabel {
@@ -444,6 +479,11 @@ class _SlotRow extends StatelessWidget {
                 ),
                 const SizedBox(width: MitlistSpacing.xs),
                 IconButton(
+                  icon: const Icon(Icons.edit, size: 18),
+                  tooltip: 'Edit',
+                  onPressed: onEdit,
+                ),
+                IconButton(
                   icon: const Icon(Icons.close, size: 18),
                   tooltip: 'Remove',
                   onPressed: onRemove,
@@ -459,13 +499,14 @@ class _SlotRow extends StatelessWidget {
 }
 
 class _RecipePickerSheet extends ConsumerStatefulWidget {
-  const _RecipePickerSheet();
+  final String? selectedRecipeId;
+  const _RecipePickerSheet({this.selectedRecipeId});
 
-  static Future<Recipe?> show(BuildContext context) async {
+  static Future<Recipe?> show(BuildContext context, {String? selectedRecipeId}) async {
     return showAppBottomSheet<Recipe?>(
       context: context,
       title: 'Pick a recipe',
-      body: const _RecipePickerSheet(),
+      body: _RecipePickerSheet(selectedRecipeId: selectedRecipeId),
     );
   }
 
@@ -475,6 +516,8 @@ class _RecipePickerSheet extends ConsumerStatefulWidget {
 
 class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
   final List<Recipe> _recipes = [];
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
   bool _isLoading = true;
   String? _error;
 
@@ -482,6 +525,15 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
   void initState() {
     super.initState();
     _load();
+    _searchController.addListener(() {
+      setState(() => _searchQuery = _searchController.text.toLowerCase());
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -498,6 +550,18 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
         _isLoading = false;
       });
     }
+  }
+
+  List<Recipe> get _filteredRecipes {
+    if (_searchQuery.isEmpty) return _recipes;
+    return _recipes.where((r) {
+      final title = r.title.toLowerCase();
+      final desc = r.descriptionShort.toLowerCase();
+      final tags = r.tags.map((t) => t.toLowerCase()).join(' ');
+      return title.contains(_searchQuery) ||
+          desc.contains(_searchQuery) ||
+          tags.contains(_searchQuery);
+    }).toList();
   }
 
   @override
@@ -529,34 +593,73 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
         description: 'Add recipes to plan meals',
       );
     }
-    return SizedBox(
-      height: 320,
-      child: ListView.builder(
-        itemCount: _recipes.length,
-        itemBuilder: (context, index) {
-          final r = _recipes[index];
-          return ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: r.imageUrl != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
-                    child: Image.network(
-                      r.imageUrl!,
-                      width: 48,
-                      height: 48,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.image, size: 48),
-                    ),
-                  )
-                : const Icon(Icons.restaurant, size: 48),
-            title: Text(r.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-            subtitle: r.descriptionShort.isNotEmpty
-                ? Text(r.descriptionShort, maxLines: 1, overflow: TextOverflow.ellipsis)
-                : null,
-            onTap: () => Navigator.of(context).pop(r),
-          );
-        },
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search recipes...',
+              prefixIcon: const Icon(Icons.search, size: 20),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 20),
+                      onPressed: () => _searchController.clear(),
+                    )
+                  : null,
+              isDense: true,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
+                borderSide: const BorderSide(color: MitlistColors.borderSubtle),
+              ),
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 320,
+          child: _filteredRecipes.isEmpty
+              ? Center(
+                  child: Text(
+                    'No recipes match "$_searchQuery"',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: MitlistColors.textTertiary,
+                        ),
+                  ),
+                )
+              : ListView.builder(
+                  itemCount: _filteredRecipes.length,
+                  itemBuilder: (context, index) {
+                    final r = _filteredRecipes[index];
+                    final isSelected = r.id == widget.selectedRecipeId;
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: r.imageUrl != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
+                              child: Image.network(
+                                r.imageUrl!,
+                                width: 48,
+                                height: 48,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const Icon(Icons.image, size: 48),
+                              ),
+                            )
+                          : const Icon(Icons.restaurant, size: 48),
+                      title: Text(r.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      subtitle: r.descriptionShort.isNotEmpty
+                          ? Text(r.descriptionShort, maxLines: 1, overflow: TextOverflow.ellipsis)
+                          : null,
+                      trailing: isSelected
+                          ? const Icon(Icons.check, color: MitlistColors.primary500)
+                          : null,
+                      onTap: () => Navigator.of(context).pop(r),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 }

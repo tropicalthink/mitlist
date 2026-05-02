@@ -205,7 +205,9 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
           groupId: widget.groupId,
           attachmentId: receipt.attachmentId,
         );
-      } catch (_) {}
+      } catch (_) {
+        debugPrint('[ExpenseDetail] Attachment cleanup failed for ${receipt.attachmentId}');
+      }
 
       if (!mounted) return;
       setState(() => _removing = false);

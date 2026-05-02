@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../models/finance_models.dart' as api;
 import '../services/finance_service.dart';
 import '../storage/app_database.dart';
+import '../exceptions.dart';
 
 class FinanceRepository {
   final AppDatabase _db;
@@ -126,7 +127,7 @@ class FinanceRepository {
     await drainOutboxOnce();
 
     final row = (await (_db.select(_db.expensesTable)..where((t) => t.id.equals(expenseId))).getSingleOrNull());
-    return row == null ? throw Exception('Expense not found') : _toExpense(row);
+    return row == null ? throw const NotFoundException('Expense not found') : _toExpense(row);
   }
 
   Future<void> deleteExpenseOfflineFirst(String expenseId) async {

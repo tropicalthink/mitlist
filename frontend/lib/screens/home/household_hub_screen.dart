@@ -10,6 +10,7 @@ import '../../models/activity_models.dart';
 import '../../models/auth_models.dart';
 import '../../models/group_models.dart';
 import '../../models/pinwall_media_models.dart';
+import '../../models/pinwall_models.dart';
 import '../../providers/activity_provider.dart';
 import '../../providers/attachment_provider.dart';
 import '../../providers/auth_provider.dart';
@@ -147,7 +148,9 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
         await repo.refresh(widget.groupId, activityLimit: 10);
         activities = (await repo.getActivitiesOnce(widget.groupId)).$1;
         activityError = (await repo.getActivitiesOnce(widget.groupId)).$2;
-      } catch (_) {}
+      } catch (_) {
+        debugPrint('[HouseholdHub] Activity refresh failed for ${widget.groupId}');
+      }
 
       if (!mounted) return;
       setState(() {
@@ -215,24 +218,32 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                           await ref.read(financeRepositoryProvider.future);
                       await financeRepo.refreshGroup(widget.groupId,
                           limit: 50, offset: 0);
-                    } catch (_) {}
+                    } catch (_) {
+                      debugPrint('[HouseholdHub] Finance repo refresh failed');
+                    }
                     try {
                       final listRepo =
                           await ref.read(listRepositoryProvider.future);
                       await listRepo.refreshLists(widget.groupId,
                           limit: 50, offset: 0);
-                    } catch (_) {}
+                    } catch (_) {
+                      debugPrint('[HouseholdHub] List repo refresh failed');
+                    }
                     try {
                       final choreRepo =
                           await ref.read(choreRepositoryProvider.future);
                       await choreRepo.refreshCurrentChores(widget.groupId);
-                    } catch (_) {}
+                    } catch (_) {
+                      debugPrint('[HouseholdHub] Chore repo refresh failed');
+                    }
                     try {
                       final pinRepo =
                           await ref.read(pinwallRepositoryProvider.future);
                       await pinRepo.refreshPosts(widget.groupId,
                           limit: 20, offset: 0);
-                    } catch (_) {}
+                    } catch (_) {
+                      debugPrint('[HouseholdHub] Pinwall repo refresh failed');
+                    }
                   },
                   child: CustomScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -548,15 +559,15 @@ class _PinwallSectionState extends ConsumerState<_PinwallSection> {
                   padding: const EdgeInsets.all(MitlistSpacing.md),
                   decoration: BoxDecoration(
                     color: dark
-                        ? const Color(0xFF3A2A1A)
-                        : const Color(0xFFFFF9C4),
+                        ? MitlistColors.pinwallNoteErrorDark
+                        : MitlistColors.noteYellow,
                     borderRadius: BorderRadius.circular(MitlistTheme.radiusLg),
                     border: Border.all(color: boardBorder, width: 1.5),
                   ),
                   child: Row(
                     children: [
                       const Icon(Icons.warning_amber_rounded,
-                          color: Color(0xFFF97316)),
+                          color: MitlistColors.primary500),
                       const SizedBox(width: MitlistSpacing.sm),
                       Expanded(
                         child: Text(
@@ -582,8 +593,8 @@ class _PinwallSectionState extends ConsumerState<_PinwallSection> {
                         textAlign: TextAlign.center,
                         style: textTheme.bodySmall?.copyWith(
                           color: dark
-                              ? const Color(0xFF8B7355)
-                              : const Color(0xFF5D4037),
+                              ? MitlistColors.pinwallNoteTextDark
+                              : MitlistColors.pinwallNoteTextLight,
                         ),
                       ),
                     );
@@ -734,7 +745,7 @@ class _PinwallNoteCard extends ConsumerWidget {
   final int index;
   final String groupId;
   final User? me;
-  final dynamic post;
+  final PinwallPost post;
 
   void _showErrorSnack(BuildContext context, String message) {
     final messenger = ScaffoldMessenger.of(context);
@@ -824,7 +835,7 @@ class _PinwallNoteCard extends ConsumerWidget {
         final svc = await ref.read(pinwallServiceProviderAsync.future);
         await svc.detachPostAttachment(
           groupId: groupId,
-          postId: post.id as String,
+          postId: post.id,
           attachmentId: media.attachmentId,
         );
         // Best-effort cleanup: avoid orphaned attachments.
@@ -835,10 +846,12 @@ class _PinwallNoteCard extends ConsumerWidget {
             groupId: groupId,
             attachmentId: media.attachmentId,
           );
-        } catch (_) {}
+        } catch (_) {
+          debugPrint('[HouseholdHub] Pinwall media cleanup failed for ${media.attachmentId}');
+        }
         ref.invalidate(
           _pinwallMediaByPostProvider(
-              (groupId: groupId, postId: post.id as String)),
+              (groupId: groupId, postId: post.id)),
         );
       } catch (_) {
         if (context.mounted) {
@@ -870,14 +883,14 @@ class _PinwallNoteCard extends ConsumerWidget {
         );
         await svc.attachPostAttachment(
           groupId: groupId,
-          postId: post.id as String,
+          postId: post.id,
           attachmentId: a.id,
         );
       }
 
       ref.invalidate(
         _pinwallMediaByPostProvider(
-            (groupId: groupId, postId: post.id as String)),
+            (groupId: groupId, postId: post.id)),
       );
     } catch (_) {
       if (context.mounted) {
@@ -891,14 +904,14 @@ class _PinwallNoteCard extends ConsumerWidget {
     final textTheme = Theme.of(context).textTheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
 
-    final userId = (post as dynamic).userId as String;
-    final content = (post.content as String).trim();
-    final createdAt = post.createdAt as DateTime;
+    final userId = post.userId;
+    final content = post.content.trim();
+    final createdAt = post.createdAt;
     final userLabel = _formatUserLabel(userId, me?.id);
     final when = _relativeDay(createdAt);
 
     // deterministic but varied rotation: +-4deg
-    final idHash = (post.id as String).hashCode;
+    final idHash = post.id.hashCode;
     final rot = ((idHash % 13) - 6) * 0.012;
 
     // pick sticky note colour deterministically from palette
@@ -909,20 +922,20 @@ class _PinwallNoteCard extends ConsumerWidget {
     // pin colour cycles through orange/teal/red
     const pinColors = [
       MitlistColors.primary600,
-      Color(0xFF0D9488), // teal
-      Color(0xFFDC2626), // red
+      MitlistColors.teal500,
+      MitlistColors.error600,
     ];
     final pinColor = pinColors[index % pinColors.length];
 
     final media = ref.watch(
       _pinwallMediaByPostProvider(
-          (groupId: groupId, postId: post.id as String)),
+          (groupId: groupId, postId: post.id)),
     );
 
     Future<void> onDelete() async {
       Haptics.light();
       final svc = await ref.read(pinwallServiceProviderAsync.future);
-      await svc.deletePost(groupId, post.id as String);
+      await svc.deletePost(groupId, post.id);
       ref.invalidate(pinwallPostsByGroupProvider(groupId));
     }
 
@@ -1520,17 +1533,21 @@ class _WallItem extends StatelessWidget {
 
     switch (item.action) {
       case 'list_item_added':
-        // groupId IS the list ID for list items (backend quirk)
         context.pushNamed('listDetail',
             pathParameters: {'listId': groupId});
+        return;
       case 'expense_created':
         context.pushNamed('money');
+        return;
       case 'chore_completed':
         context.pushNamed('chores');
+        return;
       case 'recipe_added':
         context.pushNamed('recipes');
+        return;
       case 'meal_plan_created':
         context.pushNamed('mealPlan', extra: groupId);
+        return;
       default:
         return;
     }

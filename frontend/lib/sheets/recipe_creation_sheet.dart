@@ -1,10 +1,13 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../models/recipe_models.dart';
 import '../providers/recipe_provider.dart';
+import '../providers/scan_provider.dart';
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../widgets/app_bottom_sheet.dart';
@@ -62,6 +65,7 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
   bool _isPublic = false;
   bool _isSaving = false;
   bool _isScraping = false;
+  bool _isScanning = false;
   _RecipeEntryMode _mode = _RecipeEntryMode.manual;
 
   @override
@@ -88,6 +92,48 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
   String? _selectedImageUrl;
   List<String> _scrapedEquipment = [];
   Map<String, dynamic>? _scrapedNutrition;
+
+  Future<void> _onScan() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.camera,
+      maxWidth: 2048,
+      maxHeight: 2048,
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() {
+      _isScanning = true;
+      _mode = _RecipeEntryMode.manual;
+    });
+
+    try {
+      final service = await ref.read(scanServiceProviderAsync.future);
+      final bytes = await File(picked.path).readAsBytes();
+      final result = await service.scanImage(bytes, 'image/jpeg');
+
+      if (!mounted) return;
+
+      if (result.title != null && result.title!.isNotEmpty) {
+        _titleController.text = result.title!;
+      }
+      if (result.items.isNotEmpty) {
+        _ingredientsController.text =
+            result.items.map((i) => i.name).join('\n');
+      }
+      if (result.steps.isNotEmpty) {
+        _stepsController.text = result.steps.join('\n');
+      }
+
+      setState(() => _isScanning = false);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isScanning = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Couldn\u2019t scan recipe.')),
+      );
+    }
+  }
 
   bool get _hasTitle => _titleController.text.trim().isNotEmpty;
   bool get _hasUrl => _urlController.text.trim().isNotEmpty;
@@ -295,6 +341,17 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          AppButton(
+            text: _isScanning ? 'Scanning…' : 'Scan recipe',
+            icon: Icon(
+              _isScanning ? Icons.hourglass_empty : Icons.document_scanner_outlined,
+              size: 20,
+            ),
+            variant: AppButtonVariant.outline,
+            color: AppButtonColor.neutral,
+            onPressed: _isScanning ? null : _onScan,
+          ),
+          const SizedBox(height: MitlistSpacing.md),
           SegmentedButton<_RecipeEntryMode>(
             segments: const [
               ButtonSegment(

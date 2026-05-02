@@ -111,4 +111,9 @@ class MitlistColors {
   static const Color pinwallBoardDark = Color(0xFF2A211A);
   static const Color pinwallBoardBorder = Color(0xFF8B5E3C);
   static const Color pinwallBoardBorderDark = Color(0xFF4A3C2E);
+
+  static const Color teal500 = Color(0xFF0D9488);
+  static const Color pinwallNoteTextLight = Color(0xFF5D4037);
+  static const Color pinwallNoteTextDark = Color(0xFF8B7355);
+  static const Color pinwallNoteErrorDark = Color(0xFF3A2A1A);
 }

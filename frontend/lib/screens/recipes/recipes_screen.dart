@@ -18,6 +18,7 @@ import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../widgets/alert.dart';
+import '../../exceptions.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/chip.dart';
@@ -492,7 +493,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     try {
       final groupId = await _resolveGroupId();
       if (groupId == null) {
-        throw Exception('Create or join a household first');
+        throw const UnauthorizedException('Create or join a household first');
       }
 
       final listService = await ref.read(listServiceProviderAsync.future);

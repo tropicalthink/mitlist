@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../models/calendar_models.dart';
 import '../../providers/calendar_provider.dart';
@@ -347,6 +348,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 day: day,
                 events: dayEvents,
                 isToday: _isToday(day),
+                onEventTap: (e) => _showEventDetail(context, e),
               );
             },
           ),
@@ -566,10 +568,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           });
           _load();
         case 'add_chore':
-          ChoreCreationSheet.show(ctx,
+          ChoreCreationSheet.show(context,
               initialTitle: '${day.day}.${day.month}.');
         case 'add_expense':
-          ExpenseCreationSheet.show(ctx);
+          ExpenseCreationSheet.show(context);
       }
     });
   }
@@ -592,9 +594,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               AppButton(
                 text: 'Chores',
                 variant: AppButtonVariant.outline,
-                onPressed: () {
-                  // Navigate handled by caller context
-                },
+                onPressed: () => context.pushNamed('chores'),
               ),
             ],
           ),
@@ -676,35 +676,45 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       final (icon, color, label) = _eventMeta(e);
       return Padding(
         padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
-        child: Row(
-          children: [
-            Icon(icon, size: 18, color: color),
-            const SizedBox(width: MitlistSpacing.sm),
-            Expanded(
-              child: Text(
-                e.title.isNotEmpty ? e.title : label,
-                style: Theme.of(context).textTheme.bodyMedium,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+        child: InkWell(
+          onTap: () => _showEventDetail(context, e),
+          borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: MitlistSpacing.xs,
+              horizontal: MitlistSpacing.xs,
             ),
-            if (e.type == CalendarEventType.mealPlan &&
-                e.mealPlan != null)
-              Text(
-                '${e.mealPlan!.servings} ppl ',
-                style: MitlistTypography.labelXSmall(
-                  color: MitlistColors.textTertiary,
+            child: Row(
+              children: [
+                Icon(icon, size: 18, color: color),
+                const SizedBox(width: MitlistSpacing.sm),
+                Expanded(
+                  child: Text(
+                    e.title.isNotEmpty ? e.title : label,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-            if (e.type == CalendarEventType.recurringExpense &&
-                e.recurringExpense != null)
-              Text(
-                (e.recurringExpense!.amount / 100).toStringAsFixed(2),
-                style: MitlistTypography.monoBody(
-                  color: MitlistColors.textTertiary,
-                ),
-              ),
-          ],
+                if (e.type == CalendarEventType.mealPlan &&
+                    e.mealPlan != null)
+                  Text(
+                    '${e.mealPlan!.servings} ppl ',
+                    style: MitlistTypography.labelXSmall(
+                      color: MitlistColors.textTertiary,
+                    ),
+                  ),
+                if (e.type == CalendarEventType.recurringExpense &&
+                    e.recurringExpense != null)
+                  Text(
+                    (e.recurringExpense!.amount / 100).toStringAsFixed(2),
+                    style: MitlistTypography.monoBody(
+                      color: MitlistColors.textTertiary,
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       );
     }).toList();
@@ -736,17 +746,34 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         d.month == now.month &&
         d.day == now.day;
   }
+
+  void _showEventDetail(BuildContext context, CalendarEvent event) {
+    switch (event.type) {
+      case CalendarEventType.chore:
+        context.pushNamed('chores');
+      case CalendarEventType.mealPlan:
+        if (event.mealPlan != null) {
+          context.pushNamed('mealPlan', extra: event.groupId);
+        } else {
+          context.pushNamed('mealPlan', extra: event.groupId);
+        }
+      case CalendarEventType.recurringExpense:
+        context.pushNamed('money');
+    }
+  }
 }
 
 class _DayCard extends StatelessWidget {
   final DateTime day;
   final List<CalendarEvent> events;
   final bool isToday;
+  final void Function(CalendarEvent)? onEventTap;
 
   const _DayCard({
     required this.day,
     required this.events,
     required this.isToday,
+    this.onEventTap,
   });
 
   @override
@@ -807,7 +834,10 @@ class _DayCard extends StatelessWidget {
                 ),
               )
             else
-              ...events.map((e) => _EventRow(event: e)),
+              ...events.map((e) => _EventRow(
+                    event: e,
+                    onTap: onEventTap != null ? () => onEventTap!(e) : null,
+                  )),
           ],
         ),
       ),
@@ -829,8 +859,9 @@ class _DayCard extends StatelessWidget {
 
 class _EventRow extends StatelessWidget {
   final CalendarEvent event;
+  final VoidCallback? onTap;
 
-  const _EventRow({required this.event});
+  const _EventRow({required this.event, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -854,34 +885,44 @@ class _EventRow extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(top: MitlistSpacing.sm),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: MitlistSpacing.sm),
-          Expanded(
-            child: Text(
-              event.title.isNotEmpty ? event.title : label,
-              style: TextStyle(
-                color: MitlistColors.textPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            vertical: MitlistSpacing.xs,
+            horizontal: MitlistSpacing.xs,
           ),
-          if (event.type == CalendarEventType.mealPlan &&
-              event.mealPlan != null)
-            Text(
-              '${event.mealPlan!.servings} ppl',
-              style: MitlistTypography.labelXSmall(),
-            ),
-          if (event.type == CalendarEventType.recurringExpense &&
-              event.recurringExpense != null)
-            Text(
-              (event.recurringExpense!.amount / 100).toStringAsFixed(2),
-              style: MitlistTypography.labelXSmall(),
-            ),
-        ],
+          child: Row(
+            children: [
+              Icon(icon, size: 16, color: color),
+              const SizedBox(width: MitlistSpacing.sm),
+              Expanded(
+                child: Text(
+                  event.title.isNotEmpty ? event.title : label,
+                  style: TextStyle(
+                    color: MitlistColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (event.type == CalendarEventType.mealPlan &&
+                  event.mealPlan != null)
+                Text(
+                  '${event.mealPlan!.servings} ppl',
+                  style: MitlistTypography.labelXSmall(),
+                ),
+              if (event.type == CalendarEventType.recurringExpense &&
+                  event.recurringExpense != null)
+                Text(
+                  (event.recurringExpense!.amount / 100).toStringAsFixed(2),
+                  style: MitlistTypography.labelXSmall(),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }

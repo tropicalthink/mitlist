@@ -232,7 +232,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       final authService = await ref.read(authServiceProviderAsync.future);
       await authService.logout();
       ref.read(authStateProvider.notifier).state = false;
-    } catch (_) {}
+    } catch (_) {
+      debugPrint('[AccountScreen] Logout failed');
+    }
     if (mounted) context.goNamed('welcome');
   }
 

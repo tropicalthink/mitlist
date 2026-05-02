@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../models/recipe_models.dart' as api;
 import '../services/recipe_service.dart';
 import '../storage/app_database.dart';
+import '../exceptions.dart';
 
 class RecipeRepository {
   final AppDatabase _db;
@@ -100,7 +101,7 @@ class RecipeRepository {
     final row = await (_db.select(_db.recipesTable)
           ..where((t) => t.id.equals(recipeId)))
         .getSingleOrNull();
-    return row == null ? throw Exception('Recipe not found') : _toRecipe(row);
+    return row == null ? throw const NotFoundException('Recipe not found') : _toRecipe(row);
   }
 
   Future<void> deleteRecipeOfflineFirst(String recipeId) async {

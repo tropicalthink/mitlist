@@ -1,11 +1,15 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../models/finance_models.dart';
 import '../models/group_models.dart';
 import '../providers/auth_provider.dart';
 import '../providers/finance_provider.dart';
 import '../providers/group_provider.dart';
+import '../providers/scan_provider.dart';
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../widgets/app_bottom_sheet.dart';
@@ -51,6 +55,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
   final Set<String> _selectedMemberIds = {};
   String _splitMode = 'equal';
   bool _isSaving = false;
+  bool _isScanning = false;
 
   @override
   void initState() {
@@ -88,6 +93,47 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       });
     } catch (_) {
       // Member loading is optional; expense creation still works without splits.
+    }
+  }
+
+  Future<void> _onScan() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.camera,
+      maxWidth: 2048,
+      maxHeight: 2048,
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() => _isScanning = true);
+
+    try {
+      final service = await ref.read(scanServiceProviderAsync.future);
+      final bytes = await File(picked.path).readAsBytes();
+      final result = await service.scanImage(bytes, 'image/jpeg');
+
+      if (!mounted) return;
+
+      if (result.title != null && result.title!.isNotEmpty) {
+        _descriptionController.text = result.title!;
+      }
+      if (result.amount != null && result.amount! > 0) {
+        _amountController.text =
+            (result.amount! / 100).toStringAsFixed(2);
+      }
+      if (result.items.isNotEmpty &&
+          _descriptionController.text.isEmpty) {
+        _descriptionController.text =
+            result.items.map((i) => i.name).join(', ');
+      }
+
+      setState(() => _isScanning = false);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isScanning = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Couldn\u2019t scan receipt.')),
+      );
     }
   }
 
@@ -207,6 +253,17 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        AppButton(
+          text: _isScanning ? 'Scanning…' : 'Scan receipt',
+          icon: Icon(
+            _isScanning ? Icons.hourglass_empty : Icons.document_scanner_outlined,
+            size: 20,
+          ),
+          variant: AppButtonVariant.outline,
+          color: AppButtonColor.neutral,
+          onPressed: _isScanning ? null : _onScan,
+        ),
+        const SizedBox(height: MitlistSpacing.md),
         AppInput(
           label: 'Description',
           hint: 'e.g. Dinner at Luigi\'s',

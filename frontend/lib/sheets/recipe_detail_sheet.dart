@@ -282,7 +282,9 @@ class RecipeDetailSheet extends StatelessWidget {
       if (decoded is Map) {
         return decoded.map((k, v) => MapEntry(k.toString(), v.toString()));
       }
-    } catch (_) {}
+    } catch (_) {
+      // Failed to parse nutrition JSON; return empty map.
+    }
     return {};
   }
 
@@ -293,7 +295,9 @@ class RecipeDetailSheet extends StatelessWidget {
       if (decoded is List) {
         return decoded.whereType<String>().toList();
       }
-    } catch (_) {}
+    } catch (_) {
+      // Failed to parse equipment JSON; return empty list.
+    }
     return [];
   }
 }

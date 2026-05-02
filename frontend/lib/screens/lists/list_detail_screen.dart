@@ -282,7 +282,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           groupId: groupId,
           attachmentId: attachmentId,
         );
-      } catch (_) {}
+                  } catch (_) {
+                    debugPrint('[ListDetail] Undo item creation failed for ${item.name}');
+                  }
 
       final updated =
           await svc.listItemPhotos(groupId: groupId, itemId: item.id);
@@ -511,7 +513,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                       _dirty = true;
                     });
                     _checkCompletionBanner();
-                  } catch (_) {}
+                  } catch (_) {
+                    debugPrint('[ListDetail] Undo item creation failed for ${item.name}');
+                  }
                 },
                 style: TextButton.styleFrom(
                   foregroundColor: MitlistColors.primary400,

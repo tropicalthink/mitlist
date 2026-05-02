@@ -311,7 +311,6 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
             children: [
               ...widget.supplies.map((s) => Chip(
                     label: Text(s),
-                    visualDensity: VisualDensity.compact,
                   )),
             ],
           ),

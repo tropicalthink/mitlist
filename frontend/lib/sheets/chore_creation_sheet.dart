@@ -1,9 +1,13 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../models/chore_models.dart';
 import '../providers/chore_provider.dart';
 import '../providers/group_provider.dart';
+import '../providers/scan_provider.dart';
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
@@ -62,6 +66,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
   bool _trackDateOnly = false;
   bool _rollover = false;
   bool _isSaving = false;
+  bool _isScanning = false;
 
   @override
   void initState() {
@@ -71,6 +76,41 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
     }
     if (widget.initialDescription != null) {
       _descriptionController.text = widget.initialDescription!;
+    }
+  }
+
+  Future<void> _onScan() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.camera,
+      maxWidth: 2048,
+      maxHeight: 2048,
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() => _isScanning = true);
+
+    try {
+      final service = await ref.read(scanServiceProviderAsync.future);
+      final bytes = await File(picked.path).readAsBytes();
+      final result = await service.scanImage(bytes, 'image/jpeg');
+
+      if (!mounted) return;
+
+      if (result.title != null && result.title!.isNotEmpty) {
+        _nameController.text = result.title!;
+      }
+      if (result.steps.isNotEmpty) {
+        _descriptionController.text = result.steps.join('\n');
+      }
+
+      setState(() => _isScanning = false);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isScanning = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Couldn\u2019t scan chore.')),
+      );
     }
   }
 
@@ -179,6 +219,17 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        AppButton(
+          text: _isScanning ? 'Scanning…' : 'Scan chore',
+          icon: Icon(
+            _isScanning ? Icons.hourglass_empty : Icons.document_scanner_outlined,
+            size: 20,
+          ),
+          variant: AppButtonVariant.outline,
+          color: AppButtonColor.neutral,
+          onPressed: _isScanning ? null : _onScan,
+        ),
+        const SizedBox(height: MitlistSpacing.md),
         AppInput(
           label: 'Chore Name',
           hint: 'e.g. Vacuum living room',
