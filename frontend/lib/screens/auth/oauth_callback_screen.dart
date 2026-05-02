@@ -6,6 +6,7 @@ import '../../models/auth_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
+import '../../widgets/mitlist_app_bar.dart';
 
 class OAuthCallbackScreen extends ConsumerStatefulWidget {
   const OAuthCallbackScreen({
@@ -89,7 +90,10 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Signing you in')),
+      appBar: MitlistAppBar.titleText(
+        'Signing you in',
+        showStandardActions: false,
+      ),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(MitlistSpacing.md),

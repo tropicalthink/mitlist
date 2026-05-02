@@ -12,6 +12,7 @@ import '../providers/share_target_provider.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_icon.dart';
+import '../widgets/mitlist_app_bar.dart';
 // ShareTargetService is provided via `shareTargetServiceProviderAsync`.
 
 class _DestinationOption {
@@ -219,8 +220,9 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Save to mitlist'),
+      appBar: MitlistAppBar.titleText(
+        'Save to mitlist',
+        showStandardActions: false,
       ),
       body: Padding(
         padding: const EdgeInsets.all(MitlistSpacing.md),

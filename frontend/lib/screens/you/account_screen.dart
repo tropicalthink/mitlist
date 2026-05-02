@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../models/auth_models.dart';
+import '../../models/group_models.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/group_provider.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
+import '../../theme/typography.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
@@ -29,6 +32,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   String _name = '';
   String _email = '';
   bool _isEditingName = false;
+  List<Group> _households = [];
+  String? _activeHouseholdId;
 
   late final TextEditingController _nameController;
   late final FocusNode _nameFocusNode;
@@ -58,12 +63,12 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
 
   Future<void> _loadData() async {
     User? user;
+    List<Group> households = [];
 
     try {
       final authService = await ref.read(authServiceProviderAsync.future);
       user = await authService.getMe();
     } catch (_) {
-      // If we can't load the user profile, the screen can't render meaningfully.
       if (!mounted) return;
       setState(() {
         _isLoading = false;
@@ -72,10 +77,19 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       return;
     }
 
+    try {
+      final groupService = await ref.read(groupServiceProviderAsync.future);
+      households = await groupService.listGroups();
+    } catch (_) {
+      // Households are optional for this screen.
+    }
+
     if (!mounted) return;
     setState(() {
       _name = user!.fullName;
       _email = user.email;
+      _households = households;
+      _activeHouseholdId = households.isNotEmpty ? households.first.id : null;
       _isLoading = false;
       _error = null;
     });
@@ -335,6 +349,58 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     );
   }
 
+  Widget _buildHouseholdCard() {
+    if (_households.length < 2) {
+      return const SizedBox.shrink();
+    }
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Household',
+            style: MitlistTypography.labelXSmall(
+              color: MitlistColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: MitlistSpacing.sm),
+          ..._households.map((h) {
+            final isActive = h.id == _activeHouseholdId;
+            return InkWell(
+              onTap: () {
+                setState(() => _activeHouseholdId = h.id);
+                context.goNamed('householdHub', pathParameters: {'groupId': h.id});
+              },
+              borderRadius: BorderRadius.zero,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        h.name,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                            ),
+                      ),
+                    ),
+                    if (isActive)
+                      Icon(
+                        Icons.check,
+                        size: 18,
+                        color: MitlistColors.primary500,
+                      ),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPreferencesCard() {
     return AppCard(
       child: Column(
@@ -428,6 +494,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             _buildProfileCard(),
             const SizedBox(height: MitlistSpacing.md),
           ],
+          _buildHouseholdCard(),
+          if (_households.length >= 2) const SizedBox(height: MitlistSpacing.md),
           _buildPreferencesCard(),
           const SizedBox(height: MitlistSpacing.md),
           _buildSecurityCard(),

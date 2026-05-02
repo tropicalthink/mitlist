@@ -3,6 +3,7 @@ import 'package:lottie/lottie.dart';
 import '../theme/colors.dart';
 import '../theme/shadows.dart';
 import '../theme/spacing.dart';
+import 'bobbing_icon.dart';
 
 enum AppEmptyStatePadding {
   sm,
@@ -19,6 +20,7 @@ class AppEmptyState extends StatelessWidget {
   final List<Widget>? actions;
   final bool isError;
   final AppEmptyStatePadding paddingPreset;
+  final bool animatedIcon;
 
   const AppEmptyState({
     super.key,
@@ -30,6 +32,7 @@ class AppEmptyState extends StatelessWidget {
     this.actions,
     this.isError = false,
     this.paddingPreset = AppEmptyStatePadding.lg,
+    this.animatedIcon = false,
   });
 
   EdgeInsetsGeometry get _padding {
@@ -73,6 +76,16 @@ class AppEmptyState extends StatelessWidget {
               width: 56,
               height: 56,
               fit: BoxFit.contain,
+            )
+          else if (icon != null && animatedIcon)
+            BobbingIcon(
+              child: IconTheme(
+                data: IconThemeData(
+                  size: 56,
+                  color: iconColor ?? MitlistColors.textTertiary,
+                ),
+                child: icon!,
+              ),
             )
           else if (icon != null)
             IconTheme(

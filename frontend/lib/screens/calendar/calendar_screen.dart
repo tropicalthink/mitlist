@@ -17,6 +17,7 @@ import '../../widgets/skeleton.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import '../../sheets/expense_creation_sheet.dart';
 import '../../sheets/chore_creation_sheet.dart';
+import '../../sheets/chore_detail_sheet.dart';
 
 enum _CalendarView { week, month, agenda }
 
@@ -543,7 +544,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           ...events.map((e) {
             final label = e.title.isNotEmpty ? e.title : e.type.name;
             return PopupMenuItem<String>(
-              value: 'view_${e.type.name}',
+              value: 'event_${e.id}',
+              onTap: () => _showEventDetail(context, e),
               child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
             );
           }),
@@ -753,15 +755,20 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   void _showEventDetail(BuildContext context, CalendarEvent event) {
     switch (event.type) {
       case CalendarEventType.chore:
-        context.pushNamed('chores');
-      case CalendarEventType.mealPlan:
-        if (event.mealPlan != null) {
-          context.pushNamed('mealPlan', extra: event.groupId);
-        } else {
-          context.pushNamed('mealPlan', extra: event.groupId);
+        if (event.chore != null) {
+          ChoreDetailSheet.show(
+            context,
+            choreId: event.chore!.choreId,
+            title: event.title.isNotEmpty ? event.title : 'Chore',
+            statusLabel: event.chore!.status,
+            assignee: '',
+            dueDate: event.date,
+          );
         }
+      case CalendarEventType.mealPlan:
+        context.pushNamed('mealPlan');
       case CalendarEventType.recurringExpense:
-        context.pushNamed('money');
+        context.pushNamed('recurringExpenses');
     }
   }
 }

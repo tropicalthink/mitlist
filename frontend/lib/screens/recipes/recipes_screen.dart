@@ -1,14 +1,12 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../models/list_models.dart';
 import '../../models/recipe_models.dart';
 import '../../providers/group_provider.dart';
-import '../../providers/list_provider.dart';
+import '../../providers/meal_plan_provider.dart';
 import '../../providers/recipe_provider.dart';
 import '../../services/group_id_validator.dart';
 import '../../sheets/recipe_add_to_list_sheet.dart';
@@ -18,7 +16,6 @@ import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../widgets/alert.dart';
-import '../../exceptions.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/chip.dart';
@@ -74,37 +71,6 @@ class _Recipe {
   });
 
   int get totalMinutes => prepTime + cookTime;
-
-  List<_ShoppingIngredient> get ingredients {
-    final lines = description.split('\n');
-    final parsed = <_ShoppingIngredient>[];
-    var inIngredients = false;
-
-    for (final raw in lines) {
-      final line = raw.trim();
-      if (line.isEmpty) continue;
-
-      final lower = line.toLowerCase();
-      if (lower.startsWith('ingredients')) {
-        inIngredients = true;
-        continue;
-      }
-      if (lower.startsWith('steps') ||
-          lower.startsWith('nutrition') ||
-          lower.startsWith('tags') ||
-          lower.startsWith('source')) {
-        inIngredients = false;
-      }
-
-      if (!inIngredients) continue;
-
-      final clean = line.replaceFirst(RegExp(r'^[-*]\s*'), '');
-      if (clean.isNotEmpty) parsed.add(_ShoppingIngredient.parse(clean));
-    }
-
-    if (parsed.isNotEmpty) return parsed;
-    return [_ShoppingIngredient(name: title, section: 'Prepared food')];
-  }
 }
 
 enum _ViewState { loading, error, empty, loaded }
@@ -115,96 +81,7 @@ enum _FilterOption { all, public, private }
 
 enum _RecipeMenuAction { sortNewest, sortOldest, sortAz }
 
-const List<String> _weekDays = [
-  'Mon',
-  'Tue',
-  'Wed',
-  'Thu',
-  'Fri',
-  'Sat',
-  'Sun',
-];
 
-const List<String> _mealSlots = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
-
-class _PlannedMeal {
-  final String id;
-  final String day;
-  final String slot;
-  final _Recipe recipe;
-  final int servings;
-
-  const _PlannedMeal({
-    required this.id,
-    required this.day,
-    required this.slot,
-    required this.recipe,
-    required this.servings,
-  });
-}
-
-class _ShoppingIngredient {
-  final String name;
-  final double quantity;
-  final String unit;
-  final String section;
-
-  const _ShoppingIngredient({
-    required this.name,
-    this.quantity = 1,
-    this.unit = '',
-    this.section = 'Pantry',
-  });
-
-  static _ShoppingIngredient parse(String value) {
-    final section = _sectionFor(value);
-    final match =
-        RegExp(r'^(\d+(?:\.\d+)?)\s*([A-Za-z]+)?\s+(.+)$').firstMatch(value);
-    if (match == null) {
-      return _ShoppingIngredient(name: value, section: section);
-    }
-    return _ShoppingIngredient(
-      quantity: double.tryParse(match.group(1) ?? '') ?? 1,
-      unit: match.group(2) ?? '',
-      name: match.group(3)?.trim() ?? value,
-      section: section,
-    );
-  }
-
-  static String _sectionFor(String value) {
-    final lower = value.toLowerCase();
-    if (lower.contains('tomato') ||
-        lower.contains('onion') ||
-        lower.contains('lettuce') ||
-        lower.contains('carrot') ||
-        lower.contains('pepper') ||
-        lower.contains('fruit') ||
-        lower.contains('apple') ||
-        lower.contains('banana')) {
-      return 'Produce';
-    }
-    if (lower.contains('milk') ||
-        lower.contains('cheese') ||
-        lower.contains('yogurt') ||
-        lower.contains('cream')) {
-      return 'Dairy';
-    }
-    if (lower.contains('chicken') ||
-        lower.contains('beef') ||
-        lower.contains('pork') ||
-        lower.contains('fish') ||
-        lower.contains('tofu')) {
-      return 'Protein';
-    }
-    if (lower.contains('bread') ||
-        lower.contains('flour') ||
-        lower.contains('pasta') ||
-        lower.contains('rice')) {
-      return 'Bakery and grains';
-    }
-    return 'Pantry';
-  }
-}
 
 class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   static const int _pageLimit = 50;
@@ -214,11 +91,9 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   String? _loadMoreErrorMessage;
   final List<_Recipe> _recipes = <_Recipe>[];
   final List<RecipeCollection> _collections = <RecipeCollection>[];
-  final List<_PlannedMeal> _plan = <_PlannedMeal>[];
   final ScrollController _scrollController = ScrollController();
   bool _isLoadingMore = false;
   bool _hasMore = true;
-  bool _isGeneratingList = false;
   bool _showSearch = false;
   String _searchQuery = '';
   Timer? _searchTimer;
@@ -430,271 +305,11 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     }
   }
 
-  void _planRecipe(_Recipe recipe, String day, String slot) {
-    setState(() {
-      _plan.add(
-        _PlannedMeal(
-          id: '---',
-          day: day,
-          slot: slot,
-          recipe: recipe,
-          servings: max(1, recipe.servings),
-        ),
-      );
-    });
-  }
-
-  void _removePlannedMeal(String id) {
-    setState(() {
-      _plan.removeWhere((meal) => meal.id == id);
-    });
-  }
-
-  Map<String, List<_ShoppingIngredient>> get _shoppingSections {
-    final grouped = <String, Map<String, _ShoppingIngredient>>{};
-    for (final meal in _plan) {
-      final scale = meal.recipe.servings <= 0
-          ? 1
-          : max(1, (meal.servings / meal.recipe.servings).round());
-      for (final ingredient in meal.recipe.ingredients) {
-        final section = grouped.putIfAbsent(
-            ingredient.section, () => <String, _ShoppingIngredient>{});
-        final key = '|';
-        final existing = section[key];
-        section[key] = _ShoppingIngredient(
-          name: ingredient.name,
-          quantity:
-              (existing?.quantity ?? 0) + max(1, ingredient.quantity * scale),
-          unit: ingredient.unit,
-          section: ingredient.section,
-        );
-      }
-    }
-
-    final sections = <String, List<_ShoppingIngredient>>{};
-    for (final entry in grouped.entries) {
-      sections[entry.key] = entry.value.values.toList()
-        ..sort((a, b) => a.name.compareTo(b.name));
-    }
-    return sections;
-  }
-
   Future<String?> _resolveGroupId() async {
     final groupService = await ref.read(groupServiceProviderAsync.future);
     final groups = await groupService.listGroups(limit: 1);
     final groupId = groups.isEmpty ? null : groups.first.id;
     return isValidGroupId(groupId) ? groupId : null;
-  }
-
-  Future<void> _createShoppingList() async {
-    if (_shoppingSections.isEmpty || _isGeneratingList) return;
-    setState(() => _isGeneratingList = true);
-
-    try {
-      final groupId = await _resolveGroupId();
-      if (groupId == null) {
-        throw const UnauthorizedException('Create or join a household first');
-      }
-
-      final listService = await ref.read(listServiceProviderAsync.future);
-      final list = await listService.createList(
-        CreateListRequest(
-          groupId: groupId,
-          name: 'Meal plan shopping',
-          type: 'shopping',
-        ),
-      );
-
-      for (final section in _shoppingSections.entries) {
-        await listService.createItem(
-          list.id,
-          CreateListItemRequest(name: section.key, quantity: 1, unit: ''),
-        );
-        for (final ingredient in section.value) {
-          await listService.createItem(
-            list.id,
-            CreateListItemRequest(
-              name: ingredient.name,
-              quantity: ingredient.quantity,
-              unit: ingredient.unit,
-            ),
-          );
-        }
-      }
-
-      if (!mounted) return;
-      final totalLines = _shoppingSections.values.fold<int>(
-            0,
-            (sum, list) => sum + list.length,
-          ) +
-          _shoppingSections.length;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Shopping list created with $totalLines lines')),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
-    } finally {
-      if (mounted) setState(() => _isGeneratingList = false);
-    }
-  }
-
-  Future<void> _showPlanSheet(_Recipe recipe) async {
-    final dayController = ValueNotifier<String>(_weekDays[0]);
-    final slotController = ValueNotifier<String>('Dinner');
-
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(MitlistSpacing.md),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Plan ',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: MitlistSpacing.md),
-                Text(
-                  'Day',
-                  style: Theme.of(context).textTheme.labelMedium,
-                ),
-                const SizedBox(height: MitlistSpacing.sm),
-                ValueListenableBuilder<String>(
-                  valueListenable: dayController,
-                  builder: (context, day, _) {
-                    return Wrap(
-                      spacing: MitlistSpacing.sm,
-                      runSpacing: MitlistSpacing.sm,
-                      children: _weekDays.map((d) {
-                        return AppChip(
-                          label: d,
-                          selected: day == d,
-                          onSelected: (_) => dayController.value = d,
-                        );
-                      }).toList(),
-                    );
-                  },
-                ),
-                const SizedBox(height: MitlistSpacing.md),
-                Text(
-                  'Meal',
-                  style: Theme.of(context).textTheme.labelMedium,
-                ),
-                const SizedBox(height: MitlistSpacing.sm),
-                ValueListenableBuilder<String>(
-                  valueListenable: slotController,
-                  builder: (context, slot, _) {
-                    return Wrap(
-                      spacing: MitlistSpacing.sm,
-                      runSpacing: MitlistSpacing.sm,
-                      children: _mealSlots.map((s) {
-                        return AppChip(
-                          label: s,
-                          selected: slot == s,
-                          onSelected: (_) => slotController.value = s,
-                        );
-                      }).toList(),
-                    );
-                  },
-                ),
-                const SizedBox(height: MitlistSpacing.lg),
-                AppButton(
-                  text: 'Add to plan',
-                  onPressed: () {
-                    _planRecipe(recipe, dayController.value, slotController.value);
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _showDayMeals(String day) async {
-    final meals = _plan.where((m) => m.day == day).toList();
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(MitlistSpacing.md),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  '$day plan',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: MitlistSpacing.md),
-                if (meals.isEmpty)
-                  Text(
-                    'No meals planned yet.',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  )
-                else
-                  ...meals.map((meal) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
-                      child: AppCard(
-                        variant: AppCardVariant.outlined,
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    meal.recipe.title,
-                                    style: Theme.of(context).textTheme.titleSmall,
-                                  ),
-                                  const SizedBox(height: MitlistSpacing.xs),
-                                  Text(
-                                    meal.slot,
-                                    style: Theme.of(context).textTheme.bodySmall,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(AppIcons.trash, size: 18),
-                              tooltip: 'Delete',
-                              onPressed: () {
-                                _removePlannedMeal(meal.id);
-                                Navigator.of(context).pop();
-                                if (_plan.where((m) => m.day == day).isNotEmpty) {
-                                  _showDayMeals(day);
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }),
-                const SizedBox(height: MitlistSpacing.md),
-                AppButton(
-                  variant: AppButtonVariant.ghost,
-                  text: 'Close',
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
   }
 
   @override
@@ -736,7 +351,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                 final groupId = await _resolveGroupId();
                 if (!mounted) return;
                 if (groupId != null) {
-                  router.pushNamed('mealPlan', extra: groupId);
+                  router.pushNamed('mealPlan');
                 }
               },
             ),
@@ -826,7 +441,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     final visible = _filteredRecipes;
     return Column(
       children: [
-        _buildWeekStrip(),
+        _buildMealPlanSummary(),
         _buildChipBar(),
         if (_loadMoreErrorMessage != null)
           Padding(
@@ -854,104 +469,113 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     );
   }
 
-  Widget _buildWeekStrip() {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: MitlistSpacing.md,
-        vertical: MitlistSpacing.sm,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: _weekDays.map((day) {
-                  final meals = _plan.where((m) => m.day == day).toList();
-                  final hasMeals = meals.isNotEmpty;
-                  final colorScheme = Theme.of(context).colorScheme;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: MitlistSpacing.sm),
-                    child: InkWell(
-                      onTap: () => _showDayMeals(day),
-                      borderRadius: BorderRadius.zero,
-                      child: Container(
-                        width: 48,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: hasMeals
-                              ? colorScheme.primaryContainer
-                              : colorScheme.surface,
-                          border: Border.all(
-                            color: hasMeals
-                                ? colorScheme.primary
-                                : colorScheme.outline,
-                            width: 2,
+  Widget _buildMealPlanSummary() {
+    return FutureBuilder<List<dynamic>>(
+      future: _fetchWeekMealPlans(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const SizedBox.shrink();
+        }
+        final plans = snapshot.data ?? [];
+        if (plans.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(
+            MitlistSpacing.md,
+            MitlistSpacing.sm,
+            MitlistSpacing.md,
+            0,
+          ),
+          child: AppCard(
+            variant: AppCardVariant.filled,
+            onTap: () async {
+              final groupId = await _resolveGroupId();
+              if (!mounted || groupId == null) return;
+              if (context.mounted) {
+                context.pushNamed('mealPlan');
+              }
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(MitlistSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'This week',
+                    style: MitlistTypography.labelXSmall(
+                      color: MitlistColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: MitlistSpacing.sm),
+                  ...plans.take(3).map((p) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: MitlistSpacing.xs),
+                      child: Row(
+                        children: [
+                          Icon(
+                            AppIcons.calendarDays,
+                            size: 14,
+                            color: MitlistColors.primary500,
                           ),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              day,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelSmall
-                                  ?.copyWith(
-                                    color: hasMeals
-                                        ? colorScheme.onPrimaryContainer
-                                        : colorScheme.onSurfaceVariant,
-                                  ),
+                          const SizedBox(width: MitlistSpacing.sm),
+                          Expanded(
+                            child: Text(
+                              '${p['day']} ${p['slot']}: ${p['title']}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 4),
-                            if (hasMeals)
-                              Container(
-                                width: 20,
-                                height: 20,
-                                decoration: BoxDecoration(
-                                  color: colorScheme.primary,
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    meals.length.toString(),
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelSmall
-                                        ?.copyWith(color: colorScheme.onPrimary),
-                                  ),
-                                ),
-                              )
-                            else
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: colorScheme.outlineVariant,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                          ],
-                        ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  if (plans.length > 3)
+                    Text(
+                      '+ ${plans.length - 3} more',
+                      style: MitlistTypography.labelXSmall(
+                        color: MitlistColors.textTertiary,
                       ),
                     ),
-                  );
-                }).toList(),
+                ],
               ),
             ),
           ),
-          if (_plan.isNotEmpty) ...[
-            const SizedBox(width: MitlistSpacing.sm),
-            AppButton(
-              size: AppButtonSize.sm,
-              text: _isGeneratingList ? '...' : 'List',
-              icon: const Icon(AppIcons.shoppingCart, size: 16),
-              isLoading: _isGeneratingList,
-              onPressed: _isGeneratingList ? null : _createShoppingList,
-            ),
-          ],
-        ],
-      ),
+        );
+      },
     );
+  }
+
+  Future<List<Map<String, String>>> _fetchWeekMealPlans() async {
+    try {
+      final groupId = await _resolveGroupId();
+      if (groupId == null) return [];
+
+      final now = DateTime.now();
+      final weekStart = now.subtract(Duration(days: now.weekday - 1));
+      final weekEnd = weekStart.add(const Duration(days: 6));
+
+      final mealPlanService = await ref.read(mealPlanServiceProviderAsync.future);
+      final plans = await mealPlanService.listMealPlans(
+        groupId,
+        from: weekStart.toIso8601String().split('T')[0],
+        to: weekEnd.toIso8601String().split('T')[0],
+      );
+
+      final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      return plans.map((p) {
+        final dayIndex = p.date.weekday - 1;
+        return {
+          'day': days[dayIndex.clamp(0, 6)],
+          'slot': p.slot,
+          'title': 'Meal',
+        };
+      }).toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   Widget _buildChipBar() {
@@ -1060,7 +684,6 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
         return _RecipeCard(
           recipe: recipe,
           onTap: () => _openRecipeDetail(recipe),
-          onPlan: () => _showPlanSheet(recipe),
           onAddToList: () => RecipeAddToListSheet.show(
             context,
             recipeId: recipe.id,
@@ -1123,13 +746,11 @@ class _LoadingListBody extends StatelessWidget {
 class _RecipeCard extends StatelessWidget {
   final _Recipe recipe;
   final VoidCallback? onTap;
-  final VoidCallback? onPlan;
   final VoidCallback? onAddToList;
 
   const _RecipeCard({
     required this.recipe,
     this.onTap,
-    this.onPlan,
     this.onAddToList,
   });
 
@@ -1232,20 +853,10 @@ class _RecipeCard extends StatelessWidget {
               ],
             ),
           ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                tooltip: 'Add to list',
-                icon: const Icon(AppIcons.shoppingCart),
-                onPressed: onAddToList,
-              ),
-              IconButton(
-                tooltip: 'Plan for dinner',
-                icon: const Icon(AppIcons.calendarDays),
-                onPressed: onPlan,
-              ),
-            ],
+          IconButton(
+            tooltip: 'Add to list',
+            icon: const Icon(AppIcons.shoppingCart),
+            onPressed: onAddToList,
           ),
         ],
       ),

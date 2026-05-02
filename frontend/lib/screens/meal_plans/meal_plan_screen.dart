@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../models/meal_plan_models.dart';
 import '../../models/recipe_models.dart';
+import '../../providers/group_provider.dart';
 import '../../providers/meal_plan_provider.dart';
 import '../../providers/recipe_provider.dart';
 import '../../theme/colors.dart';
@@ -21,7 +22,7 @@ import '../../exceptions.dart';
 
 class MealPlanScreen extends ConsumerStatefulWidget {
   final String groupId;
-  const MealPlanScreen({super.key, required this.groupId});
+  const MealPlanScreen({super.key, this.groupId = ''});
 
   @override
   ConsumerState<MealPlanScreen> createState() => _MealPlanScreenState();
@@ -33,12 +34,42 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
   String? _error;
   final List<MealPlan> _plans = [];
   final Map<String, Recipe> _recipeCache = {};
+  String? _resolvedGroupId;
 
   @override
   void initState() {
     super.initState();
     _weekStart = _startOfWeek(DateTime.now());
-    _load();
+    _resolveAndLoad();
+  }
+
+  Future<void> _resolveAndLoad() async {
+    if (widget.groupId.isNotEmpty) {
+      _resolvedGroupId = widget.groupId;
+      await _load();
+      return;
+    }
+    try {
+      final groupService = await ref.read(groupServiceProviderAsync.future);
+      final groups = await groupService.listGroups(limit: 1);
+      final groupId = groups.isEmpty ? null : groups.first.id;
+      if (!mounted) return;
+      if (groupId == null || groupId.isEmpty) {
+        setState(() {
+          _error = 'Create or join a household first';
+          _isLoading = false;
+        });
+        return;
+      }
+      _resolvedGroupId = groupId;
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Failed to load meal plans';
+        _isLoading = false;
+      });
+    }
   }
 
   DateTime _startOfWeek(DateTime date) {
@@ -55,7 +86,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
       final svc = await ref.read(mealPlanServiceProviderAsync.future);
       final from = _formatDate(_weekStart);
       final to = _formatDate(_weekStart.add(const Duration(days: 6)));
-      final plans = await svc.listMealPlans(widget.groupId, from: from, to: to);
+      final plans = await svc.listMealPlans(_resolvedGroupId!, from: from, to: to);
       setState(() {
         _plans.clear();
         _plans.addAll(plans);
@@ -105,7 +136,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
     try {
       final svc = await ref.read(mealPlanServiceProviderAsync.future);
       await svc.createMealPlan(CreateMealPlanRequest(
-        groupId: widget.groupId,
+        groupId: _resolvedGroupId!,
         date: _formatDate(date),
         slot: slot,
         recipeId: recipe.id,
@@ -169,7 +200,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
       final from = _formatDate(_weekStart);
       final to = _formatDate(_weekStart.add(const Duration(days: 6)));
       final result = await svc.generateShoppingList(
-        widget.groupId,
+        _resolvedGroupId!,
         from: from,
         to: to,
       );

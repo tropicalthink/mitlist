@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -62,7 +63,16 @@ func (s *WeeklySummary) notifyMembers(ctx context.Context, groupID uuid.UUID, co
 		return fmt.Errorf("query members: %w", err)
 	}
 
-	payload := fmt.Sprintf(`{"title":"Weekly Summary","body":"Your household had %d activities this week"}`, count)
+	pushPayload := map[string]interface{}{
+		"title": "Weekly Summary",
+		"body":  fmt.Sprintf("Your household had %d activities this week", count),
+		"data": models.NotificationPayload{
+			Screen:  models.ScreenHouseholdHub,
+			GroupID: groupID.String(),
+		},
+	}
+	payloadBytes, _ := json.Marshal(pushPayload)
+	payload := string(payloadBytes)
 
 	for _, userID := range members {
 		pref, err := s.repo.GetUserPreference(ctx, userID, groupID)

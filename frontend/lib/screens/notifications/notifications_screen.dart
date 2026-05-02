@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../models/notification_models.dart';
 import '../../providers/notification_provider.dart';
@@ -151,6 +154,51 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     }
   }
 
+  void _handleNotificationTap(NotificationModel n) {
+    _markRead(n);
+
+    if (n.data == null) return;
+    final payload = _parsePayload(n.data);
+    if (payload == null) return;
+
+    final screen = payload['screen'] as String?;
+    final id = payload['id'] as String?;
+    final groupId = payload['group_id'] as String?;
+
+    switch (screen) {
+      case 'choreDetail':
+        context.pushNamed('chores');
+      case 'expenseDetail':
+        context.pushNamed('money');
+      case 'listDetail':
+        if (id != null && id.isNotEmpty) {
+          context.goNamed('listDetail', pathParameters: {'listId': id});
+        }
+      case 'recipeDetail':
+        context.pushNamed('recipes');
+      case 'mealPlan':
+        context.pushNamed('mealPlan');
+      case 'householdHub':
+        if (groupId != null && groupId.isNotEmpty) {
+          context.goNamed('householdHub', pathParameters: {'groupId': groupId});
+        }
+      case 'recurringExpenses':
+        context.pushNamed('recurringExpenses');
+    }
+  }
+
+  Map<String, dynamic>? _parsePayload(dynamic data) {
+    if (data is Map<String, dynamic>) return data;
+    if (data is String) {
+      try {
+        return jsonDecode(data) as Map<String, dynamic>;
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -224,7 +272,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                           },
                           child: AppCard(
                             interactive: true,
-                            onTap: () => _markRead(n),
+                            onTap: () => _handleNotificationTap(n),
                             child: Padding(
                               padding: const EdgeInsets.all(MitlistSpacing.md),
                               child: Column(

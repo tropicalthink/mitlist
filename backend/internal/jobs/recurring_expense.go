@@ -33,8 +33,9 @@ func newRecurringExpenseJob(repo recurringExpenseRepo, push Pusher, log *logger.
 }
 
 type recurringPushPayload struct {
-	Title string `json:"title"`
-	Body  string `json:"body"`
+	Title string                 `json:"title"`
+	Body  string                 `json:"body"`
+	Data  models.NotificationPayload `json:"data"`
 }
 
 // Run executes the recurring expense processing job.
@@ -90,7 +91,16 @@ func (j *RecurringExpenseJob) processRecurringExpense(ctx context.Context, re mo
 		return fmt.Errorf("process recurring expense: %w", err)
 	}
 
-	recurringPushPayload := recurringPushPayload{Title: "New Recurring Expense", Body: re.Description + " has been added"}
+	recurringPushPayload := recurringPushPayload{
+		Title: "New Recurring Expense",
+		Body:  re.Description + " has been added",
+		Data: models.NotificationPayload{
+			Screen:     models.ScreenRecurringExpenses,
+			EntityType: models.EntityTypeRecurringExpense,
+			ID:         re.ID.String(),
+			GroupID:    re.GroupID.String(),
+		},
+	}
 	data, _ := json.Marshal(recurringPushPayload)
 	if err := j.push.BroadcastToGroup(re.GroupID, string(data)); err != nil {
 		j.log.Warn().Err(err).Str("group_id", re.GroupID.String()).Msg("failed to send recurring expense push")

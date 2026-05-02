@@ -29,6 +29,7 @@ import '../../widgets/skeleton.dart';
 import '../../theme/spacing.dart';
 import '../../theme/theme.dart';
 import '../../sheets/invite_household_sheet.dart';
+import '../../sheets/group_settings_sheet.dart';
 
 final _currencyFormat = NumberFormat.currency(symbol: '\$');
 
@@ -268,6 +269,14 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                             ),
                           ),
                            IconButton(
+                            tooltip: 'Settings',
+                            icon: const Icon(Icons.settings_outlined),
+                            onPressed: () => GroupSettingsSheet.show(
+                              context,
+                              groupId: widget.groupId,
+                            ),
+                          ),
+                        IconButton(
                             tooltip: 'Calendar',
                             icon: const Icon(Icons.calendar_month_outlined),
                             onPressed: () => context.pushNamed('calendar'),
@@ -646,8 +655,8 @@ class _PinwallComposerNote extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final bg = dark ? const Color(0xFF5D5000) : const Color(0xFFFFF9C4);
-    final border = dark ? const Color(0xFF8B7A00) : const Color(0xFFB8A800);
+    final bg = dark ? MitlistColors.composerBgDark : MitlistColors.composerBgLight;
+    final border = dark ? MitlistColors.composerBorderDark : MitlistColors.composerBorderLight;
     final pinColor = dark ? MitlistColors.primary300 : MitlistColors.primary600;
 
     return Stack(
@@ -1546,7 +1555,7 @@ class _WallItem extends StatelessWidget {
         context.pushNamed('recipes');
         return;
       case 'meal_plan_created':
-        context.pushNamed('mealPlan', extra: groupId);
+        context.pushNamed('mealPlan');
         return;
       default:
         return;

@@ -33,8 +33,9 @@ func newChoreReminder(repo choreReminderRepo, push Pusher, log *logger.Logger) *
 }
 
 type pushPayload struct {
-	Title string `json:"title"`
-	Body  string `json:"body"`
+	Title string                 `json:"title"`
+	Body  string                 `json:"body"`
+	Data  models.NotificationPayload `json:"data"`
 }
 
 // Run executes the chore reminder job.
@@ -81,7 +82,16 @@ func (r *ChoreReminder) remindAssignment(ctx context.Context, a models.ChoreAssi
 		return fmt.Errorf("get chore name: %w", err)
 	}
 
-	pushPayload := pushPayload{Title: "Chore Reminder", Body: choreName + " is due soon"}
+	pushPayload := pushPayload{
+		Title: "Chore Reminder",
+		Body:  choreName + " is due soon",
+		Data: models.NotificationPayload{
+			Screen:     models.ScreenChoreDetail,
+			EntityType: models.EntityTypeChore,
+			ID:         a.ChoreID.String(),
+			GroupID:    groupID.String(),
+		},
+	}
 	data, _ := json.Marshal(pushPayload)
 	pushErr := r.push.SendToUser(a.UserID, string(data))
 	if pushErr != nil {

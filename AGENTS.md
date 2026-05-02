@@ -82,8 +82,6 @@ Brand: warm, punchy, organized. Orange primary (`MitlistColors.primary500` = `#F
 | `/you` | you | Account |
 | `/you/notifications` | notifications | Notification inbox |
 | `/you/notification-preferences` | notificationPreferences | Preference toggles |
-| `/assistant` | assistantSessions | AI chat sessions |
-| `/assistant/:sessionId` | assistantChat | AI chat thread |
 | `/scanner` | scanner | OCR scanner for receipts, lists, recipes, chores |
 
 ## AI / OCR

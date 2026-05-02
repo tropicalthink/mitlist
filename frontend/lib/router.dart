@@ -186,40 +186,36 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: 'meal-plan',
                 name: 'mealPlan',
                 parentNavigatorKey: _rootNavigatorKey,
-                builder: (context, state) {
-                  final extra = state.extra;
-                  final groupId = extra is String ? extra : '';
-                  return MealPlanScreen(groupId: groupId);
-                },
-              ),
-            ],
-          ),
-          GoRoute(
-            path: '/calendar',
-            name: 'calendar',
-            builder: (context, state) => const CalendarScreen(),
-          ),
-          GoRoute(
-            path: '/you',
-            name: 'you',
-            builder: (context, state) => const AccountScreen(),
-            routes: [
-              GoRoute(
-                path: 'notifications',
-                name: 'notifications',
-                builder: (context, state) => const NotificationsScreen(),
-              ),
-              GoRoute(
-                path: 'notification-preferences',
-                name: 'notificationPreferences',
-                builder: (context, state) =>
-                    const NotificationPreferencesScreen(),
+                builder: (context, state) => const MealPlanScreen(),
               ),
             ],
           ),
         ],
       ),
 
+      GoRoute(
+        path: '/calendar',
+        name: 'calendar',
+        builder: (context, state) => const CalendarScreen(),
+      ),
+      GoRoute(
+        path: '/you',
+        name: 'you',
+        builder: (context, state) => const AccountScreen(),
+        routes: [
+          GoRoute(
+            path: 'notifications',
+            name: 'notifications',
+            builder: (context, state) => const NotificationsScreen(),
+          ),
+          GoRoute(
+            path: 'notification-preferences',
+            name: 'notificationPreferences',
+            builder: (context, state) =>
+                const NotificationPreferencesScreen(),
+          ),
+        ],
+      ),
       GoRoute(
         path: '/scanner',
         name: 'scanner',

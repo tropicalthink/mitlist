@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -78,8 +79,18 @@ func (s *NotificationService) CreateNotification(ctx context.Context, n *models.
 		if !pref.PushEnabled || !preferenceForType(pref, n.Type) {
 			return nil
 		}
-		payload := fmt.Sprintf(`{"title":%q,"body":%q}`, n.Title, n.Body)
-		_ = s.pushService.SendToUser(n.UserID, payload)
+		payloadMap := map[string]interface{}{
+			"title": n.Title,
+			"body":  n.Body,
+		}
+		if len(n.Data) > 0 {
+			var dataMap map[string]interface{}
+			if err := json.Unmarshal(n.Data, &dataMap); err == nil {
+				payloadMap["data"] = dataMap
+			}
+		}
+		payloadBytes, _ := json.Marshal(payloadMap)
+		_ = s.pushService.SendToUser(n.UserID, string(payloadBytes))
 	}
 
 	return nil

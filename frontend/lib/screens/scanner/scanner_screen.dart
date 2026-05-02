@@ -62,7 +62,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Couldn\u2019t analyze the image. Make sure your API key is configured and try again.';
+        _error = 'Couldn\u2019t analyze the image. Please try again with a clearer photo.';
         _isAnalyzing = false;
       });
     }
@@ -104,6 +104,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       context,
       initialDescription: r.title,
       initialAmount: amountStr,
+      receiptImage: _imageFile,
     );
     if (mounted && (created == true)) {
       context.pop();

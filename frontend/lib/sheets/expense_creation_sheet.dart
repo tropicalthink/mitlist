@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../models/finance_models.dart';
 import '../models/group_models.dart';
+import '../providers/attachment_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/finance_provider.dart';
 import '../providers/group_provider.dart';
@@ -19,17 +21,20 @@ import '../widgets/app_input.dart';
 class ExpenseCreationSheet extends ConsumerStatefulWidget {
   final String? initialDescription;
   final String? initialAmount;
+  final File? receiptImage;
 
   const ExpenseCreationSheet({
     super.key,
     this.initialDescription,
     this.initialAmount,
+    this.receiptImage,
   });
 
   static Future<bool?> show(
     BuildContext context, {
     String? initialDescription,
     String? initialAmount,
+    File? receiptImage,
   }) async {
     return showAppBottomSheet<bool>(
       context: context,
@@ -37,6 +42,7 @@ class ExpenseCreationSheet extends ConsumerStatefulWidget {
       body: ExpenseCreationSheet(
         initialDescription: initialDescription,
         initialAmount: initialAmount,
+        receiptImage: receiptImage,
       ),
     );
   }
@@ -173,7 +179,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       final me = await authService.getMe();
       final splitUserIds = _selectedMemberIds.toList();
       final splitRequests = _buildSplitRequests();
-      await financeService.createExpense(
+      final expense = await financeService.createExpense(
         CreateExpenseRequest(
           groupId: groups.first.id,
           payerId: me.id,
@@ -186,6 +192,31 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
           splits: _splitMode == 'equal' ? const [] : splitRequests,
         ),
       );
+
+      if (widget.receiptImage != null) {
+        try {
+          final bytes = await widget.receiptImage!.readAsBytes();
+          final attachmentRepo = await ref.read(attachmentRepositoryProvider.future);
+          final attachment = await attachmentRepo.uploadAttachment(
+            groupId: groups.first.id,
+            purpose: 'expense_receipt',
+            filename: widget.receiptImage!.path.split('/').last,
+            contentType: 'image/jpeg',
+            bytes: Uint8List.fromList(bytes),
+          );
+          await financeService.attachExpenseReceipt(
+            groupId: groups.first.id,
+            expenseId: expense.id,
+            attachmentId: attachment.id,
+          );
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Expense saved but receipt upload failed: $e')),
+            );
+          }
+        }
+      }
 
       if (!mounted) return;
       Navigator.of(context).pop(true);
