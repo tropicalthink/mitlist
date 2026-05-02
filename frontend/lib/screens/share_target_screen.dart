@@ -100,6 +100,7 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
                 variant: AppCardVariant.outlined,
                 interactive: true,
                 onTap: () => Navigator.of(ctx).pop(g.id),
+                semanticLabel: g.name,
                 padding: AppCardPadding.md,
                 child: Row(
                   children: [
@@ -316,6 +317,7 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
                         : AppCardTint.neutral,
                     interactive: true,
                     onTap: () => _onDestinationTapped(option.id),
+                    semanticLabel: option.label,
                     padding: AppCardPadding.md,
                     child: Row(
                       children: [

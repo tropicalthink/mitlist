@@ -364,17 +364,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: MitlistSpacing.space3),
-                        ListTile(
-                          leading: Checkbox(
-                            value: _rememberMe,
-                            onChanged: _isLoading
-                                ? null
-                                : (value) {
-                                    setState(() => _rememberMe = value ?? true);
-                                  },
+                        InkWell(
+                          onTap: _isLoading
+                              ? null
+                              : () => setState(() => _rememberMe = !_rememberMe),
+                          borderRadius: BorderRadius.zero,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
+                            child: Row(
+                              children: [
+                                Semantics(
+                                  label: 'Remember me',
+                                  child: Checkbox(
+                                    value: _rememberMe,
+                                    onChanged: _isLoading
+                                        ? null
+                                        : (value) {
+                                            setState(() => _rememberMe = value ?? true);
+                                          },
+                                  ),
+                                ),
+                                const SizedBox(width: MitlistSpacing.sm),
+                                const Text('Remember me'),
+                              ],
+                            ),
                           ),
-                          title: const Text('Remember me'),
-                          contentPadding: EdgeInsets.zero,
                         ),
                         const SizedBox(height: MitlistSpacing.space4),
                         AppButton(

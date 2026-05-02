@@ -283,6 +283,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
             Expanded(
               child: Center(
                 child: AppEmptyState(
+                  lottieAsset: 'assets/animations/lottie/404.lottie',
                   icon: const Icon(Icons.error_outline),
                   title: 'Something went wrong',
                   description: _error,
@@ -605,6 +606,7 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
     }
     if (_error != null) {
       return AppEmptyState(
+        lottieAsset: 'assets/animations/lottie/404.lottie',
         icon: const Icon(Icons.error_outline),
         title: 'Failed to load recipes',
         description: _error,
@@ -619,6 +621,7 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
     }
     if (_recipes.isEmpty) {
       return const AppEmptyState(
+        lottieAsset: 'assets/animations/lottie/Recipes.lottie',
         icon: Icon(Icons.restaurant_outlined),
         title: 'No recipes yet',
         description: 'Add recipes to plan meals',
@@ -637,6 +640,7 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear, size: 20),
+                      tooltip: 'Clear search',
                       onPressed: () => _searchController.clear(),
                     )
                   : null,

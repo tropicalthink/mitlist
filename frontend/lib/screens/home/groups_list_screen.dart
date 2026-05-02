@@ -170,32 +170,22 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          FloatingActionButton.small(
-            heroTag: 'groups_join_fab',
+          AppButton(
+            size: AppButtonSize.sm,
+            variant: AppButtonVariant.soft,
+            color: AppButtonColor.neutral,
             onPressed: _openJoinSheet,
+            icon: const AppIcon(name: 'qrCode'),
             tooltip: 'Join with code',
-            child: const AppIcon(name: 'qrCode'),
           ),
           const SizedBox(height: MitlistSpacing.md),
-          _isExtended
-              ? FloatingActionButton.extended(
-                  heroTag: 'groups_create_fab',
-                  onPressed: _openCreateSheet,
-                  icon: const AppIcon(
-                    name: 'plus',
-                    color: MitlistColors.textOnPrimary,
-                  ),
-                  label: const Text('Create'),
-                )
-              : FloatingActionButton(
-                  heroTag: 'groups_create_fab',
-                  onPressed: _openCreateSheet,
-                  mini: true,
-                  child: const AppIcon(
-                    name: 'plus',
-                    color: MitlistColors.textOnPrimary,
-                  ),
-                ),
+          AppButton(
+            size: _isExtended ? AppButtonSize.lg : AppButtonSize.md,
+            onPressed: _openCreateSheet,
+            icon: const AppIcon(name: 'plus'),
+            text: _isExtended ? 'Create' : null,
+            tooltip: 'Create household',
+          ),
         ],
       ),
     );
@@ -266,6 +256,7 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
               height: constraints.maxHeight,
               child: Center(
                 child: AppEmptyState(
+                  lottieAsset: 'assets/animations/lottie/House.lottie',
                   icon: const AppIcon(
                     name: 'userGroup',
                     size: 56,
@@ -386,6 +377,7 @@ class _GroupCard extends StatelessWidget {
         variant: AppCardVariant.elevated,
         padding: AppCardPadding.none,
         onTap: onTap,
+        semanticLabel: group.name,
         child: Container(
           color: MitlistColors.primary100,
           padding: const EdgeInsets.all(MitlistSpacing.md),
@@ -399,6 +391,7 @@ class _GroupCard extends StatelessWidget {
       variant: AppCardVariant.elevated,
       padding: AppCardPadding.md,
       onTap: onTap,
+      semanticLabel: group.name,
       child: content,
     );
   }

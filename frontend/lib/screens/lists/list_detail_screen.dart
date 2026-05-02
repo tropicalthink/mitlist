@@ -105,7 +105,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       if (!mounted) return;
       setState(() => _productSuggestions = products.take(8).toList());
     } catch (_) {
-      // Silently fail — suggestions are optional.
+      if (mounted) {
+        setState(() => _productSuggestions = []);
+      }
     }
   }
 
@@ -961,9 +963,12 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                 ),
                 const SizedBox(width: MitlistSpacing.sm),
               ],
-              Checkbox(
-                value: item.checked,
-                onChanged: (val) => _toggleItem(item, val ?? false),
+              Semantics(
+                label: 'Toggle ${item.name}',
+                child: Checkbox(
+                  value: item.checked,
+                  onChanged: (val) => _toggleItem(item, val ?? false),
+                ),
               ),
               const SizedBox(width: MitlistSpacing.sm),
               Expanded(
@@ -1100,6 +1105,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       child: Padding(
         padding: const EdgeInsets.all(MitlistSpacing.md),
         child: AppEmptyState(
+          lottieAsset: 'assets/animations/lottie/checklist.lottie',
           icon: const AppIcon(name: 'queueList'),
           title: 'Nothing on the list yet',
           description:

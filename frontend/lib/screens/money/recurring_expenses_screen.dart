@@ -132,11 +132,12 @@ class _RecurringExpensesScreenState
       body: _buildBody(),
       floatingActionButton: !_hasHousehold || _isLoading
           ? null
-          : FloatingActionButton.extended(
-              heroTag: 'recurring_create_fab',
+          : AppButton(
+              size: AppButtonSize.lg,
               onPressed: () => _openCreateSheet(),
-              label: const Text('Add recurring'),
+              text: 'Add recurring',
               icon: const AppIcon(name: 'plus'),
+              tooltip: 'Add recurring expense',
             ),
     );
   }
@@ -155,6 +156,7 @@ class _RecurringExpensesScreenState
     if (_error != null) {
       return Center(
         child: AppEmptyState(
+          lottieAsset: 'assets/animations/lottie/404.lottie',
           icon: const Icon(Icons.error_outline),
           title: 'Something went wrong',
           description: _error,
@@ -171,6 +173,7 @@ class _RecurringExpensesScreenState
     if (!_hasHousehold) {
       return const Center(
         child: AppEmptyState(
+          lottieAsset: 'assets/animations/lottie/House.lottie',
           icon: Icon(Icons.home_outlined),
           title: 'No household',
           description: 'Join or create a household to manage recurring expenses',
@@ -180,6 +183,7 @@ class _RecurringExpensesScreenState
     if (_items.isEmpty) {
       return Center(
         child: AppEmptyState(
+          lottieAsset: 'assets/animations/lottie/wallet.lottie',
           icon: const Icon(Icons.repeat),
           title: 'No recurring expenses',
           description: 'Add a recurring expense to track regular payments',

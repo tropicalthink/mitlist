@@ -179,6 +179,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     if (_error != null) {
       return Center(
         child: AppEmptyState(
+          lottieAsset: 'assets/animations/lottie/404.lottie',
           icon: const Icon(Icons.error_outline),
           title: 'Something went wrong',
           description: _error,
@@ -195,6 +196,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     if (!_hasHousehold) {
       return const Center(
         child: AppEmptyState(
+          lottieAsset: 'assets/animations/lottie/House.lottie',
           icon: Icon(Icons.home_outlined),
           title: 'No household',
           description: 'Join or create a household to view the calendar',
@@ -591,6 +593,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       return Expanded(
         child: Center(
           child: AppEmptyState(
+            lottieAsset: 'assets/animations/lottie/Calendar.lottie',
             icon: const Icon(Icons.event_note, size: 56),
             title: 'Nothing ahead',
             description:

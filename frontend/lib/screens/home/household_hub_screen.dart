@@ -175,10 +175,12 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     return Scaffold(
       floatingActionButton: _isLoading || _error != null
           ? null
-          : FloatingActionButton.extended(
+          : AppButton(
+              size: AppButtonSize.lg,
               onPressed: () => _openQuickAddSheet(context),
               icon: const Icon(Icons.add),
-              label: const Text('Quick add'),
+              text: 'Quick add',
+              tooltip: 'Quick add',
             ),
       body: _isLoading
           ? const _SkeletonDashboard()
@@ -1434,6 +1436,7 @@ class _StatTile extends StatelessWidget {
           Haptics.light();
           onTap();
         },
+        semanticLabel: title,
         child: child,
       );
     }
@@ -1447,6 +1450,7 @@ class _StatTile extends StatelessWidget {
         Haptics.light();
         onTap();
       },
+      semanticLabel: title,
       child: child,
     );
   }

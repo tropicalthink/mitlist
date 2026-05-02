@@ -28,6 +28,7 @@ class MitlistErrorBoundary extends StatelessWidget {
         padding: const EdgeInsets.all(MitlistSpacing.md),
         child: AppEmptyState(
           isError: true,
+          lottieAsset: 'assets/animations/lottie/404.lottie',
           icon: const AppIcon(name: 'exclamationTriangle'),
           title: 'Something went wrong',
           description: 'We hit an unexpected error. Please try again.',

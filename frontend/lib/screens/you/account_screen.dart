@@ -6,6 +6,7 @@ import '../../models/auth_models.dart';
 import '../../models/group_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/group_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
@@ -402,23 +403,41 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   Widget _buildPreferencesCard() {
+    final themeMode = ref.watch(themeModeProvider);
+
     return AppCard(
       child: Column(
         children: [
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const AppIcon(name: 'inbox'),
-            title: const Text('Notification inbox'),
-            trailing: const AppIcon(name: 'chevronRight'),
+          _MenuRow(
+            icon: const AppIcon(name: 'inbox'),
+            label: 'Notification inbox',
             onTap: () => context.goNamed('notifications'),
           ),
           const Divider(),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const AppIcon(name: 'cog6Tooth'),
-            title: const Text('Notification preferences'),
-            trailing: const AppIcon(name: 'chevronRight'),
+          _MenuRow(
+            icon: const AppIcon(name: 'cog6Tooth'),
+            label: 'Notification preferences',
             onTap: () => context.goNamed('notificationPreferences'),
+          ),
+          const Divider(),
+          _MenuRow(
+            icon: const AppIcon(name: 'sun'),
+            label: 'Appearance',
+            trailing: DropdownButton<ThemeMode>(
+              value: themeMode,
+              underline: const SizedBox.shrink(),
+              isDense: true,
+              items: const [
+                DropdownMenuItem(value: ThemeMode.system, child: Text('System')),
+                DropdownMenuItem(value: ThemeMode.light, child: Text('Light')),
+                DropdownMenuItem(value: ThemeMode.dark, child: Text('Dark')),
+              ],
+              onChanged: (mode) {
+                if (mode != null) {
+                  ref.read(themeModeProvider.notifier).set(mode);
+                }
+              },
+            ),
           ),
         ],
       ),
@@ -427,11 +446,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
 
   Widget _buildSecurityCard() {
     return AppCard(
-      child: ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: const AppIcon(name: 'key'),
-        title: const Text('Change Password'),
-        trailing: const AppIcon(name: 'chevronRight'),
+      child: _MenuRow(
+        icon: const AppIcon(name: 'key'),
+        label: 'Change Password',
         onTap: _showPasswordSheet,
       ),
     );
@@ -441,18 +458,15 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     return AppCard(
       child: Column(
         children: [
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const AppIcon(name: 'informationCircle'),
-            title: const Text('Version'),
-            subtitle: const Text(_appVersion),
+          _MenuRow(
+            icon: const AppIcon(name: 'informationCircle'),
+            label: 'Version',
+            value: _appVersion,
           ),
           const Divider(),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const AppIcon(name: 'identification'),
-            title: const Text('Terms of Service'),
-            trailing: const AppIcon(name: 'arrowRight'),
+          _MenuRow(
+            icon: const AppIcon(name: 'identification'),
+            label: 'Terms of Service',
             onTap: _showTermsSheet,
           ),
         ],
@@ -504,6 +518,61 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           const SizedBox(height: MitlistSpacing.md),
           _buildDangerZone(),
         ],
+      ),
+    );
+  }
+}
+
+class _MenuRow extends StatelessWidget {
+  final Widget icon;
+  final String label;
+  final String? value;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+
+  const _MenuRow({
+    required this.icon,
+    required this.label,
+    this.value,
+    this.trailing,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.zero,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
+        child: Row(
+          children: [
+            icon,
+            const SizedBox(width: MitlistSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  if (value != null)
+                    Text(
+                      value!,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: MitlistColors.textSecondary,
+                          ),
+                    ),
+                ],
+              ),
+            ),
+            if (trailing != null)
+              trailing!
+            else if (onTap != null)
+              const AppIcon(name: 'chevronRight', color: MitlistColors.textSecondary),
+          ],
+        ),
       ),
     );
   }

@@ -249,6 +249,7 @@ class _NotificationPreferencesScreenState
                     ..._preferences.map(_buildPreferenceCard)
                   else
                     const AppEmptyState(
+                      lottieAsset: 'assets/animations/lottie/Notifications.lottie',
                       icon: Icon(Icons.tune, size: 56),
                       title: 'No preferences yet',
                       description:

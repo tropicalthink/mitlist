@@ -240,6 +240,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   ],
                   if (_items.isEmpty && _error == null)
                     AppEmptyState(
+                      lottieAsset: 'assets/animations/lottie/Notifications.lottie',
                       icon: const Icon(Icons.notifications_none_outlined, size: 56),
                       title: 'No notifications yet',
                       description:
@@ -273,6 +274,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                           child: AppCard(
                             interactive: true,
                             onTap: () => _handleNotificationTap(n),
+                            semanticLabel: n.title,
                             child: Padding(
                               padding: const EdgeInsets.all(MitlistSpacing.md),
                               child: Column(

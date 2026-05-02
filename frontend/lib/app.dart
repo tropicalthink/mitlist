@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'theme/theme.dart';
 import 'router.dart';
 import 'providers/outbox_provider.dart';
+import 'providers/theme_provider.dart';
 import 'widgets/offline_banner.dart';
 
 class MitlistApp extends ConsumerStatefulWidget {
@@ -39,13 +40,14 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
       title: 'mitlist',
       debugShowCheckedModeBanner: false,
       theme: MitlistTheme.light,
       darkTheme: MitlistTheme.dark,
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
       routerConfig: router,
       builder: (context, child) {
         return Column(

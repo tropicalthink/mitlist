@@ -415,11 +415,12 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
         ],
       ),
       body: _buildBody(),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'kitchen_create_recipe_fab',
-        onPressed: _onAddRecipe,
+      floatingActionButton: AppButton(
+        size: AppButtonSize.lg,
         icon: const Icon(AppIcons.plus),
-        label: const Text('ADD RECIPE'),
+        text: 'ADD RECIPE',
+        onPressed: _onAddRecipe,
+        tooltip: 'Add recipe',
       ),
     );
   }
@@ -640,6 +641,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(MitlistSpacing.md),
                 child: AppEmptyState(
+                  lottieAsset: 'assets/animations/lottie/Recipes.lottie',
                   icon: const Icon(Icons.restaurant_menu, size: 56),
                   title: 'Build your kitchen',
                   description:

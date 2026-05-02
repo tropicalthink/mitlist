@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lottie/lottie.dart';
 import '../../theme/animations.dart';
 import '../../theme/colors.dart';
 import '../../theme/shadows.dart';
@@ -16,7 +17,7 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen>
     with SingleTickerProviderStateMixin {
-  static const int _itemCount = 3;
+  static const int _itemCount = 4;
 
   late final AnimationController _controller;
   late final List<Animation<double>> _fades;
@@ -80,6 +81,13 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   Widget build(BuildContext context) {
     final disableAnimations = MediaQuery.of(context).disableAnimations;
 
+    Widget house = Lottie.asset(
+      'assets/animations/lottie/House.lottie',
+      width: 120,
+      height: 120,
+      fit: BoxFit.contain,
+    );
+
     Widget logo = Text(
       'mitlist',
       style: MitlistTypography.logo(),
@@ -134,7 +142,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Spacer(),
+                const SizedBox(height: MitlistSpacing.space4),
                 AnimatedBuilder(
                   animation: _controller,
                   builder: (context, child) {
@@ -142,6 +150,19 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       opacity: _fades[0],
                       child: SlideTransition(
                         position: _slides[0],
+                        child: house,
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: MitlistSpacing.space4),
+                AnimatedBuilder(
+                  animation: _controller,
+                  builder: (context, child) {
+                    return FadeTransition(
+                      opacity: _fades[1],
+                      child: SlideTransition(
+                        position: _slides[1],
                         child: logo,
                       ),
                     );
@@ -152,9 +173,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   animation: _controller,
                   builder: (context, child) {
                     return FadeTransition(
-                      opacity: _fades[1],
+                      opacity: _fades[2],
                       child: SlideTransition(
-                        position: _slides[1],
+                        position: _slides[2],
                         child: card,
                       ),
                     );
@@ -165,9 +186,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   animation: _controller,
                   builder: (context, child) {
                     return FadeTransition(
-                      opacity: _fades[2],
+                      opacity: _fades[3],
                       child: SlideTransition(
-                        position: _slides[2],
+                        position: _slides[3],
                         child: button,
                       ),
                     );
@@ -189,6 +210,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Spacer(),
+              const SizedBox(height: MitlistSpacing.space4),
+              house,
+              const SizedBox(height: MitlistSpacing.space4),
               logo,
               const SizedBox(height: MitlistSpacing.space8),
               card,

@@ -455,15 +455,15 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         'Chores',
         showStandardActions: false,
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'chores_create_fab',
+      floatingActionButton: AppButton(
+        size: AppButtonSize.lg,
         onPressed:
             _hasHousehold ? _addChore : () => context.goNamed('groupsList'),
         icon: AppIcon(
           name: _hasHousehold ? 'plus' : 'userGroup',
-          color: MitlistColors.textOnPrimary,
         ),
-        label: Text(_hasHousehold ? 'Add chore' : 'Households'),
+        text: _hasHousehold ? 'Add chore' : 'Households',
+        tooltip: _hasHousehold ? 'Add chore' : 'Households',
       ),
       body: RefreshIndicator(
         color: MitlistColors.primary500,
@@ -601,6 +601,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                   child: Padding(
                     padding: const EdgeInsets.all(MitlistSpacing.md),
                     child: AppEmptyState(
+                      lottieAsset: 'assets/animations/lottie/House.lottie',
                       icon: const AppIcon(
                         name: 'userGroup',
                         size: 56,
@@ -626,6 +627,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                   child: Padding(
                     padding: const EdgeInsets.all(MitlistSpacing.md),
                     child: AppEmptyState(
+                      lottieAsset: 'assets/animations/lottie/Chores.lottie',
                       icon: const AppIcon(
                         name: 'clipboardDocumentList',
                         size: 56,

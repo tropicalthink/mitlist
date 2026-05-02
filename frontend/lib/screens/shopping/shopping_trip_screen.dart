@@ -187,6 +187,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
     if (_error != null) {
       return Center(
         child: AppEmptyState(
+          lottieAsset: 'assets/animations/lottie/404.lottie',
           icon: const Icon(Icons.error_outline),
           title: 'Something went wrong',
           description: _error,
@@ -203,6 +204,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
     if (_lists.isEmpty) {
       return const Center(
         child: AppEmptyState(
+          lottieAsset: 'assets/animations/lottie/checklist.lottie',
           icon: Icon(Icons.shopping_bag_outlined),
           title: 'No lists yet',
           description: 'Create a shopping list to start a trip',
@@ -212,6 +214,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
     if (_totalItems == 0) {
       return const Center(
         child: AppEmptyState(
+          lottieAsset: 'assets/animations/lottie/Checkmark.lottie',
           icon: Icon(Icons.check_circle_outline),
           title: 'All caught up',
           description: 'No open items across your lists. Add items to a list to see them here.',
@@ -324,9 +327,12 @@ class _ItemRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xs),
       child: Row(
         children: [
-          Checkbox(
-            value: isChecked,
-            onChanged: (_) => onToggle(),
+          Semantics(
+            label: 'Toggle ${item.name}',
+            child: Checkbox(
+              value: isChecked,
+              onChanged: (_) => onToggle(),
+            ),
           ),
           Expanded(
             child: Text(

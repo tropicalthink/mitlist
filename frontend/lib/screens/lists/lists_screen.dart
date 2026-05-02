@@ -424,12 +424,13 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         ],
       ),
       body: _buildBody(),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'lists_create_fab',
+      floatingActionButton: AppButton(
+        size: AppButtonSize.lg,
         onPressed:
             _hasHousehold ? _showCreateSheet : () => context.goNamed('groupsList'),
         icon: const Icon(AppIcons.plus),
-        label: const Text('New list'),
+        text: 'New list',
+        tooltip: 'New list',
       ),
     );
   }
@@ -607,6 +608,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(MitlistSpacing.md),
                 child: AppEmptyState(
+                  lottieAsset: 'assets/animations/lottie/checklist.lottie',
                   icon: const Icon(AppIcons.queueList),
                   title: 'No lists yet',
                   description:
@@ -632,6 +634,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
       child: Padding(
         padding: const EdgeInsets.all(MitlistSpacing.md),
         child: AppEmptyState(
+          lottieAsset: 'assets/animations/lottie/House.lottie',
           icon: const Icon(AppIcons.userGroup),
           title: 'No household yet',
           description: 'Create or join a household before adding lists.',

@@ -529,11 +529,12 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       ),
       floatingActionButton: !_hasHousehold
           ? null
-          : FloatingActionButton.extended(
-              heroTag: 'expenses_create_fab',
+          : AppButton(
+              size: AppButtonSize.lg,
               onPressed: _openCreateExpense,
-              label: const Text('Add expense'),
+              text: 'Add expense',
               icon: const AppIcon(name: 'plus'),
+              tooltip: 'Add expense',
             ),
     );
   }
@@ -791,6 +792,7 @@ class _NoHouseholdBody extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(MitlistSpacing.md),
         child: AppEmptyState(
+          lottieAsset: 'assets/animations/lottie/House.lottie',
           icon: const AppIcon(name: 'home', size: 56),
           title: 'No household yet',
           description: 'Create or join a household before tracking expenses.',
@@ -846,6 +848,7 @@ class _TimelineBody extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(MitlistSpacing.md),
                   child: AppEmptyState(
+                    lottieAsset: 'assets/animations/lottie/wallet.lottie',
                     icon: const AppIcon(name: 'receiptPercent', size: 56),
                     title: 'No expenses yet',
                     description: 'Track shared costs with your household.',
@@ -1132,6 +1135,7 @@ class _SettlementsBody extends StatelessWidget {
                 alignment: Alignment.center,
                 children: [
                   AppEmptyState(
+                    lottieAsset: 'assets/animations/lottie/Checkmark.lottie',
                     icon: const AppIcon(name: 'checkCircle', size: 56),
                     title: 'All settled up!',
                     description: 'The household tab is clear.',
