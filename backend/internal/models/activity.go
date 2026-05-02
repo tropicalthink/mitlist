@@ -19,10 +19,12 @@ const (
 
 // ActivityEvent is a recent household event for the pinwall strip.
 type ActivityEvent struct {
-	ID        string       `json:"id"`
-	Type      ActivityType `json:"type"`
-	Title     string       `json:"title"`
-	CreatedAt time.Time    `json:"created_at"`
-	UserID    *uuid.UUID   `json:"user_id,omitempty"`
-	GroupID   uuid.UUID    `json:"group_id"`
+	ID         string       `json:"id"`
+	Type       ActivityType `json:"type"`
+	Title      string       `json:"title"`
+	CreatedAt  time.Time    `json:"created_at"`
+	UserID     *uuid.UUID   `json:"user_id,omitempty"`
+	GroupID    uuid.UUID    `json:"group_id"`
+	EntityType string       `json:"entity_type"`
+	EntityId   string       `json:"entity_id"`
 }

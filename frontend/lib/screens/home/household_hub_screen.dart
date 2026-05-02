@@ -308,6 +308,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                           delegate: SliverChildListDelegate(
                             [
                               const SizedBox(height: MitlistSpacing.md),
+                              _GreetingHeader(me: _me),
+                              const SizedBox(height: MitlistSpacing.md),
                               _PinwallSection(groupId: widget.groupId, me: _me),
                               const SizedBox(height: MitlistSpacing.md),
                               _SectionLabel(label: 'At a glance'),
@@ -1148,6 +1150,34 @@ class _PushpinPainter extends CustomPainter {
   bool shouldRepaint(_PushpinPainter old) => old.headColor != headColor;
 }
 
+class _GreetingHeader extends StatelessWidget {
+  const _GreetingHeader({this.me});
+  final User? me;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final name = me?.fullName ?? 'there';
+    final hour = DateTime.now().hour;
+    final greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('$greeting, $name',
+            style: textTheme.headlineSmall?.copyWith(
+              color: MitlistColors.primary500,
+            )),
+        const SizedBox(height: MitlistSpacing.xs),
+        Text('Here\'s what\'s happening today',
+            style: textTheme.bodySmall?.copyWith(
+              color: MitlistColors.textTertiary,
+            )),
+      ],
+    );
+  }
+}
+
 class _SectionLabel extends StatelessWidget {
   const _SectionLabel({required this.label});
   final String label;
@@ -1542,27 +1572,21 @@ class _WallItem extends StatelessWidget {
   final ActivityLogModel item;
 
   void _onTap(BuildContext context) {
-    final groupId = item.groupId;
+    final entityType = item.entityType;
+    final entityId = item.entityId;
 
-    switch (item.action) {
-      case 'list_item_added':
+    switch (entityType) {
+      case 'list':
         context.pushNamed('listDetail',
-            pathParameters: {'listId': groupId});
-        return;
-      case 'expense_created':
+            pathParameters: {'listId': entityId});
+      case 'expense':
         context.pushNamed('money');
-        return;
-      case 'chore_completed':
+      case 'chore':
         context.pushNamed('chores');
-        return;
-      case 'recipe_added':
+      case 'recipe':
         context.pushNamed('recipes');
-        return;
-      case 'meal_plan_created':
-        context.pushNamed('mealPlan');
-        return;
-      default:
-        return;
+      case 'meal_plan':
+        context.pushNamed('mealPlan', extra: item.groupId);
     }
   }
 
@@ -1573,7 +1597,7 @@ class _WallItem extends StatelessWidget {
     final userLabel = _formatUserLabel(item.userId ?? '', null);
     final when = _relativeDay(item.createdAt);
     final message = _formatActivityLine(item);
-    final isTappable = _isNavigableAction(item.action);
+    final isTappable = _isNavigableAction(item.entityType);
 
     return InkWell(
       onTap: isTappable ? () => _onTap(context) : null,
@@ -1623,14 +1647,14 @@ class _WallItem extends StatelessWidget {
   }
 }
 
-bool _isNavigableAction(String action) {
+bool _isNavigableAction(String entityType) {
   return const {
-    'list_item_added',
-    'expense_created',
-    'chore_completed',
-    'recipe_added',
-    'meal_plan_created',
-  }.contains(action);
+    'list',
+    'expense',
+    'chore',
+    'recipe',
+    'meal_plan',
+  }.contains(entityType);
 }
 
 class _SkeletonDashboard extends StatelessWidget {

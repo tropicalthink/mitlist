@@ -681,3 +681,8 @@ func (s *ListService) BulkCompleteItems(ctx context.Context, user *models.User, 
 
 	return completed, nil
 }
+
+// SetListArchived archives or unarchives a list.
+func (s *ListService) SetListArchived(ctx context.Context, listID uuid.UUID, archived bool) error {
+	return s.listRepo.SetListArchived(ctx, listID, archived)
+}

@@ -44,14 +44,14 @@ func (r *ListRepository) CreateList(ctx context.Context, list *models.List) erro
 // GetListByID retrieves a list by its ID.
 func (r *ListRepository) GetListByID(ctx context.Context, id uuid.UUID) (*models.List, error) {
 	query := `
-		SELECT id, group_id, name, type, created_at, updated_at
+		SELECT id, group_id, name, type, archived_at, created_at, updated_at
 		FROM lists
 		WHERE id = $1
 	`
 	row := r.pool.QueryRow(ctx, query, id)
 
 	var l models.List
-	err := row.Scan(&l.ID, &l.GroupID, &l.Name, &l.Type, &l.CreatedAt, &l.UpdatedAt)
+	err := row.Scan(&l.ID, &l.GroupID, &l.Name, &l.Type, &l.ArchivedAt, &l.CreatedAt, &l.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func (r *ListRepository) ListListsByGroup(ctx context.Context, groupID uuid.UUID
 		limit = 50
 	}
 	query := `
-		SELECT id, group_id, name, type, created_at, updated_at
+		SELECT id, group_id, name, type, archived_at, created_at, updated_at
 		FROM lists
 		WHERE group_id = $1
 		ORDER BY created_at DESC, id DESC
@@ -79,7 +79,7 @@ func (r *ListRepository) ListListsByGroup(ctx context.Context, groupID uuid.UUID
 	var lists []models.List
 	for rows.Next() {
 		var l models.List
-		if err := rows.Scan(&l.ID, &l.GroupID, &l.Name, &l.Type, &l.CreatedAt, &l.UpdatedAt); err != nil {
+		if err := rows.Scan(&l.ID, &l.GroupID, &l.Name, &l.Type, &l.ArchivedAt, &l.CreatedAt, &l.UpdatedAt); err != nil {
 			return nil, err
 		}
 		lists = append(lists, l)
@@ -151,6 +151,24 @@ func (r *ListRepository) UpdateList(ctx context.Context, list *models.List) erro
 // HardDeleteList permanently deletes a list by ID.
 func (r *ListRepository) HardDeleteList(ctx context.Context, id uuid.UUID) error {
 	query := `DELETE FROM lists WHERE id = $1`
+	res, err := r.pool.Exec(ctx, query, id)
+	if err != nil {
+		return err
+	}
+	if res.RowsAffected() == 0 {
+		return fmt.Errorf("list not found")
+	}
+	return nil
+}
+
+// SetListArchived sets or clears the archived_at timestamp for a list.
+func (r *ListRepository) SetListArchived(ctx context.Context, id uuid.UUID, archived bool) error {
+	var query string
+	if archived {
+		query = `UPDATE lists SET archived_at = NOW(), updated_at = NOW() WHERE id = $1`
+	} else {
+		query = `UPDATE lists SET archived_at = NULL, updated_at = NOW() WHERE id = $1`
+	}
 	res, err := r.pool.Exec(ctx, query, id)
 	if err != nil {
 		return err

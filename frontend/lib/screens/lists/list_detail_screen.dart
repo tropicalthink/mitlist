@@ -605,6 +605,23 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       case 'cost_summary':
         _showCostSummary();
         break;
+      case 'archive':
+        _archiveList();
+        break;
+    }
+  }
+
+  void _archiveList() async {
+    if (_service == null) return;
+    try {
+      await _service!.archiveList(widget.listId);
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to archive list.')),
+      );
     }
   }
 
@@ -751,6 +768,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     const PopupMenuItem(
                       value: 'clear_all',
                       child: Text('Clear list'),
+                    ),
+                    const PopupMenuItem(
+                      value: 'archive',
+                      child: Text('Archive'),
                     ),
                   ],
                 ),

@@ -59,10 +59,10 @@ type ListRepo interface {
 	CreateList(ctx context.Context, list *models.List) error
 	GetListByID(ctx context.Context, id uuid.UUID) (*models.List, error)
 	ListListsByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.List, error)
-	// ListItemPreviewLinesByListIDs returns up to perList item names per list (by position), for hub previews.
 	ListItemPreviewLinesByListIDs(ctx context.Context, listIDs []uuid.UUID, perList int) (map[uuid.UUID][]string, error)
 	UpdateList(ctx context.Context, list *models.List) error
 	HardDeleteList(ctx context.Context, id uuid.UUID) error
+	SetListArchived(ctx context.Context, id uuid.UUID, archived bool) error
 	CreateItem(ctx context.Context, item *models.ListItem) error
 	GetItemByID(ctx context.Context, id uuid.UUID) (*models.ListItem, error)
 	GetItemByListNameUnit(ctx context.Context, listID uuid.UUID, name, unit string) (*models.ListItem, error)

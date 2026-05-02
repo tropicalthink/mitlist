@@ -158,6 +158,8 @@ func main() {
 			// Shopping trip
 			r.Get("/shopping/trip", listHandler.GetShoppingTrip)
 			r.Post("/shopping/complete", listHandler.BulkCompleteItems)
+			r.Post("/lists/{id}/archive", listHandler.ArchiveList)
+			r.Post("/lists/{id}/unarchive", listHandler.UnarchiveList)
 
 			// Templates
 			templateHandler := handlers.NewTemplateHandler(cnt.TemplateService())

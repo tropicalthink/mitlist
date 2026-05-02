@@ -661,3 +661,29 @@ func (h *ListHandler) BulkCompleteItems(w http.ResponseWriter, r *http.Request) 
 
 	respondJSON(w, http.StatusOK, map[string]any{"completed": completed})
 }
+
+func (h *ListHandler) ArchiveList(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUUIDParam(r, "id")
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	if err := h.service.SetListArchived(r.Context(), id, true); err != nil {
+		respondError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *ListHandler) UnarchiveList(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUUIDParam(r, "id")
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	if err := h.service.SetListArchived(r.Context(), id, false); err != nil {
+		respondError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}

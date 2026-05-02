@@ -4,6 +4,8 @@ class ItemList {
   final String name;
   final String type;
   final int? itemCount;
+  final bool isArchived;
+  final DateTime? archivedAt;
 
   /// First lines from the list (hub card preview), from API `item_preview`.
   final List<String> itemPreview;
@@ -16,6 +18,8 @@ class ItemList {
     required this.name,
     required this.type,
     this.itemCount,
+    this.isArchived = false,
+    this.archivedAt,
     this.itemPreview = const [],
     required this.createdAt,
     required this.updatedAt,
@@ -27,12 +31,15 @@ class ItemList {
     if (rawPreview is List) {
       preview = rawPreview.map((e) => e.toString()).toList();
     }
+    final archivedAtRaw = json['archived_at'];
     return ItemList(
       id: json['id'] as String,
       groupId: json['group_id'] as String,
       name: json['name'] as String,
       type: json['type'] as String? ?? 'shopping',
       itemCount: json['item_count'] as int?,
+      isArchived: json['archived_at'] != null,
+      archivedAt: archivedAtRaw != null ? DateTime.parse(archivedAtRaw as String) : null,
       itemPreview: preview,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),

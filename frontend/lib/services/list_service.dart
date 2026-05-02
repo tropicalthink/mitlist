@@ -123,6 +123,24 @@ class ListService {
     }
   }
 
+  Future<void> archiveList(String id) async {
+    try {
+      await _dio.post('/lists/$id/archive');
+    } on DioException catch (e) {
+      _logger.e('Archive list failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> unarchiveList(String id) async {
+    try {
+      await _dio.post('/lists/$id/unarchive');
+    } on DioException catch (e) {
+      _logger.e('Unarchive list failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
   Future<ItemList> updateList(String id, UpdateListRequest req) async {
     try {
       final r = await _dio.patch('/lists/$id', data: req.toJson());
