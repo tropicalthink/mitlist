@@ -31,8 +31,6 @@ import '../../theme/theme.dart';
 import '../../sheets/invite_household_sheet.dart';
 import '../../sheets/group_settings_sheet.dart';
 
-final _currencyFormat = NumberFormat.currency(symbol: '\$');
-
 final _pinwallMediaByPostProvider = FutureProvider.family<
     List<PinwallMediaItem>, ({String groupId, String postId})>(
   (ref, args) async {
@@ -311,10 +309,6 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                               _GreetingHeader(me: _me),
                               const SizedBox(height: MitlistSpacing.md),
                               _PinwallSection(groupId: widget.groupId, me: _me),
-                              const SizedBox(height: MitlistSpacing.md),
-                              _SectionLabel(label: 'At a glance'),
-                              const SizedBox(height: MitlistSpacing.sm),
-                              _StatsRow(groupId: widget.groupId, me: _me),
                               const SizedBox(height: MitlistSpacing.lg),
                               _WallSection(
                                 activities: _snapshot!.activities,
@@ -374,8 +368,6 @@ String _avatarInitials(String label) {
   }
   return label.isNotEmpty ? label[0].toUpperCase() : '?';
 }
-
-String _formatCurrency(double value) => _currencyFormat.format(value);
 
 Future<void> _openQuickAddSheet(BuildContext context) async {
   Haptics.light();
@@ -1178,336 +1170,6 @@ class _GreetingHeader extends StatelessWidget {
   }
 }
 
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.label});
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return Text(label, style: textTheme.titleMedium);
-  }
-}
-
-class _StatsRow extends StatelessWidget {
-  const _StatsRow({required this.groupId, required this.me});
-
-  final String groupId;
-  final User? me;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, c) {
-        final minTile = 160.0;
-        final count = (c.maxWidth / minTile).floor().clamp(1, 3);
-        final tileWidth =
-            (c.maxWidth - (MitlistSpacing.sm * (count - 1))) / count;
-
-        return Wrap(
-          spacing: MitlistSpacing.sm,
-          runSpacing: MitlistSpacing.sm,
-          children: [
-            SizedBox(
-                width: tileWidth,
-                child: _BalanceTile(groupId: groupId, me: me)),
-            SizedBox(width: tileWidth, child: _ShoppingTile(groupId: groupId)),
-            SizedBox(
-                width: tileWidth, child: _WeeklyChoresTile(groupId: groupId)),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _BalanceTile extends ConsumerWidget {
-  const _BalanceTile({required this.groupId, required this.me});
-
-  final String groupId;
-  final User? me;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final summary = ref.watch(cachedFinanceSummaryByGroupProvider(groupId));
-
-    return summary.when(
-      loading: () => const _StatTileSkeleton(),
-      error: (_, __) => _StatTile(
-        title: 'Current balance',
-        value: '—',
-        subtitle: 'Unavailable',
-        tint: AppCardTint.primary,
-        onTap: () => context.pushNamed('money'),
-      ),
-      data: (s) {
-        if (s == null) {
-          return _StatTile(
-            title: 'Current balance',
-            value: '—',
-            subtitle: 'No data yet',
-            tint: AppCardTint.primary,
-            onTap: () => context.pushNamed('money'),
-          );
-        }
-        final myId = me?.id;
-        final meEntry = myId == null
-            ? null
-            : s.balances.where((b) => b.userId == myId).firstOrNull;
-        final totalCents = meEntry?.total ?? 0;
-        final amount = totalCents / 100.0;
-        final abs = amount.abs();
-        final value = _formatCurrency(abs);
-        final subtitle = amount == 0
-            ? 'Settled up'
-            : amount < 0
-                ? 'You owe'
-                : 'You’re owed';
-
-        return _StatTile(
-          title: 'Current balance',
-          value: value,
-          subtitle: subtitle,
-          tint: AppCardTint.primary,
-          onTap: () => context.pushNamed('money'),
-        );
-      },
-    );
-  }
-}
-
-class _ShoppingTile extends ConsumerWidget {
-  const _ShoppingTile({required this.groupId});
-
-  final String groupId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final lists = ref.watch(cachedListsByGroupProvider(groupId));
-    return lists.when(
-      loading: () => const _StatTileSkeleton(),
-      error: (_, __) => _StatTile(
-        title: 'Shopping',
-        value: '—',
-        subtitle: 'Unavailable',
-        onTap: () => context.pushNamed('lists'),
-      ),
-      data: (all) {
-        final shopping = all.where((l) => l.type == 'shopping').toList();
-        if (shopping.isEmpty) {
-          return _StatTile(
-            title: 'Shopping',
-            value: '0',
-            subtitle: 'Items',
-            onTap: () => context.pushNamed('lists'),
-          );
-        }
-
-        final anyCount = shopping.any((l) => l.itemCount != null);
-        if (anyCount) {
-          final items =
-              shopping.fold<int>(0, (sum, l) => sum + (l.itemCount ?? 0));
-          return _StatTile(
-            title: 'Shopping',
-            value: '$items',
-            subtitle: 'Items',
-            onTap: () => context.pushNamed('lists'),
-          );
-        }
-
-        shopping.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-        final listId = shopping.first.id;
-        final items = ref.watch(cachedListItemsProvider(listId));
-        return items.when(
-          loading: () => _StatTile(
-            title: 'Shopping',
-            value: '—',
-            subtitle: 'Items',
-            onTap: () => context.pushNamed('lists'),
-          ),
-          error: (_, __) => _StatTile(
-            title: 'Shopping',
-            value: '—',
-            subtitle: 'Items',
-            onTap: () => context.pushNamed('lists'),
-          ),
-          data: (rows) {
-            final unchecked = rows.where((i) => !i.checked).length;
-            return _StatTile(
-              title: 'Shopping',
-              value: '$unchecked',
-              subtitle: 'Items',
-              onTap: () => context.pushNamed('lists'),
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-class _WeeklyChoresTile extends ConsumerWidget {
-  const _WeeklyChoresTile({required this.groupId});
-
-  final String groupId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final current = ref.watch(cachedCurrentChoresByGroupProvider(groupId));
-    return current.when(
-      loading: () => const _StatTileSkeleton(),
-      error: (_, __) => _StatTile(
-        title: 'Weekly chores',
-        value: '—',
-        subtitle: 'Unavailable',
-        onTap: () => context.pushNamed('chores'),
-      ),
-      data: (rows) {
-        if (rows.isEmpty) {
-          return _StatTile(
-            title: 'Weekly chores',
-            value: '0%',
-            subtitle: 'No chores yet',
-            onTap: () => context.pushNamed('chores'),
-          );
-        }
-        final done = rows
-            .where((c) =>
-                !c.chore.isActive ||
-                (c.pendingAssignment?.status.toLowerCase() == 'completed'))
-            .length;
-        final total = rows.length;
-        final progress = total == 0 ? 0.0 : done / total;
-        final pct = (progress * 100).round().clamp(0, 100);
-        final sub = '$done of $total';
-        return _StatTile(
-          title: 'Weekly chores',
-          value: '$pct%',
-          subtitle: sub,
-          trailing: Padding(
-            padding: const EdgeInsets.only(top: MitlistSpacing.sm),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(MitlistTheme.radiusFull),
-              child: LinearProgressIndicator(
-                value: progress.clamp(0, 1),
-                minHeight: 6,
-              ),
-            ),
-          ),
-          onTap: () => context.pushNamed('chores'),
-        );
-      },
-    );
-  }
-}
-
-class _StatTile extends StatelessWidget {
-  const _StatTile({
-    required this.title,
-    required this.value,
-    required this.subtitle,
-    this.trailing,
-    this.tint,
-    required this.onTap,
-  });
-
-  final String title;
-  final String value;
-  final String subtitle;
-  final Widget? trailing;
-  final AppCardTint? tint;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-    final titleColor = (tint == null
-            ? colorScheme.onSurfaceVariant
-            : colorScheme.onPrimaryContainer)
-        .withValues(alpha: 0.8);
-    final valueColor =
-        tint == null ? colorScheme.onSurface : colorScheme.onPrimaryContainer;
-    final subtitleColor = (tint == null
-            ? colorScheme.onSurfaceVariant
-            : colorScheme.onPrimaryContainer)
-        .withValues(alpha: 0.85);
-
-    final child = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title.toUpperCase(),
-          style: textTheme.labelSmall?.copyWith(
-            color: titleColor,
-            letterSpacing: 0.6,
-          ),
-        ),
-        const SizedBox(height: MitlistSpacing.sm),
-        Text(
-          value,
-          style: textTheme.headlineSmall?.copyWith(color: valueColor),
-        ),
-        const SizedBox(height: MitlistSpacing.xs),
-        Text(
-          subtitle,
-          style: textTheme.bodySmall?.copyWith(color: subtitleColor),
-        ),
-        if (trailing != null) trailing!,
-      ],
-    );
-
-    if (tint == null) {
-      return AppCard(
-        variant: AppCardVariant.soft,
-        padding: AppCardPadding.md,
-        interactive: true,
-        onTap: () {
-          Haptics.light();
-          onTap();
-        },
-        semanticLabel: title,
-        child: child,
-      );
-    }
-
-    return AppCard(
-      variant: AppCardVariant.filled,
-      tint: tint!,
-      padding: AppCardPadding.md,
-      interactive: true,
-      onTap: () {
-        Haptics.light();
-        onTap();
-      },
-      semanticLabel: title,
-      child: child,
-    );
-  }
-}
-
-class _StatTileSkeleton extends StatelessWidget {
-  const _StatTileSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    return const AppCard(
-      variant: AppCardVariant.soft,
-      padding: AppCardPadding.md,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppSkeleton(width: 110, height: 12),
-          SizedBox(height: MitlistSpacing.sm),
-          AppSkeleton(width: 120, height: 20),
-          SizedBox(height: MitlistSpacing.xs),
-          AppSkeleton(width: 80, height: 12),
-        ],
-      ),
-    );
-  }
-}
-
 class _WallSection extends StatelessWidget {
   const _WallSection({required this.activities, required this.activityError});
 
@@ -1697,16 +1359,6 @@ class _SkeletonDashboard extends StatelessWidget {
                     ],
                   ),
                 ),
-                SizedBox(height: MitlistSpacing.md),
-                Row(
-                  children: [
-                    Expanded(child: _StatTileSkeleton()),
-                    SizedBox(width: MitlistSpacing.sm),
-                    Expanded(child: _StatTileSkeleton()),
-                  ],
-                ),
-                SizedBox(height: MitlistSpacing.sm),
-                _StatTileSkeleton(),
                 SizedBox(height: MitlistSpacing.lg),
                 AppSkeleton(width: 120, height: 16),
                 SizedBox(height: MitlistSpacing.sm),
@@ -1727,8 +1379,4 @@ class _SkeletonDashboard extends StatelessWidget {
       ],
     );
   }
-}
-
-extension _FirstOrNull<T> on Iterable<T> {
-  T? get firstOrNull => isEmpty ? null : first;
 }
