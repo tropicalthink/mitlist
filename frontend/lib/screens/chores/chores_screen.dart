@@ -242,6 +242,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       onAddSuppliesToList: () async {
         await _addSuppliesToList(id);
       },
+      onDelete: () => _confirmDeleteChore(id),
     );
   }
 
@@ -364,6 +365,36 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       if (!mounted) return;
       _showChoreActionError(
           'Failed to undo chore execution. Please try again.');
+    }
+  }
+
+  Future<void> _confirmDeleteChore(String id) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete chore'),
+        content: const Text('This will permanently delete this chore and its history. This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    Navigator.of(context).pop();
+    try {
+      final service = await ref.read(choreServiceProviderAsync.future);
+      await service.deleteChore(id);
+      await _loadChores();
+    } catch (e) {
+      if (!mounted) return;
+      _showChoreActionError('Failed to delete chore. Please try again.');
     }
   }
 

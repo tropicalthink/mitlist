@@ -34,6 +34,7 @@ class ChoreDetailSheet extends StatefulWidget {
     this.onDeleteSubtask,
     this.onReorderSubtasks,
     this.onAddSuppliesToList,
+    this.onDelete,
   });
 
   final String choreId;
@@ -56,6 +57,7 @@ class ChoreDetailSheet extends StatefulWidget {
   final ValueChanged<String>? onDeleteSubtask;
   final ValueChanged<List<String>>? onReorderSubtasks;
   final VoidCallback? onAddSuppliesToList;
+  final VoidCallback? onDelete;
 
   static Future<void> show(
     BuildContext context, {
@@ -79,6 +81,7 @@ class ChoreDetailSheet extends StatefulWidget {
     ValueChanged<String>? onDeleteSubtask,
     ValueChanged<List<String>>? onReorderSubtasks,
     VoidCallback? onAddSuppliesToList,
+    VoidCallback? onDelete,
   }) async {
     return showAppBottomSheet(
       context: context,
@@ -104,6 +107,7 @@ class ChoreDetailSheet extends StatefulWidget {
         onDeleteSubtask: onDeleteSubtask,
         onReorderSubtasks: onReorderSubtasks,
         onAddSuppliesToList: onAddSuppliesToList,
+        onDelete: onDelete,
       ),
     );
   }
@@ -331,7 +335,8 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
         if (widget.onMarkDone != null ||
             widget.onSkip != null ||
             widget.onRescheduleTomorrow != null ||
-            widget.onUndo != null) ...[
+            widget.onUndo != null ||
+            widget.onDelete != null) ...[
           const SizedBox(height: MitlistSpacing.lg),
           if (widget.onMarkDone != null)
             SizedBox(
@@ -380,6 +385,19 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
                 size: AppButtonSize.lg,
                 text: 'Undo Last Execution',
                 onPressed: widget.onUndo,
+              ),
+            ),
+          ],
+          if (widget.onDelete != null) ...[
+            const SizedBox(height: MitlistSpacing.lg),
+            SizedBox(
+              width: double.infinity,
+              child: AppButton(
+                variant: AppButtonVariant.ghost,
+                color: AppButtonColor.error,
+                size: AppButtonSize.lg,
+                text: 'Delete chore',
+                onPressed: widget.onDelete,
               ),
             ),
           ],

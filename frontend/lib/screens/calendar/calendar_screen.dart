@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../models/calendar_models.dart';
 import '../../providers/calendar_provider.dart';
+import '../../providers/chore_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../services/group_id_validator.dart';
 import '../../theme/colors.dart';
@@ -766,12 +767,45 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             statusLabel: event.chore!.status,
             assignee: '',
             dueDate: event.date,
+            onDelete: () => _confirmDeleteChore(event.chore!.choreId),
           );
         }
       case CalendarEventType.mealPlan:
         context.pushNamed('mealPlan');
       case CalendarEventType.recurringExpense:
         context.pushNamed('recurringExpenses');
+    }
+  }
+
+  Future<void> _confirmDeleteChore(String choreId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete chore'),
+        content: const Text('This will permanently delete this chore and its history. This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    Navigator.of(context).pop();
+    try {
+      final service = await ref.read(choreServiceProviderAsync.future);
+      await service.deleteChore(choreId);
+      _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to delete chore')),
+      );
     }
   }
 }

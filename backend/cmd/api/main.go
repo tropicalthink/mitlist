@@ -160,6 +160,8 @@ func main() {
 			r.Post("/shopping/complete", listHandler.BulkCompleteItems)
 			r.Post("/lists/{id}/archive", listHandler.ArchiveList)
 			r.Post("/lists/{id}/unarchive", listHandler.UnarchiveList)
+			r.Post("/lists/{id}/items/{item_id}/claim", listHandler.ClaimItem)
+			r.Post("/lists/{id}/items/{item_id}/unclaim", listHandler.UnclaimItem)
 
 			// Templates
 			templateHandler := handlers.NewTemplateHandler(cnt.TemplateService())

@@ -8,6 +8,7 @@ import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../widgets/app_bottom_sheet.dart';
+import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
 import '../widgets/chip.dart';
 
@@ -30,6 +31,7 @@ class RecipeDetailSheet extends StatelessWidget {
     this.equipmentJson = '',
     this.imageUrl,
     this.tags = const [],
+    this.onDelete,
   });
 
   final String title;
@@ -48,6 +50,7 @@ class RecipeDetailSheet extends StatelessWidget {
   final String equipmentJson;
   final String? imageUrl;
   final List<String> tags;
+  final VoidCallback? onDelete;
 
   static Future<void> show(
     BuildContext context, {
@@ -67,6 +70,7 @@ class RecipeDetailSheet extends StatelessWidget {
     String equipmentJson = '',
     String? imageUrl,
     List<String> tags = const [],
+    VoidCallback? onDelete,
   }) async {
     return showAppBottomSheet(
       context: context,
@@ -88,6 +92,7 @@ class RecipeDetailSheet extends StatelessWidget {
         equipmentJson: equipmentJson,
         imageUrl: imageUrl,
         tags: tags,
+        onDelete: onDelete,
       ),
     );
   }
@@ -261,6 +266,21 @@ class RecipeDetailSheet extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+        if (onDelete != null) ...[
+          const SizedBox(height: MitlistSpacing.lg),
+          const Divider(),
+          const SizedBox(height: MitlistSpacing.sm),
+          SizedBox(
+            width: double.infinity,
+            child: AppButton(
+              variant: AppButtonVariant.ghost,
+              color: AppButtonColor.error,
+              size: AppButtonSize.lg,
+              text: 'Delete recipe',
+              onPressed: onDelete,
             ),
           ),
         ],

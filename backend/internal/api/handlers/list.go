@@ -687,3 +687,33 @@ func (h *ListHandler) UnarchiveList(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (h *ListHandler) ClaimItem(w http.ResponseWriter, r *http.Request) {
+	itemID, err := parseUUIDParam(r, "item_id")
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	userID := RequireUser(w, r)
+	if userID == uuid.Nil {
+		return
+	}
+	if err := h.service.ListRepo().ClaimItem(r.Context(), itemID, userID); err != nil {
+		respondError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *ListHandler) UnclaimItem(w http.ResponseWriter, r *http.Request) {
+	itemID, err := parseUUIDParam(r, "item_id")
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	if err := h.service.ListRepo().UnclaimItem(r.Context(), itemID); err != nil {
+		respondError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}

@@ -253,6 +253,41 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     if (mounted) context.goNamed('welcome');
   }
 
+  Future<void> _confirmDeleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete account'),
+        content: const Text(
+          'This will permanently delete your account and all associated data. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      final authService = await ref.read(authServiceProviderAsync.future);
+      await authService.deleteMe();
+      ref.read(authStateProvider.notifier).state = false;
+      if (!mounted) return;
+      context.goNamed('welcome');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete account: ${e.toString().replaceFirst('Exception: ', '')}')),
+      );
+    }
+  }
+
   Widget _buildSkeletonProfileCard() {
     return AppCard(
       child: Row(
@@ -475,15 +510,30 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   Widget _buildDangerZone() {
-    return SizedBox(
-      width: double.infinity,
-      child: AppButton(
-        text: 'Log out',
-        variant: AppButtonVariant.soft,
-        color: AppButtonColor.error,
-        size: AppButtonSize.lg,
-        onPressed: _onLogout,
-      ),
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: AppButton(
+            text: 'Log out',
+            variant: AppButtonVariant.soft,
+            color: AppButtonColor.error,
+            size: AppButtonSize.lg,
+            onPressed: _onLogout,
+          ),
+        ),
+        const SizedBox(height: MitlistSpacing.sm),
+        SizedBox(
+          width: double.infinity,
+          child: AppButton(
+            text: 'Delete account',
+            variant: AppButtonVariant.ghost,
+            color: AppButtonColor.error,
+            size: AppButtonSize.lg,
+            onPressed: _confirmDeleteAccount,
+          ),
+        ),
+      ],
     );
   }
 

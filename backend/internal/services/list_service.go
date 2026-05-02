@@ -686,3 +686,7 @@ func (s *ListService) BulkCompleteItems(ctx context.Context, user *models.User, 
 func (s *ListService) SetListArchived(ctx context.Context, listID uuid.UUID, archived bool) error {
 	return s.listRepo.SetListArchived(ctx, listID, archived)
 }
+
+func (s *ListService) ListRepo() repositories.ListRepo {
+	return s.listRepo
+}

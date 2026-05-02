@@ -348,7 +348,40 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       amountLabel: _formatCurrency(expense.amount, currency: expense.currency),
       payer: expense.payer,
       createdAt: expense.createdAt,
+      onDelete: () => _confirmDeleteExpense(expense),
     );
+  }
+
+  Future<void> _confirmDeleteExpense(_Expense expense) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete expense'),
+        content: const Text('This will permanently delete this expense and all associated receipts. This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    Navigator.of(context).pop();
+    try {
+      final service = await ref.read(financeServiceProviderAsync.future);
+      await service.deleteExpense(expense.id);
+      await _loadData();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to delete expense')),
+      );
+    }
   }
 
   void _rebuildTimelineGroups() {

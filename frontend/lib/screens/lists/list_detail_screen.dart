@@ -608,6 +608,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       case 'archive':
         _archiveList();
         break;
+      case 'delete':
+        _deleteList();
+        break;
     }
   }
 
@@ -621,6 +624,38 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to archive list.')),
+      );
+    }
+  }
+
+  Future<void> _deleteList() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete list'),
+        content: const Text('This will permanently delete this list and all its items. This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    if (_service == null) return;
+    try {
+      await _service!.deleteList(widget.listId);
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete list: ${e.toString().replaceFirst('Exception: ', '')}')),
       );
     }
   }
@@ -772,6 +807,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     const PopupMenuItem(
                       value: 'archive',
                       child: Text('Archive'),
+                    ),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Text('Delete', style: TextStyle(color: Colors.red)),
                     ),
                   ],
                 ),
@@ -1023,6 +1062,15 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     style: MitlistTypography.monoBody(
                       color: MitlistColors.primary500,
                     ),
+                  ),
+                ),
+              if (item.claimedBy != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: MitlistSpacing.xs),
+                  child: AppIcon(
+                    name: 'userCircle',
+                    size: MitlistSpacing.space5,
+                    color: MitlistColors.primary500,
                   ),
                 ),
               PopupMenuButton<String>(

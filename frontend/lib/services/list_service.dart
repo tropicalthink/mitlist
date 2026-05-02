@@ -194,6 +194,24 @@ class ListService {
     }
   }
 
+  Future<void> claimItem(String listId, String itemId) async {
+    try {
+      await _dio.post('/lists/$listId/items/$itemId/claim');
+    } on DioException catch (e) {
+      _logger.e('Claim item failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> unclaimItem(String listId, String itemId) async {
+    try {
+      await _dio.post('/lists/$listId/items/$itemId/unclaim');
+    } on DioException catch (e) {
+      _logger.e('Unclaim item failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
   Future<void> reorderItems(String listId, ReorderItemsRequest req) async {
     try {
       await _dio.post('/lists/$listId/reorder', data: req.toJson());

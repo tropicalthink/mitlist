@@ -68,6 +68,7 @@ class ListItem {
   final int? priceCents;
   final bool checked;
   final int position;
+  final String? claimedBy;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -81,6 +82,7 @@ class ListItem {
     this.priceCents,
     required this.checked,
     required this.position,
+    this.claimedBy,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -96,6 +98,7 @@ class ListItem {
       priceCents: json['price_cents'] as int?,
       checked: json['checked'] as bool? ?? false,
       position: json['position'] as int? ?? 0,
+      claimedBy: json['claimed_by'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );

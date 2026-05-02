@@ -72,6 +72,8 @@ type ListRepo interface {
 	SoftDeleteItem(ctx context.Context, id uuid.UUID) error
 	SoftDeleteItemsByList(ctx context.Context, listID uuid.UUID, onlyChecked bool) (int64, error)
 	BatchUpdateItemPositions(ctx context.Context, items []models.ListItem) error
+	ClaimItem(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
+	UnclaimItem(ctx context.Context, id uuid.UUID) error
 	CreateShoppingLocation(ctx context.Context, location *models.ShoppingLocation) error
 	ListShoppingLocationsByGroup(ctx context.Context, groupID uuid.UUID) ([]models.ShoppingLocation, error)
 	CreateProduct(ctx context.Context, product *models.Product) error

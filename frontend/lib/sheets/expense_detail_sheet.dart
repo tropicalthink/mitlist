@@ -12,6 +12,7 @@ import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../widgets/app_bottom_sheet.dart';
+import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
 
 class ExpenseDetailSheet extends ConsumerStatefulWidget {
@@ -23,6 +24,7 @@ class ExpenseDetailSheet extends ConsumerStatefulWidget {
     required this.amountLabel,
     required this.payer,
     required this.createdAt,
+    this.onDelete,
   });
 
   final String groupId;
@@ -31,6 +33,7 @@ class ExpenseDetailSheet extends ConsumerStatefulWidget {
   final String amountLabel;
   final String payer;
   final DateTime createdAt;
+  final VoidCallback? onDelete;
 
   static Future<void> show(
     BuildContext context, {
@@ -40,6 +43,7 @@ class ExpenseDetailSheet extends ConsumerStatefulWidget {
     required String amountLabel,
     required String payer,
     required DateTime createdAt,
+    VoidCallback? onDelete,
   }) async {
     return showAppBottomSheet(
       context: context,
@@ -51,6 +55,7 @@ class ExpenseDetailSheet extends ConsumerStatefulWidget {
         amountLabel: amountLabel,
         payer: payer,
         createdAt: createdAt,
+        onDelete: onDelete,
       ),
     );
   }
@@ -360,6 +365,21 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
               itemCount: _receipts.length,
             ),
           ),
+        if (widget.onDelete != null) ...[
+          const SizedBox(height: MitlistSpacing.lg),
+          const Divider(),
+          const SizedBox(height: MitlistSpacing.sm),
+          SizedBox(
+            width: double.infinity,
+            child: AppButton(
+              variant: AppButtonVariant.ghost,
+              color: AppButtonColor.error,
+              size: AppButtonSize.lg,
+              text: 'Delete expense',
+              onPressed: widget.onDelete,
+            ),
+          ),
+        ],
       ],
     );
   }

@@ -30,6 +30,8 @@ type ListItem struct {
 	ProductID  *uuid.UUID `json:"product_id,omitempty"`
 	StoreID    *uuid.UUID `json:"store_id,omitempty"`
 	AddedBy    *uuid.UUID `json:"added_by,omitempty"`
+	ClaimedBy  *uuid.UUID `json:"claimed_by,omitempty"`
+	ClaimedAt  *time.Time `json:"claimed_at,omitempty"`
 	Checked    bool       `json:"checked"`
 	Position   int        `json:"position"`
 	CreatedAt  time.Time  `json:"created_at"`
