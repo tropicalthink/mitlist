@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -33,7 +34,13 @@ func (s *PinwallService) requireMembership(ctx context.Context, userID, groupID 
 	return nil
 }
 
-func (s *PinwallService) CreatePost(ctx context.Context, user *models.User, groupID uuid.UUID, content string) (*models.PinwallPost, error) {
+func (s *PinwallService) CreatePost(
+	ctx context.Context,
+	user *models.User,
+	groupID uuid.UUID,
+	content string,
+	remindAt *time.Time,
+) (*models.PinwallPost, error) {
 	if !user.IsActive || !user.IsVerified {
 		return nil, &api.PermissionDeniedError{Message: "user is not active or verified"}
 	}
@@ -49,10 +56,20 @@ func (s *PinwallService) CreatePost(ctx context.Context, user *models.User, grou
 		return nil, &api.ValidationError{Field: "content", Message: "content is too long"}
 	}
 
+	if remindAt != nil {
+		t := remindAt.UTC()
+		now := time.Now().UTC()
+		if !t.After(now) {
+			return nil, &api.ValidationError{Field: "remind_at", Message: "must be in the future"}
+		}
+		remindAt = &t
+	}
+
 	p := &models.PinwallPost{
 		GroupID: groupID,
 		UserID:  user.ID,
 		Content: content,
+		RemindAt: remindAt,
 	}
 	if err := s.repo.CreatePost(ctx, p); err != nil {
 		return nil, err

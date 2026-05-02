@@ -46,6 +46,7 @@ class NotificationPreferenceModel {
   final bool expenseCreated;
   final bool mealPlanChanged;
   final bool weeklyDigest;
+  final bool pinwallReminder;
   final bool pushEnabled;
 
   const NotificationPreferenceModel({
@@ -58,6 +59,7 @@ class NotificationPreferenceModel {
     this.expenseCreated = true,
     this.mealPlanChanged = true,
     this.weeklyDigest = true,
+    this.pinwallReminder = true,
     this.pushEnabled = true,
   });
 
@@ -72,6 +74,7 @@ class NotificationPreferenceModel {
       expenseCreated: json['expense_created'] as bool? ?? true,
       mealPlanChanged: json['meal_plan_changed'] as bool? ?? true,
       weeklyDigest: json['weekly_digest'] as bool? ?? true,
+      pinwallReminder: json['pinwall_reminder'] as bool? ?? true,
       pushEnabled: json['push_enabled'] as bool? ?? true,
     );
   }
@@ -86,6 +89,7 @@ class NotificationPreferenceModel {
         'expense_created': expenseCreated,
         'meal_plan_changed': mealPlanChanged,
         'weekly_digest': weeklyDigest,
+        'pinwall_reminder': pinwallReminder,
         'push_enabled': pushEnabled,
       };
 }

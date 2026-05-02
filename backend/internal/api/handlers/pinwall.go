@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -28,6 +29,7 @@ func (h *PinwallHandler) RegisterRoutes(r chi.Router) {
 type createPinwallPostRequest struct {
 	GroupID uuid.UUID `json:"group_id"`
 	Content string    `json:"content"`
+	RemindAt *string  `json:"remind_at,omitempty"`
 }
 
 func (h *PinwallHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +46,18 @@ func (h *PinwallHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 	}
 	req.Content = strings.TrimSpace(req.Content)
 
-	post, err := h.service.CreatePost(r.Context(), user, req.GroupID, req.Content)
+	var remindAt *time.Time
+	if req.RemindAt != nil && strings.TrimSpace(*req.RemindAt) != "" {
+		parsed, err := time.Parse(time.RFC3339, strings.TrimSpace(*req.RemindAt))
+		if err != nil {
+			respondError(w, &api.ValidationError{Field: "remind_at", Message: "invalid RFC3339 timestamp"})
+			return
+		}
+		parsed = parsed.UTC()
+		remindAt = &parsed
+	}
+
+	post, err := h.service.CreatePost(r.Context(), user, req.GroupID, req.Content, remindAt)
 	if err != nil {
 		respondError(w, err)
 		return

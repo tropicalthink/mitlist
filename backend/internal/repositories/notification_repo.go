@@ -135,14 +135,14 @@ func (r *NotificationRepository) DeleteNotification(ctx context.Context, id uuid
 func (r *NotificationRepository) GetPreference(ctx context.Context, userID, groupID uuid.UUID) (*models.NotificationPreference, error) {
 	query := `
 		SELECT id, user_id, group_id, chore_due, chore_due_day_of, list_item_added,
-			expense_created, meal_plan_changed, weekly_digest, push_enabled, created_at, updated_at
+			expense_created, meal_plan_changed, weekly_digest, pinwall_reminder, push_enabled, created_at, updated_at
 		FROM notification_preferences
 		WHERE user_id = $1 AND group_id = $2
 	`
 	var p models.NotificationPreference
 	err := r.db.QueryRow(ctx, query, userID, groupID).Scan(
 		&p.ID, &p.UserID, &p.GroupID, &p.ChoreDue, &p.ChoreDueDayOf, &p.ListItemAdded,
-		&p.ExpenseCreated, &p.MealPlanChanged, &p.WeeklyDigest, &p.PushEnabled,
+		&p.ExpenseCreated, &p.MealPlanChanged, &p.WeeklyDigest, &p.PinwallReminder, &p.PushEnabled,
 		&p.CreatedAt, &p.UpdatedAt,
 	)
 	if err != nil {
@@ -158,7 +158,7 @@ func (r *NotificationRepository) GetPreference(ctx context.Context, userID, grou
 func (r *NotificationRepository) GetPreferencesByUser(ctx context.Context, userID uuid.UUID) ([]models.NotificationPreference, error) {
 	query := `
 		SELECT id, user_id, group_id, chore_due, chore_due_day_of, list_item_added,
-			expense_created, meal_plan_changed, weekly_digest, push_enabled, created_at, updated_at
+			expense_created, meal_plan_changed, weekly_digest, pinwall_reminder, push_enabled, created_at, updated_at
 		FROM notification_preferences
 		WHERE user_id = $1
 		ORDER BY group_id ASC
@@ -174,7 +174,7 @@ func (r *NotificationRepository) GetPreferencesByUser(ctx context.Context, userI
 		var p models.NotificationPreference
 		if err := rows.Scan(
 			&p.ID, &p.UserID, &p.GroupID, &p.ChoreDue, &p.ChoreDueDayOf, &p.ListItemAdded,
-			&p.ExpenseCreated, &p.MealPlanChanged, &p.WeeklyDigest, &p.PushEnabled,
+			&p.ExpenseCreated, &p.MealPlanChanged, &p.WeeklyDigest, &p.PinwallReminder, &p.PushEnabled,
 			&p.CreatedAt, &p.UpdatedAt,
 		); err != nil {
 			return nil, err
@@ -192,9 +192,9 @@ func (r *NotificationRepository) UpsertPreference(ctx context.Context, pref *mod
 	query := `
 		INSERT INTO notification_preferences (
 			id, user_id, group_id, chore_due, chore_due_day_of, list_item_added,
-			expense_created, meal_plan_changed, weekly_digest, push_enabled, created_at, updated_at
+			expense_created, meal_plan_changed, weekly_digest, pinwall_reminder, push_enabled, created_at, updated_at
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
 		ON CONFLICT (user_id, group_id)
 		DO UPDATE SET
 			chore_due = EXCLUDED.chore_due,
@@ -203,6 +203,7 @@ func (r *NotificationRepository) UpsertPreference(ctx context.Context, pref *mod
 			expense_created = EXCLUDED.expense_created,
 			meal_plan_changed = EXCLUDED.meal_plan_changed,
 			weekly_digest = EXCLUDED.weekly_digest,
+			pinwall_reminder = EXCLUDED.pinwall_reminder,
 			push_enabled = EXCLUDED.push_enabled,
 			updated_at = NOW()
 		RETURNING id, created_at, updated_at
@@ -210,6 +211,6 @@ func (r *NotificationRepository) UpsertPreference(ctx context.Context, pref *mod
 	pref.ID = uuid.New()
 	return r.db.QueryRow(ctx, query,
 		pref.ID, pref.UserID, pref.GroupID, pref.ChoreDue, pref.ChoreDueDayOf, pref.ListItemAdded,
-		pref.ExpenseCreated, pref.MealPlanChanged, pref.WeeklyDigest, pref.PushEnabled,
+		pref.ExpenseCreated, pref.MealPlanChanged, pref.WeeklyDigest, pref.PinwallReminder, pref.PushEnabled,
 	).Scan(&pref.ID, &pref.CreatedAt, &pref.UpdatedAt)
 }

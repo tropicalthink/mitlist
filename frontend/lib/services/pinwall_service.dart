@@ -40,12 +40,20 @@ class PinwallService {
     }
   }
 
-  Future<PinwallPost> createPost(String groupId, {required String content}) async {
+  Future<PinwallPost> createPost(
+    String groupId, {
+    required String content,
+    DateTime? remindAt,
+  }) async {
     ensureValidGroupId(groupId);
     try {
       final r = await _dio.post(
         '/pinwall/posts',
-        data: {'group_id': groupId, 'content': content},
+        data: {
+          'group_id': groupId,
+          'content': content,
+          if (remindAt != null) 'remind_at': remindAt.toUtc().toIso8601String(),
+        },
       );
       return PinwallPost.fromJson((r.data as Map).cast<String, dynamic>());
     } on DioException catch (e) {

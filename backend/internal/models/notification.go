@@ -31,6 +31,7 @@ type NotificationPreference struct {
 	ExpenseCreated  bool      `json:"expense_created"`
 	MealPlanChanged bool      `json:"meal_plan_changed"`
 	WeeklyDigest    bool      `json:"weekly_digest"`
+	PinwallReminder bool      `json:"pinwall_reminder"`
 	PushEnabled     bool      `json:"push_enabled"`
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`

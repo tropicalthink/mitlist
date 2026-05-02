@@ -71,11 +71,16 @@ class AppEmptyState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (lottieAsset != null)
-            Lottie.asset(
+            DotLottie.asset(
               lottieAsset!,
               width: 56,
               height: 56,
               fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => Icon(
+                Icons.animation,
+                size: 56,
+                color: MitlistColors.textTertiary,
+              ),
             )
           else if (icon != null && animatedIcon)
             BobbingIcon(

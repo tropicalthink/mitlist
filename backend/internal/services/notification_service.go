@@ -50,6 +50,8 @@ func preferenceForType(pref *models.NotificationPreference, nType string) bool {
 		return pref.MealPlanChanged
 	case "weekly_digest":
 		return pref.WeeklyDigest
+	case "pinwall_reminder":
+		return pref.PinwallReminder
 	default:
 		return pref.PushEnabled // default to global push toggle for unknown types
 	}

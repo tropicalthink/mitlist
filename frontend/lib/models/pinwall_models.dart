@@ -4,6 +4,8 @@ class PinwallPost {
   final String userId;
   final String content;
   final DateTime createdAt;
+  final DateTime? remindAt;
+  final DateTime? reminderSentAt;
 
   const PinwallPost({
     required this.id,
@@ -11,6 +13,8 @@ class PinwallPost {
     required this.userId,
     required this.content,
     required this.createdAt,
+    this.remindAt,
+    this.reminderSentAt,
   });
 
   factory PinwallPost.fromJson(Map<String, dynamic> json) => PinwallPost(
@@ -19,6 +23,12 @@ class PinwallPost {
         userId: json['user_id'] as String,
         content: json['content'] as String,
         createdAt: DateTime.parse(json['created_at'] as String),
+        remindAt: json['remind_at'] != null
+            ? DateTime.parse(json['remind_at'] as String)
+            : null,
+        reminderSentAt: json['reminder_sent_at'] != null
+            ? DateTime.parse(json['reminder_sent_at'] as String)
+            : null,
       );
 
   Map<String, dynamic> toJson() => {
@@ -27,6 +37,8 @@ class PinwallPost {
         'user_id': userId,
         'content': content,
         'created_at': createdAt.toIso8601String(),
+        'remind_at': remindAt?.toIso8601String(),
+        'reminder_sent_at': reminderSentAt?.toIso8601String(),
       };
 }
 

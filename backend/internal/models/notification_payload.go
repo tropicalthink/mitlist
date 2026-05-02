@@ -25,4 +25,5 @@ const (
 	EntityTypeRecipe           = "recipe"
 	EntityTypeMealPlan         = "meal_plan"
 	EntityTypeRecurringExpense = "recurring_expense"
+	EntityTypePinwallPost      = "pinwall_post"
 )

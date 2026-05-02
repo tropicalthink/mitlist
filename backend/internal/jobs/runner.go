@@ -56,6 +56,10 @@ func (r *Runner) RegisterAll() {
 	// T87: Weekly summary — disabled by default (Monday 09:00)
 	ws := NewWeeklySummary(r.pool, r.push, r.log)
 	r.register("weekly-summary", "0 9 * * 1", ws.Run, true)
+
+	// Pinwall reminders — every minute
+	pr := NewPinwallReminder(r.pool, r.push, r.log)
+	r.register("pinwall-reminder", "* * * * *", pr.Run, true)
 }
 
 func (r *Runner) register(name, spec string, fn func(), enabled bool) {

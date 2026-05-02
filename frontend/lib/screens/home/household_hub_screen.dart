@@ -443,11 +443,54 @@ class _PinwallSectionState extends ConsumerState<_PinwallSection> {
   bool _isPosting = false;
   bool _isUploadingMedia = false;
   final List<XFile> _pendingMedia = [];
+  DateTime? _remindAt;
 
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickReminderTime() async {
+    if (_isPosting || _isUploadingMedia) return;
+    Haptics.light();
+
+    final now = DateTime.now();
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _remindAt?.isAfter(now) == true ? _remindAt! : now,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+      helpText: 'Choose reminder date',
+    );
+    if (!mounted || pickedDate == null) return;
+
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_remindAt ?? now),
+      helpText: 'Choose reminder time',
+    );
+    if (!mounted || pickedTime == null) return;
+
+    final combined = DateTime(
+      pickedDate.year,
+      pickedDate.month,
+      pickedDate.day,
+      pickedTime.hour,
+      pickedTime.minute,
+    );
+    if (combined.isBefore(DateTime.now().add(const Duration(minutes: 1)))) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pick a time in the future.')),
+      );
+      return;
+    }
+    setState(() => _remindAt = combined);
+  }
+
+  void _clearReminder() {
+    if (_remindAt == null) return;
+    setState(() => _remindAt = null);
   }
 
   Future<void> _pickMedia() async {
@@ -466,7 +509,7 @@ class _PinwallSectionState extends ConsumerState<_PinwallSection> {
     try {
       final svc = await ref.read(pinwallServiceProviderAsync.future);
       final post = await svc.createPost(widget.groupId,
-          content: content.isEmpty ? ' ' : content);
+          content: content.isEmpty ? ' ' : content, remindAt: _remindAt);
       if (!mounted) return;
 
       if (_pendingMedia.isNotEmpty) {
@@ -500,6 +543,7 @@ class _PinwallSectionState extends ConsumerState<_PinwallSection> {
       }
 
       _controller.clear();
+      _clearReminder();
       ref.invalidate(pinwallPostsByGroupProvider(widget.groupId));
       if (!mounted) return;
       Haptics.light();
@@ -554,6 +598,9 @@ class _PinwallSectionState extends ConsumerState<_PinwallSection> {
                 isPosting: _isPosting,
                 isUploadingMedia: _isUploadingMedia,
                 pendingCount: _pendingMedia.length,
+                remindAt: _remindAt,
+                onPickReminder: _pickReminderTime,
+                onClearReminder: _clearReminder,
                 onPickMedia: _pickMedia,
                 onPost: _post,
               ),
@@ -635,6 +682,9 @@ class _PinwallComposerNote extends StatelessWidget {
     required this.isPosting,
     required this.isUploadingMedia,
     required this.pendingCount,
+    required this.remindAt,
+    required this.onPickReminder,
+    required this.onClearReminder,
     required this.onPickMedia,
     required this.onPost,
   });
@@ -643,6 +693,9 @@ class _PinwallComposerNote extends StatelessWidget {
   final bool isPosting;
   final bool isUploadingMedia;
   final int pendingCount;
+  final DateTime? remindAt;
+  final Future<void> Function() onPickReminder;
+  final VoidCallback onClearReminder;
   final Future<void> Function() onPickMedia;
   final Future<void> Function() onPost;
 
@@ -660,6 +713,8 @@ class _PinwallComposerNote extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.38)
         : MitlistColors.pinwallNoteTextLight.withValues(alpha: 0.45);
     final dividerColor = border.withValues(alpha: dark ? 0.5 : 0.4);
+    final reminderLabel =
+        remindAt == null ? null : DateFormat('MMM d \u00b7 h:mm a').format(remindAt!);
 
     return Stack(
       clipBehavior: Clip.none,
@@ -720,6 +775,47 @@ class _PinwallComposerNote extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
+                    IconButton(
+                      tooltip: remindAt == null
+                          ? 'Add reminder'
+                          : 'Reminder set for $reminderLabel. Tap to change.',
+                      icon: Icon(
+                        remindAt == null
+                            ? Icons.alarm_add_outlined
+                            : Icons.alarm_on_outlined,
+                        size: 20,
+                        color: remindAt == null
+                            ? textColor.withValues(alpha: 0.55)
+                            : pinColor,
+                      ),
+                      onPressed:
+                          (isPosting || isUploadingMedia) ? null : onPickReminder,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    if (remindAt != null)
+                      IconButton(
+                        tooltip: 'Clear reminder',
+                        icon: Icon(
+                          Icons.close,
+                          size: 18,
+                          color: textColor.withValues(alpha: 0.55),
+                        ),
+                        onPressed:
+                            (isPosting || isUploadingMedia) ? null : onClearReminder,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    if (reminderLabel != null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: MitlistSpacing.xs),
+                        child: Text(
+                          reminderLabel,
+                          style: textTheme.labelSmall?.copyWith(
+                            color: pinColor,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     IconButton(
                       tooltip: pendingCount == 0
                           ? 'Attach photo'
@@ -985,6 +1081,12 @@ class _PinwallNoteCard extends ConsumerWidget {
         ? Colors.white.withValues(alpha: 0.5)
         : MitlistColors.textSecondary.withValues(alpha: 0.7);
 
+    final remindAt = post.remindAt;
+    final reminderSentAt = post.reminderSentAt;
+    final reminderText = remindAt == null
+        ? null
+        : DateFormat('MMM d \u00b7 h:mm a').format(remindAt.toLocal());
+
     return Transform.rotate(
       angle: rot.toDouble(),
       child: Stack(
@@ -1076,6 +1178,33 @@ class _PinwallNoteCard extends ConsumerWidget {
                   },
                 ),
                 const SizedBox(height: MitlistSpacing.xs),
+                if (reminderText != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: MitlistSpacing.xs),
+                    child: Row(
+                      children: [
+                        Icon(
+                          reminderSentAt == null
+                              ? Icons.alarm_on_outlined
+                              : Icons.check_circle_outline,
+                          size: 14,
+                          color: mutedColor,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            reminderSentAt == null
+                                ? 'Reminder · $reminderText'
+                                : 'Reminded · $reminderText',
+                            style:
+                                textTheme.labelSmall?.copyWith(color: mutedColor),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 Row(
                   children: [
                     Expanded(

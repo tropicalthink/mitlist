@@ -101,6 +101,8 @@ class _NotificationPreferencesScreenState
             field == 'meal_plan_changed' ? value : pref.mealPlanChanged,
         weeklyDigest:
             field == 'weekly_digest' ? value : pref.weeklyDigest,
+        pinwallReminder:
+            field == 'pinwall_reminder' ? value : pref.pinwallReminder,
         pushEnabled: field == 'push_enabled' ? value : pref.pushEnabled,
       );
 
@@ -198,6 +200,16 @@ class _NotificationPreferencesScreenState
                   _savingKeys['${pref.id}:weekly_digest'] == true,
               onChanged: (v) =>
                   _toggle(pref.id, 'weekly_digest', v),
+            ),
+            _ToggleRow(
+              icon: 'bell',
+              label: 'Pinwall reminders',
+              subtitle: 'When someone pins a reminder for later',
+              value: pref.pinwallReminder,
+              saving:
+                  _savingKeys['${pref.id}:pinwall_reminder'] == true,
+              onChanged: (v) =>
+                  _toggle(pref.id, 'pinwall_reminder', v),
             ),
             const Divider(),
             _ToggleRow(

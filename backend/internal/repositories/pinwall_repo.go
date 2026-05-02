@@ -21,11 +21,12 @@ func NewPinwallRepository(db *pgxpool.Pool) *PinwallRepository {
 
 func (r *PinwallRepository) CreatePost(ctx context.Context, p *models.PinwallPost) error {
 	const q = `
-		INSERT INTO pinwall_posts (group_id, user_id, content)
-		VALUES ($1, $2, $3)
-		RETURNING id, created_at
+		INSERT INTO pinwall_posts (group_id, user_id, content, remind_at)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id, created_at, remind_at, reminder_sent_at
 	`
-	if err := r.db.QueryRow(ctx, q, p.GroupID, p.UserID, p.Content).Scan(&p.ID, &p.CreatedAt); err != nil {
+	if err := r.db.QueryRow(ctx, q, p.GroupID, p.UserID, p.Content, p.RemindAt).
+		Scan(&p.ID, &p.CreatedAt, &p.RemindAt, &p.ReminderSentAt); err != nil {
 		return fmt.Errorf("create pinwall post: %w", err)
 	}
 	return nil
@@ -33,7 +34,7 @@ func (r *PinwallRepository) CreatePost(ctx context.Context, p *models.PinwallPos
 
 func (r *PinwallRepository) ListPostsByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.PinwallPost, error) {
 	const q = `
-		SELECT id, group_id, user_id, content, created_at
+		SELECT id, group_id, user_id, content, created_at, remind_at, reminder_sent_at
 		FROM pinwall_posts
 		WHERE group_id = $1
 		ORDER BY created_at DESC
@@ -48,7 +49,15 @@ func (r *PinwallRepository) ListPostsByGroup(ctx context.Context, groupID uuid.U
 	var out []models.PinwallPost
 	for rows.Next() {
 		var p models.PinwallPost
-		if err := rows.Scan(&p.ID, &p.GroupID, &p.UserID, &p.Content, &p.CreatedAt); err != nil {
+		if err := rows.Scan(
+			&p.ID,
+			&p.GroupID,
+			&p.UserID,
+			&p.Content,
+			&p.CreatedAt,
+			&p.RemindAt,
+			&p.ReminderSentAt,
+		); err != nil {
 			return nil, fmt.Errorf("scan pinwall post: %w", err)
 		}
 		out = append(out, p)
@@ -58,12 +67,20 @@ func (r *PinwallRepository) ListPostsByGroup(ctx context.Context, groupID uuid.U
 
 func (r *PinwallRepository) GetPostByID(ctx context.Context, id uuid.UUID) (*models.PinwallPost, error) {
 	const q = `
-		SELECT id, group_id, user_id, content, created_at
+		SELECT id, group_id, user_id, content, created_at, remind_at, reminder_sent_at
 		FROM pinwall_posts
 		WHERE id = $1
 	`
 	var p models.PinwallPost
-	if err := r.db.QueryRow(ctx, q, id).Scan(&p.ID, &p.GroupID, &p.UserID, &p.Content, &p.CreatedAt); err != nil {
+	if err := r.db.QueryRow(ctx, q, id).Scan(
+		&p.ID,
+		&p.GroupID,
+		&p.UserID,
+		&p.Content,
+		&p.CreatedAt,
+		&p.RemindAt,
+		&p.ReminderSentAt,
+	); err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, err
 		}
