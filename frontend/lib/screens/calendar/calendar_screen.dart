@@ -204,8 +204,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     return Column(
       children: [
         _buildViewToggle(),
-        if (_viewMode == _CalendarView.week) _buildWeekView(),
-        if (_viewMode == _CalendarView.month) _buildMonthView(),
+        if (_viewMode == _CalendarView.week)
+          Expanded(child: _buildWeekView()),
+        if (_viewMode == _CalendarView.month)
+          Expanded(child: _buildMonthView()),
+        // Agenda wraps itself in Expanded (scroll + empty states).
         if (_viewMode == _CalendarView.agenda) _buildAgendaView(),
       ],
     );
