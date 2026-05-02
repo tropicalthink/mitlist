@@ -21,6 +21,7 @@ import 'screens/auth/login_screen.dart';
 import 'screens/auth/signup_screen.dart';
 import 'screens/auth/onboarding_screen.dart';
 import 'screens/auth/oauth_callback_screen.dart';
+import 'screens/auth/session_bootstrap_screen.dart';
 import 'screens/home/household_hub_screen.dart';
 import 'screens/lists/list_detail_screen.dart';
 import 'screens/share_target_screen.dart';
@@ -42,6 +43,11 @@ final _authRoutePrefixes = [
   '/auth/callback',
 ];
 
+const _sessionBootstrapPath = '/_session';
+
+bool _isSessionBootstrapPath(String location) =>
+    location.startsWith(_sessionBootstrapPath);
+
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
   final authBootstrap = ref.watch(authBootstrapProvider);
@@ -57,10 +63,31 @@ final routerProvider = Provider<GoRouter>((ref) {
         if (location.startsWith('/auth/callback')) {
           return null;
         }
-        if (location != '/welcome') {
-          return '/welcome';
+        if (_isSessionBootstrapPath(location)) {
+          return null;
         }
-        return null;
+        // Marketing / sign-in routes: stay put so first visits and /login
+        // reloads do not bounce through a loading URL.
+        if (isAuthRoute) {
+          return null;
+        }
+        final target =
+            '${state.uri.path}${state.uri.hasQuery ? '?${state.uri.query}' : ''}';
+        return '$_sessionBootstrapPath?continue=${Uri.encodeComponent(target)}';
+      }
+
+      if (_isSessionBootstrapPath(location)) {
+        if (authState) {
+          final cont = state.uri.queryParameters['continue'];
+          if (cont != null && cont.isNotEmpty) {
+            final decoded = Uri.decodeComponent(cont);
+            if (decoded.startsWith('/') && !decoded.startsWith('//')) {
+              return decoded;
+            }
+          }
+          return '/home';
+        }
+        return '/welcome';
       }
 
       if (!authState && !isAuthRoute) {
@@ -74,6 +101,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: _sessionBootstrapPath,
+        name: 'sessionBootstrap',
+        builder: (context, state) => const SessionBootstrapScreen(),
+      ),
       GoRoute(
         path: '/welcome',
         name: 'welcome',

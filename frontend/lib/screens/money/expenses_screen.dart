@@ -497,7 +497,6 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     return Scaffold(
       appBar: MitlistAppBar.titleText(
         'Money',
-        showStandardActions: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.repeat),

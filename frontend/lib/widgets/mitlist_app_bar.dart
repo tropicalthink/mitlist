@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../theme/spacing.dart';
-import '../providers/group_provider.dart';
-import '../services/group_id_validator.dart';
-import '../sheets/invite_household_sheet.dart';
+import 'shell_trailing_actions.dart';
 
 /// A consistent, hub-style top app bar used across screens.
 ///
@@ -13,7 +9,10 @@ import '../sheets/invite_household_sheet.dart';
 /// - Flat (no elevation / no scrolled-under tint)
 /// - Surface background (matches hub `SliverAppBar`)
 /// - Consistent trailing spacing for action icons
-class MitlistAppBar extends ConsumerWidget implements PreferredSizeWidget {
+///
+/// When [showStandardActions] is true, appends [shellTrailingActions] after
+/// any screen-specific [actions] (calendar, notifications, account).
+class MitlistAppBar extends StatelessWidget implements PreferredSizeWidget {
   const MitlistAppBar({
     super.key,
     required this.title,
@@ -25,7 +24,7 @@ class MitlistAppBar extends ConsumerWidget implements PreferredSizeWidget {
 
   final Widget title;
   final Widget? leading;
-  /// Screen-specific actions that appear before the standard ones.
+  /// Screen-specific actions that appear before the shell standard ones.
   final List<Widget>? actions;
   final bool? centerTitle;
   final bool showStandardActions;
@@ -56,50 +55,11 @@ class MitlistAppBar extends ConsumerWidget implements PreferredSizeWidget {
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    Future<void> openInvite() async {
-      try {
-        final svc = await ref.read(groupServiceProviderAsync.future);
-        final groups = await svc.listGroups(limit: 1);
-        final groupId = groups.isEmpty ? null : groups.first.id;
-        if (!isValidGroupId(groupId)) {
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No household to invite to yet')),
-          );
-          return;
-        }
-        if (!context.mounted) return;
-        await InviteHouseholdSheet.show(context, groupId: groupId!);
-      } catch (e) {
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Couldn’t create invite: $e')),
-        );
-      }
-    }
-
-    final standardActions = showStandardActions
-        ? <Widget>[
-            IconButton(
-              tooltip: 'Invite',
-              icon: const Icon(Icons.group_add_outlined),
-              onPressed: openInvite,
-            ),
-            IconButton(
-              tooltip: 'Notifications',
-              icon: const Icon(Icons.notifications_none_outlined),
-              onPressed: () => context.pushNamed('notifications'),
-            ),
-            IconButton(
-              tooltip: 'Account',
-              icon: const Icon(Icons.person_outline),
-              onPressed: () => context.pushNamed('you'),
-            ),
-          ]
-        : const <Widget>[];
+    final standardActions =
+        showStandardActions ? shellTrailingActions(context) : const <Widget>[];
 
     final mergedActions = <Widget>[
       ...?actions,
@@ -125,4 +85,3 @@ class MitlistAppBar extends ConsumerWidget implements PreferredSizeWidget {
     );
   }
 }
-

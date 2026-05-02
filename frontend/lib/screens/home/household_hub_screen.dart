@@ -26,6 +26,7 @@ import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
+import '../../widgets/shell_trailing_actions.dart';
 import '../../widgets/skeleton.dart';
 import '../../theme/spacing.dart';
 import '../../theme/theme.dart';
@@ -516,21 +517,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                         leading: null,
                         title: _buildAppBarTitle(context),
                         actions: [
-                          IconButton(
-                            tooltip: 'Calendar',
-                            icon: const Icon(Icons.calendar_month_outlined),
-                            onPressed: () => context.pushNamed('calendar'),
-                          ),
-                          IconButton(
-                            tooltip: 'Notifications',
-                            icon: const Icon(Icons.notifications_none_outlined),
-                            onPressed: () => context.pushNamed('notifications'),
-                          ),
-                          IconButton(
-                            tooltip: 'Account',
-                            icon: const Icon(Icons.person_outline),
-                            onPressed: () => context.pushNamed('you'),
-                          ),
+                          ...shellTrailingActions(context),
                           const SizedBox(width: MitlistSpacing.xs),
                         ],
                       ),

@@ -484,7 +484,6 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     return Scaffold(
       appBar: MitlistAppBar.titleText(
         'Chores',
-        showStandardActions: false,
       ),
       floatingActionButton: AppButton(
         size: AppButtonSize.lg,

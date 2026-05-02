@@ -316,7 +316,6 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     return Scaffold(
       appBar: MitlistAppBar(
         centerTitle: false,
-        showStandardActions: false,
         leading: _showSearch
             ? IconButton(
                 icon: const Icon(AppIcons.arrowLeft),
