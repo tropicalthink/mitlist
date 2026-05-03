@@ -1,0 +1,19 @@
+# Production API image — configure DATABASE_URL, REDIS_URL, SECRET_KEY,
+# SESSION_SECRET_KEY (and other env from .env.example) at deploy time.
+FROM golang:1.25-alpine AS build
+RUN apk add --no-cache git ca-certificates
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/mitlist-api ./cmd/api
+
+FROM alpine:3.20
+RUN apk add --no-cache ca-certificates tzdata
+WORKDIR /app
+COPY --from=build /out/mitlist-api /app/mitlist-api
+COPY migrations /app/migrations
+ENV MIGRATIONS_PATH=/app/migrations
+USER nobody
+EXPOSE 8000
+ENTRYPOINT ["/app/mitlist-api"]

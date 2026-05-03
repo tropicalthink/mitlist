@@ -1,12 +1,14 @@
 {
     "name": "mitlist",
     "short_name": "mitlist",
-    "start_url": ".",
+    "start_url": "/",
+    "scope": "/",
     "display": "standalone",
+    "display_override": ["standalone", "browser"],
     "background_color": "#F97316",
     "theme_color": "#F97316",
     "description": "Shared household coordination for lists, money, chores, and recipes.",
-    "orientation": "portrait-primary",
+    "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
         {
