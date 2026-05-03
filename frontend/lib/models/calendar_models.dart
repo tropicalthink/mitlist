@@ -1,4 +1,4 @@
-enum CalendarEventType { mealPlan, chore, recurringExpense }
+enum CalendarEventType { mealPlan, chore, recurringExpense, pinwallReminder }
 
 class CalendarEvent {
   final String id;
@@ -9,6 +9,7 @@ class CalendarEvent {
   final CalendarMealPlan? mealPlan;
   final CalendarChore? chore;
   final CalendarRecurringExpense? recurringExpense;
+  final CalendarPinwallReminder? pinwallReminder;
 
   const CalendarEvent({
     required this.id,
@@ -19,13 +20,17 @@ class CalendarEvent {
     this.mealPlan,
     this.chore,
     this.recurringExpense,
+    this.pinwallReminder,
   });
 
   factory CalendarEvent.fromJson(Map<String, dynamic> json) {
     final typeStr = json['type'] as String;
     final type = CalendarEventType.values.firstWhere(
-      (e) => e.name == typeStr,
-      orElse: () => CalendarEventType.mealPlan,
+      (e) => e.name == typeStr.replaceAll('_', ''),
+      orElse: () {
+        if (typeStr == 'pinwall_reminder') return CalendarEventType.pinwallReminder;
+        return CalendarEventType.mealPlan;
+      },
     );
     return CalendarEvent(
       id: json['id'] as String,
@@ -44,6 +49,10 @@ class CalendarEvent {
       recurringExpense: json['recurring_expense'] != null
           ? CalendarRecurringExpense.fromJson(
               (json['recurring_expense'] as Map).cast<String, dynamic>())
+          : null,
+      pinwallReminder: json['pinwall_reminder'] != null
+          ? CalendarPinwallReminder.fromJson(
+              (json['pinwall_reminder'] as Map).cast<String, dynamic>())
           : null,
     );
   }
@@ -117,5 +126,27 @@ class CalendarRecurringExpense {
         amount: json['amount'] as int,
         currency: json['currency'] as String? ?? 'EUR',
         frequency: json['frequency'] as String,
+      );
+}
+
+class CalendarPinwallReminder {
+  final String postId;
+  final String userId;
+  final String content;
+  final bool sent;
+
+  const CalendarPinwallReminder({
+    required this.postId,
+    required this.userId,
+    required this.content,
+    required this.sent,
+  });
+
+  factory CalendarPinwallReminder.fromJson(Map<String, dynamic> json) =>
+      CalendarPinwallReminder(
+        postId: json['post_id'] as String,
+        userId: json['user_id'] as String,
+        content: json['content'] as String,
+        sent: json['sent'] as bool? ?? false,
       );
 }

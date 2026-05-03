@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -99,5 +100,42 @@ func (r *PinwallRepository) DeletePost(ctx context.Context, id uuid.UUID) error 
 		return pgx.ErrNoRows
 	}
 	return nil
+}
+
+func (r *PinwallRepository) ListPostsByGroupAndRemindAtRange(
+	ctx context.Context, groupID uuid.UUID, from, to time.Time,
+) ([]models.PinwallPost, error) {
+	const q = `
+		SELECT id, group_id, user_id, content, created_at, remind_at, reminder_sent_at
+		FROM pinwall_posts
+		WHERE group_id = $1
+		  AND remind_at IS NOT NULL
+		  AND remind_at >= $2
+		  AND remind_at < $3
+		ORDER BY remind_at ASC
+	`
+	rows, err := r.db.Query(ctx, q, groupID, from, to)
+	if err != nil {
+		return nil, fmt.Errorf("list pinwall posts by remind_at range: %w", err)
+	}
+	defer rows.Close()
+
+	var out []models.PinwallPost
+	for rows.Next() {
+		var p models.PinwallPost
+		if err := rows.Scan(
+			&p.ID,
+			&p.GroupID,
+			&p.UserID,
+			&p.Content,
+			&p.CreatedAt,
+			&p.RemindAt,
+			&p.ReminderSentAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan pinwall post: %w", err)
+		}
+		out = append(out, p)
+	}
+	return out, rows.Err()
 }
 

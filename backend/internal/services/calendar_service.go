@@ -18,15 +18,16 @@ type CalendarService struct {
 	choreRepo    repositories.ChoreRepo
 	financeRepo  repositories.FinanceRepoIface
 	groupRepo    repositories.GroupRepo
+	pinwallRepo  *repositories.PinwallRepository
 }
 
-// NewCalendarService creates a new CalendarService.
 func NewCalendarService(
 	mealPlanRepo repositories.MealPlanRepoIface,
 	recipeRepo repositories.RecipeRepoIface,
 	choreRepo repositories.ChoreRepo,
 	financeRepo repositories.FinanceRepoIface,
 	groupRepo repositories.GroupRepo,
+	pinwallRepo *repositories.PinwallRepository,
 ) *CalendarService {
 	return &CalendarService{
 		mealPlanRepo: mealPlanRepo,
@@ -34,8 +35,10 @@ func NewCalendarService(
 		choreRepo:    choreRepo,
 		financeRepo:  financeRepo,
 		groupRepo:    groupRepo,
+		pinwallRepo:  pinwallRepo,
 	}
 }
+
 
 func (s *CalendarService) requireMembership(ctx context.Context, userID, groupID uuid.UUID) error {
 	member, err := s.groupRepo.GetMembership(ctx, groupID, userID)
@@ -125,6 +128,34 @@ func (s *CalendarService) GetCalendar(ctx context.Context, user *models.User, gr
 				Amount:             re.Amount,
 				Currency:           re.Currency,
 				Frequency:          re.Frequency,
+			},
+		})
+	}
+
+	// Pinwall reminders
+	pinwallPosts, err := s.pinwallRepo.ListPostsByGroupAndRemindAtRange(ctx, groupID, from, to)
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range pinwallPosts {
+		if p.RemindAt == nil {
+			continue
+		}
+		title := p.Content
+		if len(title) > 80 {
+			title = title[:80] + "…"
+		}
+		events = append(events, models.CalendarEvent{
+			ID:      "pinwall_" + p.ID.String(),
+			Type:    models.EventTypePinwallReminder,
+			Title:   title,
+			Date:    *p.RemindAt,
+			GroupID: p.GroupID,
+			PinwallReminder: &models.CalendarPinwallReminder{
+				PostID:  p.ID,
+				UserID:  p.UserID,
+				Content: p.Content,
+				Sent:    p.ReminderSentAt != nil,
 			},
 		})
 	}

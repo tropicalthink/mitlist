@@ -18,6 +18,7 @@ import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/mitlist_app_bar.dart';
+import '../../widgets/skeleton.dart';
 import '../../exceptions.dart';
 
 class MealPlanScreen extends ConsumerStatefulWidget {
@@ -277,7 +278,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
           ),
           if (_isLoading)
             const Expanded(
-              child: Center(child: CircularProgressIndicator()),
+              child: _MealPlanLoadingBody(),
             )
           else if (_error != null)
             Expanded(
@@ -299,8 +300,10 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
             )
           else
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
+              child: RefreshIndicator(
+                onRefresh: _load,
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
                 itemCount: 7,
                 itemBuilder: (context, index) {
                   final date = _weekStart.add(Duration(days: index));
@@ -314,8 +317,52 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
                   );
                 },
               ),
+              ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _MealPlanLoadingBody extends StatelessWidget {
+  const _MealPlanLoadingBody();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
+      itemCount: 4,
+      itemBuilder: (_, i) => Padding(
+        padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
+        child: AppCard(
+          variant: AppCardVariant.outlined,
+          padding: AppCardPadding.md,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const AppSkeleton(
+                      width: 100, height: 16),
+                  const Spacer(),
+                  AppSkeleton(
+                      width: MitlistSpacing.space12,
+                      height: 16),
+                ],
+              ),
+              const SizedBox(height: MitlistSpacing.sm),
+              const AppSkeleton(
+                  width: double.infinity, height: 40),
+              const SizedBox(height: MitlistSpacing.sm),
+              const AppSkeleton(
+                  width: double.infinity, height: 40),
+              const SizedBox(height: MitlistSpacing.sm),
+              const AppSkeleton(
+                  width: double.infinity, height: 40),
+            ],
+          ),
+        ),
       ),
     );
   }

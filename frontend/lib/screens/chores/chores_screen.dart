@@ -137,6 +137,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
               lastActionLabel: entry.lastAssignment != null
                   ? _formatLastAction(entry.lastAssignment!)
                   : null,
+              supplies: entry.chore.supplies,
             ))
         .toList();
 
@@ -779,6 +780,7 @@ class _Chore {
   final bool isMine;
   bool completed;
   final String? lastActionLabel;
+  final List<String> supplies;
 
   _Chore({
     required this.id,
@@ -789,6 +791,7 @@ class _Chore {
     this.isMine = true,
     this.completed = false,
     this.lastActionLabel,
+    this.supplies = const [],
   });
 }
 
@@ -901,6 +904,24 @@ class _ChoreItem extends StatelessWidget {
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
+                      ),
+                    if (chore.supplies.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: MitlistSpacing.xs),
+                        child: Row(
+                          children: [
+                            Icon(Icons.inventory_2_outlined,
+                                size: 12,
+                                color: MitlistColors.primary500),
+                            const SizedBox(width: MitlistSpacing.space1),
+                            Text(
+                              '${chore.supplies.length} supply${chore.supplies.length == 1 ? '' : 'ies'}',
+                              style: MitlistTypography.labelXSmall(
+                                color: MitlistColors.primary500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                   ],
                 ),

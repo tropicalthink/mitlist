@@ -8,6 +8,7 @@ import 'services/group_service.dart';
 import 'models/group_models.dart';
 import 'theme/colors.dart';
 import 'widgets/app_icon.dart';
+import 'providers/nav_badge_provider.dart';
 
 import 'screens/home/groups_list_screen.dart';
 import 'screens/lists/lists_screen.dart';
@@ -31,6 +32,8 @@ import 'screens/recipes/recipes_screen.dart';
 import 'screens/meal_plans/meal_plan_screen.dart';
 import 'screens/shopping/shopping_trip_screen.dart';
 import 'screens/scanner/scanner_screen.dart';
+
+final currentGroupIdProvider = StateProvider<String?>((ref) => null);
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -257,14 +260,29 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
-class BottomNavScaffold extends StatelessWidget {
+class BottomNavScaffold extends ConsumerWidget {
   final Widget child;
   const BottomNavScaffold({super.key, required this.child});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final location = GoRouterState.of(context).uri.path;
     final index = _calculateIndex(location);
+    final badgeCounts = ref.watch(navBadgeCountsProvider);
+
+    final badgeData = badgeCounts.valueOrNull ?? const NavBadgeCounts();
+
+    Widget makeBadgeIcon(Widget icon, {int count = 0}) {
+      if (count <= 0) return icon;
+      return Badge(
+        isLabelVisible: count > 0,
+        label: Text(
+          count > 99 ? '99+' : '$count',
+          style: const TextStyle(fontSize: 10),
+        ),
+        child: icon,
+      );
+    }
 
     return Scaffold(
       body: child,
@@ -279,18 +297,25 @@ class BottomNavScaffold extends StatelessWidget {
         ),
         child: BottomNavigationBar(
           currentIndex: index,
-          onTap: (i) => _onTap(i, context),
-          items: const [
-            BottomNavigationBarItem(
+          onTap: (i) => _onTap(i, context, ref),
+          items: [
+            const BottomNavigationBarItem(
                 icon: AppIcon(name: 'home'), label: 'Home'),
             BottomNavigationBarItem(
-                icon: AppIcon(name: 'clipboardDocumentList'),
+                icon: makeBadgeIcon(
+                  const AppIcon(name: 'clipboardDocumentList'),
+                  count: badgeData.choreCount,
+                ),
                 label: 'Chores'),
-            BottomNavigationBarItem(
+            const BottomNavigationBarItem(
                 icon: AppIcon(name: 'queueList'), label: 'Kitchen'),
             BottomNavigationBarItem(
-                icon: AppIcon(name: 'banknotes'), label: 'Money'),
-            BottomNavigationBarItem(
+                icon: makeBadgeIcon(
+                  const AppIcon(name: 'banknotes'),
+                  count: badgeData.settlementCount,
+                ),
+                label: 'Money'),
+            const BottomNavigationBarItem(
                 icon: AppIcon(name: 'listBullet'), label: 'Lists'),
           ],
         ),
@@ -307,10 +332,15 @@ class BottomNavScaffold extends StatelessWidget {
     return 0;
   }
 
-  void _onTap(int index, BuildContext context) {
+  void _onTap(int index, BuildContext context, WidgetRef ref) {
     switch (index) {
       case 0:
-        context.goNamed('home');
+        final savedGroupId = ref.read(currentGroupIdProvider);
+        if (savedGroupId != null) {
+          context.go('/home/$savedGroupId/hub');
+        } else {
+          context.goNamed('home');
+        }
         return;
       case 1:
         context.goNamed('chores');

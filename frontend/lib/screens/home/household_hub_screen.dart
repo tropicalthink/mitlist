@@ -27,6 +27,7 @@ import '../../widgets/hub/pinwall_section.dart';
 import '../../widgets/hub/quick_add_sheet.dart';
 import '../../widgets/hub/stats_grid.dart';
 import '../../widgets/shell_trailing_actions.dart';
+import '../../router.dart' show currentGroupIdProvider;
 import '../../sheets/create_household_sheet.dart';
 import '../../sheets/join_household_sheet.dart';
 import '../../sheets/group_settings_sheet.dart';
@@ -138,6 +139,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
         _me = me;
         _isLoading = !hadCache;
       });
+      ref.read(currentGroupIdProvider.notifier).state = widget.groupId;
 
       await _groupSub?.cancel();
       _groupSub = repo.watchGroup(widget.groupId).listen((g) {
@@ -328,6 +330,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                         ? () {
                             Navigator.of(sheetContext).pop();
                             if (h.id != widget.groupId) {
+                              ref.read(currentGroupIdProvider.notifier).state = h.id;
                               hubContext.goNamed(
                                 'householdHub',
                                 pathParameters: {'groupId': h.id},

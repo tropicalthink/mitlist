@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/mitlist-app/mitlist/internal/services"
 )
 
@@ -17,7 +18,8 @@ func newCalendarRouter(t *testing.T) (chi.Router, *CalendarHandler) {
 	financeRepo := newTestFinanceRepo()
 	recipeRepo := newTestRecipeRepo()
 	mealPlanRepo := services.NewMealPlanService(recipeRepo, newTestListRepo(), newTestGroupRepo())
-	svc := services.NewCalendarService(choreRepo, financeRepo, mealPlanRepo)
+	pinwallRepo := repositories.NewPinwallRepository(testDB)
+	svc := services.NewCalendarService(mealPlanRepo, recipeRepo, choreRepo, financeRepo, newTestGroupRepo(), pinwallRepo)
 	h := NewCalendarHandler(svc)
 
 	r := chi.NewRouter()

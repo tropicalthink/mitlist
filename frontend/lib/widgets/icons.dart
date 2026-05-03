@@ -66,6 +66,7 @@ class AppIcons {
   static const IconData alertCircleOutline = Icons.error_outline;
   static const IconData asterisk = Icons.emergency;
   static const IconData dotsHorizontal = Icons.more_horiz;
+  static const IconData camera = Icons.camera_alt;
 
   /// Resolves a semantic [name] to its placeholder [IconData].
   ///

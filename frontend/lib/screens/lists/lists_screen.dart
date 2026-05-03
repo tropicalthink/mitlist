@@ -342,6 +342,11 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         actions: [
           if (!_showSearch) ...[
             IconButton(
+              icon: const Icon(AppIcons.camera),
+              tooltip: 'Scan receipt or list',
+              onPressed: () => context.pushNamed('scanner'),
+            ),
+            IconButton(
               icon: const Icon(AppIcons.shoppingCart),
               tooltip: 'Shopping trip',
               onPressed: () => context.pushNamed('shoppingTrip'),

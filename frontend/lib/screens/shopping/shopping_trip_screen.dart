@@ -14,6 +14,7 @@ import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/mitlist_app_bar.dart';
+import '../../widgets/skeleton.dart';
 
 class ShoppingTripScreen extends ConsumerStatefulWidget {
   const ShoppingTripScreen({super.key});
@@ -115,12 +116,39 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
   Future<void> _completeChecked() async {
     if (_checkedItemIds.isEmpty) return;
     setState(() => _isSubmitting = true);
+
+    final checkedItems = <ListItem>[];
+    for (final items in _itemsByList.values) {
+      for (final item in items) {
+        if (_checkedItemIds.contains(item.id)) {
+          checkedItems.add(item);
+        }
+      }
+    }
+    final totalCents = checkedItems.fold<int>(
+        0, (sum, item) => sum + (item.priceCents ?? 0));
+
     try {
       final listSvc = await ref.read(listServiceProviderAsync.future);
       await listSvc.completeShoppingItems(_checkedItemIds.toList());
+
+      if (!mounted) return;
       setState(() => _checkedItemIds.clear());
       await _load();
-      if (mounted) {
+      if (!mounted) return;
+
+      if (totalCents > 0) {
+        final totalStr = (totalCents / 100).toStringAsFixed(2);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('\u20ac$totalStr worth of items marked as done'),
+            action: SnackBarAction(
+              label: 'Add expense',
+              onPressed: () => context.pushNamed('money'),
+            ),
+          ),
+        );
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Items marked as done')),
         );
@@ -182,7 +210,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
 
   Widget _buildBody(TextTheme textTheme) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return _buildSkeleton();
     }
     if (_error != null) {
       return Center(
@@ -222,22 +250,69 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
       );
     }
 
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.md, vertical: MitlistSpacing.sm),
+        itemCount: _itemsByList.length,
+        itemBuilder: (context, index) {
+          final listId = _itemsByList.keys.elementAt(index);
+          final items = _itemsByList[listId]!;
+          final listName = _listName(listId);
+          return _ListSection(
+            listId: listId,
+            listName: listName,
+            items: items,
+            checkedIds: _checkedItemIds,
+            onToggle: _toggleItem,
+            onTapList: () => context.pushNamed('listDetail', pathParameters: {'listId': listId}),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSkeleton() {
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.md, vertical: MitlistSpacing.sm),
-      itemCount: _itemsByList.length,
-      itemBuilder: (context, index) {
-        final listId = _itemsByList.keys.elementAt(index);
-        final items = _itemsByList[listId]!;
-        final listName = _listName(listId);
-        return _ListSection(
-          listId: listId,
-          listName: listName,
-          items: items,
-          checkedIds: _checkedItemIds,
-          onToggle: _toggleItem,
-          onTapList: () => context.pushNamed('listDetail', pathParameters: {'listId': listId}),
-        );
-      },
+      padding: const EdgeInsets.all(MitlistSpacing.md),
+      itemCount: 3,
+      itemBuilder: (_, index) => Padding(
+        padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
+        child: AppCard(
+          variant: AppCardVariant.outlined,
+          padding: AppCardPadding.md,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const AppSkeleton(width: 140, height: 16),
+              const SizedBox(height: MitlistSpacing.sm),
+              const Divider(),
+              const SizedBox(height: MitlistSpacing.sm),
+              for (var i = 0; i < 4; i++)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+                  child: Row(
+                    children: [
+                      const AppSkeleton(width: 20, height: 20),
+                      const SizedBox(width: MitlistSpacing.sm),
+                      Expanded(
+                        child: AppSkeleton(
+                          width: double.infinity,
+                          height: 14,
+                        ),
+                      ),
+                      const SizedBox(width: MitlistSpacing.md),
+                      AppSkeleton(
+                        width: MitlistSpacing.space10,
+                        height: 14,
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

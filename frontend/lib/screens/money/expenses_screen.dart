@@ -499,6 +499,11 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         'Money',
         actions: [
           IconButton(
+            icon: const Icon(Icons.camera_alt),
+            tooltip: 'Scan receipt',
+            onPressed: () => context.pushNamed('scanner'),
+          ),
+          IconButton(
             icon: const Icon(Icons.repeat),
             tooltip: 'Recurring',
             onPressed: () => context.pushNamed('recurringExpenses'),

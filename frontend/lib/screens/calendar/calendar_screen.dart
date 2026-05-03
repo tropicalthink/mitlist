@@ -209,10 +209,20 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       children: [
         _buildViewToggle(),
         if (_viewMode == _CalendarView.week)
-          Expanded(child: _buildWeekView()),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _load,
+              child: _buildWeekView(),
+            ),
+          ),
         if (_viewMode == _CalendarView.month)
-          Expanded(child: _buildMonthView()),
-        // Agenda wraps itself in Expanded (scroll + empty states).
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _load,
+              child: _buildMonthView(),
+            ),
+          ),
+        // Agenda wraps itself in Expanded + RefreshIndicator.
         if (_viewMode == _CalendarView.agenda) _buildAgendaView(),
       ],
     );
@@ -516,6 +526,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       CalendarEventType.mealPlan => MitlistColors.primary500,
       CalendarEventType.chore => MitlistColors.warning500,
       CalendarEventType.recurringExpense => MitlistColors.success500,
+      CalendarEventType.pinwallReminder => MitlistColors.error300,
     };
   }
 
@@ -746,6 +757,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           MitlistColors.success500,
           'Recurring'
         ),
+      CalendarEventType.pinwallReminder => (
+          Icons.push_pin_outlined,
+          MitlistColors.error300,
+          'Reminder'
+        ),
     };
   }
 
@@ -774,6 +790,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         context.pushNamed('mealPlan');
       case CalendarEventType.recurringExpense:
         context.pushNamed('recurringExpenses');
+      case CalendarEventType.pinwallReminder:
+        break;
     }
   }
 
@@ -927,6 +945,11 @@ class _EventRow extends StatelessWidget {
           Icons.repeat,
           MitlistColors.success500,
           'Recurring'
+        ),
+      CalendarEventType.pinwallReminder => (
+          Icons.push_pin_outlined,
+          MitlistColors.error300,
+          'Reminder'
         ),
     };
 
