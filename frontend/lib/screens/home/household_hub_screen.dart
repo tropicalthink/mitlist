@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../models/activity_models.dart';
 import '../../models/auth_models.dart';
@@ -15,6 +14,8 @@ import '../../providers/list_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/pinwall_provider.dart';
 import '../../repositories/hub_repository.dart';
+import '../../router.dart' show currentGroupIdProvider;
+import '../../services/group_id_validator.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../utils/haptics.dart';
@@ -27,7 +28,6 @@ import '../../widgets/hub/pinwall_section.dart';
 import '../../widgets/hub/quick_add_sheet.dart';
 import '../../widgets/hub/stats_grid.dart';
 import '../../widgets/shell_trailing_actions.dart';
-import '../../router.dart' show currentGroupIdProvider;
 import '../../sheets/create_household_sheet.dart';
 import '../../sheets/join_household_sheet.dart';
 import '../../sheets/group_settings_sheet.dart';
@@ -43,9 +43,9 @@ class _HubSnapshot {
 }
 
 class HouseholdHubScreen extends ConsumerStatefulWidget {
-  final String groupId;
+  final String? groupId;
 
-  const HouseholdHubScreen({super.key, required this.groupId});
+  const HouseholdHubScreen({super.key, this.groupId});
 
   @override
   ConsumerState<HouseholdHubScreen> createState() =>
@@ -61,11 +61,12 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
   User? _me;
   StreamSubscription<Group?>? _groupSub;
   StreamSubscription<(List<ActivityLogModel>, bool)>? _activitySub;
+  String? _resolvedGroupId;
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _resolveAndLoad();
   }
 
   @override
@@ -83,8 +84,56 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
       _groupSub = null;
       _activitySub?.cancel();
       _activitySub = null;
-      _loadData();
+      _resolveAndLoad();
     }
+  }
+
+  Future<void> _resolveAndLoad() async {
+    if (widget.groupId != null && widget.groupId!.isNotEmpty) {
+      _resolvedGroupId = widget.groupId;
+      ref.read(currentGroupIdProvider.notifier).state = widget.groupId!;
+      _loadData();
+      return;
+    }
+
+    final saved = ref.read(currentGroupIdProvider);
+    if (saved != null) {
+      _resolvedGroupId = saved;
+      _loadData();
+      return;
+    }
+
+    try {
+      final groupSvc = await ref.read(groupServiceProviderAsync.future);
+      final groups = await groupSvc.listGroups(limit: 1);
+      final gid = groups.isNotEmpty ? groups.first.id : null;
+      if (!mounted) return;
+      if (isValidGroupId(gid)) {
+        _resolvedGroupId = gid;
+        ref.read(currentGroupIdProvider.notifier).state = gid;
+      } else {
+        _resolvedGroupId = null;
+      }
+      _loadData();
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _switchGroup(String newGroupId) async {
+    ref.read(currentGroupIdProvider.notifier).state = newGroupId;
+    setState(() {
+      _resolvedGroupId = newGroupId;
+      _isLoading = true;
+      _error = null;
+    });
+    _groupSub?.cancel();
+    _groupSub = null;
+    _activitySub?.cancel();
+    _activitySub = null;
+    _loadData();
   }
 
   Future<void> _loadData() async {
@@ -123,9 +172,9 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
         activity: activityService,
       );
 
-      final cachedGroup = await repo.getGroupOnce(widget.groupId);
+      final cachedGroup = await repo.getGroupOnce(_resolvedGroupId!);
       final cachedActivities =
-          await repo.getActivitiesOnce(widget.groupId);
+          await repo.getActivitiesOnce(_resolvedGroupId!);
       if (!mounted) return;
       final hadCache =
           cachedGroup != null || cachedActivities.$1.isNotEmpty;
@@ -139,17 +188,17 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
         _me = me;
         _isLoading = !hadCache;
       });
-      ref.read(currentGroupIdProvider.notifier).state = widget.groupId;
+      ref.read(currentGroupIdProvider.notifier).state = _resolvedGroupId!;
 
       await _groupSub?.cancel();
-      _groupSub = repo.watchGroup(widget.groupId).listen((g) {
+      _groupSub = repo.watchGroup(_resolvedGroupId!).listen((g) {
         if (!mounted || g == null) return;
         setState(() => _data = g);
       });
 
       await _activitySub?.cancel();
       _activitySub =
-          repo.watchActivities(widget.groupId).listen((tuple) {
+          repo.watchActivities(_resolvedGroupId!).listen((tuple) {
         if (!mounted) return;
         setState(() {
           _snapshot = _HubSnapshot(
@@ -160,14 +209,14 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
       });
 
       try {
-        await repo.refresh(widget.groupId, activityLimit: 10);
+        await repo.refresh(_resolvedGroupId!, activityLimit: 10);
         activities =
-            (await repo.getActivitiesOnce(widget.groupId)).$1;
+            (await repo.getActivitiesOnce(_resolvedGroupId!)).$1;
         activityError =
-            (await repo.getActivitiesOnce(widget.groupId)).$2;
+            (await repo.getActivitiesOnce(_resolvedGroupId!)).$2;
       } catch (_) {
         debugPrint(
-            '[HouseholdHub] Activity refresh failed for ${widget.groupId}');
+            '[HouseholdHub] Activity refresh failed for ${_resolvedGroupId!}');
       }
 
       if (!mounted) return;
@@ -191,18 +240,18 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
 
   Future<void> _onRefresh() async {
     ref.invalidate(
-        cachedFinanceSummaryByGroupProvider(widget.groupId));
-    ref.invalidate(cachedListsByGroupProvider(widget.groupId));
+        cachedFinanceSummaryByGroupProvider(_resolvedGroupId!));
+    ref.invalidate(cachedListsByGroupProvider(_resolvedGroupId!));
     ref.invalidate(
-        cachedCurrentChoresByGroupProvider(widget.groupId));
+        cachedCurrentChoresByGroupProvider(_resolvedGroupId!));
     ref.invalidate(
-        pinwallPostsByGroupProvider(widget.groupId));
+        pinwallPostsByGroupProvider(_resolvedGroupId!));
     await _loadData();
 
     try {
       final financeRepo =
           await ref.read(financeRepositoryProvider.future);
-      await financeRepo.refreshGroup(widget.groupId,
+      await financeRepo.refreshGroup(_resolvedGroupId!,
           limit: 50, offset: 0);
     } catch (_) {
       debugPrint('[HouseholdHub] Finance repo refresh failed');
@@ -210,7 +259,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     try {
       final listRepo =
           await ref.read(listRepositoryProvider.future);
-      await listRepo.refreshLists(widget.groupId,
+      await listRepo.refreshLists(_resolvedGroupId!,
           limit: 50, offset: 0);
     } catch (_) {
       debugPrint('[HouseholdHub] List repo refresh failed');
@@ -218,14 +267,14 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     try {
       final choreRepo =
           await ref.read(choreRepositoryProvider.future);
-      await choreRepo.refreshCurrentChores(widget.groupId);
+      await choreRepo.refreshCurrentChores(_resolvedGroupId!);
     } catch (_) {
       debugPrint('[HouseholdHub] Chore repo refresh failed');
     }
     try {
       final pinRepo =
           await ref.read(pinwallRepositoryProvider.future);
-      await pinRepo.refreshPosts(widget.groupId,
+      await pinRepo.refreshPosts(_resolvedGroupId!,
           limit: 20, offset: 0);
     } catch (_) {
       debugPrint('[HouseholdHub] Pinwall repo refresh failed');
@@ -265,10 +314,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
           }
         }
         if (newGroup != null && hubContext.mounted) {
-          hubContext.goNamed(
-            'householdHub',
-            pathParameters: {'groupId': newGroup.id},
-          );
+          _switchGroup(newGroup.id);
         } else {
           await _loadData();
         }
@@ -329,12 +375,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                     onTap: groups.length >= 2
                         ? () {
                             Navigator.of(sheetContext).pop();
-                            if (h.id != widget.groupId) {
-                              ref.read(currentGroupIdProvider.notifier).state = h.id;
-                              hubContext.goNamed(
-                                'householdHub',
-                                pathParameters: {'groupId': h.id},
-                              );
+                            if (h.id != _resolvedGroupId!) {
+                              _switchGroup(h.id);
                             }
                           }
                         : null,
@@ -351,13 +393,13 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: rowStyle?.copyWith(
-                                fontWeight: h.id == widget.groupId
+                                fontWeight: h.id == _resolvedGroupId!
                                     ? FontWeight.w700
                                     : FontWeight.w500,
                               ),
                             ),
                           ),
-                          if (h.id == widget.groupId)
+                          if (h.id == _resolvedGroupId!)
                             Icon(
                               Icons.check,
                               size: 18,
@@ -412,7 +454,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                     if (!hubContext.mounted) return;
                     await GroupSettingsSheet.show(
                       hubContext,
-                      groupId: widget.groupId,
+                      groupId: _resolvedGroupId!,
                     );
                   });
                 },
@@ -532,10 +574,10 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                         padding: const EdgeInsets.all(MitlistSpacing.md),
                         sliver: SliverList(
                           delegate: SliverChildListDelegate([
-                            StatsGrid(groupId: widget.groupId),
+                            StatsGrid(groupId: _resolvedGroupId!),
                             const SizedBox(height: MitlistSpacing.lg),
                             PinwallSection(
-                                groupId: widget.groupId, me: _me),
+                                groupId: _resolvedGroupId!, me: _me),
                             const SizedBox(height: MitlistSpacing.lg),
                             ActivityWall(
                               activities: _snapshot!.activities,

@@ -2,10 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'providers/auth_provider.dart';
-import 'providers/group_provider.dart';
-import 'services/group_id_validator.dart';
-import 'services/group_service.dart';
-import 'models/group_models.dart';
 import 'theme/colors.dart';
 import 'widgets/app_icon.dart';
 import 'providers/nav_badge_provider.dart';
@@ -149,20 +145,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/home',
             name: 'home',
-            builder: (context, state) => const _HomeEntryScreen(),
+            builder: (context, state) => const HouseholdHubScreen(),
             routes: [
               GoRoute(
                 path: 'groups',
                 name: 'groupsList',
                 builder: (context, state) => const GroupsListScreen(),
-              ),
-              GoRoute(
-                path: ':groupId/hub',
-                name: 'householdHub',
-                builder: (context, state) {
-                  final groupId = state.pathParameters['groupId']!;
-                  return HouseholdHubScreen(groupId: groupId);
-                },
               ),
             ],
           ),
@@ -335,12 +323,7 @@ class BottomNavScaffold extends ConsumerWidget {
   void _onTap(int index, BuildContext context, WidgetRef ref) {
     switch (index) {
       case 0:
-        final savedGroupId = ref.read(currentGroupIdProvider);
-        if (savedGroupId != null) {
-          context.go('/home/$savedGroupId/hub');
-        } else {
-          context.goNamed('home');
-        }
+        context.goNamed('home');
         return;
       case 1:
         context.goNamed('chores');
@@ -355,82 +338,5 @@ class BottomNavScaffold extends ConsumerWidget {
         context.goNamed('lists');
         return;
     }
-  }
-}
-
-class _HomeEntryScreen extends ConsumerStatefulWidget {
-  const _HomeEntryScreen();
-
-  @override
-  ConsumerState<_HomeEntryScreen> createState() => _HomeEntryScreenState();
-}
-
-class _HomeEntryScreenState extends ConsumerState<_HomeEntryScreen> {
-  late final Future<GroupService> _groupServiceFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _groupServiceFuture = ref.read(groupServiceProviderAsync.future);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<GroupService>(
-      future: _groupServiceFuture,
-      builder: (context, serviceSnap) {
-        if (serviceSnap.connectionState != ConnectionState.done) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        if (serviceSnap.hasError || serviceSnap.data == null) {
-          return const GroupsListScreen();
-        }
-
-        return _GroupResolver(service: serviceSnap.data!);
-      },
-    );
-  }
-}
-
-class _GroupResolver extends StatefulWidget {
-  final GroupService service;
-  const _GroupResolver({required this.service});
-
-  @override
-  State<_GroupResolver> createState() => _GroupResolverState();
-}
-
-class _GroupResolverState extends State<_GroupResolver> {
-  late final Future<List<Group>> _groupsFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _groupsFuture = widget.service.listGroups(limit: 1);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<List<Group>>(
-      future: _groupsFuture,
-      builder: (context, groupsSnap) {
-        if (groupsSnap.connectionState != ConnectionState.done) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        final groups = groupsSnap.data ?? const [];
-        final groupId = groups.isEmpty ? null : groups.first.id;
-        if (!isValidGroupId(groupId)) {
-          return const GroupsListScreen();
-        }
-
-        return HouseholdHubScreen(groupId: groupId!);
-      },
-    );
   }
 }
