@@ -1,0 +1,149 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../models/activity_models.dart';
+import '../../theme/spacing.dart';
+import '../../utils/hub_helpers.dart';
+
+class ActivityWall extends StatelessWidget {
+  const ActivityWall({
+    super.key,
+    required this.activities,
+    required this.activityError,
+  });
+
+  final List<ActivityLogModel> activities;
+  final bool activityError;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Activity',
+                style: textTheme.titleMedium,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: MitlistSpacing.sm),
+        if (activityError)
+          Text(
+            'Couldn\u2019t load the wall right now.',
+            style: textTheme.bodySmall
+                ?.copyWith(color: colorScheme.onSurfaceVariant),
+          )
+        else if (activities.isEmpty)
+          Text(
+            'Nothing posted yet.',
+            style: textTheme.bodySmall
+                ?.copyWith(color: colorScheme.onSurfaceVariant),
+          )
+        else
+          Container(
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              border: Border.all(color: colorScheme.outline, width: 2),
+            ),
+            padding: const EdgeInsets.all(MitlistSpacing.md),
+            child: Column(
+              children: [
+                for (var i = 0; i < activities.take(5).length; i++) ...[
+                  if (i > 0) const SizedBox(height: MitlistSpacing.sm),
+                  _WallItem(item: activities[i]),
+                ],
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _WallItem extends StatelessWidget {
+  const _WallItem({required this.item});
+
+  final ActivityLogModel item;
+
+  void _onTap(BuildContext context) {
+    final entityType = item.entityType;
+    final entityId = item.entityId;
+
+    switch (entityType) {
+      case 'list':
+        context.pushNamed('listDetail',
+            pathParameters: {'listId': entityId});
+      case 'expense':
+        context.pushNamed('money');
+      case 'chore':
+        context.pushNamed('chores');
+      case 'recipe':
+        context.pushNamed('recipes');
+      case 'meal_plan':
+        context.pushNamed('mealPlan', extra: item.groupId);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    final userLabel = formatUserLabel(item.userId ?? '', null);
+    final when = relativeDay(item.createdAt);
+    final message = formatActivityLine(item);
+    final tappable = isNavigableAction(item.entityType);
+
+    return InkWell(
+      onTap: tappable ? () => _onTap(context) : null,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: colorScheme.primaryContainer,
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                avatarInitials(userLabel),
+                style: textTheme.labelMedium?.copyWith(
+                    color: colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w600),
+              ),
+            ),
+            const SizedBox(width: MitlistSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$userLabel \u00b7 $when',
+                    style: textTheme.labelMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: MitlistSpacing.xs),
+                  Text(
+                    message,
+                    style: textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

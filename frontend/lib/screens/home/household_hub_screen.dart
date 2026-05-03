@@ -3,44 +3,33 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../models/activity_models.dart';
 import '../../models/auth_models.dart';
 import '../../models/group_models.dart';
-import '../../models/pinwall_media_models.dart';
-import '../../models/pinwall_models.dart';
 import '../../providers/activity_provider.dart';
-import '../../providers/attachment_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/chore_provider.dart';
 import '../../providers/finance_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../providers/group_provider.dart';
-import '../../providers/chore_provider.dart';
 import '../../providers/pinwall_provider.dart';
 import '../../repositories/hub_repository.dart';
-import '../../utils/haptics.dart';
 import '../../theme/colors.dart';
+import '../../theme/spacing.dart';
+import '../../utils/haptics.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
-import '../../widgets/app_card.dart';
+import '../../widgets/hub/activity_wall.dart';
+import '../../widgets/hub/hub_skeleton.dart';
+import '../../widgets/hub/pinwall_section.dart';
+import '../../widgets/hub/quick_add_sheet.dart';
+import '../../widgets/hub/stats_grid.dart';
 import '../../widgets/shell_trailing_actions.dart';
-import '../../widgets/skeleton.dart';
-import '../../theme/spacing.dart';
-import '../../theme/theme.dart';
 import '../../sheets/create_household_sheet.dart';
 import '../../sheets/join_household_sheet.dart';
 import '../../sheets/group_settings_sheet.dart';
-
-final _pinwallMediaByPostProvider = FutureProvider.family<
-    List<PinwallMediaItem>, ({String groupId, String postId})>(
-  (ref, args) async {
-    final svc = await ref.read(pinwallServiceProviderAsync.future);
-    return svc.listPostAttachments(groupId: args.groupId, postId: args.postId);
-  },
-);
 
 class _HubSnapshot {
   const _HubSnapshot({
@@ -58,7 +47,8 @@ class HouseholdHubScreen extends ConsumerStatefulWidget {
   const HouseholdHubScreen({super.key, required this.groupId});
 
   @override
-  ConsumerState<HouseholdHubScreen> createState() => _HouseholdHubScreenState();
+  ConsumerState<HouseholdHubScreen> createState() =>
+      _HouseholdHubScreenState();
 }
 
 class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
@@ -108,7 +98,6 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
       try {
         households = await groupService.listGroups();
       } catch (_) {
-        // Switcher is optional; hub still loads for current group.
       }
 
       var activities = <ActivityLogModel>[];
@@ -133,11 +122,12 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
         activity: activityService,
       );
 
-      // Cache-first: show cached data immediately, refresh in background.
       final cachedGroup = await repo.getGroupOnce(widget.groupId);
-      final cachedActivities = await repo.getActivitiesOnce(widget.groupId);
+      final cachedActivities =
+          await repo.getActivitiesOnce(widget.groupId);
       if (!mounted) return;
-      final hadCache = cachedGroup != null || cachedActivities.$1.isNotEmpty;
+      final hadCache =
+          cachedGroup != null || cachedActivities.$1.isNotEmpty;
       setState(() {
         _data = cachedGroup;
         _households = households;
@@ -156,7 +146,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
       });
 
       await _activitySub?.cancel();
-      _activitySub = repo.watchActivities(widget.groupId).listen((tuple) {
+      _activitySub =
+          repo.watchActivities(widget.groupId).listen((tuple) {
         if (!mounted) return;
         setState(() {
           _snapshot = _HubSnapshot(
@@ -166,11 +157,12 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
         });
       });
 
-      // Background refresh; if it fails, keep cached view.
       try {
         await repo.refresh(widget.groupId, activityLimit: 10);
-        activities = (await repo.getActivitiesOnce(widget.groupId)).$1;
-        activityError = (await repo.getActivitiesOnce(widget.groupId)).$2;
+        activities =
+            (await repo.getActivitiesOnce(widget.groupId)).$1;
+        activityError =
+            (await repo.getActivitiesOnce(widget.groupId)).$2;
       } catch (_) {
         debugPrint(
             '[HouseholdHub] Activity refresh failed for ${widget.groupId}');
@@ -179,9 +171,10 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
       if (!mounted) return;
       setState(() {
         _data = _data;
-        _households = households;
         _snapshot = _snapshot ??
-            _HubSnapshot(activities: activities, activityError: activityError);
+            _HubSnapshot(
+                activities: activities,
+                activityError: activityError);
         _me = me;
         _isLoading = false;
       });
@@ -191,6 +184,49 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
         _error = e;
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _onRefresh() async {
+    ref.invalidate(
+        cachedFinanceSummaryByGroupProvider(widget.groupId));
+    ref.invalidate(cachedListsByGroupProvider(widget.groupId));
+    ref.invalidate(
+        cachedCurrentChoresByGroupProvider(widget.groupId));
+    ref.invalidate(
+        pinwallPostsByGroupProvider(widget.groupId));
+    await _loadData();
+
+    try {
+      final financeRepo =
+          await ref.read(financeRepositoryProvider.future);
+      await financeRepo.refreshGroup(widget.groupId,
+          limit: 50, offset: 0);
+    } catch (_) {
+      debugPrint('[HouseholdHub] Finance repo refresh failed');
+    }
+    try {
+      final listRepo =
+          await ref.read(listRepositoryProvider.future);
+      await listRepo.refreshLists(widget.groupId,
+          limit: 50, offset: 0);
+    } catch (_) {
+      debugPrint('[HouseholdHub] List repo refresh failed');
+    }
+    try {
+      final choreRepo =
+          await ref.read(choreRepositoryProvider.future);
+      await choreRepo.refreshCurrentChores(widget.groupId);
+    } catch (_) {
+      debugPrint('[HouseholdHub] Chore repo refresh failed');
+    }
+    try {
+      final pinRepo =
+          await ref.read(pinwallRepositoryProvider.future);
+      await pinRepo.refreshPosts(widget.groupId,
+          limit: 20, offset: 0);
+    } catch (_) {
+      debugPrint('[HouseholdHub] Pinwall repo refresh failed');
     }
   }
 
@@ -272,7 +308,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                         label,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: rowStyle?.copyWith(fontWeight: FontWeight.w500),
+                        style: rowStyle?.copyWith(
+                            fontWeight: FontWeight.w500),
                       ),
                     ),
                   ],
@@ -339,7 +376,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                 label: 'Create household',
                 onTap: () {
                   Navigator.of(sheetContext).pop();
-                  WidgetsBinding.instance.addPostFrameCallback((_) async {
+                  WidgetsBinding.instance
+                      .addPostFrameCallback((_) async {
                     if (!hubContext.mounted) return;
                     final created =
                         await CreateHouseholdSheet.show(hubContext);
@@ -352,9 +390,11 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                 label: 'Join household',
                 onTap: () {
                   Navigator.of(sheetContext).pop();
-                  WidgetsBinding.instance.addPostFrameCallback((_) async {
+                  WidgetsBinding.instance
+                      .addPostFrameCallback((_) async {
                     if (!hubContext.mounted) return;
-                    final joined = await JoinHouseholdSheet.show(hubContext);
+                    final joined =
+                        await JoinHouseholdSheet.show(hubContext);
                     await onCreateJoinResult(joined);
                   });
                 },
@@ -364,7 +404,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                 label: 'Household settings',
                 onTap: () {
                   Navigator.of(sheetContext).pop();
-                  WidgetsBinding.instance.addPostFrameCallback((_) async {
+                  WidgetsBinding.instance
+                      .addPostFrameCallback((_) async {
                     if (!hubContext.mounted) return;
                     await GroupSettingsSheet.show(
                       hubContext,
@@ -382,15 +423,17 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
 
   Widget _buildAppBarTitle(BuildContext context) {
     final name = _data?.name ?? 'Home';
-    final titleTextStyle = Theme.of(context).appBarTheme.titleTextStyle ??
-        Theme.of(context).textTheme.titleLarge;
+    final titleTextStyle =
+        Theme.of(context).appBarTheme.titleTextStyle ??
+            Theme.of(context).textTheme.titleLarge;
     final screenW = MediaQuery.sizeOf(context).width;
     final padding = MediaQuery.paddingOf(context).horizontal;
-    // ~4 toolbar icons at 48dp + padding; leave room for chevron.
-    final actionsReserve =
-        MitlistSpacing.space12 * 4 + MitlistSpacing.md + MitlistSpacing.sm;
-    final textMax = (screenW - padding - actionsReserve - MitlistSpacing.space6)
-        .clamp(MitlistSpacing.space20, screenW);
+    final actionsReserve = MitlistSpacing.space12 * 4 +
+        MitlistSpacing.md +
+        MitlistSpacing.sm;
+    final textMax =
+        (screenW - padding - actionsReserve - MitlistSpacing.space6)
+            .clamp(MitlistSpacing.space20, screenW);
 
     return Semantics(
       button: true,
@@ -401,7 +444,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
           onTap: () => _openHouseholdSwitcher(context),
           borderRadius: BorderRadius.zero,
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xs),
+            padding:
+                const EdgeInsets.symmetric(vertical: MitlistSpacing.xs),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -436,13 +480,13 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
           ? null
           : AppButton(
               size: AppButtonSize.lg,
-              onPressed: () => _openQuickAddSheet(context),
+              onPressed: () => showQuickAddSheet(context),
               icon: const Icon(Icons.add),
               text: 'Quick add',
               tooltip: 'Quick add',
             ),
       body: _isLoading
-          ? const _SkeletonDashboard()
+          ? const HubSkeleton()
           : _error != null
               ? Center(
                   child: Padding(
@@ -453,7 +497,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                         const AppAlert(
                           type: AppAlertType.error,
                           message:
-                              'Couldn’t load this household. Check your connection and try again.',
+                              'Couldn\u2019t load this household. Check your connection and try again.',
                         ),
                         const SizedBox(height: MitlistSpacing.md),
                         AppButton(
@@ -465,55 +509,15 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                   ),
                 )
               : RefreshIndicator(
-                  onRefresh: () async {
-                    ref.invalidate(
-                        cachedFinanceSummaryByGroupProvider(widget.groupId));
-                    ref.invalidate(cachedListsByGroupProvider(widget.groupId));
-                    ref.invalidate(
-                        cachedCurrentChoresByGroupProvider(widget.groupId));
-                    ref.invalidate(pinwallPostsByGroupProvider(widget.groupId));
-                    await _loadData();
-
-                    // Best-effort background refresh for cached sections.
-                    try {
-                      final financeRepo =
-                          await ref.read(financeRepositoryProvider.future);
-                      await financeRepo.refreshGroup(widget.groupId,
-                          limit: 50, offset: 0);
-                    } catch (_) {
-                      debugPrint('[HouseholdHub] Finance repo refresh failed');
-                    }
-                    try {
-                      final listRepo =
-                          await ref.read(listRepositoryProvider.future);
-                      await listRepo.refreshLists(widget.groupId,
-                          limit: 50, offset: 0);
-                    } catch (_) {
-                      debugPrint('[HouseholdHub] List repo refresh failed');
-                    }
-                    try {
-                      final choreRepo =
-                          await ref.read(choreRepositoryProvider.future);
-                      await choreRepo.refreshCurrentChores(widget.groupId);
-                    } catch (_) {
-                      debugPrint('[HouseholdHub] Chore repo refresh failed');
-                    }
-                    try {
-                      final pinRepo =
-                          await ref.read(pinwallRepositoryProvider.future);
-                      await pinRepo.refreshPosts(widget.groupId,
-                          limit: 20, offset: 0);
-                    } catch (_) {
-                      debugPrint('[HouseholdHub] Pinwall repo refresh failed');
-                    }
-                  },
+                  onRefresh: _onRefresh,
                   child: CustomScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     slivers: [
                       SliverAppBar(
                         pinned: true,
                         elevation: 0,
-                        backgroundColor: Theme.of(context).colorScheme.surface,
+                        backgroundColor:
+                            Theme.of(context).colorScheme.surface,
                         leading: null,
                         title: _buildAppBarTitle(context),
                         actions: [
@@ -524,1220 +528,24 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                       SliverPadding(
                         padding: const EdgeInsets.all(MitlistSpacing.md),
                         sliver: SliverList(
-                          delegate: SliverChildListDelegate(
-                            [
-                              const SizedBox(height: MitlistSpacing.md),
-                              _PinwallSection(groupId: widget.groupId, me: _me),
-                              const SizedBox(height: MitlistSpacing.lg),
-                              _WallSection(
-                                activities: _snapshot!.activities,
-                                activityError: _snapshot!.activityError,
-                              ),
-                              const SizedBox(height: MitlistSpacing.xl),
-                            ],
-                          ),
+                          delegate: SliverChildListDelegate([
+                            StatsGrid(groupId: widget.groupId),
+                            const SizedBox(height: MitlistSpacing.lg),
+                            PinwallSection(
+                                groupId: widget.groupId, me: _me),
+                            const SizedBox(height: MitlistSpacing.lg),
+                            ActivityWall(
+                              activities: _snapshot!.activities,
+                              activityError:
+                                  _snapshot!.activityError,
+                            ),
+                            const SizedBox(height: MitlistSpacing.xl),
+                          ]),
                         ),
                       ),
                     ],
                   ),
                 ),
-    );
-  }
-}
-
-String _formatActivityLine(ActivityLogModel a) {
-  final when = _relativeDay(a.createdAt);
-  switch (a.action) {
-    case 'list_item_added':
-      return 'Added an item to a list · $when';
-    case 'expense_created':
-      return 'Logged an expense · $when';
-    case 'chore_completed':
-      return 'Completed a chore · $when';
-    case 'recipe_added':
-      return 'Saved a recipe · $when';
-    case 'meal_plan_created':
-      return 'Updated meal plan · $when';
-    default:
-      return '${a.action} · $when';
-  }
-}
-
-String _relativeDay(DateTime t) {
-  final now = DateTime.now();
-  final today = DateTime(now.year, now.month, now.day);
-  final d = DateTime(t.year, t.month, t.day);
-  final diff = today.difference(d).inDays;
-  if (diff == 0) return 'today';
-  if (diff == 1) return 'yesterday';
-  if (diff < 7) return '$diff days ago';
-  return DateFormat.MMMd().format(t);
-}
-
-String _formatUserLabel(String id, String? currentUserId) {
-  if (id == currentUserId) return 'You';
-  return 'Member';
-}
-
-// Returns a 1–2 letter avatar string from a user label.
-String _avatarInitials(String label) {
-  final parts = label.trim().split(RegExp(r'\s+'));
-  if (parts.length >= 2) {
-    return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-  }
-  return label.isNotEmpty ? label[0].toUpperCase() : '?';
-}
-
-Future<void> _openQuickAddSheet(BuildContext context) async {
-  Haptics.light();
-  await showModalBottomSheet<void>(
-    context: context,
-    showDragHandle: true,
-    builder: (context) {
-      return SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(MitlistSpacing.md),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Quick add',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: MitlistSpacing.md),
-              AppButton(
-                text: 'Add expense',
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  context.pushNamed('money');
-                },
-              ),
-              const SizedBox(height: MitlistSpacing.sm),
-              AppButton(
-                text: 'Add to a list',
-                variant: AppButtonVariant.outline,
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  context.pushNamed('lists');
-                },
-              ),
-              const SizedBox(height: MitlistSpacing.sm),
-              AppButton(
-                text: 'Add chore',
-                variant: AppButtonVariant.outline,
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  context.pushNamed('chores');
-                },
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Pinwall section – a real corkboard with sticky notes
-// ─────────────────────────────────────────────────────────────────────────────
-
-// Per-note colour palette (warm sticky-note hues).
-const _kNotePalette = MitlistColors.notePalette;
-const _kNotePaletteDark = MitlistColors.notePaletteDark;
-
-class _PinwallSection extends ConsumerStatefulWidget {
-  const _PinwallSection({required this.groupId, required this.me});
-
-  final String groupId;
-  final User? me;
-
-  @override
-  ConsumerState<_PinwallSection> createState() => _PinwallSectionState();
-}
-
-class _PinwallSectionState extends ConsumerState<_PinwallSection> {
-  final TextEditingController _controller = TextEditingController();
-  bool _isPosting = false;
-  bool _isUploadingMedia = false;
-  final List<XFile> _pendingMedia = [];
-  DateTime? _remindAt;
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> _pickReminderTime() async {
-    if (_isPosting || _isUploadingMedia) return;
-    Haptics.light();
-
-    final now = DateTime.now();
-    final pickedDate = await showDatePicker(
-      context: context,
-      initialDate: _remindAt?.isAfter(now) == true ? _remindAt! : now,
-      firstDate: now,
-      lastDate: now.add(const Duration(days: 365)),
-      helpText: 'Choose reminder date',
-    );
-    if (!mounted || pickedDate == null) return;
-
-    final pickedTime = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(_remindAt ?? now),
-      helpText: 'Choose reminder time',
-    );
-    if (!mounted || pickedTime == null) return;
-
-    final combined = DateTime(
-      pickedDate.year,
-      pickedDate.month,
-      pickedDate.day,
-      pickedTime.hour,
-      pickedTime.minute,
-    );
-    if (combined.isBefore(DateTime.now().add(const Duration(minutes: 1)))) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pick a time in the future.')),
-      );
-      return;
-    }
-    setState(() => _remindAt = combined);
-  }
-
-  void _clearReminder() {
-    if (_remindAt == null) return;
-    setState(() => _remindAt = null);
-  }
-
-  Future<void> _pickMedia() async {
-    if (_isUploadingMedia) return;
-    final picker = ImagePicker();
-    final files = await picker.pickMultiImage();
-    if (!mounted || files.isEmpty) return;
-    setState(() => _pendingMedia.addAll(files));
-  }
-
-  Future<void> _post() async {
-    final content = _controller.text.trim();
-    if ((content.isEmpty && _pendingMedia.isEmpty) || _isPosting) return;
-
-    setState(() => _isPosting = true);
-    try {
-      final svc = await ref.read(pinwallServiceProviderAsync.future);
-      final post = await svc.createPost(widget.groupId,
-          content: content.isEmpty ? ' ' : content, remindAt: _remindAt);
-      if (!mounted) return;
-
-      if (_pendingMedia.isNotEmpty) {
-        setState(() => _isUploadingMedia = true);
-        try {
-          final attachmentRepo =
-              await ref.read(attachmentRepositoryProvider.future);
-          for (final f in List<XFile>.from(_pendingMedia)) {
-            final bytes = await f.readAsBytes();
-            final a = await attachmentRepo.uploadAttachment(
-              groupId: widget.groupId,
-              purpose: 'pinwall_media',
-              filename: f.name,
-              contentType: 'image/*',
-              bytes: bytes,
-            );
-            await svc.attachPostAttachment(
-              groupId: widget.groupId,
-              postId: post.id,
-              attachmentId: a.id,
-            );
-          }
-        } finally {
-          if (mounted) {
-            setState(() {
-              _isUploadingMedia = false;
-              _pendingMedia.clear();
-            });
-          }
-        }
-      }
-
-      _controller.clear();
-      _clearReminder();
-      ref.invalidate(pinwallPostsByGroupProvider(widget.groupId));
-      if (!mounted) return;
-      Haptics.light();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pinned to the wall')),
-      );
-    } finally {
-      if (mounted) setState(() => _isPosting = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final posts = ref.watch(pinwallPostsByGroupProvider(widget.groupId));
-    final textTheme = Theme.of(context).textTheme;
-    final dark = Theme.of(context).brightness == Brightness.dark;
-
-    final boardBg =
-        dark ? MitlistColors.pinwallBoardDark : MitlistColors.pinwallBoard;
-    final boardBorder = dark
-        ? MitlistColors.pinwallBoardBorderDark
-        : MitlistColors.pinwallBoardBorder;
-    final boardShadow = Colors.black.withValues(alpha: dark ? 0.38 : 0.16);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
-          child: Text(
-            'Pinwall',
-            style: textTheme.titleMedium,
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.all(MitlistSpacing.sm),
-          decoration: BoxDecoration(
-            color: boardBg,
-            borderRadius: BorderRadius.circular(MitlistTheme.radiusLg),
-            border: Border.all(color: boardBorder, width: 2),
-            boxShadow: [
-              BoxShadow(
-                color: boardShadow,
-                blurRadius: 10,
-                offset: const Offset(4, 5),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _PinwallComposerNote(
-                controller: _controller,
-                isPosting: _isPosting,
-                isUploadingMedia: _isUploadingMedia,
-                pendingCount: _pendingMedia.length,
-                remindAt: _remindAt,
-                onPickReminder: _pickReminderTime,
-                onClearReminder: _clearReminder,
-                onPickMedia: _pickMedia,
-                onPost: _post,
-              ),
-              const SizedBox(height: MitlistSpacing.lg),
-              posts.when(
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => Container(
-                  padding: const EdgeInsets.all(MitlistSpacing.md),
-                  decoration: BoxDecoration(
-                    color: dark
-                        ? MitlistColors.pinwallNoteErrorDark
-                        : MitlistColors.noteYellow,
-                    borderRadius: BorderRadius.circular(MitlistTheme.radiusLg),
-                    border: Border.all(color: boardBorder, width: 1.5),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.warning_amber_rounded,
-                          color: MitlistColors.primary500),
-                      const SizedBox(width: MitlistSpacing.sm),
-                      Expanded(
-                        child: Text(
-                          "Couldn't load the pinwall.",
-                          style: textTheme.bodySmall,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => ref.invalidate(
-                            pinwallPostsByGroupProvider(widget.groupId)),
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                ),
-                data: (rows) {
-                  if (rows.isEmpty) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: MitlistSpacing.md),
-                      child: Text(
-                        'The wall is clear. Pin a note, photo, or reminder for everyone.',
-                        textAlign: TextAlign.center,
-                        style: textTheme.bodySmall?.copyWith(
-                          color: dark
-                              ? MitlistColors.pinwallNoteTextDark
-                              : MitlistColors.pinwallNoteTextLight,
-                        ),
-                      ),
-                    );
-                  }
-                  final show = rows.take(10).toList();
-                  return Wrap(
-                    spacing: MitlistSpacing.md,
-                    runSpacing: MitlistSpacing.lg,
-                    children: [
-                      for (var i = 0; i < show.length; i++)
-                        _PinwallNoteCard(
-                          index: i,
-                          groupId: widget.groupId,
-                          me: widget.me,
-                          post: show[i],
-                        ),
-                    ],
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// Composer sticky note (write + post)
-class _PinwallComposerNote extends StatelessWidget {
-  const _PinwallComposerNote({
-    required this.controller,
-    required this.isPosting,
-    required this.isUploadingMedia,
-    required this.pendingCount,
-    required this.remindAt,
-    required this.onPickReminder,
-    required this.onClearReminder,
-    required this.onPickMedia,
-    required this.onPost,
-  });
-
-  final TextEditingController controller;
-  final bool isPosting;
-  final bool isUploadingMedia;
-  final int pendingCount;
-  final DateTime? remindAt;
-  final Future<void> Function() onPickReminder;
-  final VoidCallback onClearReminder;
-  final Future<void> Function() onPickMedia;
-  final Future<void> Function() onPost;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final bg =
-        dark ? MitlistColors.composerBgDark : MitlistColors.composerBgLight;
-    final border = dark
-        ? MitlistColors.composerBorderDark
-        : MitlistColors.composerBorderLight;
-    final pinColor = dark ? MitlistColors.primary300 : MitlistColors.primary600;
-    final textColor = dark
-        ? Colors.white.withValues(alpha: 0.9)
-        : MitlistColors.pinwallNoteTextLight;
-    final hintColor = dark
-        ? Colors.white.withValues(alpha: 0.38)
-        : MitlistColors.pinwallNoteTextLight.withValues(alpha: 0.45);
-    final dividerColor = border.withValues(alpha: dark ? 0.5 : 0.4);
-    final reminderLabel = remindAt == null
-        ? null
-        : DateFormat('MMM d \u00b7 h:mm a').format(remindAt!);
-
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(MitlistTheme.radiusMd),
-            border: Border.all(color: border, width: 1.5),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: dark ? 0.42 : 0.16),
-                blurRadius: 0,
-                offset: const Offset(4, 5),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  MitlistSpacing.md,
-                  MitlistSpacing.lg + 6,
-                  MitlistSpacing.md,
-                  MitlistSpacing.sm,
-                ),
-                child: TextField(
-                  controller: controller,
-                  minLines: 3,
-                  maxLines: 6,
-                  textInputAction: TextInputAction.newline,
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: textColor,
-                    height: 1.5,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Post a note to the household\u2026',
-                    hintStyle: textTheme.bodyMedium?.copyWith(
-                      color: hintColor,
-                      height: 1.5,
-                    ),
-                    filled: true,
-                    fillColor: bg,
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    isDense: true,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ),
-              Divider(height: 1, thickness: 1, color: dividerColor),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: MitlistSpacing.sm,
-                  vertical: MitlistSpacing.xs,
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      tooltip: remindAt == null
-                          ? 'Add reminder'
-                          : 'Reminder set for $reminderLabel. Tap to change.',
-                      icon: Icon(
-                        remindAt == null
-                            ? Icons.alarm_add_outlined
-                            : Icons.alarm_on_outlined,
-                        size: 20,
-                        color: remindAt == null
-                            ? textColor.withValues(alpha: 0.55)
-                            : pinColor,
-                      ),
-                      onPressed: (isPosting || isUploadingMedia)
-                          ? null
-                          : onPickReminder,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    if (remindAt != null)
-                      IconButton(
-                        tooltip: 'Clear reminder',
-                        icon: Icon(
-                          Icons.close,
-                          size: 18,
-                          color: textColor.withValues(alpha: 0.55),
-                        ),
-                        onPressed: (isPosting || isUploadingMedia)
-                            ? null
-                            : onClearReminder,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    if (reminderLabel != null)
-                      Padding(
-                        padding:
-                            const EdgeInsets.only(right: MitlistSpacing.xs),
-                        child: Text(
-                          reminderLabel,
-                          style: textTheme.labelSmall?.copyWith(
-                            color: pinColor,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    IconButton(
-                      tooltip: pendingCount == 0
-                          ? 'Attach photo'
-                          : '$pendingCount photo${pendingCount == 1 ? '' : 's'} added',
-                      icon: Icon(
-                        pendingCount > 0
-                            ? Icons.photo_library_outlined
-                            : Icons.photo_outlined,
-                        size: 20,
-                        color: pendingCount > 0
-                            ? pinColor
-                            : textColor.withValues(alpha: 0.55),
-                      ),
-                      onPressed:
-                          (isPosting || isUploadingMedia) ? null : onPickMedia,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    if (pendingCount > 0)
-                      Text(
-                        '$pendingCount',
-                        style: textTheme.labelSmall?.copyWith(color: pinColor),
-                      ),
-                    const Spacer(),
-                    AppButton(
-                      text: isUploadingMedia
-                          ? 'Uploading\u2026'
-                          : (isPosting ? 'Posting\u2026' : 'Pin it'),
-                      icon: const Icon(Icons.push_pin_outlined),
-                      onPressed:
-                          (isPosting || isUploadingMedia) ? null : onPost,
-                      variant: AppButtonVariant.ghost,
-                      color: AppButtonColor.primary,
-                      size: AppButtonSize.sm,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        Positioned(
-          top: -14,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: _Pushpin(headColor: pinColor),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// A single pinned note card
-class _PinwallNoteCard extends ConsumerWidget {
-  const _PinwallNoteCard({
-    required this.index,
-    required this.groupId,
-    required this.me,
-    required this.post,
-  });
-
-  final int index;
-  final String groupId;
-  final User? me;
-  final PinwallPost post;
-
-  void _showErrorSnack(BuildContext context, String message) {
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  void _openMediaViewer(BuildContext context, PinwallMediaItem m) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => Scaffold(
-          backgroundColor: Colors.black,
-          appBar: AppBar(
-            backgroundColor: Colors.black,
-            foregroundColor: Colors.white,
-            elevation: 0,
-          ),
-          body: Center(
-            child: InteractiveViewer(
-              minScale: 0.8,
-              maxScale: 6,
-              child: Image.network(
-                m.url,
-                fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => const Padding(
-                  padding: EdgeInsets.all(MitlistSpacing.md),
-                  child: Text(
-                    'Couldn\u2019t load image.',
-                    style: TextStyle(color: Colors.white),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showMediaActions(
-    BuildContext context,
-    WidgetRef ref, {
-    required PinwallMediaItem media,
-  }) async {
-    Haptics.light();
-    final action = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(MitlistSpacing.md),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                AppButton(
-                  text: 'View',
-                  onPressed: () => Navigator.of(ctx).pop('view'),
-                ),
-                const SizedBox(height: MitlistSpacing.sm),
-                AppButton(
-                  text: 'Remove from post',
-                  variant: AppButtonVariant.outline,
-                  onPressed: () => Navigator.of(ctx).pop('remove'),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-
-    if (!context.mounted) return;
-    if (action == 'view') {
-      _openMediaViewer(context, media);
-      return;
-    }
-    if (action == 'remove') {
-      try {
-        final svc = await ref.read(pinwallServiceProviderAsync.future);
-        await svc.detachPostAttachment(
-          groupId: groupId,
-          postId: post.id,
-          attachmentId: media.attachmentId,
-        );
-        // Best-effort cleanup: avoid orphaned attachments.
-        try {
-          final attachSvc =
-              await ref.read(attachmentServiceProviderAsync.future);
-          await attachSvc.deleteAttachment(
-            groupId: groupId,
-            attachmentId: media.attachmentId,
-          );
-        } catch (_) {
-          debugPrint(
-              '[HouseholdHub] Pinwall media cleanup failed for ${media.attachmentId}');
-        }
-        ref.invalidate(
-          _pinwallMediaByPostProvider((groupId: groupId, postId: post.id)),
-        );
-      } catch (_) {
-        if (context.mounted) {
-          _showErrorSnack(context, 'Couldn’t remove photo.');
-        }
-      }
-    }
-  }
-
-  Future<void> _addMediaToPost(BuildContext context, WidgetRef ref) async {
-    Haptics.light();
-    final picker = ImagePicker();
-    final files = await picker.pickMultiImage();
-    if (files.isEmpty) return;
-
-    try {
-      final attachmentRepo =
-          await ref.read(attachmentRepositoryProvider.future);
-      final svc = await ref.read(pinwallServiceProviderAsync.future);
-
-      for (final f in files) {
-        final bytes = await f.readAsBytes();
-        final a = await attachmentRepo.uploadAttachment(
-          groupId: groupId,
-          purpose: 'pinwall_media',
-          filename: f.name,
-          contentType: 'image/*',
-          bytes: bytes,
-        );
-        await svc.attachPostAttachment(
-          groupId: groupId,
-          postId: post.id,
-          attachmentId: a.id,
-        );
-      }
-
-      ref.invalidate(
-        _pinwallMediaByPostProvider((groupId: groupId, postId: post.id)),
-      );
-    } catch (_) {
-      if (context.mounted) {
-        _showErrorSnack(context, 'Couldn’t add photo.');
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final textTheme = Theme.of(context).textTheme;
-    final dark = Theme.of(context).brightness == Brightness.dark;
-
-    final userId = post.userId;
-    final content = post.content.trim();
-    final createdAt = post.createdAt;
-    final userLabel = _formatUserLabel(userId, me?.id);
-    final when = _relativeDay(createdAt);
-
-    // deterministic but varied rotation: +-4deg
-    final idHash = post.id.hashCode;
-    final rot = ((idHash % 13) - 6) * 0.012;
-
-    // pick sticky note colour deterministically from palette
-    final palette = dark ? _kNotePaletteDark : _kNotePalette;
-    final bg = palette[(idHash.abs()) % palette.length];
-    final border = bg.withValues(alpha: dark ? 0.3 : 0.6);
-
-    // pin colour cycles through orange/teal/red
-    const pinColors = [
-      MitlistColors.primary600,
-      MitlistColors.teal500,
-      MitlistColors.error600,
-    ];
-    final pinColor = pinColors[index % pinColors.length];
-
-    final media = ref.watch(
-      _pinwallMediaByPostProvider((groupId: groupId, postId: post.id)),
-    );
-
-    Future<void> onDelete() async {
-      Haptics.light();
-      final svc = await ref.read(pinwallServiceProviderAsync.future);
-      await svc.deletePost(groupId, post.id);
-      ref.invalidate(pinwallPostsByGroupProvider(groupId));
-    }
-
-    final textColor =
-        dark ? Colors.white.withValues(alpha: 0.9) : MitlistColors.textPrimary;
-    final mutedColor = dark
-        ? Colors.white.withValues(alpha: 0.5)
-        : MitlistColors.textSecondary.withValues(alpha: 0.7);
-
-    final remindAt = post.remindAt;
-    final reminderSentAt = post.reminderSentAt;
-    final reminderText = remindAt == null
-        ? null
-        : DateFormat('MMM d \u00b7 h:mm a').format(remindAt.toLocal());
-
-    return Transform.rotate(
-      angle: rot.toDouble(),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // The note itself
-          Container(
-            width: 160,
-            padding: const EdgeInsets.fromLTRB(
-              MitlistSpacing.sm + 4,
-              MitlistSpacing.lg,
-              MitlistSpacing.sm,
-              MitlistSpacing.sm,
-            ),
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: border, width: 1),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: dark ? 0.42 : 0.16),
-                  blurRadius: 0,
-                  offset: const Offset(4, 5),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  content,
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: textColor,
-                    height: 1.4,
-                  ),
-                  maxLines: 8,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                media.when(
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
-                  data: (items) {
-                    if (items.isEmpty) return const SizedBox.shrink();
-                    final show =
-                        items.length > 5 ? items.take(5).toList() : items;
-                    return Padding(
-                      padding: const EdgeInsets.only(top: MitlistSpacing.xs),
-                      child: SizedBox(
-                        height: 42,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: show.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 6),
-                          itemBuilder: (context, i) {
-                            final m = show[i];
-                            return GestureDetector(
-                              onTap: () => _openMediaViewer(context, m),
-                              onLongPress: () =>
-                                  _showMediaActions(context, ref, media: m),
-                              child: Semantics(
-                                button: true,
-                                label: 'View photo',
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(6),
-                                  child: AspectRatio(
-                                    aspectRatio: 1,
-                                    child: Image.network(
-                                      m.url,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Container(
-                                        color: MitlistColors.neutral100
-                                            .withValues(alpha: 0.25),
-                                        alignment: Alignment.center,
-                                        child: const Icon(
-                                          Icons.image_not_supported_outlined,
-                                          size: 16,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: MitlistSpacing.xs),
-                if (reminderText != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: MitlistSpacing.xs),
-                    child: Row(
-                      children: [
-                        Icon(
-                          reminderSentAt == null
-                              ? Icons.alarm_on_outlined
-                              : Icons.check_circle_outline,
-                          size: 14,
-                          color: mutedColor,
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            reminderSentAt == null
-                                ? 'Reminder · $reminderText'
-                                : 'Reminded · $reminderText',
-                            style: textTheme.labelSmall
-                                ?.copyWith(color: mutedColor),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '$userLabel · $when',
-                        style:
-                            textTheme.labelSmall?.copyWith(color: mutedColor),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    PopupMenuButton<String>(
-                      tooltip: 'Post options',
-                      onSelected: (v) async {
-                        if (v == 'photo') {
-                          await _addMediaToPost(context, ref);
-                          return;
-                        }
-                        if (v == 'delete') await onDelete();
-                      },
-                      itemBuilder: (_) => const [
-                        PopupMenuItem(value: 'photo', child: Text('Add photo')),
-                        PopupMenuItem(value: 'delete', child: Text('Delete')),
-                      ],
-                      child: Padding(
-                        padding: const EdgeInsets.all(MitlistSpacing.sm),
-                        child: Icon(Icons.more_horiz,
-                            size: MitlistSpacing.space5, color: mutedColor),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          // Pushpin at top-centre
-          Positioned(
-            top: -14,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: _Pushpin(headColor: pinColor),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Flat pushpin that matches the app's hard-edged illustration style.
-class _Pushpin extends StatelessWidget {
-  const _Pushpin({required this.headColor});
-
-  final Color headColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(22, 28),
-      painter: _PushpinPainter(headColor: headColor),
-    );
-  }
-}
-
-class _PushpinPainter extends CustomPainter {
-  const _PushpinPainter({required this.headColor});
-
-  final Color headColor;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
-
-    final headPaint = Paint()..color = headColor;
-    canvas.drawCircle(Offset(cx, 10), 10, headPaint);
-
-    final capPaint = Paint()..color = Colors.black.withValues(alpha: 0.18);
-    canvas.drawRect(
-        Rect.fromCenter(center: Offset(cx, 18), width: 14, height: 5),
-        capPaint);
-
-    final needlePaint = Paint()..color = Colors.black.withValues(alpha: 0.72);
-    final needlePath = Path()
-      ..moveTo(cx - 1.5, 19)
-      ..lineTo(cx + 1.5, 19)
-      ..lineTo(cx, size.height)
-      ..close();
-    canvas.drawPath(needlePath, needlePaint);
-
-    final outlinePaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.72)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-    canvas.drawCircle(Offset(cx, 10), 10, outlinePaint);
-  }
-
-  @override
-  bool shouldRepaint(_PushpinPainter old) => old.headColor != headColor;
-}
-
-class _WallSection extends StatelessWidget {
-  const _WallSection({required this.activities, required this.activityError});
-
-  final List<ActivityLogModel> activities;
-  final bool activityError;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Activity',
-                style: textTheme.titleMedium,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: MitlistSpacing.sm),
-        if (activityError)
-          Text(
-            'Couldn’t load the wall right now.',
-            style: textTheme.bodySmall
-                ?.copyWith(color: colorScheme.onSurfaceVariant),
-          )
-        else if (activities.isEmpty)
-          Text(
-            'Nothing posted yet.',
-            style: textTheme.bodySmall
-                ?.copyWith(color: colorScheme.onSurfaceVariant),
-          )
-        else
-          Container(
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              border: Border.all(color: colorScheme.outline, width: 2),
-            ),
-            padding: const EdgeInsets.all(MitlistSpacing.md),
-            child: Column(
-              children: [
-                for (var i = 0; i < activities.take(5).length; i++) ...[
-                  if (i > 0) const SizedBox(height: MitlistSpacing.sm),
-                  _WallItem(item: activities[i]),
-                ],
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _WallItem extends StatelessWidget {
-  const _WallItem({required this.item});
-
-  final ActivityLogModel item;
-
-  void _onTap(BuildContext context) {
-    final entityType = item.entityType;
-    final entityId = item.entityId;
-
-    switch (entityType) {
-      case 'list':
-        context.pushNamed('listDetail', pathParameters: {'listId': entityId});
-      case 'expense':
-        context.pushNamed('money');
-      case 'chore':
-        context.pushNamed('chores');
-      case 'recipe':
-        context.pushNamed('recipes');
-      case 'meal_plan':
-        context.pushNamed('mealPlan', extra: item.groupId);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-    final userLabel = _formatUserLabel(item.userId ?? '', null);
-    final when = _relativeDay(item.createdAt);
-    final message = _formatActivityLine(item);
-    final isTappable = _isNavigableAction(item.entityType);
-
-    return InkWell(
-      onTap: isTappable ? () => _onTap(context) : null,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: colorScheme.primaryContainer,
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                _avatarInitials(userLabel),
-                style: textTheme.labelMedium?.copyWith(
-                    color: colorScheme.onPrimaryContainer,
-                    fontWeight: FontWeight.w600),
-              ),
-            ),
-            const SizedBox(width: MitlistSpacing.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '$userLabel · $when',
-                    style: textTheme.labelMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: MitlistSpacing.xs),
-                  Text(
-                    message,
-                    style: textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-bool _isNavigableAction(String entityType) {
-  return const {
-    'list',
-    'expense',
-    'chore',
-    'recipe',
-    'meal_plan',
-  }.contains(entityType);
-}
-
-class _SkeletonDashboard extends StatelessWidget {
-  const _SkeletonDashboard();
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomScrollView(
-      physics: const NeverScrollableScrollPhysics(),
-      slivers: [
-        SliverAppBar(
-          pinned: true,
-          elevation: 0,
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          title: const AppSkeleton(width: 140, height: 16),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.all(MitlistSpacing.md),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate(
-              const [
-                AppSkeleton(width: 240, height: 22),
-                SizedBox(height: MitlistSpacing.xs),
-                AppSkeleton(width: 180, height: 14),
-                SizedBox(height: MitlistSpacing.lg),
-                AppCard(
-                  variant: AppCardVariant.filled,
-                  tint: AppCardTint.primary,
-                  padding: AppCardPadding.lg,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppSkeleton(width: 120, height: 12),
-                      SizedBox(height: MitlistSpacing.md),
-                      AppSkeleton(width: 240, height: 22),
-                      SizedBox(height: MitlistSpacing.sm),
-                      AppSkeleton(width: 280, height: 16),
-                      SizedBox(height: MitlistSpacing.lg),
-                      AppSkeleton(width: 240, height: 40),
-                    ],
-                  ),
-                ),
-                SizedBox(height: MitlistSpacing.lg),
-                AppSkeleton(width: 120, height: 16),
-                SizedBox(height: MitlistSpacing.sm),
-                AppCard(
-                  padding: AppCardPadding.md,
-                  child: Column(
-                    children: [
-                      AppSkeleton(width: double.infinity, height: 44),
-                      SizedBox(height: MitlistSpacing.sm),
-                      AppSkeleton(width: double.infinity, height: 44),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
