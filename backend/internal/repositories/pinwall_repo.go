@@ -22,12 +22,12 @@ func NewPinwallRepository(db *pgxpool.Pool) *PinwallRepository {
 
 func (r *PinwallRepository) CreatePost(ctx context.Context, p *models.PinwallPost) error {
 	const q = `
-		INSERT INTO pinwall_posts (group_id, user_id, content, remind_at)
-		VALUES ($1, $2, $3, $4)
-		RETURNING id, created_at, remind_at, reminder_sent_at
+		INSERT INTO pinwall_posts (group_id, user_id, content, remind_at, linked_entity_type, linked_entity_id)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id, created_at, remind_at, reminder_sent_at, linked_entity_type, linked_entity_id
 	`
-	if err := r.db.QueryRow(ctx, q, p.GroupID, p.UserID, p.Content, p.RemindAt).
-		Scan(&p.ID, &p.CreatedAt, &p.RemindAt, &p.ReminderSentAt); err != nil {
+	if err := r.db.QueryRow(ctx, q, p.GroupID, p.UserID, p.Content, p.RemindAt, p.LinkedEntityType, p.LinkedEntityID).
+		Scan(&p.ID, &p.CreatedAt, &p.RemindAt, &p.ReminderSentAt, &p.LinkedEntityType, &p.LinkedEntityID); err != nil {
 		return fmt.Errorf("create pinwall post: %w", err)
 	}
 	return nil
@@ -35,7 +35,7 @@ func (r *PinwallRepository) CreatePost(ctx context.Context, p *models.PinwallPos
 
 func (r *PinwallRepository) ListPostsByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.PinwallPost, error) {
 	const q = `
-		SELECT id, group_id, user_id, content, created_at, remind_at, reminder_sent_at
+		SELECT id, group_id, user_id, content, created_at, remind_at, reminder_sent_at, linked_entity_type, linked_entity_id
 		FROM pinwall_posts
 		WHERE group_id = $1
 		ORDER BY created_at DESC
@@ -58,6 +58,8 @@ func (r *PinwallRepository) ListPostsByGroup(ctx context.Context, groupID uuid.U
 			&p.CreatedAt,
 			&p.RemindAt,
 			&p.ReminderSentAt,
+			&p.LinkedEntityType,
+			&p.LinkedEntityID,
 		); err != nil {
 			return nil, fmt.Errorf("scan pinwall post: %w", err)
 		}
@@ -68,7 +70,7 @@ func (r *PinwallRepository) ListPostsByGroup(ctx context.Context, groupID uuid.U
 
 func (r *PinwallRepository) GetPostByID(ctx context.Context, id uuid.UUID) (*models.PinwallPost, error) {
 	const q = `
-		SELECT id, group_id, user_id, content, created_at, remind_at, reminder_sent_at
+		SELECT id, group_id, user_id, content, created_at, remind_at, reminder_sent_at, linked_entity_type, linked_entity_id
 		FROM pinwall_posts
 		WHERE id = $1
 	`
@@ -81,6 +83,8 @@ func (r *PinwallRepository) GetPostByID(ctx context.Context, id uuid.UUID) (*mod
 		&p.CreatedAt,
 		&p.RemindAt,
 		&p.ReminderSentAt,
+		&p.LinkedEntityType,
+		&p.LinkedEntityID,
 	); err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, err
@@ -106,7 +110,7 @@ func (r *PinwallRepository) ListPostsByGroupAndRemindAtRange(
 	ctx context.Context, groupID uuid.UUID, from, to time.Time,
 ) ([]models.PinwallPost, error) {
 	const q = `
-		SELECT id, group_id, user_id, content, created_at, remind_at, reminder_sent_at
+		SELECT id, group_id, user_id, content, created_at, remind_at, reminder_sent_at, linked_entity_type, linked_entity_id
 		FROM pinwall_posts
 		WHERE group_id = $1
 		  AND remind_at IS NOT NULL
@@ -131,6 +135,8 @@ func (r *PinwallRepository) ListPostsByGroupAndRemindAtRange(
 			&p.CreatedAt,
 			&p.RemindAt,
 			&p.ReminderSentAt,
+			&p.LinkedEntityType,
+			&p.LinkedEntityID,
 		); err != nil {
 			return nil, fmt.Errorf("scan pinwall post: %w", err)
 		}

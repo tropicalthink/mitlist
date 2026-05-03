@@ -44,6 +44,8 @@ class PinwallService {
     String groupId, {
     required String content,
     DateTime? remindAt,
+    String? linkedEntityType,
+    String? linkedEntityId,
   }) async {
     ensureValidGroupId(groupId);
     try {
@@ -53,6 +55,8 @@ class PinwallService {
           'group_id': groupId,
           'content': content,
           if (remindAt != null) 'remind_at': remindAt.toUtc().toIso8601String(),
+          if (linkedEntityType != null) 'linked_entity_type': linkedEntityType,
+          if (linkedEntityId != null) 'linked_entity_id': linkedEntityId,
         },
       );
       return PinwallPost.fromJson((r.data as Map).cast<String, dynamic>());

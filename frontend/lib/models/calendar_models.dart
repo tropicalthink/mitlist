@@ -1,4 +1,4 @@
-enum CalendarEventType { mealPlan, chore, recurringExpense, pinwallReminder }
+enum CalendarEventType { mealPlan, chore, recurringExpense, pinwallReminder, expense }
 
 class CalendarEvent {
   final String id;
@@ -9,6 +9,7 @@ class CalendarEvent {
   final CalendarMealPlan? mealPlan;
   final CalendarChore? chore;
   final CalendarRecurringExpense? recurringExpense;
+  final CalendarExpense? expense;
   final CalendarPinwallReminder? pinwallReminder;
 
   const CalendarEvent({
@@ -20,6 +21,7 @@ class CalendarEvent {
     this.mealPlan,
     this.chore,
     this.recurringExpense,
+    this.expense,
     this.pinwallReminder,
   });
 
@@ -49,6 +51,10 @@ class CalendarEvent {
       recurringExpense: json['recurring_expense'] != null
           ? CalendarRecurringExpense.fromJson(
               (json['recurring_expense'] as Map).cast<String, dynamic>())
+          : null,
+      expense: json['expense'] != null
+          ? CalendarExpense.fromJson(
+              (json['expense'] as Map).cast<String, dynamic>())
           : null,
       pinwallReminder: json['pinwall_reminder'] != null
           ? CalendarPinwallReminder.fromJson(
@@ -148,5 +154,30 @@ class CalendarPinwallReminder {
         userId: json['user_id'] as String,
         content: json['content'] as String,
         sent: json['sent'] as bool? ?? false,
+      );
+}
+
+class CalendarExpense {
+  final String expenseId;
+  final String payerId;
+  final int amount;
+  final String currency;
+  final String category;
+
+  const CalendarExpense({
+    required this.expenseId,
+    required this.payerId,
+    required this.amount,
+    required this.currency,
+    required this.category,
+  });
+
+  factory CalendarExpense.fromJson(Map<String, dynamic> json) =>
+      CalendarExpense(
+        expenseId: json['expense_id'] as String,
+        payerId: json['payer_id'] as String,
+        amount: json['amount'] as int,
+        currency: json['currency'] as String? ?? 'EUR',
+        category: json['category'] as String? ?? '',
       );
 }

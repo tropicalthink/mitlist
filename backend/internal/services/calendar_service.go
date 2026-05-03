@@ -160,5 +160,27 @@ func (s *CalendarService) GetCalendar(ctx context.Context, user *models.User, gr
 		})
 	}
 
+	// One-time expenses
+	expenses, err := s.financeRepo.ListExpensesByDateRange(ctx, groupID, from, to)
+	if err != nil {
+		return nil, err
+	}
+	for _, e := range expenses {
+		events = append(events, models.CalendarEvent{
+			ID:      "expense_" + e.ID.String(),
+			Type:    models.EventTypeExpense,
+			Title:   e.Description,
+			Date:    e.Date,
+			GroupID: e.GroupID,
+			Expense: &models.CalendarExpense{
+				ExpenseID: e.ID,
+				PayerID:   e.PayerID,
+				Amount:    e.Amount,
+				Currency:  e.Currency,
+				Category:  e.Category,
+			},
+		})
+	}
+
 	return events, nil
 }

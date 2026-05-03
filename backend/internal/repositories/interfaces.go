@@ -159,6 +159,7 @@ type FinanceRepoIface interface {
 	GetRecurringExpenseByID(ctx context.Context, id uuid.UUID) (*models.RecurringExpense, error)
 	ListRecurringExpenses(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.RecurringExpense, error)
 	ListRecurringExpensesByDateRange(ctx context.Context, groupID uuid.UUID, from, to time.Time) ([]models.RecurringExpense, error)
+	ListExpensesByDateRange(ctx context.Context, groupID uuid.UUID, from, to time.Time) ([]models.Expense, error)
 	UpdateRecurringExpense(ctx context.Context, re *models.RecurringExpense) error
 	DeleteRecurringExpense(ctx context.Context, id uuid.UUID) error
 	GetSplitByID(ctx context.Context, id uuid.UUID) (*models.Split, error)

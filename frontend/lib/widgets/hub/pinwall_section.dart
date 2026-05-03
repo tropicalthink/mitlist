@@ -42,6 +42,9 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
   bool _isUploadingMedia = false;
   final List<XFile> _pendingMedia = [];
   DateTime? _remindAt;
+  String? _linkedEntityType;
+  String? _linkedEntityId;
+  String? _linkedEntityLabel;
 
   @override
   void dispose() {
@@ -91,6 +94,79 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
     setState(() => _remindAt = null);
   }
 
+  Future<void> _pickLinkedEntity() async {
+    if (_isPosting || _isUploadingMedia) return;
+    Haptics.light();
+
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(MitlistSpacing.md),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Link to\u2026',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: MitlistSpacing.md),
+              AppButton(
+                text: 'A chore',
+                onPressed: () {
+                  Navigator.of(ctx).pop('chore');
+                },
+              ),
+              const SizedBox(height: MitlistSpacing.sm),
+              AppButton(
+                text: 'A list',
+                variant: AppButtonVariant.outline,
+                onPressed: () {
+                  Navigator.of(ctx).pop('list');
+                },
+              ),
+              const SizedBox(height: MitlistSpacing.sm),
+              AppButton(
+                text: 'An expense',
+                variant: AppButtonVariant.outline,
+                onPressed: () {
+                  Navigator.of(ctx).pop('expense');
+                },
+              ),
+              if (_linkedEntityType != null) ...[
+                const SizedBox(height: MitlistSpacing.sm),
+                AppButton(
+                  text: 'Remove link',
+                  variant: AppButtonVariant.ghost,
+                  color: AppButtonColor.error,
+                  onPressed: () {
+                    Navigator.of(ctx).pop('remove');
+                  },
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (!mounted || action == null) return;
+    if (action == 'remove') {
+      setState(() {
+        _linkedEntityType = null;
+        _linkedEntityId = null;
+        _linkedEntityLabel = null;
+      });
+      return;
+    }
+
+    setState(() {
+      _linkedEntityType = action;
+      _linkedEntityId = '';
+      _linkedEntityLabel = action;
+    });
+  }
+
   Future<void> _pickMedia() async {
     if (_isUploadingMedia) return;
     final picker = ImagePicker();
@@ -107,7 +183,12 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
     try {
       final svc = await ref.read(pinwallServiceProviderAsync.future);
       final post = await svc.createPost(widget.groupId,
-          content: content.isEmpty ? ' ' : content, remindAt: _remindAt);
+          content: content.isEmpty ? ' ' : content,
+          remindAt: _remindAt,
+          linkedEntityType: _linkedEntityType,
+          linkedEntityId: _linkedEntityId?.isNotEmpty == true
+              ? _linkedEntityId
+              : null);
       if (!mounted) return;
 
       if (_pendingMedia.isNotEmpty) {
@@ -142,6 +223,11 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
 
       _controller.clear();
       _clearReminder();
+      setState(() {
+        _linkedEntityType = null;
+        _linkedEntityId = null;
+        _linkedEntityLabel = null;
+      });
       ref.invalidate(pinwallPostsByGroupProvider(widget.groupId));
       if (!mounted) return;
       Haptics.light();
@@ -199,10 +285,13 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
                 isUploadingMedia: _isUploadingMedia,
                 pendingCount: _pendingMedia.length,
                 remindAt: _remindAt,
+                linkedEntityType: _linkedEntityType,
+                linkedEntityLabel: _linkedEntityLabel,
                 onPickReminder: _pickReminderTime,
                 onClearReminder: _clearReminder,
                 onPickMedia: _pickMedia,
                 onPost: _post,
+                onPickLinkedEntity: _pickLinkedEntity,
               ),
               const SizedBox(height: MitlistSpacing.lg),
               posts.when(
@@ -283,10 +372,13 @@ class _PinwallComposerNote extends StatelessWidget {
     required this.isUploadingMedia,
     required this.pendingCount,
     required this.remindAt,
+    this.linkedEntityType,
+    this.linkedEntityLabel,
     required this.onPickReminder,
     required this.onClearReminder,
     required this.onPickMedia,
     required this.onPost,
+    required this.onPickLinkedEntity,
   });
 
   final TextEditingController controller;
@@ -294,10 +386,13 @@ class _PinwallComposerNote extends StatelessWidget {
   final bool isUploadingMedia;
   final int pendingCount;
   final DateTime? remindAt;
+  final String? linkedEntityType;
+  final String? linkedEntityLabel;
   final Future<void> Function() onPickReminder;
   final VoidCallback onClearReminder;
   final Future<void> Function() onPickMedia;
   final Future<void> Function() onPost;
+  final Future<void> Function() onPickLinkedEntity;
 
   @override
   Widget build(BuildContext context) {
@@ -422,6 +517,23 @@ class _PinwallComposerNote extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                    IconButton(
+                      tooltip: linkedEntityLabel != null
+                          ? 'Linked to $linkedEntityLabel'
+                          : 'Link to a chore, list\u2026',
+                      icon: Icon(
+                        linkedEntityType != null
+                            ? Icons.link
+                            : Icons.link_outlined,
+                        size: 20,
+                        color: linkedEntityType != null
+                            ? pinColor
+                            : textColor.withValues(alpha: 0.55),
+                      ),
+                      onPressed:
+                          (isPosting || isUploadingMedia) ? null : onPickLinkedEntity,
+                      visualDensity: VisualDensity.compact,
+                    ),
                     IconButton(
                       tooltip: pendingCount == 0
                           ? 'Attach photo'
@@ -724,6 +836,26 @@ class _PinwallNoteCard extends ConsumerWidget {
                   maxLines: 8,
                   overflow: TextOverflow.ellipsis,
                 ),
+                if (post.linkedEntityType != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: MitlistSpacing.xs),
+                    child: Row(
+                      children: [
+                        Icon(Icons.link, size: 12, color: mutedColor),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            post.linkedEntityType!,
+                            style: textTheme.labelSmall?.copyWith(
+                              color: mutedColor,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 media.when(
                   loading: () => const SizedBox.shrink(),
                   error: (_, __) => const SizedBox.shrink(),

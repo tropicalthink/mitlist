@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/group_models.dart';
+import '../models/notification_models.dart';
 import '../providers/group_provider.dart';
+import '../providers/notification_provider.dart';
 import '../theme/spacing.dart';
 import '../widgets/alert.dart';
 import '../widgets/app_bottom_sheet.dart';
@@ -33,6 +35,8 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
 
   Group? _group;
   List<GroupMemberProfile> _members = [];
+  NotificationPreferenceModel? _notificationPref;
+  final Map<String, bool> _savingKeys = {};
 
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
@@ -62,18 +66,22 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
     });
     try {
       final svc = await ref.read(groupServiceProviderAsync.future);
+      final notifSvc = await ref.read(notificationServiceProviderAsync.future);
       final results = await Future.wait([
         svc.getGroup(widget.groupId),
         svc.listMembers(widget.groupId),
+        notifSvc.getGroupPreference(widget.groupId),
       ]);
       if (!mounted) return;
       final group = results[0] as Group;
       final members = results[1] as List<GroupMemberProfile>;
+      final pref = results[2] as NotificationPreferenceModel;
       _nameController.text = group.name;
       _descriptionController.text = group.description ?? '';
       setState(() {
         _group = group;
         _members = members;
+        _notificationPref = pref;
         _isLoading = false;
         _nameChanged = false;
         _descChanged = false;
@@ -241,7 +249,102 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
           const SizedBox(height: MitlistSpacing.lg),
           _buildMembersSection(),
           const SizedBox(height: MitlistSpacing.lg),
+          _buildNotificationsSection(),
+          const SizedBox(height: MitlistSpacing.lg),
           _buildDangerZone(),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _toggleNotifPref(String field, bool value) async {
+    final pref = _notificationPref;
+    if (pref == null) return;
+    final key = '$field:${pref.id}';
+    setState(() => _savingKeys[key] = true);
+
+    try {
+      final svc = await ref.read(notificationServiceProviderAsync.future);
+      final updated = NotificationPreferenceModel(
+        id: pref.id,
+        userId: pref.userId,
+        groupId: pref.groupId,
+        choreDue: field == 'chore_due' ? value : pref.choreDue,
+        choreDueDayOf: field == 'chore_due_day_of' ? value : pref.choreDueDayOf,
+        listItemAdded: field == 'list_item_added' ? value : pref.listItemAdded,
+        expenseCreated: field == 'expense_created' ? value : pref.expenseCreated,
+        mealPlanChanged: field == 'meal_plan_changed' ? value : pref.mealPlanChanged,
+        weeklyDigest: field == 'weekly_digest' ? value : pref.weeklyDigest,
+        pinwallReminder: field == 'pinwall_reminder' ? value : pref.pinwallReminder,
+        pushEnabled: field == 'push_enabled' ? value : pref.pushEnabled,
+      );
+      await svc.updatePreference(updated);
+      if (!mounted) return;
+      setState(() {
+        _notificationPref = updated;
+        _savingKeys.remove(key);
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() => _savingKeys.remove(key));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to update preference')),
+        );
+      }
+    }
+  }
+
+  Widget _buildNotificationsSection() {
+    final pref = _notificationPref;
+    if (pref == null) return const SizedBox.shrink();
+
+    return AppCard(
+      variant: AppCardVariant.outlined,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Notifications',
+              style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: MitlistSpacing.sm),
+          const Divider(),
+          _notifToggle('Chore due', pref.choreDue, 'chore_due'),
+          _notifToggle('List item added', pref.listItemAdded, 'list_item_added'),
+          _notifToggle('Expense created', pref.expenseCreated, 'expense_created'),
+          _notifToggle('Meal plan changed', pref.mealPlanChanged, 'meal_plan_changed'),
+          _notifToggle('Weekly digest', pref.weeklyDigest, 'weekly_digest'),
+          _notifToggle('Pinwall reminder', pref.pinwallReminder, 'pinwall_reminder'),
+          const Divider(),
+          _notifToggle('Push enabled', pref.pushEnabled, 'push_enabled'),
+        ],
+      ),
+    );
+  }
+
+  Widget _notifToggle(String label, bool value, String field) {
+    final key = '$field:${_notificationPref?.id}';
+    final saving = _savingKeys[key] == true;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xs),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+          ),
+          if (saving)
+            const Padding(
+              padding: EdgeInsets.all(MitlistSpacing.sm),
+              child: SizedBox(
+                width: MitlistSpacing.space4,
+                height: MitlistSpacing.space4,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else
+            Switch(
+              value: value,
+              onChanged: (v) => _toggleNotifPref(field, v),
+            ),
         ],
       ),
     );

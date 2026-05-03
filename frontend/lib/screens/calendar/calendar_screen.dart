@@ -526,6 +526,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       CalendarEventType.mealPlan => MitlistColors.primary500,
       CalendarEventType.chore => MitlistColors.warning500,
       CalendarEventType.recurringExpense => MitlistColors.success500,
+      CalendarEventType.expense => MitlistColors.teal500,
       CalendarEventType.pinwallReminder => MitlistColors.error300,
     };
   }
@@ -757,6 +758,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           MitlistColors.success500,
           'Recurring'
         ),
+      CalendarEventType.expense => (
+          Icons.receipt_outlined,
+          MitlistColors.teal500,
+          'Expense'
+        ),
       CalendarEventType.pinwallReminder => (
           Icons.push_pin_outlined,
           MitlistColors.error300,
@@ -790,6 +796,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         context.pushNamed('mealPlan');
       case CalendarEventType.recurringExpense:
         context.pushNamed('recurringExpenses');
+      case CalendarEventType.expense:
+        context.pushNamed('money');
       case CalendarEventType.pinwallReminder:
         break;
     }
@@ -945,6 +953,11 @@ class _EventRow extends StatelessWidget {
           Icons.repeat,
           MitlistColors.success500,
           'Recurring'
+        ),
+      CalendarEventType.expense => (
+          Icons.receipt_outlined,
+          MitlistColors.teal500,
+          'Expense'
         ),
       CalendarEventType.pinwallReminder => (
           Icons.push_pin_outlined,

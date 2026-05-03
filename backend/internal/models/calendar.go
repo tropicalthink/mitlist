@@ -13,6 +13,7 @@ const (
 	EventTypeMealPlan          CalendarEventType = "meal_plan"
 	EventTypeChore             CalendarEventType = "chore"
 	EventTypeRecurringExpense  CalendarEventType = "recurring_expense"
+	EventTypeExpense           CalendarEventType = "expense"
 	EventTypePinwallReminder   CalendarEventType = "pinwall_reminder"
 )
 
@@ -27,6 +28,7 @@ type CalendarEvent struct {
 	MealPlan       *CalendarMealPlan       `json:"meal_plan,omitempty"`
 	Chore          *CalendarChore          `json:"chore,omitempty"`
 	RecurringExpense *CalendarRecurringExpense `json:"recurring_expense,omitempty"`
+	Expense          *CalendarExpense          `json:"expense,omitempty"`
 	PinwallReminder  *CalendarPinwallReminder   `json:"pinwall_reminder,omitempty"`
 }
 
@@ -62,4 +64,13 @@ type CalendarPinwallReminder struct {
 	UserID   uuid.UUID `json:"user_id"`
 	Content  string    `json:"content"`
 	Sent     bool      `json:"sent"`
+}
+
+// CalendarExpense holds expense-specific calendar data.
+type CalendarExpense struct {
+	ExpenseID   uuid.UUID `json:"expense_id"`
+	PayerID     uuid.UUID `json:"payer_id"`
+	Amount      int64     `json:"amount"`
+	Currency    string    `json:"currency"`
+	Category    string    `json:"category"`
 }

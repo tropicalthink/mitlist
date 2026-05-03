@@ -6,6 +6,8 @@ class PinwallPost {
   final DateTime createdAt;
   final DateTime? remindAt;
   final DateTime? reminderSentAt;
+  final String? linkedEntityType;
+  final String? linkedEntityId;
 
   const PinwallPost({
     required this.id,
@@ -15,6 +17,8 @@ class PinwallPost {
     required this.createdAt,
     this.remindAt,
     this.reminderSentAt,
+    this.linkedEntityType,
+    this.linkedEntityId,
   });
 
   factory PinwallPost.fromJson(Map<String, dynamic> json) => PinwallPost(
@@ -29,6 +33,8 @@ class PinwallPost {
         reminderSentAt: json['reminder_sent_at'] != null
             ? DateTime.parse(json['reminder_sent_at'] as String)
             : null,
+        linkedEntityType: json['linked_entity_type'] as String?,
+        linkedEntityId: json['linked_entity_id'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -39,6 +45,8 @@ class PinwallPost {
         'created_at': createdAt.toIso8601String(),
         'remind_at': remindAt?.toIso8601String(),
         'reminder_sent_at': reminderSentAt?.toIso8601String(),
+        if (linkedEntityType != null) 'linked_entity_type': linkedEntityType,
+        if (linkedEntityId != null) 'linked_entity_id': linkedEntityId,
       };
 }
 

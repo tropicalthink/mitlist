@@ -95,6 +95,23 @@ func (r *FinanceRepo) ListAllExpensesByGroup(ctx context.Context, groupID uuid.U
 	return pgx.CollectRows(rows, pgx.RowToStructByName[models.Expense])
 }
 
+func (r *FinanceRepo) ListExpensesByDateRange(ctx context.Context, groupID uuid.UUID, from, to time.Time) ([]models.Expense, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, group_id, payer_id, amount, description, category, currency, notes, date, created_at, updated_at
+		FROM expenses
+		WHERE group_id = $1
+		  AND date >= $2
+		  AND date < $3
+		ORDER BY date ASC
+	`, groupID, from, to)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return pgx.CollectRows(rows, pgx.RowToStructByName[models.Expense])
+}
+
 // UpdateExpense updates an existing expense.
 func (r *FinanceRepo) UpdateExpense(ctx context.Context, e *models.Expense) error {
 	e.UpdatedAt = time.Now().UTC()
