@@ -44,6 +44,8 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
   bool _isSaving = false;
   bool _nameChanged = false;
   bool _descChanged = false;
+  String _groupCurrency = 'USD';
+  bool _currencyChanged = false;
 
   @override
   void initState() {
@@ -81,11 +83,13 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       _descriptionController.text = group.description ?? '';
       setState(() {
         _group = group;
+        _groupCurrency = group.currency;
         _members = members;
         _notificationPref = pref;
         _isLoading = false;
         _nameChanged = false;
         _descChanged = false;
+        _currencyChanged = false;
       });
     } catch (e) {
       if (!mounted) return;
@@ -105,7 +109,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
     final oldName = _group?.name ?? '';
     final oldDesc = _group?.description ?? '';
 
-    if (newName == oldName && newDesc == oldDesc) return;
+    if (newName == oldName && newDesc == oldDesc && !_currencyChanged) return;
 
     setState(() => _isSaving = true);
     try {
@@ -115,6 +119,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         UpdateGroupRequest(
           name: newName != oldName ? newName : null,
           description: newDesc != oldDesc ? newDesc : null,
+          currency: _currencyChanged ? _groupCurrency : null,
         ),
       );
       if (!mounted) return;
@@ -123,6 +128,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         _isSaving = false;
         _nameChanged = false;
         _descChanged = false;
+        _currencyChanged = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Group updated')),
@@ -352,7 +358,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
   }
 
   Widget _buildDetailsSection() {
-    final hasChanges = _nameChanged || _descChanged;
+    final hasChanges = _nameChanged || _descChanged || _currencyChanged;
     final nameEmpty = _nameController.text.trim().isEmpty;
 
     return AppCard(
@@ -373,6 +379,34 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
             controller: _descriptionController,
             textInputAction: TextInputAction.done,
             onChanged: (_) => setState(() => _descChanged = true),
+          ),
+          const SizedBox(height: MitlistSpacing.md),
+          DropdownButtonFormField<String>(
+            value: _groupCurrency,
+            decoration: const InputDecoration(labelText: 'Currency'),
+            items: const [
+              DropdownMenuItem(value: 'USD', child: Text('USD - US Dollar')),
+              DropdownMenuItem(value: 'EUR', child: Text('EUR - Euro')),
+              DropdownMenuItem(value: 'GBP', child: Text('GBP - British Pound')),
+              DropdownMenuItem(value: 'JPY', child: Text('JPY - Japanese Yen')),
+              DropdownMenuItem(value: 'CAD', child: Text('CAD - Canadian Dollar')),
+              DropdownMenuItem(value: 'AUD', child: Text('AUD - Australian Dollar')),
+              DropdownMenuItem(value: 'CHF', child: Text('CHF - Swiss Franc')),
+              DropdownMenuItem(value: 'SEK', child: Text('SEK - Swedish Krona')),
+              DropdownMenuItem(value: 'NOK', child: Text('NOK - Norwegian Krone')),
+              DropdownMenuItem(value: 'DKK', child: Text('DKK - Danish Krone')),
+              DropdownMenuItem(value: 'PLN', child: Text('PLN - Polish Zloty')),
+              DropdownMenuItem(value: 'CZK', child: Text('CZK - Czech Koruna')),
+              DropdownMenuItem(value: 'HUF', child: Text('HUF - Hungarian Forint')),
+            ],
+            onChanged: (v) {
+              if (v != null) {
+                setState(() {
+                  _groupCurrency = v;
+                  _currencyChanged = true;
+                });
+              }
+            },
           ),
           if (hasChanges) ...[
             const SizedBox(height: MitlistSpacing.md),

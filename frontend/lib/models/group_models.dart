@@ -5,6 +5,7 @@ class Group {
   final String? description;
   final bool? isPersonal;
   final int? memberCount;
+  final String currency;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -14,6 +15,7 @@ class Group {
     this.description,
     this.isPersonal,
     this.memberCount,
+    this.currency = 'USD',
     required this.createdAt,
     required this.updatedAt,
   });
@@ -25,6 +27,7 @@ class Group {
       description: json['description'] as String?,
       isPersonal: json['is_personal'] as bool?,
       memberCount: json['member_count'] as int?,
+      currency: json['currency'] as String? ?? 'USD',
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -37,6 +40,7 @@ class Group {
       'description': description,
       if (isPersonal != null) 'is_personal': isPersonal,
       if (memberCount != null) 'member_count': memberCount,
+      'currency': currency,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -47,16 +51,19 @@ class Group {
 class CreateGroupRequest {
   final String name;
   final String? description;
+  final String currency;
 
   const CreateGroupRequest({
     required this.name,
     this.description,
+    this.currency = 'USD',
   });
 
   factory CreateGroupRequest.fromJson(Map<String, dynamic> json) {
     return CreateGroupRequest(
       name: json['name'] as String,
       description: json['description'] as String?,
+      currency: json['currency'] as String? ?? 'USD',
     );
   }
 
@@ -64,6 +71,7 @@ class CreateGroupRequest {
     return {
       'name': name,
       'description': description,
+      'currency': currency,
     };
   }
 }
@@ -72,16 +80,19 @@ class CreateGroupRequest {
 class UpdateGroupRequest {
   final String? name;
   final String? description;
+  final String? currency;
 
   const UpdateGroupRequest({
     this.name,
     this.description,
+    this.currency,
   });
 
   factory UpdateGroupRequest.fromJson(Map<String, dynamic> json) {
     return UpdateGroupRequest(
       name: json['name'] as String?,
       description: json['description'] as String?,
+      currency: json['currency'] as String?,
     );
   }
 
@@ -89,6 +100,7 @@ class UpdateGroupRequest {
     return {
       'name': name,
       'description': description,
+      'currency': currency,
     };
   }
 }

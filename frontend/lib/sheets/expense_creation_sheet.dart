@@ -63,6 +63,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
   List<GroupMemberProfile> _members = [];
   final Set<String> _selectedMemberIds = {};
   String _splitMode = 'equal';
+  String _currency = 'USD';
   bool _isSaving = false;
   bool _isScanning = false;
 
@@ -79,6 +80,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       );
     }
     _loadMembers();
+    _loadCurrency();
   }
 
   Future<void> _loadMembers() async {
@@ -107,6 +109,24 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       });
     } catch (_) {
       // Member loading is optional; expense creation still works without splits.
+    }
+  }
+
+  Future<void> _loadCurrency() async {
+    try {
+      final groupService = await ref.read(groupServiceProviderAsync.future);
+      final groups = await groupService.listGroups(limit: 50);
+      if (!mounted || groups.isEmpty) return;
+      final groupId = resolveActiveGroupId(
+        groups,
+        ref.read(currentGroupIdProvider),
+      );
+      if (groupId == null) return;
+      final group = await groupService.getGroup(groupId);
+      if (!mounted) return;
+      setState(() => _currency = group.currency);
+    } catch (_) {
+      // Currency loading is optional; defaults to USD.
     }
   }
 
@@ -198,6 +218,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
           amount: amount,
           description: _descriptionController.text.trim(),
           notes: _notesController.text.trim(),
+          currency: _currency,
           date: DateTime.now().toUtc(),
           splitMode: _splitMode,
           splitUserIds: _splitMode == 'equal' ? splitUserIds : const [],

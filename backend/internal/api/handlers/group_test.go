@@ -47,6 +47,7 @@ func TestGroup_ListGroups(t *testing.T) {
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), &models.Group{
 		ID:        uuid.New(),
 		Name:      "Test Group",
+		Currency:  "USD",
 		CreatedBy: user.ID,
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
@@ -70,6 +71,7 @@ func TestGroup_GetGroup(t *testing.T) {
 	group := &models.Group{
 		ID:        uuid.New(),
 		Name:      "Get Group",
+		Currency:  "USD",
 		CreatedBy: user.ID,
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
@@ -104,6 +106,7 @@ func TestGroup_UpdateGroup(t *testing.T) {
 	group := &models.Group{
 		ID:        uuid.New(),
 		Name:      "Old Name",
+		Currency:  "USD",
 		CreatedBy: user.ID,
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
@@ -129,6 +132,7 @@ func TestGroup_DeleteGroup(t *testing.T) {
 	group := &models.Group{
 		ID:        uuid.New(),
 		Name:      "Delete Me",
+		Currency:  "USD",
 		CreatedBy: user.ID,
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
@@ -153,6 +157,7 @@ func TestGroup_JoinGroup(t *testing.T) {
 	group := &models.Group{
 		ID:        uuid.New(),
 		Name:      "Join Group",
+		Currency:  "USD",
 		CreatedBy: owner.ID,
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
@@ -183,6 +188,7 @@ func TestGroup_RemoveMember(t *testing.T) {
 	group := &models.Group{
 		ID:        uuid.New(),
 		Name:      "Remove Group",
+		Currency:  "USD",
 		CreatedBy: owner.ID,
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
@@ -211,6 +217,7 @@ func TestGroup_UpdateMemberRole(t *testing.T) {
 	group := &models.Group{
 		ID:        uuid.New(),
 		Name:      "Role Group",
+		Currency:  "USD",
 		CreatedBy: owner.ID,
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),

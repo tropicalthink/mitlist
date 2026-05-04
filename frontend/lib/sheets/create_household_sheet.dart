@@ -26,6 +26,7 @@ class CreateHouseholdSheet extends ConsumerStatefulWidget {
 class _CreateHouseholdSheetState extends ConsumerState<CreateHouseholdSheet> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  String _currency = 'USD';
   bool _isCreating = false;
 
   bool get _canCreate => _nameController.text.trim().isNotEmpty && !_isCreating;
@@ -42,6 +43,7 @@ class _CreateHouseholdSheetState extends ConsumerState<CreateHouseholdSheet> {
         description: _descriptionController.text.trim().isEmpty
             ? null
             : _descriptionController.text.trim(),
+        currency: _currency,
       ));
       if (!mounted) return;
       Navigator.of(context).pop(true);
@@ -85,6 +87,29 @@ class _CreateHouseholdSheetState extends ConsumerState<CreateHouseholdSheet> {
           controller: _descriptionController,
           textInputAction: TextInputAction.done,
           maxLength: 300,
+        ),
+        const SizedBox(height: MitlistSpacing.md),
+        DropdownButtonFormField<String>(
+          value: _currency,
+          decoration: const InputDecoration(labelText: 'Currency'),
+          items: const [
+            DropdownMenuItem(value: 'USD', child: Text('USD - US Dollar')),
+            DropdownMenuItem(value: 'EUR', child: Text('EUR - Euro')),
+            DropdownMenuItem(value: 'GBP', child: Text('GBP - British Pound')),
+            DropdownMenuItem(value: 'JPY', child: Text('JPY - Japanese Yen')),
+            DropdownMenuItem(value: 'CAD', child: Text('CAD - Canadian Dollar')),
+            DropdownMenuItem(value: 'AUD', child: Text('AUD - Australian Dollar')),
+            DropdownMenuItem(value: 'CHF', child: Text('CHF - Swiss Franc')),
+            DropdownMenuItem(value: 'SEK', child: Text('SEK - Swedish Krona')),
+            DropdownMenuItem(value: 'NOK', child: Text('NOK - Norwegian Krone')),
+            DropdownMenuItem(value: 'DKK', child: Text('DKK - Danish Krone')),
+            DropdownMenuItem(value: 'PLN', child: Text('PLN - Polish Zloty')),
+            DropdownMenuItem(value: 'CZK', child: Text('CZK - Czech Koruna')),
+            DropdownMenuItem(value: 'HUF', child: Text('HUF - Hungarian Forint')),
+          ],
+          onChanged: (v) {
+            if (v != null) setState(() => _currency = v);
+          },
         ),
         const SizedBox(height: MitlistSpacing.lg),
         SizedBox(

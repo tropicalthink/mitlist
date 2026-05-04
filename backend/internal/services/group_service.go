@@ -34,6 +34,7 @@ func NewGroupService(groupRepo repositories.GroupRepo, userRepo repositories.Use
 type CreateGroupInput struct {
 	Name        string
 	Description *string
+	Currency    string `json:"currency"`
 }
 
 // CreateGroup creates a new group and makes the creator an admin.
@@ -50,9 +51,14 @@ func (s *GroupService) CreateGroup(ctx context.Context, userID uuid.UUID, input 
 		}
 	}
 
+	currency := input.Currency
+	if currency == "" {
+		currency = "USD"
+	}
 	group := &models.Group{
 		Name:        input.Name,
 		Description: input.Description,
+		Currency:    currency,
 		CreatedBy:   userID,
 	}
 
@@ -104,6 +110,7 @@ func (s *GroupService) ListMemberProfiles(ctx context.Context, userID, groupID u
 type UpdateGroupInput struct {
 	Name        *string
 	Description *string
+	Currency    *string `json:"currency"`
 }
 
 // UpdateGroup updates a group's details; only admins may do so.
@@ -136,6 +143,9 @@ func (s *GroupService) UpdateGroup(ctx context.Context, userID, groupID uuid.UUI
 			}
 		}
 		group.Description = input.Description
+	}
+	if input.Currency != nil {
+		group.Currency = *input.Currency
 	}
 
 	if err := s.groupRepo.UpdateGroup(ctx, group); err != nil {
