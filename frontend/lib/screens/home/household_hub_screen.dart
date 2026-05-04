@@ -389,15 +389,27 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                       child: Row(
                         children: [
                           Expanded(
-                            child: Text(
-                              h.name,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: rowStyle?.copyWith(
-                                fontWeight: h.id == _resolvedGroupId!
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  h.name,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: rowStyle?.copyWith(
+                                    fontWeight: h.id == _resolvedGroupId!
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                  ),
+                                ),
+                                if (h.memberCount != null)
+                                  Text(
+                                    '${h.memberCount} ${h.memberCount == 1 ? 'member' : 'members'}',
+                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                          color: MitlistColors.textTertiary,
+                                        ),
+                                  ),
+                              ],
                             ),
                           ),
                           if (h.id == _resolvedGroupId!)

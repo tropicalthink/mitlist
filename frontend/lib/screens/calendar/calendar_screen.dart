@@ -502,25 +502,16 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                 : MitlistColors.textPrimary,
                           ),
                         ),
-                        if (dayEvents.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: dayEvents
-                                .take(3)
-                                .map((e) => Container(
-                                      width: 6,
-                                      height: 6,
-                                      margin: const EdgeInsets.symmetric(
-                                          horizontal: 1),
-                                      decoration: BoxDecoration(
-                                        color: _dotColor(e.type),
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ))
-                                .toList(),
+                        if (dayEvents.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              '${dayEvents.length}',
+                              style: MitlistTypography.labelXSmall(
+                                color: _dotColor(dayEvents.first.type),
+                              ),
+                            ),
                           ),
-                        ],
                       ],
                     ),
                   ),

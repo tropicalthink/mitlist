@@ -187,6 +187,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         _listName = list.name;
         _groupId = list.groupId;
       });
+      if (mounted) {
+        FocusScope.of(context).requestFocus(_composerFocusNode);
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
