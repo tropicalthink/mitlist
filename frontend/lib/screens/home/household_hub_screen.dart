@@ -583,6 +583,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                               activities: _snapshot!.activities,
                               activityError:
                                   _snapshot!.activityError,
+                              currentUserId: _me?.id,
                             ),
                             const SizedBox(height: MitlistSpacing.xl),
                           ]),

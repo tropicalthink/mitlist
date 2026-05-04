@@ -80,7 +80,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = 'Something went wrong.';
       });
     } finally {
       setState(() => _isLoading = false);
@@ -127,7 +127,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             } catch (e) {
               setSheetState(() {
                 isSubmitting = false;
-                error = e.toString().replaceFirst('Exception: ', '');
+                error = 'Something went wrong.';
               });
             }
           }
@@ -169,7 +169,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             } catch (e) {
               setSheetState(() {
                 isResetting = false;
-                error = e.toString().replaceFirst('Exception: ', '');
+                error = 'Something went wrong.';
               });
             }
           }
@@ -284,7 +284,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         return;
       }
       setState(() {
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _errorMessage = 'Something went wrong.';
       });
     }
   }

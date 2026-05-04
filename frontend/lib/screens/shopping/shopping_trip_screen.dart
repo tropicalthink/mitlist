@@ -87,7 +87,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = 'Something went wrong.';
         _isLoading = false;
       });
     }

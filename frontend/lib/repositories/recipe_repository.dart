@@ -147,7 +147,7 @@ class RecipeRepository {
             break;
         }
       } catch (e) {
-        await _db.markOutboxAttempt(op.id, error: e.toString());
+        await _db.markOutboxAttempt(op.id, error: 'Something went wrong.');
         return;
       }
     }

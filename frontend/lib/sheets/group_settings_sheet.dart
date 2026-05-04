@@ -10,6 +10,7 @@ import '../widgets/alert.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
+import '../widgets/app_dialog.dart';
 import '../widgets/app_input.dart';
 
 class GroupSettingsSheet extends ConsumerStatefulWidget {
@@ -89,7 +90,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
+        _error = 'Something went wrong.';
         _isLoading = false;
       });
     }
@@ -132,28 +133,28 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text(
-                'Failed to save: ${e.toString().replaceFirst('Exception: ', '')}')),
+                'Failed to save: ${'Something went wrong.'}')),
       );
     }
   }
 
   Future<void> _confirmRemoveMember(GroupMemberProfile member) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Remove member'),
-        content: Text('Remove ${member.displayName} from this group?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Remove'),
-          ),
-        ],
-      ),
+      title: 'Remove member',
+      body: Text('Remove ${member.displayName} from this group?'),
+      actions: [
+        AppButton(
+          text: 'Cancel',
+          variant: AppButtonVariant.outline,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        const SizedBox(width: MitlistSpacing.sm),
+        AppButton(
+          text: 'Remove',
+          onPressed: () => Navigator.of(context).pop(true),
+        ),
+      ],
     );
     if (confirmed != true || !mounted) return;
     try {
@@ -171,29 +172,29 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text(
-                'Failed to remove member: ${e.toString().replaceFirst('Exception: ', '')}')),
+                'Failed to remove member: ${'Something went wrong.'}')),
       );
     }
   }
 
   Future<void> _confirmDeleteGroup() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete group'),
-        content: const Text(
-            'This will permanently delete this household and all its data. This cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+      title: 'Delete group',
+      body: const Text('This will permanently delete this household and all its data. This cannot be undone.'),
+      actions: [
+        AppButton(
+          text: 'Cancel',
+          variant: AppButtonVariant.outline,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        const SizedBox(width: MitlistSpacing.sm),
+        AppButton(
+          text: 'Delete',
+          color: AppButtonColor.error,
+          onPressed: () => Navigator.of(context).pop(true),
+        ),
+      ],
     );
     if (confirmed != true || !mounted) return;
     try {
@@ -211,7 +212,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text(
-                'Failed to delete group: ${e.toString().replaceFirst('Exception: ', '')}')),
+                'Failed to delete group: ${'Something went wrong.'}')),
       );
     }
   }

@@ -51,7 +51,7 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _errorMessage = 'Something went wrong.';
         _isJoining = false;
       });
     }

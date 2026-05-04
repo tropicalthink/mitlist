@@ -200,7 +200,7 @@ class ListRepository {
             break;
         }
       } catch (e) {
-        await _db.markOutboxAttempt(op.id, error: e.toString());
+        await _db.markOutboxAttempt(op.id, error: 'Something went wrong.');
         // Stop early: keep ordering and avoid hammering the server.
         return;
       }
@@ -337,7 +337,7 @@ class ListRepository {
   List<String> _safeStringList(String json) {
     try {
       final decoded = jsonDecode(json);
-      if (decoded is List) return decoded.map((e) => e.toString()).toList();
+      if (decoded is List) return decoded.map((e) => 'Something went wrong.').toList();
     } catch (_) {
       // Failed to parse JSON string list; return empty.
     }

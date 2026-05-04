@@ -67,7 +67,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Failed to load meal plans';
+        _error = 'Couldn\u2019t load this week\u2019s meal plans.';
         _isLoading = false;
       });
     }
@@ -94,7 +94,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
       });
       await _preloadRecipes(plans);
     } catch (e) {
-      setState(() => _error = e.toString());
+      setState(() => _error = 'Couldn\u2019t load meal plans.');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -147,7 +147,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to add meal: $e')),
+          SnackBar(content: const Text('Couldn\u2019t add meal.')),
         );
       }
     }
@@ -161,7 +161,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to remove: $e')),
+          SnackBar(content: const Text('Couldn\u2019t remove meal.')),
         );
       }
     }
@@ -189,7 +189,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update: $e')),
+          SnackBar(content: const Text('Couldn\u2019t update meal.')),
         );
       }
     }
@@ -209,7 +209,13 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
       final itemCount = (result['item_count'] as int?) ?? 0;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Shopping list created with $itemCount items')),
+          SnackBar(
+            content: Text('Shopping list created with $itemCount items'),
+            action: SnackBarAction(
+              label: 'Track costs',
+              onPressed: () => context.pushNamed('money'),
+            ),
+          ),
         );
         if (listId != null) {
           context.pushNamed('listDetail', pathParameters: {'listId': listId});
@@ -218,7 +224,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e')),
+          SnackBar(content: const Text('Something went wrong.')),
         );
       }
     }
@@ -625,7 +631,7 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
       });
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = 'Couldn\u2019t load recipes.';
         _isLoading = false;
       });
     }
@@ -655,7 +661,7 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
       return AppEmptyState(
         lottieAsset: 'assets/animations/lottie/404.lottie',
         icon: const Icon(Icons.error_outline),
-        title: 'Failed to load recipes',
+                        title: 'Couldn\u2019t load recipes',
         description: _error,
         actions: [
           AppButton(

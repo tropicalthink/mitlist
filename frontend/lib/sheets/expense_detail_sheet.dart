@@ -1,11 +1,12 @@
 import 'dart:typed_data';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Split;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../models/expense_receipt_models.dart';
+import '../models/finance_models.dart';
 import '../providers/attachment_provider.dart';
 import '../providers/finance_provider.dart';
 import '../theme/colors.dart';
@@ -70,11 +71,28 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
   bool _removing = false;
   String? _error;
   List<ExpenseReceipt> _receipts = const [];
+  List<Split> _splits = const [];
+  bool _loadingSplits = true;
 
   @override
   void initState() {
     super.initState();
     _loadReceipts();
+    _loadSplits();
+  }
+
+  Future<void> _loadSplits() async {
+    try {
+      final finance = await ref.read(financeServiceProviderAsync.future);
+      final splits = await finance.listExpenseSplits(widget.expenseId);
+      if (!mounted) return;
+      setState(() {
+        _splits = splits;
+        _loadingSplits = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loadingSplits = false);
+    }
   }
 
   Future<void> _loadReceipts() async {
@@ -276,39 +294,22 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
           style: MitlistTypography.monoBody(color: MitlistColors.textPrimary),
         ),
         const SizedBox(height: MitlistSpacing.md),
-        AppCard(
-          variant: AppCardVariant.outlined,
-          padding: AppCardPadding.md,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _HistoryRow(label: 'Paid by', value: widget.payer),
-              const SizedBox(height: MitlistSpacing.sm),
-              _HistoryRow(
-                label: 'Created',
-                value: DateFormat.yMMMd().format(widget.createdAt),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: MitlistSpacing.md),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Receipts',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-            TextButton(
-              onPressed: _uploading ? null : _addReceiptFromGallery,
-              child: Text(_uploading ? 'Uploading…' : 'Add'),
-            ),
-          ],
-        ),
-        if (_error != null) ...[
-          Text(_error!, style: Theme.of(context).textTheme.bodySmall),
+        if (!_loadingSplits && _splits.isNotEmpty) ...[
+          Text('Splits', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: MitlistSpacing.sm),
+          AppCard(
+            variant: AppCardVariant.outlined,
+            padding: AppCardPadding.md,
+            child: Column(
+              children: [
+                for (var i = 0; i < _splits.length; i++) ...[
+                  if (i > 0) const Divider(),
+                  _SplitRow(split: _splits[i]),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: MitlistSpacing.md),
         ],
         if (_loadingReceipts)
           const Padding(
@@ -406,6 +407,39 @@ class _HistoryRow extends StatelessWidget {
           style: MitlistTypography.monoBody(color: MitlistColors.textSecondary),
         ),
       ],
+    );
+  }
+}
+
+class _SplitRow extends StatelessWidget {
+  const _SplitRow({required this.split});
+
+  final Split split;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = split.userId.length > 8
+        ? split.userId.substring(0, 8)
+        : split.userId;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+          ),
+          if (split.isSettled)
+            Padding(
+              padding: const EdgeInsets.only(right: MitlistSpacing.sm),
+              child: Icon(Icons.check_circle,
+                  size: 16, color: MitlistColors.success500),
+            ),
+          Text(
+            '\$${(split.amount / 100).toStringAsFixed(2)}',
+            style: MitlistTypography.monoBody(),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -29,7 +29,7 @@ class ItemList {
     final rawPreview = json['item_preview'];
     List<String> preview = const [];
     if (rawPreview is List) {
-      preview = rawPreview.map((e) => e.toString()).toList();
+      preview = rawPreview.map((e) => 'Something went wrong.').toList();
     }
     final archivedAtRaw = json['archived_at'];
     return ItemList(

@@ -83,7 +83,7 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
       context.goNamed('home');
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      setState(() => _error = 'Something went wrong.');
     }
   }
 

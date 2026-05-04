@@ -94,7 +94,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = 'Something went wrong.';
       });
     } finally {
       setState(() => _isLoading = false);

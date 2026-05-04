@@ -15,14 +15,17 @@ class AppDialog extends StatelessWidget {
     super.key,
     required this.title,
     required this.body,
+    this.actions,
   });
 
   final String title;
   final Widget body;
+  final List<Widget>? actions;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final dialogActions = actions;
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -52,7 +55,7 @@ class AppDialog extends StatelessWidget {
                 child: body,
               ),
             ),
-            const _Footer(),
+            if (dialogActions != null) _ActionBar(actions: dialogActions) else const _Footer(),
           ],
         ),
       ),
@@ -126,11 +129,34 @@ class _Footer extends StatelessWidget {
   }
 }
 
+class _ActionBar extends StatelessWidget {
+  const _ActionBar({required this.actions});
+
+  final List<Widget> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        MitlistSpacing.lg,
+        MitlistSpacing.sm,
+        MitlistSpacing.lg,
+        MitlistSpacing.lg,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: actions,
+      ),
+    );
+  }
+}
+
 /// Shows an [AppDialog] with fade + scale animation and a scrim backdrop.
 Future<T?> showAppDialog<T>({
   required BuildContext context,
   required String title,
   required Widget body,
+  List<Widget>? actions,
 }) {
   return showGeneralDialog<T>(
     context: context,
@@ -153,7 +179,7 @@ Future<T?> showAppDialog<T>({
       );
     },
     pageBuilder: (context, animation, secondaryAnimation) => SafeArea(
-      child: AppDialog(title: title, body: body),
+      child: AppDialog(title: title, body: body, actions: actions),
     ),
   );
 }

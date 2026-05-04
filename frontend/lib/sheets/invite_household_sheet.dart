@@ -65,7 +65,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
+        _error = 'Something went wrong.';
         _isLoading = false;
       });
     }

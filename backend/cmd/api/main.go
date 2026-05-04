@@ -213,6 +213,7 @@ func main() {
 			r.Delete("/expenses/{id}", financeHandler.DeleteExpense)
 			receiptHandler.RegisterRoutes(r)
 			r.Post("/expenses/{id}/splits", financeHandler.CreateSplit)
+			r.Get("/expenses/{id}/splits", financeHandler.ListExpenseSplits)
 			r.Patch("/expenses/{id}/splits/{split_id}", financeHandler.UpdateSplit)
 			r.Delete("/expenses/{id}/splits/{split_id}", financeHandler.DeleteSplit)
 			r.Post("/expenses/{id}/settle", financeHandler.CreateSettlement)

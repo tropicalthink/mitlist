@@ -172,7 +172,7 @@ class FinanceRepository {
             break;
         }
       } catch (e) {
-        await _db.markOutboxAttempt(op.id, error: e.toString());
+        await _db.markOutboxAttempt(op.id, error: 'Something went wrong.');
         return;
       }
     }
@@ -195,7 +195,7 @@ class FinanceRepository {
       currency: requestRaw['currency'] as String? ?? 'USD',
       notes: requestRaw['notes'] as String? ?? '',
       date: DateTime.parse(requestRaw['date'] as String),
-      splitUserIds: ((requestRaw['split_user_ids'] as List?) ?? const []).map((e) => e.toString()).toList(),
+      splitUserIds: ((requestRaw['split_user_ids'] as List?) ?? const []).map((e) => 'Something went wrong.').toList(),
       splitMode: requestRaw['split_mode'] as String? ?? 'equal',
       splits: const [],
     );

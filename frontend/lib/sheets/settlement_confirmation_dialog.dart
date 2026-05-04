@@ -40,11 +40,35 @@ class SettlementConfirmationDialog extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+          children: [
         Text(
           amount,
           style: Theme.of(context).textTheme.displayMedium,
         ),
+        if (payer == 'You')
+          Padding(
+            padding: const EdgeInsets.only(top: MitlistSpacing.sm),
+            child: Text(
+              'You\u2019ll pay $payee $amount',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          )
+        else if (payee == 'You')
+          Padding(
+            padding: const EdgeInsets.only(top: MitlistSpacing.sm),
+            child: Text(
+              '$payer will pay you $amount',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.only(top: MitlistSpacing.sm),
+            child: Text(
+              '$payer pays $payee $amount',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
         const SizedBox(height: MitlistSpacing.md),
         Row(
           children: [

@@ -87,7 +87,7 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
       });
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = 'Something went wrong.';
         _isLoading = false;
       });
     }
@@ -183,6 +183,7 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
               const Spacer(),
               IconButton(
                 icon: const Icon(Icons.remove_circle_outline),
+                tooltip: 'Decrease servings',
                 onPressed: _servings > 1 ? () => setState(() => _servings--) : null,
               ),
               Text(
@@ -191,6 +192,7 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
               ),
               IconButton(
                 icon: const Icon(Icons.add_circle_outline),
+                tooltip: 'Increase servings',
                 onPressed: () => setState(() => _servings++),
               ),
             ],

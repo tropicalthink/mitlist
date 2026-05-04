@@ -173,7 +173,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         // If we have cached content, don't replace it with an error state.
         if (!hadCache && mounted) {
           setState(() {
-            _error = e.toString().replaceFirst('Exception: ', '');
+            _error = 'Something went wrong.';
           });
         }
       }
@@ -188,7 +188,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString().replaceFirst('Exception: ', '');
+          _error = 'Something went wrong.';
           _isLoading = false;
         });
       }

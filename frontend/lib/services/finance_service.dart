@@ -170,6 +170,19 @@ class FinanceService {
     }
   }
 
+  Future<List<Split>> listExpenseSplits(String expenseId) async {
+    try {
+      final r = await _dio.get('/expenses/$expenseId/splits');
+      final data = (r.data as List).cast<dynamic>();
+      return data
+          .map((e) => Split.fromJson((e as Map).cast<String, dynamic>()))
+          .toList();
+    } on DioException catch (e) {
+      _logger.e('List splits failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
   Future<void> createSplit(String expenseId, CreateSplitRequest req) async {
     try {
       await _dio.post('/expenses/$expenseId/splits', data: req.toJson());

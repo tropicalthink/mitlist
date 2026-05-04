@@ -395,6 +395,18 @@ func (s *FinanceService) DeleteRecurringExpense(ctx context.Context, userID, id 
 	return s.financeRepo.DeleteRecurringExpense(ctx, id)
 }
 
+// ListExpenseSplits returns all splits for an expense.
+func (s *FinanceService) ListExpenseSplits(ctx context.Context, userID, expenseID uuid.UUID) ([]models.Split, error) {
+	expense, err := s.financeRepo.GetExpenseByID(ctx, expenseID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.requireMember(ctx, expense.GroupID, userID); err != nil {
+		return nil, err
+	}
+	return s.financeRepo.ListSplitsByExpense(ctx, expenseID)
+}
+
 func calculateBalances(expenses []models.Expense, splits []models.Split, settlements []models.Settlement) []models.BalanceEntry {
 	byUser := map[uuid.UUID]*models.BalanceEntry{}
 	ensure := func(userID uuid.UUID) *models.BalanceEntry {

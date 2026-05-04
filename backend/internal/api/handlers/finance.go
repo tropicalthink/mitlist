@@ -422,6 +422,28 @@ func (h *FinanceHandler) DeleteSplit(w http.ResponseWriter, r *http.Request) {
 	api.RespondJSON(w, http.StatusNoContent, nil)
 }
 
+// ListExpenseSplits GET /api/v1/expenses/{id}/splits
+func (h *FinanceHandler) ListExpenseSplits(w http.ResponseWriter, r *http.Request) {
+	userID, ok := h.userID(r)
+	if !ok {
+		api.RespondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	expenseID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		api.RespondError(w, &api.ValidationError{Field: "id", Message: "invalid expense id"})
+		return
+	}
+
+	splits, err := h.service.ListExpenseSplits(r.Context(), userID, expenseID)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	api.RespondJSON(w, http.StatusOK, splits)
+}
+
 // ------------------------------------------------------------------
 // Settlements
 // ------------------------------------------------------------------

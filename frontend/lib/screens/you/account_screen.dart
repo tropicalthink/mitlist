@@ -14,6 +14,7 @@ import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
+import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/mitlist_app_bar.dart';
 
@@ -174,7 +175,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             } catch (e) {
               setSheetState(() {
                 isSaving = false;
-                error = e.toString().replaceFirst('Exception: ', '');
+                error = 'Something went wrong.';
               });
             }
           }
@@ -254,24 +255,23 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   Future<void> _confirmDeleteAccount() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete account'),
-        content: const Text(
-          'This will permanently delete your account and all associated data. This cannot be undone.',
+      title: 'Delete account',
+      body: const Text('This will permanently delete your account and all associated data. This cannot be undone.'),
+      actions: [
+        AppButton(
+          text: 'Cancel',
+          variant: AppButtonVariant.outline,
+          onPressed: () => Navigator.of(context).pop(false),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+        const SizedBox(width: MitlistSpacing.sm),
+        AppButton(
+          text: 'Delete',
+          color: AppButtonColor.error,
+          onPressed: () => Navigator.of(context).pop(true),
+        ),
+      ],
     );
     if (confirmed != true || !mounted) return;
     try {
@@ -283,7 +283,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete account: ${e.toString().replaceFirst('Exception: ', '')}')),
+        SnackBar(content: Text('Failed to delete account: ${'Something went wrong.'}')),
       );
     }
   }

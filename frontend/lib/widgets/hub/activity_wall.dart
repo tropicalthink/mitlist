@@ -10,10 +10,12 @@ class ActivityWall extends StatelessWidget {
     super.key,
     required this.activities,
     required this.activityError,
+    this.currentUserId,
   });
 
   final List<ActivityLogModel> activities;
   final bool activityError;
+  final String? currentUserId;
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +59,7 @@ class ActivityWall extends StatelessWidget {
               children: [
                 for (var i = 0; i < activities.take(5).length; i++) ...[
                   if (i > 0) const SizedBox(height: MitlistSpacing.sm),
-                  _WallItem(item: activities[i]),
+                  _WallItem(item: activities[i], currentUserId: currentUserId),
                 ],
               ],
             ),
@@ -68,9 +70,10 @@ class ActivityWall extends StatelessWidget {
 }
 
 class _WallItem extends StatelessWidget {
-  const _WallItem({required this.item});
+  const _WallItem({required this.item, this.currentUserId});
 
   final ActivityLogModel item;
+  final String? currentUserId;
 
   void _onTap(BuildContext context) {
     final entityType = item.entityType;
@@ -95,7 +98,7 @@ class _WallItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
-    final userLabel = formatUserLabel(item.userId ?? '', null);
+    final userLabel = formatUserLabel(item.userId ?? '', currentUserId);
     final when = relativeDay(item.createdAt);
     final message = formatActivityLine(item);
     final tappable = isNavigableAction(item.entityType);
