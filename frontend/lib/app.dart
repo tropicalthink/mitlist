@@ -1,9 +1,12 @@
+import 'dart:ui' show PlatformDispatcher;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'theme/theme.dart';
 import 'router.dart';
 import 'providers/outbox_provider.dart';
 import 'providers/theme_provider.dart';
+import 'services/error_reporter.dart';
 import 'widgets/offline_banner.dart';
 
 class MitlistApp extends ConsumerStatefulWidget {
@@ -21,6 +24,25 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
     WidgetsBinding.instance.addObserver(this);
     // Ensure coordinator is initialized.
     ref.read(outboxCoordinatorProvider);
+
+    ErrorReporter().init(
+      dsn: const String.fromEnvironment('GLITCHTIP_DSN',
+          defaultValue: ''),
+      environment: const String.fromEnvironment('ENVIRONMENT',
+          defaultValue: 'development'),
+    );
+
+    FlutterError.onError = (details) {
+      FlutterError.presentError(details);
+      ErrorReporter().captureException(
+        details.exception,
+        stackTrace: details.stack,
+      );
+    };
+    PlatformDispatcher.instance.onError = (error, stack) {
+      ErrorReporter().captureException(error, stackTrace: stack);
+      return true;
+    };
   }
 
   @override

@@ -169,3 +169,11 @@ func (m *MockFinanceRepo) CreateExpenseWithSplits(ctx context.Context, e *models
 	args := m.Called(ctx, e, splits)
 	return args.Error(0)
 }
+
+func (m *MockFinanceRepo) ListExpensesByDateRange(ctx context.Context, groupID uuid.UUID, from, to time.Time) ([]models.Expense, error) {
+	args := m.Called(ctx, groupID, from, to)
+	if re := args.Get(0); re != nil {
+		return re.([]models.Expense), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
