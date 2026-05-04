@@ -41,22 +41,25 @@ final outboxCoordinatorProvider = FutureProvider<OutboxCoordinator>((ref) async 
 });
 
 /// Status of the offline outbox queue.
-enum OutboxStatus { online, syncing, offline, error }
+enum OutboxStatus { online, syncing, offline, error, conflict }
 
 class OutboxState {
   final OutboxStatus status;
   final int pendingCount;
   final int failedCount;
+  final int conflictCount;
 
   const OutboxState({
     required this.status,
     this.pendingCount = 0,
     this.failedCount = 0,
+    this.conflictCount = 0,
   });
 
   bool get isOffline => status == OutboxStatus.offline;
   bool get isSyncing => status == OutboxStatus.syncing;
   bool get hasErrors => status == OutboxStatus.error || failedCount > 0;
+  bool get hasConflicts => status == OutboxStatus.conflict || conflictCount > 0;
 }
 
 /// Watches connectivity and outbox queue to produce a unified sync status.
@@ -68,7 +71,16 @@ final outboxStateProvider = StreamProvider<OutboxState>((ref) async* {
     final online = await connectivity.isOnline();
     final pending = await db.outboxPendingCount();
     final failed = await db.outboxFailedCount();
+    final conflicts = await db.conflictCount();
 
+    if (conflicts > 0) {
+      return OutboxState(
+        status: OutboxStatus.conflict,
+        pendingCount: pending,
+        failedCount: failed,
+        conflictCount: conflicts,
+      );
+    }
     if (!online) {
       return OutboxState(
         status: OutboxStatus.offline,

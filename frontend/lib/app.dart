@@ -8,6 +8,7 @@ import 'router.dart';
 import 'providers/outbox_provider.dart';
 import 'providers/theme_provider.dart';
 import 'services/error_reporter.dart';
+import 'services/push_subscription_service.dart';
 import 'widgets/offline_banner.dart';
 
 class MitlistApp extends ConsumerStatefulWidget {
@@ -46,6 +47,12 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
         return true;
       };
     }
+
+    _initPushSubscriptions();
+  }
+
+  void _initPushSubscriptions() {
+    PushSubscriptionService().init();
   }
 
   @override
