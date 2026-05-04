@@ -13,6 +13,7 @@ import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../utils/active_group_context.dart';
+import '../utils/haptics.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
@@ -167,6 +168,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Chore added')),
       );
+      Haptics.success();
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);

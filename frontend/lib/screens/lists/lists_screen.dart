@@ -16,12 +16,14 @@ import '../../theme/list_tile_accent.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/active_group_context.dart';
+import '../../utils/haptics.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/chip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/icons.dart';
 import '../../widgets/skeleton.dart';
+import '../../widgets/list_entrance.dart';
 import '../../widgets/mitlist_app_bar.dart';
 
 enum _SortOption { newest, oldest, az, mostItems }
@@ -307,6 +309,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   }
 
   Future<void> _showCreateSheet() async {
+    Haptics.light();
     final created = await CreateListSheet.show(
       context,
       initialGroupId: widget.groupId,
@@ -564,9 +567,12 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
           itemCount: itemCount,
           itemBuilder: (context, index) {
             if (index >= lists.length) return _buildPaginationFooter();
-            return _ListCard(
-              list: lists[index],
-              onChanged: () => unawaited(_loadLists()),
+            return ListEntrance(
+              index: index,
+              child: _ListCard(
+                list: lists[index],
+                onChanged: () => unawaited(_loadLists()),
+              ),
             );
           },
         );
@@ -583,9 +589,12 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
       separatorBuilder: (_, __) => const SizedBox(height: MitlistSpacing.md),
       itemBuilder: (_, index) {
         if (index >= lists.length) return _buildPaginationFooter();
-        return _ListCard(
-          list: lists[index],
-          onChanged: () => unawaited(_loadLists()),
+        return ListEntrance(
+          index: index,
+          child: _ListCard(
+            list: lists[index],
+            onChanged: () => unawaited(_loadLists()),
+          ),
         );
       },
     );

@@ -504,49 +504,70 @@ void main() {
     final router = GoRouter(
       initialLocation: '/home',
       routes: [
-        ShellRoute(
-          builder: (context, state, child) => BottomNavScaffold(child: child),
-          routes: [
-            GoRoute(
-              path: '/home',
-              name: 'home',
-              builder: (context, state) => const GroupsListScreen(),
+        StatefulShellRoute.indexedStack(
+          builder: (context, state, navigationShell) =>
+              BottomNavScaffold(navigationShell: navigationShell),
+          branches: [
+            StatefulShellBranch(
               routes: [
                 GoRoute(
-                  path: ':groupId/hub',
-                  name: 'householdHub',
-                  builder: (context, state) => HouseholdHubScreen(
-                    groupId: state.pathParameters['groupId']!,
-                  ),
+                  path: '/home',
+                  name: 'home',
+                  builder: (context, state) => const GroupsListScreen(),
+                  routes: [
+                    GoRoute(
+                      path: ':groupId/hub',
+                      name: 'householdHub',
+                      builder: (context, state) => HouseholdHubScreen(
+                        groupId: state.pathParameters['groupId']!,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-            GoRoute(
-              path: '/lists',
-              name: 'lists',
-              builder: (context, state) => const ListsScreen(),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/lists',
+                  name: 'lists',
+                  builder: (context, state) => const ListsScreen(),
+                ),
+              ],
             ),
-            GoRoute(
-              path: '/chores',
-              name: 'chores',
-              builder: (context, state) => const ChoresScreen(),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/chores',
+                  name: 'chores',
+                  builder: (context, state) => const ChoresScreen(),
+                ),
+              ],
             ),
-            GoRoute(
-              path: '/money',
-              name: 'money',
-              builder: (context, state) => const ExpensesScreen(),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/money',
+                  name: 'money',
+                  builder: (context, state) => const ExpensesScreen(),
+                ),
+              ],
             ),
-            GoRoute(
-              path: '/recipes',
-              name: 'recipes',
-              builder: (context, state) => const RecipesScreen(),
-            ),
-            GoRoute(
-              path: '/you',
-              name: 'you',
-              builder: (context, state) => const AccountScreen(),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/recipes',
+                  name: 'recipes',
+                  builder: (context, state) => const RecipesScreen(),
+                ),
+              ],
             ),
           ],
+        ),
+        GoRoute(
+          path: '/you',
+          name: 'you',
+          builder: (context, state) => const AccountScreen(),
         ),
       ],
     );

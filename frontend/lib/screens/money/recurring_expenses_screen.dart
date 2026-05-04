@@ -90,7 +90,7 @@ class _RecurringExpensesScreenState
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update: $e')),
+        const SnackBar(content: Text('Couldn\u2019t update.')),
       );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -106,7 +106,7 @@ class _RecurringExpensesScreenState
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete: $e')),
+        const SnackBar(content: Text('Couldn\u2019t delete.')),
       );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -260,7 +260,7 @@ class _RecurringExpensesScreenState
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to create: $e')),
+        const SnackBar(content: Text('Couldn\u2019t create.')),
       );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);

@@ -32,7 +32,12 @@ import 'screens/scanner/scanner_screen.dart';
 final currentGroupIdProvider = StateProvider<String?>((ref) => null);
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
-final _shellNavigatorKey = GlobalKey<NavigatorState>();
+
+final _homeNavKey = GlobalKey<NavigatorState>(debugLabel: 'home');
+final _listsNavKey = GlobalKey<NavigatorState>(debugLabel: 'lists');
+final _choresNavKey = GlobalKey<NavigatorState>(debugLabel: 'chores');
+final _moneyNavKey = GlobalKey<NavigatorState>(debugLabel: 'money');
+final _recipesNavKey = GlobalKey<NavigatorState>(debugLabel: 'recipes');
 
 final _authRoutePrefixes = [
   '/welcome',
@@ -138,78 +143,104 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ShareTargetScreen(),
       ),
 
-      ShellRoute(
-        navigatorKey: _shellNavigatorKey,
-        builder: (context, state, child) => BottomNavScaffold(child: child),
-        routes: [
-          GoRoute(
-            path: '/home',
-            name: 'home',
-            builder: (context, state) => const HouseholdHubScreen(),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) =>
+            BottomNavScaffold(navigationShell: navigationShell),
+        branches: [
+          StatefulShellBranch(
+            navigatorKey: _homeNavKey,
             routes: [
               GoRoute(
-                path: 'groups',
-                name: 'groupsList',
-                builder: (context, state) => const GroupsListScreen(),
+                path: '/home',
+                name: 'home',
+                builder: (context, state) => const HouseholdHubScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'groups',
+                    name: 'groupsList',
+                    builder: (context, state) => const GroupsListScreen(),
+                  ),
+                ],
               ),
             ],
           ),
-          GoRoute(
-            path: '/lists',
-            name: 'lists',
-            builder: (context, state) => const ListsScreen(),
+          StatefulShellBranch(
+            navigatorKey: _choresNavKey,
             routes: [
               GoRoute(
-                path: 'shopping-trip',
-                name: 'shoppingTrip',
-                parentNavigatorKey: _rootNavigatorKey,
-                builder: (context, state) => const ShoppingTripScreen(),
-              ),
-              GoRoute(
-                path: ':listId',
-                name: 'listDetail',
-                parentNavigatorKey: _rootNavigatorKey,
-                builder: (context, state) {
-                  final listId = state.pathParameters['listId']!;
-                  final extra = state.extra;
-                  final initialName =
-                      extra is ListDetailRouteArgs ? extra.listName : null;
-                  return ListDetailScreen(
-                    listId: listId,
-                    initialListName: initialName,
-                  );
-                },
+                path: '/chores',
+                name: 'chores',
+                builder: (context, state) => const ChoresScreen(),
               ),
             ],
           ),
-          GoRoute(
-            path: '/chores',
-            name: 'chores',
-            builder: (context, state) => const ChoresScreen(),
-          ),
-          GoRoute(
-            path: '/money',
-            name: 'money',
-            builder: (context, state) => const ExpensesScreen(),
+          StatefulShellBranch(
+            navigatorKey: _recipesNavKey,
             routes: [
               GoRoute(
-                path: 'recurring',
-                name: 'recurringExpenses',
-                parentNavigatorKey: _rootNavigatorKey,
-                builder: (context, state) => const RecurringExpensesScreen(),
+                path: '/recipes',
+                name: 'recipes',
+                builder: (context, state) => const RecipesScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'meal-plan',
+                    name: 'mealPlan',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (context, state) => const MealPlanScreen(),
+                  ),
+                ],
               ),
             ],
           ),
-          GoRoute(
-            path: '/recipes',
-            name: 'recipes',
-            builder: (context, state) => const RecipesScreen(),
+          StatefulShellBranch(
+            navigatorKey: _moneyNavKey,
             routes: [
               GoRoute(
-                path: 'meal-plan',
-                name: 'mealPlan',
-                parentNavigatorKey: _rootNavigatorKey,
-                builder: (context, state) => const MealPlanScreen(),
+                path: '/money',
+                name: 'money',
+                builder: (context, state) => const ExpensesScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'recurring',
+                    name: 'recurringExpenses',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (context, state) =>
+                        const RecurringExpensesScreen(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            navigatorKey: _listsNavKey,
+            routes: [
+              GoRoute(
+                path: '/lists',
+                name: 'lists',
+                builder: (context, state) => const ListsScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'shopping-trip',
+                    name: 'shoppingTrip',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (context, state) => const ShoppingTripScreen(),
+                  ),
+                  GoRoute(
+                    path: ':listId',
+                    name: 'listDetail',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (context, state) {
+                      final listId = state.pathParameters['listId']!;
+                      final extra = state.extra;
+                      final initialName =
+                          extra is ListDetailRouteArgs ? extra.listName : null;
+                      return ListDetailScreen(
+                        listId: listId,
+                        initialListName: initialName,
+                      );
+                    },
+                  ),
+                ],
               ),
             ],
           ),
@@ -249,15 +280,12 @@ final routerProvider = Provider<GoRouter>((ref) {
 });
 
 class BottomNavScaffold extends ConsumerWidget {
-  final Widget child;
-  const BottomNavScaffold({super.key, required this.child});
+  final StatefulNavigationShell navigationShell;
+  const BottomNavScaffold({super.key, required this.navigationShell});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final location = GoRouterState.of(context).uri.path;
-    final index = _calculateIndex(location);
     final badgeCounts = ref.watch(navBadgeCountsProvider);
-
     final badgeData = badgeCounts.valueOrNull ?? const NavBadgeCounts();
 
     Widget makeBadgeIcon(Widget icon, {int count = 0}) {
@@ -273,7 +301,7 @@ class BottomNavScaffold extends ConsumerWidget {
     }
 
     return Scaffold(
-      body: child,
+      body: navigationShell,
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           border: Border(
@@ -284,8 +312,8 @@ class BottomNavScaffold extends ConsumerWidget {
           ),
         ),
         child: BottomNavigationBar(
-          currentIndex: index,
-          onTap: (i) => _onTap(i, context, ref),
+          currentIndex: navigationShell.currentIndex,
+          onTap: (i) => _onTap(i, navigationShell, ref),
           items: [
             const BottomNavigationBarItem(
                 icon: AppIcon(name: 'home'), label: 'Home'),
@@ -311,32 +339,8 @@ class BottomNavScaffold extends ConsumerWidget {
     );
   }
 
-  int _calculateIndex(String location) {
-    if (location.startsWith('/home')) return 0;
-    if (location.startsWith('/chores')) return 1;
-    if (location.startsWith('/recipes')) return 2;
-    if (location.startsWith('/money')) return 3;
-    if (location.startsWith('/lists')) return 4;
-    return 0;
-  }
-
-  void _onTap(int index, BuildContext context, WidgetRef ref) {
-    switch (index) {
-      case 0:
-        context.goNamed('home');
-        return;
-      case 1:
-        context.goNamed('chores');
-        return;
-      case 2:
-        context.goNamed('recipes');
-        return;
-      case 3:
-        context.goNamed('money');
-        return;
-      case 4:
-        context.goNamed('lists');
-        return;
-    }
+  void _onTap(int index, StatefulNavigationShell navigationShell, WidgetRef ref) {
+    if (index == navigationShell.currentIndex) return;
+    navigationShell.goBranch(index, initialLocation: index == navigationShell.currentIndex);
   }
 }

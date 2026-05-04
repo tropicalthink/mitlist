@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../models/recipe_models.dart';
 import '../providers/recipe_provider.dart';
+import '../utils/haptics.dart';
 import '../providers/scan_provider.dart';
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
@@ -260,6 +261,7 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Recipe created')),
       );
+      Haptics.success();
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);

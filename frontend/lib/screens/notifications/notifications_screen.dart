@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../models/notification_models.dart';
 import '../../providers/notification_provider.dart';
+import '../../utils/haptics.dart';
 import '../../providers/group_provider.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
@@ -123,6 +124,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   Future<void> _markAllRead() async {
     if (_isMutating) return;
     _isMutating = true;
+    Haptics.light();
     try {
       final service = await ref.read(notificationServiceProviderAsync.future);
       await service.markAllAsRead();

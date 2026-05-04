@@ -17,6 +17,7 @@ import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/active_group_context.dart';
+import '../../utils/haptics.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
@@ -25,6 +26,7 @@ import '../../widgets/app_icon.dart';
 import '../../widgets/chip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/icons.dart';
+import '../../widgets/list_entrance.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/skeleton.dart';
 
@@ -136,6 +138,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   }
 
   Future<void> _onAddRecipe() async {
+    Haptics.light();
     final created = await RecipeCreationSheet.show(context);
     if (created == true) {
       await _loadKitchen();
@@ -143,6 +146,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   }
 
   Future<void> _openRecipeDetail(_Recipe recipe) async {
+    Haptics.light();
     await RecipeDetailSheet.show(
       context,
       title: recipe.title,
@@ -747,14 +751,17 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
         }
 
         final recipe = visible[index];
-        return _RecipeCard(
-          recipe: recipe,
-          onTap: () => _openRecipeDetail(recipe),
-          onAddToList: () => RecipeAddToListSheet.show(
-            context,
-            recipeId: recipe.id,
-            recipeTitle: recipe.title,
-            defaultServings: recipe.servings,
+        return ListEntrance(
+          index: index,
+          child: _RecipeCard(
+            recipe: recipe,
+            onTap: () => _openRecipeDetail(recipe),
+            onAddToList: () => RecipeAddToListSheet.show(
+              context,
+              recipeId: recipe.id,
+              recipeTitle: recipe.title,
+              defaultServings: recipe.servings,
+            ),
           ),
         );
       },

@@ -14,6 +14,7 @@ import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../theme/theme.dart';
 import '../../utils/active_group_context.dart';
+import '../../utils/haptics.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
@@ -216,6 +217,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
   Future<void> _generateShoppingList() async {
     if (_isMutating) return;
     _isMutating = true;
+    Haptics.light();
     try {
       final svc = await ref.read(mealPlanServiceProviderAsync.future);
       final from = _formatDate(_weekStart);

@@ -17,6 +17,7 @@ import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/active_group_context.dart';
+import '../../utils/haptics.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
@@ -25,6 +26,7 @@ import '../../widgets/app_icon.dart';
 import '../../widgets/chip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton.dart';
+import '../../widgets/list_entrance.dart';
 import '../../widgets/mitlist_app_bar.dart';
 
 class ChoresScreen extends ConsumerStatefulWidget {
@@ -160,6 +162,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   Future<void> _onRefresh() => _loadChores();
 
   Future<void> _addChore() async {
+    Haptics.light();
     final created = await ChoreCreationSheet.show(context);
     if (created == true) {
       await _loadChores();
@@ -178,6 +181,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       // Keep the sheet available when an older API does not expose details yet.
     }
     if (!mounted) return;
+    Haptics.light();
     await ChoreDetailSheet.show(
       context,
       choreId: id,
@@ -289,6 +293,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       if (chore.completed) {
         return;
       }
+      Haptics.light();
       final repo = await ref.read(choreRepositoryProvider.future);
       await repo.completeOfflineFirst(id);
       await _loadChores();
@@ -769,14 +774,17 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
                           final chore = sections[section]![index];
-                          return Padding(
-                            padding: const EdgeInsets.only(
-                              bottom: MitlistSpacing.sm,
-                            ),
-                            child: _ChoreItem(
-                              chore: chore,
-                              onToggle: () => _toggleComplete(chore.id),
-                              onTap: () => _openChoreDetail(chore.id),
+                          return ListEntrance(
+                            index: index,
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                bottom: MitlistSpacing.sm,
+                              ),
+                              child: _ChoreItem(
+                                chore: chore,
+                                onToggle: () => _toggleComplete(chore.id),
+                                onTap: () => _openChoreDetail(chore.id),
+                              ),
                             ),
                           );
                         },

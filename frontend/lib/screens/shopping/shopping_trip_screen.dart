@@ -159,7 +159,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e')),
+          const SnackBar(content: Text('Something went wrong.')),
         );
       }
     } finally {

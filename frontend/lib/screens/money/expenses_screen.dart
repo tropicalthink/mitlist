@@ -13,6 +13,7 @@ import '../../models/finance_models.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../utils/active_group_context.dart';
+import '../../utils/haptics.dart';
 import '../../sheets/expense_creation_sheet.dart';
 import '../../sheets/expense_detail_sheet.dart';
 import '../../sheets/settlement_confirmation_dialog.dart';
@@ -27,6 +28,7 @@ import '../../widgets/app_icon.dart';
 import '../../widgets/chip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton.dart';
+import '../../widgets/list_entrance.dart';
 import '../../widgets/mitlist_app_bar.dart';
 
 // ---------------------------------------------------------------------------
@@ -344,6 +346,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   Future<void> _openExpenseDetail(_Expense expense) async {
     final groupId = _groupId;
     if (groupId == null) return;
+    Haptics.light();
     await ExpenseDetailSheet.show(
       context,
       groupId: groupId,
@@ -432,6 +435,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   }
 
   Future<void> _openCreateExpense() async {
+    Haptics.light();
     final created = await ExpenseCreationSheet.show(context);
     if (created == true) {
       await _loadData();
@@ -451,6 +455,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     if (confirmed != true || !mounted) return;
 
     setState(() => _isSettling = true);
+    Haptics.light();
     try {
       final financeService = await ref.read(financeServiceProviderAsync.future);
       await financeService.createGroupSettlement(
@@ -469,7 +474,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to record settlement: $e')),
+        const SnackBar(content: Text('Couldn\u2019t record settlement.')),
       );
     } finally {
       if (mounted) {
@@ -954,13 +959,16 @@ class _TimelineBody extends StatelessWidget {
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
                     final expense = group.expenses[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(
-                        bottom: MitlistSpacing.sm,
-                      ),
-                      child: _ExpenseCard(
-                        expense: expense,
-                        onTap: () => onOpenExpense(expense),
+                    return ListEntrance(
+                      index: index,
+                      child: Padding(
+                        padding: const EdgeInsets.only(
+                          bottom: MitlistSpacing.sm,
+                        ),
+                        child: _ExpenseCard(
+                          expense: expense,
+                          onTap: () => onOpenExpense(expense),
+                        ),
                       ),
                     );
                   },
