@@ -199,7 +199,7 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Select a ${typeAction}',
+                Text('Select a $typeAction',
                     style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: MitlistSpacing.md),
                 for (final opt in options)

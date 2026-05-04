@@ -6,6 +6,7 @@ import 'package:logger/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/finance_provider.dart';
 import '../../providers/group_provider.dart';
@@ -151,6 +152,10 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       duration: const Duration(seconds: 3),
     );
     _timelineScrollController.addListener(_onTimelineScroll);
+    SharedPreferences.getInstance().then((prefs) {
+      final saved = prefs.getInt('expenses_selected_tab');
+      if (saved == 0 || saved == 1) setState(() => _selectedTab = saved!);
+    });
     _loadData();
   }
 
@@ -432,6 +437,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
   void _onTabChanged(int tab) {
     setState(() => _selectedTab = tab);
+    SharedPreferences.getInstance().then((p) => p.setInt('expenses_selected_tab', tab));
   }
 
   Future<void> _openCreateExpense() async {

@@ -92,7 +92,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
   Future<void> _resolveAndLoad() async {
     if (widget.groupId != null && widget.groupId!.isNotEmpty) {
       _resolvedGroupId = widget.groupId;
-      ref.read(currentGroupIdProvider.notifier).state = widget.groupId!;
+      ref.read(currentGroupIdProvider.notifier).set(widget.groupId);
       _loadData();
       return;
     }
@@ -111,7 +111,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
       if (!mounted) return;
       if (isValidGroupId(gid)) {
         _resolvedGroupId = gid;
-        ref.read(currentGroupIdProvider.notifier).state = gid;
+        ref.read(currentGroupIdProvider.notifier).set(gid);
       } else {
         _resolvedGroupId = null;
       }
@@ -124,7 +124,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
   }
 
   Future<void> _switchGroup(String newGroupId) async {
-    ref.read(currentGroupIdProvider.notifier).state = newGroupId;
+    ref.read(currentGroupIdProvider.notifier).set(newGroupId);
     setState(() {
       _resolvedGroupId = newGroupId;
       _isLoading = true;
@@ -189,7 +189,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
         _me = me;
         _isLoading = !hadCache;
       });
-      ref.read(currentGroupIdProvider.notifier).state = _resolvedGroupId!;
+      ref.read(currentGroupIdProvider.notifier).set(_resolvedGroupId!);
 
       await _groupSub?.cancel();
       _groupSub = repo.watchGroup(_resolvedGroupId!).listen((g) {

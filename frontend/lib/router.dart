@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/auth_provider.dart';
 import 'theme/colors.dart';
 import 'widgets/app_icon.dart';
@@ -29,7 +30,33 @@ import 'screens/meal_plans/meal_plan_screen.dart';
 import 'screens/shopping/shopping_trip_screen.dart';
 import 'screens/scanner/scanner_screen.dart';
 
-final currentGroupIdProvider = StateProvider<String?>((ref) => null);
+final currentGroupIdProvider =
+    StateNotifierProvider<CurrentGroupIdNotifier, String?>(
+  (ref) => CurrentGroupIdNotifier(),
+);
+
+class CurrentGroupIdNotifier extends StateNotifier<String?> {
+  CurrentGroupIdNotifier() : super(null) {
+    _load();
+  }
+
+  static const _key = 'current_group_id';
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    state = prefs.getString(_key);
+  }
+
+  Future<void> set(String? groupId) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (groupId != null) {
+      await prefs.setString(_key, groupId);
+    } else {
+      await prefs.remove(_key);
+    }
+    state = groupId;
+  }
+}
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 

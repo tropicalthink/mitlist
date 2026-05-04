@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:logger/logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 
 import 'package:intl/intl.dart';
@@ -66,6 +67,10 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   @override
   void initState() {
     super.initState();
+    SharedPreferences.getInstance().then((prefs) {
+      final saved = prefs.getBool('chores_filter_me');
+      if (saved != null) setState(() => _filterMe = saved);
+    });
     _loadChores();
   }
 
@@ -629,6 +634,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                                   selected: _filterMe,
                                   onSelected: (_) {
                                     setState(() => _filterMe = true);
+                                    SharedPreferences.getInstance().then((p) => p.setBool('chores_filter_me', true));
                                   },
                                 ),
                                 const SizedBox(width: MitlistSpacing.sm),
@@ -637,6 +643,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                                   selected: !_filterMe,
                                   onSelected: (_) {
                                     setState(() => _filterMe = false);
+                                    SharedPreferences.getInstance().then((p) => p.setBool('chores_filter_me', false));
                                   },
                                 ),
                               ],

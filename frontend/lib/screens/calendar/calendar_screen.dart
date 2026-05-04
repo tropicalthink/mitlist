@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/calendar_models.dart';
 import '../../providers/calendar_provider.dart';
@@ -49,6 +50,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final now = DateTime.now();
     _weekStart = now.subtract(Duration(days: now.weekday - 1));
     _monthStart = DateTime(now.year, now.month, 1);
+    SharedPreferences.getInstance().then((prefs) {
+      final saved = prefs.getString('calendar_view_mode');
+      if (saved == 'month') setState(() => _viewMode = _CalendarView.month);
+      if (saved == 'agenda') setState(() => _viewMode = _CalendarView.agenda);
+    });
     _load();
   }
 
@@ -131,6 +137,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   void _setViewMode(_CalendarView mode) {
     if (mode == _viewMode) return;
     setState(() => _viewMode = mode);
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setString('calendar_view_mode', mode.name);
+    });
     _load();
   }
 

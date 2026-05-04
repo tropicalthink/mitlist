@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/list_models.dart';
 import '../../providers/group_provider.dart';
@@ -76,6 +77,22 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    SharedPreferences.getInstance().then((prefs) {
+      final savedGrid = prefs.getBool('lists_is_grid');
+      final savedFilter = prefs.getInt('lists_filter');
+      final savedSort = prefs.getInt('lists_sort');
+      if (mounted) {
+        setState(() {
+          if (savedGrid != null) _isGrid = savedGrid;
+          if (savedFilter != null && savedFilter < _FilterOption.values.length) {
+            _filter = _FilterOption.values[savedFilter];
+          }
+          if (savedSort != null && savedSort < _SortOption.values.length) {
+            _sort = _SortOption.values[savedSort];
+          }
+        });
+      }
+    });
     _loadLists();
   }
 
@@ -372,18 +389,23 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                   switch (action) {
                     case _ListMenuAction.sortNewest:
                       _sort = _SortOption.newest;
+                      SharedPreferences.getInstance().then((p) => p.setInt('lists_sort', _sort.index));
                       break;
                     case _ListMenuAction.sortOldest:
                       _sort = _SortOption.oldest;
+                      SharedPreferences.getInstance().then((p) => p.setInt('lists_sort', _sort.index));
                       break;
                     case _ListMenuAction.sortAz:
                       _sort = _SortOption.az;
+                      SharedPreferences.getInstance().then((p) => p.setInt('lists_sort', _sort.index));
                       break;
                     case _ListMenuAction.sortMostItems:
                       _sort = _SortOption.mostItems;
+                      SharedPreferences.getInstance().then((p) => p.setInt('lists_sort', _sort.index));
                       break;
                     case _ListMenuAction.toggleView:
                       _isGrid = !_isGrid;
+                      SharedPreferences.getInstance().then((p) => p.setBool('lists_is_grid', _isGrid));
                       break;
                   }
                 });
@@ -535,7 +557,10 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
             child: AppChip(
               label: label,
               selected: _filter == option,
-              onSelected: (_) => setState(() => _filter = option),
+              onSelected: (_) {
+                setState(() => _filter = option);
+                SharedPreferences.getInstance().then((p) => p.setInt('lists_filter', _filter.index));
+              },
             ),
           );
         }).toList(),

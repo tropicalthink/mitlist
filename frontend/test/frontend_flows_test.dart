@@ -54,6 +54,7 @@ import 'package:mitlist/services/list_service.dart';
 import 'package:mitlist/services/notification_service.dart';
 import 'package:mitlist/services/recipe_service.dart';
 import 'package:mitlist/storage/app_database.dart' hide FinanceSummary;
+import 'package:mitlist/widgets/app_button.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -811,6 +812,184 @@ void main() {
       findsOneWidget,
     );
   });
+  testWidgets('chores screen shows empty state when no chores exist',
+      (tester) async {
+    await _setLargeSurface(tester);
+    final groupService = FakeGroupService(groups: [group], groupDetail: group);
+    final choreService = FakeChoreService(chores: []);
+
+    await _pumpScreen(
+      tester,
+      child: const ChoresScreen(),
+      overrides: [
+        groupServiceProviderAsync.overrideWith((ref) async => groupService),
+        choreServiceProviderAsync.overrideWith((ref) async => choreService),
+      ],
+    );
+
+    expect(find.text('No chores yet'), findsOneWidget);
+  });
+
+  testWidgets('expenses screen shows empty state when no expenses exist',
+      (tester) async {
+    await _setLargeSurface(tester);
+    final groupService = FakeGroupService(groups: [group], groupDetail: group);
+    final authService = FakeAuthService(currentUser: user);
+    final financeService = FakeFinanceService(expenses: []);
+    final financeRepo = FakeFinanceRepository(financeService);
+
+    await _pumpScreen(
+      tester,
+      child: const ExpensesScreen(),
+      overrides: [
+        groupServiceProviderAsync.overrideWith((ref) async => groupService),
+        authServiceProviderAsync.overrideWith((ref) async => authService),
+        financeServiceProviderAsync.overrideWith((ref) async => financeService),
+        financeRepositoryProvider.overrideWith((ref) async => financeRepo),
+      ],
+    );
+
+    expect(find.text('No expenses yet'), findsOneWidget);
+  });
+
+  testWidgets('recipes screen shows empty state when no recipes exist',
+      (tester) async {
+    await _setLargeSurface(tester);
+    final recipeService = FakeRecipeService(recipes: []);
+
+    await _pumpScreen(
+      tester,
+      child: const RecipesScreen(),
+      overrides: [
+        recipeServiceProviderAsync.overrideWith((ref) async => recipeService),
+      ],
+    );
+
+    expect(find.text('Build your kitchen'), findsOneWidget);
+  });
+
+  testWidgets('expenses screen shows error state on API failure',
+      (tester) async {
+    await _setLargeSurface(tester);
+    final groupService = FakeGroupService(groups: [group], groupDetail: group);
+    final authService = FakeAuthService(currentUser: user);
+
+    await _pumpScreen(
+      tester,
+      child: const ExpensesScreen(),
+      overrides: [
+        groupServiceProviderAsync.overrideWith((ref) async => groupService),
+        authServiceProviderAsync.overrideWith((ref) async => authService),
+        financeRepositoryProvider.overrideWith((ref) async {
+          throw Exception('API error');
+        }),
+      ],
+    );
+
+    expect(find.text('Something went wrong.'), findsOneWidget);
+    expect(find.text('RETRY'), findsOneWidget);
+  });
+
+  testWidgets('chores screen shows error state on API failure',
+      (tester) async {
+    await _setLargeSurface(tester);
+    final groupService = FakeGroupService(groups: [group], groupDetail: group);
+
+    await _pumpScreen(
+      tester,
+      child: const ChoresScreen(),
+      overrides: [
+        groupServiceProviderAsync.overrideWith((ref) async => groupService),
+        choreRepositoryProvider.overrideWith((ref) async {
+          throw Exception('API error');
+        }),
+      ],
+    );
+
+    expect(find.text('Failed to load chores. Please try again.'),
+        findsOneWidget);
+    expect(find.text('RETRY'), findsOneWidget);
+  });
+
+  testWidgets('chore creation prevents submitting with empty name',
+      (tester) async {
+    await _setLargeSurface(tester);
+    final groupService = FakeGroupService(groups: [group], groupDetail: group);
+    final choreService = FakeChoreService();
+
+    await _pumpScreen(
+      tester,
+      child: const ChoresScreen(),
+      overrides: [
+        groupServiceProviderAsync.overrideWith((ref) async => groupService),
+        choreServiceProviderAsync.overrideWith((ref) async => choreService),
+      ],
+    );
+
+    await tester.tap(find.byTooltip('Add chore'));
+    await _pumpAfter(tester);
+
+    final createButtons = find.widgetWithText(AppButton, 'ADD CHORE');
+    expect(createButtons, findsAtLeast(1));
+    final button = tester.widget<AppButton>(createButtons.last);
+    expect(button.onPressed, isNull);
+  });
+
+  testWidgets('list creation prevents submitting with empty name',
+      (tester) async {
+    await _setLargeSurface(tester);
+    final groupService = FakeGroupService(groups: [group], groupDetail: group);
+    final listService = FakeListService(lists: []);
+    final listRepo = FakeListRepository(listService);
+
+    await _pumpScreen(
+      tester,
+      child: const ListsScreen(),
+      overrides: [
+        groupServiceProviderAsync.overrideWith((ref) async => groupService),
+        listServiceProviderAsync.overrideWith((ref) async => listService),
+        listRepositoryProvider.overrideWith((ref) async => listRepo),
+      ],
+    );
+
+    await tester.tap(find.byTooltip('New list'));
+    await _pumpAfter(tester);
+
+    final createButton = find.widgetWithText(AppButton, 'CREATE');
+    expect(createButton, findsOneWidget);
+    final button = tester.widget<AppButton>(createButton);
+    expect(button.onPressed, isNull);
+  });
+
+  testWidgets('household hub shows pinwall section', (tester) async {
+    await _setLargeSurface(tester);
+    final groupService = FakeGroupService(groups: [group], groupDetail: group);
+    final activityService = FakeActivityService();
+    final authService = FakeAuthService(currentUser: user);
+
+    await _pumpScreen(
+      tester,
+      child: HouseholdHubScreen(groupId: groupId),
+      overrides: [
+        groupServiceProviderAsync.overrideWith((ref) async => groupService),
+        activityServiceProviderAsync.overrideWith((ref) async => activityService),
+        authServiceProviderAsync.overrideWith((ref) async => authService),
+        pinwallServiceProviderAsync
+            .overrideWith((ref) async => FakePinwallService()),
+        pinwallRepositoryProvider.overrideWith(
+            (ref) async => FakePinwallRepository(FakePinwallService())),
+        choreRepositoryProvider.overrideWith(
+            (ref) async => FakeChoreRepository(FakeChoreService())),
+        listRepositoryProvider.overrideWith(
+            (ref) async => FakeListRepository(FakeListService(lists: []))),
+        financeRepositoryProvider.overrideWith(
+            (ref) async => FakeFinanceRepository(FakeFinanceService())),
+      ],
+    );
+
+    expect(find.text('Pinwall'), findsOneWidget);
+    expect(find.text('Activity'), findsOneWidget);
+  });
 }
 
 Future<AppDatabase> _pumpScreen(
@@ -901,16 +1080,20 @@ class FakeGroupService implements GroupService {
 }
 
 class FakeChoreService implements ChoreService {
-  FakeChoreService({List<Chore>? chores}) : _chores = chores ?? [];
+  FakeChoreService({List<Chore>? chores, this.shouldThrow = false})
+      : _chores = chores ?? [];
 
   final List<Chore> _chores;
+  final bool shouldThrow;
   CreateChoreRequest? lastCreateRequest;
   final List<String> completedIds = [];
 
   @override
   Future<List<Chore>> listChores(String groupId,
-          {int limit = 50, int offset = 0}) async =>
-      _chores.skip(offset).take(limit).toList();
+          {int limit = 50, int offset = 0}) async {
+    if (shouldThrow) throw Exception('API error');
+    return _chores.skip(offset).take(limit).toList();
+  }
 
   @override
   Future<Chore> createChore(CreateChoreRequest req) async {
@@ -978,15 +1161,19 @@ class FakeChoreService implements ChoreService {
 }
 
 class FakeFinanceService implements FinanceService {
-  FakeFinanceService({List<Expense>? expenses}) : _expenses = expenses ?? [];
+  FakeFinanceService({List<Expense>? expenses, this.shouldThrow = false})
+      : _expenses = expenses ?? [];
 
   final List<Expense> _expenses;
+  final bool shouldThrow;
   CreateExpenseRequest? lastCreateRequest;
 
   @override
   Future<List<Expense>> listExpenses(String groupId,
-          {int limit = 50, int offset = 0}) async =>
-      _expenses.skip(offset).take(limit).toList();
+          {int limit = 50, int offset = 0}) async {
+    if (shouldThrow) throw Exception('API error');
+    return _expenses.skip(offset).take(limit).toList();
+  }
 
   @override
   Future<Expense> createExpense(CreateExpenseRequest req) async {
@@ -1300,8 +1487,11 @@ class FakeChoreRepository implements ChoreRepository {
       .toList();
 
   @override
-  Stream<List<CurrentChore>> watchCurrentChores(String groupId) =>
-      _controller.stream;
+  Stream<List<CurrentChore>> watchCurrentChores(String groupId) async* {
+    final chores = await _service.listChores(groupId);
+    yield _toCurrent(chores);
+    yield* _controller.stream;
+  }
 
   @override
   Future<List<CurrentChore>> getCurrentChoresOnce(String groupId) async {
@@ -1414,8 +1604,11 @@ class FakeFinanceRepository implements FinanceRepository {
       : _expenseController = StreamController<List<Expense>>.broadcast();
 
   @override
-  Stream<List<Expense>> watchExpensesByGroup(String groupId) =>
-      _expenseController.stream;
+  Stream<List<Expense>> watchExpensesByGroup(String groupId) async* {
+    final expenses = await _service.listExpenses(groupId);
+    yield expenses;
+    yield* _expenseController.stream;
+  }
 
   @override
   Future<List<Expense>> getExpensesByGroupOnce(String groupId) async =>
