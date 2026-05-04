@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
@@ -8,6 +9,9 @@ import '../../models/pinwall_media_models.dart';
 import '../../models/pinwall_models.dart';
 import '../../providers/attachment_provider.dart';
 import '../../providers/pinwall_provider.dart';
+import '../../providers/chore_provider.dart';
+import '../../providers/list_provider.dart';
+import '../../providers/finance_provider.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/theme.dart';
@@ -98,7 +102,7 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
     if (_isPosting || _isUploadingMedia) return;
     Haptics.light();
 
-    final action = await showModalBottomSheet<String>(
+    final typeAction = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
       builder: (ctx) => SafeArea(
@@ -113,25 +117,19 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
               const SizedBox(height: MitlistSpacing.md),
               AppButton(
                 text: 'A chore',
-                onPressed: () {
-                  Navigator.of(ctx).pop('chore');
-                },
+                onPressed: () => Navigator.of(ctx).pop('chore'),
               ),
               const SizedBox(height: MitlistSpacing.sm),
               AppButton(
                 text: 'A list',
                 variant: AppButtonVariant.outline,
-                onPressed: () {
-                  Navigator.of(ctx).pop('list');
-                },
+                onPressed: () => Navigator.of(ctx).pop('list'),
               ),
               const SizedBox(height: MitlistSpacing.sm),
               AppButton(
                 text: 'An expense',
                 variant: AppButtonVariant.outline,
-                onPressed: () {
-                  Navigator.of(ctx).pop('expense');
-                },
+                onPressed: () => Navigator.of(ctx).pop('expense'),
               ),
               if (_linkedEntityType != null) ...[
                 const SizedBox(height: MitlistSpacing.sm),
@@ -139,9 +137,7 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
                   text: 'Remove link',
                   variant: AppButtonVariant.ghost,
                   color: AppButtonColor.error,
-                  onPressed: () {
-                    Navigator.of(ctx).pop('remove');
-                  },
+                  onPressed: () => Navigator.of(ctx).pop('remove'),
                 ),
               ],
             ],
@@ -150,8 +146,8 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
       ),
     );
 
-    if (!mounted || action == null) return;
-    if (action == 'remove') {
+    if (!mounted || typeAction == null) return;
+    if (typeAction == 'remove') {
       setState(() {
         _linkedEntityType = null;
         _linkedEntityId = null;
@@ -160,11 +156,79 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
       return;
     }
 
-    setState(() {
-      _linkedEntityType = action;
-      _linkedEntityId = '';
-      _linkedEntityLabel = action;
-    });
+    // Fetch entities of the selected type and show a picker.
+    try {
+      final groupId = widget.groupId;
+
+      List<_EntityOption> options;
+      switch (typeAction) {
+        case 'chore':
+          final svc = await ref.read(choreServiceProviderAsync.future);
+          final chores = await svc.listCurrentChores(groupId);
+          options = chores.take(50).map((c) => _EntityOption(
+                id: c.chore.id,
+                label: c.chore.name,
+              )).toList();
+        case 'list':
+          final svc = await ref.read(listServiceProviderAsync.future);
+          final lists = await svc.listLists(groupId, limit: 50);
+          options = lists.map((l) => _EntityOption(
+                id: l.id,
+                label: l.name,
+              )).toList();
+        case 'expense':
+          final svc = await ref.read(financeServiceProviderAsync.future);
+          final expenses = await svc.listExpenses(groupId, limit: 50);
+          options = expenses.map((e) => _EntityOption(
+                id: e.id,
+                label: e.description,
+              )).toList();
+        default:
+          return;
+      }
+
+      if (!mounted || options.isEmpty) return;
+
+      final picked = await showModalBottomSheet<_EntityOption>(
+        context: context,
+        showDragHandle: true,
+        builder: (ctx) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(MitlistSpacing.md),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('Select a ${typeAction}',
+                    style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: MitlistSpacing.md),
+                for (final opt in options)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+                    child: AppButton(
+                      text: opt.label,
+                      variant: AppButtonVariant.outline,
+                      onPressed: () => Navigator.of(ctx).pop(opt),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      if (!mounted || picked == null) return;
+      setState(() {
+        _linkedEntityType = typeAction;
+        _linkedEntityId = picked.id;
+        _linkedEntityLabel = picked.label;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Couldn\u2019t load entities.')),
+      );
+    }
   }
 
   Future<void> _pickMedia() async {
@@ -750,6 +814,35 @@ class _PinwallNoteCard extends ConsumerWidget {
     }
   }
 
+  void _navigateToLinkedEntity(BuildContext context) {
+    final type = post.linkedEntityType;
+    final id = post.linkedEntityId;
+    if (type == null) return;
+    switch (type) {
+      case 'list':
+        if (id != null && id.isNotEmpty) {
+          context.pushNamed('listDetail', pathParameters: {'listId': id});
+        }
+      case 'chore':
+        context.pushNamed('chores');
+      case 'expense':
+        context.pushNamed('money');
+    }
+  }
+
+  String _entityDisplayLabel(String type) {
+    switch (type) {
+      case 'list':
+        return 'Linked list';
+      case 'chore':
+        return 'Linked chore';
+      case 'expense':
+        return 'Linked expense';
+      default:
+        return type;
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
@@ -837,23 +930,27 @@ class _PinwallNoteCard extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (post.linkedEntityType != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: MitlistSpacing.xs),
-                    child: Row(
-                      children: [
-                        Icon(Icons.link, size: 12, color: mutedColor),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            post.linkedEntityType!,
-                            style: textTheme.labelSmall?.copyWith(
-                              color: mutedColor,
+                  GestureDetector(
+                    onTap: () => _navigateToLinkedEntity(context),
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: MitlistSpacing.xs),
+                      child: Row(
+                        children: [
+                          Icon(Icons.link, size: 12, color: mutedColor),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              _entityDisplayLabel(post.linkedEntityType!),
+                              style: textTheme.labelSmall?.copyWith(
+                                color: mutedColor,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                      ],
+                          Icon(Icons.chevron_right, size: 12, color: mutedColor),
+                        ],
+                      ),
                     ),
                   ),
                 media.when(
@@ -1036,4 +1133,10 @@ class _PushpinPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_PushpinPainter old) => old.headColor != headColor;
+}
+
+class _EntityOption {
+  final String id;
+  final String label;
+  const _EntityOption({required this.id, required this.label});
 }
