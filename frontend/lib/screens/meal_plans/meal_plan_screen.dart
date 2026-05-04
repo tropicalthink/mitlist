@@ -8,10 +8,12 @@ import '../../models/recipe_models.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/meal_plan_provider.dart';
 import '../../providers/recipe_provider.dart';
+import '../../router.dart' show currentGroupIdProvider;
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../theme/theme.dart';
+import '../../utils/active_group_context.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
@@ -53,8 +55,11 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
     }
     try {
       final groupService = await ref.read(groupServiceProviderAsync.future);
-      final groups = await groupService.listGroups(limit: 1);
-      final groupId = groups.isEmpty ? null : groups.first.id;
+      final groups = await groupService.listGroups(limit: 50);
+      final groupId = resolveActiveGroupId(
+        groups,
+        ref.read(currentGroupIdProvider),
+      );
       if (!mounted) return;
       if (groupId == null || groupId.isEmpty) {
         setState(() {

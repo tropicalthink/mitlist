@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../models/list_models.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
+import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../sheets/create_list_sheet.dart';
 import 'list_detail_screen.dart';
@@ -14,6 +15,7 @@ import '../../theme/colors.dart';
 import '../../theme/list_tile_accent.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
+import '../../utils/active_group_context.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/chip.dart';
@@ -110,8 +112,11 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     }
 
     final groupService = await ref.read(groupServiceProviderAsync.future);
-    final groups = await groupService.listGroups(limit: 1);
-    final groupId = groups.isEmpty ? null : groups.first.id;
+    final groups = await groupService.listGroups(limit: 50);
+    final groupId = resolveActiveGroupId(
+      groups,
+      ref.read(currentGroupIdProvider),
+    );
     return isValidGroupId(groupId) ? groupId : null;
   }
 

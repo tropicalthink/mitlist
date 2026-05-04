@@ -6,9 +6,11 @@ import '../../models/recipe_models.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../providers/recipe_provider.dart';
+import '../../router.dart' show currentGroupIdProvider;
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
+import '../../utils/active_group_context.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
@@ -96,8 +98,8 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
   Future<String?> _resolveGroupId() async {
     try {
       final groupSvc = await ref.read(groupServiceProviderAsync.future);
-      final groups = await groupSvc.listGroups(limit: 1);
-      return groups.isEmpty ? null : groups.first.id;
+      final groups = await groupSvc.listGroups(limit: 50);
+      return resolveActiveGroupId(groups, ref.read(currentGroupIdProvider));
     } catch (_) {
       return null;
     }

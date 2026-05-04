@@ -12,8 +12,10 @@ import '../providers/auth_provider.dart';
 import '../providers/finance_provider.dart';
 import '../providers/group_provider.dart';
 import '../providers/scan_provider.dart';
+import '../router.dart' show currentGroupIdProvider;
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
+import '../utils/active_group_context.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
@@ -81,9 +83,14 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
   Future<void> _loadMembers() async {
     try {
       final groupService = await ref.read(groupServiceProviderAsync.future);
-      final groups = await groupService.listGroups(limit: 1);
+      final groups = await groupService.listGroups(limit: 50);
       if (!mounted || groups.isEmpty) return;
-      final members = await groupService.listMembers(groups.first.id);
+      final groupId = resolveActiveGroupId(
+        groups,
+        ref.read(currentGroupIdProvider),
+      );
+      if (groupId == null) return;
+      final members = await groupService.listMembers(groupId);
       if (!mounted) return;
       setState(() {
         _members = members;
@@ -165,10 +172,14 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       final authService = await ref.read(authServiceProviderAsync.future);
       final groupService = await ref.read(groupServiceProviderAsync.future);
       final financeService = await ref.read(financeServiceProviderAsync.future);
-      final groups = await groupService.listGroups(limit: 1);
+      final groups = await groupService.listGroups(limit: 50);
 
       if (!mounted) return;
-      if (groups.isEmpty) {
+      final groupId = resolveActiveGroupId(
+        groups,
+        ref.read(currentGroupIdProvider),
+      );
+      if (groupId == null) {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Create or join a household first.')),
@@ -181,7 +192,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       final splitRequests = _buildSplitRequests();
       final expense = await financeService.createExpense(
         CreateExpenseRequest(
-          groupId: groups.first.id,
+          groupId: groupId,
           payerId: me.id,
           amount: amount,
           description: _descriptionController.text.trim(),
@@ -198,14 +209,14 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
           final bytes = await widget.receiptImage!.readAsBytes();
           final attachmentRepo = await ref.read(attachmentRepositoryProvider.future);
           final attachment = await attachmentRepo.uploadAttachment(
-            groupId: groups.first.id,
+            groupId: groupId,
             purpose: 'expense_receipt',
             filename: widget.receiptImage!.path.split('/').last,
             contentType: 'image/jpeg',
             bytes: Uint8List.fromList(bytes),
           );
           await financeService.attachExpenseReceipt(
-            groupId: groups.first.id,
+            groupId: groupId,
             expenseId: expense.id,
             attachmentId: attachment.id,
           );

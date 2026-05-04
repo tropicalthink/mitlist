@@ -9,12 +9,14 @@ import '../../models/chore_models.dart';
 import '../../providers/chore_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
+import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../sheets/chore_creation_sheet.dart';
 import '../../sheets/chore_detail_sheet.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
+import '../../utils/active_group_context.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
@@ -80,7 +82,10 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     try {
       final groupService = await ref.read(groupServiceProviderAsync.future);
       final groups = await groupService.listGroups();
-      final groupId = groups.isNotEmpty ? groups.first.id : null;
+      final groupId = resolveActiveGroupId(
+        groups,
+        ref.read(currentGroupIdProvider),
+      );
       if (!isValidGroupId(groupId)) {
         if (!mounted) return;
         setState(() {
@@ -326,7 +331,10 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       final listSvc = await ref.read(listServiceProviderAsync.future);
       final groupSvc = await ref.read(groupServiceProviderAsync.future);
       final groups = await groupSvc.listGroups();
-      final groupId = groups.isNotEmpty ? groups.first.id : null;
+      final groupId = resolveActiveGroupId(
+        groups,
+        ref.read(currentGroupIdProvider),
+      );
       if (groupId == null) return;
       final lists = await listSvc.listLists(groupId, limit: 50);
       final shoppingLists = lists.where((l) => l.type == 'shopping' || l.type == 'general').toList();

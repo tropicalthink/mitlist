@@ -13,7 +13,9 @@ import '../providers/finance_provider.dart';
 import '../providers/recipe_provider.dart';
 import '../models/recipe_models.dart';
 import '../providers/activity_provider.dart';
+import '../router.dart' show currentGroupIdProvider;
 import '../theme/spacing.dart';
+import '../utils/active_group_context.dart';
 import '../widgets/alert.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
@@ -129,9 +131,13 @@ class _IntegrationTestScreenState extends ConsumerState<IntegrationTestScreen> {
 
   Future<void> _ensureGroup() async {
     final groupService = await ref.read(groupServiceProviderAsync.future);
-    final groups = await groupService.listGroups(limit: 1);
-    if (groups.isNotEmpty) {
-      _groupId = groups.first.id;
+    final groups = await groupService.listGroups(limit: 50);
+    final resolved = resolveActiveGroupId(
+      groups,
+      ref.read(currentGroupIdProvider),
+    );
+    if (resolved != null) {
+      _groupId = resolved;
       return;
     }
     final g = await groupService.createGroup(CreateGroupRequest(name: 'Integration Household'));

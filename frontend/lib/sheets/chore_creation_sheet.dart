@@ -8,9 +8,11 @@ import '../models/chore_models.dart';
 import '../providers/chore_provider.dart';
 import '../providers/group_provider.dart';
 import '../providers/scan_provider.dart';
+import '../router.dart' show currentGroupIdProvider;
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
+import '../utils/active_group_context.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
@@ -124,8 +126,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
     try {
       final groupService = await ref.read(groupServiceProviderAsync.future);
       final choreService = await ref.read(choreServiceProviderAsync.future);
-      final groups = await groupService.listGroups(limit: 1);
-
+      final groups = await groupService.listGroups(limit: 50);
       if (!mounted) return;
       if (groups.isEmpty) {
         setState(() => _isSaving = false);
@@ -135,9 +136,18 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
         return;
       }
 
+      final groupId = resolveActiveGroupId(
+        groups,
+        ref.read(currentGroupIdProvider),
+      );
+      if (groupId == null) {
+        setState(() => _isSaving = false);
+        return;
+      }
+
       await choreService.createChore(
         CreateChoreRequest(
-          groupId: groups.first.id,
+          groupId: groupId,
           name: _nameController.text.trim(),
           description: _descriptionController.text.trim().isEmpty
               ? null

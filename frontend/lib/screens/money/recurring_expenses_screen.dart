@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/finance_models.dart';
 import '../../providers/finance_provider.dart';
 import '../../providers/group_provider.dart';
+import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
+import '../../utils/active_group_context.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_dialog.dart';
@@ -47,7 +49,10 @@ class _RecurringExpensesScreenState
     try {
       final groupService = await ref.read(groupServiceProviderAsync.future);
       final groups = await groupService.listGroups();
-      final groupId = groups.isNotEmpty ? groups.first.id : null;
+      final groupId = resolveActiveGroupId(
+        groups,
+        ref.read(currentGroupIdProvider),
+      );
       if (!isValidGroupId(groupId)) {
         setState(() {
           _hasHousehold = false;
@@ -219,7 +224,10 @@ class _RecurringExpensesScreenState
   Future<void> _openCreateSheet() async {
     final groupService = await ref.read(groupServiceProviderAsync.future);
     final groups = await groupService.listGroups();
-    final groupId = groups.isNotEmpty ? groups.first.id : null;
+    final groupId = resolveActiveGroupId(
+      groups,
+      ref.read(currentGroupIdProvider),
+    );
     if (!isValidGroupId(groupId)) return;
     if (!mounted) return;
 

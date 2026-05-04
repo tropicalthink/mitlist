@@ -9,9 +9,11 @@ import '../models/list_models.dart';
 import '../providers/group_provider.dart';
 import '../providers/list_provider.dart';
 import '../providers/scan_provider.dart';
+import '../router.dart' show currentGroupIdProvider;
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
+import '../utils/active_group_context.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
@@ -110,10 +112,9 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
 
       setState(() {
         _groups = groups;
-        final preferred = widget.initialGroupId;
-        _selectedGroupId = groups.any((group) => group.id == preferred)
-            ? preferred
-            : (groups.isNotEmpty ? groups.first.id : null);
+        final preferred = widget.initialGroupId ??
+            ref.read(currentGroupIdProvider);
+        _selectedGroupId = resolveActiveGroupId(groups, preferred);
         _isLoadingGroups = false;
       });
     } catch (_) {

@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/chore_models.dart';
 import '../models/finance_models.dart';
+import '../router.dart' show currentGroupIdProvider;
 import '../services/group_id_validator.dart';
+import '../utils/active_group_context.dart';
 import 'chore_provider.dart';
 import 'finance_provider.dart';
 import 'group_provider.dart';
@@ -23,8 +25,11 @@ class NavBadgeCounts {
 final navBadgeCountsProvider = FutureProvider<NavBadgeCounts>((ref) async {
   try {
     final groupSvc = await ref.read(groupServiceProviderAsync.future);
-    final groups = await groupSvc.listGroups(limit: 1);
-    final groupId = groups.isNotEmpty ? groups.first.id : null;
+    final groups = await groupSvc.listGroups(limit: 50);
+    final groupId = resolveActiveGroupId(
+      groups,
+      ref.read(currentGroupIdProvider),
+    );
     if (!isValidGroupId(groupId)) {
       return const NavBadgeCounts();
     }

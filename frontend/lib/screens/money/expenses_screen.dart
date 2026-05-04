@@ -10,7 +10,9 @@ import '../../providers/auth_provider.dart';
 import '../../providers/finance_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../models/finance_models.dart';
+import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
+import '../../utils/active_group_context.dart';
 import '../../sheets/expense_creation_sheet.dart';
 import '../../sheets/expense_detail_sheet.dart';
 import '../../sheets/settlement_confirmation_dialog.dart';
@@ -183,8 +185,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     try {
       final authService = await ref.read(authServiceProviderAsync.future);
       final groupService = await ref.read(groupServiceProviderAsync.future);
-      final groups = await groupService.listGroups(limit: 1);
-      final groupId = groups.isNotEmpty ? groups.first.id : null;
+      final groups = await groupService.listGroups(limit: 50);
+      final groupId =
+          resolveActiveGroupId(groups, ref.read(currentGroupIdProvider));
       final validGroupId = isValidGroupId(groupId) ? groupId : null;
       final me = validGroupId == null ? null : await authService.getMe();
       final repo = await ref.read(financeRepositoryProvider.future);

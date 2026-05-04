@@ -5,10 +5,12 @@ import 'package:go_router/go_router.dart';
 import '../../models/list_models.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
+import '../../router.dart' show currentGroupIdProvider;
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../theme/theme.dart';
+import '../../utils/active_group_context.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
@@ -97,8 +99,8 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
   Future<String?> _resolveGroupId() async {
     try {
       final groupSvc = await ref.read(groupServiceProviderAsync.future);
-      final groups = await groupSvc.listGroups(limit: 1);
-      return groups.isEmpty ? null : groups.first.id;
+      final groups = await groupSvc.listGroups(limit: 50);
+      return resolveActiveGroupId(groups, ref.read(currentGroupIdProvider));
     } catch (_) {
       return null;
     }

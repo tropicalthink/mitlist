@@ -6,11 +6,13 @@ import '../../models/calendar_models.dart';
 import '../../providers/calendar_provider.dart';
 import '../../providers/chore_provider.dart';
 import '../../providers/group_provider.dart';
+import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../theme/theme.dart';
+import '../../utils/active_group_context.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_dialog.dart';
@@ -58,7 +60,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     try {
       final groupService = await ref.read(groupServiceProviderAsync.future);
       final groups = await groupService.listGroups();
-      final groupId = groups.isNotEmpty ? groups.first.id : null;
+      final groupId = resolveActiveGroupId(
+        groups,
+        ref.read(currentGroupIdProvider),
+      );
       if (!isValidGroupId(groupId)) {
         setState(() {
           _hasHousehold = false;

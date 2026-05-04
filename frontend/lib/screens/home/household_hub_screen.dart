@@ -16,6 +16,7 @@ import '../../providers/pinwall_provider.dart';
 import '../../repositories/hub_repository.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
+import '../../utils/active_group_context.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../utils/haptics.dart';
@@ -105,8 +106,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
 
     try {
       final groupSvc = await ref.read(groupServiceProviderAsync.future);
-      final groups = await groupSvc.listGroups(limit: 1);
-      final gid = groups.isNotEmpty ? groups.first.id : null;
+      final groups = await groupSvc.listGroups(limit: 50);
+      final gid = resolveActiveGroupId(groups, ref.read(currentGroupIdProvider));
       if (!mounted) return;
       if (isValidGroupId(gid)) {
         _resolvedGroupId = gid;

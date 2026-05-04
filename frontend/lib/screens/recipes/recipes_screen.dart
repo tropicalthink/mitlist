@@ -8,6 +8,7 @@ import '../../models/recipe_models.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/meal_plan_provider.dart';
 import '../../providers/recipe_provider.dart';
+import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../sheets/recipe_add_to_list_sheet.dart';
 import '../../sheets/recipe_creation_sheet.dart';
@@ -15,6 +16,7 @@ import '../../sheets/recipe_detail_sheet.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
+import '../../utils/active_group_context.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
@@ -349,8 +351,11 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
 
   Future<String?> _resolveGroupId() async {
     final groupService = await ref.read(groupServiceProviderAsync.future);
-    final groups = await groupService.listGroups(limit: 1);
-    final groupId = groups.isEmpty ? null : groups.first.id;
+    final groups = await groupService.listGroups(limit: 50);
+    final groupId = resolveActiveGroupId(
+      groups,
+      ref.read(currentGroupIdProvider),
+    );
     if (!mounted) return null;
     setState(() => _hasHousehold = groups.isNotEmpty);
     return isValidGroupId(groupId) ? groupId : null;
