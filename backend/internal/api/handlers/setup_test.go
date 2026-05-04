@@ -524,17 +524,6 @@ func newNotificationRouter(t *testing.T) (chi.Router, *NotificationHandler) {
 	return r, h
 }
 
-func newActivityRouter(t *testing.T) (chi.Router, *ActivityHandler) {
-	activityRepo := newTestActivityRepo()
-	groupRepo := newTestGroupRepo()
-	svc := services.NewActivityService(activityRepo, groupRepo)
-	h := NewActivityHandler(svc)
-
-	r := chi.NewRouter()
-	r.Use(testAuthMiddleware)
-	h.RegisterRoutes(r)
-	return r, h
-}
 
 func newAssistantRouter(t *testing.T) (chi.Router, *AssistantHandler) {
 	aiClient := newTestAIClient()

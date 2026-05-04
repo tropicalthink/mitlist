@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/services"
 )
 
@@ -33,7 +34,7 @@ func TestActivityHandler_List_RequiresAuth(t *testing.T) {
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/v1/activity", nil)
-	h.ListActivities(rec, req)
+	h.ListActivity(rec, req)
 
 	assert.Equal(t, http.StatusUnauthorized, rec.Code)
 }
@@ -51,7 +52,7 @@ func TestActivityHandler_List_MissingGroupID(t *testing.T) {
 	rec := httptest.NewRecorder()
 	req := buildRequest(t, "GET", "/api/v1/activity", nil, token)
 	req = req.WithContext(setTestUserContext(req.Context(), user))
-	h.ListActivities(rec, req)
+	h.ListActivity(rec, req)
 
 	assert.Equal(t, http.StatusBadRequest, rec.Code)
 }
@@ -69,7 +70,7 @@ func TestActivityHandler_List_InvalidGroupID(t *testing.T) {
 	rec := httptest.NewRecorder()
 	req := buildRequest(t, "GET", "/api/v1/activity?group_id=not-a-uuid", nil, token)
 	req = req.WithContext(setTestUserContext(req.Context(), user))
-	h.ListActivities(rec, req)
+	h.ListActivity(rec, req)
 
 	assert.Equal(t, http.StatusBadRequest, rec.Code)
 }
@@ -84,10 +85,9 @@ func TestActivityHandler_List_ReturnsEmpty(t *testing.T) {
 	token := generateTestToken(user.ID)
 
 	group := &models.Group{
-		ID:           uuid.New(),
-		Name:         "Test Household",
-		InviteCode:   "TESTACT",
-		CreatedByID:  user.ID,
+		ID:        uuid.New(),
+		Name:      "Test Household",
+		CreatedBy: user.ID,
 	}
 	groupRepo := newTestGroupRepo()
 	groupRepo.CreateGroup(nil, group)
@@ -97,7 +97,7 @@ func TestActivityHandler_List_ReturnsEmpty(t *testing.T) {
 	rec := httptest.NewRecorder()
 	req := buildRequest(t, "GET", "/api/v1/activity?group_id="+group.ID.String()+"&limit=10", nil, token)
 	req = req.WithContext(setTestUserContext(req.Context(), user))
-	h.ListActivities(rec, req)
+	h.ListActivity(rec, req)
 
 	requireStatus(t, rec, http.StatusOK)
 	var result map[string]any

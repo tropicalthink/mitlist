@@ -66,7 +66,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
   @override
   void initState() {
     super.initState();
-    _resolveAndLoad();
+    Future.microtask(_resolveAndLoad);
   }
 
   @override

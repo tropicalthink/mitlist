@@ -17,7 +17,7 @@ func newCalendarRouter(t *testing.T) (chi.Router, *CalendarHandler) {
 	choreRepo := newTestChoreRepo()
 	financeRepo := newTestFinanceRepo()
 	recipeRepo := newTestRecipeRepo()
-	mealPlanRepo := services.NewMealPlanService(recipeRepo, newTestListRepo(), newTestGroupRepo())
+	mealPlanRepo := repositories.NewMealPlanRepo(testDB)
 	pinwallRepo := repositories.NewPinwallRepository(testDB)
 	svc := services.NewCalendarService(mealPlanRepo, recipeRepo, choreRepo, financeRepo, newTestGroupRepo(), pinwallRepo)
 	h := NewCalendarHandler(svc)

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mitlist-app/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/mitlist-app/mitlist/internal/services"
 )
 
@@ -19,7 +21,8 @@ func newMealPlanRouter(t *testing.T) (chi.Router, *MealPlanHandler) {
 	recipeRepo := newTestRecipeRepo()
 	listRepo := newTestListRepo()
 	groupRepo := newTestGroupRepo()
-	svc := services.NewMealPlanService(recipeRepo, listRepo, groupRepo)
+	mealPlanRepo := repositories.NewMealPlanRepo(testDB)
+	svc := services.NewMealPlanService(mealPlanRepo, groupRepo, recipeRepo, listRepo)
 	h := NewMealPlanHandler(svc)
 
 	r := chi.NewRouter()
@@ -52,7 +55,6 @@ func TestMealPlanHandler_ListMealPlans_RequiresGroupID(t *testing.T) {
 	clearTables(t)
 
 	user := createTestUser(t, "mp-list@test.com", "password123")
-	token := generateTestToken(user.ID)
 
 	_, h := newMealPlanRouter(t)
 
@@ -71,13 +73,10 @@ func TestMealPlanHandler_ListMealPlans_ReturnsEmpty(t *testing.T) {
 	clearTables(t)
 
 	user := createTestUser(t, "mp-empty@test.com", "password123")
-	token := generateTestToken(user.ID)
-
 	group := &models.Group{
-		ID:           uuid.New(),
-		Name:         "Test Household",
-		InviteCode:   "TESTMP",
-		CreatedByID:  user.ID,
+		ID:        uuid.New(),
+		Name:      "Test Household",
+		CreatedBy: user.ID,
 	}
 	groupRepo := newTestGroupRepo()
 	require.NoError(t, groupRepo.CreateGroup(nil, group))

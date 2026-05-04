@@ -6,7 +6,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/pashagolub/pgxmock/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,8 +38,8 @@ func TestListRepository_GetListByID(t *testing.T) {
 	repo := NewListRepository(mock)
 	id := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "group_id", "name", "type", "created_at", "updated_at"}).
-		AddRow(id, fixedUUID(), "Groceries", "shopping", fixedTime(), fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "group_id", "name", "type", "archived_at", "created_at", "updated_at"}).
+		AddRow(id, fixedUUID(), "Groceries", "shopping", nil, fixedTime(), fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM lists WHERE id = .*").
 		WithArgs(id).
@@ -72,8 +71,8 @@ func TestListRepository_ListListsByGroup(t *testing.T) {
 	repo := NewListRepository(mock)
 	gid := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "group_id", "name", "type", "created_at", "updated_at"}).
-		AddRow(fixedUUID(), gid, "Groceries", "shopping", fixedTime(), fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "group_id", "name", "type", "archived_at", "created_at", "updated_at"}).
+		AddRow(fixedUUID(), gid, "Groceries", "shopping", nil, fixedTime(), fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM lists WHERE group_id = .*").
 		WithArgs(gid, 50, 0).
@@ -91,11 +90,12 @@ func TestListRepository_ListItemPreviewLinesByListIDs(t *testing.T) {
 	lid := fixedUUID()
 	ids := []uuid.UUID{lid}
 
-	rows := pgxmock.NewRows([]string{"list_id", "preview"}).
-		AddRow(lid, []string{"milk", "bread"})
+	rows := pgxmock.NewRows([]string{"list_id", "name"}).
+		AddRow(lid, "milk").
+		AddRow(lid, "bread")
 
-	mock.ExpectQuery("SELECT list_id, COALESCE").
-		WithArgs(ids, 4).
+	mock.ExpectQuery("SELECT list_id, name FROM list_items").
+		WithArgs(4, lid).
 		WillReturnRows(rows)
 
 	m, err := repo.ListItemPreviewLinesByListIDs(context.Background(), ids, 4)
@@ -111,7 +111,7 @@ func TestListRepository_UpdateList(t *testing.T) {
 	id := fixedUUID()
 
 	mock.ExpectExec("UPDATE lists SET").
-		WithArgs("New Name", "todo", pgxmock.AnyArg(), id).
+		WithArgs("New Name", "todo", id).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
 	list := &models.List{ID: id, Name: "New Name", Type: "todo"}
@@ -162,9 +162,10 @@ func TestListRepository_GetItemByID(t *testing.T) {
 	mock := newMockDB(t)
 	repo := NewListRepository(mock)
 	id := fixedUUID()
+	addedBy := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "list_id", "name", "quantity", "unit", "note", "price_cents", "product_id", "store_id", "added_by", "checked", "position", "created_at", "updated_at"}).
-		AddRow(id, fixedUUID(), "Milk", 2.0, "liters", "organic", nil, nil, nil, pgtype.UUID{Bytes: fixedUUID(), Valid: true}, false, 1, fixedTime(), fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "list_id", "name", "quantity", "unit", "note", "price_cents", "product_id", "store_id", "added_by", "claimed_by", "checked", "position", "created_at", "updated_at"}).
+		AddRow(id, fixedUUID(), "Milk", 2.0, "liters", "organic", nil, nil, nil, &addedBy, nil, false, 1, fixedTime(), fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM list_items WHERE id = .* AND deleted_at IS NULL").
 		WithArgs(id).
@@ -196,12 +197,13 @@ func TestListRepository_ListItemsByList(t *testing.T) {
 	mock := newMockDB(t)
 	repo := NewListRepository(mock)
 	listID := fixedUUID()
+	addedBy := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "list_id", "name", "quantity", "unit", "note", "price_cents", "product_id", "store_id", "added_by", "checked", "position", "created_at", "updated_at"}).
-		AddRow(fixedUUID(), listID, "Milk", 2.0, "liters", "", nil, nil, nil, pgtype.UUID{Bytes: fixedUUID(), Valid: true}, false, 1, fixedTime(), fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "list_id", "name", "quantity", "unit", "note", "price_cents", "product_id", "store_id", "added_by", "claimed_by", "checked", "position", "created_at", "updated_at"}).
+		AddRow(fixedUUID(), listID, "Milk", 2.0, "liters", "", nil, nil, nil, &addedBy, nil, false, 1, fixedTime(), fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM list_items WHERE list_id = .* AND deleted_at IS NULL").
-		WithArgs(listID, 50, 0).
+		WithArgs(listID, 200, 0).
 		WillReturnRows(rows)
 
 	items, err := repo.ListItemsByList(context.Background(), listID, 0, 0)
@@ -216,7 +218,7 @@ func TestListRepository_UpdateItem(t *testing.T) {
 	id := fixedUUID()
 
 	mock.ExpectExec("UPDATE list_items SET").
-		WithArgs("Eggs", 12.0, "pcs", "large", pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), true, 2, pgxmock.AnyArg(), id).
+		WithArgs("Eggs", 12.0, "pcs", "large", pgxmock.AnyArg(), true, 2, pgxmock.AnyArg(), pgxmock.AnyArg(), id).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
 	item := &models.ListItem{ID: id, Name: "Eggs", Quantity: 12, Unit: "pcs", Note: "large", Checked: true, Position: 2}
@@ -245,8 +247,8 @@ func TestListRepository_GetItemByListNameUnit(t *testing.T) {
 	listID := fixedUUID()
 	id := uuid.New()
 
-	rows := pgxmock.NewRows([]string{"id", "list_id", "name", "quantity", "unit", "note", "price_cents", "product_id", "store_id", "added_by", "checked", "position", "created_at", "updated_at"}).
-		AddRow(id, listID, "Milk", 2.0, "liters", "", nil, nil, nil, nil, false, 0, fixedTime(), fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "list_id", "name", "quantity", "unit", "note", "price_cents", "product_id", "store_id", "added_by", "claimed_by", "checked", "position", "created_at", "updated_at"}).
+		AddRow(id, listID, "Milk", 2.0, "liters", "", nil, nil, nil, nil, nil, false, 0, fixedTime(), fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM list_items").
 		WithArgs(listID, "milk", "liters").
@@ -263,7 +265,7 @@ func TestListRepository_SoftDeleteItem(t *testing.T) {
 	repo := NewListRepository(mock)
 	id := fixedUUID()
 
-	mock.ExpectExec("UPDATE list_items SET deleted_at = .* WHERE id = .*").
+	mock.ExpectExec("UPDATE list_items SET deleted_at = .* WHERE id IN ").
 		WithArgs(pgxmock.AnyArg(), pgxmock.AnyArg(), id).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 

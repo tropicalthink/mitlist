@@ -140,6 +140,21 @@ func (m *MockListRepo) SearchProducts(ctx context.Context, groupID uuid.UUID, qu
 	return nil, args.Error(1)
 }
 
+func (m *MockListRepo) ClaimItem(ctx context.Context, itemID uuid.UUID, userID uuid.UUID) error {
+	args := m.Called(ctx, itemID, userID)
+	return args.Error(0)
+}
+
+func (m *MockListRepo) SetListArchived(ctx context.Context, id uuid.UUID, archived bool) error {
+	args := m.Called(ctx, id, archived)
+	return args.Error(0)
+}
+
+func (m *MockListRepo) UnclaimItem(ctx context.Context, id uuid.UUID) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
 func (m *MockListRepo) CostSummary(ctx context.Context, listID uuid.UUID) (int, int, map[uuid.UUID]int, error) {
 	args := m.Called(ctx, listID)
 	return args.Int(0), args.Int(1), args.Get(2).(map[uuid.UUID]int), args.Error(3)

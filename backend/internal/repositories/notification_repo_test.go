@@ -173,8 +173,8 @@ func TestNotificationRepository_GetPreference(t *testing.T) {
 
 	rows := pgxmock.NewRows([]string{
 		"id", "user_id", "group_id", "chore_due", "chore_due_day_of", "list_item_added",
-		"expense_created", "meal_plan_changed", "weekly_digest", "push_enabled", "created_at", "updated_at",
-	}).AddRow(fixedUUID(), uid, gid, true, true, true, true, true, true, true, fixedTime(), fixedTime())
+		"expense_created", "meal_plan_changed", "weekly_digest", "pinwall_reminder", "push_enabled", "created_at", "updated_at",
+	}).AddRow(fixedUUID(), uid, gid, true, true, true, true, true, true, true, true, fixedTime(), fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM notification_preferences WHERE user_id = .* AND group_id = .*").
 		WithArgs(uid, gid).
@@ -195,8 +195,8 @@ func TestNotificationRepository_GetPreferencesByUser(t *testing.T) {
 
 	rows := pgxmock.NewRows([]string{
 		"id", "user_id", "group_id", "chore_due", "chore_due_day_of", "list_item_added",
-		"expense_created", "meal_plan_changed", "weekly_digest", "push_enabled", "created_at", "updated_at",
-	}).AddRow(fixedUUID(), uid, fixedUUID(), true, true, true, true, true, true, true, fixedTime(), fixedTime())
+		"expense_created", "meal_plan_changed", "weekly_digest", "pinwall_reminder", "push_enabled", "created_at", "updated_at",
+	}).AddRow(fixedUUID(), uid, fixedUUID(), true, true, true, true, true, true, true, true, fixedTime(), fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM notification_preferences WHERE user_id = .*").
 		WithArgs(uid).
@@ -215,11 +215,11 @@ func TestNotificationRepository_UpsertPreference(t *testing.T) {
 	gid := fixedUUID()
 
 	mock.ExpectQuery("INSERT INTO notification_preferences").
-		WithArgs(pgxmock.AnyArg(), uid, gid, true, true, true, true, true, true, true).
+		WithArgs(pgxmock.AnyArg(), uid, gid, true, true, true, true, true, true, true, true).
 		WillReturnRows(pgxmock.NewRows([]string{"id", "created_at", "updated_at"}).
 			AddRow(fixedUUID(), fixedTime(), fixedTime()))
 
-	pref := &models.NotificationPreference{UserID: uid, GroupID: gid, ChoreDue: true, ChoreDueDayOf: true, ListItemAdded: true, ExpenseCreated: true, MealPlanChanged: true, WeeklyDigest: true, PushEnabled: true}
+	pref := &models.NotificationPreference{UserID: uid, GroupID: gid, ChoreDue: true, ChoreDueDayOf: true, ListItemAdded: true, ExpenseCreated: true, MealPlanChanged: true, WeeklyDigest: true, PinwallReminder: true, PushEnabled: true}
 	err := repo.UpsertPreference(context.Background(), pref)
 	require.NoError(t, err)
 	assert.NoError(t, mock.ExpectationsWereMet())

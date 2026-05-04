@@ -13,7 +13,7 @@ func TestMetricsHandler_RequiresAuth(t *testing.T) {
 		t.Skip("test database not connected")
 	}
 
-	h := NewMetricsHandler(testDB)
+	h := NewMetricsHandler()
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/v1/metrics", nil)

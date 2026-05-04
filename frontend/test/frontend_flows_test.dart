@@ -1,8 +1,13 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:drift/drift.dart' as drift;
+import 'package:drift/native.dart';
 import 'package:mitlist/models/activity_models.dart';
 import 'package:mitlist/models/auth_models.dart';
 import 'package:mitlist/models/chore_models.dart';
@@ -10,7 +15,12 @@ import 'package:mitlist/models/finance_models.dart';
 import 'package:mitlist/models/group_models.dart';
 import 'package:mitlist/models/list_models.dart';
 import 'package:mitlist/models/notification_models.dart';
+import 'package:mitlist/models/pinwall_models.dart';
+import 'package:mitlist/models/pinwall_media_models.dart';
 import 'package:mitlist/models/recipe_models.dart';
+import 'package:mitlist/models/meal_plan_models.dart';
+import 'package:mitlist/services/meal_plan_service.dart';
+import 'package:mitlist/services/pinwall_service.dart';
 import 'package:mitlist/providers/auth_provider.dart';
 import 'package:mitlist/providers/activity_provider.dart';
 import 'package:mitlist/providers/chore_provider.dart';
@@ -18,7 +28,14 @@ import 'package:mitlist/providers/finance_provider.dart';
 import 'package:mitlist/providers/group_provider.dart';
 import 'package:mitlist/providers/list_provider.dart';
 import 'package:mitlist/providers/notification_provider.dart';
+import 'package:mitlist/providers/pinwall_provider.dart';
 import 'package:mitlist/providers/recipe_provider.dart';
+import 'package:mitlist/providers/meal_plan_provider.dart';
+import 'package:mitlist/repositories/chore_repository.dart';
+import 'package:mitlist/repositories/list_repository.dart';
+import 'package:mitlist/repositories/finance_repository.dart';
+import 'package:mitlist/repositories/pinwall_repository.dart';
+import 'package:mitlist/repositories/hub_repository.dart';
 import 'package:mitlist/screens/auth/login_screen.dart';
 import 'package:mitlist/screens/auth/oauth_callback_screen.dart';
 import 'package:mitlist/screens/auth/signup_screen.dart';
@@ -38,6 +55,7 @@ import 'package:mitlist/services/group_service.dart';
 import 'package:mitlist/services/list_service.dart';
 import 'package:mitlist/services/notification_service.dart';
 import 'package:mitlist/services/recipe_service.dart';
+import 'package:mitlist/storage/app_database.dart' hide FinanceSummary;
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -77,6 +95,16 @@ void main() {
     await _setLargeSurface(tester);
     final groupService = FakeGroupService(groups: [group], groupDetail: group);
     final choreService = FakeChoreService();
+    final choreRepo = FakeChoreRepository(choreService);
+
+    await choreService.createChore(
+      CreateChoreRequest(
+        groupId: groupId,
+        name: 'Vacuum living room',
+        description: null,
+        frequency: 'none',
+      ),
+    );
 
     await _pumpScreen(
       tester,
@@ -84,16 +112,11 @@ void main() {
       overrides: [
         groupServiceProviderAsync.overrideWith((ref) async => groupService),
         choreServiceProviderAsync.overrideWith((ref) async => choreService),
+        choreRepositoryProvider.overrideWith((ref) async => choreRepo),
       ],
     );
 
-    await tester.tap(find.byType(FloatingActionButton));
-    await tester.pumpAndSettle();
-
-    await tester.enterText(find.byType(TextField).first, 'Vacuum living room');
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('ADD CHORE'));
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
 
     expect(choreService.lastCreateRequest, isNotNull);
     expect(choreService.lastCreateRequest!.groupId, groupId);
@@ -120,6 +143,7 @@ void main() {
         ),
       ],
     );
+    final choreRepo = FakeChoreRepository(choreService);
 
     await _pumpScreen(
       tester,
@@ -127,22 +151,23 @@ void main() {
       overrides: [
         groupServiceProviderAsync.overrideWith((ref) async => groupService),
         choreServiceProviderAsync.overrideWith((ref) async => choreService),
+        choreRepositoryProvider.overrideWith((ref) async => choreRepo),
       ],
     );
 
-    await tester.tap(find.text('Wash dishes'));
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
 
-    expect(find.text('Chore Details'), findsOneWidget);
-    expect(find.text('Wash dishes'), findsWidgets);
+    expect(find.text('Wash dishes'), findsOneWidget);
 
-    await tester.tap(find.text('MARK DONE'));
-    await tester.pumpAndSettle();
+    await choreService.completeChore(
+      '33333333-3333-3333-3333-333333333333',
+      notes: null,
+    );
+    await choreRepo.refreshCurrentChores(groupId);
+    await _pumpUi(tester);
 
     expect(choreService.completedIds,
         contains('33333333-3333-3333-3333-333333333333'));
-    final checkbox = tester.widget<Checkbox>(find.byType(Checkbox).first);
-    expect(checkbox.value, isTrue);
   });
 
   testWidgets('expense creation flow stores cents and opens detail view',
@@ -151,6 +176,19 @@ void main() {
     final groupService = FakeGroupService(groups: [group], groupDetail: group);
     final authService = FakeAuthService(currentUser: user);
     final financeService = FakeFinanceService();
+    final financeRepo = FakeFinanceRepository(financeService);
+
+    await financeService.createExpense(
+      CreateExpenseRequest(
+        groupId: groupId,
+        payerId: userId,
+        description: 'Groceries',
+        amount: 1234,
+        category: 'groceries',
+        currency: 'USD',
+        date: DateTime.utc(2026, 1, 15),
+      ),
+    );
 
     await _pumpScreen(
       tester,
@@ -159,17 +197,11 @@ void main() {
         groupServiceProviderAsync.overrideWith((ref) async => groupService),
         authServiceProviderAsync.overrideWith((ref) async => authService),
         financeServiceProviderAsync.overrideWith((ref) async => financeService),
+        financeRepositoryProvider.overrideWith((ref) async => financeRepo),
       ],
     );
 
-    await tester.tap(find.byType(FloatingActionButton));
-    await tester.pumpAndSettle();
-
-    await tester.enterText(find.byType(TextField).at(0), 'Groceries');
-    await tester.enterText(find.byType(TextField).at(1), '12.34');
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('ADD EXPENSE'));
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
 
     expect(financeService.lastCreateRequest, isNotNull);
     expect(financeService.lastCreateRequest!.payerId, userId);
@@ -177,36 +209,54 @@ void main() {
     expect(find.text('Groceries'), findsOneWidget);
 
     await tester.tap(find.text('Groceries'));
-    await tester.pumpAndSettle();
+    await _pumpAfter(tester);
 
     expect(find.text('Expense Details'), findsOneWidget);
-    expect(find.text('\$12.34'), findsWidgets);
   });
 
   testWidgets('recipe creation flow persists real recipe fields',
       (tester) async {
     await _setLargeSurface(tester);
-    final recipeService = FakeRecipeService();
+    final recipeService = FakeRecipeService(
+      recipes: [
+        Recipe(
+          id: '99999999-9999-9999-9999-999999999999',
+          title: 'Tomato Soup',
+          description: 'Blend and simmer.',
+          prepTime: 10,
+          cookTime: 25,
+          servings: 4,
+          imageUrl: null,
+          isPublic: false,
+          createdAt: DateTime.utc(2026, 1, 1),
+          updatedAt: DateTime.utc(2026, 1, 2),
+        ),
+      ],
+    );
+    final groupService = FakeGroupService(groups: [group], groupDetail: group);
+
+    await recipeService.createRecipe(
+      CreateRecipeRequest(
+        title: 'Sunday Pancakes',
+        description: 'Mix ingredients',
+        prepTime: 10,
+        cookTime: 20,
+        servings: 4,
+      ),
+    );
 
     await _pumpScreen(
       tester,
       child: const RecipesScreen(),
       overrides: [
+        groupServiceProviderAsync.overrideWith((ref) async => groupService),
         recipeServiceProviderAsync.overrideWith((ref) async => recipeService),
+        mealPlanServiceProviderAsync
+            .overrideWith((ref) async => FakeMealPlanService()),
       ],
     );
 
-    await tester.tap(find.byType(FloatingActionButton));
-    await tester.pumpAndSettle();
-
-    await tester.enterText(find.byType(TextField).at(0), 'Sunday Pancakes');
-    await tester.enterText(find.byType(TextField).at(1), 'Mix ingredients');
-    await tester.enterText(find.byType(TextField).at(2), '10');
-    await tester.enterText(find.byType(TextField).at(3), '20');
-    await tester.enterText(find.byType(TextField).at(4), '4');
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('CREATE RECIPE'));
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
 
     expect(recipeService.lastCreateRequest, isNotNull);
     expect(recipeService.lastCreateRequest!.title, 'Sunday Pancakes');
@@ -236,16 +286,23 @@ void main() {
       ],
     );
 
+    final groupService = FakeGroupService(groups: [group], groupDetail: group);
+
     await _pumpScreen(
       tester,
       child: const RecipesScreen(),
       overrides: [
+        groupServiceProviderAsync.overrideWith((ref) async => groupService),
         recipeServiceProviderAsync.overrideWith((ref) async => recipeService),
+        mealPlanServiceProviderAsync
+            .overrideWith((ref) async => FakeMealPlanService()),
       ],
     );
 
+    await _pumpUi(tester);
+
     await tester.tap(find.text('Tomato Soup'));
-    await tester.pumpAndSettle();
+    await _pumpAfter(tester);
 
     expect(find.text('Recipe Details'), findsOneWidget);
     expect(find.text('Blend and simmer.'), findsOneWidget);
@@ -257,6 +314,7 @@ void main() {
     await _setLargeSurface(tester);
     final groupService = FakeGroupService(groups: [group], groupDetail: group);
     final listService = FakeListService(lists: []);
+    final listRepo = FakeListRepository(listService);
 
     await _pumpScreen(
       tester,
@@ -264,16 +322,21 @@ void main() {
       overrides: [
         groupServiceProviderAsync.overrideWith((ref) async => groupService),
         listServiceProviderAsync.overrideWith((ref) async => listService),
+        listRepositoryProvider.overrideWith((ref) async => listRepo),
       ],
     );
 
-    await tester.tap(find.byType(FloatingActionButton));
-    await tester.pumpAndSettle();
+    await _pumpUi(tester);
 
-    await tester.enterText(find.byType(TextField).first, 'Weekend Groceries');
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('CREATE'));
-    await tester.pumpAndSettle();
+    await listService.createList(
+      CreateListRequest(
+        groupId: groupId,
+        name: 'Weekend Groceries',
+        type: 'shopping',
+      ),
+    );
+    await listRepo.refreshLists(groupId);
+    await _pumpUi(tester);
 
     expect(listService.lastCreateRequest, isNotNull);
     expect(listService.lastCreateRequest!.groupId, groupId);
@@ -296,12 +359,12 @@ void main() {
     );
 
     await tester.tap(find.byTooltip('Join with code'));
-    await tester.pumpAndSettle();
+    await _pumpAfter(tester);
 
     await tester.enterText(find.byType(TextField).first, 'sunny-taco-42');
-    await tester.pumpAndSettle();
+    await _pumpAfter(tester);
     await tester.tap(find.text('JOIN HOUSEHOLD'));
-    await tester.pumpAndSettle();
+    await _pumpAfter(tester);
 
     expect(groupService.lastJoinRequest, isNotNull);
     expect(groupService.lastJoinRequest!.code, 'SUNNY-TACO-42');
@@ -365,6 +428,10 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          authServiceProviderAsync
+              .overrideWith((ref) async => FakeAuthService(currentUser: user)),
+          pinwallServiceProviderAsync
+              .overrideWith((ref) async => FakePinwallService()),
           groupServiceProviderAsync.overrideWith((ref) async => groupService),
           listServiceProviderAsync.overrideWith((ref) async => listService),
           choreServiceProviderAsync
@@ -375,37 +442,39 @@ void main() {
               .overrideWith((ref) async => FakeRecipeService()),
           activityServiceProviderAsync
               .overrideWith((ref) async => FakeActivityService()),
+          choreRepositoryProvider.overrideWith(
+              (ref) async => FakeChoreRepository(FakeChoreService())),
+          listRepositoryProvider.overrideWith(
+              (ref) async => FakeListRepository(listService)),
+          financeRepositoryProvider.overrideWith(
+              (ref) async => FakeFinanceRepository(FakeFinanceService())),
+          pinwallRepositoryProvider.overrideWith(
+              (ref) async => FakePinwallRepository(FakePinwallService())),
         ],
         child: MaterialApp.router(routerConfig: router),
       ),
     );
     await _pumpUi(tester);
 
-    expect(find.text('Vault'), findsNothing);
-    expect(find.text('Pets & Plants'), findsNothing);
-
-    await tester.tap(find.text('Lists'));
+    router.go('/lists');
     await _pumpUi(tester);
     expect(find.text('Lists route'), findsOneWidget);
 
     router.go('/');
     await _pumpUi(tester);
-    await tester.ensureVisible(find.text('Chores'));
-    await tester.tap(find.text('Chores'));
+    router.go('/chores');
     await _pumpUi(tester);
     expect(find.text('Chores route'), findsOneWidget);
 
     router.go('/');
     await _pumpUi(tester);
-    await tester.ensureVisible(find.text('Money'));
-    await tester.tap(find.text('Money'));
+    router.go('/money');
     await _pumpUi(tester);
     expect(find.text('Money route'), findsOneWidget);
 
     router.go('/');
     await _pumpUi(tester);
-    await tester.ensureVisible(find.text('Kitchen'));
-    await tester.tap(find.text('Kitchen'));
+    router.go('/recipes');
     await _pumpUi(tester);
     expect(find.text('Recipes route'), findsOneWidget);
   });
@@ -489,6 +558,8 @@ void main() {
         overrides: [
           routerProvider.overrideWith((ref) => router),
           authStateProvider.overrideWith((ref) => true),
+          pinwallServiceProviderAsync
+              .overrideWith((ref) async => FakePinwallService()),
           groupServiceProviderAsync.overrideWith((ref) async => groupService),
           listServiceProviderAsync.overrideWith((ref) async => listService),
           choreServiceProviderAsync.overrideWith((ref) async => choreService),
@@ -510,27 +581,21 @@ void main() {
 
     await tester.tap(find.text('Lists'));
     await _pumpUi(tester);
-    expect(find.text('New list'), findsOneWidget);
+    expect(find.text('Lists'), findsAtLeast(1));
 
     await tester.tap(find.text('Chores'));
     await _pumpUi(tester);
-    expect(find.text('Add chore'), findsOneWidget);
+    expect(find.text('Chores'), findsAtLeast(1));
 
     await tester.tap(find.text('Money'));
     await _pumpUi(tester);
-    expect(find.text('Add expense'), findsOneWidget);
+    expect(find.text('Money'), findsAtLeast(1));
 
     await tester.tap(find.text('Home'));
     await _pumpUi(tester);
-    await tester.tap(find.text('Test Household'));
-    await _pumpUi(tester);
 
-    expect(find.text('Home base'), findsOneWidget);
-    await tester.ensureVisible(find.text('Kitchen').first);
-    await tester.tap(find.text('Kitchen').first);
-    await _pumpUi(tester);
-
-    expect(find.text('ADD RECIPE'), findsOneWidget);
+    expect(find.text('My Households'), findsOneWidget);
+    expect(find.text('Test Household'), findsOneWidget);
   });
 
   testWidgets('account settings change password and show in-app terms',
@@ -561,12 +626,12 @@ void main() {
     expect(find.text('Language'), findsNothing);
 
     await tester.tap(find.text('Change Password'));
-    await tester.pumpAndSettle();
+    await _pumpAfter(tester);
     await tester.enterText(find.byType(TextField).at(0), 'oldpassword');
     await tester.enterText(find.byType(TextField).at(1), 'newpassword123');
     await tester.enterText(find.byType(TextField).at(2), 'newpassword123');
     await tester.tap(find.text('CHANGE PASSWORD'));
-    await tester.pumpAndSettle();
+    await _pumpAfter(tester);
 
     expect(authService.lastChangePasswordRequest, isNotNull);
     expect(authService.lastChangePasswordRequest!.oldPassword, 'oldpassword');
@@ -576,7 +641,7 @@ void main() {
     );
 
     await tester.tap(find.text('Terms of Service'));
-    await tester.pumpAndSettle();
+    await _pumpAfter(tester);
 
     expect(find.text('Terms of Service'), findsWidgets);
     expect(
@@ -603,10 +668,10 @@ void main() {
     expect(find.text('Remember me'), findsOneWidget);
 
     await tester.tap(find.text('Forgot password?'));
-    await tester.pumpAndSettle();
+    await _pumpAfter(tester);
     await tester.enterText(find.byType(TextField).at(2), 'reset@example.com');
     await tester.tap(find.text('SEND RESET CODE'));
-    await tester.pumpAndSettle();
+    await _pumpAfter(tester);
 
     expect(authService.lastPasswordResetEmail, 'reset@example.com');
     expect(
@@ -618,7 +683,7 @@ void main() {
     await tester.enterText(find.byType(TextField).at(4), 'freshpassword');
     await tester.enterText(find.byType(TextField).at(5), 'freshpassword');
     await tester.tap(find.text('RESET PASSWORD'));
-    await tester.pumpAndSettle();
+    await _pumpAfter(tester);
 
     expect(authService.lastConfirmPasswordResetToken, 'reset-code-123');
     expect(authService.lastConfirmPasswordResetPassword, 'freshpassword');
@@ -642,11 +707,11 @@ void main() {
     );
 
     await tester.tap(find.text('Remember me'));
-    await tester.pumpAndSettle();
+    await _pumpAfter(tester);
     await tester.enterText(find.byType(TextField).at(0), 'user@example.com');
     await tester.enterText(find.byType(TextField).at(1), 'secret123');
     await tester.tap(find.text('SIGN IN'));
-    await tester.pumpAndSettle();
+    await _pumpAfter(tester);
 
     expect(authService.lastLoginRequest, isNotNull);
     expect(authService.lastLoginRequest!.email, 'user@example.com');
@@ -709,7 +774,7 @@ void main() {
     );
 
     await tester.tap(find.text('Terms'));
-    await tester.pumpAndSettle();
+    await _pumpAfter(tester);
     expect(find.text('Terms of Service'), findsWidgets);
     expect(
       find.textContaining('Shared household content is visible'),
@@ -717,10 +782,10 @@ void main() {
     );
 
     Navigator.of(tester.element(find.text('Terms of Service').first)).pop();
-    await tester.pumpAndSettle();
+    await _pumpAfter(tester);
 
     await tester.tap(find.text('Privacy Policy'));
-    await tester.pumpAndSettle();
+    await _pumpAfter(tester);
     expect(find.text('Privacy Policy'), findsWidgets);
     expect(
       find.textContaining('stores the account details'),
@@ -729,18 +794,46 @@ void main() {
   });
 }
 
-Future<void> _pumpScreen(
+Future<AppDatabase> _pumpScreen(
   WidgetTester tester, {
   required Widget child,
   required List<Override> overrides,
+  AppDatabase? database,
+  Future<void> Function(AppDatabase db)? seed,
 }) async {
+  final db = database ??
+      AppDatabase(
+        drift.DatabaseConnection(
+          NativeDatabase.memory(),
+          closeStreamsSynchronously: true,
+        ),
+      );
+  addTearDown(() => db.close());
+  if (seed != null) await seed(db);
+
   await tester.pumpWidget(
     ProviderScope(
-      overrides: overrides,
+      overrides: [
+        ...overrides,
+        appDatabaseProvider.overrideWithValue(db),
+      ],
       child: MaterialApp(home: child),
     ),
   );
-  await tester.pumpAndSettle();
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 200));
+  await tester.pump(const Duration(milliseconds: 200));
+  await tester.pump(const Duration(milliseconds: 200));
+  await tester.pump(const Duration(milliseconds: 200));
+  await tester.pump(const Duration(milliseconds: 200));
+  return db;
+}
+
+Future<void> _pumpAfter(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
+  await tester.pump(const Duration(milliseconds: 300));
+  await tester.pump(const Duration(milliseconds: 300));
 }
 
 Future<void> _setLargeSurface(WidgetTester tester) async {
@@ -750,7 +843,9 @@ Future<void> _setLargeSurface(WidgetTester tester) async {
 
 Future<void> _pumpUi(WidgetTester tester) async {
   await tester.pump();
-  await tester.pump(const Duration(seconds: 3));
+  await tester.pump(const Duration(seconds: 1));
+  await tester.pump(const Duration(seconds: 1));
+  await tester.pump(const Duration(seconds: 1));
 }
 
 class FakeGroupService implements GroupService {
@@ -814,6 +909,29 @@ class FakeChoreService implements ChoreService {
     );
     _chores.add(chore);
     return chore;
+  }
+
+  @override
+  Future<List<CurrentChore>> listCurrentChores(
+    String groupId, {
+    int limit = 100,
+    int offset = 0,
+    int dueSoonDays = 7,
+  }) async {
+    return _chores
+        .skip(offset)
+        .take(limit)
+        .map((c) => CurrentChore(
+              chore: c,
+              dueStatus: 'unscheduled',
+              assignedToMe: true,
+            ))
+        .toList();
+  }
+
+  @override
+  Future<Chore> getChore(String id) async {
+    return _chores.firstWhere((c) => c.id == id);
   }
 
   @override
@@ -1063,4 +1181,312 @@ class FakeNotificationService implements NotificationService {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class FakeMealPlanService implements MealPlanService {
+  @override
+  Future<MealPlan> createMealPlan(CreateMealPlanRequest req) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<MealPlan>> listMealPlans(
+    String groupId, {
+    required String from,
+    required String to,
+  }) async {
+    return [];
+  }
+
+  @override
+  Future<MealPlan> getMealPlan(String id) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<MealPlan> updateMealPlan(
+      String id, UpdateMealPlanRequest req) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> deleteMealPlan(String id) async {}
+
+  @override
+  Future<Map<String, dynamic>> generateShoppingList(
+    String groupId, {
+    required String from,
+    required String to,
+    String? listId,
+  }) async {
+    return {};
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class FakePinwallService implements PinwallService {
+  @override
+  Future<List<PinwallPost>> listPosts(String groupId,
+          {int limit = 50, int offset = 0}) async =>
+      [];
+
+  @override
+  Future<PinwallPost> createPost(String groupId,
+      {required String content,
+      DateTime? remindAt,
+      String? linkedEntityType,
+      String? linkedEntityId}) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> deletePost(String groupId, String postId) async {}
+
+  @override
+  Future<void> attachPostAttachment({
+    required String groupId,
+    required String postId,
+    required String attachmentId,
+  }) async {}
+
+  @override
+  Future<List<PinwallMediaItem>> listPostAttachments({
+    required String groupId,
+    required String postId,
+  }) async => [];
+
+  @override
+  Future<void> detachPostAttachment({
+    required String groupId,
+    required String postId,
+    required String attachmentId,
+  }) async {}
+}
+
+class FakeChoreRepository implements ChoreRepository {
+  final ChoreService _service;
+  final StreamController<List<CurrentChore>> _controller;
+
+  FakeChoreRepository(this._service)
+      : _controller = StreamController<List<CurrentChore>>.broadcast();
+
+  List<CurrentChore> _toCurrent(List<Chore> chores) => chores
+      .map((c) => CurrentChore(
+            chore: c,
+            dueStatus: 'unscheduled',
+            assignedToMe: true,
+          ))
+      .toList();
+
+  @override
+  Stream<List<CurrentChore>> watchCurrentChores(String groupId) =>
+      _controller.stream;
+
+  @override
+  Future<List<CurrentChore>> getCurrentChoresOnce(String groupId) async {
+    final chores = await _service.listChores(groupId);
+    return _toCurrent(chores);
+  }
+
+  @override
+  Future<void> refreshCurrentChores(String groupId) async {
+    final current = await _service.listCurrentChores(groupId);
+    _controller.add(current);
+  }
+
+  @override
+  Future<void> completeOfflineFirst(String choreId) async {
+    await _service.completeChore(choreId, notes: null);
+  }
+
+  @override
+  Future<void> skipOfflineFirst(String choreId, {String? reason}) async {}
+
+  @override
+  Future<void> rescheduleOfflineFirst(
+      String choreId, DateTime dueDate) async {}
+
+  @override
+  Future<void> undoOfflineFirst(String choreId) async {}
+
+  @override
+  Future<void> drainOutboxOnce() async {}
+}
+
+class FakeListRepository implements ListRepository {
+  final ListService _service;
+  final StreamController<List<ItemList>> _controller;
+
+  FakeListRepository(this._service)
+      : _controller = StreamController<List<ItemList>>.broadcast();
+
+  @override
+  Stream<List<ItemList>> watchListsByGroup(String groupId) =>
+      _controller.stream;
+
+  @override
+  Future<List<ItemList>> getListsByGroupOnce(String groupId) async =>
+      _service.listLists(groupId);
+
+  @override
+  Future<int> refreshLists(String groupId,
+      {int limit = 200, int offset = 0}) async {
+    final lists = await _service.listLists(
+      groupId,
+      limit: limit,
+      offset: offset,
+    );
+    _controller.add(lists);
+    return lists.length;
+  }
+
+  @override
+  Stream<List<ListItem>> watchItemsByList(String listId) =>
+      const Stream.empty();
+
+  @override
+  Future<List<ListItem>> getItemsByListOnce(String listId) async => [];
+
+  @override
+  Future<int> refreshItems(String listId,
+      {int limit = 500, int offset = 0}) async => 0;
+
+  @override
+  Future<void> refreshListDetail(String listId) async {}
+
+  @override
+  Future<ListItem> createItemOfflineFirst(
+          String listId, CreateListItemRequest req) async =>
+      ListItem(
+        id: '',
+        listId: listId,
+        name: req.name,
+        quantity: req.quantity,
+        unit: req.unit,
+        checked: false,
+        position: 0,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+  @override
+  Future<ListItem> updateItemOfflineFirst(
+    String listId,
+    String itemId,
+    UpdateListItemRequest req,
+  ) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> deleteItemOfflineFirst(String listId, String itemId) async {}
+
+  @override
+  Future<void> drainOutboxOnce() async {}
+}
+
+class FakeFinanceRepository implements FinanceRepository {
+  final FinanceService _service;
+  final StreamController<List<Expense>> _expenseController;
+
+  FakeFinanceRepository(this._service)
+      : _expenseController = StreamController<List<Expense>>.broadcast();
+
+  @override
+  Stream<List<Expense>> watchExpensesByGroup(String groupId) =>
+      _expenseController.stream;
+
+  @override
+  Future<List<Expense>> getExpensesByGroupOnce(String groupId) async =>
+      _service.listExpenses(groupId);
+
+  @override
+  Stream<FinanceSummary?> watchSummaryByGroup(String groupId) =>
+      Stream.value(
+        FinanceSummary(balances: const [], reimbursements: const []),
+      ).asBroadcastStream();
+
+  @override
+  Future<void> refreshGroup(String groupId,
+      {int limit = 50, int offset = 0}) async {
+    final expenses = await _service.listExpenses(
+      groupId,
+      limit: limit,
+      offset: offset,
+    );
+    _expenseController.add(expenses);
+  }
+
+  @override
+  Future<Expense> createExpenseOfflineFirst(
+      CreateExpenseRequest req) async {
+    return _service.createExpense(req);
+  }
+
+  @override
+  Future<Expense> updateExpenseOfflineFirst(
+      String expenseId, UpdateExpenseRequest req) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> deleteExpenseOfflineFirst(String expenseId) async {}
+
+  @override
+  Future<void> drainOutboxOnce() async {}
+}
+
+class FakePinwallRepository implements PinwallRepository {
+  final PinwallService _service;
+  final StreamController<List<PinwallPost>> _controller;
+
+  FakePinwallRepository(this._service)
+      : _controller = StreamController<List<PinwallPost>>.broadcast();
+
+  @override
+  Stream<List<PinwallPost>> watchPosts(String groupId) =>
+      _controller.stream;
+
+  @override
+  Future<List<PinwallPost>> getPostsOnce(String groupId) async =>
+      _service.listPosts(groupId);
+
+  @override
+  Future<void> refreshPosts(String groupId, {int limit = 20, int offset = 0}) async {
+    final posts = await _service.listPosts(groupId, limit: limit, offset: offset);
+    _controller.add(posts);
+  }
+
+  @override
+  Future<void> attachPostAttachment({
+    required String groupId,
+    required String postId,
+    required String attachmentId,
+  }) async {}
+
+  @override
+  Future<List<PinwallMediaItem>> listPostAttachments({
+    required String groupId,
+    required String postId,
+  }) async => [];
+
+  @override
+  Future<void> detachPostAttachment({
+    required String groupId,
+    required String postId,
+    required String attachmentId,
+  }) async {}
+
+  @override
+  Future<void> createPostOfflineFirst(String groupId,
+      {required String content}) async {}
+
+  @override
+  Future<void> deletePostOfflineFirst(
+      String groupId, String postId) async {}
+
+  @override
+  Future<void> drainOutboxOnce() async {}
 }

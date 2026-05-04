@@ -1,5 +1,6 @@
 import 'dart:ui' show PlatformDispatcher;
 
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'theme/theme.dart';
@@ -32,17 +33,19 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
           defaultValue: 'development'),
     );
 
-    FlutterError.onError = (details) {
-      FlutterError.presentError(details);
-      ErrorReporter().captureException(
-        details.exception,
-        stackTrace: details.stack,
-      );
-    };
-    PlatformDispatcher.instance.onError = (error, stack) {
-      ErrorReporter().captureException(error, stackTrace: stack);
-      return true;
-    };
+    if (kReleaseMode) {
+      FlutterError.onError = (details) {
+        FlutterError.presentError(details);
+        ErrorReporter().captureException(
+          details.exception,
+          stackTrace: details.stack,
+        );
+      };
+      PlatformDispatcher.instance.onError = (error, stack) {
+        ErrorReporter().captureException(error, stackTrace: stack);
+        return true;
+      };
+    }
   }
 
   @override

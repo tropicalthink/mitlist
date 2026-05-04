@@ -17,7 +17,7 @@ func TestVAPIDHandler_PublicKey_ReturnsKey(t *testing.T) {
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/v1/push/public-key", nil)
-	h.GetPublicKey(rec, req)
+	h.ServeHTTP(rec, req)
 
 	// Should return 200 with the public key or 400 if not configured
 	assert.True(t, rec.Code == http.StatusOK || rec.Code == http.StatusBadRequest)
@@ -33,7 +33,7 @@ func TestVAPIDHandler_Subscribe_RequiresAuth(t *testing.T) {
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/api/v1/push/subscribe", nil)
 	req.Header.Set("Content-Type", "application/json")
-	h.Subscribe(rec, req)
+	h.ServeHTTP(rec, req)
 
 	assert.Equal(t, http.StatusUnauthorized, rec.Code)
 }

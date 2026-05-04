@@ -24,7 +24,7 @@ flutter test                # Run tests
 ```bash
 cd backend
 go build ./...              # Compile
-go test ./...               # Run all tests
+go test ./...               # Run all tests (some pre-existing failures)
 docker compose up -d        # Start postgres + redis
 ```
 
@@ -35,12 +35,14 @@ docker compose up -d        # Start postgres + redis
 - **Routing**: `go_router` — see `frontend/lib/router.dart`
 - **Local DB**: Drift (SQLite) — caching layer
 - **Theme**: `frontend/lib/theme/` — design tokens (`colors.dart`, `spacing.dart`, `typography.dart`, `theme.dart`)
-- **Widgets**: `frontend/lib/widgets/` — `app_card`, `app_button`, `app_icon`, `mitlist_app_bar`, `empty_state`, `skeleton`, `alert`
+- **Widgets**: `frontend/lib/widgets/` — design system components
+- **Hub Widgets**: `frontend/lib/widgets/hub/` — `pinwall_section`, `activity_wall`, `stats_grid`, `hub_skeleton`, `quick_add_sheet`
 - **Screens**: `frontend/lib/screens/` — one subfolder per feature area
 - **Sheets**: `frontend/lib/sheets/` — bottom sheet creation/detail forms
 - **Services**: `frontend/lib/services/` — API clients (Dio)
 - **Models**: `frontend/lib/models/` — data classes with `fromJson`/`toJson`
 - **Providers**: `frontend/lib/providers/` — Riverpod async providers for services
+- **Error Handling**: `frontend/lib/services/error_reporter.dart` — GlitchTip/Sentry-compatible error reporter
 
 ### Backend
 - **Router**: `backend/cmd/api/main.go` — all route registration
@@ -68,12 +70,15 @@ Brand: warm, punchy, organized. Orange primary (`MitlistColors.primary500` = `#F
 - Missing `tooltip` on `IconButton` widgets
 - Missing `Semantics` labels on image/gesture interactions
 - Text widgets without `maxLines`/`overflow` in constrained layouts
+- Raw `AlertDialog` — use `showAppDialog()` with optional `actions` parameter
+- Raw error strings (`e.toString()`) in user-facing SnackBars — use friendly messages instead
+- Semicolons after Go final-clause block types
 
 ## Key Routes
 
 | Route | Name | Screen |
 |-------|------|--------|
-| `/home` | home | Household hub |
+| `/home` | home | Household hub (directly, no sub-route) |
 | `/chores` | chores | Chores list |
 | `/recipes` | recipes | Recipes |
 | `/money` | money | Expenses |
@@ -84,6 +89,13 @@ Brand: warm, punchy, organized. Orange primary (`MitlistColors.primary500` = `#F
 | `/you/notification-preferences` | notificationPreferences | Preference toggles |
 | `/scanner` | scanner | OCR scanner for receipts, lists, recipes, chores |
 
+### Route Notes
+- `/home` renders `HouseholdHubScreen` directly (no `_HomeEntryScreen`/`_GroupResolver` wrapper)
+- Group switching happens via `currentGroupIdProvider` state, not route navigation
+- Bottom nav Home button navigates to `/home` (no group path param)
+- `currentGroupIdProvider` defined in `router.dart` as `StateProvider<String?>`
+- The `:groupId/hub` sub-route was removed to avoid back-button issues when switching households
+
 ## AI / OCR
 
 The scanner uses **CrofAI** (`https://crof.ai/v1`) via OpenAI-compatible API. Set `CROFAI_API_KEY` in backend `.env`. The vision model `kimi-k2.5` processes images and returns structured JSON with type classification and extracted items/steps/amounts.
@@ -91,10 +103,130 @@ The scanner uses **CrofAI** (`https://crof.ai/v1`) via OpenAI-compatible API. Se
 - Endpoint: `POST /assistant/scan` (multipart file upload)
 - Service: `frontend/lib/services/scan_service.dart`
 - Screen: `frontend/lib/screens/scanner/scanner_screen.dart`
-- The old chat-based assistant has been removed.
+
+## Cross-Feature Integration
+
+### Calendar Aggregate Types
+The calendar (`GET /calendar`) aggregates these event types:
+- `meal_plan` — Meal plans with recipe title
+- `chore` — Chore assignments with due dates
+- `recurring_expense` — Recurring expense due dates
+- `expense` — One-time expense dates (added: `ListExpensesByDateRange`)
+- `pinwall_reminder` — Pinwall posts with `remind_at` set (added: `ListPostsByGroupAndRemindAtRange`)
+
+### Pinwall Entity Linking
+- Migration `000022` added `linked_entity_type` + `linked_entity_id` to `pinwall_posts`
+- Composer has a link button that opens an entity picker (fetches actual chores/lists/expenses)
+- Linked entity badges in note cards are tappable — navigate to the entity's screen
+
+### Chore → Shopping List
+- Chore items with `supplies` configured show a "N supplies" badge inline
+- Detailed supply management in the chore detail sheet
+
+### Shopping Trip → Expense
+- After completing shopping trip items, if any have `priceCents`, shows a SnackBar with total + "Add expense" action
+
+### Meal Plan → Shopping List → Money
+- "Generate shopping list" creates a list from meal plan ingredients
+- After generation, SnackBar includes "Track costs" action linking to money screen
+
+### Navigation Badges
+- Bottom nav: Chores tab shows due count badge, Money tab shows settlement count badge
+- Data from `navBadgeCountsProvider` in `providers/nav_badge_provider.dart`
 
 ## Testing
 
-- Backend: Core journey tests in `backend/internal/api/handlers/` (integration-style with pgxmock)
-- Frontend: `frontend/test/frontend_flows_test.dart` (mocked service integration tests)
-- Lint: `dart analyze lib/` and `go build ./...` before committing
+### Frontend Tests
+- Integration tests: `frontend/test/frontend_flows_test.dart` (mocked services via Riverpod)
+- 8 of 14 tests pass; 6 pre-existing failures from un-mockable Drift `appDatabaseProvider`
+
+**Riverpod override pattern** (for mocking services):
+```dart
+await tester.pumpWidget(
+  ProviderScope(
+    overrides: [
+      groupServiceProviderAsync.overrideWith((ref) async => fakeGroupService),
+      choreServiceProviderAsync.overrideWith((ref) async => fakeChoreService),
+    ],
+    child: MaterialApp(home: child),
+  ),
+);
+```
+
+**Animation-safe pump** (replace `pumpAndSettle` for shimmer/Lottie):
+```dart
+Future<void> _pumpAfter(WidgetTester tester) async {
+  for (var i = 0; i < 3; i++) await tester.pump(const Duration(milliseconds: 300));
+}
+```
+
+**Drift in-memory DB** (for future test improvements):
+```dart
+final database = AppDatabase(
+  DatabaseConnection(
+    NativeDatabase.memory(),
+    closeStreamsSynchronously: true,  // Required for widget tests
+  ),
+);
+```
+
+### Backend Tests
+| Package | Status | Notes |
+|---------|--------|-------|
+| `internal/services` | ✅ Pass | Service logic (fixed: added missing mock methods) |
+| `internal/db` | ✅ Pass | Database connection |
+| `internal/middleware` | ✅ Pass | Auth/CORS/logging |
+| `pkg/validation` | ✅ Pass | Validation utilities |
+| `internal/api/handlers` | ❌ Build | Pre-existing (stale test signatures) |
+| `internal/repositories` | ❌ Fail | Pre-existing (arg count) |
+| `internal/jobs` | ❌ Fail | Pre-existing (assertions) |
+
+**Mock method pattern** (when adding methods to backend interfaces):
+```go
+func (m *MockListRepo) ClaimItem(ctx context.Context, itemID uuid.UUID, userID uuid.UUID) error {
+	args := m.Called(ctx, itemID, userID)
+	return args.Error(0)
+}
+```
+
+### Lint
+- `dart analyze lib/` and `go build ./...` before every commit
+
+## Error Handling
+
+- `ErrorReporter` singleton in `lib/services/error_reporter.dart` — init with GlitchTip/Sentry DSN
+- In `app.dart`: `FlutterError.onError` + `PlatformDispatcher.instance.onError` capture all errors (release-mode only via `kReleaseMode`)
+- Error boundary widget at `lib/widgets/error_boundary.dart` (fallback UI, currently unused in widget tree)
+- Set `GLITCHTIP_DSN` environment variable for production; add `sentry_flutter` to pubspec.yaml
+- Error reporters are guarded by `kReleaseMode` to avoid interfering with Flutter test framework
+
+## AppDialog Actions
+
+`showAppDialog()` now supports an optional `actions` parameter:
+```dart
+showAppDialog<bool>(
+  context: context,
+  title: 'Delete item',
+  body: const Text('This cannot be undone.'),
+  actions: [
+    AppButton(text: 'Cancel', variant: AppButtonVariant.outline, onPressed: ...),
+    AppButton(text: 'Delete', color: AppButtonColor.error, onPressed: ...),
+  ],
+)
+```
+
+## Migration History
+
+| Migration | Description |
+|-----------|-------------|
+| 000001 | Core schema (users, groups, lists, chores, finance, recipes, etc.) |
+| 000002–000021 | Various schema additions (pinwall, attachments, meal plans, chore subtasks, etc.) |
+| **000022** | Added `linked_entity_type` + `linked_entity_id` to `pinwall_posts` |
+
+## Key API Endpoints Added
+
+| Method | Route | Added When |
+|--------|-------|-----------|
+| `GET` | `/expenses/{id}/splits` | Calendar density — list expense splits |
+| `GET` | (via calendar) `ListExpensesByDateRange` | Calendar density — one-time expenses in calendar |
+| `GET` | (via pinwall) `ListPostsByGroupAndRemindAtRange` | Pinwall reminders in calendar |

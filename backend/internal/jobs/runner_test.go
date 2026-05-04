@@ -12,7 +12,7 @@ func TestRunner_RegisterAll(t *testing.T) {
 	r := NewRunner(nil, nil, log)
 	r.RegisterAll()
 
-	assert.Len(t, r.jobs, 4)
+	assert.Len(t, r.jobs, 5)
 
 	expected := map[string]struct {
 		schedule string
@@ -22,6 +22,7 @@ func TestRunner_RegisterAll(t *testing.T) {
 		"recurring-expense": {"0 * * * *", true},
 		"chore-reminder":    {"0 9 * * *", true},
 		"weekly-summary":    {"0 9 * * 1", true},
+		"pinwall-reminder":  {"* * * * *", true},
 	}
 
 	for _, j := range r.jobs {
