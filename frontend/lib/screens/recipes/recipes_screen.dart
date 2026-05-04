@@ -19,6 +19,7 @@ import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_dialog.dart';
+import '../../widgets/app_icon.dart';
 import '../../widgets/chip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/icons.dart';
@@ -87,6 +88,8 @@ enum _RecipeMenuAction { sortNewest, sortOldest, sortAz }
 class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   static const int _pageLimit = 50;
 
+  bool _hasHousehold = true;
+  bool _isSaving = false;
   _ViewState _viewState = _ViewState.empty;
   String? _errorMessage;
   String? _loadMoreErrorMessage;
@@ -161,6 +164,8 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   }
 
   Future<void> _confirmDeleteRecipe(_Recipe recipe) async {
+    if (_isSaving) return;
+    _isSaving = true;
     final confirmed = await showAppDialog<bool>(
       context: context,
       title: 'Delete recipe',
@@ -179,7 +184,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
         ),
       ],
     );
-    if (confirmed != true || !mounted) return;
+    if (confirmed != true || !mounted) { _isSaving = false; return; }
     Navigator.of(context).pop();
     try {
       final service = await ref.read(recipeServiceProviderAsync.future);
@@ -190,6 +195,8 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to delete recipe')),
       );
+    } finally {
+      _isSaving = false;
     }
   }
 
@@ -344,6 +351,8 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     final groupService = await ref.read(groupServiceProviderAsync.future);
     final groups = await groupService.listGroups(limit: 1);
     final groupId = groups.isEmpty ? null : groups.first.id;
+    if (!mounted) return null;
+    setState(() => _hasHousehold = groups.isNotEmpty);
     return isValidGroupId(groupId) ? groupId : null;
   }
 
@@ -460,6 +469,22 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   }
 
   Widget _buildBody() {
+    if (!_hasHousehold) {
+      return Center(
+        child: AppEmptyState(
+          lottieAsset: 'assets/animations/lottie/House.lottie',
+          icon: const AppIcon(name: 'home', size: 56),
+          title: 'No household yet',
+          description: 'Create or join a household before adding recipes.',
+          actions: [
+            AppButton(
+              text: 'Go to households',
+              onPressed: () => context.goNamed('groupsList'),
+            ),
+          ],
+        ),
+      );
+    }
     switch (_viewState) {
       case _ViewState.loading:
         return const _LoadingListBody();

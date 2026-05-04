@@ -1083,6 +1083,8 @@ class _ExpenseCard extends StatelessWidget {
               children: [
                 Text(
                   expense.category.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
@@ -1095,6 +1097,8 @@ class _ExpenseCard extends StatelessWidget {
                 const SizedBox(height: MitlistSpacing.space1),
                 Text(
                   'Paid by ${expense.payer}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
@@ -1416,6 +1420,8 @@ class _BalancesExpandableBodyState extends State<_BalancesExpandableBody> {
                 Expanded(
                   child: Text(
                     'BALANCES',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.labelMedium,
                   ),
                 ),
@@ -1478,6 +1484,8 @@ class _BalancesExpandableBodyState extends State<_BalancesExpandableBody> {
                                           : b.amount < 0
                                               ? 'owes'
                                               : 'settled',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                       style:
                                           Theme.of(context).textTheme.bodySmall,
                                     ),

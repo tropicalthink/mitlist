@@ -200,6 +200,7 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
           controller: _nameController,
           enabled: !_isSubmitting,
           textInputAction: TextInputAction.done,
+          maxLength: 100,
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: MitlistSpacing.md),

@@ -138,7 +138,7 @@ The calendar (`GET /calendar`) aggregates these event types:
 
 ### Frontend Tests
 - Integration tests: `frontend/test/frontend_flows_test.dart` (mocked services via Riverpod)
-- 8 of 14 tests pass; 6 pre-existing failures from un-mockable Drift `appDatabaseProvider`
+- 15 of 15 tests pass ✅
 
 **Riverpod override pattern** (for mocking services):
 ```dart
@@ -177,9 +177,9 @@ final database = AppDatabase(
 | `internal/db` | ✅ Pass | Database connection |
 | `internal/middleware` | ✅ Pass | Auth/CORS/logging |
 | `pkg/validation` | ✅ Pass | Validation utilities |
-| `internal/api/handlers` | ❌ Build | Pre-existing (stale test signatures) |
-| `internal/repositories` | ❌ Fail | Pre-existing (arg count) |
-| `internal/jobs` | ❌ Fail | Pre-existing (assertions) |
+| `internal/api/handlers` | ✅ Pass | Fixed: stale test signatures, duplicated routers |
+| `internal/repositories` | ✅ Pass | Fixed: notification arg count, list column mismatches |
+| `internal/jobs` | ✅ Pass | Fixed: expected job count 4→5 (added pinwall-reminder) |
 
 **Mock method pattern** (when adding methods to backend interfaces):
 ```go

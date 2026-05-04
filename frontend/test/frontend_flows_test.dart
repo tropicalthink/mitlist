@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -35,7 +34,6 @@ import 'package:mitlist/repositories/chore_repository.dart';
 import 'package:mitlist/repositories/list_repository.dart';
 import 'package:mitlist/repositories/finance_repository.dart';
 import 'package:mitlist/repositories/pinwall_repository.dart';
-import 'package:mitlist/repositories/hub_repository.dart';
 import 'package:mitlist/screens/auth/login_screen.dart';
 import 'package:mitlist/screens/auth/oauth_callback_screen.dart';
 import 'package:mitlist/screens/auth/signup_screen.dart';

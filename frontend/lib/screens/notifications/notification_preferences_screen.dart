@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../models/group_models.dart';
 import '../../models/notification_models.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
+import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/mitlist_app_bar.dart';
+import '../../widgets/skeleton.dart';
 
 class NotificationPreferencesScreen extends ConsumerStatefulWidget {
   const NotificationPreferencesScreen({super.key});
@@ -24,6 +26,7 @@ class NotificationPreferencesScreen extends ConsumerStatefulWidget {
 class _NotificationPreferencesScreenState
     extends ConsumerState<NotificationPreferencesScreen> {
   bool _isLoading = true;
+  bool _hasHousehold = true;
   String? _error;
   List<NotificationPreferenceModel> _preferences = [];
   Map<String, String> _groupNames = {};
@@ -42,19 +45,22 @@ class _NotificationPreferencesScreenState
     });
 
     try {
+      final groupService = await ref.read(groupServiceProviderAsync.future);
+      final groups = await groupService.listGroups();
+      if (!mounted) return;
+      if (groups.isEmpty) {
+        setState(() {
+          _hasHousehold = false;
+          _isLoading = false;
+        });
+        return;
+      }
+
       final notificationService =
           await ref.read(notificationServiceProviderAsync.future);
-      final groupService = await ref.read(groupServiceProviderAsync.future);
 
-      final results = await Future.wait([
-        notificationService.getPreferences(),
-        groupService.listGroups(),
-      ]);
-
+      final prefs = await notificationService.getPreferences();
       if (!mounted) return;
-
-      final prefs = results[0] as List<NotificationPreferenceModel>;
-      final groups = results[1] as List<Group>;
 
       final names = <String, String>{};
       for (final g in groups) {
@@ -241,11 +247,26 @@ class _NotificationPreferencesScreenState
         ),
       ),
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
-                valueColor:
-                    AlwaysStoppedAnimation(MitlistColors.primary500),
-              ),
+          ? ListView(
+              padding: const EdgeInsets.all(MitlistSpacing.md),
+              children: List.generate(3, (_) => Padding(
+                padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
+                child: AppCard(
+                  padding: AppCardPadding.md,
+                  child: const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppSkeleton(width: 120, height: 16),
+                      SizedBox(height: MitlistSpacing.md),
+                      AppSkeleton(width: double.infinity, height: 24),
+                      SizedBox(height: MitlistSpacing.sm),
+                      AppSkeleton(width: double.infinity, height: 24),
+                      SizedBox(height: MitlistSpacing.sm),
+                      AppSkeleton(width: double.infinity, height: 24),
+                    ],
+                  ),
+                ),
+              )),
             )
           : RefreshIndicator(
               onRefresh: _load,
@@ -256,8 +277,29 @@ class _NotificationPreferencesScreenState
                     AppAlert(
                         type: AppAlertType.error, message: _error!),
                     const SizedBox(height: MitlistSpacing.md),
+                    AppButton(
+                      text: 'Retry',
+                      onPressed: _load,
+                    ),
+                    const SizedBox(height: MitlistSpacing.md),
                   ],
-                  if (_preferences.isNotEmpty)
+                  if (!_hasHousehold)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xl),
+                      child: AppEmptyState(
+                        lottieAsset: 'assets/animations/lottie/House.lottie',
+                        icon: const Icon(Icons.home_outlined, size: 56),
+                        title: 'No household yet',
+                        description: 'Join or create a household to configure notification preferences.',
+                        actions: [
+                          AppButton(
+                            text: 'Go to households',
+                            onPressed: () => context.goNamed('groupsList'),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (_preferences.isNotEmpty)
                     ..._preferences.map(_buildPreferenceCard)
                   else
                     const AppEmptyState(
@@ -267,10 +309,10 @@ class _NotificationPreferencesScreenState
                       description:
                           'Preferences are created when you join a household. If you just joined, they should appear shortly.',
                     ),
-                ],
+                  ],
+                ),
               ),
-            ),
-    );
+            );
   }
 }
 

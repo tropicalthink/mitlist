@@ -129,7 +129,7 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e')),
+          const SnackBar(content: Text('Something went wrong.')),
         );
       }
     } finally {
@@ -214,7 +214,7 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
             ),
             items: _lists.map((list) => DropdownMenuItem<String>(
               value: list.id,
-              child: Text(list.name),
+              child: Text(list.name, maxLines: 1, overflow: TextOverflow.ellipsis),
             )).toList(),
             onChanged: (value) => setState(() => _selectedListId = value),
           ),

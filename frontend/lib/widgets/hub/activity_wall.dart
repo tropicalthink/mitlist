@@ -132,6 +132,8 @@ class _WallItem extends StatelessWidget {
                 children: [
                   Text(
                     '$userLabel \u00b7 $when',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: textTheme.labelMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -139,6 +141,8 @@ class _WallItem extends StatelessWidget {
                   const SizedBox(height: MitlistSpacing.xs),
                   Text(
                     message,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: textTheme.bodyMedium,
                   ),
                 ],

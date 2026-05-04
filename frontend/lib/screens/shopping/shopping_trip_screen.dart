@@ -25,6 +25,7 @@ class ShoppingTripScreen extends ConsumerStatefulWidget {
 
 class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
   bool _isLoading = true;
+  bool _hasHousehold = true;
   String? _error;
   final List<ItemList> _lists = [];
   final Map<String, List<ListItem>> _itemsByList = {};
@@ -46,7 +47,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
       final groupId = await _resolveGroupId();
       if (groupId == null) {
         setState(() {
-          _error = 'Join a household first';
+          _hasHousehold = false;
           _isLoading = false;
         });
         return;
@@ -211,6 +212,22 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
   Widget _buildBody(TextTheme textTheme) {
     if (_isLoading) {
       return _buildSkeleton();
+    }
+    if (!_hasHousehold) {
+      return Center(
+        child: AppEmptyState(
+          lottieAsset: 'assets/animations/lottie/House.lottie',
+          icon: const Icon(Icons.home_outlined),
+          title: 'No household yet',
+          description: 'Create or join a household before starting a shopping trip.',
+          actions: [
+            AppButton(
+              text: 'Go to households',
+              onPressed: () => context.goNamed('groupsList'),
+            ),
+          ],
+        ),
+      );
     }
     if (_error != null) {
       return Center(

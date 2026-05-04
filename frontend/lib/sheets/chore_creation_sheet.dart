@@ -161,7 +161,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       if (!mounted) return;
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to add chore: $e')),
+        const SnackBar(content: Text('Couldn\u2019t add chore.')),
       );
     }
   }
@@ -235,6 +235,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           hint: 'e.g. Vacuum living room',
           controller: _nameController,
           textInputAction: TextInputAction.done,
+          maxLength: 100,
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: MitlistSpacing.md),
@@ -243,6 +244,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           hint: 'Add any details for this chore',
           controller: _descriptionController,
           textInputAction: TextInputAction.done,
+          maxLength: 500,
         ),
         const SizedBox(height: MitlistSpacing.md),
         Text(

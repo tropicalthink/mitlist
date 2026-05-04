@@ -86,6 +86,7 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet> {
           controller: _codeController,
           enabled: !_isJoining,
           textInputAction: TextInputAction.done,
+          maxLength: 20,
           onChanged: (_) => setState(() {}),
           keyboardType: TextInputType.text,
         ),

@@ -32,6 +32,7 @@ class CalendarScreen extends ConsumerStatefulWidget {
 
 class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   bool _isLoading = true;
+  bool _isSaving = false;
   String? _error;
   bool _hasHousehold = true;
   final List<CalendarEvent> _events = [];
@@ -805,6 +806,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 
   Future<void> _confirmDeleteChore(String choreId) async {
+    if (_isSaving) return;
+    _isSaving = true;
     final confirmed = await showAppDialog<bool>(
       context: context,
       title: 'Delete chore',
@@ -823,7 +826,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         ),
       ],
     );
-    if (confirmed != true || !mounted) return;
+    if (confirmed != true || !mounted) { _isSaving = false; return; }
     Navigator.of(context).pop();
     try {
       final service = await ref.read(choreServiceProviderAsync.future);
@@ -834,6 +837,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to delete chore')),
       );
+    } finally {
+      _isSaving = false;
     }
   }
 }

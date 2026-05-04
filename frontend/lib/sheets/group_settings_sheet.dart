@@ -330,7 +330,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       child: Row(
         children: [
           Expanded(
-            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+            child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodyMedium),
           ),
           if (saving)
             const Padding(
@@ -428,8 +428,8 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
           member.displayName.isNotEmpty ? member.displayName[0].toUpperCase() : '?',
         ),
       ),
-      title: Text(member.displayName),
-      subtitle: Text(member.role),
+      title: Text(member.displayName, maxLines: 1, overflow: TextOverflow.ellipsis),
+      subtitle: Text(member.role, maxLines: 1, overflow: TextOverflow.ellipsis),
       trailing: IconButton(
         tooltip: 'Remove ${member.displayName}',
         icon: const Icon(Icons.remove_circle_outline, size: 20),

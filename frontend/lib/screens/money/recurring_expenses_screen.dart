@@ -310,11 +310,15 @@ class _RecurringCard extends StatelessWidget {
                   const SizedBox(height: MitlistSpacing.space1),
                   Text(
                     '${formatAmount(item.amount, item.currency)} · ${formatFrequency(item.frequency)} · $payerName',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: MitlistTypography.labelXSmall(),
                   ),
                   const SizedBox(height: MitlistSpacing.space1),
                   Text(
                     'Next: ${_formatDate(item.nextDue)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: MitlistTypography.labelXSmall(),
                   ),
                 ],

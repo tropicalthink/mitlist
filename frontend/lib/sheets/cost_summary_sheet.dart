@@ -6,7 +6,7 @@ import '../theme/spacing.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 
-class CostSummarySheet extends ConsumerWidget {
+class CostSummarySheet extends ConsumerStatefulWidget {
   const CostSummarySheet({
     super.key,
     required this.listName,
@@ -43,20 +43,27 @@ class CostSummarySheet extends ConsumerWidget {
     );
   }
 
+  @override
+  ConsumerState<CostSummarySheet> createState() => _CostSummarySheetState();
+}
+
+class _CostSummarySheetState extends ConsumerState<CostSummarySheet> {
+  bool _isSaving = false;
+
   String _formatCents(int cents) {
     return '\$${(cents / 100).toStringAsFixed(2)}';
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final hasPrices = totalCents > 0;
+  Widget build(BuildContext context) {
+    final hasPrices = widget.totalCents > 0;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          listName,
+          widget.listName,
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: MitlistSpacing.md),
@@ -69,30 +76,40 @@ class CostSummarySheet extends ConsumerWidget {
         ] else ...[
           _CostRow(
             label: 'Total cost',
-            value: _formatCents(totalCents),
+            value: _formatCents(widget.totalCents),
             isTotal: true,
           ),
           const SizedBox(height: MitlistSpacing.sm),
           _CostRow(
             label: 'Equal share per person',
-            value: _formatCents(equalShareCents),
+            value: _formatCents(widget.equalShareCents),
             isTotal: false,
           ),
           const SizedBox(height: MitlistSpacing.sm),
           _CostRow(
             label: 'Items with prices',
-            value: '$itemCount',
+            value: '${widget.itemCount}',
             isTotal: false,
           ),
           const SizedBox(height: MitlistSpacing.md),
-          if (onGenerateExpense != null)
+          if (widget.onGenerateExpense != null)
             SizedBox(
               width: double.infinity,
               child: AppButton(
                 variant: AppButtonVariant.solid,
                 color: AppButtonColor.primary,
                 text: 'Generate Expense',
-                onPressed: onGenerateExpense,
+                onPressed: _isSaving
+                    ? null
+                    : () async {
+                        if (_isSaving) return;
+                        _isSaving = true;
+                        try {
+                          widget.onGenerateExpense!();
+                        } finally {
+                          _isSaving = false;
+                        }
+                      },
               ),
             ),
         ],
@@ -119,6 +136,8 @@ class _CostRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: isTotal
                 ? Theme.of(context).textTheme.titleSmall
                 : Theme.of(context).textTheme.bodyMedium,
@@ -154,6 +173,8 @@ class _InfoRow extends StatelessWidget {
         Expanded(
           child: Text(
             message,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: MitlistColors.neutral500,
                 ),

@@ -10,6 +10,7 @@ import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/mitlist_app_bar.dart';
+import '../../widgets/skeleton.dart';
 import '../../models/group_models.dart';
 import '../../providers/group_provider.dart';
 import '../../sheets/create_household_sheet.dart';
@@ -193,9 +194,23 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
 
   Widget _buildBody() {
     if (_isLoading && _groups.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation(MitlistColors.primary500),
+      return ListView.builder(
+        padding: const EdgeInsets.all(MitlistSpacing.md),
+        itemCount: 4,
+        itemBuilder: (_, __) => Padding(
+          padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+          child: AppCard(
+            variant: AppCardVariant.outlined,
+            padding: AppCardPadding.md,
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppSkeleton(width: 160, height: 16),
+                SizedBox(height: MitlistSpacing.sm),
+                AppSkeleton(width: double.infinity, height: 40),
+              ],
+            ),
+          ),
         ),
       );
     }
@@ -321,7 +336,6 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
   }
 }
 
-// Skeleton card removed: this screen now uses a spinner for loading.
 
 class _GroupCard extends StatelessWidget {
   final Group group;
@@ -357,6 +371,8 @@ class _GroupCard extends StatelessWidget {
                 const SizedBox(height: MitlistSpacing.xs),
                 Text(
                   '$memberCount member${memberCount == 1 ? '' : 's'}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],

@@ -138,6 +138,8 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet> {
                           Expanded(
                             child: Text(
                               code.isEmpty ? '—' : code.trim(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: MitlistTypography.monoBody(),
                             ),
                           ),

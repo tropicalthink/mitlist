@@ -6,14 +6,17 @@ import 'package:go_router/go_router.dart';
 
 import '../../models/notification_models.dart';
 import '../../providers/notification_provider.dart';
+import '../../providers/group_provider.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/theme.dart';
 import '../../widgets/alert.dart';
+import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/mitlist_app_bar.dart';
+import '../../widgets/skeleton.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
@@ -28,6 +31,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   bool _isLoading = true;
   bool _isLoadingMore = false;
   bool _hasMore = true;
+  bool _hasHousehold = true;
+  bool _isMutating = false;
   String? _error;
   final List<NotificationModel> _items = [];
   final ScrollController _scrollController = ScrollController();
@@ -61,6 +66,16 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     });
 
     try {
+      final groupService = await ref.read(groupServiceProviderAsync.future);
+      final groups = await groupService.listGroups(limit: 1);
+      if (!mounted) return;
+      if (groups.isEmpty) {
+        setState(() {
+          _hasHousehold = false;
+          _isLoading = false;
+        });
+        return;
+      }
       final service = await ref.read(notificationServiceProviderAsync.future);
       final data = await service.listNotifications(limit: _pageLimit, offset: 0);
       if (!mounted) return;
@@ -106,6 +121,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   }
 
   Future<void> _markAllRead() async {
+    if (_isMutating) return;
+    _isMutating = true;
     try {
       final service = await ref.read(notificationServiceProviderAsync.future);
       await service.markAllAsRead();
@@ -113,6 +130,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _error = 'Failed to mark all as read.');
+    } finally {
+      _isMutating = false;
     }
   }
 
@@ -144,6 +163,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   }
 
   Future<void> _delete(NotificationModel n) async {
+    if (_isMutating) return;
+    _isMutating = true;
     try {
       final service = await ref.read(notificationServiceProviderAsync.future);
       await service.deleteNotification(n.id);
@@ -151,6 +172,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _error = 'Failed to delete notification.');
+    } finally {
+      _isMutating = false;
     }
   }
 
@@ -224,21 +247,48 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 padding: const EdgeInsets.all(MitlistSpacing.md),
                 children: [
                   if (_isLoading) ...[
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: MitlistSpacing.md),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          valueColor:
-                              AlwaysStoppedAnimation(MitlistColors.primary500),
+                    ...List.generate(4, (_) => Padding(
+                      padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+                      child: AppCard(
+                        variant: AppCardVariant.outlined,
+                        padding: AppCardPadding.md,
+                        child: const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            AppSkeleton(width: 160, height: 16),
+                            SizedBox(height: MitlistSpacing.sm),
+                            AppSkeleton(width: double.infinity, height: 40),
+                          ],
                         ),
                       ),
-                    ),
+                    )),
                   ],
                   if (_error != null) ...[
                     AppAlert(type: AppAlertType.error, message: _error!),
                     const SizedBox(height: MitlistSpacing.md),
+                    AppButton(
+                      text: 'Retry',
+                      onPressed: _load,
+                    ),
+                    const SizedBox(height: MitlistSpacing.md),
                   ],
-                  if (_items.isEmpty && _error == null)
+                  if (!_hasHousehold)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xl),
+                      child: AppEmptyState(
+                        lottieAsset: 'assets/animations/lottie/House.lottie',
+                        icon: const Icon(Icons.home_outlined, size: 56),
+                        title: 'No household yet',
+                        description: 'Create or join a household to receive notifications.',
+                        actions: [
+                          AppButton(
+                            text: 'Go to households',
+                            onPressed: () => context.goNamed('groupsList'),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (_items.isEmpty && _error == null)
                     AppEmptyState(
                       lottieAsset: 'assets/animations/lottie/Notifications.lottie',
                       icon: const Icon(Icons.notifications_none_outlined, size: 56),
@@ -280,10 +330,12 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(n.title, style: titleStyle),
+                                  Text(n.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: titleStyle),
                                   const SizedBox(height: MitlistSpacing.xs),
                                   Text(
                                     subtitle,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
                                     style: Theme.of(context).textTheme.bodySmall,
                                   ),
                                 ],

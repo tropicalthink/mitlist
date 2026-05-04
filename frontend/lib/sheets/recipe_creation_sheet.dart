@@ -264,7 +264,7 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
       if (!mounted) return;
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to create recipe: $e')),
+        const SnackBar(content: Text('Couldn\u2019t create recipe.')),
       );
     }
   }
@@ -431,12 +431,16 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
               const SizedBox(height: MitlistSpacing.md),
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  _selectedImageUrl!,
-                  height: 120,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
+              child: Image.network(
+                _selectedImageUrl!,
+                height: 120,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: MitlistColors.neutral100,
+                  child: const Center(child: Icon(Icons.restaurant, size: 48)),
                 ),
+              ),
               ),
             ],
             const SizedBox(height: MitlistSpacing.md),
@@ -448,6 +452,7 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
             hint: 'Sunday pancakes',
             controller: _titleController,
             textInputAction: TextInputAction.next,
+            maxLength: 150,
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: MitlistSpacing.md),

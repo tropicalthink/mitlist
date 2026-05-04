@@ -378,6 +378,8 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
                       Expanded(
                         child: Text(
                           "Couldn't load the pinwall.",
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: textTheme.bodySmall,
                         ),
                       ),

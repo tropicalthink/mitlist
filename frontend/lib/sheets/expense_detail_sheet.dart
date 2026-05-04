@@ -1,9 +1,5 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart' hide Split;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../models/expense_receipt_models.dart';
 import '../models/finance_models.dart';
@@ -67,9 +63,7 @@ class ExpenseDetailSheet extends ConsumerStatefulWidget {
 
 class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
   bool _loadingReceipts = true;
-  bool _uploading = false;
   bool _removing = false;
-  String? _error;
   List<ExpenseReceipt> _receipts = const [];
   List<Split> _splits = const [];
   bool _loadingSplits = true;
@@ -98,7 +92,6 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
   Future<void> _loadReceipts() async {
     setState(() {
       _loadingReceipts = true;
-      _error = null;
     });
     try {
       final finance = await ref.read(financeServiceProviderAsync.future);
@@ -114,53 +107,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Failed to load receipts';
         _loadingReceipts = false;
-      });
-    }
-  }
-
-  Future<void> _addReceiptFromGallery() async {
-    if (_uploading) return;
-    setState(() {
-      _uploading = true;
-      _error = null;
-    });
-
-    try {
-      final picker = ImagePicker();
-      final file = await picker.pickImage(source: ImageSource.gallery);
-      if (file == null) {
-        if (!mounted) return;
-        setState(() => _uploading = false);
-        return;
-      }
-
-      final bytes = await file.readAsBytes();
-      final attachmentRepo = await ref.read(attachmentRepositoryProvider.future);
-      final attachment = await attachmentRepo.uploadAttachment(
-        groupId: widget.groupId,
-        purpose: 'expense_receipt',
-        filename: file.name,
-        contentType: 'image/*',
-        bytes: Uint8List.fromList(bytes),
-      );
-
-      final finance = await ref.read(financeServiceProviderAsync.future);
-      await finance.attachExpenseReceipt(
-        groupId: widget.groupId,
-        expenseId: widget.expenseId,
-        attachmentId: attachment.id,
-      );
-
-      if (!mounted) return;
-      setState(() => _uploading = false);
-      await _loadReceipts();
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'Upload failed';
-        _uploading = false;
       });
     }
   }
@@ -210,7 +157,6 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
     if (_removing) return;
     setState(() {
       _removing = true;
-      _error = null;
     });
 
     try {
@@ -238,7 +184,6 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _error = 'Failed to remove receipt';
         _removing = false;
       });
     }
@@ -386,31 +331,6 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
   }
 }
 
-class _HistoryRow extends StatelessWidget {
-  const _HistoryRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        ),
-        Text(
-          value,
-          style: MitlistTypography.monoBody(color: MitlistColors.textSecondary),
-        ),
-      ],
-    );
-  }
-}
-
 class _SplitRow extends StatelessWidget {
   const _SplitRow({required this.split});
 
@@ -426,7 +346,7 @@ class _SplitRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+            child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodyMedium),
           ),
           if (split.isSettled)
             Padding(

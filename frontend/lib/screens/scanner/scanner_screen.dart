@@ -278,6 +278,13 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
               ),
               textAlign: TextAlign.center,
             ),
+            const SizedBox(height: MitlistSpacing.md),
+            Center(
+              child: AppButton(
+                text: 'Retry',
+                onPressed: () => _pickImage(ImageSource.gallery),
+              ),
+            ),
           ],
 
           // Result preview

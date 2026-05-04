@@ -146,6 +146,11 @@ class RecipeDetailSheet extends StatelessWidget {
               height: 160,
               width: double.infinity,
               fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                color: MitlistColors.neutral100,
+                height: 160,
+                child: const Center(child: Icon(Icons.restaurant, size: 48)),
+              ),
             ),
           ),
         ],

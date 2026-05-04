@@ -17,6 +17,7 @@ import '../../widgets/app_card.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/mitlist_app_bar.dart';
+import '../../widgets/skeleton.dart';
 
 const String _appVersion = '1.0.0';
 
@@ -29,6 +30,7 @@ class AccountScreen extends ConsumerStatefulWidget {
 
 class _AccountScreenState extends ConsumerState<AccountScreen> {
   bool _isLoading = true;
+  bool _isSaving = false;
   String? _error;
 
   String _name = '';
@@ -108,16 +110,20 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   Future<void> _saveName() async {
-    if (!_isEditingName) return;
+    if (_isSaving) return;
+    _isSaving = true;
+    if (!_isEditingName) { _isSaving = false; return; }
     final newName = _nameController.text.trim();
     setState(() => _isEditingName = false);
-    if (newName.isEmpty) return;
+    if (newName.isEmpty) { _isSaving = false; return; }
     try {
       final authService = await ref.read(authServiceProviderAsync.future);
       await authService.updateMe(UpdateUserRequest(firstName: newName.split(' ')[0], lastName: newName.contains(' ') ? newName.split(' ').sublist(1).join(' ') : ''));
       setState(() => _name = newName);
     } catch (e) {
       if (mounted) setState(() => _error = 'Failed to save name');
+    } finally {
+      _isSaving = false;
     }
   }
 
@@ -243,7 +249,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     );
   }
 
-  void _onLogout() async {
+  Future<void> _onLogout() async {
+    if (_isSaving) return;
+    _isSaving = true;
     try {
       final authService = await ref.read(authServiceProviderAsync.future);
       await authService.logout();
@@ -252,9 +260,12 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       debugPrint('[AccountScreen] Logout failed');
     }
     if (mounted) context.goNamed('welcome');
+    _isSaving = false;
   }
 
   Future<void> _confirmDeleteAccount() async {
+    if (_isSaving) return;
+    _isSaving = true;
     final confirmed = await showAppDialog<bool>(
       context: context,
       title: 'Delete account',
@@ -273,7 +284,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         ),
       ],
     );
-    if (confirmed != true || !mounted) return;
+    if (confirmed != true || !mounted) { _isSaving = false; return; }
     try {
       final authService = await ref.read(authServiceProviderAsync.future);
       await authService.deleteMe();
@@ -285,6 +296,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to delete account: ${'Something went wrong.'}')),
       );
+    } finally {
+      _isSaving = false;
     }
   }
 
@@ -292,28 +305,20 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     return AppCard(
       child: Row(
         children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
-              child: Row(
-                children: [
-                  const SizedBox(
-                    width: MitlistSpacing.space12,
-                    height: MitlistSpacing.space12,
-                    child: CircularProgressIndicator(
-                      valueColor:
-                          AlwaysStoppedAnimation(MitlistColors.primary500),
-                    ),
-                  ),
-                  const SizedBox(width: MitlistSpacing.md),
-                  Expanded(
-                    child: Text(
-                      'Loading profile…',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                  ),
-                ],
-              ),
+          const AppSkeleton(
+            width: MitlistSpacing.space12,
+            height: MitlistSpacing.space12,
+            borderRadius: AppSkeletonRadius.sm,
+          ),
+          const SizedBox(width: MitlistSpacing.md),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppSkeleton(width: 200, height: 24),
+                SizedBox(height: MitlistSpacing.sm),
+                AppSkeleton(width: 160, height: 14),
+              ],
             ),
           ),
         ],
@@ -549,6 +554,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         children: [
           if (_error != null) ...[
             AppAlert(type: AppAlertType.error, message: _error!),
+            const SizedBox(height: MitlistSpacing.md),
+            AppButton(
+              text: 'Retry',
+              onPressed: _loadData,
+            ),
             const SizedBox(height: MitlistSpacing.md),
           ],
           if (_isLoading) ...[

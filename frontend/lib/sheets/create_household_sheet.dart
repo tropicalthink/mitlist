@@ -52,7 +52,7 @@ class _CreateHouseholdSheetState extends ConsumerState<CreateHouseholdSheet> {
       if (!mounted) return;
       setState(() => _isCreating = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to create household: $e')),
+        const SnackBar(content: Text('Couldn\u2019t create household.')),
       );
     }
   }
@@ -75,6 +75,7 @@ class _CreateHouseholdSheetState extends ConsumerState<CreateHouseholdSheet> {
           hint: 'e.g. Carter St',
           controller: _nameController,
           textInputAction: TextInputAction.next,
+          maxLength: 80,
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: MitlistSpacing.md),
@@ -83,6 +84,7 @@ class _CreateHouseholdSheetState extends ConsumerState<CreateHouseholdSheet> {
           hint: 'A few words about this household',
           controller: _descriptionController,
           textInputAction: TextInputAction.done,
+          maxLength: 300,
         ),
         const SizedBox(height: MitlistSpacing.lg),
         SizedBox(

@@ -38,6 +38,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   final List<_Chore> _chores = [];
   StreamSubscription<List<CurrentChore>>? _sub;
   bool _filterMe = true;
+  bool _isMutating = false;
   bool _hasHousehold = true;
   final Logger _logger = Logger();
 
@@ -212,15 +213,21 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         await _undoLastExecution(id);
       },
       onToggleSubtask: (subtaskId, completed) async {
+        if (_isMutating) return;
+        _isMutating = true;
         try {
           final service = await ref.read(choreServiceProviderAsync.future);
           await service.updateSubtask(subtaskId, completed: completed);
         } catch (e) {
           if (!mounted) return;
           _showChoreActionError('Failed to update subtask. Please try again.');
+        } finally {
+          _isMutating = false;
         }
       },
       onAddSubtask: (title) async {
+        if (_isMutating) return null;
+        _isMutating = true;
         try {
           final service = await ref.read(choreServiceProviderAsync.future);
           final created = await service.createSubtask(id, title);
@@ -229,15 +236,21 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
           if (!mounted) return null;
           _showChoreActionError('Failed to add subtask. Please try again.');
           return null;
+        } finally {
+          _isMutating = false;
         }
       },
       onDeleteSubtask: (subtaskId) async {
+        if (_isMutating) return;
+        _isMutating = true;
         try {
           final service = await ref.read(choreServiceProviderAsync.future);
           await service.deleteSubtask(subtaskId);
         } catch (e) {
           if (!mounted) return;
           _showChoreActionError('Failed to delete subtask. Please try again.');
+        } finally {
+          _isMutating = false;
         }
       },
       onAddSuppliesToList: () async {
@@ -264,10 +277,11 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   }
 
   Future<void> _toggleComplete(String id) async {
+    if (_isMutating) return;
+    _isMutating = true;
     try {
       final chore = _chores.firstWhere((c) => c.id == id);
       if (chore.completed) {
-        // Chore is already completed, can't un-complete through API
         return;
       }
       final repo = await ref.read(choreRepositoryProvider.future);
@@ -280,10 +294,14 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         title: 'Error',
         body: const Text('Failed to complete chore. Please try again.'),
       );
+    } finally {
+      _isMutating = false;
     }
   }
 
   Future<void> _skipChore(String id, {String? reason}) async {
+    if (_isMutating) return;
+    _isMutating = true;
     try {
       if (reason != null && reason.isNotEmpty) {
         final service = await ref.read(choreServiceProviderAsync.future);
@@ -296,10 +314,14 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     } catch (e) {
       if (!mounted) return;
       _showChoreActionError('Failed to skip chore. Please try again.');
+    } finally {
+      _isMutating = false;
     }
   }
 
   Future<void> _addSuppliesToList(String choreId) async {
+    if (_isMutating) return;
+    _isMutating = true;
     try {
       final listSvc = await ref.read(listServiceProviderAsync.future);
       final groupSvc = await ref.read(groupServiceProviderAsync.future);
@@ -325,7 +347,11 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
             itemBuilder: (_, idx) {
               final list = shoppingLists[idx];
               return ListTile(
-                title: Text(list.name),
+                title: Text(
+                  list.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 onTap: () => Navigator.of(context).pop(list.id),
               );
             },
@@ -342,10 +368,14 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     } catch (e) {
       if (!mounted) return;
       _showChoreActionError('Failed to add supplies. Please try again.');
+    } finally {
+      _isMutating = false;
     }
   }
 
   Future<void> _rescheduleTomorrow(String id) async {
+    if (_isMutating) return;
+    _isMutating = true;
     try {
       final tomorrow = DateTime.now().add(const Duration(days: 1));
       final repo = await ref.read(choreRepositoryProvider.future);
@@ -354,10 +384,14 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     } catch (e) {
       if (!mounted) return;
       _showChoreActionError('Failed to reschedule chore. Please try again.');
+    } finally {
+      _isMutating = false;
     }
   }
 
   Future<void> _undoLastExecution(String id) async {
+    if (_isMutating) return;
+    _isMutating = true;
     try {
       final repo = await ref.read(choreRepositoryProvider.future);
       await repo.undoOfflineFirst(id);
@@ -366,10 +400,14 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       if (!mounted) return;
       _showChoreActionError(
           'Failed to undo chore execution. Please try again.');
+    } finally {
+      _isMutating = false;
     }
   }
 
   Future<void> _confirmDeleteChore(String id) async {
+    if (_isMutating) return;
+    _isMutating = true;
     final confirmed = await showAppDialog<bool>(
       context: context,
       title: 'Delete chore',
@@ -388,7 +426,10 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         ),
       ],
     );
-    if (confirmed != true || !mounted) return;
+    if (confirmed != true || !mounted) {
+      _isMutating = false;
+      return;
+    }
     Navigator.of(context).pop();
     try {
       final service = await ref.read(choreServiceProviderAsync.future);
@@ -397,6 +438,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     } catch (e) {
       if (!mounted) return;
       _showChoreActionError('Failed to delete chore. Please try again.');
+    } finally {
+      _isMutating = false;
     }
   }
 

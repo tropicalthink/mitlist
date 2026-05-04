@@ -32,6 +32,7 @@ class MealPlanScreen extends ConsumerStatefulWidget {
 class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
   late DateTime _weekStart;
   bool _isLoading = true;
+  bool _isMutating = false;
   String? _error;
   final List<MealPlan> _plans = [];
   final Map<String, Recipe> _recipeCache = {};
@@ -127,12 +128,14 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
     _load();
   }
 
-  void _showRecipePicker(DateTime date, String slot) async {
+  Future<void> _showRecipePicker(DateTime date, String slot) async {
+    if (_isMutating) return;
+    _isMutating = true;
     final recipe = await _RecipePickerSheet.show(context);
-    if (recipe == null || !mounted) return;
+    if (recipe == null || !mounted) { _isMutating = false; return; }
 
     final servings = await _ServingsPickerSheet.show(context, defaultServings: recipe.servings);
-    if (servings == null || !mounted) return;
+    if (servings == null || !mounted) { _isMutating = false; return; }
 
     try {
       final svc = await ref.read(mealPlanServiceProviderAsync.future);
@@ -150,10 +153,14 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
           SnackBar(content: const Text('Couldn\u2019t add meal.')),
         );
       }
+    } finally {
+      _isMutating = false;
     }
   }
 
-  void _removePlan(String planId) async {
+  Future<void> _removePlan(String planId) async {
+    if (_isMutating) return;
+    _isMutating = true;
     try {
       final svc = await ref.read(mealPlanServiceProviderAsync.future);
       await svc.deleteMealPlan(planId);
@@ -164,20 +171,24 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
           SnackBar(content: const Text('Couldn\u2019t remove meal.')),
         );
       }
+    } finally {
+      _isMutating = false;
     }
   }
 
-  void _editPlan(String planId) async {
+  Future<void> _editPlan(String planId) async {
+    if (_isMutating) return;
+    _isMutating = true;
     final plan = _plans.firstWhere(
       (p) => p.id == planId,
       orElse: () => throw const NotFoundException('Meal plan not found'),
     );
 
     final recipe = await _RecipePickerSheet.show(context, selectedRecipeId: plan.recipeId);
-    if (recipe == null || !mounted) return;
+    if (recipe == null || !mounted) { _isMutating = false; return; }
 
     final servings = await _ServingsPickerSheet.show(context, defaultServings: recipe.servings);
-    if (servings == null || !mounted) return;
+    if (servings == null || !mounted) { _isMutating = false; return; }
 
     try {
       final svc = await ref.read(mealPlanServiceProviderAsync.future);
@@ -192,10 +203,14 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
           SnackBar(content: const Text('Couldn\u2019t update meal.')),
         );
       }
+    } finally {
+      _isMutating = false;
     }
   }
 
-  void _generateShoppingList() async {
+  Future<void> _generateShoppingList() async {
+    if (_isMutating) return;
+    _isMutating = true;
     try {
       final svc = await ref.read(mealPlanServiceProviderAsync.future);
       final from = _formatDate(_weekStart);
@@ -227,6 +242,8 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
           SnackBar(content: const Text('Something went wrong.')),
         );
       }
+    } finally {
+      _isMutating = false;
     }
   }
 

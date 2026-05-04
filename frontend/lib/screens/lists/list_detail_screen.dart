@@ -77,6 +77,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   List<Product> _productSuggestions = [];
   bool _showProductSuggestions = false;
   final Map<String, List<ListItemPhoto>> _photosByItemId = {};
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -196,11 +197,13 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Future<void> _addItemPhoto(ListItem item) async {
+    if (_isSaving) return;
+    _isSaving = true;
     final groupId = _groupId;
-    if (groupId == null) return;
+    if (groupId == null) { _isSaving = false; return; }
     final picker = ImagePicker();
     final file = await picker.pickImage(source: ImageSource.gallery);
-    if (file == null) return;
+    if (file == null) { _isSaving = false; return; }
 
     try {
       final bytes = await file.readAsBytes();
@@ -229,6 +232,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: const Text('Couldn\u2019t add photo.')),
       );
+    } finally {
+      _isSaving = false;
     }
   }
 
@@ -243,7 +248,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
               child: InteractiveViewer(
                 minScale: 0.5,
                 maxScale: 4,
-                child: Image.network(url, fit: BoxFit.contain),
+                child: Image.network(url, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const Center(
+                    child: Icon(Icons.broken_image, color: Colors.white, size: 48),
+                  )),
               ),
             ),
             SafeArea(
@@ -263,10 +270,12 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Future<void> _removeItemPhoto(ListItem item) async {
+    if (_isSaving) return;
+    _isSaving = true;
     final groupId = _groupId;
-    if (groupId == null) return;
+    if (groupId == null) { _isSaving = false; return; }
     final photos = _photosByItemId[item.id];
-    if (photos == null || photos.isEmpty) return;
+    if (photos == null || photos.isEmpty) { _isSaving = false; return; }
     final attachmentId = photos.first.attachmentId;
 
     try {
@@ -297,6 +306,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: const Text('Couldn\u2019t remove photo.')),
       );
+    } finally {
+      _isSaving = false;
     }
   }
 
@@ -323,9 +334,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     }
   }
 
-  void _completeAll() async {
+  Future<void> _completeAll() async {
+    if (_isSaving) return;
+    _isSaving = true;
     final service = _service;
-    if (service == null) return;
+    if (service == null) { _isSaving = false; return; }
 
     for (final item in _items.where((i) => !i.checked)) {
       try {
@@ -344,6 +357,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       }
     }
     _checkCompletionBanner();
+    _isSaving = false;
   }
 
   void _checkCompletionBanner() {
@@ -366,11 +380,13 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Future<void> _addItem() async {
+    if (_isSaving) return;
+    _isSaving = true;
     final text = _newItemController.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty) { _isSaving = false; return; }
 
     final service = _service;
-    if (service == null) return;
+    if (service == null) { _isSaving = false; return; }
 
     try {
       final repo = await ref.read(listRepositoryProvider.future);
@@ -403,6 +419,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: const Text('Couldn\u2019t add item. Please try again.')),
       );
+    } finally {
+      _isSaving = false;
     }
   }
 
@@ -427,8 +445,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Future<void> _clearItems({required bool onlyChecked}) async {
+    if (_isSaving) return;
+    _isSaving = true;
     final service = _service;
-    if (service == null) return;
+    if (service == null) { _isSaving = false; return; }
     try {
       await service.clearItems(widget.listId, onlyChecked: onlyChecked);
       final repo = await ref.read(listRepositoryProvider.future);
@@ -441,12 +461,16 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: const Text('Couldn\u2019t clear items. Please try again.')),
       );
+    } finally {
+      _isSaving = false;
     }
   }
 
   Future<void> _deleteItem(ListItem item) async {
+    if (_isSaving) return;
+    _isSaving = true;
     final service = _service;
-    if (service == null) return;
+    if (service == null) { _isSaving = false; return; }
 
     try {
       final repo = await ref.read(listRepositoryProvider.future);
@@ -462,10 +486,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to delete item')),
       );
+      _isSaving = false;
       return;
     }
 
-    if (!mounted) return;
+    if (!mounted) { _isSaving = false; return; }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: Colors.transparent,
@@ -532,9 +557,12 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         ),
       ),
     );
+    _isSaving = false;
   }
 
   Future<void> _setItemPrice(ListItem item) async {
+    if (_isSaving) return;
+    _isSaving = true;
     final controller = TextEditingController(
       text: item.priceCents != null
           ? (item.priceCents! / 100).toStringAsFixed(2)
@@ -569,9 +597,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       ),
     );
     controller.dispose();
-    if (priceStr == null || priceStr.isEmpty) return;
+    if (priceStr == null || priceStr.isEmpty) { _isSaving = false; return; }
     final price = double.tryParse(priceStr.replaceAll(',', '.'));
-    if (price == null || price < 0) return;
+    if (price == null || price < 0) { _isSaving = false; return; }
     final cents = (price * 100).round();
 
     try {
@@ -588,6 +616,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: const Text('Couldn\u2019t set price.')),
       );
+    } finally {
+      _isSaving = false;
     }
   }
 
@@ -614,8 +644,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     }
   }
 
-  void _archiveList() async {
-    if (_service == null) return;
+  Future<void> _archiveList() async {
+    if (_isSaving) return;
+    _isSaving = true;
+    if (_service == null) { _isSaving = false; return; }
     try {
       await _service!.archiveList(widget.listId);
       if (!mounted) return;
@@ -625,10 +657,14 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to archive list.')),
       );
+    } finally {
+      _isSaving = false;
     }
   }
 
   Future<void> _deleteList() async {
+    if (_isSaving) return;
+    _isSaving = true;
     final confirmed = await showAppDialog<bool>(
       context: context,
       title: 'Delete list',
@@ -647,8 +683,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         ),
       ],
     );
-    if (confirmed != true || !mounted) return;
-    if (_service == null) return;
+    if (confirmed != true || !mounted) { _isSaving = false; return; }
+    if (_service == null) { _isSaving = false; return; }
     try {
       await _service!.deleteList(widget.listId);
       if (!mounted) return;
@@ -658,6 +694,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Couldn\u2019t delete list.')),
       );
+    } finally {
+      _isSaving = false;
     }
   }
 
@@ -678,6 +716,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         itemCount: pricedItems,
         onGenerateExpense: totalCents > 0
             ? () async {
+                if (_isSaving) return;
+                _isSaving = true;
                 try {
                   await _service!.generateExpense(widget.listId);
                   if (mounted) {
@@ -691,6 +731,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                       const SnackBar(content: Text('Something went wrong.')),
                     );
                   }
+                } finally {
+                  _isSaving = false;
                 }
               }
             : null,
@@ -1018,7 +1060,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     child: SizedBox(
                       width: 28,
                       height: 28,
-                      child: Image.network(thumbUrl, fit: BoxFit.cover),
+                      child: Image.network(thumbUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported_outlined, size: 16)),
                     ),
                   ),
                 ),
@@ -1035,6 +1077,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
               Expanded(
                 child: Text(
                   item.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: textTheme.bodyLarge?.copyWith(
                     decoration:
                         item.checked ? TextDecoration.lineThrough : null,

@@ -227,7 +227,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       if (!mounted) return;
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to add expense: $e')),
+        const SnackBar(content: Text('Couldn\u2019t add expense.')),
       );
     }
   }
@@ -300,6 +300,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
           hint: 'e.g. Dinner at Luigi\'s',
           controller: _descriptionController,
           textInputAction: TextInputAction.next,
+          maxLength: 200,
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: MitlistSpacing.md),
