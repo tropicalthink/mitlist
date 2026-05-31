@@ -74,7 +74,7 @@ class MitlistTheme {
         selectedLabelStyle: textTheme.labelSmall,
         unselectedLabelStyle: textTheme.labelSmall,
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: MitlistColors.surfacePrimary,
         elevation: 0,
         shape: const RoundedRectangleBorder(
@@ -154,7 +154,7 @@ class MitlistTheme {
           fontWeight: FontWeight.w700,
         ),
       ),
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: MitlistColors.surfacePrimary,
         elevation: 0,
         shape: const RoundedRectangleBorder(
@@ -281,7 +281,7 @@ class MitlistTheme {
         selectedLabelStyle: textTheme.labelSmall,
         unselectedLabelStyle: textTheme.labelSmall,
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: MitlistColors.neutral900,
         elevation: 0,
         shape: const RoundedRectangleBorder(
@@ -354,7 +354,7 @@ class MitlistTheme {
           fontWeight: FontWeight.w700,
         ),
       ),
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: MitlistColors.neutral900,
         elevation: 0,
         shape: const RoundedRectangleBorder(

@@ -1,7 +1,7 @@
-# PWA-first production deploy: build and push only the Flutter web image.
+# Production deploy: build and push Flutter web + Go API images.
 # Merge a PR into `prod` to run. Requires secrets: ME_USERNAME, ME_PASSWORD.
 # Optional: PRODUCTION_API_BASE_URL (baked into the web build via dart-define).
-name: Deploy PWA to production (Gitea registry)
+name: Deploy to production (Gitea registry)
 
 on:
   pull_request:
@@ -67,6 +67,24 @@ jobs:
 
           echo "PWA image built successfully"
 
+      - name: Build backend image (Go API)
+        run: |
+          ACTOR="${{ steps.vars.outputs.actor }}"
+          REPO_NAME="${{ steps.vars.outputs.repo_name }}"
+          VERSION="${{ steps.version.outputs.version }}"
+
+          echo "Building backend image: git.vinylnostalgia.com/$ACTOR/$REPO_NAME-backend:$VERSION"
+
+          DOCKER_BUILDKIT=1 docker build \
+            --compress \
+            --no-cache \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            -t "git.vinylnostalgia.com/$ACTOR/$REPO_NAME-backend:latest" \
+            -t "git.vinylnostalgia.com/$ACTOR/$REPO_NAME-backend:$VERSION" \
+            ./backend -f ./backend/Dockerfile.prod
+
+          echo "Backend image built successfully"
+
       - name: Push PWA image with retry logic
         run: |
           ACTOR="${{ steps.vars.outputs.actor }}"
@@ -94,6 +112,36 @@ jobs:
           done
           if [ $retry_count -eq $max_retries ]; then
             echo "Failed to push PWA images after $max_retries attempts"
+            exit 1
+          fi
+
+      - name: Push backend image with retry logic
+        run: |
+          ACTOR="${{ steps.vars.outputs.actor }}"
+          REPO_NAME="${{ steps.vars.outputs.repo_name }}"
+          VERSION="${{ steps.version.outputs.version }}"
+
+          IMAGE_LATEST="git.vinylnostalgia.com/$ACTOR/$REPO_NAME-backend:latest"
+          IMAGE_VERSIONED="git.vinylnostalgia.com/$ACTOR/$REPO_NAME-backend:$VERSION"
+
+          max_retries=5
+          retry_count=0
+          base_wait=10
+          while [ $retry_count -lt $max_retries ]; do
+            echo "Pushing backend images (attempt $((retry_count + 1)) of $max_retries)..."
+            if docker push "$IMAGE_LATEST" && docker push "$IMAGE_VERSIONED"; then
+              echo "Backend images pushed successfully"
+              break
+            fi
+            retry_count=$((retry_count + 1))
+            if [ $retry_count -lt $max_retries ]; then
+              wait_time=$((base_wait * retry_count))
+              echo "Push failed, retrying in $wait_time seconds..."
+              sleep $wait_time
+            fi
+          done
+          if [ $retry_count -eq $max_retries ]; then
+            echo "Failed to push backend images after $max_retries attempts"
             exit 1
           fi
 
