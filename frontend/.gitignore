@@ -33,6 +33,11 @@ migrate_working_dir/
 .pub/
 /build/
 
+
+web/drift_worker.dart.js
+web/drift_worker.dart.js.deps
+web/drift_worker.dart.js.map
+
 # Symbolication related
 app.*.symbols
 

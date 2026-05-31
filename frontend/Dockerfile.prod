@@ -6,8 +6,10 @@ COPY pubspec.yaml pubspec.lock ./
 RUN flutter pub get
 COPY . .
 ARG API_BASE_URL=
+# Flutter does not compile web/drift_worker.dart — compile it for Drift WASM.
+RUN dart compile js -O4 web/drift_worker.dart -o web/drift_worker.dart.js
 RUN flutter build web --release \
-    --pwa-strategy offline-first \
+    --pwa-strategy none \
     --dart-define=API_BASE_URL=${API_BASE_URL}
 
 FROM nginx:1.29-alpine
