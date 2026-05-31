@@ -1,0 +1,123 @@
+# Local dev:  docker compose up
+# Production: docker compose --profile prod up -d
+#
+# Prod images are built by .gitea/workflows/deploy-prod.yml and pushed as:
+#   ${MITLIST_IMAGE}-frontend:${MITLIST_TAG}
+#   ${MITLIST_IMAGE}-backend:${MITLIST_TAG}
+#
+# Set MITLIST_IMAGE in .env (e.g. git.vinylnostalgia.com/you/mitlist).
+# Bake PRODUCTION_API_BASE_URL into the frontend image at build time so the PWA
+# can reach the API (see frontend/Dockerfile.prod).
+
+services:
+  api:
+    profiles: [dev]
+    build:
+      context: ./backend
+      dockerfile_inline: |
+        FROM golang:1.25
+        RUN go install github.com/air-verse/air@latest
+        WORKDIR /app
+        CMD ["air", "-c", ".air.toml"]
+    container_name: mitlist-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - go-mod-cache:/go/pkg/mod
+    environment:
+      DATABASE_URL: postgres://mitlist:mitlist@db:5432/mitlist?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      REDIS_PASSWORD: ""
+      SECRET_KEY: dev-only-insecure-key-do-not-use-in-prod
+      SESSION_SECRET_KEY: dev-only-insecure-key-do-not-use-in-prod
+      ENVIRONMENT: development
+      FRONTEND_URL: http://localhost:5173
+      API_PREFIX: /api
+      ACCESS_TOKEN_EXPIRE_MINUTES: "60"
+      RUN_MIGRATIONS_ON_STARTUP: "true"
+      WARM_CACHE_ON_STARTUP: "false"
+      LOG_LEVEL: DEBUG
+    env_file:
+      - path: .env
+        required: false
+      - path: backend/.env
+        required: false
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  backend:
+    profiles: [prod]
+    image: ${MITLIST_IMAGE:-git.vinylnostalgia.com/mitlist/mitlist}-backend:${MITLIST_TAG:-latest}
+    container_name: mitlist-backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgres://mitlist:mitlist@db:5432/mitlist?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      REDIS_PASSWORD: ""
+      ENVIRONMENT: production
+      RUN_MIGRATIONS_ON_STARTUP: "true"
+      WARM_CACHE_ON_STARTUP: "false"
+      LOG_LEVEL: WARNING
+    env_file:
+      - path: .env
+        required: false
+      - path: backend/.env
+        required: false
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    profiles: [prod]
+    image: ${MITLIST_IMAGE:-git.vinylnostalgia.com/mitlist/mitlist}-frontend:${MITLIST_TAG:-latest}
+    container_name: mitlist-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    container_name: mitlist-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: mitlist
+      POSTGRES_PASSWORD: mitlist
+      POSTGRES_DB: mitlist
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mitlist -d mitlist"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: mitlist-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  redis-data:
+  go-mod-cache:
