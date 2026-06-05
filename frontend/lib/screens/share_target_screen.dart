@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../providers/attachment_provider.dart';
@@ -260,12 +259,12 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
                 ],
               ),
             ],
-            const SizedBox(height: MitlistSpacing.md),
+            SizedBox(height: MitlistSpacing.md),
             if (_error != null) ...[
               Text(
                 _error!,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: MitlistColors.error500,
+                      color: Theme.of(context).colorScheme.error,
                     ),
               ),
               const SizedBox(height: MitlistSpacing.md),
@@ -322,7 +321,7 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
                     child: Row(
                       children: [
                         AppIcon(name: option.icon),
-                        const SizedBox(width: MitlistSpacing.sm),
+                        SizedBox(width: MitlistSpacing.sm),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -339,9 +338,9 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
                           ),
                         ),
                         if (isSelected)
-                          const AppIcon(
+                          AppIcon(
                             name: 'check',
-                            color: MitlistColors.primary500,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                       ],
                     ),

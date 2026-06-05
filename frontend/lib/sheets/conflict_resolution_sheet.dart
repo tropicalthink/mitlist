@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/list_provider.dart';
 import '../storage/app_database.dart';
-import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
@@ -77,7 +76,7 @@ class _ConflictResolutionSheetState
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Text('Server version accepted. Changes will sync.'),
       ),
     );
@@ -86,7 +85,7 @@ class _ConflictResolutionSheetState
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Padding(
+      return Padding(
         padding: EdgeInsets.all(MitlistSpacing.lg),
         child: Center(child: CircularProgressIndicator()),
       );
@@ -95,19 +94,19 @@ class _ConflictResolutionSheetState
     final conflicts = _conflicts ?? [];
 
     if (conflicts.isEmpty) {
-      return const Padding(
+      return Padding(
         padding: EdgeInsets.all(MitlistSpacing.lg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.check_circle, size: 48, color: MitlistColors.success500),
+            Icon(Icons.check_circle, size: 48, color: Theme.of(context).colorScheme.tertiary),
             SizedBox(height: MitlistSpacing.md),
             Text(
               'All conflicts resolved',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: MitlistColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ],
@@ -124,10 +123,10 @@ class _ConflictResolutionSheetState
               ? '1 item has conflicting changes'
               : '${conflicts.length} items have conflicting changes',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: MitlistColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
         ),
-        const SizedBox(height: MitlistSpacing.md),
+        SizedBox(height: MitlistSpacing.md),
         ...conflicts.map((conflict) => _ConflictCard(
               conflict: conflict,
               isResolving: _resolving.contains(conflict.id),
@@ -176,14 +175,14 @@ class _ConflictCard extends StatelessWidget {
             Row(
               children: [
                 Icon(Icons.warning_amber_rounded,
-                    size: 16, color: MitlistColors.warning500),
-                const SizedBox(width: MitlistSpacing.sm),
+                    size: 16, color: Theme.of(context).colorScheme.secondary),
+                SizedBox(width: MitlistSpacing.sm),
                 Expanded(
                   child: Text(
                     _entityLabel(conflict.entityType),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                     ),
@@ -191,7 +190,7 @@ class _ConflictCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: MitlistSpacing.sm),
+            SizedBox(height: MitlistSpacing.sm),
             ...keys.map((key) {
               final localVal = _formatValue(local[key]);
               final serverVal = _formatValue(server[key]);
@@ -209,12 +208,12 @@ class _ConflictCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 11,
-                          color: MitlistColors.textTertiary,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontFamily: 'JetBrains Mono',
                         ),
                       ),
                     ),
-                    const SizedBox(width: MitlistSpacing.sm),
+                    SizedBox(width: MitlistSpacing.sm),
                     Expanded(
                       child: Text(
                         localVal,
@@ -225,8 +224,8 @@ class _ConflictCard extends StatelessWidget {
                           fontWeight:
                               changed ? FontWeight.w600 : FontWeight.normal,
                           color: changed
-                              ? MitlistColors.primary500
-                              : MitlistColors.textPrimary,
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.onSurface,
                           fontFamily: 'JetBrains Mono',
                           decoration: changed
                               ? TextDecoration.underline
@@ -234,10 +233,10 @@ class _ConflictCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(width: MitlistSpacing.xs),
+                    SizedBox(width: MitlistSpacing.xs),
                     Icon(Icons.arrow_forward,
-                        size: 12, color: MitlistColors.neutral400),
-                    const SizedBox(width: MitlistSpacing.xs),
+                        size: 12, color: Theme.of(context).colorScheme.outline),
+                    SizedBox(width: MitlistSpacing.xs),
                     Expanded(
                       child: Text(
                         serverVal,
@@ -248,8 +247,8 @@ class _ConflictCard extends StatelessWidget {
                           fontWeight:
                               changed ? FontWeight.w600 : FontWeight.normal,
                           color: changed
-                              ? MitlistColors.success500
-                              : MitlistColors.textPrimary,
+                              ? Theme.of(context).colorScheme.tertiary
+                              : Theme.of(context).colorScheme.onSurface,
                           fontFamily: 'JetBrains Mono',
                         ),
                       ),

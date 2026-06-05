@@ -10,7 +10,7 @@ class HubSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomScrollView(
-      physics: const NeverScrollableScrollPhysics(),
+      physics: NeverScrollableScrollPhysics(),
       slivers: [
         SliverAppBar(
           pinned: true,

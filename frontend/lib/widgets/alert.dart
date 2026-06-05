@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../theme/animations.dart';
-import '../theme/colors.dart';
 import '../theme/shadows.dart';
 import '../theme/spacing.dart';
 import '../theme/theme.dart';
@@ -54,31 +53,32 @@ class _AppAlertState extends State<AppAlert>
     super.dispose();
   }
 
-  ({Color bg, Color text, Color iconColor}) _resolveColors() {
+  ({Color bg, Color text, Color iconColor}) _resolveColors(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     switch (widget.type) {
       case AppAlertType.info:
         return (
-          bg: MitlistColors.primary50,
-          text: MitlistColors.primary900,
-          iconColor: MitlistColors.primary500,
+          bg: colorScheme.primaryContainer,
+          text: colorScheme.primary,
+          iconColor: colorScheme.primary,
         );
       case AppAlertType.success:
         return (
-          bg: MitlistColors.success50,
-          text: MitlistColors.success900,
-          iconColor: MitlistColors.success500,
+          bg: colorScheme.tertiaryContainer,
+          text: colorScheme.tertiary,
+          iconColor: colorScheme.tertiary,
         );
       case AppAlertType.warning:
         return (
-          bg: MitlistColors.warning50,
-          text: MitlistColors.warning900,
-          iconColor: MitlistColors.warning500,
+          bg: colorScheme.secondaryContainer,
+          text: colorScheme.secondary,
+          iconColor: colorScheme.secondary,
         );
       case AppAlertType.error:
         return (
-          bg: MitlistColors.error50,
-          text: MitlistColors.error900,
-          iconColor: MitlistColors.error500,
+          bg: colorScheme.errorContainer,
+          text: colorScheme.error,
+          iconColor: colorScheme.error,
         );
     }
   }
@@ -98,15 +98,16 @@ class _AppAlertState extends State<AppAlert>
 
   @override
   Widget build(BuildContext context) {
-    final colors = _resolveColors();
+    final colors = _resolveColors(context);
+    final colorScheme = Theme.of(context).colorScheme;
     final disableAnimations = MediaQuery.of(context).disableAnimations;
 
     final alert = Container(
       padding: const EdgeInsets.all(MitlistSpacing.md),
       decoration: BoxDecoration(
         color: colors.bg,
-        border: const Border.fromBorderSide(
-          BorderSide(color: MitlistColors.borderPrimary, width: 2),
+        border: Border.fromBorderSide(
+          BorderSide(color: colorScheme.outline, width: 2),
         ),
         borderRadius: const BorderRadius.all(
           Radius.circular(MitlistTheme.radiusMd),

@@ -14,7 +14,6 @@ import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../sheets/chore_creation_sheet.dart';
 import '../../sheets/chore_detail_sheet.dart';
-import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/active_group_context.dart';
@@ -480,7 +479,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final tomorrow = today.add(const Duration(days: 1));
-    final weekLater = today.add(const Duration(days: 7));
+    final weekLater = today.add(Duration(days: 7));
 
     final result = <String, List<_Chore>>{
       'Overdue': [],
@@ -512,7 +511,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   ({int overdue, int today, int done}) _computeStats(List<_Chore> chores) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final tomorrow = today.add(const Duration(days: 1));
+    final tomorrow = today.add(Duration(days: 1));
 
     var overdue = 0;
     var tod = 0;
@@ -559,10 +558,10 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         tooltip: _hasHousehold ? 'Add chore' : 'Households',
       ),
       body: RefreshIndicator(
-        color: MitlistColors.primary500,
+        color: Theme.of(context).colorScheme.primary,
         onRefresh: _onRefresh,
         child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
+          physics: AlwaysScrollableScrollPhysics(),
           slivers: [
             SliverPersistentHeader(
               pinned: true,
@@ -577,7 +576,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                         variant: AppCardVariant.outlined,
                         padding: AppCardPadding.md,
                         child: _isLoading
-                            ? const Row(
+                            ? Row(
                                 children: [
                                   Expanded(child: _StatSkeleton()),
                                   Expanded(child: _StatSkeleton()),
@@ -590,21 +589,21 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                                     child: _StatBlock(
                                       count: stats.overdue,
                                       label: 'Overdue',
-                                      labelColor: MitlistColors.error500,
+                                      labelColor: Theme.of(context).colorScheme.error,
                                     ),
                                   ),
                                   Expanded(
                                     child: _StatBlock(
                                       count: stats.today,
                                       label: 'Today',
-                                      labelColor: MitlistColors.warning500,
+                                      labelColor: Theme.of(context).colorScheme.secondary,
                                     ),
                                   ),
                                   Expanded(
                                     child: _StatBlock(
                                       count: stats.done,
                                       label: 'Done',
-                                      labelColor: MitlistColors.success500,
+                                      labelColor: Theme.of(context).colorScheme.tertiary,
                                     ),
                                   ),
                                 ],
@@ -619,7 +618,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                                   height: MitlistSpacing.space8,
                                   borderRadius: AppSkeletonRadius.sm,
                                 ),
-                                const SizedBox(width: MitlistSpacing.sm),
+                                SizedBox(width: MitlistSpacing.sm),
                                 AppSkeleton(
                                   width: MitlistSpacing.space14,
                                   height: MitlistSpacing.space8,
@@ -637,7 +636,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                                     SharedPreferences.getInstance().then((p) => p.setBool('chores_filter_me', true));
                                   },
                                 ),
-                                const SizedBox(width: MitlistSpacing.sm),
+                                SizedBox(width: MitlistSpacing.sm),
                                 AppChip(
                                   label: 'Everyone',
                                   selected: !_filterMe,
@@ -661,7 +660,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
-                      return const Padding(
+                      return Padding(
                         padding: EdgeInsets.only(bottom: MitlistSpacing.sm),
                         child: _ChoreSkeletonItem(),
                       );
@@ -680,7 +679,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                         type: AppAlertType.error,
                         message: _error!,
                       ),
-                      const SizedBox(height: MitlistSpacing.md),
+                      SizedBox(height: MitlistSpacing.md),
                       AppButton(
                         text: 'Retry',
                         onPressed: () => _loadChores(),
@@ -697,10 +696,10 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                     padding: const EdgeInsets.all(MitlistSpacing.md),
                     child: AppEmptyState(
                       lottieAsset: 'assets/animations/lottie/House.lottie',
-                      icon: const AppIcon(
+                      icon: AppIcon(
                         name: 'userGroup',
                         size: 56,
-                        color: MitlistColors.textTertiary,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       title: 'No household yet',
                       description:
@@ -723,19 +722,19 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                     padding: const EdgeInsets.all(MitlistSpacing.md),
                     child: AppEmptyState(
                       lottieAsset: 'assets/animations/lottie/Chores.lottie',
-                      icon: const AppIcon(
+                      icon: AppIcon(
                         name: 'clipboardDocumentList',
                         size: 56,
-                        color: MitlistColors.textTertiary,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       title: 'No chores yet',
                       actions: [
                         AppButton(
                           text: 'Add a chore',
-                          icon: const AppIcon(
+                          icon: AppIcon(
                             name: 'plus',
                             size: 16,
-                            color: MitlistColors.textOnPrimary,
+                            color: Theme.of(context).colorScheme.onPrimary,
                           ),
                           onPressed: _addChore,
                         ),
@@ -757,7 +756,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                     delegate: _StickyHeaderDelegate(
                       height: _sectionHeaderHeight,
                       child: Container(
-                        color: MitlistColors.surfaceSoft,
+                        color: Theme.of(context).colorScheme.surfaceContainerLow,
                         padding: const EdgeInsets.symmetric(
                           horizontal: MitlistSpacing.md,
                           vertical: MitlistSpacing.sm,
@@ -767,7 +766,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                           section.toUpperCase(),
                           style:
                               Theme.of(context).textTheme.labelMedium?.copyWith(
-                                    color: MitlistColors.textSecondary,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   ),
                         ),
                       ),
@@ -885,7 +884,7 @@ class _StatBlock extends StatelessWidget {
             style: Theme.of(context).textTheme.displaySmall,
           ),
         ),
-        const SizedBox(height: MitlistSpacing.space1),
+        SizedBox(height: MitlistSpacing.space1),
         Text(
           label.toUpperCase(),
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
@@ -905,11 +904,11 @@ class _StatSkeleton extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const AppSkeleton(
+        AppSkeleton(
           width: MitlistSpacing.space8,
           height: MitlistSpacing.space8,
         ),
-        const SizedBox(height: MitlistSpacing.space1),
+        SizedBox(height: MitlistSpacing.space1),
         AppSkeleton(
           width: MitlistSpacing.space10,
           height: MitlistSpacing.space3,
@@ -967,7 +966,7 @@ class _ChoreItem extends StatelessWidget {
                       Text(
                         chore.lastActionLabel!,
                         style: MitlistTypography.labelXSmall(
-                          color: MitlistColors.textTertiary,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -979,12 +978,12 @@ class _ChoreItem extends StatelessWidget {
                           children: [
                             Icon(Icons.inventory_2_outlined,
                                 size: 12,
-                                color: MitlistColors.primary500),
-                            const SizedBox(width: MitlistSpacing.space1),
+                                color: Theme.of(context).colorScheme.primary),
+                            SizedBox(width: MitlistSpacing.space1),
                             Text(
                               '${chore.supplies.length} supply${chore.supplies.length == 1 ? '' : 'ies'}',
                               style: MitlistTypography.labelXSmall(
-                                color: MitlistColors.primary500,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                             ),
                           ],
@@ -995,7 +994,7 @@ class _ChoreItem extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: MitlistSpacing.sm),
+          SizedBox(width: MitlistSpacing.sm),
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [

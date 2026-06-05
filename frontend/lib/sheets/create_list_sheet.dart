@@ -10,7 +10,6 @@ import '../providers/group_provider.dart';
 import '../providers/list_provider.dart';
 import '../providers/scan_provider.dart';
 import '../router.dart' show currentGroupIdProvider;
-import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../utils/active_group_context.dart';
@@ -185,12 +184,12 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
           color: AppButtonColor.neutral,
           onPressed: _isScanning ? null : _onScan,
         ),
-        const SizedBox(height: MitlistSpacing.md),
+        SizedBox(height: MitlistSpacing.md),
         if (_errorText != null) ...[
           Text(
             _errorText!,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: MitlistColors.error500,
+                  color: Theme.of(context).colorScheme.error,
                 ),
           ),
           const SizedBox(height: MitlistSpacing.md),
@@ -204,11 +203,11 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
           maxLength: 100,
           onChanged: (_) => setState(() {}),
         ),
-        const SizedBox(height: MitlistSpacing.md),
+        SizedBox(height: MitlistSpacing.md),
         Text(
           'Type'.toUpperCase(),
           style:
-              MitlistTypography.labelXSmall(color: MitlistColors.textSecondary),
+              MitlistTypography.labelXSmall(color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: MitlistSpacing.sm),
         Wrap(
@@ -238,11 +237,11 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
             ),
           ],
         ),
-        const SizedBox(height: MitlistSpacing.md),
+        SizedBox(height: MitlistSpacing.md),
         Text(
           'Household'.toUpperCase(),
           style:
-              MitlistTypography.labelXSmall(color: MitlistColors.textSecondary),
+              MitlistTypography.labelXSmall(color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: MitlistSpacing.sm),
         if (_isLoadingGroups)

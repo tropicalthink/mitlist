@@ -6,7 +6,6 @@ import '../../providers/chore_provider.dart';
 import '../../providers/finance_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../providers/pinwall_provider.dart';
-import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../app_card.dart';
 import '../skeleton.dart';
@@ -27,14 +26,14 @@ class StatsGrid extends ConsumerWidget {
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final tomorrow = today.add(const Duration(days: 1));
+    final tomorrow = today.add(Duration(days: 1));
 
     final choresDue = chores.valueOrNull
             ?.where((c) {
               final due = c.pendingAssignment?.dueDate;
               return due != null &&
                   due.isBefore(tomorrow) &&
-                  due.isAfter(today.subtract(const Duration(days: 1))) &&
+                  due.isAfter(today.subtract(Duration(days: 1))) &&
                   c.pendingAssignment?.status != 'completed';
             })
             .length ??
@@ -79,14 +78,14 @@ class StatsGrid extends ConsumerWidget {
                 ? '$choresOverdue overdue'
                 : (choresDue > 0 ? 'due today' : 'all done'),
             color: choresOverdue > 0
-                ? MitlistColors.error500
+                ? Theme.of(context).colorScheme.error
                 : (choresDue > 0
-                    ? MitlistColors.warning500
-                    : MitlistColors.success500),
+                    ? Theme.of(context).colorScheme.secondary
+                    : Theme.of(context).colorScheme.tertiary),
             onTap: () => context.pushNamed('chores'),
           ),
         ),
-        const SizedBox(width: MitlistSpacing.sm),
+        SizedBox(width: MitlistSpacing.sm),
         Expanded(
           child: _StatCard(
             icon: Icons.receipt_outlined,
@@ -98,14 +97,14 @@ class StatsGrid extends ConsumerWidget {
                     : '\$${_fmt(balance)}'),
             subtitle: balance != 0 ? 'open' : 'settled',
             color: balance > 0
-                ? MitlistColors.success500
+                ? Theme.of(context).colorScheme.tertiary
                 : (balance < 0
-                    ? MitlistColors.error500
-                    : MitlistColors.neutral500),
+                    ? Theme.of(context).colorScheme.error
+                    : Theme.of(context).colorScheme.onSurfaceVariant),
             onTap: () => context.pushNamed('money'),
           ),
         ),
-        const SizedBox(width: MitlistSpacing.sm),
+        SizedBox(width: MitlistSpacing.sm),
         Expanded(
           child: _StatCard(
             icon: Icons.shopping_cart_outlined,
@@ -115,13 +114,13 @@ class StatsGrid extends ConsumerWidget {
                 ? 'active list'
                 : 'active lists',
             color: listCount > 0
-                ? MitlistColors.primary500
-                : MitlistColors.success500,
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.tertiary,
             onTap: () => context.pushNamed('lists'),
           ),
         ),
         if (pinnedWithReminders > 0) ...[
-          const SizedBox(width: MitlistSpacing.sm),
+          SizedBox(width: MitlistSpacing.sm),
           Expanded(
             child: _StatCard(
               icon: Icons.alarm_outlined,
@@ -130,7 +129,7 @@ class StatsGrid extends ConsumerWidget {
               subtitle: pinnedWithReminders == 1
                   ? 'pinwall reminder'
                   : 'pinwall reminders',
-              color: MitlistColors.primary500,
+              color: Theme.of(context).colorScheme.primary,
               onTap: () {
                 final scroll = PrimaryScrollController.maybeOf(context);
                 if (scroll != null) {

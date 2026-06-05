@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../models/notification_models.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/notification_provider.dart';
-import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
@@ -145,7 +144,7 @@ class _NotificationPreferencesScreenState
                       .textTheme
                       .titleMedium
                       ?.copyWith(
-                        color: MitlistColors.primary500,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                 ),
               ),
@@ -302,7 +301,7 @@ class _NotificationPreferencesScreenState
                   else if (_preferences.isNotEmpty)
                     ..._preferences.map(_buildPreferenceCard)
                   else
-                    const AppEmptyState(
+                    AppEmptyState(
                       lottieAsset: 'assets/animations/lottie/Notifications.lottie',
                       icon: Icon(Icons.tune, size: 56),
                       title: 'No preferences yet',
@@ -343,9 +342,9 @@ class _ToggleRow extends StatelessWidget {
           AppIcon(
             name: icon,
             size: MitlistSpacing.space5,
-            color: MitlistColors.textSecondary,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
-          const SizedBox(width: MitlistSpacing.sm),
+          SizedBox(width: MitlistSpacing.sm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -362,7 +361,7 @@ class _ToggleRow extends StatelessWidget {
             ),
           ),
           if (saving)
-            const Padding(
+            Padding(
               padding: EdgeInsets.all(MitlistSpacing.sm),
               child: SizedBox(
                 width: MitlistSpacing.space4,
@@ -370,7 +369,7 @@ class _ToggleRow extends StatelessWidget {
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation(
-                      MitlistColors.primary500),
+                      Theme.of(context).colorScheme.primary),
                 ),
               ),
             )

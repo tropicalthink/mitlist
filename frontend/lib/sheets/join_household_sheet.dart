@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/group_models.dart';
 import '../providers/group_provider.dart';
-import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../widgets/alert.dart';
@@ -90,11 +89,11 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet> {
           onChanged: (_) => setState(() {}),
           keyboardType: TextInputType.text,
         ),
-        const SizedBox(height: MitlistSpacing.sm),
+        SizedBox(height: MitlistSpacing.sm),
         Text(
           'Tip: codes are short words + numbers. Uppercase works best.',
           style:
-              MitlistTypography.labelXSmall(color: MitlistColors.textTertiary),
+              MitlistTypography.labelXSmall(color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: MitlistSpacing.lg),
         SizedBox(

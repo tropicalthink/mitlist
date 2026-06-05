@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../widgets/app_bottom_sheet.dart';
@@ -116,19 +115,19 @@ class RecipeDetailSheet extends StatelessWidget {
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         if (author.isNotEmpty) ...[
-          const SizedBox(height: MitlistSpacing.xs),
+          SizedBox(height: MitlistSpacing.xs),
           Text(
             'By $author',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: MitlistColors.neutral500,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
         ],
         if (ratingValue > 0) ...[
-          const SizedBox(height: MitlistSpacing.xs),
+          SizedBox(height: MitlistSpacing.xs),
           Row(
             children: [
-              Icon(Icons.star, size: 16, color: MitlistColors.primary500),
+              Icon(Icons.star, size: 16, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 4),
               Text(
                 '${ratingValue.toStringAsFixed(1)}${ratingCount > 0 ? ' ($ratingCount)' : ''}',
@@ -138,7 +137,7 @@ class RecipeDetailSheet extends StatelessWidget {
           ),
         ],
         if (imageUrl != null && imageUrl!.isNotEmpty) ...[
-          const SizedBox(height: MitlistSpacing.md),
+          SizedBox(height: MitlistSpacing.md),
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: Image.network(
@@ -147,7 +146,7 @@ class RecipeDetailSheet extends StatelessWidget {
               width: double.infinity,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Container(
-                color: MitlistColors.neutral100,
+                color: Theme.of(context).colorScheme.surfaceContainerLow,
                 height: 160,
                 child: const Center(child: Icon(Icons.restaurant, size: 48)),
               ),
@@ -233,18 +232,18 @@ class RecipeDetailSheet extends StatelessWidget {
           ),
         ],
         if (videoUrl.isNotEmpty) ...[
-          const SizedBox(height: MitlistSpacing.md),
+          SizedBox(height: MitlistSpacing.md),
           InkWell(
             onTap: () => _launchUrl(videoUrl),
             child: Row(
               children: [
-                Icon(Icons.play_circle_outline, size: 16, color: MitlistColors.primary500),
-                const SizedBox(width: 4),
+                Icon(Icons.play_circle_outline, size: 16, color: Theme.of(context).colorScheme.primary),
+                SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     'Watch video',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: MitlistColors.primary500,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -254,18 +253,18 @@ class RecipeDetailSheet extends StatelessWidget {
           ),
         ],
         if (sourceUrl.isNotEmpty) ...[
-          const SizedBox(height: MitlistSpacing.md),
+          SizedBox(height: MitlistSpacing.md),
           InkWell(
             onTap: () => _launchUrl(sourceUrl),
             child: Row(
               children: [
-                Icon(Icons.open_in_new, size: 16, color: MitlistColors.primary500),
-                const SizedBox(width: 4),
+                Icon(Icons.open_in_new, size: 16, color: Theme.of(context).colorScheme.primary),
+                SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     'View original recipe',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: MitlistColors.primary500,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -277,7 +276,7 @@ class RecipeDetailSheet extends StatelessWidget {
         if (onDelete != null) ...[
           const SizedBox(height: MitlistSpacing.lg),
           const Divider(),
-          const SizedBox(height: MitlistSpacing.sm),
+          SizedBox(height: MitlistSpacing.sm),
           SizedBox(
             width: double.infinity,
             child: AppButton(
@@ -354,7 +353,7 @@ class _RecipeDetailRow extends StatelessWidget {
           ),
           Text(
             value,
-            style: MitlistTypography.monoBody(color: MitlistColors.textPrimary),
+            style: MitlistTypography.monoBody(color: Theme.of(context).colorScheme.onSurface),
           ),
         ],
       ),

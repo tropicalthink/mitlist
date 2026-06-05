@@ -7,7 +7,6 @@ import '../../models/group_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/theme_provider.dart';
-import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../widgets/alert.dart';
@@ -310,8 +309,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             height: MitlistSpacing.space12,
             borderRadius: AppSkeletonRadius.sm,
           ),
-          const SizedBox(width: MitlistSpacing.md),
-          const Expanded(
+          SizedBox(width: MitlistSpacing.md),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -336,18 +335,18 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             width: MitlistSpacing.space12,
             height: MitlistSpacing.space12,
             decoration: BoxDecoration(
-              color: MitlistColors.primary100,
+              color: Theme.of(context).colorScheme.primaryContainer,
               shape: BoxShape.circle,
               border: Border.all(
-                color: MitlistColors.borderPrimary,
+                color: Theme.of(context).colorScheme.outline,
                 width: MitlistSpacing.space1 / 2,
               ),
             ),
-            child: const Center(
+            child: Center(
               child: AppIcon(
                 name: 'userCircle',
                 size: MitlistSpacing.space8,
-                color: MitlistColors.primary500,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
           ),
@@ -377,7 +376,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                       style: textTheme.headlineSmall,
                     ),
                   ),
-                const SizedBox(height: MitlistSpacing.sm),
+                SizedBox(height: MitlistSpacing.sm),
                 Text(
                   _email,
                   style: textTheme.bodySmall,
@@ -402,10 +401,10 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           Text(
             'Household',
             style: MitlistTypography.labelXSmall(
-              color: MitlistColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: MitlistSpacing.sm),
+          SizedBox(height: MitlistSpacing.sm),
           ..._households.map((h) {
             final isActive = h.id == _activeHouseholdId;
             return InkWell(
@@ -430,7 +429,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                       Icon(
                         Icons.check,
                         size: 18,
-                        color: MitlistColors.primary500,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                   ],
                 ),
@@ -575,7 +574,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           _buildSecurityCard(),
           const SizedBox(height: MitlistSpacing.md),
           _buildAboutCard(),
-          const SizedBox(height: MitlistSpacing.md),
+          SizedBox(height: MitlistSpacing.md),
           _buildDangerZone(),
         ],
       ),
@@ -608,7 +607,7 @@ class _MenuRow extends StatelessWidget {
         child: Row(
           children: [
             icon,
-            const SizedBox(width: MitlistSpacing.md),
+            SizedBox(width: MitlistSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -621,7 +620,7 @@ class _MenuRow extends StatelessWidget {
                     Text(
                       value!,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: MitlistColors.textSecondary,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                     ),
                 ],
@@ -630,7 +629,7 @@ class _MenuRow extends StatelessWidget {
             if (trailing != null)
               trailing!
             else if (onTap != null)
-              const AppIcon(name: 'chevronRight', color: MitlistColors.textSecondary),
+              AppIcon(name: 'chevronRight', color: Theme.of(context).colorScheme.onSurfaceVariant),
           ],
         ),
       ),

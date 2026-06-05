@@ -48,7 +48,7 @@ Future<void> showQuickAddSheet(BuildContext context) async {
                   context.pushNamed('chores');
                 },
               ),
-              const SizedBox(height: MitlistSpacing.sm),
+              SizedBox(height: MitlistSpacing.sm),
               Divider(
                 height: MitlistSpacing.lg,
                 color: Theme.of(context).colorScheme.outlineVariant,

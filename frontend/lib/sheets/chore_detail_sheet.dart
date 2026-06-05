@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../models/chore_models.dart';
-import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../widgets/app_bottom_sheet.dart';
@@ -363,7 +362,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
             ),
           ],
           if (widget.onRescheduleTomorrow != null) ...[
-            const SizedBox(height: MitlistSpacing.sm),
+            SizedBox(height: MitlistSpacing.sm),
             SizedBox(
               width: double.infinity,
               child: AppButton(
@@ -376,7 +375,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
             ),
           ],
           if (widget.onUndo != null) ...[
-            const SizedBox(height: MitlistSpacing.sm),
+            SizedBox(height: MitlistSpacing.sm),
             SizedBox(
               width: double.infinity,
               child: AppButton(
@@ -389,7 +388,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
             ),
           ],
           if (widget.onDelete != null) ...[
-            const SizedBox(height: MitlistSpacing.lg),
+            SizedBox(height: MitlistSpacing.lg),
             SizedBox(
               width: double.infinity,
               child: AppButton(
@@ -439,7 +438,7 @@ class _DetailRow extends StatelessWidget {
           ),
           Text(
             value,
-            style: MitlistTypography.monoBody(color: MitlistColors.textPrimary),
+            style: MitlistTypography.monoBody(color: Theme.of(context).colorScheme.onSurface),
           ),
         ],
       ),
@@ -476,8 +475,8 @@ class _SubtaskRow extends StatelessWidget {
                     ? TextDecoration.lineThrough
                     : null,
                 color: subtask.completed
-                    ? MitlistColors.textSecondary
-                    : MitlistColors.textPrimary,
+                    ? Theme.of(context).colorScheme.onSurfaceVariant
+                    : Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),

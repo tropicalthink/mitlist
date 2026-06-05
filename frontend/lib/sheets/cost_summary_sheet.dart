@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
@@ -85,13 +84,13 @@ class _CostSummarySheetState extends ConsumerState<CostSummarySheet> {
             value: _formatCents(widget.equalShareCents),
             isTotal: false,
           ),
-          const SizedBox(height: MitlistSpacing.sm),
+          SizedBox(height: MitlistSpacing.sm),
           _CostRow(
             label: 'Items with prices',
             value: '${widget.itemCount}',
             isTotal: false,
           ),
-          const SizedBox(height: MitlistSpacing.md),
+          SizedBox(height: MitlistSpacing.md),
           if (widget.onGenerateExpense != null)
             SizedBox(
               width: double.infinity,
@@ -147,7 +146,7 @@ class _CostRow extends StatelessWidget {
           value,
           style: isTotal
               ? Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: MitlistColors.primary500,
+                    color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.bold,
                   )
               : Theme.of(context).textTheme.bodyMedium,
@@ -168,15 +167,15 @@ class _InfoRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 20, color: MitlistColors.neutral500),
-        const SizedBox(width: MitlistSpacing.sm),
+        Icon(icon, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+        SizedBox(width: MitlistSpacing.sm),
         Expanded(
           child: Text(
             message,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: MitlistColors.neutral500,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
         ),

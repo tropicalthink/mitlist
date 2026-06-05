@@ -9,7 +9,6 @@ import '../../providers/chore_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
-import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../theme/theme.dart';
@@ -83,11 +82,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         from = DateTime(_monthStart.year, _monthStart.month, 1);
         to = DateTime(_monthStart.year, _monthStart.month + 1, 0);
       } else if (_viewMode == _CalendarView.agenda) {
-        from = DateTime.now().subtract(const Duration(days: 7));
-        to = DateTime.now().add(const Duration(days: 30));
+        from = DateTime.now().subtract(Duration(days: 7));
+        to = DateTime.now().add(Duration(days: 30));
       } else {
         from = DateTime(_weekStart.year, _weekStart.month, _weekStart.day);
-        to = from.add(const Duration(days: 6));
+        to = from.add(Duration(days: 6));
       }
 
       final calendarService =
@@ -109,12 +108,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 
   void _prevWeek() {
-    setState(() => _weekStart = _weekStart.subtract(const Duration(days: 7)));
+    setState(() => _weekStart = _weekStart.subtract(Duration(days: 7)));
     _load();
   }
 
   void _nextWeek() {
-    setState(() => _weekStart = _weekStart.add(const Duration(days: 7)));
+    setState(() => _weekStart = _weekStart.add(Duration(days: 7)));
     _load();
   }
 
@@ -144,7 +143,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 
   String _weekLabel() {
-    final end = _weekStart.add(const Duration(days: 6));
+    final end = _weekStart.add(Duration(days: 6));
     return '${_weekStart.day}.${_weekStart.month}.'
         ' – ${end.day}.${end.month}.${end.year}';
   }
@@ -187,7 +186,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       return ListView.builder(
         padding: const EdgeInsets.all(MitlistSpacing.md),
         itemCount: 7,
-        itemBuilder: (_, __) => const Padding(
+        itemBuilder: (_, __) => Padding(
           padding: EdgeInsets.only(bottom: MitlistSpacing.sm),
           child: AppSkeleton(width: double.infinity, height: 80),
         ),
@@ -197,7 +196,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       return Center(
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/404.lottie',
-          icon: const Icon(Icons.error_outline),
+          icon: Icon(Icons.error_outline),
           title: 'Something went wrong',
           description: _error,
           actions: [
@@ -211,7 +210,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       );
     }
     if (!_hasHousehold) {
-      return const Center(
+      return Center(
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/House.lottie',
           icon: Icon(Icons.home_outlined),
@@ -261,7 +260,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   border: Border(
                     bottom: BorderSide(
                       color: _viewMode == _CalendarView.week
-                          ? MitlistColors.primary500
+                          ? Theme.of(context).colorScheme.primary
                           : Colors.transparent,
                       width: 2,
                     ),
@@ -272,8 +271,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   textAlign: TextAlign.center,
                   style: textTheme.labelMedium?.copyWith(
                     color: _viewMode == _CalendarView.week
-                        ? MitlistColors.primary500
-                        : MitlistColors.textTertiary,
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
@@ -289,7 +288,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   border: Border(
                     bottom: BorderSide(
                       color: _viewMode == _CalendarView.month
-                          ? MitlistColors.primary500
+                          ? Theme.of(context).colorScheme.primary
                           : Colors.transparent,
                       width: 2,
                     ),
@@ -300,8 +299,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   textAlign: TextAlign.center,
                   style: textTheme.labelMedium?.copyWith(
                     color: _viewMode == _CalendarView.month
-                        ? MitlistColors.primary500
-                        : MitlistColors.textTertiary,
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
@@ -317,7 +316,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   border: Border(
                     bottom: BorderSide(
                       color: _viewMode == _CalendarView.agenda
-                          ? MitlistColors.primary500
+                          ? Theme.of(context).colorScheme.primary
                           : Colors.transparent,
                       width: 2,
                     ),
@@ -328,8 +327,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   textAlign: TextAlign.center,
                   style: textTheme.labelMedium?.copyWith(
                     color: _viewMode == _CalendarView.agenda
-                        ? MitlistColors.primary500
-                        : MitlistColors.textTertiary,
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
@@ -350,7 +349,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           child: Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.chevron_left),
+                icon: Icon(Icons.chevron_left),
                 tooltip: 'Previous week',
                 onPressed: _prevWeek,
               ),
@@ -362,7 +361,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.chevron_right),
+                icon: Icon(Icons.chevron_right),
                 tooltip: 'Next week',
                 onPressed: _nextWeek,
               ),
@@ -405,7 +404,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           child: Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.chevron_left),
+                icon: Icon(Icons.chevron_left),
                 tooltip: 'Previous month',
                 onPressed: _prevMonth,
               ),
@@ -417,7 +416,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.chevron_right),
+                icon: Icon(Icons.chevron_right),
                 tooltip: 'Next month',
                 onPressed: _nextMonth,
               ),
@@ -435,7 +434,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         child: Text(
                           h,
                           style: MitlistTypography.labelXSmall(
-                            color: MitlistColors.textTertiary,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),
@@ -443,14 +442,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 .toList(),
           ),
         ),
-        const SizedBox(height: MitlistSpacing.sm),
+        SizedBox(height: MitlistSpacing.sm),
         Expanded(
           child: Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: MitlistSpacing.sm),
             child: GridView.builder(
               gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
+                  SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 7,
                 childAspectRatio: 0.9,
               ),
@@ -480,26 +479,26 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     margin: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
                       color: isToday
-                          ? MitlistColors.primary50
+                          ? Theme.of(context).colorScheme.primaryContainer
                           : Colors.transparent,
                       border: Border.all(
                         color: isToday
-                            ? MitlistColors.primary500
-                            : MitlistColors.borderSubtle,
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.outlineVariant,
                         width: isToday ? 2 : 1,
                       ),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        const SizedBox(height: MitlistSpacing.xs),
+                        SizedBox(height: MitlistSpacing.xs),
                         Text(
                           '$dayNum',
                           style:
                               MitlistTypography.labelXSmall(
                             color: isToday
-                                ? MitlistColors.primary500
-                                : MitlistColors.textPrimary,
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                         if (dayEvents.isNotEmpty)
@@ -508,7 +507,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             child: Text(
                               '${dayEvents.length}',
                               style: MitlistTypography.labelXSmall(
-                                color: _dotColor(dayEvents.first.type),
+                                color: _dotColor(context, dayEvents.first.type),
                               ),
                             ),
                           ),
@@ -528,13 +527,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     return day.subtract(Duration(days: day.weekday - 1));
   }
 
-  Color _dotColor(CalendarEventType type) {
+  Color _dotColor(BuildContext context, CalendarEventType type) {
     return switch (type) {
-      CalendarEventType.mealPlan => MitlistColors.primary500,
-      CalendarEventType.chore => MitlistColors.warning500,
-      CalendarEventType.recurringExpense => MitlistColors.success500,
-      CalendarEventType.expense => MitlistColors.teal500,
-      CalendarEventType.pinwallReminder => MitlistColors.error300,
+      CalendarEventType.mealPlan => Theme.of(context).colorScheme.primary,
+      CalendarEventType.chore => Theme.of(context).colorScheme.secondary,
+      CalendarEventType.recurringExpense => Theme.of(context).colorScheme.tertiary,
+      CalendarEventType.expense => Theme.of(context).colorScheme.secondary,
+      CalendarEventType.pinwallReminder => Theme.of(context).colorScheme.errorContainer,
     };
   }
 
@@ -558,7 +557,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           child: Text(
             dayLabel,
             style: Theme.of(ctx).textTheme.labelSmall?.copyWith(
-                  color: MitlistColors.textTertiary,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
         ),
@@ -571,18 +570,18 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
             );
           }),
-        const PopupMenuDivider(),
+        PopupMenuDivider(),
         PopupMenuItem<String>(
           value: 'add_chore',
-          child: const Text('Add chore'),
+          child: Text('Add chore'),
         ),
         PopupMenuItem<String>(
           value: 'add_expense',
-          child: const Text('Add expense'),
+          child: Text('Add expense'),
         ),
         PopupMenuItem<String>(
           value: 'view_week',
-          child: const Text('View in week'),
+          child: Text('View in week'),
         ),
       ],
     ).then((value) {
@@ -614,7 +613,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         child: Center(
           child: AppEmptyState(
             lottieAsset: 'assets/animations/lottie/Calendar.lottie',
-            icon: const Icon(Icons.event_note, size: 56),
+            icon: Icon(Icons.event_note, size: 56),
             title: 'Nothing ahead',
             description:
                 'Upcoming chores, meal plans, and recurring expenses will appear here.',
@@ -651,8 +650,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       Container(
                         width: MitlistSpacing.space2,
                         height: MitlistSpacing.space2,
-                        decoration: const BoxDecoration(
-                          color: MitlistColors.primary500,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
                           shape: BoxShape.circle,
                         ),
                         margin:
@@ -665,13 +664,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           .titleSmall
                           ?.copyWith(
                             color: isToday
-                                ? MitlistColors.primary500
-                                : MitlistColors.textPrimary,
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.onSurface,
                           ),
                     ),
                   ],
                 ),
-                const SizedBox(height: MitlistSpacing.sm),
+                SizedBox(height: MitlistSpacing.sm),
                 ..._agendaDayEvents(dayEvents),
               ],
             ),
@@ -683,7 +682,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   String _formatAgendaDate(DateTime day) {
     if (_isToday(day)) return 'Today';
-    final tomorrow = DateTime.now().add(const Duration(days: 1));
+    final tomorrow = DateTime.now().add(Duration(days: 1));
     if (day.year == tomorrow.year &&
         day.month == tomorrow.month &&
         day.day == tomorrow.day) {
@@ -701,7 +700,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   List<Widget> _agendaDayEvents(List<CalendarEvent> events) {
     return events.map((e) {
-      final (icon, color, label) = _eventMeta(e);
+      final (icon, color, label) = _eventMeta(context, e);
       return Padding(
         padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
         child: InkWell(
@@ -715,7 +714,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             child: Row(
               children: [
                 Icon(icon, size: 18, color: color),
-                const SizedBox(width: MitlistSpacing.sm),
+                SizedBox(width: MitlistSpacing.sm),
                 Expanded(
                   child: Text(
                     e.title.isNotEmpty ? e.title : label,
@@ -729,7 +728,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   Text(
                     '${e.mealPlan!.servings} ppl ',
                     style: MitlistTypography.labelXSmall(
-                      color: MitlistColors.textTertiary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 if (e.type == CalendarEventType.recurringExpense &&
@@ -737,7 +736,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   Text(
                     (e.recurringExpense!.amount / 100).toStringAsFixed(2),
                     style: MitlistTypography.monoBody(
-                      color: MitlistColors.textTertiary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
               ],
@@ -748,31 +747,31 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     }).toList();
   }
 
-  (IconData, Color, String) _eventMeta(CalendarEvent event) {
+  (IconData, Color, String) _eventMeta(BuildContext context, CalendarEvent event) {
     return switch (event.type) {
       CalendarEventType.mealPlan => (
           Icons.restaurant,
-          MitlistColors.primary500,
+          Theme.of(context).colorScheme.primary,
           event.mealPlan?.slot ?? 'Meal'
         ),
       CalendarEventType.chore => (
           Icons.cleaning_services,
-          MitlistColors.warning500,
+          Theme.of(context).colorScheme.secondary,
           'Chore'
         ),
       CalendarEventType.recurringExpense => (
           Icons.repeat,
-          MitlistColors.success500,
+          Theme.of(context).colorScheme.tertiary,
           'Recurring'
         ),
       CalendarEventType.expense => (
           Icons.receipt_outlined,
-          MitlistColors.teal500,
+          Theme.of(context).colorScheme.secondary,
           'Expense'
         ),
       CalendarEventType.pinwallReminder => (
           Icons.push_pin_outlined,
-          MitlistColors.error300,
+          Theme.of(context).colorScheme.errorContainer,
           'Reminder'
         ),
     };
@@ -816,14 +815,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final confirmed = await showAppDialog<bool>(
       context: context,
       title: 'Delete chore',
-      body: const Text('This will permanently delete this chore and its history. This cannot be undone.'),
+      body: Text('This will permanently delete this chore and its history. This cannot be undone.'),
       actions: [
         AppButton(
           text: 'Cancel',
           variant: AppButtonVariant.outline,
           onPressed: () => Navigator.of(context).pop(false),
         ),
-        const SizedBox(width: MitlistSpacing.sm),
+        SizedBox(width: MitlistSpacing.sm),
         AppButton(
           text: 'Delete',
           color: AppButtonColor.error,
@@ -840,7 +839,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to delete chore')),
+        SnackBar(content: Text('Failed to delete chore')),
       );
     } finally {
       _isSaving = false;
@@ -882,20 +881,20 @@ class _DayCard extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(width: MitlistSpacing.sm),
+                SizedBox(width: MitlistSpacing.sm),
                 Text(
                   '${day.day}.${day.month}.',
                   style: MitlistTypography.labelXSmall(),
                 ),
                 if (isToday) ...[
-                  const SizedBox(width: MitlistSpacing.sm),
+                  SizedBox(width: MitlistSpacing.sm),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: MitlistSpacing.sm,
                       vertical: MitlistSpacing.space1,
                     ),
                     decoration: BoxDecoration(
-                      color: MitlistColors.primary500,
+                      color: Theme.of(context).colorScheme.primary,
                       borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
                     ),
                     child: Text(
@@ -914,7 +913,7 @@ class _DayCard extends StatelessWidget {
                 child: Text(
                   'Nothing planned',
                   style: MitlistTypography.labelXSmall(
-                    color: MitlistColors.textTertiary,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               )
@@ -953,27 +952,27 @@ class _EventRow extends StatelessWidget {
     final (icon, color, label) = switch (event.type) {
       CalendarEventType.mealPlan => (
           Icons.restaurant,
-          MitlistColors.primary500,
+          Theme.of(context).colorScheme.primary,
           event.mealPlan?.slot ?? 'Meal'
         ),
       CalendarEventType.chore => (
           Icons.cleaning_services,
-          MitlistColors.warning500,
+          Theme.of(context).colorScheme.secondary,
           'Chore'
         ),
       CalendarEventType.recurringExpense => (
           Icons.repeat,
-          MitlistColors.success500,
+          Theme.of(context).colorScheme.tertiary,
           'Recurring'
         ),
       CalendarEventType.expense => (
           Icons.receipt_outlined,
-          MitlistColors.teal500,
+          Theme.of(context).colorScheme.secondary,
           'Expense'
         ),
       CalendarEventType.pinwallReminder => (
           Icons.push_pin_outlined,
-          MitlistColors.error300,
+          Theme.of(context).colorScheme.errorContainer,
           'Reminder'
         ),
     };
@@ -991,12 +990,12 @@ class _EventRow extends StatelessWidget {
           child: Row(
             children: [
               Icon(icon, size: 16, color: color),
-              const SizedBox(width: MitlistSpacing.sm),
+              SizedBox(width: MitlistSpacing.sm),
               Expanded(
                 child: Text(
                   event.title.isNotEmpty ? event.title : label,
                   style: TextStyle(
-                    color: MitlistColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.w500,
                   ),
                   maxLines: 1,

@@ -6,7 +6,6 @@ import '../../providers/finance_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
-import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/active_group_context.dart';
@@ -189,7 +188,7 @@ class _RecurringExpensesScreenState
       return Center(
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/wallet.lottie',
-          icon: const Icon(Icons.repeat),
+          icon: Icon(Icons.repeat),
           title: 'No recurring expenses',
           description: 'Add a recurring expense to track regular payments',
           actions: [
@@ -260,7 +259,7 @@ class _RecurringExpensesScreenState
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Couldn\u2019t create.')),
+        SnackBar(content: Text('Couldn\u2019t create.')),
       );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -309,8 +308,8 @@ class _RecurringCard extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                       decoration: isActive ? null : TextDecoration.lineThrough,
                       color: isActive
-                          ? MitlistColors.textPrimary
-                          : MitlistColors.textSecondary,
+                          ? Theme.of(context).colorScheme.onSurface
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -477,7 +476,7 @@ class _CreateRecurringFormState extends State<_CreateRecurringForm> {
           ),
           const SizedBox(height: MitlistSpacing.sm),
           DropdownButtonFormField<String>(
-            value: _frequency,
+            initialValue: _frequency,
             decoration: const InputDecoration(labelText: 'Frequency'),
             items: const [
               DropdownMenuItem(value: 'daily', child: Text('Daily')),
@@ -493,7 +492,7 @@ class _CreateRecurringFormState extends State<_CreateRecurringForm> {
           const SizedBox(height: MitlistSpacing.sm),
           if (widget.userLabels.isNotEmpty)
             DropdownButtonFormField<String>(
-              value: _payerId,
+              initialValue: _payerId,
               decoration: const InputDecoration(labelText: 'Payer'),
               items: widget.userLabels.entries
                   .map((e) => DropdownMenuItem(

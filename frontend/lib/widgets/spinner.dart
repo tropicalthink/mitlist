@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../theme/colors.dart';
 
 enum AppSpinnerSize { sm, md, lg }
 
@@ -43,7 +42,7 @@ class AppSpinner extends StatelessWidget {
       child: CircularProgressIndicator(
         strokeWidth: _strokeWidth,
         valueColor: AlwaysStoppedAnimation<Color>(
-          color ?? MitlistColors.textPrimary,
+          color ?? Theme.of(context).colorScheme.onSurface,
         ),
       ),
     );

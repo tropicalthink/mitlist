@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/auth_provider.dart';
-import 'theme/colors.dart';
 import 'widgets/app_icon.dart';
 import 'providers/nav_badge_provider.dart';
 
@@ -330,10 +329,10 @@ class BottomNavScaffold extends ConsumerWidget {
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           border: Border(
             top: BorderSide(
-              color: MitlistColors.borderPrimary,
+              color: Theme.of(context).colorScheme.outline,
               width: 2,
             ),
           ),

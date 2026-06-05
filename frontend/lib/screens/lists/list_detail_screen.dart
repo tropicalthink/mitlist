@@ -10,7 +10,6 @@ import '../../providers/list_provider.dart';
 import '../../services/list_service.dart';
 import '../../theme/animations.dart';
 import '../../theme/list_tile_accent.dart';
-import '../../theme/colors.dart';
 import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
 import '../../theme/theme.dart';
@@ -371,7 +370,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     if (total > 0 && completed == total) {
       setState(() => _showCompletionBanner = true);
       _bannerTimer?.cancel();
-      _bannerTimer = Timer(const Duration(seconds: 3), () {
+      _bannerTimer = Timer(Duration(seconds: 3), () {
         if (mounted) {
           setState(() => _showCompletionBanner = false);
         }
@@ -420,7 +419,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: const Text('Couldn\u2019t add item. Please try again.')),
+        SnackBar(content: Text('Couldn\u2019t add item. Please try again.')),
       );
     } finally {
       _isSaving = false;
@@ -462,7 +461,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: const Text('Couldn\u2019t clear items. Please try again.')),
+        SnackBar(content: Text('Couldn\u2019t clear items. Please try again.')),
       );
     } finally {
       _isSaving = false;
@@ -501,9 +500,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         behavior: SnackBarBehavior.floating,
         content: Container(
           decoration: BoxDecoration(
-            color: MitlistColors.neutral950,
+            color: Theme.of(context).colorScheme.onSurface,
             border: Border.all(
-              color: MitlistColors.borderPrimary,
+              color: Theme.of(context).colorScheme.outline,
               width: 2,
             ),
             boxShadow: MitlistShadows.shadowMedium,
@@ -548,7 +547,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   }
                 },
                 style: TextButton.styleFrom(
-                  foregroundColor: MitlistColors.primary400,
+                  foregroundColor: Theme.of(context).colorScheme.primary,
                   padding: const EdgeInsets.symmetric(
                     horizontal: MitlistSpacing.md,
                   ),
@@ -818,7 +817,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     ),
               actions: [
                 IconButton(
-                  icon: const AppIcon(name: 'magnifyingGlass'),
+                  icon: AppIcon(name: 'magnifyingGlass'),
                   tooltip: 'Search',
                   onPressed: () {
                     setState(() {
@@ -832,29 +831,29 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                 ),
                 TextButton(
                   onPressed: _completeAll,
-                  child: const Text('Check all'),
+                  child: Text('Check all'),
                 ),
                 PopupMenuButton<String>(
-                  icon: const AppIcon(name: 'ellipsisVertical'),
+                  icon: AppIcon(name: 'ellipsisVertical'),
                   onSelected: _onMenuSelected,
                   itemBuilder: (context) => [
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'cost_summary',
                       child: Text('Cost summary'),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'clear_checked',
                       child: Text('Clear checked'),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'clear_all',
                       child: Text('Clear list'),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'archive',
                       child: Text('Archive'),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'delete',
                       child: Text('Delete', style: TextStyle(color: Colors.red)),
                     ),
@@ -883,14 +882,14 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
               height: _showCompletionBanner
                   ? MitlistSpacing.space8
                   : MitlistSpacing.space0,
-              color: MitlistColors.success500,
+              color: Theme.of(context).colorScheme.tertiary,
               width: double.infinity,
               alignment: Alignment.center,
               child: _showCompletionBanner
                   ? Text(
                       'All done!',
                       style: textTheme.labelMedium?.copyWith(
-                        color: MitlistColors.textOnSuccess,
+                        color: Theme.of(context).colorScheme.onTertiary,
                       ),
                     )
                   : const SizedBox.shrink(),
@@ -921,14 +920,14 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
     return CheckboxTheme(
       data: CheckboxThemeData(
-        shape: const CircleBorder(),
-        side: const BorderSide(
-          color: MitlistColors.borderPrimary,
+        shape: CircleBorder(),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.outline,
           width: 2,
         ),
         fillColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return MitlistColors.primary500;
+            return Theme.of(context).colorScheme.primary;
           }
           return Theme.of(context).colorScheme.surface;
         }),
@@ -941,8 +940,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           if (done.isNotEmpty) ...[
             Material(
               color: Theme.of(context).brightness == Brightness.dark
-                  ? MitlistColors.neutral800
-                  : MitlistColors.neutral100,
+                  ? Theme.of(context).colorScheme.surfaceContainerHighest
+                  : Theme.of(context).colorScheme.surfaceContainerLow,
               child: InkWell(
                 onTap: () => setState(
                   () => _doneSectionExpanded = !_doneSectionExpanded,
@@ -966,7 +965,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                         _doneSectionExpanded
                             ? Icons.expand_less
                             : Icons.expand_more,
-                        color: MitlistColors.textSecondary,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ],
                   ),
@@ -984,14 +983,14 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   Widget _buildSearchResultItemList(List<ListItem> items, TextTheme textTheme) {
     return CheckboxTheme(
       data: CheckboxThemeData(
-        shape: const CircleBorder(),
-        side: const BorderSide(
-          color: MitlistColors.borderPrimary,
+        shape: CircleBorder(),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.outline,
           width: 2,
         ),
         fillColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return MitlistColors.primary500;
+            return Theme.of(context).colorScheme.primary;
           }
           return Theme.of(context).colorScheme.surface;
         }),
@@ -1012,12 +1011,12 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       key: ValueKey(item.id),
       direction: DismissDirection.endToStart,
       background: Container(
-        color: MitlistColors.error500,
+        color: Theme.of(context).colorScheme.error,
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(
           horizontal: MitlistSpacing.md,
         ),
-        child: const AppIcon(
+        child: AppIcon(
           name: 'trash',
           color: Colors.white,
         ),
@@ -1039,10 +1038,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       child: InkWell(
         onTap: () => _toggleItem(item, !item.checked),
         child: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: MitlistColors.borderSecondary,
+                color: Theme.of(context).colorScheme.outlineVariant,
                 width: 2,
               ),
             ),
@@ -1051,7 +1050,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
             horizontal: MitlistSpacing.md,
             vertical: MitlistSpacing.sm,
           ),
-          constraints: const BoxConstraints(minHeight: 52),
+          constraints: BoxConstraints(minHeight: 52),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -1063,11 +1062,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     child: SizedBox(
                       width: 28,
                       height: 28,
-                      child: Image.network(thumbUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported_outlined, size: 16)),
+                      child: Image.network(thumbUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.image_not_supported_outlined, size: 16)),
                     ),
                   ),
                 ),
-                const SizedBox(width: MitlistSpacing.sm),
+                SizedBox(width: MitlistSpacing.sm),
               ],
               Semantics(
                 label: 'Toggle ${item.name}',
@@ -1076,7 +1075,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   onChanged: (val) => _toggleItem(item, val ?? false),
                 ),
               ),
-              const SizedBox(width: MitlistSpacing.sm),
+              SizedBox(width: MitlistSpacing.sm),
               Expanded(
                 child: Text(
                   item.name,
@@ -1086,8 +1085,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     decoration:
                         item.checked ? TextDecoration.lineThrough : null,
                     color: item.checked
-                        ? MitlistColors.textTertiary
-                        : MitlistColors.textPrimary,
+                        ? Theme.of(context).colorScheme.onSurfaceVariant
+                        : Theme.of(context).colorScheme.onSurface,
                     height: 1.25,
                   ),
                 ),
@@ -1098,7 +1097,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   child: Text(
                     '${_formatQuantity(item.quantity)}x',
                     style: MitlistTypography.monoBody(
-                      color: MitlistColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
@@ -1108,7 +1107,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   child: Text(
                     '\$${(item.priceCents! / 100).toStringAsFixed(2)}',
                     style: MitlistTypography.monoBody(
-                      color: MitlistColors.primary500,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                 ),
@@ -1118,7 +1117,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   child: AppIcon(
                     name: 'userCircle',
                     size: MitlistSpacing.space5,
-                    color: MitlistColors.primary500,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
               PopupMenuButton<String>(
@@ -1203,7 +1202,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   variant: AppButtonVariant.outline,
                   onPressed: _load,
                 ),
-                const SizedBox(width: MitlistSpacing.md),
+                SizedBox(width: MitlistSpacing.md),
                 AppButton(
                   text: 'Dismiss',
                   variant: AppButtonVariant.ghost,
@@ -1223,7 +1222,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         padding: const EdgeInsets.all(MitlistSpacing.md),
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/checklist.lottie',
-          icon: const AppIcon(name: 'queueList'),
+          icon: AppIcon(name: 'queueList'),
           title: 'Nothing on the list yet',
           description:
               'Add milk, bread, eggs — whatever you need. Tap the + below to get started.',
@@ -1241,16 +1240,16 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   Widget _buildBottomBar() {
     final brightness = Theme.of(context).brightness;
     final fill = brightness == Brightness.dark
-        ? MitlistColors.neutral900
-        : MitlistColors.surfacePrimary;
+        ? Theme.of(context).colorScheme.onSurface
+        : Theme.of(context).colorScheme.surface;
 
     return SafeArea(
       child: Container(
         decoration: BoxDecoration(
           color: fill,
-          border: const Border(
+          border: Border(
             top: BorderSide(
-              color: MitlistColors.borderPrimary,
+              color: Theme.of(context).colorScheme.outline,
               width: 2,
             ),
           ),
@@ -1305,9 +1304,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: MitlistSpacing.sm),
+                SizedBox(width: MitlistSpacing.sm),
                 AppButton(
-                  icon: const AppIcon(name: 'plus', color: MitlistColors.textOnPrimary),
+                  icon: AppIcon(name: 'plus', color: Theme.of(context).colorScheme.onPrimary),
                   onPressed: _addItem,
                   size: AppButtonSize.lg,
                 ),

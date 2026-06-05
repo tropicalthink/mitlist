@@ -12,7 +12,6 @@ import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../sheets/create_list_sheet.dart';
 import 'list_detail_screen.dart';
-import '../../theme/colors.dart';
 import '../../theme/list_tile_accent.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
@@ -382,7 +381,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
               onPressed: () => setState(() => _showSearch = true),
             ),
             PopupMenuButton<_ListMenuAction>(
-              icon: const Icon(AppIcons.ellipsisVertical),
+              icon: Icon(AppIcons.ellipsisVertical),
               tooltip: 'Options',
               onSelected: (action) {
                 setState(() {
@@ -416,7 +415,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                   child: Text(
                     'Sort',
                     style: MitlistTypography.labelXSmall().copyWith(
-                      color: MitlistColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
@@ -462,7 +461,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         size: AppButtonSize.lg,
         onPressed:
             _hasHousehold ? _showCreateSheet : () => context.goNamed('groupsList'),
-        icon: const Icon(AppIcons.plus),
+        icon: Icon(AppIcons.plus),
         text: 'New list',
         tooltip: 'New list',
       ),
@@ -476,7 +475,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
 
     if (_error != null && _lists.isEmpty) {
       return RefreshIndicator(
-        color: MitlistColors.primary500,
+        color: Theme.of(context).colorScheme.primary,
         onRefresh: _loadLists,
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -494,7 +493,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                         const SizedBox(height: MitlistSpacing.md),
                         AppButton(
                           text: 'Retry',
-                          icon: const Icon(AppIcons.arrowPath),
+                          icon: Icon(AppIcons.arrowPath),
                           onPressed: _loadLists,
                         ),
                       ],
@@ -528,7 +527,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         _buildChipBar(),
         Expanded(
           child: RefreshIndicator(
-            color: MitlistColors.primary500,
+            color: Theme.of(context).colorScheme.primary,
             onRefresh: _loadLists,
             child: lists.isEmpty
                 ? _buildEmptyState()
@@ -611,7 +610,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(MitlistSpacing.md),
       itemCount: lists.length + (_isLoadingMore || _error != null ? 1 : 0),
-      separatorBuilder: (_, __) => const SizedBox(height: MitlistSpacing.md),
+      separatorBuilder: (_, __) => SizedBox(height: MitlistSpacing.md),
       itemBuilder: (_, index) {
         if (index >= lists.length) return _buildPaginationFooter();
         return ListEntrance(
@@ -659,7 +658,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                   actions: [
                     AppButton(
                       text: 'Create your first list',
-                      icon: const Icon(AppIcons.plus),
+                      icon: Icon(AppIcons.plus),
                       onPressed: _showCreateSheet,
                     ),
                   ],
@@ -678,7 +677,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         padding: const EdgeInsets.all(MitlistSpacing.md),
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/House.lottie',
-          icon: const Icon(AppIcons.userGroup),
+          icon: Icon(AppIcons.userGroup),
           title: 'No household yet',
           description: 'Create or join a household before adding lists.',
           actions: [
@@ -773,7 +772,7 @@ class _ListCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (previewLines.isNotEmpty) ...[
-                  const SizedBox(height: MitlistSpacing.sm),
+                  SizedBox(height: MitlistSpacing.sm),
                   for (var i = 0; i < previewLines.length; i++)
                     Padding(
                       padding: EdgeInsets.only(

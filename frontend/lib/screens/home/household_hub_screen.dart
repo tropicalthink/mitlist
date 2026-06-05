@@ -17,7 +17,6 @@ import '../../repositories/hub_repository.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../utils/active_group_context.dart';
-import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../utils/haptics.dart';
 import '../../widgets/alert.dart';
@@ -351,7 +350,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                 child: Row(
                   children: [
                     Icon(icon, size: 22, color: iconColor),
-                    const SizedBox(width: MitlistSpacing.md),
+                    SizedBox(width: MitlistSpacing.md),
                     Expanded(
                       child: Text(
                         label,
@@ -406,7 +405,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                                   Text(
                                     '${h.memberCount} ${h.memberCount == 1 ? 'member' : 'members'}',
                                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                          color: MitlistColors.textTertiary,
+                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                                         ),
                                   ),
                               ],
@@ -416,16 +415,16 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                             Icon(
                               Icons.check,
                               size: 18,
-                              color: MitlistColors.primary500,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                         ],
                       ),
                     ),
                   ),
-                const SizedBox(height: MitlistSpacing.sm),
+                SizedBox(height: MitlistSpacing.sm),
                 Container(
                   height: 2,
-                  color: MitlistColors.borderPrimary,
+                  color: Theme.of(context).colorScheme.outline,
                 ),
                 const SizedBox(height: MitlistSpacing.sm),
               ],
@@ -516,7 +515,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                     style: titleTextStyle,
                   ),
                 ),
-                const SizedBox(width: MitlistSpacing.xs),
+                SizedBox(width: MitlistSpacing.xs),
                 Icon(
                   Icons.expand_more,
                   size: 24,
@@ -569,7 +568,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
               : RefreshIndicator(
                   onRefresh: _onRefresh,
                   child: CustomScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
+                    physics: AlwaysScrollableScrollPhysics(),
                     slivers: [
                       SliverAppBar(
                         pinned: true,

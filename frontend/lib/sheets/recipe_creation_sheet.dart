@@ -9,7 +9,6 @@ import '../models/recipe_models.dart';
 import '../providers/recipe_provider.dart';
 import '../utils/haptics.dart';
 import '../providers/scan_provider.dart';
-import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
@@ -404,7 +403,7 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: _scrapedImageOptions.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: MitlistSpacing.sm),
+                  separatorBuilder: (_, __) => SizedBox(width: MitlistSpacing.sm),
                   itemBuilder: (context, index) {
                     final imgUrl = _scrapedImageOptions[index];
                     final isSelected = imgUrl == _selectedImageUrl;
@@ -415,7 +414,7 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
                         height: 80,
                         decoration: BoxDecoration(
                           border: Border.all(
-                            color: isSelected ? MitlistColors.primary500 : Colors.transparent,
+                            color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
                             width: 3,
                           ),
                           borderRadius: BorderRadius.circular(8),
@@ -430,7 +429,7 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
                 ),
               ),
             ] else if (_selectedImageUrl != null) ...[
-              const SizedBox(height: MitlistSpacing.md),
+              SizedBox(height: MitlistSpacing.md),
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
               child: Image.network(
@@ -439,7 +438,7 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
                 width: double.infinity,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(
-                  color: MitlistColors.neutral100,
+                  color: Theme.of(context).colorScheme.surfaceContainerLow,
                   child: const Center(child: Icon(Icons.restaurant, size: 48)),
                 ),
               ),
@@ -547,11 +546,11 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
           const SizedBox(height: MitlistSpacing.md),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Share with household'),
+            title: Text('Share with household'),
             value: _isPublic,
             onChanged:
                 _isSaving ? null : (value) => setState(() => _isPublic = value),
-            activeColor: MitlistColors.primary500,
+            activeThumbColor: Theme.of(context).colorScheme.primary,
           ),
           const SizedBox(height: MitlistSpacing.lg),
           SizedBox(

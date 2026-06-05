@@ -9,7 +9,6 @@ import '../providers/chore_provider.dart';
 import '../providers/group_provider.dart';
 import '../providers/scan_provider.dart';
 import '../router.dart' show currentGroupIdProvider;
-import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../utils/active_group_context.dart';
@@ -258,11 +257,11 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           textInputAction: TextInputAction.done,
           maxLength: 500,
         ),
-        const SizedBox(height: MitlistSpacing.md),
+        SizedBox(height: MitlistSpacing.md),
         Text(
           'Recurrence'.toUpperCase(),
           style:
-              MitlistTypography.labelXSmall(color: MitlistColors.textSecondary),
+              MitlistTypography.labelXSmall(color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: MitlistSpacing.sm),
         Wrap(
@@ -323,11 +322,11 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           ),
         ],
         if (_recurrence == _Recurrence.weekly) ...[
-          const SizedBox(height: MitlistSpacing.md),
+          SizedBox(height: MitlistSpacing.md),
           Text(
             'Weekdays'.toUpperCase(),
             style: MitlistTypography.labelXSmall(
-              color: MitlistColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: MitlistSpacing.sm),
@@ -359,11 +358,11 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
             }).toList(),
           ),
         ],
-        const SizedBox(height: MitlistSpacing.md),
+        SizedBox(height: MitlistSpacing.md),
         Text(
           'Assignment'.toUpperCase(),
           style:
-              MitlistTypography.labelXSmall(color: MitlistColors.textSecondary),
+              MitlistTypography.labelXSmall(color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: MitlistSpacing.sm),
         Wrap(

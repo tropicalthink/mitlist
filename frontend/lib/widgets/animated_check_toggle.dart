@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../theme/animations.dart';
-import '../theme/colors.dart';
 import '../theme/shadows.dart';
 
 class AnimatedCheckToggle extends StatefulWidget {
@@ -66,7 +65,7 @@ class _AnimatedCheckToggleState extends State<AnimatedCheckToggle>
     final colorScheme = Theme.of(context).colorScheme;
     final progress = disableAnimations ? (widget.value ? 1.0 : 0.0) : _controller.value;
     final isInteractive = widget.onChanged != null;
-    final bgColor = _lerpColor(MitlistColors.surfacePrimary, colorScheme.primary, progress);
+    final bgColor = _lerpColor(colorScheme.surface, colorScheme.primary, progress);
     final borderColor = _lerpColor(colorScheme.outline, colorScheme.primary, progress);
 
     final label = widget.value

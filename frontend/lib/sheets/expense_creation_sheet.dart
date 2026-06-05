@@ -13,7 +13,6 @@ import '../providers/finance_provider.dart';
 import '../providers/group_provider.dart';
 import '../providers/scan_provider.dart';
 import '../router.dart' show currentGroupIdProvider;
-import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../utils/active_group_context.dart';
 import '../utils/haptics.dart';
@@ -373,7 +372,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
           onValueChanged: () => setState(() {}),
         ),
         const SizedBox(height: MitlistSpacing.md),
-        const SizedBox(height: MitlistSpacing.lg),
+        SizedBox(height: MitlistSpacing.lg),
         SizedBox(
           width: double.infinity,
           child: AppButton(
@@ -415,7 +414,7 @@ class _SplitOptions extends StatelessWidget {
       return Text(
         'Members will be available for split selection after the household loads.',
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: MitlistColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
       );
     }

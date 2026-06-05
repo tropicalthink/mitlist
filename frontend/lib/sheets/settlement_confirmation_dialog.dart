@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../widgets/app_button.dart';
@@ -75,11 +74,11 @@ class SettlementConfirmationDialog extends StatelessWidget {
             Expanded(
               child: _PartyBlock(label: 'From', name: payer),
             ),
-            const SizedBox(width: MitlistSpacing.md),
-            const Icon(
+            SizedBox(width: MitlistSpacing.md),
+            Icon(
               Icons.arrow_forward,
               size: MitlistSpacing.space5,
-              color: MitlistColors.textTertiary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             const SizedBox(width: MitlistSpacing.md),
             Expanded(
@@ -99,7 +98,7 @@ class SettlementConfirmationDialog extends StatelessWidget {
                 onPressed: () => Navigator.of(context).pop(false),
               ),
             ),
-            const SizedBox(width: MitlistSpacing.md),
+            SizedBox(width: MitlistSpacing.md),
             Expanded(
               child: AppButton(
                 variant: AppButtonVariant.solid,
@@ -129,7 +128,7 @@ class _PartyBlock extends StatelessWidget {
       children: [
         Text(
           label.toUpperCase(),
-          style: MitlistTypography.labelXSmall(color: MitlistColors.textTertiary),
+          style: MitlistTypography.labelXSmall(color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: MitlistSpacing.xs),
         Text(

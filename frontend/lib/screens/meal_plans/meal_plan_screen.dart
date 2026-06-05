@@ -9,7 +9,6 @@ import '../../providers/group_provider.dart';
 import '../../providers/meal_plan_provider.dart';
 import '../../providers/recipe_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
-import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../theme/theme.dart';
@@ -381,14 +380,14 @@ class _MealPlanLoadingBody extends StatelessWidget {
                       height: 16),
                 ],
               ),
-              const SizedBox(height: MitlistSpacing.sm),
-              const AppSkeleton(
+              SizedBox(height: MitlistSpacing.sm),
+              AppSkeleton(
                   width: double.infinity, height: 40),
-              const SizedBox(height: MitlistSpacing.sm),
-              const AppSkeleton(
+              SizedBox(height: MitlistSpacing.sm),
+              AppSkeleton(
                   width: double.infinity, height: 40),
-              const SizedBox(height: MitlistSpacing.sm),
-              const AppSkeleton(
+              SizedBox(height: MitlistSpacing.sm),
+              AppSkeleton(
                   width: double.infinity, height: 40),
             ],
           ),
@@ -438,25 +437,25 @@ class _DayCard extends StatelessWidget {
                   width: 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: isToday ? MitlistColors.primary500 : Colors.transparent,
+                    color: isToday ? Theme.of(context).colorScheme.primary : Colors.transparent,
                     shape: BoxShape.circle,
                   ),
                 ),
-                const SizedBox(width: MitlistSpacing.sm),
+                SizedBox(width: MitlistSpacing.sm),
                 Text(
                   DateFormat.EEEE().format(date),
                   style: textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const Spacer(),
+                Spacer(),
                 Text(
                   DateFormat.MMMd().format(date),
-                  style: MitlistTypography.monoBody(color: MitlistColors.textSecondary),
+                  style: MitlistTypography.monoBody(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             ),
-            const SizedBox(height: MitlistSpacing.md),
+            SizedBox(height: MitlistSpacing.md),
             ..._slots.map((slot) {
               final plan = plans.cast<MealPlan?>().firstWhere(
                     (p) => p?.slot == slot,
@@ -522,13 +521,13 @@ class _SlotRow extends StatelessWidget {
           decoration: BoxDecoration(
             border: Border.all(
               color: plan != null
-                  ? MitlistColors.primary500.withValues(alpha: 0.3)
-                  : MitlistColors.borderSubtle,
+                  ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
+                  : Theme.of(context).colorScheme.outlineVariant,
               width: 1.5,
             ),
             borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
             color: plan != null
-                ? MitlistColors.primary50.withValues(alpha: 0.3)
+                ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
                 : null,
           ),
           child: Row(
@@ -537,7 +536,7 @@ class _SlotRow extends StatelessWidget {
                 width: 64,
                 child: Text(
                   _slotLabel,
-                  style: textTheme.labelSmall?.copyWith(color: MitlistColors.textSecondary),
+                  style: textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ),
               Expanded(
@@ -545,7 +544,7 @@ class _SlotRow extends StatelessWidget {
                     ? Text(
                         'Add meal',
                         style: textTheme.bodyMedium?.copyWith(
-                          color: MitlistColors.textSecondary,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontStyle: FontStyle.italic,
                         ),
                       )
@@ -567,7 +566,7 @@ class _SlotRow extends StatelessWidget {
                                 spacing: MitlistSpacing.xs,
                                 children: r.tags.take(2).map((t) => Text(
                                       '#$t',
-                                      style: textTheme.labelSmall?.copyWith(color: MitlistColors.primary500),
+                                      style: textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary),
                                     )).toList(),
                               );
                             }),
@@ -578,7 +577,7 @@ class _SlotRow extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.xs, vertical: 2),
                   decoration: BoxDecoration(
-                    border: Border.all(color: MitlistColors.borderSubtle),
+                    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                     borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
                   ),
                   child: Text(
@@ -593,12 +592,12 @@ class _SlotRow extends StatelessWidget {
                   onPressed: onEdit,
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close, size: 18),
+                  icon: Icon(Icons.close, size: 18),
                   tooltip: 'Remove',
                   onPressed: onRemove,
                 ),
               ] else
-                const Icon(Icons.add, size: 18, color: MitlistColors.textSecondary),
+                Icon(Icons.add, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ],
           ),
         ),
@@ -716,7 +715,7 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
               prefixIcon: const Icon(Icons.search, size: 20),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
-                      icon: const Icon(Icons.clear, size: 20),
+                      icon: Icon(Icons.clear, size: 20),
                       tooltip: 'Clear search',
                       onPressed: () => _searchController.clear(),
                     )
@@ -724,7 +723,7 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
               isDense: true,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
-                borderSide: const BorderSide(color: MitlistColors.borderSubtle),
+                borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
               ),
             ),
           ),
@@ -736,7 +735,7 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
                   child: Text(
                     'No recipes match "$_searchQuery"',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: MitlistColors.textTertiary,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                   ),
                 )
@@ -764,7 +763,7 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
                           ? Text(r.descriptionShort, maxLines: 1, overflow: TextOverflow.ellipsis)
                           : null,
                       trailing: isSelected
-                          ? const Icon(Icons.check, color: MitlistColors.primary500)
+                          ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
                           : null,
                       onTap: () => Navigator.of(context).pop(r),
                     );

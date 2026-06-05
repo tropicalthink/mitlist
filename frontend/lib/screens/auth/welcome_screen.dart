@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../theme/colors.dart';
 import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
@@ -12,34 +11,34 @@ class WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: MitlistColors.neutral50,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(MitlistSpacing.md),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Spacer(),
+              Spacer(),
               Text(
                 'mitlist',
                 style: MitlistTypography.logo(),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: MitlistSpacing.space3),
+              SizedBox(height: MitlistSpacing.space3),
               Text(
                 'Your household, organized.',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: MitlistColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: MitlistSpacing.space8),
+              SizedBox(height: MitlistSpacing.space8),
               Container(
                 padding: const EdgeInsets.all(MitlistSpacing.lg),
                 decoration: BoxDecoration(
-                  color: MitlistColors.surfacePrimary,
+                  color: Theme.of(context).colorScheme.surface,
                   border: Border.all(
-                    color: MitlistColors.borderPrimary,
+                    color: Theme.of(context).colorScheme.outline,
                     width: 2,
                   ),
                   boxShadow: MitlistShadows.shadowMedium,
@@ -51,11 +50,11 @@ class WelcomeScreen extends StatelessWidget {
                       'Lists, chores, money —\nall in one place.',
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
-                    const SizedBox(height: MitlistSpacing.sm),
+                    SizedBox(height: MitlistSpacing.sm),
                     Text(
                       'Built for flatmates who want less friction and more clarity.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: MitlistColors.textSecondary,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                     ),
                   ],
