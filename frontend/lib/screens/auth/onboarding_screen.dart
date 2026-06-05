@@ -1,20 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
+
+import '../../providers/group_provider.dart';
+import '../../sheets/create_household_sheet.dart';
+import '../../sheets/join_household_sheet.dart';
 import '../../theme/animations.dart';
-import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
-import '../../widgets/app_button.dart';
+import '../../utils/haptics.dart';
+import '../../widgets/app_card.dart';
 
-class OnboardingScreen extends StatefulWidget {
+class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen>
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     with SingleTickerProviderStateMixin {
   static const int _itemCount = 4;
 
@@ -22,6 +27,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   late final List<Animation<double>> _fades;
   late final List<Animation<Offset>> _slides;
   bool _didStart = false;
+  bool _checking = true;
 
   @override
   void initState() {
@@ -46,7 +52,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           MitlistAnimations.entrance.inMilliseconds;
       final end = (start + 0.5).clamp(0.0, 1.0);
       return Tween<Offset>(
-        begin: Offset(0, 0.08),
+        begin: const Offset(0, 0.08),
         end: Offset.zero,
       ).animate(
         CurvedAnimation(
@@ -55,18 +61,33 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         ),
       );
     });
+
+    Future.microtask(_checkExistingGroups);
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_didStart) {
-      _didStart = true;
-      if (MediaQuery.of(context).disableAnimations) {
-        _controller.value = 1.0;
-      } else {
-        _controller.forward();
+  Future<void> _checkExistingGroups() async {
+    try {
+      final groupService = await ref.read(groupServiceProviderAsync.future);
+      final groups = await groupService.listGroups(limit: 1);
+      if (!mounted) return;
+      if (groups.isNotEmpty) {
+        context.goNamed('home');
+        return;
       }
+    } catch (_) {}
+    if (mounted) {
+      setState(() => _checking = false);
+      _startAnimation();
+    }
+  }
+
+  void _startAnimation() {
+    if (_didStart) return;
+    _didStart = true;
+    if (MediaQuery.of(context).disableAnimations) {
+      _controller.value = 1.0;
+    } else {
+      _controller.forward();
     }
   }
 
@@ -76,147 +97,150 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     super.dispose();
   }
 
+  Future<void> _onCreateHousehold() async {
+    await Haptics.light();
+    if (!mounted) return;
+    final created = await CreateHouseholdSheet.show(context);
+    if (created == true && mounted) {
+      context.goNamed('home');
+    }
+  }
+
+  Future<void> _onJoinHousehold() async {
+    await Haptics.light();
+    if (!mounted) return;
+    final joined = await JoinHouseholdSheet.show(context);
+    if (joined == true && mounted) {
+      context.goNamed('home');
+    }
+  }
+
+  Widget _buildAnimatedItem(int index, Widget child) {
+    if (_checking) return child;
+    final disableAnimations = MediaQuery.of(context).disableAnimations;
+    if (disableAnimations) return child;
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return FadeTransition(
+          opacity: _fades[index],
+          child: SlideTransition(
+            position: _slides[index],
+            child: child,
+          ),
+        );
+      },
+      child: child,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final disableAnimations = MediaQuery.of(context).disableAnimations;
+    final colorScheme = Theme.of(context).colorScheme;
+    final bodyMedium = Theme.of(context).textTheme.bodyMedium;
 
-    Widget house = Lottie.asset(
-      'assets/animations/lottie/House.lottie',
-      width: 120,
-      height: 120,
-      fit: BoxFit.contain,
-    );
-
-    Widget logo = Text(
-      'mitlist',
-      style: MitlistTypography.logo(),
-      textAlign: TextAlign.center,
-    );
-
-    Widget card = Container(
-      padding: const EdgeInsets.all(MitlistSpacing.lg),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline,
-          width: 2,
-        ),
-        boxShadow: MitlistShadows.shadowMedium,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    final createCard = AppCard(
+      variant: AppCardVariant.elevated,
+      padding: AppCardPadding.lg,
+      interactive: true,
+      onTap: _onCreateHousehold,
+      semanticLabel: 'Create a household',
+      child: Row(
         children: [
-          Text(
-            'Create your household',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          SizedBox(height: MitlistSpacing.sm),
-          Text(
-            'Name it, invite your flatmates, and start adding lists, chores, and shared expenses. Everything stays in one place — no more "did you get the milk?" texts at midnight.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Create a household',
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
+                const SizedBox(height: MitlistSpacing.xs),
+                Text(
+                  'Start fresh: name it, invite flatmates, share everything in one place.',
+                  style: bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: MitlistSpacing.sm),
+          Icon(
+            Icons.add_home_outlined,
+            color: colorScheme.primary,
           ),
         ],
       ),
     );
 
-    Widget button = SizedBox(
-      width: double.infinity,
-      child: AppButton(
-        text: 'Get started',
-        variant: AppButtonVariant.solid,
-        color: AppButtonColor.primary,
-        size: AppButtonSize.lg,
-        onPressed: () => context.goNamed('home'),
-      ),
-    );
-
-    if (!disableAnimations && _controller.isAnimating) {
-      return Scaffold(
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(MitlistSpacing.md),
+    final joinCard = AppCard(
+      variant: AppCardVariant.elevated,
+      padding: AppCardPadding.lg,
+      interactive: true,
+      onTap: _onJoinHousehold,
+      semanticLabel: 'Join a household with invite code',
+      child: Row(
+        children: [
+          Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: MitlistSpacing.space4),
-                AnimatedBuilder(
-                  animation: _controller,
-                  builder: (context, child) {
-                    return FadeTransition(
-                      opacity: _fades[0],
-                      child: SlideTransition(
-                        position: _slides[0],
-                        child: house,
-                      ),
-                    );
-                  },
+                Text(
+                  'Join with invite code',
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
-                const SizedBox(height: MitlistSpacing.space4),
-                AnimatedBuilder(
-                  animation: _controller,
-                  builder: (context, child) {
-                    return FadeTransition(
-                      opacity: _fades[1],
-                      child: SlideTransition(
-                        position: _slides[1],
-                        child: logo,
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: MitlistSpacing.space8),
-                AnimatedBuilder(
-                  animation: _controller,
-                  builder: (context, child) {
-                    return FadeTransition(
-                      opacity: _fades[2],
-                      child: SlideTransition(
-                        position: _slides[2],
-                        child: card,
-                      ),
-                    );
-                  },
-                ),
-                Spacer(),
-                AnimatedBuilder(
-                  animation: _controller,
-                  builder: (context, child) {
-                    return FadeTransition(
-                      opacity: _fades[3],
-                      child: SlideTransition(
-                        position: _slides[3],
-                        child: button,
-                      ),
-                    );
-                  },
+                const SizedBox(height: MitlistSpacing.xs),
+                Text(
+                  'Already got an invite? Enter the code to jump right in.',
+                  style: bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
           ),
-        ),
-      );
-    }
+          const SizedBox(width: MitlistSpacing.sm),
+          Icon(
+            Icons.vpn_key_outlined,
+            color: colorScheme.primary,
+          ),
+        ],
+      ),
+    );
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(MitlistSpacing.md),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Spacer(),
               const SizedBox(height: MitlistSpacing.space4),
-              house,
+              _buildAnimatedItem(
+                0,
+                Lottie.asset(
+                  'assets/animations/lottie/House.lottie',
+                  width: 120,
+                  height: 120,
+                  fit: BoxFit.contain,
+                ),
+              ),
               const SizedBox(height: MitlistSpacing.space4),
-              logo,
+              _buildAnimatedItem(
+                1,
+                Text(
+                  'mitlist',
+                  style: MitlistTypography.logo(),
+                  textAlign: TextAlign.center,
+                ),
+              ),
               const SizedBox(height: MitlistSpacing.space8),
-              card,
+              _buildAnimatedItem(2, createCard),
+              const SizedBox(height: MitlistSpacing.md),
+              _buildAnimatedItem(3, joinCard),
               const Spacer(),
-              button,
             ],
           ),
         ),
