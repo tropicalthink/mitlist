@@ -79,7 +79,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Something went wrong.';
+        _errorMessage = 'Couldn\u2019t sign in. Check your connection and try again.';
       });
     } finally {
       setState(() => _isLoading = false);
@@ -126,7 +126,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             } catch (e) {
               setSheetState(() {
                 isSubmitting = false;
-                error = 'Something went wrong.';
+                error = 'Couldn\u2019t sign in. Check your connection and try again.';
               });
             }
           }
@@ -168,7 +168,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             } catch (e) {
               setSheetState(() {
                 isResetting = false;
-                error = 'Something went wrong.';
+                error = 'Couldn\u2019t sign in. Check your connection and try again.';
               });
             }
           }

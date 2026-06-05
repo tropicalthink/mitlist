@@ -22,6 +22,7 @@ import '../../widgets/mitlist_app_bar.dart';
 import '../../sheets/expense_creation_sheet.dart';
 import '../../sheets/chore_creation_sheet.dart';
 import '../../sheets/chore_detail_sheet.dart';
+import '../../sheets/create_household_sheet.dart';
 
 enum _CalendarView { week, month, agenda }
 
@@ -101,7 +102,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = 'Something went wrong.';
+        _error = 'Couldn\u2019t load calendar. Check your connection.';
         _isLoading = false;
       });
     }
@@ -213,9 +214,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       return Center(
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/House.lottie',
-          icon: Icon(Icons.home_outlined),
+          icon: const Icon(Icons.home_outlined),
           title: 'No household',
           description: 'Join or create a household to view the calendar',
+          actions: [
+            AppButton(
+              text: 'Create household',
+              onPressed: () async {
+                await CreateHouseholdSheet.show(context);
+              },
+            ),
+          ],
         ),
       );
     }
@@ -251,84 +260,96 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       child: Row(
         children: [
           Expanded(
-            child: GestureDetector(
-              onTap: () => _setViewMode(_CalendarView.week),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    vertical: MitlistSpacing.sm),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
+            child: Semantics(
+              button: true,
+              label: 'Day view',
+              child: GestureDetector(
+                onTap: () => _setViewMode(_CalendarView.week),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      vertical: MitlistSpacing.sm),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: _viewMode == _CalendarView.week
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.transparent,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                  child: Text(
+                    'Week',
+                    textAlign: TextAlign.center,
+                    style: textTheme.labelMedium?.copyWith(
                       color: _viewMode == _CalendarView.week
                           ? Theme.of(context).colorScheme.primary
-                          : Colors.transparent,
-                      width: 2,
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
-                  ),
-                ),
-                child: Text(
-                  'Week',
-                  textAlign: TextAlign.center,
-                  style: textTheme.labelMedium?.copyWith(
-                    color: _viewMode == _CalendarView.week
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
             ),
           ),
           Expanded(
-            child: GestureDetector(
-              onTap: () => _setViewMode(_CalendarView.month),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    vertical: MitlistSpacing.sm),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
+            child: Semantics(
+              button: true,
+              label: 'Agenda view',
+              child: GestureDetector(
+                onTap: () => _setViewMode(_CalendarView.month),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      vertical: MitlistSpacing.sm),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: _viewMode == _CalendarView.month
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.transparent,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                  child: Text(
+                    'Month',
+                    textAlign: TextAlign.center,
+                    style: textTheme.labelMedium?.copyWith(
                       color: _viewMode == _CalendarView.month
                           ? Theme.of(context).colorScheme.primary
-                          : Colors.transparent,
-                      width: 2,
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
-                  ),
-                ),
-                child: Text(
-                  'Month',
-                  textAlign: TextAlign.center,
-                  style: textTheme.labelMedium?.copyWith(
-                    color: _viewMode == _CalendarView.month
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
             ),
           ),
           Expanded(
-            child: GestureDetector(
-              onTap: () => _setViewMode(_CalendarView.agenda),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    vertical: MitlistSpacing.sm),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: _viewMode == _CalendarView.agenda
-                          ? Theme.of(context).colorScheme.primary
-                          : Colors.transparent,
-                      width: 2,
+            child: Semantics(
+              button: true,
+              label: 'Month view',
+              child: GestureDetector(
+                onTap: () => _setViewMode(_CalendarView.agenda),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      vertical: MitlistSpacing.sm),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: _viewMode == _CalendarView.agenda
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.transparent,
+                        width: 2,
+                      ),
                     ),
                   ),
-                ),
-                child: Text(
-                  'Agenda',
-                  textAlign: TextAlign.center,
-                  style: textTheme.labelMedium?.copyWith(
-                    color: _viewMode == _CalendarView.agenda
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                  child: Text(
+                    'Agenda',
+                    textAlign: TextAlign.center,
+                    style: textTheme.labelMedium?.copyWith(
+                      color: _viewMode == _CalendarView.agenda
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ),
@@ -465,16 +486,19 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 final dayEvents = _eventsByDay[day] ?? [];
                 final isToday = _isToday(day);
 
-                return GestureDetector(
-                  onTapDown: (details) => _showDayMenu(
-                      context, day, dayEvents, details.globalPosition),
-                  onTap: () {
-                    setState(() {
-                      _weekStart = _weekStartForDay(day);
-                      _viewMode = _CalendarView.week;
-                    });
-                    _load();
-                  },
+                return Semantics(
+                  button: true,
+                  label: 'Day ${day.day}',
+                  child: GestureDetector(
+                    onTapDown: (details) => _showDayMenu(
+                        context, day, dayEvents, details.globalPosition),
+                    onTap: () {
+                      setState(() {
+                        _weekStart = _weekStartForDay(day);
+                        _viewMode = _CalendarView.week;
+                      });
+                      _load();
+                    },
                   child: Container(
                     margin: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
@@ -514,7 +538,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       ],
                     ),
                   ),
-                );
+                ),
+              );
               },
             ),
           ),
@@ -553,7 +578,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       items: [
         PopupMenuItem(
           enabled: false,
-          height: 28,
+          height: 44,
           child: Text(
             dayLabel,
             style: Theme.of(ctx).textTheme.labelSmall?.copyWith(
@@ -659,6 +684,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       ),
                     Text(
                       _formatAgendaDate(day),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: Theme.of(context)
                           .textTheme
                           .titleSmall
@@ -727,6 +754,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     e.mealPlan != null)
                   Text(
                     '${e.mealPlan!.servings} ppl ',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: MitlistTypography.labelXSmall(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),

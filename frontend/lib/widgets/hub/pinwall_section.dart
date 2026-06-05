@@ -302,7 +302,7 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
     final boardBorder = dark
         ? MitlistColors.pinwallBoardBorderDark
         : MitlistColors.pinwallBoardBorder;
-    final boardShadow = Colors.black.withValues(alpha: dark ? 0.38 : 0.16);
+    final boardShadow = MitlistColors.neutral950.withValues(alpha: dark ? 0.38 : 0.16);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -371,10 +371,12 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
                           style: textTheme.bodySmall,
                         ),
                       ),
-                      TextButton(
+                      AppButton(
+                        text: 'Retry',
+                        variant: AppButtonVariant.ghost,
+                        size: AppButtonSize.sm,
                         onPressed: () => ref.invalidate(
                             pinwallPostsByGroupProvider(widget.groupId)),
-                        child: Text('Retry'),
                       ),
                     ],
                   ),
@@ -459,10 +461,10 @@ class _PinwallComposerNote extends StatelessWidget {
         : MitlistColors.composerBorderLight;
     final pinColor = dark ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.primary;
     final textColor = dark
-        ? Colors.white.withValues(alpha: 0.9)
+        ? MitlistColors.surfaceSoft.withValues(alpha: 0.9)
         : MitlistColors.pinwallNoteTextLight;
     final hintColor = dark
-        ? Colors.white.withValues(alpha: 0.38)
+        ? MitlistColors.surfaceSoft.withValues(alpha: 0.38)
         : MitlistColors.pinwallNoteTextLight.withValues(alpha: 0.45);
     final dividerColor = border.withValues(alpha: dark ? 0.5 : 0.4);
     final reminderLabel = remindAt == null
@@ -479,7 +481,7 @@ class _PinwallComposerNote extends StatelessWidget {
             border: Border.all(color: border, width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: dark ? 0.42 : 0.16),
+                color: MitlistColors.neutral950.withValues(alpha: dark ? 0.42 : 0.16),
                 blurRadius: 0,
                 offset: const Offset(4, 5),
               ),
@@ -544,7 +546,6 @@ class _PinwallComposerNote extends StatelessWidget {
                       ),
                       onPressed:
                           (isPosting || isUploadingMedia) ? null : onPickReminder,
-                      visualDensity: VisualDensity.compact,
                     ),
                     if (remindAt != null)
                       IconButton(
@@ -556,7 +557,6 @@ class _PinwallComposerNote extends StatelessWidget {
                         ),
                         onPressed:
                             (isPosting || isUploadingMedia) ? null : onClearReminder,
-                        visualDensity: VisualDensity.compact,
                       ),
                     if (reminderLabel != null)
                       Padding(
@@ -586,7 +586,6 @@ class _PinwallComposerNote extends StatelessWidget {
                       ),
                       onPressed:
                           (isPosting || isUploadingMedia) ? null : onPickLinkedEntity,
-                      visualDensity: VisualDensity.compact,
                     ),
                     IconButton(
                       tooltip: pendingCount == 0
@@ -603,7 +602,6 @@ class _PinwallComposerNote extends StatelessWidget {
                       ),
                       onPressed:
                           (isPosting || isUploadingMedia) ? null : onPickMedia,
-                      visualDensity: VisualDensity.compact,
                     ),
                     if (pendingCount > 0)
                       Text(
@@ -669,11 +667,17 @@ class _PinwallNoteCard extends ConsumerWidget {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => Scaffold(
-          backgroundColor: Colors.black,
+          backgroundColor: MitlistColors.neutral950,
           appBar: AppBar(
-            backgroundColor: Colors.black,
-            foregroundColor: Colors.white,
+            backgroundColor: MitlistColors.neutral950,
+            foregroundColor: MitlistColors.surfaceSoft,
             elevation: 0,
+            scrolledUnderElevation: 0,
+            leading: IconButton(
+              tooltip: 'Close',
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
           ),
           body: Center(
             child: InteractiveViewer(
@@ -686,7 +690,7 @@ class _PinwallNoteCard extends ConsumerWidget {
                   padding: EdgeInsets.all(MitlistSpacing.md),
                   child: Text(
                     'Couldn\u2019t load image.',
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(color: MitlistColors.surfaceSoft),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -864,9 +868,9 @@ class _PinwallNoteCard extends ConsumerWidget {
     }
 
     final textColor =
-        dark ? Colors.white.withValues(alpha: 0.9) : Theme.of(context).colorScheme.onSurface;
+        dark ? MitlistColors.surfaceSoft.withValues(alpha: 0.9) : Theme.of(context).colorScheme.onSurface;
     final mutedColor = dark
-        ? Colors.white.withValues(alpha: 0.5)
+        ? MitlistColors.surfaceSoft.withValues(alpha: 0.5)
         : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7);
 
     final remindAt = post.remindAt;
@@ -882,6 +886,9 @@ class _PinwallNoteCard extends ConsumerWidget {
         children: [
           Container(
             width: 160,
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.7,
+            ),
             padding: const EdgeInsets.fromLTRB(
               MitlistSpacing.sm + 4,
               MitlistSpacing.lg,
@@ -894,7 +901,7 @@ class _PinwallNoteCard extends ConsumerWidget {
               border: Border.all(color: border, width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: dark ? 0.42 : 0.16),
+                  color: MitlistColors.neutral950.withValues(alpha: dark ? 0.42 : 0.16),
                   blurRadius: 0,
                   offset: const Offset(4, 5),
                 ),
@@ -1119,12 +1126,12 @@ class _PushpinPainter extends CustomPainter {
     final headPaint = Paint()..color = headColor;
     canvas.drawCircle(Offset(cx, 10), 10, headPaint);
 
-    final capPaint = Paint()..color = Colors.black.withValues(alpha: 0.18);
+    final capPaint = Paint()..color = MitlistColors.neutral950.withValues(alpha: 0.18);
     canvas.drawRect(
         Rect.fromCenter(center: Offset(cx, 18), width: 14, height: 5),
         capPaint);
 
-    final needlePaint = Paint()..color = Colors.black.withValues(alpha: 0.72);
+    final needlePaint = Paint()..color = MitlistColors.neutral950.withValues(alpha: 0.72);
     final needlePath = Path()
       ..moveTo(cx - 1.5, 19)
       ..lineTo(cx + 1.5, 19)
@@ -1133,7 +1140,7 @@ class _PushpinPainter extends CustomPainter {
     canvas.drawPath(needlePath, needlePaint);
 
     final outlinePaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.72)
+      ..color = MitlistColors.neutral950.withValues(alpha: 0.72)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
     canvas.drawCircle(Offset(cx, 10), 10, outlinePaint);

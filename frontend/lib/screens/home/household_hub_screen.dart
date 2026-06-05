@@ -343,27 +343,31 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
             required String label,
             required VoidCallback onTap,
           }) {
-            return InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.zero,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: MitlistSpacing.sm,
-                ),
-                child: Row(
-                  children: [
-                    Icon(icon, size: 22, color: iconColor),
-                    SizedBox(width: MitlistSpacing.md),
-                    Expanded(
-                      child: Text(
-                        label,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: rowStyle?.copyWith(
-                            fontWeight: FontWeight.w500),
+            return Semantics(
+              button: true,
+              label: label,
+              child: InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.zero,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: MitlistSpacing.sm,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(icon, size: 22, color: iconColor),
+                      SizedBox(width: MitlistSpacing.md),
+                      Expanded(
+                        child: Text(
+                          label,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: rowStyle?.copyWith(
+                              fontWeight: FontWeight.w500),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             );
@@ -374,53 +378,57 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
             children: [
               if (displayGroups.isNotEmpty) ...[
                 for (final h in displayGroups)
-                  InkWell(
-                    onTap: groups.length >= 2
-                        ? () {
-                            Navigator.of(sheetContext).pop();
-                            if (h.id != _resolvedGroupId!) {
-                              _switchGroup(h.id);
+                  Semantics(
+                    button: true,
+                    label: 'Switch to ${h.name}',
+                    child: InkWell(
+                      onTap: groups.length >= 2
+                          ? () {
+                              Navigator.of(sheetContext).pop();
+                              if (h.id != _resolvedGroupId!) {
+                                _switchGroup(h.id);
+                              }
                             }
-                          }
-                        : null,
-                    borderRadius: BorderRadius.zero,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: MitlistSpacing.sm,
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  h.name,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: rowStyle?.copyWith(
-                                    fontWeight: h.id == _resolvedGroupId!
-                                        ? FontWeight.w700
-                                        : FontWeight.w500,
-                                  ),
-                                ),
-                                if (h.memberCount != null)
+                          : null,
+                      borderRadius: BorderRadius.zero,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: MitlistSpacing.sm,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
                                   Text(
-                                    '${h.memberCount} ${h.memberCount == 1 ? 'member' : 'members'}',
-                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                        ),
+                                    h.name,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: rowStyle?.copyWith(
+                                      fontWeight: h.id == _resolvedGroupId!
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
+                                    ),
                                   ),
-                              ],
+                                  if (h.memberCount != null)
+                                    Text(
+                                      '${h.memberCount} ${h.memberCount == 1 ? 'member' : 'members'}',
+                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                          ),
+                                    ),
+                                ],
+                              ),
                             ),
-                          ),
-                          if (h.id == _resolvedGroupId!)
-                            Icon(
-                              Icons.check,
-                              size: 18,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                        ],
+                            if (h.id == _resolvedGroupId!)
+                              Icon(
+                                Icons.check,
+                                size: 18,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

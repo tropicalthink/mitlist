@@ -250,9 +250,12 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
               child: InteractiveViewer(
                 minScale: 0.5,
                 maxScale: 4,
-                child: Image.network(url, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const Center(
+                child: Semantics(
+                  label: 'List image',
+                  child: Image.network(url, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const Center(
                     child: Icon(Icons.broken_image, color: Colors.white, size: 48),
                   )),
+              ),
               ),
             ),
             SafeArea(
@@ -573,30 +576,30 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     final priceStr = await showAppDialog<String>(
       context: context,
       title: 'Set price',
-      body: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: controller,
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
-            autofocus: true,
-            decoration: const InputDecoration(
-              prefixText: '\$',
-              hintText: '0.00',
-            ),
-          ),
-          const SizedBox(height: MitlistSpacing.sm),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () =>
-                  Navigator.of(context).pop(controller.text.trim()),
-              child: const Text('Save'),
-            ),
-          ),
-        ],
+      body: TextField(
+        controller: controller,
+        keyboardType:
+            const TextInputType.numberWithOptions(decimal: true),
+        autofocus: true,
+        decoration: const InputDecoration(
+          labelText: 'Price',
+          prefixText: '\$',
+          hintText: '0.00',
+        ),
       ),
+      actions: [
+        AppButton(
+          text: 'Cancel',
+          variant: AppButtonVariant.outline,
+          onPressed: () => Navigator.of(context).pop(null),
+        ),
+        const SizedBox(width: MitlistSpacing.sm),
+        AppButton(
+          text: 'Save',
+          onPressed: () =>
+              Navigator.of(context).pop(controller.text.trim()),
+        ),
+      ],
     );
     controller.dispose();
     if (priceStr == null || priceStr.isEmpty) { _isSaving = false; return; }
@@ -813,6 +816,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     )
                   : Text(
                       _listName,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
               actions: [
@@ -871,11 +875,14 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       ),
       body: Column(
         children: [
-          GestureDetector(
-            onTap: () {
-              _bannerTimer?.cancel();
-              setState(() => _showCompletionBanner = false);
-            },
+          Semantics(
+            button: true,
+            label: 'Dismiss completion banner',
+            child: GestureDetector(
+              onTap: () {
+                _bannerTimer?.cancel();
+                setState(() => _showCompletionBanner = false);
+              },
             child: AnimatedContainer(
               duration: MitlistAnimations.banner,
               curve: MitlistTheme.easeToast,
@@ -894,6 +901,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     )
                   : const SizedBox.shrink(),
             ),
+          ),
           ),
           Expanded(child: _buildBody()),
           if (!_isLoading && _errorMessage == null) _buildBottomBar(),
@@ -1062,7 +1070,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     child: SizedBox(
                       width: 28,
                       height: 28,
-                      child: Image.network(thumbUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.image_not_supported_outlined, size: 16)),
+                      child: Semantics(
+                        label: 'Item photo',
+                        child: Image.network(thumbUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.image_not_supported_outlined, size: 16)),
+                      ),
                     ),
                   ),
                 ),
@@ -1298,6 +1309,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     minLines: 1,
                     maxLines: 3,
                     decoration: InputDecoration(
+                      labelText: 'New item',
                       hintText: 'e.g. Milk · Oats · 2 avocados',
                       filled: true,
                       fillColor: fill,

@@ -369,11 +369,15 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                     textInputAction: TextInputAction.done,
                   )
                 else
-                  GestureDetector(
-                    onTap: _startEditingName,
-                    child: Text(
-                      _name,
-                      style: textTheme.headlineSmall,
+                  Semantics(
+                    button: true,
+                    label: 'Edit your name',
+                    child: GestureDetector(
+                      onTap: _startEditingName,
+                      child: Text(
+                        _name,
+                        style: textTheme.headlineSmall,
+                      ),
                     ),
                   ),
                 SizedBox(height: MitlistSpacing.sm),
@@ -407,7 +411,10 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           SizedBox(height: MitlistSpacing.sm),
           ..._households.map((h) {
             final isActive = h.id == _activeHouseholdId;
-            return InkWell(
+            return Semantics(
+              button: true,
+              label: 'Switch to ${h.name}',
+              child: InkWell(
               onTap: () {
                 setState(() => _activeHouseholdId = h.id);
                 context.goNamed('householdHub', pathParameters: {'groupId': h.id});
@@ -434,7 +441,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                   ],
                 ),
               ),
-            );
+            ),
+          );
           }),
         ],
       ),

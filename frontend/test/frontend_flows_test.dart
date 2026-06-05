@@ -886,7 +886,8 @@ void main() {
       ],
     );
 
-    expect(find.text('Something went wrong.'), findsOneWidget);
+    expect(find.text('Couldn\u2019t load expenses. Check your connection.'),
+        findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
   });
 

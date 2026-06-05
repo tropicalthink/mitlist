@@ -451,6 +451,8 @@ class _DayCard extends StatelessWidget {
                 Spacer(),
                 Text(
                   DateFormat.MMMd().format(date),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: MitlistTypography.monoBody(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
@@ -513,10 +515,13 @@ class _SlotRow extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
-      child: InkWell(
-        onTap: plan == null ? onAdd : null,
-        borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
-        child: Container(
+      child: Semantics(
+        button: true,
+        label: 'Add meal for $_slotLabel',
+        child: InkWell(
+          onTap: plan == null ? onAdd : null,
+          borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
+          child: Container(
           padding: const EdgeInsets.all(MitlistSpacing.sm),
           decoration: BoxDecoration(
             border: Border.all(
@@ -601,6 +606,7 @@ class _SlotRow extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -749,12 +755,15 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
                       leading: r.imageUrl != null
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
-                              child: Image.network(
-                                r.imageUrl!,
-                                width: 48,
-                                height: 48,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => const Icon(Icons.image, size: 48),
+                              child: Semantics(
+                                label: 'Image of ${r.title}',
+                                child: Image.network(
+                                  r.imageUrl!,
+                                  width: 48,
+                                  height: 48,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => const Icon(Icons.image, size: 48),
+                                ),
                               ),
                             )
                           : const Icon(Icons.restaurant, size: 48),
