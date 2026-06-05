@@ -45,6 +45,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   bool _isMutating = false;
   bool _hasHousehold = true;
   final Logger _logger = Logger();
+  Map<String, String> _memberNames = {};
 
   static const double _displaySmallLineHeight = 36 * (44 / 36);
   static const double _labelMediumLineHeight = 12 * (16 / 12);
@@ -103,6 +104,16 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       }
       final repo = await ref.read(choreRepositoryProvider.future);
 
+      // Load member display names so assignee avatars show real initials.
+      try {
+        final members = await groupService.listMembers(groupId!);
+        if (mounted) {
+          setState(() {
+            _memberNames = {for (final m in members) m.userId: m.displayName};
+          });
+        }
+      } catch (_) {}
+
       await _sub?.cancel();
       final gid = groupId!;
       _sub = repo.watchCurrentChores(gid).listen((currentChores) {
@@ -135,12 +146,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
               assignmentId: entry.pendingAssignment?.id,
               id: entry.chore.id,
               title: entry.chore.name,
-              assigneeInitials:
-                  entry.pendingAssignment?.userId.isNotEmpty == true
-                      ? entry.pendingAssignment!.userId
-                          .substring(0, 1)
-                          .toUpperCase()
-                      : '?',
+              assigneeInitials: _initialsFor(
+                  entry.pendingAssignment?.userId, _memberNames),
               dueDate: entry.pendingAssignment?.dueDate ??
                   _fallbackDueDate(now, entry.chore.frequency),
               isMine: entry.assignedToMe,
@@ -285,6 +292,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   }
 
   String _shortUserLabel(String userId) {
+    final name = _memberNames[userId];
+    if (name != null && name.isNotEmpty) return name;
     if (userId.length <= 8) return userId;
     return userId.substring(0, 8);
   }
@@ -763,7 +772,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                         ),
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          section.toUpperCase(),
+                          section,
                           style:
                               Theme.of(context).textTheme.labelMedium?.copyWith(
                                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -886,7 +895,7 @@ class _StatBlock extends StatelessWidget {
         ),
         SizedBox(height: MitlistSpacing.space1),
         Text(
-          label.toUpperCase(),
+          label,
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
                 color: labelColor,
               ),
@@ -1084,6 +1093,23 @@ String _formatLastAction(ChoreAssignment assignment) {
     return 'Skipped';
   }
   return '';
+}
+
+String _initialsFor(String? userId, Map<String, String> names) {
+  if (userId == null || userId.isEmpty) return '?';
+  final name = names[userId];
+  if (name != null && name.isNotEmpty) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length >= 2) {
+      return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+    }
+    return name[0].toUpperCase();
+  }
+  // Fall back to first alphabetic character in the userId.
+  for (final c in userId.split('')) {
+    if (RegExp(r'[a-zA-Z]').hasMatch(c)) return c.toUpperCase();
+  }
+  return '?';
 }
 
 DateTime _fallbackDueDate(DateTime now, String frequency) {
