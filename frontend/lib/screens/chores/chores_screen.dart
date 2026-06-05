@@ -773,6 +773,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                         alignment: Alignment.centerLeft,
                         child: Text(
                           section,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style:
                               Theme.of(context).textTheme.labelMedium?.copyWith(
                                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -954,10 +956,13 @@ class _ChoreItem extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: GestureDetector(
-              onTap: onTap,
-              behavior: HitTestBehavior.translucent,
-              child: Padding(
+            child: Semantics(
+              button: true,
+              label: chore.title,
+              child: GestureDetector(
+                onTap: onTap,
+                behavior: HitTestBehavior.translucent,
+                child: Padding(
                 padding: const EdgeInsets.symmetric(
                   vertical: MitlistSpacing.sm,
                 ),
@@ -1003,7 +1008,8 @@ class _ChoreItem extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(width: MitlistSpacing.sm),
+        ),
+        SizedBox(width: MitlistSpacing.sm),
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [

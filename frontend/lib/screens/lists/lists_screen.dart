@@ -196,7 +196,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         // If we have cached content, don't replace it with an error state.
         if (!hadCache && mounted) {
           setState(() {
-            _error = 'Something went wrong.';
+            _error = 'Couldn\u2019t load lists. Check your connection.';
           });
         }
       }

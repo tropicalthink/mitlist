@@ -843,7 +843,9 @@ class _RecipeCard extends StatelessWidget {
       );
     }
 
-    return Image.network(
+    return Semantics(
+      label: 'Image of ${recipe.title}',
+      child: Image.network(
       recipe.imageUrl!,
       width: MitlistSpacing.space20,
       height: MitlistSpacing.space20,
@@ -860,7 +862,8 @@ class _RecipeCard extends StatelessWidget {
           ),
         );
       },
-    );
+    ),
+  );
   }
 
   String _metaLine() {

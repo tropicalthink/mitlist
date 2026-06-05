@@ -220,11 +220,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
               const SizedBox(height: MitlistSpacing.space4),
               _buildAnimatedItem(
                 0,
-                Lottie.asset(
-                  'assets/animations/lottie/House.lottie',
-                  width: 120,
-                  height: 120,
-                  fit: BoxFit.contain,
+                Semantics(
+                  label: 'Welcome animation of household coordination',
+                  child: Lottie.asset(
+                    'assets/animations/lottie/House.lottie',
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ),
               const SizedBox(height: MitlistSpacing.space4),

@@ -233,7 +233,8 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
               controller: _textController,
               maxLines: 4,
               decoration: const InputDecoration(
-                hintText: 'Paste or type the shared text here…',
+                labelText: 'Shared text',
+                hintText: 'Paste or type the shared text here\u2026',
               ),
             ),
             if (_selectedDestination == 'pinwall') ...[

@@ -71,7 +71,7 @@ class _RecurringExpensesScreenState
       });
     } catch (e) {
       setState(() {
-        _error = 'Something went wrong.';
+        _error = 'Couldn\u2019t load recurring expenses. Check your connection.';
         _isLoading = false;
       });
     }
@@ -352,31 +352,23 @@ class _RecurringCard extends StatelessWidget {
                   final confirmed = await showAppDialog<bool>(
                     context: context,
                     title: 'Delete recurring expense',
-                    body: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'This will stop future expenses from being created.'),
-                        const SizedBox(height: MitlistSpacing.md),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            TextButton(
-                              onPressed: () =>
-                                  Navigator.of(context).pop(false),
-                              child: const Text('Cancel'),
-                            ),
-                            const SizedBox(width: MitlistSpacing.sm),
-                            TextButton(
-                              onPressed: () =>
-                                  Navigator.of(context).pop(true),
-                              child: const Text('Delete'),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                    body: const Text(
+                      'This will stop future expenses from being created.'),
+                    actions: [
+                      AppButton(
+                        text: 'Cancel',
+                        variant: AppButtonVariant.outline,
+                        onPressed: () =>
+                            Navigator.of(context).pop(false),
+                      ),
+                      const SizedBox(width: MitlistSpacing.sm),
+                      AppButton(
+                        text: 'Delete',
+                        color: AppButtonColor.error,
+                        onPressed: () =>
+                            Navigator.of(context).pop(true),
+                      ),
+                    ],
                   );
                   if (confirmed == true) onDelete();
                 },

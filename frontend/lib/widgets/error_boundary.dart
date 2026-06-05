@@ -3,6 +3,7 @@ import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/material.dart';
 
 import '../theme/spacing.dart';
+import '../widgets/app_button.dart';
 import '../services/error_reporter.dart';
 
 class MitlistErrorBoundary extends StatefulWidget {
@@ -88,10 +89,11 @@ class _ErrorFallback extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: MitlistSpacing.lg),
-              TextButton.icon(
-                onPressed: onRetry,
+              AppButton(
+                text: 'Try again',
                 icon: const Icon(Icons.refresh),
-                label: const Text('Try again'),
+                variant: AppButtonVariant.outline,
+                onPressed: onRetry,
               ),
             ],
           ),

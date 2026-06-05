@@ -17,6 +17,7 @@ import '../../sheets/expense_creation_sheet.dart';
 import '../../sheets/create_list_sheet.dart';
 import '../../sheets/recipe_creation_sheet.dart';
 import '../../sheets/chore_creation_sheet.dart';
+import '../../widgets/empty_state.dart';
 
 class ScannerScreen extends ConsumerStatefulWidget {
   const ScannerScreen({super.key});
@@ -268,23 +269,19 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
             ),
           ],
 
-          if (_error != null) ...[
-            SizedBox(height: MitlistSpacing.md),
-            Text(
-              _error!,
-              style: textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.error,
-              ),
-              textAlign: TextAlign.center,
+          if (_error != null)
+            AppEmptyState(
+              title: _error!,
+              icon: const Icon(Icons.error_outline),
+              isError: true,
+              paddingPreset: AppEmptyStatePadding.md,
+              actions: [
+                AppButton(
+                  text: 'Retry',
+                  onPressed: () => _pickImage(ImageSource.gallery),
+                ),
+              ],
             ),
-            const SizedBox(height: MitlistSpacing.md),
-            Center(
-              child: AppButton(
-                text: 'Retry',
-                onPressed: () => _pickImage(ImageSource.gallery),
-              ),
-            ),
-          ],
 
           // Result preview
           if (_result != null) ...[

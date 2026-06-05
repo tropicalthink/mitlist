@@ -246,7 +246,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Something went wrong.';
+        _errorMessage = 'Couldn\u2019t load expenses. Check your connection.';
         _isLoading = false;
       });
     }
@@ -1423,10 +1423,13 @@ class _BalancesExpandableBodyState extends State<_BalancesExpandableBody> {
 
     return Column(
       children: [
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => setState(() => _expanded = !_expanded),
-          child: Padding(
+        Semantics(
+          button: true,
+          label: 'Expand balances',
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: MitlistSpacing.md,
               vertical: MitlistSpacing.sm,
@@ -1458,7 +1461,8 @@ class _BalancesExpandableBodyState extends State<_BalancesExpandableBody> {
             ),
           ),
         ),
-        Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
         AnimatedCrossFade(
           firstChild: const SizedBox.shrink(),
           secondChild: Padding(

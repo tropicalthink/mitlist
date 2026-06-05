@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/outbox_provider.dart';
 import '../sheets/conflict_resolution_sheet.dart';
+import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import 'app_card.dart';
@@ -153,42 +154,47 @@ class _Banner extends ConsumerWidget {
             bottom: false,
             child: Row(
               children: [
-                Icon(icon, size: 16, color: Colors.white),
+                Icon(icon, size: 16, color: MitlistColors.textOnPrimary),
                 const SizedBox(width: MitlistSpacing.sm),
                 Expanded(
                   child: Text(
                     message,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Colors.white,
+                          color: MitlistColors.textOnPrimary,
                         ),
                   ),
                 ),
                 if (state.hasErrors) ...[
                   GestureDetector(
                     onTap: () => _retry(ref),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Retry',
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelSmall
-                              ?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
-                        const SizedBox(width: MitlistSpacing.xs),
-                        const Icon(Icons.refresh,
-                            size: 14, color: Colors.white),
-                      ],
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: MitlistSpacing.space3,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Retry',
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(
+                                  color: MitlistColors.textOnPrimary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                          const SizedBox(width: MitlistSpacing.xs),
+                          const Icon(Icons.refresh,
+                              size: 14, color: MitlistColors.textOnPrimary),
+                        ],
+                      ),
                     ),
                   ),
                 ],
                 const SizedBox(width: MitlistSpacing.xs),
                 const Icon(Icons.chevron_right,
-                    size: 14, color: Colors.white),
+                    size: 14, color: MitlistColors.textOnPrimary),
               ],
             ),
           ),

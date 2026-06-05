@@ -93,7 +93,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Something went wrong.';
+        _errorMessage = 'Couldn\u2019t create account. Check your connection and try again.';
       });
     } finally {
       setState(() => _isLoading = false);

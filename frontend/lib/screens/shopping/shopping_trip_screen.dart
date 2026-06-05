@@ -89,7 +89,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = 'Something went wrong.';
+        _error = 'Couldn\u2019t load shopping trip. Check your connection.';
         _isLoading = false;
       });
     }
