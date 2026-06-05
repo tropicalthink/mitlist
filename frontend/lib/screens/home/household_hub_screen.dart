@@ -18,6 +18,7 @@ import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../utils/active_group_context.dart';
 import '../../theme/spacing.dart';
+import '../../theme/typography.dart';
 import '../../utils/haptics.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
@@ -111,10 +112,12 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
       if (isValidGroupId(gid)) {
         _resolvedGroupId = gid;
         ref.read(currentGroupIdProvider.notifier).set(gid);
+        _loadData();
       } else {
         _resolvedGroupId = null;
+        _households = groups;
+        setState(() => _isLoading = false);
       }
-      _loadData();
     } catch (_) {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -478,6 +481,102 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     );
   }
 
+  Future<void> _onCreateHousehold() async {
+    await Haptics.light();
+    if (!mounted) return;
+    final created = await CreateHouseholdSheet.show(context);
+    await _onHouseholdResult(created);
+  }
+
+  Future<void> _onJoinHousehold() async {
+    await Haptics.light();
+    if (!mounted) return;
+    final joined = await JoinHouseholdSheet.show(context);
+    await _onHouseholdResult(joined);
+  }
+
+  Future<void> _onHouseholdResult(bool? success) async {
+    if (success != true || !mounted) return;
+    try {
+      final groupSvc = await ref.read(groupServiceProviderAsync.future);
+      final groups = await groupSvc.listGroups();
+      if (!mounted) return;
+      setState(() => _households = groups);
+      if (groups.isNotEmpty) {
+        _switchGroup(groups.first.id);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final bodyMedium = Theme.of(context).textTheme.bodyMedium;
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(MitlistSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'mitlist',
+              style: MitlistTypography.logo(),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: MitlistSpacing.md),
+            Icon(
+              Icons.home_outlined,
+              size: 48,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(height: MitlistSpacing.md),
+            Text(
+              'Welcome to mitlist',
+              style: Theme.of(context).textTheme.headlineSmall,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: MitlistSpacing.sm),
+            Text(
+              'Create or join a household to start sharing lists, chores, and expenses.',
+              style: bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: MitlistSpacing.lg),
+            SizedBox(
+              width: double.infinity,
+              child: AppButton(
+                variant: AppButtonVariant.solid,
+                color: AppButtonColor.primary,
+                size: AppButtonSize.lg,
+                text: 'Create a household',
+                icon: const Icon(Icons.add_home_outlined),
+                onPressed: _onCreateHousehold,
+              ),
+            ),
+            const SizedBox(height: MitlistSpacing.md),
+            SizedBox(
+              width: double.infinity,
+              child: AppButton(
+                variant: AppButtonVariant.outline,
+                color: AppButtonColor.neutral,
+                size: AppButtonSize.lg,
+                text: 'Join with invite code',
+                icon: const Icon(Icons.vpn_key_outlined),
+                onPressed: _onJoinHousehold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildAppBarTitle(BuildContext context) {
     final name = _data?.name ?? 'Home';
     final titleTextStyle =
@@ -533,7 +632,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: _isLoading || _error != null
+      floatingActionButton: _isLoading || _error != null || _resolvedGroupId == null
           ? null
           : AppButton(
               size: AppButtonSize.lg,
@@ -544,7 +643,9 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
             ),
       body: _isLoading
           ? const HubSkeleton()
-          : _error != null
+          : _resolvedGroupId == null
+              ? _buildEmptyState(context)
+              : _error != null
               ? Center(
                   child: Padding(
                     padding: const EdgeInsets.all(MitlistSpacing.md),

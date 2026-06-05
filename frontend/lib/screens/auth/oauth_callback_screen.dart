@@ -80,7 +80,7 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
       }
       ref.read(authStateProvider.notifier).state = true;
       if (!mounted) return;
-      context.goNamed('home');
+      context.goNamed('onboarding');
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = 'Something went wrong.');

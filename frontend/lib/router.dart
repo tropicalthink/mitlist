@@ -69,7 +69,6 @@ final _authRoutePrefixes = [
   '/welcome',
   '/login',
   '/signup',
-  '/onboarding',
   '/auth/callback',
 ];
 
