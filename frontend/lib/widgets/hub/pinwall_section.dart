@@ -357,7 +357,7 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
                 onPost: _post,
                 onPickLinkedEntity: _pickLinkedEntity,
               ),
-              const SizedBox(height: MitlistSpacing.lg),
+              SizedBox(height: MitlistSpacing.lg),
               posts.when(
                 loading: () => const SizedBox.shrink(),
                 error: (_, __) => Container(
@@ -372,9 +372,9 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.warning_amber_rounded,
-                          color: MitlistColors.primary500),
-                      const SizedBox(width: MitlistSpacing.sm),
+                      Icon(Icons.warning_amber_rounded,
+                          color: Theme.of(context).colorScheme.primary),
+                      SizedBox(width: MitlistSpacing.sm),
                       Expanded(
                         child: Text(
                           "Couldn't load the pinwall.",
@@ -386,7 +386,7 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
                       TextButton(
                         onPressed: () => ref.invalidate(
                             pinwallPostsByGroupProvider(widget.groupId)),
-                        child: const Text('Retry'),
+                        child: Text('Retry'),
                       ),
                     ],
                   ),
@@ -469,7 +469,7 @@ class _PinwallComposerNote extends StatelessWidget {
     final border = dark
         ? MitlistColors.composerBorderDark
         : MitlistColors.composerBorderLight;
-    final pinColor = dark ? MitlistColors.primary300 : MitlistColors.primary600;
+    final pinColor = dark ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.primary;
     final textColor = dark
         ? Colors.white.withValues(alpha: 0.9)
         : MitlistColors.pinwallNoteTextLight;
@@ -622,12 +622,12 @@ class _PinwallComposerNote extends StatelessWidget {
                         '$pendingCount',
                         style: textTheme.labelSmall?.copyWith(color: pinColor),
                       ),
-                    const Spacer(),
+                    Spacer(),
                     AppButton(
                       text: isUploadingMedia
                           ? 'Uploading\u2026'
                           : (isPosting ? 'Posting\u2026' : 'Pin it'),
-                      icon: const Icon(Icons.push_pin_outlined),
+                      icon: Icon(Icons.push_pin_outlined),
                       onPressed:
                           (isPosting || isUploadingMedia) ? null : onPost,
                       variant: AppButtonVariant.ghost,
@@ -694,7 +694,7 @@ class _PinwallNoteCard extends ConsumerWidget {
               child: Image.network(
                 m.url,
                 fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => const Padding(
+                errorBuilder: (_, __, ___) => Padding(
                   padding: EdgeInsets.all(MitlistSpacing.md),
                   child: Text(
                     'Couldn\u2019t load image.',
@@ -731,7 +731,7 @@ class _PinwallNoteCard extends ConsumerWidget {
                   text: 'View',
                   onPressed: () => Navigator.of(ctx).pop('view'),
                 ),
-                const SizedBox(height: MitlistSpacing.sm),
+                SizedBox(height: MitlistSpacing.sm),
                 AppButton(
                   text: 'Remove from post',
                   variant: AppButtonVariant.outline,
@@ -863,10 +863,10 @@ class _PinwallNoteCard extends ConsumerWidget {
     final bg = palette[(idHash.abs()) % palette.length];
     final border = bg.withValues(alpha: dark ? 0.3 : 0.6);
 
-    const pinColors = [
-      MitlistColors.primary600,
-      MitlistColors.teal500,
-      MitlistColors.error600,
+    final pinColors = [
+      Theme.of(context).colorScheme.primary,
+      Theme.of(context).colorScheme.secondary,
+      Theme.of(context).colorScheme.error,
     ];
     final pinColor = pinColors[index % pinColors.length];
 
@@ -882,10 +882,10 @@ class _PinwallNoteCard extends ConsumerWidget {
     }
 
     final textColor =
-        dark ? Colors.white.withValues(alpha: 0.9) : MitlistColors.textPrimary;
+        dark ? Colors.white.withValues(alpha: 0.9) : Theme.of(context).colorScheme.onSurface;
     final mutedColor = dark
         ? Colors.white.withValues(alpha: 0.5)
-        : MitlistColors.textSecondary.withValues(alpha: 0.7);
+        : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7);
 
     final remindAt = post.remindAt;
     final reminderSentAt = post.reminderSentAt;
@@ -970,7 +970,7 @@ class _PinwallNoteCard extends ConsumerWidget {
                           scrollDirection: Axis.horizontal,
                           itemCount: show.length,
                           separatorBuilder: (_, __) =>
-                              const SizedBox(width: 6),
+                              SizedBox(width: 6),
                           itemBuilder: (context, i) {
                             final m = show[i];
                             return GestureDetector(
@@ -988,7 +988,7 @@ class _PinwallNoteCard extends ConsumerWidget {
                                       m.url,
                                       fit: BoxFit.cover,
                                       errorBuilder: (_, __, ___) => Container(
-                                        color: MitlistColors.neutral100
+                                        color: Theme.of(context).colorScheme.surfaceContainerLow
                                             .withValues(alpha: 0.25),
                                         alignment: Alignment.center,
                                         child: const Icon(

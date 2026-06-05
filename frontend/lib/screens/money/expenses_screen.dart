@@ -18,7 +18,6 @@ import '../../utils/haptics.dart';
 import '../../sheets/expense_creation_sheet.dart';
 import '../../sheets/expense_detail_sheet.dart';
 import '../../sheets/settlement_confirmation_dialog.dart';
-import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../widgets/alert.dart';
@@ -392,7 +391,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to delete expense')),
+        SnackBar(content: Text('Failed to delete expense')),
       );
     }
   }
@@ -425,14 +424,14 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     final today = DateTime(now.year, now.month, now.day);
     final d = DateTime(date.year, date.month, date.day);
     if (d == today) return 'Today';
-    if (d == today.subtract(const Duration(days: 1))) return 'Yesterday';
+    if (d == today.subtract(Duration(days: 1))) return 'Yesterday';
     return DateFormat('MMMM d').format(date);
   }
 
   Color get _balanceColor {
-    if (_balance > 0) return MitlistColors.success700;
-    if (_balance < 0) return MitlistColors.error700;
-    return MitlistColors.neutral900;
+    if (_balance > 0) return Theme.of(context).colorScheme.tertiary;
+    if (_balance < 0) return Theme.of(context).colorScheme.error;
+    return Theme.of(context).colorScheme.onSurface;
   }
 
   void _onTabChanged(int tab) {
@@ -793,7 +792,7 @@ class _LoadingBody extends StatelessWidget {
             height: MitlistSpacing.space12,
           ),
           const SizedBox(height: MitlistSpacing.sm),
-          const AppSkeleton(
+          AppSkeleton(
             width: double.infinity,
             height: MitlistSpacing.space12,
           ),
@@ -823,7 +822,7 @@ class _ErrorBody extends StatelessWidget {
             type: AppAlertType.error,
             message: message ?? 'Failed to load expenses. Please try again.',
           ),
-          const SizedBox(height: MitlistSpacing.md),
+          SizedBox(height: MitlistSpacing.md),
           AppButton(
             text: 'Retry',
             onPressed: onRetry,
@@ -846,7 +845,7 @@ class _NoHouseholdBody extends StatelessWidget {
         padding: const EdgeInsets.all(MitlistSpacing.md),
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/House.lottie',
-          icon: const AppIcon(name: 'home', size: 56),
+          icon: AppIcon(name: 'home', size: 56),
           title: 'No household yet',
           description: 'Create or join a household before tracking expenses.',
           actions: [
@@ -888,12 +887,12 @@ class _TimelineBody extends StatelessWidget {
   Widget build(BuildContext context) {
     if (groups.isEmpty) {
       return RefreshIndicator(
-        color: MitlistColors.primary500,
+        color: Theme.of(context).colorScheme.primary,
         onRefresh: onRefresh,
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
+              physics: AlwaysScrollableScrollPhysics(),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   minHeight: constraints.maxHeight,
@@ -902,7 +901,7 @@ class _TimelineBody extends StatelessWidget {
                   padding: const EdgeInsets.all(MitlistSpacing.md),
                   child: AppEmptyState(
                     lottieAsset: 'assets/animations/lottie/wallet.lottie',
-                    icon: const AppIcon(name: 'receiptPercent', size: 56),
+                    icon: AppIcon(name: 'receiptPercent', size: 56),
                     title: 'No expenses yet',
                     description: 'Track shared costs with your household.',
                     actions: [
@@ -921,7 +920,7 @@ class _TimelineBody extends StatelessWidget {
     }
 
     return RefreshIndicator(
-      color: MitlistColors.primary500,
+      color: Theme.of(context).colorScheme.primary,
       onRefresh: onRefresh,
       child: CustomScrollView(
         controller: controller,
@@ -938,10 +937,10 @@ class _TimelineBody extends StatelessWidget {
                   ),
                   alignment: Alignment.centerLeft,
                   child: DecoratedBox(
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       border: Border(
                         bottom: BorderSide(
-                          color: MitlistColors.borderSecondary,
+                          color: Theme.of(context).colorScheme.outlineVariant,
                           width: 2,
                         ),
                       ),
@@ -988,7 +987,7 @@ class _TimelineBody extends StatelessWidget {
               padding: const EdgeInsets.all(MitlistSpacing.md),
               sliver: SliverToBoxAdapter(
                 child: hasPageError
-                    ? const AppAlert(
+                    ? AppAlert(
                         type: AppAlertType.error,
                         message: 'Failed to load more expenses.',
                       )
@@ -1001,7 +1000,7 @@ class _TimelineBody extends StatelessWidget {
                       ),
               ),
             ),
-          const SliverPadding(
+          SliverPadding(
             padding: EdgeInsets.only(bottom: MitlistSpacing.space12),
           ),
         ],
@@ -1069,7 +1068,7 @@ class _PayerBadge extends StatelessWidget {
       child: Text(
         _initials,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: MitlistColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
       ),
     );
@@ -1093,7 +1092,7 @@ class _ExpenseCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           _PayerBadge(label: expense.payer),
-          const SizedBox(width: MitlistSpacing.sm),
+          SizedBox(width: MitlistSpacing.sm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1121,7 +1120,7 @@ class _ExpenseCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: MitlistSpacing.sm),
+          SizedBox(width: MitlistSpacing.sm),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -1161,7 +1160,7 @@ class _SettlementsBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
-      color: MitlistColors.primary500,
+      color: Theme.of(context).colorScheme.primary,
       onRefresh: onRefresh,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -1251,12 +1250,12 @@ class _SuggestionCard extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: MitlistTypography.monoBody(
-                  color: MitlistColors.primary700,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: MitlistSpacing.md),
+          SizedBox(height: MitlistSpacing.md),
           LayoutBuilder(
             builder: (context, constraints) {
               final compact = constraints.maxWidth < 360;
@@ -1264,19 +1263,19 @@ class _SuggestionCard extends StatelessWidget {
                 label: suggestion.fromLabel,
                 helper:
                     suggestion.from == suggestion.to ? 'Same account' : 'From',
-                tone: MitlistColors.error700,
+                tone: Theme.of(context).colorScheme.error,
               );
               final to = _SettlementParty(
                 label: suggestion.toLabel,
                 helper: 'To',
-                tone: MitlistColors.success700,
+                tone: Theme.of(context).colorScheme.tertiary,
               );
 
               if (compact) {
                 return Column(
                   children: [
                     from,
-                    const Padding(
+                    Padding(
                       padding:
                           EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
                       child: AppIcon(name: 'arrowRight', size: 20),
@@ -1290,7 +1289,7 @@ class _SuggestionCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(child: from),
-                  const Padding(
+                  Padding(
                     padding:
                         EdgeInsets.symmetric(horizontal: MitlistSpacing.sm),
                     child: AppIcon(name: 'arrowRight', size: 20),
@@ -1300,14 +1299,14 @@ class _SuggestionCard extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: MitlistSpacing.md),
+          SizedBox(height: MitlistSpacing.md),
           Text(
             'Record this settlement after the payment is made.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: MitlistColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
-          const SizedBox(height: MitlistSpacing.md),
+          SizedBox(height: MitlistSpacing.md),
           SizedBox(
             width: double.infinity,
             child: AppButton(
@@ -1338,7 +1337,7 @@ class _SettlementParty extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minHeight: MitlistSpacing.space14),
+      constraints: BoxConstraints(minHeight: MitlistSpacing.space14),
       padding: const EdgeInsets.all(MitlistSpacing.sm),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHigh,
@@ -1354,7 +1353,7 @@ class _SettlementParty extends StatelessWidget {
                   color: tone,
                 ),
           ),
-          const SizedBox(height: MitlistSpacing.xs),
+          SizedBox(height: MitlistSpacing.xs),
           Text(
             label,
             maxLines: 1,
@@ -1376,10 +1375,10 @@ class _BalancesSection extends StatelessWidget {
 
   const _BalancesSection({required this.balances});
 
-  Color _balanceColor(double amount) {
-    if (amount > 0) return MitlistColors.success700;
-    if (amount < 0) return MitlistColors.error700;
-    return MitlistColors.neutral900;
+  Color _balanceColor(BuildContext context, double amount) {
+    if (amount > 0) return Theme.of(context).colorScheme.tertiary;
+    if (amount < 0) return Theme.of(context).colorScheme.error;
+    return Theme.of(context).colorScheme.onSurface;
   }
 
   @override
@@ -1402,7 +1401,7 @@ class _BalancesSection extends StatelessWidget {
 class _BalancesExpandableBody extends StatefulWidget {
   final List<_BalanceEntry> sortedBalances;
   final int openCount;
-  final Color Function(double amount) balanceColor;
+  final Color Function(BuildContext, double) balanceColor;
 
   const _BalancesExpandableBody({
     required this.sortedBalances,
@@ -1453,13 +1452,13 @@ class _BalancesExpandableBodyState extends State<_BalancesExpandableBody> {
                       ? Duration.zero
                       : const Duration(milliseconds: 180),
                   curve: Curves.easeOutCubic,
-                  child: const AppIcon(name: 'chevronDown', size: 18),
+                  child: AppIcon(name: 'chevronDown', size: 18),
                 ),
               ],
             ),
           ),
         ),
-        const Divider(height: 1, color: MitlistColors.borderSecondary),
+        Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
         AnimatedCrossFade(
           firstChild: const SizedBox.shrink(),
           secondChild: Padding(
@@ -1515,7 +1514,7 @@ class _BalancesExpandableBodyState extends State<_BalancesExpandableBody> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: MitlistTypography.monoBody(
-                                  color: widget.balanceColor(b.amount),
+                                  color: widget.balanceColor(context, b.amount),
                                 ),
                               ),
                             ],

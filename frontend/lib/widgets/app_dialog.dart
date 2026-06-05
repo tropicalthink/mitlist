@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../theme/animations.dart';
-import '../theme/colors.dart';
 import '../theme/shadows.dart';
 import '../theme/spacing.dart';
 import '../theme/theme.dart';
@@ -35,13 +34,13 @@ class AppDialog extends StatelessWidget {
         vertical: MitlistSpacing.lg,
       ),
       child: Container(
-        decoration: const BoxDecoration(
-          color: MitlistColors.surfacePrimary,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.all(
             Radius.circular(MitlistTheme.radiusLg),
           ),
           border: Border.fromBorderSide(
-            BorderSide(color: MitlistColors.borderPrimary, width: 2),
+            BorderSide(color: Theme.of(context).colorScheme.outline, width: 2),
           ),
           boxShadow: MitlistShadows.shadowMedium,
         ),
@@ -72,9 +71,9 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: MitlistColors.borderPrimary, width: 2),
+          bottom: BorderSide(color: Theme.of(context).colorScheme.outline, width: 2),
         ),
       ),
       padding: const EdgeInsets.only(
@@ -93,11 +92,11 @@ class _Header extends StatelessWidget {
           ),
           IconButton(
             onPressed: () => Navigator.of(context).maybePop(),
-            icon: const Icon(Icons.close),
+            icon: Icon(Icons.close),
             iconSize: MitlistSpacing.space5,
-            color: MitlistColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
             tooltip: 'Close',
-            constraints: const BoxConstraints(
+            constraints: BoxConstraints(
               minWidth: MitlistSpacing.space8,
               minHeight: MitlistSpacing.space8,
             ),
@@ -121,7 +120,7 @@ class _Footer extends StatelessWidget {
         child: Text(
           'Press back to close',
           style: MitlistTypography.labelXSmall(
-            color: MitlistColors.textTertiary,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ),
@@ -162,7 +161,7 @@ Future<T?> showAppDialog<T>({
     context: context,
     barrierDismissible: true,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-    barrierColor: MitlistColors.neutral950.withValues(alpha: 0.6),
+    barrierColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
     transitionDuration: MitlistAnimations.medium,
     transitionBuilder: (context, animation, secondaryAnimation, child) {
       final curved = CurvedAnimation(

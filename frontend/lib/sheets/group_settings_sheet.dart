@@ -382,7 +382,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
           ),
           const SizedBox(height: MitlistSpacing.md),
           DropdownButtonFormField<String>(
-            value: _groupCurrency,
+            initialValue: _groupCurrency,
             decoration: const InputDecoration(labelText: 'Currency'),
             items: const [
               DropdownMenuItem(value: 'USD', child: Text('USD - US Dollar')),
@@ -445,7 +445,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
           ),
           if (_members.isNotEmpty) ...[
             const SizedBox(height: MitlistSpacing.sm),
-            const Divider(),
+            Divider(),
             ..._members.map((m) => _buildMemberTile(m)),
           ],
         ],

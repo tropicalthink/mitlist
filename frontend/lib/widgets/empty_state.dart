@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-import '../theme/colors.dart';
 import '../theme/shadows.dart';
 import '../theme/spacing.dart';
 import 'bobbing_icon.dart';
@@ -76,7 +75,7 @@ class AppEmptyState extends StatelessWidget {
     return Container(
       padding: _padding,
       decoration: BoxDecoration(
-        color: isError ? MitlistColors.error50 : colorScheme.surface,
+        color: isError ? colorScheme.errorContainer : colorScheme.surface,
         border: Border.fromBorderSide(
           BorderSide(color: colorScheme.outline, width: 2),
         ),
@@ -100,7 +99,7 @@ class AppEmptyState extends StatelessWidget {
               child: IconTheme(
                 data: IconThemeData(
                   size: 56,
-                  color: iconColor ?? MitlistColors.textTertiary,
+                  color: iconColor ?? colorScheme.onSurfaceVariant,
                 ),
                 child: icon!,
               ),
@@ -109,7 +108,7 @@ class AppEmptyState extends StatelessWidget {
             IconTheme(
               data: IconThemeData(
                 size: 56,
-                color: iconColor ?? MitlistColors.textTertiary,
+                color: iconColor ?? colorScheme.onSurfaceVariant,
               ),
               child: icon!,
             ),

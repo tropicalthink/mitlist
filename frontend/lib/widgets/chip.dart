@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/theme.dart';
 
@@ -19,10 +18,11 @@ class AppChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final backgroundColor =
-        selected ? MitlistColors.neutral950 : MitlistColors.surfacePrimary;
+        selected ? colorScheme.onSurface : colorScheme.surface;
     final foregroundColor =
-        selected ? Colors.white : MitlistColors.textSecondary;
+        selected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant;
 
     return GestureDetector(
       onTap: onSelected != null ? () => onSelected!(!selected) : null,
@@ -33,8 +33,8 @@ class AppChip extends StatelessWidget {
           color: backgroundColor,
           borderRadius:
               const BorderRadius.all(Radius.circular(MitlistTheme.radiusMd)),
-          border: const Border.fromBorderSide(
-            BorderSide(color: MitlistColors.borderPrimary, width: 2),
+          border: Border.fromBorderSide(
+            BorderSide(color: colorScheme.outline, width: 2),
           ),
         ),
         child: Row(
@@ -57,7 +57,7 @@ class AppChip extends StatelessWidget {
               const SizedBox(width: MitlistSpacing.space1),
             ],
             Text(
-              label.toUpperCase(),
+              label,
               style: Theme.of(context)
                   .textTheme
                   .labelSmall

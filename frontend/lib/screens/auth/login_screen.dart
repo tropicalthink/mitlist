@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../config/api_config.dart';
 import '../../models/auth_models.dart';
 import '../../providers/auth_provider.dart';
-import '../../theme/colors.dart';
 import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
@@ -225,7 +224,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => confirmReset(),
               ),
-              const SizedBox(height: MitlistSpacing.lg),
+              SizedBox(height: MitlistSpacing.lg),
               AppButton(
                 text: 'Reset password',
                 onPressed: isResetting ? null : confirmReset,
@@ -292,13 +291,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: MitlistColors.neutral50,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(MitlistSpacing.md),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
+              constraints: BoxConstraints(maxWidth: 400),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -306,12 +305,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     'mitlist',
                     style: MitlistTypography.logo(),
                   ),
-                  const SizedBox(height: MitlistSpacing.space8),
+                  SizedBox(height: MitlistSpacing.space8),
                   Container(
                     decoration: BoxDecoration(
-                      color: MitlistColors.surfacePrimary,
+                      color: Theme.of(context).colorScheme.surface,
                       border: Border.all(
-                        color: MitlistColors.borderPrimary,
+                        color: Theme.of(context).colorScheme.outline,
                         width: MitlistSpacing.space1 / 2,
                       ),
                       borderRadius: BorderRadius.zero,
@@ -406,7 +405,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           color: AppButtonColor.neutral,
                           onPressed: _isLoading ? null : () => _startOAuth('apple'),
                         ),
-                        const SizedBox(height: MitlistSpacing.space4),
+                        SizedBox(height: MitlistSpacing.space4),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -418,13 +417,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     .textTheme
                                     .labelLarge
                                     ?.copyWith(
-                                      color: MitlistColors.primary600,
+                                      color: Theme.of(context).colorScheme.primary,
                                     ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: MitlistSpacing.space2),
+                        SizedBox(height: MitlistSpacing.space2),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -436,7 +435,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     .textTheme
                                     .labelMedium
                                     ?.copyWith(
-                                      color: MitlistColors.primary600,
+                                      color: Theme.of(context).colorScheme.primary,
                                     ),
                               ),
                             ),

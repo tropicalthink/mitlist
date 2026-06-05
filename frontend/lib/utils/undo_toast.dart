@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../theme/colors.dart';
 import '../theme/shadows.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
@@ -19,12 +18,12 @@ void showUndoToast(
     backgroundColor: Colors.transparent,
     elevation: 0,
     behavior: SnackBarBehavior.floating,
-    duration: const Duration(seconds: 10),
+    duration: Duration(seconds: 10),
     content: Container(
       decoration: BoxDecoration(
-        color: MitlistColors.neutral950,
+        color: Theme.of(context).colorScheme.onSurface,
         border: Border.all(
-          color: MitlistColors.borderPrimary,
+          color: Theme.of(context).colorScheme.outline,
           width: MitlistSpacing.space1 / 2,
         ),
         boxShadow: MitlistShadows.shadowMedium,
@@ -49,16 +48,16 @@ void showUndoToast(
               onUndo();
             },
             style: TextButton.styleFrom(
-              foregroundColor: MitlistColors.primary400,
+              foregroundColor: Theme.of(context).colorScheme.primary,
               padding: const EdgeInsets.symmetric(
                 horizontal: MitlistSpacing.md,
               ),
-              minimumSize: const Size(
+              minimumSize: Size(
                 MitlistSpacing.space11,
                 MitlistSpacing.space11,
               ),
               textStyle: MitlistTypography.lightTextTheme.labelLarge?.copyWith(
-                color: MitlistColors.primary400,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
             child: const Text('UNDO'),

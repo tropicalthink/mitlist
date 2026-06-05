@@ -5,7 +5,6 @@ import '../models/expense_receipt_models.dart';
 import '../models/finance_models.dart';
 import '../providers/attachment_provider.dart';
 import '../providers/finance_provider.dart';
-import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../widgets/app_bottom_sheet.dart';
@@ -233,10 +232,10 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
           widget.description,
           style: textTheme.headlineSmall,
         ),
-        const SizedBox(height: MitlistSpacing.sm),
+        SizedBox(height: MitlistSpacing.sm),
         Text(
           widget.amountLabel,
-          style: MitlistTypography.monoBody(color: MitlistColors.textPrimary),
+          style: MitlistTypography.monoBody(color: Theme.of(context).colorScheme.onSurface),
         ),
         const SizedBox(height: MitlistSpacing.md),
         if (!_loadingSplits && _splits.isNotEmpty) ...[
@@ -257,7 +256,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
           const SizedBox(height: MitlistSpacing.md),
         ],
         if (_loadingReceipts)
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
             child: LinearProgressIndicator(),
           )
@@ -290,7 +289,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
                               r.url,
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) => Container(
-                                color: MitlistColors.neutral100,
+                                color: Theme.of(context).colorScheme.surfaceContainerLow,
                                 alignment: Alignment.center,
                                 child: const Icon(Icons.receipt_long_outlined),
                               ),
@@ -314,7 +313,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
         if (widget.onDelete != null) ...[
           const SizedBox(height: MitlistSpacing.lg),
           const Divider(),
-          const SizedBox(height: MitlistSpacing.sm),
+          SizedBox(height: MitlistSpacing.sm),
           SizedBox(
             width: double.infinity,
             child: AppButton(
@@ -352,7 +351,7 @@ class _SplitRow extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(right: MitlistSpacing.sm),
               child: Icon(Icons.check_circle,
-                  size: 16, color: MitlistColors.success500),
+                  size: 16, color: Theme.of(context).colorScheme.tertiary),
             ),
           Text(
             '\$${(split.amount / 100).toStringAsFixed(2)}',

@@ -362,7 +362,7 @@ void main() {
 
     await tester.enterText(find.byType(TextField).first, 'sunny-taco-42');
     await _pumpAfter(tester);
-    await tester.tap(find.text('JOIN HOUSEHOLD'));
+    await tester.tap(find.widgetWithText(AppButton, 'Join Household'));
     await _pumpAfter(tester);
 
     expect(groupService.lastJoinRequest, isNotNull);
@@ -650,7 +650,7 @@ void main() {
     await tester.enterText(find.byType(TextField).at(0), 'oldpassword');
     await tester.enterText(find.byType(TextField).at(1), 'newpassword123');
     await tester.enterText(find.byType(TextField).at(2), 'newpassword123');
-    await tester.tap(find.text('CHANGE PASSWORD'));
+    await tester.tap(find.text('Change password'));
     await _pumpAfter(tester);
 
     expect(authService.lastChangePasswordRequest, isNotNull);
@@ -683,14 +683,14 @@ void main() {
       ],
     );
 
-    expect(find.text('CONTINUE WITH GOOGLE'), findsOneWidget);
-    expect(find.text('CONTINUE WITH APPLE'), findsOneWidget);
+    expect(find.text('Continue with Google'), findsOneWidget);
+    expect(find.text('Continue with Apple'), findsOneWidget);
     expect(find.text('Remember me'), findsOneWidget);
 
     await tester.tap(find.text('Forgot password?'));
     await _pumpAfter(tester);
     await tester.enterText(find.byType(TextField).at(2), 'reset@example.com');
-    await tester.tap(find.text('SEND RESET CODE'));
+    await tester.tap(find.text('Send reset code'));
     await _pumpAfter(tester);
 
     expect(authService.lastPasswordResetEmail, 'reset@example.com');
@@ -702,7 +702,7 @@ void main() {
     await tester.enterText(find.byType(TextField).at(3), 'reset-code-123');
     await tester.enterText(find.byType(TextField).at(4), 'freshpassword');
     await tester.enterText(find.byType(TextField).at(5), 'freshpassword');
-    await tester.tap(find.text('RESET PASSWORD'));
+    await tester.tap(find.text('Reset password'));
     await _pumpAfter(tester);
 
     expect(authService.lastConfirmPasswordResetToken, 'reset-code-123');
@@ -730,7 +730,7 @@ void main() {
     await _pumpAfter(tester);
     await tester.enterText(find.byType(TextField).at(0), 'user@example.com');
     await tester.enterText(find.byType(TextField).at(1), 'secret123');
-    await tester.tap(find.text('SIGN IN'));
+    await tester.tap(find.text('Sign in'));
     await _pumpAfter(tester);
 
     expect(authService.lastLoginRequest, isNotNull);
@@ -887,7 +887,7 @@ void main() {
     );
 
     expect(find.text('Something went wrong.'), findsOneWidget);
-    expect(find.text('RETRY'), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
   });
 
   testWidgets('chores screen shows error state on API failure',
@@ -908,7 +908,7 @@ void main() {
 
     expect(find.text('Failed to load chores. Please try again.'),
         findsOneWidget);
-    expect(find.text('RETRY'), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
   });
 
   testWidgets('chore creation prevents submitting with empty name',
@@ -929,7 +929,7 @@ void main() {
     await tester.tap(find.byTooltip('Add chore'));
     await _pumpAfter(tester);
 
-    final createButtons = find.widgetWithText(AppButton, 'ADD CHORE');
+    final createButtons = find.widgetWithText(AppButton, 'Add Chore');
     expect(createButtons, findsAtLeast(1));
     final button = tester.widget<AppButton>(createButtons.last);
     expect(button.onPressed, isNull);
@@ -955,7 +955,7 @@ void main() {
     await tester.tap(find.byTooltip('New list'));
     await _pumpAfter(tester);
 
-    final createButton = find.widgetWithText(AppButton, 'CREATE');
+    final createButton = find.widgetWithText(AppButton, 'Create');
     expect(createButton, findsOneWidget);
     final button = tester.widget<AppButton>(createButton);
     expect(button.onPressed, isNull);

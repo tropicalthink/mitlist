@@ -8,7 +8,6 @@ import '../../models/notification_models.dart';
 import '../../providers/notification_provider.dart';
 import '../../utils/haptics.dart';
 import '../../providers/group_provider.dart';
-import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/theme.dart';
 import '../../widgets/alert.dart';
@@ -293,7 +292,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   else if (_items.isEmpty && _error == null)
                     AppEmptyState(
                       lottieAsset: 'assets/animations/lottie/Notifications.lottie',
-                      icon: const Icon(Icons.notifications_none_outlined, size: 56),
+                      icon: Icon(Icons.notifications_none_outlined, size: 56),
                       title: 'No notifications yet',
                       description:
                           'When someone adds a chore, splits a bill, or mentions you, it will show up here.',
@@ -314,10 +313,10 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                             alignment: Alignment.centerRight,
                             padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
                             decoration: BoxDecoration(
-                              color: MitlistColors.error500.withValues(alpha: 0.12),
+                              color: Theme.of(context).colorScheme.error.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(MitlistTheme.radiusLg),
                             ),
-                            child: const Icon(Icons.delete_outline, color: MitlistColors.error500),
+                            child: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
                           ),
                           confirmDismiss: (_) async {
                             await _delete(n);

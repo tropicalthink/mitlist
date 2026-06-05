@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../providers/scan_provider.dart';
 import '../../services/scan_service.dart';
-import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../widgets/app_button.dart';
@@ -161,8 +160,8 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
                 },
               ),
               ListTile(
-                leading: const AppIcon(name: 'eye'),
-                title: const Text('Choose from gallery'),
+                leading: AppIcon(name: 'eye'),
+                title: Text('Choose from gallery'),
                 onTap: () {
                   Navigator.of(context).pop();
                   _pickImage(ImageSource.gallery);
@@ -184,7 +183,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
         'Scanner',
         showStandardActions: false,
         leading: IconButton(
-          icon: const AppIcon(name: 'arrowLeft'),
+          icon: AppIcon(name: 'arrowLeft'),
           tooltip: 'Back',
           onPressed: () => Navigator.of(context).pop(),
         ),
@@ -211,34 +210,34 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
               padding: AppCardPadding.xl,
               child: Column(
                 children: [
-                  const AppIcon(
+                  AppIcon(
                     name: 'eye',
                     size: MitlistSpacing.space12,
-                    color: MitlistColors.textTertiary,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-                  const SizedBox(height: MitlistSpacing.md),
+                  SizedBox(height: MitlistSpacing.md),
                   Text(
                     'Scan a receipt, list, recipe,\nor chore reminder',
                     textAlign: TextAlign.center,
                     style: textTheme.bodyMedium?.copyWith(
-                      color: MitlistColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
               ),
             ),
-          const SizedBox(height: MitlistSpacing.md),
+          SizedBox(height: MitlistSpacing.md),
 
           // Analyze / pick buttons
           if (_isAnalyzing)
-            const Center(
+            Center(
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: MitlistSpacing.lg),
                 child: Column(
                   children: [
                     CircularProgressIndicator(
                       valueColor: AlwaysStoppedAnimation(
-                          MitlistColors.primary500),
+                          Theme.of(context).colorScheme.primary),
                     ),
                     SizedBox(height: MitlistSpacing.md),
                     Text('Analyzing…'),
@@ -250,10 +249,10 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
             AppButton(
               text: _imageFile != null ? 'Analyze this image' : 'Take a photo or choose one',
               icon: _imageFile == null
-                  ? const AppIcon(name: 'devicePhoneMobile',
-                      color: MitlistColors.textOnPrimary)
-                  : const AppIcon(name: 'magnifyingGlass',
-                      color: MitlistColors.textOnPrimary),
+                  ? AppIcon(name: 'devicePhoneMobile',
+                      color: Theme.of(context).colorScheme.onPrimary)
+                  : AppIcon(name: 'magnifyingGlass',
+                      color: Theme.of(context).colorScheme.onPrimary),
               onPressed: _imageFile != null
                   ? () => _pickImage(ImageSource.gallery)
                   : _showSourcePicker,
@@ -270,11 +269,11 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
           ],
 
           if (_error != null) ...[
-            const SizedBox(height: MitlistSpacing.md),
+            SizedBox(height: MitlistSpacing.md),
             Text(
               _error!,
               style: textTheme.bodySmall?.copyWith(
-                color: MitlistColors.error500,
+                color: Theme.of(context).colorScheme.error,
               ),
               textAlign: TextAlign.center,
             ),
@@ -289,7 +288,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
 
           // Result preview
           if (_result != null) ...[
-            const SizedBox(height: MitlistSpacing.md),
+            SizedBox(height: MitlistSpacing.md),
             _buildResultCard(),
           ],
         ],
@@ -314,10 +313,10 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
         children: [
           Row(
             children: [
-              const AppIcon(
+              AppIcon(
                 name: 'checkCircle',
                 size: MitlistSpacing.space6,
-                color: MitlistColors.success500,
+                color: Theme.of(context).colorScheme.tertiary,
               ),
               const SizedBox(width: MitlistSpacing.sm),
               Text(
@@ -327,21 +326,21 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
             ],
           ),
           if (r.title != null) ...[
-            const SizedBox(height: MitlistSpacing.sm),
+            SizedBox(height: MitlistSpacing.sm),
             Text(
               r.title!,
               style: textTheme.headlineSmall,
             ),
           ],
           if (r.items.isNotEmpty) ...[
-            const SizedBox(height: MitlistSpacing.md),
+            SizedBox(height: MitlistSpacing.md),
             Text(
               '${r.items.length} item${r.items.length == 1 ? '' : 's'}',
               style: textTheme.labelMedium?.copyWith(
-                color: MitlistColors.textTertiary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: MitlistSpacing.sm),
+            SizedBox(height: MitlistSpacing.sm),
             ...r.items.take(8).map((item) {
               var label = item.name;
               if (item.quantity != null && item.quantity!.isNotEmpty) {
@@ -369,7 +368,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
                       Text(
                         priceLabel,
                         style: MitlistTypography.monoBody(
-                          color: MitlistColors.primary500,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                   ],
@@ -380,19 +379,19 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
               Text(
                 '…and ${r.items.length - 8} more',
                 style: textTheme.bodySmall?.copyWith(
-                  color: MitlistColors.textTertiary,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
           ],
           if (r.steps.isNotEmpty) ...[
-            const SizedBox(height: MitlistSpacing.md),
+            SizedBox(height: MitlistSpacing.md),
             Text(
               '${r.steps.length} step${r.steps.length == 1 ? '' : 's'}',
               style: textTheme.labelMedium?.copyWith(
-                color: MitlistColors.textTertiary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: MitlistSpacing.sm),
+            SizedBox(height: MitlistSpacing.sm),
             ...r.steps.take(5).map((step) => Padding(
                   padding: const EdgeInsets.only(
                       bottom: MitlistSpacing.xs),
@@ -402,7 +401,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
                       Text(
                         '${r.steps.indexOf(step) + 1}. ',
                         style: MitlistTypography.labelXSmall(
-                          color: MitlistColors.textTertiary,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       Expanded(
@@ -418,11 +417,11 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
                 )),
           ],
           if (r.amount != null && r.amount! > 0) ...[
-            const SizedBox(height: MitlistSpacing.sm),
+            SizedBox(height: MitlistSpacing.sm),
             Text(
               'Total: \$${(r.amount! / 100).toStringAsFixed(2)}',
               style: textTheme.titleMedium?.copyWith(
-                color: MitlistColors.primary500,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
           ],

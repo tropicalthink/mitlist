@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
@@ -158,12 +157,12 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
           IconButton(
             tooltip: 'Settings',
             onPressed: () => context.goNamed('you'),
-            icon: const AppIcon(name: 'cog6Tooth'),
+            icon: AppIcon(name: 'cog6Tooth'),
           ),
         ],
       ),
       body: RefreshIndicator(
-        color: MitlistColors.primary500,
+        color: Theme.of(context).colorScheme.primary,
         onRefresh: _handleRefresh,
         child: _buildBody(),
       ),
@@ -272,10 +271,10 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
               child: Center(
                 child: AppEmptyState(
                   lottieAsset: 'assets/animations/lottie/House.lottie',
-                  icon: const AppIcon(
+                  icon: AppIcon(
                     name: 'userGroup',
                     size: 56,
-                    color: MitlistColors.textTertiary,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   title: 'No households yet',
                   description: 'Create one to start organizing your home.',
@@ -308,7 +307,7 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
       padding: const EdgeInsets.all(MitlistSpacing.md),
       itemCount:
           sorted.length + (_isLoadingMore || _errorMessage != null ? 1 : 0),
-      separatorBuilder: (_, __) => const SizedBox(height: MitlistSpacing.md),
+      separatorBuilder: (_, __) => SizedBox(height: MitlistSpacing.md),
       itemBuilder: (context, index) {
         if (index >= sorted.length) {
           if (_errorMessage != null) {
@@ -318,7 +317,7 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
             );
           }
 
-          return const Center(
+          return Center(
             child: Padding(
               padding: EdgeInsets.all(MitlistSpacing.md),
               child: CircularProgressIndicator(),
@@ -356,9 +355,9 @@ class _GroupCard extends StatelessWidget {
           name: isPersonal ? 'userCircle' : 'home',
           size: MitlistSpacing.space6,
           color:
-              isPersonal ? MitlistColors.primary500 : MitlistColors.textPrimary,
+              isPersonal ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
         ),
-        const SizedBox(width: MitlistSpacing.md),
+        SizedBox(width: MitlistSpacing.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -368,7 +367,7 @@ class _GroupCard extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               if (memberCount != null) ...[
-                const SizedBox(height: MitlistSpacing.xs),
+                SizedBox(height: MitlistSpacing.xs),
                 Text(
                   '$memberCount member${memberCount == 1 ? '' : 's'}',
                   maxLines: 1,
@@ -382,7 +381,7 @@ class _GroupCard extends StatelessWidget {
         AppIcon(
           name: 'chevronRight',
           size: MitlistSpacing.space5,
-          color: MitlistColors.textSecondary,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       ],
     );
@@ -395,7 +394,7 @@ class _GroupCard extends StatelessWidget {
         onTap: onTap,
         semanticLabel: group.name,
         child: Container(
-          color: MitlistColors.primary100,
+          color: Theme.of(context).colorScheme.primaryContainer,
           padding: const EdgeInsets.all(MitlistSpacing.md),
           child: content,
         ),

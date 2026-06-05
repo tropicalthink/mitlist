@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../models/auth_models.dart';
 import '../../providers/auth_provider.dart';
-import '../../theme/colors.dart';
 import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
@@ -115,7 +114,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           for (var i = 0; i < paragraphs.length; i++) ...[
             Text(paragraphs[i]),
             if (i < paragraphs.length - 1)
-              const SizedBox(height: MitlistSpacing.md),
+              SizedBox(height: MitlistSpacing.md),
           ],
         ],
       ),
@@ -125,13 +124,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: MitlistColors.neutral50,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(MitlistSpacing.md),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
+              constraints: BoxConstraints(maxWidth: 400),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -139,12 +138,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     'mitlist',
                     style: MitlistTypography.logo(),
                   ),
-                  const SizedBox(height: MitlistSpacing.space8),
+                  SizedBox(height: MitlistSpacing.space8),
                   Container(
                     decoration: BoxDecoration(
-                      color: MitlistColors.surfacePrimary,
+                      color: Theme.of(context).colorScheme.surface,
                       border: Border.all(
-                        color: MitlistColors.borderPrimary,
+                        color: Theme.of(context).colorScheme.outline,
                         width: MitlistSpacing.space1 / 2,
                       ),
                       borderRadius: BorderRadius.zero,
@@ -188,12 +187,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                           onSubmitted: (_) => _submit(),
                           errorText: _passwordError,
                         ),
-                        const SizedBox(height: MitlistSpacing.space2),
+                        SizedBox(height: MitlistSpacing.space2),
                         Text(
                           'Use 8+ characters with a mix of letters and numbers.',
                           style:
                               Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: MitlistColors.textTertiary,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   ),
                         ),
                         const SizedBox(height: MitlistSpacing.space3),
@@ -215,7 +214,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                             onPressed: _isLoading ? null : _submit,
                           ),
                         ),
-                        const SizedBox(height: MitlistSpacing.space4),
+                        SizedBox(height: MitlistSpacing.space4),
                         Wrap(
                           alignment: WrapAlignment.center,
                           crossAxisAlignment: WrapCrossAlignment.center,
@@ -232,13 +231,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                     .textTheme
                                     .labelLarge
                                     ?.copyWith(
-                                      color: MitlistColors.primary600,
+                                      color: Theme.of(context).colorScheme.primary,
                                     ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: MitlistSpacing.space2),
+                        SizedBox(height: MitlistSpacing.space2),
                         Wrap(
                           alignment: WrapAlignment.center,
                           crossAxisAlignment: WrapCrossAlignment.center,
@@ -249,7 +248,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                   .textTheme
                                   .bodySmall
                                   ?.copyWith(
-                                    color: MitlistColors.textTertiary,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   ),
                             ),
                             TextButton(
@@ -261,7 +260,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                   'The app is provided as-is while the product is still evolving. Keep your own backups for anything critical.',
                                 ],
                               ),
-                              child: const Text('Terms'),
+                              child: Text('Terms'),
                             ),
                             Text(
                               ' and ',
@@ -269,7 +268,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                   .textTheme
                                   .bodySmall
                                   ?.copyWith(
-                                    color: MitlistColors.textTertiary,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   ),
                             ),
                             TextButton(
@@ -281,7 +280,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                   'Only provide information you are comfortable keeping in a shared household workspace.',
                                 ],
                               ),
-                              child: const Text('Privacy Policy'),
+                              child: Text('Privacy Policy'),
                             ),
                             Text(
                               '.',
@@ -289,7 +288,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                   .textTheme
                                   .bodySmall
                                   ?.copyWith(
-                                    color: MitlistColors.textTertiary,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   ),
                             ),
                           ],

@@ -21,7 +21,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: AppButton(text: 'Tap me', onPressed: () {}),
       ));
-      expect(find.text('TAP ME'), findsOneWidget);
+      expect(find.text('Tap me'), findsOneWidget);
     });
 
     testWidgets('fires onPressed when tapped', (tester) async {
@@ -29,7 +29,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: AppButton(text: 'Tap', onPressed: () => tapped = true),
       ));
-      await tester.tap(find.text('TAP'));
+      await tester.tap(find.text('Tap'));
       expect(tapped, isTrue);
     });
 
@@ -37,7 +37,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: AppButton(text: 'Disabled'),
       ));
-      await tester.tap(find.text('DISABLED'));
+      await tester.tap(find.text('Disabled'));
     });
 
     testWidgets('shows loading indicator when isLoading', (tester) async {
@@ -56,7 +56,7 @@ void main() {
         ),
       ));
       expect(find.byIcon(Icons.add), findsOneWidget);
-      expect(find.text('WITH ICON'), findsOneWidget);
+      expect(find.text('With icon'), findsOneWidget);
     });
 
     testWidgets('renders all size variants', (tester) async {
@@ -64,7 +64,7 @@ void main() {
         await tester.pumpWidget(MaterialApp(
           home: AppButton(text: size.name, size: size, onPressed: () {}),
         ));
-        expect(find.text(size.name.toUpperCase()), findsOneWidget);
+        expect(find.text(size.name), findsOneWidget);
       }
     });
 
@@ -76,7 +76,7 @@ void main() {
           onPressed: () {},
         ),
       ));
-      expect(find.text('INFO'), findsOneWidget);
+      expect(find.text('Info'), findsOneWidget);
     });
 
     testWidgets('renders all color variants', (tester) async {
@@ -88,7 +88,7 @@ void main() {
             onPressed: () {},
           ),
         ));
-        expect(find.text(color.name.toUpperCase()), findsOneWidget);
+        expect(find.text(color.name), findsOneWidget);
       }
     });
 
@@ -101,11 +101,7 @@ void main() {
             onPressed: () {},
           ),
         ));
-        final expectedText = (variant == AppButtonVariant.solid ||
-                variant == AppButtonVariant.outline)
-            ? variant.name.toUpperCase()
-            : variant.name;
-        expect(find.text(expectedText), findsOneWidget);
+        expect(find.text(variant.name), findsOneWidget);
       }
     });
   });
@@ -204,7 +200,7 @@ void main() {
       await tester.tap(find.text('Show'));
       await tester.pump();
 
-      expect(find.text('TEST DIALOG'), findsOneWidget);
+      expect(find.text('Test Dialog'), findsOneWidget);
       expect(find.text('Dialog body'), findsOneWidget);
     });
 
@@ -238,9 +234,9 @@ void main() {
       await tester.tap(find.text('Show'));
       await tester.pump();
 
-      expect(find.text('CONFIRM'), findsOneWidget);
-      expect(find.text('CANCEL'), findsOneWidget);
-      expect(find.text('DELETE'), findsOneWidget);
+      expect(find.text('Confirm'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Delete'), findsOneWidget);
     });
 
     testWidgets('Cancel action pops with false', (tester) async {
@@ -271,7 +267,7 @@ void main() {
 
       await tester.tap(find.text('Show'));
       await tester.pump();
-      await tester.tap(find.text('CANCEL'));
+      await tester.tap(find.text('Cancel'));
       await tester.pump();
 
       expect(result, isFalse);
@@ -295,7 +291,7 @@ void main() {
 
       await tester.tap(find.text('Show'));
       await tester.pump();
-      expect(find.text('DISMISS'), findsOneWidget);
+      expect(find.text('Dismiss'), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.close));
       await tester.pump();
@@ -321,7 +317,7 @@ void main() {
           hint: 'Enter your name',
         ),
       ));
-      expect(find.text('NAME'), findsOneWidget);
+      expect(find.text('Name'), findsOneWidget);
       expect(find.text('Enter your name'), findsOneWidget);
     });
 
@@ -463,7 +459,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: AppChip(label: 'Filter', selected: false, onSelected: (_) {}),
       ));
-      expect(find.text('FILTER'), findsOneWidget);
+      expect(find.text('Filter'), findsOneWidget);
     });
 
     testWidgets('fires onSelected when tapped', (tester) async {
@@ -475,7 +471,7 @@ void main() {
           onSelected: (v) => selectedValue = v,
         ),
       ));
-      await tester.tap(find.text('TAP ME'));
+      await tester.tap(find.text('Tap me'));
       expect(selectedValue, isTrue);
     });
 
@@ -488,7 +484,7 @@ void main() {
           onSelected: (v) => selectedValue = v,
         ),
       ));
-      await tester.tap(find.text('TOGGLE'));
+      await tester.tap(find.text('Toggle'));
       expect(selectedValue, isFalse);
     });
 

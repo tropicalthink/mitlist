@@ -5,7 +5,6 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../models/group_models.dart';
 import '../providers/group_provider.dart';
-import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../widgets/alert.dart';
@@ -80,7 +79,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet> {
       await Clipboard.setData(ClipboardData(text: code.trim()));
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Copied invite code')),
+        SnackBar(content: Text('Copied invite code')),
       );
     } finally {
       if (mounted) setState(() => _isCopying = false);
@@ -92,7 +91,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet> {
     final code = _invite?.code ?? '';
 
     if (_isLoading) {
-      return const Padding(
+      return Padding(
         padding: EdgeInsets.all(MitlistSpacing.md),
         child: Center(child: CircularProgressIndicator()),
       );
@@ -106,7 +105,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet> {
         children: [
           if (_error != null) ...[
             AppAlert(type: AppAlertType.error, message: _error!),
-            const SizedBox(height: MitlistSpacing.md),
+            SizedBox(height: MitlistSpacing.md),
           ],
           AppCard(
             variant: AppCardVariant.outlined,
@@ -117,7 +116,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet> {
                   'Invite code',
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
-                const SizedBox(height: MitlistSpacing.sm),
+                SizedBox(height: MitlistSpacing.sm),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
@@ -125,8 +124,8 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet> {
                     vertical: MitlistSpacing.sm,
                   ),
                   decoration: BoxDecoration(
-                    color: MitlistColors.surfaceSoft,
-                    border: Border.all(color: MitlistColors.borderSecondary, width: 2),
+                    color: Theme.of(context).colorScheme.surfaceContainerLow,
+                    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant, width: 2),
                   ),
                   child: InkWell(
                     onTap: (code.isEmpty || _isCopying) ? null : _copyCode,
@@ -144,11 +143,11 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet> {
                             ),
                           ),
                           if (code.isNotEmpty) ...[
-                            const SizedBox(width: MitlistSpacing.sm),
+                            SizedBox(width: MitlistSpacing.sm),
                             Icon(
                               Icons.copy,
                               size: 18,
-                              color: MitlistColors.textTertiary,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                           ],
                         ],
@@ -156,16 +155,16 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet> {
                     ),
                   ),
                 ),
-                const SizedBox(height: MitlistSpacing.md),
+                SizedBox(height: MitlistSpacing.md),
                 Center(
                   child: InkWell(
                     onTap: (code.isEmpty || _isCopying) ? null : _copyCode,
                     child: Container(
                       padding: const EdgeInsets.all(MitlistSpacing.sm),
                       decoration: BoxDecoration(
-                        color: MitlistColors.surfacePrimary,
+                        color: Theme.of(context).colorScheme.surface,
                         border: Border.all(
-                          color: MitlistColors.borderSecondary,
+                          color: Theme.of(context).colorScheme.outlineVariant,
                           width: 2,
                         ),
                       ),
@@ -184,7 +183,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet> {
                               data: code.trim(),
                               version: QrVersions.auto,
                               size: InviteHouseholdSheet._qrSize,
-                              backgroundColor: MitlistColors.surfacePrimary,
+                              backgroundColor: Theme.of(context).colorScheme.surface,
                               errorCorrectionLevel: QrErrorCorrectLevel.M,
                               semanticsLabel: 'Household invite code QR',
                               errorStateBuilder: (context, error) {
@@ -205,15 +204,15 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet> {
                     ),
                   ),
                 ),
-                const SizedBox(height: MitlistSpacing.sm),
+                SizedBox(height: MitlistSpacing.sm),
                 Text(
                   code.isEmpty ? 'Generating QR…' : 'Scan to join',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: MitlistColors.textTertiary,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                 ),
-                const SizedBox(height: MitlistSpacing.sm),
+                SizedBox(height: MitlistSpacing.sm),
                 Text(
                   'They can join from “My Households” → “Join with code”.',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(

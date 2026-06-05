@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../theme/colors.dart';
 import 'icons.dart';
 
 /// A widget that renders an icon by semantic name.
@@ -14,7 +13,7 @@ class AppIcon extends StatelessWidget {
   /// Icon size in logical pixels. Defaults to `20`.
   final double size;
 
-  /// Icon color. Defaults to [MitlistColors.textPrimary].
+  /// Icon color. Defaults to [Theme.of(context).colorScheme.onSurface].
   final Color? color;
 
   const AppIcon({
@@ -36,7 +35,7 @@ class AppIcon extends StatelessWidget {
     return Icon(
       iconData,
       size: size,
-      color: color ?? MitlistColors.textPrimary,
+      color: color ?? Theme.of(context).colorScheme.onSurface,
     );
   }
 }

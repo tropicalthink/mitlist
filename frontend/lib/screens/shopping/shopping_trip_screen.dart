@@ -6,7 +6,6 @@ import '../../models/list_models.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
-import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../theme/theme.dart';
@@ -383,8 +382,8 @@ class _ListSection extends StatelessWidget {
               ),
             ),
             const SizedBox(height: MitlistSpacing.sm),
-            const Divider(),
-            const SizedBox(height: MitlistSpacing.sm),
+            Divider(),
+            SizedBox(height: MitlistSpacing.sm),
             ...items.map((item) {
               final isChecked = checkedIds.contains(item.id);
               return _ItemRow(
@@ -433,7 +432,7 @@ class _ItemRow extends StatelessWidget {
               item.name,
               style: TextStyle(
                 decoration: isChecked ? TextDecoration.lineThrough : null,
-                color: isChecked ? MitlistColors.textSecondary : MitlistColors.textPrimary,
+                color: isChecked ? Theme.of(context).colorScheme.onSurfaceVariant : Theme.of(context).colorScheme.onSurface,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

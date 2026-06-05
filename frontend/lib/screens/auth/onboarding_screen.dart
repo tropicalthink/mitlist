@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 import '../../theme/animations.dart';
-import '../../theme/colors.dart';
 import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
@@ -47,7 +46,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           MitlistAnimations.entrance.inMilliseconds;
       final end = (start + 0.5).clamp(0.0, 1.0);
       return Tween<Offset>(
-        begin: const Offset(0, 0.08),
+        begin: Offset(0, 0.08),
         end: Offset.zero,
       ).animate(
         CurvedAnimation(
@@ -97,9 +96,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     Widget card = Container(
       padding: const EdgeInsets.all(MitlistSpacing.lg),
       decoration: BoxDecoration(
-        color: MitlistColors.surfacePrimary,
+        color: Theme.of(context).colorScheme.surface,
         border: Border.all(
-          color: MitlistColors.borderPrimary,
+          color: Theme.of(context).colorScheme.outline,
           width: 2,
         ),
         boxShadow: MitlistShadows.shadowMedium,
@@ -111,11 +110,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             'Create your household',
             style: Theme.of(context).textTheme.headlineSmall,
           ),
-          const SizedBox(height: MitlistSpacing.sm),
+          SizedBox(height: MitlistSpacing.sm),
           Text(
             'Name it, invite your flatmates, and start adding lists, chores, and shared expenses. Everything stays in one place — no more "did you get the milk?" texts at midnight.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: MitlistColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
         ],
@@ -135,7 +134,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
     if (!disableAnimations && _controller.isAnimating) {
       return Scaffold(
-        backgroundColor: MitlistColors.neutral50,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(MitlistSpacing.md),
@@ -181,7 +180,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     );
                   },
                 ),
-                const Spacer(),
+                Spacer(),
                 AnimatedBuilder(
                   animation: _controller,
                   builder: (context, child) {
@@ -202,7 +201,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     }
 
     return Scaffold(
-      backgroundColor: MitlistColors.neutral50,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(MitlistSpacing.md),

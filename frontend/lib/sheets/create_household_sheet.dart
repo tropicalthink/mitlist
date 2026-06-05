@@ -90,7 +90,7 @@ class _CreateHouseholdSheetState extends ConsumerState<CreateHouseholdSheet> {
         ),
         const SizedBox(height: MitlistSpacing.md),
         DropdownButtonFormField<String>(
-          value: _currency,
+          initialValue: _currency,
           decoration: const InputDecoration(labelText: 'Currency'),
           items: const [
             DropdownMenuItem(value: 'USD', child: Text('USD - US Dollar')),

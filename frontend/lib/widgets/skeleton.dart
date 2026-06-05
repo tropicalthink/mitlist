@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../theme/animations.dart';
-import '../theme/colors.dart';
 import '../theme/theme.dart';
 
 enum AppSkeletonRadius { none, sm }
@@ -49,18 +48,12 @@ class _AppSkeletonState extends State<AppSkeleton>
     }
   }
 
-  (Color base, Color highlight) _colorsFor(Brightness brightness) {
-    if (brightness == Brightness.dark) {
-      return (MitlistColors.neutral800, MitlistColors.neutral700);
-    }
-    return (MitlistColors.neutral200, MitlistColors.neutral100);
-  }
-
   @override
   Widget build(BuildContext context) {
     final disableAnimations = MediaQuery.of(context).disableAnimations;
-    final brightness = Theme.of(context).brightness;
-    final (base, highlight) = _colorsFor(brightness);
+    final colorScheme = Theme.of(context).colorScheme;
+    final base = colorScheme.surfaceContainerHighest;
+    final highlight = colorScheme.surfaceContainerHigh;
 
     Widget box(Color color) {
       return Container(

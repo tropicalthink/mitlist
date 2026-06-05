@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../theme/animations.dart';
-import '../theme/colors.dart';
 import '../theme/shadows.dart';
 import '../theme/spacing.dart';
 import '../theme/theme.dart';
@@ -22,17 +21,18 @@ class AppBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: MitlistColors.surfacePrimary,
-        borderRadius: BorderRadius.vertical(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(
           top: Radius.circular(MitlistTheme.radiusLg),
         ),
         border: Border(
-          top: BorderSide(color: MitlistColors.borderPrimary, width: 2),
-          left: BorderSide(color: MitlistColors.borderPrimary, width: 2),
-          right: BorderSide(color: MitlistColors.borderPrimary, width: 2),
+          top: BorderSide(color: colorScheme.outline, width: 2),
+          left: BorderSide(color: colorScheme.outline, width: 2),
+          right: BorderSide(color: colorScheme.outline, width: 2),
         ),
         boxShadow: MitlistShadows.shadowFloating,
       ),
@@ -44,9 +44,9 @@ class AppBottomSheet extends StatelessWidget {
             child: Container(
               width: MitlistSpacing.space10,
               height: MitlistSpacing.space1,
-              decoration: const BoxDecoration(
-                color: MitlistColors.neutral300,
-                borderRadius: BorderRadius.all(
+              decoration: BoxDecoration(
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                borderRadius: const BorderRadius.all(
                   Radius.circular(MitlistTheme.radiusFull),
                 ),
               ),
@@ -95,7 +95,7 @@ Future<T?> showAppBottomSheet<T>({
   return showModalBottomSheet<T>(
     context: context,
     backgroundColor: Colors.transparent,
-    barrierColor: MitlistColors.neutral950.withValues(alpha: 0.6),
+    barrierColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
     isScrollControlled: true,
     sheetAnimationStyle: AnimationStyle(duration: MitlistAnimations.medium),
     builder: (context) => AppBottomSheet(title: title, body: body),

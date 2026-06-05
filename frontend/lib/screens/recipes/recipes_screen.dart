@@ -13,7 +13,6 @@ import '../../services/group_id_validator.dart';
 import '../../sheets/recipe_add_to_list_sheet.dart';
 import '../../sheets/recipe_creation_sheet.dart';
 import '../../sheets/recipe_detail_sheet.dart';
-import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/active_group_context.dart';
@@ -413,7 +412,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
               onPressed: () => setState(() => _showSearch = true),
             ),
             PopupMenuButton<_RecipeMenuAction>(
-              icon: const Icon(AppIcons.ellipsisVertical),
+              icon: Icon(AppIcons.ellipsisVertical),
               tooltip: 'Options',
               onSelected: (action) {
                 setState(() {
@@ -436,7 +435,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                   child: Text(
                     'Sort recipes',
                     style: MitlistTypography.labelXSmall().copyWith(
-                      color: MitlistColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
@@ -469,7 +468,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       body: _buildBody(),
       floatingActionButton: AppButton(
         size: AppButtonSize.lg,
-        icon: const Icon(AppIcons.plus),
+        icon: Icon(AppIcons.plus),
         text: 'ADD RECIPE',
         onPressed: _onAddRecipe,
         tooltip: 'Add recipe',
@@ -482,7 +481,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       return Center(
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/House.lottie',
-          icon: const AppIcon(name: 'home', size: 56),
+          icon: AppIcon(name: 'home', size: 56),
           title: 'No household yet',
           description: 'Create or join a household before adding recipes.',
           actions: [
@@ -527,7 +526,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
           ),
         Expanded(
           child: RefreshIndicator(
-            color: MitlistColors.primary500,
+            color: Theme.of(context).colorScheme.primary,
             onRefresh: _loadKitchen,
             child: visible.isEmpty
                 ? _buildEmptyState()
@@ -574,10 +573,10 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                   Text(
                     'This week',
                     style: MitlistTypography.labelXSmall(
-                      color: MitlistColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(height: MitlistSpacing.sm),
+                  SizedBox(height: MitlistSpacing.sm),
                   ...plans.take(3).map((p) {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: MitlistSpacing.xs),
@@ -586,9 +585,9 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                           Icon(
                             AppIcons.calendarDays,
                             size: 14,
-                            color: MitlistColors.primary500,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
-                          const SizedBox(width: MitlistSpacing.sm),
+                          SizedBox(width: MitlistSpacing.sm),
                           Expanded(
                             child: Text(
                               '${p['day']} ${p['slot']}: ${p['title']}',
@@ -605,7 +604,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                     Text(
                       '+ ${plans.length - 3} more',
                       style: MitlistTypography.labelXSmall(
-                        color: MitlistColors.textTertiary,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                 ],

@@ -7,7 +7,6 @@ import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../providers/recipe_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
-import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/active_group_context.dart';
@@ -184,13 +183,13 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
               const Text('Servings'),
               const Spacer(),
               IconButton(
-                icon: const Icon(Icons.remove_circle_outline),
+                icon: Icon(Icons.remove_circle_outline),
                 tooltip: 'Decrease servings',
                 onPressed: _servings > 1 ? () => setState(() => _servings--) : null,
               ),
               Text(
                 '$_servings',
-                style: MitlistTypography.monoBody(color: MitlistColors.textPrimary),
+                style: MitlistTypography.monoBody(color: Theme.of(context).colorScheme.onSurface),
               ),
               IconButton(
                 icon: const Icon(Icons.add_circle_outline),
@@ -209,7 +208,7 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
           )
         else
           DropdownButtonFormField<String>(
-            value: _selectedListId,
+            initialValue: _selectedListId,
             decoration: const InputDecoration(
               labelText: 'Target list',
               border: OutlineInputBorder(),

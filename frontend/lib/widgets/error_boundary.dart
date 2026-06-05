@@ -2,7 +2,6 @@ import 'dart:ui' show PlatformDispatcher;
 
 import 'package:flutter/material.dart';
 
-import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../services/error_reporter.dart';
 
@@ -63,6 +62,8 @@ class _ErrorFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Material(
       child: Center(
         child: Padding(
@@ -70,8 +71,8 @@ class _ErrorFallback extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline,
-                  size: 48, color: MitlistColors.error500),
+              Icon(Icons.error_outline,
+                  size: 48, color: colorScheme.error),
               const SizedBox(height: MitlistSpacing.md),
               Text(
                 'Something went wrong',
@@ -82,7 +83,7 @@ class _ErrorFallback extends StatelessWidget {
               Text(
                 'An unexpected error occurred. The team has been notified.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: MitlistColors.textSecondary,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                 textAlign: TextAlign.center,
               ),
