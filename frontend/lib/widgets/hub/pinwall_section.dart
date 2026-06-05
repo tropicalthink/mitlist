@@ -17,7 +17,9 @@ import '../../theme/spacing.dart';
 import '../../theme/theme.dart';
 import '../../utils/haptics.dart';
 import '../../utils/hub_helpers.dart';
+import '../app_bottom_sheet.dart';
 import '../app_button.dart';
+import '../app_dialog.dart';
 
 final pinwallMediaByPostProvider = FutureProvider.family<
     List<PinwallMediaItem>, ({String groupId, String postId})>(
@@ -102,48 +104,41 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
     if (_isPosting || _isUploadingMedia) return;
     Haptics.light();
 
-    final typeAction = await showModalBottomSheet<String>(
+    final typeAction = await showAppBottomSheet<String>(
       context: context,
-      showDragHandle: true,
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(MitlistSpacing.md),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text('Link to\u2026',
-                  style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: MitlistSpacing.md),
-              AppButton(
-                text: 'A chore',
-                onPressed: () => Navigator.of(ctx).pop('chore'),
-              ),
+      title: 'Link to\u2026',
+      body: Builder(builder: (ctx) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AppButton(
+              text: 'A chore',
+              onPressed: () => Navigator.of(ctx).pop('chore'),
+            ),
+            const SizedBox(height: MitlistSpacing.sm),
+            AppButton(
+              text: 'A list',
+              variant: AppButtonVariant.outline,
+              onPressed: () => Navigator.of(ctx).pop('list'),
+            ),
+            const SizedBox(height: MitlistSpacing.sm),
+            AppButton(
+              text: 'An expense',
+              variant: AppButtonVariant.outline,
+              onPressed: () => Navigator.of(ctx).pop('expense'),
+            ),
+            if (_linkedEntityType != null) ...[
               const SizedBox(height: MitlistSpacing.sm),
               AppButton(
-                text: 'A list',
-                variant: AppButtonVariant.outline,
-                onPressed: () => Navigator.of(ctx).pop('list'),
+                text: 'Remove link',
+                variant: AppButtonVariant.ghost,
+                color: AppButtonColor.error,
+                onPressed: () => Navigator.of(ctx).pop('remove'),
               ),
-              const SizedBox(height: MitlistSpacing.sm),
-              AppButton(
-                text: 'An expense',
-                variant: AppButtonVariant.outline,
-                onPressed: () => Navigator.of(ctx).pop('expense'),
-              ),
-              if (_linkedEntityType != null) ...[
-                const SizedBox(height: MitlistSpacing.sm),
-                AppButton(
-                  text: 'Remove link',
-                  variant: AppButtonVariant.ghost,
-                  color: AppButtonColor.error,
-                  onPressed: () => Navigator.of(ctx).pop('remove'),
-                ),
-              ],
             ],
-          ),
-        ),
-      ),
+          ],
+        );
+      }),
     );
 
     if (!mounted || typeAction == null) return;
@@ -189,32 +184,25 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
 
       if (!mounted || options.isEmpty) return;
 
-      final picked = await showModalBottomSheet<_EntityOption>(
+      final picked = await showAppBottomSheet<_EntityOption>(
         context: context,
-        showDragHandle: true,
-        builder: (ctx) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(MitlistSpacing.md),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text('Select a $typeAction',
-                    style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: MitlistSpacing.md),
-                for (final opt in options)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
-                    child: AppButton(
-                      text: opt.label,
-                      variant: AppButtonVariant.outline,
-                      onPressed: () => Navigator.of(ctx).pop(opt),
-                    ),
+        title: 'Select a $typeAction',
+        body: Builder(builder: (ctx) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final opt in options)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+                  child: AppButton(
+                    text: opt.label,
+                    variant: AppButtonVariant.outline,
+                    onPressed: () => Navigator.of(ctx).pop(opt),
                   ),
-              ],
-            ),
-          ),
-        ),
+                ),
+            ],
+          );
+        }),
       );
 
       if (!mounted || picked == null) return;
@@ -716,32 +704,26 @@ class _PinwallNoteCard extends ConsumerWidget {
     required PinwallMediaItem media,
   }) async {
     Haptics.light();
-    final action = await showModalBottomSheet<String>(
+    final action = await showAppBottomSheet<String>(
       context: context,
-      showDragHandle: true,
-      builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(MitlistSpacing.md),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                AppButton(
-                  text: 'View',
-                  onPressed: () => Navigator.of(ctx).pop('view'),
-                ),
-                SizedBox(height: MitlistSpacing.sm),
-                AppButton(
-                  text: 'Remove from post',
-                  variant: AppButtonVariant.outline,
-                  onPressed: () => Navigator.of(ctx).pop('remove'),
-                ),
-              ],
+      title: 'Photo',
+      body: Builder(builder: (ctx) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AppButton(
+              text: 'View',
+              onPressed: () => Navigator.of(ctx).pop('view'),
             ),
-          ),
+            const SizedBox(height: MitlistSpacing.sm),
+            AppButton(
+              text: 'Remove from post',
+              variant: AppButtonVariant.outline,
+              onPressed: () => Navigator.of(ctx).pop('remove'),
+            ),
+          ],
         );
-      },
+      }),
     );
 
     if (!context.mounted) return;
@@ -1054,7 +1036,31 @@ class _PinwallNoteCard extends ConsumerWidget {
                           await _addMediaToPost(context, ref);
                           return;
                         }
-                        if (v == 'delete') await onDelete();
+                        if (v == 'delete') {
+                          if (!context.mounted) return;
+                          final confirmed = await showAppDialog<bool>(
+                            context: context,
+                            title: 'Delete pin',
+                            body: const Text(
+                                'This pin will be permanently deleted. This cannot be undone.'),
+                            actions: [
+                              AppButton(
+                                text: 'Cancel',
+                                variant: AppButtonVariant.outline,
+                                onPressed: () =>
+                                    Navigator.of(context).pop(false),
+                              ),
+                              const SizedBox(width: MitlistSpacing.sm),
+                              AppButton(
+                                text: 'Delete',
+                                color: AppButtonColor.error,
+                                onPressed: () =>
+                                    Navigator.of(context).pop(true),
+                              ),
+                            ],
+                          );
+                          if (confirmed == true) await onDelete();
+                        }
                       },
                       itemBuilder: (_) => const [
                         PopupMenuItem(
