@@ -105,7 +105,7 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet> {
             variant: AppButtonVariant.solid,
             color: AppButtonColor.primary,
             size: AppButtonSize.lg,
-            text: _isJoining ? 'Joining...' : 'Join Household',
+            text: _isJoining ? 'Joining...' : 'Join household',
             isLoading: _isJoining,
             onPressed: _canJoin ? _onJoin : null,
           ),

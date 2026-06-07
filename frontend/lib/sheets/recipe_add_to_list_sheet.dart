@@ -185,7 +185,7 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
           padding: AppCardPadding.md,
           child: Row(
             children: [
-              const Text('Servings'),
+              Text('Servings', style: Theme.of(context).textTheme.bodyMedium),
               const Spacer(),
               IconButton(
                 icon: AppIcon(name: 'minusCircleOutline'),

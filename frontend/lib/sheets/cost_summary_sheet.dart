@@ -102,7 +102,7 @@ class _CostSummarySheetState extends ConsumerState<CostSummarySheet> {
               child: AppButton(
                 variant: AppButtonVariant.solid,
                 color: AppButtonColor.primary,
-                text: 'Generate Expense',
+                text: 'Generate expense',
                 onPressed: _isSaving
                     ? null
                     : () async {

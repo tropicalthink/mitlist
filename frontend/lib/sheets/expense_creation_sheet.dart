@@ -375,7 +375,6 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
           },
           onValueChanged: () => setState(() {}),
         ),
-        const SizedBox(height: MitlistSpacing.md),
         const SizedBox(height: MitlistSpacing.lg),
         SizedBox(
           width: double.infinity,
@@ -383,7 +382,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
             variant: AppButtonVariant.solid,
             color: AppButtonColor.primary,
             size: AppButtonSize.lg,
-            text: _isSaving ? 'Adding...' : 'Add Expense',
+            text: _isSaving ? 'Adding...' : 'Add expense',
             isLoading: _isSaving,
             onPressed: _canCreate ? _onCreate : null,
           ),

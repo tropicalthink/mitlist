@@ -565,7 +565,7 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
               variant: AppButtonVariant.solid,
               color: AppButtonColor.primary,
               size: AppButtonSize.lg,
-              text: _isSaving ? 'Creating...' : 'Create Recipe',
+              text: _isSaving ? 'Creating...' : 'Create recipe',
               isLoading: _isSaving,
               onPressed: _canCreate ? _onCreate : null,
             ),

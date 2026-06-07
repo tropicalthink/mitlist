@@ -346,7 +346,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
                 variant: AppButtonVariant.solid,
                 color: AppButtonColor.success,
                 size: AppButtonSize.lg,
-                text: 'Mark Done',
+                text: 'Mark done',
                 onPressed: widget.onMarkDone,
               ),
             ),
@@ -371,7 +371,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
                 variant: AppButtonVariant.outline,
                 color: AppButtonColor.primary,
                 size: AppButtonSize.lg,
-                text: 'Move to Tomorrow',
+                text: 'Move to tomorrow',
                 onPressed: widget.onRescheduleTomorrow,
               ),
             ),
@@ -384,7 +384,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
                 variant: AppButtonVariant.ghost,
                 color: AppButtonColor.neutral,
                 size: AppButtonSize.lg,
-                text: 'Undo Last Execution',
+                text: 'Undo last execution',
                 onPressed: widget.onUndo,
               ),
             ),
@@ -499,10 +499,8 @@ class _SubtaskRow extends StatelessWidget {
               subtask.title,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                decoration: subtask.completed
-                    ? TextDecoration.lineThrough
-                    : null,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                decoration: subtask.completed ? TextDecoration.lineThrough : null,
                 color: subtask.completed
                     ? Theme.of(context).colorScheme.onSurfaceVariant
                     : Theme.of(context).colorScheme.onSurface,

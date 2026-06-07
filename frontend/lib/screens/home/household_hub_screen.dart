@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../models/activity_models.dart';
 import '../../models/auth_models.dart';
@@ -682,6 +683,11 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                         leading: null,
                         title: _buildAppBarTitle(context),
                         actions: [
+                          IconButton(
+                            tooltip: 'Calendar',
+                            icon: const Icon(Icons.calendar_month_outlined),
+                            onPressed: () => context.pushNamed('calendar'),
+                          ),
                           ...shellTrailingActions(context),
                           const SizedBox(width: MitlistSpacing.xs),
                         ],

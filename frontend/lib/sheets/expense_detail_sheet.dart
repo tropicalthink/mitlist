@@ -6,6 +6,7 @@ import '../models/finance_models.dart';
 import '../providers/attachment_provider.dart';
 import '../providers/finance_provider.dart';
 import '../theme/spacing.dart';
+import '../theme/theme.dart';
 import '../theme/typography.dart';
 import '../utils/format_currency.dart';
 import '../widgets/app_bottom_sheet.dart';
@@ -24,6 +25,7 @@ class ExpenseDetailSheet extends ConsumerStatefulWidget {
     required this.createdAt,
     this.onDelete,
     this.currency = 'USD',
+    this.userLabels = const {},
   });
 
   final String groupId;
@@ -34,6 +36,7 @@ class ExpenseDetailSheet extends ConsumerStatefulWidget {
   final DateTime createdAt;
   final VoidCallback? onDelete;
   final String currency;
+  final Map<String, String> userLabels;
 
   static Future<void> show(
     BuildContext context, {
@@ -45,6 +48,7 @@ class ExpenseDetailSheet extends ConsumerStatefulWidget {
     required DateTime createdAt,
     VoidCallback? onDelete,
     String currency = 'USD',
+    Map<String, String> userLabels = const {},
   }) async {
     return showAppBottomSheet(
       context: context,
@@ -58,6 +62,7 @@ class ExpenseDetailSheet extends ConsumerStatefulWidget {
         createdAt: createdAt,
         onDelete: onDelete,
         currency: currency,
+        userLabels: userLabels,
       ),
     );
   }
@@ -212,7 +217,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
             title: Text(_removing ? 'Removing…' : 'Remove'),
             onTap: _removing ? null : () => Navigator.of(context).pop('remove'),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: MitlistSpacing.sm),
         ],
       ),
     );
@@ -252,7 +257,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
               children: [
                 for (var i = 0; i < _splits.length; i++) ...[
                   if (i > 0) Divider(color: Theme.of(context).colorScheme.outlineVariant),
-                  _SplitRow(split: _splits[i], currency: widget.currency),
+                  _SplitRow(split: _splits[i], currency: widget.currency, userLabels: widget.userLabels),
                 ],
               ],
             ),
@@ -283,7 +288,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
                     button: true,
                     label: 'View receipt',
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(MitlistTheme.radiusMd),
                       child: AspectRatio(
                         aspectRatio: 1,
                         child: Stack(
@@ -335,16 +340,15 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
 }
 
 class _SplitRow extends StatelessWidget {
-  const _SplitRow({required this.split, required this.currency});
+  const _SplitRow({required this.split, required this.currency, this.userLabels = const {}});
 
   final Split split;
   final String currency;
+  final Map<String, String> userLabels;
 
   @override
   Widget build(BuildContext context) {
-    final label = split.userId.length > 8
-        ? split.userId.substring(0, 8)
-        : split.userId;
+    final label = userLabels[split.userId] ?? split.userId;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
       child: Row(

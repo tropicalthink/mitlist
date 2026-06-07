@@ -10,7 +10,6 @@ import '../providers/group_provider.dart';
 import '../providers/scan_provider.dart';
 import '../router.dart' show currentGroupIdProvider;
 import '../theme/spacing.dart';
-import '../theme/typography.dart';
 import '../utils/active_group_context.dart';
 import '../utils/haptics.dart';
 import '../widgets/animated_check_toggle.dart';
@@ -262,9 +261,8 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
         ),
         const SizedBox(height: MitlistSpacing.md),
         Text(
-          'Recurrence'.toUpperCase(),
-          style:
-              MitlistTypography.labelXSmall(color: Theme.of(context).colorScheme.onSurfaceVariant),
+          'Recurrence',
+          style: Theme.of(context).textTheme.labelMedium,
         ),
         const SizedBox(height: MitlistSpacing.sm),
         Wrap(
@@ -339,10 +337,8 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
         if (_recurrence == _Recurrence.weekly) ...[
           const SizedBox(height: MitlistSpacing.md),
           Text(
-            'Weekdays'.toUpperCase(),
-            style: MitlistTypography.labelXSmall(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+            'Weekdays',
+            style: Theme.of(context).textTheme.labelMedium,
           ),
           const SizedBox(height: MitlistSpacing.sm),
           Wrap(
@@ -375,9 +371,8 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
         ],
         const SizedBox(height: MitlistSpacing.md),
         Text(
-          'Assignment'.toUpperCase(),
-          style:
-              MitlistTypography.labelXSmall(color: Theme.of(context).colorScheme.onSurfaceVariant),
+          'Assignment',
+          style: Theme.of(context).textTheme.labelMedium,
         ),
         const SizedBox(height: MitlistSpacing.sm),
         Wrap(
@@ -442,7 +437,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
                 semanticLabelOff: 'Track date only',
               ),
               const SizedBox(width: MitlistSpacing.sm),
-              const Text('Track date only'),
+              Text('Track date only', style: Theme.of(context).textTheme.bodyMedium),
             ],
           ),
         ),
@@ -457,7 +452,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
                 semanticLabelOff: 'Rollover overdue due date',
               ),
               const SizedBox(width: MitlistSpacing.sm),
-              const Text('Rollover overdue due date'),
+              Text('Rollover overdue due date', style: Theme.of(context).textTheme.bodyMedium),
             ],
           ),
         ),
@@ -468,7 +463,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
             variant: AppButtonVariant.solid,
             color: AppButtonColor.primary,
             size: AppButtonSize.lg,
-            text: _isSaving ? 'Adding...' : 'Add Chore',
+            text: _isSaving ? 'Adding...' : 'Add chore',
             isLoading: _isSaving,
             onPressed: _canCreate ? _onCreate : null,
           ),
