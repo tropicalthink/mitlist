@@ -1,0 +1,15 @@
+# Release signing config for mitlist (Android).
+#
+# Copy this file to android/key.properties and fill in real values.
+# key.properties and the keystore itself are gitignored — never commit them.
+#
+# Generate a keystore once with:
+#   keytool -genkey -v -keystore ~/mitlist-release.jks \
+#     -keyalg RSA -keysize 2048 -validity 10000 -alias mitlist
+#
+# storeFile may be absolute or relative to the android/app directory.
+
+storePassword=changeme
+keyPassword=changeme
+keyAlias=mitlist
+storeFile=/absolute/path/to/mitlist-release.jks

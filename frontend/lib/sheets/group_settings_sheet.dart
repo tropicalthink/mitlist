@@ -14,6 +14,7 @@ import '../widgets/app_dialog.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/app_input.dart';
 import '../utils/friendly_error.dart';
+import 'invite_household_sheet.dart';
 
 class GroupSettingsSheet extends ConsumerStatefulWidget {
   const GroupSettingsSheet({super.key, required this.groupId});
@@ -436,8 +437,19 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
                 '${_members.length}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style:
-                    textTheme.bodySmall?.copyWith(color: textTheme.titleSmall?.color),
+                style: textTheme.bodySmall
+                    ?.copyWith(color: textTheme.titleSmall?.color),
+              ),
+              const SizedBox(width: MitlistSpacing.sm),
+              AppButton(
+                size: AppButtonSize.sm,
+                variant: AppButtonVariant.outline,
+                text: 'Invite',
+                icon: const AppIcon(name: 'userPlus'),
+                onPressed: () => InviteHouseholdSheet.show(
+                  context,
+                  groupId: widget.groupId,
+                ),
               ),
             ],
           ),

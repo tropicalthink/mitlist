@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'colors.dart';
 
 class MitlistTypography {
+  /// Bundled brand display/heading face. See pubspec `fonts:`.
+  static const String groteskFamily = 'Space Grotesk';
+
+  /// Bundled monospace face used for numerals and code-like values.
+  static const String monoFamily = 'JetBrains Mono';
+
   static TextStyle _grotesk({
     required double size,
     required FontWeight weight,
     required double height,
-    required double spacing,
+    double spacing = 0,
     Color? color,
   }) {
-    return GoogleFonts.spaceGrotesk(
+    return TextStyle(
+      fontFamily: groteskFamily,
       fontSize: size,
       fontWeight: weight,
       height: height,
@@ -63,7 +69,8 @@ class MitlistTypography {
         color: color ?? MitlistColors.textTertiary,
       );
 
-  static TextStyle monoBody({Color? color}) => GoogleFonts.jetBrainsMono(
+  static TextStyle monoBody({Color? color}) => TextStyle(
+        fontFamily: monoFamily,
         fontSize: 14,
         fontWeight: FontWeight.w700,
         height: 1.43,
@@ -71,14 +78,10 @@ class MitlistTypography {
         color: color ?? MitlistColors.textPrimary,
       );
 
-  // Logo uses Space Grotesk (google_fonts package) as fallback.
-// TODO: Replace with bundled Mathilde font when asset files are provided:
-// 1. Add `fonts: - family: Mathilde assets: assets/fonts/Mathilde-Regular.otf` to pubspec.yaml
-// 2. Change to: `fontFamily: 'Mathilde'` with `fontLoader.load('assets/fonts/Mathilde-Regular.otf')` in main.dart
-// Note: google_fonts fetches at runtime - bundle assets for offline support.
-  static TextStyle logo({Color? color}) => GoogleFonts.spaceGrotesk(
-        fontSize: 48,
-        fontWeight: FontWeight.w700,
+  // Logo uses Space Grotesk, the brand display face.
+  static TextStyle logo({Color? color}) => _grotesk(
+        size: 48,
+        weight: FontWeight.w700,
         height: 1.0,
         color: color ?? MitlistColors.textPrimary,
       );

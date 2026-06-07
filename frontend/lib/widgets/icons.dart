@@ -108,6 +108,8 @@ class AppIcons {
   static const IconData link = Icons.link;
   static const IconData openInNew = Icons.open_in_new;
   static const IconData star = Icons.star;
+  static const IconData qrCode = Icons.qr_code_2;
+  static const IconData sun = Icons.light_mode;
 
   /// Resolves a semantic [name] to its placeholder [IconData].
   ///
@@ -211,6 +213,8 @@ class AppIcons {
       'star' => star,
       'copy' => copy,
       'warningAmber' => warningAmber,
+      'qrCode' => qrCode,
+      'sun' => sun,
       _ => null,
     };
   }
