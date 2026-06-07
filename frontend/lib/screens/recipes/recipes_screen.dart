@@ -146,6 +146,16 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
 
   Future<void> _openRecipeDetail(_Recipe recipe) async {
     Haptics.light();
+    final service = await ref.read(recipeServiceProviderAsync.future);
+    List<RecipeIngredient> ingredients = [];
+    List<RecipeStep> steps = [];
+    try {
+      ingredients = await service.getRecipeIngredients(recipe.id);
+    } catch (_) {}
+    try {
+      steps = await service.getRecipeSteps(recipe.id);
+    } catch (_) {}
+    if (!mounted) return;
     await RecipeDetailSheet.show(
       context,
       title: recipe.title,
@@ -164,6 +174,8 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       equipmentJson: recipe.equipmentJson,
       imageUrl: recipe.imageUrl,
       tags: recipe.tags,
+      ingredients: ingredients,
+      steps: steps,
       onDelete: () => _confirmDeleteRecipe(recipe),
     );
   }
@@ -709,7 +721,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                 padding: const EdgeInsets.all(MitlistSpacing.md),
                 child: AppEmptyState(
                   lottieAsset: 'assets/animations/lottie/Recipes.lottie',
-                  icon: const Icon(Icons.restaurant_menu, size: 56),
+                  icon: const AppIcon(name: 'restaurantMenu', size: 56),
                   title: 'Build your kitchen',
                   description:
                       'Import recipes, group cookbooks, plan meals, and turn the week into a shopping list.',
@@ -836,8 +848,8 @@ class _RecipeCard extends StatelessWidget {
         height: MitlistSpacing.space20,
         color: colorScheme.surfaceContainerHighest,
         alignment: Alignment.center,
-        child: Icon(
-          Icons.restaurant_outlined,
+        child: AppIcon(
+          name: 'restaurantOutline',
           color: colorScheme.onSurfaceVariant,
         ),
       );
@@ -856,8 +868,8 @@ class _RecipeCard extends StatelessWidget {
           height: MitlistSpacing.space20,
           color: colorScheme.surfaceContainerHighest,
           alignment: Alignment.center,
-          child: Icon(
-            Icons.image_not_supported_outlined,
+          child: AppIcon(
+            name: 'imageNotSupportedOutline',
             color: colorScheme.onSurfaceVariant,
           ),
         );

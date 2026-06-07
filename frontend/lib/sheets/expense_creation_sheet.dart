@@ -18,7 +18,10 @@ import '../utils/active_group_context.dart';
 import '../utils/haptics.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
+import '../widgets/animated_check_toggle.dart';
+import '../widgets/app_icon.dart';
 import '../widgets/app_input.dart';
+import '../widgets/chip.dart';
 
 class ExpenseCreationSheet extends ConsumerStatefulWidget {
   final String? initialDescription;
@@ -40,7 +43,7 @@ class ExpenseCreationSheet extends ConsumerStatefulWidget {
   }) async {
     return showAppBottomSheet<bool>(
       context: context,
-      title: 'Add Expense',
+      title: 'Add expense',
       body: ExpenseCreationSheet(
         initialDescription: initialDescription,
         initialAmount: initialAmount,
@@ -244,7 +247,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
         } catch (e) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Expense saved but receipt upload failed: $e')),
+              SnackBar(content: Text('Expense saved, but receipt upload failed.')),
             );
           }
         }
@@ -319,13 +322,14 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       children: [
         AppButton(
           text: _isScanning ? 'Scanning…' : 'Scan receipt',
-          icon: Icon(
-            _isScanning ? Icons.hourglass_empty : Icons.document_scanner_outlined,
+          icon: AppIcon(
+            name: _isScanning ? 'hourglassEmpty' : 'documentScanner',
             size: 20,
           ),
           variant: AppButtonVariant.outline,
           color: AppButtonColor.neutral,
           onPressed: _isScanning ? null : _onScan,
+          semanticLabel: 'Scan receipt via camera',
         ),
         const SizedBox(height: MitlistSpacing.md),
         AppInput(
@@ -371,7 +375,6 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
           },
           onValueChanged: () => setState(() {}),
         ),
-        const SizedBox(height: MitlistSpacing.md),
         const SizedBox(height: MitlistSpacing.lg),
         SizedBox(
           width: double.infinity,
@@ -379,7 +382,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
             variant: AppButtonVariant.solid,
             color: AppButtonColor.primary,
             size: AppButtonSize.lg,
-            text: _isSaving ? 'Adding...' : 'Add Expense',
+            text: _isSaving ? 'Adding...' : 'Add expense',
             isLoading: _isSaving,
             onPressed: _canCreate ? _onCreate : null,
           ),
@@ -428,17 +431,38 @@ class _SplitOptions extends StatelessWidget {
           spacing: MitlistSpacing.sm,
           runSpacing: MitlistSpacing.sm,
           children: [
-            for (final mode in const [
-              'equal',
-              'amount',
-              'shares',
-              'percentage'
-            ])
-              ChoiceChip(
-                label: Text(_modeLabel(mode)),
-                selected: splitMode == mode,
-                onSelected: (_) => onModeChanged(mode),
+            Tooltip(
+              message: 'Split the total evenly among selected members',
+              child: AppChip(
+                label: 'Equal',
+                selected: splitMode == 'equal',
+                onSelected: (_) => onModeChanged('equal'),
               ),
+            ),
+            Tooltip(
+              message: 'Enter exact amounts for each member',
+              child: AppChip(
+                label: 'Exact',
+                selected: splitMode == 'amount',
+                onSelected: (_) => onModeChanged('amount'),
+              ),
+            ),
+            Tooltip(
+              message: 'Split by shares (e.g., 2 shares = double)',
+              child: AppChip(
+                label: 'Shares',
+                selected: splitMode == 'shares',
+                onSelected: (_) => onModeChanged('shares'),
+              ),
+            ),
+            Tooltip(
+              message: 'Split by percentages that sum to 100%',
+              child: AppChip(
+                label: 'Percent',
+                selected: splitMode == 'percentage',
+                onSelected: (_) => onModeChanged('percentage'),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: MitlistSpacing.md),
@@ -448,10 +472,12 @@ class _SplitOptions extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
             child: Row(
               children: [
-                Checkbox(
+                AnimatedCheckToggle(
                   value: selected,
                   onChanged: (value) =>
-                      onMemberChanged(member.userId, value ?? false),
+                      onMemberChanged(member.userId, value),
+                  semanticLabelOn: 'Remove ${member.displayName} from split',
+                  semanticLabelOff: 'Add ${member.displayName} to split',
                 ),
                 Expanded(
                   child: Text(
@@ -482,13 +508,6 @@ class _SplitOptions extends StatelessWidget {
       ],
     );
   }
-
-  String _modeLabel(String mode) => switch (mode) {
-        'amount' => 'Exact',
-        'shares' => 'Shares',
-        'percentage' => 'Percent',
-        _ => 'Equal',
-      };
 
   String _valueLabel(String mode) => switch (mode) {
         'amount' => 'Amount',

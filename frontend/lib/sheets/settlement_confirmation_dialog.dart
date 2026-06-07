@@ -4,6 +4,7 @@ import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_dialog.dart';
+import '../widgets/app_icon.dart';
 
 class SettlementConfirmationDialog extends StatelessWidget {
   const SettlementConfirmationDialog({
@@ -25,7 +26,7 @@ class SettlementConfirmationDialog extends StatelessWidget {
   }) async {
     return showAppDialog<bool>(
       context: context,
-      title: 'Confirm Payment',
+      title: 'Confirm payment',
       body: SettlementConfirmationDialog(
         amount: amount,
         payer: payer,
@@ -42,6 +43,8 @@ class SettlementConfirmationDialog extends StatelessWidget {
           children: [
         Text(
           amount,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.displayMedium,
         ),
         if (payer == 'You')
@@ -49,6 +52,8 @@ class SettlementConfirmationDialog extends StatelessWidget {
             padding: const EdgeInsets.only(top: MitlistSpacing.sm),
             child: Text(
               'You\u2019ll pay $payee $amount',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodySmall,
             ),
           )
@@ -57,6 +62,8 @@ class SettlementConfirmationDialog extends StatelessWidget {
             padding: const EdgeInsets.only(top: MitlistSpacing.sm),
             child: Text(
               '$payer will pay you $amount',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodySmall,
             ),
           )
@@ -65,6 +72,8 @@ class SettlementConfirmationDialog extends StatelessWidget {
             padding: const EdgeInsets.only(top: MitlistSpacing.sm),
             child: Text(
               '$payer pays $payee $amount',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
@@ -75,8 +84,8 @@ class SettlementConfirmationDialog extends StatelessWidget {
               child: _PartyBlock(label: 'From', name: payer),
             ),
             const SizedBox(width: MitlistSpacing.md),
-            Icon(
-              Icons.arrow_forward,
+            AppIcon(
+              name: 'arrowRight',
               size: MitlistSpacing.space5,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),

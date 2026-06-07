@@ -9,6 +9,7 @@ import '../theme/spacing.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
+import '../widgets/app_icon.dart';
 
 class ConflictResolutionSheet extends ConsumerStatefulWidget {
   const ConflictResolutionSheet({super.key});
@@ -77,7 +78,7 @@ class _ConflictResolutionSheetState
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Server version accepted. Changes will sync.'),
+        content: const Text('Server version accepted. Changes will sync.'),
       ),
     );
   }
@@ -99,7 +100,7 @@ class _ConflictResolutionSheetState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.check_circle, size: 48, color: Theme.of(context).colorScheme.tertiary),
+            AppIcon(name: 'checkCircle', size: 48, color: Theme.of(context).colorScheme.tertiary),
             const SizedBox(height: MitlistSpacing.md),
             Text(
               'All conflicts resolved',
@@ -173,7 +174,7 @@ class _ConflictCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.warning_amber_rounded,
+                AppIcon(name: 'warningAmber',
                     size: 16, color: Theme.of(context).colorScheme.secondary),
                 const SizedBox(width: MitlistSpacing.sm),
                 Expanded(
@@ -234,7 +235,7 @@ class _ConflictCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: MitlistSpacing.xs),
-                    Icon(Icons.arrow_forward,
+                    AppIcon(name: 'arrowRight',
                         size: 12, color: Theme.of(context).colorScheme.outline),
                     const SizedBox(width: MitlistSpacing.xs),
                     Expanded(

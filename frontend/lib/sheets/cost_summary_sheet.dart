@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../theme/spacing.dart';
+import '../utils/format_currency.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 
@@ -13,6 +14,7 @@ class CostSummarySheet extends ConsumerStatefulWidget {
     required this.equalShareCents,
     required this.itemCount,
     required this.onGenerateExpense,
+    this.currencyCode = 'USD',
   });
 
   final String listName;
@@ -20,6 +22,7 @@ class CostSummarySheet extends ConsumerStatefulWidget {
   final int equalShareCents;
   final int itemCount;
   final VoidCallback? onGenerateExpense;
+  final String currencyCode;
 
   static Future<void> show(
     BuildContext context, {
@@ -28,16 +31,18 @@ class CostSummarySheet extends ConsumerStatefulWidget {
     required int equalShareCents,
     required int itemCount,
     required VoidCallback? onGenerateExpense,
+    String currencyCode = 'USD',
   }) async {
     return showAppBottomSheet(
       context: context,
-      title: 'Cost Summary',
+      title: 'Cost summary',
       body: CostSummarySheet(
         listName: listName,
         totalCents: totalCents,
         equalShareCents: equalShareCents,
         itemCount: itemCount,
         onGenerateExpense: onGenerateExpense,
+        currencyCode: currencyCode,
       ),
     );
   }
@@ -50,7 +55,7 @@ class _CostSummarySheetState extends ConsumerState<CostSummarySheet> {
   bool _isSaving = false;
 
   String _formatCents(int cents) {
-    return '\$${(cents / 100).toStringAsFixed(2)}';
+    return formatCurrency(cents, widget.currencyCode);
   }
 
   @override
@@ -97,7 +102,7 @@ class _CostSummarySheetState extends ConsumerState<CostSummarySheet> {
               child: AppButton(
                 variant: AppButtonVariant.solid,
                 color: AppButtonColor.primary,
-                text: 'Generate Expense',
+                text: 'Generate expense',
                 onPressed: _isSaving
                     ? null
                     : () async {

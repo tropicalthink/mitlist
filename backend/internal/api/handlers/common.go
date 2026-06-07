@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 	"strconv"
@@ -44,7 +43,7 @@ func UserFromContext(ctx context.Context) *models.User {
 func RequireUser(w http.ResponseWriter, r *http.Request) uuid.UUID {
 	id, err := getUserID(r)
 	if err != nil {
-		respondError(w, api.ErrUnauthorized)
+		api.RespondError(w, api.ErrUnauthorized)
 		return uuid.Nil
 	}
 	return id
@@ -107,56 +106,5 @@ func parseLimitOffset(r *http.Request) (limit, offset int) {
 }
 
 // ---------------------------------------------------------------------------
-// Response helpers
+// Response helpers (delegated to api.WriteError / api.RespondError in api/errors.go)
 // ---------------------------------------------------------------------------
-
-func respondJSON(w http.ResponseWriter, status int, v any) {
-	if status == http.StatusNoContent {
-		w.WriteHeader(status)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
-}
-
-func respondError(w http.ResponseWriter, err error) {
-	status, body := mapError(err)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(body)
-}
-
-type errorResponse struct {
-	Error   string `json:"error"`
-	Message string `json:"message,omitempty"`
-	Field   string `json:"field,omitempty"`
-}
-
-func mapError(err error) (int, errorResponse) {
-	var notFound *api.NotFoundError
-	if errors.As(err, &notFound) {
-		return http.StatusNotFound, errorResponse{Error: "not_found", Message: notFound.Error()}
-	}
-
-	var perm *api.PermissionDeniedError
-	if errors.As(err, &perm) {
-		return http.StatusForbidden, errorResponse{Error: "permission_denied", Message: perm.Error()}
-	}
-
-	var val *api.ValidationError
-	if errors.As(err, &val) {
-		return http.StatusBadRequest, errorResponse{Error: "validation_error", Message: val.Error(), Field: val.Field}
-	}
-
-	var conflict *api.ConflictError
-	if errors.As(err, &conflict) {
-		return http.StatusConflict, errorResponse{Error: "conflict", Message: conflict.Error()}
-	}
-
-	if errors.Is(err, api.ErrUnauthorized) {
-		return http.StatusUnauthorized, errorResponse{Error: "unauthorized", Message: err.Error()}
-	}
-
-	return http.StatusInternalServerError, errorResponse{Error: "internal_error", Message: "internal server error"}
-}

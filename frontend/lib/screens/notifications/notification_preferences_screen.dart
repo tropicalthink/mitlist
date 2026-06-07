@@ -287,7 +287,7 @@ class _NotificationPreferencesScreenState
                       padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xl),
                       child: AppEmptyState(
                         lottieAsset: 'assets/animations/lottie/House.lottie',
-                        icon: const Icon(Icons.home_outlined, size: 56),
+                        icon: const AppIcon(name: 'homeOutline', size: 56),
                         title: 'No household yet',
                         description: 'Join or create a household to configure notification preferences.',
                         actions: [
@@ -303,7 +303,7 @@ class _NotificationPreferencesScreenState
                   else
                     AppEmptyState(
                       lottieAsset: 'assets/animations/lottie/Notifications.lottie',
-                      icon: Icon(Icons.tune, size: 56),
+                      icon: AppIcon(name: 'tune', size: 56),
                       title: 'No preferences yet',
                       description:
                           'Preferences are created when you join a household. If you just joined, they should appear shortly.',

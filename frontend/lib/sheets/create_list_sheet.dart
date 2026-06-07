@@ -11,10 +11,10 @@ import '../providers/list_provider.dart';
 import '../providers/scan_provider.dart';
 import '../router.dart' show currentGroupIdProvider;
 import '../theme/spacing.dart';
-import '../theme/typography.dart';
 import '../utils/active_group_context.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
+import '../widgets/app_icon.dart';
 import '../widgets/app_input.dart';
 import '../widgets/chip.dart';
 
@@ -37,7 +37,7 @@ class CreateListSheet extends ConsumerStatefulWidget {
   }) async {
     return showAppBottomSheet<bool>(
       context: context,
-      title: 'New List',
+      title: 'New list',
       body: CreateListSheet(
         initialGroupId: initialGroupId,
         initialName: initialName,
@@ -176,13 +176,14 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
       children: [
         AppButton(
           text: _isScanning ? 'Scanning…' : 'Scan list',
-          icon: Icon(
-            _isScanning ? Icons.hourglass_empty : Icons.document_scanner_outlined,
+          icon: AppIcon(
+            name: _isScanning ? 'hourglassEmpty' : 'documentScanner',
             size: 20,
           ),
           variant: AppButtonVariant.outline,
           color: AppButtonColor.neutral,
           onPressed: _isScanning ? null : _onScan,
+          semanticLabel: 'Scan list via camera',
         ),
         const SizedBox(height: MitlistSpacing.md),
         if (_errorText != null) ...[
@@ -205,9 +206,8 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
         ),
         const SizedBox(height: MitlistSpacing.md),
         Text(
-          'Type'.toUpperCase(),
-          style:
-              MitlistTypography.labelXSmall(color: Theme.of(context).colorScheme.onSurfaceVariant),
+          'Type',
+          style: Theme.of(context).textTheme.labelMedium,
         ),
         const SizedBox(height: MitlistSpacing.sm),
         Wrap(
@@ -239,9 +239,8 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
         ),
         const SizedBox(height: MitlistSpacing.md),
         Text(
-          'Household'.toUpperCase(),
-          style:
-              MitlistTypography.labelXSmall(color: Theme.of(context).colorScheme.onSurfaceVariant),
+          'Household',
+          style: Theme.of(context).textTheme.labelMedium,
         ),
         const SizedBox(height: MitlistSpacing.sm),
         if (_isLoadingGroups)

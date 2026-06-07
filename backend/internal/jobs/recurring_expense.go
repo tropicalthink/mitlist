@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/robfig/cron/v3"
 
 	"github.com/mitlist-app/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/mitlist-app/mitlist/pkg/logger"
 )
 
@@ -24,8 +24,8 @@ type RecurringExpenseJob struct {
 }
 
 // NewRecurringExpenseJob creates a new RecurringExpenseJob.
-func NewRecurringExpenseJob(pool *pgxpool.Pool, push Pusher, log *logger.Logger) *RecurringExpenseJob {
-	return &RecurringExpenseJob{repo: &recurringExpenseRepoImpl{pool: pool}, push: push, log: log}
+func NewRecurringExpenseJob(db repositories.DBTX, push Pusher, log *logger.Logger) *RecurringExpenseJob {
+	return &RecurringExpenseJob{repo: &recurringExpenseRepoImpl{db: db}, push: push, log: log}
 }
 
 func newRecurringExpenseJob(repo recurringExpenseRepo, push Pusher, log *logger.Logger) *RecurringExpenseJob {
@@ -123,7 +123,7 @@ func (j *RecurringExpenseJob) nextDueFromCron(freq string, from time.Time) (time
 }
 
 type recurringExpenseRepoImpl struct {
-	pool *pgxpool.Pool
+	db repositories.DBTX
 }
 
 func (r *recurringExpenseRepoImpl) ListDueRecurringExpenses(ctx context.Context) ([]models.RecurringExpense, error) {
@@ -132,7 +132,7 @@ func (r *recurringExpenseRepoImpl) ListDueRecurringExpenses(ctx context.Context)
 		FROM recurring_expenses
 		WHERE is_active = true AND next_due <= NOW()
 	`
-	rows, err := r.pool.Query(ctx, query)
+	rows, err := r.db.Query(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("query due recurring expenses: %w", err)
 	}
@@ -157,7 +157,7 @@ func (r *recurringExpenseRepoImpl) ListDueRecurringExpenses(ctx context.Context)
 }
 
 func (r *recurringExpenseRepoImpl) ProcessRecurringExpense(ctx context.Context, expense *models.Expense, split *models.Split, reID uuid.UUID, oldNextDue time.Time, nextDue time.Time) error {
-	tx, err := r.pool.Begin(ctx)
+	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
 	}

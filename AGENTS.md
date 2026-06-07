@@ -39,6 +39,7 @@ docker compose up -d        # Start postgres + redis
 - **Hub Widgets**: `frontend/lib/widgets/hub/` — `pinwall_section`, `activity_wall`, `stats_grid`, `hub_skeleton`, `quick_add_sheet`
 - **Screens**: `frontend/lib/screens/` — one subfolder per feature area
 - **Sheets**: `frontend/lib/sheets/` — bottom sheet creation/detail forms
+  - **Sheet vs. Page threshold**: If a form has >3 distinct sections or >6 interactive fields, push a full-page route instead of a bottom sheet. Bottom sheets are for focused, single-purpose actions. Complex creation/edit flows (recipe creation, household settings) should be full screens.
 - **Services**: `frontend/lib/services/` — API clients (Dio)
 - **Models**: `frontend/lib/models/` — data classes with `fromJson`/`toJson`
 - **Providers**: `frontend/lib/providers/` — Riverpod async providers for services

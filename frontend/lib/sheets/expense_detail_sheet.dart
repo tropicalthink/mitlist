@@ -6,10 +6,13 @@ import '../models/finance_models.dart';
 import '../providers/attachment_provider.dart';
 import '../providers/finance_provider.dart';
 import '../theme/spacing.dart';
+import '../theme/theme.dart';
 import '../theme/typography.dart';
+import '../utils/format_currency.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
+import '../widgets/app_icon.dart';
 
 class ExpenseDetailSheet extends ConsumerStatefulWidget {
   const ExpenseDetailSheet({
@@ -21,6 +24,8 @@ class ExpenseDetailSheet extends ConsumerStatefulWidget {
     required this.payer,
     required this.createdAt,
     this.onDelete,
+    this.currency = 'USD',
+    this.userLabels = const {},
   });
 
   final String groupId;
@@ -30,6 +35,8 @@ class ExpenseDetailSheet extends ConsumerStatefulWidget {
   final String payer;
   final DateTime createdAt;
   final VoidCallback? onDelete;
+  final String currency;
+  final Map<String, String> userLabels;
 
   static Future<void> show(
     BuildContext context, {
@@ -40,10 +47,12 @@ class ExpenseDetailSheet extends ConsumerStatefulWidget {
     required String payer,
     required DateTime createdAt,
     VoidCallback? onDelete,
+    String currency = 'USD',
+    Map<String, String> userLabels = const {},
   }) async {
     return showAppBottomSheet(
       context: context,
-      title: 'Expense Details',
+      title: 'Expense details',
       body: ExpenseDetailSheet(
         groupId: groupId,
         expenseId: expenseId,
@@ -52,6 +61,8 @@ class ExpenseDetailSheet extends ConsumerStatefulWidget {
         payer: payer,
         createdAt: createdAt,
         onDelete: onDelete,
+        currency: currency,
+        userLabels: userLabels,
       ),
     );
   }
@@ -130,7 +141,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
                     padding: const EdgeInsets.all(MitlistSpacing.lg),
                     child: Text(
                       'Failed to load receipt',
-                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface),
                     ),
                   ),
                 ),
@@ -142,7 +153,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
                 child: IconButton(
                   tooltip: 'Close',
                   onPressed: () => Navigator.of(context).pop(),
-                  icon: Icon(Icons.close, color: Theme.of(context).colorScheme.onSurface),
+                  icon: AppIcon(name: 'xMark', color: Theme.of(context).colorScheme.onSurface),
                 ),
               ),
             ),
@@ -174,7 +185,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
           attachmentId: receipt.attachmentId,
         );
       } catch (_) {
-        debugPrint('[ExpenseDetail] Attachment cleanup failed for ${receipt.attachmentId}');
+        // Best-effort attachment cleanup; silently ignore failures.
       }
 
       if (!mounted) return;
@@ -190,26 +201,24 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
 
   Future<void> _showReceiptActions(ExpenseReceipt receipt) async {
     if (!mounted) return;
-    final action = await showModalBottomSheet<String>(
+    final action = await showAppBottomSheet<String>(
       context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.open_in_full),
-              title: const Text('View'),
-              onTap: () => Navigator.of(context).pop('view'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.remove_circle_outline),
-              title: Text(_removing ? 'Removing…' : 'Remove'),
-              onTap: _removing ? null : () => Navigator.of(context).pop('remove'),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
+      title: 'Receipt',
+      body: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const AppIcon(name: 'openInFull'),
+            title: const Text('View'),
+            onTap: () => Navigator.of(context).pop('view'),
+          ),
+          ListTile(
+            leading: const AppIcon(name: 'minusCircleOutline'),
+            title: Text(_removing ? 'Removing…' : 'Remove'),
+            onTap: _removing ? null : () => Navigator.of(context).pop('remove'),
+          ),
+          const SizedBox(height: MitlistSpacing.sm),
+        ],
       ),
     );
 
@@ -248,7 +257,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
               children: [
                 for (var i = 0; i < _splits.length; i++) ...[
                   if (i > 0) Divider(color: Theme.of(context).colorScheme.outlineVariant),
-                  _SplitRow(split: _splits[i]),
+                  _SplitRow(split: _splits[i], currency: widget.currency, userLabels: widget.userLabels),
                 ],
               ],
             ),
@@ -279,7 +288,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
                     button: true,
                     label: 'View receipt',
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(MitlistTheme.radiusMd),
                       child: AspectRatio(
                         aspectRatio: 1,
                         child: Stack(
@@ -291,7 +300,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
                               errorBuilder: (_, __, ___) => Container(
                                 color: Theme.of(context).colorScheme.surfaceContainerLow,
                                 alignment: Alignment.center,
-                                child: const Icon(Icons.receipt_long_outlined),
+                                child: const AppIcon(name: 'receiptLongOutline'),
                               ),
                             ),
                             if (_removing)
@@ -331,15 +340,15 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
 }
 
 class _SplitRow extends StatelessWidget {
-  const _SplitRow({required this.split});
+  const _SplitRow({required this.split, required this.currency, this.userLabels = const {}});
 
   final Split split;
+  final String currency;
+  final Map<String, String> userLabels;
 
   @override
   Widget build(BuildContext context) {
-    final label = split.userId.length > 8
-        ? split.userId.substring(0, 8)
-        : split.userId;
+    final label = userLabels[split.userId] ?? split.userId;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
       child: Row(
@@ -350,11 +359,14 @@ class _SplitRow extends StatelessWidget {
           if (split.isSettled)
             Padding(
               padding: const EdgeInsets.only(right: MitlistSpacing.sm),
-              child: Icon(Icons.check_circle,
-                  size: 16, color: Theme.of(context).colorScheme.tertiary),
+              child: AppIcon(
+                  name: 'checkCircle',
+                  size: 16,
+                  color: Theme.of(context).colorScheme.tertiary,
+                ),
             ),
           Text(
-            '\$${(split.amount / 100).toStringAsFixed(2)}',
+            formatCurrency(split.amount, currency),
             style: MitlistTypography.monoBody(),
           ),
         ],

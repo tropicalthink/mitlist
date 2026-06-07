@@ -28,6 +28,7 @@ import '../../widgets/app_icon.dart';
 import '../../widgets/chip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton.dart';
+import '../../widgets/spinner.dart';
 import '../../widgets/list_entrance.dart';
 import '../../widgets/mitlist_app_bar.dart';
 
@@ -138,7 +139,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   double _balance = 0;
   int _openBalanceCount = 0;
   String? _groupId;
+  String _groupCurrency = 'USD';
   Map<String, String> _userLabels = {};
+  Map<String, String> _memberNames = {};
   final List<_Expense> _timelineExpenses = [];
   List<_ExpenseGroup> _timelineGroups = [];
   List<_SettlementSuggestion> _suggestions = [];
@@ -196,6 +199,22 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
           resolveActiveGroupId(groups, ref.read(currentGroupIdProvider));
       final validGroupId = isValidGroupId(groupId) ? groupId : null;
       final me = validGroupId == null ? null : await authService.getMe();
+
+      if (validGroupId != null) {
+        // Load member names and group currency in parallel.
+        await Future.wait([
+          groupService.listMembers(validGroupId).then((members) {
+            _memberNames = {
+              for (final m in members)
+                m.userId: m.userId == me?.id ? 'You' : m.displayName,
+            };
+          }).catchError((_) {}),
+          groupService.getGroup(validGroupId).then((group) {
+            _groupCurrency = group.currency;
+          }).catchError((_) {}),
+        ]);
+      }
+
       final repo = await ref.read(financeRepositoryProvider.future);
       final expenses = validGroupId == null
           ? <Expense>[]
@@ -258,7 +277,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       _openBalanceCount = 0;
       _suggestions = [];
       _balances = [];
-      _userLabels = {};
+      _userLabels = {..._memberNames};
       return;
     }
 
@@ -292,6 +311,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         .toList();
 
     _userLabels = {
+      // Member names are the base layer; summary display names take precedence.
+      ..._memberNames,
       for (final b in summary.balances)
         b.userId: b.userId == currentUserId ? 'You' : b.displayName,
     };
@@ -360,6 +381,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       payer: expense.payer,
       createdAt: expense.createdAt,
       onDelete: () => _confirmDeleteExpense(expense),
+      currency: expense.currency,
+      userLabels: _userLabels,
     );
   }
 
@@ -453,7 +476,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
     final confirmed = await SettlementConfirmationDialog.show(
       context: context,
-      amount: _formatCurrency(suggestion.amount),
+      amount: _formatCurrency(suggestion.amount, currency: _groupCurrency),
       payer: suggestion.fromLabel,
       payee: suggestion.toLabel,
     );
@@ -514,12 +537,12 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         'Money',
         actions: [
           IconButton(
-            icon: const Icon(Icons.camera_alt),
+            icon: const AppIcon(name: 'camera'),
             tooltip: 'Scan receipt',
             onPressed: () => context.pushNamed('scanner'),
           ),
           IconButton(
-            icon: const Icon(Icons.repeat),
+            icon: const AppIcon(name: 'repeat'),
             tooltip: 'Recurring',
             onPressed: () => context.pushNamed('recurringExpenses'),
           ),
@@ -534,6 +557,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
               children: [
                 _BalanceCard(
                   balance: _balance,
+                  currency: _groupCurrency,
                   balanceColor: _balanceColor,
                   isLoading: _isLoading,
                   openBalanceCount: _openBalanceCount,
@@ -571,6 +595,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                             : _SettlementsBody(
                                 suggestions: _suggestions,
                                 balances: _balances,
+                                currency: _groupCurrency,
                                 isSettling: _isSettling,
                                 confettiController: _confettiController,
                                 onRefresh: _loadData,
@@ -598,6 +623,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
 class _BalanceCard extends StatelessWidget {
   final double balance;
+  final String currency;
   final Color balanceColor;
   final bool isLoading;
   final int openBalanceCount;
@@ -606,6 +632,7 @@ class _BalanceCard extends StatelessWidget {
 
   const _BalanceCard({
     required this.balance,
+    required this.currency,
     required this.balanceColor,
     required this.isLoading,
     required this.openBalanceCount,
@@ -690,12 +717,13 @@ class _BalanceCard extends StatelessWidget {
                 ],
               );
               final amount = Text(
-                _formatCurrency(balance.abs()),
+                _formatCurrency(balance.abs(), currency: currency),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: compact ? TextAlign.start : TextAlign.end,
                 style: balanceStyle,
               );
+
 
               if (compact) {
                 return Column(
@@ -992,10 +1020,9 @@ class _TimelineBody extends StatelessWidget {
                         message: 'Failed to load more expenses.',
                       )
                     : Center(
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation(
-                            Theme.of(context).colorScheme.primary,
-                          ),
+                        child: AppSpinner(
+                          size: AppSpinnerSize.sm,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
               ),
@@ -1108,6 +1135,8 @@ class _ExpenseCard extends StatelessWidget {
                 const SizedBox(height: MitlistSpacing.space1),
                 Text(
                   expense.description,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
                 const SizedBox(height: MitlistSpacing.space1),
@@ -1143,6 +1172,7 @@ class _ExpenseCard extends StatelessWidget {
 class _SettlementsBody extends StatelessWidget {
   final List<_SettlementSuggestion> suggestions;
   final List<_BalanceEntry> balances;
+  final String currency;
   final bool isSettling;
   final ConfettiController confettiController;
   final Future<void> Function() onRefresh;
@@ -1151,6 +1181,7 @@ class _SettlementsBody extends StatelessWidget {
   const _SettlementsBody({
     required this.suggestions,
     required this.balances,
+    required this.currency,
     required this.isSettling,
     required this.confettiController,
     required this.onRefresh,
@@ -1184,6 +1215,7 @@ class _SettlementsBody extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
                   child: _SuggestionCard(
                     suggestion: s,
+                    currency: currency,
                     isSettling: isSettling,
                     onRecord: () => onRecordSettlement(s),
                   ),
@@ -1197,7 +1229,7 @@ class _SettlementsBody extends StatelessWidget {
                     lottieAsset: 'assets/animations/lottie/Checkmark.lottie',
                     icon: const AppIcon(name: 'checkCircle', size: 56),
                     title: 'All settled up!',
-                    description: 'The household tab is clear.',
+                    description: 'No one owes anyone right now.',
                   ),
                   ConfettiWidget(
                     confettiController: confettiController,
@@ -1210,7 +1242,7 @@ class _SettlementsBody extends StatelessWidget {
                 ],
               ),
             const SizedBox(height: MitlistSpacing.md),
-            _BalancesSection(balances: balances),
+            _BalancesSection(balances: balances, currency: currency),
             const SizedBox(height: MitlistSpacing.space12),
           ],
         ),
@@ -1225,11 +1257,13 @@ class _SettlementsBody extends StatelessWidget {
 
 class _SuggestionCard extends StatelessWidget {
   final _SettlementSuggestion suggestion;
+  final String currency;
   final bool isSettling;
   final VoidCallback onRecord;
 
   const _SuggestionCard({
     required this.suggestion,
+    required this.currency,
     required this.isSettling,
     required this.onRecord,
   });
@@ -1246,7 +1280,7 @@ class _SuggestionCard extends StatelessWidget {
             children: [
               const Spacer(),
               Text(
-                _formatCurrency(suggestion.amount),
+                _formatCurrency(suggestion.amount, currency: currency),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: MitlistTypography.monoBody(
@@ -1372,8 +1406,9 @@ class _SettlementParty extends StatelessWidget {
 
 class _BalancesSection extends StatelessWidget {
   final List<_BalanceEntry> balances;
+  final String currency;
 
-  const _BalancesSection({required this.balances});
+  const _BalancesSection({required this.balances, required this.currency});
 
   Color _balanceColor(BuildContext context, double amount) {
     if (amount > 0) return Theme.of(context).colorScheme.tertiary;
@@ -1393,6 +1428,7 @@ class _BalancesSection extends StatelessWidget {
         sortedBalances: sortedBalances,
         openCount: balances.where((b) => b.amount != 0).length,
         balanceColor: _balanceColor,
+        currency: currency,
       ),
     );
   }
@@ -1402,11 +1438,13 @@ class _BalancesExpandableBody extends StatefulWidget {
   final List<_BalanceEntry> sortedBalances;
   final int openCount;
   final Color Function(BuildContext, double) balanceColor;
+  final String currency;
 
   const _BalancesExpandableBody({
     required this.sortedBalances,
     required this.openCount,
     required this.balanceColor,
+    required this.currency,
   });
 
   @override
@@ -1514,7 +1552,7 @@ class _BalancesExpandableBodyState extends State<_BalancesExpandableBody> {
                               ),
                               const SizedBox(width: MitlistSpacing.md),
                               Text(
-                                _formatCurrency(b.amount.abs()),
+                                _formatCurrency(b.amount.abs(), currency: widget.currency),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: MitlistTypography.monoBody(

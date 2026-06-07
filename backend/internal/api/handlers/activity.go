@@ -29,13 +29,13 @@ func (h *ActivityHandler) RegisterRoutes(r chi.Router) {
 func (h *ActivityHandler) ListActivity(w http.ResponseWriter, r *http.Request) {
 	user, ok := userFromContext(r)
 	if !ok {
-		respondError(w, api.ErrUnauthorized)
+		api.RespondError(w, api.ErrUnauthorized)
 		return
 	}
 
 	groupID, err := uuid.Parse(r.URL.Query().Get("group_id"))
 	if err != nil {
-		respondError(w, &api.ValidationError{Field: "group_id", Message: "invalid UUID"})
+		api.RespondError(w, &api.ValidationError{Field: "group_id", Message: "invalid UUID"})
 		return
 	}
 
@@ -48,9 +48,9 @@ func (h *ActivityHandler) ListActivity(w http.ResponseWriter, r *http.Request) {
 
 	events, err := h.service.ListRecentActivity(r.Context(), user, groupID, limit)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
-	respondJSON(w, http.StatusOK, map[string]any{"events": events})
+	api.RespondJSON(w, http.StatusOK, map[string]any{"events": events})
 }

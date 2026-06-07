@@ -206,6 +206,18 @@ class RecipeService {
     }
   }
 
+  Future<List<RecipeStep>> getRecipeSteps(String recipeId) async {
+    try {
+      final r = await _dio.get('/recipes/$recipeId/steps');
+      final data = r.data;
+      if (data is! List) return [];
+      return data.map((j) => RecipeStep.fromJson((j as Map).cast<String, dynamic>())).toList();
+    } on DioException catch (e) {
+      _logger.e('Get recipe steps failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
   Exception _handleError(DioException e) {
     return ApiException(ApiErrorMapper.fromDio(e));
   }

@@ -8,6 +8,7 @@ import '../providers/attachment_provider.dart';
 import '../providers/group_provider.dart';
 import '../providers/pinwall_provider.dart';
 import '../providers/share_target_provider.dart';
+import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_icon.dart';
@@ -83,43 +84,39 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
     if (groups.isEmpty) return null;
     if (groups.length == 1) return groups.first.id;
 
-    return showModalBottomSheet<String>(
+    return showAppBottomSheet<String>(
       context: context,
-      showDragHandle: true,
-      builder: (ctx) {
-        return SafeArea(
-          child: ListView.separated(
-            padding: const EdgeInsets.all(MitlistSpacing.md),
-            shrinkWrap: true,
-            itemCount: groups.length,
-            separatorBuilder: (_, __) => const SizedBox(height: MitlistSpacing.xs),
-            itemBuilder: (context, i) {
-              final g = groups[i];
-              return AppCard(
-                variant: AppCardVariant.outlined,
-                interactive: true,
-                onTap: () => Navigator.of(ctx).pop(g.id),
-                semanticLabel: g.name,
-                padding: AppCardPadding.md,
-                child: Row(
-                  children: [
-                    const AppIcon(name: 'userGroup'),
-                    const SizedBox(width: MitlistSpacing.sm),
-                    Expanded(
-                      child: Text(
-                        g.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ),
-                  ],
+      title: 'Select household',
+      body: ListView.separated(
+        padding: EdgeInsets.zero,
+        shrinkWrap: true,
+        itemCount: groups.length,
+        separatorBuilder: (_, __) => const SizedBox(height: MitlistSpacing.xs),
+        itemBuilder: (context, i) {
+          final g = groups[i];
+          return AppCard(
+            variant: AppCardVariant.outlined,
+            interactive: true,
+            onTap: () => Navigator.of(context).pop(g.id),
+            semanticLabel: g.name,
+            padding: AppCardPadding.md,
+            child: Row(
+              children: [
+                const AppIcon(name: 'userGroup'),
+                const SizedBox(width: MitlistSpacing.sm),
+                Expanded(
+                  child: Text(
+                    g.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                 ),
-              );
-            },
-          ),
-        );
-      },
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 

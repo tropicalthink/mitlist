@@ -12,6 +12,7 @@ import '../providers/scan_provider.dart';
 import '../theme/spacing.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
+import '../widgets/app_icon.dart';
 import '../widgets/app_input.dart';
 
 class RecipeCreationSheet extends ConsumerStatefulWidget {
@@ -34,7 +35,7 @@ class RecipeCreationSheet extends ConsumerStatefulWidget {
   }) async {
     return showAppBottomSheet<bool>(
       context: context,
-      title: 'New Recipe',
+      title: 'New recipe',
       body: RecipeCreationSheet(
         initialTitle: initialTitle,
         initialIngredients: initialIngredients,
@@ -344,25 +345,26 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
         children: [
           AppButton(
             text: _isScanning ? 'Scanning…' : 'Scan recipe',
-            icon: Icon(
-              _isScanning ? Icons.hourglass_empty : Icons.document_scanner_outlined,
+            icon: AppIcon(
+              name: _isScanning ? 'hourglassEmpty' : 'documentScanner',
               size: 20,
             ),
-            variant: AppButtonVariant.outline,
-            color: AppButtonColor.neutral,
-            onPressed: _isScanning ? null : _onScan,
-          ),
+          variant: AppButtonVariant.outline,
+          color: AppButtonColor.neutral,
+          onPressed: _isScanning ? null : _onScan,
+          semanticLabel: 'Scan recipe via camera',
+        ),
           const SizedBox(height: MitlistSpacing.md),
           SegmentedButton<_RecipeEntryMode>(
             segments: const [
               ButtonSegment(
                 value: _RecipeEntryMode.url,
-                icon: Icon(Icons.link),
+                icon: AppIcon(name: 'link'),
                 label: Text('URL'),
               ),
               ButtonSegment(
                 value: _RecipeEntryMode.manual,
-                icon: Icon(Icons.edit_note),
+                icon: AppIcon(name: 'editNote'),
                 label: Text('Manual'),
               ),
             ],
@@ -407,7 +409,10 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
                   itemBuilder: (context, index) {
                     final imgUrl = _scrapedImageOptions[index];
                     final isSelected = imgUrl == _selectedImageUrl;
-                    return GestureDetector(
+                    return Semantics(
+                      label: 'Select image ${index + 1}',
+                      button: true,
+                      child: GestureDetector(
                       onTap: () => setState(() => _selectedImageUrl = imgUrl),
                       child: Container(
                         width: 80,
@@ -417,21 +422,22 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
                             color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
                             width: 3,
                           ),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.zero,
                           image: DecorationImage(
                             image: NetworkImage(imgUrl),
                             fit: BoxFit.cover,
                           ),
                         ),
                       ),
-                    );
+                    ),
+                  );
                   },
                 ),
               ),
             ] else if (_selectedImageUrl != null) ...[
               const SizedBox(height: MitlistSpacing.md),
               ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.zero,
               child: Image.network(
                 _selectedImageUrl!,
                 height: 120,
@@ -439,7 +445,7 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(
                   color: Theme.of(context).colorScheme.surfaceContainerLow,
-                  child: const Center(child: Icon(Icons.restaurant, size: 48)),
+                  child: const Center(child: AppIcon(name: 'restaurant', size: 48)),
                 ),
               ),
               ),
@@ -559,7 +565,7 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
               variant: AppButtonVariant.solid,
               color: AppButtonColor.primary,
               size: AppButtonSize.lg,
-              text: _isSaving ? 'Creating...' : 'Create Recipe',
+              text: _isSaving ? 'Creating...' : 'Create recipe',
               isLoading: _isSaving,
               onPressed: _canCreate ? _onCreate : null,
             ),

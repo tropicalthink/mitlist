@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../models/recipe_models.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
+import '../widgets/app_icon.dart';
 import '../widgets/chip.dart';
 
 class RecipeDetailSheet extends StatelessWidget {
@@ -30,6 +32,8 @@ class RecipeDetailSheet extends StatelessWidget {
     this.equipmentJson = '',
     this.imageUrl,
     this.tags = const [],
+    this.ingredients = const [],
+    this.steps = const [],
     this.onDelete,
   });
 
@@ -49,6 +53,8 @@ class RecipeDetailSheet extends StatelessWidget {
   final String equipmentJson;
   final String? imageUrl;
   final List<String> tags;
+  final List<RecipeIngredient> ingredients;
+  final List<RecipeStep> steps;
   final VoidCallback? onDelete;
 
   static Future<void> show(
@@ -69,11 +75,13 @@ class RecipeDetailSheet extends StatelessWidget {
     String equipmentJson = '',
     String? imageUrl,
     List<String> tags = const [],
+    List<RecipeIngredient> ingredients = const [],
+    List<RecipeStep> steps = const [],
     VoidCallback? onDelete,
   }) async {
     return showAppBottomSheet(
       context: context,
-      title: 'Recipe Details',
+      title: 'Recipe details',
       body: RecipeDetailSheet(
         title: title,
         description: description,
@@ -91,6 +99,8 @@ class RecipeDetailSheet extends StatelessWidget {
         equipmentJson: equipmentJson,
         imageUrl: imageUrl,
         tags: tags,
+        ingredients: ingredients,
+        steps: steps,
         onDelete: onDelete,
       ),
     );
@@ -127,8 +137,8 @@ class RecipeDetailSheet extends StatelessWidget {
           const SizedBox(height: MitlistSpacing.xs),
           Row(
             children: [
-              Icon(Icons.star, size: 16, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 4),
+              AppIcon(name: 'star', size: 16, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: MitlistSpacing.xs),
               Text(
                 '${ratingValue.toStringAsFixed(1)}${ratingCount > 0 ? ' ($ratingCount)' : ''}',
                 style: Theme.of(context).textTheme.bodySmall,
@@ -139,7 +149,7 @@ class RecipeDetailSheet extends StatelessWidget {
         if (imageUrl != null && imageUrl!.isNotEmpty) ...[
           const SizedBox(height: MitlistSpacing.md),
           ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.zero,
             child: Image.network(
               imageUrl!,
               height: 160,
@@ -148,7 +158,7 @@ class RecipeDetailSheet extends StatelessWidget {
               errorBuilder: (_, __, ___) => Container(
                 color: Theme.of(context).colorScheme.surfaceContainerLow,
                 height: 160,
-                child: const Center(child: Icon(Icons.restaurant, size: 48)),
+                child: const Center(child: AppIcon(name: 'restaurant', size: 48)),
               ),
             ),
           ),
@@ -156,8 +166,8 @@ class RecipeDetailSheet extends StatelessWidget {
         if (tags.isNotEmpty) ...[
           const SizedBox(height: MitlistSpacing.md),
           Wrap(
-            spacing: 6,
-            runSpacing: 6,
+            spacing: MitlistSpacing.sm,
+            runSpacing: MitlistSpacing.sm,
             children: tags
                 .map((tag) => AppChip(
                       label: tag,
@@ -170,6 +180,8 @@ class RecipeDetailSheet extends StatelessWidget {
           const SizedBox(height: MitlistSpacing.md),
           Text(
             description,
+            maxLines: 6,
+            overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ],
@@ -209,8 +221,8 @@ class RecipeDetailSheet extends StatelessWidget {
           ),
           const SizedBox(height: MitlistSpacing.xs),
           Wrap(
-            spacing: 6,
-            runSpacing: 6,
+            spacing: MitlistSpacing.sm,
+            runSpacing: MitlistSpacing.sm,
             children: nutritionMap.entries.map((e) {
               return AppChip(label: '${e.key}: ${e.value}', selected: false);
             }).toList(),
@@ -231,14 +243,131 @@ class RecipeDetailSheet extends StatelessWidget {
                 .toList(),
           ),
         ],
+        if (ingredients.isNotEmpty) ...[
+          const SizedBox(height: MitlistSpacing.md),
+          Text(
+            'Ingredients',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: MitlistSpacing.xs),
+          AppCard(
+            variant: AppCardVariant.outlined,
+            padding: AppCardPadding.md,
+            child: Semantics(
+              label: '${ingredients.length} ingredient${ingredients.length == 1 ? '' : 's'}',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: ingredients.map((ing) {
+                  final label = ing.rawText.isNotEmpty
+                      ? ing.rawText
+                      : ing.name.isNotEmpty
+                          ? ing.name
+                          : ing.rawText;
+                  final qty = ing.quantity > 0
+                      ? _formatQuantity(ing.quantity)
+                      : '';
+                  final unit = ing.unit.isNotEmpty ? ing.unit : '';
+                  final detail = [qty, unit].where((s) => s.isNotEmpty).join(' ');
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: MitlistSpacing.xs),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '\u2022 ',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                label,
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                              if (detail.isNotEmpty)
+                                Text(
+                                  detail,
+                                  style: MitlistTypography.monoBody(
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
+        if (steps.isNotEmpty) ...[
+          const SizedBox(height: MitlistSpacing.md),
+          Text(
+            'Steps',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: MitlistSpacing.xs),
+          AppCard(
+            variant: AppCardVariant.outlined,
+            padding: AppCardPadding.md,
+            child: Semantics(
+              label: '${steps.length} step${steps.length == 1 ? '' : 's'}',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: steps.asMap().entries.map((entry) {
+                  final idx = entry.key;
+                  final step = entry.value;
+                  final desc = step.description.isNotEmpty
+                      ? step.description
+                      : (step.name.isNotEmpty ? step.name : '');
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      bottom: idx < steps.length - 1 ? MitlistSpacing.sm : 0,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 24,
+                          child: Text(
+                            '${idx + 1}.',
+                            style: MitlistTypography.monoBody(
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            desc,
+                            maxLines: 6,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
         if (videoUrl.isNotEmpty) ...[
           const SizedBox(height: MitlistSpacing.md),
-          InkWell(
+          Semantics(
+            label: 'Watch recipe video',
+            button: true,
+            child: InkWell(
             onTap: () => _launchUrl(videoUrl),
             child: Row(
               children: [
-                Icon(Icons.play_circle_outline, size: 16, color: Theme.of(context).colorScheme.primary),
-                SizedBox(width: 4),
+                AppIcon(name: 'playCircleOutline', size: 16, color: Theme.of(context).colorScheme.primary),
+                SizedBox(width: MitlistSpacing.xs),
                 Expanded(
                   child: Text(
                     'Watch video',
@@ -251,15 +380,19 @@ class RecipeDetailSheet extends StatelessWidget {
               ],
             ),
           ),
+          ),
         ],
         if (sourceUrl.isNotEmpty) ...[
           const SizedBox(height: MitlistSpacing.md),
-          InkWell(
+          Semantics(
+            label: 'View original recipe in browser',
+            button: true,
+            child: InkWell(
             onTap: () => _launchUrl(sourceUrl),
             child: Row(
               children: [
-                Icon(Icons.open_in_new, size: 16, color: Theme.of(context).colorScheme.primary),
-                SizedBox(width: 4),
+                AppIcon(name: 'openInNew', size: 16, color: Theme.of(context).colorScheme.primary),
+                SizedBox(width: MitlistSpacing.xs),
                 Expanded(
                   child: Text(
                     'View original recipe',
@@ -271,6 +404,7 @@ class RecipeDetailSheet extends StatelessWidget {
                 ),
               ],
             ),
+          ),
           ),
         ],
         if (onDelete != null) ...[
@@ -290,6 +424,15 @@ class RecipeDetailSheet extends StatelessWidget {
         ],
       ],
     );
+  }
+
+  static String _formatQuantity(double qty) {
+    if (qty == qty.roundToDouble()) {
+      return qty.toInt().toString();
+    }
+    final s = qty.toStringAsFixed(2);
+    if (s.endsWith('0')) return s.substring(0, s.length - 1);
+    return s;
   }
 
   static String _formatMinutes(int minutes) {

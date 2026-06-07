@@ -9,7 +9,10 @@ import '../../services/group_id_validator.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/active_group_context.dart';
+import '../../utils/format_currency.dart';
+import '../../utils/friendly_error.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/app_input.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
@@ -63,6 +66,7 @@ class _RecurringExpensesScreenState
       final items = await financeService.listRecurringExpenses(groupId!);
       final summary = await financeService.getFinanceSummary(groupId);
       setState(() {
+        _items.clear();
         _items.addAll(items);
         _userLabels = {
           for (final e in summary.balances) e.userId: e.displayName,
@@ -71,7 +75,7 @@ class _RecurringExpensesScreenState
       });
     } catch (e) {
       setState(() {
-        _error = 'Couldn\u2019t load recurring expenses. Check your connection.';
+        _error = friendlyErrorMessage(e);
         _isLoading = false;
       });
     }
@@ -110,11 +114,6 @@ class _RecurringExpensesScreenState
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
-  }
-
-  String _formatAmount(int cents, String currency) {
-    final symbol = currency.toUpperCase() == 'EUR' ? '€' : '\$';
-    return '$symbol${(cents / 100).toStringAsFixed(2)}';
   }
 
   String _formatFrequency(String frequency) {
@@ -161,7 +160,7 @@ class _RecurringExpensesScreenState
       return Center(
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/404.lottie',
-          icon: const Icon(Icons.error_outline),
+          icon: const AppIcon(name: 'alertCircleOutline'),
           title: 'Something went wrong',
           description: _error,
           actions: [
@@ -178,7 +177,7 @@ class _RecurringExpensesScreenState
       return const Center(
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/House.lottie',
-          icon: Icon(Icons.home_outlined),
+          icon: AppIcon(name: 'homeOutline'),
           title: 'No household yet',
           description: 'Join or create a household to manage recurring expenses',
         ),
@@ -188,7 +187,7 @@ class _RecurringExpensesScreenState
       return Center(
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/wallet.lottie',
-          icon: Icon(Icons.repeat),
+          icon: AppIcon(name: 'repeat'),
           title: 'No recurring expenses',
           description: 'Add a recurring expense to track regular payments',
           actions: [
@@ -210,7 +209,6 @@ class _RecurringExpensesScreenState
         return _RecurringCard(
           item: item,
           payerName: _userLabels[item.payerId] ?? item.payerId,
-          formatAmount: _formatAmount,
           formatFrequency: _formatFrequency,
           onToggle: () => _toggleActive(item),
           onDelete: () => _deleteItem(item.id),
@@ -270,7 +268,6 @@ class _RecurringExpensesScreenState
 class _RecurringCard extends StatelessWidget {
   final RecurringExpense item;
   final String payerName;
-  final String Function(int cents, String currency) formatAmount;
   final String Function(String frequency) formatFrequency;
   final VoidCallback onToggle;
   final VoidCallback onDelete;
@@ -279,7 +276,6 @@ class _RecurringCard extends StatelessWidget {
   const _RecurringCard({
     required this.item,
     required this.payerName,
-    required this.formatAmount,
     required this.formatFrequency,
     required this.onToggle,
     required this.onDelete,
@@ -316,7 +312,7 @@ class _RecurringCard extends StatelessWidget {
                   ),
                   const SizedBox(height: MitlistSpacing.space1),
                   Text(
-                    '${formatAmount(item.amount, item.currency)} · ${formatFrequency(item.frequency)} · $payerName',
+                    '${formatCurrency(item.amount, item.currency)} · ${formatFrequency(item.frequency)} · $payerName',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: MitlistTypography.labelXSmall(),
@@ -332,21 +328,21 @@ class _RecurringCard extends StatelessWidget {
               ),
             ),
             if (isSubmitting)
-              const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
+              SizedBox(
+                width: MitlistSpacing.space5,
+                height: MitlistSpacing.space5,
+                child: const CircularProgressIndicator(strokeWidth: 2),
               )
             else ...[
               IconButton(
-                icon: Icon(
-                  isActive ? Icons.pause_circle_outline : Icons.play_circle_outline,
+                icon: AppIcon(
+                  name: isActive ? 'pauseCircleOutline' : 'playCircleOutline',
                 ),
                 tooltip: isActive ? 'Pause' : 'Resume',
                 onPressed: onToggle,
               ),
               IconButton(
-                icon: const Icon(Icons.delete_outline),
+                icon: const AppIcon(name: 'trashOutline'),
                 tooltip: 'Delete',
                 onPressed: () async {
                   final confirmed = await showAppDialog<bool>(
@@ -429,6 +425,7 @@ class _CreateRecurringFormState extends State<_CreateRecurringForm> {
   final _amountController = TextEditingController();
   String _frequency = 'monthly';
   String? _payerId;
+  String? _error;
 
   @override
   void initState() {
@@ -450,21 +447,26 @@ class _CreateRecurringFormState extends State<_CreateRecurringForm> {
     return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          TextField(
+          if (_error != null) ...[
+            Text(
+              _error!,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+            ),
+            const SizedBox(height: MitlistSpacing.sm),
+          ],
+          AppInput(
             controller: _descriptionController,
-            decoration: const InputDecoration(labelText: 'Description'),
-            textCapitalization: TextCapitalization.sentences,
+            label: 'Description',
           ),
           const SizedBox(height: MitlistSpacing.sm),
-          TextField(
+          AppInput(
             controller: _amountController,
-            decoration: const InputDecoration(
-              labelText: 'Amount',
-              prefixText: '€ ',
-            ),
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
+            label: 'Amount',
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
           const SizedBox(height: MitlistSpacing.sm),
           DropdownButtonFormField<String>(
@@ -473,8 +475,7 @@ class _CreateRecurringFormState extends State<_CreateRecurringForm> {
             items: const [
               DropdownMenuItem(value: 'daily', child: Text('Daily')),
               DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
-              DropdownMenuItem(
-                  value: 'biweekly', child: Text('Every 2 weeks')),
+              DropdownMenuItem(value: 'biweekly', child: Text('Every 2 weeks')),
               DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
               DropdownMenuItem(value: 'quarterly', child: Text('Quarterly')),
               DropdownMenuItem(value: 'yearly', child: Text('Yearly')),
@@ -520,10 +521,24 @@ class _CreateRecurringFormState extends State<_CreateRecurringForm> {
   void _submit() {
     final description = _descriptionController.text.trim();
     final amountText = _amountController.text.trim();
-    if (description.isEmpty || amountText.isEmpty || _payerId == null) return;
+    if (description.isEmpty) {
+      setState(() => _error = 'Enter a description.');
+      return;
+    }
+    if (amountText.isEmpty) {
+      setState(() => _error = 'Enter an amount.');
+      return;
+    }
+    if (_payerId == null) {
+      setState(() => _error = 'Select a payer.');
+      return;
+    }
 
     final amount = double.tryParse(amountText.replaceAll(',', '.'));
-    if (amount == null || amount <= 0) return;
+    if (amount == null || amount <= 0) {
+      setState(() => _error = 'Enter a valid amount greater than zero.');
+      return;
+    }
 
     Navigator.of(context).pop(_CreateRecurringResult(
       groupId: widget.groupId,

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../models/activity_models.dart';
 import '../../models/auth_models.dart';
@@ -23,6 +24,7 @@ import '../../utils/haptics.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/app_icon.dart';
 import '../../widgets/hub/activity_wall.dart';
 import '../../widgets/hub/hub_skeleton.dart';
 import '../../widgets/hub/pinwall_section.dart';
@@ -218,8 +220,6 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
         activityError =
             (await repo.getActivitiesOnce(_resolvedGroupId!)).$2;
       } catch (_) {
-        debugPrint(
-            '[HouseholdHub] Activity refresh failed for ${_resolvedGroupId!}');
       }
 
       if (!mounted) return;
@@ -257,7 +257,6 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
       await financeRepo.refreshGroup(_resolvedGroupId!,
           limit: 50, offset: 0);
     } catch (_) {
-      debugPrint('[HouseholdHub] Finance repo refresh failed');
     }
     try {
       final listRepo =
@@ -265,14 +264,12 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
       await listRepo.refreshLists(_resolvedGroupId!,
           limit: 50, offset: 0);
     } catch (_) {
-      debugPrint('[HouseholdHub] List repo refresh failed');
     }
     try {
       final choreRepo =
           await ref.read(choreRepositoryProvider.future);
       await choreRepo.refreshCurrentChores(_resolvedGroupId!);
     } catch (_) {
-      debugPrint('[HouseholdHub] Chore repo refresh failed');
     }
     try {
       final pinRepo =
@@ -280,7 +277,6 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
       await pinRepo.refreshPosts(_resolvedGroupId!,
           limit: 20, offset: 0);
     } catch (_) {
-      debugPrint('[HouseholdHub] Pinwall repo refresh failed');
     }
   }
 
@@ -563,7 +559,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                 color: AppButtonColor.primary,
                 size: AppButtonSize.lg,
                 text: 'Create a household',
-                icon: const Icon(Icons.add_home_outlined),
+                icon: const AppIcon(name: 'addHomeOutline'),
                 onPressed: _onCreateHousehold,
               ),
             ),
@@ -575,7 +571,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                 color: AppButtonColor.neutral,
                 size: AppButtonSize.lg,
                 text: 'Join with invite code',
-                icon: const Icon(Icons.vpn_key_outlined),
+                icon: const AppIcon(name: 'keyOutline'),
                 onPressed: _onJoinHousehold,
               ),
             ),
@@ -623,8 +619,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                   ),
                 ),
                 const SizedBox(width: MitlistSpacing.xs),
-                Icon(
-                  Icons.expand_more,
+                AppIcon(
+                  name: 'chevronDown',
                   size: 24,
                   color: titleTextStyle?.color ??
                       Theme.of(context).colorScheme.onSurface,
@@ -645,7 +641,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
           : AppButton(
               size: AppButtonSize.lg,
               onPressed: () => showQuickAddSheet(context),
-              icon: const Icon(Icons.add),
+              icon: const AppIcon(name: 'plus'),
               text: 'Quick add',
               tooltip: 'Quick add',
             ),
@@ -687,6 +683,11 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                         leading: null,
                         title: _buildAppBarTitle(context),
                         actions: [
+                          IconButton(
+                            tooltip: 'Calendar',
+                            icon: const Icon(Icons.calendar_month_outlined),
+                            onPressed: () => context.pushNamed('calendar'),
+                          ),
                           ...shellTrailingActions(context),
                           const SizedBox(width: MitlistSpacing.xs),
                         ],

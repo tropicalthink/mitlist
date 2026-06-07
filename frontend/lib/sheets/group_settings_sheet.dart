@@ -11,7 +11,9 @@ import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_dialog.dart';
+import '../widgets/app_icon.dart';
 import '../widgets/app_input.dart';
+import '../utils/friendly_error.dart';
 
 class GroupSettingsSheet extends ConsumerStatefulWidget {
   const GroupSettingsSheet({super.key, required this.groupId});
@@ -21,7 +23,7 @@ class GroupSettingsSheet extends ConsumerStatefulWidget {
   static Future<void> show(BuildContext context, {required String groupId}) {
     return showAppBottomSheet<void>(
       context: context,
-      title: 'Household Settings',
+      title: 'Household settings',
       body: GroupSettingsSheet(groupId: groupId),
     );
   }
@@ -94,7 +96,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Something went wrong.';
+        _error = friendlyErrorMessage(e);
         _isLoading = false;
       });
     }
@@ -137,9 +139,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       if (!mounted) return;
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(
-                'Something went wrong.')),
+        SnackBar(content: Text(friendlyErrorMessage(e))),
       );
     }
   }
@@ -176,9 +176,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(
-                'Something went wrong.')),
+        SnackBar(content: Text(friendlyErrorMessage(e))),
       );
     }
   }
@@ -216,9 +214,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(
-                'Something went wrong.')),
+        SnackBar(content: Text(friendlyErrorMessage(e))),
       );
     }
   }
@@ -438,6 +434,8 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
               const Spacer(),
               Text(
                 '${_members.length}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style:
                     textTheme.bodySmall?.copyWith(color: textTheme.titleSmall?.color),
               ),
@@ -466,7 +464,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       subtitle: Text(member.role, maxLines: 1, overflow: TextOverflow.ellipsis),
       trailing: IconButton(
         tooltip: 'Remove ${member.displayName}',
-        icon: const Icon(Icons.remove_circle_outline, size: 20),
+        icon: AppIcon(name: 'minusCircleOutline', size: 20),
         onPressed: () => _confirmRemoveMember(member),
       ),
     );

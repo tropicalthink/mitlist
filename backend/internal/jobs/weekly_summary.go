@@ -9,9 +9,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/mitlist-app/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/mitlist-app/mitlist/pkg/logger"
 )
 
@@ -24,8 +24,8 @@ type WeeklySummary struct {
 }
 
 // NewWeeklySummary creates a new WeeklySummary job.
-func NewWeeklySummary(pool *pgxpool.Pool, push Pusher, log *logger.Logger) *WeeklySummary {
-	return &WeeklySummary{repo: &weeklySummaryRepoImpl{pool: pool}, push: push, log: log}
+func NewWeeklySummary(db repositories.DBTX, push Pusher, log *logger.Logger) *WeeklySummary {
+	return &WeeklySummary{repo: &weeklySummaryRepoImpl{db: db}, push: push, log: log}
 }
 
 func newWeeklySummary(repo weeklySummaryRepo, push Pusher, log *logger.Logger) *WeeklySummary {
@@ -96,11 +96,11 @@ func (s *WeeklySummary) notifyMembers(ctx context.Context, groupID uuid.UUID, co
 }
 
 type weeklySummaryRepoImpl struct {
-	pool *pgxpool.Pool
+	db repositories.DBTX
 }
 
 func (r *weeklySummaryRepoImpl) ListWeeklyActivity(ctx context.Context, since time.Time) ([]groupActivity, error) {
-	rows, err := r.pool.Query(ctx, `
+	rows, err := r.db.Query(ctx, `
 		SELECT group_id, COUNT(*) as count FROM (
 			SELECT l.group_id FROM list_items li JOIN lists l ON l.id = li.list_id WHERE li.created_at >= $1
 			UNION ALL
@@ -137,7 +137,7 @@ func (r *weeklySummaryRepoImpl) ListWeeklyActivity(ctx context.Context, since ti
 }
 
 func (r *weeklySummaryRepoImpl) ListGroupMembers(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error) {
-	rows, err := r.pool.Query(ctx, `
+	rows, err := r.db.Query(ctx, `
 		SELECT user_id FROM group_memberships WHERE group_id = $1
 	`, groupID)
 	if err != nil {
@@ -161,7 +161,7 @@ func (r *weeklySummaryRepoImpl) ListGroupMembers(ctx context.Context, groupID uu
 
 func (r *weeklySummaryRepoImpl) GetUserPreference(ctx context.Context, userID, groupID uuid.UUID) (*models.NotificationPreference, error) {
 	var p models.NotificationPreference
-	err := r.pool.QueryRow(ctx, `
+	err := r.db.QueryRow(ctx, `
 		SELECT id, user_id, group_id, chore_due, chore_due_day_of, list_item_added,
 			expense_created, meal_plan_changed, weekly_digest, pinwall_reminder, push_enabled, created_at, updated_at
 		FROM notification_preferences

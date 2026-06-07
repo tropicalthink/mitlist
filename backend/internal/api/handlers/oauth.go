@@ -3,7 +3,6 @@ package handlers
 import (
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -42,17 +41,17 @@ func NewOAuthHandler(cfg *config.Config, service *services.OAuthService) *OAuthH
 func (h *OAuthHandler) GetGoogle(w http.ResponseWriter, r *http.Request) {
 	redirectURI := r.URL.Query().Get("redirect_uri")
 	if redirectURI == "" {
-		respondError(w, &api.ValidationError{Field: "redirect_uri", Message: "redirect_uri is required"})
+		api.RespondError(w, &api.ValidationError{Field: "redirect_uri", Message: "redirect_uri is required"})
 		return
 	}
 	if h.googleClient.GetAuthURL("state", redirectURI) == "" {
-		respondError(w, &api.ValidationError{Field: "redirect_uri", Message: "redirect URI not allowed"})
+		api.RespondError(w, &api.ValidationError{Field: "redirect_uri", Message: "redirect URI not allowed"})
 		return
 	}
 
 	state, err := generateState()
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 	authURL := h.googleClient.GetAuthURL(state, h.googleClient.RedirectURI())
@@ -112,26 +111,26 @@ func (h *OAuthHandler) PostGoogleCallback(w http.ResponseWriter, r *http.Request
 		RedirectURI string `json:"redirect_uri"`
 		State       string `json:"state"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondError(w, &api.ValidationError{Message: "invalid request body"})
+	if err := decodeJSON(r, &req); err != nil {
+		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
 
 	cookie, err := r.Cookie(oauthStateCookieName)
 	if err != nil || cookie.Value == "" || cookie.Value != req.State {
 		h.clearOAuthCookie(w, oauthStateCookieName, r)
-		respondError(w, &api.ValidationError{Message: "invalid oauth state"})
+		api.RespondError(w, &api.ValidationError{Message: "invalid oauth state"})
 		return
 	}
 	h.clearOAuthCookie(w, oauthStateCookieName, r)
 
 	user, access, refresh, err := h.service.GoogleLogin(r.Context(), req.Code, req.RedirectURI)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
-	respondJSON(w, http.StatusOK, map[string]any{
+	api.RespondJSON(w, http.StatusOK, map[string]any{
 		"user":          user,
 		"access_token":  access,
 		"refresh_token": refresh,
@@ -154,17 +153,17 @@ func (h *OAuthHandler) GetGoogleCallback(w http.ResponseWriter, r *http.Request)
 func (h *OAuthHandler) GetApple(w http.ResponseWriter, r *http.Request) {
 	redirectURI := r.URL.Query().Get("redirect_uri")
 	if redirectURI == "" {
-		respondError(w, &api.ValidationError{Field: "redirect_uri", Message: "redirect_uri is required"})
+		api.RespondError(w, &api.ValidationError{Field: "redirect_uri", Message: "redirect_uri is required"})
 		return
 	}
 	if h.appleClient.GetAuthURL("state", redirectURI) == "" {
-		respondError(w, &api.ValidationError{Field: "redirect_uri", Message: "redirect URI not allowed"})
+		api.RespondError(w, &api.ValidationError{Field: "redirect_uri", Message: "redirect URI not allowed"})
 		return
 	}
 
 	state, err := generateState()
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 	authURL := h.appleClient.GetAuthURL(state, h.appleClient.RedirectURI())
@@ -182,26 +181,26 @@ func (h *OAuthHandler) PostAppleCallback(w http.ResponseWriter, r *http.Request)
 		IDToken     string `json:"id_token"`
 		State       string `json:"state"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondError(w, &api.ValidationError{Message: "invalid request body"})
+	if err := decodeJSON(r, &req); err != nil {
+		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
 
 	cookie, err := r.Cookie(oauthStateCookieName)
 	if err != nil || cookie.Value == "" || cookie.Value != req.State {
 		h.clearOAuthCookie(w, oauthStateCookieName, r)
-		respondError(w, &api.ValidationError{Message: "invalid oauth state"})
+		api.RespondError(w, &api.ValidationError{Message: "invalid oauth state"})
 		return
 	}
 	h.clearOAuthCookie(w, oauthStateCookieName, r)
 
 	user, access, refresh, err := h.service.AppleLogin(r.Context(), req.Code, req.RedirectURI, req.IDToken)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
-	respondJSON(w, http.StatusOK, map[string]any{
+	api.RespondJSON(w, http.StatusOK, map[string]any{
 		"user":          user,
 		"access_token":  access,
 		"refresh_token": refresh,
@@ -241,7 +240,7 @@ func (h *OAuthHandler) completeRedirectFlow(
 	if err != nil {
 		h.clearOAuthCookie(w, oauthStateCookieName, r)
 		h.clearOAuthCookie(w, oauthRedirectCookieName, r)
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 

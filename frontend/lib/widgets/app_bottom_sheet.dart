@@ -4,6 +4,8 @@ import '../theme/animations.dart';
 import '../theme/shadows.dart';
 import '../theme/spacing.dart';
 import '../theme/theme.dart';
+import 'app_button.dart';
+import 'app_dialog.dart';
 
 /// A custom bottom sheet matching the mitlist design system.
 ///
@@ -91,13 +93,42 @@ Future<T?> showAppBottomSheet<T>({
   required BuildContext context,
   required String title,
   required Widget body,
+  bool isDirty = false,
 }) {
   return showModalBottomSheet<T>(
     context: context,
     backgroundColor: Colors.transparent,
     barrierColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
     isScrollControlled: true,
+    isDismissible: !isDirty,
+    enableDrag: !isDirty,
     sheetAnimationStyle: AnimationStyle(duration: MitlistAnimations.medium),
-    builder: (context) => AppBottomSheet(title: title, body: body),
+    builder: (context) => PopScope(
+      canPop: !isDirty,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final confirmed = await showAppDialog<bool>(
+          context: context,
+          title: 'Discard changes?',
+          body: const Text('You have unsaved changes.'),
+          actions: [
+            AppButton(
+              text: 'Keep editing',
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            AppButton(
+              text: 'Discard',
+              color: AppButtonColor.error,
+              variant: AppButtonVariant.outline,
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        );
+        if (confirmed == true && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: AppBottomSheet(title: title, body: body),
+    ),
   );
 }

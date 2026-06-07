@@ -15,8 +15,10 @@ import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
+import '../../widgets/app_input.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/skeleton.dart';
+import '../../utils/friendly_error.dart';
 
 const String _appVersion = '1.0.0';
 
@@ -135,7 +137,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
 
     showAppBottomSheet(
       context: context,
-      title: 'Change Password',
+      title: 'Change password',
       body: StatefulBuilder(
         builder: (context, setSheetState) {
           Future<void> submit() async {
@@ -180,7 +182,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             } catch (e) {
               setSheetState(() {
                 isSaving = false;
-                error = 'Something went wrong.';
+                error = friendlyErrorMessage(e);
               });
             }
           }
@@ -193,23 +195,22 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 AppAlert(type: AppAlertType.error, message: error!),
                 const SizedBox(height: MitlistSpacing.md),
               ],
-              TextField(
+              AppInput(
                 controller: currentPasswordController,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'Current password'),
+                label: 'Current password',
               ),
               const SizedBox(height: MitlistSpacing.md),
-              TextField(
+              AppInput(
                 controller: newPasswordController,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'New password'),
+                label: 'New password',
               ),
               const SizedBox(height: MitlistSpacing.md),
-              TextField(
+              AppInput(
                 controller: confirmPasswordController,
                 obscureText: true,
-                decoration:
-                    const InputDecoration(labelText: 'Confirm new password'),
+                label: 'Confirm new password',
                 onSubmitted: (_) => submit(),
               ),
               const SizedBox(height: MitlistSpacing.lg),
@@ -228,22 +229,27 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     showAppBottomSheet(
       context: context,
       title: 'Terms of Service',
-      body: const Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Use mitlist responsibly. Shared household content is visible to the members of that household.',
-          ),
-          SizedBox(height: MitlistSpacing.md),
-          Text(
-            'Do not upload unlawful content, impersonate others, or abuse the service. Accounts and shared data may be removed for misuse.',
-          ),
-          SizedBox(height: MitlistSpacing.md),
-          Text(
-            'The app is provided as-is while the product is still evolving. Keep your own backups for anything critical.',
-          ),
-        ],
+      body: Builder(
+        builder: (context) => Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Use mitlist responsibly. Shared household content is visible to the members of that household.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: MitlistSpacing.md),
+            Text(
+              'Do not upload unlawful content, impersonate others, or abuse the service. Accounts and shared data may be removed for misuse.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: MitlistSpacing.md),
+            Text(
+              'The app is provided as-is while the product is still evolving. Keep your own backups for anything critical.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -256,7 +262,6 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       await authService.logout();
       ref.read(authStateProvider.notifier).state = false;
     } catch (_) {
-      debugPrint('[AccountScreen] Logout failed');
     }
     if (mounted) context.goNamed('welcome');
     _isSaving = false;
@@ -293,7 +298,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Something went wrong.')),
+        SnackBar(content: Text(friendlyErrorMessage(e))),
       );
     } finally {
       _isSaving = false;
@@ -377,6 +382,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                       child: Text(
                         _name,
                         style: textTheme.headlineSmall,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ),
@@ -384,6 +391,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 Text(
                   _email,
                   style: textTheme.bodySmall,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -433,8 +442,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                       ),
                     ),
                     if (isActive)
-                      Icon(
-                        Icons.check,
+                      AppIcon(
+                        name: 'check',
                         size: 18,
                         color: Theme.of(context).colorScheme.primary,
                       ),
@@ -623,10 +632,14 @@ class _MenuRow extends StatelessWidget {
                   Text(
                     label,
                     style: Theme.of(context).textTheme.bodyMedium,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   if (value != null)
                     Text(
                       value!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),

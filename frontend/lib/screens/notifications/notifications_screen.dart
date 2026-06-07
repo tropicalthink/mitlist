@@ -280,7 +280,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                       padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xl),
                       child: AppEmptyState(
                         lottieAsset: 'assets/animations/lottie/House.lottie',
-                        icon: const Icon(Icons.home_outlined, size: 56),
+                        icon: const AppIcon(name: 'homeOutline', size: 56),
                         title: 'No household yet',
                         description: 'Create or join a household to receive notifications.',
                         actions: [
@@ -294,7 +294,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   else if (_items.isEmpty && _error == null)
                     AppEmptyState(
                       lottieAsset: 'assets/animations/lottie/Notifications.lottie',
-                      icon: Icon(Icons.notifications_none_outlined, size: 56),
+                      icon: AppIcon(name: 'bellOutline', size: 56),
                       title: 'No notifications yet',
                       description:
                           'When someone adds a chore, splits a bill, or mentions you, it will show up here.',
@@ -318,7 +318,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                               color: Theme.of(context).colorScheme.error.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(MitlistTheme.radiusLg),
                             ),
-                            child: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
+                            child: AppIcon(name: 'trashOutline', color: Theme.of(context).colorScheme.error),
                           ),
                           confirmDismiss: (_) async {
                             await _delete(n);

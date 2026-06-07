@@ -8,6 +8,9 @@ import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_dialog.dart';
+import '../widgets/animated_check_toggle.dart';
+import '../widgets/app_icon.dart';
+import '../widgets/app_input.dart';
 import '../widgets/chip.dart';
 
 class ChoreDetailSheet extends StatefulWidget {
@@ -84,7 +87,7 @@ class ChoreDetailSheet extends StatefulWidget {
   }) async {
     return showAppBottomSheet(
       context: context,
-      title: 'Chore Details',
+      title: 'Chore details',
       body: ChoreDetailSheet(
         choreId: choreId,
         title: title,
@@ -139,12 +142,9 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
       body: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          TextField(
-            autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'Reason (optional)',
-              hintText: 'e.g. Away this week',
-            ),
+          AppInput(
+            label: 'Reason (optional)',
+            hint: 'e.g. Away this week',
             onSubmitted: (value) => Navigator.of(context).pop(value),
           ),
           const SizedBox(height: MitlistSpacing.md),
@@ -288,14 +288,9 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
               )),
           if (_showAddSubtask) ...[
             const SizedBox(height: MitlistSpacing.sm),
-            TextField(
+            AppInput(
+              hint: 'New subtask',
               controller: _subtaskController,
-              autofocus: true,
-              decoration: const InputDecoration(
-                hintText: 'New subtask',
-                isDense: true,
-                contentPadding: EdgeInsets.all(MitlistSpacing.sm),
-              ),
               onSubmitted: (_) => _handleAddSubtask(),
             ),
           ],
@@ -305,7 +300,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
               variant: AppButtonVariant.ghost,
               color: AppButtonColor.primary,
               text: _showAddSubtask ? 'Save' : 'Add subtask',
-              icon: const Icon(Icons.add),
+              icon: const AppIcon(name: 'plus'),
               onPressed: _handleAddSubtask,
             ),
           ],
@@ -318,8 +313,9 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
             spacing: MitlistSpacing.sm,
             runSpacing: MitlistSpacing.sm,
             children: [
-              ...widget.supplies.map((s) => Chip(
-                    label: Text(s),
+              ...widget.supplies.map((s) => AppChip(
+                    label: s,
+                    selected: true,
                   )),
             ],
           ),
@@ -350,7 +346,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
                 variant: AppButtonVariant.solid,
                 color: AppButtonColor.success,
                 size: AppButtonSize.lg,
-                text: 'Mark Done',
+                text: 'Mark done',
                 onPressed: widget.onMarkDone,
               ),
             ),
@@ -375,7 +371,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
                 variant: AppButtonVariant.outline,
                 color: AppButtonColor.primary,
                 size: AppButtonSize.lg,
-                text: 'Move to Tomorrow',
+                text: 'Move to tomorrow',
                 onPressed: widget.onRescheduleTomorrow,
               ),
             ),
@@ -388,7 +384,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
                 variant: AppButtonVariant.ghost,
                 color: AppButtonColor.neutral,
                 size: AppButtonSize.lg,
-                text: 'Undo Last Execution',
+                text: 'Undo last execution',
                 onPressed: widget.onUndo,
               ),
             ),
@@ -402,7 +398,28 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
                 color: AppButtonColor.error,
                 size: AppButtonSize.lg,
                 text: 'Delete chore',
-                onPressed: widget.onDelete,
+                onPressed: () async {
+                  final confirmed = await showAppDialog<bool>(
+                    context: context,
+                    title: 'Delete chore',
+                    body: const Text('This will permanently delete this chore and its history.'),
+                    actions: [
+                      AppButton(
+                        text: 'Cancel',
+                        variant: AppButtonVariant.outline,
+                        onPressed: () => Navigator.of(context).pop(false),
+                      ),
+                      AppButton(
+                        text: 'Delete',
+                        color: AppButtonColor.error,
+                        onPressed: () => Navigator.of(context).pop(true),
+                      ),
+                    ],
+                  );
+                  if (confirmed == true && mounted) {
+                    widget.onDelete?.call();
+                  }
+                },
               ),
             ),
           ],
@@ -471,17 +488,19 @@ class _SubtaskRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xs),
       child: Row(
         children: [
-          Checkbox(
+          AnimatedCheckToggle(
             value: subtask.completed,
             onChanged: (_) => onToggle(),
+            semanticLabelOn: 'Mark subtask as not done',
+            semanticLabelOff: 'Mark subtask as done',
           ),
           Expanded(
             child: Text(
               subtask.title,
-              style: TextStyle(
-                decoration: subtask.completed
-                    ? TextDecoration.lineThrough
-                    : null,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                decoration: subtask.completed ? TextDecoration.lineThrough : null,
                 color: subtask.completed
                     ? Theme.of(context).colorScheme.onSurfaceVariant
                     : Theme.of(context).colorScheme.onSurface,
@@ -490,7 +509,7 @@ class _SubtaskRow extends StatelessWidget {
           ),
           if (onDelete != null)
             IconButton(
-              icon: const Icon(Icons.close, size: 20),
+              icon: const AppIcon(name: 'xMark', size: 20),
               tooltip: 'Delete subtask',
               onPressed: onDelete,
             ),

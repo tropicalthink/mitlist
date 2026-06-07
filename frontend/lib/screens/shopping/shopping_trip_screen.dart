@@ -10,6 +10,8 @@ import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../theme/theme.dart';
 import '../../utils/active_group_context.dart';
+import '../../utils/friendly_error.dart';
+import '../../widgets/animated_check_toggle.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
@@ -83,13 +85,15 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
       }
 
       setState(() {
+        _lists.clear();
         _lists.addAll(shoppingLists);
+        _itemsByList.clear();
         _itemsByList.addAll(itemsByList);
         _isLoading = false;
       });
     } catch (e) {
       setState(() {
-        _error = 'Couldn\u2019t load shopping trip. Check your connection.';
+        _error = friendlyErrorMessage(e);
         _isLoading = false;
       });
     }
@@ -158,7 +162,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Something went wrong.')),
+          SnackBar(content: Text(friendlyErrorMessage(e))),
         );
       }
     } finally {
@@ -215,7 +219,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
       return Center(
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/House.lottie',
-          icon: const Icon(Icons.home_outlined),
+          icon: const AppIcon(name: 'homeOutline'),
           title: 'No household yet',
           description: 'Create or join a household before starting a shopping trip.',
           actions: [
@@ -231,7 +235,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
       return Center(
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/404.lottie',
-          icon: const Icon(Icons.error_outline),
+          icon: const AppIcon(name: 'alertCircleOutline'),
           title: 'Something went wrong',
           description: _error,
           actions: [
@@ -248,7 +252,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
       return const Center(
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/checklist.lottie',
-          icon: Icon(Icons.shopping_bag_outlined),
+          icon: AppIcon(name: 'shoppingBagOutline'),
           title: 'No lists yet',
           description: 'Create a shopping list to start a trip',
         ),
@@ -258,7 +262,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
       return const Center(
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/Checkmark.lottie',
-          icon: Icon(Icons.check_circle_outline),
+          icon: AppIcon(name: 'checkCircleOutline'),
           title: 'All caught up',
           description: 'No open items across your lists. Add items to a list to see them here.',
         ),
@@ -419,12 +423,11 @@ class _ItemRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xs),
       child: Row(
         children: [
-          Semantics(
-            label: 'Toggle ${item.name}',
-            child: Checkbox(
-              value: isChecked,
-              onChanged: (_) => onToggle(),
-            ),
+          AnimatedCheckToggle(
+            value: isChecked,
+            onChanged: (_) => onToggle(),
+            semanticLabelOn: 'Mark ${item.name} as not purchased',
+            semanticLabelOff: 'Mark ${item.name} as purchased',
           ),
           Expanded(
             child: Text(

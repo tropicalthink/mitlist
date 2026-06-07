@@ -9,7 +9,6 @@ import (
 
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/config"
-	"github.com/mitlist-app/mitlist/internal/container"
 	"github.com/mitlist-app/mitlist/internal/middleware"
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/services"
@@ -26,17 +25,23 @@ type AuthHandler struct {
 	redisClient  *redis.Client
 }
 
-// NewAuthHandler creates an AuthHandler wired from the container.
-func NewAuthHandler(cfg *config.Config, cnt *container.Container) *AuthHandler {
-	h := &AuthHandler{cfg: cfg}
-	if cnt != nil {
-		h.userService = cnt.UserService()
-		h.guestService = cnt.GuestService()
-		h.oauthService = cnt.OAuthService()
-		h.jwtService = cnt.JWT()
-		h.redisClient = cnt.Redis().Client()
+// NewAuthHandler creates an AuthHandler with explicit dependencies.
+func NewAuthHandler(
+	cfg *config.Config,
+	userService *services.UserService,
+	guestService *services.GuestService,
+	oauthService *services.OAuthService,
+	jwtService *jwtservice.Service,
+	redisClient *redis.Client,
+) *AuthHandler {
+	return &AuthHandler{
+		cfg:          cfg,
+		userService:  userService,
+		guestService: guestService,
+		oauthService: oauthService,
+		jwtService:   jwtService,
+		redisClient:  redisClient,
 	}
-	return h
 }
 
 // RegisterRoutes mounts all auth routes under the provided router.
@@ -170,7 +175,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, err)
 		return
 	}
-	respondJSON(w, http.StatusCreated, tokenPairResp{
+	api.RespondJSON(w, http.StatusCreated, tokenPairResp{
 		User:         user,
 		AccessToken:  access,
 		RefreshToken: refresh,
@@ -202,7 +207,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		_ = h.redisClient.Del(r.Context(), "ratelimit:failedlogin:"+req.Email).Err()
 	}
 
-	respondJSON(w, http.StatusOK, tokenPairResp{
+	api.RespondJSON(w, http.StatusOK, tokenPairResp{
 		User:         user,
 		AccessToken:  access,
 		RefreshToken: refresh,
@@ -229,7 +234,7 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, err)
 		return
 	}
-	respondJSON(w, http.StatusOK, tokenPairResp{
+	api.RespondJSON(w, http.StatusOK, tokenPairResp{
 		AccessToken:  access,
 		RefreshToken: refresh,
 	})
@@ -265,7 +270,7 @@ func (h *AuthHandler) PasswordReset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_ = h.userService.RequestPasswordReset(r.Context(), req.Email)
-	respondJSON(w, http.StatusAccepted, map[string]string{"message": "if the email exists, a reset link has been sent"})
+	api.RespondJSON(w, http.StatusAccepted, map[string]string{"message": "if the email exists, a reset link has been sent"})
 }
 
 func (h *AuthHandler) PasswordResetConfirm(w http.ResponseWriter, r *http.Request) {
@@ -278,7 +283,7 @@ func (h *AuthHandler) PasswordResetConfirm(w http.ResponseWriter, r *http.Reques
 		api.RespondError(w, err)
 		return
 	}
-	respondJSON(w, http.StatusOK, map[string]string{"message": "password reset successful"})
+	api.RespondJSON(w, http.StatusOK, map[string]string{"message": "password reset successful"})
 }
 
 func (h *AuthHandler) GetMe(w http.ResponseWriter, r *http.Request) {
@@ -292,7 +297,7 @@ func (h *AuthHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, err)
 		return
 	}
-	respondJSON(w, http.StatusOK, user)
+	api.RespondJSON(w, http.StatusOK, user)
 }
 
 func (h *AuthHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
@@ -315,7 +320,7 @@ func (h *AuthHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, err)
 		return
 	}
-	respondJSON(w, http.StatusOK, user)
+	api.RespondJSON(w, http.StatusOK, user)
 }
 
 func (h *AuthHandler) DeleteMe(w http.ResponseWriter, r *http.Request) {
@@ -346,7 +351,7 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, err)
 		return
 	}
-	respondJSON(w, http.StatusOK, map[string]string{"message": "password changed"})
+	api.RespondJSON(w, http.StatusOK, map[string]string{"message": "password changed"})
 }
 
 func (h *AuthHandler) CreateGuest(w http.ResponseWriter, r *http.Request) {
@@ -355,7 +360,7 @@ func (h *AuthHandler) CreateGuest(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, err)
 		return
 	}
-	respondJSON(w, http.StatusCreated, tokenPairResp{
+	api.RespondJSON(w, http.StatusCreated, tokenPairResp{
 		User:         user,
 		AccessToken:  access,
 		RefreshToken: refresh,
@@ -378,7 +383,7 @@ func (h *AuthHandler) ConvertGuest(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, err)
 		return
 	}
-	respondJSON(w, http.StatusOK, tokenPairResp{
+	api.RespondJSON(w, http.StatusOK, tokenPairResp{
 		User:         user,
 		AccessToken:  access,
 		RefreshToken: refresh,
@@ -410,7 +415,7 @@ func (h *AuthHandler) ClaimAccount(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, err)
 		return
 	}
-	respondJSON(w, http.StatusOK, tokenPairResp{
+	api.RespondJSON(w, http.StatusOK, tokenPairResp{
 		User:         user,
 		AccessToken:  access,
 		RefreshToken: refresh,
@@ -442,7 +447,7 @@ func (h *AuthHandler) CreatePushSubscription(w http.ResponseWriter, r *http.Requ
 		api.RespondError(w, err)
 		return
 	}
-	respondJSON(w, http.StatusCreated, sub)
+	api.RespondJSON(w, http.StatusCreated, sub)
 }
 
 func (h *AuthHandler) ListPushSubscriptions(w http.ResponseWriter, r *http.Request) {
@@ -456,7 +461,7 @@ func (h *AuthHandler) ListPushSubscriptions(w http.ResponseWriter, r *http.Reque
 		api.RespondError(w, err)
 		return
 	}
-	respondJSON(w, http.StatusOK, subs)
+	api.RespondJSON(w, http.StatusOK, subs)
 }
 
 func (h *AuthHandler) DeletePushSubscription(w http.ResponseWriter, r *http.Request) {

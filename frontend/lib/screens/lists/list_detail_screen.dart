@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../models/list_models.dart';
 import '../../models/list_item_photo_models.dart';
 import '../../providers/attachment_provider.dart';
+import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../services/list_service.dart';
 import '../../theme/animations.dart';
@@ -15,10 +16,13 @@ import '../../theme/spacing.dart';
 import '../../theme/theme.dart';
 import '../../theme/typography.dart';
 import '../../utils/haptics.dart';
+import '../../utils/friendly_error.dart';
 import '../../widgets/alert.dart';
+import '../../widgets/animated_check_toggle.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
+import '../../widgets/chip.dart';
 import '../../sheets/cost_summary_sheet.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton.dart';
@@ -77,6 +81,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   bool _showProductSuggestions = false;
   final Map<String, List<ListItemPhoto>> _photosByItemId = {};
   bool _isSaving = false;
+  String _groupCurrency = 'USD';
 
   @override
   void initState() {
@@ -186,6 +191,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         _listName = list.name;
         _groupId = list.groupId;
       });
+      try {
+        final groupService = await ref.read(groupServiceProviderAsync.future);
+        final group = await groupService.getGroup(list.groupId);
+        if (mounted) setState(() => _groupCurrency = group.currency);
+      } catch (_) {}
       if (mounted) {
         FocusScope.of(context).requestFocus(_composerFocusNode);
       }
@@ -253,7 +263,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                 child: Semantics(
                   label: 'List image',
                   child: Image.network(url, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Center(
-                    child: Icon(Icons.broken_image, color: Theme.of(context).colorScheme.onSurface, size: 48),
+                    child: AppIcon(name: 'brokenImage', color: Theme.of(context).colorScheme.onSurface, size: 48),
                   )),
               ),
               ),
@@ -262,7 +272,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
               child: Align(
                 alignment: Alignment.topLeft,
                 child: IconButton(
-                  icon: Icon(Icons.close, color: Theme.of(context).colorScheme.onSurface),
+                  icon: AppIcon(name: 'xMark', color: Theme.of(context).colorScheme.onSurface),
                   tooltip: 'Close',
                   onPressed: () => Navigator.of(context).pop(),
                 ),
@@ -299,7 +309,6 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           attachmentId: attachmentId,
         );
                   } catch (_) {
-                    debugPrint('[ListDetail] Undo item creation failed for ${item.name}');
                   }
 
       final updated =
@@ -519,6 +528,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
               Expanded(
                 child: Text(
                   '${item.name} deleted'.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: Theme.of(context)
                       .textTheme
                       .labelMedium
@@ -549,7 +560,6 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     });
                     _checkCompletionBanner();
                   } catch (_) {
-                    debugPrint('[ListDetail] Undo item creation failed for ${item.name}');
                   }
                 },
               ),
@@ -715,6 +725,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         totalCents: totalCents,
         equalShareCents: equalShareCents,
         itemCount: pricedItems,
+        currencyCode: _groupCurrency,
         onGenerateExpense: totalCents > 0
             ? () async {
                 if (_isSaving) return;
@@ -729,7 +740,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                 } catch (e) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Something went wrong.')),
+                      SnackBar(content: Text(friendlyErrorMessage(e))),
                     );
                   }
                 } finally {
@@ -967,10 +978,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                           ),
                         ),
                       ),
-                      Icon(
-                        _doneSectionExpanded
-                            ? Icons.expand_less
-                            : Icons.expand_more,
+                      AppIcon(
+                        name: _doneSectionExpanded
+                            ? 'chevronUp'
+                            : 'chevronDown',
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ],
@@ -1070,19 +1081,18 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                       height: 28,
                       child: Semantics(
                         label: 'Item photo',
-                        child: Image.network(thumbUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.image_not_supported_outlined, size: 16)),
+                        child: Image.network(thumbUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => AppIcon(name: 'imageNotSupportedOutline', size: 16)),
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(width: MitlistSpacing.sm),
               ],
-              Semantics(
-                label: 'Toggle ${item.name}',
-                child: Checkbox(
-                  value: item.checked,
-                  onChanged: (val) => _toggleItem(item, val ?? false),
-                ),
+              AnimatedCheckToggle(
+                value: item.checked,
+                onChanged: (val) => _toggleItem(item, val),
+                semanticLabelOn: 'Mark ${item.name} as unchecked',
+                semanticLabelOff: 'Mark ${item.name} as checked',
               ),
               const SizedBox(width: MitlistSpacing.sm),
               Expanded(
@@ -1105,6 +1115,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   padding: const EdgeInsets.only(left: MitlistSpacing.sm),
                   child: Text(
                     '${_formatQuantity(item.quantity)}x',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: MitlistTypography.monoBody(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
@@ -1115,6 +1127,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   padding: const EdgeInsets.only(left: MitlistSpacing.sm),
                   child: Text(
                     '\$${(item.priceCents! / 100).toStringAsFixed(2)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: MitlistTypography.monoBody(
                       color: Theme.of(context).colorScheme.primary,
                     ),
@@ -1284,9 +1298,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                         const SizedBox(width: MitlistSpacing.sm),
                     itemBuilder: (context, index) {
                       final product = _productSuggestions[index];
-                      return ActionChip(
-                        label: Text(product.name),
-                        onPressed: () {
+                      return AppChip(
+                        label: product.name,
+                        onSelected: (_) {
                           _newItemController.text = product.name;
                           _addItem();
                         },

@@ -9,9 +9,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/mitlist-app/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/mitlist-app/mitlist/pkg/logger"
 )
 
@@ -24,8 +24,8 @@ type ChoreReminder struct {
 }
 
 // NewChoreReminder creates a new ChoreReminder.
-func NewChoreReminder(pool *pgxpool.Pool, push Pusher, log *logger.Logger) *ChoreReminder {
-	return &ChoreReminder{repo: &choreReminderRepoImpl{pool: pool}, push: push, log: log}
+func NewChoreReminder(db repositories.DBTX, push Pusher, log *logger.Logger) *ChoreReminder {
+	return &ChoreReminder{repo: &choreReminderRepoImpl{db: db}, push: push, log: log}
 }
 
 func newChoreReminder(repo choreReminderRepo, push Pusher, log *logger.Logger) *ChoreReminder {
@@ -103,7 +103,7 @@ func (r *ChoreReminder) remindAssignment(ctx context.Context, a models.ChoreAssi
 }
 
 type choreReminderRepoImpl struct {
-	pool *pgxpool.Pool
+	db repositories.DBTX
 }
 
 func (r *choreReminderRepoImpl) ListPendingAssignmentsDueSoon(ctx context.Context, cutoff time.Time) ([]models.ChoreAssignment, error) {
@@ -112,7 +112,7 @@ func (r *choreReminderRepoImpl) ListPendingAssignmentsDueSoon(ctx context.Contex
 		FROM chore_assignments
 		WHERE status = 'pending' AND (due_date IS NULL OR due_date <= $1)
 	`
-	rows, err := r.pool.Query(ctx, query, cutoff)
+	rows, err := r.db.Query(ctx, query, cutoff)
 	if err != nil {
 		return nil, fmt.Errorf("query pending assignments: %w", err)
 	}
@@ -137,7 +137,7 @@ func (r *choreReminderRepoImpl) ListPendingAssignmentsDueSoon(ctx context.Contex
 
 func (r *choreReminderRepoImpl) GetChoreName(ctx context.Context, choreID uuid.UUID) (string, error) {
 	var name string
-	err := r.pool.QueryRow(ctx, `SELECT name FROM chores WHERE id = $1`, choreID).Scan(&name)
+	err := r.db.QueryRow(ctx, `SELECT name FROM chores WHERE id = $1`, choreID).Scan(&name)
 	if err != nil {
 		return "", err
 	}
@@ -146,13 +146,13 @@ func (r *choreReminderRepoImpl) GetChoreName(ctx context.Context, choreID uuid.U
 
 func (r *choreReminderRepoImpl) GetChoreGroupID(ctx context.Context, choreID uuid.UUID) (uuid.UUID, error) {
 	var groupID uuid.UUID
-	err := r.pool.QueryRow(ctx, `SELECT group_id FROM chores WHERE id = $1`, choreID).Scan(&groupID)
+	err := r.db.QueryRow(ctx, `SELECT group_id FROM chores WHERE id = $1`, choreID).Scan(&groupID)
 	return groupID, err
 }
 
 func (r *choreReminderRepoImpl) GetUserPreference(ctx context.Context, userID, groupID uuid.UUID) (*models.NotificationPreference, error) {
 	var p models.NotificationPreference
-	err := r.pool.QueryRow(ctx, `
+	err := r.db.QueryRow(ctx, `
 		SELECT id, user_id, group_id, chore_due, chore_due_day_of, list_item_added,
 			expense_created, meal_plan_changed, weekly_digest, pinwall_reminder, push_enabled, created_at, updated_at
 		FROM notification_preferences

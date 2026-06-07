@@ -35,13 +35,13 @@ type createPinwallPostRequest struct {
 func (h *PinwallHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 	user, ok := userFromContext(r)
 	if !ok {
-		respondError(w, api.ErrUnauthorized)
+		api.RespondError(w, api.ErrUnauthorized)
 		return
 	}
 
 	var req createPinwallPostRequest
 	if err := decodeJSON(r, &req); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 	req.Content = strings.TrimSpace(req.Content)
@@ -50,7 +50,7 @@ func (h *PinwallHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 	if req.RemindAt != nil && strings.TrimSpace(*req.RemindAt) != "" {
 		parsed, err := time.Parse(time.RFC3339, strings.TrimSpace(*req.RemindAt))
 		if err != nil {
-			respondError(w, &api.ValidationError{Field: "remind_at", Message: "invalid RFC3339 timestamp"})
+			api.RespondError(w, &api.ValidationError{Field: "remind_at", Message: "invalid RFC3339 timestamp"})
 			return
 		}
 		parsed = parsed.UTC()
@@ -59,65 +59,65 @@ func (h *PinwallHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 
 	post, err := h.service.CreatePost(r.Context(), user, req.GroupID, req.Content, remindAt)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
-	respondJSON(w, http.StatusCreated, post)
+	api.RespondJSON(w, http.StatusCreated, post)
 }
 
 func (h *PinwallHandler) ListPosts(w http.ResponseWriter, r *http.Request) {
 	user, ok := userFromContext(r)
 	if !ok {
-		respondError(w, api.ErrUnauthorized)
+		api.RespondError(w, api.ErrUnauthorized)
 		return
 	}
 
 	groupIDStr := r.URL.Query().Get("group_id")
 	if groupIDStr == "" {
-		respondError(w, &api.ValidationError{Field: "group_id", Message: "group_id is required"})
+		api.RespondError(w, &api.ValidationError{Field: "group_id", Message: "group_id is required"})
 		return
 	}
 	groupID, err := uuid.Parse(groupIDStr)
 	if err != nil {
-		respondError(w, &api.ValidationError{Field: "group_id", Message: "invalid UUID"})
+		api.RespondError(w, &api.ValidationError{Field: "group_id", Message: "invalid UUID"})
 		return
 	}
 
 	limit, offset := parsePagination(r)
 	posts, err := h.service.ListPosts(r.Context(), user, groupID, limit, offset)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
-	respondJSON(w, http.StatusOK, posts)
+	api.RespondJSON(w, http.StatusOK, posts)
 }
 
 func (h *PinwallHandler) DeletePost(w http.ResponseWriter, r *http.Request) {
 	user, ok := userFromContext(r)
 	if !ok {
-		respondError(w, api.ErrUnauthorized)
+		api.RespondError(w, api.ErrUnauthorized)
 		return
 	}
 
 	groupIDStr := r.URL.Query().Get("group_id")
 	if groupIDStr == "" {
-		respondError(w, &api.ValidationError{Field: "group_id", Message: "group_id is required"})
+		api.RespondError(w, &api.ValidationError{Field: "group_id", Message: "group_id is required"})
 		return
 	}
 	groupID, err := uuid.Parse(groupIDStr)
 	if err != nil {
-		respondError(w, &api.ValidationError{Field: "group_id", Message: "invalid UUID"})
+		api.RespondError(w, &api.ValidationError{Field: "group_id", Message: "invalid UUID"})
 		return
 	}
 
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	if err := h.service.DeletePost(r.Context(), user, groupID, id); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
