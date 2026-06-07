@@ -15,6 +15,7 @@ import '../../theme/theme.dart';
 import '../../utils/active_group_context.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
+import '../../widgets/app_icon.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton.dart';
@@ -197,7 +198,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       return Center(
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/404.lottie',
-          icon: Icon(Icons.error_outline),
+          icon: AppIcon(name: 'alertCircleOutline'),
           title: 'Something went wrong',
           description: _error,
           actions: [
@@ -214,7 +215,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       return Center(
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/House.lottie',
-          icon: const Icon(Icons.home_outlined),
+          icon: const AppIcon(name: 'homeOutline'),
           title: 'No household yet',
           description: 'Join or create a household to view the calendar',
           actions: [
@@ -370,7 +371,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           child: Row(
             children: [
               IconButton(
-                icon: Icon(Icons.chevron_left),
+                icon: AppIcon(name: 'chevronLeft'),
                 tooltip: 'Previous week',
                 onPressed: _prevWeek,
               ),
@@ -384,7 +385,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 ),
               ),
               IconButton(
-                icon: Icon(Icons.chevron_right),
+                icon: AppIcon(name: 'chevronRight'),
                 tooltip: 'Next week',
                 onPressed: _nextWeek,
               ),
@@ -427,7 +428,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           child: Row(
             children: [
               IconButton(
-                icon: Icon(Icons.chevron_left),
+                icon: AppIcon(name: 'chevronLeft'),
                 tooltip: 'Previous month',
                 onPressed: _prevMonth,
               ),
@@ -441,7 +442,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 ),
               ),
               IconButton(
-                icon: Icon(Icons.chevron_right),
+                icon: AppIcon(name: 'chevronRight'),
                 tooltip: 'Next month',
                 onPressed: _nextMonth,
               ),
@@ -642,7 +643,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         child: Center(
           child: AppEmptyState(
             lottieAsset: 'assets/animations/lottie/Calendar.lottie',
-            icon: Icon(Icons.event_note, size: 56),
+            icon: AppIcon(name: 'eventNote', size: 56),
             title: 'Nothing ahead',
             description:
                 'Upcoming chores, meal plans, and recurring expenses will appear here.',
@@ -945,6 +946,8 @@ class _DayCard extends StatelessWidget {
                 padding: const EdgeInsets.only(top: MitlistSpacing.sm),
                 child: Text(
                   'Nothing planned',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: MitlistTypography.labelXSmall(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -1027,7 +1030,7 @@ class _EventRow extends StatelessWidget {
               Expanded(
                 child: Text(
                   event.title.isNotEmpty ? event.title : label,
-                  style: TextStyle(
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.w500,
                   ),

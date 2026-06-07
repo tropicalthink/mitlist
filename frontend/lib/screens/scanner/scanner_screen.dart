@@ -9,6 +9,7 @@ import '../../providers/scan_provider.dart';
 import '../../services/scan_service.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
+import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
@@ -144,33 +145,29 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   }
 
   void _showSourcePicker() {
-    showModalBottomSheet(
+    showAppBottomSheet<void>(
       context: context,
-      builder: (_) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(MitlistSpacing.md),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const AppIcon(name: 'devicePhoneMobile'),
-                title: const Text('Take a photo'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _pickImage(ImageSource.camera);
-                },
-              ),
-              ListTile(
-                leading: AppIcon(name: 'eye'),
-                title: Text('Choose from gallery'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _pickImage(ImageSource.gallery);
-                },
-              ),
-            ],
+      title: 'Add scan',
+      body: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const AppIcon(name: 'devicePhoneMobile'),
+            title: const Text('Take a photo'),
+            onTap: () {
+              Navigator.of(context).pop();
+              _pickImage(ImageSource.camera);
+            },
           ),
-        ),
+          ListTile(
+            leading: AppIcon(name: 'eye'),
+            title: Text('Choose from gallery'),
+            onTap: () {
+              Navigator.of(context).pop();
+              _pickImage(ImageSource.gallery);
+            },
+          ),
+        ],
       ),
     );
   }
@@ -272,7 +269,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
           if (_error != null)
             AppEmptyState(
               title: _error!,
-              icon: const Icon(Icons.error_outline),
+              icon: const AppIcon(name: 'alertCircleOutline'),
               isError: true,
               paddingPreset: AppEmptyStatePadding.md,
               actions: [

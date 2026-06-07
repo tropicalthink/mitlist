@@ -19,6 +19,7 @@ import '../../theme/typography.dart';
 import '../../utils/active_group_context.dart';
 import '../../utils/haptics.dart';
 import '../../widgets/alert.dart';
+import '../../widgets/animated_check_toggle.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_dialog.dart';
@@ -47,8 +48,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   final Logger _logger = Logger();
   Map<String, String> _memberNames = {};
 
-  static const double _displaySmallLineHeight = 36 * (44 / 36);
-  static const double _labelMediumLineHeight = 12 * (16 / 12);
+  static const double _displaySmallLineHeight = 44.0;
+  static const double _labelMediumLineHeight = 16.0;
 
   static const double _stickyHeaderHeight = MitlistSpacing.md +
       MitlistSpacing.md +
@@ -737,6 +738,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       title: 'No chores yet',
+                      description: 'Track recurring household tasks. Assign them to anyone in your group.',
                       actions: [
                         AppButton(
                           text: 'Add a chore',
@@ -948,12 +950,11 @@ class _ChoreItem extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Semantics(
-            label: 'Mark ${chore.title} as done',
-            child: Checkbox(
-              value: chore.completed,
-              onChanged: (_) => onToggle(),
-            ),
+          AnimatedCheckToggle(
+            value: chore.completed,
+            onChanged: (_) => onToggle(),
+            semanticLabelOn: 'Mark ${chore.title} as not done',
+            semanticLabelOff: 'Mark ${chore.title} as done',
           ),
           Expanded(
             child: Semantics(
@@ -990,12 +991,14 @@ class _ChoreItem extends StatelessWidget {
                         padding: const EdgeInsets.only(top: MitlistSpacing.xs),
                         child: Row(
                           children: [
-                            Icon(Icons.inventory_2_outlined,
+                            AppIcon(name: 'inventoryOutline',
                                 size: 12,
                                 color: Theme.of(context).colorScheme.primary),
                             const SizedBox(width: MitlistSpacing.space1),
                             Text(
                               '${chore.supplies.length} supply${chore.supplies.length == 1 ? '' : 'ies'}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: MitlistTypography.labelXSmall(
                                 color: Theme.of(context).colorScheme.primary,
                               ),

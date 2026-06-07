@@ -161,7 +161,7 @@ class _RecurringExpensesScreenState
       return Center(
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/404.lottie',
-          icon: const Icon(Icons.error_outline),
+          icon: const AppIcon(name: 'alertCircleOutline'),
           title: 'Something went wrong',
           description: _error,
           actions: [
@@ -178,7 +178,7 @@ class _RecurringExpensesScreenState
       return const Center(
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/House.lottie',
-          icon: Icon(Icons.home_outlined),
+          icon: AppIcon(name: 'homeOutline'),
           title: 'No household yet',
           description: 'Join or create a household to manage recurring expenses',
         ),
@@ -188,7 +188,7 @@ class _RecurringExpensesScreenState
       return Center(
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/wallet.lottie',
-          icon: Icon(Icons.repeat),
+          icon: AppIcon(name: 'repeat'),
           title: 'No recurring expenses',
           description: 'Add a recurring expense to track regular payments',
           actions: [
@@ -332,21 +332,21 @@ class _RecurringCard extends StatelessWidget {
               ),
             ),
             if (isSubmitting)
-              const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
+              SizedBox(
+                width: MitlistSpacing.space5,
+                height: MitlistSpacing.space5,
+                child: const CircularProgressIndicator(strokeWidth: 2),
               )
             else ...[
               IconButton(
-                icon: Icon(
-                  isActive ? Icons.pause_circle_outline : Icons.play_circle_outline,
+                icon: AppIcon(
+                  name: isActive ? 'pauseCircleOutline' : 'playCircleOutline',
                 ),
                 tooltip: isActive ? 'Pause' : 'Resume',
                 onPressed: onToggle,
               ),
               IconButton(
-                icon: const Icon(Icons.delete_outline),
+                icon: const AppIcon(name: 'trashOutline'),
                 tooltip: 'Delete',
                 onPressed: () async {
                   final confirmed = await showAppDialog<bool>(

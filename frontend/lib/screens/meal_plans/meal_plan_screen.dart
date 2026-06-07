@@ -286,7 +286,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
             child: Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.chevron_left),
+                  icon: const AppIcon(name: 'chevronLeft'),
                   tooltip: 'Previous week',
                   onPressed: _prevWeek,
                 ),
@@ -300,7 +300,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.chevron_right),
+                  icon: const AppIcon(name: 'chevronRight'),
                   tooltip: 'Next week',
                   onPressed: _nextWeek,
                 ),
@@ -316,7 +316,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
               child: Center(
                 child: AppEmptyState(
                   lottieAsset: 'assets/animations/lottie/404.lottie',
-                  icon: const Icon(Icons.error_outline),
+                  icon: const AppIcon(name: 'alertCircleOutline'),
                   title: 'Something went wrong',
                   description: _error,
                   actions: [
@@ -596,17 +596,17 @@ class _SlotRow extends StatelessWidget {
                 ),
                 const SizedBox(width: MitlistSpacing.xs),
                 IconButton(
-                  icon: const Icon(Icons.edit, size: 18),
+                  icon: const AppIcon(name: 'pencil', size: 18),
                   tooltip: 'Edit',
                   onPressed: onEdit,
                 ),
                 IconButton(
-                  icon: Icon(Icons.close, size: 18),
+                  icon: AppIcon(name: 'xMark', size: 18),
                   tooltip: 'Remove',
                   onPressed: onRemove,
                 ),
               ] else
-                Icon(Icons.add, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                AppIcon(name: 'plus', size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ],
           ),
         ),
@@ -693,7 +693,7 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
     if (_error != null) {
       return AppEmptyState(
         lottieAsset: 'assets/animations/lottie/404.lottie',
-        icon: const Icon(Icons.error_outline),
+        icon: const AppIcon(name: 'alertCircleOutline'),
                         title: 'Couldn\u2019t load recipes',
         description: _error,
         actions: [
@@ -708,7 +708,7 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
     if (_recipes.isEmpty) {
       return const AppEmptyState(
         lottieAsset: 'assets/animations/lottie/Recipes.lottie',
-        icon: Icon(Icons.restaurant_outlined),
+        icon: AppIcon(name: 'restaurantOutline'),
         title: 'No recipes yet',
         description: 'Add recipes to plan meals',
       );
@@ -722,10 +722,10 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
             controller: _searchController,
             decoration: InputDecoration(
               hintText: 'Search recipes...',
-              prefixIcon: const Icon(Icons.search, size: 20),
+              prefixIcon: const AppIcon(name: 'magnifyingGlass', size: 20),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
-                      icon: Icon(Icons.clear, size: 20),
+                      icon: AppIcon(name: 'clear', size: 20),
                       tooltip: 'Clear search',
                       onPressed: () => _searchController.clear(),
                     )
@@ -766,17 +766,17 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
                                   width: 48,
                                   height: 48,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => const Icon(Icons.image, size: 48),
+                                  errorBuilder: (_, __, ___) => const AppIcon(name: 'image', size: 48),
                                 ),
                               ),
                             )
-                          : const Icon(Icons.restaurant, size: 48),
+                          : const AppIcon(name: 'restaurant', size: 48),
                       title: Text(r.title, maxLines: 1, overflow: TextOverflow.ellipsis),
                       subtitle: r.descriptionShort.isNotEmpty
                           ? Text(r.descriptionShort, maxLines: 1, overflow: TextOverflow.ellipsis)
                           : null,
                       trailing: isSelected
-                          ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
+                          ? AppIcon(name: 'check', color: Theme.of(context).colorScheme.primary)
                           : null,
                       onTap: () => Navigator.of(context).pop(r),
                     );
@@ -822,7 +822,7 @@ class _ServingsPickerSheetState extends State<_ServingsPickerSheet> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             IconButton(
-              icon: const Icon(Icons.remove_circle_outline),
+              icon: const AppIcon(name: 'minusCircleOutline'),
               tooltip: 'Fewer servings',
               onPressed: _servings > 1
                   ? () => setState(() => _servings--)
@@ -833,7 +833,7 @@ class _ServingsPickerSheetState extends State<_ServingsPickerSheet> {
               style: Theme.of(context).textTheme.headlineMedium,
             ),
             IconButton(
-              icon: const Icon(Icons.add_circle_outline),
+              icon: const AppIcon(name: 'addCircleOutline'),
               tooltip: 'More servings',
               onPressed: () => setState(() => _servings++),
             ),

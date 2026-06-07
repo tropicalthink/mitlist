@@ -28,6 +28,7 @@ import '../../widgets/app_icon.dart';
 import '../../widgets/chip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton.dart';
+import '../../widgets/spinner.dart';
 import '../../widgets/list_entrance.dart';
 import '../../widgets/mitlist_app_bar.dart';
 
@@ -514,12 +515,12 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         'Money',
         actions: [
           IconButton(
-            icon: const Icon(Icons.camera_alt),
+            icon: const AppIcon(name: 'camera'),
             tooltip: 'Scan receipt',
             onPressed: () => context.pushNamed('scanner'),
           ),
           IconButton(
-            icon: const Icon(Icons.repeat),
+            icon: const AppIcon(name: 'repeat'),
             tooltip: 'Recurring',
             onPressed: () => context.pushNamed('recurringExpenses'),
           ),
@@ -992,10 +993,9 @@ class _TimelineBody extends StatelessWidget {
                         message: 'Failed to load more expenses.',
                       )
                     : Center(
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation(
-                            Theme.of(context).colorScheme.primary,
-                          ),
+                        child: AppSpinner(
+                          size: AppSpinnerSize.sm,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
               ),
@@ -1108,6 +1108,8 @@ class _ExpenseCard extends StatelessWidget {
                 const SizedBox(height: MitlistSpacing.space1),
                 Text(
                   expense.description,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
                 const SizedBox(height: MitlistSpacing.space1),
@@ -1197,7 +1199,7 @@ class _SettlementsBody extends StatelessWidget {
                     lottieAsset: 'assets/animations/lottie/Checkmark.lottie',
                     icon: const AppIcon(name: 'checkCircle', size: 56),
                     title: 'All settled up!',
-                    description: 'The household tab is clear.',
+                    description: 'No one owes anyone right now.',
                   ),
                   ConfettiWidget(
                     confettiController: confettiController,

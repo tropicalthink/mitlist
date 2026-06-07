@@ -68,6 +68,36 @@ class AppIcons {
   static const IconData dotsHorizontal = Icons.more_horiz;
   static const IconData camera = Icons.camera_alt;
 
+  static const IconData addCircleOutline = Icons.add_circle_outline;
+  static const IconData addHomeOutline = Icons.add_home_outlined;
+  static const IconData apple = Icons.apple;
+  static const IconData brokenImage = Icons.broken_image;
+  static const IconData checkCircleOutline = Icons.check_circle_outline;
+  static const IconData chevronLeft = Icons.chevron_left;
+  static const IconData cleaningServices = Icons.cleaning_services;
+  static const IconData clear = Icons.clear;
+  static const IconData trashOutline = Icons.delete_outline;
+  static const IconData eventNote = Icons.event_note;
+  static const IconData homeOutline = Icons.home_outlined;
+  static const IconData image = Icons.image;
+  static const IconData imageNotSupportedOutline = Icons.image_not_supported_outlined;
+  static const IconData inventoryOutline = Icons.inventory_2_outlined;
+  static const IconData login = Icons.login;
+  static const IconData bellOutline = Icons.notifications_none_outlined;
+  static const IconData pauseCircleOutline = Icons.pause_circle_outline;
+  static const IconData playCircleOutline = Icons.play_circle_outline;
+  static const IconData pushPinOutline = Icons.push_pin_outlined;
+  static const IconData receiptOutline = Icons.receipt_outlined;
+  static const IconData minusCircleOutline = Icons.remove_circle_outline;
+  static const IconData repeat = Icons.repeat;
+  static const IconData restaurant = Icons.restaurant;
+  static const IconData restaurantMenu = Icons.restaurant_menu;
+  static const IconData restaurantOutline = Icons.restaurant_outlined;
+  static const IconData cog6ToothOutline = Icons.settings_outlined;
+  static const IconData shoppingBagOutline = Icons.shopping_bag_outlined;
+  static const IconData tune = Icons.tune;
+  static const IconData keyOutline = Icons.vpn_key_outlined;
+
   /// Resolves a semantic [name] to its placeholder [IconData].
   ///
   /// Returns `null` if the name is not recognized.
@@ -129,6 +159,36 @@ class AppIcons {
       'alertCircleOutline' => alertCircleOutline,
       'asterisk' => asterisk,
       'dotsHorizontal' => dotsHorizontal,
+      'camera' => camera,
+      'addCircleOutline' => addCircleOutline,
+      'addHomeOutline' => addHomeOutline,
+      'apple' => apple,
+      'brokenImage' => brokenImage,
+      'checkCircleOutline' => checkCircleOutline,
+      'chevronLeft' => chevronLeft,
+      'cleaningServices' => cleaningServices,
+      'clear' => clear,
+      'trashOutline' => trashOutline,
+      'eventNote' => eventNote,
+      'homeOutline' => homeOutline,
+      'image' => image,
+      'imageNotSupportedOutline' => imageNotSupportedOutline,
+      'inventoryOutline' => inventoryOutline,
+      'login' => login,
+      'bellOutline' => bellOutline,
+      'pauseCircleOutline' => pauseCircleOutline,
+      'playCircleOutline' => playCircleOutline,
+      'pushPinOutline' => pushPinOutline,
+      'receiptOutline' => receiptOutline,
+      'minusCircleOutline' => minusCircleOutline,
+      'repeat' => repeat,
+      'restaurant' => restaurant,
+      'restaurantMenu' => restaurantMenu,
+      'restaurantOutline' => restaurantOutline,
+      'cog6ToothOutline' => cog6ToothOutline,
+      'shoppingBagOutline' => shoppingBagOutline,
+      'tune' => tune,
+      'keyOutline' => keyOutline,
       _ => null,
     };
   }

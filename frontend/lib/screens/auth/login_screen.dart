@@ -11,7 +11,9 @@ import '../../utils/browser_redirect.dart';
 import '../../utils/native_oauth_launcher.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
+import '../../widgets/animated_check_toggle.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -372,16 +374,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
                             child: Row(
                               children: [
-                                Semantics(
-                                  label: 'Remember me',
-                                  child: Checkbox(
-                                    value: _rememberMe,
-                                    onChanged: _isLoading
-                                        ? null
-                                        : (value) {
-                                            setState(() => _rememberMe = value ?? true);
-                                          },
-                                  ),
+                                AnimatedCheckToggle(
+                                  value: _rememberMe,
+                                  onChanged: _isLoading
+                                      ? null
+                                      : (value) {
+                                          setState(() => _rememberMe = value);
+                                        },
+                                  semanticLabelOn: 'Remember me: on',
+                                  semanticLabelOff: 'Remember me: off',
                                 ),
                                 const SizedBox(width: MitlistSpacing.sm),
                                 const Text('Remember me'),
@@ -392,7 +393,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         const SizedBox(height: MitlistSpacing.space4),
                         AppButton(
                           text: 'Continue with Google',
-                          icon: const Icon(Icons.login, size: 20),
+                          icon: const AppIcon(name: 'login', size: 20),
                           variant: AppButtonVariant.outline,
                           color: AppButtonColor.neutral,
                           onPressed: _isLoading ? null : () => _startOAuth('google'),
@@ -400,7 +401,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         const SizedBox(height: MitlistSpacing.space3),
                         AppButton(
                           text: 'Continue with Apple',
-                          icon: const Icon(Icons.apple, size: 20),
+                          icon: const AppIcon(name: 'apple', size: 20),
                           variant: AppButtonVariant.outline,
                           color: AppButtonColor.neutral,
                           onPressed: _isLoading ? null : () => _startOAuth('apple'),
