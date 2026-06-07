@@ -10,6 +10,7 @@ import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../theme/theme.dart';
 import '../../utils/active_group_context.dart';
+import '../../utils/friendly_error.dart';
 import '../../widgets/animated_check_toggle.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
@@ -90,7 +91,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = 'Couldn\u2019t load shopping trip. Check your connection.';
+        _error = friendlyErrorMessage(e);
         _isLoading = false;
       });
     }
@@ -159,7 +160,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Something went wrong.')),
+          SnackBar(content: Text(friendlyErrorMessage(e))),
         );
       }
     } finally {

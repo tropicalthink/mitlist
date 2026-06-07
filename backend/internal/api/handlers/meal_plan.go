@@ -28,6 +28,7 @@ func (h *MealPlanHandler) RegisterRoutes(r chi.Router) {
 	r.Get("/meal-plans/{id}", h.GetMealPlan)
 	r.Patch("/meal-plans/{id}", h.UpdateMealPlan)
 	r.Delete("/meal-plans/{id}", h.DeleteMealPlan)
+	r.Post("/meal-plans/generate-shopping-list", h.GenerateShoppingList)
 }
 
 type createMealPlanRequest struct {
@@ -42,19 +43,19 @@ type createMealPlanRequest struct {
 func (h *MealPlanHandler) CreateMealPlan(w http.ResponseWriter, r *http.Request) {
 	user, ok := userFromContext(r)
 	if !ok {
-		respondError(w, api.ErrUnauthorized)
+		api.RespondError(w, api.ErrUnauthorized)
 		return
 	}
 
 	var req createMealPlanRequest
 	if err := decodeJSON(r, &req); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	date, err := time.Parse("2006-01-02", req.Date)
 	if err != nil {
-		respondError(w, &api.ValidationError{Field: "date", Message: "invalid date format, expected YYYY-MM-DD"})
+		api.RespondError(w, &api.ValidationError{Field: "date", Message: "invalid date format, expected YYYY-MM-DD"})
 		return
 	}
 
@@ -68,73 +69,73 @@ func (h *MealPlanHandler) CreateMealPlan(w http.ResponseWriter, r *http.Request)
 	}
 
 	if err := h.service.CreateMealPlan(r.Context(), user, mp); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
-	respondJSON(w, http.StatusCreated, mp)
+	api.RespondJSON(w, http.StatusCreated, mp)
 }
 
 func (h *MealPlanHandler) ListMealPlans(w http.ResponseWriter, r *http.Request) {
 	user, ok := userFromContext(r)
 	if !ok {
-		respondError(w, api.ErrUnauthorized)
+		api.RespondError(w, api.ErrUnauthorized)
 		return
 	}
 
 	groupID, err := uuid.Parse(r.URL.Query().Get("group_id"))
 	if err != nil {
-		respondError(w, &api.ValidationError{Field: "group_id", Message: "invalid UUID"})
+		api.RespondError(w, &api.ValidationError{Field: "group_id", Message: "invalid UUID"})
 		return
 	}
 
 	fromStr := r.URL.Query().Get("from")
 	toStr := r.URL.Query().Get("to")
 	if fromStr == "" || toStr == "" {
-		respondError(w, &api.ValidationError{Field: "from,to", Message: "from and to dates are required"})
+		api.RespondError(w, &api.ValidationError{Field: "from,to", Message: "from and to dates are required"})
 		return
 	}
 
 	from, err := time.Parse("2006-01-02", fromStr)
 	if err != nil {
-		respondError(w, &api.ValidationError{Field: "from", Message: "invalid date format, expected YYYY-MM-DD"})
+		api.RespondError(w, &api.ValidationError{Field: "from", Message: "invalid date format, expected YYYY-MM-DD"})
 		return
 	}
 	to, err := time.Parse("2006-01-02", toStr)
 	if err != nil {
-		respondError(w, &api.ValidationError{Field: "to", Message: "invalid date format, expected YYYY-MM-DD"})
+		api.RespondError(w, &api.ValidationError{Field: "to", Message: "invalid date format, expected YYYY-MM-DD"})
 		return
 	}
 
 	plans, err := h.service.ListMealPlans(r.Context(), user, groupID, from, to)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
-	respondJSON(w, http.StatusOK, plans)
+	api.RespondJSON(w, http.StatusOK, plans)
 }
 
 func (h *MealPlanHandler) GetMealPlan(w http.ResponseWriter, r *http.Request) {
 	user, ok := userFromContext(r)
 	if !ok {
-		respondError(w, api.ErrUnauthorized)
+		api.RespondError(w, api.ErrUnauthorized)
 		return
 	}
 
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	mp, err := h.service.GetMealPlan(r.Context(), user, id)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
-	respondJSON(w, http.StatusOK, mp)
+	api.RespondJSON(w, http.StatusOK, mp)
 }
 
 type updateMealPlanRequest struct {
@@ -148,32 +149,32 @@ type updateMealPlanRequest struct {
 func (h *MealPlanHandler) UpdateMealPlan(w http.ResponseWriter, r *http.Request) {
 	user, ok := userFromContext(r)
 	if !ok {
-		respondError(w, api.ErrUnauthorized)
+		api.RespondError(w, api.ErrUnauthorized)
 		return
 	}
 
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	var req updateMealPlanRequest
 	if err := decodeJSON(r, &req); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	existing, err := h.service.GetMealPlan(r.Context(), user, id)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	if req.Date != nil {
 		date, err := time.Parse("2006-01-02", *req.Date)
 		if err != nil {
-			respondError(w, &api.ValidationError{Field: "date", Message: "invalid date format"})
+			api.RespondError(w, &api.ValidationError{Field: "date", Message: "invalid date format"})
 			return
 		}
 		existing.Date = date
@@ -192,28 +193,28 @@ func (h *MealPlanHandler) UpdateMealPlan(w http.ResponseWriter, r *http.Request)
 	}
 
 	if err := h.service.UpdateMealPlan(r.Context(), user, existing); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
-	respondJSON(w, http.StatusOK, existing)
+	api.RespondJSON(w, http.StatusOK, existing)
 }
 
 func (h *MealPlanHandler) DeleteMealPlan(w http.ResponseWriter, r *http.Request) {
 	user, ok := userFromContext(r)
 	if !ok {
-		respondError(w, api.ErrUnauthorized)
+		api.RespondError(w, api.ErrUnauthorized)
 		return
 	}
 
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	if err := h.service.DeleteMealPlan(r.Context(), user, id); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
@@ -224,7 +225,7 @@ func (h *MealPlanHandler) DeleteMealPlan(w http.ResponseWriter, r *http.Request)
 func (h *MealPlanHandler) GenerateShoppingList(w http.ResponseWriter, r *http.Request) {
 	user, ok := userFromContext(r)
 	if !ok {
-		respondError(w, api.ErrUnauthorized)
+		api.RespondError(w, api.ErrUnauthorized)
 		return
 	}
 
@@ -235,28 +236,28 @@ func (h *MealPlanHandler) GenerateShoppingList(w http.ResponseWriter, r *http.Re
 		ListID  *uuid.UUID `json:"list_id,omitempty"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	from, err := time.Parse("2006-01-02", req.From)
 	if err != nil {
-		respondError(w, &api.ValidationError{Field: "from", Message: "invalid date format, expected YYYY-MM-DD"})
+		api.RespondError(w, &api.ValidationError{Field: "from", Message: "invalid date format, expected YYYY-MM-DD"})
 		return
 	}
 	to, err := time.Parse("2006-01-02", req.To)
 	if err != nil {
-		respondError(w, &api.ValidationError{Field: "to", Message: "invalid date format, expected YYYY-MM-DD"})
+		api.RespondError(w, &api.ValidationError{Field: "to", Message: "invalid date format, expected YYYY-MM-DD"})
 		return
 	}
 
 	list, items, err := h.service.GenerateShoppingList(r.Context(), user, req.GroupID, from, to, req.ListID)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
-	respondJSON(w, http.StatusOK, map[string]any{
+	api.RespondJSON(w, http.StatusOK, map[string]any{
 		"list":  list,
 		"items": items,
 	})

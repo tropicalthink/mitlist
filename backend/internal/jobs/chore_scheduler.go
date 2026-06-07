@@ -8,10 +8,10 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/mitlist-app/mitlist/internal/choreschedule"
 	"github.com/mitlist-app/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/mitlist-app/mitlist/pkg/logger"
 )
 
@@ -23,8 +23,8 @@ type ChoreScheduler struct {
 }
 
 // NewChoreScheduler creates a new ChoreScheduler.
-func NewChoreScheduler(pool *pgxpool.Pool, log *logger.Logger) *ChoreScheduler {
-	return &ChoreScheduler{repo: &choreSchedulerRepoImpl{pool: pool}, log: log}
+func NewChoreScheduler(db repositories.DBTX, log *logger.Logger) *ChoreScheduler {
+	return &ChoreScheduler{repo: &choreSchedulerRepoImpl{db: db}, log: log}
 }
 
 func newChoreScheduler(repo choreSchedulerRepo, log *logger.Logger) *ChoreScheduler {
@@ -111,7 +111,7 @@ func (s *ChoreScheduler) scheduleChore(ctx context.Context, chore models.Chore) 
 }
 
 type choreSchedulerRepoImpl struct {
-	pool *pgxpool.Pool
+	db repositories.DBTX
 }
 
 func (r *choreSchedulerRepoImpl) ListActiveScheduledChores(ctx context.Context) ([]models.Chore, error) {
@@ -129,7 +129,7 @@ func (r *choreSchedulerRepoImpl) ListActiveScheduledChores(ctx context.Context) 
 			  AND chore_assignments.status = 'pending'
 		  )
 	`
-	rows, err := r.pool.Query(ctx, query)
+	rows, err := r.db.Query(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("query active scheduled chores: %w", err)
 	}
@@ -157,7 +157,7 @@ func (r *choreSchedulerRepoImpl) ListActiveScheduledChores(ctx context.Context) 
 
 func (r *choreSchedulerRepoImpl) GetRotationState(ctx context.Context, choreID uuid.UUID) (*models.ChoreRotationState, error) {
 	var state models.ChoreRotationState
-	err := r.pool.QueryRow(ctx, `
+	err := r.db.QueryRow(ctx, `
 		SELECT id, chore_id, member_order, current_index
 		FROM chore_rotation_states
 		WHERE chore_id = $1
@@ -169,7 +169,7 @@ func (r *choreSchedulerRepoImpl) GetRotationState(ctx context.Context, choreID u
 }
 
 func (r *choreSchedulerRepoImpl) ScheduleChore(ctx context.Context, assignment *models.ChoreAssignment, stateID uuid.UUID, nextIndex int) error {
-	tx, err := r.pool.Begin(ctx)
+	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
 	}

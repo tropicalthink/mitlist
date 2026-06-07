@@ -7,6 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/mitlist_app_bar.dart';
+import '../../utils/friendly_error.dart';
 
 class OAuthCallbackScreen extends ConsumerStatefulWidget {
   const OAuthCallbackScreen({
@@ -83,7 +84,7 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
       context.goNamed('onboarding');
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = 'Something went wrong.');
+      setState(() => _error = friendlyErrorMessage(e));
     }
   }
 

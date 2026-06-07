@@ -33,57 +33,57 @@ func (h *NotificationHandler) RegisterRoutes(r chi.Router) {
 func (h *NotificationHandler) ListNotifications(w http.ResponseWriter, r *http.Request) {
 	userID, err := currentUserID(r)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	limit, offset := parsePagination(r)
 	notifications, err := h.service.ListNotifications(r.Context(), userID, limit, offset)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
-	respondJSON(w, http.StatusOK, notifications)
+	api.RespondJSON(w, http.StatusOK, notifications)
 }
 
 func (h *NotificationHandler) GetNotification(w http.ResponseWriter, r *http.Request) {
 	userID, err := currentUserID(r)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	n, err := h.service.GetNotification(r.Context(), userID, id)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
-	respondJSON(w, http.StatusOK, n)
+	api.RespondJSON(w, http.StatusOK, n)
 }
 
 func (h *NotificationHandler) MarkAsRead(w http.ResponseWriter, r *http.Request) {
 	userID, err := currentUserID(r)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	if err := h.service.MarkAsRead(r.Context(), userID, id); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
@@ -93,12 +93,12 @@ func (h *NotificationHandler) MarkAsRead(w http.ResponseWriter, r *http.Request)
 func (h *NotificationHandler) MarkAllAsRead(w http.ResponseWriter, r *http.Request) {
 	userID, err := currentUserID(r)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	if err := h.service.MarkAllAsRead(r.Context(), userID); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
@@ -108,18 +108,18 @@ func (h *NotificationHandler) MarkAllAsRead(w http.ResponseWriter, r *http.Reque
 func (h *NotificationHandler) DeleteNotification(w http.ResponseWriter, r *http.Request) {
 	userID, err := currentUserID(r)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	if err := h.service.DeleteNotification(r.Context(), userID, id); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
@@ -129,7 +129,7 @@ func (h *NotificationHandler) DeleteNotification(w http.ResponseWriter, r *http.
 func (h *NotificationHandler) GetPreferences(w http.ResponseWriter, r *http.Request) {
 	userID, err := currentUserID(r)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
@@ -137,42 +137,42 @@ func (h *NotificationHandler) GetPreferences(w http.ResponseWriter, r *http.Requ
 	if groupIDStr != "" {
 		groupID, err := uuid.Parse(groupIDStr)
 		if err != nil {
-			respondError(w, &api.ValidationError{Field: "group_id", Message: "invalid group_id"})
+			api.RespondError(w, &api.ValidationError{Field: "group_id", Message: "invalid group_id"})
 			return
 		}
 		pref, err := h.service.GetGroupPreference(r.Context(), userID, groupID)
 		if err != nil {
-			respondError(w, err)
+			api.RespondError(w, err)
 			return
 		}
-		respondJSON(w, http.StatusOK, pref)
+		api.RespondJSON(w, http.StatusOK, pref)
 		return
 	}
 
 	prefs, err := h.service.GetPreferences(r.Context(), userID)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
-	respondJSON(w, http.StatusOK, prefs)
+	api.RespondJSON(w, http.StatusOK, prefs)
 }
 
 func (h *NotificationHandler) UpdatePreferences(w http.ResponseWriter, r *http.Request) {
 	userID, err := currentUserID(r)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	var pref models.NotificationPreference
 	if err := decodeJSON(r, &pref); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	if err := h.service.UpdatePreferences(r.Context(), userID, &pref); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 

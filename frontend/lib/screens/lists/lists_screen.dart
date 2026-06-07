@@ -16,6 +16,7 @@ import '../../theme/list_tile_accent.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/active_group_context.dart';
+import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
@@ -211,7 +212,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = 'Something went wrong.';
+          _error = friendlyErrorMessage(e);
           _isLoading = false;
         });
       }

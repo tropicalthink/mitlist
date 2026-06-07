@@ -67,6 +67,8 @@ class AppIcons {
   static const IconData asterisk = Icons.emergency;
   static const IconData dotsHorizontal = Icons.more_horiz;
   static const IconData camera = Icons.camera_alt;
+  static const IconData copy = Icons.copy;
+  static const IconData warningAmber = Icons.warning_amber_rounded;
 
   static const IconData addCircleOutline = Icons.add_circle_outline;
   static const IconData addHomeOutline = Icons.add_home_outlined;
@@ -88,6 +90,9 @@ class AppIcons {
   static const IconData playCircleOutline = Icons.play_circle_outline;
   static const IconData pushPinOutline = Icons.push_pin_outlined;
   static const IconData receiptOutline = Icons.receipt_outlined;
+  static const IconData listAltOutline = Icons.list_alt_outlined;
+  static const IconData openInFull = Icons.open_in_full;
+  static const IconData receiptLongOutline = Icons.receipt_long_outlined;
   static const IconData minusCircleOutline = Icons.remove_circle_outline;
   static const IconData repeat = Icons.repeat;
   static const IconData restaurant = Icons.restaurant;
@@ -97,6 +102,12 @@ class AppIcons {
   static const IconData shoppingBagOutline = Icons.shopping_bag_outlined;
   static const IconData tune = Icons.tune;
   static const IconData keyOutline = Icons.vpn_key_outlined;
+  static const IconData documentScanner = Icons.document_scanner_outlined;
+  static const IconData editNote = Icons.edit_note;
+  static const IconData hourglassEmpty = Icons.hourglass_empty;
+  static const IconData link = Icons.link;
+  static const IconData openInNew = Icons.open_in_new;
+  static const IconData star = Icons.star;
 
   /// Resolves a semantic [name] to its placeholder [IconData].
   ///
@@ -180,6 +191,9 @@ class AppIcons {
       'playCircleOutline' => playCircleOutline,
       'pushPinOutline' => pushPinOutline,
       'receiptOutline' => receiptOutline,
+      'listAltOutline' => listAltOutline,
+      'openInFull' => openInFull,
+      'receiptLongOutline' => receiptLongOutline,
       'minusCircleOutline' => minusCircleOutline,
       'repeat' => repeat,
       'restaurant' => restaurant,
@@ -189,6 +203,14 @@ class AppIcons {
       'shoppingBagOutline' => shoppingBagOutline,
       'tune' => tune,
       'keyOutline' => keyOutline,
+      'documentScanner' => documentScanner,
+      'editNote' => editNote,
+      'hourglassEmpty' => hourglassEmpty,
+      'link' => link,
+      'openInNew' => openInNew,
+      'star' => star,
+      'copy' => copy,
+      'warningAmber' => warningAmber,
       _ => null,
     };
   }

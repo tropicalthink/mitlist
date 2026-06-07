@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../models/list_models.dart';
-import '../../models/recipe_models.dart';
-import '../../providers/group_provider.dart';
-import '../../providers/list_provider.dart';
-import '../../providers/recipe_provider.dart';
-import '../../router.dart' show currentGroupIdProvider;
-import '../../theme/spacing.dart';
-import '../../theme/typography.dart';
-import '../../utils/active_group_context.dart';
-import '../../widgets/app_bottom_sheet.dart';
-import '../../widgets/app_button.dart';
-import '../../widgets/app_card.dart';
-import '../../widgets/empty_state.dart';
+import '../models/list_models.dart';
+import '../models/recipe_models.dart';
+import '../providers/group_provider.dart';
+import '../providers/list_provider.dart';
+import '../providers/recipe_provider.dart';
+import '../router.dart' show currentGroupIdProvider;
+import '../theme/spacing.dart';
+import '../theme/typography.dart';
+import '../utils/active_group_context.dart';
+import '../utils/friendly_error.dart';
+import '../widgets/animated_check_toggle.dart';
+import '../widgets/app_bottom_sheet.dart';
+import '../widgets/app_button.dart';
+import '../widgets/app_card.dart';
+import '../widgets/app_icon.dart';
+import '../widgets/empty_state.dart';
 
 class RecipeAddToListSheet extends ConsumerStatefulWidget {
   final String recipeId;
@@ -87,8 +90,9 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
-        _error = 'Something went wrong.';
+        _error = friendlyErrorMessage(e);
         _isLoading = false;
       });
     }
@@ -105,6 +109,7 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
   }
 
   double _scaledQuantity(double base) {
+    if (widget.defaultServings <= 0) return base;
     if (base <= 0) return 0;
     return base * _servings / widget.defaultServings;
   }
@@ -130,7 +135,7 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Something went wrong.')),
+          SnackBar(content: Text(friendlyErrorMessage(e))),
         );
       }
     } finally {
@@ -151,7 +156,7 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
 
     if (_error != null) {
       return AppEmptyState(
-        icon: const Icon(Icons.error_outline),
+        icon: const AppIcon(name: 'alertCircleOutline'),
         title: 'Failed to load',
         description: _error,
         actions: [
@@ -183,7 +188,7 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
               const Text('Servings'),
               const Spacer(),
               IconButton(
-                icon: Icon(Icons.remove_circle_outline),
+                icon: AppIcon(name: 'minusCircleOutline'),
                 tooltip: 'Decrease servings',
                 onPressed: _servings > 1 ? () => setState(() => _servings--) : null,
               ),
@@ -192,7 +197,7 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
                 style: MitlistTypography.monoBody(color: Theme.of(context).colorScheme.onSurface),
               ),
               IconButton(
-                icon: const Icon(Icons.add_circle_outline),
+                icon: const AppIcon(name: 'addCircleOutline'),
                 tooltip: 'Increase servings',
                 onPressed: () => setState(() => _servings++),
               ),
@@ -202,7 +207,7 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
         const SizedBox(height: MitlistSpacing.md),
         if (_lists.isEmpty)
           const AppEmptyState(
-            icon: Icon(Icons.list_alt_outlined),
+            icon: AppIcon(name: 'listAltOutline'),
             title: 'No lists',
             description: 'Create a list first to add ingredients',
           )
@@ -224,7 +229,7 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
         const SizedBox(height: MitlistSpacing.sm),
         if (_ingredients.isEmpty)
           const AppEmptyState(
-            icon: Icon(Icons.restaurant_outlined),
+            icon: AppIcon(name: 'restaurantOutline'),
             title: 'No ingredients',
             description: 'This recipe has no parsed ingredients',
           )
@@ -235,24 +240,38 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
             final qtyText = scaled > 0
                 ? '${scaled.toStringAsFixed(scaled == scaled.roundToDouble() ? 0 : 1)} ${ing.unit}'
                 : ing.unit;
-            return CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              controlAffinity: ListTileControlAffinity.leading,
-              dense: true,
-              value: isSelected,
-              onChanged: (value) {
-                setState(() {
-                  if (value == true) {
-                    _selectedIngredientIds.add(ing.id);
-                  } else {
-                    _selectedIngredientIds.remove(ing.id);
-                  }
-                });
-              },
-              title: Text(ing.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-              subtitle: Text(
-                qtyText.trim(),
-                style: MitlistTypography.labelXSmall(),
+            return Padding(
+              padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+              child: Row(
+                children: [
+                  AnimatedCheckToggle(
+                    value: isSelected,
+                    onChanged: (_) {
+                      setState(() {
+                        if (isSelected) {
+                          _selectedIngredientIds.remove(ing.id);
+                        } else {
+                          _selectedIngredientIds.add(ing.id);
+                        }
+                      });
+                    },
+                    semanticLabelOn: 'Remove ${ing.name} from selection',
+                    semanticLabelOff: 'Add ${ing.name} to selection',
+                  ),
+                  const SizedBox(width: MitlistSpacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(ing.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text(
+                          qtyText.trim(),
+                          style: MitlistTypography.labelXSmall(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             );
           }),

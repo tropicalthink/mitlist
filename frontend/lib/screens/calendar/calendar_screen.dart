@@ -13,6 +13,7 @@ import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../theme/theme.dart';
 import '../../utils/active_group_context.dart';
+import '../../utils/friendly_error.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
@@ -103,7 +104,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = 'Couldn\u2019t load calendar. Check your connection.';
+        _error = friendlyErrorMessage(e);
         _isLoading = false;
       });
     }

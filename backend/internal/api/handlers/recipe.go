@@ -36,6 +36,7 @@ func (h *RecipeHandler) RegisterRoutes(r chi.Router) {
 	r.Delete("/recipes/{id}", h.DeleteRecipe)
 	r.Post("/recipes/{id}/share", h.ShareRecipe)
 	r.Get("/recipes/{id}/ingredients", h.GetRecipeIngredients)
+	r.Get("/recipes/{id}/steps", h.GetRecipeSteps)
 	r.Post("/recipes/{id}/add-to-list", h.AddToList)
 	r.Post("/recipes/{id}/add-missing-to-list", h.AddMissingToList)
 	r.Post("/recipes/clip", h.ClipRecipe)
@@ -76,13 +77,13 @@ type createRecipeRequest struct {
 func (h *RecipeHandler) CreateRecipe(w http.ResponseWriter, r *http.Request) {
 	userID, err := currentUserID(r)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	var req createRecipeRequest
 	if err := decodeJSON(r, &req); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
@@ -107,50 +108,50 @@ func (h *RecipeHandler) CreateRecipe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.CreateRecipe(r.Context(), userID, recipe); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
-	respondJSON(w, http.StatusCreated, recipe)
+	api.RespondJSON(w, http.StatusCreated, recipe)
 }
 
 func (h *RecipeHandler) ListRecipes(w http.ResponseWriter, r *http.Request) {
 	userID, err := currentUserID(r)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	limit, offset := parsePagination(r)
 	recipes, err := h.service.ListRecipes(r.Context(), userID, limit, offset)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
-	respondJSON(w, http.StatusOK, recipes)
+	api.RespondJSON(w, http.StatusOK, recipes)
 }
 
 func (h *RecipeHandler) GetRecipe(w http.ResponseWriter, r *http.Request) {
 	userID, err := currentUserID(r)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	recipe, err := h.service.GetRecipe(r.Context(), userID, id)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
-	respondJSON(w, http.StatusOK, recipe)
+	api.RespondJSON(w, http.StatusOK, recipe)
 }
 
 type updateRecipeRequest struct {
@@ -176,25 +177,25 @@ type updateRecipeRequest struct {
 func (h *RecipeHandler) UpdateRecipe(w http.ResponseWriter, r *http.Request) {
 	userID, err := currentUserID(r)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	var req updateRecipeRequest
 	if err := decodeJSON(r, &req); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	existing, err := h.service.GetRecipe(r.Context(), userID, id)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
@@ -251,28 +252,28 @@ func (h *RecipeHandler) UpdateRecipe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.UpdateRecipe(r.Context(), userID, existing); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
-	respondJSON(w, http.StatusOK, existing)
+	api.RespondJSON(w, http.StatusOK, existing)
 }
 
 func (h *RecipeHandler) DeleteRecipe(w http.ResponseWriter, r *http.Request) {
 	userID, err := currentUserID(r)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	if err := h.service.DeleteRecipe(r.Context(), userID, id); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
@@ -287,24 +288,24 @@ type recipeShareRequest struct {
 func (h *RecipeHandler) ShareRecipe(w http.ResponseWriter, r *http.Request) {
 	userID, err := currentUserID(r)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	var req recipeShareRequest
 	if err := decodeJSON(r, &req); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	if err := h.service.ShareRecipe(r.Context(), userID, id, req.SharedWithUserID, req.Permission); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
@@ -320,37 +321,37 @@ type addToListRequest struct {
 func (h *RecipeHandler) AddToList(w http.ResponseWriter, r *http.Request) {
 	user, ok := userFromContext(r)
 	if !ok {
-		respondError(w, api.ErrUnauthorized)
+		api.RespondError(w, api.ErrUnauthorized)
 		return
 	}
 	if h.listSvc == nil {
-		respondError(w, &api.ValidationError{Message: "list integration is not configured"})
+		api.RespondError(w, &api.ValidationError{Message: "list integration is not configured"})
 		return
 	}
 	recipeID, err := parseUUIDParam(r, "id")
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 	var req addToListRequest
 	if err := decodeJSON(r, &req); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 	if req.ListID == uuid.Nil {
-		respondError(w, &api.ValidationError{Field: "list_id", Message: "list_id is required"})
+		api.RespondError(w, &api.ValidationError{Field: "list_id", Message: "list_id is required"})
 		return
 	}
 
 	recipe, err := h.service.GetRecipe(r.Context(), user.ID, recipeID)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	ingredients, err := h.service.ListIngredientsForRecipe(r.Context(), user.ID, recipeID)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
@@ -383,12 +384,12 @@ func (h *RecipeHandler) AddToList(w http.ResponseWriter, r *http.Request) {
 		}
 		item, err := h.listSvc.AddItemAmount(r.Context(), user, req.ListID, ing.Name, qty, ing.Unit, "From recipe: "+recipe.Title)
 		if err != nil {
-			respondError(w, err)
+			api.RespondError(w, err)
 			return
 		}
 		added = append(added, *item)
 	}
-	respondJSON(w, http.StatusOK, map[string]any{"added": added})
+	api.RespondJSON(w, http.StatusOK, map[string]any{"added": added})
 }
 
 type addMissingToListRequest struct {
@@ -398,44 +399,44 @@ type addMissingToListRequest struct {
 func (h *RecipeHandler) AddMissingToList(w http.ResponseWriter, r *http.Request) {
 	user, ok := userFromContext(r)
 	if !ok {
-		respondError(w, api.ErrUnauthorized)
+		api.RespondError(w, api.ErrUnauthorized)
 		return
 	}
 	if h.listSvc == nil {
-		respondError(w, &api.ValidationError{Message: "list integration is not configured"})
+		api.RespondError(w, &api.ValidationError{Message: "list integration is not configured"})
 		return
 	}
 	recipeID, err := parseUUIDParam(r, "id")
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 	var req addMissingToListRequest
 	if err := decodeJSON(r, &req); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 	if req.ListID == uuid.Nil {
-		respondError(w, &api.ValidationError{Field: "list_id", Message: "list_id is required"})
+		api.RespondError(w, &api.ValidationError{Field: "list_id", Message: "list_id is required"})
 		return
 	}
 
 	recipe, err := h.service.GetRecipe(r.Context(), user.ID, recipeID)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	ingredients, err := h.service.ListIngredientsForRecipe(r.Context(), user.ID, recipeID)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	// Get existing list items for deduplication
 	existingItems, err := h.listSvc.ListItems(r.Context(), user, req.ListID, 0, 0)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
@@ -458,12 +459,12 @@ func (h *RecipeHandler) AddMissingToList(w http.ResponseWriter, r *http.Request)
 		}
 		item, err := h.listSvc.AddItemAmount(r.Context(), user, req.ListID, ing.Name, qty, ing.Unit, "From recipe: "+recipe.Title)
 		if err != nil {
-			respondError(w, err)
+			api.RespondError(w, err)
 			return
 		}
 		added = append(added, *item)
 	}
-	respondJSON(w, http.StatusOK, map[string]any{"added": added, "skipped": skipped})
+	api.RespondJSON(w, http.StatusOK, map[string]any{"added": added, "skipped": skipped})
 }
 
 func normalizeName(name string) string {
@@ -493,50 +494,72 @@ type recipeClipRequest struct {
 func (h *RecipeHandler) GetRecipeIngredients(w http.ResponseWriter, r *http.Request) {
 	userID, err := currentUserID(r)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	ingredients, err := h.service.ListIngredientsForRecipe(r.Context(), userID, id)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
-	respondJSON(w, http.StatusOK, ingredients)
+	api.RespondJSON(w, http.StatusOK, ingredients)
+}
+
+func (h *RecipeHandler) GetRecipeSteps(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+
+	id, err := parseUUIDParam(r, "id")
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+
+	steps, err := h.service.ListStepsForRecipe(r.Context(), userID, id)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+
+	api.RespondJSON(w, http.StatusOK, steps)
 }
 
 func (h *RecipeHandler) ClipRecipe(w http.ResponseWriter, r *http.Request) {
 	_ = RequireUser(w, r) // authentication only; clip data is not user-specific
 
 	if h.scrapeSvc == nil {
-		respondError(w, &api.ValidationError{Field: "url", Message: "recipe scraping is not configured"})
+		api.RespondError(w, &api.ValidationError{Field: "url", Message: "recipe scraping is not configured"})
 		return
 	}
 
 	var req recipeClipRequest
 	if err := decodeJSON(r, &req); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 	if req.URL == "" {
-		respondError(w, &api.ValidationError{Field: "url", Message: "url is required"})
+		api.RespondError(w, &api.ValidationError{Field: "url", Message: "url is required"})
 		return
 	}
 
 	clip, err := h.scrapeSvc.ScrapeRecipe(r.Context(), req.URL)
 	if err != nil {
-		respondError(w, &api.ValidationError{Field: "url", Message: err.Error()})
+		api.RespondError(w, &api.ValidationError{Field: "url", Message: err.Error()})
 		return
 	}
 
-	respondJSON(w, http.StatusOK, clip)
+	api.RespondJSON(w, http.StatusOK, clip)
 }
 
 // ------------------------------------------------------------------
@@ -550,13 +573,13 @@ type createCollectionRequest struct {
 func (h *RecipeHandler) CreateCollection(w http.ResponseWriter, r *http.Request) {
 	userID, err := currentUserID(r)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	var req createCollectionRequest
 	if err := decodeJSON(r, &req); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
@@ -565,50 +588,50 @@ func (h *RecipeHandler) CreateCollection(w http.ResponseWriter, r *http.Request)
 	}
 
 	if err := h.service.CreateCollection(r.Context(), userID, collection); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
-	respondJSON(w, http.StatusCreated, collection)
+	api.RespondJSON(w, http.StatusCreated, collection)
 }
 
 func (h *RecipeHandler) ListCollections(w http.ResponseWriter, r *http.Request) {
 	userID, err := currentUserID(r)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	limit, offset := parsePagination(r)
 	collections, err := h.service.ListCollections(r.Context(), userID, limit, offset)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
-	respondJSON(w, http.StatusOK, collections)
+	api.RespondJSON(w, http.StatusOK, collections)
 }
 
 func (h *RecipeHandler) GetCollection(w http.ResponseWriter, r *http.Request) {
 	userID, err := currentUserID(r)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	collection, err := h.service.GetCollection(r.Context(), userID, id)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
-	respondJSON(w, http.StatusOK, collection)
+	api.RespondJSON(w, http.StatusOK, collection)
 }
 
 type updateCollectionRequest struct {
@@ -618,25 +641,25 @@ type updateCollectionRequest struct {
 func (h *RecipeHandler) UpdateCollection(w http.ResponseWriter, r *http.Request) {
 	userID, err := currentUserID(r)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	var req updateCollectionRequest
 	if err := decodeJSON(r, &req); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	existing, err := h.service.GetCollection(r.Context(), userID, id)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
@@ -645,28 +668,28 @@ func (h *RecipeHandler) UpdateCollection(w http.ResponseWriter, r *http.Request)
 	}
 
 	if err := h.service.UpdateCollection(r.Context(), userID, existing); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
-	respondJSON(w, http.StatusOK, existing)
+	api.RespondJSON(w, http.StatusOK, existing)
 }
 
 func (h *RecipeHandler) DeleteCollection(w http.ResponseWriter, r *http.Request) {
 	userID, err := currentUserID(r)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	if err := h.service.DeleteCollection(r.Context(), userID, id); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
@@ -680,24 +703,24 @@ type addToCollectionRequest struct {
 func (h *RecipeHandler) AddToCollection(w http.ResponseWriter, r *http.Request) {
 	userID, err := currentUserID(r)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	collectionID, err := parseUUIDParam(r, "id")
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	var req addToCollectionRequest
 	if err := decodeJSON(r, &req); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	if err := h.service.AddToCollection(r.Context(), userID, collectionID, req.RecipeID); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
@@ -707,24 +730,24 @@ func (h *RecipeHandler) AddToCollection(w http.ResponseWriter, r *http.Request) 
 func (h *RecipeHandler) RemoveFromCollection(w http.ResponseWriter, r *http.Request) {
 	userID, err := currentUserID(r)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	collectionID, err := parseUUIDParam(r, "id")
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	recipeID, err := parseUUIDParam(r, "recipe_id")
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	if err := h.service.RemoveFromCollection(r.Context(), userID, collectionID, recipeID); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 

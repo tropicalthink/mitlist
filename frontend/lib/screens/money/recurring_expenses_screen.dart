@@ -9,6 +9,7 @@ import '../../services/group_id_validator.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/active_group_context.dart';
+import '../../utils/friendly_error.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_dialog.dart';
@@ -71,7 +72,7 @@ class _RecurringExpensesScreenState
       });
     } catch (e) {
       setState(() {
-        _error = 'Couldn\u2019t load recurring expenses. Check your connection.';
+        _error = friendlyErrorMessage(e);
         _isLoading = false;
       });
     }

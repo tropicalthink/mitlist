@@ -331,11 +331,7 @@ func newAuthRouter(t *testing.T) (chi.Router, *AuthHandler) {
 	guestSvc := services.NewGuestService(userRepo, jwtSvc, ps, nil)
 	oauthSvc := services.NewOAuthService(userRepo, authRepo, jwtSvc, nil, nil)
 
-	h := NewAuthHandler(testCfg, nil)
-	h.userService = userSvc
-	h.guestService = guestSvc
-	h.oauthService = oauthSvc
-	h.jwtService = jwtSvc
+	h := NewAuthHandler(testCfg, userSvc, guestSvc, oauthSvc, jwtSvc, nil)
 
 	r := chi.NewRouter()
 	r.Route("/api/v1/auth", func(r chi.Router) {
@@ -532,7 +528,7 @@ func newAssistantRouter(t *testing.T) (chi.Router, *AssistantHandler) {
 
 	r := chi.NewRouter()
 	r.Use(testAuthMiddleware)
-	h.Routes(r)
+	h.RegisterRoutes(r)
 	return r, h
 }
 
@@ -545,6 +541,6 @@ func newShareRouter(t *testing.T) (chi.Router, *ShareHandler) {
 
 	r := chi.NewRouter()
 	r.Use(testAuthMiddleware)
-	h.Routes(r)
+	h.RegisterRoutes(r)
 	return r, h
 }

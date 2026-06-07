@@ -22,7 +22,8 @@ func NewAssistantHandler(service *services.ScanService) *AssistantHandler {
 	return &AssistantHandler{service: service}
 }
 
-func (h *AssistantHandler) Routes(r chi.Router) {
+// RegisterRoutes mounts assistant routes.
+func (h *AssistantHandler) RegisterRoutes(r chi.Router) {
 	r.Post("/assistant/scan", h.ScanImage)
 }
 
@@ -36,20 +37,20 @@ func (h *AssistantHandler) ScanImage(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
 
 	if err := r.ParseMultipartForm(maxUploadSize); err != nil {
-		respondError(w, &api.ValidationError{Field: "file", Message: "file too large or invalid multipart form"})
+		api.RespondError(w, &api.ValidationError{Field: "file", Message: "file too large or invalid multipart form"})
 		return
 	}
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		respondError(w, &api.ValidationError{Field: "file", Message: "file is required"})
+		api.RespondError(w, &api.ValidationError{Field: "file", Message: "file is required"})
 		return
 	}
 	defer file.Close()
 
 	imageBytes, err := io.ReadAll(file)
 	if err != nil {
-		respondError(w, fmt.Errorf("read uploaded file: %w", err))
+		api.RespondError(w, fmt.Errorf("read uploaded file: %w", err))
 		return
 	}
 
@@ -60,9 +61,9 @@ func (h *AssistantHandler) ScanImage(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.service.ScanImage(r.Context(), imageBytes, mimeType)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
-	respondJSON(w, http.StatusOK, result)
+	api.RespondJSON(w, http.StatusOK, result)
 }

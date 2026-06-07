@@ -13,8 +13,10 @@ import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../utils/active_group_context.dart';
 import '../utils/haptics.dart';
+import '../widgets/animated_check_toggle.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
+import '../widgets/app_icon.dart';
 import '../widgets/app_input.dart';
 import '../widgets/chip.dart';
 
@@ -232,13 +234,14 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       children: [
         AppButton(
           text: _isScanning ? 'Scanning…' : 'Scan chore',
-          icon: Icon(
-            _isScanning ? Icons.hourglass_empty : Icons.document_scanner_outlined,
+          icon: AppIcon(
+            name: _isScanning ? 'hourglassEmpty' : 'documentScanner',
             size: 20,
           ),
           variant: AppButtonVariant.outline,
           color: AppButtonColor.neutral,
           onPressed: _isScanning ? null : _onScan,
+          semanticLabel: 'Scan chore via camera',
         ),
         const SizedBox(height: MitlistSpacing.md),
         AppInput(
@@ -279,23 +282,32 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
               onSelected: (_) =>
                   setState(() => _recurrence = _Recurrence.hourly),
             ),
-            AppChip(
-              label: 'Daily',
-              selected: _recurrence == _Recurrence.daily,
-              onSelected: (_) =>
-                  setState(() => _recurrence = _Recurrence.daily),
+            Tooltip(
+              message: 'Repeats every day',
+              child: AppChip(
+                label: 'Daily',
+                selected: _recurrence == _Recurrence.daily,
+                onSelected: (_) =>
+                    setState(() => _recurrence = _Recurrence.daily),
+              ),
             ),
-            AppChip(
-              label: 'Weekly',
-              selected: _recurrence == _Recurrence.weekly,
-              onSelected: (_) =>
-                  setState(() => _recurrence = _Recurrence.weekly),
+            Tooltip(
+              message: 'Repeats every week on selected days',
+              child: AppChip(
+                label: 'Weekly',
+                selected: _recurrence == _Recurrence.weekly,
+                onSelected: (_) =>
+                    setState(() => _recurrence = _Recurrence.weekly),
+              ),
             ),
-            AppChip(
-              label: 'Monthly',
-              selected: _recurrence == _Recurrence.monthly,
-              onSelected: (_) =>
-                  setState(() => _recurrence = _Recurrence.monthly),
+            Tooltip(
+              message: 'Repeats once a month on the same date',
+              child: AppChip(
+                label: 'Monthly',
+                selected: _recurrence == _Recurrence.monthly,
+                onSelected: (_) =>
+                    setState(() => _recurrence = _Recurrence.monthly),
+              ),
             ),
             AppChip(
               label: 'Yearly',
@@ -303,11 +315,14 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
               onSelected: (_) =>
                   setState(() => _recurrence = _Recurrence.yearly),
             ),
-            AppChip(
-              label: 'Adaptive',
-              selected: _recurrence == _Recurrence.adaptive,
-              onSelected: (_) =>
-                  setState(() => _recurrence = _Recurrence.adaptive),
+            Tooltip(
+              message: 'Repeats based on completion date, not the calendar',
+              child: AppChip(
+                label: 'Adaptive',
+                selected: _recurrence == _Recurrence.adaptive,
+                onSelected: (_) =>
+                    setState(() => _recurrence = _Recurrence.adaptive),
+              ),
             ),
           ],
         ),
@@ -369,11 +384,14 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           spacing: MitlistSpacing.sm,
           runSpacing: MitlistSpacing.sm,
           children: [
-            AppChip(
-              label: 'Rotation',
-              selected: _assignmentPolicy == _AssignmentPolicy.roundRobin,
-              onSelected: (_) => setState(
-                () => _assignmentPolicy = _AssignmentPolicy.roundRobin,
+            Tooltip(
+              message: 'Assigns to the next person in order',
+              child: AppChip(
+                label: 'Rotation',
+                selected: _assignmentPolicy == _AssignmentPolicy.roundRobin,
+                onSelected: (_) => setState(
+                  () => _assignmentPolicy = _AssignmentPolicy.roundRobin,
+                ),
               ),
             ),
             AppChip(
@@ -383,18 +401,24 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
                 () => _assignmentPolicy = _AssignmentPolicy.alphabetical,
               ),
             ),
-            AppChip(
-              label: 'Least done',
-              selected: _assignmentPolicy == _AssignmentPolicy.leastDone,
-              onSelected: (_) => setState(
-                () => _assignmentPolicy = _AssignmentPolicy.leastDone,
+            Tooltip(
+              message: 'Assigns to whoever has done it the least',
+              child: AppChip(
+                label: 'Least done',
+                selected: _assignmentPolicy == _AssignmentPolicy.leastDone,
+                onSelected: (_) => setState(
+                  () => _assignmentPolicy = _AssignmentPolicy.leastDone,
+                ),
               ),
             ),
-            AppChip(
-              label: 'Random',
-              selected: _assignmentPolicy == _AssignmentPolicy.random,
-              onSelected: (_) => setState(
-                () => _assignmentPolicy = _AssignmentPolicy.random,
+            Tooltip(
+              message: 'Picks someone at random',
+              child: AppChip(
+                label: 'Random',
+                selected: _assignmentPolicy == _AssignmentPolicy.random,
+                onSelected: (_) => setState(
+                  () => _assignmentPolicy = _AssignmentPolicy.random,
+                ),
               ),
             ),
             AppChip(
@@ -407,19 +431,35 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           ],
         ),
         const SizedBox(height: MitlistSpacing.md),
-        CheckboxListTile(
-          contentPadding: EdgeInsets.zero,
-          value: _trackDateOnly,
-          onChanged: (value) => setState(() => _trackDateOnly = value ?? false),
-          title: const Text('Track date only'),
-          dense: true,
+        Tooltip(
+          message: "Records the chore day but doesn't mark it complete",
+          child: Row(
+            children: [
+              AnimatedCheckToggle(
+                value: _trackDateOnly,
+                onChanged: (value) => setState(() => _trackDateOnly = value),
+                semanticLabelOn: 'Untrack date only',
+                semanticLabelOff: 'Track date only',
+              ),
+              const SizedBox(width: MitlistSpacing.sm),
+              const Text('Track date only'),
+            ],
+          ),
         ),
-        CheckboxListTile(
-          contentPadding: EdgeInsets.zero,
-          value: _rollover,
-          onChanged: (value) => setState(() => _rollover = value ?? false),
-          title: const Text('Rollover overdue due date'),
-          dense: true,
+        Tooltip(
+          message: 'Overdue chores roll over to the next due date',
+          child: Row(
+            children: [
+              AnimatedCheckToggle(
+                value: _rollover,
+                onChanged: (value) => setState(() => _rollover = value),
+                semanticLabelOn: 'Do not rollover overdue due date',
+                semanticLabelOff: 'Rollover overdue due date',
+              ),
+              const SizedBox(width: MitlistSpacing.sm),
+              const Text('Rollover overdue due date'),
+            ],
+          ),
         ),
         const SizedBox(height: MitlistSpacing.lg),
         SizedBox(

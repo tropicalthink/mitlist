@@ -9,7 +9,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/repositories"
@@ -25,9 +24,9 @@ type PinwallReminder struct {
 	notif *services.NotificationService
 }
 
-func NewPinwallReminder(pool *pgxpool.Pool, push Pusher, log *logger.Logger) *PinwallReminder {
-	repo := &pinwallReminderRepoImpl{pool: pool}
-	notificationRepo := repositories.NewNotificationRepository(pool)
+func NewPinwallReminder(db repositories.DBTX, push Pusher, log *logger.Logger) *PinwallReminder {
+	repo := &pinwallReminderRepoImpl{db: db}
+	notificationRepo := repositories.NewNotificationRepository(db)
 	pushSvc := pushAdapter{push: push}
 	notif := services.NewNotificationService(notificationRepo, nil, pushSvc)
 	return &PinwallReminder{repo: repo, log: log, notif: notif}
@@ -148,14 +147,14 @@ func (r *PinwallReminder) sendForPost(ctx context.Context, post models.PinwallPo
 }
 
 type pinwallReminderRepoImpl struct {
-	pool *pgxpool.Pool
+	db repositories.DBTX
 }
 
 func (r *pinwallReminderRepoImpl) ListDueReminders(ctx context.Context, before time.Time, limit int) ([]models.PinwallPost, error) {
 	if limit <= 0 {
 		limit = 200
 	}
-	rows, err := r.pool.Query(ctx, `
+	rows, err := r.db.Query(ctx, `
 		SELECT id, group_id, user_id, content, created_at, remind_at, reminder_sent_at
 		FROM pinwall_posts
 		WHERE remind_at IS NOT NULL
@@ -181,7 +180,7 @@ func (r *pinwallReminderRepoImpl) ListDueReminders(ctx context.Context, before t
 }
 
 func (r *pinwallReminderRepoImpl) ListGroupMembers(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error) {
-	rows, err := r.pool.Query(ctx, `SELECT user_id FROM group_memberships WHERE group_id = $1`, groupID)
+	rows, err := r.db.Query(ctx, `SELECT user_id FROM group_memberships WHERE group_id = $1`, groupID)
 	if err != nil {
 		return nil, fmt.Errorf("query members: %w", err)
 	}
@@ -200,7 +199,7 @@ func (r *pinwallReminderRepoImpl) ListGroupMembers(ctx context.Context, groupID 
 
 func (r *pinwallReminderRepoImpl) GetUserPreference(ctx context.Context, userID, groupID uuid.UUID) (*models.NotificationPreference, error) {
 	var p models.NotificationPreference
-	err := r.pool.QueryRow(ctx, `
+	err := r.db.QueryRow(ctx, `
 		SELECT id, user_id, group_id, chore_due, chore_due_day_of, list_item_added,
 			expense_created, meal_plan_changed, weekly_digest, pinwall_reminder, push_enabled, created_at, updated_at
 		FROM notification_preferences
@@ -231,7 +230,7 @@ func (r *pinwallReminderRepoImpl) GetUserPreference(ctx context.Context, userID,
 }
 
 func (r *pinwallReminderRepoImpl) MarkReminderSent(ctx context.Context, postID uuid.UUID, sentAt time.Time) (bool, error) {
-	ct, err := r.pool.Exec(ctx, `
+	ct, err := r.db.Exec(ctx, `
 		UPDATE pinwall_posts
 		SET reminder_sent_at = $2
 		WHERE id = $1 AND reminder_sent_at IS NULL

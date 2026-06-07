@@ -76,7 +76,7 @@ func main() {
 	})
 	srv.Router().Mount("/internal/health", healthHandler)
 
-	authHandler := handlers.NewAuthHandler(cfg, cnt)
+	authHandler := handlers.NewAuthHandler(cfg, cnt.UserService(), cnt.GuestService(), cnt.OAuthService(), cnt.JWT(), cnt.Redis().Client())
 	srv.Router().Route(cfg.APIPrefix+"/v1", func(r chi.Router) {
 		authHandler.RegisterRoutes(r)
 
@@ -118,112 +118,27 @@ func main() {
 
 			// Groups
 			groupHandler := handlers.NewGroupHandler(cnt.GroupService())
-			r.Post("/groups", groupHandler.CreateGroup)
-			r.Get("/groups", groupHandler.ListGroups)
-			r.Get("/groups/{id}", groupHandler.GetGroup)
-			r.Patch("/groups/{id}", groupHandler.UpdateGroup)
-			r.Delete("/groups/{id}", groupHandler.DeleteGroup)
-			r.Get("/groups/{id}/members", groupHandler.ListMembers)
-			r.Post("/groups/{id}/members", groupHandler.InviteMember)
-			r.Post("/groups/join", groupHandler.JoinGroup)
-			r.Delete("/groups/{id}/members/{user_id}", groupHandler.RemoveMember)
-			r.Patch("/groups/{id}/members/{user_id}", groupHandler.UpdateMemberRole)
-			r.Get("/groups/{id}/pending-claims", groupHandler.GetPendingClaims)
-			r.Post("/groups/{id}/pending-claims/{claim_id}/approve", groupHandler.ApproveClaim)
-			r.Post("/groups/{id}/pending-claims/{claim_id}/reject", groupHandler.RejectClaim)
+			groupHandler.RegisterRoutes(r)
 
 			// Lists
 			listHandler := handlers.NewListHandler(cnt.ListService(), cnt.FinanceService())
 			listItemPhotoHandler := handlers.NewListItemPhotoHandler(cnt.ListItemPhotoService())
-			r.Post("/lists", listHandler.CreateList)
-			r.Get("/lists", listHandler.ListLists)
-			r.Post("/shopping-locations", listHandler.CreateShoppingLocation)
-			r.Get("/shopping-locations", listHandler.ListShoppingLocations)
-			r.Post("/products", listHandler.CreateProduct)
-			r.Get("/products", listHandler.ListProducts)
-			r.Get("/lists/{id}", listHandler.GetList)
-			r.Patch("/lists/{id}", listHandler.UpdateList)
-			r.Delete("/lists/{id}", listHandler.DeleteList)
-			r.Post("/lists/{id}/items", listHandler.CreateItem)
-			r.Get("/lists/{id}/items", listHandler.ListItems)
-			r.Post("/lists/{id}/items/clear", listHandler.ClearItems)
-			r.Post("/lists/{id}/items/add", listHandler.AddItemAmount)
-			r.Post("/lists/{id}/items/remove", listHandler.RemoveItemAmount)
-			r.Patch("/lists/{id}/items/{item_id}", listHandler.UpdateItem)
-			r.Delete("/lists/{id}/items/{item_id}", listHandler.DeleteItem)
-			r.Post("/lists/{id}/reorder", listHandler.ReorderItems)
-			r.Get("/lists/{id}/cost-summary", listHandler.GetCostSummary)
-			r.Post("/lists/{id}/generate-expense", listHandler.GenerateExpense)
+			listHandler.RegisterRoutes(r)
 			listItemPhotoHandler.RegisterRoutes(r)
-
-			// Shopping trip
-			r.Get("/shopping/trip", listHandler.GetShoppingTrip)
-			r.Post("/shopping/complete", listHandler.BulkCompleteItems)
-			r.Post("/lists/{id}/archive", listHandler.ArchiveList)
-			r.Post("/lists/{id}/unarchive", listHandler.UnarchiveList)
-			r.Post("/lists/{id}/items/{item_id}/claim", listHandler.ClaimItem)
-			r.Post("/lists/{id}/items/{item_id}/unclaim", listHandler.UnclaimItem)
 
 			// Templates
 			templateHandler := handlers.NewTemplateHandler(cnt.TemplateService())
-			r.Post("/templates", templateHandler.CreateTemplate)
-			r.Get("/templates", templateHandler.ListTemplates)
-			r.Get("/templates/{id}", templateHandler.GetTemplate)
-			r.Patch("/templates/{id}", templateHandler.UpdateTemplate)
-			r.Delete("/templates/{id}", templateHandler.DeleteTemplate)
-			r.Post("/templates/{id}/apply", templateHandler.ApplyTemplate)
-			r.Post("/chore-templates", templateHandler.CreateChoreTemplate)
-			r.Get("/chore-templates", templateHandler.ListChoreTemplates)
-			r.Get("/chore-templates/{id}", templateHandler.GetChoreTemplate)
-			r.Patch("/chore-templates/{id}", templateHandler.UpdateChoreTemplate)
-			r.Delete("/chore-templates/{id}", templateHandler.DeleteChoreTemplate)
+			templateHandler.RegisterRoutes(r)
 
 			// Chores
 			choreHandler := handlers.NewChoreHandler(cnt.ChoreService())
-			r.Post("/chores", choreHandler.CreateChore)
-			r.Get("/chores", choreHandler.ListChores)
-			r.Get("/chores/current", choreHandler.ListCurrentChores)
-			r.Get("/chores/{id}/details", choreHandler.GetChoreDetails)
-			r.Get("/chores/{id}", choreHandler.GetChore)
-			r.Patch("/chores/{id}", choreHandler.UpdateChore)
-			r.Delete("/chores/{id}", choreHandler.DeleteChore)
-			r.Post("/chores/{id}/rotate", choreHandler.RotateChore)
-			r.Post("/chores/{id}/complete", choreHandler.CompleteChore)
-			r.Post("/chores/{id}/skip", choreHandler.SkipChore)
-			r.Patch("/chores/{id}/pending", choreHandler.RescheduleChore)
-			r.Post("/chores/{id}/undo", choreHandler.UndoLastChoreExecution)
-			r.Get("/chores/{id}/assignments", choreHandler.GetAssignments)
-			r.Get("/chores/{id}/subtasks", choreHandler.ListSubtasks)
-			r.Post("/chores/{id}/subtasks", choreHandler.CreateSubtask)
-			r.Put("/chores/{id}/subtasks/reorder", choreHandler.ReorderSubtasks)
-			r.Patch("/chores/subtasks/{subtask_id}", choreHandler.UpdateSubtask)
-			r.Delete("/chores/subtasks/{subtask_id}", choreHandler.DeleteSubtask)
-			r.Post("/chores/{id}/add-supplies-to-list", choreHandler.AddSuppliesToList)
+			choreHandler.RegisterRoutes(r)
 
 			// Finance
 			financeHandler := handlers.NewFinanceHandler(cnt.FinanceService())
 			receiptHandler := handlers.NewExpenseReceiptHandler(cnt.ExpenseReceiptService())
-			r.Get("/finance/summary", financeHandler.GetFinanceSummary)
-			r.Get("/finance/export/json", financeHandler.ExportExpensesJSON)
-			r.Get("/finance/export/csv", financeHandler.ExportExpensesCSV)
-			r.Post("/finance/settlements", financeHandler.CreateGroupSettlement)
-			r.Post("/expenses", financeHandler.CreateExpense)
-			r.Get("/expenses", financeHandler.ListExpenses)
-			r.Get("/expenses/{id}", financeHandler.GetExpense)
-			r.Patch("/expenses/{id}", financeHandler.UpdateExpense)
-			r.Delete("/expenses/{id}", financeHandler.DeleteExpense)
+			financeHandler.RegisterRoutes(r)
 			receiptHandler.RegisterRoutes(r)
-			r.Post("/expenses/{id}/splits", financeHandler.CreateSplit)
-			r.Get("/expenses/{id}/splits", financeHandler.ListExpenseSplits)
-			r.Patch("/expenses/{id}/splits/{split_id}", financeHandler.UpdateSplit)
-			r.Delete("/expenses/{id}/splits/{split_id}", financeHandler.DeleteSplit)
-			r.Post("/expenses/{id}/settle", financeHandler.CreateSettlement)
-			r.Delete("/expenses/{id}/settle/{settlement_id}", financeHandler.DeleteSettlement)
-			r.Post("/recurring-expenses", financeHandler.CreateRecurringExpense)
-			r.Get("/recurring-expenses", financeHandler.ListRecurringExpenses)
-			r.Get("/recurring-expenses/{id}", financeHandler.GetRecurringExpense)
-			r.Patch("/recurring-expenses/{id}", financeHandler.UpdateRecurringExpense)
-			r.Delete("/recurring-expenses/{id}", financeHandler.DeleteRecurringExpense)
 
 			// Recipes
 			recipeScrapeSvc := services.NewRecipeScrapingService()
@@ -232,20 +147,19 @@ func main() {
 
 			// Meal Plans
 			mealPlanHandler := handlers.NewMealPlanHandler(cnt.MealPlanService())
-			mealPlanHandler.RegisterRoutes(r)
-			r.Post("/meal-plans/generate-shopping-list", mealPlanHandler.GenerateShoppingList)
+		mealPlanHandler.RegisterRoutes(r)
 
-			// Calendar
+		// Calendar
 			calendarHandler := handlers.NewCalendarHandler(cnt.CalendarService())
 			calendarHandler.RegisterRoutes(r)
 
 			// Assistant
 			assistantHandler := handlers.NewAssistantHandler(cnt.AssistantService())
-			assistantHandler.Routes(r)
+		assistantHandler.RegisterRoutes(r)
 
-			// Share Target
-			shareHandler := handlers.NewShareHandler(cnt.ShareService())
-			shareHandler.Routes(r)
+		// Share Target
+		shareHandler := handlers.NewShareHandler(cnt.ShareService())
+		shareHandler.RegisterRoutes(r)
 		})
 	})
 

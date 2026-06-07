@@ -183,6 +183,7 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
           variant: AppButtonVariant.outline,
           color: AppButtonColor.neutral,
           onPressed: _isScanning ? null : _onScan,
+          semanticLabel: 'Scan list via camera',
         ),
         const SizedBox(height: MitlistSpacing.md),
         if (_errorText != null) ...[

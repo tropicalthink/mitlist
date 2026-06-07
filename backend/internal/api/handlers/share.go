@@ -20,7 +20,8 @@ func NewShareHandler(service *services.ShareService) *ShareHandler {
 	return &ShareHandler{service: service}
 }
 
-func (h *ShareHandler) Routes(r chi.Router) {
+// RegisterRoutes mounts share-target routes.
+func (h *ShareHandler) RegisterRoutes(r chi.Router) {
 	r.Post("/share-target/lists", h.CreateListFromShare)
 	r.Post("/share-target/recipes", h.CreateRecipeFromShare)
 }
@@ -55,28 +56,28 @@ func (h *ShareHandler) CreateListFromShare(w http.ResponseWriter, r *http.Reques
 
 	var req shareListRequest
 	if err := decodeJSON(r, &req); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	groupID, err := uuid.Parse(req.GroupID)
 	if err != nil {
-		respondError(w, &api.ValidationError{Field: "group_id", Message: "invalid UUID"})
+		api.RespondError(w, &api.ValidationError{Field: "group_id", Message: "invalid UUID"})
 		return
 	}
 
 	if req.Text == "" {
-		respondError(w, &api.ValidationError{Field: "text", Message: "text is required"})
+		api.RespondError(w, &api.ValidationError{Field: "text", Message: "text is required"})
 		return
 	}
 
 	list, items, err := h.service.CreateListFromShare(r.Context(), userID, groupID, req.Text)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
-	respondJSON(w, http.StatusCreated, shareListResponse{
+	api.RespondJSON(w, http.StatusCreated, shareListResponse{
 		List:  list,
 		Items: toAnySlice(items),
 	})
@@ -90,22 +91,22 @@ func (h *ShareHandler) CreateRecipeFromShare(w http.ResponseWriter, r *http.Requ
 
 	var req shareTargetRecipeRequest
 	if err := decodeJSON(r, &req); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	if req.Text == "" {
-		respondError(w, &api.ValidationError{Field: "text", Message: "text is required"})
+		api.RespondError(w, &api.ValidationError{Field: "text", Message: "text is required"})
 		return
 	}
 
 	recipe, err := h.service.CreateRecipeFromShare(r.Context(), userID, req.Text)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
-	respondJSON(w, http.StatusCreated, recipe)
+	api.RespondJSON(w, http.StatusCreated, recipe)
 }
 
 func toAnySlice[T any](items []T) []any {

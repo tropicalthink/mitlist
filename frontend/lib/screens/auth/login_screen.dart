@@ -8,6 +8,7 @@ import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/browser_redirect.dart';
+import '../../utils/friendly_error.dart';
 import '../../utils/native_oauth_launcher.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
@@ -285,7 +286,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         return;
       }
       setState(() {
-        _errorMessage = 'Something went wrong.';
+        _errorMessage = friendlyErrorMessage(e);
       });
     }
   }

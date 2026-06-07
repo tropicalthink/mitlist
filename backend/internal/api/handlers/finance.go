@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/csv"
-	"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
@@ -23,6 +22,30 @@ type FinanceHandler struct {
 // NewFinanceHandler creates a new FinanceHandler.
 func NewFinanceHandler(service *services.FinanceService) *FinanceHandler {
 	return &FinanceHandler{service: service}
+}
+
+// RegisterRoutes mounts all finance routes.
+func (h *FinanceHandler) RegisterRoutes(r chi.Router) {
+	r.Get("/finance/summary", h.GetFinanceSummary)
+	r.Get("/finance/export/json", h.ExportExpensesJSON)
+	r.Get("/finance/export/csv", h.ExportExpensesCSV)
+	r.Post("/finance/settlements", h.CreateGroupSettlement)
+	r.Post("/expenses", h.CreateExpense)
+	r.Get("/expenses", h.ListExpenses)
+	r.Get("/expenses/{id}", h.GetExpense)
+	r.Patch("/expenses/{id}", h.UpdateExpense)
+	r.Delete("/expenses/{id}", h.DeleteExpense)
+	r.Post("/expenses/{id}/splits", h.CreateSplit)
+	r.Get("/expenses/{id}/splits", h.ListExpenseSplits)
+	r.Patch("/expenses/{id}/splits/{split_id}", h.UpdateSplit)
+	r.Delete("/expenses/{id}/splits/{split_id}", h.DeleteSplit)
+	r.Post("/expenses/{id}/settle", h.CreateSettlement)
+	r.Delete("/expenses/{id}/settle/{settlement_id}", h.DeleteSettlement)
+	r.Post("/recurring-expenses", h.CreateRecurringExpense)
+	r.Get("/recurring-expenses", h.ListRecurringExpenses)
+	r.Get("/recurring-expenses/{id}", h.GetRecurringExpense)
+	r.Patch("/recurring-expenses/{id}", h.UpdateRecurringExpense)
+	r.Delete("/recurring-expenses/{id}", h.DeleteRecurringExpense)
 }
 
 func (h *FinanceHandler) userID(r *http.Request) (uuid.UUID, bool) {
@@ -63,7 +86,7 @@ func (h *FinanceHandler) CreateExpense(w http.ResponseWriter, r *http.Request) {
 			Percentage int64     `json:"percentage"`
 		} `json:"splits"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
@@ -190,7 +213,7 @@ func (h *FinanceHandler) UpdateExpense(w http.ResponseWriter, r *http.Request) {
 		Notes       *string    `json:"notes,omitempty"`
 		Date        *time.Time `json:"date,omitempty"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
@@ -343,7 +366,7 @@ func (h *FinanceHandler) CreateSplit(w http.ResponseWriter, r *http.Request) {
 		UserID uuid.UUID `json:"user_id"`
 		Amount int64     `json:"amount"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
@@ -378,7 +401,7 @@ func (h *FinanceHandler) UpdateSplit(w http.ResponseWriter, r *http.Request) {
 		UserID *uuid.UUID `json:"user_id,omitempty"`
 		Amount *int64     `json:"amount,omitempty"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
@@ -469,7 +492,7 @@ func (h *FinanceHandler) CreateGroupSettlement(w http.ResponseWriter, r *http.Re
 		ToUserID   uuid.UUID `json:"to_user_id"`
 		Amount     int64     `json:"amount"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
@@ -513,7 +536,7 @@ func (h *FinanceHandler) CreateSettlement(w http.ResponseWriter, r *http.Request
 		ToUserID   uuid.UUID `json:"to_user_id"`
 		Amount     int64     `json:"amount"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
@@ -580,7 +603,7 @@ func (h *FinanceHandler) CreateRecurringExpense(w http.ResponseWriter, r *http.R
 		NextDue     time.Time `json:"next_due"`
 		IsActive    bool      `json:"is_active"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
@@ -677,7 +700,7 @@ func (h *FinanceHandler) UpdateRecurringExpense(w http.ResponseWriter, r *http.R
 		NextDue     *time.Time `json:"next_due,omitempty"`
 		IsActive    *bool      `json:"is_active,omitempty"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}

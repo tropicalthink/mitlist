@@ -9,6 +9,7 @@ import '../widgets/alert.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
+import '../utils/friendly_error.dart';
 
 class JoinHouseholdSheet extends ConsumerStatefulWidget {
   const JoinHouseholdSheet({super.key});
@@ -50,7 +51,7 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Something went wrong.';
+        _errorMessage = friendlyErrorMessage(e);
         _isJoining = false;
       });
     }
@@ -88,6 +89,8 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet> {
           maxLength: 20,
           onChanged: (_) => setState(() {}),
           keyboardType: TextInputType.text,
+          errorText: _errorMessage,
+          helperText: _errorMessage == null ? 'Enter the invite code shared with you' : null,
         ),
         const SizedBox(height: MitlistSpacing.sm),
         Text(

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"io"
 	"net/http"
 	"strconv"
@@ -23,6 +22,29 @@ type ChoreHandler struct {
 // NewChoreHandler creates a new ChoreHandler.
 func NewChoreHandler(service *services.ChoreService) *ChoreHandler {
 	return &ChoreHandler{service: service}
+}
+
+// RegisterRoutes mounts all chore routes.
+func (h *ChoreHandler) RegisterRoutes(r chi.Router) {
+	r.Post("/chores", h.CreateChore)
+	r.Get("/chores", h.ListChores)
+	r.Get("/chores/current", h.ListCurrentChores)
+	r.Get("/chores/{id}/details", h.GetChoreDetails)
+	r.Get("/chores/{id}", h.GetChore)
+	r.Patch("/chores/{id}", h.UpdateChore)
+	r.Delete("/chores/{id}", h.DeleteChore)
+	r.Post("/chores/{id}/rotate", h.RotateChore)
+	r.Post("/chores/{id}/complete", h.CompleteChore)
+	r.Post("/chores/{id}/skip", h.SkipChore)
+	r.Patch("/chores/{id}/pending", h.RescheduleChore)
+	r.Post("/chores/{id}/undo", h.UndoLastChoreExecution)
+	r.Get("/chores/{id}/assignments", h.GetAssignments)
+	r.Get("/chores/{id}/subtasks", h.ListSubtasks)
+	r.Post("/chores/{id}/subtasks", h.CreateSubtask)
+	r.Put("/chores/{id}/subtasks/reorder", h.ReorderSubtasks)
+	r.Patch("/chores/subtasks/{subtask_id}", h.UpdateSubtask)
+	r.Delete("/chores/subtasks/{subtask_id}", h.DeleteSubtask)
+	r.Post("/chores/{id}/add-supplies-to-list", h.AddSuppliesToList)
 }
 
 // CreateChore POST /api/v1/chores
@@ -48,7 +70,7 @@ func (h *ChoreHandler) CreateChore(w http.ResponseWriter, r *http.Request) {
 		AssignmentConfig []uuid.UUID `json:"assignment_config"`
 		IsActive         *bool       `json:"is_active"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
@@ -207,7 +229,7 @@ func (h *ChoreHandler) UpdateChore(w http.ResponseWriter, r *http.Request) {
 		AssignmentConfig []uuid.UUID `json:"assignment_config"`
 		IsActive         *bool       `json:"is_active"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
@@ -311,7 +333,7 @@ func (h *ChoreHandler) CompleteChore(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Notes *string `json:"notes"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
@@ -340,7 +362,7 @@ func (h *ChoreHandler) SkipChore(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		SkipReason *string `json:"skip_reason"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && err != io.EOF {
+	if err := decodeJSON(r, &req); err != nil && err != io.EOF {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
@@ -370,7 +392,7 @@ func (h *ChoreHandler) RescheduleChore(w http.ResponseWriter, r *http.Request) {
 		DueDate    *time.Time `json:"due_date"`
 		AssigneeID *uuid.UUID `json:"assignee_id"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
@@ -470,7 +492,7 @@ func (h *ChoreHandler) CreateSubtask(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Title string `json:"title"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
@@ -506,7 +528,7 @@ func (h *ChoreHandler) UpdateSubtask(w http.ResponseWriter, r *http.Request) {
 		Completed *bool   `json:"completed"`
 		Position  *int    `json:"position"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
@@ -570,7 +592,7 @@ func (h *ChoreHandler) ReorderSubtasks(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		SubtaskIDs []uuid.UUID `json:"subtask_ids"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
@@ -599,7 +621,7 @@ func (h *ChoreHandler) AddSuppliesToList(w http.ResponseWriter, r *http.Request)
 	var req struct {
 		ListID uuid.UUID `json:"list_id"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}

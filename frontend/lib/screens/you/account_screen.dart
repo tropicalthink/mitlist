@@ -18,6 +18,7 @@ import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/skeleton.dart';
+import '../../utils/friendly_error.dart';
 
 const String _appVersion = '1.0.0';
 
@@ -181,7 +182,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             } catch (e) {
               setSheetState(() {
                 isSaving = false;
-                error = 'Something went wrong.';
+                error = friendlyErrorMessage(e);
               });
             }
           }
@@ -292,7 +293,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Something went wrong.')),
+        SnackBar(content: Text(friendlyErrorMessage(e))),
       );
     } finally {
       _isSaving = false;

@@ -13,6 +13,7 @@ import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../theme/theme.dart';
 import '../../utils/active_group_context.dart';
+import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
@@ -73,7 +74,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Couldn\u2019t load this week\u2019s meal plans.';
+        _error = friendlyErrorMessage(e);
         _isLoading = false;
       });
     }
@@ -100,7 +101,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
       });
       await _preloadRecipes(plans);
     } catch (e) {
-      setState(() => _error = 'Couldn\u2019t load meal plans.');
+      setState(() => _error = friendlyErrorMessage(e));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -245,7 +246,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: const Text('Something went wrong.')),
+          SnackBar(content: Text(friendlyErrorMessage(e))),
         );
       }
     } finally {
@@ -664,7 +665,7 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
       });
     } catch (e) {
       setState(() {
-        _error = 'Couldn\u2019t load recipes.';
+        _error = friendlyErrorMessage(e);
         _isLoading = false;
       });
     }

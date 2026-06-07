@@ -361,6 +361,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       payer: expense.payer,
       createdAt: expense.createdAt,
       onDelete: () => _confirmDeleteExpense(expense),
+      currency: expense.currency,
     );
   }
 

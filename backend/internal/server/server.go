@@ -47,10 +47,7 @@ func New(cfg *config.Config, cnt *container.Container, runner *jobs.Runner) *Ser
 	r.Use(middleware.RateLimit(cnt.Redis().Client(), cfg.APIPrefix))
 	r.Use(middleware.LoggingMiddleware())
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8000"
-	}
+	port := cfg.Port
 	srv := &http.Server{
 		Addr:              ":" + port,
 		Handler:           r,

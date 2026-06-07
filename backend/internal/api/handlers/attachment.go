@@ -28,34 +28,34 @@ func (h *AttachmentHandler) RegisterRoutes(r chi.Router) {
 func (h *AttachmentHandler) CreateUploadIntent(w http.ResponseWriter, r *http.Request) {
 	user, ok := userFromContext(r)
 	if !ok {
-		respondError(w, api.ErrUnauthorized)
+		api.RespondError(w, api.ErrUnauthorized)
 		return
 	}
 
 	var req services.CreateUploadIntentInput
 	if err := decodeJSON(r, &req); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	intent, err := h.service.CreateUploadIntent(r.Context(), user, req)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
-	respondJSON(w, http.StatusCreated, intent)
+	api.RespondJSON(w, http.StatusCreated, intent)
 }
 
 func (h *AttachmentHandler) Finalize(w http.ResponseWriter, r *http.Request) {
 	user, ok := userFromContext(r)
 	if !ok {
-		respondError(w, api.ErrUnauthorized)
+		api.RespondError(w, api.ErrUnauthorized)
 		return
 	}
 
 	attachmentID, err := parseUUIDParam(r, "id")
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
@@ -63,76 +63,76 @@ func (h *AttachmentHandler) Finalize(w http.ResponseWriter, r *http.Request) {
 		GroupID uuid.UUID `json:"group_id"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	a, err := h.service.FinalizeUpload(r.Context(), user, req.GroupID, attachmentID)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
-	respondJSON(w, http.StatusOK, a)
+	api.RespondJSON(w, http.StatusOK, a)
 }
 
 func (h *AttachmentHandler) GetURL(w http.ResponseWriter, r *http.Request) {
 	user, ok := userFromContext(r)
 	if !ok {
-		respondError(w, api.ErrUnauthorized)
+		api.RespondError(w, api.ErrUnauthorized)
 		return
 	}
 
 	attachmentID, err := parseUUIDParam(r, "id")
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	groupIDStr := r.URL.Query().Get("group_id")
 	if groupIDStr == "" {
-		respondError(w, &api.ValidationError{Field: "group_id", Message: "group_id is required"})
+		api.RespondError(w, &api.ValidationError{Field: "group_id", Message: "group_id is required"})
 		return
 	}
 	groupID, err := uuid.Parse(groupIDStr)
 	if err != nil {
-		respondError(w, &api.ValidationError{Field: "group_id", Message: "invalid UUID"})
+		api.RespondError(w, &api.ValidationError{Field: "group_id", Message: "invalid UUID"})
 		return
 	}
 
 	url, err := h.service.GetDownloadURL(r.Context(), user, groupID, attachmentID)
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
-	respondJSON(w, http.StatusOK, map[string]any{"url": url})
+	api.RespondJSON(w, http.StatusOK, map[string]any{"url": url})
 }
 
 func (h *AttachmentHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	user, ok := userFromContext(r)
 	if !ok {
-		respondError(w, api.ErrUnauthorized)
+		api.RespondError(w, api.ErrUnauthorized)
 		return
 	}
 
 	attachmentID, err := parseUUIDParam(r, "id")
 	if err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 
 	groupIDStr := r.URL.Query().Get("group_id")
 	if groupIDStr == "" {
-		respondError(w, &api.ValidationError{Field: "group_id", Message: "group_id is required"})
+		api.RespondError(w, &api.ValidationError{Field: "group_id", Message: "group_id is required"})
 		return
 	}
 	groupID, err := uuid.Parse(groupIDStr)
 	if err != nil {
-		respondError(w, &api.ValidationError{Field: "group_id", Message: "invalid UUID"})
+		api.RespondError(w, &api.ValidationError{Field: "group_id", Message: "invalid UUID"})
 		return
 	}
 
 	if err := h.service.DeleteAttachment(r.Context(), user, groupID, attachmentID); err != nil {
-		respondError(w, err)
+		api.RespondError(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

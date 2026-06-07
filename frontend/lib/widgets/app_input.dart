@@ -32,6 +32,8 @@ class AppInput extends StatefulWidget {
   final ValueChanged<String>? onSubmitted;
   final VoidCallback? onEditingComplete;
   final Iterable<String>? autofillHints;
+  final int? minLines;
+  final int? maxLines;
 
   const AppInput({
     super.key,
@@ -57,6 +59,8 @@ class AppInput extends StatefulWidget {
     this.onSubmitted,
     this.onEditingComplete,
     this.autofillHints,
+    this.minLines,
+    this.maxLines,
   });
 
   @override
@@ -402,7 +406,9 @@ return EdgeInsets.symmetric(horizontal: horizontal, vertical: vertical);
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 minHeight: _height,
-                maxHeight: _height,
+                maxHeight: widget.minLines != null || widget.maxLines != null
+                    ? double.infinity
+                    : _height,
               ),
               child: Semantics(
                 label: widget.label,
@@ -414,6 +420,8 @@ return EdgeInsets.symmetric(horizontal: horizontal, vertical: vertical);
                 keyboardType: widget.keyboardType,
                 textInputAction: widget.textInputAction,
                 maxLength: widget.maxLength,
+                minLines: widget.minLines,
+                maxLines: widget.maxLines,
                 onChanged: widget.onChanged,
                 onSubmitted: widget.onSubmitted,
                 onEditingComplete: widget.onEditingComplete,

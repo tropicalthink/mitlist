@@ -11,6 +11,8 @@ import '../widgets/alert.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
+import '../widgets/app_icon.dart';
+import '../utils/friendly_error.dart';
 
 class InviteHouseholdSheet extends ConsumerStatefulWidget {
   const InviteHouseholdSheet({super.key, required this.groupId});
@@ -64,7 +66,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Something went wrong.';
+        _error = friendlyErrorMessage(e);
         _isLoading = false;
       });
     }
@@ -129,28 +131,31 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet> {
                   ),
                   child: InkWell(
                     onTap: (code.isEmpty || _isCopying) ? null : _copyCode,
-                    child: Padding(
-                      // Ensures a comfy touch target without changing layout too much.
-                      padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xs),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              code.isEmpty ? '' : code.trim(),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: MitlistTypography.monoBody(),
+                    child: Semantics(
+                      label: 'Copy invite code',
+                      button: true,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xs),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                code.isEmpty ? '' : code.trim(),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: MitlistTypography.monoBody(),
+                              ),
                             ),
-                          ),
-                          if (code.isNotEmpty) ...[
-                            const SizedBox(width: MitlistSpacing.sm),
-                            Icon(
-                              Icons.copy,
-                              size: 18,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
+                            if (code.isNotEmpty) ...[
+                              const SizedBox(width: MitlistSpacing.sm),
+                              AppIcon(
+                                name: 'copy',
+                                size: 18,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -159,24 +164,25 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet> {
                 Center(
                   child: InkWell(
                     onTap: (code.isEmpty || _isCopying) ? null : _copyCode,
-                    child: Container(
-                      padding: const EdgeInsets.all(MitlistSpacing.sm),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.outlineVariant,
-                          width: 2,
+                    child: Semantics(
+                      label: 'Copy invite code via QR',
+                      button: true,
+                      child: Container(
+                        padding: const EdgeInsets.all(MitlistSpacing.sm),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                            width: 2,
+                          ),
                         ),
-                      ),
-                      child: code.isEmpty
-                          ? SizedBox(
-                              width: InviteHouseholdSheet._qrSize,
-                              height: InviteHouseholdSheet._qrSize,
-                              child: Center(
+                        child: code.isEmpty
+                            ? SizedBox(
+                                width: InviteHouseholdSheet._qrSize,
+                                height: InviteHouseholdSheet._qrSize,
                                 child: const SizedBox.shrink(),
-                              ),
-                            )
-                          : QrImageView(
+                              )
+                            : QrImageView(
                               data: code.trim(),
                               version: QrVersions.auto,
                               size: InviteHouseholdSheet._qrSize,
@@ -198,6 +204,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet> {
                                 );
                               },
                             ),
+                      ),
                     ),
                   ),
                 ),

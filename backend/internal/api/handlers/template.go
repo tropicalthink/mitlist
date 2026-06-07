@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -23,6 +22,21 @@ func NewTemplateHandler(service *services.TemplateService) *TemplateHandler {
 	return &TemplateHandler{service: service}
 }
 
+// RegisterRoutes mounts all template and chore-template routes.
+func (h *TemplateHandler) RegisterRoutes(r chi.Router) {
+	r.Post("/templates", h.CreateTemplate)
+	r.Get("/templates", h.ListTemplates)
+	r.Get("/templates/{id}", h.GetTemplate)
+	r.Patch("/templates/{id}", h.UpdateTemplate)
+	r.Delete("/templates/{id}", h.DeleteTemplate)
+	r.Post("/templates/{id}/apply", h.ApplyTemplate)
+	r.Post("/chore-templates", h.CreateChoreTemplate)
+	r.Get("/chore-templates", h.ListChoreTemplates)
+	r.Get("/chore-templates/{id}", h.GetChoreTemplate)
+	r.Patch("/chore-templates/{id}", h.UpdateChoreTemplate)
+	r.Delete("/chore-templates/{id}", h.DeleteChoreTemplate)
+}
+
 // CreateTemplate POST /api/v1/templates
 func (h *TemplateHandler) CreateTemplate(w http.ResponseWriter, r *http.Request) {
 	user, ok := api.UserFromContext(r.Context())
@@ -35,7 +49,7 @@ func (h *TemplateHandler) CreateTemplate(w http.ResponseWriter, r *http.Request)
 		GroupID uuid.UUID `json:"group_id"`
 		Name    string    `json:"name"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
@@ -114,7 +128,7 @@ func (h *TemplateHandler) UpdateTemplate(w http.ResponseWriter, r *http.Request)
 	var req struct {
 		Name string `json:"name"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
@@ -165,7 +179,7 @@ func (h *TemplateHandler) ApplyTemplate(w http.ResponseWriter, r *http.Request) 
 	var req struct {
 		ListName string `json:"list_name"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
@@ -196,7 +210,7 @@ func (h *TemplateHandler) CreateChoreTemplate(w http.ResponseWriter, r *http.Req
 		RotationType string    `json:"rotation_type"`
 		Frequency    string    `json:"frequency"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
@@ -283,7 +297,7 @@ func (h *TemplateHandler) UpdateChoreTemplate(w http.ResponseWriter, r *http.Req
 		RotationType string `json:"rotation_type"`
 		Frequency    string `json:"frequency"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}

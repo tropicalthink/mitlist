@@ -115,6 +115,30 @@ class Recipe {
       };
 }
 
+class RecipeStep {
+  final String id;
+  final String recipeId;
+  final String name;
+  final String description;
+  final int position;
+
+  const RecipeStep({
+    required this.id,
+    required this.recipeId,
+    this.name = '',
+    required this.description,
+    this.position = 0,
+  });
+
+  factory RecipeStep.fromJson(Map<String, dynamic> json) => RecipeStep(
+        id: json['id'] as String,
+        recipeId: json['recipe_id'] as String,
+        name: json['name'] as String? ?? '',
+        description: json['description'] as String? ?? '',
+        position: json['position'] as int? ?? 0,
+      );
+}
+
 class RecipeCollection {
   final String id;
   final String name;

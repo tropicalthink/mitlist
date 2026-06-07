@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../models/list_models.dart';
 import '../../models/list_item_photo_models.dart';
 import '../../providers/attachment_provider.dart';
+import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../services/list_service.dart';
 import '../../theme/animations.dart';
@@ -15,6 +16,7 @@ import '../../theme/spacing.dart';
 import '../../theme/theme.dart';
 import '../../theme/typography.dart';
 import '../../utils/haptics.dart';
+import '../../utils/friendly_error.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/animated_check_toggle.dart';
 import '../../widgets/app_button.dart';
@@ -79,6 +81,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   bool _showProductSuggestions = false;
   final Map<String, List<ListItemPhoto>> _photosByItemId = {};
   bool _isSaving = false;
+  String _groupCurrency = 'USD';
 
   @override
   void initState() {
@@ -188,6 +191,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         _listName = list.name;
         _groupId = list.groupId;
       });
+      try {
+        final groupService = await ref.read(groupServiceProviderAsync.future);
+        final group = await groupService.getGroup(list.groupId);
+        if (mounted) setState(() => _groupCurrency = group.currency);
+      } catch (_) {}
       if (mounted) {
         FocusScope.of(context).requestFocus(_composerFocusNode);
       }
@@ -717,6 +725,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         totalCents: totalCents,
         equalShareCents: equalShareCents,
         itemCount: pricedItems,
+        currencyCode: _groupCurrency,
         onGenerateExpense: totalCents > 0
             ? () async {
                 if (_isSaving) return;
@@ -731,7 +740,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                 } catch (e) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Something went wrong.')),
+                      SnackBar(content: Text(friendlyErrorMessage(e))),
                     );
                   }
                 } finally {
