@@ -85,7 +85,7 @@ class StatsGrid extends ConsumerWidget {
             onTap: () => context.pushNamed('chores'),
           ),
         ),
-        SizedBox(width: MitlistSpacing.sm),
+        const SizedBox(width: MitlistSpacing.sm),
         Expanded(
           child: _StatCard(
             icon: Icons.receipt_outlined,
@@ -104,7 +104,7 @@ class StatsGrid extends ConsumerWidget {
             onTap: () => context.pushNamed('money'),
           ),
         ),
-        SizedBox(width: MitlistSpacing.sm),
+        const SizedBox(width: MitlistSpacing.sm),
         Expanded(
           child: _StatCard(
             icon: Icons.shopping_cart_outlined,
@@ -120,7 +120,7 @@ class StatsGrid extends ConsumerWidget {
           ),
         ),
         if (pinnedWithReminders > 0) ...[
-          SizedBox(width: MitlistSpacing.sm),
+          const SizedBox(width: MitlistSpacing.sm),
           Expanded(
             child: _StatCard(
               icon: Icons.alarm_outlined,

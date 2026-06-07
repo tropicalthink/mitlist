@@ -627,7 +627,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                                   height: MitlistSpacing.space8,
                                   borderRadius: AppSkeletonRadius.sm,
                                 ),
-                                SizedBox(width: MitlistSpacing.sm),
+                                const SizedBox(width: MitlistSpacing.sm),
                                 AppSkeleton(
                                   width: MitlistSpacing.space14,
                                   height: MitlistSpacing.space8,
@@ -645,7 +645,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                                     SharedPreferences.getInstance().then((p) => p.setBool('chores_filter_me', true));
                                   },
                                 ),
-                                SizedBox(width: MitlistSpacing.sm),
+                                const SizedBox(width: MitlistSpacing.sm),
                                 AppChip(
                                   label: 'Everyone',
                                   selected: !_filterMe,
@@ -670,7 +670,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
                       return Padding(
-                        padding: EdgeInsets.only(bottom: MitlistSpacing.sm),
+                        padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
                         child: _ChoreSkeletonItem(),
                       );
                     },
@@ -688,7 +688,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                         type: AppAlertType.error,
                         message: _error!,
                       ),
-                      SizedBox(height: MitlistSpacing.md),
+                      const SizedBox(height: MitlistSpacing.md),
                       AppButton(
                         text: 'Retry',
                         onPressed: () => _loadChores(),
@@ -895,7 +895,7 @@ class _StatBlock extends StatelessWidget {
             style: Theme.of(context).textTheme.displaySmall,
           ),
         ),
-        SizedBox(height: MitlistSpacing.space1),
+        const SizedBox(height: MitlistSpacing.space1),
         Text(
           label,
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
@@ -919,7 +919,7 @@ class _StatSkeleton extends StatelessWidget {
           width: MitlistSpacing.space8,
           height: MitlistSpacing.space8,
         ),
-        SizedBox(height: MitlistSpacing.space1),
+        const SizedBox(height: MitlistSpacing.space1),
         AppSkeleton(
           width: MitlistSpacing.space10,
           height: MitlistSpacing.space3,
@@ -993,7 +993,7 @@ class _ChoreItem extends StatelessWidget {
                             Icon(Icons.inventory_2_outlined,
                                 size: 12,
                                 color: Theme.of(context).colorScheme.primary),
-                            SizedBox(width: MitlistSpacing.space1),
+                            const SizedBox(width: MitlistSpacing.space1),
                             Text(
                               '${chore.supplies.length} supply${chore.supplies.length == 1 ? '' : 'ies'}',
                               style: MitlistTypography.labelXSmall(
@@ -1009,7 +1009,7 @@ class _ChoreItem extends StatelessWidget {
             ),
           ),
         ),
-        SizedBox(width: MitlistSpacing.sm),
+        const SizedBox(width: MitlistSpacing.sm),
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [

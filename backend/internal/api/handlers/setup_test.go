@@ -327,8 +327,8 @@ func newAuthRouter(t *testing.T) (chi.Router, *AuthHandler) {
 	ms := newTestMailService()
 	jwtSvc := testJWT
 
-	userSvc := services.NewUserService(userRepo, authRepo, jwtSvc, ps, ms)
-	guestSvc := services.NewGuestService(userRepo, jwtSvc, ps)
+	userSvc := services.NewUserService(userRepo, authRepo, jwtSvc, ps, ms, nil)
+	guestSvc := services.NewGuestService(userRepo, jwtSvc, ps, nil)
 	oauthSvc := services.NewOAuthService(userRepo, authRepo, jwtSvc, nil, nil)
 
 	h := NewAuthHandler(testCfg, nil)

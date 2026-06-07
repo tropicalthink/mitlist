@@ -282,15 +282,22 @@ func (h *FinanceHandler) ExportExpensesCSV(w http.ResponseWriter, r *http.Reques
 			expense.GroupID.String(),
 			expense.PayerID.String(),
 			strconv.FormatInt(expense.Amount, 10),
-			expense.Description,
-			expense.Category,
-			expense.Currency,
-			expense.Notes,
+			sanitizeCSV(expense.Description),
+			sanitizeCSV(expense.Category),
+			sanitizeCSV(expense.Currency),
+			sanitizeCSV(expense.Notes),
 			expense.Date.Format(time.RFC3339),
 			expense.CreatedAt.Format(time.RFC3339),
 		})
 	}
 	writer.Flush()
+}
+
+func sanitizeCSV(s string) string {
+	if len(s) > 0 && (s[0] == '=' || s[0] == '+' || s[0] == '-' || s[0] == '@') {
+		return "'" + s
+	}
+	return s
 }
 
 // DeleteExpense DELETE /api/v1/expenses/{id}

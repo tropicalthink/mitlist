@@ -111,6 +111,10 @@ func parseLimitOffset(r *http.Request) (limit, offset int) {
 // ---------------------------------------------------------------------------
 
 func respondJSON(w http.ResponseWriter, status int, v any) {
+	if status == http.StatusNoContent {
+		w.WriteHeader(status)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(v)
@@ -154,5 +158,5 @@ func mapError(err error) (int, errorResponse) {
 		return http.StatusUnauthorized, errorResponse{Error: "unauthorized", Message: err.Error()}
 	}
 
-	return http.StatusInternalServerError, errorResponse{Error: "internal_error", Message: err.Error()}
+	return http.StatusInternalServerError, errorResponse{Error: "internal_error", Message: "internal server error"}
 }

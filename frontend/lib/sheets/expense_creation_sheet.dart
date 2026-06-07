@@ -372,7 +372,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
           onValueChanged: () => setState(() {}),
         ),
         const SizedBox(height: MitlistSpacing.md),
-        SizedBox(height: MitlistSpacing.lg),
+        const SizedBox(height: MitlistSpacing.lg),
         SizedBox(
           width: double.infinity,
           child: AppButton(

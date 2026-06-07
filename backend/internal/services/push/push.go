@@ -63,7 +63,8 @@ func (s *Service) SendToUser(userID uuid.UUID, payload string) error {
 }
 
 // BroadcastToGroup broadcasts a push notification to all members of a group.
+// This is a stub — per-user push via SendToUser should be used until group broadcast is implemented.
 func (s *Service) BroadcastToGroup(groupID uuid.UUID, payload string) error {
-	s.log.Info().Str("group_id", groupID.String()).Str("payload", payload).Msg("push broadcast sent")
+	s.log.Warn().Str("group_id", groupID.String()).Str("payload", payload).Msg("push broadcast to group requested but not implemented")
 	return nil
 }

@@ -21,7 +21,7 @@ class GroupSettingsSheet extends ConsumerStatefulWidget {
   static Future<void> show(BuildContext context, {required String groupId}) {
     return showAppBottomSheet<void>(
       context: context,
-      title: 'Group Settings',
+      title: 'Household Settings',
       body: GroupSettingsSheet(groupId: groupId),
     );
   }
@@ -131,7 +131,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         _currencyChanged = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Group updated')),
+        const SnackBar(content: Text('Household updated')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -139,7 +139,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text(
-                'Failed to save: ${'Something went wrong.'}')),
+                'Something went wrong.')),
       );
     }
   }
@@ -148,7 +148,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
     final confirmed = await showAppDialog<bool>(
       context: context,
       title: 'Remove member',
-      body: Text('Remove ${member.displayName} from this group?'),
+      body: Text('Remove ${member.displayName} from this household?'),
       actions: [
         AppButton(
           text: 'Cancel',
@@ -178,7 +178,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text(
-                'Failed to remove member: ${'Something went wrong.'}')),
+                'Something went wrong.')),
       );
     }
   }
@@ -186,7 +186,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
   Future<void> _confirmDeleteGroup() async {
     final confirmed = await showAppDialog<bool>(
       context: context,
-      title: 'Delete group',
+      title: 'Delete household',
       body: const Text('This will permanently delete this household and all its data. This cannot be undone.'),
       actions: [
         AppButton(
@@ -211,14 +211,14 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         ..pop()
         ..pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Group deleted')),
+        const SnackBar(content: Text('Household deleted')),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text(
-                'Failed to delete group: ${'Something went wrong.'}')),
+                'Something went wrong.')),
       );
     }
   }
@@ -313,14 +313,14 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
           Text('Notifications',
               style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: MitlistSpacing.sm),
-          const Divider(),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
           _notifToggle('Chore due', pref.choreDue, 'chore_due'),
           _notifToggle('List item added', pref.listItemAdded, 'list_item_added'),
           _notifToggle('Expense created', pref.expenseCreated, 'expense_created'),
           _notifToggle('Meal plan changed', pref.mealPlanChanged, 'meal_plan_changed'),
           _notifToggle('Weekly digest', pref.weeklyDigest, 'weekly_digest'),
           _notifToggle('Pinwall reminder', pref.pinwallReminder, 'pinwall_reminder'),
-          const Divider(),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
           _notifToggle('Push enabled', pref.pushEnabled, 'push_enabled'),
         ],
       ),
@@ -366,7 +366,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppInput(
-            label: 'Group name',
+            label: 'Household name',
             hint: 'Household name',
             controller: _nameController,
             textInputAction: TextInputAction.next,
@@ -445,7 +445,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
           ),
           if (_members.isNotEmpty) ...[
             const SizedBox(height: MitlistSpacing.sm),
-            Divider(),
+            Divider(color: Theme.of(context).colorScheme.outlineVariant),
             ..._members.map((m) => _buildMemberTile(m)),
           ],
         ],
@@ -476,7 +476,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
     return SizedBox(
       width: double.infinity,
       child: AppButton(
-        text: 'Delete group',
+        text: 'Delete household',
         variant: AppButtonVariant.soft,
         color: AppButtonColor.error,
         size: AppButtonSize.lg,

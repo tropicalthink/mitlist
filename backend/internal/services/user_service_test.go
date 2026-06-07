@@ -26,7 +26,7 @@ func TestUserService_Register(t *testing.T) {
 		jwtSvc := new(mocks.MockJWTService)
 		passSvc := new(mocks.MockPasswordService)
 		mailSvc := new(mocks.MockMailService)
-		svc := NewUserService(userRepo, authRepo, jwtSvc, passSvc, mailSvc)
+		svc := NewUserService(userRepo, authRepo, jwtSvc, passSvc, mailSvc, nil)
 
 		userRepo.On("GetByEmail", ctx, "new@example.com").Return(nil, errors.New("user not found"))
 		passSvc.On("Hash", "password123").Return("hashed", nil)
@@ -41,14 +41,14 @@ func TestUserService_Register(t *testing.T) {
 	})
 
 	t.Run("missing email or password", func(t *testing.T) {
-		svc := NewUserService(nil, nil, nil, nil, nil)
+		svc := NewUserService(nil, nil, nil, nil, nil, nil)
 		_, err := svc.Register(ctx, RegisterInput{Email: "", Password: ""})
 		require.Error(t, err)
 		assert.IsType(t, &api.ValidationError{}, err)
 	})
 
 	t.Run("password too short", func(t *testing.T) {
-		svc := NewUserService(nil, nil, nil, nil, nil)
+		svc := NewUserService(nil, nil, nil, nil, nil, nil)
 		_, err := svc.Register(ctx, RegisterInput{Email: "a@b.com", Password: "123"})
 		require.Error(t, err)
 		assert.IsType(t, &api.ValidationError{}, err)
@@ -56,7 +56,7 @@ func TestUserService_Register(t *testing.T) {
 
 	t.Run("email already registered", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
-		svc := NewUserService(userRepo, nil, nil, nil, nil)
+		svc := NewUserService(userRepo, nil, nil, nil, nil, nil)
 
 		existing := &models.User{Email: "existing@example.com"}
 		userRepo.On("GetByEmail", ctx, "existing@example.com").Return(existing, nil)
@@ -75,7 +75,7 @@ func TestUserService_Login(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
 		jwtSvc := new(mocks.MockJWTService)
 		passSvc := new(mocks.MockPasswordService)
-		svc := NewUserService(userRepo, nil, jwtSvc, passSvc, nil)
+		svc := NewUserService(userRepo, nil, jwtSvc, passSvc, nil, nil)
 
 		user := &models.User{ID: userID, Email: "test@example.com", PasswordHash: "hash", IsActive: true, IsVerified: true}
 		userRepo.On("GetByEmail", ctx, "test@example.com").Return(user, nil)
@@ -91,7 +91,7 @@ func TestUserService_Login(t *testing.T) {
 
 	t.Run("invalid credentials", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
-		svc := NewUserService(userRepo, nil, nil, nil, nil)
+		svc := NewUserService(userRepo, nil, nil, nil, nil, nil)
 
 		userRepo.On("GetByEmail", ctx, "test@example.com").Return(nil, errors.New("user not found"))
 
@@ -104,7 +104,7 @@ func TestUserService_Login(t *testing.T) {
 	t.Run("wrong password", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
 		passSvc := new(mocks.MockPasswordService)
-		svc := NewUserService(userRepo, nil, nil, passSvc, nil)
+		svc := NewUserService(userRepo, nil, nil, passSvc, nil, nil)
 
 		user := &models.User{ID: userID, Email: "test@example.com", PasswordHash: "hash", IsActive: true, IsVerified: true}
 		userRepo.On("GetByEmail", ctx, "test@example.com").Return(user, nil)
@@ -119,7 +119,7 @@ func TestUserService_Login(t *testing.T) {
 	t.Run("inactive user", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
 		passSvc := new(mocks.MockPasswordService)
-		svc := NewUserService(userRepo, nil, nil, passSvc, nil)
+		svc := NewUserService(userRepo, nil, nil, passSvc, nil, nil)
 
 		user := &models.User{ID: userID, Email: "test@example.com", PasswordHash: "hash", IsActive: false, IsVerified: true}
 		userRepo.On("GetByEmail", ctx, "test@example.com").Return(user, nil)
@@ -134,7 +134,7 @@ func TestUserService_Login(t *testing.T) {
 	t.Run("unverified user", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
 		passSvc := new(mocks.MockPasswordService)
-		svc := NewUserService(userRepo, nil, nil, passSvc, nil)
+		svc := NewUserService(userRepo, nil, nil, passSvc, nil, nil)
 
 		user := &models.User{ID: userID, Email: "test@example.com", PasswordHash: "hash", IsActive: true, IsVerified: false}
 		userRepo.On("GetByEmail", ctx, "test@example.com").Return(user, nil)
@@ -153,7 +153,7 @@ func TestUserService_GetMe(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
-		svc := NewUserService(userRepo, nil, nil, nil, nil)
+		svc := NewUserService(userRepo, nil, nil, nil, nil, nil)
 
 		user := &models.User{ID: userID, IsActive: true, IsVerified: true}
 		userRepo.On("GetByID", ctx, userID).Return(user, nil)
@@ -165,7 +165,7 @@ func TestUserService_GetMe(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
-		svc := NewUserService(userRepo, nil, nil, nil, nil)
+		svc := NewUserService(userRepo, nil, nil, nil, nil, nil)
 
 		userRepo.On("GetByID", ctx, userID).Return(nil, errors.New("user not found"))
 
@@ -176,7 +176,7 @@ func TestUserService_GetMe(t *testing.T) {
 
 	t.Run("inactive user", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
-		svc := NewUserService(userRepo, nil, nil, nil, nil)
+		svc := NewUserService(userRepo, nil, nil, nil, nil, nil)
 
 		user := &models.User{ID: userID, IsActive: false, IsVerified: true}
 		userRepo.On("GetByID", ctx, userID).Return(user, nil)
@@ -189,7 +189,7 @@ func TestUserService_GetMe(t *testing.T) {
 
 	t.Run("unverified user", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
-		svc := NewUserService(userRepo, nil, nil, nil, nil)
+		svc := NewUserService(userRepo, nil, nil, nil, nil, nil)
 
 		user := &models.User{ID: userID, IsActive: true, IsVerified: false}
 		userRepo.On("GetByID", ctx, userID).Return(user, nil)
@@ -207,7 +207,7 @@ func TestUserService_UpdateMe(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
-		svc := NewUserService(userRepo, nil, nil, nil, nil)
+		svc := NewUserService(userRepo, nil, nil, nil, nil, nil)
 
 		user := &models.User{ID: userID, IsActive: true, IsVerified: true}
 		userRepo.On("GetByID", ctx, userID).Return(user, nil)
@@ -226,7 +226,7 @@ func TestUserService_DeleteMe(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
-		svc := NewUserService(userRepo, nil, nil, nil, nil)
+		svc := NewUserService(userRepo, nil, nil, nil, nil, nil)
 
 		user := &models.User{ID: userID, IsActive: true, IsVerified: true}
 		userRepo.On("GetByID", ctx, userID).Return(user, nil)
@@ -244,7 +244,7 @@ func TestUserService_ChangePassword(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
 		passSvc := new(mocks.MockPasswordService)
-		svc := NewUserService(userRepo, nil, nil, passSvc, nil)
+		svc := NewUserService(userRepo, nil, nil, passSvc, nil, nil)
 
 		user := &models.User{ID: userID, PasswordHash: "oldhash", IsActive: true, IsVerified: true}
 		userRepo.On("GetByID", ctx, userID).Return(user, nil)
@@ -259,7 +259,7 @@ func TestUserService_ChangePassword(t *testing.T) {
 	t.Run("incorrect current password", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
 		passSvc := new(mocks.MockPasswordService)
-		svc := NewUserService(userRepo, nil, nil, passSvc, nil)
+		svc := NewUserService(userRepo, nil, nil, passSvc, nil, nil)
 
 		user := &models.User{ID: userID, PasswordHash: "oldhash", IsActive: true, IsVerified: true}
 		userRepo.On("GetByID", ctx, userID).Return(user, nil)
@@ -278,7 +278,7 @@ func TestUserService_RequestPasswordReset(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
 		authRepo := new(mocks.MockAuthRepo)
 		mailSvc := new(mocks.MockMailService)
-		svc := NewUserService(userRepo, authRepo, nil, nil, mailSvc)
+		svc := NewUserService(userRepo, authRepo, nil, nil, mailSvc, nil)
 
 		user := &models.User{ID: uuid.New(), Email: "test@example.com", IsActive: true, IsVerified: true}
 		userRepo.On("GetByEmail", ctx, "test@example.com").Return(user, nil)
@@ -291,7 +291,7 @@ func TestUserService_RequestPasswordReset(t *testing.T) {
 
 	t.Run("email not found returns nil", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
-		svc := NewUserService(userRepo, nil, nil, nil, nil)
+		svc := NewUserService(userRepo, nil, nil, nil, nil, nil)
 
 		userRepo.On("GetByEmail", ctx, "missing@example.com").Return(nil, errors.New("user not found"))
 
@@ -309,7 +309,7 @@ func TestUserService_ConfirmPasswordReset(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
 		authRepo := new(mocks.MockAuthRepo)
 		passSvc := new(mocks.MockPasswordService)
-		svc := NewUserService(userRepo, authRepo, nil, passSvc, nil)
+		svc := NewUserService(userRepo, authRepo, nil, passSvc, nil, nil)
 
 		resetToken := &models.PasswordResetToken{ID: tokenID, UserID: userID, Token: "abc", ExpiresAt: time.Now().UTC().Add(time.Hour)}
 		authRepo.On("GetPasswordResetToken", ctx, "abc").Return(resetToken, nil)
@@ -325,7 +325,7 @@ func TestUserService_ConfirmPasswordReset(t *testing.T) {
 
 	t.Run("token already used", func(t *testing.T) {
 		authRepo := new(mocks.MockAuthRepo)
-		svc := NewUserService(nil, authRepo, nil, nil, nil)
+		svc := NewUserService(nil, authRepo, nil, nil, nil, nil)
 
 		now := time.Now().UTC()
 		resetToken := &models.PasswordResetToken{ID: tokenID, UsedAt: &now}
@@ -338,7 +338,7 @@ func TestUserService_ConfirmPasswordReset(t *testing.T) {
 
 	t.Run("token expired", func(t *testing.T) {
 		authRepo := new(mocks.MockAuthRepo)
-		svc := NewUserService(nil, authRepo, nil, nil, nil)
+		svc := NewUserService(nil, authRepo, nil, nil, nil, nil)
 
 		resetToken := &models.PasswordResetToken{ID: tokenID, ExpiresAt: time.Now().UTC().Add(-time.Hour)}
 		authRepo.On("GetPasswordResetToken", ctx, "expired").Return(resetToken, nil)
@@ -356,7 +356,7 @@ func TestUserService_ClaimAccount(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
 		passSvc := new(mocks.MockPasswordService)
-		svc := NewUserService(userRepo, nil, nil, passSvc, nil)
+		svc := NewUserService(userRepo, nil, nil, passSvc, nil, nil)
 
 		user := &models.User{ID: userID, IsGuest: true}
 		userRepo.On("GetByID", ctx, userID).Return(user, nil)
@@ -372,7 +372,7 @@ func TestUserService_ClaimAccount(t *testing.T) {
 
 	t.Run("already claimed", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
-		svc := NewUserService(userRepo, nil, nil, nil, nil)
+		svc := NewUserService(userRepo, nil, nil, nil, nil, nil)
 
 		user := &models.User{ID: userID, IsActive: true, IsVerified: true, PasswordHash: "hash", IsGuest: false}
 		userRepo.On("GetByID", ctx, userID).Return(user, nil)

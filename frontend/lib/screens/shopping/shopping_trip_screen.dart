@@ -194,15 +194,12 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
         title: const Text('Shopping Trip'),
         actions: [
           if (_checkedCount > 0)
-            TextButton(
+            AppButton(
+              variant: AppButtonVariant.ghost,
+              color: AppButtonColor.primary,
+              text: 'Done ($_checkedCount)',
               onPressed: _isSubmitting ? null : _completeChecked,
-              child: _isSubmitting
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text('Done ($_checkedCount)'),
+              isLoading: _isSubmitting,
             ),
         ],
       ),
@@ -304,7 +301,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
             children: [
               const AppSkeleton(width: 140, height: 16),
               const SizedBox(height: MitlistSpacing.sm),
-              const Divider(),
+              Divider(color: Theme.of(context).colorScheme.outlineVariant),
               const SizedBox(height: MitlistSpacing.sm),
               for (var i = 0; i < 4; i++)
                 Padding(
@@ -372,6 +369,8 @@ class _ListSection extends StatelessWidget {
                   Expanded(
                     child: Text(
                       listName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -382,8 +381,8 @@ class _ListSection extends StatelessWidget {
               ),
             ),
             const SizedBox(height: MitlistSpacing.sm),
-            Divider(),
-            SizedBox(height: MitlistSpacing.sm),
+            Divider(color: Theme.of(context).colorScheme.outlineVariant),
+            const SizedBox(height: MitlistSpacing.sm),
             ...items.map((item) {
               final isChecked = checkedIds.contains(item.id);
               return _ItemRow(

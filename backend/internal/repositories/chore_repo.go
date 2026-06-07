@@ -422,6 +422,19 @@ func (r *ChoreRepository) UpdateAssignment(ctx context.Context, assignment *mode
 	return nil
 }
 
+func (r *ChoreRepository) CompleteAssignment(ctx context.Context, id uuid.UUID, status string, completedAt time.Time, skipReason *string) (bool, error) {
+	query := `
+		UPDATE chore_assignments
+		SET status = $1, completed_at = $2, skip_reason = $3, updated_at = NOW()
+		WHERE id = $4 AND status = 'pending'
+	`
+	tag, err := r.pool.Exec(ctx, query, status, completedAt, skipReason, id)
+	if err != nil {
+		return false, fmt.Errorf("failed to complete assignment: %w", err)
+	}
+	return tag.RowsAffected() > 0, nil
+}
+
 // DeleteAssignment deletes an assignment by ID.
 func (r *ChoreRepository) DeleteAssignment(ctx context.Context, id uuid.UUID) error {
 	tag, err := r.pool.Exec(ctx, `DELETE FROM chore_assignments WHERE id = $1`, id)

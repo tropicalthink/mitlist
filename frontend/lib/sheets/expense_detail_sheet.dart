@@ -116,7 +116,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
     await showDialog<void>(
       context: context,
       builder: (context) => Dialog.fullscreen(
-        backgroundColor: Colors.black,
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
         child: Stack(
           children: [
             Center(
@@ -126,11 +126,11 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
                 child: Image.network(
                   receipt.url,
                   fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const Padding(
-                    padding: EdgeInsets.all(24),
+                  errorBuilder: (_, __, ___) => Padding(
+                    padding: const EdgeInsets.all(MitlistSpacing.lg),
                     child: Text(
                       'Failed to load receipt',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                     ),
                   ),
                 ),
@@ -142,7 +142,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
                 child: IconButton(
                   tooltip: 'Close',
                   onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close, color: Colors.white),
+                  icon: Icon(Icons.close, color: Theme.of(context).colorScheme.onSurface),
                 ),
               ),
             ),
@@ -232,7 +232,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
           widget.description,
           style: textTheme.headlineSmall,
         ),
-        SizedBox(height: MitlistSpacing.sm),
+        const SizedBox(height: MitlistSpacing.sm),
         Text(
           widget.amountLabel,
           style: MitlistTypography.monoBody(color: Theme.of(context).colorScheme.onSurface),
@@ -247,7 +247,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
             child: Column(
               children: [
                 for (var i = 0; i < _splits.length; i++) ...[
-                  if (i > 0) const Divider(),
+                  if (i > 0) Divider(color: Theme.of(context).colorScheme.outlineVariant),
                   _SplitRow(split: _splits[i]),
                 ],
               ],
@@ -257,7 +257,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
         ],
         if (_loadingReceipts)
           Padding(
-            padding: EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
+            padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
             child: LinearProgressIndicator(),
           )
         else if (_receipts.isEmpty)
@@ -312,8 +312,8 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
           ),
         if (widget.onDelete != null) ...[
           const SizedBox(height: MitlistSpacing.lg),
-          const Divider(),
-          SizedBox(height: MitlistSpacing.sm),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          const SizedBox(height: MitlistSpacing.sm),
           SizedBox(
             width: double.infinity,
             child: AppButton(

@@ -235,9 +235,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
-          TextButton(
+          AppButton(
+            variant: AppButtonVariant.ghost,
+            color: AppButtonColor.neutral,
+            text: 'Mark all read',
             onPressed: _isLoading ? null : _markAllRead,
-            child: const Text('Mark all read'),
           ),
         ],
       ),

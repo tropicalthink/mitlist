@@ -356,7 +356,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                   child: Row(
                     children: [
                       Icon(icon, size: 22, color: iconColor),
-                      SizedBox(width: MitlistSpacing.md),
+                      const SizedBox(width: MitlistSpacing.md),
                       Expanded(
                         child: Text(
                           label,
@@ -432,7 +432,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                       ),
                     ),
                   ),
-                SizedBox(height: MitlistSpacing.sm),
+                const SizedBox(height: MitlistSpacing.sm),
                 Container(
                   height: 2,
                   color: Theme.of(context).colorScheme.outline,
@@ -622,7 +622,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                     style: titleTextStyle,
                   ),
                 ),
-                SizedBox(width: MitlistSpacing.xs),
+                const SizedBox(width: MitlistSpacing.xs),
                 Icon(
                   Icons.expand_more,
                   size: 24,

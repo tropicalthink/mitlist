@@ -184,7 +184,7 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
           color: AppButtonColor.neutral,
           onPressed: _isScanning ? null : _onScan,
         ),
-        SizedBox(height: MitlistSpacing.md),
+        const SizedBox(height: MitlistSpacing.md),
         if (_errorText != null) ...[
           Text(
             _errorText!,
@@ -203,7 +203,7 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
           maxLength: 100,
           onChanged: (_) => setState(() {}),
         ),
-        SizedBox(height: MitlistSpacing.md),
+        const SizedBox(height: MitlistSpacing.md),
         Text(
           'Type'.toUpperCase(),
           style:
@@ -237,7 +237,7 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
             ),
           ],
         ),
-        SizedBox(height: MitlistSpacing.md),
+        const SizedBox(height: MitlistSpacing.md),
         Text(
           'Household'.toUpperCase(),
           style:

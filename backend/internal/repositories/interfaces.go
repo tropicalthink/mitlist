@@ -125,6 +125,7 @@ type ChoreRepo interface {
 	CreateAssignment(ctx context.Context, assignment *models.ChoreAssignment) error
 	ListAssignments(ctx context.Context, choreID uuid.UUID, limit, offset int) ([]models.ChoreAssignment, error)
 	UpdateAssignment(ctx context.Context, assignment *models.ChoreAssignment) error
+	CompleteAssignment(ctx context.Context, id uuid.UUID, status string, completedAt time.Time, skipReason *string) (bool, error)
 	DeleteAssignment(ctx context.Context, id uuid.UUID) error
 	CreateCompletion(ctx context.Context, completion *models.ChoreCompletion) error
 	GetPendingAssignmentByChore(ctx context.Context, choreID uuid.UUID) (*models.ChoreAssignment, error)

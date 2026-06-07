@@ -97,8 +97,8 @@ class _Header extends StatelessWidget {
             color: Theme.of(context).colorScheme.onSurface,
             tooltip: 'Close',
             constraints: BoxConstraints(
-              minWidth: MitlistSpacing.space8,
-              minHeight: MitlistSpacing.space8,
+              minWidth: MitlistSpacing.space11,
+              minHeight: MitlistSpacing.space11,
             ),
             padding: EdgeInsets.zero,
           ),

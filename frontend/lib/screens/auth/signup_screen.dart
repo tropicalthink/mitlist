@@ -114,7 +114,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           for (var i = 0; i < paragraphs.length; i++) ...[
             Text(paragraphs[i]),
             if (i < paragraphs.length - 1)
-              SizedBox(height: MitlistSpacing.md),
+              const SizedBox(height: MitlistSpacing.md),
           ],
         ],
       ),
@@ -138,7 +138,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     'mitlist',
                     style: MitlistTypography.logo(),
                   ),
-                  SizedBox(height: MitlistSpacing.space8),
+                  const SizedBox(height: MitlistSpacing.space8),
                   Container(
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.surface,
@@ -187,7 +187,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                           onSubmitted: (_) => _submit(),
                           errorText: _passwordError,
                         ),
-                        SizedBox(height: MitlistSpacing.space2),
+                        const SizedBox(height: MitlistSpacing.space2),
                         Text(
                           'Use 8+ characters with a mix of letters and numbers.',
                           style:
@@ -214,7 +214,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                             onPressed: _isLoading ? null : _submit,
                           ),
                         ),
-                        SizedBox(height: MitlistSpacing.space4),
+                        const SizedBox(height: MitlistSpacing.space4),
                         Wrap(
                           alignment: WrapAlignment.center,
                           crossAxisAlignment: WrapCrossAlignment.center,
@@ -223,21 +223,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                               'Already have an account?',
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
-                            TextButton(
+                            AppButton(
+                              variant: AppButtonVariant.ghost,
+                              color: AppButtonColor.primary,
+                              text: 'Sign in',
                               onPressed: () => context.goNamed('login'),
-                              child: Text(
-                                'Sign in',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelLarge
-                                    ?.copyWith(
-                                      color: Theme.of(context).colorScheme.primary,
-                                    ),
-                              ),
                             ),
                           ],
                         ),
-                        SizedBox(height: MitlistSpacing.space2),
+                        const SizedBox(height: MitlistSpacing.space2),
                         Wrap(
                           alignment: WrapAlignment.center,
                           crossAxisAlignment: WrapCrossAlignment.center,
@@ -251,7 +245,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   ),
                             ),
-                            TextButton(
+                            AppButton(
+                              variant: AppButtonVariant.ghost,
+                              color: AppButtonColor.neutral,
+                              text: 'Terms of Service',
                               onPressed: () => _showLegalSheet(
                                 title: 'Terms of Service',
                                 paragraphs: const [
@@ -260,7 +257,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                   'The app is provided as-is while the product is still evolving. Keep your own backups for anything critical.',
                                 ],
                               ),
-                              child: Text('Terms'),
                             ),
                             Text(
                               ' and ',
@@ -271,7 +267,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   ),
                             ),
-                            TextButton(
+                            AppButton(
+                              variant: AppButtonVariant.ghost,
+                              color: AppButtonColor.neutral,
+                              text: 'Privacy Policy',
                               onPressed: () => _showLegalSheet(
                                 title: 'Privacy Policy',
                                 paragraphs: const [
@@ -280,7 +279,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                   'Only provide information you are comfortable keeping in a shared household workspace.',
                                 ],
                               ),
-                              child: Text('Privacy Policy'),
                             ),
                             Text(
                               '.',

@@ -294,11 +294,17 @@ func (h *OAuthHandler) redirectWithTokens(finalRedirectURI, provider, access, re
 	if err != nil {
 		return finalRedirectURI
 	}
-	query := redirectURL.Query()
-	query.Set("provider", provider)
-	query.Set("access_token", access)
-	query.Set("refresh_token", refresh)
-	redirectURL.RawQuery = query.Encode()
+	fragment := url.Values{}
+	fragment.Set("provider", provider)
+	fragment.Set("access_token", access)
+	fragment.Set("refresh_token", refresh)
+	redirectURL.RawQuery = ""
+	redirectURL.Fragment = ""
+	if strings.Contains(finalRedirectURI, "#") {
+		redirectURL.RawQuery = fragment.Encode()
+	} else {
+		redirectURL.Fragment = fragment.Encode()
+	}
 	return redirectURL.String()
 }
 
@@ -311,6 +317,7 @@ func (h *OAuthHandler) redirectWithError(finalRedirectURI, provider, message str
 	query.Set("provider", provider)
 	query.Set("error", message)
 	redirectURL.RawQuery = query.Encode()
+	redirectURL.Fragment = ""
 	return redirectURL.String()
 }
 

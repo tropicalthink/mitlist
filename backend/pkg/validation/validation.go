@@ -10,7 +10,7 @@ import (
 // Limits for common string fields.
 const (
 	MaxEmailLength     = 254
-	MaxPasswordLength  = 128
+	MaxPasswordLength  = 72
 	MaxNameLength      = 100
 	MaxTitleLength     = 200
 	MaxDescriptionLength = 2000

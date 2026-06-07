@@ -273,12 +273,19 @@ func (r *ListRepository) SoftDeleteItemsByList(ctx context.Context, listID uuid.
 }
 
 func (r *ListRepository) BatchUpdateItemPositions(ctx context.Context, items []models.ListItem) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
 	for _, item := range items {
-		if _, err := r.pool.Exec(ctx, `UPDATE list_items SET position = $1, updated_at = NOW() WHERE id = $2`, item.Position, item.ID); err != nil {
+		if _, err := tx.Exec(ctx, `UPDATE list_items SET position = $1, updated_at = NOW() WHERE id = $2`, item.Position, item.ID); err != nil {
 			return err
 		}
 	}
-	return nil
+
+	return tx.Commit(ctx)
 }
 
 // ClaimItem sets the claimed_by user on an unchecked list item.
@@ -390,8 +397,8 @@ func (r *ListRepository) CostSummary(ctx context.Context, listID uuid.UUID) (tot
 	if err := r.pool.QueryRow(ctx, query, listID).Scan(&totalCents, &equalShareCents); err != nil {
 		return 0, 0, nil, err
 	}
-	if totalCents == 0 {
-		return 0, 0, nil, nil
+	if totalCents == 0 || equalShareCents == 0 {
+		return 0, 0, userContributions, nil
 	}
 
 	userRows, err := r.pool.Query(ctx, `SELECT COALESCE(added_by, '00000000-0000-0000-0000-000000000000'::uuid), COALESCE(SUM(price_cents), 0) FROM list_items WHERE list_id = $1 AND deleted_at IS NULL AND price_cents IS NOT NULL GROUP BY added_by`, listID)

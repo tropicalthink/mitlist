@@ -2,7 +2,7 @@ package services
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/google/uuid"
@@ -145,7 +145,7 @@ func TestFinanceService_GetExpense(t *testing.T) {
 		financeRepo := new(mocks.MockFinanceRepo)
 		svc := NewFinanceService(financeRepo, nil)
 
-		financeRepo.On("GetExpenseByID", ctx, expenseID).Return(nil, errors.New("expense not found"))
+		financeRepo.On("GetExpenseByID", ctx, expenseID).Return(nil, fmt.Errorf("expense not found: %w", pgx.ErrNoRows))
 
 		_, err := svc.GetExpense(ctx, userID, expenseID)
 		require.Error(t, err)

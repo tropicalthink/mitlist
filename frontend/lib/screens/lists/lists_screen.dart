@@ -610,7 +610,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(MitlistSpacing.md),
       itemCount: lists.length + (_isLoadingMore || _error != null ? 1 : 0),
-      separatorBuilder: (_, __) => SizedBox(height: MitlistSpacing.md),
+      separatorBuilder: (_, __) => const SizedBox(height: MitlistSpacing.md),
       itemBuilder: (_, index) {
         if (index >= lists.length) return _buildPaginationFooter();
         return ListEntrance(
@@ -772,7 +772,7 @@ class _ListCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (previewLines.isNotEmpty) ...[
-                  SizedBox(height: MitlistSpacing.sm),
+                  const SizedBox(height: MitlistSpacing.sm),
                   for (var i = 0; i < previewLines.length; i++)
                     Padding(
                       padding: EdgeInsets.only(

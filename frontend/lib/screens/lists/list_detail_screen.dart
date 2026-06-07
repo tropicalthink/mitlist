@@ -243,7 +243,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     await showDialog<void>(
       context: context,
       builder: (context) => Dialog.fullscreen(
-        backgroundColor: Colors.black,
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
         child: Stack(
           children: [
             Center(
@@ -252,8 +252,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                 maxScale: 4,
                 child: Semantics(
                   label: 'List image',
-                  child: Image.network(url, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const Center(
-                    child: Icon(Icons.broken_image, color: Colors.white, size: 48),
+                  child: Image.network(url, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Center(
+                    child: Icon(Icons.broken_image, color: Theme.of(context).colorScheme.onSurface, size: 48),
                   )),
               ),
               ),
@@ -262,7 +262,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
               child: Align(
                 alignment: Alignment.topLeft,
                 child: IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
+                  icon: Icon(Icons.close, color: Theme.of(context).colorScheme.onSurface),
                   tooltip: 'Close',
                   onPressed: () => Navigator.of(context).pop(),
                 ),
@@ -522,10 +522,13 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   style: Theme.of(context)
                       .textTheme
                       .labelMedium
-                      ?.copyWith(color: Colors.white),
+                      ?.copyWith(color: Theme.of(context).colorScheme.onError),
                 ),
               ),
-              TextButton(
+              AppButton(
+                variant: AppButtonVariant.ghost,
+                color: AppButtonColor.neutral,
+                text: 'Undo',
                 onPressed: () async {
                   final service = _service;
                   if (service == null) return;
@@ -549,13 +552,6 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     debugPrint('[ListDetail] Undo item creation failed for ${item.name}');
                   }
                 },
-                style: TextButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.primary,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: MitlistSpacing.md,
-                  ),
-                ),
-                child: const Text('UNDO'),
               ),
             ],
           ),
@@ -833,9 +829,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     });
                   },
                 ),
-                TextButton(
+                AppButton(
+                  variant: AppButtonVariant.ghost,
+                  color: AppButtonColor.neutral,
+                  text: 'Check all',
                   onPressed: _completeAll,
-                  child: Text('Check all'),
                 ),
                 PopupMenuButton<String>(
                   icon: AppIcon(name: 'ellipsisVertical'),
@@ -859,7 +857,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     ),
                     PopupMenuItem(
                       value: 'delete',
-                      child: Text('Delete', style: TextStyle(color: Colors.red)),
+                      child: Text('Delete', style: TextStyle(color: Theme.of(context).colorScheme.error)),
                     ),
                   ],
                 ),
@@ -939,7 +937,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           }
           return Theme.of(context).colorScheme.surface;
         }),
-        checkColor: WidgetStateProperty.all(Colors.white),
+        checkColor: WidgetStateProperty.all(Theme.of(context).colorScheme.onPrimary),
       ),
       child: ListView(
         padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
@@ -1002,7 +1000,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           }
           return Theme.of(context).colorScheme.surface;
         }),
-        checkColor: WidgetStateProperty.all(Colors.white),
+        checkColor: WidgetStateProperty.all(Theme.of(context).colorScheme.onPrimary),
       ),
       child: ListView.builder(
         padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
@@ -1026,7 +1024,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         ),
         child: AppIcon(
           name: 'trash',
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.onError,
         ),
       ),
       onDismissed: (_) {
@@ -1077,7 +1075,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     ),
                   ),
                 ),
-                SizedBox(width: MitlistSpacing.sm),
+                const SizedBox(width: MitlistSpacing.sm),
               ],
               Semantics(
                 label: 'Toggle ${item.name}',
@@ -1086,7 +1084,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   onChanged: (val) => _toggleItem(item, val ?? false),
                 ),
               ),
-              SizedBox(width: MitlistSpacing.sm),
+              const SizedBox(width: MitlistSpacing.sm),
               Expanded(
                 child: Text(
                   item.name,
@@ -1213,7 +1211,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   variant: AppButtonVariant.outline,
                   onPressed: _load,
                 ),
-                SizedBox(width: MitlistSpacing.md),
+                const SizedBox(width: MitlistSpacing.md),
                 AppButton(
                   text: 'Dismiss',
                   variant: AppButtonVariant.ghost,
@@ -1236,7 +1234,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           icon: AppIcon(name: 'queueList'),
           title: 'Nothing on the list yet',
           description:
-              'Add milk, bread, eggs — whatever you need. Tap the + below to get started.',
+              'Add milk, bread, eggs, whatever you need. Tap the + below to get started.',
           actions: [
             AppButton(
               text: 'Add first item',
@@ -1316,7 +1314,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     ),
                   ),
                 ),
-                SizedBox(width: MitlistSpacing.sm),
+                const SizedBox(width: MitlistSpacing.sm),
                 AppButton(
                   icon: AppIcon(name: 'plus', color: Theme.of(context).colorScheme.onPrimary),
                   onPressed: _addItem,

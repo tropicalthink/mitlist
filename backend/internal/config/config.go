@@ -87,6 +87,9 @@ type Config struct {
 	S3BucketName       string `env:"S3_BUCKET_NAME"`
 	S3EndpointURL      string `env:"S3_ENDPOINT_URL"`
 
+	// Network
+	TrustedProxies string `env:"TRUSTED_PROXIES" default:""`
+
 	// Limits
 	MaxActiveListsPerGroup int `env:"MAX_ACTIVE_LISTS_PER_GROUP" default:"100"`
 	MaxItemsPerList        int `env:"MAX_ITEMS_PER_LIST" default:"1000"`

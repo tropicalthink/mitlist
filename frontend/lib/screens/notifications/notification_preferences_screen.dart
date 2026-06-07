@@ -216,7 +216,7 @@ class _NotificationPreferencesScreenState
               onChanged: (v) =>
                   _toggle(pref.id, 'pinwall_reminder', v),
             ),
-            const Divider(),
+            Divider(color: Theme.of(context).colorScheme.outlineVariant),
             _ToggleRow(
               icon: 'devicePhoneMobile',
               label: 'Push notifications',
@@ -344,7 +344,7 @@ class _ToggleRow extends StatelessWidget {
             size: MitlistSpacing.space5,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
-          SizedBox(width: MitlistSpacing.sm),
+          const SizedBox(width: MitlistSpacing.sm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -366,7 +366,7 @@ class _ToggleRow extends StatelessWidget {
           ),
           if (saving)
             Padding(
-              padding: EdgeInsets.all(MitlistSpacing.sm),
+              padding: const EdgeInsets.all(MitlistSpacing.sm),
               child: SizedBox(
                 width: MitlistSpacing.space4,
                 height: MitlistSpacing.space4,

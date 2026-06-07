@@ -46,18 +46,18 @@ class _Banner extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _detailRow(Icons.cloud_off, 'Offline', state.isOffline, colorScheme),
-            _detailRow(Icons.sync, 'Pending sync', state.pendingCount, colorScheme),
-            _detailRow(Icons.sync_problem, 'Failed', state.failedCount, colorScheme),
+            _detailRow(context, Icons.cloud_off, 'Offline', state.isOffline, colorScheme),
+            _detailRow(context, Icons.sync, 'Pending sync', state.pendingCount, colorScheme),
+            _detailRow(context, Icons.sync_problem, 'Failed', state.failedCount, colorScheme),
             const SizedBox(height: MitlistSpacing.md),
             if (state.hasErrors)
               AppCard(
                 variant: AppCardVariant.soft,
                 tint: AppCardTint.warning,
                 padding: AppCardPadding.md,
-                child: const Text(
+                child: Text(
                   'Changes will be retried automatically when connectivity is restored.',
-                  style: TextStyle(fontSize: 13),
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
             if (state.isOffline)
@@ -65,9 +65,9 @@ class _Banner extends ConsumerWidget {
                 variant: AppCardVariant.soft,
                 tint: AppCardTint.warning,
                 padding: AppCardPadding.md,
-                child: const Text(
+                child: Text(
                   'You can keep making changes offline. Everything will sync when you reconnect.',
-                  style: TextStyle(fontSize: 13),
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
           ],
@@ -76,14 +76,14 @@ class _Banner extends ConsumerWidget {
     );
   }
 
-  Widget _detailRow(IconData icon, String label, dynamic value, ColorScheme colorScheme) {
+  Widget _detailRow(BuildContext context, IconData icon, String label, dynamic value, ColorScheme colorScheme) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
       child: Row(
         children: [
           Icon(icon, size: 18, color: colorScheme.onSurfaceVariant),
           const SizedBox(width: MitlistSpacing.sm),
-          Expanded(child: Text(label, style: const TextStyle(fontSize: 14))),
+          Expanded(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodyMedium)),
           if (value is bool)
             Icon(
               value ? Icons.check_circle : Icons.cancel,

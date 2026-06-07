@@ -293,7 +293,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete account: ${'Something went wrong.'}')),
+        SnackBar(content: Text('Something went wrong.')),
       );
     } finally {
       _isSaving = false;
@@ -309,13 +309,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             height: MitlistSpacing.space12,
             borderRadius: AppSkeletonRadius.sm,
           ),
-          SizedBox(width: MitlistSpacing.md),
+          const SizedBox(width: MitlistSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AppSkeleton(width: 200, height: 24),
-                SizedBox(height: MitlistSpacing.sm),
+                const SizedBox(height: MitlistSpacing.sm),
                 AppSkeleton(width: 160, height: 14),
               ],
             ),
@@ -380,7 +380,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                       ),
                     ),
                   ),
-                SizedBox(height: MitlistSpacing.sm),
+                const SizedBox(height: MitlistSpacing.sm),
                 Text(
                   _email,
                   style: textTheme.bodySmall,
@@ -408,7 +408,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
-          SizedBox(height: MitlistSpacing.sm),
+          const SizedBox(height: MitlistSpacing.sm),
           ..._households.map((h) {
             final isActive = h.id == _activeHouseholdId;
             return Semantics(
@@ -460,13 +460,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             label: 'Notification inbox',
             onTap: () => context.goNamed('notifications'),
           ),
-          const Divider(),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
           _MenuRow(
             icon: const AppIcon(name: 'cog6Tooth'),
             label: 'Notification preferences',
             onTap: () => context.goNamed('notificationPreferences'),
           ),
-          const Divider(),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
           _MenuRow(
             icon: const AppIcon(name: 'sun'),
             label: 'Appearance',
@@ -510,7 +510,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             label: 'Version',
             value: _appVersion,
           ),
-          const Divider(),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
           _MenuRow(
             icon: const AppIcon(name: 'identification'),
             label: 'Terms of Service',
@@ -582,7 +582,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           _buildSecurityCard(),
           const SizedBox(height: MitlistSpacing.md),
           _buildAboutCard(),
-          SizedBox(height: MitlistSpacing.md),
+          const SizedBox(height: MitlistSpacing.md),
           _buildDangerZone(),
         ],
       ),
@@ -615,7 +615,7 @@ class _MenuRow extends StatelessWidget {
         child: Row(
           children: [
             icon,
-            SizedBox(width: MitlistSpacing.md),
+            const SizedBox(width: MitlistSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

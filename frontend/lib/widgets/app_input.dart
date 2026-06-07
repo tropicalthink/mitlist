@@ -382,9 +382,11 @@ return EdgeInsets.symmetric(horizontal: horizontal, vertical: vertical);
         mainAxisSize: MainAxisSize.min,
         children: [
           if (widget.label != null) ...[
-            Text(
-              widget.label!.toUpperCase(),
-              style: labelStyle,
+            ExcludeSemantics(
+              child: Text(
+                widget.label!.toUpperCase(),
+                style: labelStyle,
+              ),
             ),
             const SizedBox(height: MitlistSpacing.sm),
           ],
@@ -402,7 +404,9 @@ return EdgeInsets.symmetric(horizontal: horizontal, vertical: vertical);
                 minHeight: _height,
                 maxHeight: _height,
               ),
-              child: TextField(
+              child: Semantics(
+                label: widget.label,
+                child: TextField(
                 controller: _controller,
                 focusNode: _focusNode,
                 obscureText: _obscure,
@@ -510,6 +514,7 @@ return EdgeInsets.symmetric(horizontal: horizontal, vertical: vertical);
                   counterText: '',
                 ),
               ),
+            ),
             ),
           ),
           if (widget.helperText != null ||

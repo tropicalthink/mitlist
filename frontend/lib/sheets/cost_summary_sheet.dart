@@ -84,13 +84,13 @@ class _CostSummarySheetState extends ConsumerState<CostSummarySheet> {
             value: _formatCents(widget.equalShareCents),
             isTotal: false,
           ),
-          SizedBox(height: MitlistSpacing.sm),
+          const SizedBox(height: MitlistSpacing.sm),
           _CostRow(
             label: 'Items with prices',
             value: '${widget.itemCount}',
             isTotal: false,
           ),
-          SizedBox(height: MitlistSpacing.md),
+          const SizedBox(height: MitlistSpacing.md),
           if (widget.onGenerateExpense != null)
             SizedBox(
               width: double.infinity,
@@ -168,7 +168,7 @@ class _InfoRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
-        SizedBox(width: MitlistSpacing.sm),
+        const SizedBox(width: MitlistSpacing.sm),
         Expanded(
           child: Text(
             message,

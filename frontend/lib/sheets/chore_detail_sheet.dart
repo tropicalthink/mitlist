@@ -151,14 +151,18 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              TextButton(
+              AppButton(
+                variant: AppButtonVariant.outline,
+                color: AppButtonColor.neutral,
+                text: 'Cancel',
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel'),
               ),
               const SizedBox(width: MitlistSpacing.sm),
-              TextButton(
+              AppButton(
+                variant: AppButtonVariant.outline,
+                color: AppButtonColor.neutral,
+                text: 'Skip',
                 onPressed: () => Navigator.of(context).pop(''),
-                child: const Text('Skip'),
               ),
             ],
           ),
@@ -241,28 +245,28 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
           child: Column(
             children: [
               _DetailRow(label: 'Assignee', value: widget.assignee),
-              const Divider(),
+              Divider(color: Theme.of(context).colorScheme.outlineVariant),
               _DetailRow(
                 label: 'Due',
                 value: DateFormat.yMMMd().format(widget.dueDate),
               ),
               if (widget.trackedCount != null) ...[
-                const Divider(),
+                Divider(color: Theme.of(context).colorScheme.outlineVariant),
                 _DetailRow(label: 'Tracked', value: widget.trackedCount.toString()),
               ],
               if (widget.lastTrackedAt != null) ...[
-                const Divider(),
+                Divider(color: Theme.of(context).colorScheme.outlineVariant),
                 _DetailRow(
                   label: 'Last done',
                   value: DateFormat.yMMMd().format(widget.lastTrackedAt!),
                 ),
               ],
               if (widget.lastDoneByLabel != null && widget.lastDoneByLabel!.isNotEmpty) ...[
-                const Divider(),
+                Divider(color: Theme.of(context).colorScheme.outlineVariant),
                 _DetailRow(label: 'Last by', value: widget.lastDoneByLabel!),
               ],
               if (widget.averageFrequencyHours != null) ...[
-                const Divider(),
+                Divider(color: Theme.of(context).colorScheme.outlineVariant),
                 _DetailRow(
                   label: 'Average',
                   value: _formatAverageFrequency(widget.averageFrequencyHours!),
@@ -297,10 +301,12 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
           ],
           if (widget.onAddSubtask != null) ...[
             const SizedBox(height: MitlistSpacing.sm),
-            TextButton.icon(
+            AppButton(
+              variant: AppButtonVariant.ghost,
+              color: AppButtonColor.primary,
+              text: _showAddSubtask ? 'Save' : 'Add subtask',
+              icon: const Icon(Icons.add),
               onPressed: _handleAddSubtask,
-              icon: const Icon(Icons.add, size: 18),
-              label: Text(_showAddSubtask ? 'Save' : 'Add subtask'),
             ),
           ],
         ],
@@ -362,7 +368,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
             ),
           ],
           if (widget.onRescheduleTomorrow != null) ...[
-            SizedBox(height: MitlistSpacing.sm),
+            const SizedBox(height: MitlistSpacing.sm),
             SizedBox(
               width: double.infinity,
               child: AppButton(
@@ -375,7 +381,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
             ),
           ],
           if (widget.onUndo != null) ...[
-            SizedBox(height: MitlistSpacing.sm),
+            const SizedBox(height: MitlistSpacing.sm),
             SizedBox(
               width: double.infinity,
               child: AppButton(
@@ -388,7 +394,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
             ),
           ],
           if (widget.onDelete != null) ...[
-            SizedBox(height: MitlistSpacing.lg),
+            const SizedBox(height: MitlistSpacing.lg),
             SizedBox(
               width: double.infinity,
               child: AppButton(
@@ -433,6 +439,8 @@ class _DetailRow extends StatelessWidget {
           Expanded(
             child: Text(
               label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),

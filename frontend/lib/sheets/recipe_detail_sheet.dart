@@ -115,7 +115,7 @@ class RecipeDetailSheet extends StatelessWidget {
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         if (author.isNotEmpty) ...[
-          SizedBox(height: MitlistSpacing.xs),
+          const SizedBox(height: MitlistSpacing.xs),
           Text(
             'By $author',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -124,7 +124,7 @@ class RecipeDetailSheet extends StatelessWidget {
           ),
         ],
         if (ratingValue > 0) ...[
-          SizedBox(height: MitlistSpacing.xs),
+          const SizedBox(height: MitlistSpacing.xs),
           Row(
             children: [
               Icon(Icons.star, size: 16, color: Theme.of(context).colorScheme.primary),
@@ -137,7 +137,7 @@ class RecipeDetailSheet extends StatelessWidget {
           ),
         ],
         if (imageUrl != null && imageUrl!.isNotEmpty) ...[
-          SizedBox(height: MitlistSpacing.md),
+          const SizedBox(height: MitlistSpacing.md),
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: Image.network(
@@ -183,17 +183,17 @@ class RecipeDetailSheet extends StatelessWidget {
                 label: 'Prep',
                 value: _formatMinutes(prepTimeMinutes),
               ),
-              const Divider(),
+              Divider(color: Theme.of(context).colorScheme.outlineVariant),
               _RecipeDetailRow(
                 label: 'Cook',
                 value: _formatMinutes(cookTimeMinutes),
               ),
-              const Divider(),
+              Divider(color: Theme.of(context).colorScheme.outlineVariant),
               _RecipeDetailRow(
                 label: 'Servings',
                 value: servings.toString(),
               ),
-              const Divider(),
+              Divider(color: Theme.of(context).colorScheme.outlineVariant),
               _RecipeDetailRow(
                 label: 'Updated',
                 value: DateFormat.yMMMd().format(updatedAt),
@@ -232,7 +232,7 @@ class RecipeDetailSheet extends StatelessWidget {
           ),
         ],
         if (videoUrl.isNotEmpty) ...[
-          SizedBox(height: MitlistSpacing.md),
+          const SizedBox(height: MitlistSpacing.md),
           InkWell(
             onTap: () => _launchUrl(videoUrl),
             child: Row(
@@ -253,7 +253,7 @@ class RecipeDetailSheet extends StatelessWidget {
           ),
         ],
         if (sourceUrl.isNotEmpty) ...[
-          SizedBox(height: MitlistSpacing.md),
+          const SizedBox(height: MitlistSpacing.md),
           InkWell(
             onTap: () => _launchUrl(sourceUrl),
             child: Row(
@@ -275,8 +275,8 @@ class RecipeDetailSheet extends StatelessWidget {
         ],
         if (onDelete != null) ...[
           const SizedBox(height: MitlistSpacing.lg),
-          const Divider(),
-          SizedBox(height: MitlistSpacing.sm),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          const SizedBox(height: MitlistSpacing.sm),
           SizedBox(
             width: double.infinity,
             child: AppButton(

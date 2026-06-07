@@ -403,7 +403,7 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: _scrapedImageOptions.length,
-                  separatorBuilder: (_, __) => SizedBox(width: MitlistSpacing.sm),
+                  separatorBuilder: (_, __) => const SizedBox(width: MitlistSpacing.sm),
                   itemBuilder: (context, index) {
                     final imgUrl = _scrapedImageOptions[index];
                     final isSelected = imgUrl == _selectedImageUrl;
@@ -429,7 +429,7 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
                 ),
               ),
             ] else if (_selectedImageUrl != null) ...[
-              SizedBox(height: MitlistSpacing.md),
+              const SizedBox(height: MitlistSpacing.md),
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
               child: Image.network(
