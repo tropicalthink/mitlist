@@ -11,14 +11,24 @@ import 'package:flutter/foundation.dart';
 class ApiConfig {
   /// The base URL for the API.
   ///
-  /// In development, this should point to the local Go backend.
-  /// In production, this should point to the production API server.
+  /// Set at build time via `--dart-define=API_BASE_URL=https://api.example.com`.
+  /// Release builds MUST provide it — there is no production default baked in,
+  /// so we never ship a binary silently pointing at a developer's machine.
+  /// Debug builds fall back to the local Go backend for convenience.
   static const String _baseUrlOverride =
       String.fromEnvironment('API_BASE_URL', defaultValue: '');
 
   static String get baseUrl {
     if (_baseUrlOverride.isNotEmpty) return _baseUrlOverride;
 
+    if (kReleaseMode) {
+      throw StateError(
+        'API_BASE_URL is not set. Release builds must be built with '
+        '--dart-define=API_BASE_URL=https://your-api-host (no trailing slash).',
+      );
+    }
+
+    // Debug-only fallback to the local Go backend.
     // On Android emulators, "localhost" points to the emulator itself.
     if (!kIsWeb && Platform.isAndroid) {
       return 'http://10.0.2.2:8000';

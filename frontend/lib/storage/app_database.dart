@@ -558,6 +558,22 @@ FROM list_items_table;
       mode: InsertMode.insertOrReplace,
     );
   }
+
+  Future<void> clearAllUserData() {
+    return transaction(() async {
+      await delete(hubActivityCaches).go();
+      await delete(hubGroupCaches).go();
+      await delete(pinwallPostsCaches).go();
+      await delete(currentChoresCaches).go();
+      await delete(financeSummaries).go();
+      await delete(expensesTable).go();
+      await delete(listItemsTable).go();
+      await delete(listsTable).go();
+      await delete(recipesTable).go();
+      await delete(outboxOps).go();
+      await delete(conflicts).go();
+    });
+  }
 }
 
 QueryExecutor _openConnection() {

@@ -6,7 +6,11 @@ import '../../models/auth_models.dart';
 import '../../models/group_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/group_provider.dart';
+import '../../providers/nav_badge_provider.dart';
+import '../../providers/onboarding_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/list_provider.dart' show appDatabaseProvider;
+import '../../router.dart' show currentGroupIdProvider;
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../widgets/alert.dart';
@@ -260,7 +264,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     try {
       final authService = await ref.read(authServiceProviderAsync.future);
       await authService.logout();
+      await ref.read(appDatabaseProvider).clearAllUserData();
       ref.read(authStateProvider.notifier).state = false;
+      ref.read(currentGroupIdProvider.notifier).set(null);
+      ref.invalidate(navBadgeCountsProvider);
+      ref.invalidate(hubQuickStartDismissedProvider);
     } catch (_) {
     }
     if (mounted) context.goNamed('welcome');
@@ -292,7 +300,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     try {
       final authService = await ref.read(authServiceProviderAsync.future);
       await authService.deleteMe();
+      await ref.read(appDatabaseProvider).clearAllUserData();
       ref.read(authStateProvider.notifier).state = false;
+      ref.read(currentGroupIdProvider.notifier).set(null);
+      ref.invalidate(navBadgeCountsProvider);
+      ref.invalidate(hubQuickStartDismissedProvider);
       if (!mounted) return;
       context.goNamed('welcome');
     } catch (e) {

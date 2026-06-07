@@ -341,13 +341,16 @@ class AuthService {
     }
   }
 
-  /// Clears all stored tokens and user data.
+  /// Clears all stored tokens, user data, and user-specific UI preferences.
   Future<void> _clearTokens() async {
     await _prefs.remove(ApiConfig.accessTokenKey);
     await _prefs.remove(ApiConfig.refreshTokenKey);
     await _prefs.remove(ApiConfig.userDataKey);
     await _prefs.remove(ApiConfig.persistSessionKey);
     await _prefs.remove(ApiConfig.pendingOAuthRememberMeKey);
+    await _prefs.remove('hub_quick_start_dismissed');
+    await _prefs.remove('chores_filter_me');
+    await _prefs.remove('calendar_view_mode');
   }
 
   Exception _handleError(DioException e) {
