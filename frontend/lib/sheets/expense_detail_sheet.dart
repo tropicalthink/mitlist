@@ -52,7 +52,7 @@ class ExpenseDetailSheet extends ConsumerStatefulWidget {
   }) async {
     return showAppBottomSheet(
       context: context,
-      title: 'Expense Details',
+      title: 'Expense details',
       body: ExpenseDetailSheet(
         groupId: groupId,
         expenseId: expenseId,

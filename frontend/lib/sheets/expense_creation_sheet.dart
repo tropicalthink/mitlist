@@ -43,7 +43,7 @@ class ExpenseCreationSheet extends ConsumerStatefulWidget {
   }) async {
     return showAppBottomSheet<bool>(
       context: context,
-      title: 'Add Expense',
+      title: 'Add expense',
       body: ExpenseCreationSheet(
         initialDescription: initialDescription,
         initialAmount: initialAmount,

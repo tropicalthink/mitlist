@@ -35,7 +35,7 @@ class RecipeCreationSheet extends ConsumerStatefulWidget {
   }) async {
     return showAppBottomSheet<bool>(
       context: context,
-      title: 'New Recipe',
+      title: 'New recipe',
       body: RecipeCreationSheet(
         initialTitle: initialTitle,
         initialIngredients: initialIngredients,

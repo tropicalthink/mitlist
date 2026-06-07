@@ -23,7 +23,7 @@ class GroupSettingsSheet extends ConsumerStatefulWidget {
   static Future<void> show(BuildContext context, {required String groupId}) {
     return showAppBottomSheet<void>(
       context: context,
-      title: 'Household Settings',
+      title: 'Household settings',
       body: GroupSettingsSheet(groupId: groupId),
     );
   }

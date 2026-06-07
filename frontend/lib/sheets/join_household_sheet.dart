@@ -1,15 +1,22 @@
+import 'dart:math' show min;
+
+import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lottie/lottie.dart';
 
 import '../models/group_models.dart';
 import '../providers/group_provider.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
+import '../utils/friendly_error.dart';
+import '../utils/haptics.dart';
 import '../widgets/alert.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
-import '../utils/friendly_error.dart';
+
+enum _Phase { entry, joining, success }
 
 class JoinHouseholdSheet extends ConsumerStatefulWidget {
   const JoinHouseholdSheet({super.key});
@@ -17,7 +24,7 @@ class JoinHouseholdSheet extends ConsumerStatefulWidget {
   static Future<bool?> show(BuildContext context) async {
     return showAppBottomSheet<bool>(
       context: context,
-      title: 'Join Household',
+      title: 'Join household',
       body: const JoinHouseholdSheet(),
     );
   }
@@ -26,91 +33,371 @@ class JoinHouseholdSheet extends ConsumerStatefulWidget {
   ConsumerState<JoinHouseholdSheet> createState() => _JoinHouseholdSheetState();
 }
 
-class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet> {
-  final TextEditingController _codeController = TextEditingController();
-  bool _isJoining = false;
-  String? _errorMessage;
+class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
+    with TickerProviderStateMixin {
+  final _codeController = TextEditingController();
+  _Phase _phase = _Phase.entry;
+  String? _error;
+  Group? _joinedGroup;
 
-  bool get _canJoin => _codeController.text.trim().length >= 4 && !_isJoining;
+  late final ConfettiController _confetti;
+  late final AnimationController _lottie;
+  late final AnimationController _reveal;
+  late final Animation<double> _nameFade;
+  late final Animation<Offset> _nameSlide;
+  late final Animation<double> _subtitleFade;
+  late final Animation<double> _membersFade;
+  late final Animation<double> _buttonFade;
 
-  Future<void> _onJoin() async {
-    if (!_canJoin) return;
+  bool get _canJoin =>
+      _codeController.text.trim().length >= 4 && _phase == _Phase.entry;
 
-    setState(() {
-      _isJoining = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final groupService = await ref.read(groupServiceProviderAsync.future);
-      await groupService.joinGroup(
-        JoinGroupRequest(code: _normalizeCode(_codeController.text)),
-      );
-      if (!mounted) return;
-      Navigator.of(context).pop(true);
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _errorMessage = friendlyErrorMessage(e);
-        _isJoining = false;
-      });
-    }
-  }
-
-  String _normalizeCode(String value) {
-    return value.trim().toUpperCase();
+  @override
+  void initState() {
+    super.initState();
+    _confetti = ConfettiController(duration: const Duration(seconds: 3));
+    _lottie = AnimationController(vsync: this);
+    _reveal = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _nameFade = CurvedAnimation(
+      parent: _reveal,
+      curve: const Interval(0.15, 0.65, curve: Curves.easeOut),
+    );
+    _nameSlide = Tween<Offset>(
+      begin: const Offset(0, 0.35),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _reveal,
+      curve: const Interval(0.10, 0.60, curve: Curves.easeOutCubic),
+    ));
+    _subtitleFade = CurvedAnimation(
+      parent: _reveal,
+      curve: const Interval(0.30, 0.80, curve: Curves.easeOut),
+    );
+    _membersFade = CurvedAnimation(
+      parent: _reveal,
+      curve: const Interval(0.42, 0.88, curve: Curves.easeOut),
+    );
+    _buttonFade = CurvedAnimation(
+      parent: _reveal,
+      curve: const Interval(0.56, 1.0, curve: Curves.easeOut),
+    );
   }
 
   @override
   void dispose() {
     _codeController.dispose();
+    _confetti.dispose();
+    _lottie.dispose();
+    _reveal.dispose();
     super.dispose();
+  }
+
+  Future<void> _onJoin() async {
+    if (!_canJoin) return;
+    setState(() {
+      _phase = _Phase.joining;
+      _error = null;
+    });
+
+    try {
+      final svc = await ref.read(groupServiceProviderAsync.future);
+      final group = await svc.joinGroup(
+        JoinGroupRequest(code: _codeController.text.trim().toUpperCase()),
+      );
+      if (!mounted) return;
+
+      setState(() {
+        _phase = _Phase.success;
+        _joinedGroup = group;
+      });
+
+      Haptics.success();
+      _confetti.play();
+
+      final disableAnimations = MediaQuery.of(context).disableAnimations;
+      if (disableAnimations) {
+        _lottie.value = 1.0;
+        _reveal.value = 1.0;
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _lottie.forward();
+            _reveal.forward();
+          }
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      Haptics.failure();
+      setState(() {
+        _phase = _Phase.entry;
+        _error = friendlyErrorMessage(e);
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (_errorMessage != null) ...[
-          AppAlert(
-            type: AppAlertType.error,
-            message: _errorMessage!,
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 350),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeIn,
+      transitionBuilder: (child, anim) =>
+          FadeTransition(opacity: anim, child: child),
+      child: _phase == _Phase.success ? _buildSuccess() : _buildEntry(),
+    );
+  }
+
+  Widget _buildEntry() {
+    final isJoining = _phase == _Phase.joining;
+    return KeyedSubtree(
+      key: const ValueKey('entry'),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_error != null) ...[
+            AppAlert(type: AppAlertType.error, message: _error!),
+            const SizedBox(height: MitlistSpacing.md),
+          ],
+          AppInput(
+            label: 'Invite code',
+            hint: 'SUNNY-TACO-42',
+            controller: _codeController,
+            enabled: !isJoining,
+            textInputAction: TextInputAction.done,
+            maxLength: 20,
+            onChanged: (val) {
+              final upper = val.toUpperCase();
+              if (upper != val) {
+                _codeController.value = _codeController.value.copyWith(
+                  text: upper,
+                  selection: TextSelection.collapsed(offset: upper.length),
+                );
+              }
+              setState(() {});
+            },
+            onSubmitted: (_) => _onJoin(),
+            keyboardType: TextInputType.text,
           ),
-          const SizedBox(height: MitlistSpacing.md),
+          const SizedBox(height: MitlistSpacing.xs),
+          Text(
+            'Codes look like WORD-WORD-42. Ask whoever invited you.',
+            style: MitlistTypography.labelXSmall(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: MitlistSpacing.lg),
+          SizedBox(
+            width: double.infinity,
+            child: AppButton(
+              variant: AppButtonVariant.solid,
+              color: AppButtonColor.primary,
+              size: AppButtonSize.lg,
+              text: isJoining ? 'Joining...' : 'Join household',
+              isLoading: isJoining,
+              onPressed: _canJoin ? _onJoin : null,
+            ),
+          ),
         ],
-        AppInput(
-          label: 'Invite Code',
-          hint: 'SUNNY-TACO-42',
-          controller: _codeController,
-          enabled: !_isJoining,
-          textInputAction: TextInputAction.done,
-          maxLength: 20,
-          onChanged: (_) => setState(() {}),
-          keyboardType: TextInputType.text,
-          errorText: _errorMessage,
-          helperText: _errorMessage == null ? 'Enter the invite code shared with you' : null,
-        ),
-        const SizedBox(height: MitlistSpacing.sm),
-        Text(
-          'Tip: codes are short words + numbers. Uppercase works best.',
-          style:
-              MitlistTypography.labelXSmall(color: Theme.of(context).colorScheme.onSurfaceVariant),
-        ),
-        const SizedBox(height: MitlistSpacing.lg),
-        SizedBox(
-          width: double.infinity,
-          child: AppButton(
-            variant: AppButtonVariant.solid,
-            color: AppButtonColor.primary,
-            size: AppButtonSize.lg,
-            text: _isJoining ? 'Joining...' : 'Join household',
-            isLoading: _isJoining,
-            onPressed: _canJoin ? _onJoin : null,
+      ),
+    );
+  }
+
+  Widget _buildSuccess() {
+    final group = _joinedGroup!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final memberCount = group.memberCount ?? 0;
+
+    return KeyedSubtree(
+      key: const ValueKey('success'),
+      child: Stack(
+        alignment: Alignment.topCenter,
+        children: [
+          ConfettiWidget(
+            confettiController: _confetti,
+            blastDirectionality: BlastDirectionality.explosive,
+            numberOfParticles: 48,
+            maxBlastForce: 34,
+            minBlastForce: 14,
+            gravity: 0.22,
+            colors: [
+              colorScheme.primary,
+              colorScheme.tertiary,
+              colorScheme.secondary,
+              colorScheme.primaryContainer,
+            ],
+            shouldLoop: false,
           ),
-        ),
-      ],
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              MitlistSpacing.md,
+              MitlistSpacing.lg,
+              MitlistSpacing.md,
+              MitlistSpacing.md,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Lottie checkmark — plays once on reveal
+                SizedBox(
+                  width: 96,
+                  height: 96,
+                  child: Lottie.asset(
+                    'assets/animations/lottie/Checkmark.lottie',
+                    controller: _lottie,
+                    onLoaded: (comp) => _lottie.duration = comp.duration,
+                    repeat: false,
+                  ),
+                ),
+                const SizedBox(height: MitlistSpacing.md),
+
+                // Household name — slides up and fades in
+                FadeTransition(
+                  opacity: _nameFade,
+                  child: SlideTransition(
+                    position: _nameSlide,
+                    child: Text(
+                      group.name,
+                      style: textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.5,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+
+                // Confirmation line
+                const SizedBox(height: MitlistSpacing.xs),
+                FadeTransition(
+                  opacity: _subtitleFade,
+                  child: Text(
+                    "You're in.",
+                    style: textTheme.bodyLarge?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+
+                // Member pips + count
+                if (memberCount > 0) ...[
+                  const SizedBox(height: MitlistSpacing.md),
+                  FadeTransition(
+                    opacity: _membersFade,
+                    child: _MemberPips(
+                      count: memberCount,
+                      accentColor: colorScheme.primary,
+                      borderColor: colorScheme.surfaceContainerHighest,
+                    ),
+                  ),
+                  const SizedBox(height: MitlistSpacing.xs),
+                  FadeTransition(
+                    opacity: _membersFade,
+                    child: Text(
+                      '$memberCount ${memberCount == 1 ? 'member' : 'members'} already inside',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: MitlistSpacing.xl),
+
+                // Enter button
+                FadeTransition(
+                  opacity: _buttonFade,
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: AppButton(
+                      variant: AppButtonVariant.solid,
+                      size: AppButtonSize.lg,
+                      text: 'Enter ${group.name}',
+                      onPressed: () => Navigator.of(context).pop(true),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Stacked overlapping pip circles representing household members
+class _MemberPips extends StatelessWidget {
+  final int count;
+  final Color accentColor;
+  final Color borderColor;
+
+  const _MemberPips({
+    required this.count,
+    required this.accentColor,
+    required this.borderColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const pipSize = 32.0;
+    const overlap = 10.0;
+    const maxVisible = 5;
+
+    final visible = min(count, maxVisible);
+    final hasOverflow = count > maxVisible;
+    final totalItems = visible + (hasOverflow ? 1 : 0);
+    final totalWidth = pipSize + (totalItems - 1) * (pipSize - overlap);
+
+    return SizedBox(
+      width: totalWidth,
+      height: pipSize,
+      child: Stack(
+        children: [
+          for (var i = 0; i < visible; i++)
+            Positioned(
+              left: i * (pipSize - overlap),
+              child: Container(
+                width: pipSize,
+                height: pipSize,
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(
+                    alpha: 1.0 - i * (0.55 / maxVisible),
+                  ),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: borderColor, width: 2),
+                ),
+              ),
+            ),
+          if (hasOverflow)
+            Positioned(
+              left: visible * (pipSize - overlap),
+              child: Container(
+                width: pipSize,
+                height: pipSize,
+                decoration: BoxDecoration(
+                  color: borderColor,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: borderColor, width: 2),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '+${count - maxVisible}',
+                  style: MitlistTypography.labelXSmall(color: accentColor),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

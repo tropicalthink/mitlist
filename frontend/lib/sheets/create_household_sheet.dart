@@ -14,7 +14,7 @@ class CreateHouseholdSheet extends ConsumerStatefulWidget {
   static Future<bool?> show(BuildContext context) async {
     return showAppBottomSheet<bool>(
       context: context,
-      title: 'Create Household',
+      title: 'Create household',
       body: const CreateHouseholdSheet(),
     );
   }

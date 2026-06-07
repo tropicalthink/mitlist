@@ -37,7 +37,7 @@ class CreateListSheet extends ConsumerStatefulWidget {
   }) async {
     return showAppBottomSheet<bool>(
       context: context,
-      title: 'New List',
+      title: 'New list',
       body: CreateListSheet(
         initialGroupId: initialGroupId,
         initialName: initialName,

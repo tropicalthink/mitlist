@@ -85,7 +85,9 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
       }
 
       setState(() {
+        _lists.clear();
         _lists.addAll(shoppingLists);
+        _itemsByList.clear();
         _itemsByList.addAll(itemsByList);
         _isLoading = false;
       });

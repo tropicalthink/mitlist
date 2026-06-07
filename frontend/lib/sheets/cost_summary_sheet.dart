@@ -35,7 +35,7 @@ class CostSummarySheet extends ConsumerStatefulWidget {
   }) async {
     return showAppBottomSheet(
       context: context,
-      title: 'Cost Summary',
+      title: 'Cost summary',
       body: CostSummarySheet(
         listName: listName,
         totalCents: totalCents,

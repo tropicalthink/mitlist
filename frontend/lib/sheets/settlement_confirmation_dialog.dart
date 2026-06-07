@@ -26,7 +26,7 @@ class SettlementConfirmationDialog extends StatelessWidget {
   }) async {
     return showAppDialog<bool>(
       context: context,
-      title: 'Confirm Payment',
+      title: 'Confirm payment',
       body: SettlementConfirmationDialog(
         amount: amount,
         payer: payer,

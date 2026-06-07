@@ -137,7 +137,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
 
     showAppBottomSheet(
       context: context,
-      title: 'Change Password',
+      title: 'Change password',
       body: StatefulBuilder(
         builder: (context, setSheetState) {
           Future<void> submit() async {
@@ -229,22 +229,27 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     showAppBottomSheet(
       context: context,
       title: 'Terms of Service',
-      body: const Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Use mitlist responsibly. Shared household content is visible to the members of that household.',
-          ),
-          SizedBox(height: MitlistSpacing.md),
-          Text(
-            'Do not upload unlawful content, impersonate others, or abuse the service. Accounts and shared data may be removed for misuse.',
-          ),
-          SizedBox(height: MitlistSpacing.md),
-          Text(
-            'The app is provided as-is while the product is still evolving. Keep your own backups for anything critical.',
-          ),
-        ],
+      body: Builder(
+        builder: (context) => Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Use mitlist responsibly. Shared household content is visible to the members of that household.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: MitlistSpacing.md),
+            Text(
+              'Do not upload unlawful content, impersonate others, or abuse the service. Accounts and shared data may be removed for misuse.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: MitlistSpacing.md),
+            Text(
+              'The app is provided as-is while the product is still evolving. Keep your own backups for anything critical.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ],
+        ),
       ),
     );
   }

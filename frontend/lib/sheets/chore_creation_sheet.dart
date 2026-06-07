@@ -46,7 +46,7 @@ class ChoreCreationSheet extends ConsumerStatefulWidget {
   }) async {
     return showAppBottomSheet<bool>(
       context: context,
-      title: 'Add Chore',
+      title: 'Add chore',
       body: ChoreCreationSheet(
         initialTitle: initialTitle,
         initialDescription: initialDescription,

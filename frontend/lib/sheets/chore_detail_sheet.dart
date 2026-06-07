@@ -87,7 +87,7 @@ class ChoreDetailSheet extends StatefulWidget {
   }) async {
     return showAppBottomSheet(
       context: context,
-      title: 'Chore Details',
+      title: 'Chore details',
       body: ChoreDetailSheet(
         choreId: choreId,
         title: title,

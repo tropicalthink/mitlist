@@ -81,7 +81,7 @@ class RecipeDetailSheet extends StatelessWidget {
   }) async {
     return showAppBottomSheet(
       context: context,
-      title: 'Recipe Details',
+      title: 'Recipe details',
       body: RecipeDetailSheet(
         title: title,
         description: description,
