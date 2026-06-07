@@ -71,12 +71,12 @@ func NewRecipeScrapingService() *RecipeScrapingService {
 }
 
 func (s *RecipeScrapingService) ScrapeRecipe(ctx context.Context, rawURL string) (*RecipeClipResponse, error) {
-	u, err := security.ValidateURLForFetch(ctx, rawURL)
+	validated, err := security.ValidateAndResolveURL(ctx, rawURL)
 	if err != nil {
 		return nil, fmt.Errorf("url not allowed: %w", err)
 	}
 
-	html, finalURL, err := s.fetchHTML(ctx, u.String())
+	html, finalURL, err := s.fetchHTML(ctx, validated)
 	if err != nil {
 		return nil, err
 	}
@@ -118,9 +118,14 @@ func (s *RecipeScrapingService) scrapeHTML(html, finalURL string) (*RecipeClipRe
 // Fetching (SSRF-safe + size cap + redirect validation)
 // ------------------------------------------------------------------
 
-func (s *RecipeScrapingService) fetchHTML(ctx context.Context, raw string) (string, string, error) {
-	redirects := 0
+func (s *RecipeScrapingService) fetchHTML(ctx context.Context, validated *security.ValidatedURL) (string, string, error) {
+	pinned := security.NewPinnedTransport(validated)
 	client := *s.client
+	if pinned != nil {
+		client.Transport = pinned
+	}
+
+	redirects := 0
 	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		redirects++
 		if redirects > 3 {
@@ -132,7 +137,7 @@ func (s *RecipeScrapingService) fetchHTML(ctx context.Context, raw string) (stri
 		return nil
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, raw, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, validated.URL.String(), nil)
 	if err != nil {
 		return "", "", fmt.Errorf("invalid request")
 	}

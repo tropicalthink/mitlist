@@ -74,7 +74,7 @@ class SettlementConfirmationDialog extends StatelessWidget {
             Expanded(
               child: _PartyBlock(label: 'From', name: payer),
             ),
-            SizedBox(width: MitlistSpacing.md),
+            const SizedBox(width: MitlistSpacing.md),
             Icon(
               Icons.arrow_forward,
               size: MitlistSpacing.space5,
@@ -98,7 +98,7 @@ class SettlementConfirmationDialog extends StatelessWidget {
                 onPressed: () => Navigator.of(context).pop(false),
               ),
             ),
-            SizedBox(width: MitlistSpacing.md),
+            const SizedBox(width: MitlistSpacing.md),
             Expanded(
               child: AppButton(
                 variant: AppButtonVariant.solid,

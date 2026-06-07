@@ -89,7 +89,7 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet> {
           onChanged: (_) => setState(() {}),
           keyboardType: TextInputType.text,
         ),
-        SizedBox(height: MitlistSpacing.sm),
+        const SizedBox(height: MitlistSpacing.sm),
         Text(
           'Tip: codes are short words + numbers. Uppercase works best.',
           style:

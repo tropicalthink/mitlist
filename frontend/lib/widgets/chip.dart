@@ -27,7 +27,7 @@ class AppChip extends StatelessWidget {
     return GestureDetector(
       onTap: onSelected != null ? () => onSelected!(!selected) : null,
       child: Container(
-        height: MitlistSpacing.space8,
+        height: MitlistSpacing.space11,
         padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.space3),
         decoration: BoxDecoration(
           color: backgroundColor,

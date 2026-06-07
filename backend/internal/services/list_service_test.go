@@ -366,7 +366,7 @@ func TestListService_ReorderItems(t *testing.T) {
 
 		listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
 		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
-		listRepo.On("ListItemsByList", ctx, listID, 0, 0).Return([]models.ListItem{
+		listRepo.On("ListItemsByList", ctx, listID, 10000, 0).Return([]models.ListItem{
 			{ID: item1}, {ID: item2},
 		}, nil)
 		listRepo.On("BatchUpdateItemPositions", ctx, mock.AnythingOfType("[]models.ListItem")).Return(nil)
@@ -382,7 +382,7 @@ func TestListService_ReorderItems(t *testing.T) {
 
 		listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
 		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
-		listRepo.On("ListItemsByList", ctx, listID, 0, 0).Return([]models.ListItem{{ID: item1}}, nil)
+		listRepo.On("ListItemsByList", ctx, listID, 10000, 0).Return([]models.ListItem{{ID: item1}}, nil)
 
 		err := svc.ReorderItems(ctx, user, listID, []uuid.UUID{item2})
 		require.Error(t, err)

@@ -9,6 +9,7 @@ import (
 
 	golangjwt "github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 
 	"github.com/mitlist-app/mitlist/internal/config"
 	"github.com/mitlist-app/mitlist/internal/redis"
@@ -77,6 +78,9 @@ func (s *Service) GenerateTokenPair(userID string, roles []string) (access, refr
 }
 
 // ValidateAccessToken validates an access token and returns its claims.
+// If the Redis revocation check fails, the token is allowed (fail-open)
+// since access tokens are short-lived and blocking all access on Redis
+// outage is worse than letting a potentially-revoked token through.
 func (s *Service) ValidateAccessToken(token string) (*Claims, error) {
 	claims, err := s.parse(token)
 	if err != nil {
@@ -85,9 +89,12 @@ func (s *Service) ValidateAccessToken(token string) (*Claims, error) {
 	if claims.TokenType != TokenTypeAccess {
 		return nil, ErrInvalidToken
 	}
-	if revoked, err := s.isRevoked(TokenTypeAccess, claims.ID); err != nil {
-		return nil, err
-	} else if revoked {
+	revoked, err := s.isRevoked(TokenTypeAccess, claims.ID)
+	if err != nil {
+		log.Warn().Err(err).Str("jti", claims.ID).Msg("access token revocation check failed, allowing token")
+		return claims, nil
+	}
+	if revoked {
 		return nil, ErrRevokedToken
 	}
 	return claims, nil

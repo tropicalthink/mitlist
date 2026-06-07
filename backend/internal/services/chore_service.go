@@ -347,10 +347,13 @@ func (s *ChoreService) CompleteChore(ctx context.Context, user *models.User, cho
 	}
 
 	now := time.Now().UTC()
-	assignment.Status = "completed"
-	assignment.CompletedAt = &now
-	if err := s.choreRepo.UpdateAssignment(ctx, assignment); err != nil {
-		return fmt.Errorf("failed to update assignment: %w", err)
+
+	ok, err := s.choreRepo.CompleteAssignment(ctx, assignment.ID, "completed", now, nil)
+	if err != nil {
+		return fmt.Errorf("failed to complete assignment: %w", err)
+	}
+	if !ok {
+		return &api.ConflictError{Message: "assignment already processed"}
 	}
 
 	completion := &models.ChoreCompletion{
@@ -402,11 +405,13 @@ func (s *ChoreService) SkipChore(ctx context.Context, user *models.User, choreID
 	}
 
 	now := time.Now().UTC()
-	assignment.Status = "skipped"
-	assignment.CompletedAt = &now
-	assignment.SkipReason = skipReason
-	if err := s.choreRepo.UpdateAssignment(ctx, assignment); err != nil {
-		return fmt.Errorf("failed to update assignment: %w", err)
+
+	ok, err := s.choreRepo.CompleteAssignment(ctx, assignment.ID, "skipped", now, skipReason)
+	if err != nil {
+		return fmt.Errorf("failed to skip assignment: %w", err)
+	}
+	if !ok {
+		return &api.ConflictError{Message: "assignment already processed"}
 	}
 
 	state, err := s.choreRepo.GetRotationState(ctx, choreID)

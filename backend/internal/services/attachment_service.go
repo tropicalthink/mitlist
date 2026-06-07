@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"mime"
 	"path"
 	"strings"
 	"time"
@@ -16,6 +17,19 @@ import (
 	"github.com/mitlist-app/mitlist/internal/repositories"
 	storagesvc "github.com/mitlist-app/mitlist/internal/services/storage"
 )
+
+var allowedContentTypes = map[string]bool{
+	"application/octet-stream": true,
+	"image/jpeg":               true,
+	"image/png":                true,
+	"image/gif":                true,
+	"image/webp":               true,
+	"image/heic":               true,
+	"image/heif":               true,
+	"application/pdf":          true,
+	"text/plain":               true,
+	"text/csv":                 true,
+}
 
 type AttachmentService struct {
 	cfg      *config.Config
@@ -89,6 +103,13 @@ func (s *AttachmentService) CreateUploadIntent(ctx context.Context, user *models
 	}
 	if in.ContentType == "" {
 		in.ContentType = "application/octet-stream"
+	}
+	in.ContentType = strings.TrimSpace(in.ContentType)
+	if !allowedContentTypes[in.ContentType] {
+		mt, _, _ := mime.ParseMediaType(in.ContentType)
+		if mt == "" || !allowedContentTypes[mt] {
+			in.ContentType = "application/octet-stream"
+		}
 	}
 
 	// Enforce per-group storage cap (best-effort).

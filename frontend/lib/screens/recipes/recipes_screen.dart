@@ -469,7 +469,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       floatingActionButton: AppButton(
         size: AppButtonSize.lg,
         icon: Icon(AppIcons.plus),
-        text: 'ADD RECIPE',
+        text: 'Add recipe',
         onPressed: _onAddRecipe,
         tooltip: 'Add recipe',
       ),
@@ -576,7 +576,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  SizedBox(height: MitlistSpacing.sm),
+                  const SizedBox(height: MitlistSpacing.sm),
                   ...plans.take(3).map((p) {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: MitlistSpacing.xs),
@@ -587,7 +587,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                             size: 14,
                             color: Theme.of(context).colorScheme.primary,
                           ),
-                          SizedBox(width: MitlistSpacing.sm),
+                          const SizedBox(width: MitlistSpacing.sm),
                           Expanded(
                             child: Text(
                               '${p['day']} ${p['slot']}: ${p['title']}',

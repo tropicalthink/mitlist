@@ -294,6 +294,8 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
                   child: Text(
                     '${DateFormat.yMMMd().format(_weekStart)} – ${DateFormat.yMMMd().format(weekEnd)}',
                     textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: textTheme.titleMedium,
                   ),
                 ),
@@ -380,13 +382,13 @@ class _MealPlanLoadingBody extends StatelessWidget {
                       height: 16),
                 ],
               ),
-              SizedBox(height: MitlistSpacing.sm),
+              const SizedBox(height: MitlistSpacing.sm),
               AppSkeleton(
                   width: double.infinity, height: 40),
-              SizedBox(height: MitlistSpacing.sm),
+              const SizedBox(height: MitlistSpacing.sm),
               AppSkeleton(
                   width: double.infinity, height: 40),
-              SizedBox(height: MitlistSpacing.sm),
+              const SizedBox(height: MitlistSpacing.sm),
               AppSkeleton(
                   width: double.infinity, height: 40),
             ],
@@ -441,7 +443,7 @@ class _DayCard extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                 ),
-                SizedBox(width: MitlistSpacing.sm),
+                const SizedBox(width: MitlistSpacing.sm),
                 Text(
                   DateFormat.EEEE().format(date),
                   style: textTheme.titleSmall?.copyWith(
@@ -457,7 +459,7 @@ class _DayCard extends StatelessWidget {
                 ),
               ],
             ),
-            SizedBox(height: MitlistSpacing.md),
+            const SizedBox(height: MitlistSpacing.md),
             ..._slots.map((slot) {
               final plan = plans.cast<MealPlan?>().firstWhere(
                     (p) => p?.slot == slot,
@@ -548,6 +550,8 @@ class _SlotRow extends StatelessWidget {
                 child: plan == null
                     ? Text(
                         'Add meal',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontStyle: FontStyle.italic,

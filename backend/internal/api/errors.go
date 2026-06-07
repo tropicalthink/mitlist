@@ -166,8 +166,10 @@ func WriteError(w http.ResponseWriter, err error) {
 	if errors.As(err, &ve) {
 		resp.Message = ve.Error()
 		resp.Field = ve.Field
-	} else {
-		if err != nil {
+	} else if err != nil {
+		if status == http.StatusInternalServerError {
+			resp.Message = "internal server error"
+		} else {
 			resp.Message = err.Error()
 		}
 	}

@@ -24,7 +24,7 @@ class WelcomeScreen extends StatelessWidget {
                 style: MitlistTypography.logo(),
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: MitlistSpacing.space3),
+              const SizedBox(height: MitlistSpacing.space3),
               Text(
                 'Your household, organized.',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -32,7 +32,7 @@ class WelcomeScreen extends StatelessWidget {
                     ),
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: MitlistSpacing.space8),
+              const SizedBox(height: MitlistSpacing.space8),
               Container(
                 padding: const EdgeInsets.all(MitlistSpacing.lg),
                 decoration: BoxDecoration(
@@ -47,10 +47,10 @@ class WelcomeScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Lists, chores, money —\nall in one place.',
+                      'Lists, chores, money.\nAll in one place.',
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
-                    SizedBox(height: MitlistSpacing.sm),
+                    const SizedBox(height: MitlistSpacing.sm),
                     Text(
                       'Built for flatmates who want less friction and more clarity.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(

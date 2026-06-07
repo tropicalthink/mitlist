@@ -100,11 +100,8 @@ func (s *ShareService) CreateListFromShare(ctx context.Context, userID uuid.UUID
 		return nil, nil, err
 	}
 
-	if s.groupRepo != nil {
-		_, err := s.groupRepo.GetMembership(ctx, groupID, userID)
-		if err != nil {
-			return nil, nil, &api.PermissionDeniedError{Message: "not a member of this group"}
-		}
+	if _, err := s.groupRepo.GetMembership(ctx, groupID, userID); err != nil {
+		return nil, nil, &api.PermissionDeniedError{Message: "not a member of this group"}
 	}
 
 	list := &models.List{

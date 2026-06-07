@@ -81,7 +81,10 @@ Extract as much detail as possible. For receipts, parse each line item with pric
 	}
 
 	var scan ScanResult
-	b, _ := json.Marshal(result)
+	b, err := json.Marshal(result)
+	if err != nil {
+		return nil, fmt.Errorf("serialize scan result: %w", err)
+	}
 	if err := json.Unmarshal(b, &scan); err != nil {
 		return nil, fmt.Errorf("parse scan result: %w", err)
 	}

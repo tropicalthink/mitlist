@@ -307,7 +307,7 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
       padding: const EdgeInsets.all(MitlistSpacing.md),
       itemCount:
           sorted.length + (_isLoadingMore || _errorMessage != null ? 1 : 0),
-      separatorBuilder: (_, __) => SizedBox(height: MitlistSpacing.md),
+      separatorBuilder: (_, __) => const SizedBox(height: MitlistSpacing.md),
       itemBuilder: (context, index) {
         if (index >= sorted.length) {
           if (_errorMessage != null) {
@@ -319,7 +319,7 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
 
           return Center(
             child: Padding(
-              padding: EdgeInsets.all(MitlistSpacing.md),
+              padding: const EdgeInsets.all(MitlistSpacing.md),
               child: CircularProgressIndicator(),
             ),
           );
@@ -357,7 +357,7 @@ class _GroupCard extends StatelessWidget {
           color:
               isPersonal ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
         ),
-        SizedBox(width: MitlistSpacing.md),
+        const SizedBox(width: MitlistSpacing.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -367,7 +367,7 @@ class _GroupCard extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               if (memberCount != null) ...[
-                SizedBox(height: MitlistSpacing.xs),
+                const SizedBox(height: MitlistSpacing.xs),
                 Text(
                   '$memberCount member${memberCount == 1 ? '' : 's'}',
                   maxLines: 1,

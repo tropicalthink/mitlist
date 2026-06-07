@@ -39,7 +39,7 @@ class AppBottomSheet extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(height: MitlistSpacing.sm),
+          const SizedBox(height: MitlistSpacing.sm),
           Center(
             child: Container(
               width: MitlistSpacing.space10,
@@ -52,7 +52,7 @@ class AppBottomSheet extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(height: MitlistSpacing.sm),
+          const SizedBox(height: MitlistSpacing.sm),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.lg),
             child: Row(
@@ -66,7 +66,7 @@ class AppBottomSheet extends StatelessWidget {
               ],
             ),
           ),
-          SizedBox(height: MitlistSpacing.md),
+          const SizedBox(height: MitlistSpacing.md),
           Flexible(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(

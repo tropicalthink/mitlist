@@ -257,7 +257,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           textInputAction: TextInputAction.done,
           maxLength: 500,
         ),
-        SizedBox(height: MitlistSpacing.md),
+        const SizedBox(height: MitlistSpacing.md),
         Text(
           'Recurrence'.toUpperCase(),
           style:
@@ -322,7 +322,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           ),
         ],
         if (_recurrence == _Recurrence.weekly) ...[
-          SizedBox(height: MitlistSpacing.md),
+          const SizedBox(height: MitlistSpacing.md),
           Text(
             'Weekdays'.toUpperCase(),
             style: MitlistTypography.labelXSmall(
@@ -358,7 +358,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
             }).toList(),
           ),
         ],
-        SizedBox(height: MitlistSpacing.md),
+        const SizedBox(height: MitlistSpacing.md),
         Text(
           'Assignment'.toUpperCase(),
           style:

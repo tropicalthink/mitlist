@@ -6,6 +6,7 @@ import (
 	"math/rand"
 
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
@@ -26,6 +27,7 @@ type GuestService struct {
 	userRepo        repositories.UserRepo
 	jwtService      JWTService
 	passwordService PasswordService
+	redisClient     *redis.Client
 }
 
 // NewGuestService creates a new GuestService.
@@ -33,11 +35,13 @@ func NewGuestService(
 	userRepo repositories.UserRepo,
 	jwtService JWTService,
 	passwordService PasswordService,
+	redisClient *redis.Client,
 ) *GuestService {
 	return &GuestService{
 		userRepo:        userRepo,
 		jwtService:      jwtService,
 		passwordService: passwordService,
+		redisClient:     redisClient,
 	}
 }
 
@@ -102,6 +106,10 @@ func (s *GuestService) ConvertGuest(ctx context.Context, guestID uuid.UUID, emai
 
 	if err := s.userRepo.Update(ctx, user); err != nil {
 		return nil, "", "", fmt.Errorf("convert guest: %w", err)
+	}
+
+	if s.redisClient != nil {
+		_ = s.redisClient.Del(ctx, "cache:user:"+user.ID.String()).Err()
 	}
 
 	access, refresh, err := s.jwtService.GenerateTokenPair(user.ID.String(), nil)

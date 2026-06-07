@@ -668,6 +668,11 @@ func (h *ListHandler) ArchiveList(w http.ResponseWriter, r *http.Request) {
 		respondError(w, err)
 		return
 	}
+	_, ok := userFromContext(r)
+	if !ok {
+		respondError(w, api.ErrUnauthorized)
+		return
+	}
 	if err := h.service.SetListArchived(r.Context(), id, true); err != nil {
 		respondError(w, err)
 		return
@@ -679,6 +684,11 @@ func (h *ListHandler) UnarchiveList(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
 		respondError(w, err)
+		return
+	}
+	_, ok := userFromContext(r)
+	if !ok {
+		respondError(w, api.ErrUnauthorized)
 		return
 	}
 	if err := h.service.SetListArchived(r.Context(), id, false); err != nil {
@@ -694,11 +704,22 @@ func (h *ListHandler) ClaimItem(w http.ResponseWriter, r *http.Request) {
 		respondError(w, err)
 		return
 	}
-	userID := RequireUser(w, r)
-	if userID == uuid.Nil {
+	user, ok := userFromContext(r)
+	if !ok {
+		respondError(w, api.ErrUnauthorized)
 		return
 	}
-	if err := h.service.ListRepo().ClaimItem(r.Context(), itemID, userID); err != nil {
+	listID, err := parseUUIDParam(r, "id")
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	_, err = h.service.GetList(r.Context(), user, listID)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	if err := h.service.ListRepo().ClaimItem(r.Context(), itemID, user.ID); err != nil {
 		respondError(w, err)
 		return
 	}
@@ -709,6 +730,11 @@ func (h *ListHandler) UnclaimItem(w http.ResponseWriter, r *http.Request) {
 	itemID, err := parseUUIDParam(r, "item_id")
 	if err != nil {
 		respondError(w, err)
+		return
+	}
+	_, ok := userFromContext(r)
+	if !ok {
+		respondError(w, api.ErrUnauthorized)
 		return
 	}
 	if err := h.service.ListRepo().UnclaimItem(r.Context(), itemID); err != nil {

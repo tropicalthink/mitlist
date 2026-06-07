@@ -19,9 +19,6 @@ const (
 
 	authIPCapacity   = 10
 	authIPRefillRate = 10.0 / 60.0 // 10 requests per minute per IP for auth endpoints
-
-	failedLoginCapacity   = 5
-	failedLoginRefillRate = 5.0 / 300.0 // 5 attempts per 5 minutes per account
 )
 
 type userContextKey struct{}
@@ -71,8 +68,8 @@ end
 `)
 
 // RateLimit returns a chi-compatible HTTP middleware that enforces per-IP
-// (100 req/min) and per-user (1000 req/hr) rate limits using a Redis token
-// bucket. Routes /health and /api/v1/auth/token are excluded.
+// rate limits using a Redis token bucket. Auth endpoints get a stricter limit.
+// Health-check routes (/healthz, /readyz, /internal/health) are excluded.
 func RateLimit(client *redis.Client, apiPrefix string) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -111,17 +108,34 @@ func RateLimit(client *redis.Client, apiPrefix string) func(next http.Handler) h
 				return
 			}
 
-			if userID := UserIDFromContext(r.Context()); userID != "" {
-				allowed, err := checkLimit(r.Context(), client, "ratelimit:user:"+userID, userCapacity, userRefillRate, now)
-				if err != nil {
-					log.Warn().Err(err).Str("user_id", userID).Msg("user rate limit check failed, allowing")
-				}
-				if !allowed {
-					http.Error(w, `{"error":"rate limit exceeded"}`, http.StatusTooManyRequests)
-					return
-				}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func UserRateLimit(client *redis.Client) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if client == nil {
+				next.ServeHTTP(w, r)
+				return
 			}
 
+			userID := UserIDFromContext(r.Context())
+			if userID == "" {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			now := float64(time.Now().UnixNano()) / 1e9
+			allowed, err := checkLimit(r.Context(), client, "ratelimit:user:"+userID, userCapacity, userRefillRate, now)
+			if err != nil {
+				log.Warn().Err(err).Str("user_id", userID).Msg("user rate limit check failed, allowing")
+			}
+			if !allowed {
+				http.Error(w, `{"error":"rate limit exceeded"}`, http.StatusTooManyRequests)
+				return
+			}
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -144,17 +158,22 @@ func isAuthEndpoint(path string, apiPrefix string) bool {
 }
 
 func shouldSkip(path string, apiPrefix string) bool {
-	if path == "/health" {
-		return true
-	}
-	return false
+	return path == "/healthz" || path == "/readyz" || strings.HasPrefix(path, "/internal/health")
 }
 
-func checkLimit(ctx context.Context, client *redis.Client, key string, capacity int, refillRate float64, now float64) (bool, error) {
-	result, err := tokenBucketScript.Run(ctx, client, []string{key}, capacity, refillRate, now, 1).Result()
+func CheckLimit(ctx context.Context, client *redis.Client, key string, capacity int, refillRate float64, now ...float64) (bool, error) {
+	t := float64(time.Now().UnixNano()) / 1e9
+	if len(now) > 0 {
+		t = now[0]
+	}
+	result, err := tokenBucketScript.Run(ctx, client, []string{key}, capacity, refillRate, t, 1).Result()
 	if err != nil {
 		return false, err
 	}
 	allowed, _ := result.(int64)
 	return allowed == 1, nil
+}
+
+func checkLimit(ctx context.Context, client *redis.Client, key string, capacity int, refillRate float64, now float64) (bool, error) {
+	return CheckLimit(ctx, client, key, capacity, refillRate, now)
 }

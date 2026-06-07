@@ -92,7 +92,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet> {
 
     if (_isLoading) {
       return Padding(
-        padding: EdgeInsets.all(MitlistSpacing.md),
+        padding: const EdgeInsets.all(MitlistSpacing.md),
         child: Center(child: CircularProgressIndicator()),
       );
     }
@@ -105,7 +105,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet> {
         children: [
           if (_error != null) ...[
             AppAlert(type: AppAlertType.error, message: _error!),
-            SizedBox(height: MitlistSpacing.md),
+            const SizedBox(height: MitlistSpacing.md),
           ],
           AppCard(
             variant: AppCardVariant.outlined,
@@ -116,7 +116,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet> {
                   'Invite code',
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
-                SizedBox(height: MitlistSpacing.sm),
+                const SizedBox(height: MitlistSpacing.sm),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
@@ -136,14 +136,14 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet> {
                         children: [
                           Expanded(
                             child: Text(
-                              code.isEmpty ? '—' : code.trim(),
+                              code.isEmpty ? '' : code.trim(),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: MitlistTypography.monoBody(),
                             ),
                           ),
                           if (code.isNotEmpty) ...[
-                            SizedBox(width: MitlistSpacing.sm),
+                            const SizedBox(width: MitlistSpacing.sm),
                             Icon(
                               Icons.copy,
                               size: 18,
@@ -155,7 +155,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet> {
                     ),
                   ),
                 ),
-                SizedBox(height: MitlistSpacing.md),
+                const SizedBox(height: MitlistSpacing.md),
                 Center(
                   child: InkWell(
                     onTap: (code.isEmpty || _isCopying) ? null : _copyCode,
@@ -173,10 +173,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet> {
                               width: InviteHouseholdSheet._qrSize,
                               height: InviteHouseholdSheet._qrSize,
                               child: Center(
-                                child: Text(
-                                  '—',
-                                  style: MitlistTypography.monoBody(),
-                                ),
+                                child: const SizedBox.shrink(),
                               ),
                             )
                           : QrImageView(
@@ -204,7 +201,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet> {
                     ),
                   ),
                 ),
-                SizedBox(height: MitlistSpacing.sm),
+                const SizedBox(height: MitlistSpacing.sm),
                 Text(
                   code.isEmpty ? 'Generating QR…' : 'Scan to join',
                   textAlign: TextAlign.center,
@@ -212,7 +209,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet> {
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                 ),
-                SizedBox(height: MitlistSpacing.sm),
+                const SizedBox(height: MitlistSpacing.sm),
                 Text(
                   'They can join from “My Households” → “Join with code”.',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(

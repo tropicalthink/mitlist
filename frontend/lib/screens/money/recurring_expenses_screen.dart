@@ -89,7 +89,7 @@ class _RecurringExpensesScreenState
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Couldn\u2019t update.')),
+        const SnackBar(content: Text('Couldn\u2019t update recurring expense.')),
       );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -105,7 +105,7 @@ class _RecurringExpensesScreenState
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Couldn\u2019t delete.')),
+        const SnackBar(content: Text('Couldn\u2019t delete recurring expense.')),
       );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -179,7 +179,7 @@ class _RecurringExpensesScreenState
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/House.lottie',
           icon: Icon(Icons.home_outlined),
-          title: 'No household',
+          title: 'No household yet',
           description: 'Join or create a household to manage recurring expenses',
         ),
       );
@@ -259,7 +259,7 @@ class _RecurringExpensesScreenState
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Couldn\u2019t create.')),
+        SnackBar(content: Text('Couldn\u2019t create recurring expense.')),
       );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -498,14 +498,17 @@ class _CreateRecurringFormState extends State<_CreateRecurringForm> {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              TextButton(
+              AppButton(
+                variant: AppButtonVariant.outline,
+                color: AppButtonColor.neutral,
+                text: 'Cancel',
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel'),
               ),
               const SizedBox(width: MitlistSpacing.sm),
-              TextButton(
+              AppButton(
+                variant: AppButtonVariant.solid,
+                text: 'Save',
                 onPressed: _submit,
-                child: const Text('Save'),
               ),
             ],
           ),

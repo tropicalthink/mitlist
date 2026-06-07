@@ -2,8 +2,11 @@ package services
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
@@ -33,7 +36,10 @@ func NewActivityService(repo ActivityRepo, groupRepo GroupMembershipChecker) *Ac
 func (s *ActivityService) requireMembership(ctx context.Context, userID, groupID uuid.UUID) error {
 	_, err := s.groupRepo.GetMembership(ctx, groupID, userID)
 	if err != nil {
-		return &api.PermissionDeniedError{Message: "not a member of this group"}
+		if errors.Is(err, pgx.ErrNoRows) {
+			return &api.PermissionDeniedError{Message: "not a member of this group"}
+		}
+		return fmt.Errorf("check membership: %w", err)
 	}
 	return nil
 }

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -339,7 +340,10 @@ func (h *ChoreHandler) SkipChore(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		SkipReason *string `json:"skip_reason"`
 	}
-	_ = json.NewDecoder(r.Body).Decode(&req)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && err != io.EOF {
+		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
+		return
+	}
 
 	if err := h.service.SkipChore(r.Context(), user, id, req.SkipReason); err != nil {
 		api.RespondError(w, err)

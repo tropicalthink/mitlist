@@ -251,16 +251,18 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
                   ),
                   const Spacer(),
                   if (_pendingMedia.isNotEmpty)
-                    TextButton(
+                    AppButton(
+                      variant: AppButtonVariant.ghost,
+                      color: AppButtonColor.neutral,
+                      text: 'Clear',
                       onPressed: _isSaving
                           ? null
                           : () => setState(() => _pendingMedia.clear()),
-                      child: const Text('Clear'),
                     ),
                 ],
               ),
             ],
-            SizedBox(height: MitlistSpacing.md),
+            const SizedBox(height: MitlistSpacing.md),
             if (_error != null) ...[
               Text(
                 _error!,
@@ -277,7 +279,7 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'PREVIEW',
+                    'Preview',
                     style: MitlistTypography.labelXSmall(),
                   ),
                   const SizedBox(height: MitlistSpacing.sm),
@@ -322,7 +324,7 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
                     child: Row(
                       children: [
                         AppIcon(name: option.icon),
-                        SizedBox(width: MitlistSpacing.sm),
+                        const SizedBox(width: MitlistSpacing.sm),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,

@@ -18,7 +18,7 @@ class AppFilterPill extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      height: MitlistSpacing.space7,
+      height: MitlistSpacing.space11,
       padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.space2),
       decoration: BoxDecoration(
         color: colorScheme.surface,
@@ -36,17 +36,21 @@ class AppFilterPill extends StatelessWidget {
             style: MitlistTypography.labelXSmall(),
           ),
           const SizedBox(width: MitlistSpacing.space1),
-          GestureDetector(
-            onTap: onRemove,
-            behavior: HitTestBehavior.opaque,
-            child: SizedBox(
-              width: MitlistSpacing.space7,
-              height: MitlistSpacing.space7,
-              child: Center(
-                child: Icon(
-                  Icons.close,
-                  size: 14,
-                  color: colorScheme.onSurface,
+          Semantics(
+            button: true,
+            label: 'Remove $label filter',
+            child: GestureDetector(
+              onTap: onRemove,
+              behavior: HitTestBehavior.opaque,
+              child: SizedBox(
+                width: MitlistSpacing.space11,
+                height: MitlistSpacing.space11,
+                child: Center(
+                  child: Icon(
+                    Icons.close,
+                    size: 14,
+                    color: colorScheme.onSurface,
+                  ),
                 ),
               ),
             ),

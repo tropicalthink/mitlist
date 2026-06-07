@@ -216,7 +216,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
                     size: MitlistSpacing.space12,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-                  SizedBox(height: MitlistSpacing.md),
+                  const SizedBox(height: MitlistSpacing.md),
                   Text(
                     'Scan a receipt, list, recipe,\nor chore reminder',
                     textAlign: TextAlign.center,
@@ -227,20 +227,20 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
                 ],
               ),
             ),
-          SizedBox(height: MitlistSpacing.md),
+          const SizedBox(height: MitlistSpacing.md),
 
           // Analyze / pick buttons
           if (_isAnalyzing)
             Center(
               child: Padding(
-                padding: EdgeInsets.symmetric(vertical: MitlistSpacing.lg),
+                padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.lg),
                 child: Column(
                   children: [
                     CircularProgressIndicator(
                       valueColor: AlwaysStoppedAnimation(
                           Theme.of(context).colorScheme.primary),
                     ),
-                    SizedBox(height: MitlistSpacing.md),
+                    const SizedBox(height: MitlistSpacing.md),
                     Text('Analyzing…'),
                   ],
                 ),
@@ -285,7 +285,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
 
           // Result preview
           if (_result != null) ...[
-            SizedBox(height: MitlistSpacing.md),
+            const SizedBox(height: MitlistSpacing.md),
             _buildResultCard(),
           ],
         ],
@@ -323,21 +323,21 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
             ],
           ),
           if (r.title != null) ...[
-            SizedBox(height: MitlistSpacing.sm),
+            const SizedBox(height: MitlistSpacing.sm),
             Text(
               r.title!,
               style: textTheme.headlineSmall,
             ),
           ],
           if (r.items.isNotEmpty) ...[
-            SizedBox(height: MitlistSpacing.md),
+            const SizedBox(height: MitlistSpacing.md),
             Text(
               '${r.items.length} item${r.items.length == 1 ? '' : 's'}',
               style: textTheme.labelMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
-            SizedBox(height: MitlistSpacing.sm),
+            const SizedBox(height: MitlistSpacing.sm),
             ...r.items.take(8).map((item) {
               var label = item.name;
               if (item.quantity != null && item.quantity!.isNotEmpty) {
@@ -381,14 +381,14 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
               ),
           ],
           if (r.steps.isNotEmpty) ...[
-            SizedBox(height: MitlistSpacing.md),
+            const SizedBox(height: MitlistSpacing.md),
             Text(
               '${r.steps.length} step${r.steps.length == 1 ? '' : 's'}',
               style: textTheme.labelMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
-            SizedBox(height: MitlistSpacing.sm),
+            const SizedBox(height: MitlistSpacing.sm),
             ...r.steps.take(5).map((step) => Padding(
                   padding: const EdgeInsets.only(
                       bottom: MitlistSpacing.xs),
@@ -414,7 +414,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
                 )),
           ],
           if (r.amount != null && r.amount! > 0) ...[
-            SizedBox(height: MitlistSpacing.sm),
+            const SizedBox(height: MitlistSpacing.sm),
             Text(
               'Total: \$${(r.amount! / 100).toStringAsFixed(2)}',
               style: textTheme.titleMedium?.copyWith(

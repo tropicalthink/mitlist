@@ -4,12 +4,14 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
@@ -19,11 +21,12 @@ import (
 
 // UserService provides business logic for user authentication and management.
 type UserService struct {
-	userRepo repositories.UserRepo
-	authRepo repositories.AuthRepo
-	jwt      JWTService
-	password PasswordService
-	mail     MailService
+	userRepo    repositories.UserRepo
+	authRepo    repositories.AuthRepo
+	jwt         JWTService
+	password    PasswordService
+	mail        MailService
+	redisClient *redis.Client
 }
 
 // NewUserService creates a new UserService.
@@ -33,13 +36,15 @@ func NewUserService(
 	jwt JWTService,
 	password PasswordService,
 	mail MailService,
+	redisClient *redis.Client,
 ) *UserService {
 	return &UserService{
-		userRepo: userRepo,
-		authRepo: authRepo,
-		jwt:      jwt,
-		password: password,
-		mail:     mail,
+		userRepo:    userRepo,
+		authRepo:    authRepo,
+		jwt:         jwt,
+		password:    password,
+		mail:        mail,
+		redisClient: redisClient,
 	}
 }
 
@@ -130,8 +135,37 @@ func (s *UserService) Login(ctx context.Context, email, password string) (*model
 	return user, access, refresh, nil
 }
 
-// GetMe returns the authenticated user's profile.
+const userCacheTTL = 60 * time.Second
+
+func userCacheKey(userID uuid.UUID) string {
+	return "cache:user:" + userID.String()
+}
+
+func (s *UserService) invalidateUserCache(ctx context.Context, userID uuid.UUID) {
+	if s.redisClient == nil {
+		return
+	}
+	_ = s.redisClient.Del(ctx, userCacheKey(userID)).Err()
+}
+
+// GetMe returns the authenticated user's profile, with a short Redis cache.
 func (s *UserService) GetMe(ctx context.Context, userID uuid.UUID) (*models.User, error) {
+	if s.redisClient != nil {
+		cached, err := s.redisClient.Get(ctx, userCacheKey(userID)).Bytes()
+		if err == nil {
+			var user models.User
+			if json.Unmarshal(cached, &user) == nil {
+				if !user.IsActive {
+					return nil, &api.ValidationError{Message: "account is inactive"}
+				}
+				if !user.IsVerified {
+					return nil, &api.ValidationError{Message: "account is not verified"}
+				}
+				return &user, nil
+			}
+		}
+	}
+
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		if isNotFound(err) {
@@ -145,6 +179,13 @@ func (s *UserService) GetMe(ctx context.Context, userID uuid.UUID) (*models.User
 	if !user.IsVerified {
 		return nil, &api.ValidationError{Message: "account is not verified"}
 	}
+
+	if s.redisClient != nil && user != nil {
+		if data, err := json.Marshal(user); err == nil {
+			_ = s.redisClient.Set(ctx, userCacheKey(userID), data, userCacheTTL).Err()
+		}
+	}
+
 	return user, nil
 }
 
@@ -193,6 +234,7 @@ func (s *UserService) UpdateMe(ctx context.Context, userID uuid.UUID, input Upda
 	if err := s.userRepo.Update(ctx, user); err != nil {
 		return nil, err
 	}
+	s.invalidateUserCache(ctx, userID)
 	return user, nil
 }
 
@@ -211,7 +253,11 @@ func (s *UserService) DeleteMe(ctx context.Context, userID uuid.UUID) error {
 	if !user.IsVerified {
 		return &api.ValidationError{Message: "account is not verified"}
 	}
-	return s.userRepo.SoftDelete(ctx, userID)
+	if err := s.userRepo.SoftDelete(ctx, userID); err != nil {
+		return err
+	}
+	s.invalidateUserCache(ctx, userID)
+	return nil
 }
 
 // ChangePassword updates the user's password after verifying the current one.
@@ -243,7 +289,11 @@ func (s *UserService) ChangePassword(ctx context.Context, userID uuid.UUID, oldP
 		return err
 	}
 	user.PasswordHash = hash
-	return s.userRepo.Update(ctx, user)
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		return err
+	}
+	s.invalidateUserCache(ctx, userID)
+	return nil
 }
 
 // RequestPasswordReset generates a reset token and sends it via email.
@@ -316,7 +366,11 @@ func (s *UserService) ConfirmPasswordReset(ctx context.Context, token, newPasswo
 		return err
 	}
 
-	return s.authRepo.ConsumeToken(ctx, resetToken.ID)
+	if err := s.authRepo.ConsumeToken(ctx, resetToken.ID); err != nil {
+		return err
+	}
+	s.invalidateUserCache(ctx, resetToken.UserID)
+	return nil
 }
 
 // ClaimAccountInput holds fields for claiming a pre-created or guest account.
@@ -368,6 +422,7 @@ func (s *UserService) ClaimAccount(ctx context.Context, userID uuid.UUID, input 
 	if err := s.userRepo.Update(ctx, user); err != nil {
 		return nil, err
 	}
+	s.invalidateUserCache(ctx, userID)
 	return user, nil
 }
 

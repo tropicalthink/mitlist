@@ -224,7 +224,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => confirmReset(),
               ),
-              SizedBox(height: MitlistSpacing.lg),
+              const SizedBox(height: MitlistSpacing.lg),
               AppButton(
                 text: 'Reset password',
                 onPressed: isResetting ? null : confirmReset,
@@ -305,7 +305,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     'mitlist',
                     style: MitlistTypography.logo(),
                   ),
-                  SizedBox(height: MitlistSpacing.space8),
+                  const SizedBox(height: MitlistSpacing.space8),
                   Container(
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.surface,
@@ -405,39 +405,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           color: AppButtonColor.neutral,
                           onPressed: _isLoading ? null : () => _startOAuth('apple'),
                         ),
-                        SizedBox(height: MitlistSpacing.space4),
+                        const SizedBox(height: MitlistSpacing.space4),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            TextButton(
+                            AppButton(
+                              variant: AppButtonVariant.ghost,
+                              color: AppButtonColor.primary,
+                              text: 'Create account',
                               onPressed: () => context.goNamed('signup'),
-                              child: Text(
-                                'Create account',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelLarge
-                                    ?.copyWith(
-                                      color: Theme.of(context).colorScheme.primary,
-                                    ),
-                              ),
                             ),
                           ],
                         ),
-                        SizedBox(height: MitlistSpacing.space2),
+                        const SizedBox(height: MitlistSpacing.space2),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            TextButton(
+                            AppButton(
+                              variant: AppButtonVariant.ghost,
+                              color: AppButtonColor.neutral,
+                              text: 'Forgot password?',
                               onPressed: _showPasswordResetSheet,
-                              child: Text(
-                                'Forgot password?',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelMedium
-                                    ?.copyWith(
-                                      color: Theme.of(context).colorScheme.primary,
-                                    ),
-                              ),
                             ),
                           ],
                         ),

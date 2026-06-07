@@ -430,8 +430,8 @@ func (s *ListService) ReorderItems(ctx context.Context, user *models.User, listI
 	if len(itemIDs) == 0 {
 		return nil
 	}
-	// Verify all items belong to the list.
-	items, err := s.listRepo.ListItemsByList(ctx, listID, 0, 0)
+	// Verify all items belong to the list. Use a high limit to cover all items.
+	items, err := s.listRepo.ListItemsByList(ctx, listID, 10000, 0)
 	if err != nil {
 		return fmt.Errorf("failed to list items: %w", err)
 	}

@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 
 	"github.com/mitlist-app/mitlist/internal/config"
 	"github.com/mitlist-app/mitlist/internal/container"
@@ -31,8 +31,10 @@ type Server struct {
 func New(cfg *config.Config, cnt *container.Container, runner *jobs.Runner) *Server {
 	r := chi.NewRouter()
 
-	// Built-in chi middleware
-	r.Use(chiMiddleware.RealIP)
+	if cfg.TrustedProxies != "" {
+		middleware.SetTrustedProxies(strings.Split(cfg.TrustedProxies, ","))
+	}
+	r.Use(middleware.RealIPFromTrusted)
 
 	// Inject logger into context — must be early so downstream middleware/handlers can use it
 	r.Use(logger.Middleware(cnt.Logger()))

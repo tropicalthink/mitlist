@@ -53,7 +53,7 @@ func (r *FinanceRepo) GetExpenseByID(ctx context.Context, id uuid.UUID) (*models
 	err := row.Scan(&e.ID, &e.GroupID, &e.PayerID, &e.Amount, &e.Description, &e.Category, &e.Currency, &e.Notes, &e.Date, &e.CreatedAt, &e.UpdatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, fmt.Errorf("expense not found")
+			return nil, fmt.Errorf("expense not found: %w", pgx.ErrNoRows)
 		}
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (r *FinanceRepo) UpdateExpense(ctx context.Context, e *models.Expense) erro
 		return err
 	}
 	if cmd.RowsAffected() == 0 {
-		return fmt.Errorf("expense not found")
+		return fmt.Errorf("expense not found: %w", pgx.ErrNoRows)
 	}
 	return nil
 }
@@ -148,7 +148,7 @@ func (r *FinanceRepo) DeleteExpense(ctx context.Context, id uuid.UUID) error {
 		return err
 	}
 	if cmd.RowsAffected() == 0 {
-		return fmt.Errorf("expense not found")
+		return fmt.Errorf("expense not found: %w", pgx.ErrNoRows)
 	}
 
 	return tx.Commit(ctx)
@@ -216,7 +216,7 @@ func (r *FinanceRepo) UpdateSplit(ctx context.Context, s *models.Split) error {
 		return err
 	}
 	if cmd.RowsAffected() == 0 {
-		return fmt.Errorf("split not found")
+		return fmt.Errorf("split not found: %w", pgx.ErrNoRows)
 	}
 	return nil
 }
@@ -228,7 +228,7 @@ func (r *FinanceRepo) DeleteSplit(ctx context.Context, id uuid.UUID) error {
 		return err
 	}
 	if cmd.RowsAffected() == 0 {
-		return fmt.Errorf("split not found")
+		return fmt.Errorf("split not found: %w", pgx.ErrNoRows)
 	}
 	return nil
 }
@@ -311,7 +311,7 @@ func (r *FinanceRepo) DeleteSettlement(ctx context.Context, id uuid.UUID) error 
 		return err
 	}
 	if cmd.RowsAffected() == 0 {
-		return fmt.Errorf("settlement not found")
+		return fmt.Errorf("settlement not found: %w", pgx.ErrNoRows)
 	}
 	return nil
 }
@@ -399,7 +399,7 @@ func (r *FinanceRepo) UpdateRecurringExpense(ctx context.Context, re *models.Rec
 		return err
 	}
 	if cmd.RowsAffected() == 0 {
-		return fmt.Errorf("recurring expense not found")
+		return fmt.Errorf("recurring expense not found: %w", pgx.ErrNoRows)
 	}
 	return nil
 }
@@ -411,7 +411,7 @@ func (r *FinanceRepo) DeleteRecurringExpense(ctx context.Context, id uuid.UUID) 
 		return err
 	}
 	if cmd.RowsAffected() == 0 {
-		return fmt.Errorf("recurring expense not found")
+		return fmt.Errorf("recurring expense not found: %w", pgx.ErrNoRows)
 	}
 	return nil
 }

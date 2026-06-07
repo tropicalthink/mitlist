@@ -822,7 +822,7 @@ class _ErrorBody extends StatelessWidget {
             type: AppAlertType.error,
             message: message ?? 'Failed to load expenses. Please try again.',
           ),
-          SizedBox(height: MitlistSpacing.md),
+          const SizedBox(height: MitlistSpacing.md),
           AppButton(
             text: 'Retry',
             onPressed: onRetry,
@@ -1001,7 +1001,7 @@ class _TimelineBody extends StatelessWidget {
               ),
             ),
           SliverPadding(
-            padding: EdgeInsets.only(bottom: MitlistSpacing.space12),
+            padding: const EdgeInsets.only(bottom: MitlistSpacing.space12),
           ),
         ],
       ),
@@ -1092,7 +1092,7 @@ class _ExpenseCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           _PayerBadge(label: expense.payer),
-          SizedBox(width: MitlistSpacing.sm),
+          const SizedBox(width: MitlistSpacing.sm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1120,7 +1120,7 @@ class _ExpenseCard extends StatelessWidget {
               ],
             ),
           ),
-          SizedBox(width: MitlistSpacing.sm),
+          const SizedBox(width: MitlistSpacing.sm),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -1255,7 +1255,7 @@ class _SuggestionCard extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: MitlistSpacing.md),
+          const SizedBox(height: MitlistSpacing.md),
           LayoutBuilder(
             builder: (context, constraints) {
               final compact = constraints.maxWidth < 360;
@@ -1277,7 +1277,7 @@ class _SuggestionCard extends StatelessWidget {
                     from,
                     Padding(
                       padding:
-                          EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
+                          const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
                       child: AppIcon(name: 'arrowRight', size: 20),
                     ),
                     to,
@@ -1291,7 +1291,7 @@ class _SuggestionCard extends StatelessWidget {
                   Expanded(child: from),
                   Padding(
                     padding:
-                        EdgeInsets.symmetric(horizontal: MitlistSpacing.sm),
+                        const EdgeInsets.symmetric(horizontal: MitlistSpacing.sm),
                     child: AppIcon(name: 'arrowRight', size: 20),
                   ),
                   Expanded(child: to),
@@ -1299,14 +1299,14 @@ class _SuggestionCard extends StatelessWidget {
               );
             },
           ),
-          SizedBox(height: MitlistSpacing.md),
+          const SizedBox(height: MitlistSpacing.md),
           Text(
             'Record this settlement after the payment is made.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
-          SizedBox(height: MitlistSpacing.md),
+          const SizedBox(height: MitlistSpacing.md),
           SizedBox(
             width: double.infinity,
             child: AppButton(
@@ -1353,7 +1353,7 @@ class _SettlementParty extends StatelessWidget {
                   color: tone,
                 ),
           ),
-          SizedBox(height: MitlistSpacing.xs),
+          const SizedBox(height: MitlistSpacing.xs),
           Text(
             label,
             maxLines: 1,
@@ -1438,7 +1438,7 @@ class _BalancesExpandableBodyState extends State<_BalancesExpandableBody> {
               children: [
                 Expanded(
                   child: Text(
-                    'BALANCES',
+                    'Balances',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.labelMedium,

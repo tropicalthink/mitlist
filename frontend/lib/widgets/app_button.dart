@@ -234,7 +234,7 @@ class _AppButtonState extends State<AppButton> {
       children: [
         _buildLeading(foreground, duration),
         if (hasVisible && (widget.text != null || widget.suffixIcon != null))
-          SizedBox(width: MitlistSpacing.space2),
+          const SizedBox(width: MitlistSpacing.space2),
       ],
     );
   }
@@ -268,7 +268,7 @@ class _AppButtonState extends State<AppButton> {
         ),
       );
       if (widget.suffixIcon != null) {
-        rowChildren.add(SizedBox(width: MitlistSpacing.space2));
+        rowChildren.add(const SizedBox(width: MitlistSpacing.space2));
       }
     }
 

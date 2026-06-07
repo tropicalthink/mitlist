@@ -345,7 +345,7 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
                 onPost: _post,
                 onPickLinkedEntity: _pickLinkedEntity,
               ),
-              SizedBox(height: MitlistSpacing.lg),
+              const SizedBox(height: MitlistSpacing.lg),
               posts.when(
                 loading: () => const SizedBox.shrink(),
                 error: (_, __) => Container(
@@ -362,7 +362,7 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
                     children: [
                       Icon(Icons.warning_amber_rounded,
                           color: Theme.of(context).colorScheme.primary),
-                      SizedBox(width: MitlistSpacing.sm),
+                      const SizedBox(width: MitlistSpacing.sm),
                       Expanded(
                         child: Text(
                           "Couldn't load the pinwall.",
@@ -687,7 +687,7 @@ class _PinwallNoteCard extends ConsumerWidget {
                 m.url,
                 fit: BoxFit.contain,
                 errorBuilder: (_, __, ___) => Padding(
-                  padding: EdgeInsets.all(MitlistSpacing.md),
+                  padding: const EdgeInsets.all(MitlistSpacing.md),
                   child: Text(
                     'Couldn\u2019t load image.',
                     style: TextStyle(color: MitlistColors.surfaceSoft),

@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/config"
@@ -22,17 +23,20 @@ type AuthHandler struct {
 	guestService *services.GuestService
 	oauthService *services.OAuthService
 	jwtService   *jwtservice.Service
+	redisClient  *redis.Client
 }
 
 // NewAuthHandler creates an AuthHandler wired from the container.
 func NewAuthHandler(cfg *config.Config, cnt *container.Container) *AuthHandler {
-	return &AuthHandler{
-		cfg:          cfg,
-		userService:  cnt.UserService(),
-		guestService: cnt.GuestService(),
-		oauthService: cnt.OAuthService(),
-		jwtService:   cnt.JWT(),
+	h := &AuthHandler{cfg: cfg}
+	if cnt != nil {
+		h.userService = cnt.UserService()
+		h.guestService = cnt.GuestService()
+		h.oauthService = cnt.OAuthService()
+		h.jwtService = cnt.JWT()
+		h.redisClient = cnt.Redis().Client()
 	}
+	return h
 }
 
 // RegisterRoutes mounts all auth routes under the provided router.
@@ -179,11 +183,25 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
+
+	if h.redisClient != nil {
+		key := "ratelimit:failedlogin:" + req.Email
+		if allowed, _ := middleware.CheckLimit(r.Context(), h.redisClient, key, 5, 5.0/300.0); !allowed {
+			api.RespondError(w, &api.ValidationError{Message: "too many attempts, please wait and try again"})
+			return
+		}
+	}
+
 	user, access, refresh, err := h.userService.Login(r.Context(), req.Email, req.Password)
 	if err != nil {
 		api.RespondError(w, err)
 		return
 	}
+
+	if h.redisClient != nil {
+		_ = h.redisClient.Del(r.Context(), "ratelimit:failedlogin:"+req.Email).Err()
+	}
+
 	respondJSON(w, http.StatusOK, tokenPairResp{
 		User:         user,
 		AccessToken:  access,

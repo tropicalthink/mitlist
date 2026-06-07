@@ -86,7 +86,7 @@ class _ConflictResolutionSheetState
   Widget build(BuildContext context) {
     if (_loading) {
       return Padding(
-        padding: EdgeInsets.all(MitlistSpacing.lg),
+        padding: const EdgeInsets.all(MitlistSpacing.lg),
         child: Center(child: CircularProgressIndicator()),
       );
     }
@@ -95,16 +95,15 @@ class _ConflictResolutionSheetState
 
     if (conflicts.isEmpty) {
       return Padding(
-        padding: EdgeInsets.all(MitlistSpacing.lg),
+        padding: const EdgeInsets.all(MitlistSpacing.lg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.check_circle, size: 48, color: Theme.of(context).colorScheme.tertiary),
-            SizedBox(height: MitlistSpacing.md),
+            const SizedBox(height: MitlistSpacing.md),
             Text(
               'All conflicts resolved',
-              style: TextStyle(
-                fontSize: 16,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: Theme.of(context).colorScheme.onSurface,
               ),
@@ -126,7 +125,7 @@ class _ConflictResolutionSheetState
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
         ),
-        SizedBox(height: MitlistSpacing.md),
+        const SizedBox(height: MitlistSpacing.md),
         ...conflicts.map((conflict) => _ConflictCard(
               conflict: conflict,
               isResolving: _resolving.contains(conflict.id),
@@ -176,21 +175,20 @@ class _ConflictCard extends StatelessWidget {
               children: [
                 Icon(Icons.warning_amber_rounded,
                     size: 16, color: Theme.of(context).colorScheme.secondary),
-                SizedBox(width: MitlistSpacing.sm),
+                const SizedBox(width: MitlistSpacing.sm),
                 Expanded(
                   child: Text(
                     _entityLabel(conflict.entityType),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      fontSize: 14,
                     ),
                   ),
                 ),
               ],
             ),
-            SizedBox(height: MitlistSpacing.sm),
+            const SizedBox(height: MitlistSpacing.sm),
             ...keys.map((key) {
               final localVal = _formatValue(local[key]);
               final serverVal = _formatValue(server[key]);
@@ -207,19 +205,21 @@ class _ConflictCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
+                          // JetBrains Mono intentionally uses fixed sizes for diff alignment
                           fontSize: 11,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontFamily: 'JetBrains Mono',
                         ),
                       ),
                     ),
-                    SizedBox(width: MitlistSpacing.sm),
+                    const SizedBox(width: MitlistSpacing.sm),
                     Expanded(
                       child: Text(
                         localVal,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
+                          // JetBrains Mono intentionally uses fixed sizes for diff alignment
                           fontSize: 12,
                           fontWeight:
                               changed ? FontWeight.w600 : FontWeight.normal,
@@ -233,16 +233,17 @@ class _ConflictCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    SizedBox(width: MitlistSpacing.xs),
+                    const SizedBox(width: MitlistSpacing.xs),
                     Icon(Icons.arrow_forward,
                         size: 12, color: Theme.of(context).colorScheme.outline),
-                    SizedBox(width: MitlistSpacing.xs),
+                    const SizedBox(width: MitlistSpacing.xs),
                     Expanded(
                       child: Text(
                         serverVal,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
+                          // JetBrains Mono intentionally uses fixed sizes for diff alignment
                           fontSize: 12,
                           fontWeight:
                               changed ? FontWeight.w600 : FontWeight.normal,
@@ -310,7 +311,7 @@ class _ConflictCard extends StatelessWidget {
   }
 
   String _formatValue(dynamic value) {
-    if (value == null) return '—';
+    if (value == null) return 'None';
     if (value is Map || value is List) return jsonEncode(value);
     return value.toString();
   }

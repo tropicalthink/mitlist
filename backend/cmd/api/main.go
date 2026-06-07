@@ -95,6 +95,7 @@ func main() {
 		// Protected feature routes
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.Auth(cnt.JWT(), cnt.UserService()))
+			r.Use(middleware.UserRateLimit(cnt.Redis().Client()))
 
 			// Notifications
 			notificationHandler := handlers.NewNotificationHandler(cnt.NotificationService())

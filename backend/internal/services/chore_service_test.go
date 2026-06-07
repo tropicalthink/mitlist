@@ -246,7 +246,7 @@ func TestChoreService_CompleteChore(t *testing.T) {
 		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
 		choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{ID: choreID, GroupID: groupID}, nil)
 		choreRepo.On("GetPendingAssignmentByChore", ctx, choreID).Return(&models.ChoreAssignment{ID: assignID, ChoreID: choreID}, nil)
-		choreRepo.On("UpdateAssignment", ctx, mock.AnythingOfType("*models.ChoreAssignment")).Return(nil)
+		choreRepo.On("CompleteAssignment", ctx, assignID, "completed", mock.AnythingOfType("time.Time"), (*string)(nil)).Return(true, nil)
 		choreRepo.On("CreateCompletion", ctx, mock.AnythingOfType("*models.ChoreCompletion")).Return(nil)
 		choreRepo.On("GetRotationState", ctx, choreID).Return(&models.ChoreRotationState{
 			ChoreID: choreID, MemberOrder: []uuid.UUID{member1}, CurrentIndex: 0,
@@ -275,7 +275,7 @@ func TestChoreService_SkipChore(t *testing.T) {
 		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
 		choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{ID: choreID, GroupID: groupID}, nil)
 		choreRepo.On("GetPendingAssignmentByChore", ctx, choreID).Return(&models.ChoreAssignment{ID: assignID, ChoreID: choreID}, nil)
-		choreRepo.On("UpdateAssignment", ctx, mock.AnythingOfType("*models.ChoreAssignment")).Return(nil)
+		choreRepo.On("CompleteAssignment", ctx, assignID, "skipped", mock.AnythingOfType("time.Time"), (*string)(nil)).Return(true, nil)
 		choreRepo.On("GetRotationState", ctx, choreID).Return(&models.ChoreRotationState{
 			ChoreID: choreID, MemberOrder: []uuid.UUID{member1}, CurrentIndex: 0,
 		}, nil)

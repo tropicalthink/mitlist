@@ -188,7 +188,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         padding: const EdgeInsets.all(MitlistSpacing.md),
         itemCount: 7,
         itemBuilder: (_, __) => Padding(
-          padding: EdgeInsets.only(bottom: MitlistSpacing.sm),
+          padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
           child: AppSkeleton(width: double.infinity, height: 80),
         ),
       );
@@ -215,7 +215,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/House.lottie',
           icon: const Icon(Icons.home_outlined),
-          title: 'No household',
+          title: 'No household yet',
           description: 'Join or create a household to view the calendar',
           actions: [
             AppButton(
@@ -378,6 +378,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 child: Text(
                   _weekLabel(),
                   textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.labelLarge,
                 ),
               ),
@@ -433,6 +435,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 child: Text(
                   _monthLabel(),
                   textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.labelLarge,
                 ),
               ),
@@ -463,7 +467,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 .toList(),
           ),
         ),
-        SizedBox(height: MitlistSpacing.sm),
+        const SizedBox(height: MitlistSpacing.sm),
         Expanded(
           child: Padding(
             padding:
@@ -515,7 +519,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        SizedBox(height: MitlistSpacing.xs),
+                        const SizedBox(height: MitlistSpacing.xs),
                         Text(
                           '$dayNum',
                           style:
@@ -697,7 +701,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     ),
                   ],
                 ),
-                SizedBox(height: MitlistSpacing.sm),
+                const SizedBox(height: MitlistSpacing.sm),
                 ..._agendaDayEvents(dayEvents),
               ],
             ),
@@ -741,7 +745,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             child: Row(
               children: [
                 Icon(icon, size: 18, color: color),
-                SizedBox(width: MitlistSpacing.sm),
+                const SizedBox(width: MitlistSpacing.sm),
                 Expanded(
                   child: Text(
                     e.title.isNotEmpty ? e.title : label,
@@ -851,7 +855,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           variant: AppButtonVariant.outline,
           onPressed: () => Navigator.of(context).pop(false),
         ),
-        SizedBox(width: MitlistSpacing.sm),
+        const SizedBox(width: MitlistSpacing.sm),
         AppButton(
           text: 'Delete',
           color: AppButtonColor.error,
@@ -910,13 +914,13 @@ class _DayCard extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                SizedBox(width: MitlistSpacing.sm),
+                const SizedBox(width: MitlistSpacing.sm),
                 Text(
                   '${day.day}.${day.month}.',
                   style: MitlistTypography.labelXSmall(),
                 ),
                 if (isToday) ...[
-                  SizedBox(width: MitlistSpacing.sm),
+                  const SizedBox(width: MitlistSpacing.sm),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: MitlistSpacing.sm,
@@ -929,7 +933,7 @@ class _DayCard extends StatelessWidget {
                     child: Text(
                       'Today',
                       style: MitlistTypography.labelXSmall(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onPrimary,
                       ),
                     ),
                   ),
@@ -1019,7 +1023,7 @@ class _EventRow extends StatelessWidget {
           child: Row(
             children: [
               Icon(icon, size: 16, color: color),
-              SizedBox(width: MitlistSpacing.sm),
+              const SizedBox(width: MitlistSpacing.sm),
               Expanded(
                 child: Text(
                   event.title.isNotEmpty ? event.title : label,

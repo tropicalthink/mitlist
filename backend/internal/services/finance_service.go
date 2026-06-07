@@ -111,7 +111,7 @@ func (s *FinanceService) CreateExpenseWithSplitMode(ctx context.Context, userID 
 func (s *FinanceService) GetExpense(ctx context.Context, userID, expenseID uuid.UUID) (*models.Expense, error) {
 	expense, err := s.financeRepo.GetExpenseByID(ctx, expenseID)
 	if err != nil {
-		if err.Error() == "expense not found" {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, api.ErrNotFound
 		}
 		return nil, err
@@ -173,7 +173,7 @@ func (s *FinanceService) GetFinanceSummary(ctx context.Context, userID, groupID 
 func (s *FinanceService) UpdateExpense(ctx context.Context, userID uuid.UUID, expense *models.Expense) error {
 	existing, err := s.financeRepo.GetExpenseByID(ctx, expense.ID)
 	if err != nil {
-		if err.Error() == "expense not found" {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return api.ErrNotFound
 		}
 		return err
@@ -189,7 +189,7 @@ func (s *FinanceService) UpdateExpense(ctx context.Context, userID uuid.UUID, ex
 func (s *FinanceService) DeleteExpense(ctx context.Context, userID, expenseID uuid.UUID) error {
 	existing, err := s.financeRepo.GetExpenseByID(ctx, expenseID)
 	if err != nil {
-		if err.Error() == "expense not found" {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return api.ErrNotFound
 		}
 		return err
@@ -208,7 +208,7 @@ func (s *FinanceService) DeleteExpense(ctx context.Context, userID, expenseID uu
 func (s *FinanceService) GetSplit(ctx context.Context, userID uuid.UUID, splitID uuid.UUID) (*models.Split, error) {
 	split, err := s.financeRepo.GetSplitByID(ctx, splitID)
 	if err != nil {
-		if err.Error() == "split not found" {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, api.ErrNotFound
 		}
 		return nil, err
@@ -227,7 +227,7 @@ func (s *FinanceService) GetSplit(ctx context.Context, userID uuid.UUID, splitID
 func (s *FinanceService) CreateSplit(ctx context.Context, userID uuid.UUID, split *models.Split) error {
 	expense, err := s.financeRepo.GetExpenseByID(ctx, split.ExpenseID)
 	if err != nil {
-		if err.Error() == "expense not found" {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return api.ErrNotFound
 		}
 		return err
@@ -245,14 +245,14 @@ func (s *FinanceService) CreateSplit(ctx context.Context, userID uuid.UUID, spli
 func (s *FinanceService) UpdateSplit(ctx context.Context, userID uuid.UUID, split *models.Split) error {
 	existing, err := s.financeRepo.GetSplitByID(ctx, split.ID)
 	if err != nil {
-		if err.Error() == "split not found" {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return api.ErrNotFound
 		}
 		return err
 	}
 	expense, err := s.financeRepo.GetExpenseByID(ctx, existing.ExpenseID)
 	if err != nil {
-		if err.Error() == "expense not found" {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return api.ErrNotFound
 		}
 		return err
@@ -268,14 +268,14 @@ func (s *FinanceService) UpdateSplit(ctx context.Context, userID uuid.UUID, spli
 func (s *FinanceService) DeleteSplit(ctx context.Context, userID, splitID uuid.UUID) error {
 	existing, err := s.financeRepo.GetSplitByID(ctx, splitID)
 	if err != nil {
-		if err.Error() == "split not found" {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return api.ErrNotFound
 		}
 		return err
 	}
 	expense, err := s.financeRepo.GetExpenseByID(ctx, existing.ExpenseID)
 	if err != nil {
-		if err.Error() == "expense not found" {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return api.ErrNotFound
 		}
 		return err
@@ -315,7 +315,7 @@ func (s *FinanceService) CreateSettlement(ctx context.Context, userID uuid.UUID,
 func (s *FinanceService) DeleteSettlement(ctx context.Context, userID, settlementID uuid.UUID) error {
 	settlement, err := s.financeRepo.GetSettlementByID(ctx, settlementID)
 	if err != nil {
-		if err.Error() == "settlement not found" {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return api.ErrNotFound
 		}
 		return err
@@ -345,7 +345,7 @@ func (s *FinanceService) CreateRecurringExpense(ctx context.Context, userID uuid
 func (s *FinanceService) GetRecurringExpense(ctx context.Context, userID, id uuid.UUID) (*models.RecurringExpense, error) {
 	re, err := s.financeRepo.GetRecurringExpenseByID(ctx, id)
 	if err != nil {
-		if err.Error() == "recurring expense not found" {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, api.ErrNotFound
 		}
 		return nil, err
@@ -368,7 +368,7 @@ func (s *FinanceService) ListRecurringExpenses(ctx context.Context, userID, grou
 func (s *FinanceService) UpdateRecurringExpense(ctx context.Context, userID uuid.UUID, re *models.RecurringExpense) error {
 	existing, err := s.financeRepo.GetRecurringExpenseByID(ctx, re.ID)
 	if err != nil {
-		if err.Error() == "recurring expense not found" {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return api.ErrNotFound
 		}
 		return err
@@ -384,7 +384,7 @@ func (s *FinanceService) UpdateRecurringExpense(ctx context.Context, userID uuid
 func (s *FinanceService) DeleteRecurringExpense(ctx context.Context, userID, id uuid.UUID) error {
 	existing, err := s.financeRepo.GetRecurringExpenseByID(ctx, id)
 	if err != nil {
-		if err.Error() == "recurring expense not found" {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return api.ErrNotFound
 		}
 		return err
