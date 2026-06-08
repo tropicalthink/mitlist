@@ -136,7 +136,7 @@ class _PartyBlock extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          label.toUpperCase(),
+          label,
           style: MitlistTypography.labelXSmall(color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: MitlistSpacing.xs),

@@ -163,7 +163,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
                           horizontal: MitlistSpacing.xs,
                         ),
                         child: Text(
-                          '–',
+                          '—',
                           style: Theme.of(context)
                               .textTheme
                               .titleMedium

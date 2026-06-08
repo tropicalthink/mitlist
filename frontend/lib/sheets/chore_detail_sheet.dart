@@ -5,6 +5,7 @@ import '../models/chore_models.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../widgets/app_bottom_sheet.dart';
+import '../widgets/app_divider.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_dialog.dart';
@@ -169,6 +170,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
         ],
       ),
     );
+    if (!mounted) return;
     if (reason != null && widget.onSkip != null) {
       widget.onSkip!(reason.isEmpty ? null : reason);
     }
@@ -237,6 +239,8 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
         Text(
           widget.title,
           style: textTheme.headlineSmall,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: MitlistSpacing.md),
         AppCard(
@@ -245,28 +249,28 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
           child: Column(
             children: [
               _DetailRow(label: 'Assignee', value: widget.assignee),
-              Divider(color: Theme.of(context).colorScheme.outlineVariant),
+              const AppDivider(),
               _DetailRow(
                 label: 'Due',
                 value: DateFormat.yMMMd().format(widget.dueDate),
               ),
               if (widget.trackedCount != null) ...[
-                Divider(color: Theme.of(context).colorScheme.outlineVariant),
+                const AppDivider(),
                 _DetailRow(label: 'Tracked', value: widget.trackedCount.toString()),
               ],
               if (widget.lastTrackedAt != null) ...[
-                Divider(color: Theme.of(context).colorScheme.outlineVariant),
+                const AppDivider(),
                 _DetailRow(
                   label: 'Last done',
                   value: DateFormat.yMMMd().format(widget.lastTrackedAt!),
                 ),
               ],
               if (widget.lastDoneByLabel != null && widget.lastDoneByLabel!.isNotEmpty) ...[
-                Divider(color: Theme.of(context).colorScheme.outlineVariant),
+                const AppDivider(),
                 _DetailRow(label: 'Last by', value: widget.lastDoneByLabel!),
               ],
               if (widget.averageFrequencyHours != null) ...[
-                Divider(color: Theme.of(context).colorScheme.outlineVariant),
+                const AppDivider(),
                 _DetailRow(
                   label: 'Average',
                   value: _formatAverageFrequency(widget.averageFrequencyHours!),

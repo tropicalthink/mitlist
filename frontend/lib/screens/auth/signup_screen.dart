@@ -10,6 +10,7 @@ import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_input.dart';
+import '../../widgets/password_strength_bar.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -27,13 +28,23 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _passwordFocus = FocusNode();
 
   bool _isLoading = false;
+  bool _isSuccess = false;
   String? _errorMessage;
   String? _nameError;
   String? _emailError;
   String? _passwordError;
 
   @override
+  void initState() {
+    super.initState();
+    _passwordController.addListener(_onPasswordChanged);
+  }
+
+  void _onPasswordChanged() => setState(() {});
+
+  @override
   void dispose() {
+    _passwordController.removeListener(_onPasswordChanged);
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -87,16 +98,22 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       
       // Update auth state
       ref.read(authStateProvider.notifier).state = true;
-      
+
       if (mounted) {
-        context.goNamed('onboarding');
+        setState(() {
+          _isLoading = false;
+          _isSuccess = true;
+        });
+        await Future.delayed(const Duration(milliseconds: 650));
+        if (mounted) context.goNamed('onboarding');
       }
+      return;
     } catch (e) {
       setState(() {
         _errorMessage = 'Couldn\u2019t create account. Check your connection and try again.';
       });
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted && !_isSuccess) setState(() => _isLoading = false);
     }
   }
 
@@ -188,12 +205,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                           errorText: _passwordError,
                         ),
                         const SizedBox(height: MitlistSpacing.space2),
-                        Text(
-                          'Use 8+ characters with a mix of letters and numbers.',
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                  ),
+                        PasswordStrengthBar(
+                          password: _passwordController.text,
                         ),
                         const SizedBox(height: MitlistSpacing.space3),
                         if (_errorMessage != null) ...[
@@ -211,7 +224,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                             color: AppButtonColor.primary,
                             size: AppButtonSize.lg,
                             isLoading: _isLoading,
-                            onPressed: _isLoading ? null : _submit,
+                            isSuccess: _isSuccess,
+                            onPressed: (_isLoading || _isSuccess) ? null : _submit,
                           ),
                         ),
                         const SizedBox(height: MitlistSpacing.space4),

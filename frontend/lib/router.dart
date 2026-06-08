@@ -25,6 +25,7 @@ import 'screens/share_target_screen.dart';
 import 'screens/notifications/notifications_screen.dart';
 import 'screens/notifications/notification_preferences_screen.dart';
 import 'screens/recipes/recipes_screen.dart';
+import 'screens/recipes/recipe_creation_screen.dart';
 import 'screens/meal_plans/meal_plan_screen.dart';
 import 'screens/shopping/shopping_trip_screen.dart';
 import 'screens/scanner/scanner_screen.dart';
@@ -207,6 +208,13 @@ final routerProvider = Provider<GoRouter>((ref) {
                 name: 'recipes',
                 builder: (context, state) => const RecipesScreen(),
                 routes: [
+                  GoRoute(
+                    path: 'create',
+                    name: 'recipeCreate',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (context, state) =>
+                        const RecipeCreationScreen(),
+                  ),
                   GoRoute(
                     path: 'meal-plan',
                     name: 'mealPlan',

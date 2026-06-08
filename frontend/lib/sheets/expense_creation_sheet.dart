@@ -21,6 +21,7 @@ import '../widgets/app_button.dart';
 import '../widgets/animated_check_toggle.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/app_input.dart';
+import '../utils/friendly_error.dart';
 import '../widgets/chip.dart';
 
 class ExpenseCreationSheet extends ConsumerStatefulWidget {
@@ -164,11 +165,11 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       }
 
       setState(() => _isScanning = false);
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() => _isScanning = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Couldn\u2019t scan receipt.')),
+        SnackBar(content: Text(friendlyErrorMessage(e))),
       );
     }
   }
@@ -263,7 +264,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       if (!mounted) return;
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Couldn\u2019t add expense.')),
+        SnackBar(content: Text(friendlyErrorMessage(e))),
       );
     }
   }

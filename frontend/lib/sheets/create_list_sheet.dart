@@ -16,6 +16,7 @@ import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/app_input.dart';
+import '../utils/friendly_error.dart';
 import '../widgets/chip.dart';
 
 enum _ListType { shopping, todo, custom }
@@ -92,11 +93,11 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
       }
 
       setState(() => _isScanning = false);
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() => _isScanning = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Couldn\u2019t scan list.')),
+        SnackBar(content: Text(friendlyErrorMessage(e))),
       );
     }
   }
@@ -116,10 +117,10 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
         _selectedGroupId = resolveActiveGroupId(groups, preferred);
         _isLoadingGroups = false;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorText = 'Failed to load households.';
+        _errorText = friendlyErrorMessage(e);
         _isLoadingGroups = false;
       });
     }
@@ -153,10 +154,13 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
 
       if (!mounted) return;
       Navigator.of(context).pop(true);
-    } catch (_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('List created')),
+      );
+    } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorText = 'Failed to create list.';
+        _errorText = friendlyErrorMessage(e);
         _isSubmitting = false;
       });
     }
@@ -196,7 +200,7 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
           const SizedBox(height: MitlistSpacing.md),
         ],
         AppInput(
-          label: 'List Name',
+          label: 'List name',
           hint: 'e.g. Weekend Groceries',
           controller: _nameController,
           enabled: !_isSubmitting,
@@ -274,7 +278,8 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
             variant: AppButtonVariant.solid,
             color: AppButtonColor.primary,
             size: AppButtonSize.lg,
-            text: 'Create',
+            text: _isSubmitting ? 'Creating...' : 'Create',
+            isLoading: _isSubmitting,
             onPressed: _canCreate && !_isLoadingGroups && !_isSubmitting
                 ? _onCreate
                 : null,

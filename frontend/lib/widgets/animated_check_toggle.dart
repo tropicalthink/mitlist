@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/animations.dart';
 import '../theme/shadows.dart';
+import '../theme/spacing.dart';
 
 class AnimatedCheckToggle extends StatefulWidget {
   const AnimatedCheckToggle({
@@ -72,36 +73,42 @@ class _AnimatedCheckToggleState extends State<AnimatedCheckToggle>
         ? (widget.semanticLabelOn ?? 'Checked')
         : (widget.semanticLabelOff ?? 'Not checked');
 
-    Widget toggle = GestureDetector(
-      onTap: isInteractive ? () => widget.onChanged!(!widget.value) : null,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: widget.size,
-        height: widget.size,
-        decoration: BoxDecoration(
-          color: bgColor,
-          border: Border.all(color: borderColor, width: 2),
-          borderRadius: BorderRadius.zero,
-          boxShadow: progress > 0.5
-              ? MitlistShadows.shadowSoft
-              : MitlistShadows.shadowNone,
-        ),
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            final t = _controller.value;
-            return Opacity(
-              opacity: t.clamp(0.0, 1.0),
-              child: Transform.scale(
-                scale: 0.4 + (t * 0.6).clamp(0.0, 1.0),
-                child: Icon(
-                  Icons.check,
-                  size: widget.size * 0.62,
-                  color: colorScheme.onPrimary,
-                ),
-              ),
-            );
-          },
+    Widget toggle = SizedBox(
+      width: MitlistSpacing.space11,
+      height: MitlistSpacing.space11,
+      child: GestureDetector(
+        onTap: isInteractive ? () => widget.onChanged!(!widget.value) : null,
+        behavior: HitTestBehavior.opaque,
+        child: Center(
+          child: Container(
+            width: widget.size,
+            height: widget.size,
+            decoration: BoxDecoration(
+              color: bgColor,
+              border: Border.all(color: borderColor, width: 2),
+              borderRadius: BorderRadius.zero,
+              boxShadow: progress > 0.5
+                  ? MitlistShadows.shadowSoft
+                  : MitlistShadows.shadowNone,
+            ),
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                final t = _controller.value;
+                return Opacity(
+                  opacity: t.clamp(0.0, 1.0),
+                  child: Transform.scale(
+                    scale: 0.4 + (t * 0.6).clamp(0.0, 1.0),
+                    child: Icon(
+                      Icons.check,
+                      size: widget.size * 0.62,
+                      color: colorScheme.onPrimary,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
         ),
       ),
     );

@@ -17,7 +17,7 @@ class ConflictResolutionSheet extends ConsumerStatefulWidget {
   static Future<void> show(BuildContext context) {
     return showAppBottomSheet(
       context: context,
-      title: 'Resolve Conflicts',
+      title: 'Resolve conflicts',
       body: const ConflictResolutionSheet(),
     );
   }
@@ -139,6 +139,8 @@ class _ConflictResolutionSheetState
 }
 
 class _ConflictCard extends StatelessWidget {
+  static const _diffFontSizeKey = 11.0;
+  static const _diffFontSizeValue = 12.0;
   const _ConflictCard({
     required this.conflict,
     required this.isResolving,
@@ -195,7 +197,7 @@ class _ConflictCard extends StatelessWidget {
               final serverVal = _formatValue(server[key]);
               final changed = local[key]?.toString() != server[key]?.toString();
               return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
+                padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xs),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -207,7 +209,7 @@ class _ConflictCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           // JetBrains Mono intentionally uses fixed sizes for diff alignment
-                          fontSize: 11,
+                          fontSize: _diffFontSizeKey,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontFamily: 'JetBrains Mono',
                         ),
@@ -221,7 +223,7 @@ class _ConflictCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           // JetBrains Mono intentionally uses fixed sizes for diff alignment
-                          fontSize: 12,
+                          fontSize: _diffFontSizeValue,
                           fontWeight:
                               changed ? FontWeight.w600 : FontWeight.normal,
                           color: changed
@@ -245,7 +247,7 @@ class _ConflictCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           // JetBrains Mono intentionally uses fixed sizes for diff alignment
-                          fontSize: 12,
+                          fontSize: _diffFontSizeValue,
                           fontWeight:
                               changed ? FontWeight.w600 : FontWeight.normal,
                           color: changed
@@ -297,7 +299,7 @@ class _ConflictCard extends StatelessWidget {
   String _entityLabel(String entityType) {
     switch (entityType) {
       case 'list_item':
-        return 'List Item';
+        return 'List item';
       case 'expense':
         return 'Expense';
       case 'chore':
@@ -305,7 +307,7 @@ class _ConflictCard extends StatelessWidget {
       case 'recipe':
         return 'Recipe';
       case 'pinwall_post':
-        return 'Pinwall Post';
+        return 'Pinwall post';
       default:
         return entityType;
     }

@@ -11,7 +11,6 @@ import '../../providers/recipe_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../sheets/recipe_add_to_list_sheet.dart';
-import '../../sheets/recipe_creation_sheet.dart';
 import '../../sheets/recipe_detail_sheet.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
@@ -137,7 +136,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
 
   Future<void> _onAddRecipe() async {
     Haptics.light();
-    final created = await RecipeCreationSheet.show(context);
+    final created = await context.pushNamed<bool>('recipeCreate');
     if (created == true) {
       await _loadKitchen();
     }

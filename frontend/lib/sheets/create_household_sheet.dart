@@ -6,6 +6,8 @@ import '../providers/group_provider.dart';
 import '../theme/spacing.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
+import '../widgets/app_currency_dropdown.dart';
+import '../utils/friendly_error.dart';
 import '../widgets/app_input.dart';
 
 class CreateHouseholdSheet extends ConsumerStatefulWidget {
@@ -54,7 +56,7 @@ class _CreateHouseholdSheetState extends ConsumerState<CreateHouseholdSheet> {
       if (!mounted) return;
       setState(() => _isCreating = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Couldn\u2019t create household.')),
+        SnackBar(content: Text(friendlyErrorMessage(e))),
       );
     }
   }
@@ -73,7 +75,7 @@ class _CreateHouseholdSheetState extends ConsumerState<CreateHouseholdSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppInput(
-          label: 'Household Name',
+          label: 'Household name',
           hint: 'e.g. Carter St',
           controller: _nameController,
           textInputAction: TextInputAction.next,
@@ -89,24 +91,8 @@ class _CreateHouseholdSheetState extends ConsumerState<CreateHouseholdSheet> {
           maxLength: 300,
         ),
         const SizedBox(height: MitlistSpacing.md),
-        DropdownButtonFormField<String>(
-          initialValue: _currency,
-          decoration: const InputDecoration(labelText: 'Currency'),
-          items: const [
-            DropdownMenuItem(value: 'USD', child: Text('USD - US Dollar')),
-            DropdownMenuItem(value: 'EUR', child: Text('EUR - Euro')),
-            DropdownMenuItem(value: 'GBP', child: Text('GBP - British Pound')),
-            DropdownMenuItem(value: 'JPY', child: Text('JPY - Japanese Yen')),
-            DropdownMenuItem(value: 'CAD', child: Text('CAD - Canadian Dollar')),
-            DropdownMenuItem(value: 'AUD', child: Text('AUD - Australian Dollar')),
-            DropdownMenuItem(value: 'CHF', child: Text('CHF - Swiss Franc')),
-            DropdownMenuItem(value: 'SEK', child: Text('SEK - Swedish Krona')),
-            DropdownMenuItem(value: 'NOK', child: Text('NOK - Norwegian Krone')),
-            DropdownMenuItem(value: 'DKK', child: Text('DKK - Danish Krone')),
-            DropdownMenuItem(value: 'PLN', child: Text('PLN - Polish Zloty')),
-            DropdownMenuItem(value: 'CZK', child: Text('CZK - Czech Koruna')),
-            DropdownMenuItem(value: 'HUF', child: Text('HUF - Hungarian Forint')),
-          ],
+        AppCurrencyDropdown(
+          value: _currency,
           onChanged: (v) {
             if (v != null) setState(() => _currency = v);
           },
@@ -118,7 +104,7 @@ class _CreateHouseholdSheetState extends ConsumerState<CreateHouseholdSheet> {
             variant: AppButtonVariant.solid,
             color: AppButtonColor.primary,
             size: AppButtonSize.lg,
-            text: _isCreating ? 'Creating...' : 'Create',
+            text: _isCreating ? 'Creating...' : 'Create household',
             isLoading: _isCreating,
             onPressed: _canCreate ? _onCreate : null,
           ),
