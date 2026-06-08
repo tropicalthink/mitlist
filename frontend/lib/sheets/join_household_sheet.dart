@@ -21,8 +21,8 @@ enum _Phase { entry, joining, success }
 class JoinHouseholdSheet extends ConsumerStatefulWidget {
   const JoinHouseholdSheet({super.key});
 
-  static Future<bool?> show(BuildContext context) async {
-    return showAppBottomSheet<bool>(
+  static Future<Group?> show(BuildContext context) async {
+    return showAppBottomSheet<Group>(
       context: context,
       title: 'Join household',
       body: const JoinHouseholdSheet(),
@@ -322,7 +322,7 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
                       variant: AppButtonVariant.solid,
                       size: AppButtonSize.lg,
                       text: 'Enter ${group.name}',
-                      onPressed: () => Navigator.of(context).pop(true),
+                      onPressed: () => Navigator.of(context).pop(group),
                     ),
                   ),
                 ),

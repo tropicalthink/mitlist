@@ -20,6 +20,7 @@ import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/app_icon.dart';
 import '../../widgets/chip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton.dart';
@@ -325,11 +326,19 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     return bCount.compareTo(aCount);
   }
 
+  String? _filterToListType() => switch (_filter) {
+    _FilterOption.shopping => 'shopping',
+    _FilterOption.todo => 'todo',
+    _FilterOption.custom => 'custom',
+    _FilterOption.all => null,
+  };
+
   Future<void> _showCreateSheet() async {
     Haptics.light();
     final created = await CreateListSheet.show(
       context,
       initialGroupId: widget.groupId,
+      initialType: _filterToListType(),
     );
     if (created == true) {
       await _loadLists();
@@ -548,6 +557,17 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     );
   }
 
+  String _chipLabel(_FilterOption option, String base) {
+    if (_isLoading) return base;
+    final count = switch (option) {
+      _FilterOption.all => _lists.length,
+      _FilterOption.shopping => _lists.where((l) => l.type.toLowerCase() == 'shopping').length,
+      _FilterOption.todo => _lists.where((l) => l.type.toLowerCase() == 'todo').length,
+      _FilterOption.custom => _lists.where((l) => l.type.toLowerCase() == 'custom').length,
+    };
+    return count > 0 ? '$base ($count)' : base;
+  }
+
   Widget _buildChipBar() {
     if (!_hasHousehold) return const SizedBox.shrink();
 
@@ -560,7 +580,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
       child: Row(
         children: _filters.entries.map((entry) {
           final option = entry.key;
-          final label = entry.value;
+          final label = _chipLabel(option, entry.value);
           return Padding(
             padding: const EdgeInsets.only(right: MitlistSpacing.sm),
             child: AppChip(
@@ -649,6 +669,27 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     );
   }
 
+  String get _emptyTitle => switch (_filter) {
+    _FilterOption.shopping => 'No shopping lists',
+    _FilterOption.todo => 'No to-do lists',
+    _FilterOption.custom => 'No custom lists',
+    _FilterOption.all => 'No lists yet',
+  };
+
+  String get _emptyDescription => switch (_filter) {
+    _FilterOption.shopping => 'Great for groceries, meal prep, weekend errands.',
+    _FilterOption.todo => 'Tasks, chores, anything with a checkbox.',
+    _FilterOption.custom => 'Free-form — your list, your rules.',
+    _FilterOption.all => 'Add lines inside a list; the first few appear as a snippet on its card.',
+  };
+
+  String get _emptyActionLabel => switch (_filter) {
+    _FilterOption.shopping => 'Create a shopping list',
+    _FilterOption.todo => 'Create a to-do list',
+    _FilterOption.custom => 'Create a custom list',
+    _FilterOption.all => 'Create your first list',
+  };
+
   Widget _buildEmptyState() {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -662,12 +703,11 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                 child: AppEmptyState(
                   lottieAsset: 'assets/animations/lottie/checklist.lottie',
                   icon: const AppIcon(name: 'queueList'),
-                  title: 'No lists yet',
-                  description:
-                      'Add lines inside a list; the first few appear as a snippet on its card.',
+                  title: _emptyTitle,
+                  description: _emptyDescription,
                   actions: [
                     AppButton(
-                      text: 'Create your first list',
+                      text: _emptyActionLabel,
                       icon: const AppIcon(name: 'plus'),
                       onPressed: _showCreateSheet,
                     ),
@@ -744,6 +784,8 @@ class _ListCard extends StatelessWidget {
         .toList();
     final snippetColor = accent.snippetOnTile;
 
+    final itemCount = list.itemCount;
+
     return Material(
       color: accent.tileBackground,
       child: Semantics(
@@ -767,43 +809,86 @@ class _ListCard extends StatelessWidget {
               ),
             ),
             padding: const EdgeInsets.all(MitlistSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+            child: Stack(
               children: [
-                Text(
-                  list.name,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: accent.titleColor,
-                        fontWeight: FontWeight.w600,
-                        height: 1.2,
-                      ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (previewLines.isNotEmpty) ...[
-                  const SizedBox(height: MitlistSpacing.sm),
-                  for (var i = 0; i < previewLines.length; i++)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Reserve top-right space for the type badge
                     Padding(
-                      padding: EdgeInsets.only(
-                        top: i == 0 ? 0 : MitlistSpacing.xs,
-                      ),
+                      padding: const EdgeInsets.only(right: MitlistSpacing.space5),
                       child: Text(
-                        previewLines[i],
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: snippetColor,
-                              height: 1.35,
+                        list.name,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: accent.titleColor,
+                              fontWeight: FontWeight.w600,
+                              height: 1.2,
                             ),
-                        maxLines: 1,
+                        maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                ],
+                    if (previewLines.isNotEmpty) ...[
+                      const SizedBox(height: MitlistSpacing.sm),
+                      for (var i = 0; i < previewLines.length; i++)
+                        Padding(
+                          padding: EdgeInsets.only(
+                            top: i == 0 ? 0 : MitlistSpacing.xs,
+                          ),
+                          child: Text(
+                            previewLines[i],
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: snippetColor,
+                                  height: 1.35,
+                                ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                    ],
+                    if (itemCount != null && itemCount > 0) ...[
+                      const SizedBox(height: MitlistSpacing.sm),
+                      Text(
+                        '$itemCount item${itemCount == 1 ? '' : 's'}',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: snippetColor,
+                            ),
+                      ),
+                    ],
+                  ],
+                ),
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: _TypeBadge(type: list.type, color: accent.titleColor),
+                ),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _TypeBadge extends StatelessWidget {
+  final String type;
+  final Color color;
+
+  const _TypeBadge({required this.type, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final iconName = switch (type.toLowerCase()) {
+      'shopping' => 'shoppingCart',
+      'todo' => 'checkCircle',
+      _ => 'squares2X2',
+    };
+    return AppIcon(
+      name: iconName,
+      size: 16,
+      color: color.withValues(alpha: 0.45),
     );
   }
 }

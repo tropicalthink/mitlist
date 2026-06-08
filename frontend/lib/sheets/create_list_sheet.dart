@@ -26,15 +26,19 @@ class CreateListSheet extends ConsumerStatefulWidget {
     super.key,
     this.initialGroupId,
     this.initialName,
+    this.initialType,
   });
 
   final String? initialGroupId;
   final String? initialName;
+  /// One of 'shopping', 'todo', 'custom'. Null → defaults to shopping.
+  final String? initialType;
 
   static Future<bool?> show(
     BuildContext context, {
     String? initialGroupId,
     String? initialName,
+    String? initialType,
   }) async {
     return showAppBottomSheet<bool>(
       context: context,
@@ -42,6 +46,7 @@ class CreateListSheet extends ConsumerStatefulWidget {
       body: CreateListSheet(
         initialGroupId: initialGroupId,
         initialName: initialName,
+        initialType: initialType,
       ),
     );
   }
@@ -60,12 +65,19 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
   bool _isScanning = false;
   String? _errorText;
 
+  static _ListType _listTypeFromString(String? type) => switch (type) {
+    'todo' => _ListType.todo,
+    'custom' => _ListType.custom,
+    _ => _ListType.shopping,
+  };
+
   @override
   void initState() {
     super.initState();
     if (widget.initialName != null) {
       _nameController.text = widget.initialName!;
     }
+    _selectedType = _listTypeFromString(widget.initialType);
     _loadGroups();
   }
 

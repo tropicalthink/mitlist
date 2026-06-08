@@ -134,9 +134,9 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
   }
 
   Future<void> _openJoinSheet() async {
-    final joined = await JoinHouseholdSheet.show(context);
-    if (joined == true && mounted) {
-      await _loadInitialGroups();
+    final group = await JoinHouseholdSheet.show(context);
+    if (group != null && mounted) {
+      _navigateToHub(group.id);
     }
   }
 

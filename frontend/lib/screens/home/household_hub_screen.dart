@@ -299,25 +299,31 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
 
     late BuildContext sheetContext;
 
-    Future<void> onCreateJoinResult(bool? success) async {
+    Future<void> onCreateResult(bool? success) async {
       if (success != true || !mounted) return;
       try {
         final svc = await ref.read(groupServiceProviderAsync.future);
         final after = await svc.listGroups();
         if (!mounted) return;
         setState(() => _households = after);
-        Group? newGroup;
-        for (final g in after) {
-          if (!idsBefore.contains(g.id)) {
-            newGroup = g;
-            break;
-          }
-        }
-        if (newGroup != null && hubContext.mounted) {
-          _switchGroup(newGroup.id);
-        } else {
-          await _loadData();
-        }
+        final newGroup = after.firstWhere(
+          (g) => !idsBefore.contains(g.id),
+          orElse: () => after.first,
+        );
+        if (hubContext.mounted) _switchGroup(newGroup.id);
+      } catch (_) {
+        if (mounted) await _loadData();
+      }
+    }
+
+    Future<void> onJoinResult(Group? group) async {
+      if (group == null || !mounted) return;
+      try {
+        final svc = await ref.read(groupServiceProviderAsync.future);
+        final after = await svc.listGroups();
+        if (!mounted) return;
+        setState(() => _households = after);
+        if (hubContext.mounted) _switchGroup(group.id);
       } catch (_) {
         if (mounted) await _loadData();
       }
@@ -446,7 +452,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                     if (!hubContext.mounted) return;
                     final created =
                         await CreateHouseholdSheet.show(hubContext);
-                    await onCreateJoinResult(created);
+                    await onCreateResult(created);
                   });
                 },
               ),
@@ -460,7 +466,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                     if (!hubContext.mounted) return;
                     final joined =
                         await JoinHouseholdSheet.show(hubContext);
-                    await onCreateJoinResult(joined);
+                    await onJoinResult(joined);
                   });
                 },
               ),
@@ -511,8 +517,17 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
   Future<void> _onJoinHousehold() async {
     await Haptics.light();
     if (!mounted) return;
-    final joined = await JoinHouseholdSheet.show(context);
-    await _onHouseholdResult(joined);
+    final group = await JoinHouseholdSheet.show(context);
+    if (group == null || !mounted) return;
+    try {
+      final groupSvc = await ref.read(groupServiceProviderAsync.future);
+      final groups = await groupSvc.listGroups();
+      if (!mounted) return;
+      setState(() => _households = groups);
+      _switchGroup(group.id);
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _onHouseholdResult(bool? success) async {

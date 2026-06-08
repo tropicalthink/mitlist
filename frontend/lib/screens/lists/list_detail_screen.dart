@@ -821,10 +821,23 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                       onChanged: (value) =>
                           setState(() => _searchQuery = value),
                     )
-                  : Text(
-                      _listName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _listName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (_items.isNotEmpty)
+                          Text(
+                            _buildProgressLabel(),
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                      ],
                     ),
               actions: [
                 IconButton(
@@ -1095,25 +1108,43 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
               ),
               const SizedBox(width: MitlistSpacing.sm),
               Expanded(
-                child: Text(
-                  item.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: textTheme.bodyLarge?.copyWith(
-                    decoration:
-                        item.checked ? TextDecoration.lineThrough : null,
-                    color: item.checked
-                        ? Theme.of(context).colorScheme.onSurfaceVariant
-                        : Theme.of(context).colorScheme.onSurface,
-                    height: 1.25,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      item.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.bodyLarge?.copyWith(
+                        decoration:
+                            item.checked ? TextDecoration.lineThrough : null,
+                        color: item.checked
+                            ? Theme.of(context).colorScheme.onSurfaceVariant
+                            : Theme.of(context).colorScheme.onSurface,
+                        height: 1.25,
+                      ),
+                    ),
+                    if (item.note.isNotEmpty)
+                      Text(
+                        item.note,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          height: 1.3,
+                        ),
+                      ),
+                  ],
                 ),
               ),
-              if (item.quantity > 1)
+              if (item.quantity > 1 || item.unit.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(left: MitlistSpacing.sm),
                   child: Text(
-                    '${_formatQuantity(item.quantity)}x',
+                    item.unit.isNotEmpty
+                        ? '${_formatQuantity(item.quantity)} ${item.unit}'
+                        : '${_formatQuantity(item.quantity)}×',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: MitlistTypography.monoBody(
@@ -1170,6 +1201,14 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         ),
       ),
     );
+  }
+
+  String _buildProgressLabel() {
+    final total = _items.length;
+    final done = _items.where((i) => i.checked).length;
+    if (done == total) return 'All done';
+    if (done == 0) return '$total item${total == 1 ? '' : 's'}';
+    return '$done/$total done';
   }
 
   String _formatQuantity(double value) {
