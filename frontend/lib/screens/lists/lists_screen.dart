@@ -14,13 +14,14 @@ import '../../sheets/create_list_sheet.dart';
 import 'list_detail_screen.dart';
 import '../../theme/list_tile_accent.dart';
 import '../../theme/spacing.dart';
-import '../../theme/typography.dart';
 import '../../utils/active_group_context.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
+import '../../widgets/app_input.dart';
 import '../../widgets/chip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton.dart';
@@ -466,12 +467,6 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                 ),
               ],
             ),
-          ] else ...[
-            IconButton(
-              icon: const AppIcon(name: 'xMark'),
-              tooltip: 'Clear search',
-              onPressed: _clearSearch,
-            ),
           ],
         ],
       ),
@@ -753,7 +748,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   }
 }
 
-class _ListCard extends StatelessWidget {
+class _ListCard extends ConsumerWidget {
   final ItemList list;
   final VoidCallback onChanged;
 
@@ -771,8 +766,115 @@ class _ListCard extends StatelessWidget {
     return parts.join('. ');
   }
 
+  Future<void> _showActions(BuildContext context, WidgetRef ref) async {
+    Haptics.medium();
+    final action = await showAppDialog<String>(
+      context: context,
+      title: list.name,
+      body: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppButton(
+            text: 'Rename',
+            icon: const AppIcon(name: 'pencilSquare', size: 18),
+            variant: AppButtonVariant.outline,
+            color: AppButtonColor.neutral,
+            onPressed: () => Navigator.of(context).pop('rename'),
+          ),
+          const SizedBox(height: MitlistSpacing.sm),
+          AppButton(
+            text: 'Delete list',
+            icon: const AppIcon(name: 'trash', size: 18),
+            variant: AppButtonVariant.outline,
+            color: AppButtonColor.error,
+            onPressed: () => Navigator.of(context).pop('delete'),
+          ),
+        ],
+      ),
+      actions: [],
+    );
+    if (action == 'rename' && context.mounted) {
+      await _renameList(context, ref);
+    } else if (action == 'delete' && context.mounted) {
+      await _deleteList(context, ref);
+    }
+  }
+
+  Future<void> _renameList(BuildContext context, WidgetRef ref) async {
+    final controller = TextEditingController(text: list.name);
+    final newName = await showAppDialog<String>(
+      context: context,
+      title: 'Rename list',
+      body: AppInput(
+        label: 'List name',
+        controller: controller,
+        maxLength: 100,
+        textInputAction: TextInputAction.done,
+      ),
+      actions: [
+        AppButton(
+          text: 'Cancel',
+          variant: AppButtonVariant.outline,
+          onPressed: () => Navigator.of(context).pop(null),
+        ),
+        AppButton(
+          text: 'Save',
+          onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+        ),
+      ],
+    );
+    controller.dispose();
+    if (newName == null || newName.isEmpty || newName == list.name) return;
+    try {
+      final svc = await ref.read(listServiceProviderAsync.future);
+      await svc.updateList(list.id, UpdateListRequest(name: newName));
+      onChanged();
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Couldn’t rename list.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteList(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showAppDialog<bool>(
+      context: context,
+      title: 'Delete list',
+      body: const Text('This will permanently delete this list and all its items.'),
+      actions: [
+        AppButton(
+          text: 'Cancel',
+          variant: AppButtonVariant.outline,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton(
+          text: 'Delete',
+          color: AppButtonColor.error,
+          onPressed: () => Navigator.of(context).pop(true),
+        ),
+      ],
+    );
+    if (confirmed != true) return;
+    try {
+      final svc = await ref.read(listServiceProviderAsync.future);
+      await svc.deleteList(list.id);
+      final repo = await ref.read(listRepositoryProvider.future);
+      await repo.deleteListLocal(list.id);
+      onChanged();
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Couldn’t delete list.')),
+        );
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final accent = ListTileAccent.fromSeed(
       list.id,
       Theme.of(context).brightness,
@@ -800,6 +902,7 @@ class _ListCard extends StatelessWidget {
             );
             if (changed == true) onChanged();
           },
+          onLongPress: () => _showActions(context, ref),
           child: Container(
             width: double.infinity,
             decoration: BoxDecoration(
@@ -859,9 +962,42 @@ class _ListCard extends StatelessWidget {
                   ],
                 ),
                 Positioned(
-                  top: 0,
-                  right: 0,
-                  child: _TypeBadge(type: list.type, color: accent.titleColor),
+                  top: -4,
+                  right: -4,
+                  child: PopupMenuButton<String>(
+                    tooltip: 'List options',
+                    padding: EdgeInsets.zero,
+                    onSelected: (action) async {
+                      if (!context.mounted) return;
+                      if (action == 'rename') {
+                        await _renameList(context, ref);
+                      } else if (action == 'delete') {
+                        await _deleteList(context, ref);
+                      }
+                    },
+                    itemBuilder: (ctx) => [
+                      PopupMenuItem(
+                        value: 'rename',
+                        child: Row(children: [
+                          AppIcon(name: 'pencilSquare', size: 18, color: Theme.of(ctx).colorScheme.onSurface),
+                          const SizedBox(width: MitlistSpacing.sm),
+                          const Text('Rename'),
+                        ]),
+                      ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Row(children: [
+                          AppIcon(name: 'trash', size: 18, color: Theme.of(ctx).colorScheme.error),
+                          const SizedBox(width: MitlistSpacing.sm),
+                          Text('Delete list', style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(color: Theme.of(ctx).colorScheme.error)),
+                        ]),
+                      ),
+                    ],
+                    child: Padding(
+                      padding: const EdgeInsets.all(MitlistSpacing.sm),
+                      child: _TypeBadge(type: list.type, color: accent.titleColor),
+                    ),
+                  ),
                 ),
               ],
             ),

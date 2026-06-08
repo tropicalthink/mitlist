@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../models/finance_models.dart';
 import '../../providers/finance_provider.dart';
@@ -35,7 +36,7 @@ class _RecurringExpensesScreenState
   bool _hasHousehold = true;
   final List<RecurringExpense> _items = [];
   Map<String, String> _userLabels = {};
-  bool _isSubmitting = false;
+  String? _submittingId;
 
   @override
   void initState() {
@@ -82,7 +83,7 @@ class _RecurringExpensesScreenState
   }
 
   Future<void> _toggleActive(RecurringExpense item) async {
-    setState(() => _isSubmitting = true);
+    setState(() => _submittingId = item.id);
     try {
       final service = await ref.read(financeServiceProviderAsync.future);
       await service.updateRecurringExpense(
@@ -96,12 +97,12 @@ class _RecurringExpensesScreenState
         const SnackBar(content: Text('Couldn\u2019t update recurring expense.')),
       );
     } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+      if (mounted) setState(() => _submittingId = null);
     }
   }
 
   Future<void> _deleteItem(String id) async {
-    setState(() => _isSubmitting = true);
+    setState(() => _submittingId = id);
     try {
       final service = await ref.read(financeServiceProviderAsync.future);
       await service.deleteRecurringExpense(id);
@@ -112,7 +113,7 @@ class _RecurringExpensesScreenState
         const SnackBar(content: Text('Couldn\u2019t delete recurring expense.')),
       );
     } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+      if (mounted) setState(() => _submittingId = null);
     }
   }
 
@@ -212,7 +213,7 @@ class _RecurringExpensesScreenState
           formatFrequency: _formatFrequency,
           onToggle: () => _toggleActive(item),
           onDelete: () => _deleteItem(item.id),
-          isSubmitting: _isSubmitting,
+          isSubmitting: _submittingId == item.id,
         );
       },
     );
@@ -228,17 +229,18 @@ class _RecurringExpensesScreenState
     if (!isValidGroupId(groupId)) return;
     if (!mounted) return;
 
-    final result = await showAppDialog<_CreateRecurringResult>(
+    final result = await showModalBottomSheet<_CreateRecurringResult>(
       context: context,
-      title: 'Add recurring expense',
-      body: _CreateRecurringForm(
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (ctx) => _RecurringCreationSheet(
         userLabels: _userLabels,
         groupId: groupId!,
       ),
     );
     if (result == null) return;
 
-    setState(() => _isSubmitting = true);
+    setState(() => _submittingId = 'create');
     try {
       final service = await ref.read(financeServiceProviderAsync.future);
       await service.createRecurringExpense(
@@ -260,7 +262,7 @@ class _RecurringExpensesScreenState
         SnackBar(content: Text('Couldn\u2019t create recurring expense.')),
       );
     } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+      if (mounted) setState(() => _submittingId = null);
     }
   }
 }
@@ -384,7 +386,49 @@ class _RecurringCard extends StatelessWidget {
     if (diff == 0) return 'Today';
     if (diff == 1) return 'Tomorrow';
     if (diff == -1) return 'Yesterday';
-    return '${date.day}.${date.month}.${date.year}';
+    return DateFormat('MMM d, y').format(date);
+  }
+}
+
+class _RecurringCreationSheet extends StatelessWidget {
+  final Map<String, String> userLabels;
+  final String groupId;
+
+  const _RecurringCreationSheet({required this.userLabels, required this.groupId});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedPadding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeOut,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(MitlistSpacing.md),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: MitlistSpacing.md),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Text(
+              'Add recurring expense',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: MitlistSpacing.md),
+            _CreateRecurringForm(userLabels: userLabels, groupId: groupId),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -444,77 +488,75 @@ class _CreateRecurringFormState extends State<_CreateRecurringForm> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (_error != null) ...[
-            Text(
-              _error!,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
-            ),
-            const SizedBox(height: MitlistSpacing.sm),
-          ],
-          AppInput(
-            controller: _descriptionController,
-            label: 'Description',
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_error != null) ...[
+          Text(
+            _error!,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.error,
+                ),
           ),
           const SizedBox(height: MitlistSpacing.sm),
-          AppInput(
-            controller: _amountController,
-            label: 'Amount',
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          ),
-          const SizedBox(height: MitlistSpacing.sm),
-          DropdownButtonFormField<String>(
-            initialValue: _frequency,
-            decoration: const InputDecoration(labelText: 'Frequency'),
-            items: const [
-              DropdownMenuItem(value: 'daily', child: Text('Daily')),
-              DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
-              DropdownMenuItem(value: 'biweekly', child: Text('Every 2 weeks')),
-              DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
-              DropdownMenuItem(value: 'quarterly', child: Text('Quarterly')),
-              DropdownMenuItem(value: 'yearly', child: Text('Yearly')),
-            ],
-            onChanged: (v) => setState(() => _frequency = v!),
-          ),
-          const SizedBox(height: MitlistSpacing.sm),
-          if (widget.userLabels.isNotEmpty)
-            DropdownButtonFormField<String>(
-              initialValue: _payerId,
-              decoration: const InputDecoration(labelText: 'Payer'),
-              items: widget.userLabels.entries
-                  .map((e) => DropdownMenuItem(
-                        value: e.key,
-                        child: Text(e.value),
-                      ))
-                  .toList(),
-              onChanged: (v) => setState(() => _payerId = v),
-            ),
-          const SizedBox(height: MitlistSpacing.md),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              AppButton(
-                variant: AppButtonVariant.outline,
-                color: AppButtonColor.neutral,
-                text: 'Cancel',
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-              const SizedBox(width: MitlistSpacing.sm),
-              AppButton(
-                variant: AppButtonVariant.solid,
-                text: 'Save',
-                onPressed: _submit,
-              ),
-            ],
-          ),
         ],
-      ),
+        AppInput(
+          controller: _descriptionController,
+          label: 'Description',
+        ),
+        const SizedBox(height: MitlistSpacing.sm),
+        AppInput(
+          controller: _amountController,
+          label: 'Amount',
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        ),
+        const SizedBox(height: MitlistSpacing.sm),
+        DropdownButtonFormField<String>(
+          initialValue: _frequency,
+          decoration: const InputDecoration(labelText: 'Frequency'),
+          items: const [
+            DropdownMenuItem(value: 'daily', child: Text('Daily')),
+            DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
+            DropdownMenuItem(value: 'biweekly', child: Text('Every 2 weeks')),
+            DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
+            DropdownMenuItem(value: 'quarterly', child: Text('Quarterly')),
+            DropdownMenuItem(value: 'yearly', child: Text('Yearly')),
+          ],
+          onChanged: (v) => setState(() => _frequency = v!),
+        ),
+        const SizedBox(height: MitlistSpacing.sm),
+        if (widget.userLabels.isNotEmpty)
+          DropdownButtonFormField<String>(
+            initialValue: _payerId,
+            decoration: const InputDecoration(labelText: 'Payer'),
+            items: widget.userLabels.entries
+                .map((e) => DropdownMenuItem(
+                      value: e.key,
+                      child: Text(e.value),
+                    ))
+                .toList(),
+            onChanged: (v) => setState(() => _payerId = v),
+          ),
+        const SizedBox(height: MitlistSpacing.md),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            AppButton(
+              variant: AppButtonVariant.outline,
+              color: AppButtonColor.neutral,
+              text: 'Cancel',
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            const SizedBox(width: MitlistSpacing.sm),
+            AppButton(
+              variant: AppButtonVariant.solid,
+              text: 'Save',
+              onPressed: _submit,
+            ),
+          ],
+        ),
+      ],
     );
   }
 

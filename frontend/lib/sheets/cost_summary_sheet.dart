@@ -49,7 +49,7 @@ class CostSummarySheet extends ConsumerWidget {
   }
 
   String _formatCents(int cents) {
-    return formatCurrency(cents, currencyCode);
+    return formatCurrency(cents.clamp(0, 999999999), currencyCode);
   }
 
   @override
@@ -82,13 +82,13 @@ class CostSummarySheet extends ConsumerWidget {
           const SizedBox(height: MitlistSpacing.sm),
           _CostRow(
             label: 'Equal share per person',
-            value: _formatCents(equalShareCents),
+            value: equalShareCents > 0 ? _formatCents(equalShareCents) : 'N/A',
             isTotal: false,
           ),
           const SizedBox(height: MitlistSpacing.sm),
           _CostRow(
             label: 'Items with prices',
-            value: '$itemCount',
+            value: itemCount > 0 ? '$itemCount' : 'None',
             isTotal: false,
           ),
           const SizedBox(height: MitlistSpacing.md),

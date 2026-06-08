@@ -24,8 +24,13 @@ class AppBottomSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
+    final topPadding = MediaQuery.of(context).viewPadding.top;
 
-    return Container(
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height - topPadding - 16,
+      ),
+      child: Container(
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: const BorderRadius.vertical(
@@ -84,6 +89,7 @@ class AppBottomSheet extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 }

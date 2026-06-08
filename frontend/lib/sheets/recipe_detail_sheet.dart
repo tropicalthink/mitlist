@@ -497,9 +497,14 @@ class RecipeDetailSheet extends StatelessWidget {
 }
 
 Future<void> _launchUrl(String url) async {
-  final uri = Uri.parse(url);
-  if (await canLaunchUrl(uri)) {
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  final uri = Uri.tryParse(url);
+  if (uri == null) return;
+  try {
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  } catch (_) {
+    // URL launch failed; no-op to avoid crashing the sheet.
   }
 }
 

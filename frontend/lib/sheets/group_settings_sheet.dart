@@ -38,6 +38,7 @@ class GroupSettingsSheet extends ConsumerStatefulWidget {
 
 class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
   bool _isLoading = true;
+  bool _isDeleting = false;
   String? _error;
 
   Group? _group;
@@ -205,6 +206,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       ],
     );
     if (confirmed != true || !mounted) return;
+    setState(() => _isDeleting = true);
     try {
       final svc = await ref.read(groupServiceProviderAsync.future);
       await svc.deleteGroup(widget.groupId);
@@ -217,6 +219,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       );
     } catch (e) {
       if (!mounted) return;
+      setState(() => _isDeleting = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(friendlyErrorMessage(e))),
       );
@@ -430,7 +433,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
               const SizedBox(width: MitlistSpacing.sm),
               AppButton(
                 size: AppButtonSize.sm,
-                variant: AppButtonVariant.outline,
+                variant: AppButtonVariant.ghost,
                 text: 'Invite',
                 icon: const AppIcon(name: 'userPlus'),
                 onPressed: () => InviteHouseholdSheet.show(
@@ -465,7 +468,9 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         ),
         alignment: Alignment.center,
         child: Text(
-          member.displayName.isNotEmpty ? member.displayName[0].toUpperCase() : '?',
+          member.displayName.isNotEmpty
+              ? String.fromCharCode(member.displayName.runes.first)
+              : '?',
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
             color: Theme.of(context).colorScheme.onPrimaryContainer,
           ),
@@ -485,11 +490,12 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
     return SizedBox(
       width: double.infinity,
       child: AppButton(
-        text: 'Delete household',
+        text: _isDeleting ? 'Deleting...' : 'Delete household',
         variant: AppButtonVariant.soft,
         color: AppButtonColor.error,
         size: AppButtonSize.lg,
-        onPressed: _confirmDeleteGroup,
+        isLoading: _isDeleting,
+        onPressed: _isDeleting ? null : _confirmDeleteGroup,
       ),
     );
   }

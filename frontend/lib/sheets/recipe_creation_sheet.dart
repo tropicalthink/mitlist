@@ -143,6 +143,7 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
   }
 
   String _buildDescription() {
+    const maxTotalLen = 8000;
     final parts = <String>[];
     if (_ingredientsController.text.trim().isNotEmpty) {
       parts
@@ -151,7 +152,9 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
     if (_stepsController.text.trim().isNotEmpty) {
       parts.add('Steps:\n${_normalizeLines(_stepsController.text)}');
     }
-    return parts.join('\n\n');
+    final joined = parts.join('\n\n');
+    if (joined.length <= maxTotalLen) return joined;
+    return '${joined.substring(0, maxTotalLen)}\u2026';
   }
 
   String _normalizeLines(String value) {

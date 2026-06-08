@@ -75,6 +75,7 @@ class ExpenseDetailSheet extends ConsumerStatefulWidget {
 class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
   bool _loadingReceipts = true;
   bool _removing = false;
+  bool _isDeleting = false;
   List<ExpenseReceipt> _receipts = const [];
   List<Split> _splits = const [];
   bool _loadingSplits = true;
@@ -285,7 +286,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
         if (_loadingReceipts)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
-            child: LinearProgressIndicator(),
+            child: const LinearProgressIndicator(),
           )
         else if (_receipts.isEmpty)
           Text(
@@ -347,29 +348,33 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
               variant: AppButtonVariant.ghost,
               color: AppButtonColor.error,
               size: AppButtonSize.lg,
-              text: 'Delete expense',
-              onPressed: () async {
-                final confirmed = await showAppDialog<bool>(
-                  context: context,
-                  title: 'Delete expense',
-                  body: const Text('This will permanently delete this expense and its records.'),
-                  actions: [
-                    AppButton(
-                      text: 'Cancel',
-                      variant: AppButtonVariant.outline,
-                      onPressed: () => Navigator.of(context).pop(false),
-                    ),
-                    AppButton(
-                      text: 'Delete',
-                      color: AppButtonColor.error,
-                      onPressed: () => Navigator.of(context).pop(true),
-                    ),
-                  ],
-                );
-                if (confirmed == true && mounted) {
-                  widget.onDelete?.call();
-                }
-              },
+              text: _isDeleting ? 'Deleting...' : 'Delete expense',
+              isLoading: _isDeleting,
+              onPressed: _isDeleting
+                  ? null
+                  : () async {
+                      final confirmed = await showAppDialog<bool>(
+                        context: context,
+                        title: 'Delete expense',
+                        body: const Text('This will permanently delete this expense and its records.'),
+                        actions: [
+                          AppButton(
+                            text: 'Cancel',
+                            variant: AppButtonVariant.outline,
+                            onPressed: () => Navigator.of(context).pop(false),
+                          ),
+                          AppButton(
+                            text: 'Delete',
+                            color: AppButtonColor.error,
+                            onPressed: () => Navigator.of(context).pop(true),
+                          ),
+                        ],
+                      );
+                      if (confirmed == true && mounted) {
+                        setState(() => _isDeleting = true);
+                        widget.onDelete?.call();
+                      }
+                    },
             ),
           ),
         ],
@@ -405,7 +410,7 @@ class _SplitRow extends StatelessWidget {
                 ),
             ),
           Text(
-            formatCurrency(split.amount, currency),
+            formatCurrency(split.amount < 0 ? 0 : split.amount, currency),
             style: MitlistTypography.monoBody(),
           ),
         ],

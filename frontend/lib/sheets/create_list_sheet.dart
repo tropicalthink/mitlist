@@ -117,6 +117,7 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
   bool get _canCreate => _nameController.text.trim().isNotEmpty;
 
   Future<void> _loadGroups() async {
+    setState(() => _errorText = null);
     try {
       final groupService = await ref.read(groupServiceProviderAsync.future);
       final groups = await groupService.listGroups();
@@ -275,7 +276,7 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
             runSpacing: MitlistSpacing.sm,
             children: _groups.map((group) {
               return AppChip(
-                label: group.name,
+                label: group.name.length > 30 ? '${group.name.substring(0, 28)}\u2026' : group.name,
                 selected: _selectedGroupId == group.id,
                 onSelected: _isSubmitting
                     ? null

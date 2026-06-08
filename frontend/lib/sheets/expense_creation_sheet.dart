@@ -182,10 +182,25 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
   Future<void> _onCreate() async {
     if (!_canCreate) return;
 
+    if (_selectedMemberIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select at least one person to split with.')),
+      );
+      return;
+    }
+
     final amount = _parseAmountToCents(_amountController.text);
     if (amount == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Enter a valid amount.')),
+      );
+      return;
+    }
+
+    final splitWarning = _validateSplits(totalCents: amount);
+    if (splitWarning != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(splitWarning)),
       );
       return;
     }
@@ -275,7 +290,45 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
     if (parsed == null || parsed <= 0) {
       return null;
     }
+    if (parsed > 9999999) {
+      return null; // Reject unrealistically large values.
+    }
     return (parsed * 100).round();
+  }
+
+  /// Returns a warning message if splits are clearly wrong, null if acceptable.
+  String? _validateSplits({required int totalCents}) {
+    if (_splitMode == 'equal') return null;
+    final totalDollars = totalCents / 100.0;
+    double splitSum = 0;
+    int shareSum = 0;
+    for (final userId in _selectedMemberIds) {
+      final raw = _splitControllers[userId]?.text.trim() ?? '';
+      switch (_splitMode) {
+        case 'amount':
+          final v = double.tryParse(raw.replaceAll(',', '.')) ?? 0;
+          if (v < 0) return 'Split amounts cannot be negative.';
+          splitSum += v;
+          break;
+        case 'percentage':
+          final v = double.tryParse(raw.replaceAll(',', '.')) ?? 0;
+          if (v < 0 || v > 100) return 'Each percentage must be between 0 and 100.';
+          splitSum += v;
+          break;
+        case 'shares':
+          final v = int.tryParse(raw) ?? 0;
+          if (v < 0) return 'Shares cannot be negative.';
+          shareSum += v;
+          break;
+      }
+    }
+    if (_splitMode == 'amount' && splitSum > totalDollars * 1.5) {
+      return 'Split total (${splitSum.toStringAsFixed(2)}) is much larger than the expense (${totalDollars.toStringAsFixed(2)}).';
+    }
+    if (_splitMode == 'shares' && shareSum == 0) {
+      return 'Total shares must be greater than zero.';
+    }
+    return null;
   }
 
   List<CreateExpenseSplitRequest> _buildSplitRequests() {

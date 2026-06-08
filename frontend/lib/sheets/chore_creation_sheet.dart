@@ -200,7 +200,9 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
 
   int get _periodInterval {
     final parsed = int.tryParse(_intervalController.text.trim()) ?? 1;
-    return parsed < 1 ? 1 : parsed;
+    if (parsed < 1) return 1;
+    if (parsed > 999) return 999;
+    return parsed;
   }
 
   String _assignmentTypeValue() {

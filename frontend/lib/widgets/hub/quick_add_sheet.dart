@@ -19,7 +19,7 @@ Future<void> showQuickAddSheet(BuildContext context) async {
           text: 'Add expense',
           onPressed: () {
             Navigator.of(context).pop();
-            context.pushNamed('money');
+            context.goNamed('money');
           },
         ),
         const SizedBox(height: MitlistSpacing.sm),
@@ -28,7 +28,7 @@ Future<void> showQuickAddSheet(BuildContext context) async {
           variant: AppButtonVariant.outline,
           onPressed: () {
             Navigator.of(context).pop();
-            context.pushNamed('lists');
+            context.goNamed('lists');
           },
         ),
         const SizedBox(height: MitlistSpacing.sm),
@@ -37,7 +37,7 @@ Future<void> showQuickAddSheet(BuildContext context) async {
           variant: AppButtonVariant.outline,
           onPressed: () {
             Navigator.of(context).pop();
-            context.pushNamed('chores');
+            context.goNamed('chores');
           },
         ),
         const SizedBox(height: MitlistSpacing.sm),

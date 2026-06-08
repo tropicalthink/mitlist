@@ -153,6 +153,13 @@ class ListRepository {
     return patched;
   }
 
+  Future<void> deleteListLocal(String listId) async {
+    await (_db.delete(_db.listsTable)..where((t) => t.id.equals(listId))).go();
+    await (_db.delete(_db.listItemsTable)
+          ..where((t) => t.listId.equals(listId)))
+        .go();
+  }
+
   Future<void> deleteItemOfflineFirst(String listId, String itemId) async {
     // Optimistic local delete
     await (_db.delete(_db.listItemsTable)..where((t) => t.id.equals(itemId)))

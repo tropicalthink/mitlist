@@ -48,12 +48,12 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   final Logger _logger = Logger();
   Map<String, String> _memberNames = {};
 
-  static const double _displaySmallLineHeight = 44.0;
+  static const double _headlineSmallLineHeight = 32.0;
   static const double _labelMediumLineHeight = 16.0;
 
   static const double _stickyHeaderHeight = MitlistSpacing.md +
       MitlistSpacing.md +
-      _displaySmallLineHeight +
+      _headlineSmallLineHeight +
       MitlistSpacing.space1 +
       _labelMediumLineHeight +
       MitlistSpacing.md +
@@ -313,11 +313,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       await _loadChores();
     } catch (e) {
       if (!mounted) return;
-      showAppDialog(
-        context: context,
-        title: 'Error',
-        body: const Text('Failed to complete chore. Please try again.'),
-      );
+      _showChoreActionError('Failed to complete chore. Please try again.');
     } finally {
       _isMutating = false;
     }
@@ -471,10 +467,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   }
 
   void _showChoreActionError(String message) {
-    showAppDialog(
-      context: context,
-      title: 'Error',
-      body: Text(message),
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
     );
   }
 
@@ -637,6 +631,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                               ],
                             )
                           : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 AppChip(
                                   label: 'Me',
@@ -718,6 +713,35 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                         AppButton(
                           text: 'Go to households',
                           onPressed: () => context.goNamed('groupsList'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ] else if (filtered.isEmpty && _filterMe && _chores.isNotEmpty) ...[
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(MitlistSpacing.md),
+                    child: AppEmptyState(
+                      lottieAsset: 'assets/animations/lottie/Chores.lottie',
+                      icon: AppIcon(
+                        name: 'clipboardDocumentList',
+                        size: 56,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      title: 'No chores assigned to you',
+                      description: 'Your household has chores, but none are assigned to you right now.',
+                      actions: [
+                        AppButton(
+                          text: 'See all chores',
+                          variant: AppButtonVariant.outline,
+                          onPressed: () {
+                            setState(() => _filterMe = false);
+                            SharedPreferences.getInstance().then((p) => p.setBool('chores_filter_me', false));
+                          },
                         ),
                       ],
                     ),
@@ -894,7 +918,7 @@ class _StatBlock extends StatelessWidget {
           fit: BoxFit.scaleDown,
           child: Text(
             count.toString(),
-            style: Theme.of(context).textTheme.displaySmall,
+            style: Theme.of(context).textTheme.headlineSmall,
           ),
         ),
         const SizedBox(height: MitlistSpacing.space1),
@@ -944,104 +968,115 @@ class _ChoreItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isComplete = chore.completed;
     return AppCard(
       variant: AppCardVariant.outlined,
       padding: AppCardPadding.sm,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          AnimatedCheckToggle(
-            value: chore.completed,
-            onChanged: (_) => onToggle(),
-            semanticLabelOn: 'Mark ${chore.title} as not done',
-            semanticLabelOff: 'Mark ${chore.title} as done',
-          ),
-          Expanded(
-            child: Semantics(
-              button: true,
-              label: chore.title,
-              child: GestureDetector(
-                onTap: onTap,
-                behavior: HitTestBehavior.translucent,
+      child: InkWell(
+        onTap: onTap,
+        child: Semantics(
+          button: true,
+          label: chore.title,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              AnimatedCheckToggle(
+                value: isComplete,
+                onChanged: (_) => onToggle(),
+                semanticLabelOn: 'Mark ${chore.title} as not done',
+                semanticLabelOff: 'Mark ${chore.title} as done',
+              ),
+              Expanded(
                 child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: MitlistSpacing.sm,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      chore.title,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (chore.lastActionLabel != null &&
-                        chore.lastActionLabel!.isNotEmpty)
+                  padding: const EdgeInsets.symmetric(
+                    vertical: MitlistSpacing.sm,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        chore.lastActionLabel!,
-                        style: MitlistTypography.labelXSmall(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        chore.title,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          decoration: isComplete ? TextDecoration.lineThrough : null,
+                          color: isComplete
+                              ? Theme.of(context).colorScheme.onSurfaceVariant
+                              : null,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    if (chore.supplies.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: MitlistSpacing.xs),
-                        child: Row(
-                          children: [
-                            AppIcon(name: 'inventoryOutline',
+                      if (chore.lastActionLabel != null &&
+                          chore.lastActionLabel!.isNotEmpty)
+                        Text(
+                          chore.lastActionLabel!,
+                          style: MitlistTypography.labelXSmall(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      if (chore.supplies.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: MitlistSpacing.xs),
+                          child: Row(
+                            children: [
+                              AppIcon(
+                                name: 'inventoryOutline',
                                 size: 12,
-                                color: Theme.of(context).colorScheme.primary),
-                            const SizedBox(width: MitlistSpacing.space1),
-                            Text(
-                              '${chore.supplies.length} supply${chore.supplies.length == 1 ? '' : 'ies'}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: MitlistTypography.labelXSmall(
                                 color: Theme.of(context).colorScheme.primary,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: MitlistSpacing.space1),
+                              Text(
+                                '${chore.supplies.length} supply${chore.supplies.length == 1 ? '' : 'ies'}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: MitlistTypography.labelXSmall(
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: MitlistSpacing.sm),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: MitlistSpacing.space6,
+                    height: MitlistSpacing.space6,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                        width: 2,
                       ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: MitlistSpacing.sm),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: MitlistSpacing.space6,
-                height: MitlistSpacing.space6,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.outlineVariant,
-                    width: 2,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      chore.assigneeInitials,
+                      style: MitlistTypography.labelXSmall(
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                    ),
                   ),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  chore.assigneeInitials,
-                  style: MitlistTypography.labelXSmall(
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  const SizedBox(height: MitlistSpacing.space1),
+                  Text(
+                    _formatDate(chore.dueDate),
+                    style: MitlistTypography.labelXSmall(
+                      color: isComplete
+                          ? Theme.of(context).colorScheme.onSurfaceVariant
+                          : null,
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(height: MitlistSpacing.space1),
-              Text(
-                _formatDate(chore.dueDate),
-                style: MitlistTypography.labelXSmall(),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }

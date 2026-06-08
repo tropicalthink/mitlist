@@ -123,6 +123,8 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
   late List<ChoreSubtask> _subtasks;
   final TextEditingController _subtaskController = TextEditingController();
   bool _showAddSubtask = false;
+  bool _isDeleting = false;
+  bool _isSavingSubtask = false;
 
   @override
   void initState() {
@@ -196,8 +198,10 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
       return;
     }
     final title = _subtaskController.text.trim();
-    if (title.isEmpty) return;
+    if (title.isEmpty || _isSavingSubtask) return;
+    setState(() => _isSavingSubtask = true);
     final newSubtaskId = await widget.onAddSubtask?.call(title);
+    if (!mounted) return;
     if (newSubtaskId != null) {
       setState(() {
         _subtasks.add(
@@ -214,6 +218,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
         _showAddSubtask = false;
       });
     }
+    setState(() => _isSavingSubtask = false);
   }
 
   void _handleDeleteSubtask(String subtaskId) {
@@ -300,13 +305,16 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
           ],
           if (widget.onAddSubtask != null) ...[
             const SizedBox(height: MitlistSpacing.sm),
-            AppButton(
-              variant: AppButtonVariant.ghost,
-              color: AppButtonColor.primary,
-              text: _showAddSubtask ? 'Save' : 'Add subtask',
-              icon: const AppIcon(name: 'plus'),
-              onPressed: _handleAddSubtask,
-            ),
+              AppButton(
+                variant: AppButtonVariant.ghost,
+                color: AppButtonColor.primary,
+                text: _showAddSubtask
+                    ? (_isSavingSubtask ? 'Saving...' : 'Save')
+                    : 'Add subtask',
+                isLoading: _isSavingSubtask,
+                icon: const AppIcon(name: 'plus'),
+                onPressed: _isSavingSubtask ? null : _handleAddSubtask,
+              ),
           ],
         ],
         if (widget.supplies.isNotEmpty || widget.onAddSuppliesToList != null) ...[
@@ -401,29 +409,33 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
                 variant: AppButtonVariant.ghost,
                 color: AppButtonColor.error,
                 size: AppButtonSize.lg,
-                text: 'Delete chore',
-                onPressed: () async {
-                  final confirmed = await showAppDialog<bool>(
-                    context: context,
-                    title: 'Delete chore',
-                    body: const Text('This will permanently delete this chore and its history.'),
-                    actions: [
-                      AppButton(
-                        text: 'Cancel',
-                        variant: AppButtonVariant.outline,
-                        onPressed: () => Navigator.of(context).pop(false),
-                      ),
-                      AppButton(
-                        text: 'Delete',
-                        color: AppButtonColor.error,
-                        onPressed: () => Navigator.of(context).pop(true),
-                      ),
-                    ],
-                  );
-                  if (confirmed == true && mounted) {
-                    widget.onDelete?.call();
-                  }
-                },
+                text: _isDeleting ? 'Deleting...' : 'Delete chore',
+                isLoading: _isDeleting,
+                onPressed: _isDeleting
+                    ? null
+                    : () async {
+                        final confirmed = await showAppDialog<bool>(
+                          context: context,
+                          title: 'Delete chore',
+                          body: const Text('This will permanently delete this chore and its history.'),
+                          actions: [
+                            AppButton(
+                              text: 'Cancel',
+                              variant: AppButtonVariant.outline,
+                              onPressed: () => Navigator.of(context).pop(false),
+                            ),
+                            AppButton(
+                              text: 'Delete',
+                              color: AppButtonColor.error,
+                              onPressed: () => Navigator.of(context).pop(true),
+                            ),
+                          ],
+                        );
+                        if (confirmed == true && mounted) {
+                          setState(() => _isDeleting = true);
+                          widget.onDelete?.call();
+                        }
+                      },
               ),
             ),
           ],
@@ -467,6 +479,8 @@ class _DetailRow extends StatelessWidget {
           ),
           Text(
             value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: MitlistTypography.monoBody(color: Theme.of(context).colorScheme.onSurface),
           ),
         ],

@@ -208,7 +208,8 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
   }
 
   Widget _buildSuccess() {
-    final group = _joinedGroup!;
+    final group = _joinedGroup;
+    if (group == null) return _buildEntry();
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final memberCount = group.memberCount ?? 0;
