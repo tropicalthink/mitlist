@@ -12,6 +12,7 @@ import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/skeleton.dart';
 import '../../models/group_models.dart';
 import '../../providers/group_provider.dart';
+import '../../router.dart' show currentGroupIdProvider;
 import '../../sheets/create_household_sheet.dart';
 import '../../sheets/join_household_sheet.dart';
 
@@ -128,10 +129,8 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
   }
 
   void _navigateToHub(String groupId) {
-    context.pushNamed(
-      'householdHub',
-      pathParameters: {'groupId': groupId},
-    );
+    ref.read(currentGroupIdProvider.notifier).set(groupId);
+    context.goNamed('home');
   }
 
   Future<void> _openJoinSheet() async {

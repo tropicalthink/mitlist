@@ -390,6 +390,8 @@ return EdgeInsets.symmetric(horizontal: horizontal, vertical: vertical);
               child: Text(
                 widget.label!.toUpperCase(),
                 style: labelStyle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             const SizedBox(height: MitlistSpacing.sm),
@@ -421,7 +423,9 @@ return EdgeInsets.symmetric(horizontal: horizontal, vertical: vertical);
                 textInputAction: widget.textInputAction,
                 maxLength: widget.maxLength,
                 minLines: widget.minLines,
-                maxLines: widget.maxLines,
+                maxLines: (widget.minLines != null || widget.maxLines != null)
+                    ? widget.maxLines
+                    : 1,
                 onChanged: widget.onChanged,
                 onSubmitted: widget.onSubmitted,
                 onEditingComplete: widget.onEditingComplete,

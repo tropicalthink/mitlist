@@ -1016,9 +1016,17 @@ class _ChoreItem extends StatelessWidget {
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircleAvatar(
-                radius: MitlistSpacing.space3,
-                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              Container(
+                width: MitlistSpacing.space6,
+                height: MitlistSpacing.space6,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                    width: 2,
+                  ),
+                ),
+                alignment: Alignment.center,
                 child: Text(
                   chore.assigneeInitials,
                   style: MitlistTypography.labelXSmall(

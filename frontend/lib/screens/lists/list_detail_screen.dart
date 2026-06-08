@@ -868,7 +868,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     ),
                     PopupMenuItem(
                       value: 'delete',
-                      child: Text('Delete', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                      child: Text('Delete', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.error)),
                     ),
                   ],
                 ),
@@ -1074,8 +1074,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
               if (thumbUrl != null) ...[
                 GestureDetector(
                   onTap: () => _openPhotoViewer(thumbUrl),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
+                  child: ClipRect(
                     child: SizedBox(
                       width: 28,
                       height: 28,

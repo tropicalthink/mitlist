@@ -466,10 +466,22 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
   Widget _buildMemberTile(GroupMemberProfile member) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: CircleAvatar(
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+      leading: Container(
+        width: MitlistSpacing.space10,
+        height: MitlistSpacing.space10,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primaryContainer,
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            width: 2,
+          ),
+        ),
+        alignment: Alignment.center,
         child: Text(
           member.displayName.isNotEmpty ? member.displayName[0].toUpperCase() : '?',
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onPrimaryContainer,
+          ),
         ),
       ),
       title: Text(member.displayName, maxLines: 1, overflow: TextOverflow.ellipsis),

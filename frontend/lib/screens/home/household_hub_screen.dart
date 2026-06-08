@@ -32,6 +32,7 @@ import '../../widgets/hub/quick_add_sheet.dart';
 import '../../widgets/hub/stats_grid.dart';
 import '../../widgets/shell_trailing_actions.dart';
 import '../../sheets/create_household_sheet.dart';
+import '../../sheets/invite_household_sheet.dart';
 import '../../sheets/join_household_sheet.dart';
 import '../../sheets/group_settings_sheet.dart';
 
@@ -335,7 +336,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                   : const <Group>[]);
 
           Widget actionTile({
-            required IconData icon,
+            required String iconName,
             required String label,
             required VoidCallback onTap,
           }) {
@@ -351,7 +352,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(icon, size: 22, color: iconColor),
+                      AppIcon(name: iconName, size: 22, color: iconColor),
                       const SizedBox(width: MitlistSpacing.md),
                       Expanded(
                         child: Text(
@@ -418,8 +419,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                               ),
                             ),
                             if (h.id == _resolvedGroupId!)
-                              Icon(
-                                Icons.check,
+                              AppIcon(
+                                name: 'check',
                                 size: 18,
                                 color: Theme.of(context).colorScheme.primary,
                               ),
@@ -436,7 +437,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                 const SizedBox(height: MitlistSpacing.sm),
               ],
               actionTile(
-                icon: Icons.add_home_outlined,
+                iconName: 'addHomeOutline',
                 label: 'Create household',
                 onTap: () {
                   Navigator.of(sheetContext).pop();
@@ -450,7 +451,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                 },
               ),
               actionTile(
-                icon: Icons.vpn_key_outlined,
+                iconName: 'keyOutline',
                 label: 'Join household',
                 onTap: () {
                   Navigator.of(sheetContext).pop();
@@ -464,7 +465,22 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                 },
               ),
               actionTile(
-                icon: Icons.settings_outlined,
+                iconName: 'userPlus',
+                label: 'Invite to household',
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  WidgetsBinding.instance
+                      .addPostFrameCallback((_) async {
+                    if (!hubContext.mounted) return;
+                    await InviteHouseholdSheet.show(
+                      hubContext,
+                      groupId: _resolvedGroupId!,
+                    );
+                  });
+                },
+              ),
+              actionTile(
+                iconName: 'cog6ToothOutline',
                 label: 'Household settings',
                 onTap: () {
                   Navigator.of(sheetContext).pop();
@@ -532,8 +548,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: MitlistSpacing.md),
-            Icon(
-              Icons.home_outlined,
+            AppIcon(
+              name: 'homeOutline',
               size: 48,
               color: colorScheme.onSurfaceVariant,
             ),
@@ -685,7 +701,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                         actions: [
                           IconButton(
                             tooltip: 'Calendar',
-                            icon: const Icon(Icons.calendar_month_outlined),
+                            icon: const AppIcon(name: 'calendarDays'),
                             onPressed: () => context.pushNamed('calendar'),
                           ),
                           ...shellTrailingActions(context),

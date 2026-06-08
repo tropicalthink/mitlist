@@ -22,7 +22,6 @@ import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/chip.dart';
 import '../../widgets/empty_state.dart';
-import '../../widgets/icons.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/list_entrance.dart';
 import '../../widgets/mitlist_app_bar.dart';
@@ -32,6 +31,7 @@ enum _SortOption { newest, oldest, az, mostItems }
 enum _FilterOption { all, shopping, todo, custom }
 
 enum _ListMenuAction {
+  scanReceipt,
   sortNewest,
   sortOldest,
   sortAz,
@@ -343,7 +343,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         centerTitle: false,
         leading: _showSearch
             ? IconButton(
-                icon: const Icon(AppIcons.arrowLeft),
+                icon: const AppIcon(name: 'arrowLeft'),
                 tooltip: 'Back',
                 onPressed: _clearSearch,
               )
@@ -367,26 +367,23 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         actions: [
           if (!_showSearch) ...[
             IconButton(
-              icon: const Icon(AppIcons.camera),
-              tooltip: 'Scan receipt or list',
-              onPressed: () => context.pushNamed('scanner'),
-            ),
-            IconButton(
-              icon: const Icon(AppIcons.shoppingCart),
+              icon: const AppIcon(name: 'shoppingCart'),
               tooltip: 'Shopping trip',
               onPressed: () => context.pushNamed('shoppingTrip'),
             ),
             IconButton(
-              icon: const Icon(AppIcons.magnifyingGlass),
+              icon: const AppIcon(name: 'magnifyingGlass'),
               tooltip: 'Search',
               onPressed: () => setState(() => _showSearch = true),
             ),
             PopupMenuButton<_ListMenuAction>(
-              icon: Icon(AppIcons.ellipsisVertical),
+              icon: const AppIcon(name: 'ellipsisVertical'),
               tooltip: 'Options',
               onSelected: (action) {
                 setState(() {
                   switch (action) {
+                    case _ListMenuAction.scanReceipt:
+                      break;
                     case _ListMenuAction.sortNewest:
                       _sort = _SortOption.newest;
                       SharedPreferences.getInstance().then((p) => p.setInt('lists_sort', _sort.index));
@@ -409,15 +406,27 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                       break;
                   }
                 });
+                if (action == _ListMenuAction.scanReceipt) {
+                  context.pushNamed('scanner');
+                }
               },
               itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: _ListMenuAction.scanReceipt,
+                  child: Row(
+                    children: [
+                      AppIcon(name: 'camera', size: 18, color: Theme.of(context).colorScheme.onSurface),
+                      const SizedBox(width: MitlistSpacing.sm),
+                      const Text('Scan receipt or list'),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
                 PopupMenuItem(
                   enabled: false,
                   child: Text(
                     'Sort',
-                    style: MitlistTypography.labelXSmall().copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                    style: Theme.of(context).textTheme.labelMedium,
                   ),
                 ),
                 CheckedPopupMenuItem(
@@ -450,7 +459,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
             ),
           ] else ...[
             IconButton(
-              icon: const Icon(AppIcons.xMark),
+              icon: const AppIcon(name: 'xMark'),
               tooltip: 'Clear search',
               onPressed: _clearSearch,
             ),
@@ -462,7 +471,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         size: AppButtonSize.lg,
         onPressed:
             _hasHousehold ? _showCreateSheet : () => context.goNamed('groupsList'),
-        icon: Icon(AppIcons.plus),
+        icon: const AppIcon(name: 'plus'),
         text: 'New list',
         tooltip: 'New list',
       ),
@@ -494,7 +503,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                         const SizedBox(height: MitlistSpacing.md),
                         AppButton(
                           text: 'Retry',
-                          icon: Icon(AppIcons.arrowPath),
+                          icon: const AppIcon(name: 'arrowPath'),
                           onPressed: _loadLists,
                         ),
                       ],
@@ -652,14 +661,14 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                 padding: const EdgeInsets.all(MitlistSpacing.md),
                 child: AppEmptyState(
                   lottieAsset: 'assets/animations/lottie/checklist.lottie',
-                  icon: const Icon(AppIcons.queueList),
+                  icon: const AppIcon(name: 'queueList'),
                   title: 'No lists yet',
                   description:
                       'Add lines inside a list; the first few appear as a snippet on its card.',
                   actions: [
                     AppButton(
                       text: 'Create your first list',
-                      icon: Icon(AppIcons.plus),
+                      icon: const AppIcon(name: 'plus'),
                       onPressed: _showCreateSheet,
                     ),
                   ],
@@ -678,7 +687,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         padding: const EdgeInsets.all(MitlistSpacing.md),
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/House.lottie',
-          icon: Icon(AppIcons.userGroup),
+          icon: const AppIcon(name: 'userGroup'),
           title: 'No household yet',
           description: 'Create or join a household before adding lists.',
           actions: [

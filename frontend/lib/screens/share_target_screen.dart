@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../theme/spacing.dart';
-import '../theme/typography.dart';
 import '../providers/attachment_provider.dart';
 import '../providers/group_provider.dart';
 import '../providers/pinwall_provider.dart';
@@ -277,7 +276,7 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
                 children: [
                   Text(
                     'Preview',
-                    style: MitlistTypography.labelXSmall(),
+                    style: Theme.of(context).textTheme.labelMedium,
                   ),
                   const SizedBox(height: MitlistSpacing.sm),
                   Row(

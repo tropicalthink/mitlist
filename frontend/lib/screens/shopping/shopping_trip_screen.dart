@@ -432,9 +432,11 @@ class _ItemRow extends StatelessWidget {
           Expanded(
             child: Text(
               item.name,
-              style: TextStyle(
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 decoration: isChecked ? TextDecoration.lineThrough : null,
-                color: isChecked ? Theme.of(context).colorScheme.onSurfaceVariant : Theme.of(context).colorScheme.onSurface,
+                color: isChecked
+                    ? Theme.of(context).colorScheme.onSurfaceVariant
+                    : Theme.of(context).colorScheme.onSurface,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

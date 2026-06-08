@@ -969,8 +969,7 @@ class _PinwallNoteCard extends ConsumerWidget {
                               child: Semantics(
                                 button: true,
                                 label: 'View photo',
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(6),
+                                child: ClipRect(
                                   child: AspectRatio(
                                     aspectRatio: 1,
                                     child: Image.network(

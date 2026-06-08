@@ -11,6 +11,7 @@ class AppIcons {
   static const IconData plus = Icons.add;
   static const IconData arrowLeft = Icons.arrow_back;
   static const IconData arrowRight = Icons.arrow_forward;
+  static const IconData arrowDown = Icons.arrow_downward;
   static const IconData ellipsisVertical = Icons.more_vert;
   static const IconData check = Icons.check;
   static const IconData checkCircle = Icons.check_circle;
@@ -119,6 +120,7 @@ class AppIcons {
       'plus' => plus,
       'arrowLeft' => arrowLeft,
       'arrowRight' => arrowRight,
+      'arrowDown' => arrowDown,
       'ellipsisVertical' => ellipsisVertical,
       'check' => check,
       'checkCircle' => checkCircle,

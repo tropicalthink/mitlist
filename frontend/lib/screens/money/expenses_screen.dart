@@ -233,7 +233,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       setState(() {
         _hasHousehold = validGroupId != null;
         _hasMore = expenses.length == _pageLimit;
-        _isLoading = expenses.isEmpty;
+        _isLoading = false;
       });
 
       // Background refresh; keep cached UI if this fails.
@@ -1312,7 +1312,7 @@ class _SuggestionCard extends StatelessWidget {
                     Padding(
                       padding:
                           const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
-                      child: AppIcon(name: 'arrowRight', size: 20),
+                      child: AppIcon(name: 'arrowDown', size: 20),
                     ),
                     to,
                   ],

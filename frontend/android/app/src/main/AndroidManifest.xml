@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for all builds (release included) to reach the backend API.
+         Debug/profile manifests declare this separately for the Flutter tool. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application
         android:label="mitlist"
         android:name="${applicationName}"

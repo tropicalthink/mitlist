@@ -304,12 +304,42 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
-class BottomNavScaffold extends ConsumerWidget {
+class BottomNavScaffold extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
   const BottomNavScaffold({super.key, required this.navigationShell});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BottomNavScaffold> createState() => _BottomNavScaffoldState();
+}
+
+class _BottomNavScaffoldState extends ConsumerState<BottomNavScaffold> {
+  static const _lastTabKey = 'nav_last_tab_index';
+  bool _restored = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreLastTab();
+  }
+
+  Future<void> _restoreLastTab() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getInt(_lastTabKey) ?? 0;
+    if (!mounted || _restored) return;
+    _restored = true;
+    if (saved != 0 && saved < 5) {
+      widget.navigationShell.goBranch(saved);
+    }
+  }
+
+  void _onTap(int index) {
+    if (index == widget.navigationShell.currentIndex) return;
+    widget.navigationShell.goBranch(index);
+    SharedPreferences.getInstance().then((p) => p.setInt(_lastTabKey, index));
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final badgeCounts = ref.watch(navBadgeCountsProvider);
     final badgeData = badgeCounts.valueOrNull ?? const NavBadgeCounts();
 
@@ -326,7 +356,7 @@ class BottomNavScaffold extends ConsumerWidget {
     }
 
     return Scaffold(
-      body: navigationShell,
+      body: widget.navigationShell,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           border: Border(
@@ -337,8 +367,8 @@ class BottomNavScaffold extends ConsumerWidget {
           ),
         ),
         child: BottomNavigationBar(
-          currentIndex: navigationShell.currentIndex,
-          onTap: (i) => _onTap(i, navigationShell, ref),
+          currentIndex: widget.navigationShell.currentIndex,
+          onTap: _onTap,
           items: [
             const BottomNavigationBarItem(
                 icon: AppIcon(name: 'home'), label: 'Home'),
@@ -362,10 +392,5 @@ class BottomNavScaffold extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  void _onTap(int index, StatefulNavigationShell navigationShell, WidgetRef ref) {
-    if (index == navigationShell.currentIndex) return;
-    navigationShell.goBranch(index, initialLocation: index == navigationShell.currentIndex);
   }
 }
