@@ -16,6 +16,7 @@ import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/app_input.dart';
+import '../utils/friendly_error.dart';
 import '../widgets/chip.dart';
 
 enum _ListType { shopping, todo, custom }
@@ -25,15 +26,19 @@ class CreateListSheet extends ConsumerStatefulWidget {
     super.key,
     this.initialGroupId,
     this.initialName,
+    this.initialType,
   });
 
   final String? initialGroupId;
   final String? initialName;
+  /// One of 'shopping', 'todo', 'custom'. Null → defaults to shopping.
+  final String? initialType;
 
   static Future<bool?> show(
     BuildContext context, {
     String? initialGroupId,
     String? initialName,
+    String? initialType,
   }) async {
     return showAppBottomSheet<bool>(
       context: context,
@@ -41,6 +46,7 @@ class CreateListSheet extends ConsumerStatefulWidget {
       body: CreateListSheet(
         initialGroupId: initialGroupId,
         initialName: initialName,
+        initialType: initialType,
       ),
     );
   }
@@ -59,12 +65,19 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
   bool _isScanning = false;
   String? _errorText;
 
+  static _ListType _listTypeFromString(String? type) => switch (type) {
+    'todo' => _ListType.todo,
+    'custom' => _ListType.custom,
+    _ => _ListType.shopping,
+  };
+
   @override
   void initState() {
     super.initState();
     if (widget.initialName != null) {
       _nameController.text = widget.initialName!;
     }
+    _selectedType = _listTypeFromString(widget.initialType);
     _loadGroups();
   }
 
@@ -92,11 +105,11 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
       }
 
       setState(() => _isScanning = false);
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() => _isScanning = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Couldn\u2019t scan list.')),
+        SnackBar(content: Text(friendlyErrorMessage(e))),
       );
     }
   }
@@ -104,6 +117,7 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
   bool get _canCreate => _nameController.text.trim().isNotEmpty;
 
   Future<void> _loadGroups() async {
+    setState(() => _errorText = null);
     try {
       final groupService = await ref.read(groupServiceProviderAsync.future);
       final groups = await groupService.listGroups();
@@ -116,10 +130,10 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
         _selectedGroupId = resolveActiveGroupId(groups, preferred);
         _isLoadingGroups = false;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorText = 'Failed to load households.';
+        _errorText = friendlyErrorMessage(e);
         _isLoadingGroups = false;
       });
     }
@@ -153,10 +167,13 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
 
       if (!mounted) return;
       Navigator.of(context).pop(true);
-    } catch (_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('List created')),
+      );
+    } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorText = 'Failed to create list.';
+        _errorText = friendlyErrorMessage(e);
         _isSubmitting = false;
       });
     }
@@ -196,7 +213,7 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
           const SizedBox(height: MitlistSpacing.md),
         ],
         AppInput(
-          label: 'List Name',
+          label: 'List name',
           hint: 'e.g. Weekend Groceries',
           controller: _nameController,
           enabled: !_isSubmitting,
@@ -259,7 +276,7 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
             runSpacing: MitlistSpacing.sm,
             children: _groups.map((group) {
               return AppChip(
-                label: group.name,
+                label: group.name.length > 30 ? '${group.name.substring(0, 28)}\u2026' : group.name,
                 selected: _selectedGroupId == group.id,
                 onSelected: _isSubmitting
                     ? null
@@ -274,7 +291,8 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
             variant: AppButtonVariant.solid,
             color: AppButtonColor.primary,
             size: AppButtonSize.lg,
-            text: 'Create',
+            text: _isSubmitting ? 'Creating...' : 'Create',
+            isLoading: _isSubmitting,
             onPressed: _canCreate && !_isLoadingGroups && !_isSubmitting
                 ? _onCreate
                 : null,

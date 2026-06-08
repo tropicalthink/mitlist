@@ -9,10 +9,13 @@ import '../theme/spacing.dart';
 import '../widgets/alert.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
+import '../widgets/app_divider.dart';
 import '../widgets/app_card.dart';
+import '../widgets/app_currency_dropdown.dart';
 import '../widgets/app_dialog.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/app_input.dart';
+import '../widgets/app_switch.dart';
 import '../utils/friendly_error.dart';
 import 'invite_household_sheet.dart';
 
@@ -35,6 +38,7 @@ class GroupSettingsSheet extends ConsumerStatefulWidget {
 
 class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
   bool _isLoading = true;
+  bool _isDeleting = false;
   String? _error;
 
   Group? _group;
@@ -202,6 +206,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       ],
     );
     if (confirmed != true || !mounted) return;
+    setState(() => _isDeleting = true);
     try {
       final svc = await ref.read(groupServiceProviderAsync.future);
       await svc.deleteGroup(widget.groupId);
@@ -214,6 +219,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       );
     } catch (e) {
       if (!mounted) return;
+      setState(() => _isDeleting = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(friendlyErrorMessage(e))),
       );
@@ -288,11 +294,11 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         _notificationPref = updated;
         _savingKeys.remove(key);
       });
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         setState(() => _savingKeys.remove(key));
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to update preference')),
+          SnackBar(content: Text(friendlyErrorMessage(e))),
         );
       }
     }
@@ -310,14 +316,14 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
           Text('Notifications',
               style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: MitlistSpacing.sm),
-          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          const AppDivider(),
           _notifToggle('Chore due', pref.choreDue, 'chore_due'),
           _notifToggle('List item added', pref.listItemAdded, 'list_item_added'),
           _notifToggle('Expense created', pref.expenseCreated, 'expense_created'),
           _notifToggle('Meal plan changed', pref.mealPlanChanged, 'meal_plan_changed'),
           _notifToggle('Weekly digest', pref.weeklyDigest, 'weekly_digest'),
           _notifToggle('Pinwall reminder', pref.pinwallReminder, 'pinwall_reminder'),
-          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          const AppDivider(),
           _notifToggle('Push enabled', pref.pushEnabled, 'push_enabled'),
         ],
       ),
@@ -345,7 +351,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
               ),
             )
           else
-            Switch(
+            AppSwitch(
               value: value,
               onChanged: (v) => _toggleNotifPref(field, v),
             ),
@@ -378,24 +384,8 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
             onChanged: (_) => setState(() => _descChanged = true),
           ),
           const SizedBox(height: MitlistSpacing.md),
-          DropdownButtonFormField<String>(
-            initialValue: _groupCurrency,
-            decoration: const InputDecoration(labelText: 'Currency'),
-            items: const [
-              DropdownMenuItem(value: 'USD', child: Text('USD - US Dollar')),
-              DropdownMenuItem(value: 'EUR', child: Text('EUR - Euro')),
-              DropdownMenuItem(value: 'GBP', child: Text('GBP - British Pound')),
-              DropdownMenuItem(value: 'JPY', child: Text('JPY - Japanese Yen')),
-              DropdownMenuItem(value: 'CAD', child: Text('CAD - Canadian Dollar')),
-              DropdownMenuItem(value: 'AUD', child: Text('AUD - Australian Dollar')),
-              DropdownMenuItem(value: 'CHF', child: Text('CHF - Swiss Franc')),
-              DropdownMenuItem(value: 'SEK', child: Text('SEK - Swedish Krona')),
-              DropdownMenuItem(value: 'NOK', child: Text('NOK - Norwegian Krone')),
-              DropdownMenuItem(value: 'DKK', child: Text('DKK - Danish Krone')),
-              DropdownMenuItem(value: 'PLN', child: Text('PLN - Polish Zloty')),
-              DropdownMenuItem(value: 'CZK', child: Text('CZK - Czech Koruna')),
-              DropdownMenuItem(value: 'HUF', child: Text('HUF - Hungarian Forint')),
-            ],
+          AppCurrencyDropdown(
+            value: _groupCurrency,
             onChanged: (v) {
               if (v != null) {
                 setState(() {
@@ -443,7 +433,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
               const SizedBox(width: MitlistSpacing.sm),
               AppButton(
                 size: AppButtonSize.sm,
-                variant: AppButtonVariant.outline,
+                variant: AppButtonVariant.ghost,
                 text: 'Invite',
                 icon: const AppIcon(name: 'userPlus'),
                 onPressed: () => InviteHouseholdSheet.show(
@@ -455,7 +445,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
           ),
           if (_members.isNotEmpty) ...[
             const SizedBox(height: MitlistSpacing.sm),
-            Divider(color: Theme.of(context).colorScheme.outlineVariant),
+            const AppDivider(),
             ..._members.map((m) => _buildMemberTile(m)),
           ],
         ],
@@ -466,10 +456,24 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
   Widget _buildMemberTile(GroupMemberProfile member) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: CircleAvatar(
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+      leading: Container(
+        width: MitlistSpacing.space10,
+        height: MitlistSpacing.space10,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primaryContainer,
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            width: 2,
+          ),
+        ),
+        alignment: Alignment.center,
         child: Text(
-          member.displayName.isNotEmpty ? member.displayName[0].toUpperCase() : '?',
+          member.displayName.isNotEmpty
+              ? String.fromCharCode(member.displayName.runes.first)
+              : '?',
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onPrimaryContainer,
+          ),
         ),
       ),
       title: Text(member.displayName, maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -486,11 +490,12 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
     return SizedBox(
       width: double.infinity,
       child: AppButton(
-        text: 'Delete household',
+        text: _isDeleting ? 'Deleting...' : 'Delete household',
         variant: AppButtonVariant.soft,
         color: AppButtonColor.error,
         size: AppButtonSize.lg,
-        onPressed: _confirmDeleteGroup,
+        isLoading: _isDeleting,
+        onPressed: _isDeleting ? null : _confirmDeleteGroup,
       ),
     );
   }

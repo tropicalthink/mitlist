@@ -61,8 +61,9 @@ class _Expense {
 class _ExpenseGroup {
   final String label;
   final List<_Expense> expenses;
+  final DateTime date;
 
-  const _ExpenseGroup({required this.label, required this.expenses});
+  const _ExpenseGroup({required this.label, required this.expenses, required this.date});
 }
 
 class _SettlementSuggestion {
@@ -233,7 +234,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       setState(() {
         _hasHousehold = validGroupId != null;
         _hasMore = expenses.length == _pageLimit;
-        _isLoading = expenses.isEmpty;
+        _isLoading = false;
       });
 
       // Background refresh; keep cached UI if this fails.
@@ -430,7 +431,11 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     }
 
     _timelineGroups = timelineMap.entries
-        .map((e) => _ExpenseGroup(label: e.key, expenses: e.value))
+        .map((e) => _ExpenseGroup(
+              label: e.key,
+              expenses: e.value,
+              date: e.value.first.date,
+            ))
         .toList();
     _timelineGroups.sort((a, b) {
       final order = ['Today', 'Yesterday'];
@@ -439,7 +444,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       if (ai >= 0 && bi >= 0) return ai.compareTo(bi);
       if (ai >= 0) return -1;
       if (bi >= 0) return 1;
-      return b.label.compareTo(a.label);
+      return b.date.compareTo(a.date);
     });
   }
 
@@ -686,8 +691,7 @@ class _BalanceCard extends StatelessWidget {
       );
     }
 
-    final displayMedium = Theme.of(context).textTheme.displayMedium;
-    final balanceStyle = displayMedium?.copyWith(
+    final balanceStyle = Theme.of(context).textTheme.headlineLarge?.copyWith(
       fontFamily: MitlistTypography.monoBody().fontFamily,
       color: balanceColor,
     );
@@ -920,7 +924,7 @@ class _TimelineBody extends StatelessWidget {
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
-              physics: AlwaysScrollableScrollPhysics(),
+              physics: const AlwaysScrollableScrollPhysics(),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   minHeight: constraints.maxHeight,
@@ -1062,9 +1066,7 @@ class _StickyDateHeaderDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  bool shouldRebuild(covariant _StickyDateHeaderDelegate oldDelegate) {
-    return oldDelegate.child != child || oldDelegate.height != height;
-  }
+  bool shouldRebuild(covariant _StickyDateHeaderDelegate oldDelegate) => true;
 }
 
 // ---------------------------------------------------------------------------
@@ -1197,7 +1199,7 @@ class _SettlementsBody extends StatelessWidget {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(MitlistSpacing.md),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
               'Suggested payments',
@@ -1312,7 +1314,7 @@ class _SuggestionCard extends StatelessWidget {
                     Padding(
                       padding:
                           const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
-                      child: AppIcon(name: 'arrowRight', size: 20),
+                      child: AppIcon(name: 'arrowDown', size: 20),
                     ),
                     to,
                   ],
@@ -1375,7 +1377,7 @@ class _SettlementParty extends StatelessWidget {
       padding: const EdgeInsets.all(MitlistSpacing.sm),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHigh,
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant, width: 2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1463,7 +1465,7 @@ class _BalancesExpandableBodyState extends State<_BalancesExpandableBody> {
       children: [
         Semantics(
           button: true,
-          label: 'Expand balances',
+          label: _expanded ? 'Collapse balances' : 'Expand balances',
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () => setState(() => _expanded = !_expanded),

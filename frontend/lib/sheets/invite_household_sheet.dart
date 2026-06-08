@@ -72,7 +72,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
     setState(() {
       _isLoading = true;
       _error = null;
-      _invite = null;
+      // Don't clear _invite — keeps old code visible while regenerating.
       _copied = false;
     });
     _codeAnim.reset();
@@ -112,7 +112,11 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
   Future<void> _copyCode() async {
     final code = _invite?.code;
     if (code == null || code.trim().isEmpty || _copied) return;
-    await Clipboard.setData(ClipboardData(text: code.trim()));
+    try {
+      await Clipboard.setData(ClipboardData(text: code.trim()));
+    } catch (_) {
+      return; // Clipboard unavailable; silently ignore.
+    }
     if (!mounted) return;
     setState(() => _copied = true);
     _copiedTimer?.cancel();
@@ -131,7 +135,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
   Widget build(BuildContext context) {
     final code = _invite?.code ?? '';
 
-    if (_isLoading) {
+    if (_isLoading && _invite == null) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: MitlistSpacing.xl),
         child: Center(child: CircularProgressIndicator()),
@@ -163,7 +167,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
                           horizontal: MitlistSpacing.xs,
                         ),
                         child: Text(
-                          '–',
+                          '—',
                           style: Theme.of(context)
                               .textTheme
                               .titleMedium
@@ -278,8 +282,9 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
               Expanded(
                 child: AppButton(
                   variant: AppButtonVariant.outline,
-                  text: 'New code',
-                  onPressed: _createInvite,
+                  text: _isLoading ? 'Generating…' : 'New code',
+                  isLoading: _isLoading,
+                  onPressed: _isLoading ? null : _createInvite,
                 ),
               ),
             ],

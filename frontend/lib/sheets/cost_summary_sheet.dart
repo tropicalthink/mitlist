@@ -5,8 +5,9 @@ import '../theme/spacing.dart';
 import '../utils/format_currency.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
+import '../widgets/app_icon.dart';
 
-class CostSummarySheet extends ConsumerStatefulWidget {
+class CostSummarySheet extends ConsumerWidget {
   const CostSummarySheet({
     super.key,
     required this.listName,
@@ -47,73 +48,58 @@ class CostSummarySheet extends ConsumerStatefulWidget {
     );
   }
 
-  @override
-  ConsumerState<CostSummarySheet> createState() => _CostSummarySheetState();
-}
-
-class _CostSummarySheetState extends ConsumerState<CostSummarySheet> {
-  bool _isSaving = false;
-
   String _formatCents(int cents) {
-    return formatCurrency(cents, widget.currencyCode);
+    return formatCurrency(cents.clamp(0, 999999999), currencyCode);
   }
 
   @override
-  Widget build(BuildContext context) {
-    final hasPrices = widget.totalCents > 0;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hasPrices = totalCents > 0;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          widget.listName,
+          listName,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: MitlistSpacing.md),
         if (!hasPrices) ...[
           _InfoRow(
-            icon: Icons.info_outline,
+            iconName: 'infoOutline',
             message:
                 'No items have prices yet. Open the item options (⋯) and choose Set price to see the cost summary.',
           ),
         ] else ...[
           _CostRow(
             label: 'Total cost',
-            value: _formatCents(widget.totalCents),
+            value: _formatCents(totalCents),
             isTotal: true,
           ),
           const SizedBox(height: MitlistSpacing.sm),
           _CostRow(
             label: 'Equal share per person',
-            value: _formatCents(widget.equalShareCents),
+            value: equalShareCents > 0 ? _formatCents(equalShareCents) : 'N/A',
             isTotal: false,
           ),
           const SizedBox(height: MitlistSpacing.sm),
           _CostRow(
             label: 'Items with prices',
-            value: '${widget.itemCount}',
+            value: itemCount > 0 ? '$itemCount' : 'None',
             isTotal: false,
           ),
           const SizedBox(height: MitlistSpacing.md),
-          if (widget.onGenerateExpense != null)
+          if (onGenerateExpense != null)
             SizedBox(
               width: double.infinity,
               child: AppButton(
                 variant: AppButtonVariant.solid,
                 color: AppButtonColor.primary,
                 text: 'Generate expense',
-                onPressed: _isSaving
-                    ? null
-                    : () async {
-                        if (_isSaving) return;
-                        _isSaving = true;
-                        try {
-                          widget.onGenerateExpense!();
-                        } finally {
-                          _isSaving = false;
-                        }
-                      },
+                onPressed: onGenerateExpense,
               ),
             ),
         ],
@@ -162,9 +148,9 @@ class _CostRow extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.icon, required this.message});
+  const _InfoRow({required this.iconName, required this.message});
 
-  final IconData icon;
+  final String iconName;
   final String message;
 
   @override
@@ -172,7 +158,7 @@ class _InfoRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+        AppIcon(name: iconName, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
         const SizedBox(width: MitlistSpacing.sm),
         Expanded(
           child: Text(

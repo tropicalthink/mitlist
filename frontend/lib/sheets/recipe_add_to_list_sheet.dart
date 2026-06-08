@@ -15,6 +15,7 @@ import '../widgets/animated_check_toggle.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
+import '../widgets/app_dropdown.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/empty_state.dart';
 
@@ -192,14 +193,20 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
                 tooltip: 'Decrease servings',
                 onPressed: _servings > 1 ? () => setState(() => _servings--) : null,
               ),
-              Text(
-                '$_servings',
-                style: MitlistTypography.monoBody(color: Theme.of(context).colorScheme.onSurface),
+              SizedBox(
+                width: 48,
+                child: Text(
+                  '$_servings',
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: MitlistTypography.monoBody(color: Theme.of(context).colorScheme.onSurface),
+                ),
               ),
               IconButton(
                 icon: const AppIcon(name: 'addCircleOutline'),
                 tooltip: 'Increase servings',
-                onPressed: () => setState(() => _servings++),
+                onPressed: _servings < 99 ? () => setState(() => _servings++) : null,
               ),
             ],
           ),
@@ -212,12 +219,9 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
             description: 'Create a list first to add ingredients',
           )
         else
-          DropdownButtonFormField<String>(
-            initialValue: _selectedListId,
-            decoration: const InputDecoration(
-              labelText: 'Target list',
-              border: OutlineInputBorder(),
-            ),
+          AppDropdown<String>(
+            label: 'Target list',
+            value: _selectedListId,
             items: _lists.map((list) => DropdownMenuItem<String>(
               value: list.id,
               child: Text(list.name, maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -246,7 +250,7 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
                 children: [
                   AnimatedCheckToggle(
                     value: isSelected,
-                    onChanged: (_) {
+                    onChanged: _isSubmitting ? null : (_) {
                       setState(() {
                         if (isSelected) {
                           _selectedIngredientIds.remove(ing.id);

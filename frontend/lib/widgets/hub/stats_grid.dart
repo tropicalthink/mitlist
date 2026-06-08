@@ -82,7 +82,7 @@ class StatsGrid extends ConsumerWidget {
                 : (choresDue > 0
                     ? Theme.of(context).colorScheme.secondary
                     : Theme.of(context).colorScheme.tertiary),
-            onTap: () => context.pushNamed('chores'),
+            onTap: () => context.goNamed('chores'),
           ),
         ),
         const SizedBox(width: MitlistSpacing.sm),
@@ -101,7 +101,7 @@ class StatsGrid extends ConsumerWidget {
                 : (balance < 0
                     ? Theme.of(context).colorScheme.error
                     : Theme.of(context).colorScheme.onSurfaceVariant),
-            onTap: () => context.pushNamed('money'),
+            onTap: () => context.goNamed('money'),
           ),
         ),
         const SizedBox(width: MitlistSpacing.sm),
@@ -116,7 +116,7 @@ class StatsGrid extends ConsumerWidget {
             color: listCount > 0
                 ? Theme.of(context).colorScheme.primary
                 : Theme.of(context).colorScheme.tertiary,
-            onTap: () => context.pushNamed('lists'),
+            onTap: () => context.goNamed('lists'),
           ),
         ),
         if (pinnedWithReminders > 0) ...[

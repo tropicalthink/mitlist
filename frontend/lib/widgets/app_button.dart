@@ -60,6 +60,7 @@ class _AppButtonState extends State<AppButton> {
   Color _backgroundColor(ColorScheme colorScheme) {
     switch (widget.variant) {
       case AppButtonVariant.solid:
+        if (widget.isSuccess) return const Color(0xFF10B981); // success500
         switch (widget.color) {
           case AppButtonColor.primary:
             return colorScheme.primary;
@@ -95,7 +96,7 @@ class _AppButtonState extends State<AppButton> {
   Color _foregroundColor(ColorScheme colorScheme) {
     switch (widget.variant) {
       case AppButtonVariant.solid:
-        return colorScheme.onPrimary;
+        return colorScheme.onPrimary; // white works for both primary and success500
       case AppButtonVariant.outline:
       case AppButtonVariant.ghost:
         switch (widget.color) {
@@ -218,7 +219,15 @@ class _AppButtonState extends State<AppButton> {
       duration: duration,
       transitionBuilder: (child, animation) {
         if (child.key == const ValueKey('loading')) {
-          return child;
+          return FadeTransition(opacity: animation, child: child);
+        }
+        if (child.key == const ValueKey('success')) {
+          // Gentle settle with a slight overshoot — feels satisfying, not bouncy.
+          final curved = CurvedAnimation(
+            parent: animation,
+            curve: const Cubic(0.34, 1.15, 0.64, 1.0),
+          );
+          return ScaleTransition(scale: curved, child: child);
         }
         return ScaleTransition(scale: animation, child: child);
       },
@@ -252,12 +261,25 @@ class _AppButtonState extends State<AppButton> {
     final disableAnimations = MediaQuery.of(context).disableAnimations;
     final animationDuration =
         disableAnimations ? Duration.zero : MitlistAnimations.micro;
+    // Slower color transition when success fires so the green reads clearly.
+    final containerDuration = disableAnimations
+        ? Duration.zero
+        : widget.isSuccess
+            ? MitlistAnimations.medium
+            : MitlistAnimations.micro;
 
     final textStyle =
         Theme.of(context).textTheme.labelLarge!.copyWith(color: foreground);
 
+    // Use a longer switcher duration for the success check entrance.
+    final switcherDuration = disableAnimations
+        ? Duration.zero
+        : widget.isSuccess
+            ? MitlistAnimations.medium
+            : animationDuration;
+
     final List<Widget> rowChildren = [
-      _buildLeadingWithGap(foreground, animationDuration),
+      _buildLeadingWithGap(foreground, switcherDuration),
     ];
 
     if (widget.text != null) {
@@ -282,7 +304,7 @@ class _AppButtonState extends State<AppButton> {
     }
 
     Widget button = AnimatedContainer(
-      duration: animationDuration,
+      duration: containerDuration,
       curve: Curves.easeInOut,
       decoration: BoxDecoration(
         color: background,

@@ -460,6 +460,30 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
   Future<void> _clearItems({required bool onlyChecked}) async {
     if (_isSaving) return;
+    if (!onlyChecked) {
+      final count = _items.length;
+      final confirmed = await showAppDialog<bool>(
+        context: context,
+        title: 'Clear list',
+        body: Text(
+          'This will remove all $count item${count == 1 ? '' : 's'}. This cannot be undone.',
+        ),
+        actions: [
+          AppButton(
+            text: 'Cancel',
+            variant: AppButtonVariant.outline,
+            onPressed: () => Navigator.of(context).pop(false),
+          ),
+          const SizedBox(width: MitlistSpacing.sm),
+          AppButton(
+            text: 'Clear list',
+            color: AppButtonColor.error,
+            onPressed: () => Navigator.of(context).pop(true),
+          ),
+        ],
+      );
+      if (confirmed != true || !mounted) return;
+    }
     _isSaving = true;
     final service = _service;
     if (service == null) { _isSaving = false; return; }
@@ -587,9 +611,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         keyboardType:
             const TextInputType.numberWithOptions(decimal: true),
         autofocus: true,
-        decoration: const InputDecoration(
+        decoration: InputDecoration(
           labelText: 'Price',
-          prefixText: '\$',
+          prefixText: _currencySymbol,
           hintText: '0.00',
         ),
       ),
@@ -657,6 +681,24 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
   Future<void> _archiveList() async {
     if (_isSaving) return;
+    final confirmed = await showAppDialog<bool>(
+      context: context,
+      title: 'Archive list',
+      body: const Text('This list will be hidden from your household.'),
+      actions: [
+        AppButton(
+          text: 'Cancel',
+          variant: AppButtonVariant.outline,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        const SizedBox(width: MitlistSpacing.sm),
+        AppButton(
+          text: 'Archive',
+          onPressed: () => Navigator.of(context).pop(true),
+        ),
+      ],
+    );
+    if (confirmed != true || !mounted) return;
     _isSaving = true;
     if (_service == null) { _isSaving = false; return; }
     try {
@@ -698,6 +740,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     if (_service == null) { _isSaving = false; return; }
     try {
       await _service!.deleteList(widget.listId);
+      final repo = await ref.read(listRepositoryProvider.future);
+      await repo.deleteListLocal(widget.listId);
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } catch (e) {
@@ -821,10 +865,23 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                       onChanged: (value) =>
                           setState(() => _searchQuery = value),
                     )
-                  : Text(
-                      _listName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _listName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (_items.isNotEmpty)
+                          Text(
+                            _buildProgressLabel(),
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                      ],
                     ),
               actions: [
                 IconButton(
@@ -868,7 +925,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     ),
                     PopupMenuItem(
                       value: 'delete',
-                      child: Text('Delete', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                      child: Text('Delete', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.error)),
                     ),
                   ],
                 ),
@@ -936,20 +993,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     if (open.isEmpty && done.isEmpty) return _buildEmpty();
 
     return CheckboxTheme(
-      data: CheckboxThemeData(
-        shape: CircleBorder(),
-        side: BorderSide(
-          color: Theme.of(context).colorScheme.outline,
-          width: 2,
-        ),
-        fillColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return Theme.of(context).colorScheme.primary;
-          }
-          return Theme.of(context).colorScheme.surface;
-        }),
-        checkColor: WidgetStateProperty.all(Theme.of(context).colorScheme.onPrimary),
-      ),
+      data: _itemCheckboxThemeData(),
       child: ListView(
         padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
         children: [
@@ -999,20 +1043,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
   Widget _buildSearchResultItemList(List<ListItem> items, TextTheme textTheme) {
     return CheckboxTheme(
-      data: CheckboxThemeData(
-        shape: CircleBorder(),
-        side: BorderSide(
-          color: Theme.of(context).colorScheme.outline,
-          width: 2,
-        ),
-        fillColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return Theme.of(context).colorScheme.primary;
-          }
-          return Theme.of(context).colorScheme.surface;
-        }),
-        checkColor: WidgetStateProperty.all(Theme.of(context).colorScheme.onPrimary),
-      ),
+      data: _itemCheckboxThemeData(),
       child: ListView.builder(
         padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
         itemCount: items.length,
@@ -1074,8 +1105,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
               if (thumbUrl != null) ...[
                 GestureDetector(
                   onTap: () => _openPhotoViewer(thumbUrl),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
+                  child: ClipRect(
                     child: SizedBox(
                       width: 28,
                       height: 28,
@@ -1096,25 +1126,43 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
               ),
               const SizedBox(width: MitlistSpacing.sm),
               Expanded(
-                child: Text(
-                  item.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: textTheme.bodyLarge?.copyWith(
-                    decoration:
-                        item.checked ? TextDecoration.lineThrough : null,
-                    color: item.checked
-                        ? Theme.of(context).colorScheme.onSurfaceVariant
-                        : Theme.of(context).colorScheme.onSurface,
-                    height: 1.25,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      item.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.bodyLarge?.copyWith(
+                        decoration:
+                            item.checked ? TextDecoration.lineThrough : null,
+                        color: item.checked
+                            ? Theme.of(context).colorScheme.onSurfaceVariant
+                            : Theme.of(context).colorScheme.onSurface,
+                        height: 1.25,
+                      ),
+                    ),
+                    if (item.note.isNotEmpty)
+                      Text(
+                        item.note,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          height: 1.3,
+                        ),
+                      ),
+                  ],
                 ),
               ),
-              if (item.quantity > 1)
+              if (item.quantity > 1 || item.unit.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(left: MitlistSpacing.sm),
                   child: Text(
-                    '${_formatQuantity(item.quantity)}x',
+                    item.unit.isNotEmpty
+                        ? '${_formatQuantity(item.quantity)} ${item.unit}'
+                        : '${_formatQuantity(item.quantity)}×',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: MitlistTypography.monoBody(
@@ -1126,7 +1174,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                 Padding(
                   padding: const EdgeInsets.only(left: MitlistSpacing.sm),
                   child: Text(
-                    '\$${(item.priceCents! / 100).toStringAsFixed(2)}',
+                    '$_currencySymbol${(item.priceCents! / 100).toStringAsFixed(2)}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: MitlistTypography.monoBody(
@@ -1149,7 +1197,6 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   if (v == 'photo') await _addItemPhoto(item);
                   if (v == 'remove_photo') await _removeItemPhoto(item);
                   if (v == 'price') await _setItemPrice(item);
-                  if (v == 'delete') await _deleteItem(item);
                 },
                 itemBuilder: (context) => [
                   const PopupMenuItem(value: 'photo', child: Text('Add photo')),
@@ -1159,7 +1206,6 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                       child: Text('Remove photo'),
                     ),
                   const PopupMenuItem(value: 'price', child: Text('Set price')),
-                  const PopupMenuItem(value: 'delete', child: Text('Delete')),
                 ],
                 child: const Padding(
                   padding: EdgeInsets.all(MitlistSpacing.sm),
@@ -1171,6 +1217,40 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         ),
       ),
     );
+  }
+
+  String get _currencySymbol {
+    const symbols = {
+      'USD': '\$', 'EUR': '€', 'GBP': '£', 'JPY': '¥',
+      'CAD': 'CA\$', 'AUD': 'A\$', 'NZD': 'NZ\$', 'CHF': 'CHF',
+      'CNY': '¥', 'HKD': 'HK\$', 'SGD': 'S\$', 'SEK': 'kr',
+      'NOK': 'kr', 'DKK': 'kr', 'INR': '₹', 'BRL': 'R\$',
+      'MXN': 'MX\$', 'ZAR': 'R', 'KRW': '₩', 'TRY': '₺',
+    };
+    return symbols[_groupCurrency] ?? _groupCurrency;
+  }
+
+  CheckboxThemeData _itemCheckboxThemeData() => CheckboxThemeData(
+    shape: const CircleBorder(),
+    side: BorderSide(
+      color: Theme.of(context).colorScheme.outline,
+      width: 2,
+    ),
+    fillColor: WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.selected)) {
+        return Theme.of(context).colorScheme.primary;
+      }
+      return Theme.of(context).colorScheme.surface;
+    }),
+    checkColor: WidgetStateProperty.all(Theme.of(context).colorScheme.onPrimary),
+  );
+
+  String _buildProgressLabel() {
+    final total = _items.length;
+    final done = _items.where((i) => i.checked).length;
+    if (done == total) return 'All done';
+    if (done == 0) return '$total item${total == 1 ? '' : 's'}';
+    return '$done/$total done';
   }
 
   String _formatQuantity(double value) {
@@ -1286,29 +1366,34 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (_showProductSuggestions && _productSuggestions.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
-                child: SizedBox(
-                  height: 32,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _productSuggestions.length,
-                    separatorBuilder: (_, __) =>
-                        const SizedBox(width: MitlistSpacing.sm),
-                    itemBuilder: (context, index) {
-                      final product = _productSuggestions[index];
-                      return AppChip(
-                        label: product.name,
-                        onSelected: (_) {
-                          _newItemController.text = product.name;
-                          _addItem();
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 150),
+              curve: Curves.easeOut,
+              child: _showProductSuggestions && _productSuggestions.isNotEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+                      child: SizedBox(
+                        height: 32,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _productSuggestions.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(width: MitlistSpacing.sm),
+                          itemBuilder: (context, index) {
+                            final product = _productSuggestions[index];
+                            return AppChip(
+                              label: product.name,
+                              onSelected: (_) {
+                                _newItemController.text = product.name;
+                                _addItem();
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -1322,7 +1407,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     maxLines: 3,
                     decoration: InputDecoration(
                       labelText: 'New item',
-                      hintText: 'e.g. Milk · Oats · 2 avocados',
+                      hintText: 'e.g. Milk, 2 avocados, or 500g flour',
                       filled: true,
                       fillColor: fill,
                     ),

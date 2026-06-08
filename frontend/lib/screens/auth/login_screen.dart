@@ -31,6 +31,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordFocus = FocusNode();
 
   bool _isLoading = false;
+  bool _isSuccess = false;
   bool _rememberMe = true;
   String? _errorMessage;
   String? _emailError;
@@ -76,16 +77,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       
       // Update auth state
       ref.read(authStateProvider.notifier).state = true;
-      
+
       if (mounted) {
-        context.goNamed('home');
+        setState(() {
+          _isLoading = false;
+          _isSuccess = true;
+        });
+        await Future.delayed(const Duration(milliseconds: 650));
+        if (mounted) context.goNamed('home');
       }
+      return;
     } catch (e) {
       setState(() {
         _errorMessage = 'Couldn\u2019t sign in. Check your connection and try again.';
       });
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted && !_isSuccess) setState(() => _isLoading = false);
     }
   }
 
@@ -362,12 +369,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             color: AppButtonColor.primary,
                             size: AppButtonSize.lg,
                             isLoading: _isLoading,
-                            onPressed: _isLoading ? null : _submit,
+                            isSuccess: _isSuccess,
+                            onPressed: (_isLoading || _isSuccess) ? null : _submit,
                           ),
                         ),
                         const SizedBox(height: MitlistSpacing.space3),
                         InkWell(
-                          onTap: _isLoading
+                          onTap: (_isLoading || _isSuccess)
                               ? null
                               : () => setState(() => _rememberMe = !_rememberMe),
                           borderRadius: BorderRadius.zero,
@@ -377,7 +385,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               children: [
                                 AnimatedCheckToggle(
                                   value: _rememberMe,
-                                  onChanged: _isLoading
+                                  onChanged: (_isLoading || _isSuccess)
                                       ? null
                                       : (value) {
                                           setState(() => _rememberMe = value);
@@ -397,7 +405,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           icon: const AppIcon(name: 'login', size: 20),
                           variant: AppButtonVariant.outline,
                           color: AppButtonColor.neutral,
-                          onPressed: _isLoading ? null : () => _startOAuth('google'),
+                          onPressed: (_isLoading || _isSuccess) ? null : () => _startOAuth('google'),
                         ),
                         const SizedBox(height: MitlistSpacing.space3),
                         AppButton(
@@ -405,7 +413,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           icon: const AppIcon(name: 'apple', size: 20),
                           variant: AppButtonVariant.outline,
                           color: AppButtonColor.neutral,
-                          onPressed: _isLoading ? null : () => _startOAuth('apple'),
+                          onPressed: (_isLoading || _isSuccess) ? null : () => _startOAuth('apple'),
                         ),
                         const SizedBox(height: MitlistSpacing.space4),
                         Row(

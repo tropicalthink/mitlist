@@ -5,6 +5,7 @@ import '../models/chore_models.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../widgets/app_bottom_sheet.dart';
+import '../widgets/app_divider.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_dialog.dart';
@@ -122,6 +123,8 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
   late List<ChoreSubtask> _subtasks;
   final TextEditingController _subtaskController = TextEditingController();
   bool _showAddSubtask = false;
+  bool _isDeleting = false;
+  bool _isSavingSubtask = false;
 
   @override
   void initState() {
@@ -169,6 +172,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
         ],
       ),
     );
+    if (!mounted) return;
     if (reason != null && widget.onSkip != null) {
       widget.onSkip!(reason.isEmpty ? null : reason);
     }
@@ -194,8 +198,10 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
       return;
     }
     final title = _subtaskController.text.trim();
-    if (title.isEmpty) return;
+    if (title.isEmpty || _isSavingSubtask) return;
+    setState(() => _isSavingSubtask = true);
     final newSubtaskId = await widget.onAddSubtask?.call(title);
+    if (!mounted) return;
     if (newSubtaskId != null) {
       setState(() {
         _subtasks.add(
@@ -212,6 +218,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
         _showAddSubtask = false;
       });
     }
+    setState(() => _isSavingSubtask = false);
   }
 
   void _handleDeleteSubtask(String subtaskId) {
@@ -237,6 +244,8 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
         Text(
           widget.title,
           style: textTheme.headlineSmall,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: MitlistSpacing.md),
         AppCard(
@@ -245,28 +254,28 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
           child: Column(
             children: [
               _DetailRow(label: 'Assignee', value: widget.assignee),
-              Divider(color: Theme.of(context).colorScheme.outlineVariant),
+              const AppDivider(),
               _DetailRow(
                 label: 'Due',
                 value: DateFormat.yMMMd().format(widget.dueDate),
               ),
               if (widget.trackedCount != null) ...[
-                Divider(color: Theme.of(context).colorScheme.outlineVariant),
+                const AppDivider(),
                 _DetailRow(label: 'Tracked', value: widget.trackedCount.toString()),
               ],
               if (widget.lastTrackedAt != null) ...[
-                Divider(color: Theme.of(context).colorScheme.outlineVariant),
+                const AppDivider(),
                 _DetailRow(
                   label: 'Last done',
                   value: DateFormat.yMMMd().format(widget.lastTrackedAt!),
                 ),
               ],
               if (widget.lastDoneByLabel != null && widget.lastDoneByLabel!.isNotEmpty) ...[
-                Divider(color: Theme.of(context).colorScheme.outlineVariant),
+                const AppDivider(),
                 _DetailRow(label: 'Last by', value: widget.lastDoneByLabel!),
               ],
               if (widget.averageFrequencyHours != null) ...[
-                Divider(color: Theme.of(context).colorScheme.outlineVariant),
+                const AppDivider(),
                 _DetailRow(
                   label: 'Average',
                   value: _formatAverageFrequency(widget.averageFrequencyHours!),
@@ -296,13 +305,16 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
           ],
           if (widget.onAddSubtask != null) ...[
             const SizedBox(height: MitlistSpacing.sm),
-            AppButton(
-              variant: AppButtonVariant.ghost,
-              color: AppButtonColor.primary,
-              text: _showAddSubtask ? 'Save' : 'Add subtask',
-              icon: const AppIcon(name: 'plus'),
-              onPressed: _handleAddSubtask,
-            ),
+              AppButton(
+                variant: AppButtonVariant.ghost,
+                color: AppButtonColor.primary,
+                text: _showAddSubtask
+                    ? (_isSavingSubtask ? 'Saving...' : 'Save')
+                    : 'Add subtask',
+                isLoading: _isSavingSubtask,
+                icon: const AppIcon(name: 'plus'),
+                onPressed: _isSavingSubtask ? null : _handleAddSubtask,
+              ),
           ],
         ],
         if (widget.supplies.isNotEmpty || widget.onAddSuppliesToList != null) ...[
@@ -397,29 +409,33 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
                 variant: AppButtonVariant.ghost,
                 color: AppButtonColor.error,
                 size: AppButtonSize.lg,
-                text: 'Delete chore',
-                onPressed: () async {
-                  final confirmed = await showAppDialog<bool>(
-                    context: context,
-                    title: 'Delete chore',
-                    body: const Text('This will permanently delete this chore and its history.'),
-                    actions: [
-                      AppButton(
-                        text: 'Cancel',
-                        variant: AppButtonVariant.outline,
-                        onPressed: () => Navigator.of(context).pop(false),
-                      ),
-                      AppButton(
-                        text: 'Delete',
-                        color: AppButtonColor.error,
-                        onPressed: () => Navigator.of(context).pop(true),
-                      ),
-                    ],
-                  );
-                  if (confirmed == true && mounted) {
-                    widget.onDelete?.call();
-                  }
-                },
+                text: _isDeleting ? 'Deleting...' : 'Delete chore',
+                isLoading: _isDeleting,
+                onPressed: _isDeleting
+                    ? null
+                    : () async {
+                        final confirmed = await showAppDialog<bool>(
+                          context: context,
+                          title: 'Delete chore',
+                          body: const Text('This will permanently delete this chore and its history.'),
+                          actions: [
+                            AppButton(
+                              text: 'Cancel',
+                              variant: AppButtonVariant.outline,
+                              onPressed: () => Navigator.of(context).pop(false),
+                            ),
+                            AppButton(
+                              text: 'Delete',
+                              color: AppButtonColor.error,
+                              onPressed: () => Navigator.of(context).pop(true),
+                            ),
+                          ],
+                        );
+                        if (confirmed == true && mounted) {
+                          setState(() => _isDeleting = true);
+                          widget.onDelete?.call();
+                        }
+                      },
               ),
             ),
           ],
@@ -463,6 +479,8 @@ class _DetailRow extends StatelessWidget {
           ),
           Text(
             value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: MitlistTypography.monoBody(color: Theme.of(context).colorScheme.onSurface),
           ),
         ],

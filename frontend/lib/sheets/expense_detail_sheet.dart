@@ -6,12 +6,13 @@ import '../models/finance_models.dart';
 import '../providers/attachment_provider.dart';
 import '../providers/finance_provider.dart';
 import '../theme/spacing.dart';
-import '../theme/theme.dart';
 import '../theme/typography.dart';
 import '../utils/format_currency.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
+import '../widgets/app_dialog.dart';
+import '../widgets/app_divider.dart';
 import '../widgets/app_icon.dart';
 
 class ExpenseDetailSheet extends ConsumerStatefulWidget {
@@ -74,6 +75,7 @@ class ExpenseDetailSheet extends ConsumerStatefulWidget {
 class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
   bool _loadingReceipts = true;
   bool _removing = false;
+  bool _isDeleting = false;
   List<ExpenseReceipt> _receipts = const [];
   List<Split> _splits = const [];
   bool _loadingSplits = true;
@@ -95,7 +97,12 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
         _loadingSplits = false;
       });
     } catch (_) {
-      if (mounted) setState(() => _loadingSplits = false);
+      if (mounted) {
+        setState(() => _loadingSplits = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Couldn't load splits.")),
+        );
+      }
     }
   }
 
@@ -119,6 +126,9 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
       setState(() {
         _loadingReceipts = false;
       });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Couldn't load receipts.")),
+      );
     }
   }
 
@@ -196,6 +206,9 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
       setState(() {
         _removing = false;
       });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Couldn't remove receipt.")),
+      );
     }
   }
 
@@ -240,10 +253,14 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
         Text(
           widget.description,
           style: textTheme.headlineSmall,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: MitlistSpacing.sm),
         Text(
           widget.amountLabel,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: MitlistTypography.monoBody(color: Theme.of(context).colorScheme.onSurface),
         ),
         const SizedBox(height: MitlistSpacing.md),
@@ -256,7 +273,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
             child: Column(
               children: [
                 for (var i = 0; i < _splits.length; i++) ...[
-                  if (i > 0) Divider(color: Theme.of(context).colorScheme.outlineVariant),
+                  if (i > 0) const AppDivider(),
                   _SplitRow(split: _splits[i], currency: widget.currency, userLabels: widget.userLabels),
                 ],
               ],
@@ -264,10 +281,12 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
           ),
           const SizedBox(height: MitlistSpacing.md),
         ],
+        if (!_loadingSplits && _splits.isEmpty)
+          Text('No splits yet.', style: Theme.of(context).textTheme.bodySmall,),
         if (_loadingReceipts)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
-            child: LinearProgressIndicator(),
+            child: const LinearProgressIndicator(),
           )
         else if (_receipts.isEmpty)
           Text(
@@ -288,7 +307,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
                     button: true,
                     label: 'View receipt',
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(MitlistTheme.radiusMd),
+                      borderRadius: BorderRadius.zero,
                       child: AspectRatio(
                         aspectRatio: 1,
                         child: Stack(
@@ -321,7 +340,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
           ),
         if (widget.onDelete != null) ...[
           const SizedBox(height: MitlistSpacing.lg),
-          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          const AppDivider(),
           const SizedBox(height: MitlistSpacing.sm),
           SizedBox(
             width: double.infinity,
@@ -329,8 +348,33 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
               variant: AppButtonVariant.ghost,
               color: AppButtonColor.error,
               size: AppButtonSize.lg,
-              text: 'Delete expense',
-              onPressed: widget.onDelete,
+              text: _isDeleting ? 'Deleting...' : 'Delete expense',
+              isLoading: _isDeleting,
+              onPressed: _isDeleting
+                  ? null
+                  : () async {
+                      final confirmed = await showAppDialog<bool>(
+                        context: context,
+                        title: 'Delete expense',
+                        body: const Text('This will permanently delete this expense and its records.'),
+                        actions: [
+                          AppButton(
+                            text: 'Cancel',
+                            variant: AppButtonVariant.outline,
+                            onPressed: () => Navigator.of(context).pop(false),
+                          ),
+                          AppButton(
+                            text: 'Delete',
+                            color: AppButtonColor.error,
+                            onPressed: () => Navigator.of(context).pop(true),
+                          ),
+                        ],
+                      );
+                      if (confirmed == true && mounted) {
+                        setState(() => _isDeleting = true);
+                        widget.onDelete?.call();
+                      }
+                    },
             ),
           ),
         ],
@@ -366,7 +410,7 @@ class _SplitRow extends StatelessWidget {
                 ),
             ),
           Text(
-            formatCurrency(split.amount, currency),
+            formatCurrency(split.amount < 0 ? 0 : split.amount, currency),
             style: MitlistTypography.monoBody(),
           ),
         ],

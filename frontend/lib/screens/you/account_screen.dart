@@ -12,7 +12,6 @@ import '../../providers/theme_provider.dart';
 import '../../providers/list_provider.dart' show appDatabaseProvider;
 import '../../router.dart' show currentGroupIdProvider;
 import '../../theme/spacing.dart';
-import '../../theme/typography.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
@@ -425,9 +424,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         children: [
           Text(
             'Household',
-            style: MitlistTypography.labelXSmall(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+            style: Theme.of(context).textTheme.labelMedium,
           ),
           const SizedBox(height: MitlistSpacing.sm),
           ..._households.map((h) {
@@ -438,7 +435,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               child: InkWell(
               onTap: () {
                 setState(() => _activeHouseholdId = h.id);
-                context.goNamed('householdHub', pathParameters: {'groupId': h.id});
+                ref.read(currentGroupIdProvider.notifier).set(h.id);
+                context.goNamed('home');
               },
               borderRadius: BorderRadius.zero,
               child: Padding(

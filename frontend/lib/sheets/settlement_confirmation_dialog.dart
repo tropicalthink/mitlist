@@ -6,7 +6,7 @@ import '../widgets/app_button.dart';
 import '../widgets/app_dialog.dart';
 import '../widgets/app_icon.dart';
 
-class SettlementConfirmationDialog extends StatelessWidget {
+class SettlementConfirmationDialog extends StatefulWidget {
   const SettlementConfirmationDialog({
     super.key,
     required this.amount,
@@ -36,47 +36,50 @@ class SettlementConfirmationDialog extends StatelessWidget {
   }
 
   @override
+  State<SettlementConfirmationDialog> createState() =>
+      _SettlementConfirmationDialogState();
+}
+
+class _SettlementConfirmationDialogState
+    extends State<SettlementConfirmationDialog> {
+  bool _isConfirming = false;
+
+  @override
   Widget build(BuildContext context) {
+    final amount = widget.amount;
+    final payer = widget.payer;
+    final payee = widget.payee;
+
+    String description;
+    if (payer == payee) {
+      description = '$payer already settled';
+    } else if (payer == 'You') {
+      description = 'You\u2019ll pay $payee $amount';
+    } else if (payee == 'You') {
+      description = '$payer will pay you $amount';
+    } else {
+      description = '$payer pays $payee $amount';
+    }
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      children: [
         Text(
           amount,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.displayMedium,
         ),
-        if (payer == 'You')
-          Padding(
-            padding: const EdgeInsets.only(top: MitlistSpacing.sm),
-            child: Text(
-              'You\u2019ll pay $payee $amount',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          )
-        else if (payee == 'You')
-          Padding(
-            padding: const EdgeInsets.only(top: MitlistSpacing.sm),
-            child: Text(
-              '$payer will pay you $amount',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          )
-        else
-          Padding(
-            padding: const EdgeInsets.only(top: MitlistSpacing.sm),
-            child: Text(
-              '$payer pays $payee $amount',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+        Padding(
+          padding: const EdgeInsets.only(top: MitlistSpacing.sm),
+          child: Text(
+            description,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall,
           ),
+        ),
         const SizedBox(height: MitlistSpacing.md),
         Row(
           children: [
@@ -104,7 +107,9 @@ class SettlementConfirmationDialog extends StatelessWidget {
                 color: AppButtonColor.primary,
                 size: AppButtonSize.lg,
                 text: 'Cancel',
-                onPressed: () => Navigator.of(context).pop(false),
+                onPressed: _isConfirming
+                    ? null
+                    : () => Navigator.of(context).pop(false),
               ),
             ),
             const SizedBox(width: MitlistSpacing.md),
@@ -113,8 +118,14 @@ class SettlementConfirmationDialog extends StatelessWidget {
                 variant: AppButtonVariant.solid,
                 color: AppButtonColor.success,
                 size: AppButtonSize.lg,
-                text: 'Confirm',
-                onPressed: () => Navigator.of(context).pop(true),
+                text: _isConfirming ? 'Confirming...' : 'Confirm',
+                isLoading: _isConfirming,
+                onPressed: _isConfirming || payer == payee
+                    ? null
+                    : () {
+                        setState(() => _isConfirming = true);
+                        Navigator.of(context).pop(true);
+                      },
               ),
             ),
           ],
@@ -136,12 +147,14 @@ class _PartyBlock extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          label.toUpperCase(),
+          label,
           style: MitlistTypography.labelXSmall(color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: MitlistSpacing.xs),
         Text(
           name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.titleMedium,
         ),
       ],

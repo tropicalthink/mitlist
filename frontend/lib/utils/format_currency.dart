@@ -1,10 +1,13 @@
 String formatCurrency(int cents, String currencyCode) {
+  final isNegative = cents < 0;
+  final absCents = cents.abs().clamp(0, 999999999);
   final symbol = _currencySymbol(currencyCode);
-  final value = (cents / 100).toStringAsFixed(2);
+  final value = (absCents / 100).toStringAsFixed(2);
+  final prefix = isNegative ? '-' : '';
   if (_postfixCurrencies.contains(currencyCode.toUpperCase())) {
-    return '$value $symbol';
+    return '$prefix$value $symbol';
   }
-  return '$symbol$value';
+  return '$prefix$symbol$value';
 }
 
 String _currencySymbol(String code) {

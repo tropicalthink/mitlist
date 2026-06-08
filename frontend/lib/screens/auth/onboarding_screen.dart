@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../providers/group_provider.dart';
+import '../../router.dart' show currentGroupIdProvider;
 import '../../sheets/create_household_sheet.dart';
 import '../../sheets/join_household_sheet.dart';
 import '../../theme/animations.dart';
@@ -109,8 +110,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   Future<void> _onJoinHousehold() async {
     await Haptics.light();
     if (!mounted) return;
-    final joined = await JoinHouseholdSheet.show(context);
-    if (joined == true && mounted) {
+    final group = await JoinHouseholdSheet.show(context);
+    if (group != null && mounted) {
+      ref.read(currentGroupIdProvider.notifier).set(group.id);
       context.goNamed('home');
     }
   }

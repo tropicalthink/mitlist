@@ -280,6 +280,8 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
         _linkedEntityId = null;
         _linkedEntityLabel = null;
       });
+      final repo = await ref.read(pinwallRepositoryProvider.future);
+      await repo.refreshPosts(widget.groupId).catchError((_) {});
       ref.invalidate(pinwallPostsByGroupProvider(widget.groupId));
       if (!mounted) return;
       Haptics.light();
@@ -559,16 +561,18 @@ class _PinwallComposerNote extends StatelessWidget {
                             (isPosting || isUploadingMedia) ? null : onClearReminder,
                       ),
                     if (reminderLabel != null)
-                      Padding(
-                        padding:
-                            const EdgeInsets.only(right: MitlistSpacing.xs),
-                        child: Text(
-                          reminderLabel,
-                          style: textTheme.labelSmall?.copyWith(
-                            color: pinColor,
+                      Flexible(
+                        child: Padding(
+                          padding:
+                              const EdgeInsets.only(right: MitlistSpacing.xs),
+                          child: Text(
+                            reminderLabel,
+                            style: textTheme.labelSmall?.copyWith(
+                              color: pinColor,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     IconButton(
@@ -945,7 +949,27 @@ class _PinwallNoteCard extends ConsumerWidget {
                     ),
                   ),
                 media.when(
-                  loading: () => const SizedBox.shrink(),
+                  loading: () => Padding(
+                    padding: const EdgeInsets.only(top: MitlistSpacing.xs),
+                    child: SizedBox(
+                      height: 42,
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            color: Theme.of(context).colorScheme.surfaceContainerLow,
+                            alignment: Alignment.center,
+                            child: SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 1.5),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                   error: (_, __) => const SizedBox.shrink(),
                   data: (items) {
                     if (items.isEmpty) return const SizedBox.shrink();
@@ -969,8 +993,7 @@ class _PinwallNoteCard extends ConsumerWidget {
                               child: Semantics(
                                 button: true,
                                 label: 'View photo',
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(6),
+                                child: ClipRect(
                                   child: AspectRatio(
                                     aspectRatio: 1,
                                     child: Image.network(

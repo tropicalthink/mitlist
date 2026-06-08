@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'app_icon.dart';
+
 /// Trailing [IconButton]s shared across primary shell tabs so the top bar
 /// stays predictable next to the bottom navigation.
 ///
@@ -11,12 +13,12 @@ List<Widget> shellTrailingActions(BuildContext context) {
   return [
     IconButton(
       tooltip: 'Notifications',
-      icon: const Icon(Icons.notifications_none_outlined),
+      icon: const AppIcon(name: 'bellOutline'),
       onPressed: () => context.pushNamed('notifications'),
     ),
     IconButton(
       tooltip: 'Account',
-      icon: const Icon(Icons.person_outline),
+      icon: const AppIcon(name: 'userCircle'),
       onPressed: () => context.pushNamed('you'),
     ),
   ];

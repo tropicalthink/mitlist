@@ -17,6 +17,7 @@ import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/app_input.dart';
+import '../utils/friendly_error.dart';
 import '../widgets/chip.dart';
 
 enum _Recurrence { none, hourly, daily, weekly, monthly, yearly, adaptive }
@@ -108,11 +109,11 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       }
 
       setState(() => _isScanning = false);
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() => _isScanning = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Couldn\u2019t scan chore.')),
+        SnackBar(content: Text(friendlyErrorMessage(e))),
       );
     }
   }
@@ -173,7 +174,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       if (!mounted) return;
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Couldn\u2019t add chore.')),
+        SnackBar(content: Text(friendlyErrorMessage(e))),
       );
     }
   }
@@ -199,7 +200,9 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
 
   int get _periodInterval {
     final parsed = int.tryParse(_intervalController.text.trim()) ?? 1;
-    return parsed < 1 ? 1 : parsed;
+    if (parsed < 1) return 1;
+    if (parsed > 999) return 999;
+    return parsed;
   }
 
   String _assignmentTypeValue() {
@@ -244,7 +247,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
         ),
         const SizedBox(height: MitlistSpacing.md),
         AppInput(
-          label: 'Chore Name',
+          label: 'Chore name',
           hint: 'e.g. Vacuum living room',
           controller: _nameController,
           textInputAction: TextInputAction.done,
@@ -274,11 +277,14 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
               selected: _recurrence == _Recurrence.none,
               onSelected: (_) => setState(() => _recurrence = _Recurrence.none),
             ),
-            AppChip(
-              label: 'Hourly',
-              selected: _recurrence == _Recurrence.hourly,
-              onSelected: (_) =>
-                  setState(() => _recurrence = _Recurrence.hourly),
+            Tooltip(
+              message: 'No repeating schedule',
+              child: AppChip(
+                label: 'Hourly',
+                selected: _recurrence == _Recurrence.hourly,
+                onSelected: (_) =>
+                    setState(() => _recurrence = _Recurrence.hourly),
+              ),
             ),
             Tooltip(
               message: 'Repeats every day',
@@ -307,11 +313,14 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
                     setState(() => _recurrence = _Recurrence.monthly),
               ),
             ),
-            AppChip(
-              label: 'Yearly',
-              selected: _recurrence == _Recurrence.yearly,
-              onSelected: (_) =>
-                  setState(() => _recurrence = _Recurrence.yearly),
+            Tooltip(
+              message: 'Repeats once a year on the same date',
+              child: AppChip(
+                label: 'Yearly',
+                selected: _recurrence == _Recurrence.yearly,
+                onSelected: (_) =>
+                    setState(() => _recurrence = _Recurrence.yearly),
+              ),
             ),
             Tooltip(
               message: 'Repeats based on completion date, not the calendar',
@@ -382,18 +391,21 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
             Tooltip(
               message: 'Assigns to the next person in order',
               child: AppChip(
-                label: 'Rotation',
+                label: 'Round-robin',
                 selected: _assignmentPolicy == _AssignmentPolicy.roundRobin,
                 onSelected: (_) => setState(
                   () => _assignmentPolicy = _AssignmentPolicy.roundRobin,
                 ),
               ),
             ),
-            AppChip(
-              label: 'Alphabetical',
-              selected: _assignmentPolicy == _AssignmentPolicy.alphabetical,
-              onSelected: (_) => setState(
-                () => _assignmentPolicy = _AssignmentPolicy.alphabetical,
+            Tooltip(
+              message: 'Assigns based on alphabetical order of member names',
+              child: AppChip(
+                label: 'Alphabetical',
+                selected: _assignmentPolicy == _AssignmentPolicy.alphabetical,
+                onSelected: (_) => setState(
+                  () => _assignmentPolicy = _AssignmentPolicy.alphabetical,
+                ),
               ),
             ),
             Tooltip(
@@ -416,11 +428,14 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
                 ),
               ),
             ),
-            AppChip(
-              label: 'No assignee',
-              selected: _assignmentPolicy == _AssignmentPolicy.noAssignment,
-              onSelected: (_) => setState(
-                () => _assignmentPolicy = _AssignmentPolicy.noAssignment,
+            Tooltip(
+              message: 'Do not assign this chore to anyone',
+              child: AppChip(
+                label: 'No assignee',
+                selected: _assignmentPolicy == _AssignmentPolicy.noAssignment,
+                onSelected: (_) => setState(
+                  () => _assignmentPolicy = _AssignmentPolicy.noAssignment,
+                ),
               ),
             ),
           ],

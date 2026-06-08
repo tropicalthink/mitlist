@@ -32,6 +32,7 @@ import '../../widgets/hub/quick_add_sheet.dart';
 import '../../widgets/hub/stats_grid.dart';
 import '../../widgets/shell_trailing_actions.dart';
 import '../../sheets/create_household_sheet.dart';
+import '../../sheets/invite_household_sheet.dart';
 import '../../sheets/join_household_sheet.dart';
 import '../../sheets/group_settings_sheet.dart';
 
@@ -298,25 +299,31 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
 
     late BuildContext sheetContext;
 
-    Future<void> onCreateJoinResult(bool? success) async {
+    Future<void> onCreateResult(bool? success) async {
       if (success != true || !mounted) return;
       try {
         final svc = await ref.read(groupServiceProviderAsync.future);
         final after = await svc.listGroups();
         if (!mounted) return;
         setState(() => _households = after);
-        Group? newGroup;
-        for (final g in after) {
-          if (!idsBefore.contains(g.id)) {
-            newGroup = g;
-            break;
-          }
-        }
-        if (newGroup != null && hubContext.mounted) {
-          _switchGroup(newGroup.id);
-        } else {
-          await _loadData();
-        }
+        final newGroup = after.firstWhere(
+          (g) => !idsBefore.contains(g.id),
+          orElse: () => after.first,
+        );
+        if (hubContext.mounted) _switchGroup(newGroup.id);
+      } catch (_) {
+        if (mounted) await _loadData();
+      }
+    }
+
+    Future<void> onJoinResult(Group? group) async {
+      if (group == null || !mounted) return;
+      try {
+        final svc = await ref.read(groupServiceProviderAsync.future);
+        final after = await svc.listGroups();
+        if (!mounted) return;
+        setState(() => _households = after);
+        if (hubContext.mounted) _switchGroup(group.id);
       } catch (_) {
         if (mounted) await _loadData();
       }
@@ -335,7 +342,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                   : const <Group>[]);
 
           Widget actionTile({
-            required IconData icon,
+            required String iconName,
             required String label,
             required VoidCallback onTap,
           }) {
@@ -351,7 +358,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(icon, size: 22, color: iconColor),
+                      AppIcon(name: iconName, size: 22, color: iconColor),
                       const SizedBox(width: MitlistSpacing.md),
                       Expanded(
                         child: Text(
@@ -418,8 +425,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                               ),
                             ),
                             if (h.id == _resolvedGroupId!)
-                              Icon(
-                                Icons.check,
+                              AppIcon(
+                                name: 'check',
                                 size: 18,
                                 color: Theme.of(context).colorScheme.primary,
                               ),
@@ -436,7 +443,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                 const SizedBox(height: MitlistSpacing.sm),
               ],
               actionTile(
-                icon: Icons.add_home_outlined,
+                iconName: 'addHomeOutline',
                 label: 'Create household',
                 onTap: () {
                   Navigator.of(sheetContext).pop();
@@ -445,12 +452,12 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                     if (!hubContext.mounted) return;
                     final created =
                         await CreateHouseholdSheet.show(hubContext);
-                    await onCreateJoinResult(created);
+                    await onCreateResult(created);
                   });
                 },
               ),
               actionTile(
-                icon: Icons.vpn_key_outlined,
+                iconName: 'keyOutline',
                 label: 'Join household',
                 onTap: () {
                   Navigator.of(sheetContext).pop();
@@ -459,12 +466,27 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                     if (!hubContext.mounted) return;
                     final joined =
                         await JoinHouseholdSheet.show(hubContext);
-                    await onCreateJoinResult(joined);
+                    await onJoinResult(joined);
                   });
                 },
               ),
               actionTile(
-                icon: Icons.settings_outlined,
+                iconName: 'userPlus',
+                label: 'Invite to household',
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  WidgetsBinding.instance
+                      .addPostFrameCallback((_) async {
+                    if (!hubContext.mounted) return;
+                    await InviteHouseholdSheet.show(
+                      hubContext,
+                      groupId: _resolvedGroupId!,
+                    );
+                  });
+                },
+              ),
+              actionTile(
+                iconName: 'cog6ToothOutline',
                 label: 'Household settings',
                 onTap: () {
                   Navigator.of(sheetContext).pop();
@@ -495,8 +517,17 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
   Future<void> _onJoinHousehold() async {
     await Haptics.light();
     if (!mounted) return;
-    final joined = await JoinHouseholdSheet.show(context);
-    await _onHouseholdResult(joined);
+    final group = await JoinHouseholdSheet.show(context);
+    if (group == null || !mounted) return;
+    try {
+      final groupSvc = await ref.read(groupServiceProviderAsync.future);
+      final groups = await groupSvc.listGroups();
+      if (!mounted) return;
+      setState(() => _households = groups);
+      _switchGroup(group.id);
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _onHouseholdResult(bool? success) async {
@@ -532,8 +563,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: MitlistSpacing.md),
-            Icon(
-              Icons.home_outlined,
+            AppIcon(
+              name: 'homeOutline',
               size: 48,
               color: colorScheme.onSurfaceVariant,
             ),
@@ -685,7 +716,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                         actions: [
                           IconButton(
                             tooltip: 'Calendar',
-                            icon: const Icon(Icons.calendar_month_outlined),
+                            icon: const AppIcon(name: 'calendarDays'),
                             onPressed: () => context.pushNamed('calendar'),
                           ),
                           ...shellTrailingActions(context),

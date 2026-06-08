@@ -192,14 +192,11 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
           // Image preview area
           if (_imageFile != null)
             AppCard(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(MitlistSpacing.sm),
-                child: Image.file(
-                  _imageFile!,
-                  fit: BoxFit.contain,
-                  height: 256,
-                  width: double.infinity,
-                ),
+              child: Image.file(
+                _imageFile!,
+                fit: BoxFit.contain,
+                height: 256,
+                width: double.infinity,
               ),
             )
           else

@@ -11,7 +11,6 @@ import '../../providers/recipe_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../sheets/recipe_add_to_list_sheet.dart';
-import '../../sheets/recipe_creation_sheet.dart';
 import '../../sheets/recipe_detail_sheet.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
@@ -24,7 +23,6 @@ import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/chip.dart';
 import '../../widgets/empty_state.dart';
-import '../../widgets/icons.dart';
 import '../../widgets/list_entrance.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/skeleton.dart';
@@ -138,7 +136,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
 
   Future<void> _onAddRecipe() async {
     Haptics.light();
-    final created = await RecipeCreationSheet.show(context);
+    final created = await context.pushNamed<bool>('recipeCreate');
     if (created == true) {
       await _loadKitchen();
     }
@@ -383,7 +381,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
         centerTitle: false,
         leading: _showSearch
             ? IconButton(
-                icon: const Icon(AppIcons.arrowLeft),
+                icon: const AppIcon(name: 'arrowLeft'),
                 tooltip: 'Back',
                 onPressed: _clearSearch,
               )
@@ -407,7 +405,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
         actions: [
           if (!_showSearch) ...[
             IconButton(
-              icon: const Icon(AppIcons.calendarDays),
+              icon: const AppIcon(name: 'calendarDays'),
               tooltip: 'Meal plan',
               onPressed: () async {
                 final router = GoRouter.of(context);
@@ -419,12 +417,12 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
               },
             ),
             IconButton(
-              icon: const Icon(AppIcons.magnifyingGlass),
+              icon: const AppIcon(name: 'magnifyingGlass'),
               tooltip: 'Search',
               onPressed: () => setState(() => _showSearch = true),
             ),
             PopupMenuButton<_RecipeMenuAction>(
-              icon: Icon(AppIcons.ellipsisVertical),
+              icon: const AppIcon(name: 'ellipsisVertical'),
               tooltip: 'Options',
               onSelected: (action) {
                 setState(() {
@@ -446,9 +444,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                   enabled: false,
                   child: Text(
                     'Sort recipes',
-                    style: MitlistTypography.labelXSmall().copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                    style: Theme.of(context).textTheme.labelMedium,
                   ),
                 ),
                 CheckedPopupMenuItem(
@@ -470,7 +466,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
             ),
           ] else ...[
             IconButton(
-              icon: const Icon(AppIcons.xMark),
+              icon: const AppIcon(name: 'xMark'),
               tooltip: 'Clear search',
               onPressed: _clearSearch,
             ),
@@ -480,7 +476,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       body: _buildBody(),
       floatingActionButton: AppButton(
         size: AppButtonSize.lg,
-        icon: Icon(AppIcons.plus),
+        icon: const AppIcon(name: 'plus'),
         text: 'Add recipe',
         onPressed: _onAddRecipe,
         tooltip: 'Add recipe',
@@ -594,8 +590,8 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                       padding: const EdgeInsets.only(bottom: MitlistSpacing.xs),
                       child: Row(
                         children: [
-                          Icon(
-                            AppIcons.calendarDays,
+                          AppIcon(
+                            name: 'calendarDays',
                             size: 14,
                             color: Theme.of(context).colorScheme.primary,
                           ),
@@ -728,7 +724,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                   actions: <Widget>[
                     AppButton(
                       text: 'Add recipe',
-                      icon: const Icon(AppIcons.plus),
+                      icon: const AppIcon(name: 'plus'),
                       onPressed: _onAddRecipe,
                     ),
                   ],
@@ -942,7 +938,7 @@ class _RecipeCard extends StatelessWidget {
           ),
           IconButton(
             tooltip: 'Add to list',
-            icon: const Icon(AppIcons.shoppingCart),
+            icon: const AppIcon(name: 'shoppingCart'),
             onPressed: onAddToList,
           ),
         ],

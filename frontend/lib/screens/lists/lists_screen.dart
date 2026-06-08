@@ -14,15 +14,16 @@ import '../../sheets/create_list_sheet.dart';
 import 'list_detail_screen.dart';
 import '../../theme/list_tile_accent.dart';
 import '../../theme/spacing.dart';
-import '../../theme/typography.dart';
 import '../../utils/active_group_context.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/app_dialog.dart';
+import '../../widgets/app_icon.dart';
+import '../../widgets/app_input.dart';
 import '../../widgets/chip.dart';
 import '../../widgets/empty_state.dart';
-import '../../widgets/icons.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/list_entrance.dart';
 import '../../widgets/mitlist_app_bar.dart';
@@ -32,6 +33,7 @@ enum _SortOption { newest, oldest, az, mostItems }
 enum _FilterOption { all, shopping, todo, custom }
 
 enum _ListMenuAction {
+  scanReceipt,
   sortNewest,
   sortOldest,
   sortAz,
@@ -325,11 +327,19 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     return bCount.compareTo(aCount);
   }
 
+  String? _filterToListType() => switch (_filter) {
+    _FilterOption.shopping => 'shopping',
+    _FilterOption.todo => 'todo',
+    _FilterOption.custom => 'custom',
+    _FilterOption.all => null,
+  };
+
   Future<void> _showCreateSheet() async {
     Haptics.light();
     final created = await CreateListSheet.show(
       context,
       initialGroupId: widget.groupId,
+      initialType: _filterToListType(),
     );
     if (created == true) {
       await _loadLists();
@@ -343,7 +353,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         centerTitle: false,
         leading: _showSearch
             ? IconButton(
-                icon: const Icon(AppIcons.arrowLeft),
+                icon: const AppIcon(name: 'arrowLeft'),
                 tooltip: 'Back',
                 onPressed: _clearSearch,
               )
@@ -367,26 +377,23 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         actions: [
           if (!_showSearch) ...[
             IconButton(
-              icon: const Icon(AppIcons.camera),
-              tooltip: 'Scan receipt or list',
-              onPressed: () => context.pushNamed('scanner'),
-            ),
-            IconButton(
-              icon: const Icon(AppIcons.shoppingCart),
+              icon: const AppIcon(name: 'shoppingCart'),
               tooltip: 'Shopping trip',
               onPressed: () => context.pushNamed('shoppingTrip'),
             ),
             IconButton(
-              icon: const Icon(AppIcons.magnifyingGlass),
+              icon: const AppIcon(name: 'magnifyingGlass'),
               tooltip: 'Search',
               onPressed: () => setState(() => _showSearch = true),
             ),
             PopupMenuButton<_ListMenuAction>(
-              icon: Icon(AppIcons.ellipsisVertical),
+              icon: const AppIcon(name: 'ellipsisVertical'),
               tooltip: 'Options',
               onSelected: (action) {
                 setState(() {
                   switch (action) {
+                    case _ListMenuAction.scanReceipt:
+                      break;
                     case _ListMenuAction.sortNewest:
                       _sort = _SortOption.newest;
                       SharedPreferences.getInstance().then((p) => p.setInt('lists_sort', _sort.index));
@@ -409,15 +416,27 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                       break;
                   }
                 });
+                if (action == _ListMenuAction.scanReceipt) {
+                  context.pushNamed('scanner');
+                }
               },
               itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: _ListMenuAction.scanReceipt,
+                  child: Row(
+                    children: [
+                      AppIcon(name: 'camera', size: 18, color: Theme.of(context).colorScheme.onSurface),
+                      const SizedBox(width: MitlistSpacing.sm),
+                      const Text('Scan receipt or list'),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
                 PopupMenuItem(
                   enabled: false,
                   child: Text(
                     'Sort',
-                    style: MitlistTypography.labelXSmall().copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                    style: Theme.of(context).textTheme.labelMedium,
                   ),
                 ),
                 CheckedPopupMenuItem(
@@ -448,12 +467,6 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                 ),
               ],
             ),
-          ] else ...[
-            IconButton(
-              icon: const Icon(AppIcons.xMark),
-              tooltip: 'Clear search',
-              onPressed: _clearSearch,
-            ),
           ],
         ],
       ),
@@ -462,7 +475,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         size: AppButtonSize.lg,
         onPressed:
             _hasHousehold ? _showCreateSheet : () => context.goNamed('groupsList'),
-        icon: Icon(AppIcons.plus),
+        icon: const AppIcon(name: 'plus'),
         text: 'New list',
         tooltip: 'New list',
       ),
@@ -494,7 +507,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                         const SizedBox(height: MitlistSpacing.md),
                         AppButton(
                           text: 'Retry',
-                          icon: Icon(AppIcons.arrowPath),
+                          icon: const AppIcon(name: 'arrowPath'),
                           onPressed: _loadLists,
                         ),
                       ],
@@ -539,6 +552,17 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     );
   }
 
+  String _chipLabel(_FilterOption option, String base) {
+    if (_isLoading) return base;
+    final count = switch (option) {
+      _FilterOption.all => _lists.length,
+      _FilterOption.shopping => _lists.where((l) => l.type.toLowerCase() == 'shopping').length,
+      _FilterOption.todo => _lists.where((l) => l.type.toLowerCase() == 'todo').length,
+      _FilterOption.custom => _lists.where((l) => l.type.toLowerCase() == 'custom').length,
+    };
+    return count > 0 ? '$base ($count)' : base;
+  }
+
   Widget _buildChipBar() {
     if (!_hasHousehold) return const SizedBox.shrink();
 
@@ -551,7 +575,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
       child: Row(
         children: _filters.entries.map((entry) {
           final option = entry.key;
-          final label = entry.value;
+          final label = _chipLabel(option, entry.value);
           return Padding(
             padding: const EdgeInsets.only(right: MitlistSpacing.sm),
             child: AppChip(
@@ -640,6 +664,27 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     );
   }
 
+  String get _emptyTitle => switch (_filter) {
+    _FilterOption.shopping => 'No shopping lists',
+    _FilterOption.todo => 'No to-do lists',
+    _FilterOption.custom => 'No custom lists',
+    _FilterOption.all => 'No lists yet',
+  };
+
+  String get _emptyDescription => switch (_filter) {
+    _FilterOption.shopping => 'Great for groceries, meal prep, weekend errands.',
+    _FilterOption.todo => 'Tasks, chores, anything with a checkbox.',
+    _FilterOption.custom => 'Free-form — your list, your rules.',
+    _FilterOption.all => 'Add lines inside a list; the first few appear as a snippet on its card.',
+  };
+
+  String get _emptyActionLabel => switch (_filter) {
+    _FilterOption.shopping => 'Create a shopping list',
+    _FilterOption.todo => 'Create a to-do list',
+    _FilterOption.custom => 'Create a custom list',
+    _FilterOption.all => 'Create your first list',
+  };
+
   Widget _buildEmptyState() {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -652,14 +697,13 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                 padding: const EdgeInsets.all(MitlistSpacing.md),
                 child: AppEmptyState(
                   lottieAsset: 'assets/animations/lottie/checklist.lottie',
-                  icon: const Icon(AppIcons.queueList),
-                  title: 'No lists yet',
-                  description:
-                      'Add lines inside a list; the first few appear as a snippet on its card.',
+                  icon: const AppIcon(name: 'queueList'),
+                  title: _emptyTitle,
+                  description: _emptyDescription,
                   actions: [
                     AppButton(
-                      text: 'Create your first list',
-                      icon: Icon(AppIcons.plus),
+                      text: _emptyActionLabel,
+                      icon: const AppIcon(name: 'plus'),
                       onPressed: _showCreateSheet,
                     ),
                   ],
@@ -678,7 +722,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         padding: const EdgeInsets.all(MitlistSpacing.md),
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/House.lottie',
-          icon: Icon(AppIcons.userGroup),
+          icon: const AppIcon(name: 'userGroup'),
           title: 'No household yet',
           description: 'Create or join a household before adding lists.',
           actions: [
@@ -704,7 +748,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   }
 }
 
-class _ListCard extends StatelessWidget {
+class _ListCard extends ConsumerWidget {
   final ItemList list;
   final VoidCallback onChanged;
 
@@ -722,8 +766,115 @@ class _ListCard extends StatelessWidget {
     return parts.join('. ');
   }
 
+  Future<void> _showActions(BuildContext context, WidgetRef ref) async {
+    Haptics.medium();
+    final action = await showAppDialog<String>(
+      context: context,
+      title: list.name,
+      body: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppButton(
+            text: 'Rename',
+            icon: const AppIcon(name: 'pencilSquare', size: 18),
+            variant: AppButtonVariant.outline,
+            color: AppButtonColor.neutral,
+            onPressed: () => Navigator.of(context).pop('rename'),
+          ),
+          const SizedBox(height: MitlistSpacing.sm),
+          AppButton(
+            text: 'Delete list',
+            icon: const AppIcon(name: 'trash', size: 18),
+            variant: AppButtonVariant.outline,
+            color: AppButtonColor.error,
+            onPressed: () => Navigator.of(context).pop('delete'),
+          ),
+        ],
+      ),
+      actions: [],
+    );
+    if (action == 'rename' && context.mounted) {
+      await _renameList(context, ref);
+    } else if (action == 'delete' && context.mounted) {
+      await _deleteList(context, ref);
+    }
+  }
+
+  Future<void> _renameList(BuildContext context, WidgetRef ref) async {
+    final controller = TextEditingController(text: list.name);
+    final newName = await showAppDialog<String>(
+      context: context,
+      title: 'Rename list',
+      body: AppInput(
+        label: 'List name',
+        controller: controller,
+        maxLength: 100,
+        textInputAction: TextInputAction.done,
+      ),
+      actions: [
+        AppButton(
+          text: 'Cancel',
+          variant: AppButtonVariant.outline,
+          onPressed: () => Navigator.of(context).pop(null),
+        ),
+        AppButton(
+          text: 'Save',
+          onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+        ),
+      ],
+    );
+    controller.dispose();
+    if (newName == null || newName.isEmpty || newName == list.name) return;
+    try {
+      final svc = await ref.read(listServiceProviderAsync.future);
+      await svc.updateList(list.id, UpdateListRequest(name: newName));
+      onChanged();
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Couldn’t rename list.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteList(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showAppDialog<bool>(
+      context: context,
+      title: 'Delete list',
+      body: const Text('This will permanently delete this list and all its items.'),
+      actions: [
+        AppButton(
+          text: 'Cancel',
+          variant: AppButtonVariant.outline,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton(
+          text: 'Delete',
+          color: AppButtonColor.error,
+          onPressed: () => Navigator.of(context).pop(true),
+        ),
+      ],
+    );
+    if (confirmed != true) return;
+    try {
+      final svc = await ref.read(listServiceProviderAsync.future);
+      await svc.deleteList(list.id);
+      final repo = await ref.read(listRepositoryProvider.future);
+      await repo.deleteListLocal(list.id);
+      onChanged();
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Couldn’t delete list.')),
+        );
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final accent = ListTileAccent.fromSeed(
       list.id,
       Theme.of(context).brightness,
@@ -734,6 +885,8 @@ class _ListCard extends StatelessWidget {
         .take(3)
         .toList();
     final snippetColor = accent.snippetOnTile;
+
+    final itemCount = list.itemCount;
 
     return Material(
       color: accent.tileBackground,
@@ -749,6 +902,7 @@ class _ListCard extends StatelessWidget {
             );
             if (changed == true) onChanged();
           },
+          onLongPress: () => _showActions(context, ref),
           child: Container(
             width: double.infinity,
             decoration: BoxDecoration(
@@ -758,43 +912,119 @@ class _ListCard extends StatelessWidget {
               ),
             ),
             padding: const EdgeInsets.all(MitlistSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+            child: Stack(
               children: [
-                Text(
-                  list.name,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: accent.titleColor,
-                        fontWeight: FontWeight.w600,
-                        height: 1.2,
-                      ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (previewLines.isNotEmpty) ...[
-                  const SizedBox(height: MitlistSpacing.sm),
-                  for (var i = 0; i < previewLines.length; i++)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Reserve top-right space for the type badge
                     Padding(
-                      padding: EdgeInsets.only(
-                        top: i == 0 ? 0 : MitlistSpacing.xs,
-                      ),
+                      padding: const EdgeInsets.only(right: MitlistSpacing.space5),
                       child: Text(
-                        previewLines[i],
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: snippetColor,
-                              height: 1.35,
+                        list.name,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: accent.titleColor,
+                              fontWeight: FontWeight.w600,
+                              height: 1.2,
                             ),
-                        maxLines: 1,
+                        maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                ],
+                    if (previewLines.isNotEmpty) ...[
+                      const SizedBox(height: MitlistSpacing.sm),
+                      for (var i = 0; i < previewLines.length; i++)
+                        Padding(
+                          padding: EdgeInsets.only(
+                            top: i == 0 ? 0 : MitlistSpacing.xs,
+                          ),
+                          child: Text(
+                            previewLines[i],
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: snippetColor,
+                                  height: 1.35,
+                                ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                    ],
+                    if (itemCount != null && itemCount > 0) ...[
+                      const SizedBox(height: MitlistSpacing.sm),
+                      Text(
+                        '$itemCount item${itemCount == 1 ? '' : 's'}',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: snippetColor,
+                            ),
+                      ),
+                    ],
+                  ],
+                ),
+                Positioned(
+                  top: -4,
+                  right: -4,
+                  child: PopupMenuButton<String>(
+                    tooltip: 'List options',
+                    padding: EdgeInsets.zero,
+                    onSelected: (action) async {
+                      if (!context.mounted) return;
+                      if (action == 'rename') {
+                        await _renameList(context, ref);
+                      } else if (action == 'delete') {
+                        await _deleteList(context, ref);
+                      }
+                    },
+                    itemBuilder: (ctx) => [
+                      PopupMenuItem(
+                        value: 'rename',
+                        child: Row(children: [
+                          AppIcon(name: 'pencilSquare', size: 18, color: Theme.of(ctx).colorScheme.onSurface),
+                          const SizedBox(width: MitlistSpacing.sm),
+                          const Text('Rename'),
+                        ]),
+                      ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Row(children: [
+                          AppIcon(name: 'trash', size: 18, color: Theme.of(ctx).colorScheme.error),
+                          const SizedBox(width: MitlistSpacing.sm),
+                          Text('Delete list', style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(color: Theme.of(ctx).colorScheme.error)),
+                        ]),
+                      ),
+                    ],
+                    child: Padding(
+                      padding: const EdgeInsets.all(MitlistSpacing.sm),
+                      child: _TypeBadge(type: list.type, color: accent.titleColor),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _TypeBadge extends StatelessWidget {
+  final String type;
+  final Color color;
+
+  const _TypeBadge({required this.type, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final iconName = switch (type.toLowerCase()) {
+      'shopping' => 'shoppingCart',
+      'todo' => 'checkCircle',
+      _ => 'squares2X2',
+    };
+    return AppIcon(
+      name: iconName,
+      size: 16,
+      color: color.withValues(alpha: 0.45),
     );
   }
 }

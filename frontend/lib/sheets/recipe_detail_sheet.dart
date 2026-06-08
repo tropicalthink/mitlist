@@ -8,8 +8,10 @@ import '../models/recipe_models.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../widgets/app_bottom_sheet.dart';
+import '../widgets/app_divider.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
+import '../widgets/app_dialog.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/chip.dart';
 
@@ -122,12 +124,16 @@ class RecipeDetailSheet extends StatelessWidget {
         const SizedBox(height: MitlistSpacing.md),
         Text(
           title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         if (author.isNotEmpty) ...[
           const SizedBox(height: MitlistSpacing.xs),
           Text(
             'By $author',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -195,17 +201,17 @@ class RecipeDetailSheet extends StatelessWidget {
                 label: 'Prep',
                 value: _formatMinutes(prepTimeMinutes),
               ),
-              Divider(color: Theme.of(context).colorScheme.outlineVariant),
+              const AppDivider(),
               _RecipeDetailRow(
                 label: 'Cook',
                 value: _formatMinutes(cookTimeMinutes),
               ),
-              Divider(color: Theme.of(context).colorScheme.outlineVariant),
+              const AppDivider(),
               _RecipeDetailRow(
                 label: 'Servings',
                 value: servings.toString(),
               ),
-              Divider(color: Theme.of(context).colorScheme.outlineVariant),
+              const AppDivider(),
               _RecipeDetailRow(
                 label: 'Updated',
                 value: DateFormat.yMMMd().format(updatedAt),
@@ -236,8 +242,8 @@ class RecipeDetailSheet extends StatelessWidget {
           ),
           const SizedBox(height: MitlistSpacing.xs),
           Wrap(
-            spacing: 6,
-            runSpacing: 6,
+            spacing: MitlistSpacing.sm,
+            runSpacing: MitlistSpacing.sm,
             children: equipmentList
                 .map((e) => AppChip(label: e, selected: false))
                 .toList(),
@@ -409,7 +415,7 @@ class RecipeDetailSheet extends StatelessWidget {
         ],
         if (onDelete != null) ...[
           const SizedBox(height: MitlistSpacing.lg),
-          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          const AppDivider(),
           const SizedBox(height: MitlistSpacing.sm),
           SizedBox(
             width: double.infinity,
@@ -418,7 +424,28 @@ class RecipeDetailSheet extends StatelessWidget {
               color: AppButtonColor.error,
               size: AppButtonSize.lg,
               text: 'Delete recipe',
-              onPressed: onDelete,
+              onPressed: () async {
+                final confirmed = await showAppDialog<bool>(
+                  context: context,
+                  title: 'Delete recipe',
+                  body: const Text('This will permanently delete this recipe.'),
+                  actions: [
+                    AppButton(
+                      text: 'Cancel',
+                      variant: AppButtonVariant.outline,
+                      onPressed: () => Navigator.of(context).pop(false),
+                    ),
+                    AppButton(
+                      text: 'Delete',
+                      color: AppButtonColor.error,
+                      onPressed: () => Navigator.of(context).pop(true),
+                    ),
+                  ],
+                );
+                if (confirmed == true) {
+                  onDelete?.call();
+                }
+              },
             ),
           ),
         ],
@@ -470,9 +497,14 @@ class RecipeDetailSheet extends StatelessWidget {
 }
 
 Future<void> _launchUrl(String url) async {
-  final uri = Uri.parse(url);
-  if (await canLaunchUrl(uri)) {
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  final uri = Uri.tryParse(url);
+  if (uri == null) return;
+  try {
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  } catch (_) {
+    // URL launch failed; no-op to avoid crashing the sheet.
   }
 }
 
