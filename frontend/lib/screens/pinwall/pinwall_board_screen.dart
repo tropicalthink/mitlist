@@ -10,14 +10,13 @@ import '../../theme/spacing.dart';
 import '../../theme/theme.dart';
 import '../../utils/haptics.dart';
 import '../../utils/hub_helpers.dart';
-import '../../widgets/hub/pinwall_section.dart';
 
 // ─── Board layout constants ──────────────────────────────────────────────────
 
 const double _kBoardW = 3200;
 const double _kBoardH = 2400;
 const double _kCardW = 180;
-const double _kCardH = 240; // approximate, grows with content
+const double _kCardH = 240;
 const double _kMargin = 80;
 
 // ─── Entry point ─────────────────────────────────────────────────────────────
@@ -62,19 +61,19 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
     with TickerProviderStateMixin {
   final TransformationController _transformCtrl = TransformationController();
 
-  // per-note positions on the board canvas
   late final Map<String, Offset> _positions;
-
-  // stagger animation for notes entering after Hero lands
   late final AnimationController _staggerCtrl;
   late final List<Animation<double>> _noteAnims;
+
+  // Shown briefly on first open to hint at pan/zoom
+  bool _showHint = true;
 
   @override
   void initState() {
     super.initState();
     _positions = {
       for (var i = 0; i < widget.posts.length; i++)
-        widget.posts[i].id: _gridPosition(i, widget.posts.length),
+        widget.posts[i].id: _gridPosition(i),
     };
 
     _staggerCtrl = AnimationController(
@@ -93,13 +92,24 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
       );
     });
 
-    // Start stagger after Hero flight (~400ms)
-    Future.delayed(const Duration(milliseconds: 420), () {
-      if (mounted) _staggerCtrl.forward();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _centerOnNotes();
 
-    // Center viewport on note cluster
-    WidgetsBinding.instance.addPostFrameCallback((_) => _centerOnNotes());
+      final disableAnim = MediaQuery.of(context).disableAnimations;
+      if (disableAnim) {
+        _staggerCtrl.value = 1.0;
+      } else {
+        // Start stagger after Hero flight
+        Future.delayed(const Duration(milliseconds: 420), () {
+          if (mounted) _staggerCtrl.forward();
+        });
+      }
+
+      // Hide hint after 3s
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) setState(() => _showHint = false);
+      });
+    });
   }
 
   @override
@@ -109,7 +119,7 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
     super.dispose();
   }
 
-  Offset _gridPosition(int index, int total) {
+  Offset _gridPosition(int index) {
     const cols = 4;
     final col = index % cols;
     final row = index ~/ cols;
@@ -117,7 +127,6 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
     final baseX = _kMargin + col * (_kCardW + 60.0);
     final baseY = _kMargin + row * (_kCardH + 50.0);
 
-    // deterministic jitter from post id
     final h = widget.posts[index].id.hashCode.abs();
     final jx = ((h % 80) - 40).toDouble();
     final jy = (((h >> 8) % 60) - 30).toDouble();
@@ -129,7 +138,6 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
     if (widget.posts.isEmpty) return;
     final size = MediaQuery.of(context).size;
 
-    // bounding box of all notes
     double minX = double.infinity, minY = double.infinity;
     double maxX = 0, maxY = 0;
     for (final p in _positions.values) {
@@ -179,7 +187,7 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
               decoration: BoxDecoration(
                 color: boardBg,
                 borderRadius: BorderRadius.circular(
-                  _lerpD(MitlistTheme.radiusLg, 0, anim.value),
+                  MitlistTheme.radiusLg * (1.0 - anim.value),
                 ),
                 border: Border.all(color: boardBorder, width: 2),
               ),
@@ -188,7 +196,7 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
         },
         child: Stack(
           children: [
-            // Board surface
+            // Board surface + notes
             Container(
               color: boardBg,
               child: InteractiveViewer(
@@ -199,34 +207,29 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
                 child: SizedBox(
                   width: _kBoardW,
                   height: _kBoardH,
-                  child: _BoardCanvas(
-                    boardBg: boardBg,
-                    boardBorder: boardBorder,
+                  child: _CorkCanvas(
                     dark: dark,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        for (var i = 0; i < widget.posts.length; i++)
-                          _AnimatedNote(
-                            key: ValueKey(widget.posts[i].id),
-                            animation: _noteAnims[i],
-                            position: _positions[widget.posts[i].id]!,
-                            onDrag: (d) =>
-                                _onNoteDrag(widget.posts[i].id, d),
-                            child: _BoardNoteCard(
-                              index: i,
-                              groupId: widget.groupId,
-                              me: widget.me,
-                              post: widget.posts[i],
-                              onDeleted: () {
-                                ref.invalidate(
-                                    pinwallPostsByGroupProvider(widget.groupId));
-                                Navigator.of(context).pop();
-                              },
-                            ),
+                    child: widget.posts.isEmpty
+                        ? _EmptyBoardHint(dark: dark)
+                        : Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              for (var i = 0; i < widget.posts.length; i++)
+                                _AnimatedNote(
+                                  key: ValueKey(widget.posts[i].id),
+                                  animation: _noteAnims[i],
+                                  position: _positions[widget.posts[i].id]!,
+                                  onDrag: (d) =>
+                                      _onNoteDrag(widget.posts[i].id, d),
+                                  child: _BoardNoteCard(
+                                    index: i,
+                                    groupId: widget.groupId,
+                                    me: widget.me,
+                                    post: widget.posts[i],
+                                  ),
+                                ),
+                            ],
                           ),
-                      ],
-                    ),
                   ),
                 ),
               ),
@@ -244,7 +247,7 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
                       icon: Icons.push_pin_outlined,
                       dark: dark,
                     ),
-                    _CloseButton(
+                    _BoardCloseButton(
                       dark: dark,
                       onClose: () => Navigator.of(context).pop(),
                     ),
@@ -252,6 +255,25 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
                 ),
               ),
             ),
+
+            // Pan/zoom hint
+            if (widget.posts.isNotEmpty)
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeOut,
+                bottom: _showHint ? 32 : -40,
+                left: 0,
+                right: 0,
+                child: IgnorePointer(
+                  child: Center(
+                    child: _BoardChip(
+                      label: 'Drag notes to move  ·  Pinch to zoom',
+                      icon: Icons.open_with_rounded,
+                      dark: dark,
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -259,20 +281,11 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
   }
 }
 
-double _lerpD(double a, double b, double t) => a + (b - a) * t;
+// ─── Cork canvas with grain ───────────────────────────────────────────────────
 
-// ─── Board canvas with grain ──────────────────────────────────────────────────
+class _CorkCanvas extends StatelessWidget {
+  const _CorkCanvas({required this.dark, required this.child});
 
-class _BoardCanvas extends StatelessWidget {
-  const _BoardCanvas({
-    required this.boardBg,
-    required this.boardBorder,
-    required this.dark,
-    required this.child,
-  });
-
-  final Color boardBg;
-  final Color boardBorder;
   final bool dark;
   final Widget child;
 
@@ -292,29 +305,27 @@ class _CorkGrainPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final rng = _LCG(seed: 42);
-    final grainColor = dark
-        ? MitlistColors.pinwallBoardBorderDark.withValues(alpha: 0.18)
-        : MitlistColors.pinwallBoardBorder.withValues(alpha: 0.12);
-    final paint = Paint()
-      ..color = grainColor
+    final grainPaint = Paint()
+      ..color = dark
+          ? MitlistColors.pinwallBoardBorderDark.withValues(alpha: 0.18)
+          : MitlistColors.pinwallBoardBorder.withValues(alpha: 0.12)
       ..strokeWidth = 1.2
       ..strokeCap = StrokeCap.round;
 
-    // Draw subtle grain lines
     for (var i = 0; i < 1200; i++) {
       final x = rng.nextDouble() * size.width;
       final y = rng.nextDouble() * size.height;
       final len = 8 + rng.nextDouble() * 24;
-      final angle = (rng.nextDouble() - 0.5) * 0.4;
+      final drift = (rng.nextDouble() - 0.5) * 0.4;
       canvas.drawLine(
         Offset(x, y),
-        Offset(x + len * (1 + angle), y + len * 0.15 * (rng.nextDouble() - 0.5)),
-        paint,
+        Offset(x + len * (1 + drift),
+            y + len * 0.15 * (rng.nextDouble() - 0.5)),
+        grainPaint,
       );
     }
 
-    // Subtle vignette: darken edges
-    final vigPaint = Paint()
+    final vignettePaint = Paint()
       ..shader = RadialGradient(
         colors: [
           Colors.transparent,
@@ -323,14 +334,14 @@ class _CorkGrainPainter extends CustomPainter {
         ],
         stops: const [0.55, 1.0],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), vigPaint);
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), vignettePaint);
   }
 
   @override
   bool shouldRepaint(_CorkGrainPainter old) => old.dark != dark;
 }
 
-// Simple deterministic pseudo-random
+// Deterministic pseudo-random (LCG)
 class _LCG {
   _LCG({required int seed}) : _s = seed;
   int _s;
@@ -340,7 +351,34 @@ class _LCG {
   }
 }
 
-// ─── Animated note wrapper ───────────────────────────────────────────────────
+// ─── Empty board state ────────────────────────────────────────────────────────
+
+class _EmptyBoardHint extends StatelessWidget {
+  const _EmptyBoardHint({required this.dark});
+  final bool dark;
+
+  @override
+  Widget build(BuildContext context) {
+    final textColor = dark
+        ? MitlistColors.pinwallNoteTextDark
+        : MitlistColors.pinwallNoteTextLight;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(MitlistSpacing.xl),
+        child: Text(
+          'The wall is clear.\nPin a note from the hub to get started.',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: textColor.withValues(alpha: 0.7),
+                height: 1.6,
+              ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Animated note wrapper ────────────────────────────────────────────────────
 
 class _AnimatedNote extends StatelessWidget {
   const _AnimatedNote({
@@ -376,7 +414,7 @@ class _AnimatedNote extends StatelessWidget {
   }
 }
 
-// ─── Board note card (full-size, no width constraint) ───────────────────────
+// ─── Board note card ──────────────────────────────────────────────────────────
 
 class _BoardNoteCard extends ConsumerWidget {
   const _BoardNoteCard({
@@ -384,23 +422,20 @@ class _BoardNoteCard extends ConsumerWidget {
     required this.groupId,
     required this.me,
     required this.post,
-    required this.onDeleted,
   });
 
   final int index;
   final String groupId;
   final User? me;
   final PinwallPost post;
-  final VoidCallback onDeleted;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
 
-    final palette = dark
-        ? MitlistColors.notePaletteDark
-        : MitlistColors.notePalette;
+    final palette =
+        dark ? MitlistColors.notePaletteDark : MitlistColors.notePalette;
     final idHash = post.id.hashCode;
     final bg = palette[idHash.abs() % palette.length];
     final border = bg.withValues(alpha: dark ? 0.3 : 0.6);
@@ -433,127 +468,132 @@ class _BoardNoteCard extends ConsumerWidget {
       pinwallMediaByPostProvider((groupId: groupId, postId: post.id)),
     );
 
-    return Transform.rotate(
-      angle: rot.toDouble(),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            width: _kCardW,
-            padding: const EdgeInsets.fromLTRB(
-              MitlistSpacing.sm + 4,
-              MitlistSpacing.lg,
-              MitlistSpacing.sm,
-              MitlistSpacing.sm,
-            ),
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: border, width: 1),
-              boxShadow: [
-                BoxShadow(
-                  color: MitlistColors.neutral950
-                      .withValues(alpha: dark ? 0.5 : 0.2),
-                  blurRadius: 12,
-                  offset: const Offset(4, 6),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  content,
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: textColor,
-                    height: 1.4,
+    return Semantics(
+      label: '$userLabel · $content',
+      child: Transform.rotate(
+        angle: rot.toDouble(),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              width: _kCardW,
+              padding: const EdgeInsets.fromLTRB(
+                MitlistSpacing.sm + 4,
+                MitlistSpacing.lg,
+                MitlistSpacing.sm,
+                MitlistSpacing.sm,
+              ),
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
+                border: Border.all(color: border, width: 1),
+                boxShadow: [
+                  BoxShadow(
+                    color: MitlistColors.neutral950
+                        .withValues(alpha: dark ? 0.5 : 0.2),
+                    blurRadius: 12,
+                    offset: const Offset(4, 6),
                   ),
-                  maxLines: 10,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                media.when(
-                  loading: () => const SizedBox(height: 42),
-                  error: (_, __) => const SizedBox.shrink(),
-                  data: (items) {
-                    if (items.isEmpty) return const SizedBox.shrink();
-                    final show = items.take(4).toList();
-                    return Padding(
-                      padding: const EdgeInsets.only(top: MitlistSpacing.xs),
-                      child: SizedBox(
-                        height: 48,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: show.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(width: 4),
-                          itemBuilder: (context, i) => ClipRRect(
-                            borderRadius: BorderRadius.circular(3),
-                            child: AspectRatio(
-                              aspectRatio: 1,
-                              child: Image.network(
-                                show[i].url,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
-                                  color: border.withValues(alpha: 0.3),
-                                  child: const Icon(
-                                    Icons.image_not_supported_outlined,
-                                    size: 14,
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    content,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: textColor,
+                      height: 1.4,
+                    ),
+                    maxLines: 10,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  media.when(
+                    loading: () => const SizedBox(height: 42),
+                    error: (_, __) => const SizedBox.shrink(),
+                    data: (items) {
+                      if (items.isEmpty) return const SizedBox.shrink();
+                      final show = items.take(4).toList();
+                      return Padding(
+                        padding:
+                            const EdgeInsets.only(top: MitlistSpacing.xs),
+                        child: SizedBox(
+                          height: 48,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: show.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(width: MitlistSpacing.xs),
+                            itemBuilder: (context, i) => ClipRRect(
+                              borderRadius:
+                                  BorderRadius.circular(MitlistTheme.radiusSm),
+                              child: AspectRatio(
+                                aspectRatio: 1,
+                                child: Image.network(
+                                  show[i].url,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    color: border.withValues(alpha: 0.3),
+                                    child: const Icon(
+                                      Icons.image_not_supported_outlined,
+                                      size: 14,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-                if (reminderText != null)
-                  Padding(
-                    padding: const EdgeInsets.only(
-                        top: MitlistSpacing.xs, bottom: MitlistSpacing.xs),
-                    child: Row(
-                      children: [
-                        Icon(Icons.alarm_on_outlined,
-                            size: 12, color: mutedColor),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            reminderText,
-                            style: textTheme.labelSmall
-                                ?.copyWith(color: mutedColor),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
-                const SizedBox(height: MitlistSpacing.xs),
-                Text(
-                  '$userLabel · $when',
-                  style: textTheme.labelSmall?.copyWith(color: mutedColor),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+                  if (reminderText != null)
+                    Padding(
+                      padding: const EdgeInsets.only(
+                          top: MitlistSpacing.xs, bottom: MitlistSpacing.xs),
+                      child: Row(
+                        children: [
+                          Icon(Icons.alarm_on_outlined,
+                              size: 12, color: mutedColor),
+                          const SizedBox(width: MitlistSpacing.xs),
+                          Expanded(
+                            child: Text(
+                              reminderText,
+                              style: textTheme.labelSmall
+                                  ?.copyWith(color: mutedColor),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: MitlistSpacing.xs),
+                  Text(
+                    '$userLabel · $when',
+                    style: textTheme.labelSmall?.copyWith(color: mutedColor),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
             ),
-          ),
-          Positioned(
-            top: -14,
-            left: 0,
-            right: 0,
-            child: Center(child: _BoardPushpin(headColor: pinColor)),
-          ),
-        ],
+            Positioned(
+              top: -14,
+              left: 0,
+              right: 0,
+              child: Center(child: _BoardPushpin(headColor: pinColor)),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-// ─── Pushpin for board (same as main, slightly larger) ───────────────────────
+// ─── Pushpin ──────────────────────────────────────────────────────────────────
 
 class _BoardPushpin extends StatelessWidget {
   const _BoardPushpin({required this.headColor});
@@ -575,9 +615,7 @@ class _BoardPushpinPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final cx = size.width / 2;
-    canvas.drawCircle(Offset(cx, 11),
-        11,
-        Paint()..color = headColor);
+    canvas.drawCircle(Offset(cx, 11), 11, Paint()..color = headColor);
     canvas.drawRect(
         Rect.fromCenter(center: Offset(cx, 20), width: 15, height: 5),
         Paint()..color = MitlistColors.neutral950.withValues(alpha: 0.18));
@@ -586,8 +624,7 @@ class _BoardPushpinPainter extends CustomPainter {
       ..lineTo(cx + 1.5, 21)
       ..lineTo(cx, size.height)
       ..close();
-    canvas.drawPath(
-        needle,
+    canvas.drawPath(needle,
         Paint()..color = MitlistColors.neutral950.withValues(alpha: 0.72));
     canvas.drawCircle(
         Offset(cx, 11),
@@ -602,10 +639,11 @@ class _BoardPushpinPainter extends CustomPainter {
   bool shouldRepaint(_BoardPushpinPainter old) => old.headColor != headColor;
 }
 
-// ─── Overlay chip ────────────────────────────────────────────────────────────
+// ─── Overlay chip ─────────────────────────────────────────────────────────────
 
 class _BoardChip extends StatelessWidget {
-  const _BoardChip({required this.label, required this.icon, required this.dark});
+  const _BoardChip(
+      {required this.label, required this.icon, required this.dark});
   final String label;
   final IconData icon;
   final bool dark;
@@ -619,7 +657,7 @@ class _BoardChip extends StatelessWidget {
       borderRadius: BorderRadius.circular(MitlistTheme.radiusFull),
       child: Container(
         padding: const EdgeInsets.symmetric(
-            horizontal: MitlistSpacing.md, vertical: MitlistSpacing.xs),
+            horizontal: MitlistSpacing.md, vertical: MitlistSpacing.xs + 2),
         color: bg,
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -641,8 +679,8 @@ class _BoardChip extends StatelessWidget {
 
 // ─── Close button ─────────────────────────────────────────────────────────────
 
-class _CloseButton extends StatelessWidget {
-  const _CloseButton({required this.dark, required this.onClose});
+class _BoardCloseButton extends StatelessWidget {
+  const _BoardCloseButton({required this.dark, required this.onClose});
   final bool dark;
   final VoidCallback onClose;
 
@@ -651,20 +689,24 @@ class _CloseButton extends StatelessWidget {
     final bg = dark
         ? MitlistColors.neutral950.withValues(alpha: 0.72)
         : MitlistColors.pinwallBoardBorder.withValues(alpha: 0.75);
-    return GestureDetector(
-      onTap: () {
-        Haptics.light();
-        onClose();
-      },
-      child: Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(MitlistTheme.radiusFull),
+    return Semantics(
+      button: true,
+      label: 'Close board',
+      child: GestureDetector(
+        onTap: () {
+          Haptics.light();
+          onClose();
+        },
+        child: Container(
+          width: 44,
+          height: 44,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(MitlistTheme.radiusFull),
+          ),
+          child: const Icon(Icons.close, size: 18, color: MitlistColors.surfaceSoft),
         ),
-        child:
-            const Icon(Icons.close, size: 18, color: MitlistColors.surfaceSoft),
       ),
     );
   }

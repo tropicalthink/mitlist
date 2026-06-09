@@ -33,3 +33,14 @@
 -dontwarn com.google.android.play.core.tasks.OnFailureListener
 -dontwarn com.google.android.play.core.tasks.OnSuccessListener
 -dontwarn com.google.android.play.core.tasks.Task
+
+# ML Kit text recognition — optional script bundles referenced by the plugin
+# but not shipped when only Latin OCR is used (see ocr_service.dart).
+-dontwarn com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions$Builder
+-dontwarn com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions
+-dontwarn com.google.mlkit.vision.text.devanagari.DevanagariTextRecognizerOptions$Builder
+-dontwarn com.google.mlkit.vision.text.devanagari.DevanagariTextRecognizerOptions
+-dontwarn com.google.mlkit.vision.text.japanese.JapaneseTextRecognizerOptions$Builder
+-dontwarn com.google.mlkit.vision.text.japanese.JapaneseTextRecognizerOptions
+-dontwarn com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions$Builder
+-dontwarn com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions

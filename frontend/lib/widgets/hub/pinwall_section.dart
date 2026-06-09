@@ -22,13 +22,6 @@ import '../app_bottom_sheet.dart';
 import '../app_button.dart';
 import '../app_dialog.dart';
 
-final pinwallMediaByPostProvider = FutureProvider.family<
-    List<PinwallMediaItem>, ({String groupId, String postId})>(
-  (ref, args) async {
-    final svc = await ref.read(pinwallServiceProviderAsync.future);
-    return svc.listPostAttachments(groupId: args.groupId, postId: args.postId);
-  },
-);
 
 const _kNotePalette = MitlistColors.notePalette;
 const _kNotePaletteDark = MitlistColors.notePaletteDark;
@@ -332,7 +325,10 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
                 child: Text('Pinwall', style: textTheme.titleMedium),
               ),
               if (hasPosts)
-                GestureDetector(
+                Semantics(
+                  button: true,
+                  label: 'Open pinwall board',
+                  child: GestureDetector(
                   onTap: () => _openBoard(context, posts.value!),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -367,6 +363,7 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
                       ],
                     ),
                   ),
+                ),
                 ),
             ],
           ),
