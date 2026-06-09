@@ -29,16 +29,16 @@ func (r *ChoreRepository) CreateChore(ctx context.Context, chore *models.Chore) 
 		INSERT INTO chores (
 			id, group_id, name, description, rotation_type, frequency,
 			period_interval, period_config, start_date, track_date_only, rollover,
-			assignment_type, assignment_config, is_active, supplies, created_at, updated_at
+			assignment_type, assignment_config, is_active, supplies, category, created_at, updated_at
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW())
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW())
 		RETURNING created_at, updated_at
 	`
 	return r.pool.QueryRow(ctx, query,
 		chore.ID, chore.GroupID, chore.Name, chore.Description,
 		chore.RotationType, chore.Frequency, chore.PeriodInterval, chore.PeriodConfig,
 		chore.StartDate, chore.TrackDateOnly, chore.Rollover, chore.AssignmentType,
-		chore.AssignmentConfig, chore.IsActive, chore.Supplies,
+		chore.AssignmentConfig, chore.IsActive, chore.Supplies, chore.Category,
 	).Scan(&chore.CreatedAt, &chore.UpdatedAt)
 }
 
@@ -47,7 +47,7 @@ func (r *ChoreRepository) GetChoreByID(ctx context.Context, id uuid.UUID) (*mode
 	query := `
 		SELECT id, group_id, name, description, rotation_type, frequency,
 			period_interval, period_config, start_date, track_date_only, rollover,
-			assignment_type, assignment_config, is_active, supplies, created_at, updated_at
+			assignment_type, assignment_config, is_active, supplies, category, created_at, updated_at
 		FROM chores
 		WHERE id = $1
 	`
@@ -56,7 +56,7 @@ func (r *ChoreRepository) GetChoreByID(ctx context.Context, id uuid.UUID) (*mode
 		&c.ID, &c.GroupID, &c.Name, &c.Description,
 		&c.RotationType, &c.Frequency, &c.PeriodInterval, &c.PeriodConfig,
 		&c.StartDate, &c.TrackDateOnly, &c.Rollover, &c.AssignmentType,
-		&c.AssignmentConfig, &c.IsActive, &c.Supplies,
+		&c.AssignmentConfig, &c.IsActive, &c.Supplies, &c.Category,
 		&c.CreatedAt, &c.UpdatedAt,
 	)
 	if err != nil {
@@ -73,7 +73,7 @@ func (r *ChoreRepository) ListChoresByGroup(ctx context.Context, groupID uuid.UU
 	query := `
 		SELECT id, group_id, name, description, rotation_type, frequency,
 			period_interval, period_config, start_date, track_date_only, rollover,
-			assignment_type, assignment_config, is_active, supplies, created_at, updated_at
+			assignment_type, assignment_config, is_active, supplies, category, created_at, updated_at
 		FROM chores
 		WHERE group_id = $1
 		ORDER BY created_at DESC, id DESC
@@ -93,7 +93,7 @@ func (r *ChoreRepository) ListChoresByGroup(ctx context.Context, groupID uuid.UU
 			&c.ID, &c.GroupID, &c.Name, &c.Description,
 			&c.RotationType, &c.Frequency, &c.PeriodInterval, &c.PeriodConfig,
 			&c.StartDate, &c.TrackDateOnly, &c.Rollover, &c.AssignmentType,
-			&c.AssignmentConfig, &c.IsActive, &c.Supplies,
+			&c.AssignmentConfig, &c.IsActive, &c.Supplies, &c.Category,
 			&c.CreatedAt, &c.UpdatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan chore: %w", err)
@@ -112,7 +112,7 @@ func (r *ChoreRepository) ListCurrentChoresByGroup(ctx context.Context, groupID 
 		SELECT
 			c.id, c.group_id, c.name, c.description, c.rotation_type, c.frequency,
 			c.period_interval, c.period_config, c.start_date, c.track_date_only, c.rollover,
-			c.assignment_type, c.assignment_config, c.is_active, c.created_at, c.updated_at,
+			c.assignment_type, c.assignment_config, c.is_active, c.category, c.created_at, c.updated_at,
 			pa.id, pa.chore_id, pa.user_id, pa.status, pa.due_date, pa.assigned_at, pa.completed_at, pa.skip_reason,
 			la.id, la.chore_id, la.user_id, la.status, la.due_date, la.assigned_at, la.completed_at, la.skip_reason
 		FROM chores c
@@ -151,7 +151,7 @@ func (r *ChoreRepository) ListCurrentChoresByGroup(ctx context.Context, groupID 
 			&item.Chore.RotationType, &item.Chore.Frequency, &item.Chore.PeriodInterval,
 			&item.Chore.PeriodConfig, &item.Chore.StartDate, &item.Chore.TrackDateOnly,
 			&item.Chore.Rollover, &item.Chore.AssignmentType, &item.Chore.AssignmentConfig,
-			&item.Chore.IsActive,
+			&item.Chore.IsActive, &item.Chore.Category,
 			&item.Chore.CreatedAt, &item.Chore.UpdatedAt,
 			&pending.ID, &pending.ChoreID, &pending.UserID, &pending.Status, &pending.DueDate, &pending.AssignedAt, &pending.CompletedAt, &pending.SkipReason,
 			&last.ID, &last.ChoreID, &last.UserID, &last.Status, &last.DueDate, &last.AssignedAt, &last.CompletedAt, &last.SkipReason,
@@ -166,6 +166,38 @@ func (r *ChoreRepository) ListCurrentChoresByGroup(ctx context.Context, groupID 
 		return nil, fmt.Errorf("current chore rows error: %w", err)
 	}
 	return current, nil
+}
+
+// GetChoreLoadByGroup returns the number of chore completions per member for a
+// group since the given time, ordered by who has done the most.
+func (r *ChoreRepository) GetChoreLoadByGroup(ctx context.Context, groupID uuid.UUID, since time.Time) ([]models.ChoreLoadEntry, error) {
+	query := `
+		SELECT cc.completed_by, COUNT(*)::INTEGER AS completed_count
+		FROM chore_completions cc
+		INNER JOIN chore_assignments ca ON ca.id = cc.assignment_id
+		INNER JOIN chores c ON c.id = ca.chore_id
+		WHERE c.group_id = $1 AND cc.completed_at >= $2
+		GROUP BY cc.completed_by
+		ORDER BY completed_count DESC, cc.completed_by ASC
+	`
+	rows, err := r.pool.Query(ctx, query, groupID, since)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get chore load: %w", err)
+	}
+	defer rows.Close()
+
+	var entries []models.ChoreLoadEntry
+	for rows.Next() {
+		var e models.ChoreLoadEntry
+		if err := rows.Scan(&e.UserID, &e.CompletedCount); err != nil {
+			return nil, fmt.Errorf("failed to scan chore load: %w", err)
+		}
+		entries = append(entries, e)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("chore load rows error: %w", err)
+	}
+	return entries, nil
 }
 
 // GetChoreStats returns tracked execution count, last execution, and average spacing.
@@ -251,15 +283,15 @@ func (r *ChoreRepository) UpdateChore(ctx context.Context, chore *models.Chore) 
 		SET name = $1, description = $2, rotation_type = $3, frequency = $4,
 			period_interval = $5, period_config = $6, start_date = $7,
 			track_date_only = $8, rollover = $9, assignment_type = $10,
-			assignment_config = $11, is_active = $12, supplies = $13, updated_at = NOW()
-		WHERE id = $14
+			assignment_config = $11, is_active = $12, supplies = $13, category = $14, updated_at = NOW()
+		WHERE id = $15
 		RETURNING updated_at
 	`
 	err := r.pool.QueryRow(ctx, query,
 		chore.Name, chore.Description, chore.RotationType,
 		chore.Frequency, chore.PeriodInterval, chore.PeriodConfig, chore.StartDate,
 		chore.TrackDateOnly, chore.Rollover, chore.AssignmentType,
-		chore.AssignmentConfig, chore.IsActive, chore.Supplies, chore.ID,
+		chore.AssignmentConfig, chore.IsActive, chore.Supplies, chore.Category, chore.ID,
 	).Scan(&chore.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

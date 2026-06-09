@@ -1,0 +1,2 @@
+ALTER TABLE chores
+ADD COLUMN IF NOT EXISTS category TEXT;

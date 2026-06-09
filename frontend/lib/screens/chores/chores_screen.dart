@@ -14,6 +14,7 @@ import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../sheets/chore_creation_sheet.dart';
 import '../../sheets/chore_detail_sheet.dart';
+import '../../sheets/chore_load_sheet.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/active_group_context.dart';
@@ -43,6 +44,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   final List<_Chore> _chores = [];
   StreamSubscription<List<CurrentChore>>? _sub;
   bool _filterMe = true;
+  String _groupMode = 'due'; // 'due' | 'rhythm' | 'zone'
   bool _isMutating = false;
   bool _hasHousehold = true;
   final Logger _logger = Logger();
@@ -59,6 +61,9 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       MitlistSpacing.md +
       MitlistSpacing.sm +
       MitlistSpacing.space8 +
+      // Second control row: "By due date / By rhythm" grouping toggle.
+      MitlistSpacing.sm +
+      MitlistSpacing.space8 +
       MitlistSpacing.md +
       MitlistSpacing.space1;
 
@@ -70,7 +75,12 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     super.initState();
     SharedPreferences.getInstance().then((prefs) {
       final saved = prefs.getBool('chores_filter_me');
-      if (saved != null) setState(() => _filterMe = saved);
+      final savedMode = prefs.getString('chores_group_mode');
+      if (!mounted) return;
+      setState(() {
+        if (saved != null) _filterMe = saved;
+        if (savedMode != null) _groupMode = savedMode;
+      });
     });
     _loadChores();
   }
@@ -151,6 +161,9 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                   entry.pendingAssignment?.userId, _memberNames),
               dueDate: entry.pendingAssignment?.dueDate ??
                   _fallbackDueDate(now, entry.chore.frequency),
+              frequency: entry.chore.frequency,
+              periodInterval: entry.chore.periodInterval,
+              category: entry.chore.category,
               isMine: entry.assignedToMe,
               completed: !entry.chore.isActive ||
                   entry.pendingAssignment?.status.toLowerCase() == 'completed',
@@ -178,6 +191,39 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     final created = await ChoreCreationSheet.show(context);
     if (created == true) {
       await _loadChores();
+    }
+  }
+
+  Future<void> _openLoadSheet() async {
+    Haptics.light();
+    try {
+      final groupService = await ref.read(groupServiceProviderAsync.future);
+      final groups = await groupService.listGroups();
+      final groupId = resolveActiveGroupId(
+        groups,
+        ref.read(currentGroupIdProvider),
+      );
+      if (!isValidGroupId(groupId)) return;
+      final choreService = await ref.read(choreServiceProviderAsync.future);
+      final entries = await choreService.getChoreLoad(groupId!, days: 30);
+      // Make sure names are available even if the list hasn't loaded them yet.
+      var names = _memberNames;
+      if (names.isEmpty) {
+        try {
+          final members = await groupService.listMembers(groupId);
+          names = {for (final m in members) m.userId: m.displayName};
+        } catch (_) {}
+      }
+      if (!mounted) return;
+      await ChoreLoadSheet.show(
+        context,
+        entries: entries,
+        memberNames: names,
+        days: 30,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _showChoreActionError('Failed to load chore stats. Please try again.');
     }
   }
 
@@ -512,6 +558,75 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     return result;
   }
 
+  static const List<String> _dueOrder = [
+    'Overdue',
+    'Today',
+    'This week',
+    'Later',
+  ];
+
+  static const List<String> _rhythmOrder = [
+    'Hourly',
+    'Daily',
+    'Weekly',
+    'Monthly',
+    'Yearly',
+    'As needed',
+    'One-off',
+  ];
+
+  String _rhythmBucket(String frequency) => switch (frequency) {
+        'hourly' => 'Hourly',
+        'daily' => 'Daily',
+        'weekly' => 'Weekly',
+        'monthly' => 'Monthly',
+        'yearly' => 'Yearly',
+        'adaptive' => 'As needed',
+        _ => 'One-off',
+      };
+
+  /// Groups chores by how often they recur, so the household reads its shared
+  /// rhythm rather than only what's due next.
+  Map<String, List<_Chore>> _groupByRhythm(List<_Chore> chores) {
+    final result = {for (final key in _rhythmOrder) key: <_Chore>[]};
+    for (final chore in chores) {
+      result[_rhythmBucket(chore.frequency)]!.add(chore);
+    }
+    return result;
+  }
+
+  static const List<String> _zonePreferredOrder = [
+    'Kitchen',
+    'Bathroom',
+    'Living room',
+    'Bedroom',
+    'Outdoor',
+    'Shared',
+  ];
+
+  /// Groups chores by room/zone so the household sees them as areas of shared
+  /// space rather than a flat list. Returns buckets already in display order.
+  Map<String, List<_Chore>> _groupByZone(List<_Chore> chores) {
+    final map = <String, List<_Chore>>{};
+    for (final chore in chores) {
+      final raw = chore.category?.trim();
+      final key = (raw == null || raw.isEmpty) ? 'Unsorted' : raw;
+      (map[key] ??= []).add(chore);
+    }
+    int rank(String key) {
+      final i = _zonePreferredOrder.indexOf(key);
+      if (i >= 0) return i;
+      return key == 'Unsorted' ? 1000 : 500;
+    }
+
+    final keys = map.keys.toList()
+      ..sort((a, b) {
+        final byRank = rank(a).compareTo(rank(b));
+        return byRank != 0 ? byRank : a.compareTo(b);
+      });
+    return {for (final key in keys) key: map[key]!};
+  }
+
   ({int overdue, int today, int done}) _computeStats(List<_Chore> chores) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -545,11 +660,29 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   Widget build(BuildContext context) {
     final filtered = _filteredChores;
     final stats = _computeStats(filtered);
-    final sections = _groupBySection(filtered);
+    final sections = switch (_groupMode) {
+      'rhythm' => _groupByRhythm(filtered),
+      'zone' => _groupByZone(filtered),
+      _ => _groupBySection(filtered),
+    };
+    final sectionOrder = switch (_groupMode) {
+      'rhythm' => _rhythmOrder,
+      'zone' => sections.keys.toList(),
+      _ => _dueOrder,
+    };
 
     return Scaffold(
       appBar: MitlistAppBar.titleText(
         'Chores',
+        actions: _hasHousehold
+            ? [
+                IconButton(
+                  onPressed: _openLoadSheet,
+                  icon: const AppIcon(name: 'chartBar'),
+                  tooltip: 'Who\'s doing the chores',
+                ),
+              ]
+            : null,
       ),
       floatingActionButton: AppButton(
         size: AppButtonSize.lg,
@@ -652,6 +785,31 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                                 ),
                               ],
                             ),
+                      const SizedBox(height: MitlistSpacing.sm),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            for (final mode in const [
+                              ('due', 'By due date'),
+                              ('rhythm', 'By rhythm'),
+                              ('zone', 'By zone'),
+                            ]) ...[
+                              AppChip(
+                                label: mode.$2,
+                                selected: _groupMode == mode.$1,
+                                onSelected: (_) {
+                                  setState(() => _groupMode = mode.$1);
+                                  SharedPreferences.getInstance().then((p) =>
+                                      p.setString('chores_group_mode', mode.$1));
+                                },
+                              ),
+                              if (mode.$1 != 'zone')
+                                const SizedBox(width: MitlistSpacing.sm),
+                            ],
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -779,12 +937,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                 ),
               ),
             ] else ...[
-              for (final section in const [
-                'Overdue',
-                'Today',
-                'This week',
-                'Later'
-              ])
+              for (final section in sectionOrder)
                 if (sections[section]!.isNotEmpty) ...[
                   SliverPersistentHeader(
                     pinned: true,
@@ -880,6 +1033,9 @@ class _Chore {
   final String title;
   final String assigneeInitials;
   final DateTime dueDate;
+  final String frequency;
+  final int periodInterval;
+  final String? category;
   final bool isMine;
   bool completed;
   final String? lastActionLabel;
@@ -891,6 +1047,9 @@ class _Chore {
     required this.title,
     required this.assigneeInitials,
     required this.dueDate,
+    this.frequency = 'none',
+    this.periodInterval = 1,
+    this.category,
     this.isMine = true,
     this.completed = false,
     this.lastActionLabel,

@@ -29,6 +29,7 @@ func (h *ChoreHandler) RegisterRoutes(r chi.Router) {
 	r.Post("/chores", h.CreateChore)
 	r.Get("/chores", h.ListChores)
 	r.Get("/chores/current", h.ListCurrentChores)
+	r.Get("/chores/load", h.GetChoreLoad)
 	r.Get("/chores/{id}/details", h.GetChoreDetails)
 	r.Get("/chores/{id}", h.GetChore)
 	r.Patch("/chores/{id}", h.UpdateChore)
@@ -69,6 +70,7 @@ func (h *ChoreHandler) CreateChore(w http.ResponseWriter, r *http.Request) {
 		AssignmentType   string      `json:"assignment_type"`
 		AssignmentConfig []uuid.UUID `json:"assignment_config"`
 		IsActive         *bool       `json:"is_active"`
+		Category         *string     `json:"category"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
@@ -93,6 +95,7 @@ func (h *ChoreHandler) CreateChore(w http.ResponseWriter, r *http.Request) {
 		AssignmentType:   req.AssignmentType,
 		AssignmentConfig: req.AssignmentConfig,
 		IsActive:         isActive,
+		Category:         req.Category,
 	}
 	if err := h.service.CreateChore(r.Context(), user, chore); err != nil {
 		api.RespondError(w, err)
@@ -151,6 +154,30 @@ func (h *ChoreHandler) ListCurrentChores(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	api.RespondJSON(w, http.StatusOK, chores)
+}
+
+// GetChoreLoad GET /api/v1/chores/load
+func (h *ChoreHandler) GetChoreLoad(w http.ResponseWriter, r *http.Request) {
+	user, ok := api.UserFromContext(r.Context())
+	if !ok {
+		api.RespondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	groupID, err := uuid.Parse(r.URL.Query().Get("group_id"))
+	if err != nil {
+		api.RespondError(w, &api.ValidationError{Field: "group_id", Message: "valid group_id required"})
+		return
+	}
+
+	days, _ := strconv.Atoi(r.URL.Query().Get("days"))
+
+	load, err := h.service.GetChoreLoad(r.Context(), user, groupID, days)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	api.RespondJSON(w, http.StatusOK, load)
 }
 
 // GetChore GET /api/v1/chores/{id}
@@ -228,6 +255,7 @@ func (h *ChoreHandler) UpdateChore(w http.ResponseWriter, r *http.Request) {
 		AssignmentType   string      `json:"assignment_type"`
 		AssignmentConfig []uuid.UUID `json:"assignment_config"`
 		IsActive         *bool       `json:"is_active"`
+		Category         *string     `json:"category"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
@@ -265,6 +293,7 @@ func (h *ChoreHandler) UpdateChore(w http.ResponseWriter, r *http.Request) {
 		AssignmentType:   req.AssignmentType,
 		AssignmentConfig: req.AssignmentConfig,
 		IsActive:         isActive,
+		Category:         req.Category,
 	}
 	chore, err = h.service.UpdateChore(r.Context(), user, chore)
 	if err != nil {

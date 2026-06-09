@@ -187,22 +187,35 @@ func (r *TemplateRepository) DeleteTemplateItem(ctx context.Context, id uuid.UUI
 func (r *TemplateRepository) CreateChoreTemplate(ctx context.Context, ct *models.ChoreTemplate) error {
 	ct.ID = uuid.New()
 	query := `
-		INSERT INTO chore_templates (id, group_id, name, rotation_type, frequency, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+		INSERT INTO chore_templates (
+			id, group_id, name, description, rotation_type, frequency,
+			period_interval, period_config, track_date_only, rollover, assignment_type, category,
+			created_at, updated_at
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
 		RETURNING created_at, updated_at
 	`
-	return r.pool.QueryRow(ctx, query, ct.ID, ct.GroupID, ct.Name, ct.RotationType, ct.Frequency).Scan(&ct.CreatedAt, &ct.UpdatedAt)
+	return r.pool.QueryRow(ctx, query,
+		ct.ID, ct.GroupID, ct.Name, ct.Description, ct.RotationType, ct.Frequency,
+		ct.PeriodInterval, ct.PeriodConfig, ct.TrackDateOnly, ct.Rollover, ct.AssignmentType, ct.Category,
+	).Scan(&ct.CreatedAt, &ct.UpdatedAt)
 }
 
 // GetChoreTemplateByID retrieves a chore template by ID.
 func (r *TemplateRepository) GetChoreTemplateByID(ctx context.Context, id uuid.UUID) (*models.ChoreTemplate, error) {
 	query := `
-		SELECT id, group_id, name, rotation_type, frequency, created_at, updated_at
+		SELECT id, group_id, name, description, rotation_type, frequency,
+			period_interval, period_config, track_date_only, rollover, assignment_type, category,
+			created_at, updated_at
 		FROM chore_templates
 		WHERE id = $1
 	`
 	var ct models.ChoreTemplate
-	err := r.pool.QueryRow(ctx, query, id).Scan(&ct.ID, &ct.GroupID, &ct.Name, &ct.RotationType, &ct.Frequency, &ct.CreatedAt, &ct.UpdatedAt)
+	err := r.pool.QueryRow(ctx, query, id).Scan(
+		&ct.ID, &ct.GroupID, &ct.Name, &ct.Description, &ct.RotationType, &ct.Frequency,
+		&ct.PeriodInterval, &ct.PeriodConfig, &ct.TrackDateOnly, &ct.Rollover, &ct.AssignmentType, &ct.Category,
+		&ct.CreatedAt, &ct.UpdatedAt,
+	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("chore template not found: %w", err)
@@ -215,7 +228,9 @@ func (r *TemplateRepository) GetChoreTemplateByID(ctx context.Context, id uuid.U
 // ListChoreTemplates retrieves chore templates for a group with pagination.
 func (r *TemplateRepository) ListChoreTemplates(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.ChoreTemplate, error) {
 	query := `
-		SELECT id, group_id, name, rotation_type, frequency, created_at, updated_at
+		SELECT id, group_id, name, description, rotation_type, frequency,
+			period_interval, period_config, track_date_only, rollover, assignment_type, category,
+			created_at, updated_at
 		FROM chore_templates
 		WHERE group_id = $1
 		ORDER BY created_at DESC, id DESC
@@ -231,7 +246,11 @@ func (r *TemplateRepository) ListChoreTemplates(ctx context.Context, groupID uui
 	var templates []models.ChoreTemplate
 	for rows.Next() {
 		var ct models.ChoreTemplate
-		if err := rows.Scan(&ct.ID, &ct.GroupID, &ct.Name, &ct.RotationType, &ct.Frequency, &ct.CreatedAt, &ct.UpdatedAt); err != nil {
+		if err := rows.Scan(
+			&ct.ID, &ct.GroupID, &ct.Name, &ct.Description, &ct.RotationType, &ct.Frequency,
+			&ct.PeriodInterval, &ct.PeriodConfig, &ct.TrackDateOnly, &ct.Rollover, &ct.AssignmentType, &ct.Category,
+			&ct.CreatedAt, &ct.UpdatedAt,
+		); err != nil {
 			return nil, fmt.Errorf("failed to scan chore template: %w", err)
 		}
 		templates = append(templates, ct)
@@ -246,11 +265,17 @@ func (r *TemplateRepository) ListChoreTemplates(ctx context.Context, groupID uui
 func (r *TemplateRepository) UpdateChoreTemplate(ctx context.Context, ct *models.ChoreTemplate) error {
 	query := `
 		UPDATE chore_templates
-		SET name = $1, rotation_type = $2, frequency = $3, updated_at = NOW()
-		WHERE id = $4
+		SET name = $1, description = $2, rotation_type = $3, frequency = $4,
+			period_interval = $5, period_config = $6, track_date_only = $7, rollover = $8,
+			assignment_type = $9, category = $10, updated_at = NOW()
+		WHERE id = $11
 		RETURNING updated_at
 	`
-	err := r.pool.QueryRow(ctx, query, ct.Name, ct.RotationType, ct.Frequency, ct.ID).Scan(&ct.UpdatedAt)
+	err := r.pool.QueryRow(ctx, query,
+		ct.Name, ct.Description, ct.RotationType, ct.Frequency,
+		ct.PeriodInterval, ct.PeriodConfig, ct.TrackDateOnly, ct.Rollover,
+		ct.AssignmentType, ct.Category, ct.ID,
+	).Scan(&ct.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return fmt.Errorf("chore template not found: %w", err)

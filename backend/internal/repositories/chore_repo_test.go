@@ -34,7 +34,7 @@ func TestChoreRepository_CreateChore(t *testing.T) {
 			pgxmock.AnyArg(), chore.GroupID, chore.Name, chore.Description,
 			chore.RotationType, chore.Frequency, chore.PeriodInterval, chore.PeriodConfig,
 			chore.StartDate, chore.TrackDateOnly, chore.Rollover, chore.AssignmentType,
-			chore.AssignmentConfig, chore.IsActive, chore.Supplies,
+			chore.AssignmentConfig, chore.IsActive, chore.Supplies, chore.Category,
 		).
 		WillReturnRows(rows)
 
@@ -106,7 +106,7 @@ func TestChoreRepository_UpdateChore(t *testing.T) {
 	mock.ExpectQuery("UPDATE chores SET").
 		WithArgs(
 			"Mop", pgxmock.AnyArg(), "schedule", "daily", 0, []string(nil),
-			pgxmock.AnyArg(), false, false, "", []uuid.UUID(nil), false, []string(nil), id,
+			pgxmock.AnyArg(), false, false, "", []uuid.UUID(nil), false, []string(nil), pgxmock.AnyArg(), id,
 		).
 		WillReturnRows(rows)
 
@@ -124,7 +124,7 @@ func TestChoreRepository_UpdateChore_NotFound(t *testing.T) {
 	mock.ExpectQuery("UPDATE chores SET").
 		WithArgs(
 			"Mop", pgxmock.AnyArg(), "schedule", "daily", 0, []string(nil),
-			pgxmock.AnyArg(), false, false, "", []uuid.UUID(nil), false, []string(nil), id,
+			pgxmock.AnyArg(), false, false, "", []uuid.UUID(nil), false, []string(nil), pgxmock.AnyArg(), id,
 		).
 		WillReturnError(pgx.ErrNoRows)
 
@@ -392,7 +392,7 @@ func choreColumns() []string {
 	return []string{
 		"id", "group_id", "name", "description", "rotation_type", "frequency",
 		"period_interval", "period_config", "start_date", "track_date_only", "rollover",
-		"assignment_type", "assignment_config", "is_active", "supplies", "created_at", "updated_at",
+		"assignment_type", "assignment_config", "is_active", "supplies", "category", "created_at", "updated_at",
 	}
 }
 
@@ -400,6 +400,6 @@ func choreRowValues(id, groupID uuid.UUID, name string, description any, rotatio
 	return []any{
 		id, groupID, name, description, rotationType, frequency,
 		1, []string{}, nil, false, false,
-		"round-robin", []uuid.UUID{}, isActive, []string(nil), fixedTime(), fixedTime(),
+		"round-robin", []uuid.UUID{}, isActive, []string(nil), (*string)(nil), fixedTime(), fixedTime(),
 	}
 }

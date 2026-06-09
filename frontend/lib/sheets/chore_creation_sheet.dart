@@ -40,6 +40,7 @@ class _ChoreTemplate {
   final _AssignmentPolicy assignment;
   final bool trackDateOnly;
   final bool rollover;
+  final String? category;
 
   const _ChoreTemplate(
     this.name, {
@@ -49,23 +50,46 @@ class _ChoreTemplate {
     this.assignment = _AssignmentPolicy.roundRobin,
     this.trackDateOnly = false,
     this.rollover = true,
+    this.category,
   });
 }
 
+/// Preset zones offered in the creation sheet. Free-form categories from
+/// elsewhere still group correctly; these are just the common starting points.
+const _zonePresets = <String>[
+  'Kitchen',
+  'Bathroom',
+  'Living room',
+  'Bedroom',
+  'Outdoor',
+  'Shared',
+];
+
 const _choreTemplates = <_ChoreTemplate>[
-  _ChoreTemplate('Dishes', recurrence: _Recurrence.daily, rollover: false),
+  _ChoreTemplate(
+    'Dishes',
+    recurrence: _Recurrence.daily,
+    rollover: false,
+    category: 'Kitchen',
+  ),
   _ChoreTemplate(
     'Take out trash',
     weekdays: {'sunday'},
     assignment: _AssignmentPolicy.roundRobin,
+    category: 'Kitchen',
   ),
-  _ChoreTemplate('Vacuum', weekdays: {'saturday'}),
-  _ChoreTemplate('Clean bathroom', weekdays: {'saturday'}),
-  _ChoreTemplate('Laundry', weekdays: {'sunday'}),
+  _ChoreTemplate('Vacuum', weekdays: {'saturday'}, category: 'Living room'),
+  _ChoreTemplate(
+    'Clean bathroom',
+    weekdays: {'saturday'},
+    category: 'Bathroom',
+  ),
+  _ChoreTemplate('Laundry', weekdays: {'sunday'}, category: 'Shared'),
   _ChoreTemplate(
     'Grocery run',
     weekdays: {'friday'},
     assignment: _AssignmentPolicy.leastDone,
+    category: 'Shared',
   ),
   _ChoreTemplate(
     'Water plants',
@@ -73,8 +97,14 @@ const _choreTemplates = <_ChoreTemplate>[
     interval: 3,
     trackDateOnly: true,
     assignment: _AssignmentPolicy.noAssignment,
+    category: 'Outdoor',
   ),
-  _ChoreTemplate('Mop floors', interval: 2, weekdays: {'saturday'}),
+  _ChoreTemplate(
+    'Mop floors',
+    interval: 2,
+    weekdays: {'saturday'},
+    category: 'Kitchen',
+  ),
 ];
 
 class ChoreCreationSheet extends ConsumerStatefulWidget {
@@ -126,6 +156,10 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
   bool _isSaving = false;
   bool _isScanning = false;
   String? _appliedTemplate;
+  String? _appliedSavedId;
+  String? _category;
+  List<ChoreTemplate> _savedTemplates = [];
+  bool _savingTemplate = false;
 
   @override
   void initState() {
@@ -137,6 +171,27 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       _descriptionController.text = widget.initialDescription!;
     }
     _intervalController.addListener(_markDirty);
+    _loadSavedTemplates();
+  }
+
+  Future<String?> _resolveGroupId() async {
+    final groupService = await ref.read(groupServiceProviderAsync.future);
+    final groups = await groupService.listGroups(limit: 50);
+    if (groups.isEmpty) return null;
+    return resolveActiveGroupId(groups, ref.read(currentGroupIdProvider));
+  }
+
+  Future<void> _loadSavedTemplates() async {
+    try {
+      final groupId = await _resolveGroupId();
+      if (groupId == null) return;
+      final service = await ref.read(choreServiceProviderAsync.future);
+      final templates = await service.listChoreTemplates(groupId);
+      if (!mounted) return;
+      setState(() => _savedTemplates = templates);
+    } catch (_) {
+      // Saved routines are an enhancement; the form works without them.
+    }
   }
 
   void _markDirty() => widget.dirtyNotifier?.value = true;
@@ -146,6 +201,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
   void _applyTemplate(_ChoreTemplate template) {
     setState(() {
       _appliedTemplate = template.name;
+      _appliedSavedId = null;
       if (_nameController.text.trim().isEmpty) {
         _nameController.text = template.name;
       }
@@ -157,9 +213,104 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       _assignmentPolicy = template.assignment;
       _trackDateOnly = template.trackDateOnly;
       _rollover = template.rollover;
+      _category = template.category;
     });
     _markDirty();
     Haptics.light();
+  }
+
+  static _Recurrence _recurrenceFromFrequency(String f) => switch (f) {
+        'hourly' => _Recurrence.hourly,
+        'daily' => _Recurrence.daily,
+        'weekly' => _Recurrence.weekly,
+        'monthly' => _Recurrence.monthly,
+        'yearly' => _Recurrence.yearly,
+        'adaptive' => _Recurrence.adaptive,
+        _ => _Recurrence.none,
+      };
+
+  static _AssignmentPolicy _policyFromAssignment(String a) => switch (a) {
+        'in-alphabetical-order' => _AssignmentPolicy.alphabetical,
+        'who-least-did-first' => _AssignmentPolicy.leastDone,
+        'random' => _AssignmentPolicy.random,
+        'no-assignment' => _AssignmentPolicy.noAssignment,
+        _ => _AssignmentPolicy.roundRobin,
+      };
+
+  /// Fills the form from a saved routine (a backend [ChoreTemplate]).
+  void _applySavedTemplate(ChoreTemplate t) {
+    setState(() {
+      _appliedSavedId = t.id;
+      _appliedTemplate = null;
+      if (_nameController.text.trim().isEmpty) _nameController.text = t.name;
+      if ((t.description ?? '').isNotEmpty &&
+          _descriptionController.text.trim().isEmpty) {
+        _descriptionController.text = t.description!;
+      }
+      _recurrence = _recurrenceFromFrequency(t.frequency);
+      _intervalController.text = '${t.periodInterval}';
+      _weekdays
+        ..clear()
+        ..addAll(t.periodConfig.isEmpty ? {'monday'} : t.periodConfig);
+      _assignmentPolicy = _policyFromAssignment(t.assignmentType);
+      _trackDateOnly = t.trackDateOnly;
+      _rollover = t.rollover;
+      _category = t.category;
+    });
+    _markDirty();
+    Haptics.light();
+  }
+
+  /// Saves the current form as a reusable household routine.
+  Future<void> _saveAsRoutine() async {
+    final name = _nameController.text.trim();
+    if (name.isEmpty || _savingTemplate) return;
+    setState(() => _savingTemplate = true);
+    try {
+      final groupId = await _resolveGroupId();
+      if (groupId == null) {
+        if (!mounted) return;
+        setState(() => _savingTemplate = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Create or join a household first.')),
+        );
+        return;
+      }
+      final service = await ref.read(choreServiceProviderAsync.future);
+      final created = await service.createChoreTemplate(
+        CreateChoreTemplateRequest(
+          groupId: groupId,
+          name: name,
+          description: _descriptionController.text.trim().isEmpty
+              ? null
+              : _descriptionController.text.trim(),
+          frequency: _frequencyValue(),
+          periodInterval: _periodInterval,
+          periodConfig:
+              _recurrence == _Recurrence.weekly ? _weekdays.toList() : const [],
+          trackDateOnly: _trackDateOnly,
+          rollover: _rollover,
+          assignmentType: _assignmentTypeValue(),
+          category: _category,
+        ),
+      );
+      if (!mounted) return;
+      setState(() {
+        _savingTemplate = false;
+        _savedTemplates = [created, ..._savedTemplates];
+        _appliedSavedId = created.id;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Saved "${created.name}" as a routine')),
+      );
+      Haptics.success();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _savingTemplate = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(friendlyErrorMessage(e))),
+      );
+    }
   }
 
   Future<void> _onScan() async {
@@ -227,7 +378,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
         return;
       }
 
-      await choreService.createChore(
+      final chore = await choreService.createChore(
         CreateChoreRequest(
           groupId: groupId,
           name: _nameController.text.trim(),
@@ -241,14 +392,43 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           trackDateOnly: _trackDateOnly,
           rollover: _rollover,
           assignmentType: _assignmentTypeValue(),
+          category: _category,
         ),
       );
+
+      // Best-effort: surface who the chore landed on so a new chore reads as
+      // part of the household rotation, not an isolated entry. Never blocks the
+      // success path if the lookup fails.
+      String? assignee;
+      try {
+        final details = await choreService.getChoreDetails(chore.id);
+        if (details.assignedToMe) {
+          assignee = 'you';
+        } else {
+          final assigneeId = details.pendingAssignment?.userId;
+          if (assigneeId != null) {
+            final members = await groupService.listMembers(groupId);
+            for (final m in members) {
+              if (m.userId == assigneeId) {
+                assignee = m.displayName;
+                break;
+              }
+            }
+          }
+        }
+      } catch (_) {
+        // Confirmation is a nicety; fall back to the plain message.
+      }
 
       if (!mounted) return;
       widget.dirtyNotifier?.value = false;
       Navigator.of(context).pop(true);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Chore added')),
+        SnackBar(
+          content: Text(
+            assignee == null ? 'Chore added' : 'Chore added · next up: $assignee',
+          ),
+        ),
       );
       Haptics.success();
     } catch (e) {
@@ -364,7 +544,27 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Start from a routine', style: textTheme.labelMedium),
+        if (_savedTemplates.isNotEmpty) ...[
+          Text('Your routines', style: textTheme.labelMedium),
+          const SizedBox(height: MitlistSpacing.sm),
+          Wrap(
+            spacing: MitlistSpacing.sm,
+            runSpacing: MitlistSpacing.sm,
+            children: [
+              for (final t in _savedTemplates)
+                AppChip(
+                  label: t.name,
+                  selected: _appliedSavedId == t.id,
+                  onSelected: (_) => _applySavedTemplate(t),
+                ),
+            ],
+          ),
+          const SizedBox(height: MitlistSpacing.md),
+        ],
+        Text(
+          _savedTemplates.isEmpty ? 'Start from a routine' : 'Or a suggestion',
+          style: textTheme.labelMedium,
+        ),
         const SizedBox(height: MitlistSpacing.sm),
         Wrap(
           spacing: MitlistSpacing.sm,
@@ -420,6 +620,31 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           maxLines: 5,
           maxLength: 500,
           onChanged: (_) => _markDirty(),
+        ),
+        const SizedBox(height: MitlistSpacing.md),
+        Text('Zone (optional)', style: textTheme.labelMedium),
+        const SizedBox(height: MitlistSpacing.sm),
+        Wrap(
+          spacing: MitlistSpacing.sm,
+          runSpacing: MitlistSpacing.sm,
+          children: [
+            for (final zone in _zonePresets)
+              AppChip(
+                label: zone,
+                selected: _category == zone,
+                onSelected: (_) {
+                  setState(() => _category = _category == zone ? null : zone);
+                  _markDirty();
+                },
+              ),
+          ],
+        ),
+        const SizedBox(height: MitlistSpacing.sm),
+        Text(
+          'Group chores by room or area so your household sees them as a system.',
+          style: textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
         ),
         divider(),
 
@@ -588,6 +813,21 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
               'of piling up as overdue.',
         ),
         const SizedBox(height: MitlistSpacing.lg),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: AppButton(
+            text: _savingTemplate ? 'Saving…' : 'Save as routine',
+            icon: const AppIcon(name: 'star', size: 18),
+            variant: AppButtonVariant.ghost,
+            color: AppButtonColor.neutral,
+            size: AppButtonSize.sm,
+            isLoading: _savingTemplate,
+            onPressed:
+                (_canCreate && !_savingTemplate) ? _saveAsRoutine : null,
+            semanticLabel: 'Save this chore as a reusable routine',
+          ),
+        ),
+        const SizedBox(height: MitlistSpacing.sm),
         SizedBox(
           width: double.infinity,
           child: AppButton(

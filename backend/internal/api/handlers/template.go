@@ -196,6 +196,23 @@ func (h *TemplateHandler) ApplyTemplate(w http.ResponseWriter, r *http.Request) 
 // Chore Templates
 // ------------------------------------------------------------------
 
+func normalizeTemplateInterval(v int) int {
+	if v < 1 {
+		return 1
+	}
+	if v > 999 {
+		return 999
+	}
+	return v
+}
+
+func defaultAssignmentType(v string) string {
+	if v == "" {
+		return "round-robin"
+	}
+	return v
+}
+
 // CreateChoreTemplate POST /api/v1/chore-templates
 func (h *TemplateHandler) CreateChoreTemplate(w http.ResponseWriter, r *http.Request) {
 	user, ok := api.UserFromContext(r.Context())
@@ -205,10 +222,17 @@ func (h *TemplateHandler) CreateChoreTemplate(w http.ResponseWriter, r *http.Req
 	}
 
 	var req struct {
-		GroupID      uuid.UUID `json:"group_id"`
-		Name         string    `json:"name"`
-		RotationType string    `json:"rotation_type"`
-		Frequency    string    `json:"frequency"`
+		GroupID        uuid.UUID `json:"group_id"`
+		Name           string    `json:"name"`
+		Description    *string   `json:"description"`
+		RotationType   string    `json:"rotation_type"`
+		Frequency      string    `json:"frequency"`
+		PeriodInterval int       `json:"period_interval"`
+		PeriodConfig   []string  `json:"period_config"`
+		TrackDateOnly  bool      `json:"track_date_only"`
+		Rollover       bool      `json:"rollover"`
+		AssignmentType string    `json:"assignment_type"`
+		Category       *string   `json:"category"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
@@ -216,10 +240,17 @@ func (h *TemplateHandler) CreateChoreTemplate(w http.ResponseWriter, r *http.Req
 	}
 
 	ct := &models.ChoreTemplate{
-		GroupID:      req.GroupID,
-		Name:         req.Name,
-		RotationType: req.RotationType,
-		Frequency:    req.Frequency,
+		GroupID:        req.GroupID,
+		Name:           req.Name,
+		Description:    req.Description,
+		RotationType:   req.RotationType,
+		Frequency:      req.Frequency,
+		PeriodInterval: normalizeTemplateInterval(req.PeriodInterval),
+		PeriodConfig:   req.PeriodConfig,
+		TrackDateOnly:  req.TrackDateOnly,
+		Rollover:       req.Rollover,
+		AssignmentType: defaultAssignmentType(req.AssignmentType),
+		Category:       req.Category,
 	}
 	if err := h.service.CreateChoreTemplate(r.Context(), user, ct); err != nil {
 		api.RespondError(w, err)
@@ -293,9 +324,16 @@ func (h *TemplateHandler) UpdateChoreTemplate(w http.ResponseWriter, r *http.Req
 	}
 
 	var req struct {
-		Name         string `json:"name"`
-		RotationType string `json:"rotation_type"`
-		Frequency    string `json:"frequency"`
+		Name           string   `json:"name"`
+		Description    *string  `json:"description"`
+		RotationType   string   `json:"rotation_type"`
+		Frequency      string   `json:"frequency"`
+		PeriodInterval int      `json:"period_interval"`
+		PeriodConfig   []string `json:"period_config"`
+		TrackDateOnly  bool     `json:"track_date_only"`
+		Rollover       bool     `json:"rollover"`
+		AssignmentType string   `json:"assignment_type"`
+		Category       *string  `json:"category"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
@@ -303,10 +341,17 @@ func (h *TemplateHandler) UpdateChoreTemplate(w http.ResponseWriter, r *http.Req
 	}
 
 	ct := &models.ChoreTemplate{
-		ID:           id,
-		Name:         req.Name,
-		RotationType: req.RotationType,
-		Frequency:    req.Frequency,
+		ID:             id,
+		Name:           req.Name,
+		Description:    req.Description,
+		RotationType:   req.RotationType,
+		Frequency:      req.Frequency,
+		PeriodInterval: normalizeTemplateInterval(req.PeriodInterval),
+		PeriodConfig:   req.PeriodConfig,
+		TrackDateOnly:  req.TrackDateOnly,
+		Rollover:       req.Rollover,
+		AssignmentType: defaultAssignmentType(req.AssignmentType),
+		Category:       req.Category,
 	}
 	ct, err = h.service.UpdateChoreTemplate(r.Context(), user, ct)
 	if err != nil {

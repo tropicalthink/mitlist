@@ -1,0 +1,2 @@
+ALTER TABLE chores
+DROP COLUMN IF EXISTS category;
