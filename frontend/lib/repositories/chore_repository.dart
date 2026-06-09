@@ -1,15 +1,21 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:uuid/uuid.dart';
 
 import '../models/chore_models.dart';
 import '../services/chore_service.dart';
+import '../services/sse_service.dart';
 import '../storage/app_database.dart';
 
 class ChoreRepository {
   final AppDatabase _db;
   final ChoreService _remote;
   final Uuid _uuid;
+
+  SseService? _sseService;
+  StreamSubscription<SseEvent>? _sseSub;
+  String? _sseGroupId;
 
   ChoreRepository({
     required AppDatabase db,
@@ -121,6 +127,41 @@ class ChoreRepository {
         await _db.markOutboxAttempt(op.id, error: 'Something went wrong.');
         return;
       }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // SSE real-time sync
+  // ---------------------------------------------------------------------------
+
+  /// Start receiving real-time updates for [groupId] via SSE.
+  ///
+  /// On any chore mutation event the local cache is refreshed, which causes
+  /// the existing [watchCurrentChores] Drift stream to fire.
+  void attachSse(SseService sseService, String groupId) {
+    if (_sseService == sseService && _sseGroupId == groupId) return;
+    _sseSub?.cancel();
+    _sseService = sseService;
+    _sseGroupId = groupId;
+    // SSE connection is shared with ListRepository; connect is idempotent.
+    sseService.connect(groupId);
+    _sseSub = sseService.events.listen(_handleSseEvent);
+  }
+
+  void detachSse() {
+    _sseSub?.cancel();
+    _sseSub = null;
+    _sseService = null;
+    _sseGroupId = null;
+  }
+
+  Future<void> _handleSseEvent(SseEvent event) async {
+    if (_sseGroupId == null) return;
+    switch (event.type) {
+      case 'chore:completed':
+      case 'chore:skipped':
+      case 'chore:rescheduled':
+        await refreshCurrentChores(_sseGroupId!);
     }
   }
 

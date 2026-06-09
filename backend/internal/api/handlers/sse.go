@@ -11,8 +11,8 @@ import (
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/middleware"
 	"github.com/mitlist-app/mitlist/internal/sse"
-	jwtservice "github.com/mitlist-app/mitlist/internal/services/jwt"
 	userservice "github.com/mitlist-app/mitlist/internal/services"
+	jwtservice "github.com/mitlist-app/mitlist/internal/services/jwt"
 )
 
 // SSEHandler serves Server-Sent Events for real-time group updates.
@@ -62,6 +62,11 @@ func (h *SSEHandler) Events(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("X-Accel-Buffering", "no") // disable nginx buffering
+
+	// Clear the server's write deadline for this connection — SSE is long-lived
+	// and the global WriteTimeout in server.go would otherwise kill it after 30s.
+	rc := http.NewResponseController(w)
+	_ = rc.SetWriteDeadline(time.Time{})
 
 	ch := h.hub.Subscribe(groupID)
 	defer h.hub.Unsubscribe(groupID, ch)

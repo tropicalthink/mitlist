@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -17,12 +18,22 @@ const _prefKey = 'fcm_token_registered';
 /// The service registers the FCM token with the backend so the server can
 /// send push notifications to this device.
 ///
+/// Subscribe to [FcmService.onForegroundMessage] to show in-app banners
+/// for notifications that arrive while the app is open.
+///
 /// Prerequisites (one-time project setup):
 ///   Android — add google-services.json to android/app/
 ///   iOS     — add GoogleService-Info.plist to ios/Runner/ and enable
 ///             Push Notifications + Background Modes capabilities in Xcode.
 class FcmService {
   static final Logger _log = Logger();
+
+  static final StreamController<RemoteMessage> _foregroundController =
+      StreamController<RemoteMessage>.broadcast();
+
+  /// Fires when a push notification is received while the app is in the foreground.
+  static Stream<RemoteMessage> get onForegroundMessage =>
+      _foregroundController.stream;
 
   /// Initialise Firebase and register the FCM device token with the backend.
   ///
@@ -60,6 +71,12 @@ class FcmService {
 
     messaging.onTokenRefresh.listen((newToken) {
       _registerToken(dio, newToken);
+    });
+
+    // Foreground messages — the OS won't show a heads-up automatically when
+    // the app is open; emit on the stream so the UI can display a banner.
+    FirebaseMessaging.onMessage.listen((message) {
+      _foregroundController.add(message);
     });
   }
 

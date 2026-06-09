@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' show PlatformDispatcher;
 
 import 'package:flutter/foundation.dart' show kReleaseMode;
@@ -22,6 +23,9 @@ class MitlistApp extends ConsumerStatefulWidget {
 
 class _MitlistAppState extends ConsumerState<MitlistApp>
     with WidgetsBindingObserver {
+  final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+  StreamSubscription? _fcmSub;
+
   @override
   void initState() {
     super.initState();
@@ -55,11 +59,36 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
 
   void _initPushSubscriptions() {
     PushSubscriptionService().init();
-    FcmService.init(createApiClient());
+    FcmService.init(createApiClient()).then((_) {
+      _fcmSub = FcmService.onForegroundMessage.listen((message) {
+        final title = message.notification?.title;
+        final body = message.notification?.body;
+        if (title == null && body == null) return;
+        _scaffoldMessengerKey.currentState
+          ?..clearSnackBars()
+          ..showSnackBar(
+            SnackBar(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (title != null)
+                    Text(title,
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                  if (body != null) Text(body),
+                ],
+              ),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+      });
+    });
   }
 
   @override
   void dispose() {
+    _fcmSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -80,6 +109,7 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
     return MaterialApp.router(
       title: 'mitlist',
       debugShowCheckedModeBanner: false,
+      scaffoldMessengerKey: _scaffoldMessengerKey,
       theme: MitlistTheme.light,
       darkTheme: MitlistTheme.dark,
       themeMode: themeMode,
