@@ -1,0 +1,21 @@
+mitlist is the shared household coordination app that puts you in control. Split expenses, rotate chores, manage shopping lists, and plan meals — all in one place. No subscriptions, no ads, no lock-in.
+
+WHY MITLIST
+You're already paying rent. Why pay another subscription for apps that do less? mitlist is free and open source. Host it yourself in 5 minutes with Docker.
+
+CORE FEATURES
+• Expense splitting — Equal, exact, %, or shares. Settlement tracking with reimbursement suggestions. Recurring expenses handled automatically.
+• Chore rotation — Round-robin, fixed, or cron schedules. Subtasks, skip, undo, reschedule. Load tracking to see who's pulling their weight.
+• Shopping lists — Shared lists with item claiming, cost tracking, and one-tap expense generation.
+• Meal plans + recipes — Weekly planner, recipe clipping via AI, auto-generate shopping lists from meal plans.
+• Calendar — Unified view of chores, meals, expenses, and reminders.
+• Pinwall — Household notices, reminders, and announcements.
+• Offline-first — Works without internet. Syncs when you're back online.
+• Scanner — OCR recipes, receipts, and lists from photos.
+• Multi-household — Switch between groups. One account, many households.
+
+YOUR DATA, YOUR RULES
+No account required on self-hosted instances. Export expenses as CSV or JSON anytime. No telemetry, no usage tracking. Open source (AGPL-3.0).
+
+PRICE
+Free. No in-app purchases. No subscriptions. No ads.
