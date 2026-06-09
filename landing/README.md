@@ -1,6 +1,6 @@
-# Mitlist landing
+# mitlist landing
 
-Marketing site for Mitlist, built with [Astro](https://astro.build). The visual
+Marketing site for mitlist, built with [Astro](https://astro.build). The visual
 system is pulled 1:1 from the Flutter app (`frontend/lib/theme/colors.dart`):
 neo-brutalist warm-paper desk, hard 90° corners, 2px ink borders, flat offset
 shadows, Space Grotesk, orange `#F97316` on ink `#1A1714`.

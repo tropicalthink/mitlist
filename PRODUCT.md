@@ -10,7 +10,7 @@ Flatmates and household members sharing a living space. They coordinate everyday
 
 ## Product Purpose
 
-Shared household coordination for lists, money, chores, and recipes. Mitlist reduces the friction of living with other people: who owes what, what needs doing, what to buy. Success looks like a household that runs without anyone having to chase anyone else.
+Shared household coordination for lists, money, chores, and recipes. mitlist reduces the friction of living with other people: who owes what, what needs doing, what to buy. Success looks like a household that runs without anyone having to chase anyone else.
 
 ## Brand Personality
 
@@ -19,8 +19,8 @@ Direct, warm, practical. No corporate polish, no gamification. The interface has
 ## Anti-references
 
 - **Generic Material Design**: Default blue-and-white Android look, no personality, indistinguishable from a thousand other apps.
-- **Notion / Obsidian**: Too tool-like and monochromatic. Mitlist is for people, not power users. It has warmth.
-- **Pastel lifestyle apps**: Soft gradients, rounded corners, Instagram-aesthetic productivity. Splitwise's softness, Any.do's prettiness. Mitlist should feel grounded, not decorative.
+- **Notion / Obsidian**: Too tool-like and monochromatic. mitlist is for people, not power users. It has warmth.
+- **Pastel lifestyle apps**: Soft gradients, rounded corners, Instagram-aesthetic productivity. Splitwise's softness, Any.do's prettiness. mitlist should feel grounded, not decorative.
 
 ## Design Principles
 

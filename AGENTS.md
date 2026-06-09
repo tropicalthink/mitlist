@@ -55,18 +55,18 @@ docker compose up -d        # Start postgres + redis
 
 ## Design System
 
-Brand: warm, punchy, organized. Orange primary (`MitlistColors.primary500` = `#F97316`).
+Brand: warm, punchy, organized. Orange primary (`mitlistColors.primary500` = `#F97316`).
 - Typography: Space Grotesk (headings) + JetBrains Mono (mono)
 - Borders: 2px outlines, square geometry (`BorderRadius.zero`)
-- Components: `AppCard`, `AppButton`, `AppIcon`, `MitlistAppBar` — use these instead of raw Material widgets
-- Spacing: Use `MitlistSpacing` tokens (xs=4, sm=8, md=16, lg=24, xl=32, xxl=48)
-- Colors: Use `MitlistColors` — never hardcode `Color(0x...)`
+- Components: `AppCard`, `AppButton`, `AppIcon`, `mitlistAppBar` — use these instead of raw Material widgets
+- Spacing: Use `mitlistSpacing` tokens (xs=4, sm=8, md=16, lg=24, xl=32, xxl=48)
+- Colors: Use `mitlistColors` — never hardcode `Color(0x...)`
 - Both light and dark mode must be supported
 
 ## Anti-Patterns to Avoid
 - Raw `AppBar()`, `Card()`, `FloatingActionButton()`, `OutlinedButton()`, `FilledButton()` — use design system components
-- `Color(0x...)` — use `MitlistColors` tokens
-- Hardcoded pixel values — use `MitlistSpacing`
+- `Color(0x...)` — use `mitlistColors` tokens
+- Hardcoded pixel values — use `mitlistSpacing`
 - `VisualDensity.compact` or `MaterialTapTargetSize.shrinkWrap` on touch targets (must be ≥44dp)
 - Missing `tooltip` on `IconButton` widgets
 - Missing `Semantics` labels on image/gesture interactions
