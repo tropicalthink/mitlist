@@ -787,6 +787,16 @@ FROM list_items_table;
         .getSingleOrNull();
   }
 
+  /// Loads all non-deleted aliases for a household + global seed aliases.
+  /// Used by the fuzzy resolver when no exact match is found.
+  Future<List<ItemAliasesTableData>> getItemAliasesForFuzzy(String groupId) {
+    return (select(itemAliasesTable)
+          ..where((t) =>
+              (t.groupId.equals(groupId) | t.groupId.equals('__global__')) &
+              t.deletedAt.isNull()))
+        .get();
+  }
+
   Future<void> upsertItemAliases(
       Iterable<ItemAliasesTableCompanion> rows) async {
     await batch((b) {

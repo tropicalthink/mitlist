@@ -161,6 +161,10 @@ func main() {
 			assistantHandler := handlers.NewAssistantHandler(cnt.AssistantService())
 		assistantHandler.RegisterRoutes(r)
 
+			// Grocery graph sync
+			groceryHandler := handlers.NewGroceryHandler(cnt.GroceryService())
+			groceryHandler.RegisterRoutes(r)
+
 		// Share Target
 		shareHandler := handlers.NewShareHandler(cnt.ShareService())
 		shareHandler.RegisterRoutes(r)
