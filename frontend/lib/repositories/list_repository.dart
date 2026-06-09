@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
@@ -5,12 +6,16 @@ import 'package:uuid/uuid.dart';
 
 import '../models/list_models.dart';
 import '../services/list_service.dart';
+import '../services/sse_service.dart';
 import '../storage/app_database.dart';
 
 class ListRepository {
   final AppDatabase _db;
   final ListService _remote;
   final Uuid _uuid;
+
+  SseService? _sseService;
+  StreamSubscription<SseEvent>? _sseSub;
 
   ListRepository({
     required AppDatabase db,
@@ -278,6 +283,59 @@ class ListRepository {
 
     await _remote.deleteItem(listId, itemId);
     await _db.deleteOutboxOp(opId);
+  }
+
+  // ---------------------------------------------------------------------------
+  // SSE real-time sync
+  // ---------------------------------------------------------------------------
+
+  /// Start receiving real-time updates for [groupId] via SSE.
+  ///
+  /// Events that mutate list items are applied directly to local SQLite,
+  /// which causes the existing [watchItemsByList] Drift streams to fire.
+  void attachSse(SseService sseService, String groupId) {
+    if (_sseService == sseService) return;
+    _sseSub?.cancel();
+    _sseService = sseService;
+    sseService.connect(groupId);
+    _sseSub = sseService.events.listen(_handleSseEvent);
+  }
+
+  /// Stop the active SSE subscription without closing the service itself.
+  void detachSse() {
+    _sseSub?.cancel();
+    _sseSub = null;
+    _sseService = null;
+  }
+
+  Future<void> _handleSseEvent(SseEvent event) async {
+    switch (event.type) {
+      case 'list:item_created':
+      case 'list:item_updated':
+        final item = _itemFromPayload(event.payload);
+        if (item != null) {
+          await _db.upsertListItemsRows([_toListItemsRow(item)]);
+        }
+      case 'list:item_deleted':
+        final id = event.payload['id'] as String?;
+        if (id != null) {
+          await (_db.delete(_db.listItemsTable)..where((t) => t.id.equals(id)))
+              .go();
+        }
+      case 'list:items_cleared':
+        final listId = event.payload['list_id'] as String?;
+        if (listId != null) {
+          await refreshItems(listId);
+        }
+    }
+  }
+
+  ListItem? _itemFromPayload(Map<String, dynamic> payload) {
+    try {
+      return ListItem.fromJson(payload);
+    } catch (_) {
+      return null;
+    }
   }
 
   // ---------------------------------------------------------------------------

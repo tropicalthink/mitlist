@@ -61,3 +61,24 @@ func (m *MockAuthRepo) DeletePushSubscription(ctx context.Context, id uuid.UUID)
 	args := m.Called(ctx, id)
 	return args.Error(0)
 }
+
+func (m *MockAuthRepo) SaveDeviceToken(ctx context.Context, userID uuid.UUID, platform, token string) (*models.DeviceToken, error) {
+	args := m.Called(ctx, userID, platform, token)
+	if dt := args.Get(0); dt != nil {
+		return dt.(*models.DeviceToken), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockAuthRepo) ListDeviceTokensByUser(ctx context.Context, userID uuid.UUID) ([]models.DeviceToken, error) {
+	args := m.Called(ctx, userID)
+	if tokens := args.Get(0); tokens != nil {
+		return tokens.([]models.DeviceToken), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockAuthRepo) DeleteDeviceToken(ctx context.Context, userID, id uuid.UUID) error {
+	args := m.Called(ctx, userID, id)
+	return args.Error(0)
+}

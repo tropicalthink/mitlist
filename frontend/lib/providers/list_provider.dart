@@ -2,7 +2,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/list_models.dart';
 import '../repositories/list_repository.dart';
 import '../services/list_service.dart';
+import '../services/sse_service.dart';
 import '../storage/app_database.dart';
+
+/// Singleton SSE service. Disposed when the Riverpod container tears down.
+final sseServiceProvider = Provider<SseService>((ref) {
+  final svc = SseService();
+  ref.onDispose(svc.dispose);
+  return svc;
+});
 
 final listServiceProviderAsync = FutureProvider<ListService>((ref) async {
   return await ListService.create(ref);

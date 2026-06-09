@@ -6,8 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'theme/theme.dart';
 import 'router.dart';
 import 'providers/outbox_provider.dart';
+import 'services/api_client.dart' show createApiClient;
 import 'providers/theme_provider.dart';
 import 'services/error_reporter.dart';
+import 'services/fcm_service.dart';
 import 'services/push_subscription_service.dart';
 import 'widgets/offline_banner.dart';
 
@@ -53,6 +55,7 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
 
   void _initPushSubscriptions() {
     PushSubscriptionService().init();
+    FcmService.init(createApiClient());
   }
 
   @override

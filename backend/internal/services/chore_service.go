@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"crypto/rand"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
@@ -15,6 +16,7 @@ import (
 	"github.com/mitlist-app/mitlist/internal/choreschedule"
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/repositories"
+	"github.com/mitlist-app/mitlist/internal/sse"
 )
 
 // ChoreService provides business logic for chores and deterministic rotation.
@@ -22,6 +24,7 @@ type ChoreService struct {
 	choreRepo repositories.ChoreRepo
 	groupRepo repositories.GroupRepo
 	listRepo  repositories.ListRepo
+	hub       *sse.Hub // optional; nil disables SSE broadcasts
 }
 
 // NewChoreService creates a new ChoreService.
@@ -31,6 +34,22 @@ func NewChoreService(choreRepo repositories.ChoreRepo, groupRepo repositories.Gr
 		groupRepo: groupRepo,
 		listRepo:  listRepo,
 	}
+}
+
+// SetHub injects the SSE hub for real-time event broadcasts.
+func (s *ChoreService) SetHub(h *sse.Hub) { s.hub = h }
+
+// publishChore emits an SSE event for a chore state change.
+func (s *ChoreService) publishChore(eventType string, groupID, choreID uuid.UUID) {
+	if s.hub == nil {
+		return
+	}
+	data, _ := json.Marshal(map[string]string{"chore_id": choreID.String()})
+	s.hub.Publish(groupID.String(), sse.Event{
+		Type:    eventType,
+		GroupID: groupID.String(),
+		Payload: data,
+	})
 }
 
 func (s *ChoreService) requireActiveVerifiedUser(u *models.User) error {
@@ -396,7 +415,11 @@ func (s *ChoreService) CompleteChore(ctx context.Context, user *models.User, cho
 		return fmt.Errorf("failed to get rotation state: %w", err)
 	}
 
-	return s.rotateAndAssign(ctx, chore, state)
+	if err := s.rotateAndAssign(ctx, chore, state); err != nil {
+		return err
+	}
+	s.publishChore("chore:completed", chore.GroupID, choreID)
+	return nil
 }
 
 // SkipChore marks the current pending assignment as skipped and rotates.
@@ -444,7 +467,11 @@ func (s *ChoreService) SkipChore(ctx context.Context, user *models.User, choreID
 		return fmt.Errorf("failed to get rotation state: %w", err)
 	}
 
-	return s.rotateAndAssign(ctx, chore, state)
+	if err := s.rotateAndAssign(ctx, chore, state); err != nil {
+		return err
+	}
+	s.publishChore("chore:skipped", chore.GroupID, choreID)
+	return nil
 }
 
 // RescheduleChore updates the current pending assignment's due date and assignee.
@@ -486,6 +513,7 @@ func (s *ChoreService) RescheduleChore(ctx context.Context, user *models.User, c
 	if err := s.choreRepo.UpdateAssignment(ctx, assignment); err != nil {
 		return fmt.Errorf("failed to reschedule assignment: %w", err)
 	}
+	s.publishChore("chore:rescheduled", chore.GroupID, choreID)
 	return nil
 }
 

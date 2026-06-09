@@ -15,6 +15,7 @@ import (
 	oauthclient "github.com/mitlist-app/mitlist/internal/services/oauth"
 	passwordservice "github.com/mitlist-app/mitlist/internal/services/password"
 	pushservice "github.com/mitlist-app/mitlist/internal/services/push"
+	"github.com/mitlist-app/mitlist/internal/sse"
 	storagesvc "github.com/mitlist-app/mitlist/internal/services/storage"
 	"github.com/mitlist-app/mitlist/pkg/logger"
 )
@@ -157,6 +158,8 @@ type Container struct {
 
 	aiClientOnce sync.Once
 	aiClient     *aiservice.Client
+
+	sseHub *sse.Hub
 }
 
 // New wires shared infrastructure into a dependency container.
@@ -406,6 +409,7 @@ func (c *Container) OAuthService() *services.OAuthService {
 func (c *Container) ListService() *services.ListService {
 	c.listServiceOnce.Do(func() {
 		c.listService = services.NewListService(c.ListRepo(), c.GroupRepo())
+		c.listService.SetHub(c.SSEHub())
 	})
 	return c.listService
 }
@@ -422,6 +426,7 @@ func (c *Container) TemplateService() *services.TemplateService {
 func (c *Container) ChoreService() *services.ChoreService {
 	c.choreServiceOnce.Do(func() {
 		c.choreService = services.NewChoreService(c.ChoreRepo(), c.GroupRepo(), c.ListRepo())
+		c.choreService.SetHub(c.SSEHub())
 	})
 	return c.choreService
 }
@@ -543,6 +548,14 @@ func (c *Container) ShareService() *services.ShareService {
 		c.shareService = services.NewShareService(c.ListRepo(), c.RecipeRepo(), c.GroupRepo())
 	})
 	return c.shareService
+}
+
+// SSEHub returns the singleton SSE hub for real-time broadcasts.
+func (c *Container) SSEHub() *sse.Hub {
+	if c.sseHub == nil {
+		c.sseHub = sse.New()
+	}
+	return c.sseHub
 }
 
 // AIClient returns the singleton AI client.
