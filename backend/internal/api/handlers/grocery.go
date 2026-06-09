@@ -25,6 +25,7 @@ func NewGroceryHandler(svc *services.GroceryService) *GroceryHandler {
 func (h *GroceryHandler) RegisterRoutes(r chi.Router) {
 	r.Get("/groups/{groupID}/grocery/graph", h.GetGraph)
 	r.Post("/groups/{groupID}/grocery/corrections", h.RecordCorrection)
+	r.Patch("/groups/{groupID}/grocery/aisles", h.UpdateAisles)
 }
 
 // GetGraph returns the delta since a client cursor.
@@ -50,6 +51,34 @@ func (h *GroceryHandler) GetGraph(w http.ResponseWriter, r *http.Request) {
 	}
 
 	api.RespondJSON(w, http.StatusOK, delta)
+}
+
+// UpdateAisles persists drag-to-reorder aisle feedback from the review screen.
+func (h *GroceryHandler) UpdateAisles(w http.ResponseWriter, r *http.Request) {
+	userID := RequireUser(w, r)
+	if userID == uuid.Nil {
+		return
+	}
+
+	groupID, err := parseUUIDParam(r, "groupID")
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+
+	var req services.AisleFeedbackRequest
+	if err := decodeJSON(r, &req); err != nil {
+		api.RespondError(w, err)
+		return
+	}
+
+	version, err := h.svc.UpdateAisles(r.Context(), userID, groupID, req)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+
+	api.RespondJSON(w, http.StatusOK, map[string]any{"version": version})
 }
 
 // RecordCorrection records a confirmed alias correction and notifies other devices.

@@ -254,6 +254,39 @@ func (r *GroceryRepository) InsertCorrection(ctx context.Context, c *models.Corr
 	return err
 }
 
+// AisleFeedbackItem is a single drag-to-reorder event from the client.
+type AisleFeedbackItem struct {
+	CanonicalItemID uuid.UUID  `json:"canonical_item_id"`
+	StoreID         *uuid.UUID `json:"store_id,omitempty"`
+	Aisle           string     `json:"aisle"`
+	SortOrder       int        `json:"sort_order"`
+}
+
+// UpsertAislesBatch persists a batch of aisle feedback rows from the client.
+func (r *GroceryRepository) UpsertAislesBatch(ctx context.Context, groupID uuid.UUID, items []AisleFeedbackItem, version int64) error {
+	now := time.Now().UTC()
+	for _, item := range items {
+		query := `
+			INSERT INTO store_aisles
+				(id, group_id, store_id, canonical_item_id, aisle, sort_order, confidence, version, created_at, updated_at)
+			VALUES ($1, $2, $3, $4, $5, $6, 1.0, $7, $8, $8)
+			ON CONFLICT (group_id, store_id, canonical_item_id) DO UPDATE
+				SET aisle      = EXCLUDED.aisle,
+				    sort_order = EXCLUDED.sort_order,
+				    confidence = 1.0,
+				    version    = EXCLUDED.version,
+				    updated_at = EXCLUDED.updated_at`
+		_, err := r.pool.Exec(ctx, query,
+			uuid.New(), groupID, item.StoreID, item.CanonicalItemID,
+			item.Aisle, item.SortOrder, version, now,
+		)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // UpsertAlias writes or increments an item_aliases row for a confirmed alias correction.
 func (r *GroceryRepository) UpsertAlias(ctx context.Context, groupID, canonicalItemID uuid.UUID, aliasText, lang, source string, version int64) error {
 	if aliasText == "" {

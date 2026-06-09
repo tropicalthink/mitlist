@@ -2,11 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../models/list_models.dart';
 import '../../providers/grocery_provider.dart';
 import '../../providers/list_provider.dart';
+import '../../repositories/grocery_repository.dart';
 import '../../services/scan/scan_models.dart';
+import '../../services/scan/suggestion_service.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
@@ -16,6 +19,29 @@ import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
 import '../../widgets/mitlist_app_bar.dart';
+
+const _uuid = Uuid();
+
+/// A single entry in the flat, reorderable list — either an aisle section
+/// header or an actual prediction item.
+class _FlatEntry {
+  final bool isHeader;
+  final String? aisleLabel;
+  final GroceryPrediction? prediction;
+  final int? itemIndex; // index in the owner's _items list
+
+  const _FlatEntry.header(String label)
+      : isHeader = true,
+        aisleLabel = label,
+        prediction = null,
+        itemIndex = null;
+
+  const _FlatEntry.item(GroceryPrediction p, int idx)
+      : isHeader = false,
+        aisleLabel = null,
+        prediction = p,
+        itemIndex = idx;
+}
 
 class ScanReviewScreen extends ConsumerStatefulWidget {
   final GroceryScanResult scanResult;
@@ -38,15 +64,188 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
   late List<GroceryPrediction> _ignored;
   bool _isAdding = false;
 
+  // Phase 5: store picker
+  List<ShoppingLocation> _stores = [];
+  ShoppingLocation? _activeStore;
+
+  // Phase 6: suggestions
+  List<GrocerySuggestion> _suggestions = [];
+
   @override
   void initState() {
     super.initState();
     _items = List.of(widget.scanResult.items);
     _ignored = List.of(widget.scanResult.ignored);
+    _loadStores();
+    _loadSuggestions();
   }
 
   // ---------------------------------------------------------------------------
-  // Item editing helpers
+  // Phase 5: store picker + aisle refresh
+  // ---------------------------------------------------------------------------
+
+  Future<void> _loadStores() async {
+    if (!mounted) return;
+    try {
+      final svc = await ref.read(listServiceProviderAsync.future);
+      final stores = await svc.listShoppingLocations(widget.groupId);
+      if (!mounted) return;
+      setState(() {
+        _stores = stores;
+        _activeStore = stores.isNotEmpty ? stores.first : null;
+      });
+      if (_activeStore != null) await _refreshAisles(_activeStore!.id);
+    } catch (_) {
+      // Stores are optional; continue without store picker on error.
+    }
+  }
+
+  Future<void> _refreshAisles(String storeId) async {
+    final db = ref.read(appDatabaseProvider);
+    final aisles = await db.getStoreAisles(
+      groupId: widget.groupId,
+      storeId: storeId,
+    );
+    if (!mounted) return;
+    final aisleMap = {for (final a in aisles) a.canonicalItemId: a};
+    setState(() {
+      _items = _items.map((p) {
+        if (p.canonicalItemId == null) return p;
+        final a = aisleMap[p.canonicalItemId];
+        if (a == null) return p;
+        return p.copyWith(aisle: a.aisle, aisleSortOrder: a.sortOrder);
+      }).toList();
+      _items.sort((a, b) => a.aisleSortOrder.compareTo(b.aisleSortOrder));
+    });
+  }
+
+  void _onStoreChanged(ShoppingLocation? store) {
+    if (store == null) return;
+    setState(() => _activeStore = store);
+    unawaited(_refreshAisles(store.id));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Phase 5: drag-to-reorder
+  // ---------------------------------------------------------------------------
+
+  List<_FlatEntry> _buildFlatEntries() {
+    String? currentAisle;
+    final entries = <_FlatEntry>[];
+    for (int i = 0; i < _items.length; i++) {
+      final item = _items[i];
+      final aisle = item.aisle ?? 'Other';
+      if (aisle != currentAisle) {
+        entries.add(_FlatEntry.header(aisle));
+        currentAisle = aisle;
+      }
+      entries.add(_FlatEntry.item(item, i));
+    }
+    return entries;
+  }
+
+  void _onReorder(int oldFlat, int newFlat) {
+    final entries = _buildFlatEntries();
+    if (oldFlat >= entries.length) return;
+    if (entries[oldFlat].isHeader) return; // headers aren't reorderable
+
+    // Flutter calls onReorder with newIndex AFTER the removal.
+    if (newFlat > oldFlat) newFlat--;
+
+    // Clamp to valid item slots (skip header destinations).
+    while (newFlat < entries.length && entries[newFlat].isHeader) {
+      newFlat++;
+    }
+    if (newFlat >= entries.length) newFlat = entries.length - 1;
+    while (newFlat > 0 && entries[newFlat].isHeader) {
+      newFlat--;
+    }
+    if (newFlat < 0 || entries[newFlat].isHeader) return;
+
+    final srcIdx = entries[oldFlat].itemIndex!;
+    final dstIdx = entries[newFlat].itemIndex!;
+    if (srcIdx == dstIdx) return;
+
+    setState(() {
+      final moved = _items.removeAt(srcIdx);
+      // Determine new aisle from surrounding items.
+      final newAisle = _aisleForInsertionPoint(dstIdx, entries, newFlat);
+      final reinserted = moved.copyWith(aisle: newAisle);
+      _items.insert(dstIdx, reinserted);
+      _renumberSortOrders();
+    });
+    unawaited(_uploadAisleFeedback());
+  }
+
+  /// Infers the aisle name for the position around [flatIdx] in [entries].
+  String _aisleForInsertionPoint(
+      int flatIdx, List<_FlatEntry> entries, int nearFlat) {
+    // Scan backwards from the flat destination for the nearest header.
+    for (int i = nearFlat; i >= 0; i--) {
+      if (entries[i].isHeader) return entries[i].aisleLabel!;
+    }
+    return _items.isNotEmpty ? (_items.first.aisle ?? 'Other') : 'Other';
+  }
+
+  void _renumberSortOrders() {
+    for (int i = 0; i < _items.length; i++) {
+      _items[i] = _items[i].copyWith(aisleSortOrder: (i + 1) * 10);
+    }
+  }
+
+  Future<void> _uploadAisleFeedback() async {
+    final storeId = _activeStore?.id;
+    final groceryRepo = await ref.read(groceryRepositoryProvider.future);
+    final entries = _items
+        .where((p) => p.canonicalItemId != null)
+        .map((p) => AisleFeedbackEntry(
+              id: _uuid.v4(),
+              canonicalItemId: p.canonicalItemId!,
+              storeId: storeId,
+              aisle: p.aisle ?? 'Other',
+              sortOrder: p.aisleSortOrder,
+            ))
+        .toList();
+    await groceryRepo.updateAisleFeedback(
+        groupId: widget.groupId, entries: entries);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Phase 6: suggestions
+  // ---------------------------------------------------------------------------
+
+  Future<void> _loadSuggestions() async {
+    final db = ref.read(appDatabaseProvider);
+    final presentIds = _items
+        .map((p) => p.canonicalItemId)
+        .whereType<String>()
+        .toList();
+    if (presentIds.isEmpty) return;
+    final svc = SuggestionService(db);
+    final suggestions = await svc.suggest(
+      groupId: widget.groupId,
+      presentCanonicalIds: presentIds,
+    );
+    if (mounted) setState(() => _suggestions = suggestions);
+  }
+
+  void _addSuggestion(GrocerySuggestion suggestion) {
+    final newItem = GroceryPrediction(
+      id: _uuid.v4(),
+      rawText: suggestion.displayName,
+      displayName: suggestion.displayName,
+      canonicalItemId: suggestion.canonicalItemId,
+      confidenceLevel: ConfidenceLevel.autoAccept,
+      confidenceScore: 1.0,
+    );
+    setState(() {
+      _items.add(newItem);
+      _suggestions.removeWhere((s) => s.canonicalItemId == suggestion.canonicalItemId);
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Item editing
   // ---------------------------------------------------------------------------
 
   void _updateItem(int index, GroceryPrediction updated) {
@@ -69,10 +268,6 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
     });
   }
 
-  // ---------------------------------------------------------------------------
-  // Confirm-all: accept everything in review/ask state without editing
-  // ---------------------------------------------------------------------------
-
   void _acceptAll() {
     setState(() {
       _items = _items
@@ -82,7 +277,7 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // Add to list flow
+  // Add to list
   // ---------------------------------------------------------------------------
 
   Future<void> _addToList() async {
@@ -95,8 +290,6 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
     final groceryRepo = await ref.read(groceryRepositoryProvider.future);
     final repo = await ref.read(listRepositoryProvider.future);
 
-    // Save any corrections (items where user changed the display name).
-    // Write locally first, then upload asynchronously so it reaches other devices.
     for (final item in _items) {
       if (item.canonicalItemId != null &&
           item.rawText.toLowerCase() != item.displayName.toLowerCase()) {
@@ -106,7 +299,6 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
           rawText: item.rawText,
           canonicalItemId: item.canonicalItemId!,
         );
-        // Best-effort upload — failure is silent, local alias already written.
         unawaited(groceryRepo.uploadCorrection(
           groupId: widget.groupId,
           rawText: item.rawText,
@@ -115,7 +307,6 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
       }
     }
 
-    // Create all items in parallel for speed.
     await Future.wait(_items.map((p) => repo.createItemOfflineFirst(
           listId,
           CreateListItemRequest(
@@ -168,6 +359,7 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
     final pendingCount = _items
         .where((p) => p.confidenceLevel != ConfidenceLevel.autoAccept)
         .length;
+    final flatEntries = _buildFlatEntries();
 
     return Scaffold(
       appBar: MitlistAppBar.titleText(
@@ -212,64 +404,123 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
               ),
             ),
 
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(MitlistSpacing.md),
-              children: [
-                if (_items.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xl),
-                    child: Center(
-                      child: Text(
-                        'No items detected',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
-                      ),
-                    ),
-                  )
-                else ...[
-                  ..._items.asMap().entries.map((e) => _PredictionTile(
-                        key: ValueKey(e.value.id),
-                        prediction: e.value,
-                        onChanged: (updated) => _updateItem(e.key, updated),
-                        onRemove: () => _removeItem(e.key),
-                      )),
-                ],
-
-                // Ignored section
-                if (_ignored.isNotEmpty) ...[
-                  const SizedBox(height: MitlistSpacing.lg),
+          // Store picker (Phase 5)
+          if (_stores.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                MitlistSpacing.md, MitlistSpacing.sm, MitlistSpacing.md, 0),
+              child: Row(
+                children: [
+                  Icon(Icons.store_outlined,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  const SizedBox(width: MitlistSpacing.xs),
                   Text(
-                    'Ignored',
+                    'Store:',
                     style: MitlistTypography.labelXSmall(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(height: MitlistSpacing.sm),
-                  ..._ignored.asMap().entries.map((e) => _IgnoredTile(
-                        prediction: e.value,
-                        onRestore: () => _restoreIgnored(e.key),
-                      )),
+                  const SizedBox(width: MitlistSpacing.xs),
+                  DropdownButton<ShoppingLocation>(
+                    value: _activeStore,
+                    underline: const SizedBox.shrink(),
+                    isDense: true,
+                    items: _stores
+                        .map((s) => DropdownMenuItem(
+                              value: s,
+                              child: Text(s.name,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall),
+                            ))
+                        .toList(),
+                    onChanged: _onStoreChanged,
+                  ),
                 ],
-              ],
+              ),
+            ),
+
+          Expanded(
+            child: ReorderableListView.builder(
+              padding: const EdgeInsets.all(MitlistSpacing.md),
+              buildDefaultDragHandles: false,
+              onReorder: _onReorder,
+              itemCount: flatEntries.length +
+                  (_ignored.isNotEmpty ? _ignored.length + 2 : 0) +
+                  (_suggestions.isNotEmpty ? _suggestions.length + 2 : 0),
+              itemBuilder: (context, index) {
+                // Main items + headers
+                if (index < flatEntries.length) {
+                  final entry = flatEntries[index];
+                  if (entry.isHeader) {
+                    return _AisleHeader(
+                      key: ValueKey('h_${entry.aisleLabel}'),
+                      label: entry.aisleLabel!,
+                    );
+                  }
+                  final itemIdx = entry.itemIndex!;
+                  return _PredictionTile(
+                    key: ValueKey('i_${entry.prediction!.id}'),
+                    index: itemIdx,
+                    prediction: entry.prediction!,
+                    onChanged: (u) => _updateItem(itemIdx, u),
+                    onRemove: () => _removeItem(itemIdx),
+                  );
+                }
+
+                // Suggestions section (Phase 6)
+                final afterItems = index - flatEntries.length;
+                if (_suggestions.isNotEmpty) {
+                  if (afterItems == 0) {
+                    return _SectionLabel(
+                      key: const ValueKey('sug_header'),
+                      label: 'You might also need',
+                    );
+                  }
+                  if (afterItems == 1) {
+                    return _SuggestionRow(
+                      key: const ValueKey('sug_chips'),
+                      suggestions: _suggestions,
+                      onAdd: _addSuggestion,
+                    );
+                  }
+                }
+
+                // Ignored section
+                final afterSuggestions = _suggestions.isNotEmpty
+                    ? afterItems - 2
+                    : afterItems;
+                if (_ignored.isNotEmpty) {
+                  if (afterSuggestions == 0) {
+                    return _SectionLabel(
+                      key: const ValueKey('ign_header'),
+                      label: 'Ignored',
+                    );
+                  }
+                  final ignoredIdx = afterSuggestions - 1;
+                  if (ignoredIdx >= 0 && ignoredIdx < _ignored.length) {
+                    return _IgnoredTile(
+                      key: ValueKey('ign_$ignoredIdx'),
+                      prediction: _ignored[ignoredIdx],
+                      onRestore: () => _restoreIgnored(ignoredIdx),
+                    );
+                  }
+                }
+
+                return const SizedBox.shrink(key: ValueKey('_noop'));
+              },
             ),
           ),
 
-          // Bottom action bar
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(MitlistSpacing.md),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppButton(
-                    text: _isAdding
-                        ? 'Adding…'
-                        : 'Add ${_items.length} item${_items.length == 1 ? '' : 's'} to list',
-                    onPressed: _items.isEmpty || _isAdding ? null : _addToList,
-                  ),
-                ],
+              child: AppButton(
+                text: _isAdding
+                    ? 'Adding…'
+                    : 'Add ${_items.length} item${_items.length == 1 ? '' : 's'} to list',
+                onPressed: _items.isEmpty || _isAdding ? null : _addToList,
               ),
             ),
           ),
@@ -280,16 +531,117 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
 }
 
 // ---------------------------------------------------------------------------
-// Prediction tile — shows one item with its confidence state
+// Aisle section header — non-draggable
+// ---------------------------------------------------------------------------
+
+class _AisleHeader extends StatelessWidget {
+  final String label;
+  const _AisleHeader({super.key, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(
+        top: MitlistSpacing.md,
+        bottom: MitlistSpacing.xs,
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.shopping_cart_outlined,
+              size: 12,
+              color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: MitlistSpacing.xs),
+          Text(
+            label.toUpperCase(),
+            style: MitlistTypography.labelXSmall(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          const SizedBox(width: MitlistSpacing.xs),
+          Expanded(
+            child: Divider(
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.25),
+              height: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Generic section label (Ignored / Suggestions)
+// ---------------------------------------------------------------------------
+
+class _SectionLabel extends StatelessWidget {
+  final String label;
+  const _SectionLabel({super.key, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(
+          top: MitlistSpacing.lg, bottom: MitlistSpacing.xs),
+      child: Text(
+        label,
+        style: MitlistTypography.labelXSmall(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Suggestion chips row (Phase 6)
+// ---------------------------------------------------------------------------
+
+class _SuggestionRow extends StatelessWidget {
+  final List<GrocerySuggestion> suggestions;
+  final ValueChanged<GrocerySuggestion> onAdd;
+
+  const _SuggestionRow({
+    super.key,
+    required this.suggestions,
+    required this.onAdd,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+      child: Wrap(
+        spacing: MitlistSpacing.xs,
+        runSpacing: MitlistSpacing.xs,
+        children: suggestions
+            .map((s) => Tooltip(
+                  message: s.reason,
+                  child: ActionChip(
+                    avatar: const Icon(Icons.add, size: 14),
+                    label: Text(s.displayName),
+                    onPressed: () => onAdd(s),
+                  ),
+                ))
+            .toList(),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Prediction tile — drag handle + confidence state
 // ---------------------------------------------------------------------------
 
 class _PredictionTile extends StatelessWidget {
+  final int index;
   final GroceryPrediction prediction;
   final ValueChanged<GroceryPrediction> onChanged;
   final VoidCallback onRemove;
 
   const _PredictionTile({
     super.key,
+    required this.index,
     required this.prediction,
     required this.onChanged,
     required this.onRemove,
@@ -314,9 +666,7 @@ class _PredictionTile extends StatelessWidget {
       child: AppCard(
         padding: AppCardPadding.none,
         child: InkWell(
-          onTap: needsAction
-              ? () => _openEditor(context)
-              : null,
+          onTap: needsAction ? () => _openEditor(context) : null,
           borderRadius: BorderRadius.circular(12),
           child: Container(
             decoration: BoxDecoration(
@@ -325,11 +675,22 @@ class _PredictionTile extends StatelessWidget {
               ),
             ),
             padding: const EdgeInsets.symmetric(
-              horizontal: MitlistSpacing.md,
+              horizontal: MitlistSpacing.sm,
               vertical: MitlistSpacing.sm,
             ),
             child: Row(
               children: [
+                // Drag handle (Phase 5)
+                ReorderableDragStartListener(
+                  index: index,
+                  child: Icon(
+                    Icons.drag_handle,
+                    size: 18,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(width: MitlistSpacing.xs),
+
                 // State dot
                 Container(
                   width: 8,
@@ -353,43 +714,39 @@ class _PredictionTile extends StatelessWidget {
                               style: textTheme.titleSmall,
                             ),
                           ),
-                          if (prediction.quantity > 1 || prediction.unit.isNotEmpty)
+                          if (prediction.quantity > 1 ||
+                              prediction.unit.isNotEmpty)
                             Text(
                               _qtyLabel(),
                               style: MitlistTypography.monoBody(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
                               ),
                             ),
                         ],
                       ),
-                      if (needsAction && prediction.rawText.toLowerCase() !=
-                          prediction.displayName.toLowerCase())
+                      if (needsAction &&
+                          prediction.rawText.toLowerCase() !=
+                              prediction.displayName.toLowerCase())
                         Text(
                           '"${prediction.rawText}"',
                           style: textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                        ),
-                      if (prediction.aisle != null && prediction.aisle!.isNotEmpty)
-                        Text(
-                          prediction.aisle!,
-                          style: MitlistTypography.labelXSmall(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
                         ),
                     ],
                   ),
                 ),
 
-                // Actions
                 if (needsAction)
-                  Icon(Icons.edit_outlined,
-                      size: 18, color: stateColor)
+                  Icon(Icons.edit_outlined, size: 18, color: stateColor)
                 else
-                  Icon(Icons.check_circle_outline,
-                      size: 18, color: stateColor),
+                  Icon(Icons.check_circle_outline, size: 18, color: stateColor),
                 const SizedBox(width: MitlistSpacing.xs),
                 GestureDetector(
                   onTap: onRemove,
@@ -421,10 +778,7 @@ class _PredictionTile extends StatelessWidget {
     showAppBottomSheet<void>(
       context: context,
       title: 'Edit item',
-      body: _ItemEditorSheet(
-        prediction: prediction,
-        onSave: onChanged,
-      ),
+      body: _ItemEditorSheet(prediction: prediction, onSave: onChanged),
     );
   }
 }
@@ -437,7 +791,7 @@ class _IgnoredTile extends StatelessWidget {
   final GroceryPrediction prediction;
   final VoidCallback onRestore;
 
-  const _IgnoredTile({required this.prediction, required this.onRestore});
+  const _IgnoredTile({super.key, required this.prediction, required this.onRestore});
 
   @override
   Widget build(BuildContext context) {
@@ -446,7 +800,8 @@ class _IgnoredTile extends StatelessWidget {
       child: Row(
         children: [
           Icon(Icons.remove_done_outlined,
-              size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              size: 14,
+              color: Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(width: MitlistSpacing.sm),
           Expanded(
             child: Text(
@@ -478,8 +833,7 @@ class _ItemEditorSheet extends StatefulWidget {
   final GroceryPrediction prediction;
   final ValueChanged<GroceryPrediction> onSave;
 
-  const _ItemEditorSheet(
-      {required this.prediction, required this.onSave});
+  const _ItemEditorSheet({required this.prediction, required this.onSave});
 
   @override
   State<_ItemEditorSheet> createState() => _ItemEditorSheetState();
@@ -517,7 +871,6 @@ class _ItemEditorSheetState extends State<_ItemEditorSheet> {
       displayName: name,
       quantity: qty,
       unit: _unitCtrl.text.trim(),
-      // Accept the item: user confirmed the name.
       confidenceLevel: ConfidenceLevel.autoAccept,
       confidenceScore: 1.0,
     ));
@@ -544,10 +897,7 @@ class _ItemEditorSheetState extends State<_ItemEditorSheet> {
                   ),
             ),
           ),
-        AppInput(
-          controller: _nameCtrl,
-          label: 'Item name',
-        ),
+        AppInput(controller: _nameCtrl, label: 'Item name'),
         const SizedBox(height: MitlistSpacing.sm),
         Row(
           children: [
@@ -559,16 +909,10 @@ class _ItemEditorSheetState extends State<_ItemEditorSheet> {
               ),
             ),
             const SizedBox(width: MitlistSpacing.sm),
-            Expanded(
-              child: AppInput(
-                controller: _unitCtrl,
-                label: 'Unit',
-              ),
-            ),
+            Expanded(child: AppInput(controller: _unitCtrl, label: 'Unit')),
           ],
         ),
         const SizedBox(height: MitlistSpacing.md),
-        // Alternatives
         if (widget.prediction.alternatives.isNotEmpty) ...[
           Text(
             'Did you mean?',
@@ -582,18 +926,13 @@ class _ItemEditorSheetState extends State<_ItemEditorSheet> {
             children: widget.prediction.alternatives
                 .map((alt) => ActionChip(
                       label: Text(alt),
-                      onPressed: () {
-                        _nameCtrl.text = alt;
-                      },
+                      onPressed: () => _nameCtrl.text = alt,
                     ))
                 .toList(),
           ),
           const SizedBox(height: MitlistSpacing.md),
         ],
-        AppButton(
-          text: 'Confirm',
-          onPressed: _save,
-        ),
+        AppButton(text: 'Confirm', onPressed: _save),
       ],
     );
   }

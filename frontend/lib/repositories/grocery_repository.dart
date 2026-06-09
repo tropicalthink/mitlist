@@ -189,6 +189,56 @@ class GroceryRepository {
   }
 
   // ---------------------------------------------------------------------------
+  // Aisle feedback upload (Phase 5)
+  // ---------------------------------------------------------------------------
+
+  /// Persists aisle drag-to-reorder feedback from the review screen.
+  /// Writes locally first via [db.upsertStoreAisles], then uploads to server.
+  Future<void> updateAisleFeedback({
+    required String groupId,
+    required List<AisleFeedbackEntry> entries,
+  }) async {
+    if (entries.isEmpty) return;
+
+    final now = DateTime.now();
+    // Local write first — stays in sync even if upload fails.
+    final companions = entries.map((e) => StoreAislesTableCompanion.insert(
+          id: e.id,
+          groupId: groupId,
+          canonicalItemId: e.canonicalItemId,
+          storeId: Value(e.storeId),
+          aisle: Value(e.aisle),
+          sortOrder: Value(e.sortOrder),
+          confidence: const Value(1.0),
+          version: const Value(0),
+          createdAt: now,
+          updatedAt: now,
+        ));
+    await _db.upsertStoreAisles(companions);
+
+    // Best-effort server upload.
+    try {
+      await _dio.patch(
+        '/groups/$groupId/grocery/aisles',
+        data: {
+          'aisles': entries
+              .map((e) => {
+                    'canonical_item_id': e.canonicalItemId,
+                    if (e.storeId != null) 'store_id': e.storeId,
+                    'aisle': e.aisle,
+                    'sort_order': e.sortOrder,
+                  })
+              .toList(),
+        },
+      );
+    } on DioException catch (e) {
+      _log.w('Aisle feedback upload failed: ${e.response?.statusCode}');
+    } catch (e) {
+      _log.w('Aisle feedback upload error: $e');
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Correction upload
   // ---------------------------------------------------------------------------
 
@@ -229,6 +279,7 @@ class GroceryRepository {
   // ---------------------------------------------------------------------------
 
   static DateTime? _parseDate(dynamic raw) {
+
     if (raw == null) return null;
     try {
       return DateTime.parse(raw as String);
@@ -236,4 +287,21 @@ class GroceryRepository {
       return null;
     }
   }
+}
+
+/// Value object carrying a single drag-to-reorder aisle feedback event.
+class AisleFeedbackEntry {
+  final String id;
+  final String canonicalItemId;
+  final String? storeId;
+  final String aisle;
+  final int sortOrder;
+
+  const AisleFeedbackEntry({
+    required this.id,
+    required this.canonicalItemId,
+    this.storeId,
+    required this.aisle,
+    required this.sortOrder,
+  });
 }

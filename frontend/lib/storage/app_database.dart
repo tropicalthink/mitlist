@@ -364,6 +364,13 @@ FROM list_items_table;
     return (select(listsTable)..where((t) => t.groupId.equals(groupId))).get();
   }
 
+  Future<String?> getListGroupId(String listId) async {
+    final row = await (select(listsTable)
+          ..where((t) => t.id.equals(listId)))
+        .getSingleOrNull();
+    return row?.groupId;
+  }
+
   Stream<List<ListItemsTableData>> watchItemsByList(String listId) {
     return (select(listItemsTable)..where((t) => t.listId.equals(listId))).watch();
   }
@@ -978,6 +985,44 @@ FROM list_items_table;
       ),
       mode: InsertMode.insertOrReplace,
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Grocery graph — co-occurrence (Phase 6)
+  // ---------------------------------------------------------------------------
+
+  /// Increments the co-occurrence count for a canonical item pair.
+  /// IDs are sorted so (A,B) and (B,A) hit the same row.
+  Future<void> incrementCooccurrence({
+    required String groupId,
+    required String itemAId,
+    required String itemBId,
+  }) async {
+    // Canonical ordering so (A,B) = (B,A).
+    final a = itemAId.compareTo(itemBId) <= 0 ? itemAId : itemBId;
+    final b = itemAId.compareTo(itemBId) <= 0 ? itemBId : itemAId;
+    final now = DateTime.now();
+    await customStatement(
+      '''INSERT INTO item_cooccurrence_table
+           (group_id, item_a_id, item_b_id, count, last_seen_at, version)
+         VALUES (?, ?, ?, 1, ?, 0)
+         ON CONFLICT(group_id, item_a_id, item_b_id) DO UPDATE
+           SET count = count + 1,
+               last_seen_at = excluded.last_seen_at,
+               version = version + 1''',
+      [groupId, a, b, now],
+    );
+  }
+
+  /// Returns all checked list items that have a canonicalItemId set.
+  Future<List<ListItemsTableData>> getCheckedItemsWithCanonical(
+      String listId) {
+    return (select(listItemsTable)
+          ..where((t) =>
+              t.listId.equals(listId) &
+              t.checked.equals(true) &
+              t.canonicalItemId.isNotNull()))
+        .get();
   }
 }
 

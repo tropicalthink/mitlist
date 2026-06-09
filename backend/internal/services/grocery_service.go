@@ -126,6 +126,32 @@ func (s *GroceryService) RecordCorrection(ctx context.Context, userID, groupID u
 	return version, nil
 }
 
+// AisleFeedbackRequest is the body for the aisle feedback endpoint.
+type AisleFeedbackRequest struct {
+	Aisles []repositories.AisleFeedbackItem `json:"aisles"`
+}
+
+// UpdateAisles persists drag-to-reorder aisle feedback from the client.
+// Returns the new max version so the client can update its cursor.
+func (s *GroceryService) UpdateAisles(ctx context.Context, userID, groupID uuid.UUID, req AisleFeedbackRequest) (int64, error) {
+	if err := s.requireMembership(ctx, userID, groupID); err != nil {
+		return 0, err
+	}
+	if len(req.Aisles) == 0 {
+		cur, err := s.repo.CurrentVersion(ctx, groupID)
+		return cur, err
+	}
+	version, err := s.repo.NextVersion(ctx, groupID)
+	if err != nil {
+		return 0, err
+	}
+	if err := s.repo.UpsertAislesBatch(ctx, groupID, req.Aisles, version); err != nil {
+		return 0, err
+	}
+	s.publishGraphUpdated(groupID, version)
+	return version, nil
+}
+
 func (s *GroceryService) requireMembership(ctx context.Context, userID, groupID uuid.UUID) error {
 	_, err := s.groupRepo.GetMembership(ctx, groupID, userID)
 	if err != nil {
