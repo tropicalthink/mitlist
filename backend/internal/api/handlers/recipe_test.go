@@ -131,40 +131,232 @@ func TestRecipe_DeleteRecipe(t *testing.T) {
 	requireStatus(t, rec, http.StatusNoContent)
 }
 
-func TestRecipe_CreateCollection(t *testing.T) {
+func TestRecipe_GetRecipeIngredients(t *testing.T) {
 	clearTables(t)
 	router, _ := newRecipeRouter(t)
-	user := createTestUser(t, "col@example.com", "password123")
-	token := generateTestToken(user.ID)
-
-	body := map[string]any{"name": "Favorites"}
-	rec := execRequest(t, router, "POST", "/api/v1/collections", body, token)
-	requireStatus(t, rec, http.StatusCreated)
-
-	var resp map[string]any
-	parseJSONResponse(t, rec, &resp)
-	assert.Equal(t, "Favorites", resp["name"])
-}
-
-func TestRecipe_ListCollections(t *testing.T) {
-	clearTables(t)
-	router, _ := newRecipeRouter(t)
-	user := createTestUser(t, "lscol@example.com", "password123")
+	user := createTestUser(t, "ingredients@example.com", "password123")
 	token := generateTestToken(user.ID)
 
 	recipeRepo := newTestRecipeRepo()
-	require.NoError(t, recipeRepo.CreateCollection(context.Background(), &models.Collection{
-		ID:        uuid.New(),
-		UserID:    user.ID,
-		Name:      "My Collection",
-		CreatedAt: time.Now().UTC(),
-		UpdatedAt: time.Now().UTC(),
-	}))
+	rcp := &models.Recipe{
+		ID:          uuid.New(),
+		UserID:      user.ID,
+		Title:       "Test Recipe",
+		Description: "",
+		PrepTime:    0,
+		CookTime:    0,
+		Servings:    1,
+		ImageURL:    "",
+		IsPublic:    false,
+		CreatedAt:   time.Now().UTC(),
+		UpdatedAt:   time.Now().UTC(),
+	}
+	require.NoError(t, recipeRepo.CreateRecipe(context.Background(), rcp))
 
-	rec := execRequest(t, router, "GET", "/api/v1/collections?limit=10", nil, token)
+	ing := &models.RecipeIngredient{
+		ID:       uuid.New(),
+		RecipeID: rcp.ID,
+		Name:     "flour",
+		Quantity: "2 cups",
+		Unit:     "cups",
+		Position: 1,
+	}
+	require.NoError(t, recipeRepo.CreateIngredient(context.Background(), ing))
+
+	rec := execRequest(t, router, "GET", "/api/v1/recipes/"+rcp.ID.String()+"/ingredients", nil, token)
 	requireStatus(t, rec, http.StatusOK)
 
 	var resp []map[string]any
 	parseJSONResponse(t, rec, &resp)
 	assert.Len(t, resp, 1)
+	assert.Equal(t, "flour", resp[0]["name"])
+}
+
+func TestRecipe_GetRecipeIngredients_NotFound(t *testing.T) {
+	clearTables(t)
+	router, _ := newRecipeRouter(t)
+	user := createTestUser(t, "nfingredients@example.com", "password123")
+	token := generateTestToken(user.ID)
+
+	rec := execRequest(t, router, "GET", "/api/v1/recipes/"+uuid.New().String()+"/ingredients", nil, token)
+	requireStatus(t, rec, http.StatusNotFound)
+}
+
+func TestRecipe_GetRecipeSteps(t *testing.T) {
+	clearTables(t)
+	router, _ := newRecipeRouter(t)
+	user := createTestUser(t, "steps@example.com", "password123")
+	token := generateTestToken(user.ID)
+
+	recipeRepo := newTestRecipeRepo()
+	rcp := &models.Recipe{
+		ID:          uuid.New(),
+		UserID:      user.ID,
+		Title:       "Test Recipe",
+		Description: "",
+		PrepTime:    0,
+		CookTime:    0,
+		Servings:    1,
+		ImageURL:    "",
+		IsPublic:    false,
+		CreatedAt:   time.Now().UTC(),
+		UpdatedAt:   time.Now().UTC(),
+	}
+	require.NoError(t, recipeRepo.CreateRecipe(context.Background(), rcp))
+
+	step := &models.RecipeStep{
+		ID:          uuid.New(),
+		RecipeID:    rcp.ID,
+		Description: "Mix ingredients",
+		Position:    1,
+	}
+	require.NoError(t, recipeRepo.CreateStep(context.Background(), step))
+
+	rec := execRequest(t, router, "GET", "/api/v1/recipes/"+rcp.ID.String()+"/steps", nil, token)
+	requireStatus(t, rec, http.StatusOK)
+
+	var resp []map[string]any
+	parseJSONResponse(t, rec, &resp)
+	assert.Len(t, resp, 1)
+	assert.Equal(t, "Mix ingredients", resp[0]["description"])
+}
+
+func TestRecipe_AddToList(t *testing.T) {
+	clearTables(t)
+	router, _ := newRecipeRouter(t)
+	user := createTestUser(t, "addtolist@example.com", "password123")
+	token := generateTestToken(user.ID)
+
+	groupRepo := newTestGroupRepo()
+	group := &models.Group{
+		ID:        uuid.New(),
+		Name:      "Recipe Group",
+		CreatedBy: user.ID,
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+	}
+	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	require.NoError(t, groupRepo.CreateMembership(context.Background(), &models.GroupMembership{
+		ID:       uuid.New(),
+		GroupID:  group.ID,
+		UserID:   user.ID,
+		Role:     "admin",
+		JoinedAt: time.Now().UTC(),
+	}))
+
+	recipeRepo := newTestRecipeRepo()
+	rcp := &models.Recipe{
+		ID:          uuid.New(),
+		UserID:      user.ID,
+		Title:       "Test Recipe",
+		Description: "",
+		PrepTime:    0,
+		CookTime:    0,
+		Servings:    2,
+		ImageURL:    "",
+		IsPublic:    false,
+		CreatedAt:   time.Now().UTC(),
+		UpdatedAt:   time.Now().UTC(),
+	}
+	require.NoError(t, recipeRepo.CreateRecipe(context.Background(), rcp))
+
+	ing := &models.RecipeIngredient{
+		ID:       uuid.New(),
+		RecipeID: rcp.ID,
+		Name:     "sugar",
+		Quantity: "1 cup",
+		Unit:     "cup",
+		Position: 1,
+	}
+	require.NoError(t, recipeRepo.CreateIngredient(context.Background(), ing))
+
+	listRepo := newTestListRepo()
+	lst := &models.List{
+		ID:        uuid.New(),
+		GroupID:   group.ID,
+		Name:      "Shopping",
+		Type:      "shopping",
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+	}
+	require.NoError(t, listRepo.CreateList(context.Background(), lst))
+
+	body := map[string]any{"list_id": lst.ID.String()}
+	rec := execRequest(t, router, "POST", "/api/v1/recipes/"+rcp.ID.String()+"/add-to-list", body, token)
+	requireStatus(t, rec, http.StatusOK)
+
+	var resp map[string]any
+	parseJSONResponse(t, rec, &resp)
+	added := resp["added"].([]any)
+	assert.Len(t, added, 1)
+}
+
+func TestRecipe_AddMissingToList(t *testing.T) {
+	clearTables(t)
+	router, _ := newRecipeRouter(t)
+	user := createTestUser(t, "addmissing@example.com", "password123")
+	token := generateTestToken(user.ID)
+
+	groupRepo := newTestGroupRepo()
+	group := &models.Group{
+		ID:        uuid.New(),
+		Name:      "Recipe Group",
+		CreatedBy: user.ID,
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+	}
+	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	require.NoError(t, groupRepo.CreateMembership(context.Background(), &models.GroupMembership{
+		ID:       uuid.New(),
+		GroupID:  group.ID,
+		UserID:   user.ID,
+		Role:     "admin",
+		JoinedAt: time.Now().UTC(),
+	}))
+
+	recipeRepo := newTestRecipeRepo()
+	rcp := &models.Recipe{
+		ID:          uuid.New(),
+		UserID:      user.ID,
+		Title:       "Test Recipe",
+		Description: "",
+		PrepTime:    0,
+		CookTime:    0,
+		Servings:    1,
+		ImageURL:    "",
+		IsPublic:    false,
+		CreatedAt:   time.Now().UTC(),
+		UpdatedAt:   time.Now().UTC(),
+	}
+	require.NoError(t, recipeRepo.CreateRecipe(context.Background(), rcp))
+
+	ing := &models.RecipeIngredient{
+		ID:       uuid.New(),
+		RecipeID: rcp.ID,
+		Name:     "salt",
+		Quantity: "1 tsp",
+		Unit:     "tsp",
+		Position: 1,
+	}
+	require.NoError(t, recipeRepo.CreateIngredient(context.Background(), ing))
+
+	listRepo := newTestListRepo()
+	lst := &models.List{
+		ID:        uuid.New(),
+		GroupID:   group.ID,
+		Name:      "Shopping",
+		Type:      "shopping",
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+	}
+	require.NoError(t, listRepo.CreateList(context.Background(), lst))
+
+	body := map[string]any{"list_id": lst.ID.String()}
+	rec := execRequest(t, router, "POST", "/api/v1/recipes/"+rcp.ID.String()+"/add-missing-to-list", body, token)
+	requireStatus(t, rec, http.StatusOK)
+
+	var resp map[string]any
+	parseJSONResponse(t, rec, &resp)
+	added := resp["added"].([]any)
+	assert.Len(t, added, 1)
 }

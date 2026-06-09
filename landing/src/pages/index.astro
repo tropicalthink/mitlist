@@ -4,6 +4,7 @@ import Pinwall from "../components/Pinwall.astro";
 import StoreBadges from "../components/StoreBadges.astro";
 
 const GITHUB = "https://github.com/whtvrboo/mitlist";
+const WEBAPP = "https://mitlist.me";
 
 const pillars = [
   {
@@ -55,7 +56,7 @@ const day = [
         <a href="#open">Open source</a>
         <a href={GITHUB} rel="noopener">GitHub</a>
       </nav>
-      <a class="btn btn--primary nav__cta" href="#get">Get the app</a>
+      <a class="btn btn--primary nav__cta" href={WEBAPP}>Open the app</a>
     </div>
   </header>
 
@@ -73,9 +74,9 @@ const day = [
           has to chase anybody.
         </p>
         <div class="hero__cta">
-          <StoreBadges />
+          <StoreBadges webApp={WEBAPP} />
         </div>
-        <p class="hero__note">Free to use. Open source. Yours to self-host.</p>
+        <p class="hero__note">Free on the web, iOS, and Android. Open source. Yours to self-host.</p>
       </div>
 
       <div class="hero__board">
@@ -162,8 +163,9 @@ const day = [
     <div class="wrap">
       <div class="section-head reveal">
         <h2 class="h2">It runs on your terms.</h2>
-        <p class="lead">mitlist is open source. Use the hosted apps, or run the
-          whole thing on your own box and own every byte of it.</p>
+        <p class="lead">mitlist is open source. Use <a href={WEBAPP}>mitlist.me</a> in
+          your browser, grab the mobile apps, or run the whole thing on your own
+          box and own every byte of it.</p>
       </div>
       <div class="trust">
         <article class="trust__card reveal">
@@ -197,7 +199,7 @@ const day = [
       <p class="get__sub">Get everyone on the same board. It takes a code and
         about a minute.</p>
       <div class="get__badges">
-        <StoreBadges />
+        <StoreBadges webApp={WEBAPP} variant="dark" />
       </div>
       <a class="get__alt" href={GITHUB} rel="noopener">or self-host it from GitHub →</a>
     </div>
@@ -213,6 +215,7 @@ const day = [
         mitlist
       </a>
       <nav class="foot__links" aria-label="Footer">
+        <a href={WEBAPP}>Web app</a>
         <a href="#features">Features</a>
         <a href="#how">How it works</a>
         <a href="#open">Open source</a>
@@ -351,6 +354,14 @@ const day = [
   }
   .section-head .h2 {
     margin-bottom: 0.9rem;
+  }
+  .section-head .lead a {
+    font-weight: 700;
+    text-decoration: none;
+    border-bottom: 2px solid var(--orange);
+  }
+  .section-head .lead a:hover {
+    color: var(--orange-700);
   }
 
   /* ---------- PILLARS ---------- */
