@@ -191,6 +191,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         _listName = list.name;
         _groupId = list.groupId;
       });
+
+      // Attach SSE so edits from other household members appear in real time.
+      final sseService = ref.read(sseServiceProvider);
+      repo.attachSse(sseService, list.groupId);
       try {
         final groupService = await ref.read(groupServiceProviderAsync.future);
         final group = await groupService.getGroup(list.groupId);

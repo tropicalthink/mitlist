@@ -69,6 +69,10 @@ func (h *AuthHandler) RegisterRoutes(r chi.Router) {
 			r.Post("/push-subscriptions", h.CreatePushSubscription)
 			r.Get("/push-subscriptions", h.ListPushSubscriptions)
 			r.Delete("/push-subscriptions/{id}", h.DeletePushSubscription)
+
+			// Device tokens (FCM — mobile push)
+			r.Post("/device-tokens", h.CreateDeviceToken)
+			r.Delete("/device-tokens/{id}", h.DeleteDeviceToken)
 		})
 	})
 }
@@ -476,6 +480,50 @@ func (h *AuthHandler) DeletePushSubscription(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	if err := h.userService.DeletePushSubscription(r.Context(), userID, id); err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// ---------------------------------------------------------------------------
+// Device tokens (FCM — mobile push)
+// ---------------------------------------------------------------------------
+
+func (h *AuthHandler) CreateDeviceToken(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	var req struct {
+		Platform string `json:"platform"`
+		Token    string `json:"token"`
+	}
+	if err := decodeJSON(r, &req); err != nil {
+		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
+		return
+	}
+	dt, err := h.userService.SaveDeviceToken(r.Context(), userID, req.Platform, req.Token)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	api.RespondJSON(w, http.StatusCreated, dt)
+}
+
+func (h *AuthHandler) DeleteDeviceToken(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	id, err := parseUUIDParam(r, "id")
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	if err := h.userService.DeleteDeviceToken(r.Context(), userID, id); err != nil {
 		api.RespondError(w, err)
 		return
 	}

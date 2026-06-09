@@ -474,6 +474,31 @@ func (s *UserService) DeletePushSubscription(ctx context.Context, userID, subID 
 	return s.authRepo.DeletePushSubscription(ctx, subID)
 }
 
+// ---------------------------------------------------------------------------
+// Device tokens (FCM — mobile push)
+// ---------------------------------------------------------------------------
+
+// SaveDeviceToken upserts an FCM device token for the current user.
+func (s *UserService) SaveDeviceToken(ctx context.Context, userID uuid.UUID, platform, token string) (*models.DeviceToken, error) {
+	if platform != "android" && platform != "ios" {
+		return nil, &api.ValidationError{Field: "platform", Message: "platform must be android or ios"}
+	}
+	if token == "" {
+		return nil, &api.ValidationError{Field: "token", Message: "token is required"}
+	}
+	return s.authRepo.SaveDeviceToken(ctx, userID, platform, token)
+}
+
+// ListDeviceTokens returns all device tokens for a user.
+func (s *UserService) ListDeviceTokens(ctx context.Context, userID uuid.UUID) ([]models.DeviceToken, error) {
+	return s.authRepo.ListDeviceTokensByUser(ctx, userID)
+}
+
+// DeleteDeviceToken removes a device token by ID, scoped to the owning user.
+func (s *UserService) DeleteDeviceToken(ctx context.Context, userID, tokenID uuid.UUID) error {
+	return s.authRepo.DeleteDeviceToken(ctx, userID, tokenID)
+}
+
 // isNotFound reports whether err indicates a missing resource from any repository.
 func isNotFound(err error) bool {
 	if err == nil {

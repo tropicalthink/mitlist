@@ -207,3 +207,63 @@ func (r *AuthRepository) DeletePushSubscription(ctx context.Context, id uuid.UUI
 	}
 	return nil
 }
+
+// ---------------------------------------------------------------------------
+// Device tokens (FCM — mobile push)
+// ---------------------------------------------------------------------------
+
+// SaveDeviceToken upserts an FCM device token for a user.
+func (r *AuthRepository) SaveDeviceToken(ctx context.Context, userID uuid.UUID, platform, token string) (*models.DeviceToken, error) {
+	query := `
+		INSERT INTO device_tokens (user_id, platform, token)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (user_id, token) DO UPDATE SET platform = EXCLUDED.platform
+		RETURNING id, user_id, platform, token, created_at
+	`
+	var dt models.DeviceToken
+	err := r.db.QueryRow(ctx, query, userID, platform, token).Scan(
+		&dt.ID, &dt.UserID, &dt.Platform, &dt.Token, &dt.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &dt, nil
+}
+
+// ListDeviceTokensByUser returns all device tokens for a user.
+func (r *AuthRepository) ListDeviceTokensByUser(ctx context.Context, userID uuid.UUID) ([]models.DeviceToken, error) {
+	query := `
+		SELECT id, user_id, platform, token, created_at
+		FROM device_tokens
+		WHERE user_id = $1
+		ORDER BY created_at DESC
+	`
+	rows, err := r.db.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tokens []models.DeviceToken
+	for rows.Next() {
+		var dt models.DeviceToken
+		if err := rows.Scan(&dt.ID, &dt.UserID, &dt.Platform, &dt.Token, &dt.CreatedAt); err != nil {
+			return nil, err
+		}
+		tokens = append(tokens, dt)
+	}
+	return tokens, rows.Err()
+}
+
+// DeleteDeviceToken removes a device token by ID, scoped to the owning user.
+func (r *AuthRepository) DeleteDeviceToken(ctx context.Context, userID, id uuid.UUID) error {
+	query := `DELETE FROM device_tokens WHERE id = $1 AND user_id = $2`
+	cmd, err := r.db.Exec(ctx, query, id, userID)
+	if err != nil {
+		return err
+	}
+	if cmd.RowsAffected() == 0 {
+		return fmt.Errorf("device token not found")
+	}
+	return nil
+}

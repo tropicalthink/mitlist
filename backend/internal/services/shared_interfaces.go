@@ -29,6 +29,7 @@ type MailService interface {
 type PushService interface {
 	SendToUser(userID uuid.UUID, payload string) error
 	BroadcastToGroup(groupID uuid.UUID, payload string) error
+	BroadcastToGroupExcluding(groupID, excludeUserID uuid.UUID, payload string) error
 }
 
 // AIClient defines the interface for AI generation.

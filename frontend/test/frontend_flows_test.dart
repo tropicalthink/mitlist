@@ -1523,6 +1523,12 @@ class FakeChoreRepository implements ChoreRepository {
 
   @override
   Future<void> drainOutboxOnce() async {}
+
+  @override
+  void attachSse(dynamic sseService, String groupId) {}
+
+  @override
+  void detachSse() {}
 }
 
 class FakeListRepository implements ListRepository {
@@ -1598,6 +1604,12 @@ class FakeListRepository implements ListRepository {
 
   @override
   Future<void> drainOutboxOnce() async {}
+
+  @override
+  void attachSse(dynamic sseService, String groupId) {}
+
+  @override
+  void detachSse() {}
 }
 
 class FakeFinanceRepository implements FinanceRepository {

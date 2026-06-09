@@ -22,6 +22,8 @@ import '../widgets/chip.dart';
 
 enum _Recurrence { none, hourly, daily, weekly, monthly, yearly, adaptive }
 
+enum _TemplateEditAction { save, delete }
+
 enum _AssignmentPolicy {
   roundRobin,
   alphabetical,
@@ -195,6 +197,67 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
   }
 
   void _markDirty() => widget.dirtyNotifier?.value = true;
+
+  Future<void> _onEditTemplate(ChoreTemplate t) async {
+    final nameController = TextEditingController(text: t.name);
+    final result = await showDialog<_TemplateEditAction>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Edit routine'),
+        content: TextField(
+          controller: nameController,
+          decoration: const InputDecoration(labelText: 'Name'),
+          autofocus: true,
+          textCapitalization: TextCapitalization.sentences,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, _TemplateEditAction.delete),
+            child: Text(
+              'Delete',
+              style: TextStyle(color: Theme.of(ctx).colorScheme.error),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, _TemplateEditAction.save),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    final newName = nameController.text.trim();
+    nameController.dispose();
+    if (result == null || !mounted) return;
+
+    try {
+      final service = await ref.read(choreServiceProviderAsync.future);
+      if (result == _TemplateEditAction.save) {
+        if (newName.isEmpty || newName == t.name) return;
+        final updated = await service.updateChoreTemplate(
+          t.id,
+          UpdateChoreTemplateRequest(name: newName),
+        );
+        if (!mounted) return;
+        setState(() {
+          final idx = _savedTemplates.indexWhere((x) => x.id == t.id);
+          if (idx != -1) _savedTemplates[idx] = updated;
+          if (_appliedSavedId == t.id) _nameController.text = updated.name;
+        });
+      } else {
+        await service.deleteChoreTemplate(t.id);
+        if (!mounted) return;
+        setState(() {
+          _savedTemplates.removeWhere((x) => x.id == t.id);
+          if (_appliedSavedId == t.id) _appliedSavedId = null;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(friendlyErrorMessage(e))),
+      );
+    }
+  }
 
   /// Pre-fills the form from a routine. The name only overwrites an empty
   /// field, so a template never clobbers what the user already typed.
@@ -552,10 +615,13 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
             runSpacing: MitlistSpacing.sm,
             children: [
               for (final t in _savedTemplates)
-                AppChip(
-                  label: t.name,
-                  selected: _appliedSavedId == t.id,
-                  onSelected: (_) => _applySavedTemplate(t),
+                GestureDetector(
+                  onLongPress: () => _onEditTemplate(t),
+                  child: AppChip(
+                    label: t.name,
+                    selected: _appliedSavedId == t.id,
+                    onSelected: (_) => _applySavedTemplate(t),
+                  ),
                 ),
             ],
           ),

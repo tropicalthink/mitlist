@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -11,13 +12,23 @@ import (
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/repositories"
+	"github.com/mitlist-app/mitlist/internal/sse"
 	"github.com/mitlist-app/mitlist/pkg/validation"
 )
+
+// listPushPayload is the FCM/VAPID push message structure for list events.
+type listPushPayload struct {
+	Title string                  `json:"title"`
+	Body  string                  `json:"body"`
+	Data  models.NotificationPayload `json:"data"`
+}
 
 // ListService provides business logic for lists and list items.
 type ListService struct {
 	listRepo  repositories.ListRepo
 	groupRepo repositories.GroupRepo
+	hub       *sse.Hub    // optional; nil disables SSE broadcasts
+	pushSvc   PushService // optional; nil disables push broadcasts
 }
 
 // NewListService creates a new ListService.
@@ -26,6 +37,57 @@ func NewListService(listRepo repositories.ListRepo, groupRepo repositories.Group
 		listRepo:  listRepo,
 		groupRepo: groupRepo,
 	}
+}
+
+// SetHub injects the SSE hub for real-time event broadcasts.
+func (s *ListService) SetHub(h *sse.Hub) { s.hub = h }
+
+// SetPush injects the push service for mobile/web push broadcasts.
+func (s *ListService) SetPush(p PushService) { s.pushSvc = p }
+
+// broadcastListPush sends a push notification to all group members except the actor.
+func (s *ListService) broadcastListPush(list *models.List, actorID uuid.UUID, title, body string) {
+	if s.pushSvc == nil {
+		return
+	}
+	payload := listPushPayload{
+		Title: title,
+		Body:  body,
+		Data: models.NotificationPayload{
+			Screen:     models.ScreenListDetail,
+			EntityType: models.EntityTypeList,
+			ID:         list.ID.String(),
+			GroupID:    list.GroupID.String(),
+		},
+	}
+	data, _ := json.Marshal(payload)
+	_ = s.pushSvc.BroadcastToGroupExcluding(list.GroupID, actorID, string(data))
+}
+
+// publishItem emits an SSE event for a list item mutation.
+func (s *ListService) publishItem(eventType string, groupID uuid.UUID, item *models.ListItem) {
+	if s.hub == nil {
+		return
+	}
+	data, _ := json.Marshal(item)
+	s.hub.Publish(groupID.String(), sse.Event{
+		Type:    eventType,
+		GroupID: groupID.String(),
+		Payload: data,
+	})
+}
+
+// publishListEvent emits an SSE event for a list-level mutation (e.g. items cleared).
+func (s *ListService) publishListEvent(eventType string, groupID, listID uuid.UUID) {
+	if s.hub == nil {
+		return
+	}
+	data, _ := json.Marshal(map[string]string{"list_id": listID.String()})
+	s.hub.Publish(groupID.String(), sse.Event{
+		Type:    eventType,
+		GroupID: groupID.String(),
+		Payload: data,
+	})
 }
 
 func (s *ListService) requireMembership(ctx context.Context, userID, groupID uuid.UUID) error {
@@ -193,7 +255,12 @@ func (s *ListService) CreateItem(ctx context.Context, user *models.User, item *m
 	if item.Quantity <= 0 {
 		item.Quantity = 1
 	}
-	return s.listRepo.CreateItem(ctx, item)
+	if err := s.listRepo.CreateItem(ctx, item); err != nil {
+		return err
+	}
+	s.publishItem("list:item_created", list.GroupID, item)
+	go s.broadcastListPush(list, user.ID, "New item added", item.Name+" added to "+list.Name)
+	return nil
 }
 
 // GetItem retrieves a single list item by ID.
@@ -253,7 +320,11 @@ func (s *ListService) UpdateItem(ctx context.Context, user *models.User, item *m
 	}
 	// Preserve list_id from existing record to prevent moving between lists.
 	item.ListID = existing.ListID
-	return s.listRepo.UpdateItem(ctx, item)
+	if err := s.listRepo.UpdateItem(ctx, item); err != nil {
+		return err
+	}
+	s.publishItem("list:item_updated", list.GroupID, item)
+	return nil
 }
 
 // DeleteItem soft-deletes a list item.
@@ -275,7 +346,11 @@ func (s *ListService) DeleteItem(ctx context.Context, user *models.User, itemID 
 	if err := s.requireMembership(ctx, user.ID, list.GroupID); err != nil {
 		return err
 	}
-	return s.listRepo.SoftDeleteItem(ctx, itemID)
+	if err := s.listRepo.SoftDeleteItem(ctx, itemID); err != nil {
+		return err
+	}
+	s.publishItem("list:item_deleted", list.GroupID, item)
+	return nil
 }
 
 // ListItems returns all items in a list, enforcing group membership.
@@ -311,7 +386,15 @@ func (s *ListService) ClearItems(ctx context.Context, user *models.User, listID 
 	if err := s.requireMembership(ctx, user.ID, list.GroupID); err != nil {
 		return 0, err
 	}
-	return s.listRepo.SoftDeleteItemsByList(ctx, listID, onlyChecked)
+	n, err := s.listRepo.SoftDeleteItemsByList(ctx, listID, onlyChecked)
+	if err != nil {
+		return 0, err
+	}
+	if n > 0 {
+		s.publishListEvent("list:items_cleared", list.GroupID, listID)
+		go s.broadcastListPush(list, user.ID, "List cleared", list.Name+" was cleared")
+	}
+	return n, nil
 }
 
 // AddItemAmount adds an amount to an existing matching item or creates it.

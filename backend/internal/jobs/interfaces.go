@@ -12,6 +12,7 @@ import (
 type Pusher interface {
 	SendToUser(userID uuid.UUID, payload string) error
 	BroadcastToGroup(groupID uuid.UUID, payload string) error
+	BroadcastToGroupExcluding(groupID, excludeUserID uuid.UUID, payload string) error
 }
 
 type choreSchedulerRepo interface {

@@ -29,6 +29,9 @@ type AuthRepo interface {
 	CreatePushSubscription(ctx context.Context, sub *models.PushSubscription) error
 	ListPushSubscriptionsByUser(ctx context.Context, userID uuid.UUID) ([]models.PushSubscription, error)
 	DeletePushSubscription(ctx context.Context, id uuid.UUID) error
+	SaveDeviceToken(ctx context.Context, userID uuid.UUID, platform, token string) (*models.DeviceToken, error)
+	ListDeviceTokensByUser(ctx context.Context, userID uuid.UUID) ([]models.DeviceToken, error)
+	DeleteDeviceToken(ctx context.Context, userID, id uuid.UUID) error
 }
 
 // GroupRepo is the interface for group repository operations.

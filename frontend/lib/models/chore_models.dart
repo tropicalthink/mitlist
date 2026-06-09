@@ -433,6 +433,18 @@ class CreateChoreTemplateRequest {
       };
 }
 
+class UpdateChoreTemplateRequest {
+  final String? name;
+  final String? description;
+
+  const UpdateChoreTemplateRequest({this.name, this.description});
+
+  Map<String, dynamic> toJson() => {
+        if (name != null) 'name': name,
+        if (description != null) 'description': description,
+      };
+}
+
 class ChoreLoadEntry {
   final String userId;
   final int completedCount;

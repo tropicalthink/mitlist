@@ -62,6 +62,12 @@ type Config struct {
 	VapidPublicKey  string `env:"VAPID_PUBLIC_KEY"`
 	VapidSubject    string `env:"VAPID_SUBJECT" default:"mailto:noreply@mitlist.app"`
 
+	// Firebase / FCM (mobile push)
+	// Set FIREBASE_PROJECT_ID and FIREBASE_SERVICE_ACCOUNT_JSON (raw JSON string)
+	// to enable FCM push to Android and iOS devices.
+	FirebaseProjectID      string `env:"FIREBASE_PROJECT_ID"`
+	FirebaseServiceAccount string `env:"FIREBASE_SERVICE_ACCOUNT_JSON"`
+
 	// Email
 	ResendAPIKey    string `env:"RESEND_API_KEY"`
 	ResendFromEmail string `env:"RESEND_FROM_EMAIL"`
@@ -170,6 +176,7 @@ func (c Config) MaskSecrets() Config {
 	masked.ApplePrivateKey = mask(masked.ApplePrivateKey)
 	masked.OpenRouterAPIKey = mask(masked.OpenRouterAPIKey)
 	masked.VapidPrivateKey = mask(masked.VapidPrivateKey)
+	masked.FirebaseServiceAccount = mask(masked.FirebaseServiceAccount)
 	masked.ResendAPIKey = mask(masked.ResendAPIKey)
 	masked.SendGridSMTPPass = mask(masked.SendGridSMTPPass)
 	masked.BrevoSMTPPass = mask(masked.BrevoSMTPPass)

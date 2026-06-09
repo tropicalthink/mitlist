@@ -132,6 +132,10 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         _applyCurrentChores(currentChores);
       });
 
+      // Attach SSE so completions from other household members arrive live.
+      final sseService = ref.read(sseServiceProvider);
+      repo.attachSse(sseService, gid);
+
       final cached = await repo.getCurrentChoresOnce(gid);
       if (!mounted) return;
       _applyCurrentChores(cached, allowSkeleton: cached.isEmpty);
