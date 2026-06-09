@@ -204,41 +204,42 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
                 button: true,
                 child: GestureDetector(
                   onTap: _copyCode,
-                  child: Container(
-                    padding: const EdgeInsets.all(MitlistSpacing.sm),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      border: Border.all(
-                        color:
-                            Theme.of(context).colorScheme.outlineVariant,
-                        width: 2,
-                      ),
-                    ),
-                    child: code.isEmpty
-                        ? SizedBox(
-                            width: InviteHouseholdSheet._qrSize,
-                            height: InviteHouseholdSheet._qrSize,
-                          )
-                        : QrImageView(
-                            data: code.trim(),
-                            version: QrVersions.auto,
-                            size: InviteHouseholdSheet._qrSize,
-                            backgroundColor:
-                                Theme.of(context).colorScheme.surface,
-                            errorCorrectionLevel: QrErrorCorrectLevel.M,
-                            semanticsLabel: 'Household invite QR',
-                            errorStateBuilder: (context, _) => SizedBox(
-                              width: InviteHouseholdSheet._qrSize,
-                              height: InviteHouseholdSheet._qrSize,
-                              child: Center(
-                                child: Text(
-                                  'QR unavailable',
-                                  style: Theme.of(context).textTheme.bodySmall,
+                  child: code.isEmpty
+                      ? SizedBox(
+                          width: InviteHouseholdSheet._qrSize,
+                          height: InviteHouseholdSheet._qrSize,
+                        )
+                      : Builder(
+                          builder: (context) {
+                            final qrFg =
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.white
+                                    : Colors.black;
+                            return QrImageView(
+                              data: code.trim(),
+                              version: QrVersions.auto,
+                              size: InviteHouseholdSheet._qrSize,
+                              backgroundColor: Colors.transparent,
+                              eyeStyle: QrEyeStyle(color: qrFg),
+                              dataModuleStyle:
+                                  QrDataModuleStyle(color: qrFg),
+                              errorCorrectionLevel: QrErrorCorrectLevel.M,
+                              semanticsLabel: 'Household invite QR',
+                              errorStateBuilder: (context, _) => SizedBox(
+                                width: InviteHouseholdSheet._qrSize,
+                                height: InviteHouseholdSheet._qrSize,
+                                child: Center(
+                                  child: Text(
+                                    'QR unavailable',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
-                  ),
+                            );
+                          },
+                        ),
                 ),
               ),
             ),
