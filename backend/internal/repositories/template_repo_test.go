@@ -263,7 +263,10 @@ func TestTemplateRepository_CreateChoreTemplate(t *testing.T) {
 		AddRow(fixedTime(), fixedTime())
 
 	mock.ExpectQuery("INSERT INTO chore_templates").
-		WithArgs(pgxmock.AnyArg(), ct.GroupID, ct.Name, ct.RotationType, ct.Frequency).
+		WithArgs(
+			pgxmock.AnyArg(), ct.GroupID, ct.Name, ct.Description, ct.RotationType, ct.Frequency,
+			ct.PeriodInterval, ct.PeriodConfig, ct.TrackDateOnly, ct.Rollover, ct.AssignmentType, ct.Category,
+		).
 		WillReturnRows(rows)
 
 	err := repo.CreateChoreTemplate(context.Background(), ct)
@@ -277,8 +280,8 @@ func TestTemplateRepository_GetChoreTemplateByID(t *testing.T) {
 	repo := NewTemplateRepository(mock)
 	id := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "group_id", "name", "rotation_type", "frequency", "created_at", "updated_at"}).
-		AddRow(id, fixedUUID(), "Weekly", "schedule", "weekly", fixedTime(), fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "group_id", "name", "description", "rotation_type", "frequency", "period_interval", "period_config", "track_date_only", "rollover", "assignment_type", "category", "created_at", "updated_at"}).
+		AddRow(id, fixedUUID(), "Weekly", (*string)(nil), "schedule", "weekly", 1, []string{}, false, false, "round-robin", (*string)(nil), fixedTime(), fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM chore_templates WHERE id = .*").
 		WithArgs(id).
@@ -311,8 +314,8 @@ func TestTemplateRepository_ListChoreTemplates(t *testing.T) {
 	repo := NewTemplateRepository(mock)
 	gid := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "group_id", "name", "rotation_type", "frequency", "created_at", "updated_at"}).
-		AddRow(fixedUUID(), gid, "Weekly", "schedule", "weekly", fixedTime(), fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "group_id", "name", "description", "rotation_type", "frequency", "period_interval", "period_config", "track_date_only", "rollover", "assignment_type", "category", "created_at", "updated_at"}).
+		AddRow(fixedUUID(), gid, "Weekly", (*string)(nil), "schedule", "weekly", 1, []string{}, false, false, "round-robin", (*string)(nil), fixedTime(), fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM chore_templates WHERE group_id = .*").
 		WithArgs(gid, 50, 0).
@@ -332,7 +335,7 @@ func TestTemplateRepository_UpdateChoreTemplate(t *testing.T) {
 	rows := pgxmock.NewRows([]string{"updated_at"}).AddRow(fixedTime())
 
 	mock.ExpectQuery("UPDATE chore_templates SET").
-		WithArgs("New Name", "schedule", "daily", id).
+		WithArgs("New Name", (*string)(nil), "schedule", "daily", 0, []string(nil), false, false, "", (*string)(nil), id).
 		WillReturnRows(rows)
 
 	ct := &models.ChoreTemplate{ID: id, Name: "New Name", RotationType: "schedule", Frequency: "daily"}
@@ -347,7 +350,7 @@ func TestTemplateRepository_UpdateChoreTemplate_NotFound(t *testing.T) {
 	id := fixedUUID()
 
 	mock.ExpectQuery("UPDATE chore_templates SET").
-		WithArgs("New Name", "schedule", "daily", id).
+		WithArgs("New Name", (*string)(nil), "schedule", "daily", 0, []string(nil), false, false, "", (*string)(nil), id).
 		WillReturnError(pgx.ErrNoRows)
 
 	ct := &models.ChoreTemplate{ID: id, Name: "New Name", RotationType: "schedule", Frequency: "daily"}

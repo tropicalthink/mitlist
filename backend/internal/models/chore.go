@@ -23,6 +23,7 @@ type Chore struct {
 	AssignmentConfig []uuid.UUID `json:"assignment_config,omitempty"`
 	IsActive         bool        `json:"is_active"`
 	Supplies         []string    `json:"supplies,omitempty"`
+	Category         *string     `json:"category,omitempty"`
 	CreatedAt        time.Time   `json:"created_at"`
 	UpdatedAt        time.Time   `json:"updated_at"`
 }
@@ -82,6 +83,13 @@ type ChoreStats struct {
 	LastTrackedAt         *time.Time `json:"last_tracked_at,omitempty"`
 	LastDoneByUserID      *uuid.UUID `json:"last_done_by_user_id,omitempty"`
 	AverageFrequencyHours *float64   `json:"average_frequency_hours,omitempty"`
+}
+
+// ChoreLoadEntry is one member's completed-chore count over a window, used by
+// the "who's carrying the load" fairness view.
+type ChoreLoadEntry struct {
+	UserID         uuid.UUID `json:"user_id"`
+	CompletedCount int       `json:"completed_count"`
 }
 
 // ChoreDetails combines editable chore data, assignment context, and history stats.

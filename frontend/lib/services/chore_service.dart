@@ -68,6 +68,61 @@ class ChoreService {
     }
   }
 
+  Future<List<ChoreTemplate>> listChoreTemplates(
+    String groupId, {
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    ensureValidGroupId(groupId);
+    try {
+      final r = await _dio.get('/chore-templates', queryParameters: {
+        'group_id': groupId,
+        'limit': limit,
+        'offset': offset,
+      });
+      final data = r.data;
+      if (data is! List) return [];
+      return data
+          .map((j) => ChoreTemplate.fromJson((j as Map).cast<String, dynamic>()))
+          .toList();
+    } on DioException catch (e) {
+      _logger.e('List chore templates failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<ChoreTemplate> createChoreTemplate(
+      CreateChoreTemplateRequest req) async {
+    try {
+      final r = await _dio.post('/chore-templates', data: req.toJson());
+      return ChoreTemplate.fromJson((r.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Create chore template failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<List<ChoreLoadEntry>> getChoreLoad(
+    String groupId, {
+    int days = 30,
+  }) async {
+    ensureValidGroupId(groupId);
+    try {
+      final r = await _dio.get('/chores/load', queryParameters: {
+        'group_id': groupId,
+        'days': days,
+      });
+      final data = r.data;
+      if (data is! List) return [];
+      return data
+          .map((j) => ChoreLoadEntry.fromJson((j as Map).cast<String, dynamic>()))
+          .toList();
+    } on DioException catch (e) {
+      _logger.e('Get chore load failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
   Future<Chore> getChore(String id) async {
     try {
       final r = await _dio.get('/chores/$id');

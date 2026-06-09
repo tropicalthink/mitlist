@@ -195,6 +195,25 @@ func (s *ChoreService) ListChores(ctx context.Context, user *models.User, groupI
 }
 
 // ListCurrentChores returns chores with pending/last assignments and due-state metadata.
+// GetChoreLoad returns per-member completion counts for a group over the last
+// `days` days (clamped to a sane range), for the fairness view.
+func (s *ChoreService) GetChoreLoad(ctx context.Context, user *models.User, groupID uuid.UUID, days int) ([]models.ChoreLoadEntry, error) {
+	if err := s.requireActiveVerifiedUser(user); err != nil {
+		return nil, err
+	}
+	if err := s.requireMembership(ctx, user.ID, groupID); err != nil {
+		return nil, err
+	}
+	if days <= 0 {
+		days = 30
+	}
+	if days > 365 {
+		days = 365
+	}
+	since := time.Now().UTC().AddDate(0, 0, -days)
+	return s.choreRepo.GetChoreLoadByGroup(ctx, groupID, since)
+}
+
 func (s *ChoreService) ListCurrentChores(ctx context.Context, user *models.User, groupID uuid.UUID, limit, offset, dueSoonDays int) ([]models.CurrentChore, error) {
 	if err := s.requireActiveVerifiedUser(user); err != nil {
 		return nil, err
@@ -255,6 +274,9 @@ func (s *ChoreService) UpdateChore(ctx context.Context, user *models.User, chore
 	}
 	if chore.AssignmentConfig == nil {
 		chore.AssignmentConfig = existing.AssignmentConfig
+	}
+	if chore.Category == nil {
+		chore.Category = existing.Category
 	}
 	if chore.Name == "" {
 		return nil, &api.ValidationError{Field: "name", Message: "chore name is required"}

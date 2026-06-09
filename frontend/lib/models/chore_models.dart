@@ -14,6 +14,7 @@ class Chore {
   final List<String> assignmentConfig;
   final bool isActive;
   final List<String> supplies;
+  final String? category;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -33,6 +34,7 @@ class Chore {
     this.assignmentConfig = const [],
     required this.isActive,
     this.supplies = const [],
+    this.category,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -62,6 +64,7 @@ class Chore {
         supplies: (json['supplies'] as List<dynamic>? ?? const [])
             .map((v) => v as String)
             .toList(),
+        category: json['category'] as String?,
         createdAt: DateTime.parse(json['created_at'] as String),
         updatedAt: DateTime.parse(json['updated_at'] as String),
       );
@@ -83,6 +86,7 @@ class Chore {
         'assignment_config': assignmentConfig,
         'is_active': isActive,
         'supplies': supplies,
+        if (category != null) 'category': category,
         'created_at': createdAt.toIso8601String(),
         'updated_at': updatedAt.toIso8601String(),
       };
@@ -103,6 +107,7 @@ class CreateChoreRequest {
   final List<String> assignmentConfig;
   final bool isActive;
   final List<String> supplies;
+  final String? category;
   const CreateChoreRequest({
     required this.groupId,
     required this.name,
@@ -118,6 +123,7 @@ class CreateChoreRequest {
     this.assignmentConfig = const [],
     this.isActive = true,
     this.supplies = const [],
+    this.category,
   });
   Map<String, dynamic> toJson() => {
         'group_id': groupId,
@@ -135,6 +141,7 @@ class CreateChoreRequest {
         'assignment_config': assignmentConfig,
         'is_active': isActive,
         'supplies': supplies,
+        if (category != null) 'category': category,
       };
 }
 
@@ -337,6 +344,104 @@ class ChoreDetails {
             ChoreStats.fromJson((json['stats'] as Map).cast<String, dynamic>()),
         dueStatus: json['due_status'] as String? ?? 'unscheduled',
         assignedToMe: json['assigned_to_me'] as bool? ?? false,
+      );
+}
+
+class ChoreTemplate {
+  final String id;
+  final String groupId;
+  final String name;
+  final String? description;
+  final String rotationType;
+  final String frequency;
+  final int periodInterval;
+  final List<String> periodConfig;
+  final bool trackDateOnly;
+  final bool rollover;
+  final String assignmentType;
+  final String? category;
+
+  const ChoreTemplate({
+    required this.id,
+    required this.groupId,
+    required this.name,
+    this.description,
+    this.rotationType = '',
+    this.frequency = 'daily',
+    this.periodInterval = 1,
+    this.periodConfig = const [],
+    this.trackDateOnly = false,
+    this.rollover = false,
+    this.assignmentType = 'round-robin',
+    this.category,
+  });
+
+  factory ChoreTemplate.fromJson(Map<String, dynamic> json) => ChoreTemplate(
+        id: json['id'] as String,
+        groupId: json['group_id'] as String,
+        name: json['name'] as String,
+        description: json['description'] as String?,
+        rotationType: json['rotation_type'] as String? ?? '',
+        frequency: json['frequency'] as String? ?? 'daily',
+        periodInterval: json['period_interval'] as int? ?? 1,
+        periodConfig: (json['period_config'] as List<dynamic>? ?? const [])
+            .map((v) => v as String)
+            .toList(),
+        trackDateOnly: json['track_date_only'] as bool? ?? false,
+        rollover: json['rollover'] as bool? ?? false,
+        assignmentType: json['assignment_type'] as String? ?? 'round-robin',
+        category: json['category'] as String?,
+      );
+}
+
+class CreateChoreTemplateRequest {
+  final String groupId;
+  final String name;
+  final String? description;
+  final String frequency;
+  final int periodInterval;
+  final List<String> periodConfig;
+  final bool trackDateOnly;
+  final bool rollover;
+  final String assignmentType;
+  final String? category;
+
+  const CreateChoreTemplateRequest({
+    required this.groupId,
+    required this.name,
+    this.description,
+    this.frequency = 'daily',
+    this.periodInterval = 1,
+    this.periodConfig = const [],
+    this.trackDateOnly = false,
+    this.rollover = false,
+    this.assignmentType = 'round-robin',
+    this.category,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'group_id': groupId,
+        'name': name,
+        if (description != null) 'description': description,
+        'frequency': frequency,
+        'period_interval': periodInterval,
+        'period_config': periodConfig,
+        'track_date_only': trackDateOnly,
+        'rollover': rollover,
+        'assignment_type': assignmentType,
+        if (category != null) 'category': category,
+      };
+}
+
+class ChoreLoadEntry {
+  final String userId;
+  final int completedCount;
+
+  const ChoreLoadEntry({required this.userId, required this.completedCount});
+
+  factory ChoreLoadEntry.fromJson(Map<String, dynamic> json) => ChoreLoadEntry(
+        userId: json['user_id'] as String,
+        completedCount: json['completed_count'] as int? ?? 0,
       );
 }
 

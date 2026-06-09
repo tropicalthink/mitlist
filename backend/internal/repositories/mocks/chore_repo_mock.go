@@ -51,6 +51,14 @@ func (m *MockChoreRepo) GetChoreStats(ctx context.Context, choreID uuid.UUID) (*
 	return nil, args.Error(1)
 }
 
+func (m *MockChoreRepo) GetChoreLoadByGroup(ctx context.Context, groupID uuid.UUID, since time.Time) ([]models.ChoreLoadEntry, error) {
+	args := m.Called(ctx, groupID, since)
+	if e := args.Get(0); e != nil {
+		return e.([]models.ChoreLoadEntry), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
 func (m *MockChoreRepo) UpdateChore(ctx context.Context, chore *models.Chore) error {
 	args := m.Called(ctx, chore)
 	return args.Error(0)

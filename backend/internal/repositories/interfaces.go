@@ -116,6 +116,7 @@ type ChoreRepo interface {
 	ListChoresByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.Chore, error)
 	ListCurrentChoresByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.CurrentChore, error)
 	GetChoreStats(ctx context.Context, choreID uuid.UUID) (*models.ChoreStats, error)
+	GetChoreLoadByGroup(ctx context.Context, groupID uuid.UUID, since time.Time) ([]models.ChoreLoadEntry, error)
 	UpdateChore(ctx context.Context, chore *models.Chore) error
 	DeleteChore(ctx context.Context, id uuid.UUID) error
 	CreateRotationState(ctx context.Context, state *models.ChoreRotationState) error
