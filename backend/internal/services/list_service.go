@@ -259,7 +259,7 @@ func (s *ListService) CreateItem(ctx context.Context, user *models.User, item *m
 		return err
 	}
 	s.publishItem("list:item_created", list.GroupID, item)
-	go s.broadcastListPush(list, user.ID, "New item added", item.Name+" added to "+list.Name)
+	go s.broadcastListPush(list, user.ID, "New item added", displayName(user)+" added "+item.Name+" to "+list.Name)
 	return nil
 }
 

@@ -451,7 +451,7 @@ func (s *ChoreService) CompleteChore(ctx context.Context, user *models.User, cho
 	s.publishChore("chore:completed", chore.GroupID, choreID)
 	go s.broadcastChorePush(chore.GroupID, choreID, user.ID,
 		"Chore completed",
-		user.FirstName+" completed "+chore.Name)
+		displayName(user)+" completed "+chore.Name)
 	return nil
 }
 
@@ -506,7 +506,7 @@ func (s *ChoreService) SkipChore(ctx context.Context, user *models.User, choreID
 	s.publishChore("chore:skipped", chore.GroupID, choreID)
 	go s.broadcastChorePush(chore.GroupID, choreID, user.ID,
 		"Chore skipped",
-		user.FirstName+" skipped "+chore.Name)
+		displayName(user)+" skipped "+chore.Name)
 	return nil
 }
 

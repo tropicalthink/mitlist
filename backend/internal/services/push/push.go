@@ -14,9 +14,15 @@ import (
 	"golang.org/x/oauth2/google"
 
 	"github.com/mitlist-app/mitlist/internal/config"
+	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/mitlist-app/mitlist/pkg/logger"
 )
+
+// notifPrefRepo is the minimal repo interface needed to check opt-out preferences.
+type notifPrefRepo interface {
+	GetPreference(ctx context.Context, userID, groupID uuid.UUID) (*models.NotificationPreference, error)
+}
 
 // Service provides push notification operations.
 type Service struct {
@@ -24,6 +30,7 @@ type Service struct {
 	log       *logger.Logger
 	authRepo  *repositories.AuthRepository
 	groupRepo repositories.GroupRepo
+	notifRepo notifPrefRepo
 
 	fcmOnce  sync.Once
 	fcmCreds *google.Credentials
@@ -31,8 +38,8 @@ type Service struct {
 }
 
 // New creates a new push notification service.
-func New(cfg *config.Config, log *logger.Logger, authRepo *repositories.AuthRepository, groupRepo repositories.GroupRepo) *Service {
-	return &Service{cfg: cfg, log: log, authRepo: authRepo, groupRepo: groupRepo}
+func New(cfg *config.Config, log *logger.Logger, authRepo *repositories.AuthRepository, groupRepo repositories.GroupRepo, notifRepo notifPrefRepo) *Service {
+	return &Service{cfg: cfg, log: log, authRepo: authRepo, groupRepo: groupRepo, notifRepo: notifRepo}
 }
 
 // SendToUser sends a push notification to all subscriptions/devices for a user.
@@ -110,6 +117,13 @@ func (s *Service) broadcastExcluding(groupID, excludeUserID uuid.UUID, payload s
 	for _, m := range members {
 		if m.UserID == excludeUserID {
 			continue
+		}
+		// Respect the global push opt-out preference when the repo is available.
+		if s.notifRepo != nil {
+			pref, err := s.notifRepo.GetPreference(ctx, m.UserID, groupID)
+			if err == nil && !pref.PushEnabled {
+				continue
+			}
 		}
 		if err := s.SendToUser(m.UserID, payload); err != nil {
 			s.log.Warn().Err(err).Str("user_id", m.UserID.String()).Msg("broadcast: send failed")

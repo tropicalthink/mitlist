@@ -1,9 +1,25 @@
 package services
 
 import (
+	"strings"
+
 	"github.com/google/uuid"
+	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/services/jwt"
 )
+
+// displayName returns a friendly name for a user, falling back to "A housemate"
+// when FirstName is empty (e.g. some OAuth accounts).
+func displayName(u *models.User) string {
+	if u == nil {
+		return "A housemate"
+	}
+	name := strings.TrimSpace(u.FirstName)
+	if name == "" {
+		return "A housemate"
+	}
+	return name
+}
 
 // JWTService defines the interface for JWT operations.
 type JWTService interface {

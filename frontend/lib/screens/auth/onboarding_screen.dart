@@ -69,9 +69,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   Future<void> _checkExistingGroups() async {
     try {
       final groupService = await ref.read(groupServiceProviderAsync.future);
-      final groups = await groupService.listGroups(limit: 1);
+      // Fetch enough to detect a real household alongside the auto-created
+      // personal group that every new account gets.
+      final groups = await groupService.listGroups(limit: 50);
       if (!mounted) return;
-      if (groups.isNotEmpty) {
+      final hasHousehold = groups.any((g) => g.isPersonal != true);
+      if (hasHousehold) {
         context.goNamed('home');
         return;
       }
@@ -101,8 +104,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   Future<void> _onCreateHousehold() async {
     await Haptics.light();
     if (!mounted) return;
-    final created = await CreateHouseholdSheet.show(context);
-    if (created == true && mounted) {
+    final group = await CreateHouseholdSheet.show(context);
+    if (group != null && mounted) {
+      ref.read(currentGroupIdProvider.notifier).set(group.id);
       context.goNamed('home');
     }
   }

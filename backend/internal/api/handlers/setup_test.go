@@ -202,7 +202,7 @@ func newTestActivityRepo() *repositories.ActivityRepository {
 func newTestPasswordService() *passwordservice.Service { return passwordservice.New() }
 func newTestMailService() *mailservice.Service         { return mailservice.New(testCfg, logger.New("test")) }
 func newTestPushService() *pushservice.Service {
-	return pushservice.New(testCfg, logger.New("test"), newTestAuthRepo(), newTestGroupRepo())
+	return pushservice.New(testCfg, logger.New("test"), newTestAuthRepo(), newTestGroupRepo(), newTestNotificationRepo())
 }
 func newTestAIClient() *aiservice.Client               { return aiservice.New(testCfg) }
 

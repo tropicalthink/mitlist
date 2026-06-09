@@ -13,8 +13,8 @@ import '../widgets/app_input.dart';
 class CreateHouseholdSheet extends ConsumerStatefulWidget {
   const CreateHouseholdSheet({super.key});
 
-  static Future<bool?> show(BuildContext context) async {
-    return showAppBottomSheet<bool>(
+  static Future<Group?> show(BuildContext context) async {
+    return showAppBottomSheet<Group>(
       context: context,
       title: 'Create household',
       body: const CreateHouseholdSheet(),
@@ -40,7 +40,7 @@ class _CreateHouseholdSheetState extends ConsumerState<CreateHouseholdSheet> {
 
     try {
       final service = await ref.read(groupServiceProviderAsync.future);
-      await service.createGroup(CreateGroupRequest(
+      final group = await service.createGroup(CreateGroupRequest(
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim().isEmpty
             ? null
@@ -48,7 +48,7 @@ class _CreateHouseholdSheetState extends ConsumerState<CreateHouseholdSheet> {
         currency: _currency,
       ));
       if (!mounted) return;
-      Navigator.of(context).pop(true);
+      Navigator.of(context).pop(group);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Household created')),
       );
