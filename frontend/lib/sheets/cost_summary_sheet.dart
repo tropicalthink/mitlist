@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../theme/spacing.dart';
 import '../utils/format_currency.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_icon.dart';
 
-class CostSummarySheet extends ConsumerWidget {
+class CostSummarySheet extends StatelessWidget {
   const CostSummarySheet({
     super.key,
     required this.listName,
@@ -53,7 +51,7 @@ class CostSummarySheet extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final hasPrices = totalCents > 0;
 
     return Column(

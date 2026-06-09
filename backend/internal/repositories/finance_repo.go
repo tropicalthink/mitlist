@@ -346,7 +346,7 @@ func (r *FinanceRepo) GetRecurringExpenseByID(ctx context.Context, id uuid.UUID)
 	err := row.Scan(&re.ID, &re.GroupID, &re.PayerID, &re.Amount, &re.Description, &re.Category, &re.Currency, &re.Frequency, &re.NextDue, &re.IsActive, &re.CreatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, fmt.Errorf("recurring expense not found")
+			return nil, fmt.Errorf("recurring expense not found: %w", pgx.ErrNoRows)
 		}
 		return nil, err
 	}
@@ -377,7 +377,7 @@ func (r *FinanceRepo) ListRecurringExpensesByDateRange(ctx context.Context, grou
 	rows, err := r.pool.Query(ctx, `
 		SELECT id, group_id, payer_id, amount, description, category, frequency, next_due, is_active, created_at, currency
 		FROM recurring_expenses
-		WHERE group_id = $1 AND is_active = true AND next_due >= $2 AND next_due <= $3
+		WHERE group_id = $1 AND is_active = true AND next_due >= $2 AND next_due < $3
 		ORDER BY next_due ASC, created_at ASC
 	`, groupID, from, to)
 	if err != nil {
@@ -427,7 +427,7 @@ func (r *FinanceRepo) GetSplitByID(ctx context.Context, id uuid.UUID) (*models.S
 	err := row.Scan(&s.ID, &s.ExpenseID, &s.UserID, &s.Amount, &s.IsSettled, &s.CreatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, fmt.Errorf("split not found")
+			return nil, fmt.Errorf("split not found: %w", pgx.ErrNoRows)
 		}
 		return nil, err
 	}
@@ -445,7 +445,7 @@ func (r *FinanceRepo) GetSettlementByID(ctx context.Context, id uuid.UUID) (*mod
 	err := row.Scan(&s.ID, &s.GroupID, &s.FromUserID, &s.ToUserID, &s.Amount, &s.CreatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, fmt.Errorf("settlement not found")
+			return nil, fmt.Errorf("settlement not found: %w", pgx.ErrNoRows)
 		}
 		return nil, err
 	}

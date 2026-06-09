@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/robfig/cron/v3"
 
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
@@ -114,6 +115,10 @@ func (h *FinanceHandler) CreateExpense(w http.ResponseWriter, r *http.Request) {
 		for _, splitUserID := range req.SplitUserIDs {
 			splits = append(splits, services.ExpenseSplitInput{UserID: splitUserID})
 		}
+	}
+	if len(splits) == 0 {
+		api.RespondError(w, &api.ValidationError{Message: "at least one split participant or split detail is required"})
+		return
 	}
 	if err := h.service.CreateExpenseWithSplitMode(r.Context(), userID, expense, req.SplitMode, splits); err != nil {
 		api.RespondError(w, err)
@@ -298,29 +303,51 @@ func (h *FinanceHandler) ExportExpensesCSV(w http.ResponseWriter, r *http.Reques
 	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 	w.Header().Set("Content-Disposition", `attachment; filename="expenses.csv"`)
 	writer := csv.NewWriter(w)
-	_ = writer.Write([]string{"id", "group_id", "payer_id", "amount", "description", "category", "currency", "notes", "date", "created_at"})
+	headers := []string{"id", "group_id", "payer_id", "amount", "description", "category", "currency", "notes", "date", "created_at"}
+	if err := writer.Write(headers); err != nil {
+		api.RespondError(w, err)
+		return
+	}
 	for _, expense := range expenses {
-		_ = writer.Write([]string{
+		row := []string{
 			expense.ID.String(),
 			expense.GroupID.String(),
 			expense.PayerID.String(),
 			strconv.FormatInt(expense.Amount, 10),
-			sanitizeCSV(expense.Description),
-			sanitizeCSV(expense.Category),
-			sanitizeCSV(expense.Currency),
-			sanitizeCSV(expense.Notes),
+			expense.Description,
+			expense.Category,
+			expense.Currency,
+			expense.Notes,
 			expense.Date.Format(time.RFC3339),
 			expense.CreatedAt.Format(time.RFC3339),
-		})
+		}
+		sanitizeCSVRow(row)
+		if err := writer.Write(row); err != nil {
+			api.RespondError(w, err)
+			return
+		}
 	}
 	writer.Flush()
+	if err := writer.Error(); err != nil {
+		api.RespondError(w, err)
+	}
 }
 
-func sanitizeCSV(s string) string {
-	if len(s) > 0 && (s[0] == '=' || s[0] == '+' || s[0] == '-' || s[0] == '@') {
-		return "'" + s
+func sanitizeCSVRow(row []string) {
+	for i, s := range row {
+		if len(s) > 0 && (s[0] == '=' || s[0] == '+' || s[0] == '-' || s[0] == '@') {
+			row[i] = "'" + s
+		}
 	}
-	return s
+}
+
+func isValidFrequency(freq string) bool {
+	switch freq {
+	case "daily", "weekly", "biweekly", "monthly", "quarterly", "yearly":
+		return true
+	}
+	_, err := cron.ParseStandard(freq)
+	return err == nil
 }
 
 // DeleteExpense DELETE /api/v1/expenses/{id}
@@ -341,7 +368,7 @@ func (h *FinanceHandler) DeleteExpense(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, err)
 		return
 	}
-	api.RespondJSON(w, http.StatusNoContent, nil)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // ------------------------------------------------------------------
@@ -449,7 +476,7 @@ func (h *FinanceHandler) DeleteSplit(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, err)
 		return
 	}
-	api.RespondJSON(w, http.StatusNoContent, nil)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // ListExpenseSplits GET /api/v1/expenses/{id}/splits
@@ -577,7 +604,7 @@ func (h *FinanceHandler) DeleteSettlement(w http.ResponseWriter, r *http.Request
 		api.RespondError(w, err)
 		return
 	}
-	api.RespondJSON(w, http.StatusNoContent, nil)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // ------------------------------------------------------------------
@@ -605,6 +632,11 @@ func (h *FinanceHandler) CreateRecurringExpense(w http.ResponseWriter, r *http.R
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
+		return
+	}
+
+	if !isValidFrequency(req.Frequency) {
+		api.RespondError(w, &api.ValidationError{Field: "frequency", Message: "must be one of: daily, weekly, biweekly, monthly, quarterly, yearly, or a valid cron expression"})
 		return
 	}
 
@@ -772,5 +804,5 @@ func (h *FinanceHandler) DeleteRecurringExpense(w http.ResponseWriter, r *http.R
 		api.RespondError(w, err)
 		return
 	}
-	api.RespondJSON(w, http.StatusNoContent, nil)
+	w.WriteHeader(http.StatusNoContent)
 }

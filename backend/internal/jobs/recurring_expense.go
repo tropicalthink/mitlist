@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -86,6 +87,9 @@ func (j *RecurringExpenseJob) processRecurringExpense(ctx context.Context, re mo
 		j.log.Warn().Err(err).Str("frequency", re.Frequency).Msg("invalid cron expression, using monthly fallback")
 		nextDue = re.NextDue.AddDate(0, 1, 0)
 	}
+	if nextDue.Before(now) {
+		nextDue = now.AddDate(0, 1, 0)
+	}
 
 	if err := j.repo.ProcessRecurringExpense(ctx, &expense, &split, re.ID, re.NextDue, nextDue); err != nil {
 		return fmt.Errorf("process recurring expense: %w", err)
@@ -115,6 +119,20 @@ func (j *RecurringExpenseJob) processRecurringExpense(ctx context.Context, re mo
 }
 
 func (j *RecurringExpenseJob) nextDueFromCron(freq string, from time.Time) (time.Time, error) {
+	switch strings.ToLower(strings.TrimSpace(freq)) {
+	case "daily":
+		return from.AddDate(0, 0, 1), nil
+	case "weekly":
+		return from.AddDate(0, 0, 7), nil
+	case "biweekly":
+		return from.AddDate(0, 0, 14), nil
+	case "monthly":
+		return from.AddDate(0, 1, 0), nil
+	case "quarterly":
+		return from.AddDate(0, 3, 0), nil
+	case "yearly":
+		return from.AddDate(1, 0, 0), nil
+	}
 	sched, err := cron.ParseStandard(freq)
 	if err != nil {
 		return time.Time{}, err
@@ -164,9 +182,9 @@ func (r *recurringExpenseRepoImpl) ProcessRecurringExpense(ctx context.Context, 
 	defer tx.Rollback(ctx)
 
 	_, err = tx.Exec(ctx, `
-		INSERT INTO expenses (id, group_id, payer_id, amount, description, category, currency, date, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-	`, expense.ID, expense.GroupID, expense.PayerID, expense.Amount, expense.Description, expense.Category, expense.Currency, expense.Date, expense.CreatedAt, expense.UpdatedAt)
+		INSERT INTO expenses (id, group_id, payer_id, amount, description, category, currency, notes, date, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+	`, expense.ID, expense.GroupID, expense.PayerID, expense.Amount, expense.Description, expense.Category, expense.Currency, "", expense.Date, expense.CreatedAt, expense.UpdatedAt)
 	if err != nil {
 		return fmt.Errorf("create expense: %w", err)
 	}

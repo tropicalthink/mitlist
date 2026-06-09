@@ -28,6 +28,7 @@ func TestFinanceService_CreateExpense(t *testing.T) {
 		svc := NewFinanceService(financeRepo, groupRepo)
 
 		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "admin"}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, payerID).Return(&models.GroupMembership{Role: "member"}, nil)
 		financeRepo.On("CreateExpenseWithSplits", ctx, mock.AnythingOfType("*models.Expense"), mock.AnythingOfType("[]models.Split")).Return(nil)
 
 		splitUserIDs := []uuid.UUID{userID, payerID}

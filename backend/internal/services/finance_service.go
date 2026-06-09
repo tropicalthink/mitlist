@@ -93,6 +93,9 @@ func (s *FinanceService) CreateExpenseWithSplitMode(ctx context.Context, userID 
 			return &api.ValidationError{Message: "payer must be the current user or you must be an admin"}
 		}
 	}
+	if err := s.requireMember(ctx, expense.GroupID, expense.PayerID); err != nil {
+		return &api.ValidationError{Message: "payer must be a member of this group"}
+	}
 	if expense.Amount <= 0 {
 		return api.ErrValidation
 	}
@@ -103,6 +106,11 @@ func (s *FinanceService) CreateExpenseWithSplitMode(ctx context.Context, userID 
 	splits, err := buildSplits(expense.Amount, expense.PayerID, splitMode, splitInputs)
 	if err != nil {
 		return err
+	}
+	for _, split := range splits {
+		if err := s.requireMember(ctx, expense.GroupID, split.UserID); err != nil {
+			return &api.ValidationError{Message: "split user must be a member of this group"}
+		}
 	}
 	return s.financeRepo.CreateExpenseWithSplits(ctx, expense, splits)
 }
@@ -572,7 +580,7 @@ func buildSplits(total int64, payerID uuid.UUID, splitMode string, inputs []Expe
 			percentageSum += input.Percentage
 		}
 		if percentageSum != 10000 {
-			return nil, &api.ValidationError{Message: "percentages must total 100%"}
+			return nil, &api.ValidationError{Message: "percentages must total 100% (basis points: 10000)"}
 		}
 		distributeByWeight(total, inputs, amounts, func(input ExpenseSplitInput) int64 { return input.Percentage }, percentageSum)
 	default:

@@ -46,6 +46,7 @@ class ListRepository {
       {int limit = 200, int offset = 0}) async {
     final remote =
         await _remote.listLists(groupId, limit: limit, offset: offset);
+    await _db.clearListsForGroup(groupId);
     await _db.upsertListsRows(remote.map(_toListsRow));
     return remote.length;
   }
@@ -344,7 +345,7 @@ class ListRepository {
   List<String> _safeStringList(String json) {
     try {
       final decoded = jsonDecode(json);
-      if (decoded is List) return decoded.map((e) => 'Something went wrong.').toList();
+      if (decoded is List) return decoded.map((e) => e.toString()).toList();
     } catch (_) {
       // Failed to parse JSON string list; return empty.
     }

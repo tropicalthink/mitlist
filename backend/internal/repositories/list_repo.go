@@ -54,7 +54,7 @@ func (r *ListRepository) ListListsByGroup(ctx context.Context, groupID uuid.UUID
 	if limit <= 0 {
 		limit = 50
 	}
-	query := `SELECT id, group_id, name, type, archived_at, created_at, updated_at FROM lists WHERE group_id = $1 ORDER BY created_at DESC, id DESC LIMIT $2 OFFSET $3`
+	query := `SELECT id, group_id, name, type, archived_at, created_at, updated_at FROM lists WHERE group_id = $1 AND archived_at IS NULL ORDER BY created_at DESC, id DESC LIMIT $2 OFFSET $3`
 	rows, err := r.pool.Query(ctx, query, groupID, limit, offset)
 	if err != nil {
 		return nil, err

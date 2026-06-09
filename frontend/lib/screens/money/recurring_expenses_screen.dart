@@ -526,18 +526,19 @@ class _CreateRecurringFormState extends State<_CreateRecurringForm> {
           onChanged: (v) => setState(() => _frequency = v!),
         ),
         const SizedBox(height: MitlistSpacing.sm),
-        if (widget.userLabels.isNotEmpty)
-          DropdownButtonFormField<String>(
-            initialValue: _payerId,
-            decoration: const InputDecoration(labelText: 'Payer'),
-            items: widget.userLabels.entries
-                .map((e) => DropdownMenuItem(
-                      value: e.key,
-                      child: Text(e.value),
-                    ))
-                .toList(),
-            onChanged: (v) => setState(() => _payerId = v),
-          ),
+        DropdownButtonFormField<String>(
+          initialValue: _payerId,
+          decoration: const InputDecoration(labelText: 'Payer'),
+          items: widget.userLabels.isEmpty
+              ? const [DropdownMenuItem(value: null, child: Text('Loading members...'))]
+              : widget.userLabels.entries
+                  .map((e) => DropdownMenuItem(
+                        value: e.key,
+                        child: Text(e.value),
+                      ))
+                  .toList(),
+          onChanged: widget.userLabels.isEmpty ? null : (v) => setState(() => _payerId = v),
+        ),
         const SizedBox(height: MitlistSpacing.md),
         Row(
           mainAxisAlignment: MainAxisAlignment.end,

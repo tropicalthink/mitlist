@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -66,7 +67,7 @@ func (s *ExpenseReceiptService) Attach(ctx context.Context, userID, groupID, exp
 	}
 	expense, err := s.financeRepo.GetExpenseByID(ctx, expenseID)
 	if err != nil {
-		if err.Error() == "expense not found" {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return api.ErrNotFound
 		}
 		return err
@@ -101,7 +102,7 @@ func (s *ExpenseReceiptService) List(ctx context.Context, userID, groupID, expen
 	}
 	expense, err := s.financeRepo.GetExpenseByID(ctx, expenseID)
 	if err != nil {
-		if err.Error() == "expense not found" {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, api.ErrNotFound
 		}
 		return nil, err
@@ -144,7 +145,7 @@ func (s *ExpenseReceiptService) Detach(ctx context.Context, userID, groupID, exp
 	}
 	expense, err := s.financeRepo.GetExpenseByID(ctx, expenseID)
 	if err != nil {
-		if err.Error() == "expense not found" {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return api.ErrNotFound
 		}
 		return err

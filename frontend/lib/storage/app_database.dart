@@ -223,6 +223,10 @@ FROM list_items_table;
     return (select(listItemsTable)..where((t) => t.listId.equals(listId))).get();
   }
 
+  Future<void> clearListsForGroup(String groupId) async {
+    await (delete(listsTable)..where((t) => t.groupId.equals(groupId))).go();
+  }
+
   Future<void> upsertListsRows(Iterable<ListsTableCompanion> rows) async {
     await batch((b) {
       b.insertAllOnConflictUpdate(listsTable, rows.toList(growable: false));
