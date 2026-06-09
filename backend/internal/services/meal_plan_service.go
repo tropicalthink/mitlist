@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/repositories"
+	"github.com/mitlist-app/mitlist/pkg/parsing"
 )
 
 // MealPlanService implements business logic for meal plans.
@@ -205,25 +205,5 @@ func (s *MealPlanService) GenerateShoppingList(ctx context.Context, user *models
 }
 
 func parseIngredientAmount(raw string) float64 {
-	raw = strings.TrimSpace(strings.ReplaceAll(raw, ",", "."))
-	if raw == "" {
-		return 1
-	}
-	// Try to parse a simple number from the start of the string
-	var numStr string
-	for _, ch := range raw {
-		if (ch >= '0' && ch <= '9') || ch == '.' || ch == '/' {
-			numStr += string(ch)
-		} else if ch == ' ' && numStr != "" {
-			break
-		} else if numStr != "" {
-			break
-		}
-	}
-	if numStr != "" {
-		if n, err := strconv.ParseFloat(numStr, 64); err == nil && n > 0 {
-			return n
-		}
-	}
-	return 1
+	return parsing.ParseIngredientAmount(raw)
 }

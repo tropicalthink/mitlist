@@ -16,7 +16,6 @@ import '../../widgets/app_icon.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import '../../sheets/expense_creation_sheet.dart';
 import '../../sheets/create_list_sheet.dart';
-import '../../sheets/recipe_creation_sheet.dart';
 import '../../sheets/chore_creation_sheet.dart';
 import '../../widgets/empty_state.dart';
 
@@ -118,11 +117,13 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
         ? r.items.map((i) => i.name).join('\n')
         : null;
     final steps = r.steps.isNotEmpty ? r.steps.join('\n') : null;
-    final created = await RecipeCreationSheet.show(
-      context,
-      initialTitle: r.title,
-      initialIngredients: ingredients,
-      initialSteps: steps,
+    final created = await context.pushNamed<bool>(
+      'recipeCreate',
+      extra: {
+        'initialTitle': r.title,
+        'initialIngredients': ingredients,
+        'initialSteps': steps,
+      },
     );
     if (mounted && (created == true)) {
       context.pop();

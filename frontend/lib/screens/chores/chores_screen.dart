@@ -786,28 +786,30 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                               ],
                             ),
                       const SizedBox(height: MitlistSpacing.sm),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            for (final mode in const [
-                              ('due', 'By due date'),
-                              ('rhythm', 'By rhythm'),
-                              ('zone', 'By zone'),
-                            ]) ...[
-                              AppChip(
-                                label: mode.$2,
-                                selected: _groupMode == mode.$1,
-                                onSelected: (_) {
-                                  setState(() => _groupMode = mode.$1);
-                                  SharedPreferences.getInstance().then((p) =>
-                                      p.setString('chores_group_mode', mode.$1));
-                                },
-                              ),
-                              if (mode.$1 != 'zone')
-                                const SizedBox(width: MitlistSpacing.sm),
+                      Center(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              for (final mode in const [
+                                ('due', 'By due date'),
+                                ('rhythm', 'By rhythm'),
+                                ('zone', 'By zone'),
+                              ]) ...[
+                                AppChip(
+                                  label: mode.$2,
+                                  selected: _groupMode == mode.$1,
+                                  onSelected: (_) {
+                                    setState(() => _groupMode = mode.$1);
+                                    SharedPreferences.getInstance().then((p) =>
+                                        p.setString('chores_group_mode', mode.$1));
+                                  },
+                                ),
+                                if (mode.$1 != 'zone')
+                                  const SizedBox(width: MitlistSpacing.sm),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
                       ),
                     ],

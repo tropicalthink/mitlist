@@ -82,11 +82,11 @@ lib/
 
 ### Design Tokens
 
-- `MitlistColors` — Full palette in `theme/colors.dart`
-- `MitlistSpacing` — Spacing scale in `theme/spacing.dart`
-- `MitlistTypography` — Text styles in `theme/typography.dart`
-- `MitlistAnimations` — Duration/easing constants in `theme/animations.dart`
-- `MitlistShadows` — Shadow presets in `theme/shadows.dart`
-- `MitlistTheme` — Light/dark ThemeData in `theme/theme.dart`
+- `mitlistColors` — Full palette in `theme/colors.dart`
+- `mitlistSpacing` — Spacing scale in `theme/spacing.dart`
+- `mitlistTypography` — Text styles in `theme/typography.dart`
+- `mitlistAnimations` — Duration/easing constants in `theme/animations.dart`
+- `mitlistShadows` — Shadow presets in `theme/shadows.dart`
+- `mitlistTheme` — Light/dark ThemeData in `theme/theme.dart`
 
 Always use these tokens instead of hardcoded values. See `AGENTS.md` for anti-patterns.

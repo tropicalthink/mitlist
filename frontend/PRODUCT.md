@@ -10,7 +10,7 @@ Members of a household (roommates, partners, families) coordinating shared life:
 
 ## Product Purpose
 
-Mitlist replaces the scattered group chats, fridge sticky-notes, and "who paid for what" spreadsheets that households run on. Success is the app disappearing into the routine: a list gets cleared on a shopping trip, a chore gets marked done, an expense gets split, with no friction and no ambiguity about who did what.
+mitlist replaces the scattered group chats, fridge sticky-notes, and "who paid for what" spreadsheets that households run on. Success is the app disappearing into the routine: a list gets cleared on a shopping trip, a chore gets marked done, an expense gets split, with no friction and no ambiguity about who did what.
 
 ## Brand Personality
 

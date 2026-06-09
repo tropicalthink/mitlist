@@ -200,10 +200,11 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       ],
     );
     if (confirmed != true || !mounted) { _isSaving = false; return; }
-    Navigator.of(context).pop();
     try {
       final service = await ref.read(recipeServiceProviderAsync.future);
       await service.deleteRecipe(recipe.id);
+      if (!mounted) return;
+      Navigator.of(context).pop();
       await _loadKitchen();
     } catch (e) {
       if (!mounted) return;

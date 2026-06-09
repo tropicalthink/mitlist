@@ -1,0 +1,27 @@
+mitlist is the shared household coordination app that puts you in control. Split expenses, rotate chores, manage shopping lists, and plan meals — all in one place. No subscriptions, no ads, no lock-in.
+
+WHY MITLIST
+You're already paying rent. Why pay another subscription for apps that do less? mitlist is free and open source. Host it yourself in 5 minutes with Docker, or use our hosted platform — your data stays yours.
+
+FEATURES
+- Expense splitting: Equal, exact amounts, percentages, or shares. Track who owes whom with automatic settlement suggestions. Recurring expenses handled automatically.
+- Chore rotation: Round-robin, fixed assignment, or custom cron schedules. Subtasks, skip reasons, undo, and reschedule. See who's doing their fair share with load tracking.
+- Shopping lists: Shared lists with item claiming, cost tracking, and one-tap expense generation when you're done shopping.
+- Meal plans + recipes: Weekly planner with breakfast/lunch/dinner/snack slots. Clip recipes from any URL, scan from photos, or create manually. Auto-generate shopping lists from your meal plan.
+- Calendar: Unified view of chores, meal plans, expenses, and reminders. Everything your household needs in one timeline.
+- Pinwall: Corkboard-style notices, reminders, and household announcements. Link posts to chores, lists, or expenses.
+- Offline-first: Works without internet. Shopping lists and chores sync when you're back online.
+- Scanner: OCR recipes, receipts, and lists from photos using AI.
+- Multi-household: Switch between groups. One account, many households.
+
+YOUR DATA, YOUR RULES
+- No account required on self-hosted instances — connect the app directly to your server
+- Export expenses as CSV or JSON anytime from the app
+- Delete your account and your data is gone. Export first if you want it.
+- No telemetry, no usage tracking, no analytics on self-hosted instances
+
+OPEN SOURCE
+mitlist is AGPL-3.0 licensed. The code is public and auditable. No hidden fees, no data mining, no dark patterns. Just a tool for households to stay organized.
+
+PRICE
+Free. No in-app purchases. No subscriptions.

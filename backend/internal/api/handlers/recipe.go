@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -10,6 +9,7 @@ import (
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/services"
+	"github.com/mitlist-app/mitlist/pkg/parsing"
 )
 
 // RecipeHandler exposes recipe and collection endpoints.
@@ -472,19 +472,7 @@ func normalizeName(name string) string {
 }
 
 func parseIngredientAmount(raw string) float64 {
-	raw = strings.TrimSpace(strings.ReplaceAll(raw, ",", "."))
-	if raw == "" {
-		return 1
-	}
-	for _, field := range strings.Fields(raw) {
-		if n, err := strconv.ParseFloat(field, 64); err == nil && n > 0 {
-			return n
-		}
-	}
-	if n, err := strconv.ParseFloat(raw, 64); err == nil && n > 0 {
-		return n
-	}
-	return 1
+	return parsing.ParseIngredientAmount(raw)
 }
 
 type recipeClipRequest struct {

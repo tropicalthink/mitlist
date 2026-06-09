@@ -1,4 +1,4 @@
-// Package validation provides common input validation helpers for Mitlist.
+// Package validation provides common input validation helpers for mitlist.
 package validation
 
 import (

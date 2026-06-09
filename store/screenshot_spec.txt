@@ -1,0 +1,29 @@
+# Screenshot specifications for mitlist app store submission
+
+# Required sizes
+# iOS App Store (6.9" iPhone 16 Pro Max):  1320 x 2868 (or 1290 x 2796)
+# iOS App Store (6.5" iPhone 14 Plus):     1242 x 2688
+# Android Play Store:                       1080 x 1920 (minimum)
+# Android 7-inch tablet:                    1080 x 1920
+# Android 10-inch tablet:                   1920 x 1920
+
+# Screenshot layout: device frame + background color #F97316 with app screenshots overlaid
+
+# Required screenshots (6-8 for each store):
+# 1. Household hub — pinwall + quick actions
+# 2. Expense splitting — balance view with settlement suggestions
+# 3. Chore list — due dates with checkboxes
+# 4. Shopping list — shared list with claimed items
+# 5. Calendar — weekly view with events
+# 6. Meal planner — weekly meal plan with recipes
+# 7. Scanner — OCR recognition result
+# 8. Account/Data — export and data control
+
+# Generate screenshots by:
+# 1. Run the app in an emulator at the target resolution
+# 2. Screenshot each screen with realistic data
+# 3. Overlay on a device frame with the #F97316 background
+# 4. Add a 2-3 word caption per screenshot in white Space Grotesk
+
+# Or use fastlane screengrab (requires configuration):
+# fastlane screengrab

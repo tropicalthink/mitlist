@@ -487,7 +487,8 @@ func newFinanceRouter(t *testing.T) (chi.Router, *FinanceHandler) {
 func newRecipeRouter(t *testing.T) (chi.Router, *RecipeHandler) {
 	recipeRepo := newTestRecipeRepo()
 	svc := services.NewRecipeService(recipeRepo)
-	h := NewRecipeHandler(svc, services.NewRecipeScrapingService())
+	listSvc := services.NewListService(newTestListRepo(), newTestGroupRepo())
+	h := NewRecipeHandler(svc, services.NewRecipeScrapingService(), listSvc)
 
 	r := chi.NewRouter()
 	r.Use(testAuthMiddleware)
@@ -497,6 +498,10 @@ func newRecipeRouter(t *testing.T) (chi.Router, *RecipeHandler) {
 	r.Patch("/api/v1/recipes/{id}", h.UpdateRecipe)
 	r.Delete("/api/v1/recipes/{id}", h.DeleteRecipe)
 	r.Post("/api/v1/recipes/{id}/share", h.ShareRecipe)
+	r.Get("/api/v1/recipes/{id}/ingredients", h.GetRecipeIngredients)
+	r.Get("/api/v1/recipes/{id}/steps", h.GetRecipeSteps)
+	r.Post("/api/v1/recipes/{id}/add-to-list", h.AddToList)
+	r.Post("/api/v1/recipes/{id}/add-missing-to-list", h.AddMissingToList)
 	r.Post("/api/v1/recipes/clip", h.ClipRecipe)
 	r.Post("/api/v1/collections", h.CreateCollection)
 	r.Get("/api/v1/collections", h.ListCollections)

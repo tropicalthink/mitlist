@@ -874,6 +874,44 @@ class _ListCard extends ConsumerWidget {
     }
   }
 
+  Future<void> _quickAddItem(BuildContext context, WidgetRef ref) async {
+    final controller = TextEditingController();
+    final name = await showAppDialog<String>(
+      context: context,
+      title: 'Add item to ${list.name}',
+      body: AppInput(
+        label: 'Item name',
+        controller: controller,
+        maxLength: 200,
+        textInputAction: TextInputAction.done,
+      ),
+      actions: [
+        AppButton(
+          text: 'Cancel',
+          variant: AppButtonVariant.outline,
+          onPressed: () => Navigator.of(context).pop(null),
+        ),
+        AppButton(
+          text: 'Add',
+          onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+        ),
+      ],
+    );
+    controller.dispose();
+    if (name == null || name.isEmpty) return;
+    try {
+      final svc = await ref.read(listServiceProviderAsync.future);
+      await svc.createItem(list.id, CreateListItemRequest(name: name));
+      onChanged();
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Couldn\u2019t add item.')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final accent = ListTileAccent.fromSeed(
@@ -940,26 +978,58 @@ class _ListCard extends ConsumerWidget {
                           padding: EdgeInsets.only(
                             top: i == 0 ? 0 : MitlistSpacing.xs,
                           ),
-                          child: Text(
-                            previewLines[i],
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: snippetColor,
-                                  height: 1.35,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              AppIcon(
+                                name: 'checkCircleOutline',
+                                size: 14,
+                                color: snippetColor.withValues(alpha: 0.5),
+                              ),
+                              const SizedBox(width: MitlistSpacing.xs),
+                              Flexible(
+                                child: Text(
+                                  previewLines[i],
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: snippetColor,
+                                        height: 1.35,
+                                      ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
                         ),
                     ],
-                    if (itemCount != null && itemCount > 0) ...[
-                      const SizedBox(height: MitlistSpacing.sm),
-                      Text(
-                        '$itemCount item${itemCount == 1 ? '' : 's'}',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: snippetColor,
+                    const SizedBox(height: MitlistSpacing.sm),
+                    Row(
+                      children: [
+                        if (itemCount != null && itemCount > 0)
+                          Text(
+                            '$itemCount item${itemCount == 1 ? '' : 's'}',
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  color: snippetColor,
+                                ),
+                          ),
+                        const Spacer(),
+                        Semantics(
+                          label: 'Quick add item to ${list.name}',
+                          child: InkWell(
+                            onTap: () => _quickAddItem(context, ref),
+                            borderRadius: BorderRadius.circular(MitlistSpacing.xs),
+                            child: Padding(
+                              padding: const EdgeInsets.all(MitlistSpacing.xs),
+                              child: AppIcon(
+                                name: 'addCircleOutline',
+                                size: 18,
+                                color: snippetColor.withValues(alpha: 0.7),
+                              ),
                             ),
-                      ),
-                    ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
                 Positioned(

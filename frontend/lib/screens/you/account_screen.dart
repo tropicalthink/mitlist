@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'dart:io';
 
 import '../../models/auth_models.dart';
 import '../../models/group_models.dart';
-import '../../providers/auth_provider.dart';
+import '../../providers/auth_provider.dart'
+    show authServiceProviderAsync, authStateProvider;
 import '../../providers/group_provider.dart';
 import '../../providers/nav_badge_provider.dart';
 import '../../providers/onboarding_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/list_provider.dart' show appDatabaseProvider;
+import '../../providers/finance_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
@@ -39,7 +45,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
 
   String _name = '';
   String _email = '';
+  bool _isGuest = false;
   bool _isEditingName = false;
+  bool _isExporting = false;
   List<Group> _households = [];
   String? _activeHouseholdId;
 
@@ -96,6 +104,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     setState(() {
       _name = user!.fullName;
       _email = user.email;
+      _isGuest = user.isGuest;
       _households = households;
       _activeHouseholdId = households.isNotEmpty ? households.first.id : null;
       _isLoading = false;
@@ -540,6 +549,144 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     );
   }
 
+  Future<void> _exportExpenses(String format) async {
+    if (_isExporting || _activeHouseholdId == null) return;
+    setState(() => _isExporting = true);
+    try {
+      final financeService = await ref.read(financeServiceProviderAsync.future);
+      final groupId = _activeHouseholdId!;
+      String data;
+      String extension;
+      String mime;
+
+      if (format == 'csv') {
+        data = await financeService.exportExpensesCsv(groupId);
+        extension = 'csv';
+        mime = 'text/csv';
+      } else {
+        final expenses = await financeService.exportExpensesJson(groupId);
+        data = expenses.map((e) => e.toJson()).toString();
+        extension = 'json';
+        mime = 'application/json';
+      }
+
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/mitlist_expenses.$extension');
+      await file.writeAsString(data);
+
+      await Share.shareXFiles([XFile(file.path, mimeType: mime)]);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(friendlyErrorMessage(e))),
+      );
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
+  void _copyExpensesJson() async {
+    if (_activeHouseholdId == null) return;
+    try {
+      final financeService = await ref.read(financeServiceProviderAsync.future);
+      final expenses = await financeService.exportExpensesJson(
+        _activeHouseholdId!,
+      );
+      final json = expenses.map((e) => e.toJson()).toString();
+      await Clipboard.setData(ClipboardData(text: json));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Expenses JSON copied to clipboard')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(friendlyErrorMessage(e))),
+      );
+    }
+  }
+
+  Widget _buildGuestUpgradeCard() {
+    if (!_isGuest) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
+      child: AppCard(
+        variant: AppCardVariant.filled,
+        padding: AppCardPadding.md,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                AppIcon(
+                  name: 'star',
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: MitlistSpacing.sm),
+                Expanded(
+                  child: Text(
+                    'You\'re on a guest account',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: MitlistSpacing.sm),
+            Text(
+              'Create a full account to keep your data permanently and access all features.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: MitlistSpacing.md),
+            SizedBox(
+              width: double.infinity,
+              child: AppButton(
+                text: 'Create full account',
+                variant: AppButtonVariant.solid,
+                color: AppButtonColor.primary,
+                onPressed: () => context.goNamed('signup'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDataCard() {
+    return AppCard(
+      child: Column(
+        children: [
+          _MenuRow(
+            icon: const AppIcon(name: 'arrowDownTray'),
+            label: 'Export expenses (CSV)',
+            onTap: _isExporting || _activeHouseholdId == null
+                ? null
+                : () => _exportExpenses('csv'),
+          ),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          _MenuRow(
+            icon: const AppIcon(name: 'arrowDownTray'),
+            label: 'Share expenses (JSON)',
+            onTap: _isExporting || _activeHouseholdId == null
+                ? null
+                : () => _exportExpenses('json'),
+          ),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          _MenuRow(
+            icon: const AppIcon(name: 'copy'),
+            label: 'Copy expenses (JSON)',
+            onTap: _activeHouseholdId == null
+                ? null
+                : _copyExpensesJson,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildDangerZone() {
     return Column(
       children: [
@@ -596,11 +743,16 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           ],
           _buildHouseholdCard(),
           if (_households.length >= 2) const SizedBox(height: MitlistSpacing.md),
+          _buildGuestUpgradeCard(),
           _buildPreferencesCard(),
           const SizedBox(height: MitlistSpacing.md),
-          _buildSecurityCard(),
-          const SizedBox(height: MitlistSpacing.md),
+          if (!_isGuest) ...[
+            _buildSecurityCard(),
+            const SizedBox(height: MitlistSpacing.md),
+          ],
           _buildAboutCard(),
+          const SizedBox(height: MitlistSpacing.md),
+          _buildDataCard(),
           const SizedBox(height: MitlistSpacing.md),
           _buildDangerZone(),
         ],

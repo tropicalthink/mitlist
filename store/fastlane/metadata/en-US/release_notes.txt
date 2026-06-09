@@ -1,0 +1,28 @@
+# iOS App Store Metadata
+
+# Title (max 30 chars)
+title: "mitlist — Household Hub"
+
+# Subtitle (max 30 chars)
+subtitle: "Lists, chores, money & meals"
+
+# Keywords (max 100 chars, comma separated)
+keywords: "household,flatmate,roommate,chores,expense,shopping,grocery,meal plan,recipe,budget,split,share,family,organizer"
+
+# Promotional text (max 170 chars)
+promotional_text: "The shared household, all in one place. Free, open source, no accounts required. Self-host or use our cloud."
+
+# Primary category
+primary_category: "Lifestyle"
+primary_first_sub_category: ""
+primary_second_sub_category: ""
+
+# Secondary category (optional)
+secondary_category: "Productivity"
+
+# Rating
+# See https://developer.apple.com/app-store/ratings-and-reviews/
+kids_age_band: ""
+
+# Copyright
+copyright: "2025 mitlist"

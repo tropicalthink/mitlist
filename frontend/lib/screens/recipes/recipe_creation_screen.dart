@@ -201,10 +201,12 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
         _descriptionController.text = clip.description.trim();
       }
 
-      if (clip.prepTimeMinutes != null && clip.prepTimeMinutes! > 0) {
+      if (clip.prepTimeMinutes != null && clip.prepTimeMinutes! > 0 &&
+          _prepTimeController.text.trim().isEmpty) {
         _prepTimeController.text = clip.prepTimeMinutes.toString();
       }
-      if (clip.cookTimeMinutes != null && clip.cookTimeMinutes! > 0) {
+      if (clip.cookTimeMinutes != null && clip.cookTimeMinutes! > 0 &&
+          _cookTimeController.text.trim().isEmpty) {
         _cookTimeController.text = clip.cookTimeMinutes.toString();
       }
       final servings = (clip.servings ?? '').trim();

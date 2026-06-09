@@ -1,0 +1,12 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Take screenshots"
+  lane :screenshots do
+    capture_screenshots(
+      scheme: "Runner",
+      devices: ["iPhone 16 Pro Max"],
+      languages: ["en-US"],
+    )
+  end
+end

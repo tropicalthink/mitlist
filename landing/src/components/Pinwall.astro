@@ -1,0 +1,544 @@
+---
+// The Pinwall: a cork board of real household objects you can pick up,
+// drag, fling, and let settle. Each object is a coded preview of a
+// mitlist feature. Physics are hand-rolled (no library).
+---
+
+<div class="pinwall-shell">
+  <div class="pinwall" id="pinwall" role="application" aria-label="Interactive household board. Drag the notes, cards, and tags to rearrange them.">
+    <p class="pin-hint" aria-hidden="true">
+      <span class="pin-hint__grab">✥</span> drag anything
+    </p>
+
+    {/* Shopping list — index card */}
+    <article class="pin-obj card-shop" data-x="0.04" data-y="0.06" style="--rot:-3deg">
+      <span class="pin pin--red"></span>
+      <div class="card-shop__head">Saturday shop</div>
+      <ul class="checklist">
+        <li class="checklist__item is-done">
+          <span class="box"><svg viewBox="0 0 20 20"><path d="M4 10.5l4 4 8-9"/></svg></span>Milk
+        </li>
+        <li class="checklist__item is-done">
+          <span class="box"><svg viewBox="0 0 20 20"><path d="M4 10.5l4 4 8-9"/></svg></span>Eggs
+        </li>
+        <li class="checklist__item"><span class="box"></span>Coffee beans</li>
+        <li class="checklist__item"><span class="box"></span>Olive oil</li>
+      </ul>
+      <div class="card-shop__foot">2 of 4 · Maya is shopping</div>
+    </article>
+
+    {/* Sticky note */}
+    <article class="pin-obj note note--yellow" data-x="0.46" data-y="0.02" style="--rot:2.5deg">
+      <span class="pin pin--ink"></span>
+      <p>Bins out<br />tonight 🗑️</p>
+    </article>
+
+    {/* Chore tag — overdue */}
+    <article class="pin-obj chore" data-x="0.62" data-y="0.34" style="--rot:-2deg">
+      <span class="pin pin--ink"></span>
+      <span class="chore__flag">Overdue</span>
+      <div class="chore__title">Clean the kitchen</div>
+      <div class="chore__who">
+        <span class="avatar">S</span> Sam · every Friday
+      </div>
+    </article>
+
+    {/* Expense receipt */}
+    <article class="pin-obj receipt" data-x="0.05" data-y="0.56" style="--rot:1.5deg">
+      <span class="pin pin--red"></span>
+      <div class="receipt__top">Groceries</div>
+      <div class="receipt__amt">€42.60</div>
+      <div class="receipt__split">split 3 ways</div>
+      <div class="receipt__line"></div>
+      <div class="receipt__each"><span>Each owes</span><strong>€14.20</strong></div>
+    </article>
+
+    {/* Sticky note 2 */}
+    <article class="pin-obj note note--mint" data-x="0.66" data-y="0.7" style="--rot:-4deg">
+      <span class="pin pin--ink"></span>
+      <p>movie night<br />friday?? 🍿</p>
+    </article>
+
+    {/* Pinwall mini note */}
+    <article class="pin-obj note note--sky note--sm" data-x="0.4" data-y="0.62" style="--rot:5deg">
+      <span class="pin pin--ink"></span>
+      <p>plumber<br />comes 9am</p>
+    </article>
+  </div>
+</div>
+
+<style>
+  .pinwall-shell {
+    width: 100%;
+  }
+
+  .pinwall {
+    position: relative;
+    width: 100%;
+    height: clamp(420px, 52vw, 560px);
+    border: var(--border);
+    box-shadow: var(--shadow-xl);
+    background-color: var(--cork);
+    /* cork texture: layered radial dots, no gradients on the brand objects */
+    background-image:
+      radial-gradient(circle at 12% 18%, rgba(120, 80, 45, 0.22) 0 1.2px, transparent 1.6px),
+      radial-gradient(circle at 47% 63%, rgba(120, 80, 45, 0.18) 0 1.4px, transparent 1.8px),
+      radial-gradient(circle at 78% 30%, rgba(70, 45, 25, 0.16) 0 1px, transparent 1.4px),
+      radial-gradient(circle at 30% 82%, rgba(140, 95, 55, 0.2) 0 1.3px, transparent 1.7px),
+      radial-gradient(circle at 88% 80%, rgba(90, 60, 35, 0.18) 0 1.1px, transparent 1.5px);
+    background-size:
+      48px 48px,
+      62px 62px,
+      40px 40px,
+      54px 54px,
+      46px 46px;
+    overflow: hidden;
+    touch-action: none;
+    cursor: grab;
+  }
+
+  .pinwall::after {
+    /* inner cork frame shadow */
+    content: "";
+    position: absolute;
+    inset: 0;
+    box-shadow: inset 0 0 0 3px var(--cork-deep), inset 0 0 60px rgba(70, 45, 25, 0.25);
+    pointer-events: none;
+  }
+
+  .pin-hint {
+    position: absolute;
+    bottom: 0.8rem;
+    right: 1rem;
+    z-index: 2;
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: #4a3220;
+    background: rgba(255, 252, 247, 0.7);
+    border: 2px solid var(--cork-border);
+    padding: 0.25rem 0.6rem;
+    pointer-events: none;
+    transition: opacity 0.4s var(--ease);
+  }
+  .pin-hint__grab {
+    color: var(--cork-border);
+  }
+  .pinwall.is-touched .pin-hint {
+    opacity: 0;
+  }
+
+  /* ---- shared object chrome ---- */
+  .pin-obj {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: var(--z-board);
+    border: var(--border);
+    box-shadow: var(--shadow);
+    transform-origin: 50% 0;
+    will-change: transform;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    cursor: grab;
+    /* settle transition applied only when not actively dragging */
+    transition: box-shadow 0.16s var(--ease);
+  }
+
+  .pin-obj.is-drag {
+    cursor: grabbing;
+    z-index: var(--z-lifted);
+    box-shadow: var(--shadow-xl);
+  }
+
+  .pin {
+    position: absolute;
+    top: -9px;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin-left: -8px;
+    border-radius: 50%;
+    border: 2px solid var(--ink);
+    box-shadow: 1px 2px 0 rgba(26, 23, 20, 0.45);
+    z-index: 2;
+  }
+  .pin--red {
+    background: var(--error);
+  }
+  .pin--ink {
+    background: var(--orange);
+  }
+
+  /* ---- shopping index card ---- */
+  .card-shop {
+    width: clamp(190px, 23vw, 230px);
+    background: var(--paper);
+    padding: 0.95rem 1rem 0.85rem;
+  }
+  .card-shop__head {
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.6rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--line);
+  }
+  .checklist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.45rem;
+  }
+  .checklist__item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+  .checklist__item.is-done {
+    color: var(--line-2);
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+  }
+  .box {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    display: grid;
+    place-items: center;
+  }
+  .checklist__item.is-done .box {
+    background: var(--orange);
+    border-color: var(--ink);
+  }
+  .box svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 2.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .card-shop__foot {
+    margin-top: 0.7rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--orange-700);
+  }
+
+  /* ---- sticky notes ---- */
+  .note {
+    width: clamp(120px, 14vw, 148px);
+    aspect-ratio: 1 / 0.92;
+    padding: 0.9rem;
+    display: grid;
+    place-items: center;
+    text-align: center;
+  }
+  .note--sm {
+    width: clamp(104px, 11vw, 124px);
+  }
+  .note p {
+    font-weight: 600;
+    font-size: 1rem;
+    line-height: 1.2;
+    color: var(--note-ink);
+    transform: rotate(-1deg);
+  }
+  .note--yellow {
+    background: var(--note-yellow);
+  }
+  .note--mint {
+    background: var(--note-mint);
+  }
+  .note--sky {
+    background: var(--note-sky);
+  }
+
+  /* ---- chore tag ---- */
+  .chore {
+    width: clamp(180px, 21vw, 214px);
+    background: var(--paper);
+    padding: 0.85rem 0.95rem;
+  }
+  .chore__flag {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--paper);
+    background: var(--error-600);
+    border: 2px solid var(--ink);
+    padding: 0.12rem 0.5rem;
+    transform: rotate(-1.5deg);
+  }
+  .chore__title {
+    font-weight: 700;
+    font-size: 1.08rem;
+    letter-spacing: -0.02em;
+    margin: 0.55rem 0 0.5rem;
+  }
+  .chore__who {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--ink-3);
+  }
+  .avatar {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    background: var(--teal);
+    color: #fff;
+    border: 2px solid var(--ink);
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
+  /* ---- receipt ---- */
+  .receipt {
+    width: clamp(160px, 18vw, 186px);
+    background: var(--paper);
+    padding: 0.85rem 1rem 1rem;
+  }
+  .receipt__top {
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .receipt__amt {
+    font-size: 1.9rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin-top: 0.15rem;
+  }
+  .receipt__split {
+    font-size: 0.82rem;
+    color: var(--ink-3);
+    margin-top: 0.1rem;
+  }
+  .receipt__line {
+    height: 0;
+    border-top: 2px dashed var(--line-2);
+    margin: 0.7rem 0;
+  }
+  .receipt__each {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.85rem;
+    color: var(--ink-3);
+  }
+  .receipt__each strong {
+    font-size: 1.15rem;
+    color: var(--success-700);
+    letter-spacing: -0.02em;
+  }
+
+  @media (max-width: 540px) {
+    .pinwall {
+      height: 500px;
+    }
+  }
+</style>
+
+<script>
+  type Obj = {
+    el: HTMLElement;
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    rot: number;
+    baseRot: number;
+    w: number;
+    h: number;
+    dragging: boolean;
+  };
+
+  function initPinwall() {
+    const board = document.getElementById("pinwall");
+    if (!board) return;
+
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const nodes = Array.from(board.querySelectorAll<HTMLElement>(".pin-obj"));
+    const objs: Obj[] = [];
+    const PAD = 6;
+
+    function layout() {
+      const bw = board.clientWidth;
+      const bh = board.clientHeight;
+      nodes.forEach((el, i) => {
+        const fx = parseFloat(el.dataset.x || "0.1");
+        const fy = parseFloat(el.dataset.y || "0.1");
+        const w = el.offsetWidth;
+        const h = el.offsetHeight;
+        const baseRot = parseFloat(getComputedStyle(el).getPropertyValue("--rot")) || 0;
+        const x = clamp(fx * bw, PAD, Math.max(PAD, bw - w - PAD));
+        const y = clamp(fy * bh, PAD, Math.max(PAD, bh - h - PAD));
+        if (objs[i]) {
+          objs[i].w = w;
+          objs[i].h = h;
+          objs[i].x = clamp(objs[i].x, PAD, Math.max(PAD, bw - w - PAD));
+          objs[i].y = clamp(objs[i].y, PAD, Math.max(PAD, bh - h - PAD));
+        } else {
+          objs[i] = { el, x, y, vx: 0, vy: 0, rot: baseRot, baseRot, w, h, dragging: false };
+        }
+        draw(objs[i]);
+      });
+    }
+
+    function clamp(v: number, lo: number, hi: number) {
+      return v < lo ? lo : v > hi ? hi : v;
+    }
+
+    function draw(o: Obj) {
+      o.el.style.transform = `translate(${o.x}px, ${o.y}px) rotate(${o.rot}deg)`;
+    }
+
+    // ---- pointer dragging ----
+    let active: Obj | null = null;
+    let pid = -1;
+    let lastX = 0;
+    let lastY = 0;
+    let lastT = 0;
+
+    function onDown(o: Obj, e: PointerEvent) {
+      active = o;
+      pid = e.pointerId;
+      o.dragging = true;
+      o.vx = 0;
+      o.vy = 0;
+      o.el.classList.add("is-drag");
+      o.el.setPointerCapture?.(e.pointerId);
+      lastX = e.clientX;
+      lastY = e.clientY;
+      lastT = performance.now();
+      board.classList.add("is-touched");
+      e.preventDefault();
+    }
+
+    function onMove(e: PointerEvent) {
+      if (!active || e.pointerId !== pid) return;
+      const now = performance.now();
+      const dt = Math.max(1, now - lastT);
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      const bw = board.clientWidth;
+      const bh = board.clientHeight;
+
+      active.x = clamp(active.x + dx, PAD, bw - active.w - PAD);
+      active.y = clamp(active.y + dy, PAD, bh - active.h - PAD);
+
+      // velocity (px per frame ~16ms), smoothed
+      active.vx = (dx / dt) * 16;
+      active.vy = (dy / dt) * 16;
+
+      if (!reduce) {
+        const tilt = clamp(active.vx * 0.4, -10, 10);
+        active.rot += (active.baseRot + tilt - active.rot) * 0.35;
+      }
+
+      lastX = e.clientX;
+      lastY = e.clientY;
+      lastT = now;
+      draw(active);
+    }
+
+    function onUp(e: PointerEvent) {
+      if (!active || e.pointerId !== pid) return;
+      active.dragging = false;
+      active.el.classList.remove("is-drag");
+      active.el.releasePointerCapture?.(e.pointerId);
+      active = null;
+      pid = -1;
+    }
+
+    nodes.forEach((el, i) => {
+      el.addEventListener("pointerdown", (e) => onDown(objs[i], e as PointerEvent));
+    });
+    window.addEventListener("pointermove", onMove, { passive: false });
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+
+    // ---- inertia + settle loop ----
+    const FRICTION = 0.92;
+    const RESTITUTION = 0.55;
+
+    function tick() {
+      const bw = board.clientWidth;
+      const bh = board.clientHeight;
+      for (const o of objs) {
+        if (o.dragging) continue;
+        const moving = Math.abs(o.vx) > 0.05 || Math.abs(o.vy) > 0.05;
+        const tilted = Math.abs(o.rot - o.baseRot) > 0.05;
+        if (!moving && !tilted) continue;
+
+        if (reduce) {
+          o.vx = 0;
+          o.vy = 0;
+          o.rot = o.baseRot;
+          draw(o);
+          continue;
+        }
+
+        o.x += o.vx;
+        o.y += o.vy;
+
+        const maxX = bw - o.w - PAD;
+        const maxY = bh - o.h - PAD;
+        if (o.x < PAD) {
+          o.x = PAD;
+          o.vx = -o.vx * RESTITUTION;
+        } else if (o.x > maxX) {
+          o.x = maxX;
+          o.vx = -o.vx * RESTITUTION;
+        }
+        if (o.y < PAD) {
+          o.y = PAD;
+          o.vy = -o.vy * RESTITUTION;
+        } else if (o.y > maxY) {
+          o.y = maxY;
+          o.vy = -o.vy * RESTITUTION;
+        }
+
+        o.vx *= FRICTION;
+        o.vy *= FRICTION;
+        // ease rotation back to its pinned rest angle
+        o.rot += (o.baseRot - o.rot) * 0.12;
+
+        if (Math.abs(o.vx) < 0.05) o.vx = 0;
+        if (Math.abs(o.vy) < 0.05) o.vy = 0;
+        draw(o);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    layout();
+    let rt: number;
+    window.addEventListener("resize", () => {
+      clearTimeout(rt);
+      rt = window.setTimeout(layout, 120);
+    });
+    requestAnimationFrame(tick);
+  }
+
+  if (document.readyState !== "loading") initPinwall();
+  else document.addEventListener("DOMContentLoaded", initPinwall);
+</script>

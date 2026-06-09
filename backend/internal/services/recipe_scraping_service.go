@@ -17,6 +17,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 
 	"github.com/mitlist-app/mitlist/internal/security"
+	"github.com/mitlist-app/mitlist/pkg/parsing"
 )
 
 const maxRecipeResponseBytes = 5 * 1024 * 1024
@@ -928,7 +929,7 @@ func ParseIngredient(raw string) RecipeClipIngredient {
 		nameStr := strings.TrimSpace(matches[3])
 
 		if qtyStr != "" {
-			result.Quantity = parseFraction(qtyStr)
+			result.Quantity = parsing.ParseIngredientAmount(qtyStr)
 		}
 		if unitStr != "" {
 			result.Unit = unitStr
@@ -944,68 +945,6 @@ func ParseIngredient(raw string) RecipeClipIngredient {
 	}
 
 	return result
-}
-
-// parseFraction converts strings like "1/2", "¼", "2 1/2" to float64.
-func parseFraction(s string) float64 {
-	s = strings.TrimSpace(s)
-	if s == "" {
-		return 0
-	}
-
-	// Unicode fractions
-	fractions := map[rune]float64{
-		'¼': 0.25, '½': 0.5, '¾': 0.75,
-		'⅓': 1.0 / 3.0, '⅔': 2.0 / 3.0,
-		'⅛': 0.125, '⅜': 0.375, '⅝': 0.625, '⅞': 0.875,
-	}
-	for r, v := range fractions {
-		if strings.ContainsRune(s, r) {
-			// Check for mixed number like "1½"
-			before := strings.TrimSpace(strings.Split(s, string(r))[0])
-			if before != "" {
-				if whole, err := strconv.ParseFloat(before, 64); err == nil {
-					return whole + v
-				}
-			}
-			return v
-		}
-	}
-
-	// Mixed fraction like "1 1/2" or "1-1/2"
-	s = strings.ReplaceAll(s, "-", " ")
-	parts := strings.Fields(s)
-	if len(parts) == 2 {
-		whole, err1 := strconv.ParseFloat(parts[0], 64)
-		frac, err2 := parseSimpleFraction(parts[1])
-		if err1 == nil && err2 == nil {
-			return whole + frac
-		}
-	}
-
-	// Simple fraction like "1/2"
-	if v, err := parseSimpleFraction(s); err == nil {
-		return v
-	}
-
-	// Plain number
-	if v, err := strconv.ParseFloat(s, 64); err == nil {
-		return v
-	}
-
-	return 0
-}
-
-func parseSimpleFraction(s string) (float64, error) {
-	parts := strings.Split(s, "/")
-	if len(parts) == 2 {
-		num, err1 := strconv.ParseFloat(strings.TrimSpace(parts[0]), 64)
-		den, err2 := strconv.ParseFloat(strings.TrimSpace(parts[1]), 64)
-		if err1 == nil && err2 == nil && den != 0 {
-			return num / den, nil
-		}
-	}
-	return 0, fmt.Errorf("not a fraction")
 }
 
 func dedupeStrings(in []string) []string {

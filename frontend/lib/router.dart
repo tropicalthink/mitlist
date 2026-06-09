@@ -212,8 +212,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                     path: 'create',
                     name: 'recipeCreate',
                     parentNavigatorKey: _rootNavigatorKey,
-                    builder: (context, state) =>
-                        const RecipeCreationScreen(),
+                    builder: (context, state) {
+                      final extra = state.extra as Map<String, String?>?;
+                      return RecipeCreationScreen(
+                        initialTitle: extra?['initialTitle'],
+                        initialIngredients: extra?['initialIngredients'],
+                        initialSteps: extra?['initialSteps'],
+                      );
+                    },
                   ),
                   GoRoute(
                     path: 'meal-plan',

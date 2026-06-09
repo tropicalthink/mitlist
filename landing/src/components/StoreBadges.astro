@@ -1,0 +1,93 @@
+---
+// Primary web CTA + secondary mobile store links.
+interface Props {
+  webApp?: string;
+  appStore?: string;
+  playStore?: string;
+  variant?: "light" | "dark";
+}
+const {
+  webApp = "https://mitlist.me",
+  appStore = "#",
+  playStore = "#",
+  variant = "light",
+} = Astro.props;
+---
+
+<div class:list={["get-app", variant === "dark" && "get-app--dark"]}>
+  <a class="btn btn--primary get-app__cta" href={webApp}>Open mitlist.me</a>
+
+  <div class="get-app__stores">
+    <span class="get-app__label">Also on iOS and Android</span>
+    <div class="badges">
+      <a class="badge" href={appStore} aria-label="Download mitlist on the App Store">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path
+            d="M16.365 1.43c0 1.14-.493 2.27-1.177 3.08-.744.9-1.99 1.57-2.987 1.57-.12 0-.23-.02-.3-.03-.01-.06-.04-.22-.04-.39 0-1.15.572-2.27 1.206-2.98.804-.94 2.142-1.64 3.248-1.68.03.13.05.28.05.43zm4.565 15.71c-.03.07-.463 1.58-1.518 3.12-.945 1.34-1.94 2.71-3.43 2.71-1.517 0-1.9-.88-3.63-.88-1.698 0-2.302.91-3.67.91-1.377 0-2.332-1.26-3.428-2.8-1.287-1.82-2.323-4.63-2.323-7.28 0-4.28 2.797-6.55 5.552-6.55 1.448 0 2.675.95 3.6.95.865 0 2.222-1.01 3.902-1.01.613 0 2.886.06 4.374 2.19-.13.09-2.383 1.37-2.383 4.19 0 3.26 2.854 4.42 2.955 4.45z"
+          ></path>
+        </svg>
+        <span>
+          <span class="badge__sub">Download on the</span>
+          <span class="badge__main">App Store</span>
+        </span>
+      </a>
+
+      <a class="badge" href={playStore} aria-label="Get mitlist on Google Play">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="#34d399" d="M3.6 2.3 13.3 12 3.6 21.7c-.36-.2-.6-.58-.6-1.05V3.35c0-.47.24-.85.6-1.05z"></path>
+          <path fill="#fbbf24" d="M16.9 8.4 13.3 12l-3-3 6.6-3.77z"></path>
+          <path fill="#ef4444" d="M16.9 8.4 20.7 10.6c.7.4.7 1.4 0 1.8l-3.8 2.2-3.6-3.6z"></path>
+          <path fill="#60a5fa" d="M3.6 2.3c.18-.1.4-.15.62-.13.2.02.4.09.58.19L16.9 8.4 13.3 12z"></path>
+        </svg>
+        <span>
+          <span class="badge__sub">Get it on</span>
+          <span class="badge__main">Google Play</span>
+        </span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<style>
+  .get-app {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.15rem;
+  }
+
+  .get-app--dark {
+    align-items: center;
+  }
+
+  .get-app__cta {
+    font-size: 1.05rem;
+    padding: 0.95rem 1.6rem;
+  }
+
+  .get-app__stores {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+
+  .get-app--dark .get-app__stores {
+    align-items: center;
+  }
+
+  .get-app__label {
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--ink-3);
+  }
+
+  .get-app--dark .get-app__label {
+    color: var(--paper-3);
+  }
+
+  .get-app--dark :global(.badge) {
+    background: var(--paper);
+    color: var(--ink);
+  }
+</style>
