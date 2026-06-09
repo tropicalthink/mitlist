@@ -1,0 +1,747 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Pinwall from "../components/Pinwall.astro";
+import StoreBadges from "../components/StoreBadges.astro";
+
+const GITHUB = "https://github.com/whtvrboo/mitlist";
+
+const pillars = [
+  {
+    tag: "Lists",
+    title: "Lists that clear themselves",
+    body: "Add bread from the bus, your flatmate sees it before they hit the shop. Tick things off together; the list empties as the trip happens.",
+    accent: "orange",
+  },
+  {
+    tag: "Money",
+    title: "Settle up without the spreadsheet",
+    body: "Log who paid, split it however is fair, and Mitlist keeps the running tally. One tap shows exactly who owes what, no group-chat math.",
+    accent: "green",
+  },
+  {
+    tag: "Chores",
+    title: "Chores that rotate, not rot",
+    body: "Set a rhythm once: bins on Tuesday, bathroom every other week. It moves down the household on its own and nags nobody but the person whose turn it is.",
+    accent: "red",
+  },
+  {
+    tag: "Pinwall",
+    title: "A pinwall for everything else",
+    body: "The plumber's coming at nine. Movie night Friday. Stick it on the shared board so it lives somewhere other than one person's memory.",
+    accent: "sky",
+  },
+];
+
+const day = [
+  { t: "7:42", who: "You", text: "add oat milk on the walk to the train" },
+  { t: "13:10", who: "Maya", text: "clears the whole list on the big shop" },
+  { t: "18:30", who: "Sam", text: "marks the kitchen done, it rotates to you" },
+  { t: "21:00", who: "Everyone", text: "settle the week, square to the cent" },
+];
+---
+
+<Layout>
+  <!-- ============ NAV ============ -->
+  <header class="nav">
+    <div class="wrap nav__inner">
+      <a class="brand" href="/" aria-label="Mitlist home">
+        <span class="brand__mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M4 7.5l3 3 6-6.5" /><path d="M4 14.5l3 3 6-6.5" /><line x1="15" y1="6" x2="21" y2="6" /><line x1="15" y1="16" x2="21" y2="16" /></svg>
+        </span>
+        Mitlist
+      </a>
+      <nav class="nav__links" aria-label="Primary">
+        <a href="#how">How it works</a>
+        <a href="#open">Open source</a>
+        <a href={GITHUB} rel="noopener">GitHub</a>
+      </nav>
+      <a class="btn btn--primary nav__cta" href="#get">Get the app</a>
+    </div>
+  </header>
+
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <div class="wrap hero__grid">
+      <div class="hero__copy">
+        <span class="stamp">Sturdy · tactile · warm</span>
+        <h1 class="display">
+          The shared household, all on one board.
+        </h1>
+        <p class="lead">
+          Shopping lists, shared money, chores, and a pinwall of notes for
+          everyone you live with. Mitlist keeps the group in sync so nobody
+          has to chase anybody.
+        </p>
+        <div class="hero__cta">
+          <StoreBadges />
+        </div>
+        <p class="hero__note">Free to use. Open source. Yours to self-host.</p>
+      </div>
+
+      <div class="hero__board">
+        <Pinwall />
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PILLARS ============ -->
+  <section class="section-pad" id="features">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <h2 class="h2">Four things a house actually runs on.</h2>
+        <p class="lead">Not a productivity suite. The specific, boring,
+          load-bearing stuff of living with other people.</p>
+      </div>
+
+      <div class="pillars">
+        {pillars.map((p) => (
+          <article class={`pillar pillar--${p.accent} reveal`}>
+            <div class="pillar__visual">
+              {p.tag === "Lists" && (
+                <div class="mini mini-list">
+                  <span class="mini-row is-done"><i class="cbx is-on"></i>Tomatoes</span>
+                  <span class="mini-row is-done"><i class="cbx is-on"></i>Bread</span>
+                  <span class="mini-row"><i class="cbx"></i>Oat milk</span>
+                </div>
+              )}
+              {p.tag === "Money" && (
+                <div class="mini mini-money">
+                  <span class="mini-money__amt">€60.00</span>
+                  <span class="mini-money__split">paid by Sam · split 3</span>
+                  <span class="mini-money__pill">you owe €20.00</span>
+                </div>
+              )}
+              {p.tag === "Chores" && (
+                <div class="mini mini-chore">
+                  <span class="mini-chore__dot"></span>
+                  <span class="mini-chore__txt">Bins</span>
+                  <span class="mini-chore__turn">Maya → You</span>
+                </div>
+              )}
+              {p.tag === "Pinwall" && (
+                <div class="mini mini-pin">
+                  <span class="mini-pin__note n1">plumber 9am</span>
+                  <span class="mini-pin__note n2">film fri 🍿</span>
+                </div>
+              )}
+            </div>
+            <div class="pillar__text">
+              <span class="pillar__tag">{p.tag}</span>
+              <h3 class="h3">{p.title}</h3>
+              <p>{p.body}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ A DAY IN THE HOUSEHOLD ============ -->
+  <section class="day section-pad" id="how">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <h2 class="h2" style="color:var(--paper)">One Tuesday, four people, no group chat.</h2>
+        <p class="lead" style="color:var(--orange-100)">
+          The whole point is that it disappears into the day. Here is a normal one.
+        </p>
+      </div>
+      <ol class="timeline">
+        {day.map((d) => (
+          <li class="timeline__item reveal">
+            <span class="timeline__time">{d.t}</span>
+            <span class="timeline__who">{d.who}</span>
+            <span class="timeline__text">{d.text}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============ OPEN SOURCE / TRUST ============ -->
+  <section class="section-pad" id="open">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <h2 class="h2">It runs on your terms.</h2>
+        <p class="lead">Mitlist is open source. Use the hosted apps, or run the
+          whole thing on your own box and own every byte of it.</p>
+      </div>
+      <div class="trust">
+        <article class="trust__card reveal">
+          <span class="trust__num">01</span>
+          <h3 class="h3">Open source</h3>
+          <p>Every line is on GitHub under a permissive license. Read it, fork
+            it, send a patch, or just check it does what it says.</p>
+          <a class="trust__link" href={GITHUB} rel="noopener">Read the code →</a>
+        </article>
+        <article class="trust__card reveal">
+          <span class="trust__num">02</span>
+          <h3 class="h3">Self-hostable</h3>
+          <p>One <code>docker compose up</code> and the backend, database, and
+            web app are yours. Your household's data never leaves your server.</p>
+          <a class="trust__link" href={`${GITHUB}#self-hosting`} rel="noopener">Self-host guide →</a>
+        </article>
+        <article class="trust__card reveal">
+          <span class="trust__num">03</span>
+          <h3 class="h3">No ads, no resale</h3>
+          <p>There is no growth team mining your grocery list. The product is
+            the app, not you. It works offline and syncs when you're back.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FINAL CTA ============ -->
+  <section class="get" id="get">
+    <div class="wrap get__inner">
+      <h2 class="display get__title">Move in.</h2>
+      <p class="get__sub">Get everyone on the same board. It takes a code and
+        about a minute.</p>
+      <div class="get__badges">
+        <StoreBadges />
+      </div>
+      <a class="get__alt" href={GITHUB} rel="noopener">or self-host it from GitHub →</a>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="foot">
+    <div class="wrap foot__inner">
+      <a class="brand brand--foot" href="/">
+        <span class="brand__mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M4 7.5l3 3 6-6.5" /><path d="M4 14.5l3 3 6-6.5" /><line x1="15" y1="6" x2="21" y2="6" /><line x1="15" y1="16" x2="21" y2="16" /></svg>
+        </span>
+        Mitlist
+      </a>
+      <nav class="foot__links" aria-label="Footer">
+        <a href="#features">Features</a>
+        <a href="#how">How it works</a>
+        <a href="#open">Open source</a>
+        <a href={GITHUB} rel="noopener">GitHub</a>
+      </nav>
+      <p class="foot__copy">The shared notebook that actually works. © 2026 Mitlist.</p>
+    </div>
+  </footer>
+</Layout>
+
+<style>
+  /* ---------- NAV ---------- */
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-nav);
+    background: var(--paper-2);
+    border-bottom: var(--border);
+  }
+  .nav__inner {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    height: 64px;
+  }
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-weight: 700;
+    font-size: 1.25rem;
+    letter-spacing: -0.03em;
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .brand__mark {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    background: var(--orange);
+    border: var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+  .brand__mark svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .nav__links {
+    display: flex;
+    gap: 1.5rem;
+    margin-left: auto;
+    font-weight: 500;
+    font-size: 0.98rem;
+  }
+  .nav__links a {
+    text-decoration: none;
+    color: var(--ink-3);
+    padding-bottom: 2px;
+    border-bottom: 2px solid transparent;
+    transition: color 0.12s, border-color 0.12s;
+  }
+  .nav__links a:hover {
+    color: var(--ink);
+    border-color: var(--orange);
+  }
+  .nav__cta {
+    padding: 0.5rem 1rem;
+    font-size: 0.95rem;
+    box-shadow: var(--shadow-sm);
+  }
+  @media (max-width: 860px) {
+    .nav__links {
+      display: none;
+    }
+  }
+  @media (max-width: 460px) {
+    .nav__cta {
+      display: none;
+    }
+  }
+
+  /* ---------- HERO ---------- */
+  .hero {
+    background: var(--paper-2);
+    padding-block: clamp(2.5rem, 1.5rem + 5vw, 5rem) clamp(3rem, 2rem + 5vw, 6rem);
+    border-bottom: var(--border);
+    overflow: hidden;
+  }
+  .hero__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+    gap: clamp(2rem, 1rem + 4vw, 4rem);
+    align-items: center;
+  }
+  .hero__copy .stamp {
+    margin-bottom: 1.4rem;
+  }
+  .hero .display {
+    margin-bottom: 1.3rem;
+    max-width: 13ch;
+  }
+  .hero__cta {
+    margin-top: 1.9rem;
+  }
+  .hero__note {
+    margin-top: 1rem;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--ink-3);
+  }
+  @media (max-width: 920px) {
+    .hero__grid {
+      grid-template-columns: 1fr;
+    }
+    .hero__board {
+      order: -1;
+    }
+    .hero .display {
+      max-width: 18ch;
+    }
+  }
+
+  /* ---------- SECTION HEADS ---------- */
+  .section-head {
+    max-width: 40ch;
+    margin-bottom: clamp(2.2rem, 1.5rem + 3vw, 3.6rem);
+  }
+  .section-head .h2 {
+    margin-bottom: 0.9rem;
+  }
+
+  /* ---------- PILLARS ---------- */
+  .pillars {
+    display: grid;
+    gap: clamp(1.4rem, 1rem + 2vw, 2.4rem);
+  }
+  .pillar {
+    display: grid;
+    grid-template-columns: 0.8fr 1fr;
+    align-items: center;
+    gap: clamp(1.5rem, 1rem + 3vw, 3.5rem);
+    border: var(--border);
+    background: var(--paper);
+    box-shadow: var(--shadow-lg);
+    padding: clamp(1.4rem, 1rem + 2vw, 2.5rem);
+  }
+  .pillar:nth-child(even) .pillar__visual {
+    order: 2;
+  }
+  .pillar__text .pillar__tag {
+    display: inline-block;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--orange-700);
+    margin-bottom: 0.7rem;
+  }
+  .pillar__text .h3 {
+    margin-bottom: 0.7rem;
+  }
+  .pillar__text p {
+    color: var(--ink-3);
+    max-width: 42ch;
+  }
+  .pillar__visual {
+    align-self: stretch;
+    min-height: 180px;
+    border: var(--border);
+    display: grid;
+    place-items: center;
+    padding: 1.5rem;
+  }
+  .pillar--orange .pillar__visual {
+    background: var(--orange-50);
+  }
+  .pillar--green .pillar__visual {
+    background: #ecfdf5;
+  }
+  .pillar--red .pillar__visual {
+    background: #fef2f2;
+  }
+  .pillar--sky .pillar__visual {
+    background: #eff8ff;
+  }
+
+  /* mini visuals */
+  .mini {
+    width: 100%;
+    max-width: 240px;
+  }
+  .mini-list {
+    display: grid;
+    gap: 0.6rem;
+    background: var(--paper);
+    border: var(--border);
+    box-shadow: var(--shadow-sm);
+    padding: 1rem 1.1rem;
+  }
+  .mini-row {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    font-weight: 500;
+  }
+  .mini-row.is-done {
+    color: var(--line-2);
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+  }
+  .cbx {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    flex: none;
+    position: relative;
+  }
+  .cbx.is-on {
+    background: var(--orange);
+  }
+  .cbx.is-on::after {
+    content: "";
+    position: absolute;
+    left: 4px;
+    top: 1px;
+    width: 6px;
+    height: 11px;
+    border: solid var(--ink);
+    border-width: 0 2.6px 2.6px 0;
+    transform: rotate(45deg);
+  }
+  .mini-money {
+    display: grid;
+    gap: 0.35rem;
+    text-align: center;
+  }
+  .mini-money__amt {
+    font-size: 2.6rem;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+  .mini-money__split {
+    font-size: 0.85rem;
+    color: var(--ink-3);
+  }
+  .mini-money__pill {
+    justify-self: center;
+    margin-top: 0.5rem;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--success-700);
+    background: var(--paper);
+    border: var(--border);
+    box-shadow: var(--shadow-sm);
+    padding: 0.35rem 0.8rem;
+  }
+  .mini-chore {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    background: var(--paper);
+    border: var(--border);
+    box-shadow: var(--shadow-sm);
+    padding: 0.85rem 1rem;
+    font-weight: 600;
+  }
+  .mini-chore__dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--error);
+    border: 2px solid var(--ink);
+    flex: none;
+  }
+  .mini-chore__txt {
+    font-size: 1.05rem;
+  }
+  .mini-chore__turn {
+    margin-left: auto;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--paper);
+    background: var(--ink);
+    padding: 0.25rem 0.55rem;
+  }
+  .mini-pin {
+    position: relative;
+    width: 100%;
+    height: 130px;
+  }
+  .mini-pin__note {
+    position: absolute;
+    padding: 0.7rem 0.8rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--note-ink);
+    border: var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+  .mini-pin__note.n1 {
+    top: 0;
+    left: 6%;
+    background: var(--note-sky);
+    transform: rotate(-4deg);
+  }
+  .mini-pin__note.n2 {
+    bottom: 0;
+    right: 6%;
+    background: var(--note-yellow);
+    transform: rotate(3deg);
+  }
+
+  @media (max-width: 680px) {
+    .pillar {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+    .pillar:nth-child(even) .pillar__visual {
+      order: 0;
+    }
+    .pillar__visual {
+      min-height: 150px;
+    }
+  }
+
+  /* ---------- DAY (orange-drenched) ---------- */
+  .day {
+    background: var(--orange-700);
+    color: var(--paper);
+    border-block: var(--border);
+  }
+  .timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0;
+    border: var(--border);
+    background: var(--ink);
+  }
+  .timeline__item {
+    display: grid;
+    grid-template-columns: 96px 130px 1fr;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 1.15rem clamp(1rem, 0.5rem + 2vw, 2rem);
+    background: var(--paper);
+    border-bottom: var(--border);
+  }
+  .timeline__item:last-child {
+    border-bottom: none;
+  }
+  .timeline__time {
+    font-weight: 700;
+    font-size: 1.2rem;
+    letter-spacing: -0.02em;
+    color: var(--orange-700);
+  }
+  .timeline__who {
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .timeline__text {
+    color: var(--ink-3);
+    font-weight: 500;
+  }
+  @media (max-width: 620px) {
+    .timeline__item {
+      grid-template-columns: 70px 1fr;
+      row-gap: 0.2rem;
+    }
+    .timeline__text {
+      grid-column: 1 / -1;
+    }
+  }
+
+  /* ---------- TRUST ---------- */
+  .trust {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 0;
+    border: var(--border);
+    box-shadow: var(--shadow-lg);
+    background: var(--ink);
+  }
+  .trust__card {
+    background: var(--paper);
+    padding: clamp(1.5rem, 1rem + 2vw, 2.2rem);
+    border-right: var(--border);
+  }
+  .trust__card:last-child {
+    border-right: none;
+  }
+  .trust__num {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--orange);
+  }
+  .trust__card .h3 {
+    margin: 0.8rem 0 0.6rem;
+  }
+  .trust__card p {
+    color: var(--ink-3);
+  }
+  .trust__card code {
+    font-family: "Space Grotesk", monospace;
+    font-weight: 600;
+    background: var(--paper-3);
+    border: 1px solid var(--line);
+    padding: 0.05rem 0.35rem;
+    white-space: nowrap;
+  }
+  .trust__link {
+    display: inline-block;
+    margin-top: 1rem;
+    font-weight: 700;
+    text-decoration: none;
+    color: var(--ink);
+    border-bottom: 2px solid var(--orange);
+  }
+  .trust__link:hover {
+    color: var(--orange-700);
+  }
+  @media (max-width: 720px) {
+    .trust__card {
+      border-right: none;
+      border-bottom: var(--border);
+    }
+    .trust__card:last-child {
+      border-bottom: none;
+    }
+  }
+
+  /* ---------- FINAL CTA ---------- */
+  .get {
+    background: var(--ink);
+    color: var(--paper);
+    padding-block: clamp(4rem, 3rem + 6vw, 7rem);
+    text-align: center;
+  }
+  .get__title {
+    color: var(--orange);
+  }
+  .get__sub {
+    margin: 1.1rem auto 2rem;
+    max-width: 34ch;
+    color: var(--paper-3);
+    font-size: clamp(1.05rem, 1rem + 0.5vw, 1.3rem);
+  }
+  .get__badges {
+    display: flex;
+    justify-content: center;
+  }
+  .get__alt {
+    display: inline-block;
+    margin-top: 1.6rem;
+    font-weight: 600;
+    color: var(--orange-300);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+  }
+  .get__alt:hover {
+    border-color: var(--orange-300);
+  }
+
+  /* ---------- FOOTER ---------- */
+  .foot {
+    background: var(--paper-2);
+    border-top: var(--border);
+    padding-block: 2.5rem;
+  }
+  .foot__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.2rem 2rem;
+  }
+  .brand--foot {
+    font-size: 1.1rem;
+  }
+  .foot__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.3rem;
+    font-weight: 500;
+    font-size: 0.95rem;
+  }
+  .foot__links a {
+    text-decoration: none;
+    color: var(--ink-3);
+  }
+  .foot__links a:hover {
+    color: var(--ink);
+  }
+  .foot__copy {
+    width: 100%;
+    color: var(--line-2);
+    font-size: 0.88rem;
+    font-weight: 500;
+  }
+</style>
+
+<script>
+  // Reveal-on-scroll: enhances an already-visible default (content ships
+  // visible; this only adds entrance motion when motion is allowed).
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!reduce && "IntersectionObserver" in window) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            (e.target as HTMLElement).classList.add("is-in");
+            io.unobserve(e.target);
+          }
+        }
+      },
+      { threshold: 0.16, rootMargin: "0px 0px -8% 0px" },
+    );
+    document.querySelectorAll(".reveal").forEach((el, i) => {
+      (el as HTMLElement).style.transitionDelay = `${Math.min(i % 4, 3) * 70}ms`;
+      io.observe(el);
+    });
+  }
+</script>
