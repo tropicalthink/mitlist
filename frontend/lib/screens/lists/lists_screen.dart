@@ -278,7 +278,8 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   }
 
   List<ItemList> get _filteredLists {
-    var result = List<ItemList>.from(_lists);
+    var result = List<ItemList>.from(
+        _lists.where((l) => !l.isArchived));
 
     if (_filter != _FilterOption.all) {
       final wanted = switch (_filter) {

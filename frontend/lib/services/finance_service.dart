@@ -49,7 +49,9 @@ class FinanceService {
     try {
       final r = await _dio
           .get('/finance/summary', queryParameters: {'group_id': groupId});
-      return FinanceSummary.fromJson((r.data as Map).cast<String, dynamic>());
+      final data = r.data;
+      if (data is! Map) throw ApiException('Unexpected response format');
+      return FinanceSummary.fromJson(data.cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Get finance summary failed: ${e.response?.data}');
       throw _handleError(e);
@@ -173,10 +175,9 @@ class FinanceService {
   Future<List<Split>> listExpenseSplits(String expenseId) async {
     try {
       final r = await _dio.get('/expenses/$expenseId/splits');
-      final data = (r.data as List).cast<dynamic>();
-      return data
-          .map((e) => Split.fromJson((e as Map).cast<String, dynamic>()))
-          .toList();
+      final data = r.data;
+      if (data is! List) throw ApiException('Unexpected response format');
+      return data.cast<dynamic>().map((e) => Split.fromJson((e as Map).cast<String, dynamic>())).toList();
     } on DioException catch (e) {
       _logger.e('List splits failed: ${e.response?.data}');
       throw _handleError(e);
@@ -197,7 +198,9 @@ class FinanceService {
     try {
       final r =
           await _dio.post('/expenses/$expenseId/splits', data: req.toJson());
-      return Split.fromJson((r.data as Map).cast<String, dynamic>());
+      final data = r.data;
+      if (data is! Map) throw ApiException('Unexpected response format');
+            return Split.fromJson(data.cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Create split failed: ${e.response?.data}');
       throw _handleError(e);
@@ -209,7 +212,9 @@ class FinanceService {
     try {
       final r = await _dio.patch('/expenses/$expenseId/splits/$splitId',
           data: req.toJson());
-      return Split.fromJson((r.data as Map).cast<String, dynamic>());
+      final data = r.data;
+      if (data is! Map) throw ApiException('Unexpected response format');
+            return Split.fromJson(data.cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Update split failed: ${e.response?.data}');
       throw _handleError(e);
@@ -248,7 +253,9 @@ class FinanceService {
           amount: req.amount,
         ).toJson(),
       );
-      return Settlement.fromJson((r.data as Map).cast<String, dynamic>());
+      final data = r.data;
+      if (data is! Map) throw ApiException('Unexpected response format');
+      return Settlement.fromJson(data.cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Create group settlement failed: ${e.response?.data}');
       throw _handleError(e);
@@ -260,7 +267,9 @@ class FinanceService {
     try {
       final r =
           await _dio.post('/expenses/$expenseId/settle', data: req.toJson());
-      return Settlement.fromJson((r.data as Map).cast<String, dynamic>());
+      final data = r.data;
+      if (data is! Map) throw ApiException('Unexpected response format');
+      return Settlement.fromJson(data.cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Create settlement failed: ${e.response?.data}');
       throw _handleError(e);
@@ -281,7 +290,9 @@ class FinanceService {
       CreateRecurringExpenseRequest req) async {
     try {
       final r = await _dio.post('/recurring-expenses', data: req.toJson());
-      return RecurringExpense.fromJson((r.data as Map).cast<String, dynamic>());
+      final data = r.data;
+      if (data is! Map) throw ApiException('Unexpected response format');
+      return RecurringExpense.fromJson(data.cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Create recurring expense failed: ${e.response?.data}');
       throw _handleError(e);
@@ -312,7 +323,9 @@ class FinanceService {
   Future<RecurringExpense> getRecurringExpense(String id) async {
     try {
       final r = await _dio.get('/recurring-expenses/$id');
-      return RecurringExpense.fromJson((r.data as Map).cast<String, dynamic>());
+      final data = r.data;
+      if (data is! Map) throw ApiException('Unexpected response format');
+      return RecurringExpense.fromJson(data.cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Get recurring expense failed: ${e.response?.data}');
       throw _handleError(e);
@@ -323,7 +336,9 @@ class FinanceService {
       String id, UpdateRecurringExpenseRequest req) async {
     try {
       final r = await _dio.patch('/recurring-expenses/$id', data: req.toJson());
-      return RecurringExpense.fromJson((r.data as Map).cast<String, dynamic>());
+      final data = r.data;
+      if (data is! Map) throw ApiException('Unexpected response format');
+      return RecurringExpense.fromJson(data.cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Update recurring expense failed: ${e.response?.data}');
       throw _handleError(e);

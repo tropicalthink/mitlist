@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -6,6 +9,8 @@ import '../../models/list_models.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
+import '../../theme/animations.dart';
+import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../theme/theme.dart';
@@ -17,6 +22,7 @@ import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/mitlist_app_bar.dart';
+import '../../widgets/odometer.dart';
 import '../../widgets/skeleton.dart';
 
 class ShoppingTripScreen extends ConsumerStatefulWidget {
@@ -110,6 +116,8 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
   }
 
   void _toggleItem(String itemId) {
+    // A light tap of feedback every time something lands in the basket.
+    HapticFeedback.selectionClick();
     setState(() {
       if (_checkedItemIds.contains(itemId)) {
         _checkedItemIds.remove(itemId);
@@ -131,6 +139,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
         }
       }
     }
+    final completedCount = checkedItems.length;
     final totalCents = checkedItems.fold<int>(
         0, (sum, item) => sum + (item.priceCents ?? 0));
 
@@ -139,6 +148,10 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
       await listSvc.completeShoppingItems(_checkedItemIds.toList());
 
       if (!mounted) return;
+      // The trip is done: a heavy stamp and the matching thwack.
+      HapticFeedback.heavyImpact();
+      _showDoneStamp(completedCount, totalCents);
+
       setState(() => _checkedItemIds.clear());
       await _load();
       if (!mounted) return;
@@ -147,16 +160,12 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
         final totalStr = (totalCents / 100).toStringAsFixed(2);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('\u20ac$totalStr worth of items marked as done'),
+            content: Text('€$totalStr worth of items marked as done'),
             action: SnackBarAction(
               label: 'Add expense',
               onPressed: () => context.pushNamed('money'),
             ),
           ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Items marked as done')),
         );
       }
     } catch (e) {
@@ -168,6 +177,19 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  void _showDoneStamp(int count, int totalCents) {
+    final overlay = Overlay.of(context);
+    late OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (_) => _DoneStamp(
+        count: count,
+        totalCents: totalCents,
+        onComplete: () => entry.remove(),
+      ),
+    );
+    overlay.insert(entry);
   }
 
   String _listName(String listId) {
@@ -184,6 +206,25 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
 
   int get _checkedCount => _checkedItemIds.length;
 
+  int get _checkedTotalCents {
+    var cents = 0;
+    for (final items in _itemsByList.values) {
+      for (final item in items) {
+        if (_checkedItemIds.contains(item.id)) {
+          cents += item.priceCents ?? 0;
+        }
+      }
+    }
+    return cents;
+  }
+
+  bool get _showBasketBar =>
+      !_isLoading &&
+      _hasHousehold &&
+      _error == null &&
+      _lists.isNotEmpty &&
+      _totalItems > 0;
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -196,18 +237,17 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text('Shopping Trip'),
-        actions: [
-          if (_checkedCount > 0)
-            AppButton(
-              variant: AppButtonVariant.ghost,
-              color: AppButtonColor.primary,
-              text: 'Done ($_checkedCount)',
-              onPressed: _isSubmitting ? null : _completeChecked,
-              isLoading: _isSubmitting,
-            ),
-        ],
       ),
       body: _buildBody(textTheme),
+      bottomNavigationBar: _showBasketBar
+          ? _BasketBar(
+              checkedCount: _checkedCount,
+              totalCount: _totalItems,
+              totalCents: _checkedTotalCents,
+              isSubmitting: _isSubmitting,
+              onDone: _checkedCount > 0 && !_isSubmitting ? _completeChecked : null,
+            )
+          : null,
     );
   }
 
@@ -336,6 +376,128 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
   }
 }
 
+/// Persistent bottom bar that frames the trip: a hard-edged progress fill, a
+/// rolling count of what's in the basket, an optional running total when items
+/// carry prices, and the primary "mark done" action within thumb reach.
+class _BasketBar extends StatelessWidget {
+  const _BasketBar({
+    required this.checkedCount,
+    required this.totalCount,
+    required this.totalCents,
+    required this.isSubmitting,
+    required this.onDone,
+  });
+
+  final int checkedCount;
+  final int totalCount;
+  final int totalCents;
+  final bool isSubmitting;
+  final VoidCallback? onDone;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final disableAnimations = MediaQuery.of(context).disableAnimations;
+    final fillDuration =
+        disableAnimations ? Duration.zero : MitlistAnimations.medium;
+
+    final fraction =
+        totalCount == 0 ? 0.0 : (checkedCount / totalCount).clamp(0.0, 1.0);
+
+    final countStyle = TextStyle(
+      fontFamily: MitlistTypography.monoFamily,
+      fontSize: 22,
+      fontWeight: FontWeight.w700,
+      height: 1.0,
+      color: checkedCount > 0 ? colorScheme.primary : colorScheme.onSurfaceVariant,
+    );
+
+    final priceSuffix = totalCents > 0
+        ? '  ·  €${(totalCents / 100).toStringAsFixed(2)}'
+        : '';
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: Border(
+          top: BorderSide(color: colorScheme.outline, width: 2),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            MitlistSpacing.md,
+            MitlistSpacing.sm + MitlistSpacing.xs,
+            MitlistSpacing.md,
+            MitlistSpacing.sm,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  // Border insets the content box by 2px on each side.
+                  final innerWidth = math.max(0.0, constraints.maxWidth - 4);
+                  return Container(
+                    height: 12,
+                    clipBehavior: Clip.hardEdge,
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest,
+                      border: Border.all(color: colorScheme.outline, width: 2),
+                    ),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: AnimatedContainer(
+                        duration: fillDuration,
+                        curve: MitlistAnimations.easeEnter,
+                        width: innerWidth * fraction,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: MitlistSpacing.sm),
+              Row(
+                children: [
+                  AppIcon(
+                    name: 'shoppingBagOutline',
+                    size: 22,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: MitlistSpacing.sm),
+                  MitlistOdometer(value: checkedCount, textStyle: countStyle),
+                  const SizedBox(width: MitlistSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      '/ $totalCount collected$priceSuffix',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: MitlistSpacing.sm),
+                  AppButton(
+                    text: 'Mark done',
+                    icon: const AppIcon(name: 'checkCircleOutline'),
+                    onPressed: onDone,
+                    isLoading: isSubmitting,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ListSection extends StatelessWidget {
   final String listId;
   final String listName;
@@ -390,6 +552,7 @@ class _ListSection extends StatelessWidget {
             ...items.map((item) {
               final isChecked = checkedIds.contains(item.id);
               return _ItemRow(
+                key: ValueKey(item.id),
                 item: item,
                 isChecked: isChecked,
                 onToggle: () => onToggle(item.id),
@@ -402,60 +565,316 @@ class _ListSection extends StatelessWidget {
   }
 }
 
-class _ItemRow extends StatelessWidget {
+class _ItemRow extends StatefulWidget {
   final ListItem item;
   final bool isChecked;
   final VoidCallback onToggle;
 
   const _ItemRow({
+    super.key,
     required this.item,
     required this.isChecked,
     required this.onToggle,
   });
 
   @override
+  State<_ItemRow> createState() => _ItemRowState();
+}
+
+class _ItemRowState extends State<_ItemRow>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: MitlistAnimations.checkToggle,
+      value: widget.isChecked ? 1.0 : 0.0,
+    );
+  }
+
+  @override
+  void didUpdateWidget(_ItemRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isChecked != oldWidget.isChecked) {
+      if (widget.isChecked) {
+        _controller.forward();
+      } else {
+        _controller.reverse();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final qtyText = item.quantity > 0
-        ? '${item.quantity.toStringAsFixed(item.quantity == item.quantity.roundToDouble() ? 0 : 1)} ${item.unit}'
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final disableAnimations = MediaQuery.of(context).disableAnimations;
+
+    final qtyText = widget.item.quantity > 0
+        ? '${widget.item.quantity.toStringAsFixed(widget.item.quantity == widget.item.quantity.roundToDouble() ? 0 : 1)} ${widget.item.unit}'
         : '';
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xs),
-      child: Row(
-        children: [
-          AnimatedCheckToggle(
-            value: isChecked,
-            onChanged: (_) => onToggle(),
-            semanticLabelOn: 'Mark ${item.name} as not purchased',
-            semanticLabelOff: 'Mark ${item.name} as purchased',
-          ),
-          Expanded(
-            child: Text(
-              item.name,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                decoration: isChecked ? TextDecoration.lineThrough : null,
-                color: isChecked
-                    ? Theme.of(context).colorScheme.onSurfaceVariant
-                    : Theme.of(context).colorScheme.onSurface,
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final t = disableAnimations
+            ? (widget.isChecked ? 1.0 : 0.0)
+            : _controller.value;
+        // A single small hop as the item lands in (or leaves) the basket;
+        // peaks mid-transition and settles flat. Never persists when checked.
+        final hop = disableAnimations ? 0.0 : -math.sin(math.pi * t) * 3.0;
+        final strikeProgress = Curves.easeOutCubic.transform(t);
+        final textColor = Color.lerp(
+          colorScheme.onSurface,
+          colorScheme.onSurfaceVariant,
+          t,
+        )!;
+
+        return Transform.translate(
+          offset: Offset(0, hop),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.06 * t),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                vertical: MitlistSpacing.xs,
+                horizontal: MitlistSpacing.xs,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              child: Row(
+                children: [
+                  AnimatedCheckToggle(
+                    value: widget.isChecked,
+                    onChanged: (_) => widget.onToggle(),
+                    semanticLabelOn: 'Mark ${widget.item.name} as not purchased',
+                    semanticLabelOff: 'Mark ${widget.item.name} as purchased',
+                  ),
+                  Expanded(
+                    child: CustomPaint(
+                      foregroundPainter: _StrikePainter(
+                        progress: strikeProgress,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      child: Text(
+                        widget.item.name,
+                        style: textTheme.bodyMedium?.copyWith(color: textColor),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                  Opacity(
+                    opacity: 1.0 - 0.35 * t,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (qtyText.isNotEmpty)
+                          Text(
+                            qtyText.trim(),
+                            style: MitlistTypography.labelXSmall(),
+                          ),
+                        if (widget.item.priceCents != null &&
+                            widget.item.priceCents! > 0)
+                          Padding(
+                            padding: const EdgeInsets.only(left: MitlistSpacing.sm),
+                            child: Text(
+                              '€${(widget.item.priceCents! / 100).toStringAsFixed(2)}',
+                              style: MitlistTypography.labelXSmall(),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          if (qtyText.isNotEmpty)
-            Text(
-              qtyText.trim(),
-              style: MitlistTypography.labelXSmall(),
+        );
+      },
+    );
+  }
+}
+
+/// Draws an ink strike-through that grows across the label from left to right
+/// as [progress] goes 0 -> 1.
+class _StrikePainter extends CustomPainter {
+  _StrikePainter({required this.progress, required this.color});
+
+  final double progress;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (progress <= 0) return;
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+    final y = size.height / 2;
+    canvas.drawLine(
+      Offset(0, y),
+      Offset(size.width * progress.clamp(0.0, 1.0), y),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_StrikePainter oldDelegate) =>
+      oldDelegate.progress != progress || oldDelegate.color != color;
+}
+
+/// The completion "stamp" — a rotated, hard-bordered DONE mark that thwacks
+/// onto the screen, holds, then lifts away. With reduced motion it simply
+/// appears and fades, no scale or rotation.
+class _DoneStamp extends StatefulWidget {
+  const _DoneStamp({
+    required this.count,
+    required this.totalCents,
+    required this.onComplete,
+  });
+
+  final int count;
+  final int totalCents;
+  final VoidCallback onComplete;
+
+  @override
+  State<_DoneStamp> createState() => _DoneStampState();
+}
+
+class _DoneStampState extends State<_DoneStamp>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  bool _reduceMotion = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this);
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        widget.onComplete();
+      }
+    });
+    // Read reduced-motion next frame, once we have a MediaQuery.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _reduceMotion = MediaQuery.of(context).disableAnimations;
+      _controller.duration = _reduceMotion
+          ? const Duration(milliseconds: 900)
+          : const Duration(milliseconds: 1250);
+      _controller.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final priceStr = widget.totalCents > 0
+        ? '€${(widget.totalCents / 100).toStringAsFixed(2)}'
+        : null;
+
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          final t = _controller.value;
+          double opacity;
+          double scale;
+          double rotation;
+
+          if (_reduceMotion) {
+            // Appear, hold, fade. No movement.
+            opacity = t < 0.75 ? 1.0 : (1.0 - (t - 0.75) / 0.25);
+            scale = 1.0;
+            rotation = -0.08;
+          } else {
+            const enter = 0.22;
+            const exitStart = 0.72;
+            if (t < enter) {
+              final p = Curves.easeOutBack.transform(t / enter);
+              opacity = (t / enter).clamp(0.0, 1.0);
+              scale = 1.5 - 0.5 * p;
+              rotation = -0.20 + 0.12 * p;
+            } else if (t < exitStart) {
+              opacity = 1.0;
+              scale = 1.0;
+              rotation = -0.08;
+            } else {
+              final p = (t - exitStart) / (1.0 - exitStart);
+              opacity = (1.0 - p).clamp(0.0, 1.0);
+              scale = 1.0 + 0.08 * p;
+              rotation = -0.08;
+            }
+          }
+
+          return Opacity(
+            opacity: opacity.clamp(0.0, 1.0),
+            child: Container(
+              color: colorScheme.scrim.withValues(alpha: 0.18 * opacity.clamp(0.0, 1.0)),
+              alignment: Alignment.center,
+              child: Transform.rotate(
+                angle: rotation,
+                child: Transform.scale(scale: scale, child: child),
+              ),
             ),
-              if (item.priceCents != null && item.priceCents! > 0)
-                Padding(
-                  padding: const EdgeInsets.only(left: MitlistSpacing.sm),
-                  child: Text(
-                    '€${(item.priceCents! / 100).toStringAsFixed(2)}',
-                    style: MitlistTypography.labelXSmall(),
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: MitlistSpacing.xl,
+            vertical: MitlistSpacing.lg,
+          ),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            border: Border.all(color: colorScheme.primary, width: 4),
+            boxShadow: MitlistShadows.shadowStrong,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'DONE',
+                style: textTheme.displaySmall?.copyWith(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 2,
+                ),
+              ),
+              const SizedBox(height: MitlistSpacing.xs),
+              Text(
+                widget.count == 1 ? '1 item' : '${widget.count} items',
+                style: textTheme.titleSmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              if (priceStr != null) ...[
+                const SizedBox(height: MitlistSpacing.xs),
+                Text(
+                  priceStr,
+                  style: textTheme.titleLarge?.copyWith(
+                    color: colorScheme.onSurface,
                   ),
                 ),
-        ],
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

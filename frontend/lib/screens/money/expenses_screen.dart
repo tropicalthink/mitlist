@@ -102,10 +102,13 @@ final Map<String, NumberFormat> _currencyFormats = {};
 
 String _formatCurrency(double value, {String currency = 'USD'}) {
   final key = currency.trim().isEmpty ? 'USD' : currency.trim().toUpperCase();
-  final formatter = _currencyFormats.putIfAbsent(
-    key,
-    () => NumberFormat.simpleCurrency(name: key),
-  );
+  final formatter = _currencyFormats.putIfAbsent(key, () {
+    try {
+      return NumberFormat.simpleCurrency(name: key);
+    } catch (_) {
+      return NumberFormat.simpleCurrency(name: 'USD');
+    }
+  });
   return formatter.format(value);
 }
 
@@ -136,6 +139,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   late final ConfettiController _confettiController;
   final ScrollController _timelineScrollController = ScrollController();
   bool _hasPlayedConfetti = false;
+  bool _listenersSetUp = false;
 
   double _balance = 0;
   int _openBalanceCount = 0;
@@ -242,23 +246,26 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         unawaited(repo.refreshGroup(validGroupId, limit: _pageLimit, offset: 0).catchError((e) {
           _logger.w('Background expenses refresh failed', error: e);
         }));
-        ref.listenManual(cachedExpensesByGroupProvider(validGroupId), (prev, next) {
-          next.whenData((data) {
-            if (!mounted) return;
-            _timelineExpenses
-              ..clear()
-              ..addAll(data.map(_mapExpense));
-            _rebuildTimelineGroups();
-            setState(() => _isLoading = false);
+        if (!_listenersSetUp) {
+          _listenersSetUp = true;
+          ref.listenManual(cachedExpensesByGroupProvider(validGroupId), (prev, next) {
+            next.whenData((data) {
+              if (!mounted) return;
+              _timelineExpenses
+                ..clear()
+                ..addAll(data.map(_mapExpense));
+              _rebuildTimelineGroups();
+              setState(() => _isLoading = false);
+            });
           });
-        });
-        ref.listenManual(cachedFinanceSummaryByGroupProvider(validGroupId), (prev, next) {
-          next.whenData((s) {
-            if (!mounted) return;
-            _applyFinanceSummary(s, me?.id);
-            setState(() {});
+          ref.listenManual(cachedFinanceSummaryByGroupProvider(validGroupId), (prev, next) {
+            next.whenData((s) {
+              if (!mounted) return;
+              _applyFinanceSummary(s, me?.id);
+              setState(() {});
+            });
           });
-        });
+        }
       } else {
         if (!mounted) return;
         setState(() => _isLoading = false);
