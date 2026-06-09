@@ -141,9 +141,9 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
   }
 
   Future<void> _openCreateSheet() async {
-    final created = await CreateHouseholdSheet.show(context);
-    if (created == true && mounted) {
-      _loadInitialGroups();
+    final group = await CreateHouseholdSheet.show(context);
+    if (group != null && mounted) {
+      _navigateToHub(group.id);
     }
   }
 

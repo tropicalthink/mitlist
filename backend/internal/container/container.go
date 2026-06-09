@@ -219,7 +219,7 @@ func (c *Container) Mail() *mailservice.Service {
 // Push returns the singleton push notification service.
 func (c *Container) Push() *pushservice.Service {
 	c.pushOnce.Do(func() {
-		c.pushService = pushservice.New(c.cfg, c.logger, c.AuthRepo(), c.GroupRepo())
+		c.pushService = pushservice.New(c.cfg, c.logger, c.AuthRepo(), c.GroupRepo(), c.NotificationRepo())
 	})
 	return c.pushService
 }

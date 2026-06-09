@@ -292,25 +292,20 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     if (!context.mounted) return;
 
     final hubContext = context;
-    final idsBefore = groups.map((g) => g.id).toSet();
     final rowStyle = Theme.of(hubContext).textTheme.bodyMedium;
     final iconColor =
         rowStyle?.color ?? Theme.of(hubContext).colorScheme.onSurface;
 
     late BuildContext sheetContext;
 
-    Future<void> onCreateResult(bool? success) async {
-      if (success != true || !mounted) return;
+    Future<void> onCreateResult(Group? group) async {
+      if (group == null || !mounted) return;
       try {
         final svc = await ref.read(groupServiceProviderAsync.future);
         final after = await svc.listGroups();
         if (!mounted) return;
         setState(() => _households = after);
-        final newGroup = after.firstWhere(
-          (g) => !idsBefore.contains(g.id),
-          orElse: () => after.first,
-        );
-        if (hubContext.mounted) _switchGroup(newGroup.id);
+        if (hubContext.mounted) _switchGroup(group.id);
       } catch (_) {
         if (mounted) await _loadData();
       }
@@ -530,16 +525,14 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     }
   }
 
-  Future<void> _onHouseholdResult(bool? success) async {
-    if (success != true || !mounted) return;
+  Future<void> _onHouseholdResult(Group? group) async {
+    if (group == null || !mounted) return;
     try {
       final groupSvc = await ref.read(groupServiceProviderAsync.future);
       final groups = await groupSvc.listGroups();
       if (!mounted) return;
       setState(() => _households = groups);
-      if (groups.isNotEmpty) {
-        _switchGroup(groups.first.id);
-      }
+      _switchGroup(group.id);
     } catch (_) {
       if (mounted) {
         setState(() => _isLoading = false);
