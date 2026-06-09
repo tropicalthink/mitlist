@@ -31,9 +31,16 @@ class FcmService {
   static final StreamController<RemoteMessage> _foregroundController =
       StreamController<RemoteMessage>.broadcast();
 
+  static final StreamController<RemoteMessage> _tapController =
+      StreamController<RemoteMessage>.broadcast();
+
   /// Fires when a push notification is received while the app is in the foreground.
   static Stream<RemoteMessage> get onForegroundMessage =>
       _foregroundController.stream;
+
+  /// Fires when the user taps a notification while the app is in the background.
+  /// For cold-start taps (app killed), use [checkInitialMessage] instead.
+  static Stream<RemoteMessage> get onNotificationTap => _tapController.stream;
 
   /// Initialise Firebase and register the FCM device token with the backend.
   ///
@@ -78,6 +85,20 @@ class FcmService {
     FirebaseMessaging.onMessage.listen((message) {
       _foregroundController.add(message);
     });
+
+    // Background-to-foreground taps — user tapped a notification while the
+    // app was backgrounded (not killed).
+    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      _tapController.add(message);
+    });
+  }
+
+  /// Returns the notification that launched the app from a killed state, or
+  /// null if the app was opened normally.  Call after [init] completes.
+  static Future<RemoteMessage?> checkInitialMessage() async {
+    if (kIsWeb) return null;
+    if (!Platform.isAndroid && !Platform.isIOS) return null;
+    return FirebaseMessaging.instance.getInitialMessage();
   }
 
   static Future<void> _registerToken(Dio dio, String token) async {

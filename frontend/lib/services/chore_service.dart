@@ -102,6 +102,27 @@ class ChoreService {
     }
   }
 
+  Future<ChoreTemplate> updateChoreTemplate(
+      String id, UpdateChoreTemplateRequest req) async {
+    try {
+      final r =
+          await _dio.patch('/chore-templates/$id', data: req.toJson());
+      return ChoreTemplate.fromJson((r.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Update chore template failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> deleteChoreTemplate(String id) async {
+    try {
+      await _dio.delete('/chore-templates/$id');
+    } on DioException catch (e) {
+      _logger.e('Delete chore template failed: ${e.response?.data}');
+      throw _handleError(e);
+    }
+  }
+
   Future<List<ChoreLoadEntry>> getChoreLoad(
     String groupId, {
     int days = 30,

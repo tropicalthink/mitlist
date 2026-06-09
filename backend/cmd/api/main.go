@@ -93,7 +93,7 @@ func main() {
 		r.Post("/oauth/apple/callback", oauthHandler.PostAppleCallback)
 
 		// SSE (Server-Sent Events) — auth handled inside the handler to skip UserRateLimit
-		sseHandler := handlers.NewSSEHandler(cnt.SSEHub(), cnt.JWT(), cnt.UserService())
+		sseHandler := handlers.NewSSEHandler(cnt.SSEHub(), cnt.JWT(), cnt.UserService(), cnt.GroupRepo())
 		sseHandler.RegisterRoutes(r)
 
 		// Protected feature routes

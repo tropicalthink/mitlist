@@ -8,6 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/api_config.dart';
 
+class _SseUnauthorizedException implements Exception {}
+
 /// A single SSE event parsed from the server stream.
 class SseEvent {
   final String type;
@@ -64,12 +66,54 @@ class SseService {
     while (!_disposed && _currentGroupId == groupId) {
       try {
         await _connectOnce(groupId);
+      } on _SseUnauthorizedException {
+        if (_disposed || _currentGroupId != groupId) break;
+        _log.i('SSE got 401 — attempting token refresh');
+        final refreshed = await _tryRefreshToken();
+        if (!refreshed) {
+          _log.w('Token refresh failed; stopping SSE loop');
+          break;
+        }
+        // New token saved — retry immediately without backoff.
       } catch (e) {
         if (_disposed || _currentGroupId != groupId) break;
         _log.w('SSE disconnected, retrying in ${backoff.inSeconds}s: $e');
         await Future.delayed(backoff);
         backoff = Duration(seconds: (backoff.inSeconds * 2).clamp(2, 60));
       }
+    }
+  }
+
+  Future<bool> _tryRefreshToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final refreshToken = prefs.getString(ApiConfig.refreshTokenKey);
+    if (refreshToken == null) return false;
+
+    try {
+      final uri = Uri.parse(
+        '${ApiConfig.baseUrl}${ApiConfig.apiPrefix}/auth/token/refresh',
+      );
+      final client = HttpClient();
+      final req = await client.postUrl(uri);
+      req.headers.contentType = ContentType.json;
+      req.write(jsonEncode({'refresh_token': refreshToken}));
+      final resp = await req.close();
+      if (resp.statusCode != 200) return false;
+
+      final body = await resp.transform(utf8.decoder).join();
+      final data = jsonDecode(body) as Map<String, dynamic>;
+      final newAccess = data['access_token'] as String?;
+      final newRefresh = data['refresh_token'] as String?;
+      if (newAccess == null) return false;
+
+      await prefs.setString(ApiConfig.accessTokenKey, newAccess);
+      if (newRefresh != null) {
+        await prefs.setString(ApiConfig.refreshTokenKey, newRefresh);
+      }
+      return true;
+    } catch (e) {
+      _log.w('Token refresh in SSE failed: $e');
+      return false;
     }
   }
 
@@ -92,6 +136,9 @@ class SseService {
     request.headers.set('Cache-Control', 'no-cache');
 
     final response = await request.close();
+    if (response.statusCode == 401) {
+      throw _SseUnauthorizedException();
+    }
     if (response.statusCode != 200) {
       throw HttpException('SSE returned ${response.statusCode}');
     }

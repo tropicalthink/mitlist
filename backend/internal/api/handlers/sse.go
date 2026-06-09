@@ -7,9 +7,11 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/middleware"
+	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/mitlist-app/mitlist/internal/sse"
 	userservice "github.com/mitlist-app/mitlist/internal/services"
 	jwtservice "github.com/mitlist-app/mitlist/internal/services/jwt"
@@ -20,11 +22,12 @@ type SSEHandler struct {
 	hub        *sse.Hub
 	jwtService *jwtservice.Service
 	userSvc    *userservice.UserService
+	groupRepo  repositories.GroupRepo
 }
 
 // NewSSEHandler creates a new SSEHandler.
-func NewSSEHandler(hub *sse.Hub, jwtService *jwtservice.Service, userSvc *userservice.UserService) *SSEHandler {
-	return &SSEHandler{hub: hub, jwtService: jwtService, userSvc: userSvc}
+func NewSSEHandler(hub *sse.Hub, jwtService *jwtservice.Service, userSvc *userservice.UserService, groupRepo repositories.GroupRepo) *SSEHandler {
+	return &SSEHandler{hub: hub, jwtService: jwtService, userSvc: userSvc, groupRepo: groupRepo}
 }
 
 // RegisterRoutes mounts the SSE endpoint.
@@ -44,13 +47,25 @@ func (h *SSEHandler) Events(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, api.ErrUnauthorized)
 		return
 	}
-	_ = user // authenticated; group membership is enforced by event emission (server only sends to members' groups)
 
-	groupID := r.URL.Query().Get("group_id")
-	if groupID == "" {
+	rawGroupID := r.URL.Query().Get("group_id")
+	if rawGroupID == "" {
 		api.RespondError(w, &api.ValidationError{Field: "group_id", Message: "group_id is required"})
 		return
 	}
+
+	parsedGroupID, err := uuid.Parse(rawGroupID)
+	if err != nil {
+		api.RespondError(w, &api.ValidationError{Field: "group_id", Message: "invalid group_id"})
+		return
+	}
+
+	if _, err := h.groupRepo.GetMembership(r.Context(), parsedGroupID, user.ID); err != nil {
+		api.RespondError(w, api.ErrPermissionDenied)
+		return
+	}
+
+	groupID := parsedGroupID.String()
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {

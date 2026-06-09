@@ -10,6 +10,7 @@ import 'providers/outbox_provider.dart';
 import 'services/api_client.dart' show createApiClient;
 import 'providers/theme_provider.dart';
 import 'services/error_reporter.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'services/fcm_service.dart';
 import 'services/push_subscription_service.dart';
 import 'widgets/offline_banner.dart';
@@ -25,6 +26,7 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
     with WidgetsBindingObserver {
   final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
   StreamSubscription? _fcmSub;
+  StreamSubscription? _fcmTapSub;
 
   @override
   void initState() {
@@ -83,12 +85,36 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
             ),
           );
       });
+
+      _fcmTapSub =
+          FcmService.onNotificationTap.listen(_handleNotificationTap);
+
+      FcmService.checkInitialMessage().then((msg) {
+        if (msg != null) {
+          WidgetsBinding.instance.addPostFrameCallback(
+            (_) => _handleNotificationTap(msg),
+          );
+        }
+      });
     });
+  }
+
+  void _handleNotificationTap(RemoteMessage message) {
+    final data = message.data;
+    final screen = data['screen'] as String?;
+    final id = data['id'] as String?;
+    final router = ref.read(routerProvider);
+    if (screen == 'choreDetail') {
+      router.goNamed('chores');
+    } else if (screen == 'listDetail' && id != null) {
+      router.goNamed('listDetail', pathParameters: {'listId': id});
+    }
   }
 
   @override
   void dispose() {
     _fcmSub?.cancel();
+    _fcmTapSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
