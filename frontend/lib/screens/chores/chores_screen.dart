@@ -61,6 +61,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       MitlistSpacing.md +
       MitlistSpacing.sm +
       MitlistSpacing.space8 +
+      MitlistSpacing.sm +
       // Second control row: "By due date / By rhythm" grouping toggle.
       MitlistSpacing.sm +
       MitlistSpacing.space8 +

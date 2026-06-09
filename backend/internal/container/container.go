@@ -159,6 +159,12 @@ type Container struct {
 	aiClientOnce sync.Once
 	aiClient     *aiservice.Client
 
+	groceryRepoOnce sync.Once
+	groceryRepo     *repositories.GroceryRepository
+
+	groceryServiceOnce sync.Once
+	groceryService     *services.GroceryService
+
 	sseHub *sse.Hub
 }
 
@@ -566,4 +572,21 @@ func (c *Container) AIClient() *aiservice.Client {
 		c.aiClient = aiservice.New(c.cfg)
 	})
 	return c.aiClient
+}
+
+// GroceryRepo returns the singleton grocery repository.
+func (c *Container) GroceryRepo() *repositories.GroceryRepository {
+	c.groceryRepoOnce.Do(func() {
+		c.groceryRepo = repositories.NewGroceryRepository(c.db)
+	})
+	return c.groceryRepo
+}
+
+// GroceryService returns the singleton grocery service.
+func (c *Container) GroceryService() *services.GroceryService {
+	c.groceryServiceOnce.Do(func() {
+		c.groceryService = services.NewGroceryService(c.GroceryRepo(), c.GroupRepo())
+		c.groceryService.SetHub(c.SSEHub())
+	})
+	return c.groceryService
 }

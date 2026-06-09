@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../providers/scan_provider.dart';
+import '../../providers/grocery_provider.dart';
 import '../../services/scan_service.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
@@ -18,9 +20,14 @@ import '../../sheets/expense_creation_sheet.dart';
 import '../../sheets/create_list_sheet.dart';
 import '../../sheets/chore_creation_sheet.dart';
 import '../../widgets/empty_state.dart';
+import 'scan_review_screen.dart';
 
 class ScannerScreen extends ConsumerStatefulWidget {
-  const ScannerScreen({super.key});
+  /// Pass the current household group id to enable grocery-pipeline mode.
+  final String? groupId;
+  final String? userId;
+
+  const ScannerScreen({super.key, this.groupId, this.userId});
 
   @override
   ConsumerState<ScannerScreen> createState() => _ScannerScreenState();
@@ -63,6 +70,59 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       if (!mounted) return;
       setState(() {
         _error = 'Couldn\u2019t analyze the image. Please try again with a clearer photo.';
+        _isAnalyzing = false;
+      });
+    }
+  }
+
+  /// Grocery-intelligence pipeline: runs on-device OCR + canonical resolution
+  /// then pushes to the [ScanReviewScreen].
+  Future<void> _scanGroceryList(ImageSource source) async {
+    final groupId = widget.groupId;
+    final userId = widget.userId;
+    if (groupId == null || userId == null) {
+      // Fall back to the generic scanner if context is not provided.
+      _pickImage(source);
+      return;
+    }
+
+    final picked = await _picker.pickImage(
+      source: source,
+      maxWidth: 2048,
+      maxHeight: 2048,
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() => _isAnalyzing = true);
+
+    try {
+      final bytes = Uint8List.fromList(await File(picked.path).readAsBytes());
+      final pipeline = await ref.read(scanPipelineProvider.future);
+      final connectivity = ref.read(connectivityServiceProvider);
+      final isOnline = await connectivity.isOnline();
+
+      final result = await pipeline.run(
+        imageBytes: bytes,
+        groupId: groupId,
+        isOnline: isOnline,
+      );
+
+      if (!mounted) return;
+      setState(() => _isAnalyzing = false);
+
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ScanReviewScreen(
+            scanResult: result,
+            groupId: groupId,
+            userId: userId,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Couldn\u2019t process the image. Please try again.';
         _isAnalyzing = false;
       });
     }
@@ -145,28 +205,29 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     }
   }
 
-  void _showSourcePicker() {
+  void _showSourcePicker({bool groceryMode = false}) {
+    final onCamera = groceryMode
+        ? () { Navigator.of(context).pop(); _scanGroceryList(ImageSource.camera); }
+        : () { Navigator.of(context).pop(); _pickImage(ImageSource.camera); };
+    final onGallery = groceryMode
+        ? () { Navigator.of(context).pop(); _scanGroceryList(ImageSource.gallery); }
+        : () { Navigator.of(context).pop(); _pickImage(ImageSource.gallery); };
+
     showAppBottomSheet<void>(
       context: context,
-      title: 'Add scan',
+      title: groceryMode ? 'Scan grocery list' : 'Add scan',
       body: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           ListTile(
             leading: const AppIcon(name: 'devicePhoneMobile'),
             title: const Text('Take a photo'),
-            onTap: () {
-              Navigator.of(context).pop();
-              _pickImage(ImageSource.camera);
-            },
+            onTap: onCamera,
           ),
           ListTile(
-            leading: AppIcon(name: 'eye'),
-            title: Text('Choose from gallery'),
-            onTap: () {
-              Navigator.of(context).pop();
-              _pickImage(ImageSource.gallery);
-            },
+            leading: const AppIcon(name: 'eye'),
+            title: const Text('Choose from gallery'),
+            onTap: onGallery,
           ),
         ],
       ),
@@ -241,7 +302,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
                 ),
               ),
             )
-          else if (_result == null)
+          else if (_result == null) ...[
             AppButton(
               text: _imageFile != null ? 'Analyze this image' : 'Take a photo or choose one',
               icon: _imageFile == null
@@ -253,6 +314,16 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
                   ? () => _pickImage(ImageSource.gallery)
                   : _showSourcePicker,
             ),
+            if (widget.groupId != null) ...[
+              const SizedBox(height: MitlistSpacing.sm),
+              AppButton(
+                text: 'Scan grocery list',
+                variant: AppButtonVariant.outline,
+                icon: const AppIcon(name: 'shoppingCart'),
+                onPressed: () => _showSourcePicker(groceryMode: true),
+              ),
+            ],
+          ],
 
           if (_imageFile != null && _result == null && !_isAnalyzing) ...[
             const SizedBox(height: MitlistSpacing.sm),

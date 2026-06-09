@@ -1,4 +1,4 @@
-import 'dart:async';
+import 'dart:async' show StreamSubscription, unawaited;
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
@@ -142,6 +142,11 @@ class ListRepository {
       updatedAt: DateTime.now(),
     );
     await _db.upsertListItemsRows([_toListItemsRow(patched)]);
+
+    // Record purchase signal when item transitions to checked.
+    if ((req.checked ?? false) && !existing.checked) {
+      _recordPurchaseSignal(listId, itemId, existingRow);
+    }
 
     await _db.enqueueOutbox(
       id: _uuid.v4(),
@@ -398,6 +403,61 @@ class ListRepository {
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Phase 6: purchase signal on item check-off
+  // ---------------------------------------------------------------------------
+
+  /// Records a purchase event and increments co-occurrence counts when an item
+  /// transitions to checked. Fire-and-forget; errors are silently swallowed
+  /// because this is a background signal, not a critical write.
+  void _recordPurchaseSignal(
+    String listId,
+    String itemId,
+    ListItemsTableData row,
+  ) {
+    unawaited(_doPurchaseSignal(listId, itemId, row));
+  }
+
+  Future<void> _doPurchaseSignal(
+    String listId,
+    String itemId,
+    ListItemsTableData row,
+  ) async {
+    try {
+      final canonicalId = row.canonicalItemId;
+      if (canonicalId == null) return;
+
+      final groupId = await _db.getListGroupId(listId);
+      if (groupId == null) return;
+      // Insert a purchase_history row.
+      await _db.insertPurchaseHistory(PurchaseHistoryTableCompanion.insert(
+        id: _uuid.v4(),
+        groupId: groupId,
+        canonicalItemId: Value(canonicalId),
+        listItemId: Value(itemId),
+        quantity: Value(row.quantity),
+        unit: Value(row.unit),
+        version: const Value(0),
+        purchasedAt: DateTime.now(),
+      ));
+
+      // Increment co-occurrence with every other checked item in the same list.
+      final peers = await _db.getCheckedItemsWithCanonical(listId);
+      for (final peer in peers) {
+        if (peer.id == itemId) continue;
+        final peerCanonicalId = peer.canonicalItemId;
+        if (peerCanonicalId == null) continue;
+        await _db.incrementCooccurrence(
+          groupId: groupId,
+          itemAId: canonicalId,
+          itemBId: peerCanonicalId,
+        );
+      }
+    } catch (_) {
+      // Best-effort; never throw from a background signal.
+    }
   }
 
   List<String> _safeStringList(String json) {

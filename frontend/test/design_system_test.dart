@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:mitlist/widgets/app_button.dart';
 import 'package:mitlist/widgets/app_card.dart';
 import 'package:mitlist/widgets/app_dialog.dart';
@@ -10,9 +9,7 @@ import 'package:mitlist/widgets/chip.dart';
 import 'package:mitlist/widgets/app_icon.dart';
 
 void main() {
-  setUpAll(() {
-    GoogleFonts.config.allowRuntimeFetching = false;
-  });
+  setUpAll(() {});
 
   // ── AppButton ──────────────────────────────────────────────────────────
 
@@ -21,7 +18,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: AppButton(text: 'Tap me', onPressed: () {}),
       ));
-      expect(find.text('Tap me'), findsOneWidget);
+      expect(find.text('TAP ME'), findsOneWidget);
     });
 
     testWidgets('fires onPressed when tapped', (tester) async {
@@ -29,7 +26,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: AppButton(text: 'Tap', onPressed: () => tapped = true),
       ));
-      await tester.tap(find.text('Tap'));
+      await tester.tap(find.text('TAP'));
       expect(tapped, isTrue);
     });
 
@@ -37,7 +34,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: AppButton(text: 'Disabled'),
       ));
-      await tester.tap(find.text('Disabled'));
+      await tester.tap(find.text('DISABLED'));
     });
 
     testWidgets('shows loading indicator when isLoading', (tester) async {
@@ -56,7 +53,7 @@ void main() {
         ),
       ));
       expect(find.byIcon(Icons.add), findsOneWidget);
-      expect(find.text('With icon'), findsOneWidget);
+      expect(find.text('WITH ICON'), findsOneWidget);
     });
 
     testWidgets('renders all size variants', (tester) async {
@@ -64,7 +61,7 @@ void main() {
         await tester.pumpWidget(MaterialApp(
           home: AppButton(text: size.name, size: size, onPressed: () {}),
         ));
-        expect(find.text(size.name), findsOneWidget);
+        expect(find.text(size.name.toUpperCase()), findsOneWidget);
       }
     });
 
@@ -76,7 +73,7 @@ void main() {
           onPressed: () {},
         ),
       ));
-      expect(find.text('Info'), findsOneWidget);
+      expect(find.text('INFO'), findsOneWidget);
     });
 
     testWidgets('renders all color variants', (tester) async {
@@ -88,7 +85,7 @@ void main() {
             onPressed: () {},
           ),
         ));
-        expect(find.text(color.name), findsOneWidget);
+        expect(find.text(color.name.toUpperCase()), findsOneWidget);
       }
     });
 
@@ -101,7 +98,11 @@ void main() {
             onPressed: () {},
           ),
         ));
-        expect(find.text(variant.name), findsOneWidget);
+        final expectedText = variant == AppButtonVariant.solid ||
+                variant == AppButtonVariant.outline
+            ? variant.name.toUpperCase()
+            : variant.name;
+        expect(find.text(expectedText), findsOneWidget);
       }
     });
   });
@@ -200,7 +201,7 @@ void main() {
       await tester.tap(find.text('Show'));
       await tester.pump();
 
-      expect(find.text('Test Dialog'), findsOneWidget);
+      expect(find.text('TEST DIALOG'), findsOneWidget);
       expect(find.text('Dialog body'), findsOneWidget);
     });
 
@@ -234,9 +235,9 @@ void main() {
       await tester.tap(find.text('Show'));
       await tester.pump();
 
-      expect(find.text('Confirm'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
-      expect(find.text('Delete'), findsOneWidget);
+      expect(find.text('CONFIRM'), findsOneWidget);
+      expect(find.text('CANCEL'), findsOneWidget);
+      expect(find.text('DELETE'), findsOneWidget);
     });
 
     testWidgets('Cancel action pops with false', (tester) async {
@@ -267,7 +268,7 @@ void main() {
 
       await tester.tap(find.text('Show'));
       await tester.pump();
-      await tester.tap(find.text('Cancel'));
+      await tester.tap(find.text('CANCEL'));
       await tester.pump();
 
       expect(result, isFalse);
@@ -291,7 +292,7 @@ void main() {
 
       await tester.tap(find.text('Show'));
       await tester.pump();
-      expect(find.text('Dismiss'), findsOneWidget);
+      expect(find.text('DISMISS'), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.close));
       await tester.pump();
@@ -317,7 +318,7 @@ void main() {
           hint: 'Enter your name',
         ),
       ));
-      expect(find.text('Name'), findsOneWidget);
+      expect(find.text('NAME'), findsOneWidget);
       expect(find.text('Enter your name'), findsOneWidget);
     });
 

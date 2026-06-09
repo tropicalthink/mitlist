@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/list_models.dart';
 import '../repositories/list_repository.dart';
+import '../services/grocery_seed_loader.dart';
 import '../services/list_service.dart';
 import '../services/sse_service.dart';
 import '../storage/app_database.dart';
@@ -20,6 +21,13 @@ final appDatabaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
   ref.onDispose(() => db.close());
   return db;
+});
+
+/// Runs the grocery seed on first launch (no-op if already seeded).
+/// Watch this in the app shell to ensure seed is loaded before first scan.
+final grocerySeedProvider = FutureProvider<void>((ref) async {
+  final db = ref.watch(appDatabaseProvider);
+  await GrocerySeedLoader(db).loadIfNeeded();
 });
 
 final listRepositoryProvider = FutureProvider<ListRepository>((ref) async {
