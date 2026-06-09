@@ -109,6 +109,9 @@ Future<T?> showAppBottomSheet<T>({
   ValueListenable<bool>? isDirtyListenable,
 }) {
   Future<void> confirmDismiss(BuildContext context) async {
+    // The dialog is pushed on the root navigator (showGeneralDialog), while the
+    // sheet lives on the nested shell navigator. Pop the dialog on the root
+    // navigator so the buttons close the dialog, not the sheet underneath it.
     final confirmed = await showAppDialog<bool>(
       context: context,
       title: 'Discard changes?',
@@ -116,13 +119,15 @@ Future<T?> showAppBottomSheet<T>({
       actions: [
         AppButton(
           text: 'Keep editing',
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: () =>
+              Navigator.of(context, rootNavigator: true).pop(false),
         ),
         AppButton(
           text: 'Discard',
           color: AppButtonColor.error,
           variant: AppButtonVariant.outline,
-          onPressed: () => Navigator.of(context).pop(true),
+          onPressed: () =>
+              Navigator.of(context, rootNavigator: true).pop(true),
         ),
       ],
     );
