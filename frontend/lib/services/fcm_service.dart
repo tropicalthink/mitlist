@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
 
 const _prefKey = 'fcm_token_registered';
+const _prefDeviceTokenId = 'fcm_device_token_id';
 
 /// Handles Firebase Cloud Messaging setup and device token registration.
 ///
@@ -101,6 +102,30 @@ class FcmService {
     return FirebaseMessaging.instance.getInitialMessage();
   }
 
+  /// Removes the device token from the backend and clears it from local storage.
+  ///
+  /// Call during logout so the user stops receiving push notifications.
+  static Future<void> unregisterToken(Dio dio) async {
+    if (kIsWeb) return;
+    if (!Platform.isAndroid && !Platform.isIOS) return;
+    final prefs = await SharedPreferences.getInstance();
+    final id = prefs.getString(_prefDeviceTokenId);
+    if (id == null) return;
+    try {
+      final accessToken = prefs.getString(ApiConfig.accessTokenKey);
+      if (accessToken == null) return;
+      await dio.delete(
+        '${ApiConfig.apiPrefix}/auth/device-tokens/$id',
+        options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
+      );
+    } catch (e) {
+      _log.w('FCM token unregister failed: $e');
+    } finally {
+      await prefs.remove(_prefKey);
+      await prefs.remove(_prefDeviceTokenId);
+    }
+  }
+
   static Future<void> _registerToken(Dio dio, String token) async {
     final platform = Platform.isIOS ? 'ios' : 'android';
 
@@ -112,7 +137,7 @@ class FcmService {
       final accessToken = prefs.getString(ApiConfig.accessTokenKey);
       if (accessToken == null) return;
 
-      await dio.post(
+      final response = await dio.post(
         '${ApiConfig.apiPrefix}/auth/device-tokens',
         data: {'platform': platform, 'token': token},
         options: Options(
@@ -120,6 +145,8 @@ class FcmService {
         ),
       );
       await prefs.setString(_prefKey, token);
+      final id = (response.data as Map<String, dynamic>?)?['id'] as String?;
+      if (id != null) await prefs.setString(_prefDeviceTokenId, id);
       _log.i('FCM device token registered');
     } catch (e) {
       _log.w('FCM token registration failed: $e');

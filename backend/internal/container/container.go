@@ -219,7 +219,7 @@ func (c *Container) Mail() *mailservice.Service {
 // Push returns the singleton push notification service.
 func (c *Container) Push() *pushservice.Service {
 	c.pushOnce.Do(func() {
-		c.pushService = pushservice.New(c.cfg, c.logger, c.AuthRepo())
+		c.pushService = pushservice.New(c.cfg, c.logger, c.AuthRepo(), c.GroupRepo())
 	})
 	return c.pushService
 }
@@ -410,6 +410,7 @@ func (c *Container) ListService() *services.ListService {
 	c.listServiceOnce.Do(func() {
 		c.listService = services.NewListService(c.ListRepo(), c.GroupRepo())
 		c.listService.SetHub(c.SSEHub())
+		c.listService.SetPush(c.Push())
 	})
 	return c.listService
 }
@@ -427,6 +428,7 @@ func (c *Container) ChoreService() *services.ChoreService {
 	c.choreServiceOnce.Do(func() {
 		c.choreService = services.NewChoreService(c.ChoreRepo(), c.GroupRepo(), c.ListRepo())
 		c.choreService.SetHub(c.SSEHub())
+		c.choreService.SetPush(c.Push())
 	})
 	return c.choreService
 }

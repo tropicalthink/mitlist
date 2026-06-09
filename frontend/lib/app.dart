@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'theme/theme.dart';
 import 'router.dart';
+import 'providers/list_provider.dart' show sseServiceProvider;
 import 'providers/outbox_provider.dart';
 import 'services/api_client.dart' show createApiClient;
 import 'providers/theme_provider.dart';
@@ -124,6 +125,9 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
     if (state == AppLifecycleState.resumed) {
       final coordinator = ref.read(outboxCoordinatorProvider).valueOrNull;
       coordinator?.drain();
+      // Force-reconnect SSE — the OS may have silently killed the connection
+      // while the app was backgrounded.
+      ref.read(sseServiceProvider).reconnect();
     }
   }
 

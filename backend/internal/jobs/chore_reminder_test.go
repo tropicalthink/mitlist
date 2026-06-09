@@ -53,6 +53,11 @@ func (m *mockPusher) BroadcastToGroup(groupID uuid.UUID, payload string) error {
 	return args.Error(0)
 }
 
+func (m *mockPusher) BroadcastToGroupExcluding(groupID, excludeUserID uuid.UUID, payload string) error {
+	args := m.Called(groupID, excludeUserID, payload)
+	return args.Error(0)
+}
+
 func TestChoreReminder_Run(t *testing.T) {
 	log := logger.New("test")
 	repo := new(mockChoreReminderRepo)

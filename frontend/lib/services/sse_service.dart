@@ -178,6 +178,16 @@ class SseService {
     }
   }
 
+  /// Force-close the current SSE connection so the retry loop re-establishes it.
+  ///
+  /// Call on app resume to recover from connections silently dropped by the OS
+  /// while the app was backgrounded.
+  void reconnect() {
+    if (_currentGroupId == null || _disposed) return;
+    _httpClient?.close(force: true);
+    _httpClient = null;
+  }
+
   /// Stop the SSE connection and free resources.
   void dispose() {
     _disposed = true;

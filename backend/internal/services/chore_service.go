@@ -19,12 +19,20 @@ import (
 	"github.com/mitlist-app/mitlist/internal/sse"
 )
 
+// chorePushPayload is the push message structure for chore events.
+type chorePushPayload struct {
+	Title string                     `json:"title"`
+	Body  string                     `json:"body"`
+	Data  models.NotificationPayload `json:"data"`
+}
+
 // ChoreService provides business logic for chores and deterministic rotation.
 type ChoreService struct {
 	choreRepo repositories.ChoreRepo
 	groupRepo repositories.GroupRepo
 	listRepo  repositories.ListRepo
-	hub       *sse.Hub // optional; nil disables SSE broadcasts
+	hub       *sse.Hub    // optional; nil disables SSE broadcasts
+	pushSvc   PushService // optional; nil disables push broadcasts
 }
 
 // NewChoreService creates a new ChoreService.
@@ -38,6 +46,28 @@ func NewChoreService(choreRepo repositories.ChoreRepo, groupRepo repositories.Gr
 
 // SetHub injects the SSE hub for real-time event broadcasts.
 func (s *ChoreService) SetHub(h *sse.Hub) { s.hub = h }
+
+// SetPush injects the push service for mobile/web push broadcasts.
+func (s *ChoreService) SetPush(p PushService) { s.pushSvc = p }
+
+// broadcastChorePush notifies all group members except the actor of a chore state change.
+func (s *ChoreService) broadcastChorePush(groupID, choreID, actorID uuid.UUID, title, body string) {
+	if s.pushSvc == nil {
+		return
+	}
+	payload := chorePushPayload{
+		Title: title,
+		Body:  body,
+		Data: models.NotificationPayload{
+			Screen:     models.ScreenChoreDetail,
+			EntityType: models.EntityTypeChore,
+			ID:         choreID.String(),
+			GroupID:    groupID.String(),
+		},
+	}
+	data, _ := json.Marshal(payload)
+	_ = s.pushSvc.BroadcastToGroupExcluding(groupID, actorID, string(data))
+}
 
 // publishChore emits an SSE event for a chore state change.
 func (s *ChoreService) publishChore(eventType string, groupID, choreID uuid.UUID) {
@@ -419,6 +449,9 @@ func (s *ChoreService) CompleteChore(ctx context.Context, user *models.User, cho
 		return err
 	}
 	s.publishChore("chore:completed", chore.GroupID, choreID)
+	go s.broadcastChorePush(chore.GroupID, choreID, user.ID,
+		"Chore completed",
+		user.FirstName+" completed "+chore.Name)
 	return nil
 }
 
@@ -471,6 +504,9 @@ func (s *ChoreService) SkipChore(ctx context.Context, user *models.User, choreID
 		return err
 	}
 	s.publishChore("chore:skipped", chore.GroupID, choreID)
+	go s.broadcastChorePush(chore.GroupID, choreID, user.ID,
+		"Chore skipped",
+		user.FirstName+" skipped "+chore.Name)
 	return nil
 }
 

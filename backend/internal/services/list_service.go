@@ -16,11 +16,19 @@ import (
 	"github.com/mitlist-app/mitlist/pkg/validation"
 )
 
+// listPushPayload is the FCM/VAPID push message structure for list events.
+type listPushPayload struct {
+	Title string                  `json:"title"`
+	Body  string                  `json:"body"`
+	Data  models.NotificationPayload `json:"data"`
+}
+
 // ListService provides business logic for lists and list items.
 type ListService struct {
 	listRepo  repositories.ListRepo
 	groupRepo repositories.GroupRepo
-	hub       *sse.Hub // optional; nil disables SSE broadcasts
+	hub       *sse.Hub    // optional; nil disables SSE broadcasts
+	pushSvc   PushService // optional; nil disables push broadcasts
 }
 
 // NewListService creates a new ListService.
@@ -33,6 +41,28 @@ func NewListService(listRepo repositories.ListRepo, groupRepo repositories.Group
 
 // SetHub injects the SSE hub for real-time event broadcasts.
 func (s *ListService) SetHub(h *sse.Hub) { s.hub = h }
+
+// SetPush injects the push service for mobile/web push broadcasts.
+func (s *ListService) SetPush(p PushService) { s.pushSvc = p }
+
+// broadcastListPush sends a push notification to all group members except the actor.
+func (s *ListService) broadcastListPush(list *models.List, actorID uuid.UUID, title, body string) {
+	if s.pushSvc == nil {
+		return
+	}
+	payload := listPushPayload{
+		Title: title,
+		Body:  body,
+		Data: models.NotificationPayload{
+			Screen:     models.ScreenListDetail,
+			EntityType: models.EntityTypeList,
+			ID:         list.ID.String(),
+			GroupID:    list.GroupID.String(),
+		},
+	}
+	data, _ := json.Marshal(payload)
+	_ = s.pushSvc.BroadcastToGroupExcluding(list.GroupID, actorID, string(data))
+}
 
 // publishItem emits an SSE event for a list item mutation.
 func (s *ListService) publishItem(eventType string, groupID uuid.UUID, item *models.ListItem) {
@@ -229,6 +259,7 @@ func (s *ListService) CreateItem(ctx context.Context, user *models.User, item *m
 		return err
 	}
 	s.publishItem("list:item_created", list.GroupID, item)
+	go s.broadcastListPush(list, user.ID, "New item added", item.Name+" added to "+list.Name)
 	return nil
 }
 
@@ -361,6 +392,7 @@ func (s *ListService) ClearItems(ctx context.Context, user *models.User, listID 
 	}
 	if n > 0 {
 		s.publishListEvent("list:items_cleared", list.GroupID, listID)
+		go s.broadcastListPush(list, user.ID, "List cleared", list.Name+" was cleared")
 	}
 	return n, nil
 }

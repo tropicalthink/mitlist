@@ -20,9 +20,10 @@ import (
 
 // Service provides push notification operations.
 type Service struct {
-	cfg      *config.Config
-	log      *logger.Logger
-	authRepo *repositories.AuthRepository
+	cfg       *config.Config
+	log       *logger.Logger
+	authRepo  *repositories.AuthRepository
+	groupRepo repositories.GroupRepo
 
 	fcmOnce  sync.Once
 	fcmCreds *google.Credentials
@@ -30,8 +31,8 @@ type Service struct {
 }
 
 // New creates a new push notification service.
-func New(cfg *config.Config, log *logger.Logger, authRepo *repositories.AuthRepository) *Service {
-	return &Service{cfg: cfg, log: log, authRepo: authRepo}
+func New(cfg *config.Config, log *logger.Logger, authRepo *repositories.AuthRepository, groupRepo repositories.GroupRepo) *Service {
+	return &Service{cfg: cfg, log: log, authRepo: authRepo, groupRepo: groupRepo}
 }
 
 // SendToUser sends a push notification to all subscriptions/devices for a user.
@@ -90,7 +91,30 @@ func (s *Service) SendToUser(userID uuid.UUID, payload string) error {
 
 // BroadcastToGroup broadcasts a push notification to all members of a group.
 func (s *Service) BroadcastToGroup(groupID uuid.UUID, payload string) error {
-	s.log.Warn().Str("group_id", groupID.String()).Msg("push broadcast to group not implemented")
+	return s.broadcastExcluding(groupID, uuid.Nil, payload)
+}
+
+// BroadcastToGroupExcluding broadcasts to all group members except excludeUserID.
+// Pass uuid.Nil as excludeUserID to broadcast to everyone.
+func (s *Service) BroadcastToGroupExcluding(groupID, excludeUserID uuid.UUID, payload string) error {
+	return s.broadcastExcluding(groupID, excludeUserID, payload)
+}
+
+func (s *Service) broadcastExcluding(groupID, excludeUserID uuid.UUID, payload string) error {
+	ctx := context.Background()
+	members, err := s.groupRepo.ListMembershipsByGroup(ctx, groupID)
+	if err != nil {
+		s.log.Error().Err(err).Str("group_id", groupID.String()).Msg("broadcast: failed to list group members")
+		return err
+	}
+	for _, m := range members {
+		if m.UserID == excludeUserID {
+			continue
+		}
+		if err := s.SendToUser(m.UserID, payload); err != nil {
+			s.log.Warn().Err(err).Str("user_id", m.UserID.String()).Msg("broadcast: send failed")
+		}
+	}
 	return nil
 }
 

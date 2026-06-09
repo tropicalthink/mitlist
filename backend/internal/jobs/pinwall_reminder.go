@@ -44,6 +44,10 @@ func (a pushAdapter) BroadcastToGroup(groupID uuid.UUID, payload string) error {
 	return a.push.BroadcastToGroup(groupID, payload)
 }
 
+func (a pushAdapter) BroadcastToGroupExcluding(groupID, excludeUserID uuid.UUID, payload string) error {
+	return a.push.BroadcastToGroupExcluding(groupID, excludeUserID, payload)
+}
+
 type pinwallReminderRepo interface {
 	ListDueReminders(ctx context.Context, before time.Time, limit int) ([]models.PinwallPost, error)
 	ListGroupMembers(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error)

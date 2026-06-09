@@ -7,6 +7,7 @@ import '../config/api_config.dart';
 import '../models/auth_models.dart';
 import 'api_client.dart';
 import 'api_error_mapper.dart';
+import 'fcm_service.dart';
 
 /// Authentication service for managing user authentication.
 ///
@@ -100,6 +101,9 @@ class AuthService {
   ///
   /// Clears all stored tokens and user data.
   Future<void> logout() async {
+    // Remove the FCM device token so push stops after logout.
+    await FcmService.unregisterToken(_dio);
+
     try {
       final refreshToken = _prefs.getString(ApiConfig.refreshTokenKey);
       if (refreshToken != null) {
