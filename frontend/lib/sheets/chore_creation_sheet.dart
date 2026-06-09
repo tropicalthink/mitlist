@@ -30,14 +30,63 @@ enum _AssignmentPolicy {
   noAssignment,
 }
 
+/// A common household routine that pre-fills the form. Turns chore creation
+/// from a blank config screen into picking from the household's shared rhythm.
+class _ChoreTemplate {
+  final String name;
+  final _Recurrence recurrence;
+  final int interval;
+  final Set<String> weekdays;
+  final _AssignmentPolicy assignment;
+  final bool trackDateOnly;
+  final bool rollover;
+
+  const _ChoreTemplate(
+    this.name, {
+    this.recurrence = _Recurrence.weekly,
+    this.interval = 1,
+    this.weekdays = const {'monday'},
+    this.assignment = _AssignmentPolicy.roundRobin,
+    this.trackDateOnly = false,
+    this.rollover = true,
+  });
+}
+
+const _choreTemplates = <_ChoreTemplate>[
+  _ChoreTemplate('Dishes', recurrence: _Recurrence.daily, rollover: false),
+  _ChoreTemplate(
+    'Take out trash',
+    weekdays: {'sunday'},
+    assignment: _AssignmentPolicy.roundRobin,
+  ),
+  _ChoreTemplate('Vacuum', weekdays: {'saturday'}),
+  _ChoreTemplate('Clean bathroom', weekdays: {'saturday'}),
+  _ChoreTemplate('Laundry', weekdays: {'sunday'}),
+  _ChoreTemplate(
+    'Grocery run',
+    weekdays: {'friday'},
+    assignment: _AssignmentPolicy.leastDone,
+  ),
+  _ChoreTemplate(
+    'Water plants',
+    recurrence: _Recurrence.adaptive,
+    interval: 3,
+    trackDateOnly: true,
+    assignment: _AssignmentPolicy.noAssignment,
+  ),
+  _ChoreTemplate('Mop floors', interval: 2, weekdays: {'saturday'}),
+];
+
 class ChoreCreationSheet extends ConsumerStatefulWidget {
   final String? initialTitle;
   final String? initialDescription;
+  final ValueNotifier<bool>? dirtyNotifier;
 
   const ChoreCreationSheet({
     super.key,
     this.initialTitle,
     this.initialDescription,
+    this.dirtyNotifier,
   });
 
   static Future<bool?> show(
@@ -45,14 +94,19 @@ class ChoreCreationSheet extends ConsumerStatefulWidget {
     String? initialTitle,
     String? initialDescription,
   }) async {
-    return showAppBottomSheet<bool>(
+    final dirty = ValueNotifier<bool>(false);
+    final future = showAppBottomSheet<bool>(
       context: context,
       title: 'Add chore',
+      isDirtyListenable: dirty,
       body: ChoreCreationSheet(
         initialTitle: initialTitle,
         initialDescription: initialDescription,
+        dirtyNotifier: dirty,
       ),
     );
+    future.whenComplete(dirty.dispose);
+    return future;
   }
 
   @override
@@ -71,6 +125,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
   bool _rollover = false;
   bool _isSaving = false;
   bool _isScanning = false;
+  String? _appliedTemplate;
 
   @override
   void initState() {
@@ -81,6 +136,30 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
     if (widget.initialDescription != null) {
       _descriptionController.text = widget.initialDescription!;
     }
+    _intervalController.addListener(_markDirty);
+  }
+
+  void _markDirty() => widget.dirtyNotifier?.value = true;
+
+  /// Pre-fills the form from a routine. The name only overwrites an empty
+  /// field, so a template never clobbers what the user already typed.
+  void _applyTemplate(_ChoreTemplate template) {
+    setState(() {
+      _appliedTemplate = template.name;
+      if (_nameController.text.trim().isEmpty) {
+        _nameController.text = template.name;
+      }
+      _recurrence = template.recurrence;
+      _intervalController.text = '${template.interval}';
+      _weekdays
+        ..clear()
+        ..addAll(template.weekdays);
+      _assignmentPolicy = template.assignment;
+      _trackDateOnly = template.trackDateOnly;
+      _rollover = template.rollover;
+    });
+    _markDirty();
+    Haptics.light();
   }
 
   Future<void> _onScan() async {
@@ -93,6 +172,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
     if (picked == null || !mounted) return;
 
     setState(() => _isScanning = true);
+    _markDirty();
 
     try {
       final service = await ref.read(scanServiceProviderAsync.future);
@@ -165,6 +245,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       );
 
       if (!mounted) return;
+      widget.dirtyNotifier?.value = false;
       Navigator.of(context).pop(true);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Chore added')),
@@ -222,18 +303,89 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
 
   @override
   void dispose() {
+    _intervalController.removeListener(_markDirty);
     _nameController.dispose();
     _descriptionController.dispose();
     _intervalController.dispose();
     super.dispose();
   }
 
+  // ---- Plain-language descriptions of the current selection ----
+
+  String get _recurrenceHint => switch (_recurrence) {
+        _Recurrence.none => 'A one-time chore. It won\'t come back on its own.',
+        _Recurrence.hourly => 'Comes back every set number of hours.',
+        _Recurrence.daily => 'Comes back every set number of days.',
+        _Recurrence.weekly => 'Comes back each week on the days you pick.',
+        _Recurrence.monthly => 'Comes back monthly on the same date.',
+        _Recurrence.yearly => 'Comes back yearly on the same date.',
+        _Recurrence.adaptive =>
+          'Comes back based on when it was last done, not the calendar.',
+      };
+
+  String get _assignmentHint => switch (_assignmentPolicy) {
+        _AssignmentPolicy.roundRobin => 'Rotates to the next person each time.',
+        _AssignmentPolicy.alphabetical =>
+          'Goes in alphabetical order of names.',
+        _AssignmentPolicy.leastDone => 'Goes to whoever has done it least.',
+        _AssignmentPolicy.random => 'Picks someone at random each time.',
+        _AssignmentPolicy.noAssignment =>
+          'Stays unassigned. Anyone in the household can pick it up.',
+      };
+
+  /// Live, singular-aware summary of the repeat interval, e.g. "Every 2 weeks".
+  String get _intervalSummary {
+    final n = _periodInterval;
+    final (singular, plural) = switch (_recurrence) {
+      _Recurrence.hourly => ('hour', 'hours'),
+      _Recurrence.weekly => ('week', 'weeks'),
+      _Recurrence.monthly => ('month', 'months'),
+      _Recurrence.yearly => ('year', 'years'),
+      _ => ('day', 'days'),
+    };
+    return n == 1 ? 'Every $singular' : 'Every $n $plural';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    Widget divider() => Padding(
+          padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.lg),
+          child: Divider(
+            height: 1,
+            thickness: 1,
+            color: colorScheme.outlineVariant,
+          ),
+        );
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text('Start from a routine', style: textTheme.labelMedium),
+        const SizedBox(height: MitlistSpacing.sm),
+        Wrap(
+          spacing: MitlistSpacing.sm,
+          runSpacing: MitlistSpacing.sm,
+          children: [
+            for (final template in _choreTemplates)
+              AppChip(
+                label: template.name,
+                selected: _appliedTemplate == template.name,
+                onSelected: (_) => _applyTemplate(template),
+              ),
+          ],
+        ),
+        const SizedBox(height: MitlistSpacing.sm),
+        Text(
+          'Tap a routine to fill the form, then tweak anything below.',
+          style: textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        divider(),
         AppButton(
           text: _isScanning ? 'Scanning…' : 'Scan chore',
           icon: AppIcon(
@@ -250,105 +402,97 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           label: 'Chore name',
           hint: 'e.g. Vacuum living room',
           controller: _nameController,
-          textInputAction: TextInputAction.done,
+          textInputAction: TextInputAction.next,
           maxLength: 100,
-          onChanged: (_) => setState(() {}),
+          onChanged: (_) {
+            _markDirty();
+            setState(() {});
+          },
         ),
         const SizedBox(height: MitlistSpacing.md),
         AppInput(
           label: 'Notes (optional)',
-          hint: 'Add any details for this chore',
+          hint: 'Add any details or steps for this chore',
           controller: _descriptionController,
-          textInputAction: TextInputAction.done,
+          textInputAction: TextInputAction.newline,
+          keyboardType: TextInputType.multiline,
+          minLines: 1,
+          maxLines: 5,
           maxLength: 500,
+          onChanged: (_) => _markDirty(),
         ),
-        const SizedBox(height: MitlistSpacing.md),
-        Text(
-          'Recurrence',
-          style: Theme.of(context).textTheme.labelMedium,
-        ),
+        divider(),
+
+        // ---- Repeats ----
+        Text('Repeats', style: textTheme.labelMedium),
         const SizedBox(height: MitlistSpacing.sm),
         Wrap(
           spacing: MitlistSpacing.sm,
           runSpacing: MitlistSpacing.sm,
           children: [
-            AppChip(
-              label: 'None',
-              selected: _recurrence == _Recurrence.none,
-              onSelected: (_) => setState(() => _recurrence = _Recurrence.none),
-            ),
-            Tooltip(
-              message: 'No repeating schedule',
-              child: AppChip(
-                label: 'Hourly',
-                selected: _recurrence == _Recurrence.hourly,
-                onSelected: (_) =>
-                    setState(() => _recurrence = _Recurrence.hourly),
+            for (final option in const [
+              (_Recurrence.none, 'None'),
+              (_Recurrence.daily, 'Daily'),
+              (_Recurrence.weekly, 'Weekly'),
+              (_Recurrence.monthly, 'Monthly'),
+              (_Recurrence.yearly, 'Yearly'),
+              (_Recurrence.hourly, 'Hourly'),
+              (_Recurrence.adaptive, 'Adaptive'),
+            ])
+              AppChip(
+                label: option.$2,
+                selected: _recurrence == option.$1,
+                onSelected: (_) {
+                  setState(() {
+                    _recurrence = option.$1;
+                    _appliedTemplate = null;
+                  });
+                  _markDirty();
+                },
               ),
-            ),
-            Tooltip(
-              message: 'Repeats every day',
-              child: AppChip(
-                label: 'Daily',
-                selected: _recurrence == _Recurrence.daily,
-                onSelected: (_) =>
-                    setState(() => _recurrence = _Recurrence.daily),
-              ),
-            ),
-            Tooltip(
-              message: 'Repeats every week on selected days',
-              child: AppChip(
-                label: 'Weekly',
-                selected: _recurrence == _Recurrence.weekly,
-                onSelected: (_) =>
-                    setState(() => _recurrence = _Recurrence.weekly),
-              ),
-            ),
-            Tooltip(
-              message: 'Repeats once a month on the same date',
-              child: AppChip(
-                label: 'Monthly',
-                selected: _recurrence == _Recurrence.monthly,
-                onSelected: (_) =>
-                    setState(() => _recurrence = _Recurrence.monthly),
-              ),
-            ),
-            Tooltip(
-              message: 'Repeats once a year on the same date',
-              child: AppChip(
-                label: 'Yearly',
-                selected: _recurrence == _Recurrence.yearly,
-                onSelected: (_) =>
-                    setState(() => _recurrence = _Recurrence.yearly),
-              ),
-            ),
-            Tooltip(
-              message: 'Repeats based on completion date, not the calendar',
-              child: AppChip(
-                label: 'Adaptive',
-                selected: _recurrence == _Recurrence.adaptive,
-                onSelected: (_) =>
-                    setState(() => _recurrence = _Recurrence.adaptive),
-              ),
-            ),
           ],
+        ),
+        const SizedBox(height: MitlistSpacing.sm),
+        Text(
+          _recurrenceHint,
+          style: textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
         ),
         if (_recurrence != _Recurrence.none) ...[
           const SizedBox(height: MitlistSpacing.md),
-          AppInput(
-            label: 'Interval',
-            hint: '1',
-            controller: _intervalController,
-            keyboardType: TextInputType.number,
-            textInputAction: TextInputAction.done,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              SizedBox(
+                width: 96,
+                child: AppInput(
+                  label: 'Repeat every',
+                  hint: '1',
+                  controller: _intervalController,
+                  keyboardType: TextInputType.number,
+                  textInputAction: TextInputAction.done,
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+              const SizedBox(width: MitlistSpacing.md),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: MitlistSpacing.space3),
+                  child: Text(
+                    _intervalSummary,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
         if (_recurrence == _Recurrence.weekly) ...[
           const SizedBox(height: MitlistSpacing.md),
-          Text(
-            'Weekdays',
-            style: Theme.of(context).textTheme.labelMedium,
-          ),
+          Text('On these days', style: textTheme.labelMedium),
           const SizedBox(height: MitlistSpacing.sm),
           Wrap(
             spacing: MitlistSpacing.sm,
@@ -373,103 +517,75 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
                       _weekdays.add(day.$1);
                     }
                   });
+                  _markDirty();
                 },
               );
             }).toList(),
           ),
         ],
-        const SizedBox(height: MitlistSpacing.md),
-        Text(
-          'Assignment',
-          style: Theme.of(context).textTheme.labelMedium,
-        ),
+        divider(),
+
+        // ---- Who does it ----
+        Text('Who does it?', style: textTheme.labelMedium),
         const SizedBox(height: MitlistSpacing.sm),
         Wrap(
           spacing: MitlistSpacing.sm,
           runSpacing: MitlistSpacing.sm,
           children: [
-            Tooltip(
-              message: 'Assigns to the next person in order',
-              child: AppChip(
-                label: 'Round-robin',
-                selected: _assignmentPolicy == _AssignmentPolicy.roundRobin,
-                onSelected: (_) => setState(
-                  () => _assignmentPolicy = _AssignmentPolicy.roundRobin,
-                ),
+            for (final option in const [
+              (_AssignmentPolicy.roundRobin, 'Take turns'),
+              (_AssignmentPolicy.leastDone, 'Least done'),
+              (_AssignmentPolicy.alphabetical, 'Alphabetical'),
+              (_AssignmentPolicy.random, 'Random'),
+              (_AssignmentPolicy.noAssignment, 'No assignee'),
+            ])
+              AppChip(
+                label: option.$2,
+                selected: _assignmentPolicy == option.$1,
+                onSelected: (_) {
+                  setState(() {
+                    _assignmentPolicy = option.$1;
+                    _appliedTemplate = null;
+                  });
+                  _markDirty();
+                },
               ),
-            ),
-            Tooltip(
-              message: 'Assigns based on alphabetical order of member names',
-              child: AppChip(
-                label: 'Alphabetical',
-                selected: _assignmentPolicy == _AssignmentPolicy.alphabetical,
-                onSelected: (_) => setState(
-                  () => _assignmentPolicy = _AssignmentPolicy.alphabetical,
-                ),
-              ),
-            ),
-            Tooltip(
-              message: 'Assigns to whoever has done it the least',
-              child: AppChip(
-                label: 'Least done',
-                selected: _assignmentPolicy == _AssignmentPolicy.leastDone,
-                onSelected: (_) => setState(
-                  () => _assignmentPolicy = _AssignmentPolicy.leastDone,
-                ),
-              ),
-            ),
-            Tooltip(
-              message: 'Picks someone at random',
-              child: AppChip(
-                label: 'Random',
-                selected: _assignmentPolicy == _AssignmentPolicy.random,
-                onSelected: (_) => setState(
-                  () => _assignmentPolicy = _AssignmentPolicy.random,
-                ),
-              ),
-            ),
-            Tooltip(
-              message: 'Do not assign this chore to anyone',
-              child: AppChip(
-                label: 'No assignee',
-                selected: _assignmentPolicy == _AssignmentPolicy.noAssignment,
-                onSelected: (_) => setState(
-                  () => _assignmentPolicy = _AssignmentPolicy.noAssignment,
-                ),
-              ),
-            ),
           ],
         ),
-        const SizedBox(height: MitlistSpacing.md),
-        Tooltip(
-          message: "Records the chore day but doesn't mark it complete",
-          child: Row(
-            children: [
-              AnimatedCheckToggle(
-                value: _trackDateOnly,
-                onChanged: (value) => setState(() => _trackDateOnly = value),
-                semanticLabelOn: 'Untrack date only',
-                semanticLabelOff: 'Track date only',
-              ),
-              const SizedBox(width: MitlistSpacing.sm),
-              Text('Track date only', style: Theme.of(context).textTheme.bodyMedium),
-            ],
+        const SizedBox(height: MitlistSpacing.sm),
+        Text(
+          _assignmentHint,
+          style: textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
           ),
         ),
-        Tooltip(
-          message: 'Overdue chores roll over to the next due date',
-          child: Row(
-            children: [
-              AnimatedCheckToggle(
-                value: _rollover,
-                onChanged: (value) => setState(() => _rollover = value),
-                semanticLabelOn: 'Do not rollover overdue due date',
-                semanticLabelOff: 'Rollover overdue due date',
-              ),
-              const SizedBox(width: MitlistSpacing.sm),
-              Text('Rollover overdue due date', style: Theme.of(context).textTheme.bodyMedium),
-            ],
-          ),
+        divider(),
+
+        // ---- Options ----
+        Text('Options', style: textTheme.labelMedium),
+        const SizedBox(height: MitlistSpacing.md),
+        _OptionToggle(
+          value: _trackDateOnly,
+          onChanged: (value) {
+            setState(() => _trackDateOnly = value);
+            _markDirty();
+          },
+          title: 'Log when it\'s done, don\'t tick it off',
+          helper:
+              'Records the day someone did it without checking it off the list. '
+              'Good for things you want a history of, like watering plants.',
+        ),
+        const SizedBox(height: MitlistSpacing.md),
+        _OptionToggle(
+          value: _rollover,
+          onChanged: (value) {
+            setState(() => _rollover = value);
+            _markDirty();
+          },
+          title: 'Roll over if it\'s missed',
+          helper:
+              'If nobody does it in time, it moves to the next due date instead '
+              'of piling up as overdue.',
         ),
         const SizedBox(height: MitlistSpacing.lg),
         SizedBox(
@@ -478,9 +594,65 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
             variant: AppButtonVariant.solid,
             color: AppButtonColor.primary,
             size: AppButtonSize.lg,
-            text: _isSaving ? 'Adding...' : 'Add chore',
+            text: _isSaving ? 'Adding…' : 'Add chore',
             isLoading: _isSaving,
             onPressed: _canCreate ? _onCreate : null,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// A labelled switch row with a visible helper line, replacing the previous
+/// tooltip-only explanations (which never appear on touch).
+class _OptionToggle extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final String title;
+  final String helper;
+
+  const _OptionToggle({
+    required this.value,
+    required this.onChanged,
+    required this.title,
+    required this.helper,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AnimatedCheckToggle(
+          value: value,
+          onChanged: onChanged,
+          semanticLabelOn: '$title (on)',
+          semanticLabelOff: '$title (off)',
+        ),
+        const SizedBox(width: MitlistSpacing.sm),
+        Expanded(
+          child: GestureDetector(
+            onTap: () => onChanged(!value),
+            behavior: HitTestBehavior.opaque,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: MitlistSpacing.xs),
+                  child: Text(title, style: textTheme.bodyMedium),
+                ),
+                const SizedBox(height: MitlistSpacing.xs),
+                Text(
+                  helper,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],

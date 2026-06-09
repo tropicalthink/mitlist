@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/animations.dart';
@@ -95,46 +96,73 @@ class AppBottomSheet extends StatelessWidget {
 }
 
 /// Shows an [AppBottomSheet] with a slide-up animation and scrim backdrop.
+///
+/// Pass [isDirtyListenable] for forms whose dirty state changes while the sheet
+/// is open: dismissal is then guarded by a "Discard changes?" dialog only while
+/// the value is `true`. The static [isDirty] flag remains for sheets that are
+/// dirty for their whole lifetime.
 Future<T?> showAppBottomSheet<T>({
   required BuildContext context,
   required String title,
   required Widget body,
   bool isDirty = false,
+  ValueListenable<bool>? isDirtyListenable,
 }) {
+  Future<void> confirmDismiss(BuildContext context) async {
+    final confirmed = await showAppDialog<bool>(
+      context: context,
+      title: 'Discard changes?',
+      body: const Text('You have unsaved changes.'),
+      actions: [
+        AppButton(
+          text: 'Keep editing',
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton(
+          text: 'Discard',
+          color: AppButtonColor.error,
+          variant: AppButtonVariant.outline,
+          onPressed: () => Navigator.of(context).pop(true),
+        ),
+      ],
+    );
+    if (confirmed == true && context.mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
   return showModalBottomSheet<T>(
     context: context,
     backgroundColor: Colors.transparent,
     barrierColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
     isScrollControlled: true,
-    isDismissible: !isDirty,
-    enableDrag: !isDirty,
+    // When dirtiness is dynamic, route every dismissal through the barrier so
+    // the PopScope guard below can intercept it; drag-to-dismiss bypasses it.
+    isDismissible: isDirtyListenable != null ? true : !isDirty,
+    enableDrag: isDirtyListenable != null ? false : !isDirty,
     sheetAnimationStyle: AnimationStyle(duration: MitlistAnimations.medium),
-    builder: (context) => PopScope(
-      canPop: !isDirty,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) return;
-        final confirmed = await showAppDialog<bool>(
-          context: context,
-          title: 'Discard changes?',
-          body: const Text('You have unsaved changes.'),
-          actions: [
-            AppButton(
-              text: 'Keep editing',
-              onPressed: () => Navigator.of(context).pop(false),
-            ),
-            AppButton(
-              text: 'Discard',
-              color: AppButtonColor.error,
-              variant: AppButtonVariant.outline,
-              onPressed: () => Navigator.of(context).pop(true),
-            ),
-          ],
+    builder: (context) {
+      if (isDirtyListenable != null) {
+        return ValueListenableBuilder<bool>(
+          valueListenable: isDirtyListenable,
+          builder: (context, dirty, _) => PopScope(
+            canPop: !dirty,
+            onPopInvokedWithResult: (didPop, result) async {
+              if (didPop) return;
+              await confirmDismiss(context);
+            },
+            child: AppBottomSheet(title: title, body: body),
+          ),
         );
-        if (confirmed == true && context.mounted) {
-          Navigator.of(context).pop();
-        }
-      },
-      child: AppBottomSheet(title: title, body: body),
-    ),
+      }
+      return PopScope(
+        canPop: !isDirty,
+        onPopInvokedWithResult: (didPop, result) async {
+          if (didPop) return;
+          await confirmDismiss(context);
+        },
+        child: AppBottomSheet(title: title, body: body),
+      );
+    },
   );
 }
