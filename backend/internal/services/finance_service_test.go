@@ -327,3 +327,255 @@ func TestFinanceService_DeleteRecurringExpense(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func TestFinanceService_UpdateExpense(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+	otherUserID := uuid.New()
+	expenseID := uuid.New()
+	groupID := uuid.New()
+
+	existingExpense := &models.Expense{ID: expenseID, GroupID: groupID, PayerID: userID, Amount: 100, Currency: "USD"}
+
+	t.Run("member updating own-payer expense succeeds", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		financeRepo.On("GetExpenseByID", ctx, expenseID).Return(existingExpense, nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		financeRepo.On("UpdateExpense", ctx, mock.AnythingOfType("*models.Expense")).Return(nil)
+
+		expense := &models.Expense{ID: expenseID, PayerID: userID, Amount: 200, Currency: "USD"}
+		err := svc.UpdateExpense(ctx, userID, expense)
+		require.NoError(t, err)
+	})
+
+	t.Run("member reassigning payer to different user is denied", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		financeRepo.On("GetExpenseByID", ctx, expenseID).Return(existingExpense, nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+
+		expense := &models.Expense{ID: expenseID, PayerID: otherUserID, Amount: 100, Currency: "USD"}
+		err := svc.UpdateExpense(ctx, userID, expense)
+		require.Error(t, err)
+	})
+
+	t.Run("admin reassigning payer succeeds", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		financeRepo.On("GetExpenseByID", ctx, expenseID).Return(existingExpense, nil)
+		// requireMember call for userID (admin)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "admin"}, nil)
+		// requireMember call for new payer (otherUserID)
+		groupRepo.On("GetMembership", ctx, groupID, otherUserID).Return(&models.GroupMembership{Role: "member"}, nil)
+		financeRepo.On("UpdateExpense", ctx, mock.AnythingOfType("*models.Expense")).Return(nil)
+
+		expense := &models.Expense{ID: expenseID, PayerID: otherUserID, Amount: 100, Currency: "USD"}
+		err := svc.UpdateExpense(ctx, userID, expense)
+		require.NoError(t, err)
+	})
+
+	t.Run("amount zero returns ErrValidation", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		financeRepo.On("GetExpenseByID", ctx, expenseID).Return(existingExpense, nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+
+		expense := &models.Expense{ID: expenseID, PayerID: userID, Amount: 0, Currency: "USD"}
+		err := svc.UpdateExpense(ctx, userID, expense)
+		require.Error(t, err)
+		assert.Equal(t, api.ErrValidation, err)
+	})
+
+	t.Run("negative amount returns ErrValidation", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		financeRepo.On("GetExpenseByID", ctx, expenseID).Return(existingExpense, nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+
+		expense := &models.Expense{ID: expenseID, PayerID: userID, Amount: -50, Currency: "USD"}
+		err := svc.UpdateExpense(ctx, userID, expense)
+		require.Error(t, err)
+		assert.Equal(t, api.ErrValidation, err)
+	})
+}
+
+func TestFinanceService_UpdateSplit(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+	otherUserID := uuid.New()
+	splitID := uuid.New()
+	expenseID := uuid.New()
+	groupID := uuid.New()
+
+	existingSplit := &models.Split{ID: splitID, ExpenseID: expenseID, UserID: otherUserID, Amount: 50}
+	existingExpense := &models.Expense{ID: expenseID, GroupID: groupID, PayerID: userID}
+
+	t.Run("member updating amount to positive value succeeds", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		financeRepo.On("GetSplitByID", ctx, splitID).Return(existingSplit, nil)
+		financeRepo.On("GetExpenseByID", ctx, expenseID).Return(existingExpense, nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		financeRepo.On("UpdateSplit", ctx, mock.AnythingOfType("*models.Split")).Return(nil)
+
+		split := &models.Split{ID: splitID, UserID: otherUserID, Amount: 75}
+		err := svc.UpdateSplit(ctx, userID, split)
+		require.NoError(t, err)
+	})
+
+	t.Run("amount zero returns validation error", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		financeRepo.On("GetSplitByID", ctx, splitID).Return(existingSplit, nil)
+		financeRepo.On("GetExpenseByID", ctx, expenseID).Return(existingExpense, nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+
+		split := &models.Split{ID: splitID, UserID: otherUserID, Amount: 0}
+		err := svc.UpdateSplit(ctx, userID, split)
+		require.Error(t, err)
+		var valErr *api.ValidationError
+		assert.ErrorAs(t, err, &valErr)
+	})
+
+	t.Run("negative amount returns validation error", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		financeRepo.On("GetSplitByID", ctx, splitID).Return(existingSplit, nil)
+		financeRepo.On("GetExpenseByID", ctx, expenseID).Return(existingExpense, nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+
+		split := &models.Split{ID: splitID, UserID: otherUserID, Amount: -5}
+		err := svc.UpdateSplit(ctx, userID, split)
+		require.Error(t, err)
+		var valErr *api.ValidationError
+		assert.ErrorAs(t, err, &valErr)
+	})
+
+	t.Run("member reassigning split user is denied", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		newUserID := uuid.New()
+		financeRepo.On("GetSplitByID", ctx, splitID).Return(existingSplit, nil)
+		financeRepo.On("GetExpenseByID", ctx, expenseID).Return(existingExpense, nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+
+		split := &models.Split{ID: splitID, UserID: newUserID, Amount: 50}
+		err := svc.UpdateSplit(ctx, userID, split)
+		require.Error(t, err)
+		assert.Equal(t, api.ErrPermissionDenied, err)
+	})
+
+	t.Run("admin reassigning split user succeeds", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		newUserID := uuid.New()
+		financeRepo.On("GetSplitByID", ctx, splitID).Return(existingSplit, nil)
+		financeRepo.On("GetExpenseByID", ctx, expenseID).Return(existingExpense, nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "admin"}, nil)
+		financeRepo.On("UpdateSplit", ctx, mock.AnythingOfType("*models.Split")).Return(nil)
+
+		split := &models.Split{ID: splitID, UserID: newUserID, Amount: 50}
+		err := svc.UpdateSplit(ctx, userID, split)
+		require.NoError(t, err)
+	})
+}
+
+func TestFinanceService_UpdateRecurringExpense(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+	otherUserID := uuid.New()
+	reID := uuid.New()
+	groupID := uuid.New()
+
+	existingRE := &models.RecurringExpense{ID: reID, GroupID: groupID, PayerID: userID, Amount: 100}
+
+	t.Run("member updating amount succeeds", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		financeRepo.On("GetRecurringExpenseByID", ctx, reID).Return(existingRE, nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		financeRepo.On("UpdateRecurringExpense", ctx, mock.AnythingOfType("*models.RecurringExpense")).Return(nil)
+
+		re := &models.RecurringExpense{ID: reID, PayerID: userID, Amount: 200}
+		err := svc.UpdateRecurringExpense(ctx, userID, re)
+		require.NoError(t, err)
+	})
+
+	t.Run("amount zero returns ErrValidation", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		financeRepo.On("GetRecurringExpenseByID", ctx, reID).Return(existingRE, nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+
+		re := &models.RecurringExpense{ID: reID, PayerID: userID, Amount: 0}
+		err := svc.UpdateRecurringExpense(ctx, userID, re)
+		require.Error(t, err)
+		assert.Equal(t, api.ErrValidation, err)
+	})
+
+	t.Run("negative amount returns ErrValidation", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		financeRepo.On("GetRecurringExpenseByID", ctx, reID).Return(existingRE, nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+
+		re := &models.RecurringExpense{ID: reID, PayerID: userID, Amount: -10}
+		err := svc.UpdateRecurringExpense(ctx, userID, re)
+		require.Error(t, err)
+		assert.Equal(t, api.ErrValidation, err)
+	})
+
+	t.Run("member reassigning payer is denied", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		financeRepo.On("GetRecurringExpenseByID", ctx, reID).Return(existingRE, nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+
+		re := &models.RecurringExpense{ID: reID, PayerID: otherUserID, Amount: 100}
+		err := svc.UpdateRecurringExpense(ctx, userID, re)
+		require.Error(t, err)
+	})
+
+	t.Run("admin reassigning payer succeeds", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		financeRepo.On("GetRecurringExpenseByID", ctx, reID).Return(existingRE, nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "admin"}, nil)
+		financeRepo.On("UpdateRecurringExpense", ctx, mock.AnythingOfType("*models.RecurringExpense")).Return(nil)
+
+		re := &models.RecurringExpense{ID: reID, PayerID: otherUserID, Amount: 100}
+		err := svc.UpdateRecurringExpense(ctx, userID, re)
+		require.NoError(t, err)
+	})
+}
