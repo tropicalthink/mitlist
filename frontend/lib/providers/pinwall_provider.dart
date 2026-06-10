@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/pinwall_media_models.dart';
 import '../models/pinwall_models.dart';
 import '../providers/list_provider.dart';
 import '../repositories/pinwall_repository.dart';
@@ -16,6 +17,14 @@ final pinwallRepositoryProvider = FutureProvider<PinwallRepository>((ref) async 
   final service = await ref.read(pinwallServiceProviderAsync.future);
   return PinwallRepository(db: db, remote: service);
 });
+
+final pinwallMediaByPostProvider = FutureProvider.family<
+    List<PinwallMediaItem>, ({String groupId, String postId})>(
+  (ref, args) async {
+    final svc = await ref.read(pinwallServiceProviderAsync.future);
+    return svc.listPostAttachments(groupId: args.groupId, postId: args.postId);
+  },
+);
 
 final pinwallPostsByGroupProvider =
     StreamProvider.family<List<PinwallPost>, String>((ref, groupId) async* {

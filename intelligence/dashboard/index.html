@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>mitlist intelligence</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="logo">◆</span>
+      <h1>mitlist intelligence</h1>
+    </div>
+    <div class="meta">
+      <span id="job-indicator" class="job-indicator idle">idle</span>
+      <span id="model-badge" class="badge">—</span>
+      <span id="updated-at" class="muted">—</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- Run controls -->
+    <section class="panel controls-panel">
+      <h2>Run controls</h2>
+      <div id="api-warning" class="banner warn hidden">DEEPSEEK_API_KEY not set — add it to <code>.env</code></div>
+
+      <div class="controls-grid">
+        <label>
+          Prompt
+          <select id="ctrl-prompt">
+            <option value="1">P1 — Canonical seed</option>
+            <option value="2">P2 — OCR noise</option>
+            <option value="3">P3 — Triplets</option>
+            <option value="4">P4 — Store aisles</option>
+            <option value="5">P5 — Corrections</option>
+          </select>
+        </label>
+        <label>
+          Mode
+          <select id="ctrl-mode">
+            <option value="pending">Pending only (skip done)</option>
+            <option value="all">All batches</option>
+            <option value="category">Single category (P1)</option>
+            <option value="batch">Single batch key</option>
+          </select>
+        </label>
+        <label id="ctrl-category-wrap" class="hidden">
+          Category
+          <input type="text" id="ctrl-category" placeholder="produce_fruit">
+        </label>
+        <label id="ctrl-batch-wrap" class="hidden">
+          Batch key
+          <input type="text" id="ctrl-batch" placeholder="DE_group_0">
+        </label>
+        <label>
+          Temperature
+          <input type="number" id="ctrl-temp" min="0" max="2" step="0.1" placeholder="default">
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="ctrl-force"> Force re-run completed
+        </label>
+      </div>
+
+      <div class="btn-row">
+        <button id="btn-start" class="btn primary">▶ Start</button>
+        <button id="btn-stop" class="btn danger" disabled>■ Stop</button>
+        <button id="btn-pipeline" class="btn outline">▶▶ Run pipeline (P1→2→5→3→4)</button>
+      </div>
+
+      <div id="job-status" class="job-status hidden">
+        <div class="job-status-header">
+          <span id="job-label">—</span>
+          <span id="job-progress-text" class="muted">—</span>
+        </div>
+        <div class="progress-bar"><div id="job-progress-fill" class="progress-fill" style="width:0%"></div></div>
+        <pre id="job-log" class="job-log"></pre>
+      </div>
+    </section>
+
+    <section class="cards" id="totals">
+      <div class="card">
+        <div class="card-label">Total cost</div>
+        <div class="card-value" id="total-cost">$0.00</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Rows generated</div>
+        <div class="card-value" id="total-rows">0</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Batches done</div>
+        <div class="card-value" id="batch-progress">0 / 0</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Tokens (in / out)</div>
+        <div class="card-value small" id="total-tokens">0 / 0</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Prompt progress</h2>
+      <div id="prompt-bars"></div>
+    </section>
+
+    <section class="two-col">
+      <div class="panel">
+        <h2>Data files</h2>
+        <table id="data-files">
+          <thead><tr><th>File</th><th>Rows</th><th>Size</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="panel">
+        <h2>Model versions</h2>
+        <div id="model-versions"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Recent batches</h2>
+      <table id="recent-batches">
+        <thead>
+          <tr><th>Prompt</th><th>Batch</th><th>Status</th><th>Rows</th><th>Cost</th><th>Time</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer>
+    Auto-refreshes every 2s while running · <code>./run.sh dashboard</code>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

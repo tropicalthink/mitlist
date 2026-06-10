@@ -1,0 +1,13 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+progress.db
+debug/
+ml/data/*.jsonl
+ml/data/seed.json
+ml/phase7_classifier/*.keras
+ml/phase7_classifier/*.pkl
+ml/phase8_embeddings/finetuned/
+ml/phase8_embeddings/onnx/
+ml/phase8_embeddings/model.pb/

@@ -1,0 +1,30 @@
+You are generating a large-scale contrastive learning dataset for a multilingual
+grocery embedding model. The model must learn that similar-looking items are
+DIFFERENT and cross-language names for the SAME item are close.
+
+CURRENT BATCH CATEGORY CLUSTER: {CLUSTER}
+
+Generate 200 training triplets for this cluster. Each triplet has:
+- anchor: a canonical item (give all 4 language names)
+- positive: the SAME item expressed differently
+- negative: a DIFFERENT but confusable item
+
+NEGATIVE SUBTYPES (distribute evenly):
+[A] SAME_CATEGORY_HARD
+[B] SHARED_KEYWORD
+[C] CROSS_LANGUAGE_FALSE_FRIEND
+[D] PACKAGING_VARIANT
+[E] REGIONAL_ALIAS_CONFUSION
+[F] OCR_INDUCED
+
+POSITIVE TYPES (vary across triplets):
+- Same item, different language
+- Same item, OCR noise version
+- Same item, abbreviation
+- Same item, regional name variant
+
+Output format — one JSON object per line (JSONL):
+{"anchor_de":"Butter","anchor_en":"Butter","anchor_fr":"Beurre","anchor_es":"Mantequilla","positive_text":"Beurre doux","positive_type":"regional_variant","positive_lang":"fr","negative_de":"Margarine","negative_en":"Margarine","negative_fr":"Margarine","negative_es":"Margarina","negative_subtype":"SAME_CATEGORY_HARD","reason":"both yellow spreadable fats"}
+
+Generate exactly 200 triplets. Vary anchor items — do not overuse any single anchor.
+Output ONLY the JSONL. No markdown, no explanation.

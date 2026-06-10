@@ -12,6 +12,7 @@ import '../../providers/pinwall_provider.dart';
 import '../../providers/chore_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../providers/finance_provider.dart';
+import '../../screens/pinwall/pinwall_board_screen.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/theme.dart';
@@ -21,13 +22,6 @@ import '../app_bottom_sheet.dart';
 import '../app_button.dart';
 import '../app_dialog.dart';
 
-final pinwallMediaByPostProvider = FutureProvider.family<
-    List<PinwallMediaItem>, ({String groupId, String postId})>(
-  (ref, args) async {
-    final svc = await ref.read(pinwallServiceProviderAsync.future);
-    return svc.listPostAttachments(groupId: args.groupId, postId: args.postId);
-  },
-);
 
 const _kNotePalette = MitlistColors.notePalette;
 const _kNotePaletteDark = MitlistColors.notePaletteDark;
@@ -293,6 +287,16 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
     }
   }
 
+  void _openBoard(BuildContext context, List<PinwallPost> posts) {
+    Haptics.light();
+    PinwallBoardScreen.show(
+      context,
+      groupId: widget.groupId,
+      me: widget.me,
+      posts: posts,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final posts = ref.watch(pinwallPostsByGroupProvider(widget.groupId));
@@ -304,118 +308,183 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
     final boardBorder = dark
         ? MitlistColors.pinwallBoardBorderDark
         : MitlistColors.pinwallBoardBorder;
-    final boardShadow = MitlistColors.neutral950.withValues(alpha: dark ? 0.38 : 0.16);
+    final boardShadow =
+        MitlistColors.neutral950.withValues(alpha: dark ? 0.38 : 0.16);
+
+    final hasPosts =
+        posts.hasValue && posts.value != null && posts.value!.isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
-          child: Text(
-            'Pinwall',
-            style: textTheme.titleMedium,
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.all(MitlistSpacing.sm),
-          decoration: BoxDecoration(
-            color: boardBg,
-            borderRadius: BorderRadius.circular(MitlistTheme.radiusLg),
-            border: Border.all(color: boardBorder, width: 2),
-            boxShadow: [
-              BoxShadow(
-                color: boardShadow,
-                blurRadius: 10,
-                offset: const Offset(4, 5),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: Row(
             children: [
-              _PinwallComposerNote(
-                controller: _controller,
-                isPosting: _isPosting,
-                isUploadingMedia: _isUploadingMedia,
-                pendingCount: _pendingMedia.length,
-                remindAt: _remindAt,
-                linkedEntityType: _linkedEntityType,
-                linkedEntityLabel: _linkedEntityLabel,
-                onPickReminder: _pickReminderTime,
-                onClearReminder: _clearReminder,
-                onPickMedia: _pickMedia,
-                onPost: _post,
-                onPickLinkedEntity: _pickLinkedEntity,
+              Expanded(
+                child: Text('Pinwall', style: textTheme.titleMedium),
               ),
-              const SizedBox(height: MitlistSpacing.lg),
-              posts.when(
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => Container(
-                  padding: const EdgeInsets.all(MitlistSpacing.md),
-                  decoration: BoxDecoration(
-                    color: dark
-                        ? MitlistColors.pinwallNoteErrorDark
-                        : MitlistColors.noteYellow,
-                    borderRadius:
-                        BorderRadius.circular(MitlistTheme.radiusLg),
-                    border: Border.all(color: boardBorder, width: 1.5),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.warning_amber_rounded,
-                          color: Theme.of(context).colorScheme.primary),
-                      const SizedBox(width: MitlistSpacing.sm),
-                      Expanded(
-                        child: Text(
-                          "Couldn't load the pinwall.",
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: textTheme.bodySmall,
-                        ),
-                      ),
-                      AppButton(
-                        text: 'Retry',
-                        variant: AppButtonVariant.ghost,
-                        size: AppButtonSize.sm,
-                        onPressed: () => ref.invalidate(
-                            pinwallPostsByGroupProvider(widget.groupId)),
-                      ),
-                    ],
-                  ),
-                ),
-                data: (rows) {
-                  if (rows.isEmpty) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: MitlistSpacing.md),
-                      child: Text(
-                        'The wall is clear. Pin a note, photo, or reminder for everyone.',
-                        textAlign: TextAlign.center,
-                        style: textTheme.bodySmall?.copyWith(
+              if (hasPosts)
+                Semantics(
+                  button: true,
+                  label: 'Open pinwall board',
+                  child: GestureDetector(
+                  onTap: () => _openBoard(context, posts.value!),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: MitlistSpacing.sm,
+                      vertical: MitlistSpacing.xs,
+                    ),
+                    decoration: BoxDecoration(
+                      color: boardBg,
+                      borderRadius:
+                          BorderRadius.circular(MitlistTheme.radiusFull),
+                      border: Border.all(color: boardBorder, width: 1.5),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.open_in_full_rounded,
+                          size: 13,
                           color: dark
                               ? MitlistColors.pinwallNoteTextDark
                               : MitlistColors.pinwallNoteTextLight,
                         ),
-                      ),
-                    );
-                  }
-                  final show = rows.take(10).toList();
-                  return Wrap(
-                    spacing: MitlistSpacing.md,
-                    runSpacing: MitlistSpacing.lg,
-                    children: [
-                      for (var i = 0; i < show.length; i++)
-                        _PinwallNoteCard(
-                          index: i,
-                          groupId: widget.groupId,
-                          me: widget.me,
-                          post: show[i],
+                        const SizedBox(width: 4),
+                        Text(
+                          'Open board',
+                          style: textTheme.labelSmall?.copyWith(
+                            color: dark
+                                ? MitlistColors.pinwallNoteTextDark
+                                : MitlistColors.pinwallNoteTextLight,
+                          ),
                         ),
-                    ],
-                  );
-                },
-              ),
+                      ],
+                    ),
+                  ),
+                ),
+                ),
             ],
+          ),
+        ),
+        Hero(
+          tag: 'pinwall_board_${widget.groupId}',
+          flightShuttleBuilder: (ctx, anim, dir, fromCtx, toCtx) {
+            return AnimatedBuilder(
+              animation: anim,
+              builder: (_, __) => Container(
+                decoration: BoxDecoration(
+                  color: boardBg,
+                  borderRadius: BorderRadius.circular(
+                    MitlistTheme.radiusLg * (1 - anim.value),
+                  ),
+                  border: Border.all(color: boardBorder, width: 2),
+                ),
+              ),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.all(MitlistSpacing.sm),
+            decoration: BoxDecoration(
+              color: boardBg,
+              borderRadius: BorderRadius.circular(MitlistTheme.radiusLg),
+              border: Border.all(color: boardBorder, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: boardShadow,
+                  blurRadius: 10,
+                  offset: const Offset(4, 5),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _PinwallComposerNote(
+                  controller: _controller,
+                  isPosting: _isPosting,
+                  isUploadingMedia: _isUploadingMedia,
+                  pendingCount: _pendingMedia.length,
+                  remindAt: _remindAt,
+                  linkedEntityType: _linkedEntityType,
+                  linkedEntityLabel: _linkedEntityLabel,
+                  onPickReminder: _pickReminderTime,
+                  onClearReminder: _clearReminder,
+                  onPickMedia: _pickMedia,
+                  onPost: _post,
+                  onPickLinkedEntity: _pickLinkedEntity,
+                ),
+                const SizedBox(height: MitlistSpacing.lg),
+                posts.when(
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => Container(
+                    padding: const EdgeInsets.all(MitlistSpacing.md),
+                    decoration: BoxDecoration(
+                      color: dark
+                          ? MitlistColors.pinwallNoteErrorDark
+                          : MitlistColors.noteYellow,
+                      borderRadius:
+                          BorderRadius.circular(MitlistTheme.radiusLg),
+                      border: Border.all(color: boardBorder, width: 1.5),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.warning_amber_rounded,
+                            color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: MitlistSpacing.sm),
+                        Expanded(
+                          child: Text(
+                            "Couldn't load the pinwall.",
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: textTheme.bodySmall,
+                          ),
+                        ),
+                        AppButton(
+                          text: 'Retry',
+                          variant: AppButtonVariant.ghost,
+                          size: AppButtonSize.sm,
+                          onPressed: () => ref.invalidate(
+                              pinwallPostsByGroupProvider(widget.groupId)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  data: (rows) {
+                    if (rows.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: MitlistSpacing.md),
+                        child: Text(
+                          'The wall is clear. Pin a note, photo, or reminder for everyone.',
+                          textAlign: TextAlign.center,
+                          style: textTheme.bodySmall?.copyWith(
+                            color: dark
+                                ? MitlistColors.pinwallNoteTextDark
+                                : MitlistColors.pinwallNoteTextLight,
+                          ),
+                        ),
+                      );
+                    }
+                    final show = rows.take(10).toList();
+                    return Wrap(
+                      spacing: MitlistSpacing.md,
+                      runSpacing: MitlistSpacing.lg,
+                      children: [
+                        for (var i = 0; i < show.length; i++)
+                          _PinwallNoteCard(
+                            index: i,
+                            groupId: widget.groupId,
+                            me: widget.me,
+                            post: show[i],
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ],
