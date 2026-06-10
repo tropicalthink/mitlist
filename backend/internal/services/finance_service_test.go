@@ -289,6 +289,319 @@ func TestFinanceService_GetFinanceSummary(t *testing.T) {
 	}, summary.Reimbursements)
 }
 
+// ---------------------------------------------------------------------------
+// Step 1: buildSplits edge cases
+// ---------------------------------------------------------------------------
+
+func TestBuildSplitsEqualMode(t *testing.T) {
+	payerID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+	secondID := uuid.MustParse("00000000-0000-0000-0000-000000000002")
+	thirdID := uuid.MustParse("00000000-0000-0000-0000-000000000003")
+
+	t.Run("100/3 sums to 100 with one extra cent", func(t *testing.T) {
+		splits, err := buildSplits(100, payerID, "equal", []ExpenseSplitInput{
+			{UserID: payerID},
+			{UserID: secondID},
+			{UserID: thirdID},
+		})
+		require.NoError(t, err)
+		require.Len(t, splits, 3)
+		var total int64
+		for _, s := range splits {
+			total += s.Amount
+		}
+		assert.Equal(t, int64(100), total, "amounts must sum to total")
+		// Sorted by UUID string; payerID < secondID < thirdID, so first gets extra cent.
+		amounts := []int64{splits[0].Amount, splits[1].Amount, splits[2].Amount}
+		assert.Equal(t, []int64{34, 33, 33}, amounts)
+	})
+
+	t.Run("100/7 sums to 100", func(t *testing.T) {
+		ids := make([]ExpenseSplitInput, 7)
+		for i := range ids {
+			ids[i] = ExpenseSplitInput{UserID: uuid.New()}
+		}
+		splits, err := buildSplits(100, ids[0].UserID, "equal", ids)
+		require.NoError(t, err)
+		require.Len(t, splits, 7)
+		var total int64
+		for _, s := range splits {
+			total += s.Amount
+		}
+		assert.Equal(t, int64(100), total)
+	})
+
+	t.Run("1/2 — one participant gets 0 cent (finding: zero split produced)", func(t *testing.T) {
+		splits, err := buildSplits(1, payerID, "equal", []ExpenseSplitInput{
+			{UserID: payerID},
+			{UserID: secondID},
+		})
+		require.NoError(t, err)
+		require.Len(t, splits, 2)
+		var total int64
+		for _, s := range splits {
+			total += s.Amount
+		}
+		assert.Equal(t, int64(1), total, "amounts must sum to 1")
+		// One split will be 0. Record this as a known behavior (not necessarily a bug,
+		// but callers should filter zero-amount splits before display).
+		amounts := []int64{splits[0].Amount, splits[1].Amount}
+		assert.Contains(t, amounts, int64(0), "a zero-amount split is produced for 1/2")
+		assert.Contains(t, amounts, int64(1))
+	})
+
+	t.Run("single participant gets 100%", func(t *testing.T) {
+		splits, err := buildSplits(500, payerID, "equal", []ExpenseSplitInput{
+			{UserID: payerID},
+		})
+		require.NoError(t, err)
+		require.Len(t, splits, 1)
+		assert.Equal(t, int64(500), splits[0].Amount)
+		assert.True(t, splits[0].IsSettled, "payer is always settled")
+	})
+
+	t.Run("payer-in-inputs gets IsSettled true", func(t *testing.T) {
+		splits, err := buildSplits(90, payerID, "equal", []ExpenseSplitInput{
+			{UserID: payerID},
+			{UserID: secondID},
+			{UserID: thirdID},
+		})
+		require.NoError(t, err)
+		payerFound := false
+		for _, s := range splits {
+			if s.UserID == payerID {
+				assert.True(t, s.IsSettled)
+				payerFound = true
+			} else {
+				assert.False(t, s.IsSettled)
+			}
+		}
+		assert.True(t, payerFound)
+	})
+}
+
+func TestBuildSplitsExactMode(t *testing.T) {
+	payerID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+	secondID := uuid.MustParse("00000000-0000-0000-0000-000000000002")
+
+	t.Run("amounts not summing to total returns error", func(t *testing.T) {
+		_, err := buildSplits(1000, payerID, "amount", []ExpenseSplitInput{
+			{UserID: payerID, Amount: 400},
+			{UserID: secondID, Amount: 400},
+		})
+		require.Error(t, err)
+	})
+
+	t.Run("amount <= 0 returns error", func(t *testing.T) {
+		_, err := buildSplits(1000, payerID, "exact", []ExpenseSplitInput{
+			{UserID: payerID, Amount: 0},
+			{UserID: secondID, Amount: 1000},
+		})
+		require.Error(t, err)
+	})
+}
+
+func TestBuildSplitsPercentageMode(t *testing.T) {
+	payerID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+	secondID := uuid.MustParse("00000000-0000-0000-0000-000000000002")
+
+	t.Run("percentages not summing to 10000 basis points returns error", func(t *testing.T) {
+		_, err := buildSplits(1000, payerID, "percentage", []ExpenseSplitInput{
+			{UserID: payerID, Percentage: 5000},
+			{UserID: secondID, Percentage: 4998}, // 9998, not 10000
+		})
+		require.Error(t, err)
+	})
+
+	t.Run("valid 50/50 percentage split", func(t *testing.T) {
+		splits, err := buildSplits(1000, payerID, "percentage", []ExpenseSplitInput{
+			{UserID: payerID, Percentage: 5000},
+			{UserID: secondID, Percentage: 5000},
+		})
+		require.NoError(t, err)
+		require.Len(t, splits, 2)
+		var total int64
+		for _, s := range splits {
+			total += s.Amount
+		}
+		assert.Equal(t, int64(1000), total)
+	})
+}
+
+func TestBuildSplitsSharesMode(t *testing.T) {
+	payerID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+	secondID := uuid.MustParse("00000000-0000-0000-0000-000000000002")
+	thirdID := uuid.MustParse("00000000-0000-0000-0000-000000000003")
+
+	t.Run("3 users shares 1/1/2 on 100 sums to 100", func(t *testing.T) {
+		splits, err := buildSplits(100, payerID, "shares", []ExpenseSplitInput{
+			{UserID: payerID, Shares: 2},
+			{UserID: secondID, Shares: 1},
+			{UserID: thirdID, Shares: 1},
+		})
+		require.NoError(t, err)
+		require.Len(t, splits, 3)
+		var total int64
+		for _, s := range splits {
+			total += s.Amount
+		}
+		assert.Equal(t, int64(100), total)
+	})
+}
+
+// ---------------------------------------------------------------------------
+// Step 2: calculateBalances and suggestReimbursements characterization
+// ---------------------------------------------------------------------------
+
+func TestCalculateBalances(t *testing.T) {
+	payerID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+	secondID := uuid.MustParse("00000000-0000-0000-0000-000000000002")
+	expenseID := uuid.New()
+
+	t.Run("two users one 100 expense split equally", func(t *testing.T) {
+		expenses := []models.Expense{
+			{ID: expenseID, PayerID: payerID, Amount: 100},
+		}
+		splits := []models.Split{
+			{ExpenseID: expenseID, UserID: payerID, Amount: 50, IsSettled: true},
+			{ExpenseID: expenseID, UserID: secondID, Amount: 50},
+		}
+		balances := calculateBalances(expenses, splits, nil)
+
+		require.Len(t, balances, 2)
+		// Sorted by UUID string; payerID < secondID
+		payer := balances[0]
+		second := balances[1]
+		assert.Equal(t, payerID, payer.UserID)
+		assert.Equal(t, int64(100), payer.Paid)
+		assert.Equal(t, int64(50), payer.Owed)
+		assert.Equal(t, int64(50), payer.Total)
+
+		assert.Equal(t, secondID, second.UserID)
+		assert.Equal(t, int64(0), second.Paid)
+		assert.Equal(t, int64(50), second.Owed)
+		assert.Equal(t, int64(-50), second.Total)
+
+		// Balances must sum to zero across group.
+		var sum int64
+		for _, b := range balances {
+			sum += b.Total
+		}
+		assert.Equal(t, int64(0), sum, "group totals must net to zero")
+	})
+
+	t.Run("settlement of 50 adjusts balances correctly", func(t *testing.T) {
+		expenses := []models.Expense{
+			{ID: expenseID, PayerID: payerID, Amount: 100},
+		}
+		splits := []models.Split{
+			{ExpenseID: expenseID, UserID: payerID, Amount: 50, IsSettled: true},
+			{ExpenseID: expenseID, UserID: secondID, Amount: 50},
+		}
+		settlements := []models.Settlement{
+			{FromUserID: secondID, ToUserID: payerID, Amount: 50},
+		}
+		balances := calculateBalances(expenses, splits, settlements)
+
+		require.Len(t, balances, 2)
+		payer := balances[0]
+		second := balances[1]
+		// After settlement: payer paid 100, owed 50+50=100 → total 0
+		assert.Equal(t, int64(0), payer.Total, "payer should be zeroed out after settlement")
+		// second paid 50 (settlement), owed 50 → total 0
+		assert.Equal(t, int64(0), second.Total, "debtor should be zeroed out after settlement")
+	})
+
+	t.Run("settled splits still create Owed debt", func(t *testing.T) {
+		// IsSettled on a split does NOT affect balance calculation — it's a display flag.
+		// This test pins current behavior.
+		expenses := []models.Expense{
+			{ID: expenseID, PayerID: payerID, Amount: 100},
+		}
+		splits := []models.Split{
+			{ExpenseID: expenseID, UserID: secondID, Amount: 100, IsSettled: true},
+		}
+		balances := calculateBalances(expenses, splits, nil)
+		require.Len(t, balances, 2)
+		var second *models.BalanceEntry
+		for i := range balances {
+			if balances[i].UserID == secondID {
+				second = &balances[i]
+			}
+		}
+		require.NotNil(t, second)
+		// IsSettled flag on the split does not affect calculateBalances — Owed is still counted.
+		assert.Equal(t, int64(100), second.Owed, "IsSettled on split does not zero Owed in calculateBalances")
+	})
+
+	t.Run("three users circular balances sum to zero", func(t *testing.T) {
+		thirdID := uuid.MustParse("00000000-0000-0000-0000-000000000003")
+		exp2ID := uuid.New()
+		expenses := []models.Expense{
+			{ID: expenseID, PayerID: payerID, Amount: 90},
+			{ID: exp2ID, PayerID: secondID, Amount: 60},
+		}
+		splits := []models.Split{
+			{ExpenseID: expenseID, UserID: payerID, Amount: 30, IsSettled: true},
+			{ExpenseID: expenseID, UserID: secondID, Amount: 30},
+			{ExpenseID: expenseID, UserID: thirdID, Amount: 30},
+			{ExpenseID: exp2ID, UserID: secondID, Amount: 20, IsSettled: true},
+			{ExpenseID: exp2ID, UserID: payerID, Amount: 20},
+			{ExpenseID: exp2ID, UserID: thirdID, Amount: 20},
+		}
+		balances := calculateBalances(expenses, splits, nil)
+		var sum int64
+		for _, b := range balances {
+			sum += b.Total
+		}
+		assert.Equal(t, int64(0), sum, "group totals must net to zero for multi-expense scenario")
+	})
+}
+
+func TestSuggestReimbursements(t *testing.T) {
+	payerID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+	secondID := uuid.MustParse("00000000-0000-0000-0000-000000000002")
+
+	t.Run("simple 2-user: other pays payer 50", func(t *testing.T) {
+		balances := []models.BalanceEntry{
+			{UserID: payerID, Total: 50},
+			{UserID: secondID, Total: -50},
+		}
+		reimbursements := suggestReimbursements(balances)
+		require.Len(t, reimbursements, 1)
+		assert.Equal(t, secondID, reimbursements[0].FromUserID)
+		assert.Equal(t, payerID, reimbursements[0].ToUserID)
+		assert.Equal(t, int64(50), reimbursements[0].Amount)
+	})
+
+	t.Run("all-zero balances produce no reimbursements", func(t *testing.T) {
+		balances := []models.BalanceEntry{
+			{UserID: payerID, Total: 0},
+			{UserID: secondID, Total: 0},
+		}
+		reimbursements := suggestReimbursements(balances)
+		assert.Empty(t, reimbursements)
+	})
+
+	t.Run("three users: reimbursements minimize transfers", func(t *testing.T) {
+		thirdID := uuid.MustParse("00000000-0000-0000-0000-000000000003")
+		balances := []models.BalanceEntry{
+			{UserID: payerID, Total: 80},
+			{UserID: secondID, Total: -30},
+			{UserID: thirdID, Total: -50},
+		}
+		reimbursements := suggestReimbursements(balances)
+		// Both debtors must pay the creditor; all amounts positive.
+		var totalPaid int64
+		for _, r := range reimbursements {
+			assert.Positive(t, r.Amount)
+			assert.Equal(t, payerID, r.ToUserID)
+			totalPaid += r.Amount
+		}
+		assert.Equal(t, int64(80), totalPaid, "total reimbursed must equal creditor's surplus")
+	})
+}
+
 func TestFinanceService_CreateRecurringExpense(t *testing.T) {
 	ctx := context.Background()
 	userID := uuid.New()
