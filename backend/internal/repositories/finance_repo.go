@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -327,28 +328,44 @@ func (r *FinanceRepo) CreateRecurringExpense(ctx context.Context, re *models.Rec
 	}
 	re.CreatedAt = time.Now().UTC()
 
-	_, err := r.pool.Exec(ctx, `
-		INSERT INTO recurring_expenses (id, group_id, payer_id, amount, description, category, currency, frequency, next_due, is_active, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-	`, re.ID, re.GroupID, re.PayerID, re.Amount, re.Description, re.Category, re.Currency, re.Frequency, re.NextDue, re.IsActive, re.CreatedAt)
+	if re.SplitMode == "" {
+		re.SplitMode = "payer_only"
+	}
+	if re.SplitInputs == nil {
+		re.SplitInputs = []models.RecurringSplitInput{}
+	}
+	splitInputsJSON, err := json.Marshal(re.SplitInputs)
+	if err != nil {
+		return fmt.Errorf("marshal split_inputs: %w", err)
+	}
+
+	_, err = r.pool.Exec(ctx, `
+		INSERT INTO recurring_expenses (id, group_id, payer_id, amount, description, category, currency, frequency, next_due, is_active, created_at, split_mode, split_inputs)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::jsonb)
+	`, re.ID, re.GroupID, re.PayerID, re.Amount, re.Description, re.Category, re.Currency, re.Frequency, re.NextDue, re.IsActive, re.CreatedAt, re.SplitMode, splitInputsJSON)
 	return err
 }
 
 // GetRecurringExpenseByID retrieves a recurring expense by its ID.
 func (r *FinanceRepo) GetRecurringExpenseByID(ctx context.Context, id uuid.UUID) (*models.RecurringExpense, error) {
 	row := r.pool.QueryRow(ctx, `
-		SELECT id, group_id, payer_id, amount, description, category, currency, frequency, next_due, is_active, created_at
+		SELECT id, group_id, payer_id, amount, description, category, currency, frequency, next_due, is_active, created_at,
+		       COALESCE(split_mode, 'payer_only'), COALESCE(split_inputs, '[]'::jsonb)::text
 		FROM recurring_expenses
 		WHERE id = $1
 	`, id)
 
 	var re models.RecurringExpense
-	err := row.Scan(&re.ID, &re.GroupID, &re.PayerID, &re.Amount, &re.Description, &re.Category, &re.Currency, &re.Frequency, &re.NextDue, &re.IsActive, &re.CreatedAt)
+	var splitInputsJSON string
+	err := row.Scan(&re.ID, &re.GroupID, &re.PayerID, &re.Amount, &re.Description, &re.Category, &re.Currency, &re.Frequency, &re.NextDue, &re.IsActive, &re.CreatedAt, &re.SplitMode, &splitInputsJSON)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, fmt.Errorf("recurring expense not found: %w", pgx.ErrNoRows)
 		}
 		return nil, err
+	}
+	if err := json.Unmarshal([]byte(splitInputsJSON), &re.SplitInputs); err != nil {
+		re.SplitInputs = []models.RecurringSplitInput{}
 	}
 	return &re, nil
 }
@@ -358,7 +375,8 @@ func (r *FinanceRepo) ListRecurringExpenses(ctx context.Context, groupID uuid.UU
 	limit = clampLimit(limit)
 
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, group_id, payer_id, amount, description, category, frequency, next_due, is_active, created_at, currency
+		SELECT id, group_id, payer_id, amount, description, category, frequency, next_due, is_active, created_at, currency,
+		       COALESCE(split_mode, 'payer_only'), COALESCE(split_inputs, '[]'::jsonb)::text
 		FROM recurring_expenses
 		WHERE group_id = $1
 		ORDER BY next_due ASC, created_at ASC
@@ -369,13 +387,29 @@ func (r *FinanceRepo) ListRecurringExpenses(ctx context.Context, groupID uuid.UU
 	}
 	defer rows.Close()
 
-	return pgx.CollectRows(rows, pgx.RowToStructByName[models.RecurringExpense])
+	var result []models.RecurringExpense
+	for rows.Next() {
+		var re models.RecurringExpense
+		var splitInputsJSON string
+		if err := rows.Scan(&re.ID, &re.GroupID, &re.PayerID, &re.Amount, &re.Description, &re.Category, &re.Frequency, &re.NextDue, &re.IsActive, &re.CreatedAt, &re.Currency, &re.SplitMode, &splitInputsJSON); err != nil {
+			return nil, err
+		}
+		if err := json.Unmarshal([]byte(splitInputsJSON), &re.SplitInputs); err != nil {
+			re.SplitInputs = []models.RecurringSplitInput{}
+		}
+		result = append(result, re)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 // ListRecurringExpensesByDateRange returns active recurring expenses for a group with next_due in range.
 func (r *FinanceRepo) ListRecurringExpensesByDateRange(ctx context.Context, groupID uuid.UUID, from, to time.Time) ([]models.RecurringExpense, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, group_id, payer_id, amount, description, category, frequency, next_due, is_active, created_at, currency
+		SELECT id, group_id, payer_id, amount, description, category, frequency, next_due, is_active, created_at, currency,
+		       COALESCE(split_mode, 'payer_only'), COALESCE(split_inputs, '[]'::jsonb)::text
 		FROM recurring_expenses
 		WHERE group_id = $1 AND is_active = true AND next_due >= $2 AND next_due < $3
 		ORDER BY next_due ASC, created_at ASC
@@ -385,16 +419,42 @@ func (r *FinanceRepo) ListRecurringExpensesByDateRange(ctx context.Context, grou
 	}
 	defer rows.Close()
 
-	return pgx.CollectRows(rows, pgx.RowToStructByName[models.RecurringExpense])
+	var result []models.RecurringExpense
+	for rows.Next() {
+		var re models.RecurringExpense
+		var splitInputsJSON string
+		if err := rows.Scan(&re.ID, &re.GroupID, &re.PayerID, &re.Amount, &re.Description, &re.Category, &re.Frequency, &re.NextDue, &re.IsActive, &re.CreatedAt, &re.Currency, &re.SplitMode, &splitInputsJSON); err != nil {
+			return nil, err
+		}
+		if err := json.Unmarshal([]byte(splitInputsJSON), &re.SplitInputs); err != nil {
+			re.SplitInputs = []models.RecurringSplitInput{}
+		}
+		result = append(result, re)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 // UpdateRecurringExpense updates an existing recurring expense.
 func (r *FinanceRepo) UpdateRecurringExpense(ctx context.Context, re *models.RecurringExpense) error {
+	if re.SplitMode == "" {
+		re.SplitMode = "payer_only"
+	}
+	if re.SplitInputs == nil {
+		re.SplitInputs = []models.RecurringSplitInput{}
+	}
+	splitInputsJSON, err := json.Marshal(re.SplitInputs)
+	if err != nil {
+		return fmt.Errorf("marshal split_inputs: %w", err)
+	}
+
 	cmd, err := r.pool.Exec(ctx, `
 		UPDATE recurring_expenses
-		SET payer_id = $1, amount = $2, description = $3, category = $4, currency = $5, frequency = $6, next_due = $7, is_active = $8
-		WHERE id = $9
-	`, re.PayerID, re.Amount, re.Description, re.Category, re.Currency, re.Frequency, re.NextDue, re.IsActive, re.ID)
+		SET payer_id = $1, amount = $2, description = $3, category = $4, currency = $5, frequency = $6, next_due = $7, is_active = $8, split_mode = $9, split_inputs = $10::jsonb
+		WHERE id = $11
+	`, re.PayerID, re.Amount, re.Description, re.Category, re.Currency, re.Frequency, re.NextDue, re.IsActive, re.SplitMode, splitInputsJSON, re.ID)
 	if err != nil {
 		return err
 	}

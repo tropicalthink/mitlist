@@ -189,6 +189,20 @@ func (s *FinanceService) UpdateExpense(ctx context.Context, userID uuid.UUID, ex
 	if err := s.requireMember(ctx, existing.GroupID, userID); err != nil {
 		return err
 	}
+	// Only allow reassigning the payer if the user is an admin.
+	if expense.PayerID != existing.PayerID && expense.PayerID != userID {
+		if err := s.requireAdmin(ctx, existing.GroupID, userID); err != nil {
+			return &api.ValidationError{Message: "payer must be the current user or you must be an admin"}
+		}
+	}
+	if expense.PayerID != existing.PayerID {
+		if err := s.requireMember(ctx, existing.GroupID, expense.PayerID); err != nil {
+			return &api.ValidationError{Message: "payer must be a member of this group"}
+		}
+	}
+	if expense.Amount <= 0 {
+		return api.ErrValidation
+	}
 	expense.GroupID = existing.GroupID
 	return s.financeRepo.UpdateExpense(ctx, expense)
 }
@@ -268,6 +282,15 @@ func (s *FinanceService) UpdateSplit(ctx context.Context, userID uuid.UUID, spli
 	if err := s.requireMember(ctx, expense.GroupID, userID); err != nil {
 		return err
 	}
+	if split.Amount <= 0 {
+		return &api.ValidationError{Message: "split amount must be positive"}
+	}
+	// Only allow reassigning the split to another user if the actor is an admin.
+	if split.UserID != existing.UserID {
+		if err := s.requireAdmin(ctx, expense.GroupID, userID); err != nil {
+			return err
+		}
+	}
 	split.ExpenseID = existing.ExpenseID
 	return s.financeRepo.UpdateSplit(ctx, split)
 }
@@ -346,6 +369,9 @@ func (s *FinanceService) CreateRecurringExpense(ctx context.Context, userID uuid
 	if re.Amount <= 0 {
 		return api.ErrValidation
 	}
+	if err := s.validateRecurringSplitConfig(ctx, re); err != nil {
+		return err
+	}
 	return s.financeRepo.CreateRecurringExpense(ctx, re)
 }
 
@@ -384,8 +410,52 @@ func (s *FinanceService) UpdateRecurringExpense(ctx context.Context, userID uuid
 	if err := s.requireMember(ctx, existing.GroupID, userID); err != nil {
 		return err
 	}
+	if re.Amount <= 0 {
+		return api.ErrValidation
+	}
+	// Only allow reassigning the payer if the user is an admin.
+	if re.PayerID != existing.PayerID && re.PayerID != userID {
+		if err := s.requireAdmin(ctx, existing.GroupID, userID); err != nil {
+			return &api.ValidationError{Message: "payer must be the current user or you must be an admin"}
+		}
+	}
 	re.GroupID = existing.GroupID
+	if err := s.validateRecurringSplitConfig(ctx, re); err != nil {
+		return err
+	}
 	return s.financeRepo.UpdateRecurringExpense(ctx, re)
+}
+
+// validateRecurringSplitConfig validates split_mode and split_inputs if a non-payer-only mode is set.
+func (s *FinanceService) validateRecurringSplitConfig(ctx context.Context, re *models.RecurringExpense) error {
+	if re.SplitMode == "" || re.SplitMode == "payer_only" {
+		return nil
+	}
+	// Validate every referenced user is a group member.
+	for _, si := range re.SplitInputs {
+		if err := s.requireMember(ctx, re.GroupID, si.UserID); err != nil {
+			return &api.ValidationError{Message: "split user must be a member of this group"}
+		}
+	}
+	// Validate the split math by attempting a dry-run build.
+	inputs := toExpenseSplitInputs(re.SplitInputs)
+	if _, err := buildSplits(re.Amount, re.PayerID, re.SplitMode, inputs); err != nil {
+		return err
+	}
+	return nil
+}
+
+func toExpenseSplitInputs(in []models.RecurringSplitInput) []ExpenseSplitInput {
+	out := make([]ExpenseSplitInput, len(in))
+	for i, si := range in {
+		out[i] = ExpenseSplitInput{
+			UserID:     si.UserID,
+			Amount:     si.Amount,
+			Shares:     si.Shares,
+			Percentage: si.Percentage,
+		}
+	}
+	return out
 }
 
 // DeleteRecurringExpense removes a recurring expense (admin only).
@@ -596,6 +666,11 @@ func buildSplits(total int64, payerID uuid.UUID, splitMode string, inputs []Expe
 		splits = append(splits, split)
 	}
 	return splits, nil
+}
+
+// BuildExpenseSplits exposes split computation for jobs.
+func BuildExpenseSplits(total int64, payerID uuid.UUID, splitMode string, inputs []ExpenseSplitInput) ([]models.Split, error) {
+	return buildSplits(total, payerID, splitMode, inputs)
 }
 
 func distributeByWeight(total int64, inputs []ExpenseSplitInput, amounts []int64, weight func(ExpenseSplitInput) int64, weightSum int64) {
