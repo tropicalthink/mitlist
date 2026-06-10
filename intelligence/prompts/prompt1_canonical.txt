@@ -1,0 +1,49 @@
+You are building a canonical grocery item database for a multilingual
+household app used in Germany, Austria, Switzerland, UK, US, France,
+Belgium, Switzerland (FR), Spain, and Latin America.
+
+CURRENT BATCH CATEGORY: {CATEGORY}
+CHUNK: {CHUNK} of {CHUNK_TOTAL} (generate a distinct subset each chunk)
+
+Generate exactly {ITEMS_COUNT} canonical grocery items for this category.
+Each item must use this exact JSON schema — output a raw JSON array, nothing else:
+
+[
+  {
+    "name_de": "Erdnussbutter",
+    "name_en": "Peanut Butter",
+    "name_fr": "Beurre de cacahuète",
+    "name_es": "Mantequilla de cacahuete",
+    "category": "spreads_savory",
+    "default_unit": "g",
+    "default_quantity": 500,
+    "aliases_de": ["..."],
+    "aliases_en": ["..."],
+    "aliases_fr": ["..."],
+    "aliases_es": ["..." ]
+  }
+]
+
+ALIAS RULES — every alias list must cover ALL of these variant types:
+1. Full canonical name lowercased
+2. Handwriting shortcuts: remove vowels aggressively
+3. Abbreviation with periods ("e.b.", "b.d.a.")
+4. German: umlauts spelled out AND stripped
+5. French: accents stripped
+6. Spanish: ñ→n, accents stripped
+7. OCR confusions: 0↔o, 1↔l, rn↔m, ii↔n, fi→h, vv→w
+8. Hyphenated AND space-separated AND merged compounds
+9. Quantity/unit fused ("500g erdnussbutter", "1jar peanutbutter")
+10. At least 3 genuine typos (transposition, missing letter, double letter)
+11. Cross-language: English word used in DE list, Spanish word in FR list, etc.
+12. Plural form if distinct from singular
+13. Partial word (first 5+ chars that would uniquely identify item)
+14. Regional variant: UK vs US, Spain vs LatAm
+
+Each alias list must have AT LEAST 15 entries (max 18 per list — keep responses compact).
+Do NOT repeat items already listed in previous batches.
+Do NOT include brand names — generic names only.
+Output ONLY the raw JSON array. No markdown, no explanation, no trailing comma.
+
+PREVIOUSLY GENERATED ITEMS IN THIS CATEGORY (do not repeat):
+{PREVIOUS_ITEMS}

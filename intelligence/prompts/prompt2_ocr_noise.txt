@@ -1,0 +1,31 @@
+You are generating a large-scale OCR noise corpus for a multilingual grocery
+scanner training pipeline. Target language for this batch: {LANGUAGE}
+
+For each item in the list below, generate exactly 30 raw OCR strings that
+a phone camera might produce when scanning a handwritten or printed grocery
+list written in {LANGUAGE}.
+
+VARIANT TYPES — distribute your 30 variants across ALL of these:
+[1] HANDWRITING_SHORTCUT — vowels dropped, consonant clusters
+[2] OCR_CHAR_CONFUSION — character-level substitutions
+[3] PARTIAL_WORD — word cut at edge
+[4] COMPOUND_ERROR — split/merge compounds
+[5] ACCENT_STRIPPED — all diacritics removed
+[6] QUANTITY_FUSED — number/unit attached
+[7] CROSSED_OUT — strike markers
+[8] PRICE_ATTACHED — price appended
+[9] LANGUAGE_MIX — item name from different language
+[10] CAPITALIZATION_VARIANT — ALL CAPS, all lower, mIxEd CaSe
+[11] TYPO — genuine human typos
+[12] PHONETIC_SPELLING — spell as it sounds
+[13] ABBREVIATION_STANDARD — known list shorthand
+
+ITEMS FOR THIS BATCH:
+{ITEM_LIST}
+
+Output format — one JSON object per line (JSONL), no array wrapper, no markdown:
+{"item_de":"Mozzarella","item_en":"Mozzarella","item_fr":"Mozzarella","item_es":"Mozzarella","lang":"{LANGUAGE}","raw":"mzzrl","variant_type":"HANDWRITING_SHORTCUT","variant_subtype":"vowel_drop"}
+
+Include `variant_subtype` to describe the specific transformation applied.
+Every item must have exactly 30 rows. No duplicates within an item's rows.
+Output ONLY the JSONL.

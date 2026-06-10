@@ -1,0 +1,153 @@
+# Batch definitions for all 5 prompts.
+# Run: python -m generator.runner run --prompt 1 --all
+
+prompts:
+  "1":
+    name: canonical_seed
+    output: ml/data/seed.json
+    output_mode: json_array
+    items_per_batch: 15
+    chunks_per_category: 3
+    min_aliases: 12
+    temperatures: [0.7, 0.9, 1.0]
+    variables:
+      CATEGORY:
+        - produce_fruit
+        - produce_vegetable
+        - produce_herb
+        - dairy_milk
+        - dairy_cheese
+        - dairy_fermented
+        - dairy_cream
+        - eggs
+        - meat_poultry
+        - meat_beef
+        - meat_pork
+        - meat_lamb
+        - seafood
+        - bakery_bread
+        - bakery_pastry
+        - frozen
+        - beverages_soft
+        - beverages_hot
+        - beverages_alcohol
+        - snacks
+        - spreads_sweet
+        - spreads_savory
+        - condiments_sauce
+        - condiments_oil_vinegar
+        - canned_legume
+        - canned_vegetable
+        - canned_fish
+        - pasta_noodle
+        - pasta_grain
+        - baking
+        - cleaning
+        - personal_care
+        - baby
+        - pet
+        - deli
+        - international_asian
+        - international_mexican
+        - international_mediterranean
+        - health_supplement
+        - flowers_plant
+
+  "2":
+    name: ocr_noise
+    output: ml/data/ocr_corpus.jsonl
+    output_mode: jsonl
+    depends_on: "1"
+    items_per_batch: 50
+    variants_per_item: 30
+    variables:
+      LANGUAGE: [DE, EN, FR, ES]
+    # ITEM_LIST is built dynamically from seed.json in groups of 50
+
+  "3":
+    name: triplets
+    output: ml/data/triplets.jsonl
+    output_mode: jsonl
+    items_per_batch: 200
+    variables:
+      CLUSTER:
+        - "dairy_fats: Butter, Margarine, Ghee, Pflanzenbutter, Coconut oil"
+        - "dairy_cheese_soft: Mozzarella, Ricotta, Mascarpone, Frischkäse, Cottage cheese"
+        - "dairy_cheese_hard: Parmesan, Gouda, Cheddar, Emmentaler, Pecorino"
+        - "dairy_milk_alt: Hafermilch, Mandelmilch, Sojadrink, Kokosmilch, Laktosefreie Milch"
+        - "produce_fruit_citrus: Zitrone, Limette, Orange, Grapefruit, Clementinen"
+        - "produce_fruit_berry: Erdbeeren, Himbeeren, Blaubeeren, Brombeeren, Johannisbeeren"
+        - "produce_veg_root: Kartoffeln, Möhren, Pastinaken, Rote Bete, Süßkartoffeln"
+        - "produce_veg_leafy: Spinat, Rucola, Kopfsalat, Mangold, Feldsalat"
+        - "produce_veg_nightshade: Tomaten, Paprika, Aubergine, Zucchini, Chili"
+        - "meat_poultry: Hähnchenbrust, Putenbrust, Entenbrust, Hähnchenkeule, Hähnchenflügel"
+        - "meat_beef: Rinderhack, Rindersteak, Rinderfilet, Rinderbrust, Rinderroulade"
+        - "meat_pork: Schweineschnitzel, Schweinefilet, Schweinebauch, Speck, Bratwurst"
+        - "seafood_fish: Lachs, Forelle, Kabeljau, Thunfisch, Sardinen"
+        - "seafood_shell: Garnelen, Muscheln, Calamari, Tintenfisch, Krabben"
+        - "bakery_bread: Vollkornbrot, Weißbrot, Roggenbrot, Baguette, Toastbrot"
+        - "pasta_types: Spaghetti, Penne, Fusilli, Rigatoni, Tagliatelle"
+        - "grains: Reis, Quinoa, Couscous, Bulgur, Hirse"
+        - "oils: Olivenöl, Rapsöl, Sonnenblumenöl, Kokosöl, Sesamöl"
+        - "vinegars: Balsamico, Apfelessig, Weißweinessig, Rotweinessig, Reisessig"
+        - "sauces: Ketchup, Mayonnaise, Senf, Sojasauce, Worcestersoße"
+        - "spreads_sweet: Erdnussbutter, Marmelade, Honig, Nutella-ähnlich, Schokocreme"
+        - "spreads_savory: Butter, Margarine, Hummus, Pesto, Ajvar"
+        - "canned: Thunfisch Dose, Kidneybohnen, Kichererbsen, Mais Dose, Tomatendosen"
+        - "beverages_soft: Cola, Orangensaft, Apfelsaft, Mineralwasser, Limonade"
+        - "beverages_hot: Kaffee, Tee, Kakao, Matcha, Espresso"
+        - "snacks_salty: Chips, Popcorn, Salzstangen, Nüsse, Cracker"
+        - "snacks_sweet: Schokolade, Kekse, Gummibärchen, Müsliriegel, Kuchen"
+        - "frozen_veg: Erbsen TK, Spinat TK, Brokkoli TK, Pommes TK, Gemüsemischung TK"
+        - "herbs_fresh: Basilikum, Petersilie, Koriander, Dill, Schnittlauch"
+        - "herbs_dried: Oregano, Thymian, Rosmarin, Salbei, Lorbeer"
+        - "false_friends: Chips DE/EN, Peperoni DE/IT, Preservativos ES, Batata PT/ES, Courgette UK/US"
+        - "regional_produce: Zucchini/Courgette/Calabacín, Aubergine/Eggplant, Cilantro/Coriander, Arugula/Rocket"
+        - "ocr_confusable: Mehl/Mehr, Sahne/Sohne, Pâtes/Pates, Butter/Buttr, Milch/Milcn"
+        - "packaging_forms: Tomatenmark/Tomatensoße, Frischkäse/Quark, Sahne/Schlagsahne, Reis/Basmati"
+        - "deli: Schinken, Salami, Mortadella, Chorizo, Fleischwurst"
+        - "baking: Mehl 405, Backpulver, Hefe, Zucker, Vanillezucker"
+        - "baby: Babynahrung, Windeln, Babymilch, Brei, Schnuller"
+        - "pet: Hundefutter, Katzenfutter, Katzenstreu, Hundesnacks, Leckerli"
+        - "cleaning: Spülmittel, Waschmittel, Allzweckreiniger, Müllbeutel, Schwamm"
+        - "health: Vitamin C, Magnesium, Omega-3, Probiotika, Proteinpulver"
+
+  "4":
+    name: store_aisles
+    output: ml/data/aisles.jsonl
+    output_mode: jsonl
+    variables:
+      COUNTRY: [DE, FR, ES, EN]
+
+  "5":
+    name: corrections
+    output: ml/data/corrections.jsonl
+    output_mode: jsonl
+    items_per_batch: 1000
+    variables:
+      SCENARIO:
+        - EXACT_MATCH
+        - MINOR_OCR_FIX
+        - ABBREVIATION
+        - ACCENT_STRIP
+        - LANGUAGE_MIX
+        - BRAND_VS_GENERIC
+        - REGIONAL_NAME
+        - COMPOUND_SPLIT_MERGE
+      LANGUAGE: [DE, EN, FR, ES]
+
+# Model versions tracked for training runs (updated manually or via train scripts)
+model_versions:
+  grocery_classifier:
+    version: "0.0.0"
+    status: not_trained
+    tflite_path: ml/models/grocery_classifier.tflite
+    trained_on: null
+    top1_accuracy: null
+    top5_accuracy: null
+  grocery_embeddings:
+    version: "0.0.0"
+    status: not_trained
+    tflite_path: ml/models/grocery_embeddings.tflite
+    base_model: paraphrase-multilingual-MiniLM-L12-v2
+    trained_on: null

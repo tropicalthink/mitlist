@@ -1,0 +1,36 @@
+You are generating store aisle placement data for a grocery intelligence system.
+
+CURRENT BATCH COUNTRY: {COUNTRY}
+
+CHAINS BY COUNTRY:
+DE: REWE, Edeka, Aldi Süd, Aldi Nord, Lidl, Kaufland, Penny, Netto, tegut, Globus, Real
+FR: Carrefour, Leclerc, Intermarché, Auchan, Monoprix, Franprix, Picard, Casino, Système U, Lidl FR, Aldi FR
+ES: Mercadona, Carrefour ES, Lidl ES, Dia, Eroski, Alcampo, Consum, Ahorramas, El Corte Inglés, Supercor
+EN: Tesco, Sainsbury's, Asda, Morrisons, Waitrose, Aldi UK, Lidl UK, Whole Foods UK, Walmart US, Kroger US, Trader Joe's, Whole Foods US
+
+For each chain in {COUNTRY}, generate one row per item in the list below.
+
+Sort order conventions for {COUNTRY} chains:
+- Fresh produce near entrance: sort_order 1-15
+- Bakery: sort_order 5-20
+- Meat/fish counter: sort_order 20-40
+- Centre aisles (shelf-stable): sort_order 30-70
+- Dairy wall at back: sort_order 65-80
+- Frozen: sort_order 75-90
+- Checkout zone: sort_order 91-99
+
+Aisle names must be in the STORE'S LOCAL LANGUAGE.
+
+Output format — one JSON object per line (JSONL):
+{"country":"DE","store":"REWE","chain_type":"supermarket","canonical_name_de":"Äpfel","canonical_name_en":"Apples","canonical_name_fr":"Pommes","canonical_name_es":"Manzanas","aisle":"Obst & Gemüse","aisle_sublocation":"Tafelobst","sort_order":3,"typically_stocked":true}
+
+Include `aisle_sublocation` where relevant.
+Set `typically_stocked: false` for items the chain normally doesn't carry.
+
+ITEMS (generate all 300 items × all chains in {COUNTRY}):
+[PRODUCE] Äpfel, Birnen, Pflaumen, Kirschen, Weintrauben, Erdbeeren, Himbeeren, Blaubeeren, Brombeeren, Stachelbeeren, Johannisbeeren, Aprikosen, Pfirsiche, Nektarinen, Mango, Papaya, Ananas, Kiwi, Feigen, Granatapfel, Wassermelone, Honigmelone, Avocado, Zitrone, Limette, Orange, Grapefruit, Clementinen, Bananen, Kokosnuss, Passionsfrucht, Lychee, Guave, Kaktusfrucht, Tomaten, Kirschtomaten, Cherrytomaten, Rispentomaten, Paprika rot, Paprika gelb, Paprika grün, Chili rot, Chili grün, Jalapeño, Zucchini, Aubergine, Gurke, Salatgurke, Kürbis, Hokkaido, Butternutkürbis, Brokkoli, Blumenkohl, Romanesco, Rosenkohl, Weißkohl, Rotkohl, Wirsing, Chinakohl, Spitzkohl, Kohlrabi, Fenchel, Staudensellerie, Knollensellerie, Lauch, Frühlingszwiebeln, Zwiebeln, Rote Zwiebeln, Schalotten, Knoblauch, Kartoffeln, Süßkartoffeln, Rote Bete, Radieschen, Rettich, Möhren, Pastinaken, Petersilienwurzel, Mairüben, Topinambur, Spinat, Mangold, Rucola, Kopfsalat, Eisbergsalat, Feldsalat, Radicchio, Endivie, Pak Choi, Ingwer, Kurkuma, Sprossen, Kresse, Basilikum, Petersilie, Schnittlauch, Dill, Minze, Rosmarin, Thymian, Koriander, Oregano, Salbei, Zitronengras, Kapern, Oliven grün, Oliven schwarz
+[DAIRY & EGGS] Vollmilch, Fettarme Milch, Magermilch, Laktosefreie Milch, Hafermilch, Mandelmilch, Sojadrink, Reismilch, Kokosmilch Drink, Cashewmilch, Buttermilch, Kefir, Butter, Süßrahmbutter, Sauerrahmbutter, Margarine, Pflanzenbutter, Ghee, Sahne, Schlagsahne, Saure Sahne, Crème fraîche, Schmand, Crème double, Kondensmilch gesüßt, Kondensmilch ungesüßt, Joghurt natur, Joghurt griechisch, Skyr, Quark Mager, Quark 40%, Frischkäse Natur, Frischkäse Kräuter, Mascarpone, Ricotta, Mozzarella, Büffelmozzarella, Feta, Halloumi, Gouda Jung, Gouda Mittelalt, Gouda Alt, Edamer, Emmentaler, Allgäuer, Brie, Camembert, Tilsiter, Leerdammer, Parmesan, Pecorino, Manchego, Comté, Gruyère, Beaufort, Raclette, Gorgonzola, Roquefort, Brie de Meaux, Reblochon, Munster, Eier M, Eier L, Bio-Eier, Freiland-Eier
+[MEAT & FISH] Hähnchenbrust, Hähnchenschenkel, Hähnchenflügel, Hähnchenkeule, Putenbrustfilet, Putenhackfleisch, Entenbrust, Gänsekeule, Rinderhack, Rindersteak, Rinderfilet, Rinderroulade, Rinderbrust, Schweineschnitzel, Schweinefilet, Schweinebauch, Schweinshaxe, Lammkeule, Lammkotelett, Lammhack, Kalbsschnitzel, Speck, Bauchspeck, Schwarzwälder Schinken, Parmaschinken, Serranoschinken, Chorizo, Salami, Mortadella, Fleischwurst, Wiener Würstchen, Bratwurst, Lachs, Lachsfilet, Forelle, Kabeljau, Seelachs, Hering, Sardinen, Thunfisch frisch, Makrele, Garnelen roh, Garnelen gekocht, Muscheln, Tintenfisch, Calamari
+[GROCERY] Spaghetti, Penne, Fusilli, Rigatoni, Farfalle, Tagliatelle, Linguine, Lasagneplatten, Gnocchi trocken, Couscous, Bulgur, Quinoa, Amaranth, Buchweizen, Hirse, Polenta, Basmati, Jasminreis, Risottoreis, Wildreis, Vollkornreis, Parboiled Reis, Weizenmehl 405, Weizenmehl 550, Dinkelmehl, Roggenmehl, Maismehl, Kartoffelmehl, Mandelmehl, Zucker weiß, Rohrzucker, Puderzucker, Kokosblütenzucker, Honig, Ahornsirup, Agavensirup, Backpulver, Natron, Hefe trocken, Hefe frisch, Vanilleschote, Vanillezucker, Speisestärke, Gelatine, Agar-Agar, Kakaopulver, Schokodrops dunkel, Schokodrops hell, Kuvertüre, Tomatenmark, Tomatensoße, Passata, Ajvar, Pesto Rosso, Pesto Verde, Ketchup, Senf mittelscharf, Senf süß, Dijonsenf, Mayonnaise, Sriracha, Tabasco, Worcestersoße, Sojasauce, Teriyakisauce, Fischsauce, Olivenöl nativ extra, Sonnenblumenöl, Rapsöl, Kokosöl, Sesamöl, Weißweinessig, Rotweinessig, Apfelessig, Balsamico, Reisessig, Gemüsebrühe, Hühnerbrühe, Rinderbrühe, Kokosmilch Dose, Kidneybohnen Dose, Kichererbsen Dose, Linsen Dose, Mais Dose, Erbsen Dose, Thunfisch Dose, Sardinendose, Tomatendosen, Artischocken Dose
+
+Output ONLY the JSONL. No markdown, no explanation.
