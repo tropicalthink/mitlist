@@ -579,3 +579,99 @@ func TestFinanceService_UpdateRecurringExpense(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func TestFinanceService_CreateRecurringExpense_SplitValidation(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+	groupID := uuid.New()
+	member1 := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	member2 := uuid.MustParse("22222222-2222-2222-2222-222222222222")
+	outsider := uuid.New()
+
+	t.Run("empty split mode defaults fine", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		financeRepo.On("CreateRecurringExpense", ctx, mock.AnythingOfType("*models.RecurringExpense")).Return(nil)
+
+		re := &models.RecurringExpense{GroupID: groupID, PayerID: userID, Amount: 100}
+		err := svc.CreateRecurringExpense(ctx, userID, re)
+		require.NoError(t, err)
+	})
+
+	t.Run("valid equal split config passes", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, member1).Return(&models.GroupMembership{Role: "member"}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, member2).Return(&models.GroupMembership{Role: "member"}, nil)
+		financeRepo.On("CreateRecurringExpense", ctx, mock.AnythingOfType("*models.RecurringExpense")).Return(nil)
+
+		re := &models.RecurringExpense{
+			GroupID:   groupID,
+			PayerID:   userID,
+			Amount:    100,
+			SplitMode: "equal",
+			SplitInputs: []models.RecurringSplitInput{
+				{UserID: member1},
+				{UserID: member2},
+			},
+		}
+		err := svc.CreateRecurringExpense(ctx, userID, re)
+		require.NoError(t, err)
+	})
+
+	t.Run("exact amounts not summing to total returns error", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, member1).Return(&models.GroupMembership{Role: "member"}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, member2).Return(&models.GroupMembership{Role: "member"}, nil)
+
+		re := &models.RecurringExpense{
+			GroupID:   groupID,
+			PayerID:   userID,
+			Amount:    100,
+			SplitMode: "amount",
+			SplitInputs: []models.RecurringSplitInput{
+				{UserID: member1, Amount: 40},
+				{UserID: member2, Amount: 40}, // only 80, not 100
+			},
+		}
+		err := svc.CreateRecurringExpense(ctx, userID, re)
+		require.Error(t, err)
+		var valErr *api.ValidationError
+		require.ErrorAs(t, err, &valErr)
+		assert.Contains(t, valErr.Message, "equal expense amount")
+	})
+
+	t.Run("non-member in inputs returns error", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, outsider).Return(nil, pgx.ErrNoRows)
+
+		re := &models.RecurringExpense{
+			GroupID:   groupID,
+			PayerID:   userID,
+			Amount:    100,
+			SplitMode: "equal",
+			SplitInputs: []models.RecurringSplitInput{
+				{UserID: outsider},
+			},
+		}
+		err := svc.CreateRecurringExpense(ctx, userID, re)
+		require.Error(t, err)
+		var valErr *api.ValidationError
+		require.ErrorAs(t, err, &valErr)
+		assert.Contains(t, valErr.Message, "member of this group")
+	})
+}
