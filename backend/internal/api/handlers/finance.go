@@ -620,15 +620,17 @@ func (h *FinanceHandler) CreateRecurringExpense(w http.ResponseWriter, r *http.R
 	}
 
 	var req struct {
-		GroupID     uuid.UUID `json:"group_id"`
-		PayerID     uuid.UUID `json:"payer_id"`
-		Amount      int64     `json:"amount"`
-		Description string    `json:"description"`
-		Category    string    `json:"category"`
-		Currency    string    `json:"currency"`
-		Frequency   string    `json:"frequency"`
-		NextDue     time.Time `json:"next_due"`
-		IsActive    bool      `json:"is_active"`
+		GroupID     uuid.UUID                    `json:"group_id"`
+		PayerID     uuid.UUID                    `json:"payer_id"`
+		Amount      int64                        `json:"amount"`
+		Description string                       `json:"description"`
+		Category    string                       `json:"category"`
+		Currency    string                       `json:"currency"`
+		Frequency   string                       `json:"frequency"`
+		NextDue     time.Time                    `json:"next_due"`
+		IsActive    bool                         `json:"is_active"`
+		SplitMode   string                       `json:"split_mode"`
+		SplitInputs []models.RecurringSplitInput `json:"split_inputs"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
@@ -650,6 +652,8 @@ func (h *FinanceHandler) CreateRecurringExpense(w http.ResponseWriter, r *http.R
 		Frequency:   req.Frequency,
 		NextDue:     req.NextDue,
 		IsActive:    req.IsActive,
+		SplitMode:   req.SplitMode,
+		SplitInputs: req.SplitInputs,
 	}
 	if err := h.service.CreateRecurringExpense(r.Context(), userID, re); err != nil {
 		api.RespondError(w, err)
@@ -723,14 +727,16 @@ func (h *FinanceHandler) UpdateRecurringExpense(w http.ResponseWriter, r *http.R
 	}
 
 	var req struct {
-		PayerID     *uuid.UUID `json:"payer_id,omitempty"`
-		Amount      *int64     `json:"amount,omitempty"`
-		Description *string    `json:"description,omitempty"`
-		Category    *string    `json:"category,omitempty"`
-		Currency    *string    `json:"currency,omitempty"`
-		Frequency   *string    `json:"frequency,omitempty"`
-		NextDue     *time.Time `json:"next_due,omitempty"`
-		IsActive    *bool      `json:"is_active,omitempty"`
+		PayerID     *uuid.UUID                    `json:"payer_id,omitempty"`
+		Amount      *int64                        `json:"amount,omitempty"`
+		Description *string                       `json:"description,omitempty"`
+		Category    *string                       `json:"category,omitempty"`
+		Currency    *string                       `json:"currency,omitempty"`
+		Frequency   *string                       `json:"frequency,omitempty"`
+		NextDue     *time.Time                    `json:"next_due,omitempty"`
+		IsActive    *bool                         `json:"is_active,omitempty"`
+		SplitMode   *string                       `json:"split_mode,omitempty"`
+		SplitInputs []models.RecurringSplitInput  `json:"split_inputs,omitempty"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
@@ -767,6 +773,12 @@ func (h *FinanceHandler) UpdateRecurringExpense(w http.ResponseWriter, r *http.R
 	if req.IsActive != nil {
 		existing.IsActive = *req.IsActive
 	}
+	if req.SplitMode != nil {
+		existing.SplitMode = *req.SplitMode
+	}
+	if req.SplitInputs != nil {
+		existing.SplitInputs = req.SplitInputs
+	}
 
 	re := &models.RecurringExpense{
 		ID:          id,
@@ -778,6 +790,8 @@ func (h *FinanceHandler) UpdateRecurringExpense(w http.ResponseWriter, r *http.R
 		Frequency:   existing.Frequency,
 		NextDue:     existing.NextDue,
 		IsActive:    existing.IsActive,
+		SplitMode:   existing.SplitMode,
+		SplitInputs: existing.SplitInputs,
 	}
 	if err := h.service.UpdateRecurringExpense(r.Context(), userID, re); err != nil {
 		api.RespondError(w, err)

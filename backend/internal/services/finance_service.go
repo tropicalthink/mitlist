@@ -369,6 +369,9 @@ func (s *FinanceService) CreateRecurringExpense(ctx context.Context, userID uuid
 	if re.Amount <= 0 {
 		return api.ErrValidation
 	}
+	if err := s.validateRecurringSplitConfig(ctx, re); err != nil {
+		return err
+	}
 	return s.financeRepo.CreateRecurringExpense(ctx, re)
 }
 
@@ -417,7 +420,42 @@ func (s *FinanceService) UpdateRecurringExpense(ctx context.Context, userID uuid
 		}
 	}
 	re.GroupID = existing.GroupID
+	if err := s.validateRecurringSplitConfig(ctx, re); err != nil {
+		return err
+	}
 	return s.financeRepo.UpdateRecurringExpense(ctx, re)
+}
+
+// validateRecurringSplitConfig validates split_mode and split_inputs if a non-payer-only mode is set.
+func (s *FinanceService) validateRecurringSplitConfig(ctx context.Context, re *models.RecurringExpense) error {
+	if re.SplitMode == "" || re.SplitMode == "payer_only" {
+		return nil
+	}
+	// Validate every referenced user is a group member.
+	for _, si := range re.SplitInputs {
+		if err := s.requireMember(ctx, re.GroupID, si.UserID); err != nil {
+			return &api.ValidationError{Message: "split user must be a member of this group"}
+		}
+	}
+	// Validate the split math by attempting a dry-run build.
+	inputs := toExpenseSplitInputs(re.SplitInputs)
+	if _, err := buildSplits(re.Amount, re.PayerID, re.SplitMode, inputs); err != nil {
+		return err
+	}
+	return nil
+}
+
+func toExpenseSplitInputs(in []models.RecurringSplitInput) []ExpenseSplitInput {
+	out := make([]ExpenseSplitInput, len(in))
+	for i, si := range in {
+		out[i] = ExpenseSplitInput{
+			UserID:     si.UserID,
+			Amount:     si.Amount,
+			Shares:     si.Shares,
+			Percentage: si.Percentage,
+		}
+	}
+	return out
 }
 
 // DeleteRecurringExpense removes a recurring expense (admin only).
