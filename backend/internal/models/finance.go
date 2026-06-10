@@ -65,19 +65,29 @@ type FinanceSummary struct {
 	Reimbursements []ReimbursementSuggestion `json:"reimbursements"`
 }
 
+// RecurringSplitInput describes one participant's share for a recurring expense.
+type RecurringSplitInput struct {
+	UserID     uuid.UUID `json:"user_id"`
+	Amount     int64     `json:"amount"`
+	Shares     int64     `json:"shares"`
+	Percentage int64     `json:"percentage"`
+}
+
 // RecurringExpense represents a repeating expense.
 type RecurringExpense struct {
-	ID          uuid.UUID `json:"id"`
-	GroupID     uuid.UUID `json:"group_id"`
-	PayerID     uuid.UUID `json:"payer_id"`
-	Amount      int64     `json:"amount"`
-	Description string    `json:"description"`
-	Category    string    `json:"category"`
-	Currency    string    `json:"currency"`
-	Frequency   string    `json:"frequency"`
-	NextDue     time.Time `json:"next_due"`
-	IsActive    bool      `json:"is_active"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID          uuid.UUID             `json:"id"`
+	GroupID     uuid.UUID             `json:"group_id"`
+	PayerID     uuid.UUID             `json:"payer_id"`
+	Amount      int64                 `json:"amount"`
+	Description string                `json:"description"`
+	Category    string                `json:"category"`
+	Currency    string                `json:"currency"`
+	Frequency   string                `json:"frequency"`
+	NextDue     time.Time             `json:"next_due"`
+	IsActive    bool                  `json:"is_active"`
+	CreatedAt   time.Time             `json:"created_at"`
+	SplitMode   string                `json:"split_mode"`
+	SplitInputs []RecurringSplitInput `json:"split_inputs"`
 }
 
 // ExpenseCategory groups expenses by category.
