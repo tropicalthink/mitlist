@@ -189,6 +189,20 @@ func (s *FinanceService) UpdateExpense(ctx context.Context, userID uuid.UUID, ex
 	if err := s.requireMember(ctx, existing.GroupID, userID); err != nil {
 		return err
 	}
+	// Only allow reassigning the payer if the user is an admin.
+	if expense.PayerID != existing.PayerID && expense.PayerID != userID {
+		if err := s.requireAdmin(ctx, existing.GroupID, userID); err != nil {
+			return &api.ValidationError{Message: "payer must be the current user or you must be an admin"}
+		}
+	}
+	if expense.PayerID != existing.PayerID {
+		if err := s.requireMember(ctx, existing.GroupID, expense.PayerID); err != nil {
+			return &api.ValidationError{Message: "payer must be a member of this group"}
+		}
+	}
+	if expense.Amount <= 0 {
+		return api.ErrValidation
+	}
 	expense.GroupID = existing.GroupID
 	return s.financeRepo.UpdateExpense(ctx, expense)
 }
@@ -267,6 +281,15 @@ func (s *FinanceService) UpdateSplit(ctx context.Context, userID uuid.UUID, spli
 	}
 	if err := s.requireMember(ctx, expense.GroupID, userID); err != nil {
 		return err
+	}
+	if split.Amount <= 0 {
+		return &api.ValidationError{Message: "split amount must be positive"}
+	}
+	// Only allow reassigning the split to another user if the actor is an admin.
+	if split.UserID != existing.UserID {
+		if err := s.requireAdmin(ctx, expense.GroupID, userID); err != nil {
+			return err
+		}
 	}
 	split.ExpenseID = existing.ExpenseID
 	return s.financeRepo.UpdateSplit(ctx, split)
@@ -383,6 +406,15 @@ func (s *FinanceService) UpdateRecurringExpense(ctx context.Context, userID uuid
 	}
 	if err := s.requireMember(ctx, existing.GroupID, userID); err != nil {
 		return err
+	}
+	if re.Amount <= 0 {
+		return api.ErrValidation
+	}
+	// Only allow reassigning the payer if the user is an admin.
+	if re.PayerID != existing.PayerID && re.PayerID != userID {
+		if err := s.requireAdmin(ctx, existing.GroupID, userID); err != nil {
+			return &api.ValidationError{Message: "payer must be the current user or you must be an admin"}
+		}
 	}
 	re.GroupID = existing.GroupID
 	return s.financeRepo.UpdateRecurringExpense(ctx, re)
