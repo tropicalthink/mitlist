@@ -630,6 +630,11 @@ func buildSplits(total int64, payerID uuid.UUID, splitMode string, inputs []Expe
 	return splits, nil
 }
 
+// BuildExpenseSplits exposes split computation for jobs.
+func BuildExpenseSplits(total int64, payerID uuid.UUID, splitMode string, inputs []ExpenseSplitInput) ([]models.Split, error) {
+	return buildSplits(total, payerID, splitMode, inputs)
+}
+
 func distributeByWeight(total int64, inputs []ExpenseSplitInput, amounts []int64, weight func(ExpenseSplitInput) int64, weightSum int64) {
 	var assigned int64
 	for i, input := range inputs {
