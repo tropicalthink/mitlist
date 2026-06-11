@@ -457,18 +457,18 @@ class ListRepository {
         purchasedAt: DateTime.now(),
       ));
 
-      // Increment co-occurrence with every other checked item in the same list.
+      // Increment co-occurrence with every other checked item in the same list
+      // in a single batched transaction.
       final peers = await _db.getCheckedItemsWithCanonical(listId);
-      for (final peer in peers) {
-        if (peer.id == itemId) continue;
-        final peerCanonicalId = peer.canonicalItemId;
-        if (peerCanonicalId == null) continue;
-        await _db.incrementCooccurrence(
-          groupId: groupId,
-          itemAId: canonicalId,
-          itemBId: peerCanonicalId,
-        );
-      }
+      final peerCanonicalIds = peers
+          .where((p) => p.id != itemId && p.canonicalItemId != null)
+          .map((p) => p.canonicalItemId!)
+          .toList();
+      await _db.incrementCooccurrences(
+        groupId: groupId,
+        canonicalItemId: canonicalId,
+        peerCanonicalIds: peerCanonicalIds,
+      );
     } catch (_) {
       // Best-effort; never throw from a background signal.
     }
