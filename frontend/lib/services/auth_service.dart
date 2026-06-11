@@ -103,6 +103,8 @@ class AuthService {
   Future<void> logout() async {
     // Remove the FCM device token so push stops after logout.
     await FcmService.unregisterToken(_dio);
+    // Cancel FCM stream listeners to prevent duplicate handlers on re-login.
+    await FcmService.reset();
 
     try {
       final refreshToken = _prefs.getString(ApiConfig.refreshTokenKey);
