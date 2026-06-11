@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logger/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -165,12 +166,16 @@ Dio createApiClient([Ref? ref]) {
   dio.interceptors.add(TokenRefreshInterceptor(dio, ref));
   dio.interceptors.add(AuthInterceptor());
 
-  final logger = Logger();
-  dio.interceptors.add(LogInterceptor(
-    requestBody: true,
-    responseBody: true,
-    logPrint: (object) => logger.d(object),
-  ));
+  if (kDebugMode) {
+    final logger = Logger();
+    dio.interceptors.add(LogInterceptor(
+      requestHeader: false,
+      responseHeader: false,
+      requestBody: false,
+      responseBody: false,
+      logPrint: (object) => logger.d(object),
+    ));
+  }
 
   return dio;
 }
