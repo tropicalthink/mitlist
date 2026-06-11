@@ -147,20 +147,13 @@ func (s *FinanceService) ListAllExpenses(ctx context.Context, userID, groupID uu
 }
 
 // GetFinanceSummary returns the canonical group balance and reimbursement view.
+// It uses a single aggregate SQL query instead of loading all historical rows.
 func (s *FinanceService) GetFinanceSummary(ctx context.Context, userID, groupID uuid.UUID) (*models.FinanceSummary, error) {
 	if err := s.requireMember(ctx, groupID, userID); err != nil {
 		return nil, err
 	}
 
-	expenses, err := s.financeRepo.ListAllExpensesByGroup(ctx, groupID)
-	if err != nil {
-		return nil, err
-	}
-	splits, err := s.financeRepo.ListSplitsByGroup(ctx, groupID)
-	if err != nil {
-		return nil, err
-	}
-	settlements, err := s.financeRepo.ListAllSettlementsByGroup(ctx, groupID)
+	aggregates, err := s.financeRepo.GetGroupBalanceAggregates(ctx, groupID)
 	if err != nil {
 		return nil, err
 	}
@@ -169,12 +162,41 @@ func (s *FinanceService) GetFinanceSummary(ctx context.Context, userID, groupID 
 		return nil, err
 	}
 
-	balances := calculateBalances(expenses, splits, settlements)
+	balances := balancesFromAggregates(aggregates)
 	applyDisplayNames(balances, profiles)
 	return &models.FinanceSummary{
 		Balances:       balances,
 		Reimbursements: suggestReimbursements(balances),
 	}, nil
+}
+
+// balancesFromAggregates converts database aggregates into BalanceEntry slice
+// using the same semantics as calculateBalances:
+//
+//	Paid  = ExpensePaid + SettledOut  (payer credits + settlements sent)
+//	Owed  = SplitOwed  + SettledIn   (split debits  + settlements received)
+//	Total = Paid - Owed
+//
+// Sort order: UserID.String() ascending — matches calculateBalances.
+func balancesFromAggregates(aggregates []models.BalanceAggregate) []models.BalanceEntry {
+	balances := make([]models.BalanceEntry, 0, len(aggregates))
+	for _, agg := range aggregates {
+		paid := agg.ExpensePaid + agg.SettledOut
+		owed := agg.SplitOwed + agg.SettledIn
+		balances = append(balances, models.BalanceEntry{
+			UserID: agg.UserID,
+			Paid:   paid,
+			Owed:   owed,
+			Total:  paid - owed,
+		})
+	}
+	// The SQL query returns rows ORDER BY user_id ASC, which is uuid string sort.
+	// UUIDs are stored as bytes in PostgreSQL; to guarantee identical ordering
+	// with calculateBalances (which sorts on uuid.String()), we re-sort here.
+	sort.Slice(balances, func(i, j int) bool {
+		return balances[i].UserID.String() < balances[j].UserID.String()
+	})
+	return balances
 }
 
 // UpdateExpense updates an existing expense.

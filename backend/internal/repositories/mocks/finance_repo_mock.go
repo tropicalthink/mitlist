@@ -177,3 +177,11 @@ func (m *MockFinanceRepo) ListExpensesByDateRange(ctx context.Context, groupID u
 	}
 	return nil, args.Error(1)
 }
+
+func (m *MockFinanceRepo) GetGroupBalanceAggregates(ctx context.Context, groupID uuid.UUID) ([]models.BalanceAggregate, error) {
+	args := m.Called(ctx, groupID)
+	if agg := args.Get(0); agg != nil {
+		return agg.([]models.BalanceAggregate), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
