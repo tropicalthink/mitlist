@@ -1569,19 +1569,20 @@ class FakeChoreRepository implements ChoreRepository {
   }
 
   @override
-  Future<void> completeOfflineFirst(String choreId) async {
+  Future<void> completeOfflineFirst(String choreId, {String? groupId}) async {
     await _service.completeChore(choreId, notes: null);
   }
 
   @override
-  Future<void> skipOfflineFirst(String choreId, {String? reason}) async {}
+  Future<void> skipOfflineFirst(String choreId,
+      {String? reason, String? groupId}) async {}
 
   @override
-  Future<void> rescheduleOfflineFirst(
-      String choreId, DateTime dueDate) async {}
+  Future<void> rescheduleOfflineFirst(String choreId, DateTime dueDate,
+      {String? groupId}) async {}
 
   @override
-  Future<void> undoOfflineFirst(String choreId) async {}
+  Future<void> undoOfflineFirst(String choreId, {String? groupId}) async {}
 
   @override
   Future<void> drainOutboxOnce() async {}

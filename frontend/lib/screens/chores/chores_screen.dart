@@ -26,7 +26,9 @@ import '../../widgets/app_card.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/chip.dart';
+import '../../widgets/animated_strikethrough.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/odometer.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/list_entrance.dart';
 import '../../widgets/mitlist_app_bar.dart';
@@ -47,6 +49,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   String _groupMode = 'due'; // 'due' | 'rhythm' | 'zone'
   bool _isMutating = false;
   bool _hasHousehold = true;
+  String? _groupId;
   final Logger _logger = Logger();
   Map<String, String> _memberNames = {};
 
@@ -133,6 +136,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
 
       await _sub?.cancel();
       final gid = groupId!;
+      _groupId = gid;
       _sub = repo.watchCurrentChores(gid).listen((currentChores) {
         if (!mounted) return;
         _applyCurrentChores(currentChores);
@@ -355,6 +359,19 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     return userId.substring(0, 8);
   }
 
+  /// Quiet sync: pulls fresh data without resetting the stream subscription
+  /// or flashing skeletons. Used after mutations that bypass the repo cache.
+  Future<void> _refreshQuietly() async {
+    final gid = _groupId;
+    if (gid == null) return;
+    try {
+      final repo = await ref.read(choreRepositoryProvider.future);
+      await repo.refreshCurrentChores(gid);
+    } catch (e) {
+      _logger.w('Quiet chores refresh failed', error: e);
+    }
+  }
+
   Future<void> _toggleComplete(String id) async {
     if (_isMutating) return;
     _isMutating = true;
@@ -363,15 +380,52 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       if (chore.completed) {
         return;
       }
-      unawaited(Haptics.light());
+      // Optimistic: strike through instantly; the repo patches its cache and
+      // reconciles with the server in the background.
+      setState(() => chore.completed = true);
+      unawaited(Haptics.success());
       final repo = await ref.read(choreRepositoryProvider.future);
-      await repo.completeOfflineFirst(id);
-      await _loadChores();
+      await repo.completeOfflineFirst(id, groupId: _groupId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${chore.title} done',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () => _undoComplete(id),
+          ),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
+      setState(() {
+        final chore = _chores.where((c) => c.id == id).firstOrNull;
+        chore?.completed = false;
+      });
       _showChoreActionError('Failed to complete chore. Please try again.');
     } finally {
       _isMutating = false;
+    }
+  }
+
+  Future<void> _undoComplete(String id) async {
+    try {
+      unawaited(Haptics.light());
+      setState(() {
+        final chore = _chores.where((c) => c.id == id).firstOrNull;
+        chore?.completed = false;
+      });
+      final repo = await ref.read(choreRepositoryProvider.future);
+      await repo.undoOfflineFirst(id, groupId: _groupId);
+    } catch (e) {
+      if (!mounted) return;
+      _showChoreActionError(
+          'Failed to undo chore execution. Please try again.');
     }
   }
 
@@ -382,11 +436,11 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       if (reason != null && reason.isNotEmpty) {
         final service = await ref.read(choreServiceProviderAsync.future);
         await service.skipChore(id, skipReason: reason);
+        await _refreshQuietly();
       } else {
         final repo = await ref.read(choreRepositoryProvider.future);
-        await repo.skipOfflineFirst(id);
+        await repo.skipOfflineFirst(id, groupId: _groupId);
       }
-      await _loadChores();
     } catch (e) {
       if (!mounted) return;
       _showChoreActionError('Failed to skip chore. Please try again.');
@@ -458,8 +512,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     try {
       final tomorrow = DateTime.now().add(const Duration(days: 1));
       final repo = await ref.read(choreRepositoryProvider.future);
-      await repo.rescheduleOfflineFirst(id, tomorrow);
-      await _loadChores();
+      await repo.rescheduleOfflineFirst(id, tomorrow, groupId: _groupId);
     } catch (e) {
       if (!mounted) return;
       _showChoreActionError('Failed to reschedule chore. Please try again.');
@@ -473,8 +526,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     _isMutating = true;
     try {
       final repo = await ref.read(choreRepositoryProvider.future);
-      await repo.undoOfflineFirst(id);
-      await _loadChores();
+      await repo.undoOfflineFirst(id, groupId: _groupId);
     } catch (e) {
       if (!mounted) return;
       _showChoreActionError(
@@ -513,7 +565,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     try {
       final service = await ref.read(choreServiceProviderAsync.future);
       await service.deleteChore(id);
-      await _loadChores();
+      await _refreshQuietly();
     } catch (e) {
       if (!mounted) return;
       _showChoreActionError('Failed to delete chore. Please try again.');
@@ -777,7 +829,9 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 AppChip(
-                                  label: 'Me',
+                                  label: _chores.isEmpty
+                                      ? 'Me'
+                                      : 'Me (${_chores.where((c) => c.isMine).length})',
                                   selected: _filterMe,
                                   onSelected: (_) {
                                     setState(() => _filterMe = true);
@@ -786,7 +840,9 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                                 ),
                                 const SizedBox(width: MitlistSpacing.sm),
                                 AppChip(
-                                  label: 'Everyone',
+                                  label: _chores.isEmpty
+                                      ? 'Everyone'
+                                      : 'Everyone (${_chores.length})',
                                   selected: !_filterMe,
                                   onSelected: (_) {
                                     setState(() => _filterMe = false);
@@ -1082,14 +1138,16 @@ class _StatBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final countStyle = Theme.of(context).textTheme.headlineSmall ??
+        const TextStyle(fontSize: 24);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         FittedBox(
           fit: BoxFit.scaleDown,
-          child: Text(
-            count.toString(),
-            style: Theme.of(context).textTheme.headlineSmall,
+          child: MitlistOdometer(
+            value: count,
+            textStyle: countStyle,
           ),
         ),
         const SizedBox(height: MitlistSpacing.space1),
@@ -1165,16 +1223,10 @@ class _ChoreItem extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        chore.title,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          decoration: isComplete ? TextDecoration.lineThrough : null,
-                          color: isComplete
-                              ? Theme.of(context).colorScheme.onSurfaceVariant
-                              : null,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      AnimatedStrikethrough(
+                        text: chore.title,
+                        struck: isComplete,
+                        style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       if (chore.lastActionLabel != null &&
                           chore.lastActionLabel!.isNotEmpty)

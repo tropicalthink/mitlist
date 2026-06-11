@@ -10,8 +10,8 @@ import '../../providers/attachment_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../services/list_service.dart';
+import '../../theme/animations.dart';
 import '../../theme/list_tile_accent.dart';
-import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
 import '../../utils/haptics.dart';
 import '../../utils/friendly_error.dart';
@@ -25,6 +25,7 @@ import '../../widgets/list/list_composer_bar.dart';
 import '../../widgets/list/list_item_actions_sheet.dart';
 import '../../widgets/list/list_item_row.dart';
 import '../../widgets/list/list_scan_launcher.dart';
+import '../../widgets/odometer.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/mitlist_app_bar.dart';
 
@@ -82,6 +83,15 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   bool _isSaving = false;
   String _groupCurrency = 'USD';
   String? _userId;
+
+  /// Checked items briefly held in the open section so the strike animation
+  /// plays in place before the row collapses away into "Checked off".
+  final Set<String> _settling = {};
+  final Set<String> _collapsing = {};
+  final Map<String, Timer> _settleTimers = {};
+
+  /// How long a freshly checked row rests in place before collapsing.
+  static const Duration _settleHold = Duration(milliseconds: 650);
 
   @override
   void initState() {
@@ -143,6 +153,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
   @override
   void dispose() {
+    for (final timer in _settleTimers.values) {
+      timer.cancel();
+    }
     _composerFocusNode.removeListener(_onComposerFocusChanged);
     _itemsSub?.cancel();
     _newItemController.dispose();
@@ -207,7 +220,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         if (mounted) setState(() => _groupCurrency = group.currency);
       } catch (_) {}
       unawaited(_loadPhotosForItems(_items));
-      if (mounted) {
+      // Pop the keyboard only for an empty list (the next step is clearly
+      // typing). On a populated list it would cover the items people came
+      // to read.
+      if (mounted && _items.isEmpty) {
         FocusScope.of(context).requestFocus(_composerFocusNode);
       }
     } catch (e) {
@@ -368,6 +384,20 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     final service = _service;
     if (service == null) return;
 
+    final disableAnimations = MediaQuery.of(context).disableAnimations;
+    if (value && !disableAnimations && _searchQuery.isEmpty) {
+      // Hold the row in place while the strike draws, then collapse it away
+      // into the done section instead of jump-cutting on the next rebuild.
+      _settleTimers.remove(item.id)?.cancel();
+      setState(() => _settling.add(item.id));
+      _settleTimers[item.id] = Timer(_settleHold, () {
+        if (!mounted) return;
+        setState(() => _collapsing.add(item.id));
+      });
+    } else {
+      _cancelSettle(item.id);
+    }
+
     try {
       final repo = await ref.read(listRepositoryProvider.future);
       await repo.updateItemOfflineFirst(
@@ -379,10 +409,32 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       setState(() => _dirty = true);
     } catch (e) {
       if (!mounted) return;
+      _cancelSettle(item.id);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: const Text('Couldn\u2019t update. Please try again.')),
       );
     }
+  }
+
+  void _cancelSettle(String id) {
+    _settleTimers.remove(id)?.cancel();
+    if (_settling.contains(id) || _collapsing.contains(id)) {
+      setState(() {
+        _settling.remove(id);
+        _collapsing.remove(id);
+      });
+    }
+  }
+
+  /// Called when a settled row finishes its collapse animation; the item then
+  /// re-sections into "Checked off" with no visible jump.
+  void _finishSettle(String id) {
+    _settleTimers.remove(id)?.cancel();
+    if (!mounted) return;
+    setState(() {
+      _settling.remove(id);
+      _collapsing.remove(id);
+    });
   }
 
   Future<void> _completeAll() async {
@@ -554,6 +606,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   Future<void> _deleteItem(ListItem item) async {
     if (_isSaving) return;
     _isSaving = true;
+    _cancelSettle(item.id);
     final service = _service;
     if (service == null) { _isSaving = false; return; }
 
@@ -575,77 +628,55 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     }
 
     if (!mounted) { _isSaving = false; return; }
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        behavior: SnackBarBehavior.floating,
-        content: Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.onSurface,
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outline,
-              width: 2,
-            ),
-            boxShadow: MitlistShadows.shadowMedium,
-          ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: MitlistSpacing.md,
-            vertical: MitlistSpacing.sm,
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '${item.name} deleted'.toUpperCase(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context)
-                      .textTheme
-                      .labelMedium
-                      ?.copyWith(color: Theme.of(context).colorScheme.onError),
-                ),
-              ),
-              AppButton(
-                variant: AppButtonVariant.ghost,
-                color: AppButtonColor.neutral,
-                text: 'Undo',
-                onPressed: () async {
-                  final service = _service;
-                  if (service == null) return;
-                  try {
-                    final repo = await ref.read(listRepositoryProvider.future);
-                    final restored = await repo.createItemOfflineFirst(
-                      widget.listId,
-                      CreateListItemRequest(
-                        name: item.name,
-                        quantity: item.quantity,
-                        unit: item.unit,
-                        note: item.note,
-                        priceCents: item.priceCents,
-                      ),
-                    );
-                    if (item.checked) {
-                      await repo.updateItemOfflineFirst(
-                        widget.listId,
-                        restored.id,
-                        const UpdateListItemRequest(checked: true),
-                      );
-                    }
-                    if (!mounted) return;
-                    setState(() {
-                      _dirty = true;
-                    });
-                  } catch (_) {
-                  }
-                },
-              ),
-            ],
-          ),
+        content: Text(
+          '${item.name} deleted',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () => _restoreDeletedItem(item),
         ),
       ),
     );
     _isSaving = false;
+  }
+
+  Future<void> _restoreDeletedItem(ListItem item) async {
+    final service = _service;
+    if (service == null) return;
+    try {
+      final repo = await ref.read(listRepositoryProvider.future);
+      final restored = await repo.createItemOfflineFirst(
+        widget.listId,
+        CreateListItemRequest(
+          name: item.name,
+          quantity: item.quantity,
+          unit: item.unit,
+          note: item.note,
+          priceCents: item.priceCents,
+        ),
+      );
+      if (item.checked) {
+        await repo.updateItemOfflineFirst(
+          widget.listId,
+          restored.id,
+          const UpdateListItemRequest(checked: true),
+        );
+      }
+      if (!mounted) return;
+      setState(() {
+        _dirty = true;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Couldn’t restore item.')),
+      );
+    }
   }
 
   Future<void> _setItemPrice(ListItem item) async {
@@ -865,22 +896,28 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   List<ListItem> get _searchOrderedItems {
     final list = List<ListItem>.from(_filteredItems);
     list.sort((a, b) {
-      if (a.checked != b.checked) {
-        return a.checked ? 1 : -1;
+      final aOpen = _displaysAsOpen(a);
+      final bOpen = _displaysAsOpen(b);
+      if (aOpen != bOpen) {
+        return aOpen ? -1 : 1;
       }
       return a.position.compareTo(b.position);
     });
     return list;
   }
 
+  /// Settling rows count as open so they stay in place during the hold.
+  bool _displaysAsOpen(ListItem item) =>
+      !item.checked || _settling.contains(item.id);
+
   List<ListItem> _openItemsSorted() {
-    final list = _items.where((i) => !i.checked).toList()
+    final list = _items.where(_displaysAsOpen).toList()
       ..sort((a, b) => a.position.compareTo(b.position));
     return list;
   }
 
   List<ListItem> _doneItemsSorted() {
-    final list = _items.where((i) => i.checked).toList()
+    final list = _items.where((i) => !_displaysAsOpen(i)).toList()
       ..sort((a, b) => a.position.compareTo(b.position));
     return list;
   }
@@ -1159,6 +1196,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
               return _buildDismissibleItemRow(item, reorderIndex: index);
             },
           ),
+        if (open.isEmpty && done.isNotEmpty)
+          SliverToBoxAdapter(child: _buildAllDonePanel()),
         if (done.isNotEmpty)
           SliverToBoxAdapter(child: _buildDoneHeader(done.length, textTheme)),
         if (done.isNotEmpty && _doneSectionExpanded)
@@ -1175,7 +1214,41 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     );
   }
 
+  /// Quiet landing for a fully checked-off list: acknowledgment plus the two
+  /// actions that actually come next mid-errand.
+  Widget _buildAllDonePanel() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    return Padding(
+      padding: const EdgeInsets.all(MitlistSpacing.md),
+      child: Row(
+        children: [
+          AppIcon(name: 'checkCircle', size: 20, color: colorScheme.primary),
+          const SizedBox(width: MitlistSpacing.sm),
+          Expanded(
+            child: Text(
+              'All checked off',
+              style: textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          AppButton(
+            text: 'Clear checked',
+            variant: AppButtonVariant.outline,
+            color: AppButtonColor.neutral,
+            onPressed: () => _clearItems(onlyChecked: true),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildDoneHeader(int doneCount, TextTheme textTheme) {
+    final headerStyle = textTheme.titleSmall?.copyWith(
+          fontWeight: FontWeight.w700,
+        ) ??
+        const TextStyle(fontWeight: FontWeight.w700);
     return Material(
       color: Theme.of(context).brightness == Brightness.dark
           ? Theme.of(context).colorScheme.surfaceContainerHighest
@@ -1190,14 +1263,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           ),
           child: Row(
             children: [
-              Expanded(
-                child: Text(
-                  'Checked off ($doneCount)',
-                  style: textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
+              Text('Checked off', style: headerStyle),
+              const SizedBox(width: MitlistSpacing.sm),
+              MitlistOdometer(value: doneCount, textStyle: headerStyle),
+              const Spacer(),
               AppIcon(
                 name: _doneSectionExpanded ? 'chevronUp' : 'chevronDown',
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -1220,8 +1289,17 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Widget _buildDismissibleItemRow(ListItem item, {int? reorderIndex}) {
-    return Dismissible(
+    return _SettleCollapse(
       key: ValueKey(item.id),
+      collapsed: _collapsing.contains(item.id),
+      onCollapsed: () => _finishSettle(item.id),
+      child: _buildDismissibleCore(item, reorderIndex: reorderIndex),
+    );
+  }
+
+  Widget _buildDismissibleCore(ListItem item, {int? reorderIndex}) {
+    return Dismissible(
+      key: ValueKey('dismiss-${item.id}'),
       direction: DismissDirection.endToStart,
       background: Container(
         color: Theme.of(context).colorScheme.error,
@@ -1398,6 +1476,46 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       onScan: () => _launchScan(),
       productSuggestions: _productSuggestions,
       showProductSuggestions: _showProductSuggestions,
+    );
+  }
+}
+
+/// Collapses its child's height to zero (with a fade) when [collapsed] flips
+/// on, then reports completion via [onCollapsed] so the parent can re-section
+/// the item without a visible jump. At rest it is a transparent passthrough.
+class _SettleCollapse extends StatelessWidget {
+  const _SettleCollapse({
+    super.key,
+    required this.collapsed,
+    required this.onCollapsed,
+    required this.child,
+  });
+
+  final bool collapsed;
+  final VoidCallback onCollapsed;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final disableAnimations = MediaQuery.of(context).disableAnimations;
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(end: collapsed ? 0.0 : 1.0),
+      duration: disableAnimations ? Duration.zero : MitlistAnimations.micro,
+      curve: MitlistAnimations.easeExit,
+      onEnd: () {
+        if (collapsed) onCollapsed();
+      },
+      child: child,
+      builder: (context, t, child) {
+        if (t >= 1.0) return child!;
+        return ClipRect(
+          child: Align(
+            alignment: Alignment.topCenter,
+            heightFactor: t,
+            child: Opacity(opacity: t, child: child),
+          ),
+        );
+      },
     );
   }
 }
