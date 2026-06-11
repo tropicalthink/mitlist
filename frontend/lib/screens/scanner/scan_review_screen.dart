@@ -47,12 +47,16 @@ class ScanReviewScreen extends ConsumerStatefulWidget {
   final GroceryScanResult scanResult;
   final String groupId;
   final String userId;
+  final String? targetListId;
+  final String? targetListName;
 
   const ScanReviewScreen({
     super.key,
     required this.scanResult,
     required this.groupId,
     required this.userId,
+    this.targetListId,
+    this.targetListName,
   });
 
   @override
@@ -281,10 +285,17 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
   // ---------------------------------------------------------------------------
 
   Future<void> _addToList() async {
-    final listId = await _showListPicker();
+    final String? listId;
+    if (widget.targetListId != null) {
+      listId = widget.targetListId;
+    } else {
+      listId = await _showListPicker();
+    }
     if (listId == null || !mounted) return;
 
     setState(() => _isAdding = true);
+
+    final targetListId = listId;
 
     final correctionSvc = ref.read(correctionMemoryProvider);
     final groceryRepo = await ref.read(groceryRepositoryProvider.future);
@@ -308,7 +319,7 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
     }
 
     await Future.wait(_items.map((p) => repo.createItemOfflineFirst(
-          listId,
+          targetListId,
           CreateListItemRequest(
             name: p.displayName,
             quantity: p.quantity,
@@ -318,7 +329,7 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
 
     if (mounted) {
       setState(() => _isAdding = false);
-      Navigator.of(context).pop(true);
+      Navigator.of(context).pop(_items.length);
     }
   }
 
@@ -361,9 +372,16 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
         .length;
     final flatEntries = _buildFlatEntries();
 
+    final appBarTitle = widget.targetListName != null
+        ? 'Add to ${widget.targetListName}'
+        : 'Review items';
+    final ctaLabel = widget.targetListId != null
+        ? 'Add ${_items.length} item${_items.length == 1 ? '' : 's'}'
+        : 'Add ${_items.length} item${_items.length == 1 ? '' : 's'} to list';
+
     return Scaffold(
       appBar: MitlistAppBar.titleText(
-        'Review items',
+        appBarTitle,
         showStandardActions: false,
         leading: IconButton(
           icon: const AppIcon(name: 'arrowLeft'),
@@ -517,9 +535,7 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
             child: Padding(
               padding: const EdgeInsets.all(MitlistSpacing.md),
               child: AppButton(
-                text: _isAdding
-                    ? 'Adding…'
-                    : 'Add ${_items.length} item${_items.length == 1 ? '' : 's'} to list',
+                text: _isAdding ? 'Adding…' : ctaLabel,
                 onPressed: _items.isEmpty || _isAdding ? null : _addToList,
               ),
             ),

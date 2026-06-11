@@ -5,26 +5,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../models/list_models.dart';
 import '../../models/list_item_photo_models.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/attachment_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../services/list_service.dart';
-import '../../theme/animations.dart';
 import '../../theme/list_tile_accent.dart';
 import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
-import '../../theme/theme.dart';
-import '../../theme/typography.dart';
 import '../../utils/haptics.dart';
 import '../../utils/friendly_error.dart';
 import '../../widgets/alert.dart';
-import '../../widgets/animated_check_toggle.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
-import '../../widgets/chip.dart';
 import '../../sheets/cost_summary_sheet.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/list/list_composer_bar.dart';
+import '../../widgets/list/list_item_actions_sheet.dart';
+import '../../widgets/list/list_item_row.dart';
+import '../../widgets/list/list_scan_launcher.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/mitlist_app_bar.dart';
 
@@ -66,10 +66,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   String _listName = '';
   final List<ListItem> _items = [];
   StreamSubscription<List<ListItem>>? _itemsSub;
-  bool _showCompletionBanner = false;
   bool _showSearch = false;
   String _searchQuery = '';
-  Timer? _bannerTimer;
   final TextEditingController _newItemController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
   ListService? _service;
@@ -82,6 +80,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   final Map<String, List<ListItemPhoto>> _photosByItemId = {};
   bool _isSaving = false;
   String _groupCurrency = 'USD';
+  String? _userId;
 
   @override
   void initState() {
@@ -142,7 +141,6 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   @override
   void dispose() {
     _composerFocusNode.removeListener(_onComposerFocusChanged);
-    _bannerTimer?.cancel();
     _itemsSub?.cancel();
     _newItemController.dispose();
     _searchController.dispose();
@@ -169,7 +167,6 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
             ..clear()
             ..addAll(items);
         });
-        _checkCompletionBanner();
       });
 
       final cached = await repo.getItemsByListOnce(widget.listId);
@@ -195,6 +192,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       // Attach SSE so edits from other household members appear in real time.
       final sseService = ref.read(sseServiceProvider);
       repo.attachSse(sseService, list.groupId);
+      try {
+        final authService = await ref.read(authServiceProviderAsync.future);
+        final me = await authService.getMe();
+        if (mounted) setState(() => _userId = me.id);
+      } catch (_) {}
       try {
         final groupService = await ref.read(groupServiceProviderAsync.future);
         final group = await groupService.getGroup(list.groupId);
@@ -343,7 +345,6 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       );
       if (!mounted) return;
       setState(() => _dirty = true);
-      _checkCompletionBanner();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -374,27 +375,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         break;
       }
     }
-    _checkCompletionBanner();
     _isSaving = false;
-  }
-
-  void _checkCompletionBanner() {
-    if (!mounted) return;
-    final total = _items.length;
-    final completed = _items.where((i) => i.checked).length;
-
-    if (total > 0 && completed == total) {
-      setState(() => _showCompletionBanner = true);
-      _bannerTimer?.cancel();
-      _bannerTimer = Timer(Duration(seconds: 3), () {
-        if (mounted) {
-          setState(() => _showCompletionBanner = false);
-        }
-      });
-    } else {
-      _bannerTimer?.cancel();
-      setState(() => _showCompletionBanner = false);
-    }
   }
 
   Future<void> _addItem() async {
@@ -426,11 +407,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         await repo.refreshItems(widget.listId);
       }
       if (!mounted) return;
+      Haptics.light();
       setState(() {
         _newItemController.clear();
         _dirty = true;
       });
-      _checkCompletionBanner();
       _composerFocusNode.requestFocus();
     } catch (e) {
       if (!mounted) return;
@@ -497,7 +478,6 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       await repo.refreshItems(widget.listId);
       if (!mounted) return;
       setState(() => _dirty = true);
-      _checkCompletionBanner();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -522,7 +502,6 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         _items.remove(item);
         _dirty = true;
       });
-      _checkCompletionBanner();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -586,7 +565,6 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     setState(() {
                       _dirty = true;
                     });
-                    _checkCompletionBanner();
                   } catch (_) {
                   }
                 },
@@ -836,61 +814,98 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     return list;
   }
 
+  Future<void> _launchScan({ImageSource? source}) async {
+    final groupId = _groupId;
+    final userId = _userId;
+    if (groupId == null || userId == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Couldn\u2019t start scan. Try again.')),
+      );
+      return;
+    }
+    final addedCount = await launchListScan(
+      context,
+      ref,
+      groupId: groupId,
+      userId: userId,
+      listId: widget.listId,
+      listName: _listName.isNotEmpty ? _listName : null,
+      source: source,
+    );
+    if (!mounted || addedCount == null || addedCount <= 0) return;
+    final message = addedCount == 1
+        ? '1 item added to list'
+        : '$addedCount items added to list';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  Future<void> _handleItemAction(ListItem item) async {
+    final photos = _photosByItemId[item.id];
+    final hasPhoto = photos != null && photos.isNotEmpty;
+
+    final action = await ListItemActionsSheet.show(
+      context,
+      item: item,
+      hasPhoto: hasPhoto,
+    );
+    if (!mounted || action == null) return;
+
+    switch (action) {
+      case ListItemAction.viewPhoto:
+        final photos = _photosByItemId[item.id];
+        if (photos != null && photos.isNotEmpty) {
+          await _openPhotoViewer(photos.first.url);
+        }
+      case ListItemAction.photo:
+        await _addItemPhoto(item);
+      case ListItemAction.removePhoto:
+        await _removeItemPhoto(item);
+      case ListItemAction.price:
+        await _setItemPrice(item);
+      case ListItemAction.delete:
+        await _deleteItem(item);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
     final accent = ListTileAccent.fromSeed(
       widget.listId,
       Theme.of(context).brightness,
     );
 
+    final headerHeight = kToolbarHeight + 6 + (_showSearch ? 52.0 : 0);
+
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight + 6),
+        preferredSize: Size.fromHeight(headerHeight),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             MitlistAppBar(
+              showStandardActions: false,
               leading: IconButton(
                 icon: const AppIcon(name: 'arrowLeft'),
                 tooltip: 'Back',
                 onPressed: () => Navigator.of(context).pop(_dirty),
               ),
-              title: _showSearch
-                  ? TextField(
-                      controller: _searchController,
-                      autofocus: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Search items',
-                        hintText: 'Name, e.g. milk',
-                        border: InputBorder.none,
-                      ),
-                      onChanged: (value) =>
-                          setState(() => _searchQuery = value),
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _listName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (_items.isNotEmpty)
-                          Text(
-                            _buildProgressLabel(),
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                      ],
-                    ),
+              title: Text(
+                _listName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
               actions: [
                 IconButton(
-                  icon: AppIcon(name: 'magnifyingGlass'),
-                  tooltip: 'Search',
+                  icon: AppIcon(
+                    name: 'magnifyingGlass',
+                    color: _showSearch
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+                  ),
+                  tooltip: _showSearch ? 'Close search' : 'Search',
                   onPressed: () {
                     setState(() {
                       _showSearch = !_showSearch;
@@ -901,35 +916,44 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     });
                   },
                 ),
-                AppButton(
-                  variant: AppButtonVariant.ghost,
-                  color: AppButtonColor.neutral,
-                  text: 'Check all',
-                  onPressed: _completeAll,
+                IconButton(
+                  icon: const AppIcon(name: 'camera'),
+                  tooltip: 'Scan list',
+                  onPressed: () => _launchScan(),
                 ),
                 PopupMenuButton<String>(
-                  icon: AppIcon(name: 'ellipsisVertical'),
+                  icon: const AppIcon(name: 'ellipsisVertical'),
+                  tooltip: 'List options',
                   onSelected: _onMenuSelected,
                   itemBuilder: (context) => [
-                    PopupMenuItem(
+                    const PopupMenuItem(
+                      value: 'complete_all',
+                      child: Text('Check all'),
+                    ),
+                    const PopupMenuItem(
                       value: 'cost_summary',
                       child: Text('Cost summary'),
                     ),
-                    PopupMenuItem(
+                    const PopupMenuItem(
                       value: 'clear_checked',
                       child: Text('Clear checked'),
                     ),
-                    PopupMenuItem(
+                    const PopupMenuItem(
                       value: 'clear_all',
                       child: Text('Clear list'),
                     ),
-                    PopupMenuItem(
+                    const PopupMenuItem(
                       value: 'archive',
                       child: Text('Archive'),
                     ),
                     PopupMenuItem(
                       value: 'delete',
-                      child: Text('Delete', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.error)),
+                      child: Text(
+                        'Delete',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                      ),
                     ),
                   ],
                 ),
@@ -940,39 +964,31 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
               width: double.infinity,
               color: accent.stripe,
             ),
+            if (_showSearch)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  MitlistSpacing.md,
+                  MitlistSpacing.xs,
+                  MitlistSpacing.md,
+                  MitlistSpacing.sm,
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Filter items',
+                    hintText: 'Name, e.g. milk',
+                    isDense: true,
+                  ),
+                  onChanged: (value) =>
+                      setState(() => _searchQuery = value),
+                ),
+              ),
           ],
         ),
       ),
       body: Column(
         children: [
-          Semantics(
-            button: true,
-            label: 'Dismiss completion banner',
-            child: GestureDetector(
-              onTap: () {
-                _bannerTimer?.cancel();
-                setState(() => _showCompletionBanner = false);
-              },
-            child: AnimatedContainer(
-              duration: MitlistAnimations.banner,
-              curve: MitlistTheme.easeToast,
-              height: _showCompletionBanner
-                  ? MitlistSpacing.space8
-                  : MitlistSpacing.space0,
-              color: Theme.of(context).colorScheme.tertiary,
-              width: double.infinity,
-              alignment: Alignment.center,
-              child: _showCompletionBanner
-                  ? Text(
-                      'All done!',
-                      style: textTheme.labelMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onTertiary,
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-          ),
-          ),
           Expanded(child: _buildBody()),
           if (!_isLoading && _errorMessage == null) _buildBottomBar(),
         ],
@@ -988,8 +1004,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
     if (_searchQuery.isNotEmpty) {
       final ordered = _searchOrderedItems;
-      if (ordered.isEmpty) return _buildEmpty();
-      return _buildSearchResultItemList(ordered, textTheme);
+      if (ordered.isEmpty) return _buildSearchEmpty();
+      return _buildSearchResultItemList(ordered);
     }
 
     final open = _openItemsSorted();
@@ -1004,12 +1020,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       if (done.isNotEmpty && _doneSectionExpanded) ...done,
     ];
 
-    return CheckboxTheme(
-      data: _itemCheckboxThemeData(),
-      child: ListView.builder(
-        padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
-        itemCount: rows.length,
-        itemBuilder: (context, index) {
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
+      itemCount: rows.length,
+      itemBuilder: (context, index) {
           final row = rows[index];
           if (row is _DoneHeaderMarker) {
             return Material(
@@ -1047,26 +1061,22 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
               ),
             );
           }
-          return _buildDismissibleItemRow(row as ListItem, textTheme);
+          return _buildDismissibleItemRow(row as ListItem);
         },
-      ),
     );
   }
 
-  Widget _buildSearchResultItemList(List<ListItem> items, TextTheme textTheme) {
-    return CheckboxTheme(
-      data: _itemCheckboxThemeData(),
-      child: ListView.builder(
-        padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
-        itemCount: items.length,
-        itemBuilder: (context, index) {
-          return _buildDismissibleItemRow(items[index], textTheme);
-        },
-      ),
+  Widget _buildSearchResultItemList(List<ListItem> items) {
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        return _buildDismissibleItemRow(items[index]);
+      },
     );
   }
 
-  Widget _buildDismissibleItemRow(ListItem item, TextTheme textTheme) {
+  Widget _buildDismissibleItemRow(ListItem item) {
     return Dismissible(
       key: ValueKey(item.id),
       direction: DismissDirection.endToStart,
@@ -1085,149 +1095,24 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         Haptics.medium();
         _deleteItem(item);
       },
-      child: _buildItemRow(item, textTheme),
+      child: _buildItemRow(item),
     );
   }
 
-  Widget _buildItemRow(ListItem item, TextTheme textTheme) {
+  Widget _buildItemRow(ListItem item) {
     final photos = _photosByItemId[item.id];
     final thumbUrl =
         (photos != null && photos.isNotEmpty) ? photos.first.url : null;
-    return Material(
-      color: Theme.of(context).colorScheme.surface,
-      child: InkWell(
-        onTap: () => _toggleItem(item, !item.checked),
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: Theme.of(context).colorScheme.outlineVariant,
-                width: 2,
-              ),
-            ),
-          ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: MitlistSpacing.md,
-            vertical: MitlistSpacing.sm,
-          ),
-          constraints: BoxConstraints(minHeight: 52),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              if (thumbUrl != null) ...[
-                GestureDetector(
-                  onTap: () => _openPhotoViewer(thumbUrl),
-                  child: ClipRect(
-                    child: SizedBox(
-                      width: 28,
-                      height: 28,
-                      child: Semantics(
-                        label: 'Item photo',
-                        child: Image.network(thumbUrl, fit: BoxFit.cover, cacheWidth: (28 * MediaQuery.devicePixelRatioOf(context) * 1.5).round(), errorBuilder: (_, __, ___) => AppIcon(name: 'imageNotSupportedOutline', size: 16)),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: MitlistSpacing.sm),
-              ],
-              AnimatedCheckToggle(
-                value: item.checked,
-                onChanged: (val) => _toggleItem(item, val),
-                semanticLabelOn: 'Mark ${item.name} as unchecked',
-                semanticLabelOff: 'Mark ${item.name} as checked',
-              ),
-              const SizedBox(width: MitlistSpacing.sm),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      item.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: textTheme.bodyLarge?.copyWith(
-                        decoration:
-                            item.checked ? TextDecoration.lineThrough : null,
-                        color: item.checked
-                            ? Theme.of(context).colorScheme.onSurfaceVariant
-                            : Theme.of(context).colorScheme.onSurface,
-                        height: 1.25,
-                      ),
-                    ),
-                    if (item.note.isNotEmpty)
-                      Text(
-                        item.note,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          height: 1.3,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              if (item.quantity > 1 || item.unit.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(left: MitlistSpacing.sm),
-                  child: Text(
-                    item.unit.isNotEmpty
-                        ? '${_formatQuantity(item.quantity)} ${item.unit}'
-                        : '${_formatQuantity(item.quantity)}×',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: MitlistTypography.monoBody(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              if (item.priceCents != null && item.priceCents! > 0)
-                Padding(
-                  padding: const EdgeInsets.only(left: MitlistSpacing.sm),
-                  child: Text(
-                    '$_currencySymbol${(item.priceCents! / 100).toStringAsFixed(2)}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: MitlistTypography.monoBody(
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                ),
-              if (item.claimedBy != null)
-                Padding(
-                  padding: const EdgeInsets.only(right: MitlistSpacing.xs),
-                  child: AppIcon(
-                    name: 'userCircle',
-                    size: MitlistSpacing.space5,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-              PopupMenuButton<String>(
-                tooltip: 'Item options',
-                onSelected: (v) async {
-                  if (v == 'photo') await _addItemPhoto(item);
-                  if (v == 'remove_photo') await _removeItemPhoto(item);
-                  if (v == 'price') await _setItemPrice(item);
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(value: 'photo', child: Text('Add photo')),
-                  if (thumbUrl != null)
-                    const PopupMenuItem(
-                      value: 'remove_photo',
-                      child: Text('Remove photo'),
-                    ),
-                  const PopupMenuItem(value: 'price', child: Text('Set price')),
-                ],
-                child: const Padding(
-                  padding: EdgeInsets.all(MitlistSpacing.sm),
-                  child: AppIcon(name: 'dotsHorizontal', size: MitlistSpacing.space5),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+
+    return ListItemRow(
+      item: item,
+      photoUrl: thumbUrl,
+      currencySymbol: _currencySymbol,
+      claimedLabel: item.claimedBy != null ? '\u00b7 claimed' : null,
+      onToggle: (val) => _toggleItem(item, val),
+      onPhotoTap:
+          thumbUrl != null ? () => _openPhotoViewer(thumbUrl) : null,
+      onLongPress: () => _handleItemAction(item),
     );
   }
 
@@ -1240,37 +1125,6 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       'MXN': 'MX\$', 'ZAR': 'R', 'KRW': '₩', 'TRY': '₺',
     };
     return symbols[_groupCurrency] ?? _groupCurrency;
-  }
-
-  CheckboxThemeData _itemCheckboxThemeData() => CheckboxThemeData(
-    shape: const CircleBorder(),
-    side: BorderSide(
-      color: Theme.of(context).colorScheme.outline,
-      width: 2,
-    ),
-    fillColor: WidgetStateProperty.resolveWith((states) {
-      if (states.contains(WidgetState.selected)) {
-        return Theme.of(context).colorScheme.primary;
-      }
-      return Theme.of(context).colorScheme.surface;
-    }),
-    checkColor: WidgetStateProperty.all(Theme.of(context).colorScheme.onPrimary),
-  );
-
-  String _buildProgressLabel() {
-    final total = _items.length;
-    final done = _items.where((i) => i.checked).length;
-    if (done == total) return 'All done';
-    if (done == 0) return '$total item${total == 1 ? '' : 's'}';
-    return '$done/$total done';
-  }
-
-  String _formatQuantity(double value) {
-    if (value == value.roundToDouble()) return value.toInt().toString();
-    return value
-        .toStringAsFixed(2)
-        .replaceFirst(RegExp(r'0+$'), '')
-        .replaceFirst(RegExp(r'\.$'), '');
   }
 
   Widget _buildSkeleton() {
@@ -1338,12 +1192,18 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/checklist.lottie',
           icon: AppIcon(name: 'queueList'),
-          title: 'Nothing on the list yet',
+          title: 'Nothing here yet',
           description:
-              'Add milk, bread, eggs, whatever you need. Tap the + below to get started.',
+              'Photograph a handwritten list, fridge note, or screenshot. We\u2019ll pull out the items.',
           actions: [
             AppButton(
-              text: 'Add first item',
+              text: 'Scan a list',
+              icon: const AppIcon(name: 'camera'),
+              onPressed: () => _launchScan(source: ImageSource.camera),
+            ),
+            AppButton(
+              text: 'Type an item',
+              variant: AppButtonVariant.outline,
               onPressed: () => _composerFocusNode.requestFocus(),
             ),
           ],
@@ -1352,90 +1212,48 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     );
   }
 
-  Widget _buildBottomBar() {
-    final brightness = Theme.of(context).brightness;
-    final fill = brightness == Brightness.dark
-        ? Theme.of(context).colorScheme.onSurface
-        : Theme.of(context).colorScheme.surface;
+  Widget _buildSearchEmpty() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
-    return SafeArea(
-      child: Container(
-        decoration: BoxDecoration(
-          color: fill,
-          border: Border(
-            top: BorderSide(
-              color: Theme.of(context).colorScheme.outline,
-              width: 2,
-            ),
-          ),
-        ),
-        padding: const EdgeInsets.fromLTRB(
-          MitlistSpacing.md,
-          MitlistSpacing.sm,
-          MitlistSpacing.md,
-          MitlistSpacing.md,
-        ),
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(MitlistSpacing.md),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AnimatedSize(
-              duration: const Duration(milliseconds: 150),
-              curve: Curves.easeOut,
-              child: _showProductSuggestions && _productSuggestions.isNotEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
-                      child: SizedBox(
-                        height: 32,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _productSuggestions.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(width: MitlistSpacing.sm),
-                          itemBuilder: (context, index) {
-                            final product = _productSuggestions[index];
-                            return AppChip(
-                              label: product.name,
-                              onSelected: (_) {
-                                _newItemController.text = product.name;
-                                _addItem();
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                    )
-                  : const SizedBox.shrink(),
+            Text(
+              'No items match your filter',
+              textAlign: TextAlign.center,
+              style: textTheme.bodyLarge?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _newItemController,
-                    focusNode: _composerFocusNode,
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (_) => _addItem(),
-                    minLines: 1,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      labelText: 'New item',
-                      hintText: 'e.g. Milk, 2 avocados, or 500g flour',
-                      filled: true,
-                      fillColor: fill,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: MitlistSpacing.sm),
-                AppButton(
-                  icon: AppIcon(name: 'plus', color: Theme.of(context).colorScheme.onPrimary),
-                  onPressed: _addItem,
-                  size: AppButtonSize.lg,
-                ),
-              ],
+            const SizedBox(height: MitlistSpacing.md),
+            AppButton(
+              text: 'Clear search',
+              variant: AppButtonVariant.outline,
+              onPressed: () {
+                setState(() {
+                  _searchQuery = '';
+                  _searchController.clear();
+                });
+              },
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildBottomBar() {
+    return ListComposerBar(
+      controller: _newItemController,
+      focusNode: _composerFocusNode,
+      onAdd: _addItem,
+      onScan: () => _launchScan(),
+      productSuggestions: _productSuggestions,
+      showProductSuggestions: _showProductSuggestions,
     );
   }
 }
