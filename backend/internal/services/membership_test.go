@@ -41,6 +41,8 @@ func TestRequireGroupMember(t *testing.T) {
 		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "viewer"}, nil)
 		err := requireGroupMember(ctx, groupRepo, groupID, userID)
 		assert.ErrorIs(t, err, api.ErrPermissionDenied)
+		var pd *api.PermissionDeniedError
+		assert.True(t, errors.As(err, &pd), "err must be *api.PermissionDeniedError so HTTP maps to 403")
 		groupRepo.AssertExpectations(t)
 	})
 
