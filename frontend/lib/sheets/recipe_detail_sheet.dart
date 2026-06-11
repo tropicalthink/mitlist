@@ -2,9 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
-
 import '../models/recipe_models.dart';
+import '../utils/safe_launch.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../widgets/app_bottom_sheet.dart';
@@ -370,7 +369,7 @@ class RecipeDetailSheet extends StatelessWidget {
             label: 'Watch recipe video',
             button: true,
             child: InkWell(
-            onTap: () => _launchUrl(videoUrl),
+            onTap: () => safeLaunchUrl(videoUrl),
             child: Row(
               children: [
                 AppIcon(name: 'playCircleOutline', size: 16, color: Theme.of(context).colorScheme.primary),
@@ -395,7 +394,7 @@ class RecipeDetailSheet extends StatelessWidget {
             label: 'View original recipe in browser',
             button: true,
             child: InkWell(
-            onTap: () => _launchUrl(sourceUrl),
+            onTap: () => safeLaunchUrl(sourceUrl),
             child: Row(
               children: [
                 AppIcon(name: 'openInNew', size: 16, color: Theme.of(context).colorScheme.primary),
@@ -494,18 +493,6 @@ class RecipeDetailSheet extends StatelessWidget {
       // Failed to parse equipment JSON; return empty list.
     }
     return [];
-  }
-}
-
-Future<void> _launchUrl(String url) async {
-  final uri = Uri.tryParse(url);
-  if (uri == null) return;
-  try {
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  } catch (_) {
-    // URL launch failed; no-op to avoid crashing the sheet.
   }
 }
 
