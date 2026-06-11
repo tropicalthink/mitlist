@@ -336,7 +336,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   };
 
   Future<void> _showCreateSheet() async {
-    Haptics.light();
+    unawaited(Haptics.light());
     final created = await CreateListSheet.show(
       context,
       initialGroupId: widget.groupId,
@@ -768,7 +768,7 @@ class _ListCard extends ConsumerWidget {
   }
 
   Future<void> _showActions(BuildContext context, WidgetRef ref) async {
-    Haptics.medium();
+    unawaited(Haptics.medium());
     final action = await showAppDialog<String>(
       context: context,
       title: list.name,

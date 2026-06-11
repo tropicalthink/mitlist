@@ -52,10 +52,10 @@ class FakeFinanceService implements FinanceService {
   final List<String> deleteCalls = [];
 
   /// When non-null, the next [createExpense] call will throw this exception.
-  Object? throwOnCreate;
+  Exception? throwOnCreate;
 
   /// When non-null, the next [updateExpense] call will throw this exception.
-  Object? throwOnUpdate;
+  Exception? throwOnUpdate;
 
   /// Server ID returned by [createExpense] (default: a fixed UUID).
   String serverExpenseId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
@@ -132,7 +132,7 @@ class FakeListService implements ListService {
   final List<UpdateItemCall> updateItemCalls = [];
   final List<String> deleteItemCalls = [];
 
-  Object? throwOnCreateItem;
+  Exception? throwOnCreateItem;
 
   /// Prefix used when constructing the server ID for [createItem].
   String serverItemIdPrefix = 'server-item-';

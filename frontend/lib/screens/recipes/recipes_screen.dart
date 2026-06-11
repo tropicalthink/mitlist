@@ -136,7 +136,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   }
 
   Future<void> _onAddRecipe() async {
-    Haptics.light();
+    unawaited(Haptics.light());
     final created = await context.pushNamed<bool>('recipeCreate');
     if (created == true) {
       await _loadKitchen();
@@ -144,7 +144,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   }
 
   Future<void> _openRecipeDetail(_Recipe recipe) async {
-    Haptics.light();
+    unawaited(Haptics.light());
     final service = await ref.read(recipeServiceProviderAsync.future);
     List<RecipeIngredient> ingredients = [];
     List<RecipeStep> steps = [];
@@ -414,7 +414,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                 final groupId = await _resolveGroupId();
                 if (!mounted) return;
                 if (groupId != null) {
-                  router.pushNamed('mealPlan');
+                  unawaited(router.pushNamed('mealPlan'));
                 }
               },
             ),
@@ -572,7 +572,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
               final groupId = await _resolveGroupId();
               if (!mounted || groupId == null) return;
               if (context.mounted) {
-                context.pushNamed('mealPlan');
+                unawaited(context.pushNamed('mealPlan'));
               }
             },
             child: Padding(

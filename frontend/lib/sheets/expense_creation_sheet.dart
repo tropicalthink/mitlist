@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -58,7 +60,7 @@ class ExpenseCreationSheet extends ConsumerStatefulWidget {
         dirtyNotifier: dirty,
       ),
     );
-    future.whenComplete(dirty.dispose);
+    unawaited(future.whenComplete(dirty.dispose));
     return future;
   }
 
@@ -247,7 +249,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
     );
     if (!summary.isValid) {
       // The live split summary already shows the reason in red; just block.
-      Haptics.medium();
+      unawaited(Haptics.medium());
       return;
     }
 
@@ -325,7 +327,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Expense added')),
       );
-      Haptics.success();
+      unawaited(Haptics.success());
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
