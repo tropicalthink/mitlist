@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -217,7 +219,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
   Future<void> _generateShoppingList() async {
     if (_isMutating) return;
     _isMutating = true;
-    Haptics.light();
+    unawaited(Haptics.light());
     try {
       final svc = await ref.read(mealPlanServiceProviderAsync.future);
       final from = _formatDate(_weekStart);
@@ -240,7 +242,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
           ),
         );
         if (listId != null) {
-          context.pushNamed('listDetail', pathParameters: {'listId': listId});
+          unawaited(context.pushNamed('listDetail', pathParameters: {'listId': listId}));
         }
       }
     } catch (e) {

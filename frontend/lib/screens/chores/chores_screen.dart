@@ -197,7 +197,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   Future<void> _onRefresh() => _loadChores();
 
   Future<void> _addChore() async {
-    Haptics.light();
+    unawaited(Haptics.light());
     final created = await ChoreCreationSheet.show(context);
     if (created == true) {
       await _loadChores();
@@ -205,7 +205,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   }
 
   Future<void> _openLoadSheet() async {
-    Haptics.light();
+    unawaited(Haptics.light());
     try {
       final groupService = await ref.read(groupServiceProviderAsync.future);
       final groups = await groupService.listGroups();
@@ -249,7 +249,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       // Keep the sheet available when an older API does not expose details yet.
     }
     if (!mounted) return;
-    Haptics.light();
+    unawaited(Haptics.light());
     await ChoreDetailSheet.show(
       context,
       choreId: id,
@@ -363,7 +363,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       if (chore.completed) {
         return;
       }
-      Haptics.light();
+      unawaited(Haptics.light());
       final repo = await ref.read(choreRepositoryProvider.future);
       await repo.completeOfflineFirst(id);
       await _loadChores();
