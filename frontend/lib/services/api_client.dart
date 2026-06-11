@@ -5,16 +5,20 @@ import 'package:logger/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/api_config.dart';
 import '../providers/auth_provider.dart';
+import 'token_store.dart';
 
 const _retryKey = 'has_retried';
 
 class AuthInterceptor extends Interceptor {
   final Logger _logger = Logger();
+  final TokenStore _tokenStore;
+
+  AuthInterceptor([TokenStore? tokenStore])
+      : _tokenStore = tokenStore ?? SecureTokenStore();
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString(ApiConfig.accessTokenKey);
+    final token = await _tokenStore.getAccessToken();
 
     if (token != null) {
       options.headers[ApiConfig.authorizationHeader] =
@@ -43,16 +47,18 @@ class TokenRefreshInterceptor extends Interceptor {
   final Dio dio;
   final Logger _logger = Logger();
   final Ref? _ref;
+  final TokenStore _tokenStore;
 
-  TokenRefreshInterceptor(this.dio, [this._ref]);
+  TokenRefreshInterceptor(this.dio, [this._ref, TokenStore? tokenStore])
+      : _tokenStore = tokenStore ?? SecureTokenStore();
 
   static Future<TokenPairResult?>? _refreshInFlight;
 
-  Future<TokenPairResult?> _refreshTokensOnce(Dio dio, SharedPreferences prefs) async {
+  Future<TokenPairResult?> _refreshTokensOnce(Dio dio) async {
     if (_refreshInFlight != null) {
       return await _refreshInFlight!;
     }
-    final refreshToken = prefs.getString(ApiConfig.refreshTokenKey);
+    final refreshToken = await _tokenStore.getRefreshToken();
     if (refreshToken == null) {
       return null;
     }
@@ -106,16 +112,17 @@ class TokenRefreshInterceptor extends Interceptor {
       return;
     }
 
-    final prefs = await SharedPreferences.getInstance();
-    final tokenPair = await _refreshTokensOnce(dio, prefs);
+    final tokenPair = await _refreshTokensOnce(dio);
     if (tokenPair == null) {
-      await _onRefreshFailure(prefs);
+      await _onRefreshFailure();
       handler.next(err);
       return;
     }
 
-    await prefs.setString(ApiConfig.accessTokenKey, tokenPair.accessToken);
-    await prefs.setString(ApiConfig.refreshTokenKey, tokenPair.refreshToken);
+    await _tokenStore.save(
+      accessToken: tokenPair.accessToken,
+      refreshToken: tokenPair.refreshToken,
+    );
 
     final options = err.requestOptions;
     options.headers[ApiConfig.authorizationHeader] =
@@ -130,13 +137,13 @@ class TokenRefreshInterceptor extends Interceptor {
       _logger.e('Retry failed: $retryErr');
     }
 
-    await _onRefreshFailure(prefs);
+    await _onRefreshFailure();
     handler.next(err);
   }
 
-  Future<void> _onRefreshFailure(SharedPreferences prefs) async {
-    await prefs.remove(ApiConfig.accessTokenKey);
-    await prefs.remove(ApiConfig.refreshTokenKey);
+  Future<void> _onRefreshFailure() async {
+    await _tokenStore.clear();
+    final prefs = await SharedPreferences.getInstance();
     await prefs.remove(ApiConfig.userDataKey);
     _ref?.read(authStateProvider.notifier).state = false;
   }
@@ -149,7 +156,8 @@ class TokenPairResult {
 }
 
 /// Creates a configured Dio instance for API requests.
-Dio createApiClient([Ref? ref]) {
+Dio createApiClient([Ref? ref, TokenStore? tokenStore]) {
+  final store = tokenStore ?? SecureTokenStore();
   final dio = Dio(
     BaseOptions(
       baseUrl: '${ApiConfig.baseUrl}${ApiConfig.apiPrefix}',
@@ -163,8 +171,8 @@ Dio createApiClient([Ref? ref]) {
     ),
   );
 
-  dio.interceptors.add(TokenRefreshInterceptor(dio, ref));
-  dio.interceptors.add(AuthInterceptor());
+  dio.interceptors.add(TokenRefreshInterceptor(dio, ref, store));
+  dio.interceptors.add(AuthInterceptor(store));
 
   if (kDebugMode) {
     final logger = Logger();
