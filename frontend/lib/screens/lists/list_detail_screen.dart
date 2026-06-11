@@ -266,7 +266,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                 maxScale: 4,
                 child: Semantics(
                   label: 'List image',
-                  child: Image.network(url, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Center(
+                  child: Image.network(url, fit: BoxFit.contain, cacheWidth: (MediaQuery.sizeOf(context).width * MediaQuery.devicePixelRatioOf(context) * 1.5).round(), errorBuilder: (_, __, ___) => Center(
                     child: AppIcon(name: 'brokenImage', color: Theme.of(context).colorScheme.onSurface, size: 48),
                   )),
               ),
@@ -996,14 +996,23 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     final done = _doneItemsSorted();
     if (open.isEmpty && done.isEmpty) return _buildEmpty();
 
+    // Build a flat row model for lazy ListView.builder:
+    //   [open items..., if done non-empty: _DoneHeaderMarker, if expanded: done items...]
+    final List<Object> rows = [
+      ...open,
+      if (done.isNotEmpty) const _DoneHeaderMarker(),
+      if (done.isNotEmpty && _doneSectionExpanded) ...done,
+    ];
+
     return CheckboxTheme(
       data: _itemCheckboxThemeData(),
-      child: ListView(
+      child: ListView.builder(
         padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
-        children: [
-          ...open.map((item) => _buildDismissibleItemRow(item, textTheme)),
-          if (done.isNotEmpty) ...[
-            Material(
+        itemCount: rows.length,
+        itemBuilder: (context, index) {
+          final row = rows[index];
+          if (row is _DoneHeaderMarker) {
+            return Material(
               color: Theme.of(context).brightness == Brightness.dark
                   ? Theme.of(context).colorScheme.surfaceContainerHighest
                   : Theme.of(context).colorScheme.surfaceContainerLow,
@@ -1036,11 +1045,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   ),
                 ),
               ),
-            ),
-            if (_doneSectionExpanded)
-              ...done.map((item) => _buildDismissibleItemRow(item, textTheme)),
-          ],
-        ],
+            );
+          }
+          return _buildDismissibleItemRow(row as ListItem, textTheme);
+        },
       ),
     );
   }
@@ -1115,7 +1123,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                       height: 28,
                       child: Semantics(
                         label: 'Item photo',
-                        child: Image.network(thumbUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => AppIcon(name: 'imageNotSupportedOutline', size: 16)),
+                        child: Image.network(thumbUrl, fit: BoxFit.cover, cacheWidth: (28 * MediaQuery.devicePixelRatioOf(context) * 1.5).round(), errorBuilder: (_, __, ___) => AppIcon(name: 'imageNotSupportedOutline', size: 16)),
                       ),
                     ),
                   ),
@@ -1430,4 +1438,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       ),
     );
   }
+}
+
+/// Sentinel marker used in the flat row model of [_ListDetailScreenState]
+/// to represent the done-section header in [ListView.builder].
+class _DoneHeaderMarker {
+  const _DoneHeaderMarker();
 }
