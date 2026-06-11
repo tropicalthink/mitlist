@@ -994,6 +994,60 @@ void main() {
     expect(find.text('Pinwall'), findsOneWidget);
     expect(find.text('Activity'), findsOneWidget);
   });
+
+  test('logout wipes expenses and lists tables from local database', () async {
+    final db = AppDatabase(
+      drift.DatabaseConnection(
+        NativeDatabase.memory(),
+        closeStreamsSynchronously: true,
+      ),
+    );
+    addTearDown(() => db.close());
+
+    // Seed one expense row.
+    await db.into(db.expensesTable).insert(ExpensesTableCompanion.insert(
+          id: 'exp-1',
+          groupId: groupId,
+          payerId: userId,
+          amount: 1000,
+          description: 'Coffee',
+          category: 'Food',
+          currency: 'USD',
+          notes: '',
+          date: DateTime.utc(2026, 1, 1),
+          createdAt: DateTime.utc(2026, 1, 1),
+        ));
+
+    // Seed one list row.
+    await db.into(db.listsTable).insert(ListsTableCompanion.insert(
+          id: 'list-1',
+          groupId: groupId,
+          name: 'Shopping',
+          type: 'grocery',
+          createdAt: DateTime.utc(2026, 1, 1),
+          updatedAt: DateTime.utc(2026, 1, 1),
+        ));
+
+    // Confirm rows exist before logout.
+    expect(await db.select(db.expensesTable).get(), hasLength(1));
+    expect(await db.select(db.listsTable).get(), hasLength(1));
+
+    // Create AuthService with the wipe callback (no Ref needed in unit tests).
+    final authService = await AuthService.createWithWipe(
+      wipeLocalData: db.clearAllUserData,
+    );
+
+    // Call logout — FCM/network calls will fail, but logout must complete.
+    try {
+      await authService.logout();
+    } catch (_) {
+      // Network errors are expected in unit tests; wipe still ran.
+    }
+
+    // Both tables must be empty after logout.
+    expect(await db.select(db.expensesTable).get(), isEmpty);
+    expect(await db.select(db.listsTable).get(), isEmpty);
+  });
 }
 
 Future<AppDatabase> _pumpScreen(
