@@ -1,0 +1,206 @@
+import 'package:flutter/material.dart';
+
+import '../../models/list_models.dart';
+import '../../theme/spacing.dart';
+import '../../theme/typography.dart';
+import '../animated_check_toggle.dart';
+import '../app_icon.dart';
+
+class ListItemRow extends StatelessWidget {
+  const ListItemRow({
+    super.key,
+    required this.item,
+    required this.onToggle,
+    this.photoUrl,
+    this.currencySymbol = '\$',
+    this.claimedLabel,
+    this.onPhotoTap,
+    this.onLongPress,
+    this.reorderIndex,
+  });
+
+  final ListItem item;
+  final ValueChanged<bool> onToggle;
+  final String? photoUrl;
+  final String currencySymbol;
+  final String? claimedLabel;
+  final VoidCallback? onPhotoTap;
+  final VoidCallback? onLongPress;
+  final int? reorderIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final row = Material(
+      color: colorScheme.surface,
+      child: InkWell(
+        onTap: () => onToggle(!item.checked),
+        onLongPress: onLongPress,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: colorScheme.outlineVariant,
+                width: 1,
+              ),
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: MitlistSpacing.md,
+            vertical: MitlistSpacing.sm,
+          ),
+          constraints: const BoxConstraints(minHeight: 56),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (reorderIndex != null) ...[
+                Semantics(
+                  label: 'Reorder',
+                  child: Tooltip(
+                    message: 'Reorder',
+                    child: ReorderableDragStartListener(
+                      index: reorderIndex!,
+                      child: SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: Center(
+                          child: Icon(
+                            Icons.drag_handle,
+                            size: 18,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              AnimatedCheckToggle(
+                value: item.checked,
+                onChanged: onToggle,
+                semanticLabelOn: 'Mark ${item.name} as unchecked',
+                semanticLabelOff: 'Mark ${item.name} as checked',
+              ),
+              const SizedBox(width: MitlistSpacing.sm),
+              if (photoUrl != null) ...[
+                GestureDetector(
+                  onTap: onPhotoTap,
+                  child: ClipRect(
+                    child: SizedBox(
+                      width: 28,
+                      height: 28,
+                      child: Semantics(
+                        label: 'Item photo',
+                        child: Image.network(
+                          photoUrl!,
+                          fit: BoxFit.cover,
+                          cacheWidth: (28 *
+                                  MediaQuery.devicePixelRatioOf(context) *
+                                  1.5)
+                              .round(),
+                          errorBuilder: (_, __, ___) => AppIcon(
+                            name: 'imageNotSupportedOutline',
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: MitlistSpacing.sm),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      item.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.bodyLarge?.copyWith(
+                        color: item.checked
+                            ? colorScheme.onSurfaceVariant
+                            : colorScheme.onSurface,
+                        decoration: item.checked
+                            ? TextDecoration.lineThrough
+                            : null,
+                        height: 1.25,
+                      ),
+                    ),
+                    if (item.note.isNotEmpty)
+                      Text(
+                        item.note,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.3,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (item.quantity > 1 || item.unit.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(left: MitlistSpacing.sm),
+                  child: Text(
+                    item.unit.isNotEmpty
+                        ? '${_formatQuantity(item.quantity)} ${item.unit}'
+                        : '${_formatQuantity(item.quantity)}×',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: MitlistTypography.monoBody(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              if (item.priceCents != null && item.priceCents! > 0)
+                Padding(
+                  padding: const EdgeInsets.only(left: MitlistSpacing.sm),
+                  child: Text(
+                    '$currencySymbol${(item.priceCents! / 100).toStringAsFixed(2)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: MitlistTypography.monoBody(
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ),
+              if (claimedLabel != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: MitlistSpacing.sm),
+                  child: Text(
+                    claimedLabel!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (onLongPress == null) return row;
+
+    return Semantics(
+      button: true,
+      hint: 'Long press for more options',
+      child: row,
+    );
+  }
+
+  String _formatQuantity(double value) {
+    if (value == value.roundToDouble()) return value.toInt().toString();
+    return value
+        .toStringAsFixed(2)
+        .replaceFirst(RegExp(r'0+$'), '')
+        .replaceFirst(RegExp(r'\.$'), '');
+  }
+}
