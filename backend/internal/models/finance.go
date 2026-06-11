@@ -73,6 +73,22 @@ type RecurringSplitInput struct {
 	Percentage int64     `json:"percentage"`
 }
 
+// BalanceAggregate is the raw per-user aggregate returned by the database for
+// the GetGroupBalanceAggregates query. It carries the four raw sums that the
+// in-memory calculateBalances helper previously assembled from three full
+// table scans. The mapping to BalanceEntry is:
+//
+//	Paid  = ExpensePaid  + SettledOut  (payer credits + settlement debits from)
+//	Owed  = SplitOwed   + SettledIn   (split debits  + settlement credits to)
+//	Total = Paid - Owed
+type BalanceAggregate struct {
+	UserID      uuid.UUID
+	ExpensePaid int64 // SUM(expenses.amount) WHERE payer_id = user_id
+	SplitOwed   int64 // SUM(splits.amount) — IsSettled is ignored
+	SettledOut  int64 // SUM(settlements.amount) WHERE from_user_id = user_id
+	SettledIn   int64 // SUM(settlements.amount) WHERE to_user_id = user_id
+}
+
 // RecurringExpense represents a repeating expense.
 type RecurringExpense struct {
 	ID          uuid.UUID             `json:"id"`
