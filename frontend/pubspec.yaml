@@ -60,6 +60,7 @@ dependencies:
   # from your Firebase project before building.
   firebase_core: ^3.13.1
   firebase_messaging: ^15.2.5
+  flutter_secure_storage: ^10.3.1
 
 dev_dependencies:
   flutter_test:
