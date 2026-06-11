@@ -79,18 +79,13 @@ void main() {
     // -------------------------------------------------------------------------
     // Case 2: temp-ID reconciliation — dependent update op
     //
-    // KNOWN BUG: drainOutboxOnce fetches the batch of ops into memory BEFORE
-    // processing them. _syncCreateItem calls rewriteOutboxPayloadIds to update
-    // the DB, but the subsequent _syncUpdateItem in the same loop uses the
-    // in-memory (stale) payload, which still contains the temp ID. As a result
-    // _remote.updateItem is called with the temp ID and the "updated" item is
-    // re-inserted with the temp ID, leaving 2 rows: [server-id, temp-id].
-    //
-    // This test pins CURRENT behavior. A fix should re-read the op from the DB
-    // (or re-fetch the batch payload) after each successful op.
+    // Fix: drainOutboxOnce now re-reads each op's payload from the DB before
+    // processing it, so _syncUpdateItem sees the server ID (not the temp ID)
+    // after _syncCreateItem called rewriteOutboxPayloadIds. Only one row should
+    // exist after the drain and it should carry the server ID.
     // -------------------------------------------------------------------------
     test(
-        'KNOWN BUG: dependent updateItem op uses stale in-memory payload — temp ID re-inserted',
+        'dependent updateItem op uses fresh DB payload — only server-ID row remains',
         () async {
       const listId = 'list-002';
       await _insertList(db, listId);
@@ -124,26 +119,24 @@ void main() {
         updates: {db.outboxOps},
       );
 
+      // Allow the create to succeed this time.
+      remote.throwOnCreateItem = null;
+
       await repo.drainOutboxOnce();
 
       // All ops deleted from outbox.
       expect(await db.outboxCount(), equals(0));
 
-      // KNOWN BUG: because _syncUpdateItem uses the stale in-memory payload
-      // (tempId instead of server ID), the update inserts the temp-ID row back.
-      // Current behavior: 2 rows exist (server-id + temp-id).
+      // Fixed: _syncUpdateItem re-reads its payload from the DB and sees the
+      // server ID. Exactly one row exists with the server ID; no temp row.
       final itemsAfter = await db.getItemsByListOnce(listId);
       final ids = itemsAfter.map((i) => i.id).toSet();
       expect(ids.contains('${remote.serverItemIdPrefix}1'), isTrue,
           reason: 'server row should exist');
-      // KNOWN BUG: temp row is re-inserted by _syncUpdateItem (stale payload).
-      expect(ids.contains(tempId), isTrue,
-          reason:
-              // ignore: lines_longer_than_80_chars
-              'KNOWN BUG: temp row is re-inserted because drainOutboxOnce '
-              'uses stale in-memory payloads after rewriteOutboxPayloadIds');
-      expect(itemsAfter.length, equals(2),
-          reason: 'KNOWN BUG: should be 1 after fix; currently 2');
+      expect(ids.contains(tempId), isFalse,
+          reason: 'temp row must not be re-inserted after fix');
+      expect(itemsAfter.length, equals(1),
+          reason: 'exactly one row (server ID) should remain after drain');
     });
 
     // -------------------------------------------------------------------------

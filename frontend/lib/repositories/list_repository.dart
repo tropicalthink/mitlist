@@ -243,9 +243,18 @@ class ListRepository {
     if (batch.isEmpty) return;
 
     for (final op in batch) {
+      // Re-read the current payload from the DB so we see any ID rewrites that
+      // a preceding _syncCreateItem may have performed in this same drain pass.
+      final freshOp = await _db.getOutboxOpById(op.id);
+      if (freshOp == null) {
+        // Op was already deleted (e.g. by a concurrent drain); skip it.
+        continue;
+      }
+
       Map<String, dynamic> payload;
       try {
-        payload = (jsonDecode(op.payloadJson) as Map).cast<String, dynamic>();
+        payload =
+            (jsonDecode(freshOp.payloadJson) as Map).cast<String, dynamic>();
       } catch (_) {
         await _db.deleteOutboxOp(op.id);
         continue;
@@ -292,8 +301,13 @@ class ListRepository {
       ),
     );
 
-    await _db.replaceTempItemId(tempId: tempId, server: created);
-    await _db.rewriteOutboxPayloadIds(oldId: tempId, newId: created.id);
+    // Atomically replace the temp row and rewrite all queued payloads that
+    // still reference the temp ID, so subsequent ops in the same drain pass
+    // see the server ID when they re-read their payload from the DB.
+    await _db.transaction(() async {
+      await _db.replaceTempItemId(tempId: tempId, server: created);
+      await _db.rewriteOutboxPayloadIds(oldId: tempId, newId: created.id);
+    });
     await _db.deleteOutboxOp(opId);
   }
 
@@ -491,18 +505,18 @@ class ListRepository {
         purchasedAt: DateTime.now(),
       ));
 
-      // Increment co-occurrence with every other checked item in the same list.
+      // Increment co-occurrence with every other checked item in the same list
+      // in a single batched transaction.
       final peers = await _db.getCheckedItemsWithCanonical(listId);
-      for (final peer in peers) {
-        if (peer.id == itemId) continue;
-        final peerCanonicalId = peer.canonicalItemId;
-        if (peerCanonicalId == null) continue;
-        await _db.incrementCooccurrence(
-          groupId: groupId,
-          itemAId: canonicalId,
-          itemBId: peerCanonicalId,
-        );
-      }
+      final peerCanonicalIds = peers
+          .where((p) => p.id != itemId && p.canonicalItemId != null)
+          .map((p) => p.canonicalItemId!)
+          .toList();
+      await _db.incrementCooccurrences(
+        groupId: groupId,
+        canonicalItemId: canonicalId,
+        peerCanonicalIds: peerCanonicalIds,
+      );
     } catch (_) {
       // Best-effort; never throw from a background signal.
     }
