@@ -78,6 +78,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   List<Product> _productSuggestions = [];
   bool _showProductSuggestions = false;
   final Map<String, List<ListItemPhoto>> _photosByItemId = {};
+  final Set<String> _photoLoadAttempted = {};
   bool _isSaving = false;
   String _groupCurrency = 'USD';
   String? _userId;
@@ -121,6 +122,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     if (oldWidget.listId != widget.listId) {
       _service = null;
       _items.clear();
+      _photosByItemId.clear();
+      _photoLoadAttempted.clear();
       _searchQuery = '';
       _showSearch = false;
       _searchController.clear();
@@ -167,6 +170,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
             ..clear()
             ..addAll(items);
         });
+        unawaited(_loadPhotosForItems(items));
       });
 
       final cached = await repo.getItemsByListOnce(widget.listId);
@@ -202,6 +206,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         final group = await groupService.getGroup(list.groupId);
         if (mounted) setState(() => _groupCurrency = group.currency);
       } catch (_) {}
+      unawaited(_loadPhotosForItems(_items));
       if (mounted) {
         FocusScope.of(context).requestFocus(_composerFocusNode);
       }
@@ -212,6 +217,33 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         _errorMessage = 'Couldn\u2019t load list.';
       });
     }
+  }
+
+  Future<void> _loadPhotosForItems(List<ListItem> items) async {
+    final groupId = _groupId;
+    final service = _service;
+    if (groupId == null || service == null) return;
+
+    final toLoad = items
+        .where((item) => !_photoLoadAttempted.contains(item.id))
+        .toList();
+    if (toLoad.isEmpty) return;
+    for (final item in toLoad) {
+      _photoLoadAttempted.add(item.id);
+    }
+
+    await Future.wait(
+      toLoad.map((item) async {
+        try {
+          final photos = await service.listItemPhotos(
+            groupId: groupId,
+            itemId: item.id,
+          );
+          if (!mounted || photos.isEmpty) return;
+          setState(() => _photosByItemId[item.id] = photos);
+        } catch (_) {}
+      }),
+    );
   }
 
   Future<void> _addItemPhoto(ListItem item) async {
@@ -356,26 +388,57 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   Future<void> _completeAll() async {
     if (_isSaving) return;
     _isSaving = true;
-    final service = _service;
-    if (service == null) { _isSaving = false; return; }
+    try {
+      final service = _service;
+      if (service == null) return;
 
-    for (final item in _items.where((i) => !i.checked)) {
-      try {
-        final repo = await ref.read(listRepositoryProvider.future);
-        await repo.updateItemOfflineFirst(
-          widget.listId,
-          item.id,
-          UpdateListItemRequest(checked: true),
-        );
-        if (!mounted) return;
-        setState(() {
-          _dirty = true;
-        });
-      } catch (_) {
-        break;
+      for (final item in _items.where((i) => !i.checked)) {
+        try {
+          final repo = await ref.read(listRepositoryProvider.future);
+          await repo.updateItemOfflineFirst(
+            widget.listId,
+            item.id,
+            UpdateListItemRequest(checked: true),
+          );
+          if (!mounted) return;
+          setState(() {
+            _dirty = true;
+          });
+        } catch (_) {
+          break;
+        }
       }
+    } finally {
+      _isSaving = false;
     }
-    _isSaving = false;
+  }
+
+  Future<void> _uncheckAll() async {
+    if (_isSaving) return;
+    _isSaving = true;
+    try {
+      final service = _service;
+      if (service == null) return;
+
+      for (final item in _items.where((i) => i.checked)) {
+        try {
+          final repo = await ref.read(listRepositoryProvider.future);
+          await repo.updateItemOfflineFirst(
+            widget.listId,
+            item.id,
+            UpdateListItemRequest(checked: false),
+          );
+          if (!mounted) return;
+          setState(() {
+            _dirty = true;
+          });
+        } catch (_) {
+          break;
+        }
+      }
+    } finally {
+      _isSaving = false;
+    }
   }
 
   Future<void> _addItem() async {
@@ -552,15 +615,23 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   if (service == null) return;
                   try {
                     final repo = await ref.read(listRepositoryProvider.future);
-                    await repo.createItemOfflineFirst(
+                    final restored = await repo.createItemOfflineFirst(
                       widget.listId,
                       CreateListItemRequest(
                         name: item.name,
                         quantity: item.quantity,
                         unit: item.unit,
                         note: item.note,
+                        priceCents: item.priceCents,
                       ),
                     );
+                    if (item.checked) {
+                      await repo.updateItemOfflineFirst(
+                        widget.listId,
+                        restored.id,
+                        const UpdateListItemRequest(checked: true),
+                      );
+                    }
                     if (!mounted) return;
                     setState(() {
                       _dirty = true;
@@ -643,8 +714,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       case 'complete_all':
         _completeAll();
         break;
-      case 'clear_checked':
-        _clearItems(onlyChecked: true);
+      case 'uncheck_all':
+        _uncheckAll();
         break;
       case 'clear_all':
         _clearItems(onlyChecked: false);
@@ -814,9 +885,73 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     return list;
   }
 
+  void _onReorderOpen(int oldIndex, int newIndex) {
+    if (newIndex > oldIndex) newIndex--;
+    Haptics.light();
+
+    final open = _openItemsSorted();
+    final done = _doneItemsSorted();
+    final reorderedOpen = List<ListItem>.from(open);
+    final moved = reorderedOpen.removeAt(oldIndex);
+    reorderedOpen.insert(newIndex, moved);
+
+    final itemIdsInOrder = [
+      ...reorderedOpen.map((i) => i.id),
+      ...done.map((i) => i.id),
+    ];
+
+    setState(() {
+      var pos = 0;
+      for (final id in itemIdsInOrder) {
+        final idx = _items.indexWhere((i) => i.id == id);
+        if (idx < 0) continue;
+        final item = _items[idx];
+        _items[idx] = ListItem(
+          id: item.id,
+          listId: item.listId,
+          name: item.name,
+          quantity: item.quantity,
+          unit: item.unit,
+          note: item.note,
+          checked: item.checked,
+          position: pos++,
+          priceCents: item.priceCents,
+          claimedBy: item.claimedBy,
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt,
+        );
+      }
+      _dirty = true;
+    });
+
+    unawaited(_persistReorder(itemIdsInOrder));
+  }
+
+  Future<void> _persistReorder(List<String> itemIdsInOrder) async {
+    try {
+      final repo = await ref.read(listRepositoryProvider.future);
+      await repo.reorderItemsOfflineFirst(widget.listId, itemIdsInOrder);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Couldn\u2019t reorder items. Please try again.'),
+        ),
+      );
+    }
+  }
+
   Future<void> _launchScan({ImageSource? source}) async {
     final groupId = _groupId;
-    final userId = _userId;
+    var userId = _userId;
+    if (userId == null) {
+      try {
+        final authService = await ref.read(authServiceProviderAsync.future);
+        final me = await authService.getMe();
+        userId = me.id;
+        if (mounted) setState(() => _userId = userId);
+      } catch (_) {}
+    }
     if (groupId == null || userId == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -824,6 +959,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       );
       return;
     }
+    if (!mounted) return;
     final addedCount = await launchListScan(
       context,
       ref,
@@ -935,8 +1071,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                       child: Text('Cost summary'),
                     ),
                     const PopupMenuItem(
-                      value: 'clear_checked',
-                      child: Text('Clear checked'),
+                      value: 'uncheck_all',
+                      child: Text('Uncheck all'),
                     ),
                     const PopupMenuItem(
                       value: 'clear_all',
@@ -1012,57 +1148,64 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     final done = _doneItemsSorted();
     if (open.isEmpty && done.isEmpty) return _buildEmpty();
 
-    // Build a flat row model for lazy ListView.builder:
-    //   [open items..., if done non-empty: _DoneHeaderMarker, if expanded: done items...]
-    final List<Object> rows = [
-      ...open,
-      if (done.isNotEmpty) const _DoneHeaderMarker(),
-      if (done.isNotEmpty && _doneSectionExpanded) ...done,
-    ];
+    return CustomScrollView(
+      slivers: [
+        if (open.isNotEmpty)
+          SliverReorderableList(
+            itemCount: open.length,
+            onReorder: _onReorderOpen,
+            itemBuilder: (context, index) {
+              final item = open[index];
+              return _buildDismissibleItemRow(item, reorderIndex: index);
+            },
+          ),
+        if (done.isNotEmpty)
+          SliverToBoxAdapter(child: _buildDoneHeader(done.length, textTheme)),
+        if (done.isNotEmpty && _doneSectionExpanded)
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) => _buildDismissibleItemRow(done[index]),
+              childCount: done.length,
+            ),
+          ),
+        const SliverToBoxAdapter(
+          child: SizedBox(height: MitlistSpacing.md),
+        ),
+      ],
+    );
+  }
 
-    return ListView.builder(
-      padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
-      itemCount: rows.length,
-      itemBuilder: (context, index) {
-          final row = rows[index];
-          if (row is _DoneHeaderMarker) {
-            return Material(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? Theme.of(context).colorScheme.surfaceContainerHighest
-                  : Theme.of(context).colorScheme.surfaceContainerLow,
-              child: InkWell(
-                onTap: () => setState(
-                  () => _doneSectionExpanded = !_doneSectionExpanded,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: MitlistSpacing.md,
-                    vertical: MitlistSpacing.sm,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Checked off (${done.length})',
-                          style: textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      AppIcon(
-                        name: _doneSectionExpanded
-                            ? 'chevronUp'
-                            : 'chevronDown',
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ],
+  Widget _buildDoneHeader(int doneCount, TextTheme textTheme) {
+    return Material(
+      color: Theme.of(context).brightness == Brightness.dark
+          ? Theme.of(context).colorScheme.surfaceContainerHighest
+          : Theme.of(context).colorScheme.surfaceContainerLow,
+      child: InkWell(
+        onTap: () =>
+            setState(() => _doneSectionExpanded = !_doneSectionExpanded),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: MitlistSpacing.md,
+            vertical: MitlistSpacing.sm,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Checked off ($doneCount)',
+                  style: textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
-            );
-          }
-          return _buildDismissibleItemRow(row as ListItem);
-        },
+              AppIcon(
+                name: _doneSectionExpanded ? 'chevronUp' : 'chevronDown',
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -1076,7 +1219,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     );
   }
 
-  Widget _buildDismissibleItemRow(ListItem item) {
+  Widget _buildDismissibleItemRow(ListItem item, {int? reorderIndex}) {
     return Dismissible(
       key: ValueKey(item.id),
       direction: DismissDirection.endToStart,
@@ -1095,11 +1238,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         Haptics.medium();
         _deleteItem(item);
       },
-      child: _buildItemRow(item),
+      child: _buildItemRow(item, reorderIndex: reorderIndex),
     );
   }
 
-  Widget _buildItemRow(ListItem item) {
+  Widget _buildItemRow(ListItem item, {int? reorderIndex}) {
     final photos = _photosByItemId[item.id];
     final thumbUrl =
         (photos != null && photos.isNotEmpty) ? photos.first.url : null;
@@ -1113,6 +1256,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       onPhotoTap:
           thumbUrl != null ? () => _openPhotoViewer(thumbUrl) : null,
       onLongPress: () => _handleItemAction(item),
+      reorderIndex: reorderIndex,
     );
   }
 
@@ -1256,10 +1400,4 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       showProductSuggestions: _showProductSuggestions,
     );
   }
-}
-
-/// Sentinel marker used in the flat row model of [_ListDetailScreenState]
-/// to represent the done-section header in [ListView.builder].
-class _DoneHeaderMarker {
-  const _DoneHeaderMarker();
 }
