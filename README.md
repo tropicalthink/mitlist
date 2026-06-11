@@ -131,7 +131,7 @@ See [backend/README.md](backend/README.md) for detailed configuration.
 | iOS | [App Store](#) |
 | Android | [Google Play](#) |
 | Web | [mitlist.app](#) |
-| Self-host | `docker compose up -d` |
+| Self-host | `docker compose --profile prod up -d` |
 
 ---
 
@@ -146,9 +146,9 @@ flutter pub get
 flutter run
 
 # Backend
+docker compose up -d    # postgres + redis only (no profile)
 cd backend
-docker compose up -d    # postgres + redis
-cp .env.example .env
+cp .env.example .env    # see comments inside for secret generation
 go run ./cmd/migrate up
 go run ./cmd/api
 ```
