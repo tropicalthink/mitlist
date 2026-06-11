@@ -18,6 +18,18 @@ flutter run --release          # Release build
 
 ## Testing
 
+### Prerequisites (Linux)
+
+The test suite uses `NativeDatabase.memory()` (Drift/SQLite). On Linux the
+dynamic loader must be able to find `libsqlite3.so`. Install the dev package
+if it is not already present:
+
+```bash
+sudo apt install libsqlite3-dev   # Debian / Ubuntu
+```
+
+### Running tests
+
 ```bash
 dart analyze lib/              # Static analysis
 flutter test                   # Run all tests

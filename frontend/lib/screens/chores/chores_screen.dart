@@ -66,7 +66,12 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       MitlistSpacing.sm +
       MitlistSpacing.space8 +
       MitlistSpacing.md +
-      MitlistSpacing.space1;
+      MitlistSpacing.space1 +
+      // Extra headroom: AppCard border (2 px × 2 sides) + AppChip height
+      // correction (space11=44 vs the space8=32 used above) and text-scale
+      // buffer so the header does not overflow at textScaleFactor ≥ 1.0.
+      MitlistSpacing.md +
+      MitlistSpacing.sm;
 
   static const double _sectionHeaderHeight =
       MitlistSpacing.sm + _labelMediumLineHeight + MitlistSpacing.sm;
