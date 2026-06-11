@@ -176,18 +176,13 @@ void main() {
     });
 
     // -------------------------------------------------------------------------
-    // Case 3: _isDraining guard — pins current behavior
+    // Case 3: _isDraining guard — two concurrent drain() calls collapse to one
     //
-    // KNOWN BUG: _isDraining is set only AFTER `isOnline()` returns, so two
-    // synchronously-launched drain() calls both pass the initial `if (_isDraining)`
-    // guard before either sets the flag. As a result two concurrent drain() calls
-    // do NOT collapse; both run through the repo drains.
-    //
-    // This test pins CURRENT behavior. The guard would work correctly only if
-    // _isDraining were set to true before the first await.
+    // Fix: _isDraining is set to true BEFORE the first await (isOnline()), so
+    // the second synchronous call hits the guard and returns immediately.
     // -------------------------------------------------------------------------
     test(
-        'KNOWN BUG: two concurrent drain() calls both proceed (_isDraining set after await)',
+        'two concurrent drain() calls collapse to one (_isDraining set before await)',
         () async {
       connectivity = FakeConnectivityService(initiallyOnline: true);
       final (:coordinator, :spies, :db) = _build(connectivity);
@@ -198,13 +193,13 @@ void main() {
       final f2 = coordinator.drain();
       await Future.wait([f1, f2]);
 
-      // KNOWN BUG: current code sets _isDraining only after the first await
-      // (isOnline()), so both calls proceed and each repo is drained twice.
-      expect(spies.list.drainCalls, equals(2),
+      // Fixed: _isDraining is set before isOnline(), so the second call is
+      // blocked and each repo is drained exactly once.
+      expect(spies.list.drainCalls, equals(1),
           reason:
-              'KNOWN BUG: _isDraining is set after isOnline() so both calls '
-              'proceed; should be 1 after fix');
-      expect(spies.finance.drainCalls, equals(2));
+              '_isDraining is set before isOnline() so the second call '
+              'is blocked; each repo should drain exactly once');
+      expect(spies.finance.drainCalls, equals(1));
     });
 
     // -------------------------------------------------------------------------

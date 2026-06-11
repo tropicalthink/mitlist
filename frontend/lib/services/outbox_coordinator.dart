@@ -26,6 +26,7 @@ class OutboxCoordinator {
 
   Timer? _retryTimer;
   bool _isDraining = false;
+  StreamSubscription<bool>? _connectivitySub;
 
   OutboxCoordinator({
     required AppDatabase db,
@@ -44,8 +45,11 @@ class OutboxCoordinator {
         _pinwallRepo = pinwallRepo;
 
   /// Start listening to connectivity changes and drain when back online.
+  ///
+  /// Idempotent: cancels any existing subscription before re-subscribing.
   void start() {
-    _connectivity.onStatusChange.listen((online) {
+    _connectivitySub?.cancel();
+    _connectivitySub = _connectivity.onStatusChange.listen((online) {
       if (online) {
         _logger.i('Connectivity restored; draining outbox');
         drain();
@@ -62,13 +66,15 @@ class OutboxCoordinator {
   /// Safe to call multiple times; internally guarded by [_isDraining].
   Future<void> drain() async {
     if (_isDraining) return;
-    final online = await _connectivity.isOnline();
-    if (!online) {
-      _logger.i('Offline; skipping outbox drain');
-      return;
-    }
+    // Set the flag BEFORE the first await so concurrent synchronous callers
+    // are blocked even while isOnline() is still resolving.
     _isDraining = true;
     try {
+      final online = await _connectivity.isOnline();
+      if (!online) {
+        _logger.i('Offline; skipping outbox drain');
+        return;
+      }
       // Drain in dependency order: lists first (other entities may reference them)
       await _listRepo.drainOutboxOnce();
       await _recipeRepo.drainOutboxOnce();
@@ -95,6 +101,8 @@ class OutboxCoordinator {
   }
 
   void dispose() {
+    _connectivitySub?.cancel();
+    _connectivitySub = null;
     _retryTimer?.cancel();
   }
 }
