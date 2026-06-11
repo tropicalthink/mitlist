@@ -36,7 +36,7 @@ func TestListService_CreateList(t *testing.T) {
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := NewListService(listRepo, groupRepo)
 
-		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 		listRepo.On("CreateList", ctx, mock.AnythingOfType("*models.List")).Return(nil)
 
 		list := &models.List{GroupID: groupID, Name: "Shopping"}
@@ -56,7 +56,7 @@ func TestListService_CreateList(t *testing.T) {
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := NewListService(nil, groupRepo)
 
-		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 
 		err := svc.CreateList(ctx, user, &models.List{GroupID: groupID, Name: ""})
 		require.Error(t, err)
@@ -76,7 +76,7 @@ func TestListService_GetList(t *testing.T) {
 		svc := NewListService(listRepo, groupRepo)
 
 		listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
-		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 
 		l, err := svc.GetList(ctx, user, listID)
 		require.NoError(t, err)
@@ -106,7 +106,7 @@ func TestListService_ListLists(t *testing.T) {
 		svc := NewListService(listRepo, groupRepo)
 
 		lid := uuid.New()
-		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 		listRepo.On("ListListsByGroup", ctx, groupID, 10, 0).Return([]models.List{{ID: lid}}, nil)
 		listRepo.On("ListItemPreviewLinesByListIDs", ctx, []uuid.UUID{lid}, listHubPreviewLines).
 			Return(map[uuid.UUID][]string{lid: {"milk", "eggs"}}, nil)
@@ -130,7 +130,7 @@ func TestListService_UpdateList(t *testing.T) {
 		svc := NewListService(listRepo, groupRepo)
 
 		listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID, Name: "Old"}, nil)
-		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 		listRepo.On("UpdateList", ctx, mock.AnythingOfType("*models.List")).Return(nil)
 
 		l, err := svc.UpdateList(ctx, user, listID, "New", "shopping")
@@ -151,7 +151,7 @@ func TestListService_DeleteList(t *testing.T) {
 		svc := NewListService(listRepo, groupRepo)
 
 		listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
-		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 		listRepo.On("HardDeleteList", ctx, listID).Return(nil)
 
 		err := svc.DeleteList(ctx, user, listID)
@@ -171,7 +171,7 @@ func TestListService_CreateItem(t *testing.T) {
 		svc := NewListService(listRepo, groupRepo)
 
 		listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
-		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 		listRepo.On("CreateItem", ctx, mock.AnythingOfType("*models.ListItem")).Return(nil)
 
 		item := &models.ListItem{ListID: listID, Name: "Milk"}
@@ -185,7 +185,7 @@ func TestListService_CreateItem(t *testing.T) {
 		svc := NewListService(listRepo, groupRepo)
 
 		listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
-		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 
 		item := &models.ListItem{ListID: listID, Name: ""}
 		err := svc.CreateItem(ctx, user, item)
@@ -208,7 +208,7 @@ func TestListService_GetItem(t *testing.T) {
 
 		listRepo.On("GetItemByID", ctx, itemID).Return(&models.ListItem{ID: itemID, ListID: listID}, nil)
 		listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
-		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 
 		item, err := svc.GetItem(ctx, user, itemID)
 		require.NoError(t, err)
@@ -230,7 +230,7 @@ func TestListService_UpdateItem(t *testing.T) {
 
 		listRepo.On("GetItemByID", ctx, itemID).Return(&models.ListItem{ID: itemID, ListID: listID}, nil)
 		listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
-		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 		listRepo.On("UpdateItem", ctx, mock.AnythingOfType("*models.ListItem")).Return(nil)
 
 		item := &models.ListItem{ID: itemID, Name: "Updated", Quantity: 1}
@@ -253,7 +253,7 @@ func TestListService_DeleteItem(t *testing.T) {
 
 		listRepo.On("GetItemByID", ctx, itemID).Return(&models.ListItem{ID: itemID, ListID: listID}, nil)
 		listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
-		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 		listRepo.On("SoftDeleteItem", ctx, itemID).Return(nil)
 
 		err := svc.DeleteItem(ctx, user, itemID)
@@ -272,7 +272,7 @@ func TestListService_ClearItems(t *testing.T) {
 	svc := NewListService(listRepo, groupRepo)
 
 	listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
-	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 	listRepo.On("SoftDeleteItemsByList", ctx, listID, true).Return(2, nil)
 
 	deleted, err := svc.ClearItems(ctx, user, listID, true)
@@ -292,7 +292,7 @@ func TestListService_AddItemAmount_IncrementsExisting(t *testing.T) {
 	svc := NewListService(listRepo, groupRepo)
 
 	listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
-	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 	listRepo.On("GetItemByListNameUnit", ctx, listID, "Milk", "L").Return(&models.ListItem{
 		ID: itemID, ListID: listID, Name: "Milk", Quantity: 2, Unit: "L", Checked: true,
 	}, nil)
@@ -316,7 +316,7 @@ func TestListService_AddItemAmount_CreatesWhenMissing(t *testing.T) {
 	svc := NewListService(listRepo, groupRepo)
 
 	listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
-	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 	listRepo.On("GetItemByListNameUnit", ctx, listID, "Milk", "").Return(nil, pgx.ErrNoRows)
 	listRepo.On("CreateItem", ctx, mock.MatchedBy(func(item *models.ListItem) bool {
 		return item.ListID == listID && item.Name == "Milk" && item.Quantity == 2
@@ -339,7 +339,7 @@ func TestListService_RemoveItemAmount_DecrementsOrDeletes(t *testing.T) {
 	svc := NewListService(listRepo, groupRepo)
 
 	listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
-	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 	listRepo.On("GetItemByListNameUnit", ctx, listID, "Milk", "").Return(&models.ListItem{
 		ID: itemID, ListID: listID, Name: "Milk", Quantity: 2,
 	}, nil)
@@ -365,7 +365,7 @@ func TestListService_ReorderItems(t *testing.T) {
 		svc := NewListService(listRepo, groupRepo)
 
 		listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
-		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 		listRepo.On("ListItemsByList", ctx, listID, 10000, 0).Return([]models.ListItem{
 			{ID: item1}, {ID: item2},
 		}, nil)
@@ -381,7 +381,7 @@ func TestListService_ReorderItems(t *testing.T) {
 		svc := NewListService(listRepo, groupRepo)
 
 		listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
-		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 		listRepo.On("ListItemsByList", ctx, listID, 10000, 0).Return([]models.ListItem{{ID: item1}}, nil)
 
 		err := svc.ReorderItems(ctx, user, listID, []uuid.UUID{item2})

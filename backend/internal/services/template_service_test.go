@@ -25,7 +25,7 @@ func TestTemplateService_CreateTemplate(t *testing.T) {
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := NewTemplateService(templateRepo, groupRepo, nil)
 
-		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 		templateRepo.On("CreateTemplate", ctx, mock.AnythingOfType("*models.Template")).Return(nil)
 
 		template := &models.Template{GroupID: groupID, Name: "TPL"}
@@ -37,7 +37,7 @@ func TestTemplateService_CreateTemplate(t *testing.T) {
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := NewTemplateService(nil, groupRepo, nil)
 
-		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 
 		err := svc.CreateTemplate(ctx, user, &models.Template{GroupID: groupID, Name: ""})
 		require.Error(t, err)
@@ -57,7 +57,7 @@ func TestTemplateService_GetTemplate(t *testing.T) {
 		svc := NewTemplateService(templateRepo, groupRepo, nil)
 
 		templateRepo.On("GetTemplateByID", ctx, templateID).Return(&models.Template{ID: templateID, GroupID: groupID}, nil)
-		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 
 		tpl, err := svc.GetTemplate(ctx, user, templateID)
 		require.NoError(t, err)
@@ -89,7 +89,7 @@ func TestTemplateService_ApplyTemplate(t *testing.T) {
 		svc := NewTemplateService(templateRepo, groupRepo, listRepo)
 
 		templateRepo.On("GetTemplateByID", ctx, templateID).Return(&models.Template{ID: templateID, GroupID: groupID, Name: "TPL"}, nil)
-		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 		templateRepo.On("ListTemplateItems", ctx, templateID).Return([]models.TemplateItem{
 			{Name: "A", Quantity: 1, Unit: "pc"},
 		}, nil)
@@ -112,7 +112,7 @@ func TestTemplateService_CreateChoreTemplate(t *testing.T) {
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := NewTemplateService(templateRepo, groupRepo, nil)
 
-		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 		templateRepo.On("CreateChoreTemplate", ctx, mock.AnythingOfType("*models.ChoreTemplate")).Return(nil)
 
 		ct := &models.ChoreTemplate{GroupID: groupID, Name: "CT"}
@@ -133,7 +133,7 @@ func TestTemplateService_GetChoreTemplate(t *testing.T) {
 		svc := NewTemplateService(templateRepo, groupRepo, nil)
 
 		templateRepo.On("GetChoreTemplateByID", ctx, templateID).Return(&models.ChoreTemplate{ID: templateID, GroupID: groupID}, nil)
-		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 
 		ct, err := svc.GetChoreTemplate(ctx, user, templateID)
 		require.NoError(t, err)
@@ -153,7 +153,7 @@ func TestTemplateService_UpdateChoreTemplate(t *testing.T) {
 		svc := NewTemplateService(templateRepo, groupRepo, nil)
 
 		templateRepo.On("GetChoreTemplateByID", ctx, templateID).Return(&models.ChoreTemplate{ID: templateID, GroupID: groupID}, nil)
-		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 		templateRepo.On("UpdateChoreTemplate", ctx, mock.AnythingOfType("*models.ChoreTemplate")).Return(nil)
 
 		ct := &models.ChoreTemplate{ID: templateID, Name: "Updated"}
@@ -175,7 +175,7 @@ func TestTemplateService_DeleteChoreTemplate(t *testing.T) {
 		svc := NewTemplateService(templateRepo, groupRepo, nil)
 
 		templateRepo.On("GetChoreTemplateByID", ctx, templateID).Return(&models.ChoreTemplate{ID: templateID, GroupID: groupID}, nil)
-		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 		templateRepo.On("DeleteChoreTemplate", ctx, templateID).Return(nil)
 
 		err := svc.DeleteChoreTemplate(ctx, user, templateID)

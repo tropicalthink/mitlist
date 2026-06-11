@@ -80,7 +80,7 @@ func TestFinanceService_CreateExpense(t *testing.T) {
 
 		err := svc.CreateExpense(ctx, userID, &models.Expense{GroupID: groupID, PayerID: userID, Amount: 100, Currency: "USD"}, nil)
 		require.Error(t, err)
-		assert.Equal(t, api.ErrPermissionDenied, err)
+		assert.ErrorIs(t, err, api.ErrPermissionDenied)
 	})
 }
 
@@ -183,7 +183,7 @@ func TestFinanceService_DeleteExpense(t *testing.T) {
 
 		err := svc.DeleteExpense(ctx, userID, expenseID)
 		require.Error(t, err)
-		assert.Equal(t, api.ErrPermissionDenied, err)
+		assert.ErrorIs(t, err, api.ErrPermissionDenied)
 	})
 }
 
@@ -867,7 +867,7 @@ func TestFinanceService_UpdateSplit(t *testing.T) {
 		split := &models.Split{ID: splitID, UserID: newUserID, Amount: 50}
 		err := svc.UpdateSplit(ctx, userID, split)
 		require.Error(t, err)
-		assert.Equal(t, api.ErrPermissionDenied, err)
+		assert.ErrorIs(t, err, api.ErrPermissionDenied)
 	})
 
 	t.Run("admin reassigning split user succeeds", func(t *testing.T) {

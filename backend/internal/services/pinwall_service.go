@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -24,14 +23,7 @@ func NewPinwallService(repo repositories.PinwallRepo, groupRepo repositories.Gro
 }
 
 func (s *PinwallService) requireMembership(ctx context.Context, userID, groupID uuid.UUID) error {
-	_, err := s.groupRepo.GetMembership(ctx, groupID, userID)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return &api.PermissionDeniedError{Message: "not a member of this group"}
-		}
-		return fmt.Errorf("check membership: %w", err)
-	}
-	return nil
+	return requireGroupMember(ctx, s.groupRepo, groupID, userID)
 }
 
 func (s *PinwallService) CreatePost(
