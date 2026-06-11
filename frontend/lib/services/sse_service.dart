@@ -4,9 +4,9 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/api_config.dart';
+import 'token_store.dart';
 
 class _SseUnauthorizedException implements Exception {}
 
@@ -42,6 +42,7 @@ class SseEvent {
 /// Call [dispose] when the stream is no longer needed (e.g. screen removed).
 class SseService {
   final Logger _log = Logger();
+  final TokenStore _tokenStore;
   final StreamController<SseEvent> _controller =
       StreamController<SseEvent>.broadcast();
 
@@ -49,6 +50,9 @@ class SseService {
   bool _disposed = false;
   String? _currentGroupId;
   int _generation = 0;
+
+  SseService([TokenStore? tokenStore])
+      : _tokenStore = tokenStore ?? SecureTokenStore();
 
   Stream<SseEvent> get events => _controller.stream;
 
@@ -87,8 +91,7 @@ class SseService {
   }
 
   Future<bool> _tryRefreshToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    final refreshToken = prefs.getString(ApiConfig.refreshTokenKey);
+    final refreshToken = await _tokenStore.getRefreshToken();
     if (refreshToken == null) return false;
 
     try {
@@ -108,10 +111,10 @@ class SseService {
       final newRefresh = data['refresh_token'] as String?;
       if (newAccess == null) return false;
 
-      await prefs.setString(ApiConfig.accessTokenKey, newAccess);
-      if (newRefresh != null) {
-        await prefs.setString(ApiConfig.refreshTokenKey, newRefresh);
-      }
+      await _tokenStore.save(
+        accessToken: newAccess,
+        refreshToken: newRefresh ?? refreshToken,
+      );
       return true;
     } catch (e) {
       _log.w('Token refresh in SSE failed: $e');
@@ -120,8 +123,7 @@ class SseService {
   }
 
   Future<void> _connectOnce(String groupId, int gen) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString(ApiConfig.accessTokenKey);
+    final token = await _tokenStore.getAccessToken();
     if (token == null) return;
 
     final baseUrl = kIsWeb ? ApiConfig.baseUrl : ApiConfig.baseUrl;
