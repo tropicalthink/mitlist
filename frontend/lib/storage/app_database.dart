@@ -1066,6 +1066,25 @@ FROM list_items_table;
     );
   }
 
+  /// Increments co-occurrence counts for multiple canonical item pairs in a
+  /// single transaction. Reuses [incrementCooccurrence] per pair.
+  Future<void> incrementCooccurrences({
+    required String groupId,
+    required String canonicalItemId,
+    required List<String> peerCanonicalIds,
+  }) async {
+    if (peerCanonicalIds.isEmpty) return;
+    await transaction(() async {
+      for (final peerId in peerCanonicalIds) {
+        await incrementCooccurrence(
+          groupId: groupId,
+          itemAId: canonicalItemId,
+          itemBId: peerId,
+        );
+      }
+    });
+  }
+
   /// Returns all checked list items that have a canonicalItemId set.
   Future<List<ListItemsTableData>> getCheckedItemsWithCanonical(
       String listId) {
