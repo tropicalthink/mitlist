@@ -488,6 +488,11 @@ FROM list_items_table;
         .get();
   }
 
+  /// Returns a single outbox op by ID, or null if it no longer exists.
+  Future<OutboxOp?> getOutboxOpById(String id) {
+    return (select(outboxOps)..where((t) => t.id.equals(id))).getSingleOrNull();
+  }
+
   Future<void> markOutboxAttempt(String id, {String? error}) async {
     await (update(outboxOps)..where((t) => t.id.equals(id))).write(
       OutboxOpsCompanion(
