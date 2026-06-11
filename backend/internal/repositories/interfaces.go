@@ -170,6 +170,7 @@ type FinanceRepoIface interface {
 	GetSplitByID(ctx context.Context, id uuid.UUID) (*models.Split, error)
 	GetSettlementByID(ctx context.Context, id uuid.UUID) (*models.Settlement, error)
 	CreateExpenseWithSplits(ctx context.Context, e *models.Expense, splits []models.Split) error
+	GetGroupBalanceAggregates(ctx context.Context, groupID uuid.UUID) ([]models.BalanceAggregate, error)
 }
 
 // RecipeRepoIface is the interface for recipe repository operations.

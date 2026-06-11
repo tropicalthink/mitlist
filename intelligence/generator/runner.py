@@ -42,6 +42,11 @@ CONFIG_DIR = ROOT / "config"
 DATA_DIR = ROOT / "ml" / "data"
 DB_PATH = ROOT / "progress.db"
 
+OCR_SCHEMA_EXAMPLE = (
+    '{"item_de":"Birne","item_en":"Pear","item_fr":"Poire","item_es":"Pera",'
+    '"lang":"DE","raw":"Birne","variant_type":"TYPO","variant_subtype":"missing_e"}'
+)
+
 
 def load_config() -> dict:
     with open(CONFIG_DIR / "batches.yaml") as f:
@@ -146,11 +151,12 @@ def build_batch_list(prompt_id: str, cfg: dict, *, require_seed: bool = True) ->
             if require_seed:
                 print("ERROR: Prompt 2 requires seed.json from Prompt 1. Run --prompt 1 first.", file=sys.stderr)
                 sys.exit(1)
-            # Estimate mode: assume ~32 groups (1600 items / 50)
+            # Estimate mode: assume ~360 groups (1800 items / 5)
             langs = pcfg["variables"]["LANGUAGE"]
-            return [(f"{lang}_group_{i}", {"LANGUAGE": lang, "ITEM_LIST": ""}) for lang in langs for i in range(32)]
+            return [(f"{lang}_group_{i}", {"LANGUAGE": lang, "ITEM_LIST": ""}) for lang in langs for i in range(360)]
         langs = pcfg["variables"]["LANGUAGE"]
-        group_size = pcfg.get("items_per_batch", 50)
+        group_size = pcfg.get("items_per_batch", 5)
+        variants = str(pcfg.get("variants_per_item", 20))
         batches = []
         for lang in langs:
             for gi in range(math.ceil(len(seed) / group_size)):
@@ -161,7 +167,13 @@ def build_batch_list(prompt_id: str, cfg: dict, *, require_seed: bool = True) ->
                 )
                 batches.append((
                     f"{lang}_group_{gi}",
-                    {"LANGUAGE": lang, "ITEM_LIST": item_list, "_items": [i["name_de"] for i in chunk]},
+                    {
+                        "LANGUAGE": lang,
+                        "ITEM_LIST": item_list,
+                        "VARIANTS_PER_ITEM": variants,
+                        "_items": [i["name_de"] for i in chunk],
+                        "_item_map": {i["name_de"].lower(): i for i in chunk},
+                    },
                 ))
         return batches
 
@@ -200,6 +212,17 @@ def run_batch(
         variables = {**variables, "PREVIOUS_ITEMS": get_previous_items_in_category(cat)}
 
     prompt = substitute(template, {k: v for k, v in variables.items() if not k.startswith("_")})
+    system = None
+    if pcfg["output_mode"] == "jsonl":
+        system = (
+            "You are a training data generator. Output ONLY valid JSONL — "
+            "one JSON object per line. No markdown, no code fences, no explanation."
+        )
+    elif pcfg["output_mode"] == "json_array":
+        system = (
+            "You are a training data generator. Output ONLY a raw JSON array. "
+            "No markdown, no code fences, no explanation."
+        )
     output_rel = pcfg["output"]
     output_path = ROOT / output_rel
 
@@ -233,7 +256,7 @@ def run_batch(
 
             for attempt in range(parse_attempts):
                 for continuation in range(4):
-                    result = client.complete(current_prompt, temperature=temperature)
+                    result = client.complete(current_prompt, temperature=temperature, system=system)
                     last_model = result.model
                     total_prompt_tokens += result.prompt_tokens
                     total_completion_tokens += result.completion_tokens
@@ -289,10 +312,108 @@ def run_batch(
 
             rows = merge_seed(output_path, all_items)
 
+        elif prompt_id == "2":
+            from collections import Counter
+
+            items = variables.get("_items", [])
+            variants_target = pcfg.get("variants_per_item", 20)
+            min_per_item = max(8, variants_target // 2)
+            min_accept = max(len(items) * min_per_item, 1)
+            all_rows: list[dict] = []
+            seen_keys: set[tuple[str, str]] = set()
+            current_prompt = prompt
+            last_content = ""
+
+            def _merge_rows(new_rows: list[dict]) -> None:
+                for row in new_rows:
+                    key = (row.get("item_de", ""), row.get("raw", ""))
+                    if key not in seen_keys:
+                        all_rows.append(row)
+                        seen_keys.add(key)
+
+            def _per_item_counts() -> Counter:
+                c: Counter = Counter()
+                for row in all_rows:
+                    c[row.get("item_de", "")] += 1
+                return c
+
+            def _enough() -> bool:
+                counts = _per_item_counts()
+                return len(all_rows) >= min_accept and all(
+                    counts.get(it, 0) >= min_per_item for it in items
+                )
+
+            for attempt in range(parse_attempts):
+                for continuation in range(4):
+                    result = client.complete(current_prompt, temperature=temperature, system=system)
+                    last_model = result.model
+                    total_prompt_tokens += result.prompt_tokens
+                    total_completion_tokens += result.completion_tokens
+                    total_cost += calc_cost(result.model, result.prompt_tokens, result.completion_tokens, pricing)
+                    total_latency += result.latency_ms
+                    last_content = result.content
+                    finish_reason = result.raw_response.get("finish_reason", "")
+
+                    try:
+                        if not result.content.strip():
+                            raise ValueError("empty model response (check model/thinking mode)")
+                        chunk_rows = parse_jsonl(
+                            result.content,
+                            min_lines=1,
+                            item_lookup=variables.get("_item_map"),
+                            lang=variables.get("LANGUAGE", ""),
+                        )
+                        _merge_rows(chunk_rows)
+                    except (ValueError, json.JSONDecodeError) as e:
+                        _save_debug(last_content or "(empty)", str(e))
+                        preview = (result.content or "")[:300].replace("\n", " ")
+                        print(f"  DEBUG {batch_key}: {preview!r}", file=sys.stderr)
+                        if attempt < parse_attempts - 1:
+                            print(f"  RETRY {batch_key} (parse failed, attempt {attempt + 1}): {e}", file=sys.stderr)
+                            break
+                        raise
+
+                    if _enough():
+                        break
+                    if finish_reason != "length":
+                        break
+
+                    counts = _per_item_counts()
+                    need_lines = []
+                    for it in items:
+                        have = counts.get(it, 0)
+                        if have < variants_target:
+                            need_lines.append(f"- {it}: have {have}, need {variants_target - have} more")
+                    lang = variables.get("LANGUAGE", "")
+                    current_prompt = (
+                        f"Continue OCR noise JSONL for language {lang}. "
+                        f"Generate ONLY the missing variants:\n"
+                        + "\n".join(need_lines)
+                        + f"\n\nUse EXACTLY this schema (field names matter):\n"
+                        f"{OCR_SCHEMA_EXAMPLE}\n\n"
+                        f"Required fields: item_de, item_en, item_fr, item_es, lang, raw, "
+                        f"variant_type, variant_subtype. One object per line. No other field names."
+                    )
+                    print(f"  CONTINUE {batch_key}: {len(all_rows)} rows so far", file=sys.stderr)
+                else:
+                    continue
+                if _enough() or len(all_rows) >= min_accept:
+                    break
+
+            if not _enough() and len(all_rows) < min_accept:
+                _save_debug(last_content, f"Only {len(all_rows)} rows, need ≥{min_accept}")
+                raise ValueError(f"Only {len(all_rows)} OCR rows, need ≥{min_accept}")
+
+            if not _enough():
+                print(f"  WARN {batch_key}: partial — {len(all_rows)} rows", file=sys.stderr)
+
+            append_jsonl(output_path, all_rows)
+            rows = len(all_rows)
+
         else:
             result = None
             for attempt in range(parse_attempts):
-                result = client.complete(prompt, temperature=temperature)
+                result = client.complete(prompt, temperature=temperature, system=system)
                 total_prompt_tokens += result.prompt_tokens
                 total_completion_tokens += result.completion_tokens
                 total_cost += calc_cost(result.model, result.prompt_tokens, result.completion_tokens, pricing)
@@ -301,9 +422,7 @@ def run_batch(
 
                 try:
                     min_lines = pcfg.get("items_per_batch", 1)
-                    if prompt_id == "2":
-                        min_lines = len(variables.get("_items", [])) * pcfg.get("variants_per_item", 30)
-                    elif prompt_id == "3":
+                    if prompt_id == "3":
                         min_lines = pcfg.get("items_per_batch", 200)
                     elif prompt_id == "5":
                         min_lines = pcfg.get("items_per_batch", 1000)

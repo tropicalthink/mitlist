@@ -347,7 +347,7 @@ func TestFinanceRepo_CreateRecurringExpense(t *testing.T) {
 	}
 
 	mock.ExpectExec("INSERT INTO recurring_expenses").
-		WithArgs(pgxmock.AnyArg(), re.GroupID, re.PayerID, re.Amount, re.Description, re.Category, re.Currency, re.Frequency, re.NextDue, re.IsActive, pgxmock.AnyArg()).
+		WithArgs(pgxmock.AnyArg(), re.GroupID, re.PayerID, re.Amount, re.Description, re.Category, re.Currency, re.Frequency, re.NextDue, re.IsActive, pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg()).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
 	err := repo.CreateRecurringExpense(context.Background(), re)
@@ -361,8 +361,8 @@ func TestFinanceRepo_GetRecurringExpenseByID(t *testing.T) {
 	repo := NewFinanceRepo(mock)
 	id := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "group_id", "payer_id", "amount", "description", "category", "currency", "frequency", "next_due", "is_active", "created_at"}).
-		AddRow(id, fixedUUID(), fixedUUID(), 1000, "Rent", "housing", "USD", "monthly", fixedTime(), true, fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "group_id", "payer_id", "amount", "description", "category", "currency", "frequency", "next_due", "is_active", "created_at", "split_mode", "split_inputs"}).
+		AddRow(id, fixedUUID(), fixedUUID(), 1000, "Rent", "housing", "USD", "monthly", fixedTime(), true, fixedTime(), "payer_only", "[]")
 
 	mock.ExpectQuery("SELECT .* FROM recurring_expenses WHERE id = .*").
 		WithArgs(id).
@@ -395,8 +395,8 @@ func TestFinanceRepo_ListRecurringExpenses(t *testing.T) {
 	repo := NewFinanceRepo(mock)
 	gid := fixedUUID()
 
-	cols := []string{"id", "group_id", "payer_id", "amount", "description", "category", "frequency", "next_due", "is_active", "created_at", "currency"}
-	rows := pgxmock.NewRows(cols).AddRow(fixedUUID(), gid, fixedUUID(), 1000, "Rent", "housing", "monthly", fixedTime(), true, fixedTime(), "USD")
+	cols := []string{"id", "group_id", "payer_id", "amount", "description", "category", "frequency", "next_due", "is_active", "created_at", "currency", "split_mode", "split_inputs"}
+	rows := pgxmock.NewRows(cols).AddRow(fixedUUID(), gid, fixedUUID(), 1000, "Rent", "housing", "monthly", fixedTime(), true, fixedTime(), "USD", "payer_only", "[]")
 
 	mock.ExpectQuery("SELECT .* FROM recurring_expenses WHERE group_id = .*").
 		WithArgs(gid, 50, 0).
@@ -414,7 +414,7 @@ func TestFinanceRepo_UpdateRecurringExpense(t *testing.T) {
 	id := fixedUUID()
 
 	mock.ExpectExec("UPDATE recurring_expenses SET").
-		WithArgs(fixedUUID(), int64(2000), "New Rent", "housing", "USD", "monthly", fixedTime(), true, id).
+		WithArgs(fixedUUID(), int64(2000), "New Rent", "housing", "USD", "monthly", fixedTime(), true, pgxmock.AnyArg(), pgxmock.AnyArg(), id).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
 	re := &models.RecurringExpense{ID: id, PayerID: fixedUUID(), Amount: 2000, Description: "New Rent", Category: "housing", Currency: "USD", Frequency: "monthly", NextDue: fixedTime(), IsActive: true}
@@ -429,7 +429,7 @@ func TestFinanceRepo_UpdateRecurringExpense_NotFound(t *testing.T) {
 	id := fixedUUID()
 
 	mock.ExpectExec("UPDATE recurring_expenses SET").
-		WithArgs(fixedUUID(), int64(2000), "New Rent", "housing", "USD", "monthly", fixedTime(), true, id).
+		WithArgs(fixedUUID(), int64(2000), "New Rent", "housing", "USD", "monthly", fixedTime(), true, pgxmock.AnyArg(), pgxmock.AnyArg(), id).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 0))
 
 	re := &models.RecurringExpense{ID: id, PayerID: fixedUUID(), Amount: 2000, Description: "New Rent", Category: "housing", Currency: "USD", Frequency: "monthly", NextDue: fixedTime(), IsActive: true}
@@ -533,6 +533,35 @@ func TestFinanceRepo_GetSettlementByID_NotFound(t *testing.T) {
 	require.Error(t, err)
 	assert.Nil(t, s)
 	assert.Contains(t, err.Error(), "not found")
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestFinanceRepo_GetGroupBalanceAggregates(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewFinanceRepo(mock)
+	gid := fixedUUID()
+
+	userA := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+	userB := uuid.MustParse("00000000-0000-0000-0000-000000000002")
+
+	cols := []string{"user_id", "expense_paid", "split_owed", "settled_out", "settled_in"}
+	rows := pgxmock.NewRows(cols).
+		AddRow(userA, int64(10000), int64(5000), int64(0), int64(0)).
+		AddRow(userB, int64(0), int64(5000), int64(0), int64(0))
+
+	mock.ExpectQuery("WITH all_users AS").
+		WithArgs(gid).
+		WillReturnRows(rows)
+
+	aggregates, err := repo.GetGroupBalanceAggregates(context.Background(), gid)
+	require.NoError(t, err)
+	require.Len(t, aggregates, 2)
+	assert.Equal(t, userA, aggregates[0].UserID)
+	assert.Equal(t, int64(10000), aggregates[0].ExpensePaid)
+	assert.Equal(t, int64(5000), aggregates[0].SplitOwed)
+	assert.Equal(t, userB, aggregates[1].UserID)
+	assert.Equal(t, int64(0), aggregates[1].ExpensePaid)
+	assert.Equal(t, int64(5000), aggregates[1].SplitOwed)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 

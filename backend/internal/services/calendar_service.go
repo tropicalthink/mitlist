@@ -6,7 +6,6 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/repositories"
 )
@@ -41,14 +40,9 @@ func NewCalendarService(
 
 
 func (s *CalendarService) requireMembership(ctx context.Context, userID, groupID uuid.UUID) error {
-	member, err := s.groupRepo.GetMembership(ctx, groupID, userID)
-	if err != nil {
-		return err
-	}
-	if member == nil {
-		return &api.PermissionDeniedError{Message: "not a member of this group"}
-	}
-	return nil
+	// Previously checked member == nil (unreachable when err == nil); now uses
+	// canonical fail-closed helper (authorized behavior change per reviewer ruling).
+	return requireGroupMember(ctx, s.groupRepo, groupID, userID)
 }
 
 // GetCalendar returns calendar events for a group in a date range.

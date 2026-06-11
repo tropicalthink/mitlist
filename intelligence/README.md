@@ -59,7 +59,7 @@ python3 -m generator.runner run --prompt 4 --all          # store aisles (option
 | Prompt | File | ~Rows |
 |--------|------|-------|
 | 1 Canonical seed | `ml/data/seed.json` | ~1,800 items (40 cat × 3 chunks × 15 items) |
-| 2 OCR noise | `ml/data/ocr_corpus.jsonl` | ~120,000 |
+| 2 OCR noise | `ml/data/ocr_corpus.jsonl` | ~144,000 (5 items × 20 variants × langs) |
 | 3 Triplets | `ml/data/triplets.jsonl` | ~8,000 |
 | 4 Store aisles | `ml/data/aisles.jsonl` | ~9,600 |
 | 5 Corrections | `ml/data/corrections.jsonl` | ~32,000 |

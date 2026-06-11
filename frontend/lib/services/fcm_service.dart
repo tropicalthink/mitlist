@@ -35,6 +35,10 @@ class FcmService {
   static final StreamController<RemoteMessage> _tapController =
       StreamController<RemoteMessage>.broadcast();
 
+  static StreamSubscription<String>? _tokenSub;
+  static StreamSubscription<RemoteMessage>? _messageSub;
+  static StreamSubscription<RemoteMessage>? _tapSub;
+
   /// Fires when a push notification is received while the app is in the foreground.
   static Stream<RemoteMessage> get onForegroundMessage =>
       _foregroundController.stream;
@@ -77,21 +81,40 @@ class FcmService {
 
     await _registerToken(dio, token);
 
-    messaging.onTokenRefresh.listen((newToken) {
+    // Cancel any existing subscriptions before re-registering to prevent
+    // duplicate handlers stacking across logout/login cycles.
+    await _tokenSub?.cancel();
+    await _messageSub?.cancel();
+    await _tapSub?.cancel();
+
+    _tokenSub = messaging.onTokenRefresh.listen((newToken) {
       _registerToken(dio, newToken);
     });
 
     // Foreground messages — the OS won't show a heads-up automatically when
     // the app is open; emit on the stream so the UI can display a banner.
-    FirebaseMessaging.onMessage.listen((message) {
+    _messageSub = FirebaseMessaging.onMessage.listen((message) {
       _foregroundController.add(message);
     });
 
     // Background-to-foreground taps — user tapped a notification while the
     // app was backgrounded (not killed).
-    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+    _tapSub = FirebaseMessaging.onMessageOpenedApp.listen((message) {
       _tapController.add(message);
     });
+  }
+
+  /// Cancels all active FCM stream subscriptions.
+  ///
+  /// Call during logout (alongside [unregisterToken]) so that no stale
+  /// listeners remain active for the next login cycle.
+  static Future<void> reset() async {
+    await _tokenSub?.cancel();
+    await _messageSub?.cancel();
+    await _tapSub?.cancel();
+    _tokenSub = null;
+    _messageSub = null;
+    _tapSub = null;
   }
 
   /// Returns the notification that launched the app from a killed state, or

@@ -28,11 +28,9 @@ func NewMealPlanService(mealPlanRepo repositories.MealPlanRepoIface, groupRepo r
 }
 
 func (s *MealPlanService) requireMembership(ctx context.Context, userID, groupID uuid.UUID) error {
-	_, err := s.groupRepo.GetMembership(ctx, groupID, userID)
-	if err != nil {
-		return &api.PermissionDeniedError{Message: "not a member of this group"}
-	}
-	return nil
+	// Previously swallowed all repo errors; now uses canonical fail-closed helper
+	// (authorized behavior change per reviewer ruling).
+	return requireGroupMember(ctx, s.groupRepo, groupID, userID)
 }
 
 // CreateMealPlan creates a new meal plan.

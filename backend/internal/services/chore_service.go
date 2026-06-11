@@ -93,28 +93,11 @@ func (s *ChoreService) requireActiveVerifiedUser(u *models.User) error {
 }
 
 func (s *ChoreService) requireMembership(ctx context.Context, userID, groupID uuid.UUID) error {
-	_, err := s.groupRepo.GetMembership(ctx, groupID, userID)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return &api.PermissionDeniedError{Message: "not a member of this group"}
-		}
-		return fmt.Errorf("failed to check membership: %w", err)
-	}
-	return nil
+	return requireGroupMember(ctx, s.groupRepo, groupID, userID)
 }
 
 func (s *ChoreService) requireAdmin(ctx context.Context, userID, groupID uuid.UUID) error {
-	m, err := s.groupRepo.GetMembership(ctx, groupID, userID)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return &api.PermissionDeniedError{Message: "not a member of this group"}
-		}
-		return fmt.Errorf("failed to check membership: %w", err)
-	}
-	if m.Role != "admin" {
-		return &api.PermissionDeniedError{Message: "admin role required"}
-	}
-	return nil
+	return requireGroupAdmin(ctx, s.groupRepo, groupID, userID)
 }
 
 // CreateChore creates a new chore, initializes deterministic rotation state, and creates the first assignment.
