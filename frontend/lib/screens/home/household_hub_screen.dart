@@ -95,15 +95,15 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
   Future<void> _resolveAndLoad() async {
     if (widget.groupId != null && widget.groupId!.isNotEmpty) {
       _resolvedGroupId = widget.groupId;
-      ref.read(currentGroupIdProvider.notifier).set(widget.groupId);
-      _loadData();
+      unawaited(ref.read(currentGroupIdProvider.notifier).set(widget.groupId));
+      unawaited(_loadData());
       return;
     }
 
     final saved = ref.read(currentGroupIdProvider);
     if (saved != null) {
       _resolvedGroupId = saved;
-      _loadData();
+      unawaited(_loadData());
       return;
     }
 
@@ -114,8 +114,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
       if (!mounted) return;
       if (isValidGroupId(gid)) {
         _resolvedGroupId = gid;
-        ref.read(currentGroupIdProvider.notifier).set(gid);
-        _loadData();
+        unawaited(ref.read(currentGroupIdProvider.notifier).set(gid));
+        unawaited(_loadData());
       } else {
         _resolvedGroupId = null;
         _households = groups;
@@ -129,17 +129,17 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
   }
 
   Future<void> _switchGroup(String newGroupId) async {
-    ref.read(currentGroupIdProvider.notifier).set(newGroupId);
+    unawaited(ref.read(currentGroupIdProvider.notifier).set(newGroupId));
     setState(() {
       _resolvedGroupId = newGroupId;
       _isLoading = true;
       _error = null;
     });
-    _groupSub?.cancel();
+    unawaited(_groupSub?.cancel());
     _groupSub = null;
-    _activitySub?.cancel();
+    unawaited(_activitySub?.cancel());
     _activitySub = null;
-    _loadData();
+    unawaited(_loadData());
   }
 
   Future<void> _loadData() async {
@@ -194,7 +194,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
         _me = me;
         _isLoading = !hadCache;
       });
-      ref.read(currentGroupIdProvider.notifier).set(_resolvedGroupId!);
+      unawaited(ref.read(currentGroupIdProvider.notifier).set(_resolvedGroupId!));
 
       await _groupSub?.cancel();
       _groupSub = repo.watchGroup(_resolvedGroupId!).listen((g) {
@@ -305,7 +305,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
         final after = await svc.listGroups();
         if (!mounted) return;
         setState(() => _households = after);
-        if (hubContext.mounted) _switchGroup(group.id);
+        if (hubContext.mounted) unawaited(_switchGroup(group.id));
       } catch (_) {
         if (mounted) await _loadData();
       }
@@ -318,7 +318,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
         final after = await svc.listGroups();
         if (!mounted) return;
         setState(() => _households = after);
-        if (hubContext.mounted) _switchGroup(group.id);
+        if (hubContext.mounted) unawaited(_switchGroup(group.id));
       } catch (_) {
         if (mounted) await _loadData();
       }
@@ -519,7 +519,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
       final groups = await groupSvc.listGroups();
       if (!mounted) return;
       setState(() => _households = groups);
-      _switchGroup(group.id);
+      unawaited(_switchGroup(group.id));
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -532,7 +532,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
       final groups = await groupSvc.listGroups();
       if (!mounted) return;
       setState(() => _households = groups);
-      _switchGroup(group.id);
+      unawaited(_switchGroup(group.id));
     } catch (_) {
       if (mounted) {
         setState(() => _isLoading = false);

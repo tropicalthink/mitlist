@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -132,7 +134,7 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Recipe created')),
       );
-      Haptics.success();
+      unawaited(Haptics.success());
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);

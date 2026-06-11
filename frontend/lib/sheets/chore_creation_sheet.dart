@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -137,7 +139,7 @@ class ChoreCreationSheet extends ConsumerStatefulWidget {
         dirtyNotifier: dirty,
       ),
     );
-    future.whenComplete(dirty.dispose);
+    unawaited(future.whenComplete(dirty.dispose));
     return future;
   }
 
@@ -366,7 +368,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Saved "${created.name}" as a routine')),
       );
-      Haptics.success();
+      unawaited(Haptics.success());
     } catch (e) {
       if (!mounted) return;
       setState(() => _savingTemplate = false);
@@ -493,7 +495,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           ),
         ),
       );
-      Haptics.success();
+      unawaited(Haptics.success());
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);

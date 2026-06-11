@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -54,7 +56,7 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
 
   Future<void> _pickReminderTime() async {
     if (_isPosting || _isUploadingMedia) return;
-    Haptics.light();
+    unawaited(Haptics.light());
 
     final now = DateTime.now();
     final pickedDate = await showDatePicker(
@@ -96,7 +98,7 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
 
   Future<void> _pickLinkedEntity() async {
     if (_isPosting || _isUploadingMedia) return;
-    Haptics.light();
+    unawaited(Haptics.light());
 
     final typeAction = await showAppBottomSheet<String>(
       context: context,
@@ -278,7 +280,7 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
       await repo.refreshPosts(widget.groupId).catchError((_) {});
       ref.invalidate(pinwallPostsByGroupProvider(widget.groupId));
       if (!mounted) return;
-      Haptics.light();
+      unawaited(Haptics.light());
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Pinned to the wall')),
       );
@@ -781,7 +783,7 @@ class _PinwallNoteCard extends ConsumerWidget {
     WidgetRef ref, {
     required PinwallMediaItem media,
   }) async {
-    Haptics.light();
+    unawaited(Haptics.light());
     final action = await showAppBottomSheet<String>(
       context: context,
       title: 'Photo',
@@ -840,7 +842,7 @@ class _PinwallNoteCard extends ConsumerWidget {
   }
 
   Future<void> _addMediaToPost(BuildContext context, WidgetRef ref) async {
-    Haptics.light();
+    unawaited(Haptics.light());
     final picker = ImagePicker();
     final files = await picker.pickMultiImage();
     if (files.isEmpty) return;
@@ -935,7 +937,7 @@ class _PinwallNoteCard extends ConsumerWidget {
     );
 
     Future<void> onDelete() async {
-      Haptics.light();
+      unawaited(Haptics.light());
       final svc = await ref.read(pinwallServiceProviderAsync.future);
       await svc.deletePost(groupId, post.id);
       ref.invalidate(pinwallPostsByGroupProvider(groupId));
