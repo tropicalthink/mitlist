@@ -417,6 +417,93 @@ func (r *FinanceRepo) DeleteRecurringExpense(ctx context.Context, id uuid.UUID) 
 }
 
 // GetSplitByID retrieves a split by its ID.
+// GetGroupBalanceAggregates returns per-user aggregate balance components for a
+// group using a single SQL query instead of loading every row into memory.
+//
+// The aggregation replicates calculateBalances semantics exactly:
+//   - ExpensePaid: total of expenses where the user is the payer
+//   - SplitOwed:   total of the user's split amounts (IsSettled is ignored)
+//   - SettledOut:  total settlements where the user is from_user_id
+//   - SettledIn:   total settlements where the user is to_user_id
+//
+// The caller maps these into BalanceEntry:
+//
+//	Paid  = ExpensePaid + SettledOut
+//	Owed  = SplitOwed  + SettledIn
+//	Total = Paid - Owed
+func (r *FinanceRepo) GetGroupBalanceAggregates(ctx context.Context, groupID uuid.UUID) ([]models.BalanceAggregate, error) {
+	rows, err := r.pool.Query(ctx, `
+		WITH all_users AS (
+			-- Users who appear as payers in expenses
+			SELECT payer_id AS user_id FROM expenses WHERE group_id = $1
+			UNION
+			-- Users who appear in splits for group expenses
+			SELECT s.user_id FROM splits s
+			JOIN expenses e ON e.id = s.expense_id
+			WHERE e.group_id = $1
+			UNION
+			-- Users who appear in settlements (either side)
+			SELECT from_user_id AS user_id FROM settlements WHERE group_id = $1
+			UNION
+			SELECT to_user_id   AS user_id FROM settlements WHERE group_id = $1
+		),
+		expense_paid AS (
+			SELECT payer_id AS user_id, COALESCE(SUM(amount), 0) AS total
+			FROM expenses
+			WHERE group_id = $1
+			GROUP BY payer_id
+		),
+		split_owed AS (
+			SELECT s.user_id, COALESCE(SUM(s.amount), 0) AS total
+			FROM splits s
+			JOIN expenses e ON e.id = s.expense_id
+			WHERE e.group_id = $1
+			GROUP BY s.user_id
+		),
+		settled_out AS (
+			SELECT from_user_id AS user_id, COALESCE(SUM(amount), 0) AS total
+			FROM settlements
+			WHERE group_id = $1
+			GROUP BY from_user_id
+		),
+		settled_in AS (
+			SELECT to_user_id AS user_id, COALESCE(SUM(amount), 0) AS total
+			FROM settlements
+			WHERE group_id = $1
+			GROUP BY to_user_id
+		)
+		SELECT
+			u.user_id,
+			COALESCE(ep.total, 0) AS expense_paid,
+			COALESCE(so.total, 0) AS split_owed,
+			COALESCE(sout.total, 0) AS settled_out,
+			COALESCE(sin.total, 0) AS settled_in
+		FROM all_users u
+		LEFT JOIN expense_paid ep   ON ep.user_id   = u.user_id
+		LEFT JOIN split_owed so     ON so.user_id    = u.user_id
+		LEFT JOIN settled_out sout  ON sout.user_id  = u.user_id
+		LEFT JOIN settled_in  sin   ON sin.user_id   = u.user_id
+		ORDER BY u.user_id ASC
+	`, groupID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var aggregates []models.BalanceAggregate
+	for rows.Next() {
+		var agg models.BalanceAggregate
+		if err := rows.Scan(&agg.UserID, &agg.ExpensePaid, &agg.SplitOwed, &agg.SettledOut, &agg.SettledIn); err != nil {
+			return nil, err
+		}
+		aggregates = append(aggregates, agg)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return aggregates, nil
+}
+
 func (r *FinanceRepo) GetSplitByID(ctx context.Context, id uuid.UUID) (*models.Split, error) {
 	row := r.pool.QueryRow(ctx, `
 		SELECT id, expense_id, user_id, amount, is_settled, created_at

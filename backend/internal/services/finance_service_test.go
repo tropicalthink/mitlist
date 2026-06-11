@@ -251,23 +251,23 @@ func TestFinanceService_GetFinanceSummary(t *testing.T) {
 	payerID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
 	secondID := uuid.MustParse("00000000-0000-0000-0000-000000000002")
 	thirdID := uuid.MustParse("00000000-0000-0000-0000-000000000003")
-	expenseID := uuid.New()
 
 	financeRepo := new(mocks.MockFinanceRepo)
 	groupRepo := new(mocks.MockGroupRepo)
 	svc := NewFinanceService(financeRepo, groupRepo)
 
 	groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
-	financeRepo.On("ListAllExpensesByGroup", ctx, groupID).Return([]models.Expense{
-		{ID: expenseID, GroupID: groupID, PayerID: payerID, Amount: 10001},
-	}, nil)
-	financeRepo.On("ListSplitsByGroup", ctx, groupID).Return([]models.Split{
-		{ExpenseID: expenseID, UserID: payerID, Amount: 3334, IsSettled: true},
-		{ExpenseID: expenseID, UserID: secondID, Amount: 3334},
-		{ExpenseID: expenseID, UserID: thirdID, Amount: 3333},
-	}, nil)
-	financeRepo.On("ListAllSettlementsByGroup", ctx, groupID).Return([]models.Settlement{
-		{GroupID: groupID, FromUserID: secondID, ToUserID: payerID, Amount: 1000},
+	// Derived from the original fixture by hand:
+	//   payerID:   ExpensePaid=10001, SplitOwed=3334, SettledOut=0,    SettledIn=1000
+	//              → Paid=10001, Owed=4334, Total=5667
+	//   secondID:  ExpensePaid=0,     SplitOwed=3334, SettledOut=1000, SettledIn=0
+	//              → Paid=1000,  Owed=3334, Total=-2334
+	//   thirdID:   ExpensePaid=0,     SplitOwed=3333, SettledOut=0,    SettledIn=0
+	//              → Paid=0,     Owed=3333, Total=-3333
+	financeRepo.On("GetGroupBalanceAggregates", ctx, groupID).Return([]models.BalanceAggregate{
+		{UserID: payerID, ExpensePaid: 10001, SplitOwed: 3334, SettledOut: 0, SettledIn: 1000},
+		{UserID: secondID, ExpensePaid: 0, SplitOwed: 3334, SettledOut: 1000, SettledIn: 0},
+		{UserID: thirdID, ExpensePaid: 0, SplitOwed: 3333, SettledOut: 0, SettledIn: 0},
 	}, nil)
 	groupRepo.On("ListMemberProfilesByGroup", ctx, groupID).Return([]models.GroupMemberProfile{
 		{UserID: payerID, DisplayName: "Ada Lovelace", Role: "member"},
@@ -287,6 +287,79 @@ func TestFinanceService_GetFinanceSummary(t *testing.T) {
 		{FromUserID: thirdID, FromDisplayName: "Katherine Johnson", ToUserID: payerID, ToDisplayName: "Ada Lovelace", Amount: 3333},
 		{FromUserID: secondID, FromDisplayName: "Grace Hopper", ToUserID: payerID, ToDisplayName: "Ada Lovelace", Amount: 2334},
 	}, summary.Reimbursements)
+}
+
+// TestBalancesEquivalence proves that balancesFromAggregates produces the same
+// []models.BalanceEntry as calculateBalances for a mixed fixture with 3 users,
+// several expenses with splits, and 2 settlements.
+//
+// Fixture description:
+//   - Expense E1: payer=userA, amount=9000
+//     splits: userA→3000 (IsSettled=true, ignored for balance), userB→3000, userC→3000
+//   - Expense E2: payer=userB, amount=5000
+//     splits: userB→2500 (IsSettled=true), userC→2500
+//   - Settlement S1: from=userB, to=userA, amount=2000
+//   - Settlement S2: from=userC, to=userA, amount=1500
+//
+// calculateBalances manual derivation:
+//   userA: Paid=9000+0+0=9000,  Owed=3000+0+0=3000, Total=6000
+//     (S1: +to→Owed+=2000; S2: +to→Owed+=1500  → Owed=3000+2000+1500=6500)
+//     Paid=(9000 from expense)+(0 settlements from)=9000  Total=9000-6500=2500
+//   userB: Paid=5000+2000=7000, Owed=3000+2500=5500, Total=1500
+//     (settlement S1: from_user→Paid+=2000)
+//   userC: Paid=0+1500=1500,    Owed=3000+2500=5500, Total=-4000
+//     (settlement S2: from_user→Paid+=1500)
+//
+// Aggregate derivation (what DB would return):
+//   userA: ExpensePaid=9000, SplitOwed=3000, SettledOut=0,    SettledIn=3500
+//          → Paid=9000,  Owed=6500, Total=2500
+//   userB: ExpensePaid=5000, SplitOwed=5500, SettledOut=2000, SettledIn=0
+//          → Paid=7000,  Owed=5500, Total=1500
+//   userC: ExpensePaid=0,    SplitOwed=5500, SettledOut=1500, SettledIn=0
+//          → Paid=1500,  Owed=5500, Total=-4000
+func TestBalancesEquivalence(t *testing.T) {
+	userA := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+	userB := uuid.MustParse("00000000-0000-0000-0000-000000000002")
+	userC := uuid.MustParse("00000000-0000-0000-0000-000000000003")
+
+	expE1 := uuid.New()
+	expE2 := uuid.New()
+
+	// Feed fixture through calculateBalances (path A)
+	expenses := []models.Expense{
+		{ID: expE1, PayerID: userA, Amount: 9000},
+		{ID: expE2, PayerID: userB, Amount: 5000},
+	}
+	splits := []models.Split{
+		{ExpenseID: expE1, UserID: userA, Amount: 3000, IsSettled: true},
+		{ExpenseID: expE1, UserID: userB, Amount: 3000},
+		{ExpenseID: expE1, UserID: userC, Amount: 3000},
+		{ExpenseID: expE2, UserID: userB, Amount: 2500, IsSettled: true},
+		{ExpenseID: expE2, UserID: userC, Amount: 2500},
+	}
+	settlements := []models.Settlement{
+		{FromUserID: userB, ToUserID: userA, Amount: 2000},
+		{FromUserID: userC, ToUserID: userA, Amount: 1500},
+	}
+	wantBalances := calculateBalances(expenses, splits, settlements)
+
+	// Feed hand-derived aggregates through balancesFromAggregates (path B)
+	// Derivation documented in function-level comment above.
+	aggregates := []models.BalanceAggregate{
+		{UserID: userA, ExpensePaid: 9000, SplitOwed: 3000, SettledOut: 0, SettledIn: 3500},
+		{UserID: userB, ExpensePaid: 5000, SplitOwed: 5500, SettledOut: 2000, SettledIn: 0},
+		{UserID: userC, ExpensePaid: 0, SplitOwed: 5500, SettledOut: 1500, SettledIn: 0},
+	}
+	gotBalances := balancesFromAggregates(aggregates)
+
+	// Both paths must produce identical BalanceEntry slices.
+	require.Equal(t, len(wantBalances), len(gotBalances), "balance count mismatch")
+	for i := range wantBalances {
+		assert.Equal(t, wantBalances[i].UserID, gotBalances[i].UserID, "user_id[%d]", i)
+		assert.Equal(t, wantBalances[i].Paid, gotBalances[i].Paid, "Paid[%d] user=%s", i, wantBalances[i].UserID)
+		assert.Equal(t, wantBalances[i].Owed, gotBalances[i].Owed, "Owed[%d] user=%s", i, wantBalances[i].UserID)
+		assert.Equal(t, wantBalances[i].Total, gotBalances[i].Total, "Total[%d] user=%s", i, wantBalances[i].UserID)
+	}
 }
 
 func TestFinanceService_CreateRecurringExpense(t *testing.T) {
