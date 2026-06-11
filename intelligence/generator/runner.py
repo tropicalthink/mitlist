@@ -15,7 +15,10 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import sys
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from itertools import product
 from pathlib import Path
 
@@ -41,6 +44,12 @@ PROMPTS_DIR = ROOT / "prompts"
 CONFIG_DIR = ROOT / "config"
 DATA_DIR = ROOT / "ml" / "data"
 DB_PATH = ROOT / "progress.db"
+_FILE_LOCK = threading.Lock()
+
+
+def batch_workers() -> int:
+    return max(1, int(os.getenv("BATCH_WORKERS", "8")))
+
 
 OCR_SCHEMA_EXAMPLE = (
     '{"item_de":"Birne","item_en":"Pear","item_fr":"Poire","item_es":"Pera",'
@@ -96,26 +105,28 @@ def load_seed_items() -> list[dict]:
 
 def append_jsonl(path: Path, rows: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "a", encoding="utf-8") as f:
-        for row in rows:
-            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    with _FILE_LOCK:
+        with open(path, "a", encoding="utf-8") as f:
+            for row in rows:
+                f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
 def merge_seed(path: Path, new_items: list[dict]) -> int:
-    existing = []
-    if path.exists():
-        existing = json.loads(path.read_text())
-    seen = {(i.get("name_de", ""), i.get("category", "")) for i in existing}
-    added = 0
-    for item in new_items:
-        key = (item.get("name_de", ""), item.get("category", ""))
-        if key not in seen:
-            existing.append(item)
-            seen.add(key)
-            added += 1
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(existing, ensure_ascii=False, indent=2))
-    return added
+    with _FILE_LOCK:
+        existing = []
+        if path.exists():
+            existing = json.loads(path.read_text())
+        seen = {(i.get("name_de", ""), i.get("category", "")) for i in existing}
+        added = 0
+        for item in new_items:
+            key = (item.get("name_de", ""), item.get("category", ""))
+            if key not in seen:
+                existing.append(item)
+                seen.add(key)
+                added += 1
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(existing, ensure_ascii=False, indent=2))
+        return added
 
 
 def get_previous_items_in_category(category: str) -> str:
@@ -461,7 +472,6 @@ def cmd_run(args: argparse.Namespace) -> None:
     cfg = load_config()
     pricing = load_pricing()
     store = ProgressStore(DB_PATH)
-    client = DeepSeekClient()
 
     prompt_id = str(args.prompt)
     pcfg = cfg["prompts"][prompt_id]
@@ -489,18 +499,43 @@ def cmd_run(args: argparse.Namespace) -> None:
             key = f"{batch_key}_t{str(temp).replace('.', '')}" if len(temperatures) > 1 else batch_key
             expanded.append((key, variables, temp))
 
-    ok = fail = skip = 0
-    for batch_key, variables, temp in tqdm(expanded, desc=f"Prompt {prompt_id}"):
+    workers = batch_workers()
+    to_run: list[tuple[str, dict, float]] = []
+    skip = 0
+    for batch_key, variables, temp in expanded:
         if not args.force and store.is_completed(prompt_id, batch_key):
             skip += 1
             continue
-        if run_batch(
+        to_run.append((batch_key, variables, temp))
+
+    def _run_one(batch_key: str, variables: dict, temp: float) -> bool:
+        thread_client = DeepSeekClient()
+        thread_store = ProgressStore(DB_PATH)
+        return run_batch(
             prompt_id, batch_key, variables,
-            temperature=temp, client=client, store=store, cfg=cfg, pricing=pricing, force=args.force,
-        ):
-            ok += 1
-        else:
-            fail += 1
+            temperature=temp, client=thread_client, store=thread_store,
+            cfg=cfg, pricing=pricing, force=args.force,
+        )
+
+    ok = fail = 0
+    if workers <= 1 or len(to_run) <= 1:
+        for batch_key, variables, temp in tqdm(to_run, desc=f"Prompt {prompt_id}"):
+            if _run_one(batch_key, variables, temp):
+                ok += 1
+            else:
+                fail += 1
+    else:
+        print(f"Running {len(to_run)} batches with {workers} workers", file=sys.stderr)
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = {
+                pool.submit(_run_one, batch_key, variables, temp): batch_key
+                for batch_key, variables, temp in to_run
+            }
+            for fut in tqdm(as_completed(futures), total=len(futures), desc=f"Prompt {prompt_id}"):
+                if fut.result():
+                    ok += 1
+                else:
+                    fail += 1
 
     print(f"\nDone: {ok} completed, {fail} failed, {skip} skipped")
     stats = store.get_stats()
