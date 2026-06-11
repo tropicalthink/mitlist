@@ -767,6 +767,7 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
                                   width: 48,
                                   height: 48,
                                   fit: BoxFit.cover,
+                                  cacheWidth: (48 * MediaQuery.devicePixelRatioOf(context) * 1.5).round(),
                                   errorBuilder: (_, __, ___) => const AppIcon(name: 'image', size: 48),
                                 ),
                               ),

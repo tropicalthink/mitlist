@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/auth_service.dart';
 import '../exceptions.dart';
+import 'list_provider.dart' show appDatabaseProvider;
 
 /// Provider for the AuthService instance.
 final authServiceProvider = Provider<AuthService>((ref) {
@@ -8,7 +9,8 @@ final authServiceProvider = Provider<AuthService>((ref) {
 });
 
 final authServiceProviderAsync = FutureProvider<AuthService>((ref) async {
-  return await AuthService.create(ref);
+  final db = ref.read(appDatabaseProvider);
+  return await AuthService.createWithWipe(ref: ref, wipeLocalData: db.clearAllUserData);
 });
 
 /// Provider for authentication state.

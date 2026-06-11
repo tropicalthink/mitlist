@@ -302,11 +302,54 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
+
+  /// Creates all hot-query indexes.  Called from both onCreate and the v4
+  /// onUpgrade block so that fresh installs and upgrades both get the indexes.
+  Future<void> _createIndexes() async {
+    // lists_table
+    await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_lists_table_group_id ON lists_table(group_id);');
+    // list_items_table
+    await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_list_items_table_list_id ON list_items_table(list_id);');
+    // expenses_table
+    await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_expenses_table_group_id ON expenses_table(group_id);');
+    // outbox_ops — ordered by created_at in every drain query
+    await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_outbox_ops_created_at ON outbox_ops(created_at);');
+    // canonical_items_table
+    await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_canonical_items_table_group_id ON canonical_items_table(group_id);');
+    // item_aliases_table — filtered by group_id and alias_text
+    await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_item_aliases_table_group_id ON item_aliases_table(group_id);');
+    await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_item_aliases_table_alias_text ON item_aliases_table(alias_text);');
+    // corrections_table
+    await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_corrections_table_group_id ON corrections_table(group_id);');
+    // store_aisles_table
+    await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_store_aisles_table_group_id ON store_aisles_table(group_id);');
+    // purchase_history_table — filtered by group_id + canonical_item_id
+    await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_purchase_history_table_group_id ON purchase_history_table(group_id);');
+    await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_purchase_history_table_canonical_item_id ON purchase_history_table(canonical_item_id);');
+    // item_cooccurrence_table — PK covers (group_id, item_a_id, item_b_id) but
+    // queries also filter on item_b_id alone; add a covering index on group_id.
+    await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_item_cooccurrence_table_group_id ON item_cooccurrence_table(group_id);');
+  }
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (m) async => m.createAll(),
+        onCreate: (m) async {
+          await m.createAll();
+          await _createIndexes();
+        },
         onUpgrade: (m, from, to) async {
           if (from < 2) {
             // SQLite can't change column types in-place; rebuild list_items_table.
@@ -349,6 +392,10 @@ FROM list_items_table;
             await m.createTable(itemCooccurrenceTable);
             await m.createTable(scanArtifactsTable);
             await m.createTable(groceryVersionsTable);
+          }
+          if (from < 4) {
+            // Add hot-query indexes (no data migration needed).
+            await _createIndexes();
           }
         },
         beforeOpen: (details) async {

@@ -655,6 +655,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
                 height: 120,
                 width: double.infinity,
                 fit: BoxFit.cover,
+                cacheWidth: (MediaQuery.sizeOf(context).width * MediaQuery.devicePixelRatioOf(context) * 1.5).round(),
                 errorBuilder: (_, __, ___) => Container(
                   color: colorScheme.surfaceContainerLow,
                   child: const Center(

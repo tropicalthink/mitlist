@@ -759,6 +759,7 @@ class _PinwallNoteCard extends ConsumerWidget {
               child: Image.network(
                 m.url,
                 fit: BoxFit.contain,
+                cacheWidth: (MediaQuery.sizeOf(context).width * MediaQuery.devicePixelRatioOf(context) * 1.5).round(),
                 errorBuilder: (_, __, ___) => Padding(
                   padding: const EdgeInsets.all(MitlistSpacing.md),
                   child: Text(
@@ -1068,6 +1069,7 @@ class _PinwallNoteCard extends ConsumerWidget {
                                     child: Image.network(
                                       m.url,
                                       fit: BoxFit.cover,
+                                      cacheWidth: (42 * MediaQuery.devicePixelRatioOf(context) * 1.5).round(),
                                       errorBuilder: (_, __, ___) => Container(
                                         color: Theme.of(context).colorScheme.surfaceContainerLow
                                             .withValues(alpha: 0.25),

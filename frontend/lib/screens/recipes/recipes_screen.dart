@@ -13,6 +13,7 @@ import '../../services/group_id_validator.dart';
 import '../../sheets/recipe_add_to_list_sheet.dart';
 import '../../sheets/recipe_detail_sheet.dart';
 import '../../theme/spacing.dart';
+import '../../theme/theme.dart';
 import '../../theme/typography.dart';
 import '../../utils/active_group_context.dart';
 import '../../utils/haptics.dart';
@@ -859,6 +860,7 @@ class _RecipeCard extends StatelessWidget {
       width: MitlistSpacing.space20,
       height: MitlistSpacing.space20,
       fit: BoxFit.cover,
+      cacheWidth: (MitlistSpacing.space20 * MediaQuery.devicePixelRatioOf(context) * 1.5).round(),
       errorBuilder: (context, error, stackTrace) {
         return Container(
           width: MitlistSpacing.space20,
@@ -925,14 +927,8 @@ class _RecipeCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (tags.isNotEmpty) ...[
-                  const SizedBox(height: MitlistSpacing.space6),
-                  Wrap(
-                    spacing: MitlistSpacing.xs,
-                    runSpacing: MitlistSpacing.xs,
-                    children: [
-                      for (final tag in tags) AppChip(label: tag),
-                    ],
-                  ),
+                  const SizedBox(height: MitlistSpacing.xs),
+                  _RecipeCardTags(tags: tags),
                 ],
               ],
             ),
@@ -943,6 +939,72 @@ class _RecipeCard extends StatelessWidget {
             onPressed: onAddToList,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _RecipeCardTags extends StatelessWidget {
+  static const int _maxVisible = 2;
+
+  final List<String> tags;
+
+  const _RecipeCardTags({required this.tags});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final visible = tags.take(_maxVisible).toList();
+    final overflow = tags.length - visible.length;
+
+    return Row(
+      children: [
+        for (var i = 0; i < visible.length; i++) ...[
+          if (i > 0) const SizedBox(width: MitlistSpacing.xs),
+          Flexible(
+            child: _CompactTagChip(label: visible[i]),
+          ),
+        ],
+        if (overflow > 0) ...[
+          const SizedBox(width: MitlistSpacing.xs),
+          Text(
+            '+$overflow',
+            style: MitlistTypography.labelXSmall(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _CompactTagChip extends StatelessWidget {
+  final String label;
+
+  const _CompactTagChip({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: MitlistSpacing.xs,
+        vertical: 2,
+      ),
+      decoration: BoxDecoration(
+        border: Border.all(color: colorScheme.outline, width: 1),
+        borderRadius:
+            const BorderRadius.all(Radius.circular(MitlistTheme.radiusSm)),
+      ),
+      child: Text(
+        label,
+        style: MitlistTypography.labelXSmall(
+          color: colorScheme.onSurfaceVariant,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }
