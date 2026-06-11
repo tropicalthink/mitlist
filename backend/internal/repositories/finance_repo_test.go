@@ -536,6 +536,35 @@ func TestFinanceRepo_GetSettlementByID_NotFound(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestFinanceRepo_GetGroupBalanceAggregates(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewFinanceRepo(mock)
+	gid := fixedUUID()
+
+	userA := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+	userB := uuid.MustParse("00000000-0000-0000-0000-000000000002")
+
+	cols := []string{"user_id", "expense_paid", "split_owed", "settled_out", "settled_in"}
+	rows := pgxmock.NewRows(cols).
+		AddRow(userA, int64(10000), int64(5000), int64(0), int64(0)).
+		AddRow(userB, int64(0), int64(5000), int64(0), int64(0))
+
+	mock.ExpectQuery("WITH all_users AS").
+		WithArgs(gid).
+		WillReturnRows(rows)
+
+	aggregates, err := repo.GetGroupBalanceAggregates(context.Background(), gid)
+	require.NoError(t, err)
+	require.Len(t, aggregates, 2)
+	assert.Equal(t, userA, aggregates[0].UserID)
+	assert.Equal(t, int64(10000), aggregates[0].ExpensePaid)
+	assert.Equal(t, int64(5000), aggregates[0].SplitOwed)
+	assert.Equal(t, userB, aggregates[1].UserID)
+	assert.Equal(t, int64(0), aggregates[1].ExpensePaid)
+	assert.Equal(t, int64(5000), aggregates[1].SplitOwed)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestFinanceRepo_CreateExpenseWithSplits(t *testing.T) {
 	mock := newMockDB(t)
 	repo := NewFinanceRepo(mock)
