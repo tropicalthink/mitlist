@@ -95,6 +95,7 @@ class ListRepository {
       note: req.note,
       checked: false,
       position: 0,
+      priceCents: req.priceCents,
       createdAt: now,
       updatedAt: now,
     );
@@ -110,6 +111,7 @@ class ListRepository {
         'quantity': req.quantity,
         'unit': req.unit,
         'note': req.note,
+        if (req.priceCents != null) 'priceCents': req.priceCents,
       },
       idempotencyKey: 'createItem:$tempId',
     );
@@ -169,6 +171,50 @@ class ListRepository {
     await (_db.delete(_db.listItemsTable)
           ..where((t) => t.listId.equals(listId)))
         .go();
+  }
+
+  Future<void> reorderItemsOfflineFirst(
+    String listId,
+    List<String> itemIdsInOrder,
+  ) async {
+    final existingRows = await _db.getItemsByListOnce(listId);
+    final byId = {for (final row in existingRows) row.id: _toListItem(row)};
+
+    final patched = <ListItemsTableCompanion>[];
+    for (var i = 0; i < itemIdsInOrder.length; i++) {
+      final existing = byId[itemIdsInOrder[i]];
+      if (existing == null) continue;
+      patched.add(
+        _toListItemsRow(
+          ListItem(
+            id: existing.id,
+            listId: existing.listId,
+            name: existing.name,
+            quantity: existing.quantity,
+            unit: existing.unit,
+            note: existing.note,
+            checked: existing.checked,
+            position: i,
+            priceCents: existing.priceCents,
+            claimedBy: existing.claimedBy,
+            createdAt: existing.createdAt,
+            updatedAt: DateTime.now(),
+          ),
+        ),
+      );
+    }
+
+    await _db.upsertListItemsRows(patched);
+
+    try {
+      await _remote.reorderItems(
+        listId,
+        ReorderItemsRequest(itemIds: itemIdsInOrder),
+      );
+    } catch (e) {
+      await refreshItems(listId);
+      rethrow;
+    }
   }
 
   Future<void> deleteItemOfflineFirst(String listId, String itemId) async {
@@ -242,6 +288,7 @@ class ListRepository {
         quantity: (payload['quantity'] as num?)?.toDouble() ?? 1,
         unit: payload['unit'] as String? ?? '',
         note: payload['note'] as String? ?? '',
+        priceCents: payload['priceCents'] as int?,
       ),
     );
 
@@ -268,6 +315,7 @@ class ListRepository {
         quantity: (patch['quantity'] as num?)?.toDouble(),
         unit: patch['unit'] as String?,
         note: patch['note'] as String?,
+        priceCents: patch['price_cents'] as int? ?? patch['priceCents'] as int?,
         checked: patch['checked'] as bool?,
         position: patch['position'] as int?,
       ),

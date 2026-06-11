@@ -16,6 +16,7 @@ class ListItemRow extends StatelessWidget {
     this.claimedLabel,
     this.onPhotoTap,
     this.onLongPress,
+    this.reorderIndex,
   });
 
   final ListItem item;
@@ -25,6 +26,7 @@ class ListItemRow extends StatelessWidget {
   final String? claimedLabel;
   final VoidCallback? onPhotoTap;
   final VoidCallback? onLongPress;
+  final int? reorderIndex;
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +55,28 @@ class ListItemRow extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              if (reorderIndex != null) ...[
+                Semantics(
+                  label: 'Reorder',
+                  child: Tooltip(
+                    message: 'Reorder',
+                    child: ReorderableDragStartListener(
+                      index: reorderIndex!,
+                      child: SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: Center(
+                          child: Icon(
+                            Icons.drag_handle,
+                            size: 18,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
               AnimatedCheckToggle(
                 value: item.checked,
                 onChanged: onToggle,

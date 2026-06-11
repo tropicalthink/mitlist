@@ -1660,6 +1660,12 @@ class FakeListRepository implements ListRepository {
   Future<void> deleteItemOfflineFirst(String listId, String itemId) async {}
 
   @override
+  Future<void> reorderItemsOfflineFirst(
+    String listId,
+    List<String> itemIdsInOrder,
+  ) async {}
+
+  @override
   Future<void> deleteListLocal(String listId) async {}
 
   @override
