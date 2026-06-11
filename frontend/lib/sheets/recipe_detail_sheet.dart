@@ -161,6 +161,7 @@ class RecipeDetailSheet extends StatelessWidget {
               height: 160,
               width: double.infinity,
               fit: BoxFit.cover,
+              cacheWidth: (MediaQuery.sizeOf(context).width * MediaQuery.devicePixelRatioOf(context) * 1.5).round(),
               errorBuilder: (_, __, ___) => Container(
                 color: Theme.of(context).colorScheme.surfaceContainerLow,
                 height: 160,

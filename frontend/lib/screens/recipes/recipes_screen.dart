@@ -859,6 +859,7 @@ class _RecipeCard extends StatelessWidget {
       width: MitlistSpacing.space20,
       height: MitlistSpacing.space20,
       fit: BoxFit.cover,
+      cacheWidth: (MitlistSpacing.space20 * MediaQuery.devicePixelRatioOf(context) * 1.5).round(),
       errorBuilder: (context, error, stackTrace) {
         return Container(
           width: MitlistSpacing.space20,

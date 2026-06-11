@@ -534,6 +534,7 @@ class _BoardNoteCard extends ConsumerWidget {
                                 child: Image.network(
                                   show[i].url,
                                   fit: BoxFit.cover,
+                                  cacheWidth: (48 * MediaQuery.devicePixelRatioOf(context) * 1.5).round(),
                                   errorBuilder: (_, __, ___) => Container(
                                     color: border.withValues(alpha: 0.3),
                                     child: const Icon(

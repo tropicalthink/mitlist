@@ -147,6 +147,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
                 child: Image.network(
                   receipt.url,
                   fit: BoxFit.contain,
+                  cacheWidth: (MediaQuery.sizeOf(context).width * MediaQuery.devicePixelRatioOf(context) * 1.5).round(),
                   errorBuilder: (_, __, ___) => Padding(
                     padding: const EdgeInsets.all(MitlistSpacing.lg),
                     child: Text(
@@ -316,6 +317,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
                             Image.network(
                               r.url,
                               fit: BoxFit.cover,
+                              cacheWidth: (84 * MediaQuery.devicePixelRatioOf(context) * 1.5).round(),
                               errorBuilder: (_, __, ___) => Container(
                                 color: Theme.of(context).colorScheme.surfaceContainerLow,
                                 alignment: Alignment.center,
