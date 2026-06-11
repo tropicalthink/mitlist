@@ -48,6 +48,7 @@ class SseService {
   HttpClient? _httpClient;
   bool _disposed = false;
   String? _currentGroupId;
+  int _generation = 0;
 
   Stream<SseEvent> get events => _controller.stream;
 
@@ -57,17 +58,18 @@ class SseService {
     _currentGroupId = groupId;
     _httpClient?.close(force: true);
     _httpClient = null;
-    unawaited(_startLoop(groupId));
+    final gen = ++_generation;
+    unawaited(_startLoop(groupId, gen));
   }
 
-  Future<void> _startLoop(String groupId) async {
+  Future<void> _startLoop(String groupId, int gen) async {
     var backoff = const Duration(seconds: 2);
 
-    while (!_disposed && _currentGroupId == groupId) {
+    while (!_disposed && _generation == gen) {
       try {
-        await _connectOnce(groupId);
+        await _connectOnce(groupId, gen);
       } on _SseUnauthorizedException {
-        if (_disposed || _currentGroupId != groupId) break;
+        if (_disposed || _generation != gen) break;
         _log.i('SSE got 401 — attempting token refresh');
         final refreshed = await _tryRefreshToken();
         if (!refreshed) {
@@ -76,7 +78,7 @@ class SseService {
         }
         // New token saved — retry immediately without backoff.
       } catch (e) {
-        if (_disposed || _currentGroupId != groupId) break;
+        if (_disposed || _generation != gen) break;
         _log.w('SSE disconnected, retrying in ${backoff.inSeconds}s: $e');
         await Future.delayed(backoff);
         backoff = Duration(seconds: (backoff.inSeconds * 2).clamp(2, 60));
@@ -117,7 +119,7 @@ class SseService {
     }
   }
 
-  Future<void> _connectOnce(String groupId) async {
+  Future<void> _connectOnce(String groupId, int gen) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString(ApiConfig.accessTokenKey);
     if (token == null) return;
@@ -148,7 +150,7 @@ class SseService {
 
     final buffer = StringBuffer();
     await for (final chunk in response.transform(utf8.decoder)) {
-      if (_disposed || _currentGroupId != groupId) return;
+      if (_disposed || _generation != gen) return;
       buffer.write(chunk);
 
       // SSE events are separated by double newlines.
@@ -172,7 +174,9 @@ class SseService {
           if (!_controller.isClosed) {
             _controller.add(SseEvent.fromJson(map));
           }
-        } catch (_) {}
+        } catch (e) {
+          _log.w('SSE: dropping malformed event: $e');
+        }
         return;
       }
     }
