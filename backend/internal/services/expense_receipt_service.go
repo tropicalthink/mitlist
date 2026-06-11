@@ -48,14 +48,7 @@ type ExpenseReceipt struct {
 }
 
 func (s *ExpenseReceiptService) requireMember(ctx context.Context, groupID, userID uuid.UUID) error {
-	_, err := s.groupRepo.GetMembership(ctx, groupID, userID)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return &api.PermissionDeniedError{Message: "not a member of this group"}
-		}
-		return err
-	}
-	return nil
+	return requireGroupMember(ctx, s.groupRepo, groupID, userID)
 }
 
 func (s *ExpenseReceiptService) Attach(ctx context.Context, userID, groupID, expenseID, attachmentID uuid.UUID) error {
