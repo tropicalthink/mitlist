@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -52,7 +53,7 @@ func TestMealPlanService_CreateMealPlan(t *testing.T) {
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := newMealPlanService(mpRepo, groupRepo, nil, nil)
 
-		groupRepo.On("GetMembership", ctx, groupID, userID).Return(nil, fmt.Errorf("no membership"))
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(nil, pgx.ErrNoRows)
 
 		mp := &models.MealPlan{GroupID: groupID, RecipeID: recipeID, Date: time.Now()}
 		err := svc.CreateMealPlan(ctx, user, mp)
@@ -115,7 +116,7 @@ func TestMealPlanService_GetMealPlan(t *testing.T) {
 		svc := newMealPlanService(mpRepo, groupRepo, nil, nil)
 
 		mpRepo.On("GetMealPlanByID", ctx, mpID).Return(&models.MealPlan{ID: mpID, GroupID: groupID}, nil)
-		groupRepo.On("GetMembership", ctx, groupID, userID).Return(nil, fmt.Errorf("no membership"))
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(nil, pgx.ErrNoRows)
 
 		_, err := svc.GetMealPlan(ctx, user, mpID)
 		require.Error(t, err)
@@ -155,7 +156,7 @@ func TestMealPlanService_ListMealPlans(t *testing.T) {
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := newMealPlanService(mpRepo, groupRepo, nil, nil)
 
-		groupRepo.On("GetMembership", ctx, groupID, userID).Return(nil, fmt.Errorf("no membership"))
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(nil, pgx.ErrNoRows)
 
 		_, err := svc.ListMealPlans(ctx, user, groupID, from, to)
 		require.Error(t, err)

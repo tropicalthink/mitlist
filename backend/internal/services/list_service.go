@@ -91,14 +91,7 @@ func (s *ListService) publishListEvent(eventType string, groupID, listID uuid.UU
 }
 
 func (s *ListService) requireMembership(ctx context.Context, userID, groupID uuid.UUID) error {
-	_, err := s.groupRepo.GetMembership(ctx, groupID, userID)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return &api.PermissionDeniedError{Message: "not a member of this group"}
-		}
-		return fmt.Errorf("failed to check membership: %w", err)
-	}
-	return nil
+	return requireGroupMember(ctx, s.groupRepo, groupID, userID)
 }
 
 func (s *ListService) requireActiveVerifiedUser(u *models.User) error {

@@ -38,31 +38,11 @@ func NewFinanceService(financeRepo repositories.FinanceRepoIface, groupRepo repo
 }
 
 func (s *FinanceService) requireMember(ctx context.Context, groupID, userID uuid.UUID) error {
-	m, err := s.groupRepo.GetMembership(ctx, groupID, userID)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return api.ErrPermissionDenied
-		}
-		return err
-	}
-	if m.Role != "admin" && m.Role != "member" {
-		return api.ErrPermissionDenied
-	}
-	return nil
+	return requireGroupMember(ctx, s.groupRepo, groupID, userID)
 }
 
 func (s *FinanceService) requireAdmin(ctx context.Context, groupID, userID uuid.UUID) error {
-	m, err := s.groupRepo.GetMembership(ctx, groupID, userID)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return api.ErrPermissionDenied
-		}
-		return err
-	}
-	if m.Role != "admin" {
-		return api.ErrPermissionDenied
-	}
-	return nil
+	return requireGroupAdmin(ctx, s.groupRepo, groupID, userID)
 }
 
 // ------------------------------------------------------------------

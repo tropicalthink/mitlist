@@ -3,13 +3,10 @@ package services
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 
-	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/mitlist-app/mitlist/internal/sse"
@@ -153,14 +150,7 @@ func (s *GroceryService) UpdateAisles(ctx context.Context, userID, groupID uuid.
 }
 
 func (s *GroceryService) requireMembership(ctx context.Context, userID, groupID uuid.UUID) error {
-	_, err := s.groupRepo.GetMembership(ctx, groupID, userID)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return &api.PermissionDeniedError{Message: "not a member of this group"}
-		}
-		return fmt.Errorf("check membership: %w", err)
-	}
-	return nil
+	return requireGroupMember(ctx, s.groupRepo, groupID, userID)
 }
 
 func (s *GroceryService) publishGraphUpdated(groupID uuid.UUID, version int64) {
