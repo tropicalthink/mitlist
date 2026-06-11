@@ -47,14 +47,7 @@ type PinwallMediaItem struct {
 }
 
 func (s *PinwallMediaService) requireMembership(ctx context.Context, userID, groupID uuid.UUID) error {
-	_, err := s.groupRepo.GetMembership(ctx, groupID, userID)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return &api.PermissionDeniedError{Message: "not a member of this group"}
-		}
-		return fmt.Errorf("check membership: %w", err)
-	}
-	return nil
+	return requireGroupMember(ctx, s.groupRepo, groupID, userID)
 }
 
 func (s *PinwallMediaService) Attach(ctx context.Context, userID, groupID, postID, attachmentID uuid.UUID) error {
