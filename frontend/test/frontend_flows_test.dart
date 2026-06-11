@@ -208,7 +208,7 @@ void main() {
     await tester.tap(find.text('Groceries'));
     await _pumpAfter(tester);
 
-    expect(find.text('Expense Details'), findsOneWidget);
+    expect(find.text('Expense details'), findsOneWidget);
   });
 
   testWidgets('recipe creation flow persists real recipe fields',
@@ -301,7 +301,7 @@ void main() {
     await tester.tap(find.text('Tomato Soup'));
     await _pumpAfter(tester);
 
-    expect(find.text('Recipe Details'), findsOneWidget);
+    expect(find.text('Recipe details'), findsOneWidget);
     expect(find.text('Blend and simmer.'), findsOneWidget);
     expect(find.text('4'), findsOneWidget);
   });
@@ -360,12 +360,12 @@ void main() {
 
     await tester.enterText(find.byType(TextField).first, 'sunny-taco-42');
     await _pumpAfter(tester);
-    await tester.tap(find.widgetWithText(AppButton, 'Join Household'));
+    await tester.tap(find.widgetWithText(AppButton, 'JOIN HOUSEHOLD')); // solid variant renders text as uppercase
     await _pumpAfter(tester);
 
     expect(groupService.lastJoinRequest, isNotNull);
     expect(groupService.lastJoinRequest!.code, 'SUNNY-TACO-42');
-    expect(find.text('Joined Household'), findsOneWidget);
+    expect(find.text("You're in."), findsOneWidget);
   });
 
   testWidgets(
@@ -1073,6 +1073,9 @@ class FakeGroupService implements GroupService {
     groups.add(group);
     return group;
   }
+
+  @override
+  Future<List<GroupMemberProfile>> listMembers(String groupId) async => [];
 
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
