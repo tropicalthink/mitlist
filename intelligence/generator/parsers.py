@@ -8,9 +8,15 @@ from typing import Any
 
 
 def strip_markdown_fences(text: str) -> str:
-    """Remove ```json ... ``` wrappers if the model ignored instructions."""
+    """Remove markdown fences and thinking blocks from model output."""
     text = text.strip()
+    # Strip ... blocks (reasoner models)
+    text = re.sub(r"<think\b[^>]*>.*?", "", text, flags=re.DOTALL | re.IGNORECASE)
     m = re.match(r"^```(?:json|jsonl)?\s*\n?(.*?)\n?```\s*$", text, re.DOTALL | re.IGNORECASE)
+    if m:
+        return m.group(1).strip()
+    # Inline code fence
+    m = re.search(r"```(?:json|jsonl)?\s*\n(.*?)```", text, re.DOTALL | re.IGNORECASE)
     if m:
         return m.group(1).strip()
     return text
@@ -34,23 +40,14 @@ def _validate_canonical_item(item: dict, index: int, *, min_aliases: int | None 
             raise ValueError(f"Item {index} {alias_field} needs ≥{floor} entries, got {len(aliases)}")
 
 
-def extract_complete_objects(text: str) -> list[dict[str, Any]]:
-    """Salvage complete top-level objects from a truncated JSON array."""
-    cleaned = strip_markdown_fences(text)
-    start = cleaned.find("[")
-    if start == -1:
-        return []
-
+def _scan_json_objects(text: str, start_pos: int = 0) -> list[dict[str, Any]]:
+    """Extract complete {...} objects via brace matching."""
     objects: list[dict[str, Any]] = []
-    i = start + 1
-    n = len(cleaned)
+    n = len(text)
+    i = start_pos
 
     while i < n:
-        while i < n and cleaned[i] in " \t\n\r,":
-            i += 1
-        if i >= n or cleaned[i] == "]":
-            break
-        if cleaned[i] != "{":
+        if text[i] != "{":
             i += 1
             continue
 
@@ -60,7 +57,7 @@ def extract_complete_objects(text: str) -> list[dict[str, Any]]:
         j = i
 
         while j < n:
-            c = cleaned[j]
+            c = text[j]
             if escape:
                 escape = False
             elif c == "\\":
@@ -73,7 +70,7 @@ def extract_complete_objects(text: str) -> list[dict[str, Any]]:
                 elif c == "}":
                     depth -= 1
                     if depth == 0:
-                        chunk = cleaned[i : j + 1]
+                        chunk = text[i : j + 1]
                         try:
                             obj = json.loads(chunk)
                             if isinstance(obj, dict):
@@ -84,9 +81,18 @@ def extract_complete_objects(text: str) -> list[dict[str, Any]]:
                         break
             j += 1
         else:
-            break  # truncated mid-object
+            break
 
     return objects
+
+
+def extract_complete_objects(text: str) -> list[dict[str, Any]]:
+    """Salvage complete objects from truncated JSON array or JSONL."""
+    cleaned = strip_markdown_fences(text)
+    start = cleaned.find("[")
+    if start != -1:
+        return _scan_json_objects(cleaned, start + 1)
+    return _scan_json_objects(cleaned, 0)
 
 
 def parse_json_array(
@@ -138,20 +144,126 @@ def parse_json_array(
     return valid
 
 
-def parse_jsonl(text: str, *, min_lines: int = 1) -> list[dict[str, Any]]:
+_OCR_RAW_KEYS = ("raw", "noisy", "text", "dirty", "ocr", "wrong", "input")
+_OCR_ITEM_KEYS = ("item_de", "clean", "correct", "completion", "canonical", "name", "item")
+
+
+def normalize_ocr_row(
+    row: dict,
+    item_lookup: dict[str, dict[str, Any]],
+    lang: str,
+) -> dict[str, Any] | None:
+    """Map alternate model schemas (clean/noisy, text/completion) to canonical OCR format."""
+    raw = next((str(row[k]).strip() for k in _OCR_RAW_KEYS if row.get(k)), "")
+    if not raw:
+        return None
+
+    item_name = next((str(row[k]).strip() for k in _OCR_ITEM_KEYS if row.get(k)), "")
+    seed = item_lookup.get(item_name.lower()) if item_name else None
+    if not seed:
+        # Try matching raw against canonical names
+        for candidate in item_lookup.values():
+            if item_name and item_name.lower() in (
+                candidate.get("name_de", "").lower(),
+                candidate.get("name_en", "").lower(),
+            ):
+                seed = candidate
+                break
+    if not seed:
+        return None
+
+    vtype = row.get("variant_type") or row.get("type") or "TYPO"
+    vtype = str(vtype).upper()
+    if vtype == "OCR":
+        vtype = "OCR_CHAR_CONFUSION"
+
+    return {
+        "item_de": seed["name_de"],
+        "item_en": seed.get("name_en", ""),
+        "item_fr": seed.get("name_fr", ""),
+        "item_es": seed.get("name_es", ""),
+        "lang": lang,
+        "raw": raw,
+        "variant_type": vtype,
+        "variant_subtype": row.get("variant_subtype") or row.get("subtype") or "model_variant",
+    }
+
+
+def _validate_jsonl_row(row: dict, index: int) -> None:
+    if not isinstance(row, dict):
+        raise ValueError(f"Row {index} is not an object")
+    if not row.get("raw"):
+        raise ValueError(f"Row {index} missing raw")
+    if not row.get("variant_type"):
+        raise ValueError(f"Row {index} missing variant_type")
+    if not row.get("item_de"):
+        raise ValueError(f"Row {index} missing item_de")
+
+
+def parse_jsonl(
+    text: str,
+    *,
+    min_lines: int = 1,
+    salvage: bool = True,
+    item_lookup: dict[str, dict[str, Any]] | None = None,
+    lang: str = "",
+) -> list[dict[str, Any]]:
+    """Parse JSONL; salvage complete objects if lines are truncated or merged."""
     cleaned = strip_markdown_fences(text)
     rows: list[dict[str, Any]] = []
-    for i, line in enumerate(cleaned.splitlines(), 1):
-        line = line.strip()
-        if not line:
-            continue
+    line_errors: list[str] = []
+
+    # Full-text scan handles concatenated objects on one line
+    if salvage:
+        rows = _scan_json_objects(cleaned, 0)
+
+    if not rows:
+        for i, line in enumerate(cleaned.splitlines(), 1):
+            line = line.strip()
+            if not line or line in ("[", "]", "{}", "[]"):
+                continue
+            try:
+                obj = json.loads(line)
+                if isinstance(obj, dict):
+                    rows.append(obj)
+            except json.JSONDecodeError as e:
+                line_errors.append(f"line {i}: {e}")
+                if salvage:
+                    rows.extend(extract_complete_objects(line))
+
+    # Deduplicate by (item_de, raw) after normalization
+    seen: set[tuple[str, str]] = set()
+    valid: list[dict[str, Any]] = []
+    errors: list[str] = []
+    for i, row in enumerate(rows):
         try:
-            rows.append(json.loads(line))
-        except json.JSONDecodeError as e:
-            raise ValueError(f"JSONL line {i} invalid: {e}") from e
-    if len(rows) < min_lines:
-        raise ValueError(f"Expected ≥{min_lines} JSONL rows, got {len(rows)}")
-    return rows
+            if item_lookup and lang:
+                normalized = normalize_ocr_row(row, item_lookup, lang)
+                if normalized is None:
+                    if row.get("raw") and row.get("item_de"):
+                        normalized = row
+                    else:
+                        errors.append(f"Row {i} could not normalize: {list(row.keys())}")
+                        continue
+                row = normalized
+            _validate_jsonl_row(row, i)
+            key = (row.get("item_de", ""), row.get("raw", ""))
+            if key in seen:
+                continue
+            seen.add(key)
+            valid.append(row)
+        except ValueError as e:
+            errors.append(str(e))
+
+    if len(valid) < min_lines:
+        detail = f"Expected ≥{min_lines} JSONL rows, got {len(valid)}"
+        if line_errors:
+            detail += f"; first line error: {line_errors[0]}"
+        if errors:
+            detail += f"; first row error: {errors[0]}"
+        raise ValueError(detail)
+
+    return valid
 
 
 def validate_ocr_corpus(rows: list[dict], *, items: list[str], variants_per_item: int = 30) -> None:

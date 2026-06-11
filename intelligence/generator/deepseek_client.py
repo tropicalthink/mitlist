@@ -67,7 +67,13 @@ class DeepSeekClient:
                 latency_ms = int((time.monotonic() - start) * 1000)
                 choice = response.choices[0]
                 usage = response.usage
-                content = choice.message.content or ""
+                msg = choice.message
+                content = msg.content or ""
+                # Thinking/reasoner models may put output in reasoning_content
+                if not content.strip():
+                    reasoning = getattr(msg, "reasoning_content", None) or ""
+                    if reasoning:
+                        content = reasoning
                 raw = response.model_dump()
                 raw["finish_reason"] = choice.finish_reason
                 return CompletionResult(

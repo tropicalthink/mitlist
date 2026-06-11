@@ -42,7 +42,7 @@ func TestShareService_CreateListFromShare(t *testing.T) {
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := NewShareService(listRepo, recipeRepo, groupRepo)
 
-		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
 		listRepo.On("CreateList", ctx, mock.AnythingOfType("*models.List")).Return(nil)
 		listRepo.On("CreateItem", ctx, mock.AnythingOfType("*models.ListItem")).Return(nil)
 

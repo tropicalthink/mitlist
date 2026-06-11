@@ -12,6 +12,7 @@ import (
 
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/repositories"
+	"github.com/mitlist-app/mitlist/internal/services"
 	"github.com/mitlist-app/mitlist/pkg/logger"
 )
 
@@ -60,8 +61,9 @@ func (j *RecurringExpenseJob) Run() {
 func (j *RecurringExpenseJob) processRecurringExpense(ctx context.Context, re models.RecurringExpense) error {
 	now := time.Now().UTC()
 
+	expenseID := uuid.New()
 	expense := models.Expense{
-		ID:          uuid.New(),
+		ID:          expenseID,
 		GroupID:     re.GroupID,
 		PayerID:     re.PayerID,
 		Amount:      re.Amount,
@@ -73,14 +75,8 @@ func (j *RecurringExpenseJob) processRecurringExpense(ctx context.Context, re mo
 		UpdatedAt:   now,
 	}
 
-	split := models.Split{
-		ID:        uuid.New(),
-		ExpenseID: expense.ID,
-		UserID:    re.PayerID,
-		Amount:    re.Amount,
-		IsSettled: true,
-		CreatedAt: now,
-	}
+	// Build splits: use stored split config when available, otherwise single payer split.
+	splits := j.buildSplitsForRecurring(re, expenseID, now)
 
 	nextDue, err := j.nextDueFromCron(re.Frequency, now)
 	if err != nil {
@@ -91,7 +87,7 @@ func (j *RecurringExpenseJob) processRecurringExpense(ctx context.Context, re mo
 		nextDue = now.AddDate(0, 1, 0)
 	}
 
-	if err := j.repo.ProcessRecurringExpense(ctx, &expense, &split, re.ID, re.NextDue, nextDue); err != nil {
+	if err := j.repo.ProcessRecurringExpense(ctx, &expense, splits, re.ID, re.NextDue, nextDue); err != nil {
 		return fmt.Errorf("process recurring expense: %w", err)
 	}
 
@@ -116,6 +112,50 @@ func (j *RecurringExpenseJob) processRecurringExpense(ctx context.Context, re mo
 		Time("next_due", nextDue).
 		Msg("recurring expense processed")
 	return nil
+}
+
+// buildSplitsForRecurring returns splits for a recurring expense materialisation.
+// For legacy / payer_only rows it returns a single settled payer split.
+// For configured split modes it delegates to BuildExpenseSplits with a fallback on error.
+func (j *RecurringExpenseJob) buildSplitsForRecurring(re models.RecurringExpense, expenseID uuid.UUID, now time.Time) []models.Split {
+	payerOnlySplit := []models.Split{{
+		ID:        uuid.New(),
+		ExpenseID: expenseID,
+		UserID:    re.PayerID,
+		Amount:    re.Amount,
+		IsSettled: true,
+		CreatedAt: now,
+	}}
+
+	if re.SplitMode == "" || re.SplitMode == "payer_only" || len(re.SplitInputs) == 0 {
+		return payerOnlySplit
+	}
+
+	inputs := make([]services.ExpenseSplitInput, len(re.SplitInputs))
+	for i, si := range re.SplitInputs {
+		inputs[i] = services.ExpenseSplitInput{
+			UserID:     si.UserID,
+			Amount:     si.Amount,
+			Shares:     si.Shares,
+			Percentage: si.Percentage,
+		}
+	}
+
+	builtSplits, err := services.BuildExpenseSplits(re.Amount, re.PayerID, re.SplitMode, inputs)
+	if err != nil {
+		j.log.Error().Err(err).
+			Str("recurring_expense_id", re.ID.String()).
+			Str("split_mode", re.SplitMode).
+			Msg("split build failed for recurring expense; falling back to payer-only split")
+		return payerOnlySplit
+	}
+
+	for i := range builtSplits {
+		builtSplits[i].ID = uuid.New()
+		builtSplits[i].ExpenseID = expenseID
+		builtSplits[i].CreatedAt = now
+	}
+	return builtSplits
 }
 
 func (j *RecurringExpenseJob) nextDueFromCron(freq string, from time.Time) (time.Time, error) {
@@ -146,7 +186,8 @@ type recurringExpenseRepoImpl struct {
 
 func (r *recurringExpenseRepoImpl) ListDueRecurringExpenses(ctx context.Context) ([]models.RecurringExpense, error) {
 	query := `
-		SELECT id, group_id, payer_id, amount, description, category, currency, frequency, next_due, is_active, created_at
+		SELECT id, group_id, payer_id, amount, description, category, currency, frequency, next_due, is_active, created_at,
+		       COALESCE(split_mode, 'payer_only'), COALESCE(split_inputs, '[]'::jsonb)::text
 		FROM recurring_expenses
 		WHERE is_active = true AND next_due <= NOW()
 	`
@@ -159,12 +200,17 @@ func (r *recurringExpenseRepoImpl) ListDueRecurringExpenses(ctx context.Context)
 	var expenses []models.RecurringExpense
 	for rows.Next() {
 		var re models.RecurringExpense
+		var splitInputsJSON string
 		if err := rows.Scan(
 			&re.ID, &re.GroupID, &re.PayerID, &re.Amount,
 			&re.Description, &re.Category, &re.Currency,
 			&re.Frequency, &re.NextDue, &re.IsActive, &re.CreatedAt,
+			&re.SplitMode, &splitInputsJSON,
 		); err != nil {
 			return nil, fmt.Errorf("scan recurring expense: %w", err)
+		}
+		if err := json.Unmarshal([]byte(splitInputsJSON), &re.SplitInputs); err != nil {
+			re.SplitInputs = []models.RecurringSplitInput{}
 		}
 		expenses = append(expenses, re)
 	}
@@ -174,7 +220,7 @@ func (r *recurringExpenseRepoImpl) ListDueRecurringExpenses(ctx context.Context)
 	return expenses, nil
 }
 
-func (r *recurringExpenseRepoImpl) ProcessRecurringExpense(ctx context.Context, expense *models.Expense, split *models.Split, reID uuid.UUID, oldNextDue time.Time, nextDue time.Time) error {
+func (r *recurringExpenseRepoImpl) ProcessRecurringExpense(ctx context.Context, expense *models.Expense, splits []models.Split, reID uuid.UUID, oldNextDue time.Time, nextDue time.Time) error {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
@@ -189,12 +235,15 @@ func (r *recurringExpenseRepoImpl) ProcessRecurringExpense(ctx context.Context, 
 		return fmt.Errorf("create expense: %w", err)
 	}
 
-	_, err = tx.Exec(ctx, `
-		INSERT INTO splits (id, expense_id, user_id, amount, is_settled, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
-	`, split.ID, split.ExpenseID, split.UserID, split.Amount, split.IsSettled, split.CreatedAt)
-	if err != nil {
-		return fmt.Errorf("create split: %w", err)
+	for i := range splits {
+		s := &splits[i]
+		_, err = tx.Exec(ctx, `
+			INSERT INTO splits (id, expense_id, user_id, amount, is_settled, created_at)
+			VALUES ($1, $2, $3, $4, $5, $6)
+		`, s.ID, s.ExpenseID, s.UserID, s.Amount, s.IsSettled, s.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("create split: %w", err)
+		}
 	}
 
 	res, err := tx.Exec(ctx, `

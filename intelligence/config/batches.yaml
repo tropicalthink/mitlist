@@ -58,8 +58,8 @@ prompts:
     output: ml/data/ocr_corpus.jsonl
     output_mode: jsonl
     depends_on: "1"
-    items_per_batch: 50
-    variants_per_item: 30
+    items_per_batch: 5
+    variants_per_item: 20
     variables:
       LANGUAGE: [DE, EN, FR, ES]
     # ITEM_LIST is built dynamically from seed.json in groups of 50

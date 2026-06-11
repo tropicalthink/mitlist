@@ -38,31 +38,11 @@ func NewFinanceService(financeRepo repositories.FinanceRepoIface, groupRepo repo
 }
 
 func (s *FinanceService) requireMember(ctx context.Context, groupID, userID uuid.UUID) error {
-	m, err := s.groupRepo.GetMembership(ctx, groupID, userID)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return api.ErrPermissionDenied
-		}
-		return err
-	}
-	if m.Role != "admin" && m.Role != "member" {
-		return api.ErrPermissionDenied
-	}
-	return nil
+	return requireGroupMember(ctx, s.groupRepo, groupID, userID)
 }
 
 func (s *FinanceService) requireAdmin(ctx context.Context, groupID, userID uuid.UUID) error {
-	m, err := s.groupRepo.GetMembership(ctx, groupID, userID)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return api.ErrPermissionDenied
-		}
-		return err
-	}
-	if m.Role != "admin" {
-		return api.ErrPermissionDenied
-	}
-	return nil
+	return requireGroupAdmin(ctx, s.groupRepo, groupID, userID)
 }
 
 // ------------------------------------------------------------------
@@ -147,20 +127,13 @@ func (s *FinanceService) ListAllExpenses(ctx context.Context, userID, groupID uu
 }
 
 // GetFinanceSummary returns the canonical group balance and reimbursement view.
+// It uses a single aggregate SQL query instead of loading all historical rows.
 func (s *FinanceService) GetFinanceSummary(ctx context.Context, userID, groupID uuid.UUID) (*models.FinanceSummary, error) {
 	if err := s.requireMember(ctx, groupID, userID); err != nil {
 		return nil, err
 	}
 
-	expenses, err := s.financeRepo.ListAllExpensesByGroup(ctx, groupID)
-	if err != nil {
-		return nil, err
-	}
-	splits, err := s.financeRepo.ListSplitsByGroup(ctx, groupID)
-	if err != nil {
-		return nil, err
-	}
-	settlements, err := s.financeRepo.ListAllSettlementsByGroup(ctx, groupID)
+	aggregates, err := s.financeRepo.GetGroupBalanceAggregates(ctx, groupID)
 	if err != nil {
 		return nil, err
 	}
@@ -169,12 +142,41 @@ func (s *FinanceService) GetFinanceSummary(ctx context.Context, userID, groupID 
 		return nil, err
 	}
 
-	balances := calculateBalances(expenses, splits, settlements)
+	balances := balancesFromAggregates(aggregates)
 	applyDisplayNames(balances, profiles)
 	return &models.FinanceSummary{
 		Balances:       balances,
 		Reimbursements: suggestReimbursements(balances),
 	}, nil
+}
+
+// balancesFromAggregates converts database aggregates into BalanceEntry slice
+// using the same semantics as calculateBalances:
+//
+//	Paid  = ExpensePaid + SettledOut  (payer credits + settlements sent)
+//	Owed  = SplitOwed  + SettledIn   (split debits  + settlements received)
+//	Total = Paid - Owed
+//
+// Sort order: UserID.String() ascending — matches calculateBalances.
+func balancesFromAggregates(aggregates []models.BalanceAggregate) []models.BalanceEntry {
+	balances := make([]models.BalanceEntry, 0, len(aggregates))
+	for _, agg := range aggregates {
+		paid := agg.ExpensePaid + agg.SettledOut
+		owed := agg.SplitOwed + agg.SettledIn
+		balances = append(balances, models.BalanceEntry{
+			UserID: agg.UserID,
+			Paid:   paid,
+			Owed:   owed,
+			Total:  paid - owed,
+		})
+	}
+	// The SQL query returns rows ORDER BY user_id ASC, which is uuid string sort.
+	// UUIDs are stored as bytes in PostgreSQL; to guarantee identical ordering
+	// with calculateBalances (which sorts on uuid.String()), we re-sort here.
+	sort.Slice(balances, func(i, j int) bool {
+		return balances[i].UserID.String() < balances[j].UserID.String()
+	})
+	return balances
 }
 
 // UpdateExpense updates an existing expense.
@@ -188,6 +190,20 @@ func (s *FinanceService) UpdateExpense(ctx context.Context, userID uuid.UUID, ex
 	}
 	if err := s.requireMember(ctx, existing.GroupID, userID); err != nil {
 		return err
+	}
+	// Only allow reassigning the payer if the user is an admin.
+	if expense.PayerID != existing.PayerID && expense.PayerID != userID {
+		if err := s.requireAdmin(ctx, existing.GroupID, userID); err != nil {
+			return &api.ValidationError{Message: "payer must be the current user or you must be an admin"}
+		}
+	}
+	if expense.PayerID != existing.PayerID {
+		if err := s.requireMember(ctx, existing.GroupID, expense.PayerID); err != nil {
+			return &api.ValidationError{Message: "payer must be a member of this group"}
+		}
+	}
+	if expense.Amount <= 0 {
+		return api.ErrValidation
 	}
 	expense.GroupID = existing.GroupID
 	return s.financeRepo.UpdateExpense(ctx, expense)
@@ -268,6 +284,15 @@ func (s *FinanceService) UpdateSplit(ctx context.Context, userID uuid.UUID, spli
 	if err := s.requireMember(ctx, expense.GroupID, userID); err != nil {
 		return err
 	}
+	if split.Amount <= 0 {
+		return &api.ValidationError{Message: "split amount must be positive"}
+	}
+	// Only allow reassigning the split to another user if the actor is an admin.
+	if split.UserID != existing.UserID {
+		if err := s.requireAdmin(ctx, expense.GroupID, userID); err != nil {
+			return err
+		}
+	}
 	split.ExpenseID = existing.ExpenseID
 	return s.financeRepo.UpdateSplit(ctx, split)
 }
@@ -346,6 +371,9 @@ func (s *FinanceService) CreateRecurringExpense(ctx context.Context, userID uuid
 	if re.Amount <= 0 {
 		return api.ErrValidation
 	}
+	if err := s.validateRecurringSplitConfig(ctx, re); err != nil {
+		return err
+	}
 	return s.financeRepo.CreateRecurringExpense(ctx, re)
 }
 
@@ -384,8 +412,52 @@ func (s *FinanceService) UpdateRecurringExpense(ctx context.Context, userID uuid
 	if err := s.requireMember(ctx, existing.GroupID, userID); err != nil {
 		return err
 	}
+	if re.Amount <= 0 {
+		return api.ErrValidation
+	}
+	// Only allow reassigning the payer if the user is an admin.
+	if re.PayerID != existing.PayerID && re.PayerID != userID {
+		if err := s.requireAdmin(ctx, existing.GroupID, userID); err != nil {
+			return &api.ValidationError{Message: "payer must be the current user or you must be an admin"}
+		}
+	}
 	re.GroupID = existing.GroupID
+	if err := s.validateRecurringSplitConfig(ctx, re); err != nil {
+		return err
+	}
 	return s.financeRepo.UpdateRecurringExpense(ctx, re)
+}
+
+// validateRecurringSplitConfig validates split_mode and split_inputs if a non-payer-only mode is set.
+func (s *FinanceService) validateRecurringSplitConfig(ctx context.Context, re *models.RecurringExpense) error {
+	if re.SplitMode == "" || re.SplitMode == "payer_only" {
+		return nil
+	}
+	// Validate every referenced user is a group member.
+	for _, si := range re.SplitInputs {
+		if err := s.requireMember(ctx, re.GroupID, si.UserID); err != nil {
+			return &api.ValidationError{Message: "split user must be a member of this group"}
+		}
+	}
+	// Validate the split math by attempting a dry-run build.
+	inputs := toExpenseSplitInputs(re.SplitInputs)
+	if _, err := buildSplits(re.Amount, re.PayerID, re.SplitMode, inputs); err != nil {
+		return err
+	}
+	return nil
+}
+
+func toExpenseSplitInputs(in []models.RecurringSplitInput) []ExpenseSplitInput {
+	out := make([]ExpenseSplitInput, len(in))
+	for i, si := range in {
+		out[i] = ExpenseSplitInput{
+			UserID:     si.UserID,
+			Amount:     si.Amount,
+			Shares:     si.Shares,
+			Percentage: si.Percentage,
+		}
+	}
+	return out
 }
 
 // DeleteRecurringExpense removes a recurring expense (admin only).
@@ -596,6 +668,11 @@ func buildSplits(total int64, payerID uuid.UUID, splitMode string, inputs []Expe
 		splits = append(splits, split)
 	}
 	return splits, nil
+}
+
+// BuildExpenseSplits exposes split computation for jobs.
+func BuildExpenseSplits(total int64, payerID uuid.UUID, splitMode string, inputs []ExpenseSplitInput) ([]models.Split, error) {
+	return buildSplits(total, payerID, splitMode, inputs)
 }
 
 func distributeByWeight(total int64, inputs []ExpenseSplitInput, amounts []int64, weight func(ExpenseSplitInput) int64, weightSum int64) {

@@ -30,7 +30,7 @@ type choreReminderRepo interface {
 
 type recurringExpenseRepo interface {
 	ListDueRecurringExpenses(ctx context.Context) ([]models.RecurringExpense, error)
-	ProcessRecurringExpense(ctx context.Context, expense *models.Expense, split *models.Split, reID uuid.UUID, oldNextDue time.Time, nextDue time.Time) error
+	ProcessRecurringExpense(ctx context.Context, expense *models.Expense, splits []models.Split, reID uuid.UUID, oldNextDue time.Time, nextDue time.Time) error
 }
 
 type groupActivity struct {
