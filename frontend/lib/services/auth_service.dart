@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logger/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +9,7 @@ import '../models/auth_models.dart';
 import 'api_client.dart';
 import 'api_error_mapper.dart';
 import 'fcm_service.dart';
+import 'token_store.dart';
 
 /// Authentication service for managing user authentication.
 ///
@@ -22,17 +24,30 @@ class AuthService {
   final Dio _dio;
   final Logger _logger = Logger();
   final SharedPreferences _prefs;
+  final TokenStore _tokenStore;
   /// Optional callback invoked during logout to wipe the local Drift database.
   /// Wrapped in try/catch so a wipe failure never blocks token clearance.
   final Future<void> Function()? _wipeLocalData;
 
-  AuthService._(this._dio, this._prefs, {Future<void> Function()? wipeLocalData})
+  AuthService._(this._dio, this._prefs, this._tokenStore,
+      {Future<void> Function()? wipeLocalData})
       : _wipeLocalData = wipeLocalData;
+
+  /// Test-only constructor that accepts all dependencies directly.
+  @visibleForTesting
+  AuthService.forTest(
+    Dio dio,
+    SharedPreferences prefs,
+    TokenStore tokenStore, {
+    Future<void> Function()? wipeLocalData,
+  }) : this._(dio, prefs, tokenStore, wipeLocalData: wipeLocalData);
 
   static Future<AuthService> create([Ref? ref]) async {
     final prefs = await SharedPreferences.getInstance();
     final dio = createApiClient(ref);
-    return AuthService._(dio, prefs);
+    final store = SecureTokenStore();
+    await store.migrateFromPrefs(prefs);
+    return AuthService._(dio, prefs, store);
   }
 
   /// Creates an [AuthService] wired to wipe the local Drift database on logout.
@@ -42,7 +57,9 @@ class AuthService {
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final dio = createApiClient(ref);
-    return AuthService._(dio, prefs, wipeLocalData: wipeLocalData);
+    final store = SecureTokenStore();
+    await store.migrateFromPrefs(prefs);
+    return AuthService._(dio, prefs, store, wipeLocalData: wipeLocalData);
   }
 
   /// Registers a new user.
@@ -121,7 +138,7 @@ class AuthService {
     await FcmService.reset();
 
     try {
-      final refreshToken = _prefs.getString(ApiConfig.refreshTokenKey);
+      final refreshToken = await _tokenStore.getRefreshToken();
       if (refreshToken != null) {
         await _dio.post(
           '/auth/logout',
@@ -330,13 +347,13 @@ class AuthService {
 
   /// Checks if the user is authenticated.
   Future<bool> isAuthenticated() async {
-    final token = _prefs.getString(ApiConfig.accessTokenKey);
+    final token = await _tokenStore.getAccessToken();
     return token != null;
   }
 
   /// Restores a persisted session, clearing non-persistent sessions on restart.
   Future<bool> bootstrapSession() async {
-    final token = _prefs.getString(ApiConfig.accessTokenKey);
+    final token = await _tokenStore.getAccessToken();
     if (token == null) {
       return false;
     }
@@ -352,15 +369,17 @@ class AuthService {
 
   /// Gets the stored access token.
   Future<String?> getAccessToken() async {
-    return _prefs.getString(ApiConfig.accessTokenKey);
+    return _tokenStore.getAccessToken();
   }
 
   Future<void> _saveTokens(
     TokenPair tokenPair, {
     required bool persistSession,
   }) async {
-    await _prefs.setString(ApiConfig.accessTokenKey, tokenPair.accessToken);
-    await _prefs.setString(ApiConfig.refreshTokenKey, tokenPair.refreshToken);
+    await _tokenStore.save(
+      accessToken: tokenPair.accessToken,
+      refreshToken: tokenPair.refreshToken,
+    );
     await _prefs.setBool(ApiConfig.persistSessionKey, persistSession);
     if (tokenPair.user != null) {
       await _prefs.setString(
@@ -372,8 +391,7 @@ class AuthService {
 
   /// Clears all stored tokens, user data, and user-specific UI preferences.
   Future<void> _clearTokens() async {
-    await _prefs.remove(ApiConfig.accessTokenKey);
-    await _prefs.remove(ApiConfig.refreshTokenKey);
+    await _tokenStore.clear();
     await _prefs.remove(ApiConfig.userDataKey);
     await _prefs.remove(ApiConfig.persistSessionKey);
     await _prefs.remove(ApiConfig.pendingOAuthRememberMeKey);

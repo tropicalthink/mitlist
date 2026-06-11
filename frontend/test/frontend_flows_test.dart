@@ -55,12 +55,14 @@ import 'package:mitlist/services/recipe_service.dart';
 import 'package:mitlist/storage/app_database.dart' hide FinanceSummary;
 import 'package:mitlist/widgets/app_button.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() {
     SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
   });
 
   const groupId = '11111111-1111-1111-1111-111111111111';
