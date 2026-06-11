@@ -71,7 +71,7 @@ func TestChoreService_CreateChore(t *testing.T) {
 
 		err := svc.CreateChore(ctx, user, &models.Chore{GroupID: groupID, Name: "Clean"})
 		require.Error(t, err)
-		assert.IsType(t, &api.PermissionDeniedError{}, err)
+		assert.ErrorIs(t, err, api.ErrPermissionDenied)
 	})
 
 	t.Run("missing name", func(t *testing.T) {
@@ -98,7 +98,7 @@ func TestChoreService_GetChore(t *testing.T) {
 		svc := NewChoreService(choreRepo, groupRepo, nil)
 
 		choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{ID: choreID, GroupID: groupID}, nil)
-		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 
 		c, err := svc.GetChore(ctx, user, choreID)
 		require.NoError(t, err)
@@ -124,7 +124,7 @@ func TestChoreService_GetChoreDetails(t *testing.T) {
 		GroupID: groupID,
 		Name:    "Clean counters",
 	}, nil)
-	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 	dueSoon := now.Add(24 * time.Hour)
 	choreRepo.On("GetPendingAssignmentByChore", ctx, choreID).Return(&models.ChoreAssignment{
 		ID:         assignmentID,
@@ -167,7 +167,7 @@ func TestChoreService_ListCurrentChores(t *testing.T) {
 	groupRepo := new(mocks.MockGroupRepo)
 	svc := NewChoreService(choreRepo, groupRepo, nil)
 
-	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 	choreRepo.On("ListCurrentChoresByGroup", ctx, groupID, 50, 0).Return([]models.CurrentChore{
 		{
 			Chore: models.Chore{ID: choreID, GroupID: groupID, Name: "Vacuum"},
@@ -201,7 +201,7 @@ func TestChoreService_ListCurrentChores_RequiresMembership(t *testing.T) {
 
 	_, err := svc.ListCurrentChores(ctx, user, groupID, 50, 0, 7)
 	require.Error(t, err)
-	assert.IsType(t, &api.PermissionDeniedError{}, err)
+	assert.ErrorIs(t, err, api.ErrPermissionDenied)
 }
 
 func TestChoreService_RotateChore(t *testing.T) {
@@ -243,7 +243,7 @@ func TestChoreService_CompleteChore(t *testing.T) {
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := NewChoreService(choreRepo, groupRepo, nil)
 
-		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 		choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{ID: choreID, GroupID: groupID}, nil)
 		choreRepo.On("GetPendingAssignmentByChore", ctx, choreID).Return(&models.ChoreAssignment{ID: assignID, ChoreID: choreID}, nil)
 		choreRepo.On("CompleteAssignment", ctx, assignID, "completed", mock.AnythingOfType("time.Time"), (*string)(nil)).Return(true, nil)
@@ -272,7 +272,7 @@ func TestChoreService_SkipChore(t *testing.T) {
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := NewChoreService(choreRepo, groupRepo, nil)
 
-		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 		choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{ID: choreID, GroupID: groupID}, nil)
 		choreRepo.On("GetPendingAssignmentByChore", ctx, choreID).Return(&models.ChoreAssignment{ID: assignID, ChoreID: choreID}, nil)
 		choreRepo.On("CompleteAssignment", ctx, assignID, "skipped", mock.AnythingOfType("time.Time"), (*string)(nil)).Return(true, nil)
@@ -300,7 +300,7 @@ func TestChoreService_RescheduleChore(t *testing.T) {
 	svc := NewChoreService(choreRepo, groupRepo, nil)
 
 	choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{ID: choreID, GroupID: groupID}, nil)
-	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 	choreRepo.On("GetPendingAssignmentByChore", ctx, choreID).Return(&models.ChoreAssignment{
 		ID:         assignID,
 		ChoreID:    choreID,
@@ -328,7 +328,7 @@ func TestChoreService_RescheduleChore_RejectsPastDueDate(t *testing.T) {
 	svc := NewChoreService(choreRepo, groupRepo, nil)
 
 	choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{ID: choreID, GroupID: groupID}, nil)
-	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 
 	err := svc.RescheduleChore(ctx, user, choreID, &past, nil)
 	require.Error(t, err)
@@ -352,7 +352,7 @@ func TestChoreService_UndoLastChoreExecution_RestoresSuccessorRotation(t *testin
 	svc := NewChoreService(choreRepo, groupRepo, nil)
 
 	choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{ID: choreID, GroupID: groupID}, nil)
-	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{}, nil)
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 	choreRepo.On("ListAssignments", ctx, choreID, 100, 0).Return([]models.ChoreAssignment{
 		{
 			ID:          finishedID,
