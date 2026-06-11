@@ -379,7 +379,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   Future<void> _openExpenseDetail(_Expense expense) async {
     final groupId = _groupId;
     if (groupId == null) return;
-    Haptics.light();
+    unawaited(Haptics.light());
     await ExpenseDetailSheet.show(
       context,
       groupId: groupId,
@@ -475,7 +475,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   }
 
   Future<void> _openCreateExpense() async {
-    Haptics.light();
+    unawaited(Haptics.light());
     final created = await ExpenseCreationSheet.show(context);
     if (created == true) {
       await _loadData();
@@ -495,7 +495,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     if (confirmed != true || !mounted) return;
 
     setState(() => _isSettling = true);
-    Haptics.light();
+    unawaited(Haptics.light());
     try {
       final financeService = await ref.read(financeServiceProviderAsync.future);
       await financeService.createGroupSettlement(

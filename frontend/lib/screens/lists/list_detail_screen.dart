@@ -364,7 +364,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Future<void> _toggleItem(ListItem item, bool value) async {
-    Haptics.light();
+    unawaited(Haptics.light());
     final service = _service;
     if (service == null) return;
 
@@ -470,7 +470,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         await repo.refreshItems(widget.listId);
       }
       if (!mounted) return;
-      Haptics.light();
+      unawaited(Haptics.light());
       setState(() {
         _newItemController.clear();
         _dirty = true;

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'dart:math' show min;
 
 import 'package:confetti/confetti.dart';
@@ -114,7 +116,7 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
         _joinedGroup = group;
       });
 
-      Haptics.success();
+      unawaited(Haptics.success());
       _confetti.play();
 
       final disableAnimations = MediaQuery.of(context).disableAnimations;
@@ -131,7 +133,7 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
       }
     } catch (e) {
       if (!mounted) return;
-      Haptics.failure();
+      unawaited(Haptics.failure());
       setState(() {
         _phase = _Phase.entry;
         _error = friendlyErrorMessage(e);

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -274,7 +276,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       await authService.logout();
       await ref.read(appDatabaseProvider).clearAllUserData();
       ref.read(authStateProvider.notifier).state = false;
-      ref.read(currentGroupIdProvider.notifier).set(null);
+      unawaited(ref.read(currentGroupIdProvider.notifier).set(null));
       ref.invalidate(navBadgeCountsProvider);
       ref.invalidate(hubQuickStartDismissedProvider);
     } catch (_) {
@@ -310,7 +312,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       await authService.deleteMe();
       await ref.read(appDatabaseProvider).clearAllUserData();
       ref.read(authStateProvider.notifier).state = false;
-      ref.read(currentGroupIdProvider.notifier).set(null);
+      unawaited(ref.read(currentGroupIdProvider.notifier).set(null));
       ref.invalidate(navBadgeCountsProvider);
       ref.invalidate(hubQuickStartDismissedProvider);
       if (!mounted) return;

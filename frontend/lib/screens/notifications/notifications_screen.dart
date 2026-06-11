@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -123,7 +125,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   Future<void> _markAllRead() async {
     if (_isMutating) return;
     _isMutating = true;
-    Haptics.light();
+    unawaited(Haptics.light());
     try {
       final service = await ref.read(notificationServiceProviderAsync.future);
       await service.markAllAsRead();

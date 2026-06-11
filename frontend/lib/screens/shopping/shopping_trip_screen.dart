@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -149,7 +151,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
 
       if (!mounted) return;
       // The trip is done: a heavy stamp and the matching thwack.
-      HapticFeedback.heavyImpact();
+      unawaited(HapticFeedback.heavyImpact());
       _showDoneStamp(completedCount, totalCents);
 
       setState(() => _checkedItemIds.clear());
