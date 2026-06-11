@@ -22,13 +22,27 @@ class AuthService {
   final Dio _dio;
   final Logger _logger = Logger();
   final SharedPreferences _prefs;
+  /// Optional callback invoked during logout to wipe the local Drift database.
+  /// Wrapped in try/catch so a wipe failure never blocks token clearance.
+  final Future<void> Function()? _wipeLocalData;
 
-  AuthService._(this._dio, this._prefs);
+  AuthService._(this._dio, this._prefs, {Future<void> Function()? wipeLocalData})
+      : _wipeLocalData = wipeLocalData;
 
   static Future<AuthService> create([Ref? ref]) async {
     final prefs = await SharedPreferences.getInstance();
     final dio = createApiClient(ref);
     return AuthService._(dio, prefs);
+  }
+
+  /// Creates an [AuthService] wired to wipe the local Drift database on logout.
+  static Future<AuthService> createWithWipe({
+    Ref? ref,
+    required Future<void> Function() wipeLocalData,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final dio = createApiClient(ref);
+    return AuthService._(dio, prefs, wipeLocalData: wipeLocalData);
   }
 
   /// Registers a new user.
@@ -120,6 +134,15 @@ class AuthService {
     }
 
     await _clearTokens();
+
+    if (_wipeLocalData != null) {
+      try {
+        await _wipeLocalData();
+      } catch (e) {
+        _logger.e('Failed to wipe local database on logout: $e');
+        // Non-fatal — tokens are already cleared; wipe failure must not block logout.
+      }
+    }
   }
 
   /// Requests a password reset for the given email.
