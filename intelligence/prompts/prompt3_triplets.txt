@@ -4,7 +4,7 @@ DIFFERENT and cross-language names for the SAME item are close.
 
 CURRENT BATCH CATEGORY CLUSTER: {CLUSTER}
 
-Generate 200 training triplets for this cluster. Each triplet has:
+Generate {COUNT} training triplets for this cluster. Each triplet has:
 - anchor: a canonical item (give all 4 language names)
 - positive: the SAME item expressed differently
 - negative: a DIFFERENT but confusable item
@@ -26,5 +26,5 @@ POSITIVE TYPES (vary across triplets):
 Output format — one JSON object per line (JSONL):
 {"anchor_de":"Butter","anchor_en":"Butter","anchor_fr":"Beurre","anchor_es":"Mantequilla","positive_text":"Beurre doux","positive_type":"regional_variant","positive_lang":"fr","negative_de":"Margarine","negative_en":"Margarine","negative_fr":"Margarine","negative_es":"Margarina","negative_subtype":"SAME_CATEGORY_HARD","reason":"both yellow spreadable fats"}
 
-Generate exactly 200 triplets. Vary anchor items — do not overuse any single anchor.
+Generate exactly {COUNT} triplets. Vary anchor items — do not overuse any single anchor.
 Output ONLY the JSONL. No markdown, no explanation.

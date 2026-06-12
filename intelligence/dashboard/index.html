@@ -31,9 +31,9 @@
           <select id="ctrl-prompt">
             <option value="1">P1 — Canonical seed</option>
             <option value="2">P2 — OCR noise</option>
-            <option value="3">P3 — Triplets</option>
-            <option value="4">P4 — Store aisles</option>
-            <option value="5">P5 — Corrections</option>
+            <option value="3">P3 — Triplets (OpenRouter)</option>
+            <option value="4">P4 — Store aisles (OpenRouter)</option>
+            <option value="5">P5 — Corrections (OpenRouter)</option>
           </select>
         </label>
         <label>
@@ -66,6 +66,7 @@
         <button id="btn-start" class="btn primary">▶ Start</button>
         <button id="btn-stop" class="btn danger" disabled>■ Stop</button>
         <button id="btn-pipeline" class="btn outline">▶▶ Run pipeline (P1→2→5→3→4)</button>
+        <button id="btn-p45-parallel" class="btn outline">⚡ P4+P5 parallel</button>
       </div>
 
       <div id="job-status" class="job-status hidden">

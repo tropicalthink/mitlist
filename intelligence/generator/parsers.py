@@ -200,6 +200,107 @@ def _validate_jsonl_row(row: dict, index: int) -> None:
         raise ValueError(f"Row {index} missing item_de")
 
 
+def _validate_triplet_row(row: dict, index: int) -> None:
+    if not isinstance(row, dict):
+        raise ValueError(f"Row {index} is not an object")
+    for field in ("anchor_de", "anchor_en", "anchor_fr", "anchor_es"):
+        if not row.get(field):
+            raise ValueError(f"Row {index} missing {field}")
+    for field in ("positive_text", "positive_type", "positive_lang"):
+        if not row.get(field):
+            raise ValueError(f"Row {index} missing {field}")
+    for field in ("negative_de", "negative_en", "negative_fr", "negative_es", "negative_subtype"):
+        if not row.get(field):
+            raise ValueError(f"Row {index} missing {field}")
+
+
+def _validate_aisle_row(row: dict, index: int) -> None:
+    if not isinstance(row, dict):
+        raise ValueError(f"Row {index} is not an object")
+    for field in ("country", "store", "canonical_name_de", "aisle"):
+        if not row.get(field):
+            raise ValueError(f"Row {index} missing {field}")
+    if row.get("sort_order") is None:
+        raise ValueError(f"Row {index} missing sort_order")
+    if row.get("typically_stocked") is None:
+        raise ValueError(f"Row {index} missing typically_stocked")
+
+
+def _is_wrong_correction_format(row: dict) -> bool:
+    """Reject general Q&A / instruction-tuning shapes (common with fast models)."""
+    if row.get("instruction"):
+        return True
+    text = str(row.get("input", ""))
+    if "?" in text and not row.get("raw_ocr"):
+        return True
+    if text.lower().startswith(("what ", "who ", "when ", "where ", "how ", "name ")):
+        return True
+    return False
+
+
+def normalize_correction_row(row: dict, lang: str = "") -> dict | None:
+    """Map alternate field names; reject non-grocery correction shapes."""
+    if not isinstance(row, dict):
+        return None
+    if _is_wrong_correction_format(row):
+        return None
+    if row.get("raw_ocr") and row.get("scenario") and row.get("list_language"):
+        return row
+
+    raw = str(row.get("raw_ocr") or row.get("ocr") or row.get("input") or "").strip()
+    if not raw or len(raw) > 80:
+        return None
+
+    list_lang = str(row.get("list_language") or row.get("language") or lang or "").lower()
+    scenario = row.get("scenario") or row.get("correction_type") or row.get("type") or ""
+    user_action = row.get("user_action") or row.get("action")
+    if not user_action:
+        user_action = "corrected" if row.get("corrected") or row.get("correction") else "accepted"
+
+    canon_de = row.get("correct_canonical_de") or row.get("corrected_output") or row.get("output") or row.get("correction") or ""
+    canon_en = row.get("correct_canonical_en") or canon_de
+    if not scenario or not list_lang or not canon_de:
+        return None
+
+    rid = row.get("id") or f"gen_{list_lang}_{raw[:12]}"
+    return {
+        **row,
+        "id": rid,
+        "raw_ocr": raw,
+        "scenario": scenario,
+        "list_language": list_lang,
+        "user_action": user_action,
+        "correct_canonical_de": str(canon_de),
+        "correct_canonical_en": str(canon_en),
+        "correct_canonical_fr": row.get("correct_canonical_fr") or str(canon_de),
+        "correct_canonical_es": row.get("correct_canonical_es") or str(canon_de),
+        "correction_text": row.get("correction_text") or row.get("correction") or str(canon_de),
+    }
+
+
+def _validate_correction_row(row: dict, index: int) -> None:
+    if not isinstance(row, dict):
+        raise ValueError(f"Row {index} is not an object")
+    for field in ("id", "raw_ocr", "scenario", "list_language", "user_action"):
+        if not row.get(field):
+            raise ValueError(f"Row {index} missing {field}")
+    for field in ("correct_canonical_de", "correct_canonical_en"):
+        if not row.get(field):
+            raise ValueError(f"Row {index} missing {field}")
+
+
+def count_json_objects(text: str) -> int:
+    return len(_scan_json_objects(strip_markdown_fences(text), 0))
+
+
+_SCHEMA_VALIDATORS: dict[str, Any] = {
+    "ocr": _validate_jsonl_row,
+    "triplet": _validate_triplet_row,
+    "aisle": _validate_aisle_row,
+    "correction": _validate_correction_row,
+}
+
+
 def parse_jsonl(
     text: str,
     *,
@@ -207,6 +308,8 @@ def parse_jsonl(
     salvage: bool = True,
     item_lookup: dict[str, dict[str, Any]] | None = None,
     lang: str = "",
+    schema: str = "ocr",
+    dedupe_key: tuple[str, str] | None = None,
 ) -> list[dict[str, Any]]:
     """Parse JSONL; salvage complete objects if lines are truncated or merged."""
     cleaned = strip_markdown_fences(text)
@@ -231,13 +334,22 @@ def parse_jsonl(
                 if salvage:
                     rows.extend(extract_complete_objects(line))
 
-    # Deduplicate by (item_de, raw) after normalization
+    validate = _SCHEMA_VALIDATORS.get(schema, _validate_jsonl_row)
+    if dedupe_key is None:
+        dedupe_key = ("item_de", "raw") if schema == "ocr" else ("anchor_de", "positive_text")
+
     seen: set[tuple[str, str]] = set()
     valid: list[dict[str, Any]] = []
     errors: list[str] = []
     for i, row in enumerate(rows):
         try:
-            if item_lookup and lang:
+            if schema == "correction":
+                normalized = normalize_correction_row(row, lang)
+                if normalized is None:
+                    errors.append(f"Row {i} wrong schema: {list(row.keys())[:6]}")
+                    continue
+                row = normalized
+            elif item_lookup and lang:
                 normalized = normalize_ocr_row(row, item_lookup, lang)
                 if normalized is None:
                     if row.get("raw") and row.get("item_de"):
@@ -246,8 +358,8 @@ def parse_jsonl(
                         errors.append(f"Row {i} could not normalize: {list(row.keys())}")
                         continue
                 row = normalized
-            _validate_jsonl_row(row, i)
-            key = (row.get("item_de", ""), row.get("raw", ""))
+            validate(row, i)
+            key = (str(row.get(dedupe_key[0], "")), str(row.get(dedupe_key[1], "")))
             if key in seen:
                 continue
             seen.add(key)

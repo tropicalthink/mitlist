@@ -53,6 +53,7 @@ class ScanPipelineService {
   Future<GroceryScanResult> run({
     required Uint8List imageBytes,
     required String groupId,
+    String? storeId,
     bool isOnline = true,
   }) async {
     // 1. Enhance.
@@ -78,17 +79,21 @@ class ScanPipelineService {
     for (final item in parsed) {
       final resolved = await _resolver.resolve(item.itemName, groupId);
 
-      // 6. Aisle assignment (best-effort from Drift, no store selected yet).
+      // 6. Aisle assignment. With a store selected, use its shipped layout
+      //    (shopping-path sort order); otherwise fall back to the item's
+      //    category as a coarse aisle label.
       String? aisle;
       int aisleSortOrder = 99;
       if (resolved.canonicalItemId != null) {
-        final aisleRow = await _db.getStoreAisle(
-          groupId: groupId,
-          storeId: '__default__',
-          canonicalItemId: resolved.canonicalItemId!,
-        );
-        aisle = aisleRow?.aisle;
-        aisleSortOrder = aisleRow?.sortOrder ?? 99;
+        if (storeId != null) {
+          final aisleRow = await _db.getStoreAisle(
+            groupId: groupId,
+            storeId: storeId,
+            canonicalItemId: resolved.canonicalItemId!,
+          );
+          aisle = aisleRow?.aisle;
+          aisleSortOrder = aisleRow?.sortOrder ?? 99;
+        }
 
         // Fall back to category-level default from canonical item.
         if (aisle == null) {

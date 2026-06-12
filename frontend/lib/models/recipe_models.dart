@@ -466,9 +466,26 @@ class RecipeIngredient {
         id: json['id'] as String,
         recipeId: json['recipe_id'] as String,
         name: json['name'] as String? ?? '',
-        quantity: (json['quantity'] as num?)?.toDouble() ?? 0,
+        quantity: _parseQuantity(json['quantity']),
         unit: json['unit'] as String? ?? '',
         rawText: json['raw_text'] as String? ?? '',
         position: json['position'] as int? ?? 0,
       );
+
+  static double _parseQuantity(dynamic raw) {
+    if (raw == null) return 0;
+    if (raw is num) return raw.toDouble();
+    if (raw is String) {
+      if (raw.isEmpty) return 0;
+      final n = double.tryParse(raw);
+      if (n != null) return n;
+      final slash = raw.indexOf('/');
+      if (slash > 0) {
+        final num = double.tryParse(raw.substring(0, slash).trim());
+        final den = double.tryParse(raw.substring(slash + 1).trim());
+        if (num != null && den != null && den != 0) return num / den;
+      }
+    }
+    return 0;
+  }
 }

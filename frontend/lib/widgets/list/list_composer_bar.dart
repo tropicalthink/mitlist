@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/list_models.dart';
+import '../../services/scan/grocery_suggestion_service.dart';
 import '../../theme/animations.dart';
 import '../../theme/spacing.dart';
 import '../app_button.dart';
@@ -15,6 +16,7 @@ class ListComposerBar extends StatelessWidget {
     required this.onAdd,
     required this.onScan,
     this.productSuggestions = const [],
+    this.grocerySuggestions = const [],
     this.showProductSuggestions = false,
   });
 
@@ -23,19 +25,66 @@ class ListComposerBar extends StatelessWidget {
   final VoidCallback onAdd;
   final VoidCallback onScan;
   final List<Product> productSuggestions;
+
+  /// Offline, alias-powered suggestions from the canonical grocery seed,
+  /// shown ahead of backend product history.
+  final List<GrocerySuggestion> grocerySuggestions;
   final bool showProductSuggestions;
+
+  Widget _buildSuggestions(BuildContext context) {
+    if (!showProductSuggestions) return const SizedBox.shrink();
+
+    // Grocery (seed) suggestions lead; backend products fill in, deduped by
+    // name so the same item never appears twice.
+    final seen = <String>{};
+    final chips = <Widget>[];
+    void addChip(String name, {required bool fromSeed}) {
+      final key = name.toLowerCase();
+      if (name.isEmpty || !seen.add(key)) return;
+      chips.add(AppChip(
+        label: name,
+        leading: fromSeed ? const AppIcon(name: 'bolt', size: 14) : null,
+        onSelected: (_) {
+          controller.text = name;
+          onAdd();
+        },
+      ));
+    }
+
+    for (final g in grocerySuggestions) {
+      addChip(g.name, fromSeed: true);
+    }
+    for (final p in productSuggestions) {
+      addChip(p.name, fromSeed: false);
+    }
+    if (chips.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+      child: SizedBox(
+        height: 32,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: chips.length,
+          separatorBuilder: (_, __) => const SizedBox(width: MitlistSpacing.sm),
+          itemBuilder: (context, index) => chips[index],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
-    final fill = brightness == Brightness.dark
-        ? Theme.of(context).colorScheme.onSurface
-        : Theme.of(context).colorScheme.surface;
+    final colorScheme = Theme.of(context).colorScheme;
+    // Bar sits on the base surface; the input uses an elevated surface token
+    // so its background contrasts with the (onSurface) text in both themes.
+    final barColor = colorScheme.surface;
+    final fieldFill = colorScheme.surfaceContainerHighest;
 
     return SafeArea(
       child: Container(
         decoration: BoxDecoration(
-          color: fill,
+          color: barColor,
           border: Border(
             top: BorderSide(
               color: Theme.of(context).colorScheme.outline,
@@ -55,30 +104,7 @@ class ListComposerBar extends StatelessWidget {
             AnimatedSize(
               duration: MitlistAnimations.micro,
               curve: MitlistAnimations.easeEnter,
-              child: showProductSuggestions && productSuggestions.isNotEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
-                      child: SizedBox(
-                        height: 32,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: productSuggestions.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(width: MitlistSpacing.sm),
-                          itemBuilder: (context, index) {
-                            final product = productSuggestions[index];
-                            return AppChip(
-                              label: product.name,
-                              onSelected: (_) {
-                                controller.text = product.name;
-                                onAdd();
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                    )
-                  : const SizedBox.shrink(),
+              child: _buildSuggestions(context),
             ),
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -95,7 +121,7 @@ class ListComposerBar extends StatelessWidget {
                       labelText: 'New item',
                       hintText: 'e.g. Milk, 2 avocados, or 500g flour',
                       filled: true,
-                      fillColor: fill,
+                      fillColor: fieldFill,
                     ),
                   ),
                 ),

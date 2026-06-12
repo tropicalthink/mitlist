@@ -66,9 +66,11 @@ prompts:
 
   "3":
     name: triplets
+    # Uses OpenRouter (OPENROUTER_* in .env)
     output: ml/data/triplets.jsonl
     output_mode: jsonl
     items_per_batch: 200
+    turbo_chunk_size: 50
     variables:
       CLUSTER:
         - "dairy_fats: Butter, Margarine, Ghee, Pflanzenbutter, Coconut oil"
@@ -114,6 +116,7 @@ prompts:
 
   "4":
     name: store_aisles
+    # Uses OpenRouter (OPENROUTER_* in .env)
     output: ml/data/aisles.jsonl
     output_mode: jsonl
     variables:
@@ -121,9 +124,11 @@ prompts:
 
   "5":
     name: corrections
+    # Uses OpenRouter (OPENROUTER_* in .env)
     output: ml/data/corrections.jsonl
     output_mode: jsonl
     items_per_batch: 1000
+    turbo_chunk_size: 100
     variables:
       SCENARIO:
         - EXACT_MATCH

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/list_models.dart';
 import '../models/recipe_models.dart';
+import '../utils/cook_mode.dart';
 import '../providers/group_provider.dart';
 import '../providers/list_provider.dart';
 import '../providers/recipe_provider.dart';
@@ -107,12 +108,6 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
     } catch (_) {
       return null;
     }
-  }
-
-  double _scaledQuantity(double base) {
-    if (widget.defaultServings <= 0) return base;
-    if (base <= 0) return 0;
-    return base * _servings / widget.defaultServings;
   }
 
   Future<void> _submit() async {
@@ -240,10 +235,14 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
         else
           ..._ingredients.map((ing) {
             final isSelected = _selectedIngredientIds.contains(ing.id);
-            final scaled = _scaledQuantity(ing.quantity);
-            final qtyText = scaled > 0
-                ? '${scaled.toStringAsFixed(scaled == scaled.roundToDouble() ? 0 : 1)} ${ing.unit}'
-                : ing.unit;
+            final scaleFactor = widget.defaultServings > 0
+                ? _servings / widget.defaultServings
+                : 1.0;
+            final qtyText = ing.quantity > 0
+                ? '${formatScaledQuantity(ing.quantity, scaleFactor)} ${ing.unit}'.trim()
+                : ing.unit.isNotEmpty
+                    ? ing.unit
+                    : '';
             return Padding(
               padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
               child: Row(

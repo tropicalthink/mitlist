@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../providers/scan_provider.dart';
 import '../../providers/grocery_provider.dart';
+import '../../providers/store_provider.dart';
 import '../../services/scan_service.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
@@ -18,6 +19,7 @@ import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/mitlist_app_bar.dart';
+import '../../widgets/store_picker_sheet.dart';
 import '../../sheets/expense_creation_sheet.dart';
 import '../../sheets/create_list_sheet.dart';
 import '../../sheets/chore_creation_sheet.dart';
@@ -106,6 +108,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       final result = await pipeline.run(
         imageBytes: bytes,
         groupId: groupId,
+        storeId: ref.read(selectedStoreIdProvider),
         isOnline: isOnline,
       );
 
@@ -236,6 +239,53 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     );
   }
 
+  Widget _buildStoreSelector() {
+    final selectedId = ref.watch(selectedStoreIdProvider);
+    final catalog = ref.watch(storeCatalogProvider);
+    final storeName = selectedId == null
+        ? null
+        : catalog.maybeWhen(
+            data: (stores) {
+              for (final s in stores) {
+                if (s.id == selectedId) return s.name;
+              }
+              return null;
+            },
+            orElse: () => null,
+          );
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return AppCard(
+      variant: AppCardVariant.outlined,
+      onTap: () => showStorePicker(context),
+      child: Row(
+        children: [
+          AppIcon(name: 'shoppingCart', color: colorScheme.primary),
+          const SizedBox(width: MitlistSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Shopping at',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                ),
+                Text(
+                  storeName ?? 'Choose your store',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ],
+            ),
+          ),
+          AppIcon(name: 'chevronRight', color: colorScheme.onSurfaceVariant),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -253,6 +303,8 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       body: ListView(
         padding: const EdgeInsets.all(MitlistSpacing.md),
         children: [
+          _buildStoreSelector(),
+          const SizedBox(height: MitlistSpacing.md),
           // Image preview area
           if (_imageFile != null)
             AppCard(
