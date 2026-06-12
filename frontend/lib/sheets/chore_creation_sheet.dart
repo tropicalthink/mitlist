@@ -159,6 +159,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
   bool _rollover = false;
   bool _isSaving = false;
   bool _isScanning = false;
+  bool _showAdvanced = false;
   String? _appliedTemplate;
   String? _appliedSavedId;
   String? _category;
@@ -596,19 +597,37 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
 
-    Widget divider() => Padding(
-          padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.lg),
-          child: Divider(
-            height: 1,
-            thickness: 1,
-            color: colorScheme.outlineVariant,
-          ),
-        );
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ---- Name + scan ----
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: AppInput(
+                label: 'Chore name',
+                hint: 'e.g. Vacuum living room',
+                controller: _nameController,
+                textInputAction: TextInputAction.next,
+                maxLength: 100,
+                onChanged: (_) {
+                  _markDirty();
+                  setState(() {});
+                },
+              ),
+            ),
+            const SizedBox(width: MitlistSpacing.sm),
+            _ScanIconButton(
+              isScanning: _isScanning,
+              onPressed: _isScanning ? null : _onScan,
+            ),
+          ],
+        ),
+        const SizedBox(height: MitlistSpacing.lg),
+
+        // ---- Routines ----
         if (_savedTemplates.isNotEmpty) ...[
           Text('Your routines', style: textTheme.labelMedium),
           const SizedBox(height: MitlistSpacing.sm),
@@ -630,7 +649,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           const SizedBox(height: MitlistSpacing.md),
         ],
         Text(
-          _savedTemplates.isEmpty ? 'Start from a routine' : 'Or a suggestion',
+          _savedTemplates.isEmpty ? 'Start from a routine' : 'Suggestions',
           style: textTheme.labelMedium,
         ),
         const SizedBox(height: MitlistSpacing.sm),
@@ -646,41 +665,12 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
               ),
           ],
         ),
-        const SizedBox(height: MitlistSpacing.sm),
-        Text(
-          'Tap a routine to fill the form, then tweak anything below.',
-          style: textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
-        divider(),
-        AppButton(
-          text: _isScanning ? 'Scanning…' : 'Scan chore',
-          icon: AppIcon(
-            name: _isScanning ? 'hourglassEmpty' : 'documentScanner',
-            size: 20,
-          ),
-          variant: AppButtonVariant.outline,
-          color: AppButtonColor.neutral,
-          onPressed: _isScanning ? null : _onScan,
-          semanticLabel: 'Scan chore via camera',
-        ),
-        const SizedBox(height: MitlistSpacing.md),
-        AppInput(
-          label: 'Chore name',
-          hint: 'e.g. Vacuum living room',
-          controller: _nameController,
-          textInputAction: TextInputAction.next,
-          maxLength: 100,
-          onChanged: (_) {
-            _markDirty();
-            setState(() {});
-          },
-        ),
-        const SizedBox(height: MitlistSpacing.md),
+        const SizedBox(height: MitlistSpacing.lg),
+
+        // ---- Notes ----
         AppInput(
           label: 'Notes (optional)',
-          hint: 'Add any details or steps for this chore',
+          hint: 'Steps, reminders, anything useful',
           controller: _descriptionController,
           textInputAction: TextInputAction.newline,
           keyboardType: TextInputType.multiline,
@@ -689,8 +679,10 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           maxLength: 500,
           onChanged: (_) => _markDirty(),
         ),
-        const SizedBox(height: MitlistSpacing.md),
-        Text('Zone (optional)', style: textTheme.labelMedium),
+        const SizedBox(height: MitlistSpacing.lg),
+
+        // ---- Zone ----
+        Text('Zone', style: textTheme.labelMedium),
         const SizedBox(height: MitlistSpacing.sm),
         Wrap(
           spacing: MitlistSpacing.sm,
@@ -707,14 +699,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
               ),
           ],
         ),
-        const SizedBox(height: MitlistSpacing.sm),
-        Text(
-          'Group chores by room or area so your household sees them as a system.',
-          style: textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
-        divider(),
+        const SizedBox(height: MitlistSpacing.lg),
 
         // ---- Repeats ----
         Text('Repeats', style: textTheme.labelMedium),
@@ -745,22 +730,22 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
               ),
           ],
         ),
-        const SizedBox(height: MitlistSpacing.sm),
-        Text(
-          _recurrenceHint,
-          style: textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
         if (_recurrence != _Recurrence.none) ...[
+          const SizedBox(height: MitlistSpacing.sm),
+          Text(
+            _recurrenceHint,
+            style: textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
           const SizedBox(height: MitlistSpacing.md),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               SizedBox(
-                width: 96,
+                width: 80,
                 child: AppInput(
-                  label: 'Repeat every',
+                  label: 'Every',
                   hint: '1',
                   controller: _intervalController,
                   keyboardType: TextInputType.number,
@@ -785,8 +770,6 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
         ],
         if (_recurrence == _Recurrence.weekly) ...[
           const SizedBox(height: MitlistSpacing.md),
-          Text('On these days', style: textTheme.labelMedium),
-          const SizedBox(height: MitlistSpacing.sm),
           Wrap(
             spacing: MitlistSpacing.sm,
             runSpacing: MitlistSpacing.sm,
@@ -816,71 +799,110 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
             }).toList(),
           ),
         ],
-        divider(),
+        const SizedBox(height: MitlistSpacing.lg),
 
-        // ---- Who does it ----
-        Text('Who does it?', style: textTheme.labelMedium),
-        const SizedBox(height: MitlistSpacing.sm),
-        Wrap(
-          spacing: MitlistSpacing.sm,
-          runSpacing: MitlistSpacing.sm,
-          children: [
-            for (final option in const [
-              (_AssignmentPolicy.roundRobin, 'Take turns'),
-              (_AssignmentPolicy.leastDone, 'Least done'),
-              (_AssignmentPolicy.alphabetical, 'Alphabetical'),
-              (_AssignmentPolicy.random, 'Random'),
-              (_AssignmentPolicy.noAssignment, 'No assignee'),
-            ])
-              AppChip(
-                label: option.$2,
-                selected: _assignmentPolicy == option.$1,
-                onSelected: (_) {
-                  setState(() {
-                    _assignmentPolicy = option.$1;
-                    _appliedTemplate = null;
-                  });
-                  _markDirty();
-                },
-              ),
-          ],
-        ),
-        const SizedBox(height: MitlistSpacing.sm),
-        Text(
-          _assignmentHint,
-          style: textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurfaceVariant,
+        // ---- More options (collapsible) ----
+        GestureDetector(
+          onTap: () => setState(() => _showAdvanced = !_showAdvanced),
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xs),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'More options',
+                  style: textTheme.labelMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(width: MitlistSpacing.xs),
+                AnimatedRotation(
+                  turns: _showAdvanced ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOut,
+                  child: Icon(
+                    Icons.expand_more,
+                    size: 18,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        divider(),
-
-        // ---- Options ----
-        Text('Options', style: textTheme.labelMedium),
-        const SizedBox(height: MitlistSpacing.md),
-        _OptionToggle(
-          value: _trackDateOnly,
-          onChanged: (value) {
-            setState(() => _trackDateOnly = value);
-            _markDirty();
-          },
-          title: 'Log when it\'s done, don\'t tick it off',
-          helper:
-              'Records the day someone did it without checking it off the list. '
-              'Good for things you want a history of, like watering plants.',
-        ),
-        const SizedBox(height: MitlistSpacing.md),
-        _OptionToggle(
-          value: _rollover,
-          onChanged: (value) {
-            setState(() => _rollover = value);
-            _markDirty();
-          },
-          title: 'Roll over if it\'s missed',
-          helper:
-              'If nobody does it in time, it moves to the next due date instead '
-              'of piling up as overdue.',
+        AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          child: _showAdvanced
+              ? Padding(
+                  padding: const EdgeInsets.only(top: MitlistSpacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Who does it?', style: textTheme.labelMedium),
+                      const SizedBox(height: MitlistSpacing.sm),
+                      Wrap(
+                        spacing: MitlistSpacing.sm,
+                        runSpacing: MitlistSpacing.sm,
+                        children: [
+                          for (final option in const [
+                            (_AssignmentPolicy.roundRobin, 'Take turns'),
+                            (_AssignmentPolicy.leastDone, 'Least done'),
+                            (_AssignmentPolicy.alphabetical, 'Alphabetical'),
+                            (_AssignmentPolicy.random, 'Random'),
+                            (_AssignmentPolicy.noAssignment, 'No assignee'),
+                          ])
+                            AppChip(
+                              label: option.$2,
+                              selected: _assignmentPolicy == option.$1,
+                              onSelected: (_) {
+                                setState(() {
+                                  _assignmentPolicy = option.$1;
+                                  _appliedTemplate = null;
+                                });
+                                _markDirty();
+                              },
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: MitlistSpacing.sm),
+                      Text(
+                        _assignmentHint,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: MitlistSpacing.md),
+                      _OptionToggle(
+                        value: _trackDateOnly,
+                        onChanged: (value) {
+                          setState(() => _trackDateOnly = value);
+                          _markDirty();
+                        },
+                        title: 'Log when done, don\'t tick off',
+                        helper:
+                            'Records the date without marking it complete. Good for tasks you want a history of.',
+                      ),
+                      const SizedBox(height: MitlistSpacing.md),
+                      _OptionToggle(
+                        value: _rollover,
+                        onChanged: (value) {
+                          setState(() => _rollover = value);
+                          _markDirty();
+                        },
+                        title: 'Roll over if missed',
+                        helper:
+                            'Shifts to the next due date instead of piling up as overdue.',
+                      ),
+                    ],
+                  ),
+                )
+              : const SizedBox.shrink(),
         ),
         const SizedBox(height: MitlistSpacing.lg),
+
+        // ---- Actions ----
         Align(
           alignment: Alignment.centerLeft,
           child: AppButton(
@@ -890,8 +912,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
             color: AppButtonColor.neutral,
             size: AppButtonSize.sm,
             isLoading: _savingTemplate,
-            onPressed:
-                (_canCreate && !_savingTemplate) ? _saveAsRoutine : null,
+            onPressed: (_canCreate && !_savingTemplate) ? _saveAsRoutine : null,
             semanticLabel: 'Save this chore as a reusable routine',
           ),
         ),
@@ -912,8 +933,6 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
   }
 }
 
-/// A labelled switch row with a visible helper line, replacing the previous
-/// tooltip-only explanations (which never appear on touch).
 class _OptionToggle extends StatelessWidget {
   final bool value;
   final ValueChanged<bool> onChanged;
@@ -964,6 +983,47 @@ class _OptionToggle extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ScanIconButton extends StatelessWidget {
+  final bool isScanning;
+  final VoidCallback? onPressed;
+
+  const _ScanIconButton({required this.isScanning, this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Semantics(
+      label: 'Scan chore via camera',
+      button: true,
+      child: GestureDetector(
+        onTap: onPressed,
+        child: Container(
+          width: MitlistSpacing.space11,
+          height: MitlistSpacing.space11,
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            border: Border.all(color: colorScheme.outline, width: 2),
+          ),
+          child: Center(
+            child: isScanning
+                ? SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  )
+                : AppIcon(name: 'documentScanner', size: 20),
+          ),
+        ),
+      ),
     );
   }
 }
