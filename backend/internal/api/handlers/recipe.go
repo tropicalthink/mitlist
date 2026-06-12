@@ -54,24 +54,38 @@ func (h *RecipeHandler) RegisterRoutes(r chi.Router) {
 // Recipes
 // ------------------------------------------------------------------
 
+type createIngredientRequest struct {
+	Name     string `json:"name"`
+	Quantity string `json:"quantity"`
+	Unit     string `json:"unit"`
+	RawText  string `json:"raw_text"`
+}
+
+type createStepRequest struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
 type createRecipeRequest struct {
-	Title            string   `json:"title"`
-	Description      string   `json:"description"`
-	DescriptionShort string   `json:"description_short"`
-	Author           string   `json:"author"`
-	RatingValue      float64  `json:"rating_value"`
-	RatingCount      int      `json:"rating_count"`
-	NutritionJSON    string   `json:"nutrition_json"`
-	VideoURL         string   `json:"video_url"`
-	EquipmentJSON    string   `json:"equipment_json"`
-	SourceURL        string   `json:"source_url"`
-	ImageURL         string   `json:"image_url"`
-	ImageOptions     []string `json:"image_options"`
-	Tags             []string `json:"tags"`
-	PrepTime         int      `json:"prep_time"`
-	CookTime         int      `json:"cook_time"`
-	Servings         int      `json:"servings"`
-	IsPublic         bool     `json:"is_public"`
+	Title            string                   `json:"title"`
+	Description      string                   `json:"description"`
+	DescriptionShort string                   `json:"description_short"`
+	Author           string                   `json:"author"`
+	RatingValue      float64                  `json:"rating_value"`
+	RatingCount      int                      `json:"rating_count"`
+	NutritionJSON    string                   `json:"nutrition_json"`
+	VideoURL         string                   `json:"video_url"`
+	EquipmentJSON    string                   `json:"equipment_json"`
+	SourceURL        string                   `json:"source_url"`
+	ImageURL         string                   `json:"image_url"`
+	ImageOptions     []string                 `json:"image_options"`
+	Tags             []string                 `json:"tags"`
+	PrepTime         int                      `json:"prep_time"`
+	CookTime         int                      `json:"cook_time"`
+	Servings         int                      `json:"servings"`
+	IsPublic         bool                     `json:"is_public"`
+	Ingredients      []createIngredientRequest `json:"ingredients,omitempty"`
+	Steps            []createStepRequest       `json:"steps,omitempty"`
 }
 
 func (h *RecipeHandler) CreateRecipe(w http.ResponseWriter, r *http.Request) {
@@ -110,6 +124,34 @@ func (h *RecipeHandler) CreateRecipe(w http.ResponseWriter, r *http.Request) {
 	if err := h.service.CreateRecipe(r.Context(), userID, recipe); err != nil {
 		api.RespondError(w, err)
 		return
+	}
+
+	for i, ing := range req.Ingredients {
+		m := &models.RecipeIngredient{
+			RecipeID: recipe.ID,
+			Name:     ing.Name,
+			Quantity: ing.Quantity,
+			Unit:     ing.Unit,
+			RawText:  ing.RawText,
+			Position: i,
+		}
+		if err := h.service.CreateIngredient(r.Context(), m); err != nil {
+			api.RespondError(w, err)
+			return
+		}
+	}
+
+	for i, step := range req.Steps {
+		m := &models.RecipeStep{
+			RecipeID:    recipe.ID,
+			Name:        step.Name,
+			Description: step.Description,
+			Position:    i,
+		}
+		if err := h.service.CreateStep(r.Context(), m); err != nil {
+			api.RespondError(w, err)
+			return
+		}
 	}
 
 	api.RespondJSON(w, http.StatusCreated, recipe)
