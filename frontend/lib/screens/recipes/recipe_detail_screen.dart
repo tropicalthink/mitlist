@@ -116,6 +116,20 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     }
   }
 
+  void _startCook() {
+    final recipe = _recipe;
+    if (recipe == null) return;
+    context.pushNamed(
+      'recipeCook',
+      pathParameters: {'recipeId': widget.recipeId},
+      extra: <String, Object?>{
+        'recipe': recipe,
+        'ingredients': _ingredients,
+        'steps': _steps,
+      },
+    );
+  }
+
   Future<void> _addToList() async {
     final recipe = _recipe;
     if (recipe == null) return;
@@ -163,13 +177,27 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                   MitlistSpacing.md,
                   MitlistSpacing.md,
                 ),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: AppButton(
-                    text: 'Add to list',
-                    size: AppButtonSize.lg,
-                    onPressed: _addToList,
-                  ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: AppButton(
+                        text: 'Add to list',
+                        size: AppButtonSize.lg,
+                        variant: AppButtonVariant.outline,
+                        onPressed: _addToList,
+                      ),
+                    ),
+                    if (_steps.isNotEmpty) ...[
+                      const SizedBox(width: MitlistSpacing.sm),
+                      Expanded(
+                        child: AppButton(
+                          text: 'Cook',
+                          size: AppButtonSize.lg,
+                          onPressed: _startCook,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ),
