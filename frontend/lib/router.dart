@@ -27,6 +27,8 @@ import 'screens/notifications/notification_preferences_screen.dart';
 import 'screens/recipes/recipes_screen.dart';
 import 'screens/recipes/recipe_creation_screen.dart';
 import 'screens/recipes/recipe_detail_screen.dart';
+import 'screens/recipes/cook_mode_screen.dart';
+import 'models/recipe_models.dart';
 import 'screens/meal_plans/meal_plan_screen.dart';
 import 'screens/shopping/shopping_trip_screen.dart';
 import 'screens/scanner/scanner_screen.dart';
@@ -235,6 +237,25 @@ final routerProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) => RecipeDetailScreen(
                       recipeId: state.pathParameters['recipeId']!,
                     ),
+                    routes: [
+                      GoRoute(
+                        path: 'cook',
+                        name: 'recipeCook',
+                        parentNavigatorKey: _rootNavigatorKey,
+                        builder: (context, state) {
+                          final extra =
+                              state.extra as Map<String, Object?>?;
+                          return CookModeScreen(
+                            recipeId: state.pathParameters['recipeId']!,
+                            recipe: extra?['recipe'] as Recipe?,
+                            ingredients: extra?['ingredients']
+                                as List<RecipeIngredient>?,
+                            steps:
+                                extra?['steps'] as List<RecipeStep>?,
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
