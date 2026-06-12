@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -38,7 +40,7 @@ Future<int?> launchListScan(
   if (picked == null || !context.mounted) return null;
 
   if (!context.mounted) return null;
-  showDialog<void>(
+  unawaited(showDialog<void>(
     context: context,
     barrierDismissible: false,
     builder: (dialogContext) {
@@ -71,7 +73,7 @@ Future<int?> launchListScan(
         ),
       );
     },
-  );
+  ));
 
   try {
     final bytes = Uint8List.fromList(await File(picked.path).readAsBytes());

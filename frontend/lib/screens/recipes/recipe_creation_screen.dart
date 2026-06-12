@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -309,7 +311,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Recipe created')),
       );
-      Haptics.success();
+      unawaited(Haptics.success());
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);

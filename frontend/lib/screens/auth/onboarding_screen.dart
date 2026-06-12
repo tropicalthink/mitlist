@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -106,7 +108,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     if (!mounted) return;
     final group = await CreateHouseholdSheet.show(context);
     if (group != null && mounted) {
-      ref.read(currentGroupIdProvider.notifier).set(group.id);
+      unawaited(ref.read(currentGroupIdProvider.notifier).set(group.id));
       context.goNamed('home');
     }
   }
@@ -116,7 +118,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     if (!mounted) return;
     final group = await JoinHouseholdSheet.show(context);
     if (group != null && mounted) {
-      ref.read(currentGroupIdProvider.notifier).set(group.id);
+      unawaited(ref.read(currentGroupIdProvider.notifier).set(group.id));
       context.goNamed('home');
     }
   }

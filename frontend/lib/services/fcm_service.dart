@@ -9,6 +9,7 @@ import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/api_config.dart';
+import 'token_store.dart';
 
 const _prefKey = 'fcm_token_registered';
 const _prefDeviceTokenId = 'fcm_device_token_id';
@@ -28,6 +29,7 @@ const _prefDeviceTokenId = 'fcm_device_token_id';
 ///             Push Notifications + Background Modes capabilities in Xcode.
 class FcmService {
   static final Logger _log = Logger();
+  static final TokenStore _tokenStore = SecureTokenStore();
 
   static final StreamController<RemoteMessage> _foregroundController =
       StreamController<RemoteMessage>.broadcast();
@@ -135,7 +137,7 @@ class FcmService {
     final id = prefs.getString(_prefDeviceTokenId);
     if (id == null) return;
     try {
-      final accessToken = prefs.getString(ApiConfig.accessTokenKey);
+      final accessToken = await _tokenStore.getAccessToken();
       if (accessToken == null) return;
       await dio.delete(
         '${ApiConfig.apiPrefix}/auth/device-tokens/$id',
@@ -157,7 +159,7 @@ class FcmService {
     if (stored == token) return; // already registered this token
 
     try {
-      final accessToken = prefs.getString(ApiConfig.accessTokenKey);
+      final accessToken = await _tokenStore.getAccessToken();
       if (accessToken == null) return;
 
       final response = await dio.post(

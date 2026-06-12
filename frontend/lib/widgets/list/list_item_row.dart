@@ -4,6 +4,7 @@ import '../../models/list_models.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../animated_check_toggle.dart';
+import '../animated_strikethrough.dart';
 import '../app_icon.dart';
 
 class ListItemRow extends StatelessWidget {
@@ -116,19 +117,11 @@ class ListItemRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      item.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: textTheme.bodyLarge?.copyWith(
-                        color: item.checked
-                            ? colorScheme.onSurfaceVariant
-                            : colorScheme.onSurface,
-                        decoration: item.checked
-                            ? TextDecoration.lineThrough
-                            : null,
-                        height: 1.25,
-                      ),
+                    AnimatedStrikethrough(
+                      text: item.name,
+                      struck: item.checked,
+                      style: textTheme.bodyLarge?.copyWith(height: 1.25),
+                      color: colorScheme.onSurface,
                     ),
                     if (item.note.isNotEmpty)
                       Text(

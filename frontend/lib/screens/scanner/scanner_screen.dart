@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -82,7 +84,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     final userId = widget.userId;
     if (groupId == null || userId == null) {
       // Fall back to the generic scanner if context is not provided.
-      _pickImage(source);
+      unawaited(_pickImage(source));
       return;
     }
 

@@ -95,7 +95,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
         _codeAnim.value = 1.0;
         _qrAnim.value = 1.0;
       } else {
-        _codeAnim.forward();
+        unawaited(_codeAnim.forward());
         Future.delayed(const Duration(milliseconds: 240), () {
           if (mounted) _qrAnim.forward();
         });

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import os
 import threading
-import traceback
 from collections import deque
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,6 +15,7 @@ from generator.progress import ProgressStore
 from generator.runner import (
     DB_PATH,
     ROOT,
+    batch_workers,
     build_batch_list,
     load_config,
     load_pricing,
@@ -53,6 +54,7 @@ class JobState:
     error: str | None = None
     logs: deque[str] = field(default_factory=lambda: deque(maxlen=MAX_LOG_LINES))
     queue: list[JobSpec] = field(default_factory=list)
+    workers: int = 1
 
 
 class JobController:
@@ -70,7 +72,8 @@ class JobController:
 
     def _log(self, msg: str) -> None:
         line = f"[{_utcnow()[:19]}] {msg}"
-        self._state.logs.append(line)
+        with self._lock:
+            self._state.logs.append(line)
 
     def start(self, spec: JobSpec) -> dict[str, Any]:
         with self._lock:
@@ -101,7 +104,7 @@ class JobController:
             if self._state.status not in ("running", "queued"):
                 return {"ok": False, "error": "No job is running"}
             self._cancel.set()
-            self._log("Stop requested — finishing current batch then stopping")
+            self._log("Stop requested — finishing in-flight batches then stopping")
         return {"ok": True, "message": "Cancellation requested"}
 
     def status(self) -> dict[str, Any]:
@@ -113,6 +116,7 @@ class JobController:
                 "prompt_id": spec.prompt_id if spec else None,
                 "mode": spec.mode if spec else None,
                 "current_batch": s.current_batch,
+                "workers": s.workers,
                 "progress": {
                     "index": s.index,
                     "total": s.total,
@@ -157,15 +161,107 @@ class JobController:
                 self._state.status = "done"
             self._state.finished_at = _utcnow()
             self._state.current_batch = None
-            self._log(f"Finished — {self._state.completed} ok, {self._state.failed} failed, {self._state.skipped} skipped")
+            self._log(
+                f"Finished — {self._state.completed} ok, "
+                f"{self._state.failed} failed, {self._state.skipped} skipped"
+            )
 
-    def _run_spec(self, spec: JobSpec) -> None:
+    def _execute_batch(
+        self,
+        spec: JobSpec,
+        prompt_id: str,
+        batch_key: str,
+        variables: dict,
+        temp: float,
+        cfg: dict,
+        pricing: dict,
+    ) -> str:
+        """Run one batch. Returns ok | fail | cancelled."""
+        if self._cancel.is_set():
+            return "cancelled"
+
         from generator.deepseek_client import DeepSeekClient
 
-        cfg = load_config()
-        pricing = load_pricing()
         store = ProgressStore(DB_PATH)
+        if not spec.force and store.is_completed(prompt_id, batch_key):
+            return "skip"
 
+        client = DeepSeekClient()
+        self._log(f"Running {batch_key} (temp={temp})")
+        try:
+            ok = run_batch(
+                prompt_id, batch_key, variables,
+                temperature=temp, client=client, store=store,
+                cfg=cfg, pricing=pricing, force=spec.force,
+            )
+            if ok:
+                self._log(f"OK {batch_key}")
+                return "ok"
+            self._log(f"FAIL {batch_key}")
+            return "fail"
+        except Exception as e:
+            self._log(f"ERROR {batch_key}: {e}")
+            return "fail"
+
+    def _record_batch_result(self, batch_key: str, result: str) -> None:
+        with self._lock:
+            self._state.index += 1
+            self._state.current_batch = batch_key
+            if result == "ok":
+                self._state.completed += 1
+            elif result == "fail":
+                self._state.failed += 1
+            elif result == "skip":
+                self._state.skipped += 1
+
+    def _run_batches_sequential(
+        self,
+        spec: JobSpec,
+        prompt_id: str,
+        to_run: list[tuple[str, dict, float]],
+        cfg: dict,
+        pricing: dict,
+    ) -> None:
+        for batch_key, variables, temp in to_run:
+            if self._cancel.is_set():
+                return
+            result = self._execute_batch(spec, prompt_id, batch_key, variables, temp, cfg, pricing)
+            if result == "cancelled":
+                return
+            self._record_batch_result(batch_key, result)
+
+    def _run_batches_parallel(
+        self,
+        spec: JobSpec,
+        prompt_id: str,
+        to_run: list[tuple[str, dict, float]],
+        cfg: dict,
+        pricing: dict,
+        workers: int,
+    ) -> None:
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = {
+                pool.submit(
+                    self._execute_batch,
+                    spec, prompt_id, batch_key, variables, temp, cfg, pricing,
+                ): batch_key
+                for batch_key, variables, temp in to_run
+            }
+            for fut in as_completed(futures):
+                if self._cancel.is_set():
+                    pool.shutdown(wait=False, cancel_futures=True)
+                    return
+                batch_key = futures[fut]
+                try:
+                    result = fut.result()
+                except Exception as e:
+                    self._log(f"ERROR {batch_key}: {e}")
+                    result = "fail"
+                if result == "cancelled":
+                    return
+                self._record_batch_result(batch_key, result)
+
+    def _run_spec(self, spec: JobSpec) -> None:
         if not os.environ.get("DEEPSEEK_API_KEY"):
             self._state.status = "error"
             self._state.error = "DEEPSEEK_API_KEY not set in .env"
@@ -173,14 +269,9 @@ class JobController:
             self._state.queue.clear()
             return
 
-        try:
-            client = DeepSeekClient()
-        except Exception as e:
-            self._state.status = "error"
-            self._state.error = str(e)
-            self._log(f"Client init failed: {e}")
-            self._state.queue.clear()
-            return
+        cfg = load_config()
+        pricing = load_pricing()
+        store = ProgressStore(DB_PATH)
 
         prompt_id = spec.prompt_id
         pcfg = cfg["prompts"][prompt_id]
@@ -213,38 +304,31 @@ class JobController:
                 if spec.force or not store.is_completed(prompt_id, k)
             ]
 
+        to_run: list[tuple[str, dict, float]] = []
+        skipped = 0
+        for batch_key, variables, temp in expanded:
+            if not spec.force and store.is_completed(prompt_id, batch_key):
+                skipped += 1
+                continue
+            to_run.append((batch_key, variables, temp))
+
+        workers = batch_workers()
+        self._state.workers = workers if len(to_run) > 1 else 1
         self._state.total = len(expanded)
         self._state.index = 0
-        self._log(f"Prompt {prompt_id} ({spec.mode}): {len(expanded)} batch(es) to run")
+        self._state.skipped += skipped
+        self._log(
+            f"Prompt {prompt_id} ({spec.mode}): {len(to_run)} to run, "
+            f"{skipped} skipped, workers={self._state.workers}"
+        )
 
-        for batch_key, variables, temp in expanded:
-            if self._cancel.is_set():
-                return
+        if not to_run:
+            return
 
-            self._state.index += 1
-            self._state.current_batch = batch_key
-
-            if not spec.force and store.is_completed(prompt_id, batch_key):
-                self._state.skipped += 1
-                self._log(f"Skip {batch_key} (already done)")
-                continue
-
-            self._log(f"Running [{self._state.index}/{self._state.total}] {batch_key} (temp={temp})")
-            try:
-                ok = run_batch(
-                    prompt_id, batch_key, variables,
-                    temperature=temp, client=client, store=store,
-                    cfg=cfg, pricing=pricing, force=spec.force,
-                )
-                if ok:
-                    self._state.completed += 1
-                    self._log(f"OK {batch_key}")
-                else:
-                    self._state.failed += 1
-                    self._log(f"FAIL {batch_key}")
-            except Exception as e:
-                self._state.failed += 1
-                self._log(f"ERROR {batch_key}: {e}")
+        if self._state.workers <= 1:
+            self._run_batches_sequential(spec, prompt_id, to_run, cfg, pricing)
+        else:
+            self._run_batches_parallel(spec, prompt_id, to_run, cfg, pricing, self._state.workers)
 
 
 # Module singleton — shared by dashboard server

@@ -42,25 +42,35 @@ class ChoreRepository {
     );
   }
 
-  Future<void> completeOfflineFirst(String choreId) async {
+  Future<void> completeOfflineFirst(String choreId, {String? groupId}) async {
     await _db.enqueueOutbox(
       id: _uuid.v4(),
       type: 'completeChore',
       payload: {'choreId': choreId},
       idempotencyKey: 'completeChore:$choreId',
     );
+    if (groupId != null) {
+      // Optimistic local patch so the Drift stream reflects the completion
+      // immediately; the post-drain refresh reconciles with the server.
+      await _patchCachedAssignmentStatus(groupId, choreId, 'completed');
+      unawaited(_drainAndRefresh(groupId));
+    }
   }
 
-  Future<void> skipOfflineFirst(String choreId, {String? reason}) async {
+  Future<void> skipOfflineFirst(String choreId, {String? reason, String? groupId}) async {
     await _db.enqueueOutbox(
       id: _uuid.v4(),
       type: 'skipChore',
       payload: {'choreId': choreId, if (reason != null) 'reason': reason},
       idempotencyKey: 'skipChore:$choreId',
     );
+    if (groupId != null) {
+      unawaited(_drainAndRefresh(groupId));
+    }
   }
 
-  Future<void> rescheduleOfflineFirst(String choreId, DateTime dueDate) async {
+  Future<void> rescheduleOfflineFirst(String choreId, DateTime dueDate,
+      {String? groupId}) async {
     await _db.enqueueOutbox(
       id: _uuid.v4(),
       type: 'rescheduleChore',
@@ -70,15 +80,70 @@ class ChoreRepository {
       },
       idempotencyKey: 'rescheduleChore:$choreId:${dueDate.toIso8601String()}',
     );
+    if (groupId != null) {
+      unawaited(_drainAndRefresh(groupId));
+    }
   }
 
-  Future<void> undoOfflineFirst(String choreId) async {
+  Future<void> undoOfflineFirst(String choreId, {String? groupId}) async {
     await _db.enqueueOutbox(
       id: _uuid.v4(),
       type: 'undoChore',
       payload: {'choreId': choreId},
       idempotencyKey: 'undoChore:$choreId',
     );
+    if (groupId != null) {
+      await _patchCachedAssignmentStatus(groupId, choreId, 'pending');
+      unawaited(_drainAndRefresh(groupId));
+    }
+  }
+
+  /// Rewrites the cached current-chores blob so [choreId]'s pending assignment
+  /// carries [status]. Patches raw JSON in place to avoid round-tripping
+  /// through the models.
+  Future<void> _patchCachedAssignmentStatus(
+    String groupId,
+    String choreId,
+    String status,
+  ) async {
+    final row = await _db.getCurrentChoresOnce(groupId);
+    final raw = row?.choresJson;
+    if (raw == null || raw.isEmpty) return;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return;
+      var changed = false;
+      for (final entry in decoded) {
+        if (entry is! Map) continue;
+        final chore = entry['chore'];
+        if (chore is! Map || chore['id'] != choreId) continue;
+        final pending = entry['pending_assignment'];
+        if (pending is Map) {
+          pending['status'] = status;
+          pending['completed_at'] = status == 'completed'
+              ? DateTime.now().toUtc().toIso8601String()
+              : null;
+          changed = true;
+        }
+      }
+      if (changed) {
+        await _db.upsertCurrentChores(
+          groupId: groupId,
+          choresJson: jsonEncode(decoded),
+        );
+      }
+    } catch (_) {
+      // Cache patch is best-effort; the drain + refresh reconciles.
+    }
+  }
+
+  /// Best-effort immediate sync: push queued ops, then pull server state.
+  /// Failures are swallowed; the cache keeps the optimistic patch offline.
+  Future<void> _drainAndRefresh(String groupId) async {
+    try {
+      await drainOutboxOnce();
+      await refreshCurrentChores(groupId);
+    } catch (_) {}
   }
 
   Future<void> drainOutboxOnce() async {
