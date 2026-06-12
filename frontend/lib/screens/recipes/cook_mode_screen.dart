@@ -669,6 +669,7 @@ class _GatherRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final disableAnimations = MediaQuery.of(context).disableAnimations;
     return Semantics(
       label: '$label, ${isGathered ? 'gathered' : 'not gathered'}',
       button: true,
@@ -683,7 +684,9 @@ class _GatherRow extends StatelessWidget {
           child: Row(
             children: [
               AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
+                duration: disableAnimations
+                    ? Duration.zero
+                    : const Duration(milliseconds: 150),
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
