@@ -79,6 +79,16 @@ func (s *RecipeService) ListRecipes(ctx context.Context, userID uuid.UUID, limit
 	return s.recipeRepo.ListRecipesByUser(ctx, userID, limit, offset)
 }
 
+// CreateIngredient adds an ingredient to an existing recipe.
+func (s *RecipeService) CreateIngredient(ctx context.Context, ing *models.RecipeIngredient) error {
+	return s.recipeRepo.CreateIngredient(ctx, ing)
+}
+
+// CreateStep adds a step to an existing recipe.
+func (s *RecipeService) CreateStep(ctx context.Context, step *models.RecipeStep) error {
+	return s.recipeRepo.CreateStep(ctx, step)
+}
+
 func (s *RecipeService) ListIngredientsForRecipe(ctx context.Context, userID, recipeID uuid.UUID) ([]models.RecipeIngredient, error) {
 	if _, err := s.GetRecipe(ctx, userID, recipeID); err != nil {
 		return nil, err

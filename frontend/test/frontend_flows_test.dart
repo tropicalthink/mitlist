@@ -41,6 +41,7 @@ import 'package:mitlist/screens/home/groups_list_screen.dart';
 import 'package:mitlist/screens/home/household_hub_screen.dart';
 import 'package:mitlist/screens/lists/lists_screen.dart';
 import 'package:mitlist/screens/money/expenses_screen.dart';
+import 'package:mitlist/screens/recipes/recipe_detail_screen.dart';
 import 'package:mitlist/screens/recipes/recipes_screen.dart';
 import 'package:mitlist/screens/you/account_screen.dart';
 import 'package:mitlist/router.dart';
@@ -266,44 +267,65 @@ void main() {
     expect(find.text('Sunday Pancakes'), findsOneWidget);
   });
 
-  testWidgets('recipe card opens a real detail sheet', (tester) async {
+  testWidgets('recipe card opens the detail screen', (tester) async {
     await _setLargeSurface(tester);
-    final recipeService = FakeRecipeService(
-      recipes: [
-        Recipe(
-          id: '99999999-9999-9999-9999-999999999999',
-          title: 'Tomato Soup',
-          description: 'Blend and simmer.',
-          prepTime: 10,
-          cookTime: 25,
-          servings: 4,
-          imageUrl: null,
-          isPublic: false,
-          createdAt: DateTime.utc(2026, 1, 1),
-          updatedAt: DateTime.utc(2026, 1, 2),
+    final recipe = Recipe(
+      id: '99999999-9999-9999-9999-999999999999',
+      title: 'Tomato Soup',
+      description: 'Blend and simmer.',
+      prepTime: 10,
+      cookTime: 25,
+      servings: 4,
+      imageUrl: null,
+      isPublic: false,
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 2),
+    );
+    final recipeService = FakeRecipeService(recipes: [recipe]);
+    final groupService = FakeGroupService(groups: [group], groupDetail: group);
+
+    final router = GoRouter(
+      initialLocation: '/recipes',
+      routes: [
+        GoRoute(
+          path: '/recipes',
+          builder: (context, state) => const RecipesScreen(),
+        ),
+        GoRoute(
+          path: '/recipes/:recipeId',
+          name: 'recipeDetail',
+          builder: (context, state) => RecipeDetailScreen(
+            recipeId: state.pathParameters['recipeId']!,
+          ),
         ),
       ],
     );
 
-    final groupService = FakeGroupService(groups: [group], groupDetail: group);
-
-    await _pumpScreen(
-      tester,
-      child: const RecipesScreen(),
-      overrides: [
-        groupServiceProviderAsync.overrideWith((ref) async => groupService),
-        recipeServiceProviderAsync.overrideWith((ref) async => recipeService),
-        mealPlanServiceProviderAsync
-            .overrideWith((ref) async => FakeMealPlanService()),
-      ],
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(
+            AppDatabase(
+              drift.DatabaseConnection(
+                NativeDatabase.memory(),
+                closeStreamsSynchronously: true,
+              ),
+            ),
+          ),
+          groupServiceProviderAsync.overrideWith((ref) async => groupService),
+          recipeServiceProviderAsync.overrideWith((ref) async => recipeService),
+          mealPlanServiceProviderAsync
+              .overrideWith((ref) async => FakeMealPlanService()),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
     );
-
     await _pumpUi(tester);
 
     await tester.tap(find.text('Tomato Soup'));
     await _pumpAfter(tester);
 
-    expect(find.text('Recipe details'), findsOneWidget);
+    expect(find.text('Recipe'), findsOneWidget);
     expect(find.text('Blend and simmer.'), findsOneWidget);
     expect(find.text('4'), findsOneWidget);
   });
@@ -1373,6 +1395,11 @@ class FakeRecipeService implements RecipeService {
   @override
   Future<List<Recipe>> listRecipes({int limit = 50, int offset = 0}) async =>
       _recipes.skip(offset).take(limit).toList();
+
+  @override
+  Future<Recipe> getRecipe(String id) async {
+    return _recipes.firstWhere((r) => r.id == id);
+  }
 
   @override
   Future<Recipe> createRecipe(CreateRecipeRequest req) async {

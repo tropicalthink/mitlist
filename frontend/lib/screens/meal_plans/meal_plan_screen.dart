@@ -475,6 +475,10 @@ class _DayCard extends StatelessWidget {
                 onAdd: () => onAdd(slot),
                 onRemove: plan != null ? () => onRemove(plan.id) : null,
                 onEdit: plan != null ? () => onEdit(plan.id) : null,
+                onOpen: plan != null
+                    ? () => context.pushNamed('recipeDetail',
+                        pathParameters: {'recipeId': plan.recipeId})
+                    : null,
               );
             }),
           ],
@@ -491,6 +495,7 @@ class _SlotRow extends StatelessWidget {
   final VoidCallback onAdd;
   final VoidCallback? onRemove;
   final VoidCallback? onEdit;
+  final VoidCallback? onOpen;
 
   const _SlotRow({
     required this.slot,
@@ -499,6 +504,7 @@ class _SlotRow extends StatelessWidget {
     required this.onAdd,
     this.onRemove,
     this.onEdit,
+    this.onOpen,
   });
 
   String get _slotLabel {
@@ -522,9 +528,9 @@ class _SlotRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
       child: Semantics(
         button: true,
-        label: 'Add meal for $_slotLabel',
+        label: plan != null ? 'Open recipe for $_slotLabel' : 'Add meal for $_slotLabel',
         child: InkWell(
-          onTap: plan == null ? onAdd : null,
+          onTap: plan == null ? onAdd : onOpen,
           borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
           child: Container(
           padding: const EdgeInsets.all(MitlistSpacing.sm),
