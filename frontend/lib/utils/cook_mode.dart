@@ -20,10 +20,10 @@ class IngredientMatch {
 
 /// Returns the scale factor: [selectedServings] / [baseServings].
 ///
-/// Guards against [baseServings] < 1 by treating it as 1.
+/// Guards against [baseServings] < 1 by returning 1.0 (no scaling).
 double cookScale(int baseServings, int selectedServings) {
-  final base = baseServings < 1 ? 1 : baseServings;
-  return selectedServings / base;
+  if (baseServings < 1) return 1.0;
+  return selectedServings / baseServings;
 }
 
 /// Formats a scaled quantity for display.

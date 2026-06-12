@@ -1275,41 +1275,43 @@ class _BottomZone extends StatelessWidget {
       ),
       child: SafeArea(
         top: false,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Ingredients handle (bottom-left)
-            if (ingredients.isNotEmpty)
-              _IngredientsHandle(
-                ingredients: ingredients,
-                scaledLabel: scaledLabel,
-                colorScheme: colorScheme,
-                theme: theme,
-              ),
-            // Done zone (full-width when no ingredients, otherwise expanded)
-            Expanded(
-              child: Semantics(
-                label: isLast ? 'Finish cooking' : 'Done, advance to next step',
-                button: true,
-                child: GestureDetector(
-                  onTap: onAdvance,
-                  child: Container(
-                    constraints: const BoxConstraints(minHeight: 88),
-                    color: colorScheme.primary,
-                    child: Center(
-                      child: Text(
-                        isLast ? 'Finish' : 'Done →',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: colorScheme.onPrimary,
-                          fontWeight: FontWeight.w700,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Ingredients handle (bottom-left)
+              if (ingredients.isNotEmpty)
+                _IngredientsHandle(
+                  ingredients: ingredients,
+                  scaledLabel: scaledLabel,
+                  colorScheme: colorScheme,
+                  theme: theme,
+                ),
+              // Done zone (full-width when no ingredients, otherwise expanded)
+              Expanded(
+                child: Semantics(
+                  label: isLast ? 'Finish cooking' : 'Done, advance to next step',
+                  button: true,
+                  child: GestureDetector(
+                    onTap: onAdvance,
+                    child: Container(
+                      constraints: const BoxConstraints(minHeight: 88),
+                      color: colorScheme.primary,
+                      child: Center(
+                        child: Text(
+                          isLast ? 'Finish' : 'Done →',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: colorScheme.onPrimary,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
