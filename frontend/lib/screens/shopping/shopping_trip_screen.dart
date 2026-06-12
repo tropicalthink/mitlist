@@ -10,7 +10,9 @@ import 'package:go_router/go_router.dart';
 import '../../models/list_models.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
+import '../../providers/store_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
+import '../../services/scan/canonical_resolver_service.dart';
 import '../../theme/animations.dart';
 import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
@@ -26,6 +28,24 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/odometer.dart';
 import '../../widgets/skeleton.dart';
+import '../../widgets/store_picker_sheet.dart';
+
+/// An item's aisle for the selected store: a display name plus its shopping-path
+/// sort order (lower = earlier in the store).
+class _ItemAisle {
+  final String aisle;
+  final int sortOrder;
+  const _ItemAisle(this.aisle, this.sortOrder);
+}
+
+/// A run of items that live in the same aisle, used when shopping mode is
+/// sorted by store layout instead of by list.
+class _AisleGroup {
+  final String aisle;
+  final int sortOrder;
+  final List<ListItem> items;
+  _AisleGroup(this.aisle, this.sortOrder, this.items);
+}
 
 class ShoppingTripScreen extends ConsumerStatefulWidget {
   const ShoppingTripScreen({super.key});
@@ -42,6 +62,12 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
   final Map<String, List<ListItem>> _itemsByList = {};
   final Set<String> _checkedItemIds = {};
   bool _isSubmitting = false;
+
+  /// Resolved aisle per item id for the selected store. Empty when no store is
+  /// chosen (the trip then groups by list). Recomputed when items or store
+  /// change.
+  Map<String, _ItemAisle> _aisleByItemId = {};
+  String? _groupId;
 
   @override
   void initState() {
@@ -63,6 +89,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
         });
         return;
       }
+      _groupId = groupId;
 
       final listSvc = await ref.read(listServiceProviderAsync.future);
       final lists = await listSvc.listLists(groupId, limit: 100);
@@ -99,6 +126,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
         _itemsByList.addAll(itemsByList);
         _isLoading = false;
       });
+      unawaited(_recomputeAisles());
     } catch (e) {
       setState(() {
         _error = friendlyErrorMessage(e);
@@ -115,6 +143,79 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
     } catch (_) {
       return null;
     }
+  }
+
+  /// Resolves each open item to an aisle for the selected store so the trip can
+  /// be walked in shopping-path order. Runs off the canonical graph + global
+  /// store layout; items that don't resolve fall into an "Other" bucket.
+  Future<void> _recomputeAisles() async {
+    final storeId = ref.read(selectedStoreIdProvider);
+    final groupId = _groupId;
+    if (storeId == null || groupId == null) {
+      if (_aisleByItemId.isNotEmpty) {
+        setState(() => _aisleByItemId = {});
+      }
+      return;
+    }
+
+    final db = ref.read(appDatabaseProvider);
+    final resolver = CanonicalResolverService(db);
+    final result = <String, _ItemAisle>{};
+
+    for (final items in _itemsByList.values) {
+      for (final item in items) {
+        final resolved = await resolver.resolve(item.name, groupId);
+        final canonicalId = resolved.canonicalItemId;
+        if (canonicalId == null) continue;
+        final row = await db.getStoreAisle(
+          groupId: groupId,
+          storeId: storeId,
+          canonicalItemId: canonicalId,
+        );
+        if (row != null && row.aisle.isNotEmpty) {
+          result[item.id] = _ItemAisle(row.aisle, row.sortOrder);
+        }
+      }
+    }
+
+    if (!mounted) return;
+    setState(() => _aisleByItemId = result);
+  }
+
+  /// Groups all open items by aisle, ordered by shopping path. Items without a
+  /// known aisle for this store collect under "Other" at the end.
+  List<_AisleGroup> _buildAisleGroups() {
+    final byAisle = <String, _AisleGroup>{};
+    for (final items in _itemsByList.values) {
+      for (final item in items) {
+        final info = _aisleByItemId[item.id];
+        final name = info?.aisle ?? 'Other';
+        final sort = info?.sortOrder ?? 100000;
+        final group = byAisle.putIfAbsent(
+          name,
+          () => _AisleGroup(name, sort, []),
+        );
+        group.items.add(item);
+        // A group sorts by its earliest item on the shopping path.
+        if (sort < group.sortOrder) {
+          byAisle[name] = _AisleGroup(name, sort, group.items);
+        }
+      }
+    }
+    final groups = byAisle.values.toList()
+      ..sort((a, b) {
+        if (a.aisle == 'Other') return 1;
+        if (b.aisle == 'Other') return -1;
+        return a.sortOrder.compareTo(b.sortOrder);
+      });
+    for (final g in groups) {
+      g.items.sort((x, y) {
+        final sx = _aisleByItemId[x.id]?.sortOrder ?? 100000;
+        final sy = _aisleByItemId[y.id]?.sortOrder ?? 100000;
+        return sx.compareTo(sy);
+      });
+    }
+    return groups;
   }
 
   void _toggleItem(String itemId) {
@@ -231,6 +332,9 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
+    // Re-plan the aisle order whenever the chosen store changes.
+    ref.listen<String?>(selectedStoreIdProvider, (_, __) => _recomputeAisles());
+
     return Scaffold(
       appBar: MitlistAppBar(
         leading: IconButton(
@@ -239,6 +343,13 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text('Shopping Trip'),
+        actions: [
+          IconButton(
+            icon: const AppIcon(name: 'shoppingCart'),
+            tooltip: 'Choose store',
+            onPressed: () => showStorePicker(context),
+          ),
+        ],
       ),
       body: _buildBody(textTheme),
       bottomNavigationBar: _showBasketBar
@@ -311,6 +422,11 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
       );
     }
 
+    final storeId = ref.watch(selectedStoreIdProvider);
+    if (storeId != null) {
+      return RefreshIndicator(onRefresh: _load, child: _buildAisleView());
+    }
+
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView.builder(
@@ -330,6 +446,68 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
           );
         },
       ),
+    );
+  }
+
+  /// Trip grouped by store aisle in shopping-path order. A header banner names
+  /// the store and offers a tap target to change it.
+  Widget _buildAisleView() {
+    final groups = _buildAisleGroups();
+    final colorScheme = Theme.of(context).colorScheme;
+    final storeName = ref.watch(storeCatalogProvider).maybeWhen(
+          data: (stores) {
+            final id = ref.read(selectedStoreIdProvider);
+            for (final s in stores) {
+              if (s.id == id) return s.name;
+            }
+            return null;
+          },
+          orElse: () => null,
+        );
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(
+          horizontal: MitlistSpacing.md, vertical: MitlistSpacing.sm),
+      itemCount: groups.length + 1,
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return InkWell(
+            onTap: () => showStorePicker(context),
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+              child: Row(
+                children: [
+                  AppIcon(name: 'shoppingCart', size: 16, color: colorScheme.primary),
+                  const SizedBox(width: MitlistSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      storeName == null
+                          ? 'Sorted by store aisles'
+                          : 'Sorted by $storeName aisles',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ),
+                  Text(
+                    'Change',
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: colorScheme.primary,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+        final group = groups[index - 1];
+        return _AisleSection(
+          aisle: group.aisle,
+          items: group.items,
+          checkedIds: _checkedItemIds,
+          onToggle: _toggleItem,
+        );
+      },
     );
   }
 
@@ -557,6 +735,70 @@ class _ListSection extends StatelessWidget {
                 key: ValueKey(item.id),
                 item: item,
                 isChecked: isChecked,
+                onToggle: () => onToggle(item.id),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A store-aisle section in shopping mode: an aisle title over its items, with
+/// no list affordance (items may span several lists).
+class _AisleSection extends StatelessWidget {
+  final String aisle;
+  final List<ListItem> items;
+  final Set<String> checkedIds;
+  final ValueChanged<String> onToggle;
+
+  const _AisleSection({
+    required this.aisle,
+    required this.items,
+    required this.checkedIds,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
+      child: AppCard(
+        variant: AppCardVariant.outlined,
+        padding: AppCardPadding.md,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                AppIcon(
+                  name: 'tagOutline',
+                  size: 16,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: MitlistSpacing.xs),
+                Expanded(
+                  child: Text(
+                    aisle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: MitlistSpacing.sm),
+            Divider(color: Theme.of(context).colorScheme.outlineVariant),
+            const SizedBox(height: MitlistSpacing.sm),
+            ...items.map((item) {
+              return _ItemRow(
+                key: ValueKey(item.id),
+                item: item,
+                isChecked: checkedIds.contains(item.id),
                 onToggle: () => onToggle(item.id),
               );
             }),

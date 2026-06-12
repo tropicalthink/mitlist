@@ -38,6 +38,7 @@ services:
       RUN_MIGRATIONS_ON_STARTUP: "true"
       WARM_CACHE_ON_STARTUP: "false"
       LOG_LEVEL: DEBUG
+      SCRAPER_FLARESOLVER_URL: http://flaresolverr:8191
     env_file:
       - path: .env
         required: false
@@ -63,6 +64,7 @@ services:
       RUN_MIGRATIONS_ON_STARTUP: "true"
       WARM_CACHE_ON_STARTUP: "false"
       LOG_LEVEL: WARNING
+      SCRAPER_FLARESOLVER_URL: http://flaresolverr:8191
     env_file:
       - path: .env
         required: false
@@ -101,6 +103,16 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+
+  # Headless-browser proxy that solves Cloudflare/JS bot challenges. The scraper
+  # falls back to it (SCRAPER_FLARESOLVER_URL) when a host blocks the direct
+  # fetch — common from datacenter IPs even with a browser user-agent.
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: mitlist-flaresolverr
+    ports:
+      - "8191:8191"
     restart: unless-stopped
 
   redis:

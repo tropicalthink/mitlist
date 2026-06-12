@@ -13,6 +13,7 @@ import yaml
 
 from generator.job_controller import JobSpec, get_controller
 from generator.progress import ProgressStore
+from generator.runner import batch_workers, build_batch_list, load_config, turbo_enabled
 
 ROOT = Path(__file__).resolve().parent.parent
 DASHBOARD_DIR = ROOT / "dashboard"
@@ -68,7 +69,6 @@ def build_dashboard_payload() -> dict:
 
     batch_targets = {}
     for pid, pcfg in cfg["prompts"].items():
-        from generator.runner import build_batch_list
         total = len(build_batch_list(pid, cfg, require_seed=False))
         batch_targets[pid] = {
             "name": pcfg["name"],
@@ -82,8 +82,13 @@ def build_dashboard_payload() -> dict:
         "data_files": files,
         "batch_targets": batch_targets,
         "deepseek_model": os.getenv("DEEPSEEK_MODEL", "deepseek-chat"),
+        "openrouter_model": os.getenv("OPENROUTER_MODEL", "google/gemini-2.5-flash-preview"),
+        "openrouter_prompts": ["3", "4", "5"],
+        "turbo_mode": turbo_enabled(),
+        "batch_workers": batch_workers(),
         "job": controller.status(),
         "api_key_set": bool(os.getenv("DEEPSEEK_API_KEY")),
+        "openrouter_key_set": bool(os.getenv("OPENROUTER_API_KEY")),
     }
 
 
@@ -198,6 +203,18 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._send_json(result, status=200 if result.get("ok") else 409)
             return
 
+        if parsed.path == "/api/job/parallel":
+            prompts = body.get("prompts", ["4", "5"])
+            mode = body.get("mode", "pending")
+            force = bool(body.get("force", False))
+            specs = [
+                JobSpec(prompt_id=str(p), mode=mode, force=force)
+                for p in prompts
+            ]
+            result = controller.start_parallel(specs)
+            self._send_json(result, status=200 if result.get("ok") else 409)
+            return
+
         if parsed.path == "/api/job/stop":
             result = controller.stop()
             self._send_json(result, status=200 if result.get("ok") else 409)
@@ -217,6 +234,13 @@ def serve(host: str = "127.0.0.1", port: int = 8765) -> None:
     print(f"Dashboard → http://{host}:{port}")
     print(f"API       → http://{host}:{port}/api/stats")
     print("Controls  → start/stop jobs from the web UI")
+    if turbo_enabled():
+        cfg = load_config()
+        p5 = len(build_batch_list("5", cfg, require_seed=False))
+        p3 = len(build_batch_list("3", cfg, require_seed=False))
+        print(f"TURBO ON  → {batch_workers()} workers, P5={p5} chunks, P3={p3} chunks")
+    else:
+        print(f"Workers   → {batch_workers()} (set TURBO_MODE=1 for fast P3/P5)")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

@@ -233,3 +233,5 @@ footer code { font-family: var(--mono); color: var(--primary); }
   color: var(--warn);
 }
 .banner code { color: var(--primary); }
+
+.prompt-bars { overflow: hidden; }
