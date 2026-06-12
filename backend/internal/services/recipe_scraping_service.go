@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"sort"
 	"strconv"
@@ -68,6 +69,13 @@ type RecipeClipResponse struct {
 // Each tier is validated by a quality gate: ingredients or instructions must exist.
 type RecipeScrapingService struct {
 	client *http.Client
+
+	// flareSolverURL, when set (env SCRAPER_FLARESOLVER_URL, e.g.
+	// http://flaresolverr:8191), is a FlareSolverr endpoint used as a last-resort
+	// fallback when a host's bot protection (typically Cloudflare) blocks the
+	// direct fetch regardless of user-agent. FlareSolverr drives a real headless
+	// browser that solves the challenge and returns the rendered HTML.
+	flareSolverURL string
 }
 
 func NewRecipeScrapingService() *RecipeScrapingService {
@@ -79,6 +87,7 @@ func NewRecipeScrapingService() *RecipeScrapingService {
 			Timeout:   15 * time.Second,
 			Transport: transport,
 		},
+		flareSolverURL: strings.TrimSpace(os.Getenv("SCRAPER_FLARESOLVER_URL")),
 	}
 }
 
@@ -230,7 +239,87 @@ func (s *RecipeScrapingService) fetchHTML(ctx context.Context, validated *securi
 			break
 		}
 	}
+
+	// Last resort: route through FlareSolverr (headless browser) to clear
+	// Cloudflare-style challenges that block our direct fetch by IP/fingerprint.
+	if s.flareSolverURL != "" {
+		if body, finalURL, ferr := s.fetchViaFlareSolverr(ctx, validated.URL.String()); ferr == nil {
+			return body, finalURL, nil
+		} else {
+			lastErr = fmt.Errorf("%v (flaresolverr fallback: %v)", lastErr, ferr)
+		}
+	}
+
 	return "", "", lastErr
+}
+
+type flareSolverrResponse struct {
+	Status   string `json:"status"`
+	Message  string `json:"message"`
+	Solution struct {
+		URL      string `json:"url"`
+		Status   int    `json:"status"`
+		Response string `json:"response"`
+	} `json:"solution"`
+}
+
+// fetchViaFlareSolverr proxies the fetch through a FlareSolverr instance, which
+// uses a real browser to solve JS/Cloudflare challenges and returns the
+// rendered HTML. targetURL must already be SSRF-validated by the caller.
+func (s *RecipeScrapingService) fetchViaFlareSolverr(ctx context.Context, targetURL string) (body, finalURL string, err error) {
+	// Challenge solving is slow; give it its own bounded deadline.
+	ctx, cancel := context.WithTimeout(ctx, 90*time.Second)
+	defer cancel()
+
+	payload, _ := json.Marshal(map[string]any{
+		"cmd":        "request.get",
+		"url":        targetURL,
+		"maxTimeout": 60000,
+	})
+	endpoint := strings.TrimRight(s.flareSolverURL, "/") + "/v1"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(payload))
+	if err != nil {
+		return "", "", fmt.Errorf("invalid flaresolverr request")
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	// Dedicated client: the shared one's 15s timeout is too short for challenge
+	// solving, and we must not pin to the target host (we talk to FlareSolverr).
+	client := &http.Client{Timeout: 95 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", "", fmt.Errorf("flaresolverr unreachable: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", "", fmt.Errorf("flaresolverr http %d", resp.StatusCode)
+	}
+
+	raw, err := readUpTo(resp.Body, maxRecipeResponseBytes*2)
+	if err != nil {
+		return "", "", err
+	}
+
+	var fr flareSolverrResponse
+	if jerr := json.Unmarshal(raw, &fr); jerr != nil {
+		return "", "", fmt.Errorf("invalid flaresolverr response")
+	}
+	if fr.Status != "ok" {
+		return "", "", fmt.Errorf("flaresolverr: %s", fr.Message)
+	}
+	if fr.Solution.Status >= http.StatusBadRequest {
+		return "", "", fmt.Errorf("http %d", fr.Solution.Status)
+	}
+	if strings.TrimSpace(fr.Solution.Response) == "" {
+		return "", "", fmt.Errorf("flaresolverr returned empty body")
+	}
+
+	final := fr.Solution.URL
+	if strings.TrimSpace(final) == "" {
+		final = targetURL
+	}
+	return fr.Solution.Response, final, nil
 }
 
 func (s *RecipeScrapingService) fetchOnce(ctx context.Context, validated *security.ValidatedURL, userAgent string) (body, finalURL string, retryable bool, err error) {
