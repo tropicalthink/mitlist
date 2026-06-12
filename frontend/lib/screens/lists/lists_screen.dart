@@ -23,6 +23,7 @@ import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
 import '../../widgets/chip.dart';
+import '../../widgets/grocery_suggestion_field.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/list_entrance.dart';
@@ -916,11 +917,14 @@ class _ListCard extends ConsumerWidget {
     final name = await showAppDialog<String>(
       context: context,
       title: 'Add item to ${list.name}',
-      body: AppInput(
-        label: 'Item name',
+      body: GrocerySuggestionField(
         controller: controller,
+        groupId: list.groupId,
+        label: 'Item name',
         maxLength: 200,
-        textInputAction: TextInputAction.done,
+        submitOnSelect: true,
+        onSubmitted: (value) =>
+            Navigator.of(context).pop(value.trim().isEmpty ? null : value.trim()),
       ),
       actions: [
         AppButton(

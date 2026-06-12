@@ -46,8 +46,12 @@ class CanonicalResolverService {
       }
     }
 
-    // 2. Fuzzy match across all aliases for this household + globals.
-    final allAliases = await _db.getItemAliasesForFuzzy(groupId);
+    // 2. Fuzzy match against an indexed candidate set (same first char,
+    //    similar length) rather than the full ~120k-row alias table.
+    final allAliases = await _db.getAliasFuzzyCandidates(
+      groupId: groupId,
+      query: normalised,
+    );
     if (allAliases.isEmpty) {
       return ResolveResult(displayName: _titleCase(itemName), score: 0);
     }

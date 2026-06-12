@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../repositories/grocery_repository.dart';
 import '../services/scan/correction_memory_service.dart';
+import '../services/scan/grocery_suggestion_service.dart';
 import '../services/scan/scan_pipeline_service.dart';
 import '../services/connectivity_service.dart';
 import 'list_provider.dart';
@@ -10,6 +11,12 @@ import 'scan_provider.dart';
 
 final connectivityServiceProvider = Provider<ConnectivityService>((ref) {
   return ConnectivityService();
+});
+
+/// Local, offline grocery autocomplete over the canonical seed (alias-powered).
+final grocerySuggestionServiceProvider =
+    Provider<GrocerySuggestionService>((ref) {
+  return GrocerySuggestionService(ref.watch(appDatabaseProvider));
 });
 
 final scanPipelineProvider = FutureProvider<ScanPipelineService>((ref) async {

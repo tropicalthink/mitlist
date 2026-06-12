@@ -1,0 +1,5753 @@
+{
+"version": 1,
+"stores": [
+{
+"id": "de_rewe",
+"name": "REWE",
+"country": "DE",
+"chain_type": "supermarket"
+},
+{
+"id": "en_aldi_uk",
+"name": "Aldi UK",
+"country": "EN",
+"chain_type": "supermarket"
+},
+{
+"id": "en_asda",
+"name": "Asda",
+"country": "EN",
+"chain_type": "supermarket"
+},
+{
+"id": "en_kroger_us",
+"name": "Kroger US",
+"country": "EN",
+"chain_type": "supermarket"
+},
+{
+"id": "en_lidl_uk",
+"name": "Lidl UK",
+"country": "EN",
+"chain_type": "supermarket"
+},
+{
+"id": "en_morrisons",
+"name": "Morrisons",
+"country": "EN",
+"chain_type": "supermarket"
+},
+{
+"id": "en_sainsbury_s",
+"name": "Sainsbury's",
+"country": "EN",
+"chain_type": "supermarket"
+},
+{
+"id": "en_tesco",
+"name": "Tesco",
+"country": "EN",
+"chain_type": "supermarket"
+},
+{
+"id": "en_trader_joe_s",
+"name": "Trader Joe's",
+"country": "EN",
+"chain_type": "supermarket"
+},
+{
+"id": "en_waitrose",
+"name": "Waitrose",
+"country": "EN",
+"chain_type": "supermarket"
+},
+{
+"id": "en_walmart_us",
+"name": "Walmart US",
+"country": "EN",
+"chain_type": "supermarket"
+},
+{
+"id": "en_whole_foods_uk",
+"name": "Whole Foods UK",
+"country": "EN",
+"chain_type": "supermarket"
+},
+{
+"id": "en_whole_foods_us",
+"name": "Whole Foods US",
+"country": "EN",
+"chain_type": "supermarket"
+},
+{
+"id": "es_mercadona",
+"name": "Mercadona",
+"country": "ES",
+"chain_type": "supermarket"
+},
+{
+"id": "fr_carrefour",
+"name": "Carrefour",
+"country": "FR",
+"chain_type": "supermarket"
+}
+],
+"aisles": [
+{
+"store_id": "de_rewe",
+"canonical_item_id": "apple",
+"aisle": "Obst & Gemüse",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "pear",
+"aisle": "Obst & Gemüse",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "plum",
+"aisle": "Obst & Gemüse",
+"sort_order": 9,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "cherry",
+"aisle": "Obst & Gemüse",
+"sort_order": 8,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "grape",
+"aisle": "Obst & Gemüse",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "raspberry",
+"aisle": "Obst & Gemüse",
+"sort_order": 7,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "blueberry",
+"aisle": "Obst & Gemüse",
+"sort_order": 8,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "blackberry",
+"aisle": "Obst & Gemüse",
+"sort_order": 9,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "apricot",
+"aisle": "Obst & Gemüse",
+"sort_order": 10,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "peach",
+"aisle": "Obst & Gemüse",
+"sort_order": 11,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "nectarine",
+"aisle": "Obst & Gemüse",
+"sort_order": 11,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "mango",
+"aisle": "Obst & Gemüse",
+"sort_order": 12,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "papaya",
+"aisle": "Obst & Gemüse",
+"sort_order": 13,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "pineapple",
+"aisle": "Obst & Gemüse",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "kiwi",
+"aisle": "Obst & Gemüse",
+"sort_order": 13,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "fig",
+"aisle": "Obst & Gemüse",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "pomegranate",
+"aisle": "Obst & Gemüse",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "watermelon",
+"aisle": "Obst & Gemüse",
+"sort_order": 6,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "honeydew_melon",
+"aisle": "Obst & Gemüse",
+"sort_order": 7,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "avocado",
+"aisle": "Obst & Gemüse",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "lemon",
+"aisle": "Obst & Gemüse",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "lime",
+"aisle": "Obst & Gemüse",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "orange",
+"aisle": "Obst & Gemüse",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "pomelo",
+"aisle": "Obst & Gemüse",
+"sort_order": 6,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "banana",
+"aisle": "Obst & Gemüse",
+"sort_order": 2,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "coconut",
+"aisle": "Obst & Gemüse",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "passion_fruit",
+"aisle": "Obst & Gemüse",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "lychee",
+"aisle": "Obst & Gemüse",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "guava",
+"aisle": "Obst & Gemüse",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "dragon_fruit",
+"aisle": "Obst & Gemüse",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "tomato",
+"aisle": "Gemüse",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "bell_pepper_red_fresh_mexican",
+"aisle": "Gemüse",
+"sort_order": 8,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "pickled_jalapenos",
+"aisle": "Gemüse",
+"sort_order": 11,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "zucchini",
+"aisle": "Gemüse",
+"sort_order": 11,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "eggplant",
+"aisle": "Gemüse",
+"sort_order": 12,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "cucumber",
+"aisle": "Gemüse",
+"sort_order": 8,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "cucumber",
+"aisle": "Gemüse",
+"sort_order": 9,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "pumpkin",
+"aisle": "Gemüse",
+"sort_order": 13,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "broccoli",
+"aisle": "Gemüse",
+"sort_order": 7,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "cauliflower",
+"aisle": "Gemüse",
+"sort_order": 7,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "brussels_sprouts",
+"aisle": "Gemüse",
+"sort_order": 8,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "canned_white_cabbage",
+"aisle": "Gemüse",
+"sort_order": 10,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "canned_red_cabbage",
+"aisle": "Gemüse",
+"sort_order": 10,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "savoy_cabbage",
+"aisle": "Gemüse",
+"sort_order": 11,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "chinese_cabbage",
+"aisle": "Gemüse",
+"sort_order": 11,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "kohlrabi",
+"aisle": "Gemüse",
+"sort_order": 9,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "fennel",
+"aisle": "Gemüse",
+"sort_order": 12,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "canned_celeriac",
+"aisle": "Gemüse",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "leek",
+"aisle": "Gemüse",
+"sort_order": 6,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "onion",
+"aisle": "Gemüse",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "red_onions",
+"aisle": "Gemüse",
+"sort_order": 6,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "shallots",
+"aisle": "Gemüse",
+"sort_order": 7,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "garlic",
+"aisle": "Gemüse",
+"sort_order": 8,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "potato",
+"aisle": "Gemüse",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "sweet_potato",
+"aisle": "Gemüse",
+"sort_order": 13,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "beetroot",
+"aisle": "Gemüse",
+"sort_order": 12,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "radish",
+"aisle": "Gemüse",
+"sort_order": 9,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "radish",
+"aisle": "Gemüse",
+"sort_order": 10,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "carrots",
+"aisle": "Gemüse",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "parsnip",
+"aisle": "Gemüse",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "parsley_root",
+"aisle": "Gemüse",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "jerusalem_artichoke",
+"aisle": "Gemüse",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "spinach",
+"aisle": "Gemüse",
+"sort_order": 2,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "chard",
+"aisle": "Gemüse",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "arugula",
+"aisle": "Gemüse",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "head_lettuce",
+"aisle": "Gemüse",
+"sort_order": 1,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "iceberg_lettuce",
+"aisle": "Gemüse",
+"sort_order": 2,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "lambs_lettuce",
+"aisle": "Gemüse",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "radicchio",
+"aisle": "Gemüse",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "endive",
+"aisle": "Gemüse",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "bok_choy",
+"aisle": "Gemüse",
+"sort_order": 12,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "ginger",
+"aisle": "Gemüse",
+"sort_order": 11,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "bean_sprouts",
+"aisle": "Gemüse",
+"sort_order": 13,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "cress",
+"aisle": "Gemüse",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "basil",
+"aisle": "Kräuter",
+"sort_order": 1,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "parsley",
+"aisle": "Kräuter",
+"sort_order": 1,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "chives",
+"aisle": "Kräuter",
+"sort_order": 2,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "dill",
+"aisle": "Kräuter",
+"sort_order": 2,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "mint",
+"aisle": "Kräuter",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "rosemary",
+"aisle": "Kräuter",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "thyme",
+"aisle": "Kräuter",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "cilantro_coriander",
+"aisle": "Kräuter",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "oregano",
+"aisle": "Kräuter",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "sage",
+"aisle": "Kräuter",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "lemongrass",
+"aisle": "Kräuter",
+"sort_order": 6,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "capers",
+"aisle": "Gemüse",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "whole_milk",
+"aisle": "Molkereiprodukte",
+"sort_order": 65,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "semi_skimmed_milk",
+"aisle": "Molkereiprodukte",
+"sort_order": 66,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "skimmed_milk",
+"aisle": "Molkereiprodukte",
+"sort_order": 67,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "lactose_free_milk",
+"aisle": "Molkereiprodukte",
+"sort_order": 68,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "oat_milk",
+"aisle": "Molkereiprodukte",
+"sort_order": 70,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "almond_milk",
+"aisle": "Molkereiprodukte",
+"sort_order": 71,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "soy_milk",
+"aisle": "Molkereiprodukte",
+"sort_order": 72,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "rice_milk",
+"aisle": "Molkereiprodukte",
+"sort_order": 73,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "buttermilk",
+"aisle": "Molkereiprodukte",
+"sort_order": 69,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "kefir",
+"aisle": "Molkereiprodukte",
+"sort_order": 69,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "butter",
+"aisle": "Molkereiprodukte",
+"sort_order": 76,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "sweet_cream_butter",
+"aisle": "Molkereiprodukte",
+"sort_order": 77,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "cultured_butter",
+"aisle": "Molkereiprodukte",
+"sort_order": 78,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "vegan_butter_spread",
+"aisle": "Molkereiprodukte",
+"sort_order": 79,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "ghee",
+"aisle": "Molkereiprodukte",
+"sort_order": 80,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "cream",
+"aisle": "Molkereiprodukte",
+"sort_order": 72,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "whipping_cream",
+"aisle": "Molkereiprodukte",
+"sort_order": 73,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "sour_cream",
+"aisle": "Molkereiprodukte",
+"sort_order": 74,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "creme_fraiche",
+"aisle": "Molkereiprodukte",
+"sort_order": 74,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "sour_cream_german_style",
+"aisle": "Molkereiprodukte",
+"sort_order": 75,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "double_cream",
+"aisle": "Molkereiprodukte",
+"sort_order": 75,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "sweetened_condensed_milk",
+"aisle": "Molkereiprodukte",
+"sort_order": 76,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "evaporated_milk",
+"aisle": "Molkereiprodukte",
+"sort_order": 76,
+"confidence": 0.5
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "plain_yogurt",
+"aisle": "Molkereiprodukte",
+"sort_order": 67,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "greek_yogurt",
+"aisle": "Molkereiprodukte",
+"sort_order": 68,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "skyr",
+"aisle": "Molkereiprodukte",
+"sort_order": 69,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "low_fat_quark",
+"aisle": "Molkereiprodukte",
+"sort_order": 70,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "plain_cream_cheese",
+"aisle": "Molkereiprodukte",
+"sort_order": 72,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "herb_cream_cheese",
+"aisle": "Molkereiprodukte",
+"sort_order": 73,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "mascarpone",
+"aisle": "Molkereiprodukte",
+"sort_order": 74,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "ricotta",
+"aisle": "Molkereiprodukte",
+"sort_order": 75,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "mozzarella",
+"aisle": "Molkereiprodukte",
+"sort_order": 65,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "buffalo_mozzarella",
+"aisle": "Molkereiprodukte",
+"sort_order": 66,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "feta",
+"aisle": "Molkereiprodukte",
+"sort_order": 67,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "halloumi",
+"aisle": "Molkereiprodukte",
+"sort_order": 68,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "young_gouda",
+"aisle": "Molkereiprodukte",
+"sort_order": 69,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "gouda_medium_aged",
+"aisle": "Molkereiprodukte",
+"sort_order": 70,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "edam",
+"aisle": "Molkereiprodukte",
+"sort_order": 72,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "emmental",
+"aisle": "Molkereiprodukte",
+"sort_order": 73,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "brie",
+"aisle": "Molkereiprodukte",
+"sort_order": 75,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "camembert",
+"aisle": "Molkereiprodukte",
+"sort_order": 76,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "tilsit",
+"aisle": "Molkereiprodukte",
+"sort_order": 77,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "parmesan",
+"aisle": "Molkereiprodukte",
+"sort_order": 79,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "pecorino",
+"aisle": "Molkereiprodukte",
+"sort_order": 80,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "gruyere",
+"aisle": "Molkereiprodukte",
+"sort_order": 80,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "gorgonzola",
+"aisle": "Molkereiprodukte",
+"sort_order": 76,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "roquefort",
+"aisle": "Molkereiprodukte",
+"sort_order": 77,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "brie_de_meaux",
+"aisle": "Molkereiprodukte",
+"sort_order": 78,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "munster_cheese",
+"aisle": "Molkereiprodukte",
+"sort_order": 80,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "organic_egg",
+"aisle": "Molkereiprodukte",
+"sort_order": 67,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "free_range_egg",
+"aisle": "Molkereiprodukte",
+"sort_order": 68,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "chicken_breast",
+"aisle": "Fleisch & Wurst",
+"sort_order": 20,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "chicken_leg",
+"aisle": "Fleisch & Wurst",
+"sort_order": 21,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "chicken_wings",
+"aisle": "Fleisch & Wurst",
+"sort_order": 22,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "chicken_leg",
+"aisle": "Fleisch & Wurst",
+"sort_order": 23,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "ground_turkey",
+"aisle": "Fleisch & Wurst",
+"sort_order": 25,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "duck_breast",
+"aisle": "Fleisch & Wurst",
+"sort_order": 26,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "goose_leg",
+"aisle": "Fleisch & Wurst",
+"sort_order": 27,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "ground_beef",
+"aisle": "Fleisch & Wurst",
+"sort_order": 28,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "beef_steak",
+"aisle": "Fleisch & Wurst",
+"sort_order": 29,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "beef_fillet",
+"aisle": "Fleisch & Wurst",
+"sort_order": 30,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "beef_roulade",
+"aisle": "Fleisch & Wurst",
+"sort_order": 31,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "beef_brisket",
+"aisle": "Fleisch & Wurst",
+"sort_order": 32,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "pork_schnitzel",
+"aisle": "Fleisch & Wurst",
+"sort_order": 33,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "pork_fillet",
+"aisle": "Fleisch & Wurst",
+"sort_order": 34,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "pork_belly",
+"aisle": "Fleisch & Wurst",
+"sort_order": 35,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "pork_knuckle",
+"aisle": "Fleisch & Wurst",
+"sort_order": 36,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "lamb_leg",
+"aisle": "Fleisch & Wurst",
+"sort_order": 37,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "lamb_chops",
+"aisle": "Fleisch & Wurst",
+"sort_order": 38,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "ground_lamb",
+"aisle": "Fleisch & Wurst",
+"sort_order": 39,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "veal_cutlet",
+"aisle": "Fleisch & Wurst",
+"sort_order": 40,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "pork_bacon",
+"aisle": "Fleisch & Wurst",
+"sort_order": 30,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "pork_belly_bacon",
+"aisle": "Fleisch & Wurst",
+"sort_order": 31,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "parma_ham",
+"aisle": "Fleisch & Wurst",
+"sort_order": 33,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "mexican_dried_chorizo",
+"aisle": "Fleisch & Wurst",
+"sort_order": 35,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "salami",
+"aisle": "Fleisch & Wurst",
+"sort_order": 36,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "mortadella",
+"aisle": "Fleisch & Wurst",
+"sort_order": 37,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "bologna_sausage",
+"aisle": "Fleisch & Wurst",
+"sort_order": 38,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "vienna_sausages",
+"aisle": "Fleisch & Wurst",
+"sort_order": 39,
+"confidence": 0.9
+},
+{
+"store_id": "de_rewe",
+"canonical_item_id": "bratwurst",
+"aisle": "Fleisch & Wurst",
+"sort_order": 40,
+"confidence": 0.9
+},
+{
+"store_id": "en_tesco",
+"canonical_item_id": "apple",
+"aisle": "Fresh Produce",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "en_sainsbury_s",
+"canonical_item_id": "apple",
+"aisle": "Fresh Produce",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "en_asda",
+"canonical_item_id": "apple",
+"aisle": "Fresh Produce",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "en_morrisons",
+"canonical_item_id": "apple",
+"aisle": "Fresh Produce",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "en_waitrose",
+"canonical_item_id": "apple",
+"aisle": "Fresh Produce",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "en_aldi_uk",
+"canonical_item_id": "apple",
+"aisle": "Fresh Produce",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "en_lidl_uk",
+"canonical_item_id": "apple",
+"aisle": "Fresh Produce",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_uk",
+"canonical_item_id": "apple",
+"aisle": "Fresh Produce",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "en_walmart_us",
+"canonical_item_id": "apple",
+"aisle": "Produce",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "en_kroger_us",
+"canonical_item_id": "apple",
+"aisle": "Produce",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "en_trader_joe_s",
+"canonical_item_id": "apple",
+"aisle": "Produce",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_us",
+"canonical_item_id": "apple",
+"aisle": "Produce",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "en_tesco",
+"canonical_item_id": "pear",
+"aisle": "Fresh Produce",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "en_sainsbury_s",
+"canonical_item_id": "pear",
+"aisle": "Fresh Produce",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "en_asda",
+"canonical_item_id": "pear",
+"aisle": "Fresh Produce",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "en_morrisons",
+"canonical_item_id": "pear",
+"aisle": "Fresh Produce",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "en_waitrose",
+"canonical_item_id": "pear",
+"aisle": "Fresh Produce",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "en_aldi_uk",
+"canonical_item_id": "pear",
+"aisle": "Fresh Produce",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "en_lidl_uk",
+"canonical_item_id": "pear",
+"aisle": "Fresh Produce",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_uk",
+"canonical_item_id": "pear",
+"aisle": "Fresh Produce",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "en_walmart_us",
+"canonical_item_id": "pear",
+"aisle": "Produce",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "en_kroger_us",
+"canonical_item_id": "pear",
+"aisle": "Produce",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "en_trader_joe_s",
+"canonical_item_id": "pear",
+"aisle": "Produce",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_us",
+"canonical_item_id": "pear",
+"aisle": "Produce",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "en_tesco",
+"canonical_item_id": "plum",
+"aisle": "Fresh Produce",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "en_sainsbury_s",
+"canonical_item_id": "plum",
+"aisle": "Fresh Produce",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "en_asda",
+"canonical_item_id": "plum",
+"aisle": "Fresh Produce",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "en_morrisons",
+"canonical_item_id": "plum",
+"aisle": "Fresh Produce",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "en_waitrose",
+"canonical_item_id": "plum",
+"aisle": "Fresh Produce",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "en_aldi_uk",
+"canonical_item_id": "plum",
+"aisle": "Fresh Produce",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "en_lidl_uk",
+"canonical_item_id": "plum",
+"aisle": "Fresh Produce",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_uk",
+"canonical_item_id": "plum",
+"aisle": "Fresh Produce",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "en_walmart_us",
+"canonical_item_id": "plum",
+"aisle": "Produce",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "en_kroger_us",
+"canonical_item_id": "plum",
+"aisle": "Produce",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "en_trader_joe_s",
+"canonical_item_id": "plum",
+"aisle": "Produce",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_us",
+"canonical_item_id": "plum",
+"aisle": "Produce",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "en_tesco",
+"canonical_item_id": "cherry",
+"aisle": "Fresh Produce",
+"sort_order": 6,
+"confidence": 0.9
+},
+{
+"store_id": "en_sainsbury_s",
+"canonical_item_id": "cherry",
+"aisle": "Fresh Produce",
+"sort_order": 6,
+"confidence": 0.9
+},
+{
+"store_id": "en_asda",
+"canonical_item_id": "cherry",
+"aisle": "Fresh Produce",
+"sort_order": 6,
+"confidence": 0.9
+},
+{
+"store_id": "en_morrisons",
+"canonical_item_id": "cherry",
+"aisle": "Fresh Produce",
+"sort_order": 6,
+"confidence": 0.9
+},
+{
+"store_id": "en_waitrose",
+"canonical_item_id": "cherry",
+"aisle": "Fresh Produce",
+"sort_order": 6,
+"confidence": 0.9
+},
+{
+"store_id": "en_aldi_uk",
+"canonical_item_id": "cherry",
+"aisle": "Fresh Produce",
+"sort_order": 6,
+"confidence": 0.9
+},
+{
+"store_id": "en_lidl_uk",
+"canonical_item_id": "cherry",
+"aisle": "Fresh Produce",
+"sort_order": 6,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_uk",
+"canonical_item_id": "cherry",
+"aisle": "Fresh Produce",
+"sort_order": 6,
+"confidence": 0.9
+},
+{
+"store_id": "en_walmart_us",
+"canonical_item_id": "cherry",
+"aisle": "Produce",
+"sort_order": 6,
+"confidence": 0.9
+},
+{
+"store_id": "en_kroger_us",
+"canonical_item_id": "cherry",
+"aisle": "Produce",
+"sort_order": 6,
+"confidence": 0.9
+},
+{
+"store_id": "en_trader_joe_s",
+"canonical_item_id": "cherry",
+"aisle": "Produce",
+"sort_order": 6,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_us",
+"canonical_item_id": "cherry",
+"aisle": "Produce",
+"sort_order": 6,
+"confidence": 0.9
+},
+{
+"store_id": "en_tesco",
+"canonical_item_id": "grape",
+"aisle": "Fresh Produce",
+"sort_order": 7,
+"confidence": 0.9
+},
+{
+"store_id": "en_sainsbury_s",
+"canonical_item_id": "grape",
+"aisle": "Fresh Produce",
+"sort_order": 7,
+"confidence": 0.9
+},
+{
+"store_id": "en_asda",
+"canonical_item_id": "grape",
+"aisle": "Fresh Produce",
+"sort_order": 7,
+"confidence": 0.9
+},
+{
+"store_id": "en_morrisons",
+"canonical_item_id": "grape",
+"aisle": "Fresh Produce",
+"sort_order": 7,
+"confidence": 0.9
+},
+{
+"store_id": "en_waitrose",
+"canonical_item_id": "grape",
+"aisle": "Fresh Produce",
+"sort_order": 7,
+"confidence": 0.9
+},
+{
+"store_id": "en_aldi_uk",
+"canonical_item_id": "grape",
+"aisle": "Fresh Produce",
+"sort_order": 7,
+"confidence": 0.9
+},
+{
+"store_id": "en_lidl_uk",
+"canonical_item_id": "grape",
+"aisle": "Fresh Produce",
+"sort_order": 7,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_uk",
+"canonical_item_id": "grape",
+"aisle": "Fresh Produce",
+"sort_order": 7,
+"confidence": 0.9
+},
+{
+"store_id": "en_walmart_us",
+"canonical_item_id": "grape",
+"aisle": "Produce",
+"sort_order": 7,
+"confidence": 0.9
+},
+{
+"store_id": "en_kroger_us",
+"canonical_item_id": "grape",
+"aisle": "Produce",
+"sort_order": 7,
+"confidence": 0.9
+},
+{
+"store_id": "en_trader_joe_s",
+"canonical_item_id": "grape",
+"aisle": "Produce",
+"sort_order": 7,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_us",
+"canonical_item_id": "grape",
+"aisle": "Produce",
+"sort_order": 7,
+"confidence": 0.9
+},
+{
+"store_id": "en_tesco",
+"canonical_item_id": "raspberry",
+"aisle": "Fresh Produce",
+"sort_order": 9,
+"confidence": 0.9
+},
+{
+"store_id": "en_sainsbury_s",
+"canonical_item_id": "raspberry",
+"aisle": "Fresh Produce",
+"sort_order": 9,
+"confidence": 0.9
+},
+{
+"store_id": "en_asda",
+"canonical_item_id": "raspberry",
+"aisle": "Fresh Produce",
+"sort_order": 9,
+"confidence": 0.9
+},
+{
+"store_id": "en_morrisons",
+"canonical_item_id": "raspberry",
+"aisle": "Fresh Produce",
+"sort_order": 9,
+"confidence": 0.9
+},
+{
+"store_id": "en_waitrose",
+"canonical_item_id": "raspberry",
+"aisle": "Fresh Produce",
+"sort_order": 9,
+"confidence": 0.9
+},
+{
+"store_id": "en_aldi_uk",
+"canonical_item_id": "raspberry",
+"aisle": "Fresh Produce",
+"sort_order": 9,
+"confidence": 0.9
+},
+{
+"store_id": "en_lidl_uk",
+"canonical_item_id": "raspberry",
+"aisle": "Fresh Produce",
+"sort_order": 9,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_uk",
+"canonical_item_id": "raspberry",
+"aisle": "Fresh Produce",
+"sort_order": 9,
+"confidence": 0.9
+},
+{
+"store_id": "en_walmart_us",
+"canonical_item_id": "raspberry",
+"aisle": "Produce",
+"sort_order": 9,
+"confidence": 0.9
+},
+{
+"store_id": "en_kroger_us",
+"canonical_item_id": "raspberry",
+"aisle": "Produce",
+"sort_order": 9,
+"confidence": 0.9
+},
+{
+"store_id": "en_trader_joe_s",
+"canonical_item_id": "raspberry",
+"aisle": "Produce",
+"sort_order": 9,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_us",
+"canonical_item_id": "raspberry",
+"aisle": "Produce",
+"sort_order": 9,
+"confidence": 0.9
+},
+{
+"store_id": "en_tesco",
+"canonical_item_id": "blueberry",
+"aisle": "Fresh Produce",
+"sort_order": 10,
+"confidence": 0.9
+},
+{
+"store_id": "en_sainsbury_s",
+"canonical_item_id": "blueberry",
+"aisle": "Fresh Produce",
+"sort_order": 10,
+"confidence": 0.9
+},
+{
+"store_id": "en_asda",
+"canonical_item_id": "blueberry",
+"aisle": "Fresh Produce",
+"sort_order": 10,
+"confidence": 0.9
+},
+{
+"store_id": "en_morrisons",
+"canonical_item_id": "blueberry",
+"aisle": "Fresh Produce",
+"sort_order": 10,
+"confidence": 0.9
+},
+{
+"store_id": "en_waitrose",
+"canonical_item_id": "blueberry",
+"aisle": "Fresh Produce",
+"sort_order": 10,
+"confidence": 0.9
+},
+{
+"store_id": "en_aldi_uk",
+"canonical_item_id": "blueberry",
+"aisle": "Fresh Produce",
+"sort_order": 10,
+"confidence": 0.9
+},
+{
+"store_id": "en_lidl_uk",
+"canonical_item_id": "blueberry",
+"aisle": "Fresh Produce",
+"sort_order": 10,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_uk",
+"canonical_item_id": "blueberry",
+"aisle": "Fresh Produce",
+"sort_order": 10,
+"confidence": 0.9
+},
+{
+"store_id": "en_walmart_us",
+"canonical_item_id": "blueberry",
+"aisle": "Produce",
+"sort_order": 10,
+"confidence": 0.9
+},
+{
+"store_id": "en_kroger_us",
+"canonical_item_id": "blueberry",
+"aisle": "Produce",
+"sort_order": 10,
+"confidence": 0.9
+},
+{
+"store_id": "en_trader_joe_s",
+"canonical_item_id": "blueberry",
+"aisle": "Produce",
+"sort_order": 10,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_us",
+"canonical_item_id": "blueberry",
+"aisle": "Produce",
+"sort_order": 10,
+"confidence": 0.9
+},
+{
+"store_id": "en_tesco",
+"canonical_item_id": "blackberry",
+"aisle": "Fresh Produce",
+"sort_order": 11,
+"confidence": 0.9
+},
+{
+"store_id": "en_sainsbury_s",
+"canonical_item_id": "blackberry",
+"aisle": "Fresh Produce",
+"sort_order": 11,
+"confidence": 0.9
+},
+{
+"store_id": "en_asda",
+"canonical_item_id": "blackberry",
+"aisle": "Fresh Produce",
+"sort_order": 11,
+"confidence": 0.9
+},
+{
+"store_id": "en_morrisons",
+"canonical_item_id": "blackberry",
+"aisle": "Fresh Produce",
+"sort_order": 11,
+"confidence": 0.9
+},
+{
+"store_id": "en_waitrose",
+"canonical_item_id": "blackberry",
+"aisle": "Fresh Produce",
+"sort_order": 11,
+"confidence": 0.9
+},
+{
+"store_id": "en_aldi_uk",
+"canonical_item_id": "blackberry",
+"aisle": "Fresh Produce",
+"sort_order": 11,
+"confidence": 0.9
+},
+{
+"store_id": "en_lidl_uk",
+"canonical_item_id": "blackberry",
+"aisle": "Fresh Produce",
+"sort_order": 11,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_uk",
+"canonical_item_id": "blackberry",
+"aisle": "Fresh Produce",
+"sort_order": 11,
+"confidence": 0.9
+},
+{
+"store_id": "en_walmart_us",
+"canonical_item_id": "blackberry",
+"aisle": "Produce",
+"sort_order": 11,
+"confidence": 0.9
+},
+{
+"store_id": "en_kroger_us",
+"canonical_item_id": "blackberry",
+"aisle": "Produce",
+"sort_order": 11,
+"confidence": 0.9
+},
+{
+"store_id": "en_trader_joe_s",
+"canonical_item_id": "blackberry",
+"aisle": "Produce",
+"sort_order": 11,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_us",
+"canonical_item_id": "blackberry",
+"aisle": "Produce",
+"sort_order": 11,
+"confidence": 0.9
+},
+{
+"store_id": "en_tesco",
+"canonical_item_id": "apricot",
+"aisle": "Fresh Produce",
+"sort_order": 13,
+"confidence": 0.9
+},
+{
+"store_id": "en_sainsbury_s",
+"canonical_item_id": "apricot",
+"aisle": "Fresh Produce",
+"sort_order": 13,
+"confidence": 0.9
+},
+{
+"store_id": "en_asda",
+"canonical_item_id": "apricot",
+"aisle": "Fresh Produce",
+"sort_order": 13,
+"confidence": 0.9
+},
+{
+"store_id": "en_morrisons",
+"canonical_item_id": "apricot",
+"aisle": "Fresh Produce",
+"sort_order": 13,
+"confidence": 0.9
+},
+{
+"store_id": "en_waitrose",
+"canonical_item_id": "apricot",
+"aisle": "Fresh Produce",
+"sort_order": 13,
+"confidence": 0.9
+},
+{
+"store_id": "en_aldi_uk",
+"canonical_item_id": "apricot",
+"aisle": "Fresh Produce",
+"sort_order": 13,
+"confidence": 0.9
+},
+{
+"store_id": "en_lidl_uk",
+"canonical_item_id": "apricot",
+"aisle": "Fresh Produce",
+"sort_order": 13,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_uk",
+"canonical_item_id": "apricot",
+"aisle": "Fresh Produce",
+"sort_order": 13,
+"confidence": 0.9
+},
+{
+"store_id": "en_walmart_us",
+"canonical_item_id": "apricot",
+"aisle": "Produce",
+"sort_order": 13,
+"confidence": 0.9
+},
+{
+"store_id": "en_kroger_us",
+"canonical_item_id": "apricot",
+"aisle": "Produce",
+"sort_order": 13,
+"confidence": 0.9
+},
+{
+"store_id": "en_trader_joe_s",
+"canonical_item_id": "apricot",
+"aisle": "Produce",
+"sort_order": 13,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_us",
+"canonical_item_id": "apricot",
+"aisle": "Produce",
+"sort_order": 13,
+"confidence": 0.9
+},
+{
+"store_id": "en_tesco",
+"canonical_item_id": "peach",
+"aisle": "Fresh Produce",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "en_sainsbury_s",
+"canonical_item_id": "peach",
+"aisle": "Fresh Produce",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "en_asda",
+"canonical_item_id": "peach",
+"aisle": "Fresh Produce",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "en_morrisons",
+"canonical_item_id": "peach",
+"aisle": "Fresh Produce",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "en_waitrose",
+"canonical_item_id": "peach",
+"aisle": "Fresh Produce",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "en_aldi_uk",
+"canonical_item_id": "peach",
+"aisle": "Fresh Produce",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "en_lidl_uk",
+"canonical_item_id": "peach",
+"aisle": "Fresh Produce",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_uk",
+"canonical_item_id": "peach",
+"aisle": "Fresh Produce",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "en_walmart_us",
+"canonical_item_id": "peach",
+"aisle": "Produce",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "en_kroger_us",
+"canonical_item_id": "peach",
+"aisle": "Produce",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "en_trader_joe_s",
+"canonical_item_id": "peach",
+"aisle": "Produce",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_us",
+"canonical_item_id": "peach",
+"aisle": "Produce",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "en_tesco",
+"canonical_item_id": "nectarine",
+"aisle": "Fresh Produce",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "en_sainsbury_s",
+"canonical_item_id": "nectarine",
+"aisle": "Fresh Produce",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "en_asda",
+"canonical_item_id": "nectarine",
+"aisle": "Fresh Produce",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "en_morrisons",
+"canonical_item_id": "nectarine",
+"aisle": "Fresh Produce",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "en_waitrose",
+"canonical_item_id": "nectarine",
+"aisle": "Fresh Produce",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "en_aldi_uk",
+"canonical_item_id": "nectarine",
+"aisle": "Fresh Produce",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "en_lidl_uk",
+"canonical_item_id": "nectarine",
+"aisle": "Fresh Produce",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_uk",
+"canonical_item_id": "nectarine",
+"aisle": "Fresh Produce",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "en_walmart_us",
+"canonical_item_id": "nectarine",
+"aisle": "Produce",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "en_kroger_us",
+"canonical_item_id": "nectarine",
+"aisle": "Produce",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "en_trader_joe_s",
+"canonical_item_id": "nectarine",
+"aisle": "Produce",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_us",
+"canonical_item_id": "nectarine",
+"aisle": "Produce",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "en_tesco",
+"canonical_item_id": "mango",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_sainsbury_s",
+"canonical_item_id": "mango",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_asda",
+"canonical_item_id": "mango",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_morrisons",
+"canonical_item_id": "mango",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_waitrose",
+"canonical_item_id": "mango",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_aldi_uk",
+"canonical_item_id": "mango",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_lidl_uk",
+"canonical_item_id": "mango",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_uk",
+"canonical_item_id": "mango",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_walmart_us",
+"canonical_item_id": "mango",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_kroger_us",
+"canonical_item_id": "mango",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_trader_joe_s",
+"canonical_item_id": "mango",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_us",
+"canonical_item_id": "mango",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_tesco",
+"canonical_item_id": "papaya",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_sainsbury_s",
+"canonical_item_id": "papaya",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_asda",
+"canonical_item_id": "papaya",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_morrisons",
+"canonical_item_id": "papaya",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_waitrose",
+"canonical_item_id": "papaya",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_aldi_uk",
+"canonical_item_id": "papaya",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.5
+},
+{
+"store_id": "en_lidl_uk",
+"canonical_item_id": "papaya",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_uk",
+"canonical_item_id": "papaya",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_walmart_us",
+"canonical_item_id": "papaya",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_kroger_us",
+"canonical_item_id": "papaya",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_trader_joe_s",
+"canonical_item_id": "papaya",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_us",
+"canonical_item_id": "papaya",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_tesco",
+"canonical_item_id": "pineapple",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_sainsbury_s",
+"canonical_item_id": "pineapple",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_asda",
+"canonical_item_id": "pineapple",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_morrisons",
+"canonical_item_id": "pineapple",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_waitrose",
+"canonical_item_id": "pineapple",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_aldi_uk",
+"canonical_item_id": "pineapple",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_lidl_uk",
+"canonical_item_id": "pineapple",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_uk",
+"canonical_item_id": "pineapple",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_walmart_us",
+"canonical_item_id": "pineapple",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_kroger_us",
+"canonical_item_id": "pineapple",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_trader_joe_s",
+"canonical_item_id": "pineapple",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_us",
+"canonical_item_id": "pineapple",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_tesco",
+"canonical_item_id": "kiwi",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_sainsbury_s",
+"canonical_item_id": "kiwi",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_asda",
+"canonical_item_id": "kiwi",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_morrisons",
+"canonical_item_id": "kiwi",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_waitrose",
+"canonical_item_id": "kiwi",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_aldi_uk",
+"canonical_item_id": "kiwi",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_lidl_uk",
+"canonical_item_id": "kiwi",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_uk",
+"canonical_item_id": "kiwi",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_walmart_us",
+"canonical_item_id": "kiwi",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_kroger_us",
+"canonical_item_id": "kiwi",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_trader_joe_s",
+"canonical_item_id": "kiwi",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_us",
+"canonical_item_id": "kiwi",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_tesco",
+"canonical_item_id": "fig",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_sainsbury_s",
+"canonical_item_id": "fig",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_asda",
+"canonical_item_id": "fig",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_morrisons",
+"canonical_item_id": "fig",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_waitrose",
+"canonical_item_id": "fig",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_aldi_uk",
+"canonical_item_id": "fig",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.5
+},
+{
+"store_id": "en_lidl_uk",
+"canonical_item_id": "fig",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_uk",
+"canonical_item_id": "fig",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_walmart_us",
+"canonical_item_id": "fig",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_kroger_us",
+"canonical_item_id": "fig",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_trader_joe_s",
+"canonical_item_id": "fig",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_us",
+"canonical_item_id": "fig",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_tesco",
+"canonical_item_id": "pomegranate",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_sainsbury_s",
+"canonical_item_id": "pomegranate",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_asda",
+"canonical_item_id": "pomegranate",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_morrisons",
+"canonical_item_id": "pomegranate",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_waitrose",
+"canonical_item_id": "pomegranate",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_aldi_uk",
+"canonical_item_id": "pomegranate",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_lidl_uk",
+"canonical_item_id": "pomegranate",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_uk",
+"canonical_item_id": "pomegranate",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_walmart_us",
+"canonical_item_id": "pomegranate",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_kroger_us",
+"canonical_item_id": "pomegranate",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_trader_joe_s",
+"canonical_item_id": "pomegranate",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_us",
+"canonical_item_id": "pomegranate",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_tesco",
+"canonical_item_id": "watermelon",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_sainsbury_s",
+"canonical_item_id": "watermelon",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_asda",
+"canonical_item_id": "watermelon",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_morrisons",
+"canonical_item_id": "watermelon",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_waitrose",
+"canonical_item_id": "watermelon",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_aldi_uk",
+"canonical_item_id": "watermelon",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_lidl_uk",
+"canonical_item_id": "watermelon",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_uk",
+"canonical_item_id": "watermelon",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_walmart_us",
+"canonical_item_id": "watermelon",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_kroger_us",
+"canonical_item_id": "watermelon",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_trader_joe_s",
+"canonical_item_id": "watermelon",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_us",
+"canonical_item_id": "watermelon",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_tesco",
+"canonical_item_id": "honeydew_melon",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_sainsbury_s",
+"canonical_item_id": "honeydew_melon",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_asda",
+"canonical_item_id": "honeydew_melon",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_morrisons",
+"canonical_item_id": "honeydew_melon",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_waitrose",
+"canonical_item_id": "honeydew_melon",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_aldi_uk",
+"canonical_item_id": "honeydew_melon",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_lidl_uk",
+"canonical_item_id": "honeydew_melon",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_whole_foods_uk",
+"canonical_item_id": "honeydew_melon",
+"aisle": "Fresh Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_walmart_us",
+"canonical_item_id": "honeydew_melon",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "en_kroger_us",
+"canonical_item_id": "honeydew_melon",
+"aisle": "Produce",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "apple",
+"aisle": "Fruits & Légumes",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "pear",
+"aisle": "Fruits & Légumes",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "plum",
+"aisle": "Fruits & Légumes",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "cherry",
+"aisle": "Fruits & Légumes",
+"sort_order": 6,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "grape",
+"aisle": "Fruits & Légumes",
+"sort_order": 7,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "raspberry",
+"aisle": "Fruits & Légumes",
+"sort_order": 9,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "blueberry",
+"aisle": "Fruits & Légumes",
+"sort_order": 10,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "blackberry",
+"aisle": "Fruits & Légumes",
+"sort_order": 11,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "apricot",
+"aisle": "Fruits & Légumes",
+"sort_order": 14,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "peach",
+"aisle": "Fruits & Légumes",
+"sort_order": 15,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "nectarine",
+"aisle": "Fruits & Légumes",
+"sort_order": 16,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "mango",
+"aisle": "Fruits & Légumes",
+"sort_order": 17,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "papaya",
+"aisle": "Fruits & Légumes",
+"sort_order": 18,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "pineapple",
+"aisle": "Fruits & Légumes",
+"sort_order": 19,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "kiwi",
+"aisle": "Fruits & Légumes",
+"sort_order": 20,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "fig",
+"aisle": "Fruits & Légumes",
+"sort_order": 21,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "pomegranate",
+"aisle": "Fruits & Légumes",
+"sort_order": 22,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "watermelon",
+"aisle": "Fruits & Légumes",
+"sort_order": 23,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "honeydew_melon",
+"aisle": "Fruits & Légumes",
+"sort_order": 24,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "avocado",
+"aisle": "Fruits & Légumes",
+"sort_order": 25,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "lemon",
+"aisle": "Fruits & Légumes",
+"sort_order": 26,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "lime",
+"aisle": "Fruits & Légumes",
+"sort_order": 27,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "orange",
+"aisle": "Fruits & Légumes",
+"sort_order": 28,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "pomelo",
+"aisle": "Fruits & Légumes",
+"sort_order": 29,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "banana",
+"aisle": "Fruits & Légumes",
+"sort_order": 31,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "coconut",
+"aisle": "Fruits & Légumes",
+"sort_order": 32,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "passion_fruit",
+"aisle": "Fruits & Légumes",
+"sort_order": 33,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "lychee",
+"aisle": "Fruits & Légumes",
+"sort_order": 34,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "guava",
+"aisle": "Fruits & Légumes",
+"sort_order": 35,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "prickly_pear_fresh",
+"aisle": "Fruits & Légumes",
+"sort_order": 36,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "tomato",
+"aisle": "Fruits & Légumes",
+"sort_order": 37,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "bell_pepper_red_fresh_mexican",
+"aisle": "Fruits & Légumes",
+"sort_order": 41,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "pickled_jalapenos",
+"aisle": "Fruits & Légumes",
+"sort_order": 46,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "zucchini",
+"aisle": "Fruits & Légumes",
+"sort_order": 47,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "eggplant",
+"aisle": "Fruits & Légumes",
+"sort_order": 48,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "cucumber",
+"aisle": "Fruits & Légumes",
+"sort_order": 49,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "cucumber",
+"aisle": "Fruits & Légumes",
+"sort_order": 50,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "pumpkin",
+"aisle": "Fruits & Légumes",
+"sort_order": 51,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "broccoli",
+"aisle": "Fruits & Légumes",
+"sort_order": 54,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "cauliflower",
+"aisle": "Fruits & Légumes",
+"sort_order": 55,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "brussels_sprouts",
+"aisle": "Fruits & Légumes",
+"sort_order": 57,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "canned_white_cabbage",
+"aisle": "Fruits & Légumes",
+"sort_order": 58,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "canned_red_cabbage",
+"aisle": "Fruits & Légumes",
+"sort_order": 59,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "savoy_cabbage",
+"aisle": "Fruits & Légumes",
+"sort_order": 60,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "chinese_cabbage",
+"aisle": "Fruits & Légumes",
+"sort_order": 61,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "kohlrabi",
+"aisle": "Fruits & Légumes",
+"sort_order": 63,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "fennel",
+"aisle": "Fruits & Légumes",
+"sort_order": 64,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "canned_celeriac",
+"aisle": "Fruits & Légumes",
+"sort_order": 66,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "leek",
+"aisle": "Fruits & Légumes",
+"sort_order": 67,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "onion",
+"aisle": "Fruits & Légumes",
+"sort_order": 69,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "red_onions",
+"aisle": "Fruits & Légumes",
+"sort_order": 70,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "shallots",
+"aisle": "Fruits & Légumes",
+"sort_order": 71,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "garlic",
+"aisle": "Fruits & Légumes",
+"sort_order": 72,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "potato",
+"aisle": "Fruits & Légumes",
+"sort_order": 73,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "sweet_potato",
+"aisle": "Fruits & Légumes",
+"sort_order": 74,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "beetroot",
+"aisle": "Fruits & Légumes",
+"sort_order": 75,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "radish",
+"aisle": "Fruits & Légumes",
+"sort_order": 76,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "radish",
+"aisle": "Fruits & Légumes",
+"sort_order": 77,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "carrots",
+"aisle": "Fruits & Légumes",
+"sort_order": 78,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "parsnip",
+"aisle": "Fruits & Légumes",
+"sort_order": 79,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "parsley_root",
+"aisle": "Fruits & Légumes",
+"sort_order": 80,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "jerusalem_artichoke",
+"aisle": "Fruits & Légumes",
+"sort_order": 82,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "spinach",
+"aisle": "Fruits & Légumes",
+"sort_order": 83,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "chard",
+"aisle": "Fruits & Légumes",
+"sort_order": 84,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "arugula",
+"aisle": "Fruits & Légumes",
+"sort_order": 85,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "head_lettuce",
+"aisle": "Fruits & Légumes",
+"sort_order": 86,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "iceberg_lettuce",
+"aisle": "Fruits & Légumes",
+"sort_order": 87,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "lambs_lettuce",
+"aisle": "Fruits & Légumes",
+"sort_order": 88,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "radicchio",
+"aisle": "Fruits & Légumes",
+"sort_order": 89,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "endive",
+"aisle": "Fruits & Légumes",
+"sort_order": 90,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "bok_choy",
+"aisle": "Fruits & Légumes",
+"sort_order": 91,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "ginger",
+"aisle": "Fruits & Légumes",
+"sort_order": 92,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "mung_bean_sprouts",
+"aisle": "Fruits & Légumes",
+"sort_order": 94,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "cress",
+"aisle": "Fruits & Légumes",
+"sort_order": 95,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "basil",
+"aisle": "Fruits & Légumes",
+"sort_order": 96,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "parsley",
+"aisle": "Fruits & Légumes",
+"sort_order": 97,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "chives",
+"aisle": "Fruits & Légumes",
+"sort_order": 98,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "dill",
+"aisle": "Fruits & Légumes",
+"sort_order": 99,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "mint",
+"aisle": "Fruits & Légumes",
+"sort_order": 100,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "rosemary",
+"aisle": "Fruits & Légumes",
+"sort_order": 101,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "thyme",
+"aisle": "Fruits & Légumes",
+"sort_order": 102,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "cilantro_coriander",
+"aisle": "Fruits & Légumes",
+"sort_order": 103,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "oregano",
+"aisle": "Fruits & Légumes",
+"sort_order": 104,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "sage",
+"aisle": "Fruits & Légumes",
+"sort_order": 105,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "lemongrass",
+"aisle": "Fruits & Légumes",
+"sort_order": 106,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "capers",
+"aisle": "Épicerie",
+"sort_order": 107,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "whole_milk",
+"aisle": "Produits laitiers",
+"sort_order": 110,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "semi_skimmed_milk",
+"aisle": "Produits laitiers",
+"sort_order": 111,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "skimmed_milk",
+"aisle": "Produits laitiers",
+"sort_order": 112,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "lactose_free_milk",
+"aisle": "Produits laitiers",
+"sort_order": 113,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "oat_milk",
+"aisle": "Produits laitiers",
+"sort_order": 114,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "almond_milk",
+"aisle": "Produits laitiers",
+"sort_order": 115,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "rice_milk",
+"aisle": "Produits laitiers",
+"sort_order": 117,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "buttermilk",
+"aisle": "Produits laitiers",
+"sort_order": 120,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "kefir",
+"aisle": "Produits laitiers",
+"sort_order": 121,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "butter",
+"aisle": "Produits laitiers",
+"sort_order": 122,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "sweet_cream_butter",
+"aisle": "Produits laitiers",
+"sort_order": 123,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "sour_cream_butter",
+"aisle": "Produits laitiers",
+"sort_order": 124,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "vegan_butter_spread",
+"aisle": "Produits laitiers",
+"sort_order": 125,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "ghee",
+"aisle": "Produits laitiers",
+"sort_order": 127,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "cream",
+"aisle": "Produits laitiers",
+"sort_order": 128,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "whipping_cream",
+"aisle": "Produits laitiers",
+"sort_order": 129,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "sour_cream",
+"aisle": "Produits laitiers",
+"sort_order": 130,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "creme_fraiche",
+"aisle": "Produits laitiers",
+"sort_order": 131,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "sour_cream_german_style",
+"aisle": "Produits laitiers",
+"sort_order": 132,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "double_cream",
+"aisle": "Produits laitiers",
+"sort_order": 133,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "sweetened_condensed_milk",
+"aisle": "Épicerie",
+"sort_order": 134,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "evaporated_milk",
+"aisle": "Épicerie",
+"sort_order": 135,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "plain_yogurt",
+"aisle": "Produits laitiers",
+"sort_order": 136,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "greek_yogurt",
+"aisle": "Produits laitiers",
+"sort_order": 137,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "skyr",
+"aisle": "Produits laitiers",
+"sort_order": 138,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "low_fat_quark",
+"aisle": "Produits laitiers",
+"sort_order": 139,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "plain_cream_cheese",
+"aisle": "Produits laitiers",
+"sort_order": 141,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "cream_cheese_with_herbs",
+"aisle": "Produits laitiers",
+"sort_order": 142,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "mascarpone",
+"aisle": "Produits laitiers",
+"sort_order": 143,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "ricotta",
+"aisle": "Produits laitiers",
+"sort_order": 144,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "mozzarella",
+"aisle": "Produits laitiers",
+"sort_order": 145,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "buffalo_mozzarella",
+"aisle": "Produits laitiers",
+"sort_order": 146,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "feta",
+"aisle": "Produits laitiers",
+"sort_order": 147,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "halloumi",
+"aisle": "Produits laitiers",
+"sort_order": 148,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "young_gouda",
+"aisle": "Produits laitiers",
+"sort_order": 149,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "gouda_medium_aged",
+"aisle": "Produits laitiers",
+"sort_order": 150,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "gouda_medium_aged",
+"aisle": "Produits laitiers",
+"sort_order": 151,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "edam",
+"aisle": "Produits laitiers",
+"sort_order": 152,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "emmental",
+"aisle": "Produits laitiers",
+"sort_order": 153,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "brie",
+"aisle": "Produits laitiers",
+"sort_order": 155,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "camembert",
+"aisle": "Produits laitiers",
+"sort_order": 156,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "tilsit",
+"aisle": "Produits laitiers",
+"sort_order": 157,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "parmesan",
+"aisle": "Produits laitiers",
+"sort_order": 159,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "pecorino",
+"aisle": "Produits laitiers",
+"sort_order": 160,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "gruyere",
+"aisle": "Produits laitiers",
+"sort_order": 163,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "gorgonzola",
+"aisle": "Produits laitiers",
+"sort_order": 166,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "roquefort",
+"aisle": "Produits laitiers",
+"sort_order": 167,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "brie_de_meaux",
+"aisle": "Produits laitiers",
+"sort_order": 168,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "munster_cheese",
+"aisle": "Produits laitiers",
+"sort_order": 170,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "organic_egg",
+"aisle": "Produits laitiers",
+"sort_order": 173,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "free_range_egg",
+"aisle": "Produits laitiers",
+"sort_order": 174,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "chicken_breast",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 175,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "chicken_leg",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 176,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "chicken_wings",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 177,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "chicken_leg",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 178,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "ground_turkey",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 180,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "duck_breast",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 181,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "goose_leg",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 182,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "ground_beef",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 183,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "beef_steak",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 184,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "beef_fillet",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 185,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "beef_roulade",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 186,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "beef_brisket",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 187,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "pork_schnitzel",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 188,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "pork_fillet",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 189,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "pork_belly",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 190,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "pork_knuckle",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 191,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "lamb_leg",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 192,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "lamb_chops",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 193,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "ground_lamb",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 194,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "veal_cutlet",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 195,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "pork_bacon",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 196,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "smoked_pork_belly",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 197,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "parma_ham",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 199,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "mexican_dried_chorizo",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 201,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "salami",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 202,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "mortadella",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 203,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "bologna_sausage",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 204,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "vienna_sausages",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 205,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "bratwurst",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 206,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "salmon",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 207,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "salmon_fillet",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 208,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "trout",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 209,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "cod",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 210,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "pollock",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 211,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "herring",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 212,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "canned_sardines",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 213,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "mackerel",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 215,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "mussels",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 218,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "squid",
+"aisle": "Boucherie & Poissonnerie",
+"sort_order": 219,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "spaghetti",
+"aisle": "Épicerie",
+"sort_order": 221,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "penne",
+"aisle": "Épicerie",
+"sort_order": 222,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "fusilli",
+"aisle": "Épicerie",
+"sort_order": 223,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "rigatoni",
+"aisle": "Épicerie",
+"sort_order": 224,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "farfalle",
+"aisle": "Épicerie",
+"sort_order": 225,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "tagliatelle",
+"aisle": "Épicerie",
+"sort_order": 226,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "linguine",
+"aisle": "Épicerie",
+"sort_order": 227,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "lasagna_sheets",
+"aisle": "Épicerie",
+"sort_order": 228,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "couscous",
+"aisle": "Épicerie",
+"sort_order": 230,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "bulgur",
+"aisle": "Épicerie",
+"sort_order": 231,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "quinoa",
+"aisle": "Épicerie",
+"sort_order": 232,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "amaranth",
+"aisle": "Épicerie",
+"sort_order": 233,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "buckwheat",
+"aisle": "Épicerie",
+"sort_order": 234,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "millet",
+"aisle": "Épicerie",
+"sort_order": 235,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "polenta",
+"aisle": "Épicerie",
+"sort_order": 236,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "basmati_rice",
+"aisle": "Épicerie",
+"sort_order": 237,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "jasmine_rice",
+"aisle": "Épicerie",
+"sort_order": 238,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "arborio_rice",
+"aisle": "Épicerie",
+"sort_order": 239,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "wild_rice",
+"aisle": "Épicerie",
+"sort_order": 240,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "brown_rice",
+"aisle": "Épicerie",
+"sort_order": 241,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "spelt_flour",
+"aisle": "Épicerie",
+"sort_order": 245,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "rye_flour",
+"aisle": "Épicerie",
+"sort_order": 246,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "cornstarch",
+"aisle": "Épicerie",
+"sort_order": 247,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "potato_flour",
+"aisle": "Épicerie",
+"sort_order": 248,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "almond_flour",
+"aisle": "Épicerie",
+"sort_order": 249,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "brown_cane_sugar",
+"aisle": "Épicerie",
+"sort_order": 251,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "powdered_sugar",
+"aisle": "Épicerie",
+"sort_order": 252,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "coconut_blossom_sugar",
+"aisle": "Épicerie",
+"sort_order": 253,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "honey",
+"aisle": "Épicerie",
+"sort_order": 254,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "maple_syrup",
+"aisle": "Épicerie",
+"sort_order": 255,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "baking_powder",
+"aisle": "Épicerie",
+"sort_order": 257,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "baking_soda",
+"aisle": "Épicerie",
+"sort_order": 258,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "dry_yeast",
+"aisle": "Épicerie",
+"sort_order": 259,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "vanilla_sugar",
+"aisle": "Épicerie",
+"sort_order": 262,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "cornstarch",
+"aisle": "Épicerie",
+"sort_order": 263,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "aspic_meat",
+"aisle": "Épicerie",
+"sort_order": 264,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "cocoa_powder",
+"aisle": "Épicerie",
+"sort_order": 266,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "dark_couverture_chocolate",
+"aisle": "Épicerie",
+"sort_order": 269,
+"confidence": 0.9
+},
+{
+"store_id": "fr_carrefour",
+"canonical_item_id": "tomato_paste",
+"aisle": "Épicerie",
+"sort_order": 270,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "apple",
+"aisle": "Frutería",
+"sort_order": 2,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "pear",
+"aisle": "Frutería",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "plum",
+"aisle": "Frutería",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "cherry",
+"aisle": "Frutería",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "grape",
+"aisle": "Frutería",
+"sort_order": 6,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "raspberry",
+"aisle": "Frutería",
+"sort_order": 8,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "blueberry",
+"aisle": "Frutería",
+"sort_order": 9,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "blackberry",
+"aisle": "Frutería",
+"sort_order": 10,
+"confidence": 0.5
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "apricot",
+"aisle": "Frutería",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "peach",
+"aisle": "Frutería",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "nectarine",
+"aisle": "Frutería",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "mango",
+"aisle": "Frutería",
+"sort_order": 6,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "papaya",
+"aisle": "Frutería",
+"sort_order": 7,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "pineapple",
+"aisle": "Frutería",
+"sort_order": 8,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "kiwi",
+"aisle": "Frutería",
+"sort_order": 9,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "fig",
+"aisle": "Frutería",
+"sort_order": 10,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "pomegranate",
+"aisle": "Frutería",
+"sort_order": 11,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "watermelon",
+"aisle": "Frutería",
+"sort_order": 2,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "honeydew_melon",
+"aisle": "Frutería",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "avocado",
+"aisle": "Frutería",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "lemon",
+"aisle": "Frutería",
+"sort_order": 2,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "lime",
+"aisle": "Frutería",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "orange",
+"aisle": "Frutería",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "pomelo",
+"aisle": "Frutería",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "mandarin",
+"aisle": "Frutería",
+"sort_order": 6,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "banana",
+"aisle": "Frutería",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "coconut",
+"aisle": "Frutería",
+"sort_order": 12,
+"confidence": 0.5
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "passion_fruit",
+"aisle": "Frutería",
+"sort_order": 13,
+"confidence": 0.5
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "lychee",
+"aisle": "Frutería",
+"sort_order": 14,
+"confidence": 0.5
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "guava",
+"aisle": "Frutería",
+"sort_order": 15,
+"confidence": 0.5
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "prickly_pear_fresh",
+"aisle": "Frutería",
+"sort_order": 13,
+"confidence": 0.5
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "tomato",
+"aisle": "Verdulería",
+"sort_order": 2,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "bell_pepper_red_fresh_mexican",
+"aisle": "Verdulería",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "pickled_jalapenos",
+"aisle": "Verdulería",
+"sort_order": 10,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "zucchini",
+"aisle": "Verdulería",
+"sort_order": 2,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "eggplant",
+"aisle": "Verdulería",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "cucumber",
+"aisle": "Verdulería",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "cucumber",
+"aisle": "Verdulería",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "pumpkin",
+"aisle": "Verdulería",
+"sort_order": 2,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "broccoli",
+"aisle": "Verdulería",
+"sort_order": 2,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "cauliflower",
+"aisle": "Verdulería",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "brussels_sprouts",
+"aisle": "Verdulería",
+"sort_order": 2,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "canned_white_cabbage",
+"aisle": "Verdulería",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "canned_red_cabbage",
+"aisle": "Verdulería",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "savoy_cabbage",
+"aisle": "Verdulería",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "bok_choy",
+"aisle": "Verdulería",
+"sort_order": 6,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "kohlrabi",
+"aisle": "Verdulería",
+"sort_order": 2,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "fennel",
+"aisle": "Verdulería",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "celery",
+"aisle": "Verdulería",
+"sort_order": 2,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "canned_celeriac",
+"aisle": "Verdulería",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "leek",
+"aisle": "Verdulería",
+"sort_order": 2,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "onion",
+"aisle": "Verdulería",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "red_onions",
+"aisle": "Verdulería",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "shallot",
+"aisle": "Verdulería",
+"sort_order": 6,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "garlic",
+"aisle": "Verdulería",
+"sort_order": 2,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "potato",
+"aisle": "Verdulería",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "sweet_potato",
+"aisle": "Verdulería",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "beetroot",
+"aisle": "Verdulería",
+"sort_order": 2,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "radish",
+"aisle": "Verdulería",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "radish",
+"aisle": "Verdulería",
+"sort_order": 4,
+"confidence": 0.5
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "carrots",
+"aisle": "Verdulería",
+"sort_order": 2,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "parsnip",
+"aisle": "Verdulería",
+"sort_order": 3,
+"confidence": 0.5
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "parsley_root",
+"aisle": "Verdulería",
+"sort_order": 4,
+"confidence": 0.5
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "jerusalem_artichoke",
+"aisle": "Verdulería",
+"sort_order": 2,
+"confidence": 0.5
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "spinach",
+"aisle": "Verdulería",
+"sort_order": 2,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "chard",
+"aisle": "Verdulería",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "arugula",
+"aisle": "Verdulería",
+"sort_order": 2,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "iceberg_lettuce",
+"aisle": "Verdulería",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "iceberg_lettuce",
+"aisle": "Verdulería",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "lambs_lettuce",
+"aisle": "Verdulería",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "radicchio",
+"aisle": "Verdulería",
+"sort_order": 6,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "endive",
+"aisle": "Verdulería",
+"sort_order": 7,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "pak_choi",
+"aisle": "Verdulería",
+"sort_order": 2,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "ginger",
+"aisle": "Verdulería",
+"sort_order": 2,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "bean_sprouts",
+"aisle": "Verdulería",
+"sort_order": 2,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "cress",
+"aisle": "Verdulería",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "basil",
+"aisle": "Verdulería",
+"sort_order": 2,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "parsley",
+"aisle": "Verdulería",
+"sort_order": 3,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "chives",
+"aisle": "Verdulería",
+"sort_order": 4,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "dill",
+"aisle": "Verdulería",
+"sort_order": 5,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "mint",
+"aisle": "Verdulería",
+"sort_order": 6,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "rosemary",
+"aisle": "Verdulería",
+"sort_order": 7,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "thyme",
+"aisle": "Verdulería",
+"sort_order": 8,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "cilantro",
+"aisle": "Verdulería",
+"sort_order": 9,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "oregano",
+"aisle": "Verdulería",
+"sort_order": 10,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "sage",
+"aisle": "Verdulería",
+"sort_order": 11,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "lemongrass",
+"aisle": "Verdulería",
+"sort_order": 12,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "capers",
+"aisle": "Verdulería",
+"sort_order": 2,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "whole_milk",
+"aisle": "Lácteos",
+"sort_order": 66,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "semi_skimmed_milk",
+"aisle": "Lácteos",
+"sort_order": 67,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "skimmed_milk",
+"aisle": "Lácteos",
+"sort_order": 68,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "lactose_free_milk",
+"aisle": "Lácteos",
+"sort_order": 69,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "oat_milk",
+"aisle": "Lácteos",
+"sort_order": 70,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "almond_milk",
+"aisle": "Lácteos",
+"sort_order": 71,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "soy_milk",
+"aisle": "Lácteos",
+"sort_order": 72,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "rice_milk",
+"aisle": "Lácteos",
+"sort_order": 73,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "buttermilk",
+"aisle": "Lácteos",
+"sort_order": 70,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "kefir",
+"aisle": "Lácteos",
+"sort_order": 71,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "butter",
+"aisle": "Lácteos",
+"sort_order": 72,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "sweet_cream_butter",
+"aisle": "Lácteos",
+"sort_order": 73,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "sour_cream_butter",
+"aisle": "Lácteos",
+"sort_order": 74,
+"confidence": 0.5
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "vegan_butter_spread",
+"aisle": "Lácteos",
+"sort_order": 75,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "ghee",
+"aisle": "Lácteos",
+"sort_order": 77,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "cream",
+"aisle": "Lácteos",
+"sort_order": 66,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "whipping_cream",
+"aisle": "Lácteos",
+"sort_order": 67,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "sour_cream",
+"aisle": "Lácteos",
+"sort_order": 68,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "creme_fraiche",
+"aisle": "Lácteos",
+"sort_order": 69,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "sour_cream_german_style",
+"aisle": "Lácteos",
+"sort_order": 70,
+"confidence": 0.5
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "double_cream",
+"aisle": "Lácteos",
+"sort_order": 71,
+"confidence": 0.5
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "sweetened_condensed_milk",
+"aisle": "Lácteos",
+"sort_order": 72,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "evaporated_milk",
+"aisle": "Lácteos",
+"sort_order": 73,
+"confidence": 0.5
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "plain_yogurt",
+"aisle": "Lácteos",
+"sort_order": 66,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "greek_yogurt",
+"aisle": "Lácteos",
+"sort_order": 67,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "skyr",
+"aisle": "Lácteos",
+"sort_order": 68,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "low_fat_quark",
+"aisle": "Lácteos",
+"sort_order": 69,
+"confidence": 0.5
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "plain_cream_cheese",
+"aisle": "Lácteos",
+"sort_order": 71,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "cream_cheese_with_herbs",
+"aisle": "Lácteos",
+"sort_order": 72,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "mascarpone",
+"aisle": "Lácteos",
+"sort_order": 73,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "ricotta",
+"aisle": "Lácteos",
+"sort_order": 74,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "mozzarella",
+"aisle": "Lácteos",
+"sort_order": 75,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "buffalo_mozzarella",
+"aisle": "Lácteos",
+"sort_order": 76,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "feta",
+"aisle": "Lácteos",
+"sort_order": 66,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "halloumi",
+"aisle": "Lácteos",
+"sort_order": 67,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "young_gouda",
+"aisle": "Lácteos",
+"sort_order": 68,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "gouda_medium_aged",
+"aisle": "Lácteos",
+"sort_order": 69,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "gouda_medium_aged",
+"aisle": "Lácteos",
+"sort_order": 70,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "edam",
+"aisle": "Lácteos",
+"sort_order": 71,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "emmental",
+"aisle": "Lácteos",
+"sort_order": 72,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "brie",
+"aisle": "Lácteos",
+"sort_order": 74,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "camembert",
+"aisle": "Lácteos",
+"sort_order": 75,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "tilsit",
+"aisle": "Lácteos",
+"sort_order": 76,
+"confidence": 0.5
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "parmesan",
+"aisle": "Lácteos",
+"sort_order": 66,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "pecorino",
+"aisle": "Lácteos",
+"sort_order": 67,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "gruyere",
+"aisle": "Lácteos",
+"sort_order": 70,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "gorgonzola",
+"aisle": "Lácteos",
+"sort_order": 66,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "roquefort",
+"aisle": "Lácteos",
+"sort_order": 67,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "brie_de_meaux",
+"aisle": "Lácteos",
+"sort_order": 78,
+"confidence": 0.5
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "munster_cheese",
+"aisle": "Lácteos",
+"sort_order": 80,
+"confidence": 0.5
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "organic_egg",
+"aisle": "Lácteos",
+"sort_order": 68,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "free_range_egg",
+"aisle": "Lácteos",
+"sort_order": 69,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "chicken_breast",
+"aisle": "Carnicería",
+"sort_order": 22,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "chicken_leg",
+"aisle": "Carnicería",
+"sort_order": 23,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "chicken_wings",
+"aisle": "Carnicería",
+"sort_order": 24,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "chicken_leg",
+"aisle": "Carnicería",
+"sort_order": 25,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "ground_turkey",
+"aisle": "Carnicería",
+"sort_order": 27,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "duck_breast",
+"aisle": "Carnicería",
+"sort_order": 28,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "goose_leg",
+"aisle": "Carnicería",
+"sort_order": 29,
+"confidence": 0.5
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "beef",
+"aisle": "Carnicería",
+"sort_order": 30,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "beef_steak",
+"aisle": "Carnicería",
+"sort_order": 31,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "beef_fillet",
+"aisle": "Carnicería",
+"sort_order": 32,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "beef_roulade",
+"aisle": "Carnicería",
+"sort_order": 33,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "beef_brisket",
+"aisle": "Carnicería",
+"sort_order": 34,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "pork_schnitzel",
+"aisle": "Carnicería",
+"sort_order": 22,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "pork_fillet",
+"aisle": "Carnicería",
+"sort_order": 23,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "pork_belly",
+"aisle": "Carnicería",
+"sort_order": 24,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "pork_knuckle",
+"aisle": "Carnicería",
+"sort_order": 25,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "lamb_leg",
+"aisle": "Carnicería",
+"sort_order": 26,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "lamb_chop",
+"aisle": "Carnicería",
+"sort_order": 27,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "ground_lamb",
+"aisle": "Carnicería",
+"sort_order": 28,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "veal_cutlet",
+"aisle": "Carnicería",
+"sort_order": 29,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "pork_bacon",
+"aisle": "Carnicería",
+"sort_order": 30,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "smoked_pork_belly",
+"aisle": "Carnicería",
+"sort_order": 31,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "parma_ham",
+"aisle": "Carnicería",
+"sort_order": 33,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "mexican_dried_chorizo",
+"aisle": "Carnicería",
+"sort_order": 35,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "salami",
+"aisle": "Carnicería",
+"sort_order": 36,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "mortadella",
+"aisle": "Carnicería",
+"sort_order": 37,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "bologna_sausage",
+"aisle": "Carnicería",
+"sort_order": 38,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "vienna_sausages",
+"aisle": "Carnicería",
+"sort_order": 39,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "bratwurst",
+"aisle": "Carnicería",
+"sort_order": 40,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "salmon",
+"aisle": "Pescadería",
+"sort_order": 22,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "salmon_fillet",
+"aisle": "Pescadería",
+"sort_order": 23,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "trout",
+"aisle": "Pescadería",
+"sort_order": 24,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "cod",
+"aisle": "Pescadería",
+"sort_order": 25,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "pollock",
+"aisle": "Pescadería",
+"sort_order": 26,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "herring",
+"aisle": "Pescadería",
+"sort_order": 27,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "canned_sardines",
+"aisle": "Pescadería",
+"sort_order": 28,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "mackerel",
+"aisle": "Pescadería",
+"sort_order": 30,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "mussels",
+"aisle": "Pescadería",
+"sort_order": 24,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "squid",
+"aisle": "Pescadería",
+"sort_order": 25,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "spaghetti",
+"aisle": "Despensa",
+"sort_order": 35,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "penne",
+"aisle": "Despensa",
+"sort_order": 36,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "fusilli",
+"aisle": "Despensa",
+"sort_order": 37,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "rigatoni",
+"aisle": "Despensa",
+"sort_order": 38,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "farfalle",
+"aisle": "Despensa",
+"sort_order": 39,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "tagliatelle",
+"aisle": "Despensa",
+"sort_order": 40,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "linguine",
+"aisle": "Despensa",
+"sort_order": 41,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "lasagna_sheets",
+"aisle": "Despensa",
+"sort_order": 42,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "couscous",
+"aisle": "Despensa",
+"sort_order": 44,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "bulgur",
+"aisle": "Despensa",
+"sort_order": 45,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "quinoa",
+"aisle": "Despensa",
+"sort_order": 46,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "amaranth",
+"aisle": "Despensa",
+"sort_order": 47,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "buckwheat",
+"aisle": "Despensa",
+"sort_order": 48,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "millet",
+"aisle": "Despensa",
+"sort_order": 49,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "polenta",
+"aisle": "Despensa",
+"sort_order": 50,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "basmati_rice",
+"aisle": "Despensa",
+"sort_order": 35,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "jasmine_rice",
+"aisle": "Despensa",
+"sort_order": 36,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "arborio_rice",
+"aisle": "Despensa",
+"sort_order": 37,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "wild_rice",
+"aisle": "Despensa",
+"sort_order": 38,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "brown_rice",
+"aisle": "Despensa",
+"sort_order": 39,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "spelt_flour",
+"aisle": "Despensa",
+"sort_order": 43,
+"confidence": 0.9
+},
+{
+"store_id": "es_mercadona",
+"canonical_item_id": "rye_flour",
+"aisle": "Despensa",
+"sort_order": 44,
+"confidence": 0.9
+}
+]
+}

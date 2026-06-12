@@ -804,6 +804,35 @@ FROM list_items_table;
   // Grocery graph — canonical items
   // ---------------------------------------------------------------------------
 
+  /// Prefix search over aliases for typed autocomplete (e.g. "mlch" → Milch).
+  /// Uses the `alias_text` index; includes household + global seed aliases.
+  Future<List<ItemAliasesTableData>> searchAliasPrefix({
+    required String groupId,
+    required String query,
+    int limit = 40,
+  }) {
+    if (query.isEmpty) return Future.value(const []);
+    final prefix =
+        query.replaceAll('%', r'\%').replaceAll('_', r'\_');
+    return (select(itemAliasesTable)
+          ..where((t) =>
+              (t.groupId.equals(groupId) | t.groupId.equals('__global__')) &
+              t.deletedAt.isNull() &
+              t.aliasText.like('$prefix%'))
+          ..orderBy([(t) => OrderingTerm.desc(t.weight)])
+          ..limit(limit))
+        .get();
+  }
+
+  Future<List<CanonicalItemsTableData>> getCanonicalItemsByIds(
+      Iterable<String> ids) {
+    final list = ids.toList(growable: false);
+    if (list.isEmpty) return Future.value(const []);
+    return (select(canonicalItemsTable)
+          ..where((t) => t.id.isIn(list) & t.deletedAt.isNull()))
+        .get();
+  }
+
   Future<CanonicalItemsTableData?> getCanonicalItemById(String id) {
     return (select(canonicalItemsTable)..where((t) => t.id.equals(id)))
         .getSingleOrNull();
@@ -823,6 +852,20 @@ FROM list_items_table;
     await batch((b) {
       b.insertAllOnConflictUpdate(
           canonicalItemsTable, rows.toList(growable: false));
+    });
+  }
+
+  /// Hard-deletes the bundled global seed (canonical items + their aliases)
+  /// so a newer seed version can be re-ingested cleanly. Household-scoped
+  /// items, aliases, and corrections are untouched.
+  Future<void> clearGlobalSeed(String globalGroupId) async {
+    await batch((b) {
+      b.deleteWhere<ItemAliasesTable, ItemAliasesTableData>(
+          itemAliasesTable,
+          (t) => t.groupId.equals(globalGroupId) & t.source.equals('seed'));
+      b.deleteWhere<CanonicalItemsTable, CanonicalItemsTableData>(
+          canonicalItemsTable,
+          (t) => t.groupId.equals(globalGroupId) | t.isGlobal.equals(true));
     });
   }
 
@@ -848,11 +891,38 @@ FROM list_items_table;
 
   /// Loads all non-deleted aliases for a household + global seed aliases.
   /// Used by the fuzzy resolver when no exact match is found.
+  ///
+  /// NOTE: with the full global seed this returns ~120k rows. Prefer
+  /// [getAliasFuzzyCandidates] for the hot resolve path.
   Future<List<ItemAliasesTableData>> getItemAliasesForFuzzy(String groupId) {
     return (select(itemAliasesTable)
           ..where((t) =>
               (t.groupId.equals(groupId) | t.groupId.equals('__global__')) &
               t.deletedAt.isNull()))
+        .get();
+  }
+
+  /// Indexed prefilter for fuzzy resolution: only aliases that share the query's
+  /// first character and are within ±2 in length. Uses the `alias_text` index
+  /// for the prefix `LIKE`, cutting the candidate set from ~120k to typically a
+  /// few hundred before edit-distance scoring runs in Dart.
+  Future<List<ItemAliasesTableData>> getAliasFuzzyCandidates({
+    required String groupId,
+    required String query,
+    int maxCandidates = 400,
+  }) {
+    if (query.isEmpty) return Future.value(const []);
+    final lo = (query.length - 2).clamp(1, 1 << 30);
+    final hi = query.length + 2;
+    final prefix = query.substring(0, 1).replaceAll('%', r'\%').replaceAll('_', r'\_');
+    return (select(itemAliasesTable)
+          ..where((t) =>
+              (t.groupId.equals(groupId) | t.groupId.equals('__global__')) &
+              t.deletedAt.isNull() &
+              t.aliasText.length.isBetweenValues(lo, hi) &
+              t.aliasText.like('$prefix%'))
+          ..orderBy([(t) => OrderingTerm.desc(t.weight)])
+          ..limit(maxCandidates))
         .get();
   }
 
@@ -909,6 +979,9 @@ FROM list_items_table;
   // Grocery graph — store aisles
   // ---------------------------------------------------------------------------
 
+  /// Returns the aisle for an item at a store. Household-specific overrides
+  /// take precedence over the shipped global store layout (groupId desc orders
+  /// a real group id ahead of '__global__').
   Future<StoreAislesTableData?> getStoreAisle({
     required String groupId,
     required String storeId,
@@ -916,11 +989,21 @@ FROM list_items_table;
   }) {
     return (select(storeAislesTable)
           ..where((t) =>
-              t.groupId.equals(groupId) &
+              (t.groupId.equals(groupId) | t.groupId.equals('__global__')) &
               t.storeId.equals(storeId) &
               t.canonicalItemId.equals(canonicalItemId) &
-              t.deletedAt.isNull()))
+              t.deletedAt.isNull())
+          ..orderBy([(t) => OrderingTerm.desc(t.groupId)])
+          ..limit(1))
         .getSingleOrNull();
+  }
+
+  /// Hard-deletes the shipped global store layout so a newer version can be
+  /// re-ingested cleanly. Household-specific aisle overrides are untouched.
+  Future<void> clearGlobalStoreAisles(String globalGroupId) async {
+    await (delete(storeAislesTable)
+          ..where((t) => t.groupId.equals(globalGroupId)))
+        .go();
   }
 
   Future<List<StoreAislesTableData>> getStoreAisles({

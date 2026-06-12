@@ -354,7 +354,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
         ),
         if (nutritionMap.isNotEmpty) ...[
           const SizedBox(height: MitlistSpacing.md),
-          Text('Nutrition', style: theme.textTheme.titleSmall),
+          _SectionHeader(title: 'Nutrition'),
           const SizedBox(height: MitlistSpacing.xs),
           Wrap(
             spacing: MitlistSpacing.sm,
@@ -366,7 +366,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
         ],
         if (equipmentList.isNotEmpty) ...[
           const SizedBox(height: MitlistSpacing.md),
-          Text('Equipment', style: theme.textTheme.titleSmall),
+          _SectionHeader(title: 'Equipment'),
           const SizedBox(height: MitlistSpacing.xs),
           Wrap(
             spacing: MitlistSpacing.sm,
@@ -378,47 +378,61 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
         ],
         if (_ingredients.isNotEmpty) ...[
           const SizedBox(height: MitlistSpacing.md),
-          Text('Ingredients', style: theme.textTheme.titleSmall),
+          _SectionHeader(
+            title: 'Ingredients',
+            count: _ingredients.length,
+          ),
           const SizedBox(height: MitlistSpacing.xs),
           AppCard(
             variant: AppCardVariant.outlined,
-            padding: AppCardPadding.md,
+            padding: AppCardPadding.none,
             child: Semantics(
               label:
                   '${_ingredients.length} ingredient${_ingredients.length == 1 ? '' : 's'}',
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: _ingredients.map((ing) {
-                  final label =
-                      ing.rawText.isNotEmpty ? ing.rawText : ing.name;
+                children: _ingredients.asMap().entries.map((entry) {
+                  final idx = entry.key;
+                  final ing = entry.value;
+                  final name = ing.name.isNotEmpty ? ing.name : ing.rawText;
                   final qty =
                       ing.quantity > 0 ? _formatQuantity(ing.quantity) : '';
                   final unit = ing.unit.isNotEmpty ? ing.unit : '';
-                  final detail =
-                      [qty, unit].where((s) => s.isNotEmpty).join(' ');
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: MitlistSpacing.xs),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('• ', style: theme.textTheme.bodyMedium),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(label, style: theme.textTheme.bodyMedium),
-                              if (detail.isNotEmpty)
-                                Text(
-                                  detail,
-                                  style: MitlistTypography.monoBody(
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                            ],
-                          ),
+                  final amount =
+                      [qty, unit].where((s) => s.isNotEmpty).join(' ');
+                  return Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: MitlistSpacing.md,
+                          vertical: MitlistSpacing.sm,
                         ),
-                      ],
-                    ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                name,
+                                style: theme.textTheme.bodyMedium,
+                              ),
+                            ),
+                            if (amount.isNotEmpty) ...[
+                              const SizedBox(width: MitlistSpacing.sm),
+                              Text(
+                                amount,
+                                style: MitlistTypography.monoBody(
+                                  color: colorScheme.primary,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      if (idx < _ingredients.length - 1)
+                        Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: colorScheme.outlineVariant,
+                        ),
+                    ],
                   );
                 }).toList(),
               ),
@@ -427,44 +441,58 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
         ],
         if (_steps.isNotEmpty) ...[
           const SizedBox(height: MitlistSpacing.md),
-          Text('Steps', style: theme.textTheme.titleSmall),
+          _SectionHeader(
+            title: 'Steps',
+            count: _steps.length,
+          ),
           const SizedBox(height: MitlistSpacing.xs),
           AppCard(
             variant: AppCardVariant.outlined,
-            padding: AppCardPadding.md,
+            padding: AppCardPadding.none,
             child: Semantics(
               label: '${_steps.length} step${_steps.length == 1 ? '' : 's'}',
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: _steps.asMap().entries.map((entry) {
                   final idx = entry.key;
                   final step = entry.value;
                   final desc = step.description.isNotEmpty
                       ? step.description
                       : step.name;
-                  return Padding(
-                    padding: EdgeInsets.only(
-                      bottom:
-                          idx < _steps.length - 1 ? MitlistSpacing.sm : 0,
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: 28,
-                          child: Text(
-                            '${idx + 1}.',
-                            style: MitlistTypography.monoBody(
-                              color: colorScheme.primary,
+                  return Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: MitlistSpacing.md,
+                          vertical: MitlistSpacing.sm,
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: 28,
+                              child: Text(
+                                '${idx + 1}.',
+                                style: MitlistTypography.monoBody(
+                                  color: colorScheme.primary,
+                                ),
+                              ),
                             ),
-                          ),
+                            Expanded(
+                              child: Text(
+                                desc,
+                                style: theme.textTheme.bodyMedium,
+                              ),
+                            ),
+                          ],
                         ),
-                        Expanded(
-                          child: Text(desc,
-                              style: theme.textTheme.bodyMedium),
+                      ),
+                      if (idx < _steps.length - 1)
+                        Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: colorScheme.outlineVariant,
                         ),
-                      ],
-                    ),
+                    ],
                   );
                 }).toList(),
               ),
@@ -534,6 +562,35 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
       // Failed to parse equipment JSON; return empty list.
     }
     return [];
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title, this.count});
+
+  final String title;
+  final int? count;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        Text(title, style: theme.textTheme.titleSmall),
+        if (count != null) ...[
+          const SizedBox(width: MitlistSpacing.xs),
+          Text(
+            count.toString(),
+            style: MitlistTypography.labelXSmall(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ],
+    );
   }
 }
 

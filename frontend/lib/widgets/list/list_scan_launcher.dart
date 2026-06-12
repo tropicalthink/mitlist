@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../providers/grocery_provider.dart';
+import '../../providers/store_provider.dart';
 import '../../screens/scanner/scan_review_screen.dart';
 import '../../theme/spacing.dart';
 import '../app_bottom_sheet.dart';
@@ -84,6 +85,7 @@ Future<int?> launchListScan(
     final result = await pipeline.run(
       imageBytes: bytes,
       groupId: groupId,
+      storeId: ref.read(selectedStoreIdProvider),
       isOnline: isOnline,
     );
 
