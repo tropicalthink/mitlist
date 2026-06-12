@@ -54,6 +54,7 @@ dependencies:
   google_mlkit_text_recognition: ^0.14.0
   image: ^4.8.0
   url_launcher: ^6.3.1
+  wakelock_plus: ^1.2.8
   share_plus: ^10.1.4
   # Firebase — required for FCM push on Android and iOS.
   # Add google-services.json (Android) and GoogleService-Info.plist (iOS)
