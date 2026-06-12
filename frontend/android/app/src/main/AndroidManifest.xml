@@ -35,6 +35,9 @@
                 <data
                     android:scheme="mitlist"
                     android:pathPrefix="/auth/callback" />
+                <data
+                    android:scheme="mitlist"
+                    android:host="join" />
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

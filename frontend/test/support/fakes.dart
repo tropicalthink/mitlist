@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 
 import 'package:mitlist/models/finance_models.dart' as finance;
+import 'package:mitlist/models/group_models.dart';
 import 'package:mitlist/models/list_models.dart';
 import 'package:mitlist/services/connectivity_service.dart';
 import 'package:mitlist/services/finance_service.dart';
+import 'package:mitlist/services/group_service.dart';
 import 'package:mitlist/services/list_service.dart';
 import 'package:mitlist/services/token_store.dart';
 
@@ -232,6 +234,42 @@ class FakeTokenStore implements TokenStore {
     _accessToken = null;
     _refreshToken = null;
   }
+}
+
+// ---------------------------------------------------------------------------
+// FakeGroupService
+// ---------------------------------------------------------------------------
+
+/// Minimal fake for [GroupService] that records [joinGroup] calls and can be
+/// made to throw on demand.
+class FakeGroupService implements GroupService {
+  final List<JoinGroupRequest> joinCalls = [];
+
+  /// When non-null, the next [joinGroup] call will throw this exception.
+  Exception? throwOnJoin;
+
+  /// The [Group] returned by [joinGroup] (when not throwing).
+  Group joinResult = Group(
+    id: 'group-fake-1',
+    name: 'Test Household',
+    createdAt: DateTime.utc(2026, 1, 1),
+    updatedAt: DateTime.utc(2026, 1, 1),
+  );
+
+  @override
+  Future<Group> joinGroup(JoinGroupRequest request) async {
+    joinCalls.add(request);
+    if (throwOnJoin != null) {
+      final err = throwOnJoin!;
+      throwOnJoin = null;
+      throw err;
+    }
+    return joinResult;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError(
+      '${invocation.memberName} not implemented on FakeGroupService');
 }
 
 // ---------------------------------------------------------------------------

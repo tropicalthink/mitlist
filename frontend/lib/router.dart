@@ -19,6 +19,7 @@ import 'screens/auth/signup_screen.dart';
 import 'screens/auth/onboarding_screen.dart';
 import 'screens/auth/oauth_callback_screen.dart';
 import 'screens/auth/session_bootstrap_screen.dart';
+import 'screens/auth/join_landing_screen.dart';
 import 'screens/home/household_hub_screen.dart';
 import 'screens/lists/list_detail_screen.dart';
 import 'screens/share_target_screen.dart';
@@ -81,6 +82,11 @@ const _sessionBootstrapPath = '/_session';
 bool _isSessionBootstrapPath(String location) =>
     location.startsWith(_sessionBootstrapPath);
 
+final _inviteCodePattern = RegExp(r'^[A-Za-z0-9\-]{4,}$');
+
+bool _isPlausibleInviteCode(String code) =>
+    _inviteCodePattern.hasMatch(code);
+
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
   final authBootstrap = ref.watch(authBootstrapProvider);
@@ -124,10 +130,25 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (!authState && !isAuthRoute) {
+        // Preserve invite code through the auth flow so that after sign-in
+        // the redirect below can forward the user to the join landing screen.
+        if (location.startsWith('/join/')) {
+          final code = location.substring('/join/'.length);
+          if (_isPlausibleInviteCode(code)) {
+            return '/welcome?invite=${Uri.encodeComponent(code)}';
+          }
+        }
         return '/welcome';
       }
 
       if (authState && isAuthRoute) {
+        // When the user lands on an auth route carrying an invite param
+        // (e.g. after completing guest sign-in from /welcome?invite=CODE),
+        // forward them to the join landing screen instead of home.
+        final invite = state.uri.queryParameters['invite'];
+        if (invite != null && _isPlausibleInviteCode(invite)) {
+          return '/join/${Uri.encodeComponent(invite)}';
+        }
         return '/home';
       }
 
@@ -170,6 +191,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/share-target',
         name: 'shareTarget',
         builder: (context, state) => const ShareTargetScreen(),
+      ),
+      GoRoute(
+        path: '/join/:code',
+        name: 'joinLanding',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => JoinLandingScreen(
+          code: state.pathParameters['code']!,
+        ),
       ),
 
       StatefulShellRoute.indexedStack(

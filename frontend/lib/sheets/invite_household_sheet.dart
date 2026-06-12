@@ -5,11 +5,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import 'package:share_plus/share_plus.dart';
+
 import '../models/group_models.dart';
 import '../providers/group_provider.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../utils/friendly_error.dart';
+import '../utils/invite_link.dart';
 import '../widgets/alert.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
@@ -216,7 +219,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
                                     ? Colors.white
                                     : Colors.black;
                             return QrImageView(
-                              data: code.trim(),
+                              data: buildInviteLink(code),
                               version: QrVersions.auto,
                               size: InviteHouseholdSheet._qrSize,
                               backgroundColor: Colors.transparent,
@@ -248,7 +251,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
           FadeTransition(
             opacity: _qrAnim,
             child: Text(
-              'Scan to join, or share the code below.',
+              'Scan with a phone camera to join, or share the code below.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -289,6 +292,16 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: MitlistSpacing.sm),
+          AppButton(
+            variant: AppButtonVariant.solid,
+            color: AppButtonColor.primary,
+            text: 'Share invite link',
+            icon: const AppIcon(name: 'share', size: 18),
+            onPressed: code.isEmpty
+                ? null
+                : () => Share.share(inviteShareText(code)),
           ),
         ],
       ),
