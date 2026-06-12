@@ -303,6 +303,8 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
                   .toList()
               : const [],
           isPublic: _isPublic,
+          ingredients: _buildIngredients(),
+          steps: _buildSteps(),
         ),
       );
 
@@ -361,6 +363,28 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
         .where((line) => line.isNotEmpty)
         .map((line) => line.startsWith('-') ? line : '- $line')
         .join('\n');
+  }
+
+  List<CreateIngredientRequest> _buildIngredients() {
+    final text = _ingredientsController.text.trim();
+    if (text.isEmpty) return const [];
+    return text
+        .split('\n')
+        .map((line) => line.trim().replaceFirst(RegExp(r'^-\s*'), ''))
+        .where((line) => line.isNotEmpty)
+        .map((line) => CreateIngredientRequest(name: line, rawText: line))
+        .toList();
+  }
+
+  List<CreateStepRequest> _buildSteps() {
+    final text = _stepsController.text.trim();
+    if (text.isEmpty) return const [];
+    return text
+        .split('\n')
+        .map((line) => line.trim().replaceFirst(RegExp(r'^-\s*'), ''))
+        .where((line) => line.isNotEmpty)
+        .map((line) => CreateStepRequest(description: line))
+        .toList();
   }
 
   int? _parsePositiveInt(String value) {

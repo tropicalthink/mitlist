@@ -161,6 +161,35 @@ class RecipeCollection {
       );
 }
 
+class CreateIngredientRequest {
+  final String name;
+  final String quantity;
+  final String unit;
+  final String rawText;
+  const CreateIngredientRequest({
+    this.name = '',
+    this.quantity = '',
+    this.unit = '',
+    this.rawText = '',
+  });
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'quantity': quantity,
+        'unit': unit,
+        'raw_text': rawText,
+      };
+}
+
+class CreateStepRequest {
+  final String name;
+  final String description;
+  const CreateStepRequest({this.name = '', required this.description});
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'description': description,
+      };
+}
+
 class CreateRecipeRequest {
   final String title;
   final String description;
@@ -179,6 +208,8 @@ class CreateRecipeRequest {
   final List<String> imageOptions;
   final List<String> tags;
   final bool isPublic;
+  final List<CreateIngredientRequest> ingredients;
+  final List<CreateStepRequest> steps;
   const CreateRecipeRequest({
     required this.title,
     this.description = '',
@@ -197,6 +228,8 @@ class CreateRecipeRequest {
     this.imageOptions = const [],
     this.tags = const [],
     this.isPublic = false,
+    this.ingredients = const [],
+    this.steps = const [],
   });
   Map<String, dynamic> toJson() => {
         'title': title,
@@ -216,6 +249,8 @@ class CreateRecipeRequest {
         'image_options': imageOptions,
         'tags': tags,
         'is_public': isPublic,
+        'ingredients': ingredients.map((i) => i.toJson()).toList(),
+        'steps': steps.map((s) => s.toJson()).toList(),
       };
 }
 
