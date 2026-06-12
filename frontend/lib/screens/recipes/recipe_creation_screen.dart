@@ -84,6 +84,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
   String? _selectedImageUrl;
   List<String> _scrapedEquipment = [];
   Map<String, dynamic>? _scrapedNutrition;
+  List<RecipeClipIngredient> _scrapedIngredients = [];
 
   bool get _isDirty {
     return _titleController.text.trim().isNotEmpty ||
@@ -249,6 +250,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
       _selectedImageUrl = clip.imageUrl;
       _scrapedEquipment = clip.equipment;
       _scrapedNutrition = clip.nutrition;
+      _scrapedIngredients = clip.ingredients;
 
       setState(() => _isScraping = false);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -366,6 +368,16 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
   }
 
   List<CreateIngredientRequest> _buildIngredients() {
+    if (_scrapedIngredients.isNotEmpty) {
+      return _scrapedIngredients
+          .map((i) => CreateIngredientRequest(
+                name: i.name.isNotEmpty ? i.name : i.rawText,
+                quantity: i.quantity > 0 ? i.quantity.toString() : '',
+                unit: i.unit,
+                rawText: i.rawText,
+              ))
+          .toList();
+    }
     final text = _ingredientsController.text.trim();
     if (text.isEmpty) return const [];
     return text
