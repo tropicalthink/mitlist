@@ -90,18 +90,24 @@ class _OdometerWheel extends StatelessWidget {
           duration: duration,
           curve: curve,
           builder: (context, position, _) {
-            return Transform.translate(
-              offset: Offset(0, -position * height),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (var i = 0; i < 10; i++)
-                    SizedBox(
-                      width: width,
-                      height: height,
-                      child: Center(child: Text('$i', style: style)),
-                    ),
-                ],
+            // The wheel is deliberately taller than its viewport; OverflowBox
+            // keeps the flex system from flagging the off-screen digits.
+            return OverflowBox(
+              maxHeight: height * 10,
+              alignment: Alignment.topCenter,
+              child: Transform.translate(
+                offset: Offset(0, -position * height),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (var i = 0; i < 10; i++)
+                      SizedBox(
+                        width: width,
+                        height: height,
+                        child: Center(child: Text('$i', style: style)),
+                      ),
+                  ],
+                ),
               ),
             );
           },

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -7,7 +9,7 @@ import '../app_bottom_sheet.dart';
 import '../app_button.dart';
 
 Future<void> showQuickAddSheet(BuildContext context) async {
-  Haptics.light();
+  unawaited(Haptics.light());
   await showAppBottomSheet<void>(
     context: context,
     title: 'Quick add',

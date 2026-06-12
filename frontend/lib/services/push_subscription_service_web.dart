@@ -8,9 +8,14 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
+import 'token_store.dart';
 
 class PushSubscriptionService {
   static const _subscribedKey = 'push_subscribed';
+  final TokenStore _tokenStore;
+
+  PushSubscriptionService([TokenStore? tokenStore])
+      : _tokenStore = tokenStore ?? SecureTokenStore();
 
   Future<void> init() async {
     if (!kReleaseMode) return;
@@ -43,7 +48,7 @@ class PushSubscriptionService {
         receiveTimeout: ApiConfig.requestTimeout,
         headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
       ));
-      final token = prefs.getString(ApiConfig.accessTokenKey);
+      final token = await _tokenStore.getAccessToken();
       if (token != null) {
         authDio.options.headers[ApiConfig.authorizationHeader] =
             '${ApiConfig.authorizationPrefix}$token';

@@ -55,12 +55,14 @@ import 'package:mitlist/services/recipe_service.dart';
 import 'package:mitlist/storage/app_database.dart' hide FinanceSummary;
 import 'package:mitlist/widgets/app_button.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() {
     SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
   });
 
   const groupId = '11111111-1111-1111-1111-111111111111';
@@ -1567,19 +1569,20 @@ class FakeChoreRepository implements ChoreRepository {
   }
 
   @override
-  Future<void> completeOfflineFirst(String choreId) async {
+  Future<void> completeOfflineFirst(String choreId, {String? groupId}) async {
     await _service.completeChore(choreId, notes: null);
   }
 
   @override
-  Future<void> skipOfflineFirst(String choreId, {String? reason}) async {}
+  Future<void> skipOfflineFirst(String choreId,
+      {String? reason, String? groupId}) async {}
 
   @override
-  Future<void> rescheduleOfflineFirst(
-      String choreId, DateTime dueDate) async {}
+  Future<void> rescheduleOfflineFirst(String choreId, DateTime dueDate,
+      {String? groupId}) async {}
 
   @override
-  Future<void> undoOfflineFirst(String choreId) async {}
+  Future<void> undoOfflineFirst(String choreId, {String? groupId}) async {}
 
   @override
   Future<void> drainOutboxOnce() async {}

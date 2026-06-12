@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,7 +22,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   bool _isGuestLoading = false;
 
   Future<void> _onGuestContinue() async {
-    HapticFeedback.lightImpact();
+    unawaited(HapticFeedback.lightImpact());
     if (_isGuestLoading) return;
     setState(() => _isGuestLoading = true);
     try {

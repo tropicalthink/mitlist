@@ -336,7 +336,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   };
 
   Future<void> _showCreateSheet() async {
-    Haptics.light();
+    unawaited(Haptics.light());
     final created = await CreateListSheet.show(
       context,
       initialGroupId: widget.groupId,
@@ -696,7 +696,9 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.all(MitlistSpacing.md),
-                child: AppEmptyState(
+                child: _searchQuery.isNotEmpty
+                    ? _buildSearchEmptyState()
+                    : AppEmptyState(
                   lottieAsset: 'assets/animations/lottie/checklist.lottie',
                   icon: const AppIcon(name: 'queueList'),
                   title: _emptyTitle,
@@ -714,6 +716,41 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
           ),
         );
       },
+    );
+  }
+
+  /// Shown when a search matches nothing: name the dead end and offer the way
+  /// out, instead of the create-a-list pitch.
+  Widget _buildSearchEmptyState() {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'No lists match "$_searchQuery"',
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: textTheme.bodyLarge?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: MitlistSpacing.xs),
+        Text(
+          'Names and list items are searched.',
+          textAlign: TextAlign.center,
+          style: textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: MitlistSpacing.md),
+        AppButton(
+          text: 'Clear search',
+          variant: AppButtonVariant.outline,
+          onPressed: _clearSearch,
+        ),
+      ],
     );
   }
 
@@ -768,7 +805,7 @@ class _ListCard extends ConsumerWidget {
   }
 
   Future<void> _showActions(BuildContext context, WidgetRef ref) async {
-    Haptics.medium();
+    unawaited(Haptics.medium());
     final action = await showAppDialog<String>(
       context: context,
       title: list.name,

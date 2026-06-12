@@ -7,6 +7,7 @@ import 'package:mitlist/models/list_models.dart';
 import 'package:mitlist/services/connectivity_service.dart';
 import 'package:mitlist/services/finance_service.dart';
 import 'package:mitlist/services/list_service.dart';
+import 'package:mitlist/services/token_store.dart';
 
 // ---------------------------------------------------------------------------
 // FakeConnectivityService
@@ -51,10 +52,10 @@ class FakeFinanceService implements FinanceService {
   final List<String> deleteCalls = [];
 
   /// When non-null, the next [createExpense] call will throw this exception.
-  Object? throwOnCreate;
+  Exception? throwOnCreate;
 
   /// When non-null, the next [updateExpense] call will throw this exception.
-  Object? throwOnUpdate;
+  Exception? throwOnUpdate;
 
   /// Server ID returned by [createExpense] (default: a fixed UUID).
   String serverExpenseId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
@@ -131,7 +132,7 @@ class FakeListService implements ListService {
   final List<UpdateItemCall> updateItemCalls = [];
   final List<String> deleteItemCalls = [];
 
-  Object? throwOnCreateItem;
+  Exception? throwOnCreateItem;
 
   /// Prefix used when constructing the server ID for [createItem].
   String serverItemIdPrefix = 'server-item-';
@@ -200,6 +201,37 @@ class UpdateItemCall {
   final String itemId;
   final UpdateListItemRequest req;
   UpdateItemCall(this.listId, this.itemId, this.req);
+}
+
+// ---------------------------------------------------------------------------
+// FakeTokenStore
+// ---------------------------------------------------------------------------
+
+/// In-memory [TokenStore] for use in tests. No platform dependencies.
+class FakeTokenStore implements TokenStore {
+  String? _accessToken;
+  String? _refreshToken;
+
+  @override
+  Future<String?> getAccessToken() async => _accessToken;
+
+  @override
+  Future<String?> getRefreshToken() async => _refreshToken;
+
+  @override
+  Future<void> save({
+    required String accessToken,
+    required String refreshToken,
+  }) async {
+    _accessToken = accessToken;
+    _refreshToken = refreshToken;
+  }
+
+  @override
+  Future<void> clear() async {
+    _accessToken = null;
+    _refreshToken = null;
+  }
 }
 
 // ---------------------------------------------------------------------------

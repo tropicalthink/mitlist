@@ -5,8 +5,10 @@ import 'package:mitlist/widgets/app_card.dart';
 import 'package:mitlist/widgets/app_dialog.dart';
 import 'package:mitlist/widgets/app_input.dart';
 import 'package:mitlist/widgets/app_bottom_sheet.dart';
+import 'package:mitlist/widgets/animated_strikethrough.dart';
 import 'package:mitlist/widgets/chip.dart';
 import 'package:mitlist/widgets/app_icon.dart';
+import 'package:mitlist/widgets/odometer.dart';
 
 void main() {
   setUpAll(() {});
@@ -499,6 +501,115 @@ void main() {
         ),
       ));
       expect(find.byIcon(Icons.star), findsOneWidget);
+    });
+  });
+
+  // ── AnimatedStrikethrough ─────────────────────────────────────────────
+
+  group('AnimatedStrikethrough', () {
+    testWidgets('renders the text', (tester) async {
+      await tester.pumpWidget(const MaterialApp(
+        home: Scaffold(
+          body: AnimatedStrikethrough(
+            text: 'Buy milk',
+            struck: false,
+            style: TextStyle(fontSize: 16),
+          ),
+        ),
+      ));
+      expect(find.text('Buy milk'), findsOneWidget);
+    });
+
+    testWidgets('paints the strike when struck flips on', (tester) async {
+      var struck = false;
+      late StateSetter setOuterState;
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setState) {
+              setOuterState = setState;
+              return AnimatedStrikethrough(
+                text: 'Buy milk',
+                struck: struck,
+                style: const TextStyle(fontSize: 16),
+              );
+            },
+          ),
+        ),
+      ));
+      CustomPaint paintOf() => tester.widget<CustomPaint>(find.ancestor(
+            of: find.text('Buy milk'),
+            matching: find.byType(CustomPaint),
+          ).first);
+      expect(paintOf().foregroundPainter, isNull);
+
+      setOuterState(() => struck = true);
+      await tester.pumpAndSettle();
+      expect(paintOf().foregroundPainter, isNotNull);
+    });
+
+    testWidgets('strikes instantly with reduced motion', (tester) async {
+      await tester.pumpWidget(const MaterialApp(
+        home: MediaQuery(
+          data: MediaQueryData(disableAnimations: true),
+          child: Scaffold(
+            body: AnimatedStrikethrough(
+              text: 'Buy milk',
+              struck: true,
+              style: TextStyle(fontSize: 16),
+            ),
+          ),
+        ),
+      ));
+      await tester.pump();
+      final paint = tester.widget<CustomPaint>(find.ancestor(
+        of: find.text('Buy milk'),
+        matching: find.byType(CustomPaint),
+      ).first);
+      expect(paint.foregroundPainter, isNotNull);
+    });
+  });
+
+  // ── MitlistOdometer ───────────────────────────────────────────────────
+
+  group('MitlistOdometer', () {
+    testWidgets('renders every digit of the value without overflow errors',
+        (tester) async {
+      await tester.pumpWidget(const MaterialApp(
+        home: Scaffold(
+          body: MitlistOdometer(
+            value: 42,
+            textStyle: TextStyle(fontSize: 24),
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      // Each wheel renders 0-9; the value's digits must be present.
+      expect(find.text('4'), findsWidgets);
+      expect(find.text('2'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('rolls to a new value without overflow errors',
+        (tester) async {
+      var value = 8;
+      late StateSetter setOuterState;
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setState) {
+              setOuterState = setState;
+              return MitlistOdometer(
+                value: value,
+                textStyle: const TextStyle(fontSize: 24),
+              );
+            },
+          ),
+        ),
+      ));
+      setOuterState(() => value = 12);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
     });
   });
 }

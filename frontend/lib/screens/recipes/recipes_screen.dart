@@ -11,7 +11,6 @@ import '../../providers/recipe_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../sheets/recipe_add_to_list_sheet.dart';
-import '../../sheets/recipe_detail_sheet.dart';
 import '../../theme/spacing.dart';
 import '../../theme/theme.dart';
 import '../../theme/typography.dart';
@@ -20,7 +19,6 @@ import '../../utils/haptics.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
-import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/chip.dart';
 import '../../widgets/empty_state.dart';
@@ -91,7 +89,6 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   static const int _pageLimit = 50;
 
   bool _hasHousehold = true;
-  bool _isSaving = false;
   _ViewState _viewState = _ViewState.empty;
   String? _errorMessage;
   String? _loadMoreErrorMessage;
@@ -136,7 +133,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   }
 
   Future<void> _onAddRecipe() async {
-    Haptics.light();
+    unawaited(Haptics.light());
     final created = await context.pushNamed<bool>('recipeCreate');
     if (created == true) {
       await _loadKitchen();
@@ -144,76 +141,13 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   }
 
   Future<void> _openRecipeDetail(_Recipe recipe) async {
-    Haptics.light();
-    final service = await ref.read(recipeServiceProviderAsync.future);
-    List<RecipeIngredient> ingredients = [];
-    List<RecipeStep> steps = [];
-    try {
-      ingredients = await service.getRecipeIngredients(recipe.id);
-    } catch (_) {}
-    try {
-      steps = await service.getRecipeSteps(recipe.id);
-    } catch (_) {}
-    if (!mounted) return;
-    await RecipeDetailSheet.show(
-      context,
-      title: recipe.title,
-      description: recipe.description,
-      visibilityLabel: recipe.isPublic ? 'Shared' : 'Private',
-      prepTimeMinutes: recipe.prepTime,
-      cookTimeMinutes: recipe.cookTime,
-      servings: recipe.servings,
-      updatedAt: recipe.updatedAt,
-      author: recipe.author,
-      ratingValue: recipe.ratingValue,
-      ratingCount: recipe.ratingCount,
-      sourceUrl: recipe.sourceUrl,
-      videoUrl: recipe.videoUrl,
-      nutritionJson: recipe.nutritionJson,
-      equipmentJson: recipe.equipmentJson,
-      imageUrl: recipe.imageUrl,
-      tags: recipe.tags,
-      ingredients: ingredients,
-      steps: steps,
-      onDelete: () => _confirmDeleteRecipe(recipe),
+    unawaited(Haptics.light());
+    final changed = await context.pushNamed<bool>(
+      'recipeDetail',
+      pathParameters: {'recipeId': recipe.id},
     );
-  }
-
-  Future<void> _confirmDeleteRecipe(_Recipe recipe) async {
-    if (_isSaving) return;
-    _isSaving = true;
-    final confirmed = await showAppDialog<bool>(
-      context: context,
-      title: 'Delete recipe',
-      body: const Text('This will permanently delete this recipe. This cannot be undone.'),
-      actions: [
-        AppButton(
-          text: 'Cancel',
-          variant: AppButtonVariant.outline,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
-        const SizedBox(width: MitlistSpacing.sm),
-        AppButton(
-          text: 'Delete',
-          color: AppButtonColor.error,
-          onPressed: () => Navigator.of(context).pop(true),
-        ),
-      ],
-    );
-    if (confirmed != true || !mounted) { _isSaving = false; return; }
-    try {
-      final service = await ref.read(recipeServiceProviderAsync.future);
-      await service.deleteRecipe(recipe.id);
-      if (!mounted) return;
-      Navigator.of(context).pop();
+    if (changed == true && mounted) {
       await _loadKitchen();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to delete recipe')),
-      );
-    } finally {
-      _isSaving = false;
     }
   }
 
@@ -414,7 +348,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                 final groupId = await _resolveGroupId();
                 if (!mounted) return;
                 if (groupId != null) {
-                  router.pushNamed('mealPlan');
+                  unawaited(router.pushNamed('mealPlan'));
                 }
               },
             ),
@@ -572,7 +506,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
               final groupId = await _resolveGroupId();
               if (!mounted || groupId == null) return;
               if (context.mounted) {
-                context.pushNamed('mealPlan');
+                unawaited(context.pushNamed('mealPlan'));
               }
             },
             child: Padding(
