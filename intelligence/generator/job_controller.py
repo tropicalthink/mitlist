@@ -20,6 +20,7 @@ from generator.runner import (
     load_config,
     load_pricing,
     run_batch,
+    turbo_enabled,
 )
 
 MAX_LOG_LINES = 200
@@ -55,6 +56,8 @@ class JobState:
     logs: deque[str] = field(default_factory=lambda: deque(maxlen=MAX_LOG_LINES))
     queue: list[JobSpec] = field(default_factory=list)
     workers: int = 1
+    parallel: bool = False
+    active_prompts: list[str] = field(default_factory=list)
 
 
 class JobController:
@@ -85,19 +88,26 @@ class JobController:
             self._thread.start()
         return {"ok": True, "message": f"Started prompt {spec.prompt_id} ({spec.mode})"}
 
-    def enqueue(self, specs: list[JobSpec]) -> dict[str, Any]:
-        """Queue multiple prompts to run sequentially."""
+    def enqueue(self, specs: list[JobSpec], *, parallel: bool = False) -> dict[str, Any]:
+        """Queue multiple prompts — sequential by default, parallel when parallel=True."""
         with self._lock:
             if self._state.status in ("running", "queued"):
                 return {"ok": False, "error": "A job is already running."}
             if not specs:
                 return {"ok": False, "error": "No jobs to enqueue"}
             self._cancel.clear()
-            self._state = JobState(status="queued", spec=specs[0], queue=list(specs))
+            self._state = JobState(
+                status="queued", spec=specs[0], queue=list(specs), parallel=parallel,
+            )
             self._thread = threading.Thread(target=self._run_loop, daemon=True)
             self._thread.start()
         labels = ", ".join(f"P{s.prompt_id}" for s in specs)
-        return {"ok": True, "message": f"Queued pipeline: {labels}"}
+        mode = "parallel" if parallel else "pipeline"
+        return {"ok": True, "message": f"Queued {mode}: {labels}"}
+
+    def start_parallel(self, specs: list[JobSpec]) -> dict[str, Any]:
+        """Run multiple prompts concurrently (e.g. P4 + P5 both on OpenRouter)."""
+        return self.enqueue(specs, parallel=True)
 
     def stop(self) -> dict[str, Any]:
         with self._lock:
@@ -111,9 +121,12 @@ class JobController:
         with self._lock:
             s = self._state
             spec = s.spec
+            prompt_ids = s.active_prompts or ([spec.prompt_id] if spec else [])
             return {
                 "status": s.status,
-                "prompt_id": spec.prompt_id if spec else None,
+                "prompt_id": "+".join(prompt_ids) if len(prompt_ids) > 1 else (prompt_ids[0] if prompt_ids else None),
+                "prompt_ids": prompt_ids,
+                "parallel": s.parallel,
                 "mode": spec.mode if spec else None,
                 "current_batch": s.current_batch,
                 "workers": s.workers,
@@ -145,6 +158,14 @@ class JobController:
                 self._log("Job cancelled")
                 self._state.queue.clear()
                 return
+
+            if self._state.parallel:
+                specs = list(self._state.queue)
+                self._state.queue.clear()
+                self._state.status = "running"
+                self._state.started_at = self._state.started_at or _utcnow()
+                self._run_specs_parallel(specs)
+                continue
 
             spec = self._state.queue.pop(0)
             self._state.spec = spec
@@ -180,14 +201,14 @@ class JobController:
         if self._cancel.is_set():
             return "cancelled"
 
-        from generator.deepseek_client import DeepSeekClient
+        from generator.deepseek_client import client_for_prompt, provider_label_for_prompt
 
         store = ProgressStore(DB_PATH)
         if not spec.force and store.is_completed(prompt_id, batch_key):
             return "skip"
 
-        client = DeepSeekClient()
-        self._log(f"Running {batch_key} (temp={temp})")
+        client = client_for_prompt(prompt_id)
+        self._log(f"Running {batch_key} via {provider_label_for_prompt(prompt_id)} (temp={temp})")
         try:
             ok = run_batch(
                 prompt_id, batch_key, variables,
@@ -230,6 +251,44 @@ class JobController:
                 return
             self._record_batch_result(batch_key, result)
 
+    def _workers_for_parallel(self, prompt_count: int) -> int:
+        total = batch_workers()
+        if prompt_count > 1:
+            return max(2, total // prompt_count)
+        return total
+
+    def _run_specs_parallel(self, specs: list[JobSpec]) -> None:
+        from generator.deepseek_client import api_key_error_for_prompt
+
+        for spec in specs:
+            key_err = api_key_error_for_prompt(spec.prompt_id)
+            if key_err:
+                self._state.status = "error"
+                self._state.error = key_err
+                self._log(self._state.error)
+                return
+
+        per_prompt = self._workers_for_parallel(len(specs))
+        with self._lock:
+            self._state.workers = per_prompt * len(specs)
+        labels = "+".join(f"P{s.prompt_id}" for s in specs)
+        self._log(f"Parallel run: {labels} ({per_prompt} workers each)")
+
+        with ThreadPoolExecutor(max_workers=len(specs)) as pool:
+            futures = {
+                pool.submit(self._run_spec, spec, per_prompt): spec
+                for spec in specs
+            }
+            for fut in as_completed(futures):
+                if self._cancel.is_set():
+                    pool.shutdown(wait=False, cancel_futures=True)
+                    return
+                spec = futures[fut]
+                try:
+                    fut.result()
+                except Exception as e:
+                    self._log(f"ERROR P{spec.prompt_id}: {e}")
+
     def _run_batches_parallel(
         self,
         spec: JobSpec,
@@ -261,14 +320,29 @@ class JobController:
                     return
                 self._record_batch_result(batch_key, result)
 
-    def _run_spec(self, spec: JobSpec) -> None:
-        if not os.environ.get("DEEPSEEK_API_KEY"):
-            self._state.status = "error"
-            self._state.error = "DEEPSEEK_API_KEY not set in .env"
+    def _run_spec(self, spec: JobSpec, workers: int | None = None) -> None:
+        from generator.deepseek_client import api_key_error_for_prompt
+
+        key_err = api_key_error_for_prompt(spec.prompt_id)
+        if key_err:
+            with self._lock:
+                self._state.status = "error"
+                self._state.error = key_err
+                self._state.queue.clear()
             self._log(self._state.error)
-            self._state.queue.clear()
             return
 
+        with self._lock:
+            if spec.prompt_id not in self._state.active_prompts:
+                self._state.active_prompts.append(spec.prompt_id)
+        try:
+            self._run_spec_inner(spec, workers)
+        finally:
+            with self._lock:
+                if spec.prompt_id in self._state.active_prompts:
+                    self._state.active_prompts.remove(spec.prompt_id)
+
+    def _run_spec_inner(self, spec: JobSpec, workers: int | None = None) -> None:
         cfg = load_config()
         pricing = load_pricing()
         store = ProgressStore(DB_PATH)
@@ -312,23 +386,26 @@ class JobController:
                 continue
             to_run.append((batch_key, variables, temp))
 
-        workers = batch_workers()
-        self._state.workers = workers if len(to_run) > 1 else 1
-        self._state.total = len(expanded)
-        self._state.index = 0
-        self._state.skipped += skipped
+        w = workers if workers is not None else batch_workers()
+        w = w if len(to_run) > 1 else 1
+        with self._lock:
+            if not self._state.parallel:
+                self._state.workers = w
+            self._state.total += len(expanded)
+            self._state.skipped += skipped
+        turbo = " turbo" if turbo_enabled() else ""
         self._log(
-            f"Prompt {prompt_id} ({spec.mode}): {len(to_run)} to run, "
-            f"{skipped} skipped, workers={self._state.workers}"
+            f"Prompt {prompt_id} ({spec.mode}{turbo}): {len(to_run)} to run, "
+            f"{skipped} skipped, workers={w}"
         )
 
         if not to_run:
             return
 
-        if self._state.workers <= 1:
+        if w <= 1:
             self._run_batches_sequential(spec, prompt_id, to_run, cfg, pricing)
         else:
-            self._run_batches_parallel(spec, prompt_id, to_run, cfg, pricing, self._state.workers)
+            self._run_batches_parallel(spec, prompt_id, to_run, cfg, pricing, w)
 
 
 # Module singleton — shared by dashboard server

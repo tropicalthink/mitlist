@@ -4,7 +4,7 @@ OCR correction model.
 CURRENT BATCH:
 - Scenario type: {SCENARIO}
 - Language: {LANGUAGE}
-- Count: 1000 examples
+- Count: {COUNT} examples (IDs starting at {ID_START})
 
 SCENARIO DEFINITIONS:
 
@@ -24,5 +24,5 @@ ID format: {SCENARIO_SHORT}_{LANGUAGE}_{4-digit-index} (e.g. "ABBR_de_0001")
 SCENARIO_SHORT map: EXACT_MATCH=EXCT, MINOR_OCR_FIX=MINR, ABBREVIATION=ABBR, ACCENT_STRIP=ACNT, LANGUAGE_MIX=LANG, BRAND_VS_GENERIC=BRND, REGIONAL_NAME=REGN, COMPOUND_SPLIT_MERGE=COMP
 
 Include quantity_hint and unit_hint when raw_ocr contained quantity/unit info. Use null otherwise.
-Generate exactly 1000 rows. Do not repeat the same item more than 5 times.
+Generate exactly {COUNT} rows. Use IDs from {ID_START} upward. Do not repeat the same item more than 5 times.
 Output ONLY the JSONL.

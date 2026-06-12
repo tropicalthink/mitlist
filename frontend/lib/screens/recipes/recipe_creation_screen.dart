@@ -38,7 +38,7 @@ class RecipeCreationScreen extends ConsumerStatefulWidget {
       _RecipeCreationScreenState();
 }
 
-enum _RecipeEntryMode { url, manual, scan }
+enum _RecipeEntryMode { url, manual }
 
 class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
   int _currentStep = 0;
@@ -176,7 +176,6 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
   bool get _canGoNext {
     if (_currentStep == 0) {
       if (_mode == _RecipeEntryMode.url) return _hasUrl;
-      if (_mode == _RecipeEntryMode.scan) return true;
       return _hasTitle;
     }
     return true;
@@ -252,9 +251,28 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
       _scrapedNutrition = clip.nutrition;
       _scrapedIngredients = clip.ingredients;
 
-      setState(() => _isScraping = false);
+      setState(() {
+        _isScraping = false;
+        if (_currentStep == 0) _currentStep = 1;
+      });
+
+      final ingCount = clip.ingredients.length;
+      final stepCount = clip.instructionsMd
+          .split('\n\n')
+          .where((s) => s.trim().isNotEmpty)
+          .length;
+      final parts = <String>[
+        if (ingCount > 0) '$ingCount ingredient${ingCount == 1 ? '' : 's'}',
+        if (stepCount > 0) '$stepCount step${stepCount == 1 ? '' : 's'}',
+      ];
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Details fetched')),
+        SnackBar(
+          content: Text(
+            parts.isEmpty
+                ? 'Recipe imported'
+                : 'Imported: ${parts.join(', ')}',
+          ),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -339,32 +357,32 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
     if (_descriptionController.text.trim().isNotEmpty) {
       parts.add(_descriptionController.text.trim());
     }
-    if (url.isNotEmpty) {
-      parts.add('Source: $url');
-    }
-    if (_ingredientsController.text.trim().isNotEmpty) {
-      parts
-          .add('Ingredients:\n${_normalizeLines(_ingredientsController.text)}');
-    }
-    if (_stepsController.text.trim().isNotEmpty) {
-      parts.add('Steps:\n${_normalizeLines(_stepsController.text)}');
-    }
-    if (_nutritionController.text.trim().isNotEmpty) {
+    // Include free-text nutrition only when no structured nutrition was scraped,
+    // since the detail screen has no other place to show it.
+    if (_nutritionController.text.trim().isNotEmpty &&
+        _scrapedNutrition == null) {
       parts.add('Nutrition: ${_nutritionController.text.trim()}');
-    }
-    if (_tagsController.text.trim().isNotEmpty) {
-      parts.add('Tags: ${_tagsController.text.trim()}');
     }
     return parts.join('\n\n');
   }
 
-  String _normalizeLines(String value) {
-    return value
-        .split('\n')
-        .map((line) => line.trim())
-        .where((line) => line.isNotEmpty)
-        .map((line) => line.startsWith('-') ? line : '- $line')
-        .join('\n');
+  // Strips common list prefixes: "- ", "* ", "• ", "1. ", "1) ", "Step 1: " etc.
+  static final _listPrefixRe = RegExp(
+    r'^(?:Step\s+\d+[:.)\s]\s*|\d+[.)]\s*|[-*•]\s*)',
+    caseSensitive: false,
+  );
+
+  static String _stripPrefix(String line) =>
+      line.trim().replaceFirst(_listPrefixRe, '').trim();
+
+  // Clears scraped ingredients when the user manually edits the text area,
+  // so that _buildIngredients() falls back to text parsing for their edits.
+  void _onIngredientsChanged(String value) {
+    if (_scrapedIngredients.isEmpty) return;
+    final expected = _scrapedIngredients.map((i) => i.rawText).join('\n');
+    if (value != expected) {
+      setState(() => _scrapedIngredients = []);
+    }
   }
 
   List<CreateIngredientRequest> _buildIngredients() {
@@ -372,7 +390,12 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
       return _scrapedIngredients
           .map((i) => CreateIngredientRequest(
                 name: i.name.isNotEmpty ? i.name : i.rawText,
-                quantity: i.quantity > 0 ? i.quantity.toString() : '',
+                quantity: i.quantity > 0
+                    ? (i.quantity == i.quantity.roundToDouble()
+                        ? i.quantity.toInt().toString()
+                        : i.quantity.toStringAsFixed(2)
+                            .replaceAll(RegExp(r'0+$'), ''))
+                    : '',
                 unit: i.unit,
                 rawText: i.rawText,
               ))
@@ -382,7 +405,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
     if (text.isEmpty) return const [];
     return text
         .split('\n')
-        .map((line) => line.trim().replaceFirst(RegExp(r'^-\s*'), ''))
+        .map(_stripPrefix)
         .where((line) => line.isNotEmpty)
         .map((line) => CreateIngredientRequest(name: line, rawText: line))
         .toList();
@@ -393,7 +416,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
     if (text.isEmpty) return const [];
     return text
         .split('\n')
-        .map((line) => line.trim().replaceFirst(RegExp(r'^-\s*'), ''))
+        .map(_stripPrefix)
         .where((line) => line.isNotEmpty)
         .map((line) => CreateStepRequest(description: line))
         .toList();
@@ -743,7 +766,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
           children: [
             Expanded(
               child: AppInput(
-                label: 'Prep',
+                label: 'Prep (min)',
                 hint: '10',
                 controller: _prepTimeController,
                 keyboardType: TextInputType.number,
@@ -753,7 +776,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
             const SizedBox(width: MitlistSpacing.md),
             Expanded(
               child: AppInput(
-                label: 'Cook',
+                label: 'Cook (min)',
                 hint: '20',
                 controller: _cookTimeController,
                 keyboardType: TextInputType.number,
@@ -806,6 +829,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
           controller: _ingredientsController,
           minLines: 4,
           maxLines: 8,
+          onChanged: _onIngredientsChanged,
         ),
         const SizedBox(height: MitlistSpacing.md),
         AppInput(
@@ -828,7 +852,9 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
   }
 
   Widget _buildBottomBar(ColorScheme colorScheme) {
-    return Container(
+    return SafeArea(
+      top: false,
+      child: Container(
       decoration: BoxDecoration(
         border: Border(
           top: BorderSide(color: colorScheme.outline, width: 2),
@@ -867,6 +893,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
                   ),
           ),
         ],
+      ),
       ),
     );
   }

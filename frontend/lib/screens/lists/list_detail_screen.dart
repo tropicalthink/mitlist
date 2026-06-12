@@ -8,8 +8,10 @@ import '../../models/list_item_photo_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/attachment_provider.dart';
 import '../../providers/group_provider.dart';
+import '../../providers/grocery_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../services/list_service.dart';
+import '../../services/scan/grocery_suggestion_service.dart';
 import '../../theme/animations.dart';
 import '../../theme/list_tile_accent.dart';
 import '../../theme/spacing.dart';
@@ -77,7 +79,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   bool _doneSectionExpanded = true;
   String? _groupId;
   List<Product> _productSuggestions = [];
+  List<GrocerySuggestion> _grocerySuggestions = [];
   bool _showProductSuggestions = false;
+  Timer? _suggestDebounce;
   final Map<String, List<ListItemPhoto>> _photosByItemId = {};
   final Set<String> _photoLoadAttempted = {};
   bool _isSaving = false;
@@ -100,29 +104,47 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       _listName = widget.initialListName!;
     }
     _composerFocusNode.addListener(_onComposerFocusChanged);
+    _newItemController.addListener(_onComposerTextChanged);
     _load();
   }
 
   void _onComposerFocusChanged() {
     if (_composerFocusNode.hasFocus) {
-      _loadProductSuggestions();
+      _refreshSuggestions();
       setState(() => _showProductSuggestions = true);
     } else {
       setState(() => _showProductSuggestions = false);
     }
   }
 
-  Future<void> _loadProductSuggestions() async {
-    if (_groupId == null) return;
+  void _onComposerTextChanged() {
+    if (!_composerFocusNode.hasFocus) return;
+    _suggestDebounce?.cancel();
+    _suggestDebounce =
+        Timer(const Duration(milliseconds: 180), _refreshSuggestions);
+  }
+
+  /// Refreshes both suggestion sources for the current composer text: the
+  /// offline canonical grocery seed (alias-powered) and the backend product
+  /// history. The grocery seed needs no network and matches shorthand/typos.
+  Future<void> _refreshSuggestions() async {
+    final groupId = _groupId;
+    if (groupId == null) return;
+    final query = _newItemController.text.trim();
+
+    // Local grocery seed first — instant, offline.
+    final grocery =
+        await ref.read(grocerySuggestionServiceProvider).suggest(query, groupId);
+    if (mounted) setState(() => _grocerySuggestions = grocery);
+
     try {
       final service = await ref.read(listServiceProviderAsync.future);
-      final products = await service.listProducts(_groupId!, search: _newItemController.text.isEmpty ? null : _newItemController.text);
+      final products = await service
+          .listProducts(groupId, search: query.isEmpty ? null : query);
       if (!mounted) return;
       setState(() => _productSuggestions = products.take(8).toList());
     } catch (_) {
-      if (mounted) {
-        setState(() => _productSuggestions = []);
-      }
+      if (mounted) setState(() => _productSuggestions = []);
     }
   }
 
@@ -157,6 +179,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       timer.cancel();
     }
     _composerFocusNode.removeListener(_onComposerFocusChanged);
+    _newItemController.removeListener(_onComposerTextChanged);
+    _suggestDebounce?.cancel();
     _itemsSub?.cancel();
     _newItemController.dispose();
     _searchController.dispose();
@@ -1475,6 +1499,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       onAdd: _addItem,
       onScan: () => _launchScan(),
       productSuggestions: _productSuggestions,
+      grocerySuggestions: _grocerySuggestions,
       showProductSuggestions: _showProductSuggestions,
     );
   }

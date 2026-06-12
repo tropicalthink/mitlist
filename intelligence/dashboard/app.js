@@ -25,6 +25,7 @@ const ctrlForce = document.getElementById('ctrl-force');
 const btnStart = document.getElementById('btn-start');
 const btnStop = document.getElementById('btn-stop');
 const btnPipeline = document.getElementById('btn-pipeline');
+const btnP45Parallel = document.getElementById('btn-p45-parallel');
 
 ctrlMode.addEventListener('change', () => {
   const mode = ctrlMode.value;
@@ -82,6 +83,19 @@ btnPipeline.addEventListener('click', async () => {
   else refresh();
 });
 
+btnP45Parallel.addEventListener('click', async () => {
+  if (!confirm('Run P4 + P5 in parallel (both OpenRouter)?')) return;
+  btnP45Parallel.disabled = true;
+  const result = await apiPost('/api/job/parallel', {
+    prompts: ['4', '5'],
+    mode: ctrlMode.value === 'all' ? 'all' : 'pending',
+    force: ctrlForce.checked,
+  });
+  btnP45Parallel.disabled = false;
+  if (!result.ok) alert(result.error || 'Failed to start parallel job');
+  else refresh();
+});
+
 // Per-prompt quick actions (delegated)
 document.getElementById('prompt-bars').addEventListener('click', async (e) => {
   const btn = e.target.closest('[data-action]');
@@ -123,12 +137,17 @@ function render(data) {
     `${t.completed || 0} / ${t.total_batches || 0}`;
   document.getElementById('total-tokens').textContent =
     `${fmt.num(t.prompt_tokens)} / ${fmt.num(t.completion_tokens)}`;
-  document.getElementById('model-badge').textContent = data.deepseek_model || 'deepseek-chat';
+  const orModel = data.openrouter_model || 'openrouter';
+  document.getElementById('model-badge').textContent =
+    `P1–2: ${data.deepseek_model || 'deepseek-chat'} · P3–5: ${orModel}`;
   document.getElementById('updated-at').textContent = fmt.time(data.updated_at);
 
   // API key warning
   const warn = document.getElementById('api-warning');
-  warn.classList.toggle('hidden', data.api_key_set);
+  const keysOk = data.api_key_set && data.openrouter_key_set;
+  warn.classList.toggle('hidden', keysOk);
+  if (!data.api_key_set) warn.textContent = 'DEEPSEEK_API_KEY not set in .env';
+  else if (!data.openrouter_key_set) warn.textContent = 'OPENROUTER_API_KEY not set in .env (required for P3–P5)';
 
   // Job status
   const job = data.job || {};
@@ -140,14 +159,19 @@ function render(data) {
   btnStart.disabled = jobRunning;
   btnStop.disabled = !jobRunning;
   btnPipeline.disabled = jobRunning;
+  btnP45Parallel.disabled = jobRunning;
 
   const jobPanel = document.getElementById('job-status');
   jobPanel.classList.toggle('hidden', job.status === 'idle' && !job.logs?.length);
 
   if (job.status && job.status !== 'idle') {
     const p = job.progress || {};
+    const promptLabel = (job.prompt_ids?.length > 1)
+      ? job.prompt_ids.map((p) => `P${p}`).join('+')
+      : `P${job.prompt_id || '?'}`;
+    const parallelTag = job.parallel ? ' · parallel' : '';
     document.getElementById('job-label').textContent =
-      `P${job.prompt_id} · ${job.mode || '—'} · ${job.current_batch || 'starting…'}`;
+      `${promptLabel} · ${job.mode || '—'}${parallelTag} · ${job.current_batch || 'starting…'}`;
     document.getElementById('job-progress-text').textContent =
       `${p.index || 0}/${p.total || 0} · ${p.completed || 0} ok · ${p.failed || 0} fail · ${p.skipped || 0} skip`;
     const pct = p.total ? Math.round((p.index / p.total) * 100) : 0;

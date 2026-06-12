@@ -9,3 +9,7 @@ models:
     input_per_million: 0.55
     output_per_million: 2.19
     cache_hit_input_per_million: 0.14
+  # Fallback for OpenRouter models (P4 aisles) — update per model if needed
+  openrouter-default:
+    input_per_million: 0.15
+    output_per_million: 0.60
