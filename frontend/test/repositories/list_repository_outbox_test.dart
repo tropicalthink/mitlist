@@ -39,7 +39,7 @@ void main() {
     setUp(() {
       db = _memoryDb();
       remote = FakeListService();
-      repo = ListRepository(db: db, remote: remote);
+      repo = ListRepository(db: db, remote: remote, autoSync: false);
     });
 
     tearDown(() => db.close());
@@ -61,6 +61,8 @@ void main() {
       // The returned item carries a temp UUID (not the server ID prefix).
       expect(result.name, equals('Apples'));
       expect(result.quantity, equals(2));
+
+      await repo.drainOutboxOnce();
 
       // After successful drain, exactly one item exists with server ID.
       final items = await db.getItemsByListOnce(listId);
@@ -152,6 +154,7 @@ void main() {
         listId,
         const CreateListItemRequest(name: 'Butter', quantity: 1, unit: 'pack'),
       );
+      await repo.drainOutboxOnce();
 
       // Outbox empty after first successful drain.
       expect(await db.outboxCount(), equals(0));
@@ -163,6 +166,7 @@ void main() {
         serverItemId,
         const UpdateListItemRequest(checked: true),
       );
+      await repo.drainOutboxOnce();
 
       // updateItem op synced as well.
       expect(await db.outboxCount(), equals(0),
@@ -196,6 +200,7 @@ void main() {
       ]);
 
       await repo.deleteItemOfflineFirst(listId, itemId);
+      await repo.drainOutboxOnce();
 
       // Local row gone.
       final items = await db.getItemsByListOnce(listId);
@@ -222,6 +227,8 @@ void main() {
         listId,
         const CreateListItemRequest(name: 'Eggs', quantity: 12, unit: 'pcs'),
       );
+
+      await repo.drainOutboxOnce();
 
       expect(result.name, equals('Eggs'));
 
