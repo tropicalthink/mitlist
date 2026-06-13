@@ -103,6 +103,41 @@ Cycle-6 ordering: 023 before 024 (the backend must accept/store
 can run in parallel with 023/024. 023 is HIGH-risk (it edits the balance engine)
 — run its full test suite and confirm `TestBalancesEquivalence` stays green.
 
+### Cycle 7 — intelligence ML integration (2026-06-13, against commit `c862d307`)
+
+Scope: both Phase 7/8 models are now **trained** (`/improve plan`, maintainer
+pointed at `grocery_classifier.tflite`, `grocery_classifier_labels.txt`,
+`grocery_embeddings.onnx`). These plans take trained-on-disk → used-in-app.
+Key recon finding: the app has **no ML runtime** (`pubspec.yaml` has no
+`tflite_flutter`), and the classifier `.tflite` as exported needs the TF **Flex
+delegate** (baked-in `TextVectorization`/`tf_idf`) — impractical in stock
+Flutter. Maintainer chose a **Flex-free re-export** (no retraining). The 470 MB
+embeddings `.onnx` is not shippable as-is; maintainer green-lit a verify +
+re-export spike.
+
+| Plan | Title | Priority | Effort | Depends on | Status |
+|------|-------|----------|--------|------------|--------|
+| 026  | Wire the Phase 7 classifier into on-device resolution (Flex-free re-export + Dart TF-IDF + resolver fallback) | P2 | L | 021 (trained model on disk) | TODO |
+| 027  | Verify and re-export the Phase 8 embeddings; decide on-device shippability (spike) | P3 | M | 022 (trained model on disk) | CODE DONE (2026-06-13, reviewed; worktree branch `worktree-agent-a01c59b35e0e71d18`, commit `4e3ca898`. export.py now emits float16-quantized tflite + size report + >40MB warning; `verify_dim.py` added; train.py correctly untouched — projection head confirmed present at train.py:83-88, so dim is very likely 128. Maintainer runs `verify_dim.py` + `export.py` for the actual dim + size go/no-go.) |
+
+Cycle-7 notes:
+- **026 has a hard executor/maintainer split.** The executor builds ALL the
+  code (pubspec dep, `GroceryClassifierService` with pure-Dart trigrams+TF-IDF,
+  optional resolver fallback, the Flex-free `export.py` rewrite, unit tests with
+  synthetic fixture + fake classifier) — fully verifiable in a worktree without
+  TensorFlow or a device. The **maintainer** then re-runs `python export.py`,
+  copies the real `.tflite`/`vocab.json`/labels into `frontend/assets/models/`,
+  validates against the emitted `grocery_classifier_golden.json`, and wires the
+  live classifier into `scan_pipeline_service.dart`. Code merges safely before
+  the model ships (classifier fails soft → returns `[]` when the asset is
+  absent).
+- **026 and 027 share the `tflite_flutter` runtime** 026 adds; 027 needs no
+  second runtime.
+- 027 is a **decision gate, not an integration** — it stops at "is the quantized
+  TFLite ≤ ~40 MB and is the output dim 128?" A GO spawns a future integration
+  plan; a NO-GO records "embeddings stay server-side / dropped" and the
+  classifier remains the sole on-device resolution model.
+
 ### Direction findings — cycle 6 (2026-06-13), maintainer's decisions
 
 Presented but NOT selected (re-pitchable; don't re-detail verbatim):

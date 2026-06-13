@@ -525,6 +525,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       );
       await _loadData();
       if (!mounted) return;
+      unawaited(Haptics.success());
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Settlement recorded')),
       );
