@@ -133,8 +133,12 @@ class FakeListService implements ListService {
   final List<CreateItemCall> createItemCalls = [];
   final List<UpdateItemCall> updateItemCalls = [];
   final List<String> deleteItemCalls = [];
+  final List<ReorderItemsCall> reorderItemsCalls = [];
 
   Exception? throwOnCreateItem;
+
+  /// When non-null, the next [reorderItems] call will throw this exception.
+  Exception? throwOnReorderItems;
 
   /// Prefix used when constructing the server ID for [createItem].
   String serverItemIdPrefix = 'server-item-';
@@ -188,8 +192,24 @@ class FakeListService implements ListService {
   }
 
   @override
+  Future<void> reorderItems(String listId, ReorderItemsRequest req) async {
+    reorderItemsCalls.add(ReorderItemsCall(listId, req.itemIds));
+    if (throwOnReorderItems != null) {
+      final err = throwOnReorderItems!;
+      throwOnReorderItems = null;
+      throw err;
+    }
+  }
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError(
       '${invocation.memberName} not implemented on FakeListService');
+}
+
+class ReorderItemsCall {
+  final String listId;
+  final List<String> itemIds;
+  ReorderItemsCall(this.listId, this.itemIds);
 }
 
 class CreateItemCall {

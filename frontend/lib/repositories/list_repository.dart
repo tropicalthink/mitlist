@@ -8,11 +8,15 @@ import '../models/list_models.dart';
 import '../services/list_service.dart';
 import '../services/sse_service.dart';
 import '../storage/app_database.dart';
+import 'outbox_drainer.dart';
 
 class ListRepository {
   final AppDatabase _db;
   final ListService _remote;
   final Uuid _uuid;
+  final bool _autoSync;
+
+  bool _isDraining = false;
 
   SseService? _sseService;
   StreamSubscription<SseEvent>? _sseSub;
@@ -21,9 +25,11 @@ class ListRepository {
     required AppDatabase db,
     required ListService remote,
     Uuid? uuid,
+    bool autoSync = true,
   })  : _db = db,
         _remote = remote,
-        _uuid = uuid ?? const Uuid();
+        _uuid = uuid ?? const Uuid(),
+        _autoSync = autoSync;
 
   Stream<List<ItemList>> watchListsByGroup(String groupId) {
     return _db
@@ -121,7 +127,7 @@ class ListRepository {
     );
 
     // Best-effort immediate sync.
-    await drainOutboxOnce();
+    if (_autoSync) unawaited(drainOutboxOnce());
     return local;
   }
 
@@ -166,7 +172,7 @@ class ListRepository {
           'updateItem:$itemId:${patched.updatedAt.toIso8601String()}',
     );
 
-    await drainOutboxOnce();
+    if (_autoSync) unawaited(drainOutboxOnce());
     return patched;
   }
 
@@ -210,15 +216,18 @@ class ListRepository {
 
     await _db.upsertListItemsRows(patched);
 
-    try {
-      await _remote.reorderItems(
-        listId,
-        ReorderItemsRequest(itemIds: itemIdsInOrder),
-      );
-    } catch (e) {
-      await refreshItems(listId);
-      rethrow;
-    }
+    await _db.enqueueOutbox(
+      id: _uuid.v4(),
+      type: 'reorderItems',
+      payload: {
+        'listId': listId,
+        'itemIds': itemIdsInOrder,
+      },
+      idempotencyKey:
+          'reorderItems:$listId:${DateTime.now().toIso8601String()}',
+    );
+
+    if (_autoSync) unawaited(drainOutboxOnce());
   }
 
   Future<void> deleteItemOfflineFirst(String listId, String itemId) async {
@@ -236,51 +245,29 @@ class ListRepository {
       idempotencyKey: 'deleteItem:$itemId',
     );
 
-    await drainOutboxOnce();
+    if (_autoSync) unawaited(drainOutboxOnce());
   }
 
   Future<void> drainOutboxOnce() async {
-    final batch = await _db.getOutboxBatchByTypes(
-      ['createItem', 'updateItem', 'deleteItem'],
-      limit: 25,
-    );
-    if (batch.isEmpty) return;
-
-    for (final op in batch) {
-      // Re-read the current payload from the DB so we see any ID rewrites that
-      // a preceding _syncCreateItem may have performed in this same drain pass.
-      final freshOp = await _db.getOutboxOpById(op.id);
-      if (freshOp == null) {
-        // Op was already deleted (e.g. by a concurrent drain); skip it.
-        continue;
-      }
-
-      Map<String, dynamic> payload;
-      try {
-        payload =
-            (jsonDecode(freshOp.payloadJson) as Map).cast<String, dynamic>();
-      } catch (_) {
-        await _db.deleteOutboxOp(op.id);
-        continue;
-      }
-
-      try {
-        switch (op.type) {
-          case 'createItem':
-            await _syncCreateItem(op.id, payload);
-            break;
-          case 'updateItem':
-            await _syncUpdateItem(op.id, payload);
-            break;
-          case 'deleteItem':
-            await _syncDeleteItem(op.id, payload);
-            break;
-        }
-      } catch (e) {
-        await _db.markOutboxAttempt(op.id, error: 'Something went wrong.');
-        // Stop early: keep ordering and avoid hammering the server.
-        return;
-      }
+    if (_isDraining) return;
+    _isDraining = true;
+    try {
+      await OutboxDrainer(_db).drain(
+        types: const [
+          'createItem',
+          'updateItem',
+          'deleteItem',
+          'reorderItems',
+        ],
+        handlers: {
+          'createItem': (op, payload) => _syncCreateItem(op.id, payload),
+          'updateItem': (op, payload) => _syncUpdateItem(op.id, payload),
+          'deleteItem': (op, payload) => _syncDeleteItem(op.id, payload),
+          'reorderItems': (op, payload) => _syncReorderItems(op.id, payload),
+        },
+      );
+    } finally {
+      _isDraining = false;
     }
   }
 
@@ -353,6 +340,19 @@ class ListRepository {
     }
 
     await _remote.deleteItem(listId, itemId);
+    await _db.deleteOutboxOp(opId);
+  }
+
+  Future<void> _syncReorderItems(
+      String opId, Map<String, dynamic> payload) async {
+    final listId = payload['listId'] as String?;
+    final rawIds = payload['itemIds'];
+    if (listId == null || rawIds is! List) {
+      await _db.deleteOutboxOp(opId);
+      return;
+    }
+    final itemIds = rawIds.map((e) => e.toString()).toList();
+    await _remote.reorderItems(listId, ReorderItemsRequest(itemIds: itemIds));
     await _db.deleteOutboxOp(opId);
   }
 

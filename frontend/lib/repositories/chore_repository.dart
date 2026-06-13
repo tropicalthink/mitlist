@@ -7,6 +7,7 @@ import '../models/chore_models.dart';
 import '../services/chore_service.dart';
 import '../services/sse_service.dart';
 import '../storage/app_database.dart';
+import 'outbox_drainer.dart';
 
 class ChoreRepository {
   final AppDatabase _db;
@@ -147,52 +148,33 @@ class ChoreRepository {
   }
 
   Future<void> drainOutboxOnce() async {
-    final batch = await _db.getOutboxBatchByTypes(
-      ['completeChore', 'skipChore', 'rescheduleChore', 'undoChore'],
-      limit: 25,
+    await OutboxDrainer(_db).drain(
+      types: const ['completeChore', 'skipChore', 'rescheduleChore', 'undoChore'],
+      handlers: {
+        'completeChore': (op, payload) async {
+          await _remote.completeChore(payload['choreId'] as String);
+          await _db.deleteOutboxOp(op.id);
+        },
+        'skipChore': (op, payload) async {
+          await _remote.skipChore(
+            payload['choreId'] as String,
+            skipReason: payload['reason'] as String?,
+          );
+          await _db.deleteOutboxOp(op.id);
+        },
+        'rescheduleChore': (op, payload) async {
+          await _remote.rescheduleChore(
+            payload['choreId'] as String,
+            dueDate: DateTime.parse(payload['dueDate'] as String),
+          );
+          await _db.deleteOutboxOp(op.id);
+        },
+        'undoChore': (op, payload) async {
+          await _remote.undoLastChoreExecution(payload['choreId'] as String);
+          await _db.deleteOutboxOp(op.id);
+        },
+      },
     );
-    if (batch.isEmpty) return;
-
-    for (final op in batch) {
-      Map<String, dynamic> payload;
-      try {
-        payload = (jsonDecode(op.payloadJson) as Map).cast<String, dynamic>();
-      } catch (_) {
-        await _db.deleteOutboxOp(op.id);
-        continue;
-      }
-
-      try {
-        switch (op.type) {
-          case 'completeChore':
-            await _remote.completeChore(payload['choreId'] as String);
-            await _db.deleteOutboxOp(op.id);
-            break;
-          case 'skipChore':
-            final reason = payload['reason'] as String?;
-            await _remote.skipChore(
-              payload['choreId'] as String,
-              skipReason: reason,
-            );
-            await _db.deleteOutboxOp(op.id);
-            break;
-          case 'rescheduleChore':
-            await _remote.rescheduleChore(
-              payload['choreId'] as String,
-              dueDate: DateTime.parse(payload['dueDate'] as String),
-            );
-            await _db.deleteOutboxOp(op.id);
-            break;
-          case 'undoChore':
-            await _remote.undoLastChoreExecution(payload['choreId'] as String);
-            await _db.deleteOutboxOp(op.id);
-            break;
-        }
-      } catch (e) {
-        await _db.markOutboxAttempt(op.id, error: 'Something went wrong.');
-        return;
-      }
-    }
   }
 
   // ---------------------------------------------------------------------------

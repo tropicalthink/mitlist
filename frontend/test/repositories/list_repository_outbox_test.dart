@@ -39,7 +39,7 @@ void main() {
     setUp(() {
       db = _memoryDb();
       remote = FakeListService();
-      repo = ListRepository(db: db, remote: remote);
+      repo = ListRepository(db: db, remote: remote, autoSync: false);
     });
 
     tearDown(() => db.close());
@@ -61,6 +61,8 @@ void main() {
       // The returned item carries a temp UUID (not the server ID prefix).
       expect(result.name, equals('Apples'));
       expect(result.quantity, equals(2));
+
+      await repo.drainOutboxOnce();
 
       // After successful drain, exactly one item exists with server ID.
       final items = await db.getItemsByListOnce(listId);
@@ -152,6 +154,7 @@ void main() {
         listId,
         const CreateListItemRequest(name: 'Butter', quantity: 1, unit: 'pack'),
       );
+      await repo.drainOutboxOnce();
 
       // Outbox empty after first successful drain.
       expect(await db.outboxCount(), equals(0));
@@ -163,6 +166,7 @@ void main() {
         serverItemId,
         const UpdateListItemRequest(checked: true),
       );
+      await repo.drainOutboxOnce();
 
       // updateItem op synced as well.
       expect(await db.outboxCount(), equals(0),
@@ -196,6 +200,7 @@ void main() {
       ]);
 
       await repo.deleteItemOfflineFirst(listId, itemId);
+      await repo.drainOutboxOnce();
 
       // Local row gone.
       final items = await db.getItemsByListOnce(listId);
@@ -223,6 +228,8 @@ void main() {
         const CreateListItemRequest(name: 'Eggs', quantity: 12, unit: 'pcs'),
       );
 
+      await repo.drainOutboxOnce();
+
       expect(result.name, equals('Eggs'));
 
       // Temp row still present.
@@ -240,6 +247,88 @@ void main() {
       expect(createOps.first.idempotencyKey,
           startsWith('createItem:'),
           reason: 'idempotency key should be set');
+    });
+
+    // -------------------------------------------------------------------------
+    // Case 6: reorderItemsOfflineFirst — enqueues, optimistic positions, syncs
+    // -------------------------------------------------------------------------
+    Future<void> insertItem(String listId, String id, int position) async {
+      await db.upsertListItemsRows([
+        ListItemsTableCompanion(
+          id: drift.Value(id),
+          listId: drift.Value(listId),
+          name: drift.Value('Item $id'),
+          quantity: const drift.Value(1.0),
+          unit: const drift.Value(''),
+          checked: const drift.Value(false),
+          position: drift.Value(position),
+          createdAt: drift.Value(DateTime.utc(2026, 1, 5)),
+          updatedAt: drift.Value(DateTime.utc(2026, 1, 5)),
+        ),
+      ]);
+    }
+
+    test(
+        'reorderItemsOfflineFirst: optimistic positions, enqueues, syncs on drain',
+        () async {
+      const listId = 'list-006';
+      await _insertList(db, listId);
+      await insertItem(listId, 'id1', 0);
+      await insertItem(listId, 'id2', 1);
+      await insertItem(listId, 'id3', 2);
+
+      await repo.reorderItemsOfflineFirst(listId, ['id3', 'id1', 'id2']);
+
+      // Optimistic local positions updated immediately.
+      final after = await db.getItemsByListOnce(listId);
+      final byId = {for (final i in after) i.id: i.position};
+      expect(byId['id3'], equals(0));
+      expect(byId['id1'], equals(1));
+      expect(byId['id2'], equals(2));
+
+      // Op enqueued; nothing synced yet (autoSync: false).
+      expect(await db.outboxCount(), equals(1));
+      expect(remote.reorderItemsCalls, isEmpty);
+
+      await repo.drainOutboxOnce();
+
+      // Synced with correct order; op cleaned up.
+      expect(remote.reorderItemsCalls.length, equals(1));
+      expect(remote.reorderItemsCalls.first.listId, equals(listId));
+      expect(remote.reorderItemsCalls.first.itemIds,
+          equals(['id3', 'id1', 'id2']));
+      expect(await db.outboxCount(), equals(0));
+    });
+
+    // -------------------------------------------------------------------------
+    // Case 7: reorder offline — does not throw, positions kept, op stays
+    // -------------------------------------------------------------------------
+    test(
+        'reorderItemsOfflineFirst: API 503 does not throw; op stays attempt_count=1',
+        () async {
+      const listId = 'list-007';
+      await _insertList(db, listId);
+      await insertItem(listId, 'a', 0);
+      await insertItem(listId, 'b', 1);
+
+      remote.throwOnReorderItems = fakeDioException(statusCode: 503);
+
+      // Must NOT throw even though sync will fail.
+      await repo.reorderItemsOfflineFirst(listId, ['b', 'a']);
+
+      // Local positions still updated optimistically.
+      final after = await db.getItemsByListOnce(listId);
+      final byId = {for (final i in after) i.id: i.position};
+      expect(byId['b'], equals(0));
+      expect(byId['a'], equals(1));
+
+      await repo.drainOutboxOnce();
+
+      // 503 is transient: op stays with incremented attempt_count.
+      final ops = await db.getOutboxBatch(limit: 10);
+      final reorderOps = ops.where((o) => o.type == 'reorderItems').toList();
+      expect(reorderOps.length, equals(1));
+      expect(reorderOps.first.attemptCount, equals(1));
     });
   });
 }

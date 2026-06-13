@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/outbox_provider.dart';
-import '../sheets/conflict_resolution_sheet.dart';
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
@@ -104,13 +103,6 @@ class _Banner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final (color, icon, message) = switch (state.status) {
-      OutboxStatus.conflict => (
-          colorScheme.secondary,
-          Icons.warning_amber_rounded,
-          state.conflictCount > 1
-              ? '${state.conflictCount} conflicts need resolution'
-              : '1 conflict needs resolution',
-        ),
       OutboxStatus.offline => (
           colorScheme.secondary,
           Icons.cloud_off,
@@ -136,13 +128,7 @@ class _Banner extends ConsumerWidget {
     return Material(
       color: color,
       child: InkWell(
-        onTap: () {
-          if (state.hasConflicts) {
-            ConflictResolutionSheet.show(context);
-          } else {
-            _showDetails(context);
-          }
-        },
+        onTap: () => _showDetails(context),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(
