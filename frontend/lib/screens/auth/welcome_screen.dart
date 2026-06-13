@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
@@ -61,6 +62,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   @override
   Widget build(BuildContext context) {
     final onSurface = Theme.of(context).colorScheme.onSurface;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -78,7 +80,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
               ),
               const SizedBox(height: MitlistSpacing.space3),
               Text(
-                'Your household, organized.',
+                l10n.welcomeTagline,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
@@ -99,12 +101,12 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Lists, chores, money.\nAll in one place.',
+                      l10n.welcomeCardTitle,
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     const SizedBox(height: MitlistSpacing.sm),
                     Text(
-                      'Built for flatmates who want less friction and more clarity.',
+                      l10n.welcomeCardBody,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
@@ -116,7 +118,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
               SizedBox(
                 width: double.infinity,
                 child: AppButton(
-                  text: 'Create free household',
+                  text: l10n.welcomeCreateHousehold,
                   variant: AppButtonVariant.solid,
                   color: AppButtonColor.primary,
                   size: AppButtonSize.lg,
@@ -127,7 +129,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
               SizedBox(
                 width: double.infinity,
                 child: AppButton(
-                  text: 'Sign in',
+                  text: l10n.welcomeSignIn,
                   variant: AppButtonVariant.outline,
                   color: AppButtonColor.primary,
                   size: AppButtonSize.lg,
@@ -138,7 +140,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
               SizedBox(
                 width: double.infinity,
                 child: AppButton(
-                  text: _isGuestLoading ? 'Setting up...' : 'Continue as guest',
+                  text: _isGuestLoading ? l10n.welcomeGuestLoading : l10n.welcomeContinueAsGuest,
                   variant: AppButtonVariant.ghost,
                   size: AppButtonSize.lg,
                   onPressed: _isGuestLoading ? null : _onGuestContinue,
@@ -146,7 +148,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
               ),
               const SizedBox(height: MitlistSpacing.md),
               Text(
-                'No account needed. Try everything free for 30 days.',
+                l10n.welcomeGuestFootnote,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mitlist/l10n/app_localizations.dart';
 import 'package:mitlist/models/auth_models.dart';
 import 'package:mitlist/providers/auth_provider.dart';
 import 'package:mitlist/screens/auth/welcome_screen.dart';
@@ -69,7 +70,11 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          child: MaterialApp.router(routerConfig: router),
+          child: MaterialApp.router(
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -101,7 +106,11 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          child: MaterialApp.router(routerConfig: router),
+          child: MaterialApp.router(
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -135,7 +144,11 @@ void main() {
           child: Builder(
             builder: (context) {
               container = ProviderScope.containerOf(context);
-              return MaterialApp.router(routerConfig: router);
+              return MaterialApp.router(
+                routerConfig: router,
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+              );
             },
           ),
         ),
@@ -176,7 +189,11 @@ void main() {
           child: Builder(
             builder: (context) {
               container = ProviderScope.containerOf(context);
-              return MaterialApp.router(routerConfig: router);
+              return MaterialApp.router(
+                routerConfig: router,
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+              );
             },
           ),
         ),
