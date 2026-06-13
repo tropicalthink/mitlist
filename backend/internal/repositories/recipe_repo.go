@@ -70,6 +70,32 @@ func (r *RecipeRepo) CreateRecipe(ctx context.Context, rec *models.Recipe) error
 	return err
 }
 
+// GetRecipesByIDs returns recipes keyed by ID (id, title, servings only).
+func (r *RecipeRepo) GetRecipesByIDs(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]*models.Recipe, error) {
+	out := make(map[uuid.UUID]*models.Recipe)
+	if len(ids) == 0 {
+		return out, nil
+	}
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, title, servings
+		FROM recipes
+		WHERE id = ANY($1)
+	`, ids)
+	if err != nil {
+		return nil, fmt.Errorf("get recipes by ids: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var rec models.Recipe
+		if err := rows.Scan(&rec.ID, &rec.Title, &rec.Servings); err != nil {
+			return nil, fmt.Errorf("scan recipe: %w", err)
+		}
+		recCopy := rec
+		out[rec.ID] = &recCopy
+	}
+	return out, rows.Err()
+}
+
 // GetRecipeByID retrieves a recipe by its ID.
 func (r *RecipeRepo) GetRecipeByID(ctx context.Context, id uuid.UUID) (*models.Recipe, error) {
 	row := r.pool.QueryRow(ctx, `
@@ -270,6 +296,32 @@ func (r *RecipeRepo) ListIngredients(ctx context.Context, recipeID uuid.UUID) ([
 	defer rows.Close()
 
 	return pgx.CollectRows(rows, pgx.RowToStructByName[models.RecipeIngredient])
+}
+
+// ListIngredientsByRecipeIDs returns ingredients grouped by recipe_id.
+func (r *RecipeRepo) ListIngredientsByRecipeIDs(ctx context.Context, recipeIDs []uuid.UUID) (map[uuid.UUID][]models.RecipeIngredient, error) {
+	out := make(map[uuid.UUID][]models.RecipeIngredient)
+	if len(recipeIDs) == 0 {
+		return out, nil
+	}
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, recipe_id, name, quantity, unit, raw_text, position
+		FROM recipe_ingredients
+		WHERE recipe_id = ANY($1)
+		ORDER BY recipe_id ASC, position ASC, id ASC
+	`, recipeIDs)
+	if err != nil {
+		return nil, fmt.Errorf("list ingredients by recipe ids: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var ing models.RecipeIngredient
+		if err := rows.Scan(&ing.ID, &ing.RecipeID, &ing.Name, &ing.Quantity, &ing.Unit, &ing.RawText, &ing.Position); err != nil {
+			return nil, fmt.Errorf("scan ingredient: %w", err)
+		}
+		out[ing.RecipeID] = append(out[ing.RecipeID], ing)
+	}
+	return out, rows.Err()
 }
 
 // UpdateIngredient updates an existing ingredient.
