@@ -1152,12 +1152,16 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                       ),
                       onSubmitted: (_) => _submitTitleEdit(),
                     )
-                  : GestureDetector(
-                      onTap: _startEditingTitle,
-                      child: Text(
-                        _listName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                  : Semantics(
+                      button: true,
+                      label: 'Edit list name, $_listName',
+                      child: GestureDetector(
+                        onTap: _startEditingTitle,
+                        child: Text(
+                          _listName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ),
               actions: [
@@ -1170,6 +1174,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   ),
                   tooltip: _showSearch ? 'Close search' : 'Search',
                   onPressed: () {
+                    unawaited(Haptics.light());
                     setState(() {
                       _showSearch = !_showSearch;
                       if (!_showSearch) {
