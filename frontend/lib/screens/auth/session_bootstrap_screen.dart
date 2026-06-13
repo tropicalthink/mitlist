@@ -15,7 +15,9 @@ class SessionBootstrapScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('mitlist', style: MitlistTypography.logo()),
+              Text('mitlist', style: MitlistTypography.logo(
+                color: Theme.of(context).colorScheme.onSurface,
+              )),
               const SizedBox(height: MitlistSpacing.lg),
               const SizedBox(
                 width: 28,

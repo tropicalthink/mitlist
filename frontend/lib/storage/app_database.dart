@@ -508,6 +508,17 @@ FROM list_items_table;
     );
   }
 
+  Future<void> markOutboxPermanentFailure(String id,
+      {String? error, int threshold = 10}) async {
+    await (update(outboxOps)..where((t) => t.id.equals(id))).write(
+      OutboxOpsCompanion(
+        lastAttemptAt: Value(DateTime.now()),
+        attemptCount: Value(threshold),
+        lastError: Value(error),
+      ),
+    );
+  }
+
   Future<void> deleteOutboxOp(String id) async {
     await (delete(outboxOps)..where((t) => t.id.equals(id))).go();
   }
@@ -533,29 +544,6 @@ FROM list_items_table;
       variables: [Variable.withInt(maxAttempts)],
     ).getSingle();
     return (result.data['c'] as int?) ?? 0;
-  }
-
-  Future<List<Conflict>> getConflicts() async {
-    return (select(conflicts)..where((t) => t.resolvedAt.isNull())).get();
-  }
-
-  Future<int> conflictCount() async {
-    final result = await customSelect(
-      'SELECT COUNT(*) AS c FROM conflicts WHERE resolved_at IS NULL',
-    ).getSingle();
-    return (result.data['c'] as int?) ?? 0;
-  }
-
-  Future<void> resolveConflict(String id) async {
-    await (update(conflicts)..where((t) => t.id.equals(id))).write(
-      ConflictsCompanion(
-        resolvedAt: Value(DateTime.now()),
-      ),
-    );
-  }
-
-  Future<void> insertConflict(ConflictsCompanion entry) async {
-    await into(conflicts).insert(entry);
   }
 
   Future<void> rewriteOutboxPayloadIds({
@@ -613,6 +601,10 @@ FROM list_items_table;
     await batch((b) {
       b.insertAllOnConflictUpdate(expensesTable, rows.toList(growable: false));
     });
+  }
+
+  Future<void> clearExpensesForGroup(String groupId) async {
+    await (delete(expensesTable)..where((t) => t.groupId.equals(groupId))).go();
   }
 
   Stream<FinanceSummary?> watchFinanceSummary(String groupId) {

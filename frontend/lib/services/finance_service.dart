@@ -12,7 +12,7 @@ class FinanceService {
   final Logger _logger = Logger();
   FinanceService._(this._dio);
   static Future<FinanceService> create([Ref? ref]) async {
-    final dio = createApiClient(ref);
+    final dio = resolveDio(ref);
     return FinanceService._(dio);
   }
 

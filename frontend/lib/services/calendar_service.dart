@@ -13,7 +13,7 @@ class CalendarService {
   CalendarService._(this._dio) : _logger = Logger();
 
   static Future<CalendarService> create([Ref? ref]) async {
-    final dio = createApiClient(ref);
+    final dio = resolveDio(ref);
     return CalendarService._(dio);
   }
 

@@ -16,12 +16,14 @@ final financeRepositoryProvider = FutureProvider<FinanceRepository>((ref) async 
 
 final cachedExpensesByGroupProvider =
     StreamProvider.family<List<Expense>, String>((ref, groupId) async* {
+  ref.keepAlive();
   final repo = await ref.watch(financeRepositoryProvider.future);
   yield* repo.watchExpensesByGroup(groupId);
 });
 
 final cachedFinanceSummaryByGroupProvider =
     StreamProvider.family<FinanceSummary?, String>((ref, groupId) async* {
+  ref.keepAlive();
   final repo = await ref.watch(financeRepositoryProvider.future);
   yield* repo.watchSummaryByGroup(groupId);
 });

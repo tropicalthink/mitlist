@@ -3,9 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/auth_provider.dart';
-import 'providers/list_provider.dart';
 import 'widgets/app_icon.dart';
 import 'providers/nav_badge_provider.dart';
+import 'providers/grocery_provider.dart' show groceryGraphSyncProvider;
+import 'utils/shell_tab_load.dart';
 
 import 'screens/home/groups_list_screen.dart';
 import 'screens/lists/lists_screen.dart';
@@ -34,6 +35,7 @@ import 'models/recipe_models.dart';
 import 'screens/meal_plans/meal_plan_screen.dart';
 import 'screens/shopping/shopping_trip_screen.dart';
 import 'screens/scanner/scanner_screen.dart';
+import 'router_redirect.dart';
 
 final currentGroupIdProvider =
     StateNotifierProvider<CurrentGroupIdNotifier, String?>(
@@ -42,17 +44,27 @@ final currentGroupIdProvider =
 
 class CurrentGroupIdNotifier extends StateNotifier<String?> {
   CurrentGroupIdNotifier() : super(null) {
-    _load();
+    _loadFuture = _load();
   }
 
   static const _key = 'current_group_id';
 
+  late final Future<void> _loadFuture;
+  bool _isLoaded = false;
+
+  bool get isLoaded => _isLoaded;
+
+  /// Awaits hydration from SharedPreferences before resolving group context.
+  Future<void> ensureLoaded() => _loadFuture;
+
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
     state = prefs.getString(_key);
+    _isLoaded = true;
   }
 
   Future<void> set(String? groupId) async {
+    await ensureLoaded();
     final prefs = await SharedPreferences.getInstance();
     if (groupId != null) {
       await prefs.setString(_key, groupId);
@@ -60,6 +72,15 @@ class CurrentGroupIdNotifier extends StateNotifier<String?> {
       await prefs.remove(_key);
     }
     state = groupId;
+  }
+}
+
+/// Triggers [GoRouter] redirect re-evaluation without recreating the router.
+class _RouterRefreshListenable extends ChangeNotifier {
+  _RouterRefreshListenable(Ref ref) {
+    ref.listen(authStateProvider, (_, __) => notifyListeners());
+    ref.listen(authBootstrapProvider, (_, __) => notifyListeners());
+    ref.listen(pendingAuthNavigationProvider, (_, __) => notifyListeners());
   }
 }
 
@@ -71,89 +92,34 @@ final _choresNavKey = GlobalKey<NavigatorState>(debugLabel: 'chores');
 final _moneyNavKey = GlobalKey<NavigatorState>(debugLabel: 'money');
 final _recipesNavKey = GlobalKey<NavigatorState>(debugLabel: 'recipes');
 
-final _authRoutePrefixes = [
-  '/welcome',
-  '/login',
-  '/signup',
-  '/auth/callback',
-];
-
-const _sessionBootstrapPath = '/_session';
-
-bool _isSessionBootstrapPath(String location) =>
-    location.startsWith(_sessionBootstrapPath);
-
-final _inviteCodePattern = RegExp(r'^[A-Za-z0-9\-]{4,}$');
-
-bool _isPlausibleInviteCode(String code) =>
-    _inviteCodePattern.hasMatch(code);
+const _sessionBootstrapPath = sessionBootstrapPath;
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateProvider);
-  final authBootstrap = ref.watch(authBootstrapProvider);
+  ref.watch(authBootstrapListenerProvider);
+  final refreshListenable = _RouterRefreshListenable(ref);
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: '/welcome',
+    initialLocation: _sessionBootstrapPath,
+    refreshListenable: refreshListenable,
     redirect: (context, state) {
-      final location = state.uri.path;
-      final isAuthRoute = _authRoutePrefixes.any((p) => location.startsWith(p));
-
-      if (authBootstrap.isLoading) {
-        if (location.startsWith('/auth/callback')) {
-          return null;
-        }
-        if (_isSessionBootstrapPath(location)) {
-          return null;
-        }
-        // Marketing / sign-in routes: stay put so first visits and /login
-        // reloads do not bounce through a loading URL.
-        if (isAuthRoute) {
-          return null;
-        }
-        final target =
-            '${state.uri.path}${state.uri.hasQuery ? '?${state.uri.query}' : ''}';
-        return '$_sessionBootstrapPath?continue=${Uri.encodeComponent(target)}';
+      final authState = ref.read(authStateProvider);
+      final authBootstrap = ref.read(authBootstrapProvider);
+      final result = resolveAppRedirect(
+        AppRedirectInput(
+          location: state.uri.path,
+          queryParameters: state.uri.queryParameters,
+          authBootstrapLoading: authBootstrap.isLoading,
+          authState: authState,
+          pendingAuthNavigation: ref.read(pendingAuthNavigationProvider),
+          requestedPathWithQuery:
+              '${state.uri.path}${state.uri.hasQuery ? '?${state.uri.query}' : ''}',
+        ),
+      );
+      if (result.clearPendingAuth) {
+        ref.read(pendingAuthNavigationProvider.notifier).state = null;
       }
-
-      if (_isSessionBootstrapPath(location)) {
-        if (authState) {
-          final cont = state.uri.queryParameters['continue'];
-          if (cont != null && cont.isNotEmpty) {
-            final decoded = Uri.decodeComponent(cont);
-            if (decoded.startsWith('/') && !decoded.startsWith('//')) {
-              return decoded;
-            }
-          }
-          return '/home';
-        }
-        return '/welcome';
-      }
-
-      if (!authState && !isAuthRoute) {
-        // Preserve invite code through the auth flow so that after sign-in
-        // the redirect below can forward the user to the join landing screen.
-        if (location.startsWith('/join/')) {
-          final code = location.substring('/join/'.length);
-          if (_isPlausibleInviteCode(code)) {
-            return '/welcome?invite=${Uri.encodeComponent(code)}';
-          }
-        }
-        return '/welcome';
-      }
-
-      if (authState && isAuthRoute) {
-        // When the user lands on an auth route carrying an invite param
-        // (e.g. after completing guest sign-in from /welcome?invite=CODE),
-        // forward them to the join landing screen instead of home.
-        final invite = state.uri.queryParameters['invite'];
-        if (invite != null && _isPlausibleInviteCode(invite)) {
-          return '/join/${Uri.encodeComponent(invite)}';
-        }
-        return '/home';
-      }
-
-      return null;
+      return result.redirect;
     },
     routes: [
       GoRoute(
@@ -331,11 +297,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) {
                       final listId = state.pathParameters['listId']!;
                       final extra = state.extra;
-                      final initialName =
-                          extra is ListDetailRouteArgs ? extra.listName : null;
+                      final args = extra is ListDetailRouteArgs ? extra : null;
                       return ListDetailScreen(
                         listId: listId,
-                        initialListName: initialName,
+                        initialListName: args?.listName,
+                        autoFocusTitle: args?.autoFocusTitle ?? false,
                       );
                     },
                   ),
@@ -393,6 +359,10 @@ class _BottomNavScaffoldState extends ConsumerState<BottomNavScaffold> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      markShellTabVisited(ref, widget.navigationShell.currentIndex);
+    });
     _restoreLastTab();
   }
 
@@ -403,23 +373,24 @@ class _BottomNavScaffoldState extends ConsumerState<BottomNavScaffold> {
     _restored = true;
     if (saved != 0 && saved < 5) {
       widget.navigationShell.goBranch(saved);
+      markShellTabVisited(ref, saved);
     }
   }
 
   void _onTap(int index) {
     if (index == widget.navigationShell.currentIndex) return;
+    markShellTabVisited(ref, index);
     widget.navigationShell.goBranch(index);
     SharedPreferences.getInstance().then((p) => p.setInt(_lastTabKey, index));
   }
 
   @override
   Widget build(BuildContext context) {
-    // Kick off the offline grocery seed once the app shell mounts. Without
-    // this the canonical item + alias tables stay empty and composer
-    // autocomplete (GrocerySuggestionService) never has anything to surface.
-    ref.watch(grocerySeedProvider);
-    final badgeCounts = ref.watch(navBadgeCountsProvider);
-    final badgeData = badgeCounts.valueOrNull ?? const NavBadgeCounts();
+    final groupId = ref.watch(currentGroupIdProvider);
+    if (groupId != null && groupId.isNotEmpty) {
+      ref.watch(groceryGraphSyncProvider(groupId));
+    }
+    final badgeData = ref.watch(navBadgeCountsProvider);
 
     Widget makeBadgeIcon(Widget icon, {int count = 0}) {
       if (count <= 0) return icon;

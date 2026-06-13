@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../models/auth_models.dart';
 import '../../providers/auth_provider.dart';
@@ -79,9 +78,8 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
           rememberMe: rememberMe,
         );
       }
+      ref.read(pendingAuthNavigationProvider.notifier).state = '/onboarding';
       ref.read(authStateProvider.notifier).state = true;
-      if (!mounted) return;
-      context.goNamed('onboarding');
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = friendlyErrorMessage(e));

@@ -29,7 +29,7 @@ class GroceryRepository {
         _dio = dio;
 
   static Future<GroceryRepository> create(AppDatabase db, [Ref? ref]) async {
-    final dio = createApiClient(ref);
+    final dio = resolveDio(ref);
     return GroceryRepository(db: db, dio: dio);
   }
 

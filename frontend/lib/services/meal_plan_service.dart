@@ -11,7 +11,7 @@ class MealPlanService {
   final Logger _logger = Logger();
   MealPlanService._(this._dio);
   static Future<MealPlanService> create([Ref? ref]) async {
-    final dio = createApiClient(ref);
+    final dio = resolveDio(ref);
     return MealPlanService._(dio);
   }
 

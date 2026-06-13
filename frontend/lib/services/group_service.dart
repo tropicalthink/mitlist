@@ -14,7 +14,7 @@ class GroupService {
 
   /// Creates an instance of GroupService.
   static Future<GroupService> create([Ref? ref]) async {
-    final dio = createApiClient(ref);
+    final dio = resolveDio(ref);
     return GroupService._(dio);
   }
 

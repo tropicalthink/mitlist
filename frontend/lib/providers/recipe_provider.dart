@@ -15,6 +15,7 @@ final recipeRepositoryProvider = FutureProvider<RecipeRepository>((ref) async {
 });
 
 final cachedRecipesProvider = StreamProvider<List<Recipe>>((ref) async* {
+  ref.keepAlive();
   final repo = await ref.watch(recipeRepositoryProvider.future);
   yield* repo.watchRecipes();
 });

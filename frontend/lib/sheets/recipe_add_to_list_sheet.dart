@@ -102,8 +102,7 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
 
   Future<String?> _resolveGroupId() async {
     try {
-      final groupSvc = await ref.read(groupServiceProviderAsync.future);
-      final groups = await groupSvc.listGroups(limit: 50);
+      final groups = await ref.read(cachedGroupsProvider.future);
       return resolveActiveGroupId(groups, ref.read(currentGroupIdProvider));
     } catch (_) {
       return null;

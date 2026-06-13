@@ -13,6 +13,7 @@ import '../../providers/group_provider.dart';
 import '../../models/finance_models.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
+import '../../utils/shell_tab_load.dart';
 import '../../utils/active_group_context.dart';
 import '../../utils/haptics.dart';
 import '../../sheets/expense_creation_sheet.dart';
@@ -131,7 +132,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   bool _hasMore = true;
   String? _errorMessage;
   bool _hasPageError = false;
-  bool _hasHousehold = true;
+  bool _hasHousehold = false;
   bool _isSettling = false;
   int _selectedTab = 0; // 0 = Timeline, 1 = Settlements
   final Logger _logger = Logger();
@@ -152,6 +153,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   List<_SettlementSuggestion> _suggestions = [];
   List<_BalanceEntry> _balances = [];
 
+  bool _tabLoadStarted = false;
+
   @override
   void initState() {
     super.initState();
@@ -163,6 +166,13 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       final saved = prefs.getInt('expenses_selected_tab');
       if (saved == 0 || saved == 1) setState(() => _selectedTab = saved!);
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _activateTabIfNeeded());
+  }
+
+  void _activateTabIfNeeded() {
+    if (_tabLoadStarted || !mounted) return;
+    if (!shouldActivateShellTab(ref, moneyShellTabIndex)) return;
+    _tabLoadStarted = true;
     _loadData();
   }
 
@@ -197,9 +207,10 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     });
 
     try {
+      await ref.read(currentGroupIdProvider.notifier).ensureLoaded();
       final authService = await ref.read(authServiceProviderAsync.future);
       final groupService = await ref.read(groupServiceProviderAsync.future);
-      final groups = await groupService.listGroups(limit: 50);
+      final groups = await ref.read(cachedGroupsProvider.future);
       final groupId =
           resolveActiveGroupId(groups, ref.read(currentGroupIdProvider));
       final validGroupId = isValidGroupId(groupId) ? groupId : null;
@@ -245,6 +256,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       if (validGroupId != null) {
         unawaited(repo.refreshGroup(validGroupId, limit: _pageLimit, offset: 0).catchError((e) {
           _logger.w('Background expenses refresh failed', error: e);
+          return 0;
         }));
         if (!_listenersSetUp) {
           _listenersSetUp = true;
@@ -338,8 +350,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     });
 
     try {
-      final financeService = await ref.read(financeServiceProviderAsync.future);
-      final expenses = await financeService.listExpenses(
+      final repo = await ref.read(financeRepositoryProvider.future);
+      final fetchedCount = await repo.refreshGroup(
         groupId,
         limit: _pageLimit,
         offset: _timelineExpenses.length,
@@ -347,10 +359,13 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
       if (!mounted) return;
 
-      _timelineExpenses.addAll(expenses.map(_mapExpense));
+      final allCached = await repo.getExpensesByGroupOnce(groupId);
+      _timelineExpenses
+        ..clear()
+        ..addAll(allCached.map(_mapExpense));
       _rebuildTimelineGroups();
       setState(() {
-        _hasMore = expenses.length == _pageLimit;
+        _hasMore = fetchedCount == _pageLimit;
         _isLoadingMore = false;
         _hasPageError = false;
       });
@@ -539,6 +554,15 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(shellVisitedTabsProvider, (previous, next) {
+      _activateTabIfNeeded();
+    });
+    ref.listen<String?>(currentGroupIdProvider, (previous, next) {
+      if (previous != next) {
+        _loadData();
+      }
+    });
+
     _maybePlayConfetti();
 
     final canSettle = _hasHousehold && !_isLoading && _errorMessage == null;

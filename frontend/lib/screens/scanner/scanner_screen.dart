@@ -8,8 +8,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../providers/scan_provider.dart';
 import '../../providers/grocery_provider.dart';
+import '../../providers/list_provider.dart' show grocerySeedProvider;
+import '../../providers/scan_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../services/scan_service.dart';
 import '../../theme/spacing.dart';
@@ -44,6 +45,12 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   ScanResult? _result;
 
   final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    ref.read(grocerySeedProvider);
+  }
 
   Future<void> _pickImage(ImageSource source) async {
     final picked = await _picker.pickImage(

@@ -13,7 +13,7 @@ class TemplateService {
   TemplateService._(this._dio);
 
   static Future<TemplateService> create([Ref? ref]) async {
-    final dio = createApiClient(ref);
+    final dio = resolveDio(ref);
     return TemplateService._(dio);
   }
 

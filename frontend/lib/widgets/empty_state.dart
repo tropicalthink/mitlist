@@ -93,6 +93,7 @@ class AppEmptyState extends StatelessWidget {
               width: 56,
               height: 56,
               fit: BoxFit.contain,
+              repeat: false,
             )
           else if (icon != null && animatedIcon)
             BobbingIcon(

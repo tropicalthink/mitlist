@@ -57,8 +57,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
       return;
     }
     try {
-      final groupService = await ref.read(groupServiceProviderAsync.future);
-      final groups = await groupService.listGroups(limit: 50);
+      final groups = await ref.read(cachedGroupsProvider.future);
       final groupId = resolveActiveGroupId(
         groups,
         ref.read(currentGroupIdProvider),
