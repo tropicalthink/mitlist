@@ -698,7 +698,22 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
 
   Widget _buildPaginationFooter() {
     if (_error != null) {
-      return AppAlert(type: AppAlertType.error, message: _error!);
+      return Padding(
+        padding: const EdgeInsets.all(MitlistSpacing.md),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppAlert(type: AppAlertType.error, message: _error!),
+            const SizedBox(height: MitlistSpacing.sm),
+            AppButton(
+              text: 'Retry',
+              variant: AppButtonVariant.outline,
+              size: AppButtonSize.sm,
+              onPressed: _loadMoreLists,
+            ),
+          ],
+        ),
+      );
     }
 
     return Center(
@@ -773,6 +788,12 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        Icon(
+          Icons.search_off_rounded,
+          size: 40,
+          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+        ),
+        const SizedBox(height: MitlistSpacing.sm),
         Text(
           'No lists match "$_searchQuery"',
           textAlign: TextAlign.center,
