@@ -94,7 +94,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: '/welcome',
+    initialLocation: _sessionBootstrapPath,
     redirect: (context, state) {
       final location = state.uri.path;
       final isAuthRoute = _authRoutePrefixes.any((p) => location.startsWith(p));
@@ -106,26 +106,28 @@ final routerProvider = Provider<GoRouter>((ref) {
         if (_isSessionBootstrapPath(location)) {
           return null;
         }
-        // Marketing / sign-in routes: stay put so first visits and /login
-        // reloads do not bounce through a loading URL.
-        if (isAuthRoute) {
-          return null;
-        }
         final target =
             '${state.uri.path}${state.uri.hasQuery ? '?${state.uri.query}' : ''}';
         return '$_sessionBootstrapPath?continue=${Uri.encodeComponent(target)}';
       }
 
       if (_isSessionBootstrapPath(location)) {
-        if (authState) {
-          final cont = state.uri.queryParameters['continue'];
-          if (cont != null && cont.isNotEmpty) {
-            final decoded = Uri.decodeComponent(cont);
-            if (decoded.startsWith('/') && !decoded.startsWith('//')) {
-              return decoded;
-            }
+        final cont = state.uri.queryParameters['continue'];
+        String? continueTarget;
+        if (cont != null && cont.isNotEmpty) {
+          final decoded = Uri.decodeComponent(cont);
+          if (decoded.startsWith('/') && !decoded.startsWith('//')) {
+            continueTarget = decoded;
           }
-          return '/home';
+        }
+
+        if (authState) {
+          return continueTarget ?? '/home';
+        }
+
+        if (continueTarget != null &&
+            _authRoutePrefixes.any((p) => continueTarget!.startsWith(p))) {
+          return continueTarget;
         }
         return '/welcome';
       }
