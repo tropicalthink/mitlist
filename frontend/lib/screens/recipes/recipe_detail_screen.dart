@@ -11,6 +11,7 @@ import '../../providers/recipe_provider.dart';
 import '../../sheets/recipe_add_to_list_sheet.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
+import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
 import '../../utils/safe_launch.dart';
 import '../../widgets/app_button.dart';
@@ -107,11 +108,12 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
       await service.deleteRecipe(widget.recipeId);
       if (!mounted) return;
       context.pop(true);
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() => _isDeleting = false);
+      unawaited(Haptics.failure());
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to delete recipe')),
+        SnackBar(content: Text(friendlyErrorMessage(e))),
       );
     }
   }

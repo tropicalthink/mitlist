@@ -13,6 +13,7 @@ import '../../utils/friendly_error.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_icon.dart';
+import '../../widgets/mitlist_app_bar.dart';
 
 enum _Phase { idle, joining, success }
 
@@ -66,7 +67,9 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: MitlistAppBar(
+        showStandardActions: false,
+        title: const SizedBox.shrink(),
         leading: IconButton(
           icon: const AppIcon(name: 'xMark'),
           onPressed: () => context.goNamed('home'),

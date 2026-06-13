@@ -14,6 +14,7 @@ import '../widgets/app_card.dart';
 import '../widgets/app_dialog.dart';
 import '../widgets/app_divider.dart';
 import '../widgets/app_icon.dart';
+import '../widgets/alert.dart';
 
 class ExpenseDetailSheet extends ConsumerStatefulWidget {
   const ExpenseDetailSheet({
@@ -283,16 +284,20 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
           const SizedBox(height: MitlistSpacing.md),
         ],
         if (!_loadingSplits && _splits.isEmpty)
-          Text('No splits yet.', style: Theme.of(context).textTheme.bodySmall,),
+          AppAlert(
+            type: AppAlertType.info,
+            message: 'This expense isn\u2019t split yet.',
+          ),
         if (_loadingReceipts)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
             child: const LinearProgressIndicator(),
           )
         else if (_receipts.isEmpty)
-          Text(
-            'No receipts yet.',
-            style: Theme.of(context).textTheme.bodySmall,
+          AppAlert(
+            type: AppAlertType.info,
+            message:
+                'No receipts attached. Add one when editing the expense.',
           )
         else
           SizedBox(

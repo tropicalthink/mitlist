@@ -818,9 +818,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         'You',
         showStandardActions: false,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(MitlistSpacing.md),
-        children: [
+      body: RefreshIndicator(
+        color: Theme.of(context).colorScheme.primary,
+        onRefresh: _loadData,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(MitlistSpacing.md),
+          children: [
           if (_error != null) ...[
             AppAlert(type: AppAlertType.error, message: _error!),
             const SizedBox(height: MitlistSpacing.md),
@@ -852,6 +856,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           const SizedBox(height: MitlistSpacing.md),
           _buildDangerZone(),
         ],
+        ),
       ),
     );
   }

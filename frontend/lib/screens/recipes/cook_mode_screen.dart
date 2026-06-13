@@ -15,6 +15,7 @@ import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/chip.dart';
+import '../../widgets/empty_state.dart';
 
 // ---------------------------------------------------------------------------
 // Screen entry point
@@ -381,13 +382,12 @@ class _CookModeScreenState extends ConsumerState<CookModeScreen> {
     if (_hasError || _recipe == null) {
       return Scaffold(
         body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const AppIcon(name: 'restaurant', size: 48),
-              const SizedBox(height: MitlistSpacing.md),
-              const Text('Could not load recipe'),
-              const SizedBox(height: MitlistSpacing.md),
+          child: AppEmptyState(
+            lottieAsset: 'assets/animations/lottie/404.lottie',
+            icon: const AppIcon(name: 'restaurant'),
+            title: 'Could not load recipe',
+            description: 'Check your connection and try again.',
+            actions: [
               AppButton(
                 text: 'Retry',
                 variant: AppButtonVariant.outline,

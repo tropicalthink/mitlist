@@ -23,6 +23,7 @@ import '../../utils/hub_helpers.dart';
 import '../app_bottom_sheet.dart';
 import '../app_button.dart';
 import '../app_dialog.dart';
+import '../mitlist_app_bar.dart';
 
 
 const _kNotePalette = MitlistColors.notePalette;
@@ -800,11 +801,9 @@ class _PinwallNoteCard extends ConsumerWidget {
       MaterialPageRoute<void>(
         builder: (_) => Scaffold(
           backgroundColor: MitlistColors.neutral950,
-          appBar: AppBar(
-            backgroundColor: MitlistColors.neutral950,
-            foregroundColor: MitlistColors.surfaceSoft,
-            elevation: 0,
-            scrolledUnderElevation: 0,
+          appBar: MitlistAppBar(
+            showStandardActions: false,
+            title: const SizedBox.shrink(),
             leading: IconButton(
               tooltip: 'Close',
               icon: const Icon(Icons.close),
@@ -1054,26 +1053,32 @@ class _PinwallNoteCard extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (post.linkedEntityType != null)
-                  GestureDetector(
-                    onTap: () => _navigateToLinkedEntity(context),
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: MitlistSpacing.xs),
-                      child: Row(
-                        children: [
-                          Icon(Icons.link, size: 12, color: mutedColor),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              _entityDisplayLabel(post.linkedEntityType!),
-                              style: textTheme.labelSmall?.copyWith(
-                                color: mutedColor,
+                  Semantics(
+                    button: true,
+                    label:
+                        'Open linked ${_entityDisplayLabel(post.linkedEntityType!)}',
+                    child: GestureDetector(
+                      onTap: () => _navigateToLinkedEntity(context),
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: MitlistSpacing.xs),
+                        child: Row(
+                          children: [
+                            Icon(Icons.link, size: 12, color: mutedColor),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                _entityDisplayLabel(post.linkedEntityType!),
+                                style: textTheme.labelSmall?.copyWith(
+                                  color: mutedColor,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                          Icon(Icons.chevron_right, size: 12, color: mutedColor),
-                        ],
+                            Icon(Icons.chevron_right,
+                                size: 12, color: mutedColor),
+                          ],
+                        ),
                       ),
                     ),
                   ),

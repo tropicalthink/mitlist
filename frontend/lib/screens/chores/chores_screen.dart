@@ -7,6 +7,7 @@ import 'dart:async';
 
 import 'package:intl/intl.dart';
 import '../../models/chore_models.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/chore_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
@@ -19,6 +20,7 @@ import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/shell_tab_load.dart';
 import '../../utils/active_group_context.dart';
+import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/animated_check_toggle.dart';
@@ -29,7 +31,6 @@ import '../../widgets/app_icon.dart';
 import '../../widgets/chip.dart';
 import '../../widgets/animated_strikethrough.dart';
 import '../../widgets/empty_state.dart';
-import '../../widgets/odometer.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/list_entrance.dart';
 import '../../widgets/mitlist_app_bar.dart';
@@ -47,36 +48,17 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   final List<_Chore> _chores = [];
   StreamSubscription<List<CurrentChore>>? _sub;
   bool _filterMe = true;
-  String _groupMode = 'due'; // 'due' | 'rhythm' | 'zone'
   bool _isMutating = false;
   bool _hasHousehold = false;
   String? _groupId;
   final Logger _logger = Logger();
   Map<String, String> _memberNames = {};
+  List<ChoreLoadEntry> _load = const [];
+  String? _myUserId;
 
-  static const double _headlineSmallLineHeight = 32.0;
   static const double _labelMediumLineHeight = 16.0;
 
-  static const double _stickyHeaderHeight = MitlistSpacing.md +
-      MitlistSpacing.md +
-      _headlineSmallLineHeight +
-      MitlistSpacing.space1 +
-      _labelMediumLineHeight +
-      MitlistSpacing.md +
-      MitlistSpacing.sm +
-      MitlistSpacing.space8 +
-      MitlistSpacing.sm +
-      // Second control row: "By due date / By rhythm" grouping toggle.
-      MitlistSpacing.sm +
-      MitlistSpacing.space8 +
-      MitlistSpacing.md +
-      MitlistSpacing.space1 +
-      // Extra headroom: AppCard border (2 px × 2 sides) + AppChip height
-      // correction (space11=44 vs the space8=32 used above) and text-scale
-      // buffer so the header does not overflow at textScaleFactor ≥ 1.0.
-      MitlistSpacing.md +
-      MitlistSpacing.sm;
-
+  // Pinned section header (Overdue / Today / This week / Later).
   static const double _sectionHeaderHeight =
       MitlistSpacing.sm + _labelMediumLineHeight + MitlistSpacing.sm;
 
@@ -87,12 +69,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     super.initState();
     SharedPreferences.getInstance().then((prefs) {
       final saved = prefs.getBool('chores_filter_me');
-      final savedMode = prefs.getString('chores_group_mode');
       if (!mounted) return;
-      setState(() {
-        if (saved != null) _filterMe = saved;
-        if (savedMode != null) _groupMode = savedMode;
-      });
+      if (saved != null) setState(() => _filterMe = saved);
     });
     WidgetsBinding.instance.addPostFrameCallback((_) => _activateTabIfNeeded());
   }
@@ -134,7 +112,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       }
       final repo = await ref.read(choreRepositoryProvider.future);
 
-      // Load member display names so assignee avatars show real initials.
+      // Load member display names so assignee avatars and turn labels show
+      // real names.
       try {
         final groupService = await ref.read(groupServiceProviderAsync.future);
         final members = await groupService.listMembers(groupId!);
@@ -165,12 +144,32 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       unawaited(repo.refreshCurrentChores(gid).catchError((e) {
         _logger.w('Background chores refresh failed', error: e);
       }));
+
+      // Best-effort context for the fairness strip: who I am (to highlight my
+      // share) and how the load has been split over the last 30 days. The UI
+      // is already rendered from cache, so these only enrich it.
+      unawaited(_loadFairnessContext(gid));
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _error = 'Failed to load chores. Please try again.';
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _loadFairnessContext(String gid) async {
+    try {
+      final authService = await ref.read(authServiceProviderAsync.future);
+      final me = await authService.getMe();
+      if (mounted) setState(() => _myUserId = me.id);
+    } catch (_) {}
+    try {
+      final choreService = await ref.read(choreServiceProviderAsync.future);
+      final load = await choreService.getChoreLoad(gid, days: 30);
+      if (mounted) setState(() => _load = load);
+    } catch (e) {
+      _logger.w('Chore load fetch failed', error: e);
     }
   }
 
@@ -184,6 +183,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
               title: entry.chore.name,
               assigneeInitials: _initialsFor(
                   entry.pendingAssignment?.userId, _memberNames),
+              assigneeName:
+                  _memberNames[entry.pendingAssignment?.userId ?? ''],
               dueDate: entry.pendingAssignment?.dueDate ??
                   _fallbackDueDate(now, entry.chore.frequency),
               frequency: entry.chore.frequency,
@@ -221,35 +222,12 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
 
   Future<void> _openLoadSheet() async {
     unawaited(Haptics.light());
-    try {
-      final groups = await ref.read(cachedGroupsProvider.future);
-      final groupId = resolveActiveGroupId(
-        groups,
-        ref.read(currentGroupIdProvider),
-      );
-      if (!isValidGroupId(groupId)) return;
-      final choreService = await ref.read(choreServiceProviderAsync.future);
-      final entries = await choreService.getChoreLoad(groupId!, days: 30);
-      // Make sure names are available even if the list hasn't loaded them yet.
-      var names = _memberNames;
-      if (names.isEmpty) {
-        try {
-          final groupService = await ref.read(groupServiceProviderAsync.future);
-          final members = await groupService.listMembers(groupId);
-          names = {for (final m in members) m.userId: m.displayName};
-        } catch (_) {}
-      }
-      if (!mounted) return;
-      await ChoreLoadSheet.show(
-        context,
-        entries: entries,
-        memberNames: names,
-        days: 30,
-      );
-    } catch (e) {
-      if (!mounted) return;
-      _showChoreActionError('Failed to load chore stats. Please try again.');
-    }
+    await ChoreLoadSheet.show(
+      context,
+      entries: _load,
+      memberNames: _memberNames,
+      days: 30,
+    );
   }
 
   Future<void> _openChoreDetail(String id) async {
@@ -340,7 +318,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
           await service.deleteSubtask(subtaskId);
         } catch (e) {
           if (!mounted) return;
-          _showChoreActionError('Failed to delete subtask. Please try again.');
+          unawaited(Haptics.failure());
+          _showChoreActionError(friendlyErrorMessage(e));
         } finally {
           _isMutating = false;
         }
@@ -578,7 +557,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       await _refreshQuietly();
     } catch (e) {
       if (!mounted) return;
-      _showChoreActionError('Failed to delete chore. Please try again.');
+      unawaited(Haptics.failure());
+      _showChoreActionError(friendlyErrorMessage(e));
     } finally {
       _isMutating = false;
     }
@@ -597,11 +577,16 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     return _chores.toList();
   }
 
+  void _setFilterMe(bool value) {
+    setState(() => _filterMe = value);
+    SharedPreferences.getInstance().then((p) => p.setBool('chores_filter_me', value));
+  }
+
   Map<String, List<_Chore>> _groupBySection(List<_Chore> chores) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final tomorrow = today.add(const Duration(days: 1));
-    final weekLater = today.add(Duration(days: 7));
+    final weekLater = today.add(const Duration(days: 7));
 
     final result = <String, List<_Chore>>{
       'Overdue': [],
@@ -637,95 +622,17 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     'Later',
   ];
 
-  static const List<String> _rhythmOrder = [
-    'Hourly',
-    'Daily',
-    'Weekly',
-    'Monthly',
-    'Yearly',
-    'As needed',
-    'One-off',
-  ];
-
-  String _rhythmBucket(String frequency) => switch (frequency) {
-        'hourly' => 'Hourly',
-        'daily' => 'Daily',
-        'weekly' => 'Weekly',
-        'monthly' => 'Monthly',
-        'yearly' => 'Yearly',
-        'adaptive' => 'As needed',
-        _ => 'One-off',
-      };
-
-  /// Groups chores by how often they recur, so the household reads its shared
-  /// rhythm rather than only what's due next.
-  Map<String, List<_Chore>> _groupByRhythm(List<_Chore> chores) {
-    final result = {for (final key in _rhythmOrder) key: <_Chore>[]};
-    for (final chore in chores) {
-      result[_rhythmBucket(chore.frequency)]!.add(chore);
-    }
-    return result;
-  }
-
-  static const List<String> _zonePreferredOrder = [
-    'Kitchen',
-    'Bathroom',
-    'Living room',
-    'Bedroom',
-    'Outdoor',
-    'Shared',
-  ];
-
-  /// Groups chores by room/zone so the household sees them as areas of shared
-  /// space rather than a flat list. Returns buckets already in display order.
-  Map<String, List<_Chore>> _groupByZone(List<_Chore> chores) {
-    final map = <String, List<_Chore>>{};
-    for (final chore in chores) {
-      final raw = chore.category?.trim();
-      final key = (raw == null || raw.isEmpty) ? 'Unsorted' : raw;
-      (map[key] ??= []).add(chore);
-    }
-    int rank(String key) {
-      final i = _zonePreferredOrder.indexOf(key);
-      if (i >= 0) return i;
-      return key == 'Unsorted' ? 1000 : 500;
-    }
-
-    final keys = map.keys.toList()
-      ..sort((a, b) {
-        final byRank = rank(a).compareTo(rank(b));
-        return byRank != 0 ? byRank : a.compareTo(b);
-      });
-    return {for (final key in keys) key: map[key]!};
-  }
-
-  ({int overdue, int today, int done}) _computeStats(List<_Chore> chores) {
+  /// Chores assigned to me that need doing now (overdue or due today). This is
+  /// the "your turn" set the hero leads with.
+  List<_Chore> _myTurnNow() {
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final tomorrow = today.add(Duration(days: 1));
-
-    var overdue = 0;
-    var tod = 0;
-    var done = 0;
-
-    for (final chore in chores) {
-      if (chore.completed) {
-        done++;
-        continue;
-      }
-      final due = DateTime(
-        chore.dueDate.year,
-        chore.dueDate.month,
-        chore.dueDate.day,
-      );
-      if (due.isBefore(today)) {
-        overdue++;
-      } else if (due.isBefore(tomorrow)) {
-        tod++;
-      }
-    }
-
-    return (overdue: overdue, today: tod, done: done);
+    final tomorrow = DateTime(now.year, now.month, now.day)
+        .add(const Duration(days: 1));
+    return _chores.where((c) {
+      if (!c.isMine || c.completed) return false;
+      final due = DateTime(c.dueDate.year, c.dueDate.month, c.dueDate.day);
+      return due.isBefore(tomorrow);
+    }).toList();
   }
 
   @override
@@ -740,31 +647,18 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     });
 
     final filtered = _filteredChores;
-    final stats = _computeStats(filtered);
-    final sections = switch (_groupMode) {
-      'rhythm' => _groupByRhythm(filtered),
-      'zone' => _groupByZone(filtered),
-      _ => _groupBySection(filtered),
-    };
-    final sectionOrder = switch (_groupMode) {
-      'rhythm' => _rhythmOrder,
-      'zone' => sections.keys.toList(),
-      _ => _dueOrder,
-    };
+    final sections = _groupBySection(filtered);
+    final myActive = _chores.where((c) => c.isMine && !c.completed).length;
+    final totalActive = _chores.where((c) => !c.completed).length;
+    final myTurn = _myTurnNow();
+
+    final showHeader = _hasHousehold &&
+        !_isLoading &&
+        _error == null &&
+        _chores.isNotEmpty;
 
     return Scaffold(
-      appBar: MitlistAppBar.titleText(
-        'Chores',
-        actions: _hasHousehold
-            ? [
-                IconButton(
-                  onPressed: _openLoadSheet,
-                  icon: const AppIcon(name: 'chartBar'),
-                  tooltip: 'Who\'s doing the chores',
-                ),
-              ]
-            : null,
-      ),
+      appBar: MitlistAppBar.titleText('Chores'),
       floatingActionButton: AppButton(
         size: AppButtonSize.lg,
         onPressed:
@@ -779,130 +673,10 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         color: Theme.of(context).colorScheme.primary,
         onRefresh: _onRefresh,
         child: CustomScrollView(
-          physics: AlwaysScrollableScrollPhysics(),
+          physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _StickyHeaderDelegate(
-                height: _stickyHeaderHeight,
-                child: Padding(
-                  padding: const EdgeInsets.all(MitlistSpacing.md),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppCard(
-                        variant: AppCardVariant.outlined,
-                        padding: AppCardPadding.md,
-                        child: _isLoading
-                            ? Row(
-                                children: [
-                                  Expanded(child: _StatSkeleton()),
-                                  Expanded(child: _StatSkeleton()),
-                                  Expanded(child: _StatSkeleton()),
-                                ],
-                              )
-                            : Row(
-                                children: [
-                                  Expanded(
-                                    child: _StatBlock(
-                                      count: stats.overdue,
-                                      label: 'Overdue',
-                                      labelColor: Theme.of(context).colorScheme.error,
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: _StatBlock(
-                                      count: stats.today,
-                                      label: 'Today',
-                                      labelColor: Theme.of(context).colorScheme.secondary,
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: _StatBlock(
-                                      count: stats.done,
-                                      label: 'Done',
-                                      labelColor: Theme.of(context).colorScheme.tertiary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                      ),
-                      const SizedBox(height: MitlistSpacing.sm),
-                      _isLoading
-                          ? Row(
-                              children: [
-                                AppSkeleton(
-                                  width: MitlistSpacing.space12,
-                                  height: MitlistSpacing.space8,
-                                  borderRadius: AppSkeletonRadius.sm,
-                                ),
-                                const SizedBox(width: MitlistSpacing.sm),
-                                AppSkeleton(
-                                  width: MitlistSpacing.space14,
-                                  height: MitlistSpacing.space8,
-                                  borderRadius: AppSkeletonRadius.sm,
-                                ),
-                              ],
-                            )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                AppChip(
-                                  label: _chores.isEmpty
-                                      ? 'Me'
-                                      : 'Me (${_chores.where((c) => c.isMine).length})',
-                                  selected: _filterMe,
-                                  onSelected: (_) {
-                                    setState(() => _filterMe = true);
-                                    SharedPreferences.getInstance().then((p) => p.setBool('chores_filter_me', true));
-                                  },
-                                ),
-                                const SizedBox(width: MitlistSpacing.sm),
-                                AppChip(
-                                  label: _chores.isEmpty
-                                      ? 'Everyone'
-                                      : 'Everyone (${_chores.length})',
-                                  selected: !_filterMe,
-                                  onSelected: (_) {
-                                    setState(() => _filterMe = false);
-                                    SharedPreferences.getInstance().then((p) => p.setBool('chores_filter_me', false));
-                                  },
-                                ),
-                              ],
-                            ),
-                      const SizedBox(height: MitlistSpacing.sm),
-                      Center(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: [
-                              for (final mode in const [
-                                ('due', 'By due date'),
-                                ('rhythm', 'By rhythm'),
-                                ('zone', 'By zone'),
-                              ]) ...[
-                                AppChip(
-                                  label: mode.$2,
-                                  selected: _groupMode == mode.$1,
-                                  onSelected: (_) {
-                                    setState(() => _groupMode = mode.$1);
-                                    SharedPreferences.getInstance().then((p) =>
-                                        p.setString('chores_group_mode', mode.$1));
-                                  },
-                                ),
-                                if (mode.$1 != 'zone')
-                                  const SizedBox(width: MitlistSpacing.sm),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
             if (_isLoading) ...[
+              const SliverToBoxAdapter(child: _HeaderSkeleton()),
               SliverPadding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: MitlistSpacing.md,
@@ -910,8 +684,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+                      return const Padding(
+                        padding: EdgeInsets.only(bottom: MitlistSpacing.sm),
                         child: _ChoreSkeletonItem(),
                       );
                     },
@@ -964,36 +738,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                   ),
                 ),
               ),
-            ] else if (filtered.isEmpty && _filterMe && _chores.isNotEmpty) ...[
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(MitlistSpacing.md),
-                    child: AppEmptyState(
-                      lottieAsset: 'assets/animations/lottie/Chores.lottie',
-                      icon: AppIcon(
-                        name: 'clipboardDocumentList',
-                        size: 56,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                      title: 'No chores assigned to you',
-                      description: 'Your household has chores, but none are assigned to you right now.',
-                      actions: [
-                        AppButton(
-                          text: 'See all chores',
-                          variant: AppButtonVariant.outline,
-                          onPressed: () {
-                            setState(() => _filterMe = false);
-                            SharedPreferences.getInstance().then((p) => p.setBool('chores_filter_me', false));
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ] else if (filtered.isEmpty) ...[
+            ] else if (_chores.isEmpty) ...[
               SliverFillRemaining(
                 hasScrollBody: false,
                 child: Center(
@@ -1024,58 +769,135 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                 ),
               ),
             ] else ...[
-              for (final section in sectionOrder)
-                if (sections[section]!.isNotEmpty) ...[
-                  SliverPersistentHeader(
-                    pinned: true,
-                    delegate: _StickyHeaderDelegate(
-                      height: _sectionHeaderHeight,
-                      child: Container(
-                        color: Theme.of(context).colorScheme.surfaceContainerLow,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: MitlistSpacing.md,
-                          vertical: MitlistSpacing.sm,
-                        ),
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          section,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style:
-                              Theme.of(context).textTheme.labelMedium?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                  ),
-                        ),
-                      ),
+              if (showHeader)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      MitlistSpacing.md,
+                      MitlistSpacing.md,
+                      MitlistSpacing.md,
+                      MitlistSpacing.sm,
                     ),
-                  ),
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: MitlistSpacing.md,
-                    ),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final chore = sections[section]![index];
-                          return ListEntrance(
-                            index: index,
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                bottom: MitlistSpacing.sm,
-                              ),
-                              child: _ChoreItem(
-                                chore: chore,
-                                onToggle: () => _toggleComplete(chore.id),
-                                onTap: () => _openChoreDetail(chore.id),
-                              ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _TurnHero(
+                          myTurn: myTurn,
+                          myActiveCount: myActive,
+                          totalActiveCount: totalActive,
+                          onTap: myTurn.isEmpty ? null : () => _setFilterMe(true),
+                        ),
+                        const SizedBox(height: MitlistSpacing.sm),
+                        _FairnessStrip(
+                          entries: _load,
+                          memberNames: _memberNames,
+                          myUserId: _myUserId,
+                          onTap: _openLoadSheet,
+                        ),
+                        const SizedBox(height: MitlistSpacing.md),
+                        Row(
+                          children: [
+                            AppChip(
+                              label: 'Me ($myActive)',
+                              selected: _filterMe,
+                              onSelected: (_) => _setFilterMe(true),
                             ),
-                          );
-                        },
-                        childCount: sections[section]!.length,
-                      ),
+                            const SizedBox(width: MitlistSpacing.sm),
+                            AppChip(
+                              label: 'Everyone ($totalActive)',
+                              selected: !_filterMe,
+                              onSelected: (_) => _setFilterMe(false),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
+              if (filtered.isEmpty && _filterMe)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      MitlistSpacing.md,
+                      MitlistSpacing.xl,
+                      MitlistSpacing.md,
+                      MitlistSpacing.md,
+                    ),
+                    child: AppEmptyState(
+                      icon: AppIcon(
+                        name: 'checkCircle',
+                        size: 48,
+                        color: Theme.of(context).colorScheme.tertiary,
+                      ),
+                      title: 'Nothing on you right now',
+                      description:
+                          'Your household has chores, but none are assigned to you.',
+                      actions: [
+                        AppButton(
+                          text: 'See everyone\'s chores',
+                          variant: AppButtonVariant.outline,
+                          onPressed: () => _setFilterMe(false),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                for (final section in _dueOrder)
+                  if (sections[section]!.isNotEmpty) ...[
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: _StickyHeaderDelegate(
+                        height: _sectionHeaderHeight,
+                        child: Container(
+                          color: Theme.of(context).colorScheme.surfaceContainerLow,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: MitlistSpacing.md,
+                            vertical: MitlistSpacing.sm,
+                          ),
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            section,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style:
+                                Theme.of(context).textTheme.labelMedium?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: MitlistSpacing.md,
+                      ),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final chore = sections[section]![index];
+                            return ListEntrance(
+                              index: index,
+                              child: Padding(
+                                padding: const EdgeInsets.only(
+                                  bottom: MitlistSpacing.sm,
+                                ),
+                                child: _ChoreItem(
+                                  chore: chore,
+                                  onToggle: () => _toggleComplete(chore.id),
+                                  onTap: () => _openChoreDetail(chore.id),
+                                ),
+                              ),
+                            );
+                          },
+                          childCount: sections[section]!.length,
+                        ),
+                      ),
+                    ),
+                  ],
+              const SliverToBoxAdapter(
+                child: SizedBox(height: MitlistSpacing.space20),
+              ),
             ],
           ],
         ),
@@ -1119,6 +941,7 @@ class _Chore {
   final String? assignmentId;
   final String title;
   final String assigneeInitials;
+  final String? assigneeName;
   final DateTime dueDate;
   final String frequency;
   final int periodInterval;
@@ -1133,6 +956,7 @@ class _Chore {
     this.assignmentId,
     required this.title,
     required this.assigneeInitials,
+    this.assigneeName,
     required this.dueDate,
     this.frequency = 'none',
     this.periodInterval = 1,
@@ -1142,63 +966,314 @@ class _Chore {
     this.lastActionLabel,
     this.supplies = const [],
   });
+
+  /// Short label for whose turn it is: "Your turn", "Sam's turn", or null when
+  /// unassigned.
+  String? turnLabel() {
+    if (isMine) return 'Your turn';
+    final name = assigneeName;
+    if (name != null && name.isNotEmpty) return "$name's turn";
+    return null;
+  }
 }
 
-class _StatBlock extends StatelessWidget {
-  final int count;
-  final String label;
-  final Color labelColor;
+/// The people-first hero: leads with what's on *you* right now, and how much
+/// of the household's open load you're carrying.
+class _TurnHero extends StatelessWidget {
+  final List<_Chore> myTurn;
+  final int myActiveCount;
+  final int totalActiveCount;
+  final VoidCallback? onTap;
 
-  const _StatBlock({
-    required this.count,
-    required this.label,
-    required this.labelColor,
+  const _TurnHero({
+    required this.myTurn,
+    required this.myActiveCount,
+    required this.totalActiveCount,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final countStyle = Theme.of(context).textTheme.headlineSmall ??
-        const TextStyle(fontSize: 24);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: MitlistOdometer(
-            value: count,
-            textStyle: countStyle,
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final caughtUp = myTurn.isEmpty;
+
+    final bg = caughtUp
+        ? colorScheme.surfaceContainerLow
+        : colorScheme.primaryContainer;
+    final fg = caughtUp ? colorScheme.onSurface : colorScheme.onPrimaryContainer;
+    final muted = caughtUp
+        ? colorScheme.onSurfaceVariant
+        : colorScheme.onPrimaryContainer.withValues(alpha: 0.75);
+
+    final names = myTurn.map((c) => c.title).join(', ');
+    final shareLabel = totalActiveCount == 0
+        ? 'Nothing on you right now'
+        : 'Carrying $myActiveCount of $totalActiveCount open chores';
+
+    return Semantics(
+      button: onTap != null,
+      label: caughtUp
+          ? 'You are all caught up'
+          : 'Your turn: $names. $shareLabel',
+      child: Material(
+        color: bg,
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: colorScheme.outlineVariant, width: 2),
+            ),
+            padding: const EdgeInsets.all(MitlistSpacing.md),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppIcon(
+                  name: caughtUp ? 'checkCircle' : 'cleaningServices',
+                  size: 28,
+                  color: caughtUp ? colorScheme.tertiary : colorScheme.primary,
+                ),
+                const SizedBox(width: MitlistSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        caughtUp ? "You're all caught up" : 'Your turn',
+                        style: textTheme.labelMedium?.copyWith(
+                          color: muted,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: MitlistSpacing.space1),
+                      if (!caughtUp)
+                        Text(
+                          names,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: textTheme.titleMedium?.copyWith(
+                            color: fg,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      if (!caughtUp)
+                        const SizedBox(height: MitlistSpacing.space1),
+                      Text(
+                        caughtUp ? 'Nothing on you right now.' : shareLabel,
+                        style: textTheme.bodySmall?.copyWith(color: muted),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        const SizedBox(height: MitlistSpacing.space1),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: labelColor,
-              ),
-        ),
-      ],
+      ),
     );
   }
 }
 
-class _StatSkeleton extends StatelessWidget {
-  const _StatSkeleton();
+/// Inline fairness read: who's carried the household load over the last 30
+/// days. Your share is the brand color so an uneven split is obvious at a
+/// glance. Tap for the per-member breakdown.
+class _FairnessStrip extends StatelessWidget {
+  final List<ChoreLoadEntry> entries;
+  final Map<String, String> memberNames;
+  final String? myUserId;
+  final VoidCallback onTap;
+
+  const _FairnessStrip({
+    required this.entries,
+    required this.memberNames,
+    required this.myUserId,
+    required this.onTap,
+  });
+
+  String _nameFor(String userId) {
+    if (userId == myUserId) return 'You';
+    final name = memberNames[userId];
+    if (name != null && name.isNotEmpty) return name;
+    return userId.length <= 6 ? userId : userId.substring(0, 6);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    // Merge so every known member shows, including those at zero.
+    final counts = <String, int>{for (final id in memberNames.keys) id: 0};
+    for (final e in entries) {
+      counts[e.userId] = e.completedCount;
+    }
+    final rows = counts.entries.toList()
+      ..sort((a, b) {
+        final byCount = b.value.compareTo(a.value);
+        return byCount != 0 ? byCount : _nameFor(a.key).compareTo(_nameFor(b.key));
+      });
+    final total = rows.fold<int>(0, (sum, e) => sum + e.value);
+
+    // Neutral tones cycled for everyone who isn't you, so adjacent segments
+    // stay distinguishable while "you" keeps the brand color.
+    final otherTones = <Color>[
+      colorScheme.onSurfaceVariant,
+      colorScheme.onSurfaceVariant.withValues(alpha: 0.55),
+      colorScheme.outline,
+    ];
+    Color toneFor(String userId, int otherIndex) =>
+        userId == myUserId ? colorScheme.primary : otherTones[otherIndex % otherTones.length];
+
+    final header = Row(
       children: [
-        AppSkeleton(
-          width: MitlistSpacing.space8,
-          height: MitlistSpacing.space8,
+        AppIcon(
+          name: 'chartBar',
+          size: 16,
+          color: colorScheme.onSurfaceVariant,
         ),
-        const SizedBox(height: MitlistSpacing.space1),
-        AppSkeleton(
-          width: MitlistSpacing.space10,
-          height: MitlistSpacing.space3,
+        const SizedBox(width: MitlistSpacing.space2),
+        Text(
+          'How it splits',
+          style: textTheme.labelMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          'Last 30 days',
+          style: MitlistTypography.labelXSmall(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(width: MitlistSpacing.space1),
+        AppIcon(
+          name: 'chevronRight',
+          size: 16,
+          color: colorScheme.onSurfaceVariant,
         ),
       ],
+    );
+
+    Widget body;
+    if (total == 0) {
+      body = Text(
+        'No chores logged yet. Be the first to mark one done.',
+        style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+      );
+    } else {
+      var otherIndex = 0;
+      final segments = <Widget>[];
+      final legend = <Widget>[];
+      for (final entry in rows) {
+        if (entry.value <= 0) continue;
+        final isMe = entry.key == myUserId;
+        final color = toneFor(entry.key, isMe ? 0 : otherIndex);
+        if (!isMe) otherIndex++;
+        segments.add(
+          Expanded(
+            flex: entry.value,
+            child: Container(color: color),
+          ),
+        );
+        legend.add(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(width: 8, height: 8, color: color),
+              const SizedBox(width: MitlistSpacing.space1),
+              Text(
+                '${_nameFor(entry.key)} ${entry.value}',
+                style: MitlistTypography.labelXSmall(
+                  color: isMe ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                ).copyWith(
+                  fontWeight: isMe ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+      body = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: MitlistSpacing.space2,
+            child: Row(children: segments),
+          ),
+          const SizedBox(height: MitlistSpacing.space2),
+          Wrap(
+            spacing: MitlistSpacing.md,
+            runSpacing: MitlistSpacing.space1,
+            children: legend,
+          ),
+        ],
+      );
+    }
+
+    return AppCard(
+      variant: AppCardVariant.outlined,
+      padding: AppCardPadding.sm,
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          header,
+          const SizedBox(height: MitlistSpacing.sm),
+          body,
+        ],
+      ),
+    );
+  }
+}
+
+class _HeaderSkeleton extends StatelessWidget {
+  const _HeaderSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        MitlistSpacing.md,
+        MitlistSpacing.md,
+        MitlistSpacing.md,
+        MitlistSpacing.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LayoutBuilder(
+            builder: (context, constraints) => AppSkeleton(
+              width: constraints.maxWidth,
+              height: MitlistSpacing.space20,
+              borderRadius: AppSkeletonRadius.sm,
+            ),
+          ),
+          const SizedBox(height: MitlistSpacing.sm),
+          LayoutBuilder(
+            builder: (context, constraints) => AppSkeleton(
+              width: constraints.maxWidth,
+              height: MitlistSpacing.space16,
+              borderRadius: AppSkeletonRadius.sm,
+            ),
+          ),
+          const SizedBox(height: MitlistSpacing.md),
+          Row(
+            children: [
+              AppSkeleton(
+                width: MitlistSpacing.space12,
+                height: MitlistSpacing.space11,
+                borderRadius: AppSkeletonRadius.sm,
+              ),
+              const SizedBox(width: MitlistSpacing.sm),
+              AppSkeleton(
+                width: MitlistSpacing.space20,
+                height: MitlistSpacing.space11,
+                borderRadius: AppSkeletonRadius.sm,
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1216,7 +1291,9 @@ class _ChoreItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final isComplete = chore.completed;
+    final turnLabel = chore.turnLabel();
     return AppCard(
       variant: AppCardVariant.outlined,
       padding: AppCardPadding.sm,
@@ -1247,36 +1324,47 @@ class _ChoreItem extends StatelessWidget {
                         struck: isComplete,
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
+                      const SizedBox(height: MitlistSpacing.space1),
+                      Wrap(
+                        spacing: MitlistSpacing.sm,
+                        runSpacing: MitlistSpacing.space1,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          _MetaChip(
+                            icon: 'arrowPath',
+                            label: _frequencyLabel(
+                                chore.frequency, chore.periodInterval),
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          if (turnLabel != null && !isComplete)
+                            _MetaChip(
+                              dot: true,
+                              label: turnLabel,
+                              color: chore.isMine
+                                  ? colorScheme.primary
+                                  : colorScheme.onSurfaceVariant,
+                              emphasized: chore.isMine,
+                            ),
+                          if (chore.supplies.isNotEmpty)
+                            _MetaChip(
+                              icon: 'inventoryOutline',
+                              label:
+                                  '${chore.supplies.length} ${chore.supplies.length == 1 ? 'supply' : 'supplies'}',
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                        ],
+                      ),
                       if (chore.lastActionLabel != null &&
                           chore.lastActionLabel!.isNotEmpty)
-                        Text(
-                          chore.lastActionLabel!,
-                          style: MitlistTypography.labelXSmall(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      if (chore.supplies.isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.only(top: MitlistSpacing.xs),
-                          child: Row(
-                            children: [
-                              AppIcon(
-                                name: 'inventoryOutline',
-                                size: 12,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                              const SizedBox(width: MitlistSpacing.space1),
-                              Text(
-                                '${chore.supplies.length} supply${chore.supplies.length == 1 ? '' : 'ies'}',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: MitlistTypography.labelXSmall(
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                              ),
-                            ],
+                          padding: const EdgeInsets.only(top: MitlistSpacing.space1),
+                          child: Text(
+                            chore.lastActionLabel!,
+                            style: MitlistTypography.labelXSmall(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                     ],
@@ -1291,9 +1379,11 @@ class _ChoreItem extends StatelessWidget {
                     width: MitlistSpacing.space6,
                     height: MitlistSpacing.space6,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer,
+                      color: chore.isMine
+                          ? colorScheme.primary
+                          : colorScheme.primaryContainer,
                       border: Border.all(
-                        color: Theme.of(context).colorScheme.outlineVariant,
+                        color: colorScheme.outlineVariant,
                         width: 2,
                       ),
                     ),
@@ -1301,7 +1391,9 @@ class _ChoreItem extends StatelessWidget {
                     child: Text(
                       chore.assigneeInitials,
                       style: MitlistTypography.labelXSmall(
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        color: chore.isMine
+                            ? colorScheme.onPrimary
+                            : colorScheme.onPrimaryContainer,
                       ),
                     ),
                   ),
@@ -1309,9 +1401,7 @@ class _ChoreItem extends StatelessWidget {
                   Text(
                     _formatDate(chore.dueDate),
                     style: MitlistTypography.labelXSmall(
-                      color: isComplete
-                          ? Theme.of(context).colorScheme.onSurfaceVariant
-                          : null,
+                      color: isComplete ? colorScheme.onSurfaceVariant : null,
                     ),
                   ),
                 ],
@@ -1320,6 +1410,46 @@ class _ChoreItem extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Compact inline metadata pill used on chore rows (recurrence, whose turn,
+/// supplies). Not interactive; sized far below a tap target on purpose.
+class _MetaChip extends StatelessWidget {
+  final String? icon;
+  final bool dot;
+  final String label;
+  final Color color;
+  final bool emphasized;
+
+  const _MetaChip({
+    this.icon,
+    this.dot = false,
+    required this.label,
+    required this.color,
+    this.emphasized = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (dot)
+          Container(width: 6, height: 6, color: color)
+        else if (icon != null)
+          AppIcon(name: icon!, size: 12, color: color),
+        const SizedBox(width: MitlistSpacing.space1),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: MitlistTypography.labelXSmall(color: color).copyWith(
+            fontWeight: emphasized ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1374,6 +1504,29 @@ class _ChoreSkeletonItem extends StatelessWidget {
 
 String _formatDate(DateTime date) {
   return DateFormat.MMMd().format(date);
+}
+
+String _frequencyLabel(String frequency, int interval) {
+  if (interval > 1) {
+    final unit = switch (frequency) {
+      'hourly' => 'hours',
+      'daily' => 'days',
+      'weekly' => 'weeks',
+      'monthly' => 'months',
+      'yearly' => 'years',
+      _ => '',
+    };
+    if (unit.isNotEmpty) return 'Every $interval $unit';
+  }
+  return switch (frequency) {
+    'hourly' => 'Hourly',
+    'daily' => 'Daily',
+    'weekly' => 'Weekly',
+    'monthly' => 'Monthly',
+    'yearly' => 'Yearly',
+    'adaptive' => 'As needed',
+    _ => 'One-off',
+  };
 }
 
 String _formatLastAction(ChoreAssignment assignment) {

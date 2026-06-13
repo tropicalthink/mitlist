@@ -689,8 +689,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       });
     } catch (e) {
       if (!mounted) return;
+      unawaited(Haptics.failure());
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete item')),
+        SnackBar(content: Text(friendlyErrorMessage(e))),
       );
       _isSaving = false;
       return;
@@ -1264,22 +1265,45 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Widget _buildBody() {
+    return RefreshIndicator(
+      color: Theme.of(context).colorScheme.primary,
+      onRefresh: _load,
+      child: _buildBodyContent(),
+    );
+  }
+
+  Widget _wrapForRefresh(Widget child) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBodyContent() {
     final textTheme = Theme.of(context).textTheme;
 
-    if (_isLoading) return _buildSkeleton();
-    if (_errorMessage != null) return _buildError();
+    if (_isLoading) return _wrapForRefresh(_buildSkeleton());
+    if (_errorMessage != null) return _wrapForRefresh(_buildError());
 
     if (_searchQuery.isNotEmpty) {
       final ordered = _searchOrderedItems;
-      if (ordered.isEmpty) return _buildSearchEmpty();
+      if (ordered.isEmpty) return _wrapForRefresh(_buildSearchEmpty());
       return _buildSearchResultItemList(ordered);
     }
 
     final open = _openItemsSorted();
     final done = _doneItemsSorted();
-    if (open.isEmpty && done.isEmpty) return _buildEmpty();
+    if (open.isEmpty && done.isEmpty) return _wrapForRefresh(_buildEmpty());
 
     return CustomScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
         if (open.isNotEmpty)
           SliverReorderableList(
@@ -1374,6 +1398,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
   Widget _buildSearchResultItemList(List<ListItem> items) {
     return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
       itemCount: items.length,
       itemBuilder: (context, index) {
