@@ -44,7 +44,6 @@ class OutboxDrainer {
             await _db.markOutboxAttempt(op.id, error: message);
             return;
           case OutboxErrorDisposition.permanent:
-          case OutboxErrorDisposition.conflict:
             await _db.markOutboxPermanentFailure(op.id,
                 error: message, threshold: kOutboxMaxAttempts);
             continue;
