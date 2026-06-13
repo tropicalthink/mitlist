@@ -1,0 +1,19 @@
+{
+  "@@locale": "en",
+  "welcomeTagline": "Your household, organized.",
+  "@welcomeTagline": { "description": "Subtitle under the app name on the welcome screen" },
+  "welcomeCardTitle": "Lists, chores, money.\nAll in one place.",
+  "@welcomeCardTitle": { "description": "Headline in the welcome card; contains a line break" },
+  "welcomeCardBody": "Built for flatmates who want less friction and more clarity.",
+  "@welcomeCardBody": { "description": "Supporting body text in the welcome card" },
+  "welcomeCreateHousehold": "Create free household",
+  "@welcomeCreateHousehold": { "description": "Primary CTA button on the welcome screen" },
+  "welcomeSignIn": "Sign in",
+  "@welcomeSignIn": { "description": "Secondary sign-in button on the welcome screen" },
+  "welcomeGuestLoading": "Setting up...",
+  "@welcomeGuestLoading": { "description": "Loading label shown while guest account is being created" },
+  "welcomeContinueAsGuest": "Continue as guest",
+  "@welcomeContinueAsGuest": { "description": "Ghost button to continue without an account" },
+  "welcomeGuestFootnote": "No account needed. Try everything free for 30 days.",
+  "@welcomeGuestFootnote": { "description": "Footnote below the guest button explaining the trial" }
+}
