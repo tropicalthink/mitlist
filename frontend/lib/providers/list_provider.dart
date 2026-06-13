@@ -42,12 +42,14 @@ final listRepositoryProvider = FutureProvider<ListRepository>((ref) async {
 
 final cachedListsByGroupProvider =
     StreamProvider.family<List<ItemList>, String>((ref, groupId) async* {
+  ref.keepAlive();
   final repo = await ref.watch(listRepositoryProvider.future);
   yield* repo.watchListsByGroup(groupId);
 });
 
 final cachedListItemsProvider =
     StreamProvider.family<List<ListItem>, String>((ref, listId) async* {
+  ref.keepAlive();
   final repo = await ref.watch(listRepositoryProvider.future);
   yield* repo.watchItemsByList(listId);
 });

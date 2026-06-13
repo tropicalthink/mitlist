@@ -114,7 +114,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
   Future<void> _loadGroupContext() async {
     try {
       final groupService = await ref.read(groupServiceProviderAsync.future);
-      final groups = await groupService.listGroups(limit: 50);
+      final groups = await ref.read(cachedGroupsProvider.future);
       if (!mounted) return;
       if (groups.isEmpty) {
         setState(() => _membersLoading = false);
@@ -257,9 +257,8 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
 
     try {
       final authService = await ref.read(authServiceProviderAsync.future);
-      final groupService = await ref.read(groupServiceProviderAsync.future);
       final financeService = await ref.read(financeServiceProviderAsync.future);
-      final groups = await groupService.listGroups(limit: 50);
+      final groups = await ref.read(cachedGroupsProvider.future);
 
       if (!mounted) return;
       final groupId = resolveActiveGroupId(

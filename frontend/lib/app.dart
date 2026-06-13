@@ -8,8 +8,9 @@ import 'theme/theme.dart';
 import 'router.dart';
 import 'providers/list_provider.dart' show sseServiceProvider;
 import 'providers/outbox_provider.dart';
-import 'services/api_client.dart' show createApiClient;
+import 'services/api_client.dart' show dioProvider;
 import 'providers/theme_provider.dart';
+import 'providers/auth_provider.dart';
 import 'services/error_reporter.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'services/fcm_service.dart';
@@ -28,13 +29,12 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
   final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
   StreamSubscription? _fcmSub;
   StreamSubscription? _fcmTapSub;
+  bool _deferredInitDone = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // Ensure coordinator is initialized.
-    ref.read(outboxCoordinatorProvider);
 
     ErrorReporter().init(
       dsn: const String.fromEnvironment('GLITCHTIP_DSN',
@@ -56,13 +56,18 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
         return true;
       };
     }
+  }
 
+  void _ensureDeferredInit() {
+    if (_deferredInitDone || !ref.read(authStateProvider)) return;
+    _deferredInitDone = true;
+    ref.read(outboxCoordinatorProvider);
     _initPushSubscriptions();
   }
 
   void _initPushSubscriptions() {
     PushSubscriptionService().init();
-    FcmService.init(createApiClient()).then((_) {
+    FcmService.init(ref.read(dioProvider)).then((_) {
       _fcmSub = FcmService.onForegroundMessage.listen((message) {
         final title = message.notification?.title;
         final body = message.notification?.body;
@@ -101,6 +106,10 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
   }
 
   void _handleNotificationTap(RemoteMessage message) {
+    final bootstrap = ref.read(authBootstrapProvider);
+    if (bootstrap.isLoading || !ref.read(authStateProvider)) {
+      return;
+    }
     final data = message.data;
     final screen = data['screen'] as String?;
     final id = data['id'] as String?;
@@ -133,6 +142,15 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(authBootstrapProvider, (prev, next) {
+      next.whenData((authenticated) {
+        if (authenticated) _ensureDeferredInit();
+      });
+    });
+    if (ref.read(authStateProvider)) {
+      _ensureDeferredInit();
+    }
+
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
 

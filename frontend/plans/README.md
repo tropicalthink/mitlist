@@ -31,13 +31,32 @@ verification command, and update your row in the table when done.
 | 001  | Writes never block on the network; opportunistic sync is fire-and-forget | P1 | M | — | DONE (commit f0545a68, branch advisor/offline-sync) |
 | 002  | Extract one shared `OutboxDrainer`; collapse 5 duplicated drain loops | P1 | M | — | DONE (commit 7e01a477) |
 | 003  | Classify sync failures: transient retries, permanent dead-letters, no head-of-line blocking | P1 | M | 002 | DONE (commit 20daea21) |
-| 004  | Wire conflict detection to the existing conflict UI — or remove the dead code | P3 | M | 003 | TODO |
-| 005  | Make `reorderItemsOfflineFirst` actually offline (route through the outbox) | P2 | S | 002 | TODO |
+| 004  | Wire conflict detection to the existing conflict UI — or remove the dead code | P3 | M | 003 | DONE — Branch B / remove (commit 342db192) |
+| 005  | Make `reorderItemsOfflineFirst` actually offline (route through the outbox) | P2 | S | 002 | DONE (commit 53b7bcbb) |
 
-> Execution note: 001–003 were executed and reviewed (APPROVE) on the
-> `advisor/offline-sync` branch in worktree `.claude/worktrees/agent-a5fe890dd8df66fd0`.
+> Execution note: ALL FIVE plans executed and reviewed (APPROVE) on the
+> `advisor/offline-sync` branch in worktree `.claude/worktrees/agent-a5fe890dd8df66fd0`,
+> built on commit `6c868661`. Commits: f0545a68 (001), 7e01a477 (002),
+> 20daea21 (003), 53b7bcbb (005), 342db192 (004).
 > 001 was revised during execution (re-entrancy guard + `autoSync` test seam) —
-> see the plan file's "Revised" note. 005 + 004 continue on the same branch.
+> see the plan file's "Revised" note.
+>
+> **Plan 004 resolved to Branch B (remove the dead conflict code).** Step 0
+> investigation found the Go backend (`backend/`) returns 409 only for
+> uniqueness/duplicate errors (chore assignment, group membership, email/account)
+> — never on outbox-mutating endpoints, and `WriteError` (`backend/internal/api/errors.go`)
+> never includes server entity state in the body. No `If-Match`/etag/optimistic-
+> concurrency contract exists (`git grep` → no matches). So there was no
+> `serverPayloadJson` source and no edit-conflict contract to wire to. The
+> unreachable feature was removed; `OutboxStatus.conflict`, `conflictCount`,
+> `ConflictResolutionSheet`, and the dead `insertConflict`/`getConflicts`/
+> `resolveConflict` helpers are gone. The `Conflicts` table declaration was kept
+> (schemaVersion stays 4, no migration) so plan 004 Branch A remains the spec if
+> the backend later grows a real conflict contract.
+>
+> Final verification (re-run by advisor in the worktree): `dart analyze lib/` →
+> `2 issues found.` (pre-existing); `flutter test` → 187 passed. Nothing merged
+> or pushed — merge is the user's call. Worktree HEAD: 342db192.
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (one-line reason) | REJECTED (one-line rationale)
 

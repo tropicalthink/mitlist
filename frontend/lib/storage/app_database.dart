@@ -615,6 +615,10 @@ FROM list_items_table;
     });
   }
 
+  Future<void> clearExpensesForGroup(String groupId) async {
+    await (delete(expensesTable)..where((t) => t.groupId.equals(groupId))).go();
+  }
+
   Stream<FinanceSummary?> watchFinanceSummary(String groupId) {
     return (select(financeSummaries)..where((t) => t.groupId.equals(groupId))).watchSingleOrNull();
   }

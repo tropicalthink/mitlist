@@ -17,6 +17,7 @@ import '../../sheets/chore_detail_sheet.dart';
 import '../../sheets/chore_load_sheet.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
+import '../../utils/shell_tab_load.dart';
 import '../../utils/active_group_context.dart';
 import '../../utils/haptics.dart';
 import '../../widgets/alert.dart';
@@ -48,7 +49,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   bool _filterMe = true;
   String _groupMode = 'due'; // 'due' | 'rhythm' | 'zone'
   bool _isMutating = false;
-  bool _hasHousehold = true;
+  bool _hasHousehold = false;
   String? _groupId;
   final Logger _logger = Logger();
   Map<String, String> _memberNames = {};
@@ -79,6 +80,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   static const double _sectionHeaderHeight =
       MitlistSpacing.sm + _labelMediumLineHeight + MitlistSpacing.sm;
 
+  bool _tabLoadStarted = false;
+
   @override
   void initState() {
     super.initState();
@@ -91,6 +94,13 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         if (savedMode != null) _groupMode = savedMode;
       });
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _activateTabIfNeeded());
+  }
+
+  void _activateTabIfNeeded() {
+    if (_tabLoadStarted || !mounted) return;
+    if (!shouldActivateShellTab(ref, choresShellTabIndex)) return;
+    _tabLoadStarted = true;
     _loadChores();
   }
 
@@ -107,8 +117,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       _error = null;
     });
     try {
-      final groupService = await ref.read(groupServiceProviderAsync.future);
-      final groups = await groupService.listGroups();
+      await ref.read(currentGroupIdProvider.notifier).ensureLoaded();
+      final groups = await ref.read(cachedGroupsProvider.future);
       final groupId = resolveActiveGroupId(
         groups,
         ref.read(currentGroupIdProvider),
@@ -126,6 +136,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
 
       // Load member display names so assignee avatars show real initials.
       try {
+        final groupService = await ref.read(groupServiceProviderAsync.future);
         final members = await groupService.listMembers(groupId!);
         if (mounted) {
           setState(() {
@@ -211,8 +222,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   Future<void> _openLoadSheet() async {
     unawaited(Haptics.light());
     try {
-      final groupService = await ref.read(groupServiceProviderAsync.future);
-      final groups = await groupService.listGroups();
+      final groups = await ref.read(cachedGroupsProvider.future);
       final groupId = resolveActiveGroupId(
         groups,
         ref.read(currentGroupIdProvider),
@@ -224,6 +234,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       var names = _memberNames;
       if (names.isEmpty) {
         try {
+          final groupService = await ref.read(groupServiceProviderAsync.future);
           final members = await groupService.listMembers(groupId);
           names = {for (final m in members) m.userId: m.displayName};
         } catch (_) {}
@@ -454,8 +465,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     _isMutating = true;
     try {
       final listSvc = await ref.read(listServiceProviderAsync.future);
-      final groupSvc = await ref.read(groupServiceProviderAsync.future);
-      final groups = await groupSvc.listGroups();
+      final groups = await ref.read(cachedGroupsProvider.future);
       final groupId = resolveActiveGroupId(
         groups,
         ref.read(currentGroupIdProvider),
@@ -720,6 +730,15 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(shellVisitedTabsProvider, (previous, next) {
+      _activateTabIfNeeded();
+    });
+    ref.listen<String?>(currentGroupIdProvider, (previous, next) {
+      if (previous != next) {
+        _loadChores();
+      }
+    });
+
     final filtered = _filteredChores;
     final stats = _computeStats(filtered);
     final sections = switch (_groupMode) {

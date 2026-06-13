@@ -12,7 +12,7 @@ class ActivityService {
   ActivityService._(this._dio);
 
   static Future<ActivityService> create([Ref? ref]) async {
-    final dio = createApiClient(ref);
+    final dio = resolveDio(ref);
     return ActivityService._(dio);
   }
 

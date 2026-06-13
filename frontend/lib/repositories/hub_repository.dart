@@ -44,16 +44,19 @@ class HubRepository {
   }
 
   Future<void> refresh(String groupId, {int activityLimit = 10}) async {
-    final group = await _groups.getGroup(groupId);
-    await _db.upsertHubGroup(groupId: groupId, groupJson: jsonEncode(group.toJson()));
-
-    var activities = <ActivityLogModel>[];
     var activityError = false;
-    try {
-      activities = await _activity.listActivityLogs(groupId, limit: activityLimit, offset: 0);
-    } catch (_) {
-      activityError = true;
-    }
+    final results = await Future.wait<Object>([
+      _groups.getGroup(groupId),
+      _activity
+          .listActivityLogs(groupId, limit: activityLimit, offset: 0)
+          .catchError((_) {
+        activityError = true;
+        return <ActivityLogModel>[];
+      }),
+    ]);
+    final group = results[0] as Group;
+    final activities = results[1] as List<ActivityLogModel>;
+    await _db.upsertHubGroup(groupId: groupId, groupJson: jsonEncode(group.toJson()));
     await _db.upsertHubActivities(
       groupId: groupId,
       activitiesJson: jsonEncode(activities.map((a) => {

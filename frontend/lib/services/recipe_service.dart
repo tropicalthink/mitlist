@@ -10,7 +10,7 @@ class RecipeService {
   final Logger _logger = Logger();
   RecipeService._(this._dio);
   static Future<RecipeService> create([Ref? ref]) async {
-    final dio = createApiClient(ref);
+    final dio = resolveDio(ref);
     return RecipeService._(dio);
   }
 

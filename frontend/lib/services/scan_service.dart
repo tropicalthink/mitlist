@@ -61,7 +61,7 @@ class ScanService {
   ScanService._(this._dio);
 
   static Future<ScanService> create([Ref? ref]) async {
-    final dio = createApiClient(ref);
+    final dio = resolveDio(ref);
     return ScanService._(dio);
   }
 

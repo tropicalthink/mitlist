@@ -21,6 +21,18 @@ class WelcomeScreen extends ConsumerStatefulWidget {
 class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   bool _isGuestLoading = false;
 
+  String? get _inviteCode =>
+      GoRouterState.of(context).uri.queryParameters['invite'];
+
+  void _goToAuth(String routeName) {
+    final invite = _inviteCode;
+    if (invite != null && invite.isNotEmpty) {
+      context.goNamed(routeName, queryParameters: {'invite': invite});
+    } else {
+      context.goNamed(routeName);
+    }
+  }
+
   Future<void> _onGuestContinue() async {
     unawaited(HapticFeedback.lightImpact());
     if (_isGuestLoading) return;
@@ -28,9 +40,15 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     try {
       final authService = await ref.read(authServiceProviderAsync.future);
       await authService.createGuest();
+      final invite = _inviteCode;
+      if (invite != null && invite.isNotEmpty) {
+        ref.read(pendingAuthNavigationProvider.notifier).state =
+            '/join/${Uri.encodeComponent(invite)}';
+      } else {
+        ref.read(pendingAuthNavigationProvider.notifier).state = '/onboarding';
+      }
       ref.read(authStateProvider.notifier).state = true;
       ref.read(isGuestProvider.notifier).state = true;
-      if (mounted) context.goNamed('onboarding');
     } catch (e) {
       if (!mounted) return;
       setState(() => _isGuestLoading = false);
@@ -42,6 +60,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
@@ -53,7 +73,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
               const Spacer(),
               Text(
                 'mitlist',
-                style: MitlistTypography.logo(),
+                style: MitlistTypography.logo(color: onSurface),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: MitlistSpacing.space3),
@@ -100,7 +120,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                   variant: AppButtonVariant.solid,
                   color: AppButtonColor.primary,
                   size: AppButtonSize.lg,
-                  onPressed: () => context.goNamed('signup'),
+                  onPressed: () => _goToAuth('signup'),
                 ),
               ),
               const SizedBox(height: MitlistSpacing.space3),
@@ -111,7 +131,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                   variant: AppButtonVariant.outline,
                   color: AppButtonColor.primary,
                   size: AppButtonSize.lg,
-                  onPressed: () => context.goNamed('login'),
+                  onPressed: () => _goToAuth('login'),
                 ),
               ),
               const SizedBox(height: MitlistSpacing.space3),

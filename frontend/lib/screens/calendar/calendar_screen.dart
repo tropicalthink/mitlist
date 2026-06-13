@@ -68,8 +68,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       _error = null;
     });
     try {
-      final groupService = await ref.read(groupServiceProviderAsync.future);
-      final groups = await groupService.listGroups();
+      final groups = await ref.read(cachedGroupsProvider.future);
       final groupId = resolveActiveGroupId(
         groups,
         ref.read(currentGroupIdProvider),
