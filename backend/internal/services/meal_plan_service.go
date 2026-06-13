@@ -121,15 +121,29 @@ func (s *MealPlanService) GenerateShoppingList(ctx context.Context, user *models
 	}
 	ingredientMap := make(map[ingredientKey]float64)
 
+	recipeIDs := make([]uuid.UUID, 0, len(plans))
+	seenRecipes := make(map[uuid.UUID]struct{}, len(plans))
 	for _, plan := range plans {
-		recipe, err := s.recipeRepo.GetRecipeByID(ctx, plan.RecipeID)
-		if err != nil {
-			continue // skip recipes that can't be found
+		if _, ok := seenRecipes[plan.RecipeID]; !ok {
+			seenRecipes[plan.RecipeID] = struct{}{}
+			recipeIDs = append(recipeIDs, plan.RecipeID)
 		}
-		ingredients, err := s.recipeRepo.ListIngredients(ctx, plan.RecipeID)
-		if err != nil {
+	}
+	recipes, err := s.recipeRepo.GetRecipesByIDs(ctx, recipeIDs)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get recipes: %w", err)
+	}
+	ingredientsByRecipe, err := s.recipeRepo.ListIngredientsByRecipeIDs(ctx, recipeIDs)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to list ingredients: %w", err)
+	}
+
+	for _, plan := range plans {
+		recipe, ok := recipes[plan.RecipeID]
+		if !ok || recipe == nil {
 			continue
 		}
+		ingredients := ingredientsByRecipe[plan.RecipeID]
 
 		scale := 1.0
 		if recipe.Servings > 0 && plan.Servings > 0 {
@@ -182,22 +196,24 @@ func (s *MealPlanService) GenerateShoppingList(ctx context.Context, user *models
 	}
 
 	// Add ingredients to list
-	createdItems := make([]models.ListItem, 0, len(ingredientMap))
+	toCreate := make([]models.ListItem, 0, len(ingredientMap))
 	for key, qty := range ingredientMap {
 		if _, exists := existingNames[strings.ToLower(strings.TrimSpace(key.name))]; exists {
 			continue
 		}
-		item := &models.ListItem{
+		toCreate = append(toCreate, models.ListItem{
 			ListID:   targetList.ID,
 			Name:     key.name,
 			Quantity: qty,
 			Unit:     key.unit,
-		}
-		if err := s.listRepo.CreateItem(ctx, item); err != nil {
-			return nil, nil, fmt.Errorf("failed to create item: %w", err)
-		}
-		createdItems = append(createdItems, *item)
+		})
 	}
+	if len(toCreate) > 0 {
+		if err := s.listRepo.CreateItems(ctx, toCreate); err != nil {
+			return nil, nil, fmt.Errorf("failed to create items: %w", err)
+		}
+	}
+	createdItems := toCreate
 
 	return targetList, createdItems, nil
 }

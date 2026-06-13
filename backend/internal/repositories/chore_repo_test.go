@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -385,6 +386,44 @@ func TestChoreRepository_GetPendingAssignmentByChore_NotFound(t *testing.T) {
 	require.Error(t, err)
 	assert.Nil(t, assignment)
 	assert.Contains(t, err.Error(), "not found")
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestChoreRepository_ListDueAssignmentsByGroup_IncludesChoreName(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewChoreRepository(mock)
+	groupID := fixedUUID()
+	from := fixedTime()
+	to := from.Add(24 * time.Hour)
+
+	rows := pgxmock.NewRows([]string{"id", "chore_id", "user_id", "status", "due_date", "assigned_at", "completed_at", "skip_reason", "name"}).
+		AddRow(fixedUUID(), fixedUUID(), fixedUUID(), "pending", &from, fixedTime(), nil, nil, "Dishes")
+
+	mock.ExpectQuery("SELECT .* FROM chore_assignments a").
+		WithArgs(groupID, from, to).
+		WillReturnRows(rows)
+
+	assignments, err := repo.ListDueAssignmentsByGroup(context.Background(), groupID, from, to)
+	require.NoError(t, err)
+	require.Len(t, assignments, 1)
+	assert.Equal(t, "Dishes", assignments[0].ChoreName)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestChoreRepository_BulkUpdateRotationStates(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewChoreRepository(mock)
+	stateID := fixedUUID()
+	memberID := fixedUUID()
+
+	mock.ExpectExec("UPDATE chore_rotation_states AS crs").
+		WithArgs([]uuid.UUID{stateID}, [][]uuid.UUID{{memberID}}, []int32{0}).
+		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+
+	err := repo.BulkUpdateRotationStates(context.Background(), []models.ChoreRotationState{{
+		ID: stateID, MemberOrder: []uuid.UUID{memberID}, CurrentIndex: 0,
+	}})
+	require.NoError(t, err)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 

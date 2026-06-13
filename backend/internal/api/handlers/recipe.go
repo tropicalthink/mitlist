@@ -418,18 +418,24 @@ func (h *RecipeHandler) AddToList(w http.ResponseWriter, r *http.Request) {
 		scale = float64(*req.Servings) / float64(recipe.Servings)
 	}
 
-	added := make([]models.ListItem, 0, len(selected))
+	batchInputs := make([]services.ListItemAmountInput, 0, len(selected))
+	note := "From recipe: " + recipe.Title
 	for _, ing := range selected {
 		qty := parseIngredientAmount(ing.Quantity) * scale
 		if qty <= 0 {
 			qty = 1 * scale
 		}
-		item, err := h.listSvc.AddItemAmount(r.Context(), user, req.ListID, ing.Name, qty, ing.Unit, "From recipe: "+recipe.Title)
-		if err != nil {
-			api.RespondError(w, err)
-			return
-		}
-		added = append(added, *item)
+		batchInputs = append(batchInputs, services.ListItemAmountInput{
+			Name:   ing.Name,
+			Amount: qty,
+			Unit:   ing.Unit,
+			Note:   note,
+		})
+	}
+	added, err := h.listSvc.AddItemsBatch(r.Context(), user, req.ListID, batchInputs)
+	if err != nil {
+		api.RespondError(w, err)
+		return
 	}
 	api.RespondJSON(w, http.StatusOK, map[string]any{"added": added})
 }
@@ -488,8 +494,9 @@ func (h *RecipeHandler) AddMissingToList(w http.ResponseWriter, r *http.Request)
 		existingNames[normalizeName(item.Name)] = struct{}{}
 	}
 
-	added := make([]models.ListItem, 0)
 	skipped := make([]string, 0)
+	batchInputs := make([]services.ListItemAmountInput, 0)
+	note := "From recipe: " + recipe.Title
 	for _, ing := range ingredients {
 		if _, exists := existingNames[normalizeName(ing.Name)]; exists {
 			skipped = append(skipped, ing.Name)
@@ -499,12 +506,20 @@ func (h *RecipeHandler) AddMissingToList(w http.ResponseWriter, r *http.Request)
 		if qty <= 0 {
 			qty = 1
 		}
-		item, err := h.listSvc.AddItemAmount(r.Context(), user, req.ListID, ing.Name, qty, ing.Unit, "From recipe: "+recipe.Title)
+		batchInputs = append(batchInputs, services.ListItemAmountInput{
+			Name:   ing.Name,
+			Amount: qty,
+			Unit:   ing.Unit,
+			Note:   note,
+		})
+	}
+	var added []models.ListItem
+	if len(batchInputs) > 0 {
+		added, err = h.listSvc.AddItemsBatch(r.Context(), user, req.ListID, batchInputs)
 		if err != nil {
 			api.RespondError(w, err)
 			return
 		}
-		added = append(added, *item)
 	}
 	api.RespondJSON(w, http.StatusOK, map[string]any{"added": added, "skipped": skipped})
 }

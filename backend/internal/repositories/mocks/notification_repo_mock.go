@@ -65,6 +65,19 @@ func (m *MockNotificationRepo) GetPreferencesByUser(ctx context.Context, userID 
 	return nil, args.Error(1)
 }
 
+func (m *MockNotificationRepo) GetPreferencesByGroup(ctx context.Context, groupID uuid.UUID) (map[uuid.UUID]*models.NotificationPreference, error) {
+	args := m.Called(ctx, groupID)
+	if p := args.Get(0); p != nil {
+		return p.(map[uuid.UUID]*models.NotificationPreference), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockNotificationRepo) CreateNotificationsBatch(ctx context.Context, notifications []models.Notification) error {
+	args := m.Called(ctx, notifications)
+	return args.Error(0)
+}
+
 func (m *MockNotificationRepo) UpsertPreference(ctx context.Context, pref *models.NotificationPreference) error {
 	args := m.Called(ctx, pref)
 	return args.Error(0)

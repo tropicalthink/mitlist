@@ -28,9 +28,11 @@ type AuthRepo interface {
 	ConsumeToken(ctx context.Context, id uuid.UUID) error
 	CreatePushSubscription(ctx context.Context, sub *models.PushSubscription) error
 	ListPushSubscriptionsByUser(ctx context.Context, userID uuid.UUID) ([]models.PushSubscription, error)
+	ListPushSubscriptionsByUserIDs(ctx context.Context, userIDs []uuid.UUID) (map[uuid.UUID][]models.PushSubscription, error)
 	DeletePushSubscription(ctx context.Context, id uuid.UUID) error
 	SaveDeviceToken(ctx context.Context, userID uuid.UUID, platform, token string) (*models.DeviceToken, error)
 	ListDeviceTokensByUser(ctx context.Context, userID uuid.UUID) ([]models.DeviceToken, error)
+	ListDeviceTokensByUserIDs(ctx context.Context, userIDs []uuid.UUID) (map[uuid.UUID][]models.DeviceToken, error)
 	DeleteDeviceToken(ctx context.Context, userID, id uuid.UUID) error
 }
 
@@ -61,15 +63,19 @@ type GroupRepo interface {
 type ListRepo interface {
 	CreateList(ctx context.Context, list *models.List) error
 	GetListByID(ctx context.Context, id uuid.UUID) (*models.List, error)
+	GetListsByIDs(ctx context.Context, ids []uuid.UUID) ([]models.List, error)
 	ListListsByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.List, error)
 	ListItemPreviewLinesByListIDs(ctx context.Context, listIDs []uuid.UUID, perList int) (map[uuid.UUID][]string, error)
 	UpdateList(ctx context.Context, list *models.List) error
 	HardDeleteList(ctx context.Context, id uuid.UUID) error
 	SetListArchived(ctx context.Context, id uuid.UUID, archived bool) error
 	CreateItem(ctx context.Context, item *models.ListItem) error
+	CreateItems(ctx context.Context, items []models.ListItem) error
+	BulkMarkItemsChecked(ctx context.Context, userID uuid.UUID, itemIDs []uuid.UUID) (int64, error)
 	GetItemByID(ctx context.Context, id uuid.UUID) (*models.ListItem, error)
 	GetItemByListNameUnit(ctx context.Context, listID uuid.UUID, name, unit string) (*models.ListItem, error)
 	ListItemsByList(ctx context.Context, listID uuid.UUID, limit, offset int) ([]models.ListItem, error)
+	ListItemsByListIDs(ctx context.Context, listIDs []uuid.UUID) (map[uuid.UUID][]models.ListItem, error)
 	UpdateItem(ctx context.Context, item *models.ListItem) error
 	HardDeleteItem(ctx context.Context, id uuid.UUID) error
 	SoftDeleteItem(ctx context.Context, id uuid.UUID) error
@@ -177,11 +183,13 @@ type FinanceRepoIface interface {
 type RecipeRepoIface interface {
 	CreateRecipe(ctx context.Context, rec *models.Recipe) error
 	GetRecipeByID(ctx context.Context, id uuid.UUID) (*models.Recipe, error)
+	GetRecipesByIDs(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]*models.Recipe, error)
 	ListRecipesByUser(ctx context.Context, userID uuid.UUID, limit, offset int) ([]models.Recipe, error)
 	UpdateRecipe(ctx context.Context, rec *models.Recipe) error
 	DeleteRecipe(ctx context.Context, id uuid.UUID) error
 	CreateIngredient(ctx context.Context, ing *models.RecipeIngredient) error
 	ListIngredients(ctx context.Context, recipeID uuid.UUID) ([]models.RecipeIngredient, error)
+	ListIngredientsByRecipeIDs(ctx context.Context, recipeIDs []uuid.UUID) (map[uuid.UUID][]models.RecipeIngredient, error)
 	UpdateIngredient(ctx context.Context, ing *models.RecipeIngredient) error
 	DeleteIngredient(ctx context.Context, id uuid.UUID) error
 	CreateStep(ctx context.Context, step *models.RecipeStep) error
@@ -209,6 +217,8 @@ type NotificationRepo interface {
 	DeleteNotification(ctx context.Context, id uuid.UUID) error
 	GetPreference(ctx context.Context, userID, groupID uuid.UUID) (*models.NotificationPreference, error)
 	GetPreferencesByUser(ctx context.Context, userID uuid.UUID) ([]models.NotificationPreference, error)
+	GetPreferencesByGroup(ctx context.Context, groupID uuid.UUID) (map[uuid.UUID]*models.NotificationPreference, error)
+	CreateNotificationsBatch(ctx context.Context, notifications []models.Notification) error
 	UpsertPreference(ctx context.Context, pref *models.NotificationPreference) error
 }
 
@@ -224,6 +234,11 @@ type PinwallRepo interface {
 	ListPostsByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.PinwallPost, error)
 	GetPostByID(ctx context.Context, id uuid.UUID) (*models.PinwallPost, error)
 	DeletePost(ctx context.Context, id uuid.UUID) error
+}
+
+// CalendarPinwallRepo lists pinwall reminders for calendar aggregation.
+type CalendarPinwallRepo interface {
+	ListPostsByGroupAndRemindAtRange(ctx context.Context, groupID uuid.UUID, from, to time.Time) ([]models.PinwallPost, error)
 }
 
 // AttachmentRepo is the interface for attachment repository operations.

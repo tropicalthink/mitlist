@@ -1,46 +1,66 @@
 package services
 
-// KNOWN BUG: CalendarService cannot be unit-tested with mocks because it
-// depends on *repositories.PinwallRepository (a concrete struct) rather than
-// the repositories.PinwallRepo interface. The pinwallRepo field is typed as:
-//
-//   pinwallRepo *repositories.PinwallRepository
-//
-// ...instead of repositories.PinwallRepo. Adding an interface seam requires a
-// production-code change and is out of scope for this plan. Track as tech debt.
-//
-// The tests below are skipped stubs that document expected behavior so they can
-// be enabled once the interface seam is added.
-
 import (
 	"context"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/mitlist-app/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/repositories/mocks"
 )
 
-// TestCalendarService_GetCalendar_Skipped documents the interface seam problem.
-// KNOWN BUG: CalendarService.pinwallRepo is *repositories.PinwallRepository
-// (concrete type), not the PinwallRepo interface; mock injection is impossible
-// without a production-code change. Remove the t.Skip once the seam is added.
-func TestCalendarService_GetCalendar_Skipped(t *testing.T) {
-	t.Skip("KNOWN BUG: CalendarService uses *repositories.PinwallRepository instead of repositories.PinwallRepo interface — cannot inject mock without production code change")
-
+func TestCalendarService_GetCalendar_BatchesRecipeAndChoreLookups(t *testing.T) {
 	ctx := context.Background()
 	groupID := uuid.New()
-	userID := uuid.New()
-	_ = ctx
-	_ = groupID
-	_ = userID
-
-	from := time.Now()
+	user := &models.User{ID: uuid.New()}
+	from := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
 	to := from.Add(7 * 24 * time.Hour)
-	_ = from
-	_ = to
 
-	// When the seam is fixed, wire mocks here and assert:
-	// - member sees events from all sub-sources (meal plans, chores, recurring expenses, pinwall reminders, expenses)
-	// - non-member receives permission denied
-	// - empty date range returns empty slice (not nil)
+	recipeID := uuid.New()
+	planID := uuid.New()
+	assignmentID := uuid.New()
+	choreID := uuid.New()
+	due := from.Add(24 * time.Hour)
+
+	mpRepo := new(mocks.MockMealPlanRepo)
+	recipeRepo := new(mocks.MockRecipeRepo)
+	choreRepo := new(mocks.MockChoreRepo)
+	financeRepo := new(mocks.MockFinanceRepo)
+	groupRepo := new(mocks.MockGroupRepo)
+	pinwallRepo := new(mocks.MockCalendarPinwallRepo)
+
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
+	mpRepo.On("ListMealPlansByGroup", ctx, groupID, from, to).Return([]models.MealPlan{{
+		ID: planID, GroupID: groupID, Date: from, RecipeID: recipeID,
+	}}, nil)
+	recipeRepo.On("GetRecipesByIDs", ctx, []uuid.UUID{recipeID}).Return(map[uuid.UUID]*models.Recipe{
+		recipeID: {ID: recipeID, Title: "Pasta"},
+	}, nil)
+	choreRepo.On("ListDueAssignmentsByGroup", ctx, groupID, from, to).Return([]models.ChoreAssignment{{
+		ID: assignmentID, ChoreID: choreID, UserID: user.ID, Status: "pending", DueDate: &due, ChoreName: "Dishes",
+	}}, nil)
+	financeRepo.On("ListRecurringExpensesByDateRange", ctx, groupID, from, to).Return(nil, nil)
+	pinwallRepo.On("ListPostsByGroupAndRemindAtRange", ctx, groupID, from, to).Return(nil, nil)
+	financeRepo.On("ListExpensesByDateRange", ctx, groupID, from, to).Return(nil, nil)
+
+	svc := NewCalendarService(mpRepo, recipeRepo, choreRepo, financeRepo, groupRepo, pinwallRepo)
+	events, err := svc.GetCalendar(ctx, user, groupID, from, to)
+	require.NoError(t, err)
+	require.Len(t, events, 2)
+
+	mealEvent := events[0]
+	assert.Equal(t, models.EventTypeMealPlan, mealEvent.Type)
+	assert.Equal(t, "Pasta", mealEvent.Title)
+
+	choreEvent := events[1]
+	assert.Equal(t, models.EventTypeChore, choreEvent.Type)
+	assert.Equal(t, "Dishes", choreEvent.Title)
+
+	recipeRepo.AssertExpectations(t)
+	recipeRepo.AssertNotCalled(t, "GetRecipeByID", ctx, recipeID)
+	choreRepo.AssertNotCalled(t, "GetChoreByID", ctx, choreID)
 }

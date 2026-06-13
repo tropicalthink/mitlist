@@ -46,6 +46,7 @@ type ChoreAssignment struct {
 	AssignedAt  time.Time  `json:"assigned_at"`
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
 	SkipReason  *string    `json:"skip_reason,omitempty"`
+	ChoreName   string     `json:"chore_name,omitempty"`
 }
 
 // ChoreCompletion records the completion of a chore assignment.

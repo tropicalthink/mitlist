@@ -26,6 +26,14 @@ func (m *MockListRepo) GetListByID(ctx context.Context, id uuid.UUID) (*models.L
 	return nil, args.Error(1)
 }
 
+func (m *MockListRepo) GetListsByIDs(ctx context.Context, ids []uuid.UUID) ([]models.List, error) {
+	args := m.Called(ctx, ids)
+	if l := args.Get(0); l != nil {
+		return l.([]models.List), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
 func (m *MockListRepo) ListListsByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.List, error) {
 	args := m.Called(ctx, groupID, limit, offset)
 	if l := args.Get(0); l != nil {
@@ -57,6 +65,16 @@ func (m *MockListRepo) CreateItem(ctx context.Context, item *models.ListItem) er
 	return args.Error(0)
 }
 
+func (m *MockListRepo) CreateItems(ctx context.Context, items []models.ListItem) error {
+	args := m.Called(ctx, items)
+	return args.Error(0)
+}
+
+func (m *MockListRepo) BulkMarkItemsChecked(ctx context.Context, userID uuid.UUID, itemIDs []uuid.UUID) (int64, error) {
+	args := m.Called(ctx, userID, itemIDs)
+	return args.Get(0).(int64), args.Error(1)
+}
+
 func (m *MockListRepo) GetItemByID(ctx context.Context, id uuid.UUID) (*models.ListItem, error) {
 	args := m.Called(ctx, id)
 	if i := args.Get(0); i != nil {
@@ -77,6 +95,14 @@ func (m *MockListRepo) ListItemsByList(ctx context.Context, listID uuid.UUID, li
 	args := m.Called(ctx, listID, limit, offset)
 	if i := args.Get(0); i != nil {
 		return i.([]models.ListItem), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockListRepo) ListItemsByListIDs(ctx context.Context, listIDs []uuid.UUID) (map[uuid.UUID][]models.ListItem, error) {
+	args := m.Called(ctx, listIDs)
+	if i := args.Get(0); i != nil {
+		return i.(map[uuid.UUID][]models.ListItem), args.Error(1)
 	}
 	return nil, args.Error(1)
 }
