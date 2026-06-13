@@ -64,6 +64,7 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
   bool _isSubmitting = false;
   bool _isScanning = false;
   String? _errorText;
+  String? _nameError;
 
   static _ListType _listTypeFromString(String? type) => switch (type) {
     'todo' => _ListType.todo,
@@ -146,6 +147,14 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
     };
   }
 
+  Future<void> _attemptCreate() async {
+    if (_nameController.text.trim().isEmpty) {
+      setState(() => _nameError = 'List name is required');
+      return;
+    }
+    await _onCreate();
+  }
+
   Future<void> _onCreate() async {
     if (!_canCreate || _selectedGroupId == null) return;
 
@@ -218,7 +227,10 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
           enabled: !_isSubmitting,
           textInputAction: TextInputAction.done,
           maxLength: 100,
-          onChanged: (_) => setState(() {}),
+          errorText: _nameError,
+          onChanged: (_) => setState(() {
+            _nameError = null;
+          }),
         ),
         const SizedBox(height: MitlistSpacing.md),
         Text(
@@ -292,8 +304,8 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
             size: AppButtonSize.lg,
             text: _isSubmitting ? 'Creating...' : 'Create',
             isLoading: _isSubmitting,
-            onPressed: _canCreate && !_isLoadingGroups && !_isSubmitting
-                ? _onCreate
+            onPressed: !_isLoadingGroups && !_isSubmitting
+                ? _attemptCreate
                 : null,
           ),
         ),
