@@ -14,6 +14,7 @@ import '../../sheets/create_list_sheet.dart';
 import 'list_detail_screen.dart';
 import '../../theme/list_tile_accent.dart';
 import '../../theme/spacing.dart';
+import '../../utils/shell_tab_load.dart';
 import '../../utils/active_group_context.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
@@ -73,8 +74,10 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   bool _showSearch = false;
   _SortOption _sort = _SortOption.newest;
   Timer? _searchTimer;
-  bool _hasHousehold = true;
+  bool _hasHousehold = false;
   final TextEditingController _searchController = TextEditingController();
+
+  bool _tabLoadStarted = false;
 
   @override
   void initState() {
@@ -96,6 +99,14 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         });
       }
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _activateTabIfNeeded());
+  }
+
+  void _activateTabIfNeeded() {
+    if (_tabLoadStarted || !mounted) return;
+    if (!shouldActivateShellTab(ref, listsShellTabIndex)) return;
+    _tabLoadStarted = true;
+    ref.read(grocerySeedProvider);
     _loadLists();
   }
 
@@ -133,8 +144,8 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
       return explicitGroupId;
     }
 
-    final groupService = await ref.read(groupServiceProviderAsync.future);
-    final groups = await groupService.listGroups(limit: 50);
+    await ref.read(currentGroupIdProvider.notifier).ensureLoaded();
+    final groups = await ref.read(cachedGroupsProvider.future);
     final groupId = resolveActiveGroupId(
       groups,
       ref.read(currentGroupIdProvider),
@@ -350,6 +361,15 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(shellVisitedTabsProvider, (previous, next) {
+      _activateTabIfNeeded();
+    });
+    ref.listen<String?>(currentGroupIdProvider, (previous, next) {
+      if (previous != next) {
+        _loadLists();
+      }
+    });
+
     return Scaffold(
       appBar: MitlistAppBar(
         centerTitle: false,

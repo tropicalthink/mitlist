@@ -44,7 +44,7 @@ class AuthService {
 
   static Future<AuthService> create([Ref? ref]) async {
     final prefs = await SharedPreferences.getInstance();
-    final dio = createApiClient(ref);
+    final dio = resolveDio(ref);
     final store = SecureTokenStore();
     await store.migrateFromPrefs(prefs);
     return AuthService._(dio, prefs, store);
@@ -56,7 +56,7 @@ class AuthService {
     required Future<void> Function() wipeLocalData,
   }) async {
     final prefs = await SharedPreferences.getInstance();
-    final dio = createApiClient(ref);
+    final dio = resolveDio(ref);
     final store = SecureTokenStore();
     await store.migrateFromPrefs(prefs);
     return AuthService._(dio, prefs, store, wipeLocalData: wipeLocalData);

@@ -68,8 +68,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     });
 
     try {
-      final groupService = await ref.read(groupServiceProviderAsync.future);
-      final groups = await groupService.listGroups(limit: 1);
+      final groups = await ref.read(cachedGroupsProvider.future);
       if (!mounted) return;
       if (groups.isEmpty) {
         setState(() {
@@ -246,27 +245,34 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         ],
       ),
       body: RefreshIndicator(
-              onRefresh: _load,
-              child: ListView(
-                controller: _scrollController,
-                padding: const EdgeInsets.all(MitlistSpacing.md),
-                children: [
+        onRefresh: _load,
+        child: CustomScrollView(
+          controller: _scrollController,
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.all(MitlistSpacing.md),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
                   if (_isLoading) ...[
-                    ...List.generate(4, (_) => Padding(
-                      padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
-                      child: AppCard(
-                        variant: AppCardVariant.outlined,
-                        padding: AppCardPadding.md,
-                        child: const Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            AppSkeleton(width: 160, height: 16),
-                            SizedBox(height: MitlistSpacing.sm),
-                            AppSkeleton(width: double.infinity, height: 40),
-                          ],
+                    ...List.generate(
+                      4,
+                      (_) => Padding(
+                        padding:
+                            const EdgeInsets.only(bottom: MitlistSpacing.sm),
+                        child: AppCard(
+                          variant: AppCardVariant.outlined,
+                          padding: AppCardPadding.md,
+                          child: const Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              AppSkeleton(width: 160, height: 16),
+                              SizedBox(height: MitlistSpacing.sm),
+                              AppSkeleton(width: double.infinity, height: 40),
+                            ],
+                          ),
                         ),
                       ),
-                    )),
+                    ),
                   ],
                   if (_error != null) ...[
                     AppAlert(type: AppAlertType.error, message: _error!),
@@ -279,12 +285,14 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   ],
                   if (!_hasHousehold)
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xl),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: MitlistSpacing.xl),
                       child: AppEmptyState(
                         lottieAsset: 'assets/animations/lottie/House.lottie',
                         icon: const AppIcon(name: 'homeOutline', size: 56),
                         title: 'No household yet',
-                        description: 'Create or join a household to receive notifications.',
+                        description:
+                            'Create or join a household to receive notifications.',
                         actions: [
                           AppButton(
                             text: 'Go to households',
@@ -293,34 +301,56 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                         ],
                       ),
                     )
-                  else if (_items.isEmpty && _error == null)
+                  else if (_items.isEmpty && _error == null && !_isLoading)
                     AppEmptyState(
-                      lottieAsset: 'assets/animations/lottie/Notifications.lottie',
+                      lottieAsset:
+                          'assets/animations/lottie/Notifications.lottie',
                       icon: AppIcon(name: 'bellOutline', size: 56),
                       title: 'No notifications yet',
                       description:
                           'When someone adds a chore, splits a bill, or mentions you, it will show up here.',
-                    )
-                  else
-                    ..._items.map((n) {
+                    ),
+                ]),
+              ),
+            ),
+            if (_hasHousehold && _items.isNotEmpty)
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: MitlistSpacing.md,
+                ),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final n = _items[index];
                       final subtitle = n.body.isNotEmpty ? n.body : n.type;
-                      final titleStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: n.isRead ? FontWeight.w500 : FontWeight.w800,
-                          );
+                      final titleStyle =
+                          Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight:
+                                    n.isRead ? FontWeight.w500 : FontWeight.w800,
+                              );
 
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+                        padding:
+                            const EdgeInsets.only(bottom: MitlistSpacing.sm),
                         child: Dismissible(
                           key: ValueKey(n.id),
                           direction: DismissDirection.endToStart,
                           background: Container(
                             alignment: Alignment.centerRight,
-                            padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: MitlistSpacing.md),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.error.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(MitlistTheme.radiusLg),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .error
+                                  .withValues(alpha: 0.12),
+                              borderRadius:
+                                  BorderRadius.circular(MitlistTheme.radiusLg),
                             ),
-                            child: AppIcon(name: 'trashOutline', color: Theme.of(context).colorScheme.error),
+                            child: AppIcon(
+                              name: 'trashOutline',
+                              color: Theme.of(context).colorScheme.error,
+                            ),
                           ),
                           confirmDismiss: (_) async {
                             await _delete(n);
@@ -331,17 +361,24 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                             onTap: () => _handleNotificationTap(n),
                             semanticLabel: n.title,
                             child: Padding(
-                              padding: const EdgeInsets.all(MitlistSpacing.md),
+                              padding:
+                                  const EdgeInsets.all(MitlistSpacing.md),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(n.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: titleStyle),
+                                  Text(
+                                    n.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: titleStyle,
+                                  ),
                                   const SizedBox(height: MitlistSpacing.xs),
                                   Text(
                                     subtitle,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(context).textTheme.bodySmall,
+                                    style:
+                                        Theme.of(context).textTheme.bodySmall,
                                   ),
                                 ],
                               ),
@@ -349,14 +386,21 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                           ),
                         ),
                       );
-                    }),
-                  if (_isLoadingMore) ...[
-                    const SizedBox(height: MitlistSpacing.sm),
-                    const Center(child: CircularProgressIndicator()),
-                  ],
-                ],
+                    },
+                    childCount: _items.length,
+                  ),
+                ),
               ),
-            ),
+            if (_isLoadingMore)
+              const SliverPadding(
+                padding: EdgeInsets.all(MitlistSpacing.md),
+                sliver: SliverToBoxAdapter(
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

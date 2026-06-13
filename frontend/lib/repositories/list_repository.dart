@@ -51,7 +51,9 @@ class ListRepository {
       {int limit = 200, int offset = 0}) async {
     final remote =
         await _remote.listLists(groupId, limit: limit, offset: offset);
-    await _db.clearListsForGroup(groupId);
+    if (offset == 0) {
+      await _db.clearListsForGroup(groupId);
+    }
     await _db.upsertListsRows(remote.map(_toListsRow));
     return remote.length;
   }
@@ -60,7 +62,9 @@ class ListRepository {
       {int limit = 500, int offset = 0}) async {
     final remote =
         await _remote.listItems(listId, limit: limit, offset: offset);
-    await _db.deleteItemsForList(listId);
+    if (offset == 0) {
+      await _db.deleteItemsForList(listId);
+    }
     await _db.upsertListItemsRows(remote.map(_toListItemsRow));
     return remote.length;
   }

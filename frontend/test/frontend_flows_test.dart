@@ -762,7 +762,7 @@ void main() {
     expect(authService.lastLoginRememberMe, isFalse);
   });
 
-  testWidgets('oauth callback screen completes session and routes home',
+  testWidgets('oauth callback screen completes session and queues onboarding',
       (tester) async {
     await _setLargeSurface(tester);
     final authService = FakeAuthService(currentUser: user)
@@ -779,11 +779,6 @@ void main() {
               'state': 'oauth-state',
             },
           ),
-        ),
-        GoRoute(
-          path: '/home',
-          name: 'onboarding', // OAuthCallbackScreen navigates via goNamed('onboarding')
-          builder: (context, state) => const Scaffold(body: Text('Home route')),
         ),
       ],
     );
@@ -803,7 +798,12 @@ void main() {
     expect(authService.lastOAuthCode, 'oauth-code');
     expect(authService.lastOAuthState, 'oauth-state');
     expect(authService.lastOAuthRememberMe, isFalse);
-    expect(find.text('Home route'), findsOneWidget);
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(OAuthCallbackScreen)),
+    );
+    expect(container.read(authStateProvider), isTrue);
+    expect(container.read(pendingAuthNavigationProvider), '/onboarding');
   });
 
   testWidgets('signup screen exposes actionable terms and privacy',
@@ -1733,7 +1733,7 @@ class FakeFinanceRepository implements FinanceRepository {
       ).asBroadcastStream();
 
   @override
-  Future<void> refreshGroup(String groupId,
+  Future<int> refreshGroup(String groupId,
       {int limit = 50, int offset = 0}) async {
     final expenses = await _service.listExpenses(
       groupId,
@@ -1741,6 +1741,7 @@ class FakeFinanceRepository implements FinanceRepository {
       offset: offset,
     );
     _expenseController.add(expenses);
+    return expenses.length;
   }
 
   @override

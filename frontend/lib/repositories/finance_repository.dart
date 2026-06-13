@@ -45,17 +45,19 @@ class FinanceRepository {
     });
   }
 
-  Future<void> refreshGroup(String groupId, {int limit = 50, int offset = 0}) async {
-    final results = await Future.wait<Object>([
-      _remote.listExpenses(groupId, limit: limit, offset: offset),
-      _remote.getFinanceSummary(groupId),
-    ]);
-
-    final expenses = results[0] as List<api.Expense>;
-    final summary = results[1] as api.FinanceSummary;
-
+  Future<int> refreshGroup(String groupId, {int limit = 50, int offset = 0}) async {
+    final expenses =
+        await _remote.listExpenses(groupId, limit: limit, offset: offset);
+    api.FinanceSummary? summary;
+    if (offset == 0) {
+      summary = await _remote.getFinanceSummary(groupId);
+      await _db.clearExpensesForGroup(groupId);
+    }
     await _db.upsertExpensesRows(expenses.map(_toExpensesRow));
-    await _db.upsertFinanceSummary(groupId: groupId, summaryJson: summary.toJson());
+    if (summary != null) {
+      await _db.upsertFinanceSummary(groupId: groupId, summaryJson: summary.toJson());
+    }
+    return expenses.length;
   }
 
   // ---------------------------------------------------------------------------

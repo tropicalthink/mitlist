@@ -180,8 +180,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
   }
 
   Future<String?> _resolveGroupId() async {
-    final groupService = await ref.read(groupServiceProviderAsync.future);
-    final groups = await groupService.listGroups(limit: 50);
+    final groups = await ref.read(cachedGroupsProvider.future);
     if (groups.isEmpty) return null;
     return resolveActiveGroupId(groups, ref.read(currentGroupIdProvider));
   }
@@ -425,7 +424,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
     try {
       final groupService = await ref.read(groupServiceProviderAsync.future);
       final choreService = await ref.read(choreServiceProviderAsync.future);
-      final groups = await groupService.listGroups(limit: 50);
+      final groups = await ref.read(cachedGroupsProvider.future);
       if (!mounted) return;
       if (groups.isEmpty) {
         setState(() => _isSaving = false);

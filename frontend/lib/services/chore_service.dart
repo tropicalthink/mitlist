@@ -11,7 +11,7 @@ class ChoreService {
   final Logger _logger = Logger();
   ChoreService._(this._dio);
   static Future<ChoreService> create([Ref? ref]) async {
-    final dio = createApiClient(ref);
+    final dio = resolveDio(ref);
     return ChoreService._(dio);
   }
 

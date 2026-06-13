@@ -11,7 +11,7 @@ class ShareTargetService {
   ShareTargetService._(this._dio);
 
   static Future<ShareTargetService> create([Ref? ref]) async {
-    final dio = createApiClient(ref);
+    final dio = resolveDio(ref);
     return ShareTargetService._(dio);
   }
 

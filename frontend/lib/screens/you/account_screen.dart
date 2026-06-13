@@ -13,7 +13,6 @@ import '../../models/group_models.dart';
 import '../../providers/auth_provider.dart'
     show authServiceProviderAsync, authStateProvider;
 import '../../providers/group_provider.dart';
-import '../../providers/nav_badge_provider.dart';
 import '../../providers/onboarding_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/list_provider.dart' show appDatabaseProvider;
@@ -96,8 +95,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     }
 
     try {
-      final groupService = await ref.read(groupServiceProviderAsync.future);
-      households = await groupService.listGroups();
+      households = await ref.read(cachedGroupsProvider.future);
     } catch (_) {
       // Households are optional for this screen.
     }
@@ -277,7 +275,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       await ref.read(appDatabaseProvider).clearAllUserData();
       ref.read(authStateProvider.notifier).state = false;
       unawaited(ref.read(currentGroupIdProvider.notifier).set(null));
-      ref.invalidate(navBadgeCountsProvider);
+      ref.invalidate(cachedGroupsProvider);
       ref.invalidate(hubQuickStartDismissedProvider);
     } catch (_) {
     }
@@ -313,7 +311,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       await ref.read(appDatabaseProvider).clearAllUserData();
       ref.read(authStateProvider.notifier).state = false;
       unawaited(ref.read(currentGroupIdProvider.notifier).set(null));
-      ref.invalidate(navBadgeCountsProvider);
+      ref.invalidate(cachedGroupsProvider);
       ref.invalidate(hubQuickStartDismissedProvider);
       if (!mounted) return;
       context.goNamed('welcome');

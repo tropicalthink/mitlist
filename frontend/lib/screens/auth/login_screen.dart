@@ -75,16 +75,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final request = LoginRequest(email: email, password: password);
       await authService.login(request, rememberMe: _rememberMe);
       
-      // Update auth state
-      ref.read(authStateProvider.notifier).state = true;
-
+      // Update auth state after the success animation so redirect does not
+      // dispose this screen before the checkmark is visible.
       if (mounted) {
         setState(() {
           _isLoading = false;
           _isSuccess = true;
         });
         await Future.delayed(const Duration(milliseconds: 650));
-        if (mounted) context.goNamed('home');
+        if (mounted) ref.read(authStateProvider.notifier).state = true;
       }
       return;
     } catch (e) {
@@ -313,7 +312,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 children: [
                   Text(
                     'mitlist',
-                    style: MitlistTypography.logo(),
+                    style: MitlistTypography.logo(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                   const SizedBox(height: MitlistSpacing.space8),
                   Container(

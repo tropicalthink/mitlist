@@ -13,7 +13,7 @@ class NotificationService {
   NotificationService._(this._dio);
 
   static Future<NotificationService> create([Ref? ref]) async {
-    final dio = createApiClient(ref);
+    final dio = resolveDio(ref);
     return NotificationService._(dio);
   }
 

@@ -50,8 +50,7 @@ class _RecurringExpensesScreenState
       _error = null;
     });
     try {
-      final groupService = await ref.read(groupServiceProviderAsync.future);
-      final groups = await groupService.listGroups();
+      final groups = await ref.read(cachedGroupsProvider.future);
       final groupId = resolveActiveGroupId(
         groups,
         ref.read(currentGroupIdProvider),
@@ -220,8 +219,7 @@ class _RecurringExpensesScreenState
   }
 
   Future<void> _openCreateSheet() async {
-    final groupService = await ref.read(groupServiceProviderAsync.future);
-    final groups = await groupService.listGroups();
+    final groups = await ref.read(cachedGroupsProvider.future);
     final groupId = resolveActiveGroupId(
       groups,
       ref.read(currentGroupIdProvider),

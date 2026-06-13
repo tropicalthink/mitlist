@@ -77,8 +77,7 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
   }
 
   Future<String?> _pickGroupId() async {
-    final groupService = await ref.read(groupServiceProviderAsync.future);
-    final groups = await groupService.listGroups(limit: 50);
+    final groups = await ref.read(cachedGroupsProvider.future);
     if (!mounted) return null;
     if (groups.isEmpty) return null;
     if (groups.length == 1) return groups.first.id;

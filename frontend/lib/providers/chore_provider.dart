@@ -16,6 +16,7 @@ final choreRepositoryProvider = FutureProvider<ChoreRepository>((ref) async {
 
 final cachedCurrentChoresByGroupProvider =
     StreamProvider.family<List<CurrentChore>, String>((ref, groupId) async* {
+  ref.keepAlive();
   final repo = await ref.watch(choreRepositoryProvider.future);
   yield* repo.watchCurrentChores(groupId);
 });

@@ -102,6 +102,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
       return;
     }
 
+    await ref.read(currentGroupIdProvider.notifier).ensureLoaded();
     final saved = ref.read(currentGroupIdProvider);
     if (saved != null) {
       _resolvedGroupId = saved;
@@ -110,8 +111,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     }
 
     try {
-      final groupSvc = await ref.read(groupServiceProviderAsync.future);
-      final groups = await groupSvc.listGroups(limit: 50);
+      final groups = await ref.read(cachedGroupsProvider.future);
       final gid = resolveActiveGroupId(groups, ref.read(currentGroupIdProvider));
       if (!mounted) return;
       if (isValidGroupId(gid)) {
@@ -123,9 +123,12 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
         _households = groups;
         setState(() => _isLoading = false);
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          _isLoading = false;
+          _error = e;
+        });
       }
     }
   }
@@ -154,7 +157,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
 
       var households = <Group>[];
       try {
-        households = await groupService.listGroups();
+        households = await ref.read(cachedGroupsProvider.future);
       } catch (_) {
       }
 
@@ -218,10 +221,9 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
 
       try {
         await repo.refresh(_resolvedGroupId!, activityLimit: 10);
-        activities =
-            (await repo.getActivitiesOnce(_resolvedGroupId!)).$1;
-        activityError =
-            (await repo.getActivitiesOnce(_resolvedGroupId!)).$2;
+        final tuple = await repo.getActivitiesOnce(_resolvedGroupId!);
+        activities = tuple.$1;
+        activityError = tuple.$2;
       } catch (_) {
       }
 
@@ -288,8 +290,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     await Haptics.light();
     var groups = _households;
     try {
-      final svc = await ref.read(groupServiceProviderAsync.future);
-      groups = await svc.listGroups();
+      ref.invalidate(cachedGroupsProvider);
+      groups = await ref.read(cachedGroupsProvider.future);
       if (mounted) setState(() => _households = groups);
     } catch (_) {}
     if (!context.mounted) return;
@@ -304,8 +306,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     Future<void> onCreateResult(Group? group) async {
       if (group == null || !mounted) return;
       try {
-        final svc = await ref.read(groupServiceProviderAsync.future);
-        final after = await svc.listGroups();
+        ref.invalidate(cachedGroupsProvider);
+        final after = await ref.read(cachedGroupsProvider.future);
         if (!mounted) return;
         setState(() => _households = after);
         if (hubContext.mounted) unawaited(_switchGroup(group.id));
@@ -317,8 +319,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     Future<void> onJoinResult(Group? group) async {
       if (group == null || !mounted) return;
       try {
-        final svc = await ref.read(groupServiceProviderAsync.future);
-        final after = await svc.listGroups();
+        ref.invalidate(cachedGroupsProvider);
+        final after = await ref.read(cachedGroupsProvider.future);
         if (!mounted) return;
         setState(() => _households = after);
         if (hubContext.mounted) unawaited(_switchGroup(group.id));
@@ -518,8 +520,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     final group = await JoinHouseholdSheet.show(context);
     if (group == null || !mounted) return;
     try {
-      final groupSvc = await ref.read(groupServiceProviderAsync.future);
-      final groups = await groupSvc.listGroups();
+      ref.invalidate(cachedGroupsProvider);
+      final groups = await ref.read(cachedGroupsProvider.future);
       if (!mounted) return;
       setState(() => _households = groups);
       unawaited(_switchGroup(group.id));
@@ -531,8 +533,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
   Future<void> _onHouseholdResult(Group? group) async {
     if (group == null || !mounted) return;
     try {
-      final groupSvc = await ref.read(groupServiceProviderAsync.future);
-      final groups = await groupSvc.listGroups();
+      ref.invalidate(cachedGroupsProvider);
+      final groups = await ref.read(cachedGroupsProvider.future);
       if (!mounted) return;
       setState(() => _households = groups);
       unawaited(_switchGroup(group.id));
@@ -555,7 +557,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
           children: [
             Text(
               'mitlist',
-              style: MitlistTypography.logo(),
+              style: MitlistTypography.logo(color: colorScheme.onSurface),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: MitlistSpacing.md),
@@ -674,6 +676,33 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
             ),
       body: _isLoading
           ? const HubSkeleton()
+          : _error != null && _resolvedGroupId == null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(MitlistSpacing.md),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const AppAlert(
+                          type: AppAlertType.error,
+                          message:
+                              'Couldn\u2019t load your households. Check your connection and try again.',
+                        ),
+                        const SizedBox(height: MitlistSpacing.md),
+                        AppButton(
+                          text: 'Retry',
+                          onPressed: () {
+                            setState(() {
+                              _isLoading = true;
+                              _error = null;
+                            });
+                            _resolveAndLoad();
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                )
           : _resolvedGroupId == null
               ? _buildEmptyState(context)
               : _error != null
