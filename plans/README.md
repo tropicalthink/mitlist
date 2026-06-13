@@ -96,7 +96,7 @@ dropped. The cleaner seam is backend-FX / frontend-FX-UX, with the existing
 |------|-------|----------|--------|------------|--------|
 | 023  | Compute group balances in a single base currency (per-expense FX at entry) | P2 | L | — (relies on existing finance test net) | TODO |
 | 024  | Record an expense in a foreign currency; show balances converted to the household currency | P2 | M | 023 | TODO |
-| 025  | Stand up the Flutter l10n pipeline + localize the welcome screen (en, de) | P3 | M | — | TODO |
+| 025  | Stand up the Flutter l10n pipeline + localize the welcome screen (en, de) | P3 | M | — | DONE (executed 2026-06-13, commit `19044fcb` on branch `advisor/025-i18n-foundation`; intl bumped to ^0.20.2 to satisfy flutter_localizations SDK pin; localization tests pass; frontend_flows_test compile error pre-exists and is unrelated) |
 
 Cycle-6 ordering: 023 before 024 (the backend must accept/store
 `base_amount`/`fx_rate` before the UI sends them). 025 is fully independent and
