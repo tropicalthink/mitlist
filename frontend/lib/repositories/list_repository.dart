@@ -61,6 +61,7 @@ class ListRepository {
       await _db.clearListsForGroup(groupId);
     }
     await _db.upsertListsRows(remote.map(_toListsRow));
+    await backfillListPreviewsForGroup(groupId);
     return remote.length;
   }
 
@@ -72,6 +73,7 @@ class ListRepository {
       await _db.deleteItemsForList(listId);
     }
     await _db.upsertListItemsRows(remote.map(_toListItemsRow));
+    await _patchListPreviewFromLocalItems(listId);
     return remote.length;
   }
 
@@ -85,6 +87,7 @@ class ListRepository {
     await _db.upsertListsRows([_toListsRow(list)]);
     await _db.deleteItemsForList(listId);
     await _db.upsertListItemsRows(items.map(_toListItemsRow));
+    await _patchListPreviewFromLocalItems(listId);
   }
 
   // ---------------------------------------------------------------------------
@@ -111,6 +114,7 @@ class ListRepository {
     );
 
     await _db.upsertListItemsRows([_toListItemsRow(local)]);
+    await _patchListPreviewFromLocalItems(listId);
     await _db.enqueueOutbox(
       id: _uuid.v4(),
       type: 'createItem',
@@ -154,6 +158,7 @@ class ListRepository {
       updatedAt: DateTime.now(),
     );
     await _db.upsertListItemsRows([_toListItemsRow(patched)]);
+    await _patchListPreviewFromLocalItems(listId);
 
     // Record purchase signal when item transitions to checked.
     if ((req.checked ?? false) && !existing.checked) {
@@ -215,6 +220,7 @@ class ListRepository {
     }
 
     await _db.upsertListItemsRows(patched);
+    await _patchListPreviewFromLocalItems(listId);
 
     await _db.enqueueOutbox(
       id: _uuid.v4(),
@@ -234,6 +240,7 @@ class ListRepository {
     // Optimistic local delete
     await (_db.delete(_db.listItemsTable)..where((t) => t.id.equals(itemId)))
         .go();
+    await _patchListPreviewFromLocalItems(listId);
 
     await _db.enqueueOutbox(
       id: _uuid.v4(),
@@ -300,6 +307,7 @@ class ListRepository {
       await _db.rewriteOutboxPayloadIds(oldId: tempId, newId: created.id);
     });
     await _db.deleteOutboxOp(opId);
+    await _patchListPreviewFromLocalItems(listId);
   }
 
   Future<void> _syncUpdateItem(
@@ -328,6 +336,7 @@ class ListRepository {
 
     await _db.upsertListItemsRows([_toListItemsRow(updated)]);
     await _db.deleteOutboxOp(opId);
+    await _patchListPreviewFromLocalItems(listId);
   }
 
   Future<void> _syncDeleteItem(
@@ -341,6 +350,7 @@ class ListRepository {
 
     await _remote.deleteItem(listId, itemId);
     await _db.deleteOutboxOp(opId);
+    await _patchListPreviewFromLocalItems(listId);
   }
 
   Future<void> _syncReorderItems(
@@ -354,6 +364,7 @@ class ListRepository {
     final itemIds = rawIds.map((e) => e.toString()).toList();
     await _remote.reorderItems(listId, ReorderItemsRequest(itemIds: itemIds));
     await _db.deleteOutboxOp(opId);
+    await _patchListPreviewFromLocalItems(listId);
   }
 
   // ---------------------------------------------------------------------------
@@ -386,12 +397,18 @@ class ListRepository {
         final item = _itemFromPayload(event.payload);
         if (item != null) {
           await _db.upsertListItemsRows([_toListItemsRow(item)]);
+          await _patchListPreviewFromLocalItems(item.listId);
         }
       case 'list:item_deleted':
         final id = event.payload['id'] as String?;
+        final listId = event.payload['list_id'] as String? ??
+            (id != null ? await _listIdForItem(id) : null);
         if (id != null) {
           await (_db.delete(_db.listItemsTable)..where((t) => t.id.equals(id)))
               .go();
+        }
+        if (listId != null) {
+          await _patchListPreviewFromLocalItems(listId);
         }
       case 'list:items_cleared':
         final listId = event.payload['list_id'] as String?;
@@ -534,5 +551,63 @@ class ListRepository {
       // Failed to parse JSON string list; return empty.
     }
     return const [];
+  }
+
+  static const int _listCardPreviewLines = 4;
+
+  /// Rebuilds card snippets from locally cached list items (Google Keep-style).
+  Future<void> backfillListPreviewsForGroup(String groupId) async {
+    final lists = await _db.getListsByGroupOnce(groupId);
+    for (final list in lists) {
+      await _patchListPreviewFromLocalItems(list.id);
+    }
+  }
+
+  Future<void> _patchListPreviewFromLocalItems(String listId) async {
+    final groupId = await _db.getListGroupId(listId);
+    if (groupId == null) return;
+
+    final lists = await _db.getListsByGroupOnce(groupId);
+    ListsTableData? existing;
+    for (final row in lists) {
+      if (row.id == listId) {
+        existing = row;
+        break;
+      }
+    }
+    if (existing == null) return;
+
+    final rows = await _db.getItemsByListOnce(listId);
+
+    rows.sort((a, b) {
+      final byPos = a.position.compareTo(b.position);
+      return byPos != 0 ? byPos : a.id.compareTo(b.id);
+    });
+
+    final preview = rows
+        .map((row) => row.name.trim())
+        .where((name) => name.isNotEmpty)
+        .take(_listCardPreviewLines)
+        .toList();
+
+    await _db.upsertListsRows([
+      ListsTableCompanion(
+        id: Value(existing.id),
+        groupId: Value(existing.groupId),
+        name: Value(existing.name),
+        type: Value(existing.type),
+        itemCount: Value(rows.isEmpty ? null : rows.length),
+        itemPreviewJson: Value(jsonEncode(preview)),
+        createdAt: Value(existing.createdAt),
+        updatedAt: Value(existing.updatedAt),
+      ),
+    ]);
+  }
+
+  Future<String?> _listIdForItem(String itemId) async {
+    final row = await (_db.select(_db.listItemsTable)
+          ..where((t) => t.id.equals(itemId)))
+        .getSingleOrNull();
+    return row?.listId;
   }
 }
