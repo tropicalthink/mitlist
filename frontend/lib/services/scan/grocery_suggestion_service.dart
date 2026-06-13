@@ -42,6 +42,10 @@ class GrocerySuggestionService {
     );
     if (aliases.isEmpty) return const [];
 
+    // Keep the first matching alias per canonical item; its language decides
+    // which name we label the suggestion with (so "milch" → Milch, "milk" →
+    // Milk for the same canonical item).
+    // Collapse alias hits to distinct canonical items, preserving order.
     final orderedIds = <String>[];
     final seen = <String>{};
     for (final a in aliases) {
@@ -57,7 +61,7 @@ class GrocerySuggestionService {
       if (it == null) continue;
       out.add(GrocerySuggestion(
         canonicalItemId: it.id,
-        name: _displayName(it),
+        name: _displayName(it, q),
         category: it.category,
         unit: it.defaultUnit,
       ));
@@ -73,9 +77,58 @@ class GrocerySuggestionService {
     return out.take(limit).toList();
   }
 
-  static String _displayName(CanonicalItemsTableData it) {
-    final base = it.nameDe.isNotEmpty ? it.nameDe : it.nameEn;
-    if (base.isEmpty) return it.id;
-    return base[0].toUpperCase() + base.substring(1);
+  /// Labels a suggestion in the language the user typed. We can't trust the
+  /// matched alias's stored `lang` — the seed cross-links each item's English
+  /// and German spellings under both languages — so we infer intent directly
+  /// from the query: whichever of the two canonical names the typed text is
+  /// closer to wins. English is the default on a tie or when a name is missing.
+  static String _displayName(CanonicalItemsTableData it, String query) {
+    final en = it.nameEn;
+    final de = it.nameDe;
+    if (en.isEmpty) return _cap(de.isEmpty ? it.id : de);
+    if (de.isEmpty) return _cap(en);
+
+    final base = _closerToQuery(query, en, de) ? en : de;
+    return _cap(base);
   }
+
+  /// True when [query] is closer to [en] than to [de]. A prefix relation
+  /// counts as the best possible match; otherwise we fall back to edit
+  /// distance. Ties resolve to English (the `<=`).
+  static bool _closerToQuery(String query, String en, String de) {
+    final scoreEn = _matchScore(query, en.toLowerCase());
+    final scoreDe = _matchScore(query, de.toLowerCase());
+    return scoreEn <= scoreDe;
+  }
+
+  static int _matchScore(String query, String name) {
+    if (name.startsWith(query) || query.startsWith(name)) return 0;
+    return _levenshtein(query, name);
+  }
+
+  static int _levenshtein(String a, String b) {
+    if (a == b) return 0;
+    if (a.isEmpty) return b.length;
+    if (b.isEmpty) return a.length;
+    var prev = List<int>.generate(b.length + 1, (i) => i);
+    var curr = List<int>.filled(b.length + 1, 0);
+    for (var i = 0; i < a.length; i++) {
+      curr[0] = i + 1;
+      for (var j = 0; j < b.length; j++) {
+        final cost = a[i] == b[j] ? 0 : 1;
+        curr[j + 1] = [
+          curr[j] + 1,
+          prev[j + 1] + 1,
+          prev[j] + cost,
+        ].reduce((m, e) => e < m ? e : m);
+      }
+      final tmp = prev;
+      prev = curr;
+      curr = tmp;
+    }
+    return prev[b.length];
+  }
+
+  static String _cap(String s) =>
+      s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 }

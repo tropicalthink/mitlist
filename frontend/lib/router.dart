@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/auth_provider.dart';
+import 'providers/list_provider.dart';
 import 'widgets/app_icon.dart';
 import 'providers/nav_badge_provider.dart';
 
@@ -413,6 +414,10 @@ class _BottomNavScaffoldState extends ConsumerState<BottomNavScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    // Kick off the offline grocery seed once the app shell mounts. Without
+    // this the canonical item + alias tables stay empty and composer
+    // autocomplete (GrocerySuggestionService) never has anything to surface.
+    ref.watch(grocerySeedProvider);
     final badgeCounts = ref.watch(navBadgeCountsProvider);
     final badgeData = badgeCounts.valueOrNull ?? const NavBadgeCounts();
 
