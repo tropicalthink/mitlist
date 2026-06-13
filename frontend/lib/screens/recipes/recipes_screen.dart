@@ -214,6 +214,11 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       _hasMore = true;
     });
 
+    final groupId = await _resolveGroupId();
+    if (groupId != null) {
+      ref.invalidate(weekMealPlansSummaryProvider(groupId));
+    }
+
     try {
       final service = await ref.read(recipeServiceProviderAsync.future);
 
@@ -492,16 +497,21 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   }
 
   Widget _buildMealPlanSummary() {
-    return FutureBuilder<List<dynamic>>(
-      future: _fetchWeekMealPlans(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const SizedBox.shrink();
-        }
-        final plans = snapshot.data ?? [];
-        if (plans.isEmpty) {
-          return const SizedBox.shrink();
-        }
+    final groups = ref.watch(cachedGroupsProvider).valueOrNull;
+    if (groups == null) return const SizedBox.shrink();
+
+    final groupId = resolveActiveGroupId(
+      groups,
+      ref.watch(currentGroupIdProvider),
+    );
+    if (!isValidGroupId(groupId)) return const SizedBox.shrink();
+
+    final async = ref.watch(weekMealPlansSummaryProvider(groupId!));
+    return async.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (plans) {
+        if (plans.isEmpty) return const SizedBox.shrink();
 
         return Padding(
           padding: const EdgeInsets.fromLTRB(
@@ -512,9 +522,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
           ),
           child: AppCard(
             variant: AppCardVariant.filled,
-            onTap: () async {
-              final groupId = await _resolveGroupId();
-              if (!mounted || groupId == null) return;
+            onTap: () {
               if (context.mounted) {
                 unawaited(context.pushNamed('mealPlan'));
               }
@@ -531,7 +539,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                     ),
                   ),
                   const SizedBox(height: MitlistSpacing.sm),
-                  ...plans.take(3).map((p) {
+                  ...plans.take(3).map((plan) {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: MitlistSpacing.xs),
                       child: Row(
@@ -544,7 +552,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                           const SizedBox(width: MitlistSpacing.sm),
                           Expanded(
                             child: Text(
-                              '${p['day']} ${p['slot']}: ${p['title']}',
+                              '${plan.day} ${plan.slot}: ${plan.title}',
                               style: Theme.of(context).textTheme.bodySmall,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -568,36 +576,6 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
         );
       },
     );
-  }
-
-  Future<List<Map<String, String>>> _fetchWeekMealPlans() async {
-    try {
-      final groupId = await _resolveGroupId();
-      if (groupId == null) return [];
-
-      final now = DateTime.now();
-      final weekStart = now.subtract(Duration(days: now.weekday - 1));
-      final weekEnd = weekStart.add(const Duration(days: 6));
-
-      final mealPlanService = await ref.read(mealPlanServiceProviderAsync.future);
-      final plans = await mealPlanService.listMealPlans(
-        groupId,
-        from: weekStart.toIso8601String().split('T')[0],
-        to: weekEnd.toIso8601String().split('T')[0],
-      );
-
-      final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      return plans.map((p) {
-        final dayIndex = p.date.weekday - 1;
-        return {
-          'day': days[dayIndex.clamp(0, 6)],
-          'slot': p.slot,
-          'title': 'Meal',
-        };
-      }).toList();
-    } catch (_) {
-      return [];
-    }
   }
 
   Widget _buildChipBar() {
