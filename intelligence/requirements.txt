@@ -3,12 +3,14 @@ pyyaml>=6.0
 python-dotenv>=1.0.0
 tqdm>=4.66.0
 # ML training (optional — install when training)
-tensorflow==2.16.1
-sentence-transformers==3.0.1
-scikit-learn>=1.4.0
-pandas>=2.2.0
-numpy>=1.26.0
-onnx>=1.16.0
-onnxruntime>=1.18.0
-tf2onnx>=1.16.0
-optimum[exporters]>=1.21.0
+tensorflow[and-cuda]==2.21.0
+sentence-transformers==5.5.1
+datasets>=3.0.0
+accelerate>=1.1.0
+scikit-learn>=1.9.0
+pandas>=3.0.3
+numpy>=2.4.6
+onnx>=1.21.0
+onnxruntime>=1.26.0
+tf2onnx>=1.17.0
+optimum[exporters]>=2.2.0

@@ -15,21 +15,64 @@ DATA_DIR = ROOT / "ml" / "data"
 OUT_DIR = Path(__file__).resolve().parent
 
 
-def load_corpus(paths: list[Path]) -> list[tuple[str, str]]:
+def build_label_resolver(seed_path: Path):
+    """Map any label/alias string -> canonical name_de, else None.
+
+    Label space = the shipped canonical seed. Resolution order:
+      1. exact match against a canonical name_de
+      2. case-insensitive match against the alias/name table (all languages)
+    """
+    seed = json.loads(seed_path.read_text(encoding="utf-8"))
+    canon = set()
+    alias2canon: dict[str, str] = {}
+    for it in seed:
+        nd = (it.get("name_de") or "").strip()
+        if not nd:
+            continue
+        canon.add(nd)
+        for key in ("name_de", "name_en", "name_fr", "name_es"):
+            v = (it.get(key) or "").strip()
+            if v:
+                alias2canon.setdefault(v.lower(), nd)
+        for alist in ("aliases_de", "aliases_en", "aliases_fr", "aliases_es"):
+            for a in (it.get(alist) or []):
+                a = (a or "").strip().lower()
+                if a:
+                    alias2canon.setdefault(a, nd)
+
+    def resolve(label: str):
+        if not label:
+            return None
+        label = label.strip()
+        if label in canon:
+            return label
+        return alias2canon.get(label.lower())
+
+    return resolve
+
+
+def load_corpus(specs: list[tuple[Path, str, str]], resolve) -> list[tuple[str, str]]:
+    """specs: (path, ocr_field, label_field). Returns (text, canonical) rows."""
     rows = []
-    for p in paths:
+    for p, ocr_field, label_field in specs:
         if not p.exists():
             print(f"Skipping missing {p}")
             continue
+        kept = dropped = 0
         for line in p.read_text(encoding="utf-8").splitlines():
             if not line.strip():
                 continue
             obj = json.loads(line)
-            raw = obj.get("raw", "").strip().lower()
-            canonical = (obj.get("item_de") or obj.get("correct_canonical_de", "")).strip()
-            if raw and canonical:
-                rows.append((raw, canonical))
-        print(f"Loaded {len(rows)} rows from {p}")
+            raw = obj.get(ocr_field)
+            raw = raw.strip().lower() if isinstance(raw, str) else ""
+            label = obj.get(label_field)
+            label = label.strip() if isinstance(label, str) else ""
+            canon = resolve(label) if (raw and label) else None
+            if raw and canon:
+                rows.append((raw, canon)); kept += 1
+            else:
+                dropped += 1
+        print(f"{p.name}: kept {kept}, dropped {dropped}")
     return rows
 
 
@@ -39,9 +82,22 @@ def char_trigrams(text: str, max_len: int = 64) -> str:
 
 
 def main() -> None:
-    rows = load_corpus([DATA_DIR / "ocr_corpus.jsonl", DATA_DIR / "corrections.jsonl"])
+    resolve = build_label_resolver(DATA_DIR / "seed.json")
+    rows = load_corpus(
+        [
+            (DATA_DIR / "ocr_corpus.jsonl", "raw", "item_de"),
+            (DATA_DIR / "corrections.jsonl", "raw_ocr", "correct_canonical_de"),
+        ],
+        resolve,
+    )
     if len(rows) < 100:
         raise SystemExit(f"Need ≥100 training rows, got {len(rows)}. Generate Prompt 2 + 5 data first.")
+
+    from collections import Counter
+    counts = Counter(lbl for _, lbl in rows)
+    rows = [(t, lbl) for (t, lbl) in rows if counts[lbl] >= 2]
+    dropped_singletons = sum(1 for c in counts.values() if c < 2)
+    print(f"Dropped {dropped_singletons} singleton classes; {len(rows)} rows remain")
 
     texts = [r[0] for r in rows]
     labels = [r[1] for r in rows]
