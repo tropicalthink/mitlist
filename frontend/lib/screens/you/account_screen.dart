@@ -606,6 +606,102 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     }
   }
 
+  Future<void> _showConvertGuestSheet() async {
+    final nameCtrl = TextEditingController();
+    final emailCtrl = TextEditingController();
+    final passCtrl = TextEditingController();
+    String? sheetError;
+    bool isConverting = false;
+
+    await showAppBottomSheet<void>(
+      context: context,
+      title: 'Create your account',
+      body: StatefulBuilder(builder: (ctx, setLocal) {
+        Future<void> submit() async {
+          final name = nameCtrl.text.trim();
+          final email = emailCtrl.text.trim();
+          final password = passCtrl.text;
+          if (name.isEmpty || email.isEmpty || password.isEmpty) {
+            setLocal(() => sheetError = 'Please fill in all fields.');
+            return;
+          }
+          setLocal(() { isConverting = true; sheetError = null; });
+          try {
+            final authSvc = await ref.read(authServiceProviderAsync.future);
+            final parts = name.split(' ');
+            await authSvc.convertGuest(ConvertGuestRequest(
+              email: email,
+              password: password,
+              firstName: parts.first,
+              lastName: parts.length > 1 ? parts.sublist(1).join(' ') : '',
+            ));
+            if (ctx.mounted) Navigator.of(ctx).pop();
+            if (mounted) {
+              ref.read(authStateProvider.notifier).state = true;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Account created. Welcome!')),
+              );
+            }
+          } catch (e) {
+            setLocal(() {
+              isConverting = false;
+              sheetError = friendlyErrorMessage(e);
+            });
+          }
+        }
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AppInput(
+              label: 'Your name',
+              hint: 'e.g. Alex Smith',
+              controller: nameCtrl,
+              textInputAction: TextInputAction.next,
+              maxLength: 100,
+            ),
+            const SizedBox(height: MitlistSpacing.md),
+            AppInput(
+              label: 'Email',
+              hint: 'you@example.com',
+              controller: emailCtrl,
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              maxLength: 200,
+            ),
+            const SizedBox(height: MitlistSpacing.md),
+            AppInput(
+              label: 'Password',
+              controller: passCtrl,
+              obscureText: true,
+              textInputAction: TextInputAction.done,
+              maxLength: 128,
+              onChanged: (_) => setLocal(() {}),
+            ),
+            if (sheetError != null) ...[
+              const SizedBox(height: MitlistSpacing.sm),
+              AppAlert(type: AppAlertType.error, message: sheetError!),
+            ],
+            const SizedBox(height: MitlistSpacing.lg),
+            AppButton(
+              text: isConverting ? 'Creating account…' : 'Create account',
+              variant: AppButtonVariant.solid,
+              color: AppButtonColor.primary,
+              size: AppButtonSize.lg,
+              isLoading: isConverting,
+              onPressed: isConverting ? null : submit,
+            ),
+          ],
+        );
+      }),
+    );
+
+    nameCtrl.dispose();
+    emailCtrl.dispose();
+    passCtrl.dispose();
+  }
+
   Widget _buildGuestUpgradeCard() {
     if (!_isGuest) return const SizedBox.shrink();
 
@@ -646,7 +742,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 text: 'Create full account',
                 variant: AppButtonVariant.solid,
                 color: AppButtonColor.primary,
-                onPressed: () => context.goNamed('signup'),
+                onPressed: _showConvertGuestSheet,
               ),
             ),
           ],

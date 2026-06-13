@@ -297,11 +297,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) {
                       final listId = state.pathParameters['listId']!;
                       final extra = state.extra;
-                      final initialName =
-                          extra is ListDetailRouteArgs ? extra.listName : null;
+                      final args = extra is ListDetailRouteArgs ? extra : null;
                       return ListDetailScreen(
                         listId: listId,
-                        initialListName: initialName,
+                        initialListName: args?.listName,
+                        autoFocusTitle: args?.autoFocusTitle ?? false,
                       );
                     },
                   ),
