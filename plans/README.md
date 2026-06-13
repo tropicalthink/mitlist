@@ -74,6 +74,52 @@ git worktree — a worktree would have empty `ml/data/`. The `intelligence/.venv
 currently has **no ML deps**; step 1 of each plan installs
 `intelligence/requirements.txt`.
 
+### Cycle 6 — direction audit (2026-06-13, against commit `fea883d3`)
+
+Scope: roadmap/direction (`/improve next`). The maintainer redirected the audit
+to **multi-currency** and **i18n** (neither was in the advisor's presented list).
+Note: multi-currency was advisor-*rejected* in cycle 3 ("a household shares one
+currency") — re-examined here and the rejection was downgraded: the schema
+already stores per-expense `currency` while the balance math (SQL aggregate +
+in-memory) is currency-blind, so the system is in an inconsistent state. The
+maintainer chose **true multi-currency with FX** (not the cheap "lock to group
+currency" option) and i18n **foundation + reference screen + German**.
+
+Plan-shape note: the originally-floated "characterization then FX" 2-plan split
+was collapsed — balance-math characterization **already exists** (plans 003/005:
+`TestCalculateBalances`, `TestBalancesEquivalence`, `TestSuggestReimbursements`,
+`TestFinanceService_GetFinanceSummary`), so a redundant characterization plan was
+dropped. The cleaner seam is backend-FX / frontend-FX-UX, with the existing
+`TestBalancesEquivalence` as the regression guard.
+
+| Plan | Title | Priority | Effort | Depends on | Status |
+|------|-------|----------|--------|------------|--------|
+| 023  | Compute group balances in a single base currency (per-expense FX at entry) | P2 | L | — (relies on existing finance test net) | TODO |
+| 024  | Record an expense in a foreign currency; show balances converted to the household currency | P2 | M | 023 | TODO |
+| 025  | Stand up the Flutter l10n pipeline + localize the welcome screen (en, de) | P3 | M | — | TODO |
+
+Cycle-6 ordering: 023 before 024 (the backend must accept/store
+`base_amount`/`fx_rate` before the UI sends them). 025 is fully independent and
+can run in parallel with 023/024. 023 is HIGH-risk (it edits the balance engine)
+— run its full test suite and confirm `TestBalancesEquivalence` stays green.
+
+### Direction findings — cycle 6 (2026-06-13), maintainer's decisions
+
+Presented but NOT selected (re-pitchable; don't re-detail verbatim):
+- **Predictive restock from purchase cadence** — `purchase_history` is written on
+  every check-off (`list_repository.dart:481` `_doPurchaseSignal`, with timestamp
+  + quantity) but has **zero read consumers**; its co-occurrence sibling already
+  powers "frequently bought together" (`suggestion_service.dart`). Strongest fresh
+  finding; the data is flowing into a dead end. Effort M.
+- **Spending insights** — every expense carries `category` and an `ExpenseCategory`
+  model (with a `Color` field) exists with zero consumers; money screen has only
+  Timeline + Settlements tabs. A category/month breakdown is mostly read-and-render.
+  Effort M.
+- **Pantry / "running low"** — the `products` table (barcode, min_stock, in_stock)
+  has existed since migration 000001, used only as a passive FK; README concedes
+  pantry to Grocy. Scope to manual stock (barcode spike was declined cycle 3).
+  Effort M–L; lower confidence.
+
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 
 ### Reconcile log
@@ -152,7 +198,10 @@ impeccable-critique gate). Record so they aren't re-pitched verbatim:
 - **Barcode scanning into the grocery graph**: declined; would need a spike
   (Open Food Facts dependency, unvalidated scan-while-shopping hypothesis).
 - **Multi-currency with exchange rates**: rejected by advisor — a household
-  shares one currency; `group.Currency` is the right scope.
+  shares one currency; `group.Currency` is the right scope. **[Reversed in
+  cycle 6, 2026-06-13]** — re-examination found the schema already stores
+  per-expense `currency` while balances are currency-blind; maintainer chose
+  true FX. See plans 023/024.
 - **Real-time list sync gap**: rejected by advisor — false gap; SSE item-level
   publish already exists (`list_service.go:67`). The README's Bring! row is a
   docs correction, not a feature.

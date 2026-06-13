@@ -17,8 +17,7 @@ void main() {
   });
 
   group('OnboardingScreen', () {
-    testWidgets('shows loading indicator while checking existing groups',
-        (tester) async {
+    testWidgets('shows create/join actions immediately', (tester) async {
       final groupsCompleter = Completer<List<Group>>();
       addTearDown(() {
         if (!groupsCompleter.isCompleted) {
@@ -36,8 +35,11 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.text('Create a household'), findsNothing);
+      expect(find.text('Create a household'), findsOneWidget);
+      expect(find.text('Join with invite code'), findsOneWidget);
+
+      groupsCompleter.complete(const []);
+      await tester.pump();
     });
 
     testWidgets('redirects to home when user already has a household',
