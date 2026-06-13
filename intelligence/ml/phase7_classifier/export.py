@@ -15,6 +15,12 @@ def main() -> None:
 
     converter = tf.lite.TFLiteConverter.from_keras_model(model)
     converter.optimizations = [tf.lite.Optimize.DEFAULT]
+    # TextVectorization uses tf.StringLower, tf.DenseBincount, etc.
+    converter.target_spec.supported_ops = [
+        tf.lite.OpsSet.TFLITE_BUILTINS,
+        tf.lite.OpsSet.SELECT_TF_OPS,
+    ]
+    converter._experimental_lower_tensor_list_ops = False
     tflite_model = converter.convert()
 
     MODELS_DIR.mkdir(parents=True, exist_ok=True)

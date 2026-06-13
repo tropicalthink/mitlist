@@ -1,6 +1,7 @@
 """Phase 8 — Multilingual embedding fine-tuning with triplet loss."""
 
 import json
+import os
 import random
 import sys
 from pathlib import Path
@@ -51,10 +52,34 @@ def load_triplets(path: Path) -> list[InputExample]:
     return examples
 
 
+def _training_device() -> tuple[str, int, bool]:
+    """Device, batch size, and fp16 for full-model Adam fine-tuning."""
+    force_cpu = os.environ.get("FORCE_CPU", "").lower() in ("1", "true", "yes")
+    if force_cpu or not torch.cuda.is_available():
+        if force_cpu:
+            print("FORCE_CPU set — training on CPU")
+        else:
+            print("CUDA not available — training on CPU")
+        return "cpu", 32, False
+
+    vram_gb = torch.cuda.get_device_properties(0).total_memory / (1024**3)
+    if vram_gb < 4:
+        print(
+            f"GPU has {vram_gb:.1f}GB VRAM; full MiniLM fine-tuning needs ~4GB+ for Adam. "
+            "Training on CPU (unset FORCE_CPU or use a larger GPU for CUDA training)."
+        )
+        return "cpu", 32, False
+
+    return "cuda", 16, True
+
+
 def main() -> None:
     examples = load_triplets(DATA_DIR / "triplets.jsonl")
 
-    model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
+    device, batch_size, use_amp = _training_device()
+    print(f"Training on {device} (batch_size={batch_size}, fp16={use_amp})")
+
+    model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2", device=device)
     dense = Dense(
         in_features=model.get_sentence_embedding_dimension(),
         out_features=128,
@@ -62,7 +87,7 @@ def main() -> None:
     )
     model.add_module("dense_projection", dense)
 
-    loader = DataLoader(examples, shuffle=True, batch_size=64)
+    loader = DataLoader(examples, shuffle=True, batch_size=batch_size)
     loss = losses.TripletLoss(
         model=model,
         distance_metric=losses.TripletDistanceMetric.COSINE,
@@ -86,6 +111,7 @@ def main() -> None:
         output_path=str(OUT_DIR / "finetuned"),
         save_best_model=True,
         show_progress_bar=True,
+        use_amp=use_amp,
     )
 
     print(f"Training complete → {OUT_DIR / 'finetuned'}")
