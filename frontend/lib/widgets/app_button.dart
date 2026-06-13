@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/animations.dart';
+import '../theme/colors.dart';
 import '../theme/shadows.dart';
 import '../theme/spacing.dart';
 import '../theme/theme.dart';
@@ -60,7 +61,7 @@ class _AppButtonState extends State<AppButton> {
   Color _backgroundColor(ColorScheme colorScheme) {
     switch (widget.variant) {
       case AppButtonVariant.solid:
-        if (widget.isSuccess) return const Color(0xFF10B981); // success500
+        if (widget.isSuccess) return MitlistColors.success500;
         switch (widget.color) {
           case AppButtonColor.primary:
             return colorScheme.primary;

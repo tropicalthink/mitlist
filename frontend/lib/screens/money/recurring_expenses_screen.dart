@@ -146,8 +146,31 @@ class _RecurringExpensesScreenState
   }
 
   Widget _buildBody() {
+    return RefreshIndicator(
+      color: Theme.of(context).colorScheme.primary,
+      onRefresh: _load,
+      child: _buildBodyContent(),
+    );
+  }
+
+  Widget _wrapForRefresh(Widget child) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBodyContent() {
     if (_isLoading) {
       return ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(MitlistSpacing.md),
         itemCount: 6,
         itemBuilder: (_, __) => const Padding(
@@ -157,51 +180,58 @@ class _RecurringExpensesScreenState
       );
     }
     if (_error != null) {
-      return Center(
-        child: AppEmptyState(
-          lottieAsset: 'assets/animations/lottie/404.lottie',
-          icon: const AppIcon(name: 'alertCircleOutline'),
-          title: 'Something went wrong',
-          description: _error,
-          actions: [
-            AppButton(
-              variant: AppButtonVariant.outline,
-              text: 'Retry',
-              onPressed: _load,
-            ),
-          ],
+      return _wrapForRefresh(
+        Center(
+          child: AppEmptyState(
+            lottieAsset: 'assets/animations/lottie/404.lottie',
+            icon: const AppIcon(name: 'alertCircleOutline'),
+            title: 'Something went wrong',
+            description: _error,
+            actions: [
+              AppButton(
+                variant: AppButtonVariant.outline,
+                text: 'Retry',
+                onPressed: _load,
+              ),
+            ],
+          ),
         ),
       );
     }
     if (!_hasHousehold) {
-      return const Center(
-        child: AppEmptyState(
-          lottieAsset: 'assets/animations/lottie/House.lottie',
-          icon: AppIcon(name: 'homeOutline'),
-          title: 'No household yet',
-          description: 'Join or create a household to manage recurring expenses',
+      return _wrapForRefresh(
+        const Center(
+          child: AppEmptyState(
+            lottieAsset: 'assets/animations/lottie/House.lottie',
+            icon: AppIcon(name: 'homeOutline'),
+            title: 'No household yet',
+            description: 'Join or create a household to manage recurring expenses',
+          ),
         ),
       );
     }
     if (_items.isEmpty) {
-      return Center(
-        child: AppEmptyState(
-          lottieAsset: 'assets/animations/lottie/wallet.lottie',
-          icon: AppIcon(name: 'repeat'),
-          title: 'No recurring expenses',
-          description: 'Add a recurring expense to track regular payments',
-          actions: [
-            AppButton(
-              text: 'Add expense',
-              variant: AppButtonVariant.outline,
-              size: AppButtonSize.sm,
-              onPressed: _openCreateSheet,
-            ),
-          ],
+      return _wrapForRefresh(
+        Center(
+          child: AppEmptyState(
+            lottieAsset: 'assets/animations/lottie/wallet.lottie',
+            icon: AppIcon(name: 'repeat'),
+            title: 'No recurring expenses',
+            description: 'Add a recurring expense to track regular payments',
+            actions: [
+              AppButton(
+                text: 'Add expense',
+                variant: AppButtonVariant.outline,
+                size: AppButtonSize.sm,
+                onPressed: _openCreateSheet,
+              ),
+            ],
+          ),
         ),
       );
     }
     return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(MitlistSpacing.md),
       itemCount: _items.length,
       itemBuilder: (context, index) {
@@ -217,7 +247,6 @@ class _RecurringExpensesScreenState
       },
     );
   }
-
   Future<void> _openCreateSheet() async {
     final groups = await ref.read(cachedGroupsProvider.future);
     final groupId = resolveActiveGroupId(

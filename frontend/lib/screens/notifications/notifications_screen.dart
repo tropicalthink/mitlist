@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../models/notification_models.dart';
 import '../../providers/notification_provider.dart';
+import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
 import '../../providers/group_provider.dart';
 import '../../theme/spacing.dart';
@@ -171,9 +172,10 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       final service = await ref.read(notificationServiceProviderAsync.future);
       await service.deleteNotification(n.id);
       setState(() => _items.removeWhere((x) => x.id == n.id));
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      setState(() => _error = 'Failed to delete notification.');
+      unawaited(Haptics.failure());
+      setState(() => _error = friendlyErrorMessage(e));
     } finally {
       _isMutating = false;
     }

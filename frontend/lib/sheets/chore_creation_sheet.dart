@@ -17,6 +17,7 @@ import '../utils/haptics.dart';
 import '../widgets/animated_check_toggle.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
+import '../widgets/app_dialog.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/app_input.dart';
 import '../utils/friendly_error.dart';
@@ -202,30 +203,34 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
 
   Future<void> _onEditTemplate(ChoreTemplate t) async {
     final nameController = TextEditingController(text: t.name);
-    final result = await showDialog<_TemplateEditAction>(
+    final result = await showAppDialog<_TemplateEditAction>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Edit routine'),
-        content: TextField(
-          controller: nameController,
-          decoration: const InputDecoration(labelText: 'Name'),
-          autofocus: true,
-          textCapitalization: TextCapitalization.sentences,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, _TemplateEditAction.delete),
-            child: Text(
-              'Delete',
-              style: TextStyle(color: Theme.of(ctx).colorScheme.error),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, _TemplateEditAction.save),
-            child: const Text('Save'),
-          ),
-        ],
+      title: 'Edit routine',
+      body: AppInput(
+        label: 'Name',
+        controller: nameController,
+        textInputAction: TextInputAction.done,
       ),
+      actions: [
+        AppButton(
+          text: 'Delete',
+          color: AppButtonColor.error,
+          variant: AppButtonVariant.outline,
+          onPressed: () =>
+              Navigator.of(context).pop(_TemplateEditAction.delete),
+        ),
+        const SizedBox(width: MitlistSpacing.sm),
+        AppButton(
+          text: 'Cancel',
+          variant: AppButtonVariant.outline,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        const SizedBox(width: MitlistSpacing.sm),
+        AppButton(
+          text: 'Save',
+          onPressed: () => Navigator.of(context).pop(_TemplateEditAction.save),
+        ),
+      ],
     );
     final newName = nameController.text.trim();
     nameController.dispose();
