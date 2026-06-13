@@ -8,6 +8,7 @@ import '../models/list_models.dart';
 import '../services/list_service.dart';
 import '../services/sse_service.dart';
 import '../storage/app_database.dart';
+import 'outbox_drainer.dart';
 
 class ListRepository {
   final AppDatabase _db;
@@ -244,48 +245,14 @@ class ListRepository {
     if (_isDraining) return;
     _isDraining = true;
     try {
-      final batch = await _db.getOutboxBatchByTypes(
-        ['createItem', 'updateItem', 'deleteItem'],
-        limit: 25,
+      await OutboxDrainer(_db).drain(
+        types: const ['createItem', 'updateItem', 'deleteItem'],
+        handlers: {
+          'createItem': (op, payload) => _syncCreateItem(op.id, payload),
+          'updateItem': (op, payload) => _syncUpdateItem(op.id, payload),
+          'deleteItem': (op, payload) => _syncDeleteItem(op.id, payload),
+        },
       );
-      if (batch.isEmpty) return;
-
-      for (final op in batch) {
-      // Re-read the current payload from the DB so we see any ID rewrites that
-      // a preceding _syncCreateItem may have performed in this same drain pass.
-      final freshOp = await _db.getOutboxOpById(op.id);
-      if (freshOp == null) {
-        // Op was already deleted (e.g. by a concurrent drain); skip it.
-        continue;
-      }
-
-      Map<String, dynamic> payload;
-      try {
-        payload =
-            (jsonDecode(freshOp.payloadJson) as Map).cast<String, dynamic>();
-      } catch (_) {
-        await _db.deleteOutboxOp(op.id);
-        continue;
-      }
-
-      try {
-        switch (op.type) {
-          case 'createItem':
-            await _syncCreateItem(op.id, payload);
-            break;
-          case 'updateItem':
-            await _syncUpdateItem(op.id, payload);
-            break;
-          case 'deleteItem':
-            await _syncDeleteItem(op.id, payload);
-            break;
-        }
-      } catch (e) {
-        await _db.markOutboxAttempt(op.id, error: 'Something went wrong.');
-        // Stop early: keep ordering and avoid hammering the server.
-        return;
-      }
-      }
     } finally {
       _isDraining = false;
     }

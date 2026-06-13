@@ -8,6 +8,7 @@ import '../models/finance_models.dart' as api;
 import '../services/finance_service.dart';
 import '../storage/app_database.dart';
 import '../exceptions.dart';
+import 'outbox_drainer.dart';
 
 class FinanceRepository {
   final AppDatabase _db;
@@ -153,38 +154,14 @@ class FinanceRepository {
     if (_isDraining) return;
     _isDraining = true;
     try {
-      final batch = await _db.getOutboxBatchByTypes(
-        ['createExpense', 'updateExpense', 'deleteExpense'],
-        limit: 25,
+      await OutboxDrainer(_db).drain(
+        types: const ['createExpense', 'updateExpense', 'deleteExpense'],
+        handlers: {
+          'createExpense': (op, payload) => _syncCreateExpense(op.id, payload),
+          'updateExpense': (op, payload) => _syncUpdateExpense(op.id, payload),
+          'deleteExpense': (op, payload) => _syncDeleteExpense(op.id, payload),
+        },
       );
-      if (batch.isEmpty) return;
-
-      for (final op in batch) {
-        Map<String, dynamic> payload;
-        try {
-          payload = (jsonDecode(op.payloadJson) as Map).cast<String, dynamic>();
-        } catch (_) {
-          await _db.deleteOutboxOp(op.id);
-          continue;
-        }
-
-        try {
-          switch (op.type) {
-            case 'createExpense':
-              await _syncCreateExpense(op.id, payload);
-              break;
-            case 'updateExpense':
-              await _syncUpdateExpense(op.id, payload);
-              break;
-            case 'deleteExpense':
-              await _syncDeleteExpense(op.id, payload);
-              break;
-          }
-        } catch (e) {
-          await _db.markOutboxAttempt(op.id, error: 'Something went wrong.');
-          return;
-        }
-      }
     } finally {
       _isDraining = false;
     }
