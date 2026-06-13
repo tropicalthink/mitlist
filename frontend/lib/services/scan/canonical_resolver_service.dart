@@ -1,4 +1,5 @@
 import '../../storage/app_database.dart';
+import 'grocery_classifier_service.dart';
 
 /// Result of a canonical resolution attempt.
 class ResolveResult {
@@ -20,11 +21,17 @@ class ResolveResult {
 /// Lookup order:
 ///  1. Exact alias match (household scope first, then global seed).
 ///  2. Fuzzy alias match (normalised edit distance).
-///  3. No match → returns the cleaned name as-is with score 0.
+///  3. Optional on-device classifier fallback when fuzzy confidence < 0.85.
+///  4. No match → returns the cleaned name as-is with score 0.
+///
+/// The [classifier] argument is optional; existing call sites that omit it
+/// keep compiling and behave exactly as before.
 class CanonicalResolverService {
   final AppDatabase _db;
+  final GroceryClassifierService? _classifier;
 
-  CanonicalResolverService(this._db);
+  CanonicalResolverService(this._db, {GroceryClassifierService? classifier})
+      : _classifier = classifier;
 
   Future<ResolveResult> resolve(String itemName, String groupId) async {
     final normalised = _normalise(itemName);
@@ -53,7 +60,9 @@ class CanonicalResolverService {
       query: normalised,
     );
     if (allAliases.isEmpty) {
-      return ResolveResult(displayName: _titleCase(itemName), score: 0);
+      final fuzzyResult =
+          ResolveResult(displayName: _titleCase(itemName), score: 0);
+      return _resolveWithFallback(itemName, groupId, fuzzyResult);
     }
 
     _AliasMatch? best;
@@ -71,12 +80,16 @@ class CanonicalResolverService {
     }
 
     if (best == null || best.score < 0.5) {
-      return ResolveResult(displayName: _titleCase(itemName), score: 0);
+      final fuzzyResult =
+          ResolveResult(displayName: _titleCase(itemName), score: 0);
+      return _resolveWithFallback(itemName, groupId, fuzzyResult);
     }
 
     final canonical = await _db.getCanonicalItemById(best.alias.canonicalItemId);
     if (canonical == null) {
-      return ResolveResult(displayName: _titleCase(itemName), score: 0);
+      final fuzzyResult =
+          ResolveResult(displayName: _titleCase(itemName), score: 0);
+      return _resolveWithFallback(itemName, groupId, fuzzyResult);
     }
 
     final alternatives = <String>[];
@@ -85,11 +98,59 @@ class CanonicalResolverService {
       if (alt != null) alternatives.add(_preferredName(alt));
     }
 
-    return ResolveResult(
+    final fuzzyResult = ResolveResult(
       canonicalItemId: canonical.id,
       displayName: _preferredName(canonical),
       score: best.score,
       alternatives: alternatives,
+    );
+    return _resolveWithFallback(itemName, groupId, fuzzyResult);
+  }
+
+  /// Attempts to improve [fuzzyResult] using the on-device classifier.
+  ///
+  /// Returns [fuzzyResult] unchanged when:
+  /// - no classifier is wired, or
+  /// - fuzzy confidence is already ≥ 0.85, or
+  /// - the classifier returns no predictions, or
+  /// - the top prediction score < 0.85, or
+  /// - the predicted label cannot be resolved to a canonical item.
+  Future<ResolveResult> _resolveWithFallback(
+    String itemName,
+    String groupId,
+    ResolveResult fuzzyResult,
+  ) async {
+    if (_classifier == null || fuzzyResult.score >= 0.85) return fuzzyResult;
+
+    final preds = await _classifier.classify(itemName, topK: 5);
+    if (preds.isEmpty) return fuzzyResult;
+
+    final top = preds.first;
+    if (top.score < 0.85) return fuzzyResult;
+
+    // Map the predicted label back via the alias table.
+    final alias = await _db.findAlias(
+      groupId: groupId,
+      aliasText: _normalise(top.label),
+    );
+    if (alias == null) return fuzzyResult;
+
+    final canonical = await _db.getCanonicalItemById(alias.canonicalItemId);
+    if (canonical == null) return fuzzyResult;
+
+    // Only override if the model is more confident than the fuzzy result.
+    if (top.score <= fuzzyResult.score) return fuzzyResult;
+
+    final altNames = preds
+        .skip(1)
+        .map((p) => p.label)
+        .toList();
+
+    return ResolveResult(
+      canonicalItemId: canonical.id,
+      displayName: _preferredName(canonical),
+      score: top.score,
+      alternatives: altNames,
     );
   }
 
