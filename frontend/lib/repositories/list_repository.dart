@@ -13,6 +13,9 @@ class ListRepository {
   final AppDatabase _db;
   final ListService _remote;
   final Uuid _uuid;
+  final bool _autoSync;
+
+  bool _isDraining = false;
 
   SseService? _sseService;
   StreamSubscription<SseEvent>? _sseSub;
@@ -21,9 +24,11 @@ class ListRepository {
     required AppDatabase db,
     required ListService remote,
     Uuid? uuid,
+    bool autoSync = true,
   })  : _db = db,
         _remote = remote,
-        _uuid = uuid ?? const Uuid();
+        _uuid = uuid ?? const Uuid(),
+        _autoSync = autoSync;
 
   Stream<List<ItemList>> watchListsByGroup(String groupId) {
     return _db
@@ -117,7 +122,7 @@ class ListRepository {
     );
 
     // Best-effort immediate sync.
-    await drainOutboxOnce();
+    if (_autoSync) unawaited(drainOutboxOnce());
     return local;
   }
 
@@ -162,7 +167,7 @@ class ListRepository {
           'updateItem:$itemId:${patched.updatedAt.toIso8601String()}',
     );
 
-    await drainOutboxOnce();
+    if (_autoSync) unawaited(drainOutboxOnce());
     return patched;
   }
 
@@ -232,17 +237,20 @@ class ListRepository {
       idempotencyKey: 'deleteItem:$itemId',
     );
 
-    await drainOutboxOnce();
+    if (_autoSync) unawaited(drainOutboxOnce());
   }
 
   Future<void> drainOutboxOnce() async {
-    final batch = await _db.getOutboxBatchByTypes(
-      ['createItem', 'updateItem', 'deleteItem'],
-      limit: 25,
-    );
-    if (batch.isEmpty) return;
+    if (_isDraining) return;
+    _isDraining = true;
+    try {
+      final batch = await _db.getOutboxBatchByTypes(
+        ['createItem', 'updateItem', 'deleteItem'],
+        limit: 25,
+      );
+      if (batch.isEmpty) return;
 
-    for (final op in batch) {
+      for (final op in batch) {
       // Re-read the current payload from the DB so we see any ID rewrites that
       // a preceding _syncCreateItem may have performed in this same drain pass.
       final freshOp = await _db.getOutboxOpById(op.id);
@@ -277,6 +285,9 @@ class ListRepository {
         // Stop early: keep ordering and avoid hammering the server.
         return;
       }
+      }
+    } finally {
+      _isDraining = false;
     }
   }
 
