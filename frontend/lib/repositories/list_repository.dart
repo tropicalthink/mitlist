@@ -212,15 +212,18 @@ class ListRepository {
 
     await _db.upsertListItemsRows(patched);
 
-    try {
-      await _remote.reorderItems(
-        listId,
-        ReorderItemsRequest(itemIds: itemIdsInOrder),
-      );
-    } catch (e) {
-      await refreshItems(listId);
-      rethrow;
-    }
+    await _db.enqueueOutbox(
+      id: _uuid.v4(),
+      type: 'reorderItems',
+      payload: {
+        'listId': listId,
+        'itemIds': itemIdsInOrder,
+      },
+      idempotencyKey:
+          'reorderItems:$listId:${DateTime.now().toIso8601String()}',
+    );
+
+    if (_autoSync) unawaited(drainOutboxOnce());
   }
 
   Future<void> deleteItemOfflineFirst(String listId, String itemId) async {
@@ -246,11 +249,17 @@ class ListRepository {
     _isDraining = true;
     try {
       await OutboxDrainer(_db).drain(
-        types: const ['createItem', 'updateItem', 'deleteItem'],
+        types: const [
+          'createItem',
+          'updateItem',
+          'deleteItem',
+          'reorderItems',
+        ],
         handlers: {
           'createItem': (op, payload) => _syncCreateItem(op.id, payload),
           'updateItem': (op, payload) => _syncUpdateItem(op.id, payload),
           'deleteItem': (op, payload) => _syncDeleteItem(op.id, payload),
+          'reorderItems': (op, payload) => _syncReorderItems(op.id, payload),
         },
       );
     } finally {
@@ -327,6 +336,19 @@ class ListRepository {
     }
 
     await _remote.deleteItem(listId, itemId);
+    await _db.deleteOutboxOp(opId);
+  }
+
+  Future<void> _syncReorderItems(
+      String opId, Map<String, dynamic> payload) async {
+    final listId = payload['listId'] as String?;
+    final rawIds = payload['itemIds'];
+    if (listId == null || rawIds is! List) {
+      await _db.deleteOutboxOp(opId);
+      return;
+    }
+    final itemIds = rawIds.map((e) => e.toString()).toList();
+    await _remote.reorderItems(listId, ReorderItemsRequest(itemIds: itemIds));
     await _db.deleteOutboxOp(opId);
   }
 
