@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../models/activity_models.dart';
 import '../../theme/spacing.dart';
 import '../../utils/hub_helpers.dart';
+import '../alert.dart';
 
 class ActivityWall extends StatelessWidget {
   const ActivityWall({
@@ -37,14 +38,14 @@ class ActivityWall extends StatelessWidget {
         ),
         const SizedBox(height: MitlistSpacing.sm),
         if (activityError)
-          Text(
-            'Couldn\u2019t load the wall right now.',
-            style: textTheme.bodySmall
-                ?.copyWith(color: colorScheme.onSurfaceVariant),
+          AppAlert(
+            type: AppAlertType.error,
+            message:
+                'Couldn\u2019t load activity. Pull to refresh on the hub.',
           )
         else if (activities.isEmpty)
           Text(
-            'Nothing posted yet.',
+            'No activity yet. Complete a chore or add to a list to get things moving.',
             style: textTheme.bodySmall
                 ?.copyWith(color: colorScheme.onSurfaceVariant),
           )

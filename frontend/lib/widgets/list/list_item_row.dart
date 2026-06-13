@@ -37,7 +37,6 @@ class ListItemRow extends StatelessWidget {
     final row = Material(
       color: colorScheme.surface,
       child: InkWell(
-        onTap: () => onToggle(!item.checked),
         onLongPress: onLongPress,
         child: Container(
           decoration: BoxDecoration(
@@ -86,24 +85,31 @@ class ListItemRow extends StatelessWidget {
               ),
               const SizedBox(width: MitlistSpacing.sm),
               if (photoUrl != null) ...[
-                GestureDetector(
-                  onTap: onPhotoTap,
-                  child: ClipRect(
+                Semantics(
+                  button: true,
+                  label: 'View photo for ${item.name}',
+                  child: GestureDetector(
+                    onTap: onPhotoTap,
                     child: SizedBox(
-                      width: 28,
-                      height: 28,
-                      child: Semantics(
-                        label: 'Item photo',
-                        child: Image.network(
-                          photoUrl!,
-                          fit: BoxFit.cover,
-                          cacheWidth: (28 *
-                                  MediaQuery.devicePixelRatioOf(context) *
-                                  1.5)
-                              .round(),
-                          errorBuilder: (_, __, ___) => AppIcon(
-                            name: 'imageNotSupportedOutline',
-                            size: 16,
+                      width: 44,
+                      height: 44,
+                      child: Center(
+                        child: ClipRect(
+                          child: SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: Image.network(
+                              photoUrl!,
+                              fit: BoxFit.cover,
+                              cacheWidth: (28 *
+                                      MediaQuery.devicePixelRatioOf(context) *
+                                      1.5)
+                                  .round(),
+                              errorBuilder: (_, __, ___) => AppIcon(
+                                name: 'imageNotSupportedOutline',
+                                size: 16,
+                              ),
+                            ),
                           ),
                         ),
                       ),

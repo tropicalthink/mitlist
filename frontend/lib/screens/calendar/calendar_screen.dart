@@ -16,6 +16,7 @@ import '../../theme/typography.dart';
 import '../../theme/theme.dart';
 import '../../utils/active_group_context.dart';
 import '../../utils/friendly_error.dart';
+import '../../utils/haptics.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
@@ -874,8 +875,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       unawaited(_load());
     } catch (e) {
       if (!mounted) return;
+      unawaited(Haptics.failure());
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete chore')),
+        SnackBar(content: Text(friendlyErrorMessage(e))),
       );
     } finally {
       _isSaving = false;

@@ -15,6 +15,7 @@ import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../utils/shell_tab_load.dart';
 import '../../utils/active_group_context.dart';
+import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
 import '../../sheets/expense_creation_sheet.dart';
 import '../../sheets/expense_detail_sheet.dart';
@@ -436,8 +437,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       await _loadData();
     } catch (e) {
       if (!mounted) return;
+      unawaited(Haptics.failure());
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete expense')),
+        SnackBar(content: Text(friendlyErrorMessage(e))),
       );
     }
   }
