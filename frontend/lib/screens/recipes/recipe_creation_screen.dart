@@ -15,6 +15,7 @@ import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/haptics.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/app_card.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
@@ -58,7 +59,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
   bool _isSaving = false;
   bool _isScraping = false;
   bool _isScanning = false;
-  _RecipeEntryMode _mode = _RecipeEntryMode.manual;
+  _RecipeEntryMode _mode = _RecipeEntryMode.url;
 
   @override
   void initState() {
@@ -605,43 +606,49 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppButton(
-          text: _isScanning ? 'Scanning…' : 'Scan recipe',
-          icon: AppIcon(
-            name: _isScanning ? 'hourglassEmpty' : 'documentScanner',
-            size: 20,
-          ),
-          variant: AppButtonVariant.outline,
-          color: AppButtonColor.neutral,
-          onPressed: _isScanning ? null : _onScan,
-          semanticLabel: 'Scan recipe via camera',
+        Text(
+          'Start your recipe',
+          style: Theme.of(context).textTheme.headlineSmall,
         ),
-        const SizedBox(height: MitlistSpacing.md),
-        SegmentedButton<_RecipeEntryMode>(
-          segments: const [
-            ButtonSegment(
-              value: _RecipeEntryMode.url,
-              icon: AppIcon(name: 'link'),
-              label: Text('URL'),
-            ),
-            ButtonSegment(
-              value: _RecipeEntryMode.manual,
-              icon: AppIcon(name: 'editNote'),
-              label: Text('Manual'),
-            ),
-          ],
-          selected: {_mode},
-          onSelectionChanged: _isSaving
+        const SizedBox(height: MitlistSpacing.xs),
+        Text(
+          'Import from a link, type it yourself, or scan a photo.',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+        ),
+        const SizedBox(height: MitlistSpacing.lg),
+        _buildEntryOption(
+          colorScheme: colorScheme,
+          icon: 'link',
+          title: 'Import from URL',
+          subtitle: 'Paste a recipe link and we\u2019ll pull the details',
+          selected: _mode == _RecipeEntryMode.url,
+          onTap: _isSaving
               ? null
-              : (value) => setState(() {
-                    if (value.first == _RecipeEntryMode.url) {
-                      _mode = _RecipeEntryMode.url;
-                    } else {
-                      _mode = _RecipeEntryMode.manual;
-                    }
-                  }),
+              : () => setState(() => _mode = _RecipeEntryMode.url),
         ),
-        const SizedBox(height: MitlistSpacing.md),
+        const SizedBox(height: MitlistSpacing.sm),
+        _buildEntryOption(
+          colorScheme: colorScheme,
+          icon: 'editNote',
+          title: 'Type it in',
+          subtitle: 'Start with a title and add ingredients later',
+          selected: _mode == _RecipeEntryMode.manual,
+          onTap: _isSaving
+              ? null
+              : () => setState(() => _mode = _RecipeEntryMode.manual),
+        ),
+        const SizedBox(height: MitlistSpacing.sm),
+        _buildEntryOption(
+          colorScheme: colorScheme,
+          icon: _isScanning ? 'hourglassEmpty' : 'documentScanner',
+          title: _isScanning ? 'Scanning\u2026' : 'Scan a photo',
+          subtitle: 'Snap a recipe card or cookbook page',
+          selected: false,
+          onTap: _isScanning || _isSaving ? null : _onScan,
+        ),
+        const SizedBox(height: MitlistSpacing.lg),
         if (_mode == _RecipeEntryMode.url) ...[
           AppInput(
             label: 'Recipe URL',
@@ -652,22 +659,20 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: MitlistSpacing.sm),
-          Row(
-            children: [
-              AppButton(
-                size: AppButtonSize.sm,
-                variant: AppButtonVariant.outline,
-                color: AppButtonColor.neutral,
-                text: _isScraping ? 'Fetching…' : 'Fetch details',
-                isLoading: _isScraping,
-                onPressed: _canScrape ? _onScrape : null,
-              ),
-            ],
+          AppButton(
+            size: AppButtonSize.sm,
+            variant: AppButtonVariant.outline,
+            color: AppButtonColor.neutral,
+            text: _isScraping ? 'Fetching\u2026' : 'Fetch details',
+            isLoading: _isScraping,
+            onPressed: _canScrape ? _onScrape : null,
           ),
           if (_scrapedImageOptions.length > 1) ...[
             const SizedBox(height: MitlistSpacing.md),
-            Text('Choose an image',
-                style: Theme.of(context).textTheme.bodySmall),
+            Text(
+              'Choose an image',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
             const SizedBox(height: MitlistSpacing.sm),
             SizedBox(
               height: 80,
@@ -716,16 +721,19 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
                 height: 120,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                cacheWidth: (MediaQuery.sizeOf(context).width * MediaQuery.devicePixelRatioOf(context) * 1.5).round(),
+                cacheWidth: (MediaQuery.sizeOf(context).width *
+                        MediaQuery.devicePixelRatioOf(context) *
+                        1.5)
+                    .round(),
                 errorBuilder: (_, __, ___) => Container(
                   color: colorScheme.surfaceContainerLow,
                   child: const Center(
-                      child: AppIcon(name: 'restaurant', size: 48)),
+                    child: AppIcon(name: 'restaurant', size: 48),
+                  ),
                 ),
               ),
             ),
           ],
-          const SizedBox(height: MitlistSpacing.md),
         ],
         if (_mode == _RecipeEntryMode.manual) ...[
           AppInput(
@@ -738,6 +746,77 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
           ),
         ],
       ],
+    );
+  }
+
+  Widget _buildEntryOption({
+    required ColorScheme colorScheme,
+    required String icon,
+    required String title,
+    required String subtitle,
+    required bool selected,
+    required VoidCallback? onTap,
+  }) {
+    return AppCard(
+      variant: selected ? AppCardVariant.outlined : AppCardVariant.soft,
+      tint: selected ? AppCardTint.primary : AppCardTint.neutral,
+      padding: AppCardPadding.md,
+      interactive: onTap != null,
+      onTap: onTap,
+      semanticLabel: title,
+      child: Row(
+        children: [
+          Container(
+            width: MitlistSpacing.space11,
+            height: MitlistSpacing.space11,
+            decoration: BoxDecoration(
+              color: selected
+                  ? colorScheme.primaryContainer
+                  : colorScheme.surfaceContainerHighest,
+              border: Border.all(
+                color: selected ? colorScheme.primary : colorScheme.outline,
+                width: 2,
+              ),
+            ),
+            child: Center(
+              child: AppIcon(
+                name: icon,
+                size: 20,
+                color: selected ? colorScheme.primary : colorScheme.onSurface,
+              ),
+            ),
+          ),
+          const SizedBox(width: MitlistSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: selected
+                            ? colorScheme.primary
+                            : colorScheme.onSurface,
+                      ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: MitlistSpacing.xs),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          if (selected)
+            AppIcon(name: 'check', size: 18, color: colorScheme.primary),
+        ],
+      ),
     );
   }
 

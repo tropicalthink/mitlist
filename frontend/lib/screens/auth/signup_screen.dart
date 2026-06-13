@@ -96,16 +96,19 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       );
       await authService.register(request);
       
-      // Update auth state
-      ref.read(authStateProvider.notifier).state = true;
-
+      // Defer auth flip until after success animation; router redirect sends
+      // new users to onboarding.
       if (mounted) {
         setState(() {
           _isLoading = false;
           _isSuccess = true;
         });
         await Future.delayed(const Duration(milliseconds: 650));
-        if (mounted) context.goNamed('onboarding');
+        if (mounted) {
+          ref.read(pendingAuthNavigationProvider.notifier).state =
+              '/onboarding';
+          ref.read(authStateProvider.notifier).state = true;
+        }
       }
       return;
     } catch (e) {
@@ -153,7 +156,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 children: [
                   Text(
                     'mitlist',
-                    style: MitlistTypography.logo(),
+                    style: MitlistTypography.logo(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                   const SizedBox(height: MitlistSpacing.space8),
                   Container(

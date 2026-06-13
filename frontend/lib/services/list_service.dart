@@ -12,7 +12,7 @@ class ListService {
   final Logger _logger = Logger();
   ListService._(this._dio);
   static Future<ListService> create([Ref? ref]) async {
-    final dio = createApiClient(ref);
+    final dio = resolveDio(ref);
     return ListService._(dio);
   }
 

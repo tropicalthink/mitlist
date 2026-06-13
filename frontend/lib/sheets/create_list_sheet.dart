@@ -119,8 +119,7 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
   Future<void> _loadGroups() async {
     setState(() => _errorText = null);
     try {
-      final groupService = await ref.read(groupServiceProviderAsync.future);
-      final groups = await groupService.listGroups();
+      final groups = await ref.read(cachedGroupsProvider.future);
       if (!mounted) return;
 
       setState(() {

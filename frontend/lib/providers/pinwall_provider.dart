@@ -28,6 +28,7 @@ final pinwallMediaByPostProvider = FutureProvider.family<
 
 final pinwallPostsByGroupProvider =
     StreamProvider.family<List<PinwallPost>, String>((ref, groupId) async* {
+  ref.keepAlive();
   final repo = await ref.watch(pinwallRepositoryProvider.future);
   final cached = await repo.getPostsOnce(groupId);
   if (cached.isNotEmpty) {

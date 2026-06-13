@@ -33,8 +33,9 @@ import '../../widgets/mitlist_app_bar.dart';
 
 /// Optional [GoRouter] `extra` when opening a list from the hub (title shows immediately).
 class ListDetailRouteArgs {
-  const ListDetailRouteArgs({this.listName});
+  const ListDetailRouteArgs({this.listName, this.autoFocusTitle = false});
   final String? listName;
+  final bool autoFocusTitle;
 }
 
 class _ParsedComposerItem {
@@ -52,11 +53,13 @@ class _ParsedComposerItem {
 class ListDetailScreen extends ConsumerStatefulWidget {
   final String listId;
   final String? initialListName;
+  final bool autoFocusTitle;
 
   const ListDetailScreen({
     super.key,
     required this.listId,
     this.initialListName,
+    this.autoFocusTitle = false,
   });
 
   @override
@@ -73,6 +76,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   String _searchQuery = '';
   final TextEditingController _newItemController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _titleController = TextEditingController();
+  final FocusNode _titleFocusNode = FocusNode();
+  bool _editingTitle = false;
   ListService? _service;
   bool _dirty = false;
   final FocusNode _composerFocusNode = FocusNode();
@@ -105,6 +111,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     }
     _composerFocusNode.addListener(_onComposerFocusChanged);
     _newItemController.addListener(_onComposerTextChanged);
+    _titleFocusNode.addListener(_onTitleFocusChanged);
+    if (widget.autoFocusTitle) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _startEditingTitle());
+    }
     _load();
   }
 
@@ -122,6 +132,38 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     _suggestDebounce?.cancel();
     _suggestDebounce =
         Timer(const Duration(milliseconds: 180), _refreshSuggestions);
+  }
+
+  void _startEditingTitle() {
+    _titleController.text = _listName;
+    _titleController.selection =
+        TextSelection(baseOffset: 0, extentOffset: _listName.length);
+    setState(() => _editingTitle = true);
+    _titleFocusNode.requestFocus();
+  }
+
+  void _onTitleFocusChanged() {
+    if (!_titleFocusNode.hasFocus && _editingTitle) {
+      _submitTitleEdit();
+    }
+  }
+
+  Future<void> _submitTitleEdit() async {
+    final newName = _titleController.text.trim();
+    setState(() => _editingTitle = false);
+    if (newName.isEmpty || newName == _listName) return;
+    final svc = _service;
+    if (svc == null) return;
+    try {
+      await svc.updateList(widget.listId, UpdateListRequest(name: newName));
+      if (mounted) setState(() => _listName = newName);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Couldn’t rename list.')),
+        );
+      }
+    }
   }
 
   /// Refreshes both suggestion sources for the current composer text: the
@@ -180,11 +222,14 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     }
     _composerFocusNode.removeListener(_onComposerFocusChanged);
     _newItemController.removeListener(_onComposerTextChanged);
+    _titleFocusNode.removeListener(_onTitleFocusChanged);
     _suggestDebounce?.cancel();
     _itemsSub?.cancel();
     _newItemController.dispose();
     _searchController.dispose();
+    _titleController.dispose();
     _composerFocusNode.dispose();
+    _titleFocusNode.dispose();
     super.dispose();
   }
 
@@ -766,6 +811,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
   void _onMenuSelected(String value) {
     switch (value) {
+      case 'rename':
+        _startEditingTitle();
+        break;
       case 'complete_all':
         _completeAll();
         break;
@@ -1089,11 +1137,28 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                 tooltip: 'Back',
                 onPressed: () => Navigator.of(context).pop(_dirty),
               ),
-              title: Text(
-                _listName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+              title: _editingTitle
+                  ? TextField(
+                      controller: _titleController,
+                      focusNode: _titleFocusNode,
+                      autofocus: true,
+                      textInputAction: TextInputAction.done,
+                      style: Theme.of(context).textTheme.titleMedium,
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      onSubmitted: (_) => _submitTitleEdit(),
+                    )
+                  : GestureDetector(
+                      onTap: _startEditingTitle,
+                      child: Text(
+                        _listName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
               actions: [
                 IconButton(
                   icon: AppIcon(
@@ -1123,6 +1188,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   tooltip: 'List options',
                   onSelected: _onMenuSelected,
                   itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'rename',
+                      child: Text('Rename'),
+                    ),
+                    const PopupMenuDivider(),
                     const PopupMenuItem(
                       value: 'complete_all',
                       child: Text('Check all'),

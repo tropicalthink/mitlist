@@ -155,6 +155,21 @@ class TokenPairResult {
   const TokenPairResult({required this.accessToken, required this.refreshToken});
 }
 
+/// Shared Dio instance for all API services.
+final dioProvider = Provider<Dio>((ref) {
+  final dio = createApiClient(ref);
+  ref.onDispose(() => dio.close());
+  return dio;
+});
+
+/// Returns the shared Dio when [ref] is available, otherwise a standalone client.
+Dio resolveDio([Ref? ref]) {
+  if (ref != null) {
+    return ref.read(dioProvider);
+  }
+  return createApiClient(ref);
+}
+
 /// Creates a configured Dio instance for API requests.
 Dio createApiClient([Ref? ref, TokenStore? tokenStore]) {
   final store = tokenStore ?? SecureTokenStore();

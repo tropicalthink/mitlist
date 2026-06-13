@@ -557,7 +557,9 @@ class _MiseEnPlaceView extends StatelessWidget {
                     child: Center(
                       child: Text(
                         '$selectedServings',
-                        style: MitlistTypography.monoBody(),
+                        style: MitlistTypography.monoBody(
+                          color: colorScheme.onSurface,
+                        ),
                       ),
                     ),
                   ),

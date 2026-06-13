@@ -18,13 +18,18 @@ final todayMealPlansProvider =
   final plans = await mealPlanSvc.listMealPlans(groupId, from: today, to: today);
 
   final recipeSvc = await ref.read(recipeServiceProviderAsync.future);
+  final recipes = await Future.wait(
+    plans.map((plan) async {
+      try {
+        return await recipeSvc.getRecipe(plan.recipeId);
+      } catch (_) {
+        return null;
+      }
+    }),
+  );
   final results = <TodayMeal>[];
-  for (final plan in plans) {
-    Recipe? recipe;
-    try {
-      recipe = await recipeSvc.getRecipe(plan.recipeId);
-    } catch (_) {}
-    results.add((plan: plan, recipe: recipe));
+  for (var i = 0; i < plans.length; i++) {
+    results.add((plan: plans[i], recipe: recipes[i]));
   }
   return results;
 });

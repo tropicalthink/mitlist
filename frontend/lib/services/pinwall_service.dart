@@ -14,7 +14,7 @@ class PinwallService {
   PinwallService._(this._dio);
 
   static Future<PinwallService> create([Ref? ref]) async {
-    final dio = createApiClient(ref);
+    final dio = resolveDio(ref);
     return PinwallService._(dio);
   }
 

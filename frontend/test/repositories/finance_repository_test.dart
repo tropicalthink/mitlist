@@ -41,7 +41,7 @@ void main() {
     setUp(() {
       db = _memoryDb();
       remote = FakeFinanceService();
-      repo = FinanceRepository(db: db, remote: remote);
+      repo = FinanceRepository(db: db, remote: remote, autoSync: false);
     });
 
     tearDown(() => db.close());
@@ -53,6 +53,7 @@ void main() {
         'createExpenseOfflineFirst: local row written, outbox op deleted after successful drain',
         () async {
       final result = await repo.createExpenseOfflineFirst(_req());
+      await repo.drainOutboxOnce();
 
       // Local row exists with the temp id initially returned.
       expect(result.amount, equals(2500));
@@ -85,6 +86,7 @@ void main() {
       remote.throwOnCreate = fakeDioException(statusCode: 503);
 
       final result = await repo.createExpenseOfflineFirst(_req());
+      await repo.drainOutboxOnce();
       expect(result.amount, equals(2500),
           reason: 'should return the locally created expense');
 
@@ -121,6 +123,7 @@ void main() {
       // First call: API throws.
       remote.throwOnCreate = fakeDioException(statusCode: 503);
       await repo.createExpenseOfflineFirst(_req());
+      await repo.drainOutboxOnce(); // consumes the one-shot throw (attempt 1)
 
       // Verify op is stuck.
       expect(await db.outboxCount(), equals(1));
@@ -179,6 +182,7 @@ void main() {
         expenseId,
         const UpdateExpenseRequest(amount: 1500, description: 'Updated lunch'),
       );
+      await repo.drainOutboxOnce();
 
       expect(remote.updateCalls.length, equals(1),
           reason: 'update API should be called during drain');
@@ -210,6 +214,7 @@ void main() {
       ]);
 
       await repo.deleteExpenseOfflineFirst(expenseId);
+      await repo.drainOutboxOnce();
 
       // Local row is gone.
       final expenses = await db.getExpensesByGroupOnce('group-1');
@@ -250,9 +255,10 @@ void main() {
       // can add a flag via a local subclass.
       final throwingRemote = _ThrowingDeleteFinanceService();
       final throwingRepo =
-          FinanceRepository(db: db, remote: throwingRemote);
+          FinanceRepository(db: db, remote: throwingRemote, autoSync: false);
 
       await throwingRepo.deleteExpenseOfflineFirst(expenseId);
+      await throwingRepo.drainOutboxOnce();
 
       final ops = await db.getOutboxBatch(limit: 10);
       final deleteOps =

@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'dart:async' show unawaited;
 
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
@@ -7,19 +7,25 @@ import '../models/recipe_models.dart' as api;
 import '../services/recipe_service.dart';
 import '../storage/app_database.dart';
 import '../exceptions.dart';
+import 'outbox_drainer.dart';
 
 class RecipeRepository {
   final AppDatabase _db;
   final RecipeService _remote;
   final Uuid _uuid;
+  final bool _autoSync;
+
+  bool _isDraining = false;
 
   RecipeRepository({
     required AppDatabase db,
     required RecipeService remote,
     Uuid? uuid,
+    bool autoSync = true,
   })  : _db = db,
         _remote = remote,
-        _uuid = uuid ?? const Uuid();
+        _uuid = uuid ?? const Uuid(),
+        _autoSync = autoSync;
 
   Stream<List<api.Recipe>> watchRecipes() {
     return _db.watchRecipes().map((rows) => rows.map(_toRecipe).toList());
@@ -60,7 +66,7 @@ class RecipeRepository {
       idempotencyKey: 'createRecipe:$tempId',
     );
 
-    await drainOutboxOnce();
+    if (_autoSync) unawaited(drainOutboxOnce());
     return local;
   }
 
@@ -96,7 +102,7 @@ class RecipeRepository {
       idempotencyKey: 'updateRecipe:$recipeId:${DateTime.now().toIso8601String()}',
     );
 
-    await drainOutboxOnce();
+    if (_autoSync) unawaited(drainOutboxOnce());
 
     final row = await (_db.select(_db.recipesTable)
           ..where((t) => t.id.equals(recipeId)))
@@ -115,41 +121,23 @@ class RecipeRepository {
       idempotencyKey: 'deleteRecipe:$recipeId',
     );
 
-    await drainOutboxOnce();
+    if (_autoSync) unawaited(drainOutboxOnce());
   }
 
   Future<void> drainOutboxOnce() async {
-    final batch = await _db.getOutboxBatchByTypes(
-      ['createRecipe', 'updateRecipe', 'deleteRecipe'],
-      limit: 25,
-    );
-    if (batch.isEmpty) return;
-
-    for (final op in batch) {
-      Map<String, dynamic> payload;
-      try {
-        payload = (jsonDecode(op.payloadJson) as Map).cast<String, dynamic>();
-      } catch (_) {
-        await _db.deleteOutboxOp(op.id);
-        continue;
-      }
-
-      try {
-        switch (op.type) {
-          case 'createRecipe':
-            await _syncCreate(op.id, payload);
-            break;
-          case 'updateRecipe':
-            await _syncUpdate(op.id, payload);
-            break;
-          case 'deleteRecipe':
-            await _syncDelete(op.id, payload);
-            break;
-        }
-      } catch (e) {
-        await _db.markOutboxAttempt(op.id, error: 'Something went wrong.');
-        return;
-      }
+    if (_isDraining) return;
+    _isDraining = true;
+    try {
+      await OutboxDrainer(_db).drain(
+        types: const ['createRecipe', 'updateRecipe', 'deleteRecipe'],
+        handlers: {
+          'createRecipe': (op, payload) => _syncCreate(op.id, payload),
+          'updateRecipe': (op, payload) => _syncUpdate(op.id, payload),
+          'deleteRecipe': (op, payload) => _syncDelete(op.id, payload),
+        },
+      );
+    } finally {
+      _isDraining = false;
     }
   }
 

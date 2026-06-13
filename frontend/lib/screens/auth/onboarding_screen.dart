@@ -70,10 +70,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
 
   Future<void> _checkExistingGroups() async {
     try {
-      final groupService = await ref.read(groupServiceProviderAsync.future);
-      // Fetch enough to detect a real household alongside the auto-created
-      // personal group that every new account gets.
-      final groups = await groupService.listGroups(limit: 50);
+      final groups = await ref.read(cachedGroupsProvider.future);
       if (!mounted) return;
       final hasHousehold = groups.any((g) => g.isPersonal != true);
       if (hasHousehold) {
@@ -146,6 +143,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final bodyMedium = Theme.of(context).textTheme.bodyMedium;
+
+    if (_checking) {
+      return Scaffold(
+        backgroundColor: colorScheme.surface,
+        body: const Center(
+          child: SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
 
     final createCard = AppCard(
       variant: AppCardVariant.elevated,
@@ -243,7 +253,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                 1,
                 Text(
                   'mitlist',
-                  style: MitlistTypography.logo(),
+                  style: MitlistTypography.logo(color: colorScheme.onSurface),
                   textAlign: TextAlign.center,
                 ),
               ),

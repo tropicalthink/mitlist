@@ -14,6 +14,7 @@ import '../../sheets/recipe_add_to_list_sheet.dart';
 import '../../theme/spacing.dart';
 import '../../theme/theme.dart';
 import '../../theme/typography.dart';
+import '../../utils/shell_tab_load.dart';
 import '../../utils/active_group_context.dart';
 import '../../utils/haptics.dart';
 import '../../widgets/alert.dart';
@@ -104,13 +105,20 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   _FilterOption _filter = _FilterOption.all;
   _SortOption _sort = _SortOption.newest;
 
+  bool _tabLoadStarted = false;
+
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadKitchen();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _activateTabIfNeeded());
+  }
+
+  void _activateTabIfNeeded() {
+    if (_tabLoadStarted || !mounted) return;
+    if (!shouldActivateShellTab(ref, kitchenShellTabIndex)) return;
+    _tabLoadStarted = true;
+    _loadKitchen();
   }
 
   @override
@@ -299,8 +307,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   }
 
   Future<String?> _resolveGroupId() async {
-    final groupService = await ref.read(groupServiceProviderAsync.future);
-    final groups = await groupService.listGroups(limit: 50);
+    final groups = await ref.read(cachedGroupsProvider.future);
     final groupId = resolveActiveGroupId(
       groups,
       ref.read(currentGroupIdProvider),
@@ -312,6 +319,9 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(shellVisitedTabsProvider, (previous, next) {
+      _activateTabIfNeeded();
+    });
     return Scaffold(
       appBar: MitlistAppBar(
         centerTitle: false,
