@@ -188,7 +188,6 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
 
       final List<ItemList> cached =
           await repo.getListsByGroupOnce(effectiveGroupId);
-      await repo.backfillListPreviewsForGroup(effectiveGroupId);
       if (!mounted) return;
       final hadCache = cached.isNotEmpty;
       setState(() {

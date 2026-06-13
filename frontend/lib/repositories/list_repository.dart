@@ -61,7 +61,6 @@ class ListRepository {
       await _db.clearListsForGroup(groupId);
     }
     await _db.upsertListsRows(remote.map(_toListsRow));
-    await backfillListPreviewsForGroup(groupId);
     return remote.length;
   }
 
@@ -554,14 +553,6 @@ class ListRepository {
   }
 
   static const int _listCardPreviewLines = 4;
-
-  /// Rebuilds card snippets from locally cached list items (Google Keep-style).
-  Future<void> backfillListPreviewsForGroup(String groupId) async {
-    final lists = await _db.getListsByGroupOnce(groupId);
-    for (final list in lists) {
-      await _patchListPreviewFromLocalItems(list.id);
-    }
-  }
 
   Future<void> _patchListPreviewFromLocalItems(String listId) async {
     final groupId = await _db.getListGroupId(listId);
