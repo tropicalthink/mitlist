@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../models/pinwall_models.dart';
 import '../services/pinwall_service.dart';
 import '../storage/app_database.dart';
+import 'outbox_drainer.dart';
 
 class PinwallRepository {
   final AppDatabase _db;
@@ -55,45 +56,27 @@ class PinwallRepository {
   }
 
   Future<void> drainOutboxOnce() async {
-    final batch = await _db.getOutboxBatchByTypes(
-      ['createPinwallPost', 'deletePinwallPost'],
-      limit: 25,
+    await OutboxDrainer(_db).drain(
+      types: const ['createPinwallPost', 'deletePinwallPost'],
+      handlers: {
+        'createPinwallPost': (op, payload) async {
+          await _remote.createPost(
+            payload['groupId'] as String,
+            content: payload['content'] as String,
+          );
+          await refreshPosts(payload['groupId'] as String);
+          await _db.deleteOutboxOp(op.id);
+        },
+        'deletePinwallPost': (op, payload) async {
+          await _remote.deletePost(
+            payload['groupId'] as String,
+            payload['postId'] as String,
+          );
+          await refreshPosts(payload['groupId'] as String);
+          await _db.deleteOutboxOp(op.id);
+        },
+      },
     );
-    if (batch.isEmpty) return;
-
-    for (final op in batch) {
-      Map<String, dynamic> payload;
-      try {
-        payload = (jsonDecode(op.payloadJson) as Map).cast<String, dynamic>();
-      } catch (_) {
-        await _db.deleteOutboxOp(op.id);
-        continue;
-      }
-
-      try {
-        switch (op.type) {
-          case 'createPinwallPost':
-            await _remote.createPost(
-              payload['groupId'] as String,
-              content: payload['content'] as String,
-            );
-            await refreshPosts(payload['groupId'] as String);
-            await _db.deleteOutboxOp(op.id);
-            break;
-          case 'deletePinwallPost':
-            await _remote.deletePost(
-              payload['groupId'] as String,
-              payload['postId'] as String,
-            );
-            await refreshPosts(payload['groupId'] as String);
-            await _db.deleteOutboxOp(op.id);
-            break;
-        }
-      } catch (e) {
-        await _db.markOutboxAttempt(op.id, error: 'Something went wrong.');
-        return;
-      }
-    }
   }
 
   List<PinwallPost> _decode(String? raw) {

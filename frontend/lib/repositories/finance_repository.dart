@@ -1,3 +1,4 @@
+import 'dart:async' show unawaited;
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
@@ -7,19 +8,25 @@ import '../models/finance_models.dart' as api;
 import '../services/finance_service.dart';
 import '../storage/app_database.dart';
 import '../exceptions.dart';
+import 'outbox_drainer.dart';
 
 class FinanceRepository {
   final AppDatabase _db;
   final FinanceService _remote;
   final Uuid _uuid;
+  final bool _autoSync;
+
+  bool _isDraining = false;
 
   FinanceRepository({
     required AppDatabase db,
     required FinanceService remote,
     Uuid? uuid,
+    bool autoSync = true,
   })  : _db = db,
         _remote = remote,
-        _uuid = uuid ?? const Uuid();
+        _uuid = uuid ?? const Uuid(),
+        _autoSync = autoSync;
 
   // ---------------------------------------------------------------------------
   // Read (cache-first)
@@ -92,7 +99,7 @@ class FinanceRepository {
       idempotencyKey: 'createExpense:$tempId',
     );
 
-    await drainOutboxOnce();
+    if (_autoSync) unawaited(drainOutboxOnce());
     return local;
   }
 
@@ -126,7 +133,7 @@ class FinanceRepository {
       idempotencyKey: 'updateExpense:$expenseId:${DateTime.now().toIso8601String()}',
     );
 
-    await drainOutboxOnce();
+    if (_autoSync) unawaited(drainOutboxOnce());
 
     final row = (await (_db.select(_db.expensesTable)..where((t) => t.id.equals(expenseId))).getSingleOrNull());
     return row == null ? throw const NotFoundException('Expense not found') : _toExpense(row);
@@ -142,41 +149,23 @@ class FinanceRepository {
       idempotencyKey: 'deleteExpense:$expenseId',
     );
 
-    await drainOutboxOnce();
+    if (_autoSync) unawaited(drainOutboxOnce());
   }
 
   Future<void> drainOutboxOnce() async {
-    final batch = await _db.getOutboxBatchByTypes(
-      ['createExpense', 'updateExpense', 'deleteExpense'],
-      limit: 25,
-    );
-    if (batch.isEmpty) return;
-
-    for (final op in batch) {
-      Map<String, dynamic> payload;
-      try {
-        payload = (jsonDecode(op.payloadJson) as Map).cast<String, dynamic>();
-      } catch (_) {
-        await _db.deleteOutboxOp(op.id);
-        continue;
-      }
-
-      try {
-        switch (op.type) {
-          case 'createExpense':
-            await _syncCreateExpense(op.id, payload);
-            break;
-          case 'updateExpense':
-            await _syncUpdateExpense(op.id, payload);
-            break;
-          case 'deleteExpense':
-            await _syncDeleteExpense(op.id, payload);
-            break;
-        }
-      } catch (e) {
-        await _db.markOutboxAttempt(op.id, error: 'Something went wrong.');
-        return;
-      }
+    if (_isDraining) return;
+    _isDraining = true;
+    try {
+      await OutboxDrainer(_db).drain(
+        types: const ['createExpense', 'updateExpense', 'deleteExpense'],
+        handlers: {
+          'createExpense': (op, payload) => _syncCreateExpense(op.id, payload),
+          'updateExpense': (op, payload) => _syncUpdateExpense(op.id, payload),
+          'deleteExpense': (op, payload) => _syncDeleteExpense(op.id, payload),
+        },
+      );
+    } finally {
+      _isDraining = false;
     }
   }
 
