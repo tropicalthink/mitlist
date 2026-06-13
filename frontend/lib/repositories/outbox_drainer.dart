@@ -1,6 +1,10 @@
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
+
+import '../services/api_error_mapper.dart';
 import '../storage/app_database.dart';
+import 'outbox_error_classifier.dart';
 
 typedef OutboxOpHandler = Future<void> Function(
     OutboxOp op, Map<String, dynamic> payload);
@@ -34,9 +38,17 @@ class OutboxDrainer {
       try {
         await handler(fresh, payload);
       } catch (e) {
-        // PLAN 003 will replace this block with error classification.
-        await _db.markOutboxAttempt(op.id, error: 'Something went wrong.');
-        return;
+        final message = e is DioException ? ApiErrorMapper.fromDio(e) : 'Sync failed.';
+        switch (classifyOutboxError(e)) {
+          case OutboxErrorDisposition.transient:
+            await _db.markOutboxAttempt(op.id, error: message);
+            return;
+          case OutboxErrorDisposition.permanent:
+          case OutboxErrorDisposition.conflict:
+            await _db.markOutboxPermanentFailure(op.id,
+                error: message, threshold: kOutboxMaxAttempts);
+            continue;
+        }
       }
     }
   }

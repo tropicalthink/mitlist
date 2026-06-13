@@ -3,7 +3,10 @@ import 'package:drift/drift.dart' as drift;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mitlist/repositories/outbox_drainer.dart';
+import 'package:mitlist/repositories/outbox_error_classifier.dart';
 import 'package:mitlist/storage/app_database.dart';
+
+import '../support/fakes.dart';
 
 AppDatabase _memoryDb() => AppDatabase(
       drift.DatabaseConnection(
@@ -104,11 +107,12 @@ void main() {
     });
 
     // -------------------------------------------------------------------------
-    // Case 4: failure stops the pass (head-of-line blocking — current behavior).
-    // First handler throws → first op attemptCount==1, lastError set, and the
-    // SECOND op is NOT processed. Plan 003 changes this for permanent errors.
+    // Case 4: transient failure stops the pass (head-of-line). First handler
+    // throws a transient (503) → first op attemptCount==1, lastError set, and
+    // the SECOND op is NOT processed. (Permanent failures behave differently —
+    // see the plan-003 cases below.)
     // -------------------------------------------------------------------------
-    test('failure stops the pass: second op not processed', () async {
+    test('transient failure stops the pass: second op not processed', () async {
       await db.enqueueOutbox(
         id: 'op-first',
         type: 'doThing',
@@ -128,7 +132,7 @@ void main() {
         handlers: {
           'doThing': (op, payload) async {
             if (payload['order'] == 1) {
-              throw StateError('boom');
+              throw fakeDioException(statusCode: 503);
             }
             secondCalls += 1;
             await db.deleteOutboxOp(op.id);
@@ -137,7 +141,7 @@ void main() {
       );
 
       expect(secondCalls, equals(0),
-          reason: 'second op must not run after first op fails');
+          reason: 'second op must not run after first op fails transiently');
 
       final ops = await db.getOutboxBatch(limit: 10);
       final first = ops.firstWhere((o) => o.id == 'op-first');
@@ -146,6 +150,114 @@ void main() {
 
       // Both ops still present (nothing deleted).
       expect(await db.outboxCount(), equals(2));
+    });
+
+    // -------------------------------------------------------------------------
+    // Plan 003 — Case A: permanent failure dead-letters AND does not block the
+    // queue. First op throws 422 (permanent) → dead-lettered; second op still
+    // runs and is deleted. KEY regression test vs head-of-line blocking.
+    // -------------------------------------------------------------------------
+    test('permanent failure dead-letters and does not block the queue',
+        () async {
+      await db.enqueueOutbox(
+        id: 'op-first',
+        type: 'doThing',
+        payload: {'order': 1},
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+      await db.enqueueOutbox(
+        id: 'op-second',
+        type: 'doThing',
+        payload: {'order': 2},
+      );
+
+      var secondCalls = 0;
+      await OutboxDrainer(db).drain(
+        types: const ['doThing'],
+        handlers: {
+          'doThing': (op, payload) async {
+            if (payload['order'] == 1) {
+              throw fakeDioException(statusCode: 422);
+            }
+            secondCalls += 1;
+            await db.deleteOutboxOp(op.id);
+          },
+        },
+      );
+
+      // First op dead-lettered: attempt_count pushed to the threshold.
+      final ops = await db.getOutboxBatch(limit: 10);
+      final first = ops.firstWhere((o) => o.id == 'op-first');
+      expect(first.attemptCount, equals(kOutboxMaxAttempts));
+      expect(await db.outboxFailedCount(), equals(1));
+      expect(await db.outboxPendingCount(), equals(0),
+          reason: 'dead-lettered op is excluded from pending');
+
+      // Second op still ran and was deleted.
+      expect(secondCalls, equals(1));
+      expect(ops.where((o) => o.id == 'op-second'), isEmpty);
+    });
+
+    // -------------------------------------------------------------------------
+    // Plan 003 — Case B: transient failure records one attempt and stops pass.
+    // First op throws 503 (transient) → attempt_count==1, second op NOT run.
+    // -------------------------------------------------------------------------
+    test('transient failure records one attempt and stops the pass', () async {
+      await db.enqueueOutbox(
+        id: 'op-first',
+        type: 'doThing',
+        payload: {'order': 1},
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+      await db.enqueueOutbox(
+        id: 'op-second',
+        type: 'doThing',
+        payload: {'order': 2},
+      );
+
+      var secondCalls = 0;
+      await OutboxDrainer(db).drain(
+        types: const ['doThing'],
+        handlers: {
+          'doThing': (op, payload) async {
+            if (payload['order'] == 1) {
+              throw fakeDioException(statusCode: 503);
+            }
+            secondCalls += 1;
+            await db.deleteOutboxOp(op.id);
+          },
+        },
+      );
+
+      final ops = await db.getOutboxBatch(limit: 10);
+      final first = ops.firstWhere((o) => o.id == 'op-first');
+      expect(first.attemptCount, equals(1));
+      expect(first.lastError, isNotNull);
+      expect(secondCalls, equals(0),
+          reason: 'transient failure stops the pass (head-of-line)');
+    });
+
+    // -------------------------------------------------------------------------
+    // Plan 003 — Case C: non-Dio exception is permanent (dead-letter).
+    // -------------------------------------------------------------------------
+    test('non-Dio exception is permanent', () async {
+      await db.enqueueOutbox(
+        id: 'op-1',
+        type: 'doThing',
+        payload: {'k': 'v'},
+      );
+
+      await OutboxDrainer(db).drain(
+        types: const ['doThing'],
+        handlers: {
+          'doThing': (op, payload) async {
+            throw StateError('x');
+          },
+        },
+      );
+
+      final ops = await db.getOutboxBatch(limit: 10);
+      expect(ops.first.attemptCount, equals(kOutboxMaxAttempts));
     });
   });
 }

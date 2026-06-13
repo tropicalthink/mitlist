@@ -508,6 +508,17 @@ FROM list_items_table;
     );
   }
 
+  Future<void> markOutboxPermanentFailure(String id,
+      {String? error, int threshold = 10}) async {
+    await (update(outboxOps)..where((t) => t.id.equals(id))).write(
+      OutboxOpsCompanion(
+        lastAttemptAt: Value(DateTime.now()),
+        attemptCount: Value(threshold),
+        lastError: Value(error),
+      ),
+    );
+  }
+
   Future<void> deleteOutboxOp(String id) async {
     await (delete(outboxOps)..where((t) => t.id.equals(id))).go();
   }
