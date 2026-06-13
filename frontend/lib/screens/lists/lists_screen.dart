@@ -359,6 +359,31 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     }
   }
 
+  Future<void> _quickCreateAndOpen() async {
+    unawaited(Haptics.light());
+    final effectiveGroupId = await _resolveGroupId();
+    if (effectiveGroupId == null || !mounted) return;
+    try {
+      final svc = await ref.read(listServiceProviderAsync.future);
+      final type = _filterToListType() ?? 'shopping';
+      final list = await svc.createList(
+        CreateListRequest(groupId: effectiveGroupId, name: 'New list', type: type),
+      );
+      if (!mounted) return;
+      final changed = await context.pushNamed<bool>(
+        'listDetail',
+        pathParameters: {'listId': list.id},
+        extra: ListDetailRouteArgs(listName: list.name, autoFocusTitle: true),
+      );
+      if (changed == true || mounted) unawaited(_loadLists());
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Couldn’t create list.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(shellVisitedTabsProvider, (previous, next) {
@@ -496,7 +521,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
       floatingActionButton: AppButton(
         size: AppButtonSize.lg,
         onPressed:
-            _hasHousehold ? _showCreateSheet : () => context.goNamed('groupsList'),
+            _hasHousehold ? _quickCreateAndOpen : () => context.goNamed('groupsList'),
         icon: const AppIcon(name: 'plus'),
         text: 'New list',
         tooltip: 'New list',
