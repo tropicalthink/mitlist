@@ -188,6 +188,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
 
       final List<ItemList> cached =
           await repo.getListsByGroupOnce(effectiveGroupId);
+      await repo.backfillListPreviewsForGroup(effectiveGroupId);
       if (!mounted) return;
       final hadCache = cached.isNotEmpty;
       setState(() {
@@ -843,7 +844,7 @@ class _ListCard extends ConsumerWidget {
     final lines = list.itemPreview
         .map((s) => s.trim())
         .where((s) => s.isNotEmpty)
-        .take(3);
+        .take(4);
     if (lines.isNotEmpty) {
       parts.add(lines.join(', '));
     }
@@ -1007,9 +1008,10 @@ class _ListCard extends ConsumerWidget {
     final previewLines = list.itemPreview
         .map((s) => s.trim())
         .where((s) => s.isNotEmpty)
-        .take(3)
+        .take(4)
         .toList();
     final snippetColor = accent.snippetOnTile;
+    final isTodo = list.type.toLowerCase() == 'todo';
 
     final itemCount = list.itemCount;
 
@@ -1065,22 +1067,24 @@ class _ListCard extends ConsumerWidget {
                             top: i == 0 ? 0 : MitlistSpacing.xs,
                           ),
                           child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              AppIcon(
-                                name: 'checkCircleOutline',
-                                size: 14,
-                                color: snippetColor.withValues(alpha: 0.5),
-                              ),
-                              const SizedBox(width: MitlistSpacing.xs),
-                              Flexible(
+                              if (isTodo) ...[
+                                AppIcon(
+                                  name: 'checkCircleOutline',
+                                  size: 14,
+                                  color: snippetColor.withValues(alpha: 0.5),
+                                ),
+                                const SizedBox(width: MitlistSpacing.xs),
+                              ],
+                              Expanded(
                                 child: Text(
                                   previewLines[i],
                                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                         color: snippetColor,
                                         height: 1.35,
                                       ),
-                                  maxLines: 1,
+                                  maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
