@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"math"
 	"sort"
 	"strings"
 
@@ -82,8 +83,11 @@ func (s *FinanceService) CreateExpenseWithSplitMode(ctx context.Context, userID 
 	if expense.Currency == "" {
 		return api.ErrValidation
 	}
+	if err := s.normalizeBaseAmount(ctx, expense); err != nil {
+		return err
+	}
 
-	splits, err := buildSplits(expense.Amount, expense.PayerID, splitMode, splitInputs)
+	splits, err := buildSplits(expense.BaseAmount, expense.PayerID, splitMode, splitInputs)
 	if err != nil {
 		return err
 	}
@@ -93,6 +97,29 @@ func (s *FinanceService) CreateExpenseWithSplitMode(ctx context.Context, userID 
 		}
 	}
 	return s.financeRepo.CreateExpenseWithSplits(ctx, expense, splits)
+}
+
+// normalizeBaseAmount converts the expense's entered amount into the group's
+// base currency, capturing the FX rate. When the expense currency matches the
+// group's base currency the rate is forced to 1 and base_amount = amount. For a
+// foreign currency a positive FxRate is required and
+// base_amount = round(amount * fx_rate). The integer BaseAmount is the stored
+// truth used by all balance math; FxRate is retained for display only.
+func (s *FinanceService) normalizeBaseAmount(ctx context.Context, expense *models.Expense) error {
+	group, err := s.groupRepo.GetGroupByID(ctx, expense.GroupID)
+	if err != nil {
+		return err
+	}
+	if expense.Currency == group.Currency {
+		expense.FxRate = 1
+		expense.BaseAmount = expense.Amount
+		return nil
+	}
+	if expense.FxRate <= 0 {
+		return api.ErrValidation
+	}
+	expense.BaseAmount = int64(math.Round(float64(expense.Amount) * expense.FxRate))
+	return nil
 }
 
 // GetExpense returns an expense by ID.
@@ -206,6 +233,9 @@ func (s *FinanceService) UpdateExpense(ctx context.Context, userID uuid.UUID, ex
 		return api.ErrValidation
 	}
 	expense.GroupID = existing.GroupID
+	if err := s.normalizeBaseAmount(ctx, expense); err != nil {
+		return err
+	}
 	return s.financeRepo.UpdateExpense(ctx, expense)
 }
 
@@ -498,7 +528,7 @@ func calculateBalances(expenses []models.Expense, splits []models.Split, settlem
 
 	for _, expense := range expenses {
 		balance := ensure(expense.PayerID)
-		balance.Paid += expense.Amount
+		balance.Paid += expense.BaseAmount
 	}
 	for _, split := range splits {
 		balance := ensure(split.UserID)
