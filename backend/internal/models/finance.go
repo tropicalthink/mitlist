@@ -12,6 +12,8 @@ type Expense struct {
 	GroupID     uuid.UUID `json:"group_id"`
 	PayerID     uuid.UUID `json:"payer_id"`
 	Amount      int64     `json:"amount"`
+	BaseAmount  int64     `json:"base_amount"`
+	FxRate      float64   `json:"fx_rate"`
 	Description string    `json:"description"`
 	Category    string    `json:"category"`
 	Currency    string    `json:"currency"`
@@ -83,7 +85,7 @@ type RecurringSplitInput struct {
 //	Total = Paid - Owed
 type BalanceAggregate struct {
 	UserID      uuid.UUID
-	ExpensePaid int64 // SUM(expenses.amount) WHERE payer_id = user_id
+	ExpensePaid int64 // SUM(expenses.base_amount) WHERE payer_id = user_id
 	SplitOwed   int64 // SUM(splits.amount) — IsSettled is ignored
 	SettledOut  int64 // SUM(settlements.amount) WHERE from_user_id = user_id
 	SettledIn   int64 // SUM(settlements.amount) WHERE to_user_id = user_id

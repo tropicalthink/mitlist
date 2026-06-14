@@ -1,0 +1,2 @@
+ALTER TABLE expenses DROP COLUMN IF EXISTS fx_rate;
+ALTER TABLE expenses DROP COLUMN IF EXISTS base_amount;
