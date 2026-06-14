@@ -4,6 +4,7 @@ import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'l10n/app_localizations.dart';
 import 'theme/theme.dart';
 import 'router.dart';
 import 'providers/list_provider.dart' show sseServiceProvider;
@@ -162,6 +163,8 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
       darkTheme: MitlistTheme.dark,
       themeMode: themeMode,
       routerConfig: router,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) {
         return Column(
           children: [

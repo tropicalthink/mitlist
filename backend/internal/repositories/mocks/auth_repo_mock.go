@@ -57,6 +57,14 @@ func (m *MockAuthRepo) ListPushSubscriptionsByUser(ctx context.Context, userID u
 	return nil, args.Error(1)
 }
 
+func (m *MockAuthRepo) ListPushSubscriptionsByUserIDs(ctx context.Context, userIDs []uuid.UUID) (map[uuid.UUID][]models.PushSubscription, error) {
+	args := m.Called(ctx, userIDs)
+	if s := args.Get(0); s != nil {
+		return s.(map[uuid.UUID][]models.PushSubscription), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
 func (m *MockAuthRepo) DeletePushSubscription(ctx context.Context, id uuid.UUID) error {
 	args := m.Called(ctx, id)
 	return args.Error(0)
@@ -74,6 +82,14 @@ func (m *MockAuthRepo) ListDeviceTokensByUser(ctx context.Context, userID uuid.U
 	args := m.Called(ctx, userID)
 	if tokens := args.Get(0); tokens != nil {
 		return tokens.([]models.DeviceToken), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockAuthRepo) ListDeviceTokensByUserIDs(ctx context.Context, userIDs []uuid.UUID) (map[uuid.UUID][]models.DeviceToken, error) {
+	args := m.Called(ctx, userIDs)
+	if tokens := args.Get(0); tokens != nil {
+		return tokens.(map[uuid.UUID][]models.DeviceToken), args.Error(1)
 	}
 	return nil, args.Error(1)
 }

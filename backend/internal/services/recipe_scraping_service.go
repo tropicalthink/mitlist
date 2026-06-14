@@ -29,10 +29,11 @@ const (
 )
 
 type RecipeClipIngredient struct {
-	RawText  string  `json:"raw_text"`
-	Name     string  `json:"name"`
-	Quantity float64 `json:"quantity"`
-	Unit     string  `json:"unit"`
+	RawText         string  `json:"raw_text"`
+	Name            string  `json:"name"`
+	Quantity        float64 `json:"quantity"`
+	Unit            string  `json:"unit"`
+	CanonicalItemID *string `json:"canonical_item_id,omitempty"`
 }
 
 type RecipeClipResponse struct {
@@ -1354,6 +1355,7 @@ func dedupeIngredients(in []RecipeClipIngredient) []RecipeClipIngredient {
 // ------------------------------------------------------------------
 
 var ingredientUnits = []string{
+	// English
 	"cups", "cup", "tablespoons", "tablespoon", "tbsp", "teaspoons", "teaspoon", "tsp",
 	"ounces", "ounce", "oz", "pounds", "pound", "lbs", "lb",
 	"grams", "gram", "g", "kilograms", "kilogram", "kg", "milligrams", "mg",
@@ -1364,7 +1366,43 @@ var ingredientUnits = []string{
 	"heads", "head", "bulbs", "bulb", "ears", "ear", "strips", "strip",
 	"sticks", "stick", "dashes", "dash", "handfuls", "handful", "knobs", "knob",
 	"fillets", "fillet", "sheets", "sheet", "jars", "jar", "bottles", "bottle",
+	// German
+	"el", "tl", "esslöffel", "teelöffel", "stück", "stücke", "messerspitze",
+	"bund", "bunde", "zweig", "zweige", "scheibe", "scheiben", "dose", "dosen",
+	"packung", "packungen", "päckchen", "flasche", "flaschen", "glas", "gläser",
+	"prise", "prisen", "zehe", "zehen", "blatt", "blätter", "becher",
+	// French
+	"cuillère", "cuilleres", "cuillères", "cas", "café",
+	"sachet", "sachets", "boîte", "boite", "boîtes",
+	"feuille", "feuilles", "gousse", "gousses", "brin", "brins",
+	"pincée", "pincees", "verre", "verres", "tranche", "tranches",
+	// Spanish
+	"cucharadas", "cucharada", "cucharaditas", "cucharadita",
+	"tazas", "taza", "puñado", "puñados", "rodaja", "rodajas",
+	"diente", "dientes", "ramita", "ramitas", "lata", "latas",
+	"pizca", "pizcas", "vaso", "vasos",
 }
+
+// prepPhrasesRe matches trailing preparation notes in any supported language.
+// These are stripped from the ingredient name, keeping only the bare noun.
+var prepPhrasesRe = regexp.MustCompile(
+	`(?i)[,;]\s*.+$|` + // anything after comma/semicolon (e.g. ", sifted", "; finely chopped")
+		`\s*\(.*?\)\s*$|` + // parenthetical notes at end (e.g. "(drained)")
+		`\s+(?:` +
+		// EN prep words
+		`chopped|minced|diced|sliced|grated|shredded|peeled|crushed|ground|sifted|` +
+		`softened|melted|beaten|cooked|fresh|dried|frozen|optional|divided|halved|quartered|` +
+		// DE prep words
+		`gehackt|gewürfelt|geschnitten|gerieben|geschält|zerdrückt|gemahlen|gesiegt|` +
+		`weich|geschmolzen|getrocknet|tiefgekühlt|frisch|` +
+		// FR prep words
+		`haché|hachée|coupé|coupée|râpé|râpée|épluché|épluchée|écrasé|écrasée|` +
+		`moulu|moulue|tamisé|tamisée|fondu|fondue|frais|fraîche|séché|séchée|` +
+		// ES prep words
+		`picado|picada|cortado|cortada|rallado|rallada|pelado|pelada|` +
+		`molido|molida|tamizado|tamizada|derretido|derretida|fresco|fresca|seco|seca` +
+		`)(?:\s+\w+)*$`,
+)
 
 var (
 	leadingBulletRe = regexp.MustCompile(`^[\s\-–—•*▢☐☑✓✔►◦·]+`)
@@ -1406,8 +1444,13 @@ func ParseIngredient(raw string) RecipeClipIngredient {
 			result.Unit = strings.ToLower(unitStr)
 		}
 		if nameStr != "" {
-			result.Name = strings.TrimPrefix(nameStr, "of ")
-			result.Name = strings.TrimSpace(result.Name)
+			name := strings.TrimPrefix(nameStr, "of ")
+			// Also strip "de " prefix used in FR/ES ("de aceite" → "aceite")
+			name = strings.TrimPrefix(name, "de ")
+			name = strings.TrimSpace(name)
+			// Strip trailing prep phrases and parenthetical notes.
+			name = strings.TrimSpace(prepPhrasesRe.ReplaceAllString(name, ""))
+			result.Name = name
 		}
 	}
 

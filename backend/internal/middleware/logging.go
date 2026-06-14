@@ -66,3 +66,15 @@ func (lr *logRecorder) WriteHeader(code int) {
 	lr.statusCode = code
 	lr.ResponseWriter.WriteHeader(code)
 }
+
+// Flush delegates to the underlying writer so SSE/streaming handlers work.
+func (lr *logRecorder) Flush() {
+	if f, ok := lr.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}
+
+// Unwrap exposes the underlying writer for http.NewResponseController.
+func (lr *logRecorder) Unwrap() http.ResponseWriter {
+	return lr.ResponseWriter
+}

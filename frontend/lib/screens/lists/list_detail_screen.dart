@@ -169,6 +169,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   /// Refreshes both suggestion sources for the current composer text: the
   /// offline canonical grocery seed (alias-powered) and the backend product
   /// history. The grocery seed needs no network and matches shorthand/typos.
+  /// When the query is empty, predictive restock suggestions are prepended
+  /// (items the household usually buys and whose cadence indicates they are due).
   Future<void> _refreshSuggestions() async {
     final groupId = _groupId;
     if (groupId == null) return;
@@ -177,7 +179,38 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     // Local grocery seed first — instant, offline.
     final grocery =
         await ref.read(grocerySuggestionServiceProvider).suggest(query, groupId);
-    if (mounted) setState(() => _grocerySuggestions = grocery);
+
+    // When the composer is empty, prepend restock predictions ("usually every N
+    // days") — on-device only, no network or model in the request path.
+    List<GrocerySuggestion> blended = grocery;
+    if (query.isEmpty) {
+      try {
+        final currentNames = _items
+            .where((it) => !it.checked)
+            .map((it) => it.name.toLowerCase())
+            .toSet();
+        final restock = await ref.read(restockServiceProvider).due(
+              groupId: groupId,
+              currentItemNames: currentNames,
+              limit: 5,
+            );
+        if (restock.isNotEmpty) {
+          final restockChips = restock.map((r) => GrocerySuggestion(
+                canonicalItemId: r.canonicalItemId,
+                name: r.name,
+                // category/unit unused by the chip renderer — reuse empty strings.
+                category: '',
+                unit: '',
+              ));
+          // Restock items lead when the query is blank; grocery seed follows.
+          blended = [...restockChips, ...grocery];
+        }
+      } catch (_) {
+        // Restock is best-effort; don't disrupt the rest of the suggestion flow.
+      }
+    }
+
+    if (mounted) setState(() => _grocerySuggestions = blended);
 
     try {
       final service = await ref.read(listServiceProviderAsync.future);
@@ -1152,12 +1185,16 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                       ),
                       onSubmitted: (_) => _submitTitleEdit(),
                     )
-                  : GestureDetector(
-                      onTap: _startEditingTitle,
-                      child: Text(
-                        _listName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                  : Semantics(
+                      button: true,
+                      label: 'Edit list name, $_listName',
+                      child: GestureDetector(
+                        onTap: _startEditingTitle,
+                        child: Text(
+                          _listName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ),
               actions: [
@@ -1170,6 +1207,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   ),
                   tooltip: _showSearch ? 'Close search' : 'Search',
                   onPressed: () {
+                    unawaited(Haptics.light());
                     setState(() {
                       _showSearch = !_showSearch;
                       if (!_showSearch) {
@@ -1563,6 +1601,12 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Icon(
+              Icons.search_off_rounded,
+              size: 40,
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+            ),
+            const SizedBox(height: MitlistSpacing.sm),
             Text(
               'No items match your filter',
               textAlign: TextAlign.center,

@@ -1,0 +1,11 @@
+{
+  "@@locale": "de",
+  "welcomeTagline": "Dein Haushalt, organisiert.",
+  "welcomeCardTitle": "Listen, Aufgaben, Geld.\nAlles an einem Ort.",
+  "welcomeCardBody": "Gemacht für WGs, die weniger Reibung und mehr Klarheit wollen.",
+  "welcomeCreateHousehold": "Kostenlosen Haushalt erstellen",
+  "welcomeSignIn": "Anmelden",
+  "welcomeGuestLoading": "Wird eingerichtet …",
+  "welcomeContinueAsGuest": "Als Gast fortfahren",
+  "welcomeGuestFootnote": "Kein Konto nötig. 30 Tage lang alles kostenlos testen."
+}

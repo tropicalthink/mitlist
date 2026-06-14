@@ -1,4 +1,6 @@
 import '../../storage/app_database.dart';
+import 'grocery_classifier_service.dart';
+import 'static_embedding_service.dart';
 
 /// Result of a canonical resolution attempt.
 class ResolveResult {
@@ -20,11 +22,23 @@ class ResolveResult {
 /// Lookup order:
 ///  1. Exact alias match (household scope first, then global seed).
 ///  2. Fuzzy alias match (normalised edit distance).
-///  3. No match → returns the cleaned name as-is with score 0.
+///  3. Optional on-device classifier fallback when fuzzy confidence < 0.85.
+///  4. Optional semantic embedder fallback when classifier also misses.
+///  5. No match → returns the cleaned name as-is with score 0.
+///
+/// The [classifier] and [embedder] arguments are optional; existing call sites
+/// that omit them keep compiling and behave exactly as before.
 class CanonicalResolverService {
   final AppDatabase _db;
+  final GroceryClassifierService? _classifier;
+  final StaticEmbeddingService? _embedder;
 
-  CanonicalResolverService(this._db);
+  CanonicalResolverService(
+    this._db, {
+    GroceryClassifierService? classifier,
+    StaticEmbeddingService? embedder,
+  })  : _classifier = classifier,
+        _embedder = embedder;
 
   Future<ResolveResult> resolve(String itemName, String groupId) async {
     final normalised = _normalise(itemName);
@@ -53,7 +67,9 @@ class CanonicalResolverService {
       query: normalised,
     );
     if (allAliases.isEmpty) {
-      return ResolveResult(displayName: _titleCase(itemName), score: 0);
+      final fuzzyResult =
+          ResolveResult(displayName: _titleCase(itemName), score: 0);
+      return _resolveWithFallback(itemName, groupId, fuzzyResult);
     }
 
     _AliasMatch? best;
@@ -71,12 +87,16 @@ class CanonicalResolverService {
     }
 
     if (best == null || best.score < 0.5) {
-      return ResolveResult(displayName: _titleCase(itemName), score: 0);
+      final fuzzyResult =
+          ResolveResult(displayName: _titleCase(itemName), score: 0);
+      return _resolveWithFallback(itemName, groupId, fuzzyResult);
     }
 
     final canonical = await _db.getCanonicalItemById(best.alias.canonicalItemId);
     if (canonical == null) {
-      return ResolveResult(displayName: _titleCase(itemName), score: 0);
+      final fuzzyResult =
+          ResolveResult(displayName: _titleCase(itemName), score: 0);
+      return _resolveWithFallback(itemName, groupId, fuzzyResult);
     }
 
     final alternatives = <String>[];
@@ -85,12 +105,77 @@ class CanonicalResolverService {
       if (alt != null) alternatives.add(_preferredName(alt));
     }
 
-    return ResolveResult(
+    final fuzzyResult = ResolveResult(
       canonicalItemId: canonical.id,
       displayName: _preferredName(canonical),
       score: best.score,
       alternatives: alternatives,
     );
+    return _resolveWithFallback(itemName, groupId, fuzzyResult);
+  }
+
+  /// Attempts to improve [fuzzyResult] using the on-device classifier, then
+  /// the semantic embedder, in that order.
+  ///
+  /// Returns [fuzzyResult] unchanged when:
+  /// - fuzzy confidence is already ≥ 0.85, or
+  /// - neither classifier nor embedder is wired, or
+  /// - the classifier/embedder both produce no useful result.
+  Future<ResolveResult> _resolveWithFallback(
+    String itemName,
+    String groupId,
+    ResolveResult fuzzyResult,
+  ) async {
+    if (fuzzyResult.score >= 0.85) return fuzzyResult;
+
+    // Step A: classifier fallback (Plan 026 behaviour, unchanged).
+    if (_classifier != null) {
+      final preds = await _classifier.classify(itemName, topK: 5);
+      if (preds.isNotEmpty) {
+        final top = preds.first;
+        if (top.score >= 0.85) {
+          final alias = await _db.findAlias(
+            groupId: groupId,
+            aliasText: _normalise(top.label),
+          );
+          if (alias != null) {
+            final canonical =
+                await _db.getCanonicalItemById(alias.canonicalItemId);
+            if (canonical != null && top.score > fuzzyResult.score) {
+              return ResolveResult(
+                canonicalItemId: canonical.id,
+                displayName: _preferredName(canonical),
+                score: top.score,
+                alternatives: preds.skip(1).map((p) => p.label).toList(),
+              );
+            }
+          }
+        }
+      }
+    }
+
+    // Step B: semantic embedder fallback (Plan 028, new).
+    // Only attempted when the embedder is wired and fuzzy+classifier both
+    // produced low confidence (< 0.85).
+    if (_embedder != null) {
+      final matches = await _embedder.nearest(itemName, topK: 1);
+      if (matches.isNotEmpty) {
+        final top = matches.first;
+        // Only override when semantic score is meaningfully better.
+        if (top.score > fuzzyResult.score) {
+          final canonical = await _db.getCanonicalItemById(top.itemId);
+          if (canonical != null) {
+            return ResolveResult(
+              canonicalItemId: canonical.id,
+              displayName: _preferredName(canonical),
+              score: top.score,
+            );
+          }
+        }
+      }
+    }
+
+    return fuzzyResult;
   }
 
   String _preferredName(CanonicalItemsTableData item) {

@@ -31,6 +31,7 @@ class CreateListSheet extends ConsumerStatefulWidget {
 
   final String? initialGroupId;
   final String? initialName;
+
   /// One of 'shopping', 'todo', 'custom'. Null → defaults to shopping.
   final String? initialType;
 
@@ -57,6 +58,7 @@ class CreateListSheet extends ConsumerStatefulWidget {
 
 class _CreateListSheetState extends ConsumerState<CreateListSheet> {
   final TextEditingController _nameController = TextEditingController();
+  final FocusNode _nameFocusNode = FocusNode();
   _ListType _selectedType = _ListType.shopping;
   String? _selectedGroupId;
   List<Group> _groups = const [];
@@ -67,10 +69,10 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
   String? _nameError;
 
   static _ListType _listTypeFromString(String? type) => switch (type) {
-    'todo' => _ListType.todo,
-    'custom' => _ListType.custom,
-    _ => _ListType.shopping,
-  };
+        'todo' => _ListType.todo,
+        'custom' => _ListType.custom,
+        _ => _ListType.shopping,
+      };
 
   @override
   void initState() {
@@ -80,6 +82,11 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
     }
     _selectedType = _listTypeFromString(widget.initialType);
     _loadGroups();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_nameFocusNode.hasFocus) {
+        _nameFocusNode.requestFocus();
+      }
+    });
   }
 
   Future<void> _onScan() async {
@@ -106,6 +113,15 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
       }
 
       setState(() => _isScanning = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _nameController.text.trim().isEmpty
+                ? 'Scan finished'
+                : 'Scanned "${_nameController.text.trim()}"',
+          ),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _isScanning = false);
@@ -125,8 +141,8 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
 
       setState(() {
         _groups = groups;
-        final preferred = widget.initialGroupId ??
-            ref.read(currentGroupIdProvider);
+        final preferred =
+            widget.initialGroupId ?? ref.read(currentGroupIdProvider);
         _selectedGroupId = resolveActiveGroupId(groups, preferred);
         _isLoadingGroups = false;
       });
@@ -144,6 +160,14 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
       _ListType.shopping => 'shopping',
       _ListType.todo => 'todo',
       _ListType.custom => 'custom',
+    };
+  }
+
+  String get _selectedTypeDescription {
+    return switch (_selectedType) {
+      _ListType.shopping => 'Best for groceries and errands with quantities.',
+      _ListType.todo => 'A simple checklist for tasks that need doing.',
+      _ListType.custom => 'A flexible list for anything that does not fit.',
     };
   }
 
@@ -189,6 +213,7 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
 
   @override
   void dispose() {
+    _nameFocusNode.dispose();
     _nameController.dispose();
     super.dispose();
   }
@@ -224,9 +249,11 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
           label: 'List name',
           hint: 'e.g. Weekend Groceries',
           controller: _nameController,
+          focusNode: _nameFocusNode,
           enabled: !_isSubmitting,
           textInputAction: TextInputAction.done,
           maxLength: 100,
+          clearable: true,
           errorText: _nameError,
           onChanged: (_) => setState(() {
             _nameError = null;
@@ -265,6 +292,13 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
             ),
           ],
         ),
+        const SizedBox(height: MitlistSpacing.xs),
+        Text(
+          _selectedTypeDescription,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
         const SizedBox(height: MitlistSpacing.md),
         Text(
           'Household',
@@ -287,7 +321,9 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
             runSpacing: MitlistSpacing.sm,
             children: _groups.map((group) {
               return AppChip(
-                label: group.name.length > 30 ? '${group.name.substring(0, 28)}\u2026' : group.name,
+                label: group.name.length > 30
+                    ? '${group.name.substring(0, 28)}\u2026'
+                    : group.name,
                 selected: _selectedGroupId == group.id,
                 onSelected: _isSubmitting
                     ? null
@@ -304,7 +340,10 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
             size: AppButtonSize.lg,
             text: _isSubmitting ? 'Creating...' : 'Create',
             isLoading: _isSubmitting,
-            onPressed: !_isLoadingGroups && !_isSubmitting
+            onPressed: !_isLoadingGroups &&
+                    !_isSubmitting &&
+                    _selectedGroupId != null &&
+                    _canCreate
                 ? _attemptCreate
                 : null,
           ),

@@ -208,6 +208,44 @@ func TestNotificationRepository_GetPreferencesByUser(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestNotificationRepository_GetPreferencesByGroup(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewNotificationRepository(mock)
+	uid := fixedUUID()
+	gid := fixedUUID()
+
+	rows := pgxmock.NewRows([]string{
+		"id", "user_id", "group_id", "chore_due", "chore_due_day_of", "list_item_added",
+		"expense_created", "meal_plan_changed", "weekly_digest", "pinwall_reminder", "push_enabled", "created_at", "updated_at",
+	}).AddRow(fixedUUID(), uid, gid, true, true, true, true, true, true, true, true, fixedTime(), fixedTime())
+
+	mock.ExpectQuery("SELECT .* FROM notification_preferences WHERE group_id = .*").
+		WithArgs(gid).
+		WillReturnRows(rows)
+
+	prefs, err := repo.GetPreferencesByGroup(context.Background(), gid)
+	require.NoError(t, err)
+	require.Len(t, prefs, 1)
+	assert.True(t, prefs[uid].PushEnabled)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestNotificationRepository_CreateNotificationsBatch(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewNotificationRepository(mock)
+	uid := fixedUUID()
+
+	mock.ExpectExec("INSERT INTO notifications").
+		WithArgs(pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg()).
+		WillReturnResult(pgxmock.NewResult("INSERT", 1))
+
+	err := repo.CreateNotificationsBatch(context.Background(), []models.Notification{{
+		UserID: uid, Type: "pinwall_reminder", Title: "Reminder", Body: "Buy milk",
+	}})
+	require.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestNotificationRepository_UpsertPreference(t *testing.T) {
 	mock := newMockDB(t)
 	repo := NewNotificationRepository(mock)

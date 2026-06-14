@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../theme/spacing.dart';
+import '../utils/haptics.dart';
 import '../providers/attachment_provider.dart';
 import '../providers/group_provider.dart';
 import '../providers/pinwall_provider.dart';
@@ -64,6 +67,7 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
   ];
 
   void _onDestinationTapped(String id) {
+    unawaited(Haptics.light());
     setState(() {
       _selectedDestination = id;
       _error = null;
@@ -314,7 +318,9 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
                         : AppCardTint.neutral,
                     interactive: true,
                     onTap: () => _onDestinationTapped(option.id),
-                    semanticLabel: option.label,
+                    semanticLabel: isSelected
+                        ? '${option.label}, selected'
+                        : '${option.label}, ${option.description}',
                     padding: AppCardPadding.md,
                     child: Row(
                       children: [

@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lottie/lottie.dart';
 
 import '../../providers/group_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
@@ -14,6 +13,7 @@ import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/haptics.dart';
 import '../../widgets/app_card.dart';
+import '../../widgets/app_icon.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -30,7 +30,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   late final List<Animation<double>> _fades;
   late final List<Animation<Offset>> _slides;
   bool _didStart = false;
-  bool _checking = true;
 
   @override
   void initState() {
@@ -65,22 +64,26 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       );
     });
 
-    Future.microtask(_checkExistingGroups);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _startAnimation();
+      unawaited(_checkExistingGroups());
+    });
   }
 
   Future<void> _checkExistingGroups() async {
     try {
-      final groups = await ref.read(cachedGroupsProvider.future);
+      final groups = await ref
+          .read(cachedGroupsProvider.future)
+          .timeout(const Duration(seconds: 10));
       if (!mounted) return;
-      final hasHousehold = groups.any((g) => g.isPersonal != true);
+      // Only skip onboarding when the user already belongs to a shared household.
+      final hasHousehold = groups.any((g) => g.isPersonal == false);
       if (hasHousehold) {
         context.goNamed('home');
-        return;
       }
-    } catch (_) {}
-    if (mounted) {
-      setState(() => _checking = false);
-      _startAnimation();
+    } catch (_) {
+      // API slow/unavailable — keep onboarding visible so the user can proceed.
     }
   }
 
@@ -90,7 +93,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     if (MediaQuery.of(context).disableAnimations) {
       _controller.value = 1.0;
     } else {
-      _controller.forward();
+      unawaited(_controller.forward());
     }
   }
 
@@ -121,9 +124,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   }
 
   Widget _buildAnimatedItem(int index, Widget child) {
-    if (_checking) return child;
     final disableAnimations = MediaQuery.of(context).disableAnimations;
-    if (disableAnimations) return child;
+    if (disableAnimations || _controller.value >= 1.0) return child;
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -143,19 +145,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final bodyMedium = Theme.of(context).textTheme.bodyMedium;
-
-    if (_checking) {
-      return Scaffold(
-        backgroundColor: colorScheme.surface,
-        body: const Center(
-          child: SizedBox(
-            width: 28,
-            height: 28,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        ),
-      );
-    }
 
     final createCard = AppCard(
       variant: AppCardVariant.elevated,
@@ -239,12 +228,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
               _buildAnimatedItem(
                 0,
                 Semantics(
-                  label: 'Welcome animation of household coordination',
-                  child: Lottie.asset(
-                    'assets/animations/lottie/House.lottie',
+                  label: 'Household home icon',
+                  child: Container(
                     width: 120,
                     height: 120,
-                    fit: BoxFit.contain,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer,
+                      border: Border.all(color: colorScheme.outline, width: 2),
+                    ),
+                    child: AppIcon(
+                      name: 'home',
+                      size: 56,
+                      color: colorScheme.primary,
+                    ),
                   ),
                 ),
               ),

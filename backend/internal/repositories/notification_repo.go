@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -185,6 +186,80 @@ func (r *NotificationRepository) GetPreferencesByUser(ctx context.Context, userI
 		return nil, err
 	}
 	return prefs, nil
+}
+
+// GetPreferencesByGroup retrieves notification preferences for all members of a group.
+func (r *NotificationRepository) GetPreferencesByGroup(ctx context.Context, groupID uuid.UUID) (map[uuid.UUID]*models.NotificationPreference, error) {
+	query := `
+		SELECT id, user_id, group_id, chore_due, chore_due_day_of, list_item_added,
+			expense_created, meal_plan_changed, weekly_digest, pinwall_reminder, push_enabled, created_at, updated_at
+		FROM notification_preferences
+		WHERE group_id = $1
+	`
+	rows, err := r.db.Query(ctx, query, groupID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make(map[uuid.UUID]*models.NotificationPreference)
+	for rows.Next() {
+		var p models.NotificationPreference
+		if err := rows.Scan(
+			&p.ID, &p.UserID, &p.GroupID, &p.ChoreDue, &p.ChoreDueDayOf, &p.ListItemAdded,
+			&p.ExpenseCreated, &p.MealPlanChanged, &p.WeeklyDigest, &p.PinwallReminder, &p.PushEnabled,
+			&p.CreatedAt, &p.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		pCopy := p
+		out[p.UserID] = &pCopy
+	}
+	return out, rows.Err()
+}
+
+// CreateNotificationsBatch inserts multiple notifications.
+func (r *NotificationRepository) CreateNotificationsBatch(ctx context.Context, notifications []models.Notification) error {
+	if len(notifications) == 0 {
+		return nil
+	}
+	ids := make([]uuid.UUID, len(notifications))
+	userIDs := make([]uuid.UUID, len(notifications))
+	types := make([]string, len(notifications))
+	titles := make([]string, len(notifications))
+	bodies := make([]string, len(notifications))
+	data := make([][]byte, len(notifications))
+	isRead := make([]bool, len(notifications))
+	createdAt := make([]time.Time, len(notifications))
+	for i := range notifications {
+		n := &notifications[i]
+		if n.ID == uuid.Nil {
+			n.ID = uuid.New()
+		}
+		if n.CreatedAt.IsZero() {
+			n.CreatedAt = time.Now().UTC()
+		}
+		n.IsRead = false
+		ids[i] = n.ID
+		userIDs[i] = n.UserID
+		types[i] = n.Type
+		titles[i] = n.Title
+		bodies[i] = n.Body
+		data[i] = n.Data
+		isRead[i] = n.IsRead
+		createdAt[i] = n.CreatedAt
+	}
+	_, err := r.db.Exec(ctx, `
+		INSERT INTO notifications (id, user_id, type, title, body, data, is_read, read_at, created_at)
+		SELECT id, user_id, type, title, body, data, is_read, NULL::timestamptz, created_at
+		FROM unnest($1::uuid[], $2::uuid[], $3::text[], $4::text[], $5::text[], $6::jsonb[], $7::bool[], $8::timestamptz[]) AS t(
+			id, user_id, type, title, body, data, is_read, created_at
+		)
+	`, ids, userIDs, types, titles, bodies, data, isRead, createdAt)
+	if err != nil {
+		return fmt.Errorf("create notification batch: %w", err)
+	}
+	return nil
 }
 
 // UpsertPreference inserts or updates notification preferences for a user/group.

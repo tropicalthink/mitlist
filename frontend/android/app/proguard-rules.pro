@@ -44,3 +44,10 @@
 -dontwarn com.google.mlkit.vision.text.japanese.JapaneseTextRecognizerOptions
 -dontwarn com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions$Builder
 -dontwarn com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions
+
+# TensorFlow Lite (tflite_flutter) — keep the interpreter runtime, and suppress
+# the optional GPU delegate which we don't bundle (CPU-only inference; see
+# grocery_classifier_service.dart). Matches missing_rules.txt.
+-keep class org.tensorflow.lite.** { *; }
+-dontwarn org.tensorflow.lite.gpu.GpuDelegateFactory$Options
+-dontwarn org.tensorflow.lite.gpu.**

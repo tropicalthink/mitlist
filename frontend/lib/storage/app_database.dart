@@ -1052,6 +1052,22 @@ FROM list_items_table;
         .get();
   }
 
+  /// Returns all purchase-history rows for [groupId] that have a non-null
+  /// [canonicalItemId], ordered newest-first. Used by [RestockService] to
+  /// compute per-item purchase cadence without N+1 per-item queries.
+  Future<List<PurchaseHistoryTableData>> getGroupPurchaseHistory({
+    required String groupId,
+    int limit = 500,
+  }) {
+    return (select(purchaseHistoryTable)
+          ..where((t) =>
+              t.groupId.equals(groupId) &
+              t.canonicalItemId.isNotNull())
+          ..orderBy([(t) => OrderingTerm.desc(t.purchasedAt)])
+          ..limit(limit))
+        .get();
+  }
+
   // ---------------------------------------------------------------------------
   // Grocery graph — cooccurrence
   // ---------------------------------------------------------------------------

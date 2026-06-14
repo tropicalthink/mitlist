@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -54,9 +55,10 @@ func (h *AssistantHandler) ScanImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mimeType := header.Header.Get("Content-Type")
-	if mimeType == "" {
-		mimeType = "image/jpeg"
+	mimeType, ok := allowedScanMimeType(imageBytes, header.Header.Get("Content-Type"))
+	if !ok {
+		api.RespondError(w, &api.ValidationError{Field: "file", Message: "file must be a supported image"})
+		return
 	}
 
 	result, err := h.service.ScanImage(r.Context(), imageBytes, mimeType)
@@ -66,4 +68,32 @@ func (h *AssistantHandler) ScanImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	api.RespondJSON(w, http.StatusOK, result)
+}
+
+func allowedScanMimeType(data []byte, declared string) (string, bool) {
+	detected := http.DetectContentType(data)
+	if isAllowedScanImageType(detected) {
+		return detected, true
+	}
+
+	// Some mobile formats are detected as application/octet-stream by the
+	// standard library. Only trust the declared type for those narrow cases.
+	declared = strings.ToLower(strings.TrimSpace(strings.Split(declared, ";")[0]))
+	switch declared {
+	case "image/heic", "image/heif":
+		if detected == "application/octet-stream" {
+			return declared, true
+		}
+	}
+
+	return "", false
+}
+
+func isAllowedScanImageType(mimeType string) bool {
+	switch strings.ToLower(strings.TrimSpace(mimeType)) {
+	case "image/jpeg", "image/png", "image/webp", "image/gif":
+		return true
+	default:
+		return false
+	}
 }

@@ -171,6 +171,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     try {
       final service = await ref.read(notificationServiceProviderAsync.future);
       await service.deleteNotification(n.id);
+      if (!mounted) return;
+      unawaited(Haptics.medium());
       setState(() => _items.removeWhere((x) => x.id == n.id));
     } catch (e) {
       if (!mounted) return;
@@ -182,6 +184,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   }
 
   void _handleNotificationTap(NotificationModel n) {
+    unawaited(Haptics.light());
     _markRead(n);
 
     if (n.data == null) return;
@@ -337,21 +340,24 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                         child: Dismissible(
                           key: ValueKey(n.id),
                           direction: DismissDirection.endToStart,
-                          background: Container(
-                            alignment: Alignment.centerRight,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: MitlistSpacing.md),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .error
-                                  .withValues(alpha: 0.12),
-                              borderRadius:
-                                  BorderRadius.circular(MitlistTheme.radiusLg),
-                            ),
-                            child: AppIcon(
-                              name: 'trashOutline',
-                              color: Theme.of(context).colorScheme.error,
+                          background: Semantics(
+                            label: 'Delete notification',
+                            child: Container(
+                              alignment: Alignment.centerRight,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: MitlistSpacing.md),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .error
+                                    .withValues(alpha: 0.12),
+                                borderRadius:
+                                    BorderRadius.circular(MitlistTheme.radiusLg),
+                              ),
+                              child: AppIcon(
+                                name: 'trashOutline',
+                                color: Theme.of(context).colorScheme.error,
+                              ),
                             ),
                           ),
                           confirmDismiss: (_) async {
@@ -361,7 +367,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                           child: AppCard(
                             interactive: true,
                             onTap: () => _handleNotificationTap(n),
-                            semanticLabel: n.title,
+                            semanticLabel: n.isRead
+                                ? n.title
+                                : 'Unread, ${n.title}',
                             child: Padding(
                               padding:
                                   const EdgeInsets.all(MitlistSpacing.md),

@@ -385,6 +385,7 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
         showStandardActions: false,
         leading: IconButton(
           icon: const AppIcon(name: 'arrowLeft'),
+          tooltip: 'Back',
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
@@ -728,6 +729,8 @@ class _PredictionTile extends StatelessWidget {
                             child: Text(
                               prediction.displayName,
                               style: textTheme.titleSmall,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           if (prediction.quantity > 1 ||
@@ -764,11 +767,15 @@ class _PredictionTile extends StatelessWidget {
                 else
                   Icon(Icons.check_circle_outline, size: 18, color: stateColor),
                 const SizedBox(width: MitlistSpacing.xs),
-                GestureDetector(
-                  onTap: onRemove,
-                  child: Icon(Icons.remove_circle_outline,
-                      size: 18,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                Semantics(
+                  button: true,
+                  label: 'Remove ${prediction.displayName}',
+                  child: GestureDetector(
+                    onTap: onRemove,
+                    child: Icon(Icons.remove_circle_outline,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  ),
                 ),
               ],
             ),

@@ -14,6 +14,7 @@ import '../../providers/auth_provider.dart'
     show authServiceProviderAsync, authStateProvider;
 import '../../providers/group_provider.dart';
 import '../../providers/onboarding_provider.dart';
+import '../../providers/scan_provider.dart' show cloudScanProvider;
 import '../../providers/theme_provider.dart';
 import '../../providers/list_provider.dart' show appDatabaseProvider;
 import '../../providers/finance_provider.dart';
@@ -26,6 +27,7 @@ import '../../widgets/app_card.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
+import '../../utils/haptics.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/skeleton.dart';
 import '../../utils/friendly_error.dart';
@@ -211,18 +213,21 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 controller: currentPasswordController,
                 obscureText: true,
                 label: 'Current password',
+                textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: MitlistSpacing.md),
               AppInput(
                 controller: newPasswordController,
                 obscureText: true,
                 label: 'New password',
+                textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: MitlistSpacing.md),
               AppInput(
                 controller: confirmPasswordController,
                 obscureText: true,
                 label: 'Confirm new password',
+                textInputAction: TextInputAction.done,
                 onSubmitted: (_) => submit(),
               ),
               const SizedBox(height: MitlistSpacing.lg),
@@ -479,6 +484,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
 
   Widget _buildPreferencesCard() {
     final themeMode = ref.watch(themeModeProvider);
+    final allowCloudScan = ref.watch(cloudScanProvider);
 
     return AppCard(
       child: Column(
@@ -511,6 +517,17 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 if (mode != null) {
                   ref.read(themeModeProvider.notifier).set(mode);
                 }
+              },
+            ),
+          ),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          _MenuRow(
+            icon: const AppIcon(name: 'camera'),
+            label: 'Cloud scan assist',
+            trailing: Switch(
+              value: allowCloudScan,
+              onChanged: (value) {
+                ref.read(cloudScanProvider.notifier).set(value);
               },
             ),
           ),
@@ -595,6 +612,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       final json = expenses.map((e) => e.toJson()).toString();
       await Clipboard.setData(ClipboardData(text: json));
       if (!mounted) return;
+      unawaited(Haptics.light());
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Expenses JSON copied to clipboard')),
       );
