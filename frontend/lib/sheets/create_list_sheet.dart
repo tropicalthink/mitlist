@@ -58,6 +58,7 @@ class CreateListSheet extends ConsumerStatefulWidget {
 
 class _CreateListSheetState extends ConsumerState<CreateListSheet> {
   final TextEditingController _nameController = TextEditingController();
+  final FocusNode _nameFocusNode = FocusNode();
   _ListType _selectedType = _ListType.shopping;
   String? _selectedGroupId;
   List<Group> _groups = const [];
@@ -81,6 +82,11 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
     }
     _selectedType = _listTypeFromString(widget.initialType);
     _loadGroups();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_nameFocusNode.hasFocus) {
+        _nameFocusNode.requestFocus();
+      }
+    });
   }
 
   Future<void> _onScan() async {
@@ -107,6 +113,15 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
       }
 
       setState(() => _isScanning = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _nameController.text.trim().isEmpty
+                ? 'Scan finished'
+                : 'Scanned "${_nameController.text.trim()}"',
+          ),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _isScanning = false);
@@ -145,6 +160,14 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
       _ListType.shopping => 'shopping',
       _ListType.todo => 'todo',
       _ListType.custom => 'custom',
+    };
+  }
+
+  String get _selectedTypeDescription {
+    return switch (_selectedType) {
+      _ListType.shopping => 'Best for groceries and errands with quantities.',
+      _ListType.todo => 'A simple checklist for tasks that need doing.',
+      _ListType.custom => 'A flexible list for anything that does not fit.',
     };
   }
 
@@ -190,6 +213,7 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
 
   @override
   void dispose() {
+    _nameFocusNode.dispose();
     _nameController.dispose();
     super.dispose();
   }
@@ -225,9 +249,11 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
           label: 'List name',
           hint: 'e.g. Weekend Groceries',
           controller: _nameController,
+          focusNode: _nameFocusNode,
           enabled: !_isSubmitting,
           textInputAction: TextInputAction.done,
           maxLength: 100,
+          clearable: true,
           errorText: _nameError,
           onChanged: (_) => setState(() {
             _nameError = null;
@@ -265,6 +291,13 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
                   : (_) => setState(() => _selectedType = _ListType.custom),
             ),
           ],
+        ),
+        const SizedBox(height: MitlistSpacing.xs),
+        Text(
+          _selectedTypeDescription,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
         ),
         const SizedBox(height: MitlistSpacing.md),
         Text(

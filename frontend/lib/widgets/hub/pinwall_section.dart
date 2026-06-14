@@ -1075,27 +1075,32 @@ class _PinwallNoteCard extends ConsumerWidget {
                     button: true,
                     label:
                         'Open linked ${_entityDisplayLabel(post.linkedEntityType!)}',
-                    child: GestureDetector(
-                      onTap: () => _navigateToLinkedEntity(context),
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: MitlistSpacing.xs),
-                        child: Row(
-                          children: [
-                            Icon(Icons.link, size: 12, color: mutedColor),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                _entityDisplayLabel(post.linkedEntityType!),
-                                style: textTheme.labelSmall?.copyWith(
-                                  color: mutedColor,
+                    child: Tooltip(
+                      message:
+                          'Open linked ${_entityDisplayLabel(post.linkedEntityType!)}',
+                      child: GestureDetector(
+                        onTap: () => _navigateToLinkedEntity(context),
+                        child: Padding(
+                          padding:
+                              const EdgeInsets.only(top: MitlistSpacing.xs),
+                          child: Row(
+                            children: [
+                              Icon(Icons.link, size: 12, color: mutedColor),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  'Open ${_entityDisplayLabel(post.linkedEntityType!)}',
+                                  style: textTheme.labelSmall?.copyWith(
+                                    color: mutedColor,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                            Icon(Icons.chevron_right,
-                                size: 12, color: mutedColor),
-                          ],
+                              Icon(Icons.chevron_right,
+                                  size: 12, color: mutedColor),
+                            ],
+                          ),
                         ),
                       ),
                     ),

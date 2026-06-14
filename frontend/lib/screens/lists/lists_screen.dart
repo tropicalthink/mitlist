@@ -1127,18 +1127,23 @@ class _ListCard extends ConsumerWidget {
                                 ),
                           ),
                         const Spacer(),
-                        Semantics(
-                          label: 'Quick add item to ${list.name}',
-                          child: InkWell(
-                            onTap: () => _quickAddItem(context, ref),
-                            borderRadius:
-                                BorderRadius.circular(MitlistSpacing.xs),
-                            child: Padding(
-                              padding: const EdgeInsets.all(MitlistSpacing.xs),
-                              child: AppIcon(
-                                name: 'addCircleOutline',
-                                size: 18,
-                                color: snippetColor.withValues(alpha: 0.7),
+                        Tooltip(
+                          message: 'Quick add item',
+                          child: Semantics(
+                            button: true,
+                            label: 'Quick add item to ${list.name}',
+                            child: InkWell(
+                              onTap: () => _quickAddItem(context, ref),
+                              borderRadius:
+                                  BorderRadius.circular(MitlistSpacing.xs),
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.all(MitlistSpacing.xs),
+                                child: AppIcon(
+                                  name: 'addCircleOutline',
+                                  size: 18,
+                                  color: snippetColor.withValues(alpha: 0.7),
+                                ),
                               ),
                             ),
                           ),
