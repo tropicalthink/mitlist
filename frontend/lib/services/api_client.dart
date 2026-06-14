@@ -9,6 +9,16 @@ import 'token_store.dart';
 
 const _retryKey = 'has_retried';
 
+String _redactedDioError(Object error) {
+  if (error is DioException) {
+    final status = error.response?.statusCode;
+    final method = error.requestOptions.method;
+    final path = error.requestOptions.path;
+    return 'DioException(type: ${error.type}, status: $status, request: $method $path)';
+  }
+  return error.runtimeType.toString();
+}
+
 class AuthInterceptor extends Interceptor {
   final Logger _logger = Logger();
   final TokenStore _tokenStore;
@@ -17,7 +27,8 @@ class AuthInterceptor extends Interceptor {
       : _tokenStore = tokenStore ?? SecureTokenStore();
 
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+  void onRequest(
+      RequestOptions options, RequestInterceptorHandler handler) async {
     final token = await _tokenStore.getAccessToken();
 
     if (token != null) {
@@ -25,19 +36,27 @@ class AuthInterceptor extends Interceptor {
           '${ApiConfig.authorizationPrefix}$token';
     }
 
-    _logger.d('Request: ${options.method} ${options.path}');
+    if (kDebugMode) {
+      _logger.d('Request: ${options.method} ${options.path}');
+    }
     handler.next(options);
   }
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    _logger.d('Response: ${response.statusCode} ${response.requestOptions.path}');
+    if (kDebugMode) {
+      _logger.d(
+        'Response: ${response.statusCode} ${response.requestOptions.path}',
+      );
+    }
     handler.next(response);
   }
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    _logger.e('Dio Error: ${err.type} - ${err.message}');
+    if (kDebugMode) {
+      _logger.e(_redactedDioError(err));
+    }
     handler.next(err);
   }
 }
@@ -72,8 +91,10 @@ class TokenRefreshInterceptor extends Interceptor {
         );
         if (response.statusCode == 200 &&
             response.data is Map<String, dynamic> &&
-            (response.data as Map<String, dynamic>).containsKey('access_token') &&
-            (response.data as Map<String, dynamic>).containsKey('refresh_token')) {
+            (response.data as Map<String, dynamic>)
+                .containsKey('access_token') &&
+            (response.data as Map<String, dynamic>)
+                .containsKey('refresh_token')) {
           final data = response.data as Map<String, dynamic>;
           return TokenPairResult(
             accessToken: data['access_token'] as String,
@@ -82,7 +103,9 @@ class TokenRefreshInterceptor extends Interceptor {
         }
       } catch (e) {
         // log below
-        _logger.e('Token refresh failed: $e');
+        if (kDebugMode) {
+          _logger.e('Token refresh failed: ${_redactedDioError(e)}');
+        }
       }
       return null;
     }();
@@ -134,7 +157,9 @@ class TokenRefreshInterceptor extends Interceptor {
       handler.resolve(retryResponse);
       return;
     } catch (retryErr) {
-      _logger.e('Retry failed: $retryErr');
+      if (kDebugMode) {
+        _logger.e('Retry failed: ${_redactedDioError(retryErr)}');
+      }
     }
 
     await _onRefreshFailure();
@@ -152,7 +177,8 @@ class TokenRefreshInterceptor extends Interceptor {
 class TokenPairResult {
   final String accessToken;
   final String refreshToken;
-  const TokenPairResult({required this.accessToken, required this.refreshToken});
+  const TokenPairResult(
+      {required this.accessToken, required this.refreshToken});
 }
 
 /// Shared Dio instance for all API services.
@@ -188,17 +214,6 @@ Dio createApiClient([Ref? ref, TokenStore? tokenStore]) {
 
   dio.interceptors.add(TokenRefreshInterceptor(dio, ref, store));
   dio.interceptors.add(AuthInterceptor(store));
-
-  if (kDebugMode) {
-    final logger = Logger();
-    dio.interceptors.add(LogInterceptor(
-      requestHeader: false,
-      responseHeader: false,
-      requestBody: false,
-      responseBody: false,
-      logPrint: (object) => logger.d(object),
-    ));
-  }
 
   return dio;
 }
