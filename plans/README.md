@@ -95,7 +95,7 @@ dropped. The cleaner seam is backend-FX / frontend-FX-UX, with the existing
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
 | 023  | Compute group balances in a single base currency (per-expense FX at entry) | P2 | L | — (relies on existing finance test net) | CODE DONE — reviewed APPROVE (2026-06-14, worktree branch `worktree-agent-a15d1aa985cd731ad`, commit `5b188d1a` atop `28655faa`). All criteria re-run by reviewer: `go build ./...` OK, full `go test ./...` green, new `TestCreateExpense_ForeignCurrencyConvertsToBase` (3 subtests) PASS, `TestBalancesEquivalence` green. Scope clean (7 in-scope files, single commit). Migration 000030 adds `base_amount`/`fx_rate`; `normalizeBaseAmount` helper on create+update; `expense_paid` CTE and `calculateBalances` both sum `base_amount`. **Awaiting maintainer merge** (not pushed/merged). Merge 023 before 024. |
-| 024  | Record an expense in a foreign currency; show balances converted to the household currency | P2 | M | 023 | TODO |
+| 024  | Record an expense in a foreign currency; show balances converted to the household currency | P2 | M | 023 | CODE DONE — reviewed APPROVE (2026-06-14, worktree branch `worktree-agent-afb53b3a865f42496`, commit `b004e93f` atop `28655faa`). All criteria re-run by reviewer: `flutter pub get` OK, `dart analyze lib/` clean (only the 2 pre-existing `dart:html` infos), codegen regenerated `app_database.g.dart`, full `flutter test` **276/276 green** incl. new `finance_models_test.dart` + foreign-currency outbox round-trip case. Scope clean (11 files, all `frontend/`; lib files in-scope, test edits to `fakes.dart`/`frontend_flows_test.dart` are required compile fixes for the new required field). Drift v4→v5 backfills `base_amount = amount`; outbox `_syncCreateExpense` carries `base_amount`/`fx_rate` with safe fallbacks; currency picker + FX rate + live converted preview on the creation sheet; original≈converted display in list/detail (splits rendered in base currency). **Awaiting maintainer merge** (not pushed/merged). Merge AFTER 023. |
 | 025  | Stand up the Flutter l10n pipeline + localize the welcome screen (en, de) | P3 | M | — | DONE (executed 2026-06-13, commit `19044fcb` on branch `advisor/025-i18n-foundation`; intl bumped to ^0.20.2 to satisfy flutter_localizations SDK pin; localization tests pass; frontend_flows_test compile error pre-exists and is unrelated) |
 
 Cycle-6 ordering: 023 before 024 (the backend must accept/store
@@ -215,6 +215,29 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJE
 
 ### Reconcile log
 
+- **2026-06-14 (executed 023 + 024 — multi-currency FX), HEAD `28655faa`** — both
+  multi-currency plans dispatched to executors in isolated worktrees and reviewed
+  APPROVE. **Neither is merged** — they sit on their worktree branches awaiting the
+  maintainer's decision.
+  - **023 (backend FX)** — branch `worktree-agent-a15d1aa985cd731ad`, commit
+    `5b188d1a`. Migration 000030 adds `base_amount`/`fx_rate`; `normalizeBaseAmount`
+    on create+update; `expense_paid` CTE and `calculateBalances` both sum
+    `base_amount`. Reviewer re-ran: `go build ./...` OK, full `go test ./...` green,
+    new `TestCreateExpense_ForeignCurrencyConvertsToBase` (3 subtests) + the
+    `TestBalancesEquivalence` safety net PASS. Scope clean (7 in-scope files).
+    Migration `migrate up/down` NOT run (no live Postgres; static-verified only) —
+    maintainer should apply it against a real DB once before/at merge.
+  - **024 (frontend FX)** — branch `worktree-agent-afb53b3a865f42496`, commit
+    `b004e93f`. Drift v4→v5 backfill, outbox round-trip carries the fields,
+    currency picker + FX rate + live preview, original≈converted display. Reviewer
+    re-ran: `dart analyze lib/` clean, codegen OK, full `flutter test` **276/276**
+    incl. new finance + outbox round-trip tests. Scope clean (11 `frontend/` files).
+  - **Merge order: 023 BEFORE 024** (the backend must accept `base_amount`/`fx_rate`
+    before the frontend sends them). 024 was built/verified in isolation (frontend
+    tests are self-contained and don't need the live backend), so its green suite
+    does not by itself prove the end-to-end contract — confirm against a running
+    023 backend after merging both. Both branches are worktree branches, not the
+    plan's named `advisor/023-…`/`advisor/024-…`; cherry-pick or rename on merge.
 - **2026-06-14 (post-merge sweep), HEAD `28655faa`** — five commits landed since the
   last reconcile (`15eedaf6`): `81abf034` **commits the on-device model assets**
   (the 026 + 028 maintainer model-tails that were uncommitted last session),
