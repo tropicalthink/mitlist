@@ -55,6 +55,7 @@ class ScanPipelineService {
     required String groupId,
     String? storeId,
     bool isOnline = true,
+    bool allowCloud = false,
   }) async {
     // 1. Enhance.
     final enhanced = _enhancement.enhance(imageBytes);
@@ -63,7 +64,7 @@ class ScanPipelineService {
     final lines = await _ocr.recognise(enhanced);
 
     // 3. Route.
-    final decision = _routing.decide(lines, isOnline: isOnline);
+    final decision = _routing.decide(lines, isOnline: isOnline, allowCloud: allowCloud);
 
     if (!decision.useOnDevice) {
       return _runCloud(imageBytes);
