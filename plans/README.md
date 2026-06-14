@@ -117,8 +117,8 @@ re-export spike.
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
-| 026  | Wire the Phase 7 classifier into on-device resolution (Flex-free re-export + Dart TF-IDF + resolver fallback) | P2 | L | 021 (trained model on disk) | TODO |
-| 027  | Verify and re-export the Phase 8 embeddings; decide on-device shippability (spike) | P3 | M | 022 (trained model on disk) | CODE DONE (2026-06-13, reviewed; worktree branch `worktree-agent-a01c59b35e0e71d18`, commit `4e3ca898`. export.py now emits float16-quantized tflite + size report + >40MB warning; `verify_dim.py` added; train.py correctly untouched — projection head confirmed present at train.py:83-88, so dim is very likely 128. Maintainer runs `verify_dim.py` + `export.py` for the actual dim + size go/no-go.) |
+| 026  | Wire the Phase 7 classifier into on-device resolution (Flex-free re-export + Dart TF-IDF + resolver fallback) | P2 | L | 021 (trained model on disk) | CODE DONE — reviewed APPROVE (2026-06-13, worktree branch `worktree-agent-a5d0f7cedb76cbea3`, commit `e69a32f9`). All gates re-run by reviewer: `flutter pub get` OK (tflite_flutter ^0.11.0 resolves against the pinned SDK), zero project analyzer errors, 14/14 service tests pass, `export.py` py_compiles + is Flex-free. Maintainer tail remains: re-run `python export.py`, copy `.tflite`/`vocab.json`/labels into `frontend/assets/models/`, parity-check vs `grocery_classifier_golden.json`, then pass the classifier into `CanonicalResolverService` at `scan_pipeline_service.dart:46`. Base is `c862d307`; merges cleanly onto `57a8c11e` (no shared files). |
+| 027  | Verify and re-export the Phase 8 embeddings; decide on-device shippability (spike) | P3 | M | 022 (trained model on disk) | DONE — DECISION: **NO-GO on-device** (2026-06-13, run by advisor at maintainer's request). `verify_dim.py` → dim **128** (ST head present, train.py:83-88). But the `optimum→onnx→onnx2tf` path is unshippable for THREE independent reasons (below). Embeddings stay **server-side or dropped**; the Phase 7 classifier (026) is the sole on-device resolution model. Note: an `export.py` with the float16/size logic + `verify_dim.py` already existed in HEAD `c862d307` (maintainer's own training-run work); the cycle-7 executor's `worktree-agent-a01c59b35e0e71d18`/`4e3ca898` reproduced it and is superseded (worktree removed). |
 
 Cycle-7 notes:
 - **026 has a hard executor/maintainer split.** The executor builds ALL the
@@ -137,6 +137,65 @@ Cycle-7 notes:
   TFLite ≤ ~40 MB and is the output dim 128?" A GO spawns a future integration
   plan; a NO-GO records "embeddings stay server-side / dropped" and the
   classifier remains the sole on-device resolution model.
+- **027 RESULT — NO-GO (run 2026-06-13).** Three independent blockers, any one
+  fatal for bundling:
+  1. **Wrong artifact.** `optimum --task feature-extraction` exports the base
+     BERT encoder (output shape `(1, seq, 384)` = token-level `last_hidden_state`)
+     and drops the sentence-transformers pooling + `Dense(128)` head.
+     `verify_dim.py` reports 128 only because it runs the full `SentenceTransformer`;
+     the ONNX/TFLite path never carries the head. A correct on-device export would
+     need a custom wrapper (mean-pool + Dense) exported as one graph, not the
+     optimum feature-extraction task.
+  2. **Size is fatal regardless.** The multilingual word-embedding table alone is
+     `250037 × 384` ≈ 96M params ≈ **~192 MB at float16** — before any transformer
+     layer. (Total model 470 MB float32 ≈ 117.5M params; int8 ≈ ~118 MB.) The
+     ~40 MB on-device bar is missed by 3–6×.
+  3. **It won't convert.** `onnx2tf` errors on the existing ONNX
+     (`ValueError: Output tensors of a Functional model… Expand` op; also missing
+     `onnxsim`) — graph surgery would be required on top of (1) and (2).
+  Recommendation: if embeddings are wanted, run them **server-side** (the 470 MB
+  ONNX is fine on a server) as a resolution fallback behind the classifier, or
+  drop them. Do NOT attempt on-device bundling. This matches the maintainer's
+  standing "harden existing features" direction.
+  **Update (2026-06-13):** maintainer set a firmer direction — **everything
+  on-device, zero per-prediction cloud cost** (free+open hosted tier). The 470 MB
+  model becomes a **build-time-only teacher** (distill a tiny static embedder +
+  precompute catalog vectors), never served. See the north-star + plans 028–033
+  below; **028 supersedes this on-device NO-GO** via Model2Vec static distillation.
+
+### Cycle 7 (cont.) — on-device intelligence north star (2026-06-13, against commit `6c0df971`)
+
+**Read `plans/INTELLIGENCE-NORTH-STAR.md` before any 028–033 work.** It is the
+constraint every plan in this series inherits: every prediction runs on-device or
+at build time; the backend only syncs and distributes versioned bundles; no
+per-request cloud inference in the free tier; third-party data/models must be on
+the license green-list (OFF/ODbL, Wikidata/CC0, FoodOn/CC-BY, SmolVLM·Moondream·
+gte/Apache-2.0, Model2Vec·e5·bge·ingredient-parser/MIT; avoid RecipeNLG/Recipe1M+).
+
+**Consolidated 6 → 4** (pre-prod, big jumps): old 030 (OFF bundle) folded into
+028; old 033 (VLM) folded into 032 as phase 2.
+
+| Plan | Title | Priority | Effort | Depends on | Status |
+|------|-------|----------|--------|------------|--------|
+| 028  | On-device grocery brain: OFF-enriched seed bundle + Model2Vec static embedder + precomputed catalog vectors → semantic autocomplete + resolver fallback + barcode (folds 030; supersedes 027 NO-GO) | P2 | XL | 022 (teacher, build-time only) | CODE DONE — reviewed APPROVE (2026-06-14, worktree branch `worktree-agent-a62a2b9de40ddc3fd`, commit `ff7b18fe`, base `679201ab`). Pure-Dart `StaticEmbeddingService` (no ML runtime; imports only dart:convert + flutter foundation/services), fail-soft `[]` when bundle absent; optional embedder threaded into suggestion + canonical-resolver services (026 classifier Step A preserved verbatim, embedder Step B additive). Maintainer-run build scripts `off_enrich_seed.py` + `build_embedder_bundle.py` (py_compile OK). Gates: `flutter analyze` clean (pre-existing issues only), 24/24 service tests pass. North-star: on-device/build-time only, no request-path inference, Model2Vec (MIT) named. Notes: inlined private `_charTrigrams` (public 026 helper returns truncated String); no fake-embedder wiring test (null-guard + fail-soft make it low-risk). Safe to merge before the embedder bundle ships (fails soft). Maintainer tail: run the two build scripts, drop the versioned bundle into `frontend/assets/grocery/`. |
+| 029  | Recipe → canonical shopping: better Go ingredient parser + SQL alias resolution on scrape/add-to-list (semantic tier-3 on-device, depends 028) | P2 | L | 028 (tier-3 only) | DONE — reviewed APPROVE (2026-06-14, branch `advisor/029-recipe-canonical-shopping`, commit `ad76ee04`). Deterministic Go parser expanded (DE/EN/FR/ES units + prep/parenthetical stripping, total/never-panics); `ResolveAlias` repo query (global sentinel + household-scoped-first, weight DESC) + `ResolveIngredientName` service (lowercase/trim/collapse-spaces normalize); best-effort `canonical_item_id` population in AddToList/AddMissingToList. Gates: `go build ./...` + `go test ./...` PASS (new pgxmock parser/resolver/handler tests). North-star: no request-path ML, SQL alias matching only. Note: `CanonicalItemID` column pre-existed via migration `000028` (no migration invented — out-of-scope plumbing justified on merit); one nit — `recipe_scraping_service_test.go` is not gofmt-clean (other touched files' drift pre-existed). |
+| 031  | Activate dormant signals: predictive restock (`purchase_history`, phase 1) + pantry subtraction (`products`, phase 2) | P2 | M | — | CODE DONE (phase 1) — reviewed APPROVE (2026-06-14, branch `advisor/031-activate-dormant-signals`, commit `44ff4f41`). `RestockService.due()` reads purchase history, groups by canonical id, computes median gap (≥3 purchases), returns overdue sorted; `@visibleForTesting medianInterval` pure. New `getGroupPurchaseHistory` Drift helper (justified — per-item `getRecentPurchases` would N+1; helper was in-scope). `restockServiceProvider`; composer prepends restock chips when query empty, best-effort try/catch, excludes unchecked current items. Gates: `flutter analyze` clean, 11/11 tests pass (median pure logic + in-memory Drift due/not-due/insufficient/excluded/sort). North-star: on-device only, no network/model. Phase 2 (pantry subtraction) deferred per plan. |
+| 032  | Fully on-device scanning: default on-device + gate CrofAI opt-in (phase 1), then on-device VLM for hard cases (phase 2, folds 033) | P1 | L | — | CODE DONE (phase 1) — reviewed APPROVE (2026-06-14, branch `advisor/032-on-device-scan-default`, commit `43c3dd95`). `routing_service.decide(..., allowCloud=false)` short-circuits to on-device unless opted in; `CloudScanNotifier` (SharedPreferences `allow_cloud_scan`, default false, mirrors ThemeModeNotifier) + `cloudScanProvider`; `allowCloud` threaded through `scan_pipeline_service.run()` to both (only 2) call sites; "Cloud scan assist" Switch in account preferences. Gates: `flutter analyze` clean, 10/10 routing tests pass. North-star: stops the one current cloud-inference violation — CrofAI is now opt-in/off by default. Phase 2 (on-device VLM) deferred per plan. |
+
+Recommended order: **032 phase 1** (stops cost today) → **028** (brain +
+multiplier) → **029** (recipe woah) → **031** (dormant signals) → **032 phase 2**
+(retire cloud). 028 and 032 are written; 029 and 031 registered, written on request.
+
+**All four executed + reviewed APPROVE 2026-06-14** on disposable branches (above)
+— **merging into `new-main-fr` is the maintainer's decision** (the advisor never
+merges). Each frontend plan's verdict rests on `flutter analyze` (clean, pre-existing
+issues only) + its targeted test suite (28→24/24, 031→11/11, 032→10/10); 029 on full
+`go build`/`go test ./...`. The whole-repo `flutter test` regression net could **not
+be completed in this environment** (the dev process kept restarting mid-run and the
+suite is long), so it is NOT part of these verdicts — the maintainer should run
+`cd frontend && flutter test` once after merge and confirm no new failures beyond the
+known `frontend_flows_test.dart` "No GoRouter found in context" baseline. All four
+changes are additive and fail-soft/null-guarded, so regression risk is low.
 
 ### Direction findings — cycle 6 (2026-06-13), maintainer's decisions
 
