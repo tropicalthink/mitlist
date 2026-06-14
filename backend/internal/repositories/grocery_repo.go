@@ -295,6 +295,29 @@ func (r *GroceryRepository) UpsertAislesBatch(ctx context.Context, groupID uuid.
 	return err
 }
 
+// ResolveAlias looks up a canonical_item_id for an alias string.
+// It checks the household-scoped aliases first, then the global seed aliases
+// (group_id = '00000000-0000-0000-0000-000000000000'), preferring higher weight.
+// aliasText must already be normalised (lowercase, trimmed, single-spaced) by the caller.
+func (r *GroceryRepository) ResolveAlias(ctx context.Context, groupID uuid.UUID, aliasText string) (canonicalItemID uuid.UUID, found bool, err error) {
+	const globalGroupID = "00000000-0000-0000-0000-000000000000"
+	query := `
+		SELECT canonical_item_id
+		FROM item_aliases
+		WHERE (group_id = $1 OR group_id = '` + globalGroupID + `')
+		  AND alias_text = $2
+		  AND deleted_at IS NULL
+		ORDER BY
+		  CASE WHEN group_id = $1 THEN 0 ELSE 1 END,
+		  weight DESC
+		LIMIT 1`
+	var id uuid.UUID
+	if err := r.pool.QueryRow(ctx, query, groupID, aliasText).Scan(&id); err != nil {
+		return uuid.Nil, false, nil //nolint:nilerr // not-found is not an error here
+	}
+	return id, true, nil
+}
+
 // UpsertAlias writes or increments an item_aliases row for a confirmed alias correction.
 func (r *GroceryRepository) UpsertAlias(ctx context.Context, groupID, canonicalItemID uuid.UUID, aliasText, lang, source string, version int64) error {
 	if aliasText == "" {

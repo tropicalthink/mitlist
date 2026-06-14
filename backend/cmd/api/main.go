@@ -147,6 +147,7 @@ func main() {
 			// Recipes
 			recipeScrapeSvc := services.NewRecipeScrapingService()
 			recipeHandler := handlers.NewRecipeHandler(cnt.RecipeService(), recipeScrapeSvc, cnt.ListService())
+			recipeHandler.SetGroceryService(cnt.GroceryService())
 			recipeHandler.RegisterRoutes(r)
 
 			// Meal Plans

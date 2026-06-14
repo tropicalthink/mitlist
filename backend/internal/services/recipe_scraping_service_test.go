@@ -544,3 +544,83 @@ func TestRecipeScraping_EmptyPage_ReturnsError(t *testing.T) {
 	_, err := svc.scrapeHTML(html, "https://example.com/recipe")
 	assert.Error(t, err)
 }
+
+// TestIngredientParser_Multilingual verifies ParseIngredient across EN/DE/FR/ES.
+func TestIngredientParser_Multilingual(t *testing.T) {
+	cases := []struct {
+		raw      string
+		qty      float64
+		unit     string
+		name     string
+	}{
+		// English
+		{"2 cups flour", 2, "cups", "flour"},
+		{"1 cup all-purpose flour, sifted", 1, "cup", "all-purpose flour"},
+		{"1 1/2 tsp salt", 1.5, "tsp", "salt"},
+		{"3 cloves garlic, minced", 3, "cloves", "garlic"},
+		{"200 g butter, softened", 200, "g", "butter"},
+		// German
+		{"200 g Mehl", 200, "g", "Mehl"},
+		{"2 EL Olivenöl", 2, "el", "Olivenöl"},
+		{"1 TL Salz", 1, "tl", "Salz"},
+		{"3 Stück Kartoffeln, gehackt", 3, "stück", "Kartoffeln"},
+		// French
+		{"2 cuillères à soupe d'huile", 2, "cuillères", "à soupe d'huile"},
+		{"1 gousse d'ail", 1, "gousse", "d'ail"},
+		// Spanish
+		{"2 cucharadas de aceite", 2, "cucharadas", "aceite"},
+		{"1 taza de harina", 1, "taza", "harina"},
+		{"3 dientes de ajo", 3, "dientes", "ajo"},
+		// Bare name (no qty/unit)
+		{"Salz", 0, "", "Salz"},
+		// Empty
+		{"", 0, "", ""},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.raw, func(t *testing.T) {
+			got := ParseIngredient(tc.raw)
+			assert.Equal(t, tc.raw, got.RawText, "RawText preserved")
+			assert.InDelta(t, tc.qty, got.Quantity, 0.001, "Quantity")
+			assert.Equal(t, tc.unit, got.Unit, "Unit")
+			assert.Equal(t, tc.name, got.Name, "Name")
+		})
+	}
+}
+
+// TestIngredientParser_PrepPhraseStripping verifies trailing prep notes are removed.
+func TestIngredientParser_PrepPhraseStripping(t *testing.T) {
+	cases := []struct {
+		raw  string
+		name string
+	}{
+		{"1 cup flour, sifted", "flour"},
+		{"2 cloves garlic, minced", "garlic"},
+		{"100 g butter, softened", "butter"},
+		{"200 g Mehl, gesiebt", "Mehl"},
+		{"3 Stück Kartoffeln, gehackt", "Kartoffeln"},
+		{"1 taza harina tamizada", "harina"},
+		{"1 cup sugar (optional)", "sugar"},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.raw, func(t *testing.T) {
+			got := ParseIngredient(tc.raw)
+			assert.Equal(t, tc.name, got.Name, "Name after prep strip")
+		})
+	}
+}
+
+// TestIngredientParser_NeverPanics confirms ParseIngredient is total (no panics).
+func TestIngredientParser_NeverPanics(t *testing.T) {
+	inputs := []string{
+		"", " ", "   ", "½", "¼ tsp", "a", "some flour",
+		"1-2 cloves garlic", "3 to 4 cups milk",
+	}
+	for _, raw := range inputs {
+		raw := raw
+		t.Run(raw, func(t *testing.T) {
+			assert.NotPanics(t, func() { ParseIngredient(raw) })
+		})
+	}
+}

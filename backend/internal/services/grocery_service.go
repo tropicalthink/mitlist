@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/google/uuid"
@@ -147,6 +148,27 @@ func (s *GroceryService) UpdateAisles(ctx context.Context, userID, groupID uuid.
 	}
 	s.publishGraphUpdated(groupID, version)
 	return version, nil
+}
+
+// ResolveIngredientName performs an exact alias lookup for the given ingredient
+// name against the household's grocery catalog (household-scoped aliases first,
+// then global seed aliases). Returns the canonical item ID when matched, nil
+// when not found. Resolution is best-effort: callers must not fail the request
+// when this returns nil.
+func (s *GroceryService) ResolveIngredientName(ctx context.Context, groupID uuid.UUID, name string) (*uuid.UUID, error) {
+	// Normalise: lowercase, trim, collapse internal whitespace.
+	normalised := strings.Join(strings.Fields(strings.ToLower(strings.TrimSpace(name))), " ")
+	if normalised == "" {
+		return nil, nil
+	}
+	id, found, err := s.repo.ResolveAlias(ctx, groupID, normalised)
+	if err != nil {
+		return nil, fmt.Errorf("resolve ingredient alias: %w", err)
+	}
+	if !found {
+		return nil, nil
+	}
+	return &id, nil
 }
 
 func (s *GroceryService) requireMembership(ctx context.Context, userID, groupID uuid.UUID) error {
