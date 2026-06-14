@@ -1017,6 +1017,21 @@ class $ExpensesTableTable extends ExpensesTable
   late final GeneratedColumn<int> amount = GeneratedColumn<int>(
       'amount', aliasedName, false,
       type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _baseAmountMeta =
+      const VerificationMeta('baseAmount');
+  @override
+  late final GeneratedColumn<int> baseAmount = GeneratedColumn<int>(
+      'base_amount', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _fxRateMeta = const VerificationMeta('fxRate');
+  @override
+  late final GeneratedColumn<double> fxRate = GeneratedColumn<double>(
+      'fx_rate', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(1.0));
   static const VerificationMeta _descriptionMeta =
       const VerificationMeta('description');
   @override
@@ -1057,6 +1072,8 @@ class $ExpensesTableTable extends ExpensesTable
         groupId,
         payerId,
         amount,
+        baseAmount,
+        fxRate,
         description,
         category,
         currency,
@@ -1096,6 +1113,16 @@ class $ExpensesTableTable extends ExpensesTable
           amount.isAcceptableOrUnknown(data['amount']!, _amountMeta));
     } else if (isInserting) {
       context.missing(_amountMeta);
+    }
+    if (data.containsKey('base_amount')) {
+      context.handle(
+          _baseAmountMeta,
+          baseAmount.isAcceptableOrUnknown(
+              data['base_amount']!, _baseAmountMeta));
+    }
+    if (data.containsKey('fx_rate')) {
+      context.handle(_fxRateMeta,
+          fxRate.isAcceptableOrUnknown(data['fx_rate']!, _fxRateMeta));
     }
     if (data.containsKey('description')) {
       context.handle(
@@ -1152,6 +1179,10 @@ class $ExpensesTableTable extends ExpensesTable
           .read(DriftSqlType.string, data['${effectivePrefix}payer_id'])!,
       amount: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}amount'])!,
+      baseAmount: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}base_amount'])!,
+      fxRate: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}fx_rate'])!,
       description: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}description'])!,
       category: attachedDatabase.typeMapping
@@ -1179,6 +1210,8 @@ class ExpensesTableData extends DataClass
   final String groupId;
   final String payerId;
   final int amount;
+  final int baseAmount;
+  final double fxRate;
   final String description;
   final String category;
   final String currency;
@@ -1190,6 +1223,8 @@ class ExpensesTableData extends DataClass
       required this.groupId,
       required this.payerId,
       required this.amount,
+      required this.baseAmount,
+      required this.fxRate,
       required this.description,
       required this.category,
       required this.currency,
@@ -1203,6 +1238,8 @@ class ExpensesTableData extends DataClass
     map['group_id'] = Variable<String>(groupId);
     map['payer_id'] = Variable<String>(payerId);
     map['amount'] = Variable<int>(amount);
+    map['base_amount'] = Variable<int>(baseAmount);
+    map['fx_rate'] = Variable<double>(fxRate);
     map['description'] = Variable<String>(description);
     map['category'] = Variable<String>(category);
     map['currency'] = Variable<String>(currency);
@@ -1218,6 +1255,8 @@ class ExpensesTableData extends DataClass
       groupId: Value(groupId),
       payerId: Value(payerId),
       amount: Value(amount),
+      baseAmount: Value(baseAmount),
+      fxRate: Value(fxRate),
       description: Value(description),
       category: Value(category),
       currency: Value(currency),
@@ -1235,6 +1274,8 @@ class ExpensesTableData extends DataClass
       groupId: serializer.fromJson<String>(json['groupId']),
       payerId: serializer.fromJson<String>(json['payerId']),
       amount: serializer.fromJson<int>(json['amount']),
+      baseAmount: serializer.fromJson<int>(json['baseAmount']),
+      fxRate: serializer.fromJson<double>(json['fxRate']),
       description: serializer.fromJson<String>(json['description']),
       category: serializer.fromJson<String>(json['category']),
       currency: serializer.fromJson<String>(json['currency']),
@@ -1251,6 +1292,8 @@ class ExpensesTableData extends DataClass
       'groupId': serializer.toJson<String>(groupId),
       'payerId': serializer.toJson<String>(payerId),
       'amount': serializer.toJson<int>(amount),
+      'baseAmount': serializer.toJson<int>(baseAmount),
+      'fxRate': serializer.toJson<double>(fxRate),
       'description': serializer.toJson<String>(description),
       'category': serializer.toJson<String>(category),
       'currency': serializer.toJson<String>(currency),
@@ -1265,6 +1308,8 @@ class ExpensesTableData extends DataClass
           String? groupId,
           String? payerId,
           int? amount,
+          int? baseAmount,
+          double? fxRate,
           String? description,
           String? category,
           String? currency,
@@ -1276,6 +1321,8 @@ class ExpensesTableData extends DataClass
         groupId: groupId ?? this.groupId,
         payerId: payerId ?? this.payerId,
         amount: amount ?? this.amount,
+        baseAmount: baseAmount ?? this.baseAmount,
+        fxRate: fxRate ?? this.fxRate,
         description: description ?? this.description,
         category: category ?? this.category,
         currency: currency ?? this.currency,
@@ -1289,6 +1336,9 @@ class ExpensesTableData extends DataClass
       groupId: data.groupId.present ? data.groupId.value : this.groupId,
       payerId: data.payerId.present ? data.payerId.value : this.payerId,
       amount: data.amount.present ? data.amount.value : this.amount,
+      baseAmount:
+          data.baseAmount.present ? data.baseAmount.value : this.baseAmount,
+      fxRate: data.fxRate.present ? data.fxRate.value : this.fxRate,
       description:
           data.description.present ? data.description.value : this.description,
       category: data.category.present ? data.category.value : this.category,
@@ -1306,6 +1356,8 @@ class ExpensesTableData extends DataClass
           ..write('groupId: $groupId, ')
           ..write('payerId: $payerId, ')
           ..write('amount: $amount, ')
+          ..write('baseAmount: $baseAmount, ')
+          ..write('fxRate: $fxRate, ')
           ..write('description: $description, ')
           ..write('category: $category, ')
           ..write('currency: $currency, ')
@@ -1317,8 +1369,8 @@ class ExpensesTableData extends DataClass
   }
 
   @override
-  int get hashCode => Object.hash(id, groupId, payerId, amount, description,
-      category, currency, notes, date, createdAt);
+  int get hashCode => Object.hash(id, groupId, payerId, amount, baseAmount,
+      fxRate, description, category, currency, notes, date, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1327,6 +1379,8 @@ class ExpensesTableData extends DataClass
           other.groupId == this.groupId &&
           other.payerId == this.payerId &&
           other.amount == this.amount &&
+          other.baseAmount == this.baseAmount &&
+          other.fxRate == this.fxRate &&
           other.description == this.description &&
           other.category == this.category &&
           other.currency == this.currency &&
@@ -1340,6 +1394,8 @@ class ExpensesTableCompanion extends UpdateCompanion<ExpensesTableData> {
   final Value<String> groupId;
   final Value<String> payerId;
   final Value<int> amount;
+  final Value<int> baseAmount;
+  final Value<double> fxRate;
   final Value<String> description;
   final Value<String> category;
   final Value<String> currency;
@@ -1352,6 +1408,8 @@ class ExpensesTableCompanion extends UpdateCompanion<ExpensesTableData> {
     this.groupId = const Value.absent(),
     this.payerId = const Value.absent(),
     this.amount = const Value.absent(),
+    this.baseAmount = const Value.absent(),
+    this.fxRate = const Value.absent(),
     this.description = const Value.absent(),
     this.category = const Value.absent(),
     this.currency = const Value.absent(),
@@ -1365,6 +1423,8 @@ class ExpensesTableCompanion extends UpdateCompanion<ExpensesTableData> {
     required String groupId,
     required String payerId,
     required int amount,
+    this.baseAmount = const Value.absent(),
+    this.fxRate = const Value.absent(),
     required String description,
     required String category,
     required String currency,
@@ -1387,6 +1447,8 @@ class ExpensesTableCompanion extends UpdateCompanion<ExpensesTableData> {
     Expression<String>? groupId,
     Expression<String>? payerId,
     Expression<int>? amount,
+    Expression<int>? baseAmount,
+    Expression<double>? fxRate,
     Expression<String>? description,
     Expression<String>? category,
     Expression<String>? currency,
@@ -1400,6 +1462,8 @@ class ExpensesTableCompanion extends UpdateCompanion<ExpensesTableData> {
       if (groupId != null) 'group_id': groupId,
       if (payerId != null) 'payer_id': payerId,
       if (amount != null) 'amount': amount,
+      if (baseAmount != null) 'base_amount': baseAmount,
+      if (fxRate != null) 'fx_rate': fxRate,
       if (description != null) 'description': description,
       if (category != null) 'category': category,
       if (currency != null) 'currency': currency,
@@ -1415,6 +1479,8 @@ class ExpensesTableCompanion extends UpdateCompanion<ExpensesTableData> {
       Value<String>? groupId,
       Value<String>? payerId,
       Value<int>? amount,
+      Value<int>? baseAmount,
+      Value<double>? fxRate,
       Value<String>? description,
       Value<String>? category,
       Value<String>? currency,
@@ -1427,6 +1493,8 @@ class ExpensesTableCompanion extends UpdateCompanion<ExpensesTableData> {
       groupId: groupId ?? this.groupId,
       payerId: payerId ?? this.payerId,
       amount: amount ?? this.amount,
+      baseAmount: baseAmount ?? this.baseAmount,
+      fxRate: fxRate ?? this.fxRate,
       description: description ?? this.description,
       category: category ?? this.category,
       currency: currency ?? this.currency,
@@ -1451,6 +1519,12 @@ class ExpensesTableCompanion extends UpdateCompanion<ExpensesTableData> {
     }
     if (amount.present) {
       map['amount'] = Variable<int>(amount.value);
+    }
+    if (baseAmount.present) {
+      map['base_amount'] = Variable<int>(baseAmount.value);
+    }
+    if (fxRate.present) {
+      map['fx_rate'] = Variable<double>(fxRate.value);
     }
     if (description.present) {
       map['description'] = Variable<String>(description.value);
@@ -1483,6 +1557,8 @@ class ExpensesTableCompanion extends UpdateCompanion<ExpensesTableData> {
           ..write('groupId: $groupId, ')
           ..write('payerId: $payerId, ')
           ..write('amount: $amount, ')
+          ..write('baseAmount: $baseAmount, ')
+          ..write('fxRate: $fxRate, ')
           ..write('description: $description, ')
           ..write('category: $category, ')
           ..write('currency: $currency, ')
@@ -8486,6 +8562,8 @@ typedef $$ExpensesTableTableCreateCompanionBuilder = ExpensesTableCompanion
   required String groupId,
   required String payerId,
   required int amount,
+  Value<int> baseAmount,
+  Value<double> fxRate,
   required String description,
   required String category,
   required String currency,
@@ -8500,6 +8578,8 @@ typedef $$ExpensesTableTableUpdateCompanionBuilder = ExpensesTableCompanion
   Value<String> groupId,
   Value<String> payerId,
   Value<int> amount,
+  Value<int> baseAmount,
+  Value<double> fxRate,
   Value<String> description,
   Value<String> category,
   Value<String> currency,
@@ -8529,6 +8609,12 @@ class $$ExpensesTableTableFilterComposer
 
   ColumnFilters<int> get amount => $composableBuilder(
       column: $table.amount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get baseAmount => $composableBuilder(
+      column: $table.baseAmount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get fxRate => $composableBuilder(
+      column: $table.fxRate, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get description => $composableBuilder(
       column: $table.description, builder: (column) => ColumnFilters(column));
@@ -8570,6 +8656,12 @@ class $$ExpensesTableTableOrderingComposer
   ColumnOrderings<int> get amount => $composableBuilder(
       column: $table.amount, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get baseAmount => $composableBuilder(
+      column: $table.baseAmount, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get fxRate => $composableBuilder(
+      column: $table.fxRate, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get description => $composableBuilder(
       column: $table.description, builder: (column) => ColumnOrderings(column));
 
@@ -8609,6 +8701,12 @@ class $$ExpensesTableTableAnnotationComposer
 
   GeneratedColumn<int> get amount =>
       $composableBuilder(column: $table.amount, builder: (column) => column);
+
+  GeneratedColumn<int> get baseAmount => $composableBuilder(
+      column: $table.baseAmount, builder: (column) => column);
+
+  GeneratedColumn<double> get fxRate =>
+      $composableBuilder(column: $table.fxRate, builder: (column) => column);
 
   GeneratedColumn<String> get description => $composableBuilder(
       column: $table.description, builder: (column) => column);
@@ -8659,6 +8757,8 @@ class $$ExpensesTableTableTableManager extends RootTableManager<
             Value<String> groupId = const Value.absent(),
             Value<String> payerId = const Value.absent(),
             Value<int> amount = const Value.absent(),
+            Value<int> baseAmount = const Value.absent(),
+            Value<double> fxRate = const Value.absent(),
             Value<String> description = const Value.absent(),
             Value<String> category = const Value.absent(),
             Value<String> currency = const Value.absent(),
@@ -8672,6 +8772,8 @@ class $$ExpensesTableTableTableManager extends RootTableManager<
             groupId: groupId,
             payerId: payerId,
             amount: amount,
+            baseAmount: baseAmount,
+            fxRate: fxRate,
             description: description,
             category: category,
             currency: currency,
@@ -8685,6 +8787,8 @@ class $$ExpensesTableTableTableManager extends RootTableManager<
             required String groupId,
             required String payerId,
             required int amount,
+            Value<int> baseAmount = const Value.absent(),
+            Value<double> fxRate = const Value.absent(),
             required String description,
             required String category,
             required String currency,
@@ -8698,6 +8802,8 @@ class $$ExpensesTableTableTableManager extends RootTableManager<
             groupId: groupId,
             payerId: payerId,
             amount: amount,
+            baseAmount: baseAmount,
+            fxRate: fxRate,
             description: description,
             category: category,
             currency: currency,

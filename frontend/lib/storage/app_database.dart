@@ -75,6 +75,10 @@ class ExpensesTable extends Table {
   TextColumn get groupId => text().named('group_id')();
   TextColumn get payerId => text().named('payer_id')();
   IntColumn get amount => integer()();
+  IntColumn get baseAmount =>
+      integer().named('base_amount').withDefault(const Constant(0))();
+  RealColumn get fxRate =>
+      real().named('fx_rate').withDefault(const Constant(1.0))();
   TextColumn get description => text()();
   TextColumn get category => text()();
   TextColumn get currency => text()();
@@ -302,7 +306,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   /// Creates all hot-query indexes.  Called from both onCreate and the v4
   /// onUpgrade block so that fresh installs and upgrades both get the indexes.
@@ -396,6 +400,15 @@ FROM list_items_table;
           if (from < 4) {
             // Add hot-query indexes (no data migration needed).
             await _createIndexes();
+          }
+          if (from < 5) {
+            // Multi-currency: store the household-base amount and FX rate per
+            // expense. Backfill base_amount = amount for existing rows so they
+            // remain correct (they were single-currency at the group rate).
+            await m.addColumn(expensesTable, expensesTable.baseAmount);
+            await m.addColumn(expensesTable, expensesTable.fxRate);
+            await customStatement(
+                'UPDATE expenses_table SET base_amount = amount WHERE base_amount = 0;');
           }
         },
         beforeOpen: (details) async {

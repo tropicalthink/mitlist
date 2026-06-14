@@ -23,10 +23,12 @@ class ExpenseDetailSheet extends ConsumerStatefulWidget {
     required this.expenseId,
     required this.description,
     required this.amountLabel,
+    this.convertedLabel,
     required this.payer,
     required this.createdAt,
     this.onDelete,
     this.currency = 'USD',
+    this.baseCurrency,
     this.userLabels = const {},
   });
 
@@ -34,10 +36,18 @@ class ExpenseDetailSheet extends ConsumerStatefulWidget {
   final String expenseId;
   final String description;
   final String amountLabel;
+
+  /// Optional "≈ converted" label shown under [amountLabel] when the expense
+  /// was recorded in a non-base currency. Null when no conversion applies.
+  final String? convertedLabel;
   final String payer;
   final DateTime createdAt;
   final VoidCallback? onDelete;
   final String currency;
+
+  /// The household base currency. Splits are denominated in it; falls back to
+  /// [currency] when not provided.
+  final String? baseCurrency;
   final Map<String, String> userLabels;
 
   static Future<void> show(
@@ -46,10 +56,12 @@ class ExpenseDetailSheet extends ConsumerStatefulWidget {
     required String expenseId,
     required String description,
     required String amountLabel,
+    String? convertedLabel,
     required String payer,
     required DateTime createdAt,
     VoidCallback? onDelete,
     String currency = 'USD',
+    String? baseCurrency,
     Map<String, String> userLabels = const {},
   }) async {
     return showAppBottomSheet(
@@ -60,10 +72,12 @@ class ExpenseDetailSheet extends ConsumerStatefulWidget {
         expenseId: expenseId,
         description: description,
         amountLabel: amountLabel,
+        convertedLabel: convertedLabel,
         payer: payer,
         createdAt: createdAt,
         onDelete: onDelete,
         currency: currency,
+        baseCurrency: baseCurrency,
         userLabels: userLabels,
       ),
     );
@@ -265,6 +279,17 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
           overflow: TextOverflow.ellipsis,
           style: MitlistTypography.monoBody(color: Theme.of(context).colorScheme.onSurface),
         ),
+        if (widget.convertedLabel != null) ...[
+          const SizedBox(height: MitlistSpacing.xs),
+          Text(
+            '≈ ${widget.convertedLabel}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
         const SizedBox(height: MitlistSpacing.md),
         if (!_loadingSplits && _splits.isNotEmpty) ...[
           Text('Splits', style: Theme.of(context).textTheme.titleMedium),
@@ -276,7 +301,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
               children: [
                 for (var i = 0; i < _splits.length; i++) ...[
                   if (i > 0) const AppDivider(),
-                  _SplitRow(split: _splits[i], currency: widget.currency, userLabels: widget.userLabels),
+                  _SplitRow(split: _splits[i], currency: widget.baseCurrency ?? widget.currency, userLabels: widget.userLabels),
                 ],
               ],
             ),
