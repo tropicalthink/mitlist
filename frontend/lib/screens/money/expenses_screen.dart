@@ -42,6 +42,9 @@ class _Expense {
   final String id;
   final String description;
   final double amount;
+  final double baseAmount;
+  final double fxRate;
+  final String baseCurrency;
   final String payer;
   final String currency;
   final String category;
@@ -52,12 +55,19 @@ class _Expense {
     required this.id,
     required this.description,
     required this.amount,
+    required this.baseAmount,
+    required this.fxRate,
+    required this.baseCurrency,
     required this.payer,
     required this.currency,
     required this.category,
     required this.date,
     required this.createdAt,
   });
+
+  /// True when this expense was recorded in a currency other than the
+  /// household base currency and therefore carries a conversion.
+  bool get isConverted => fxRate != 1.0 || currency != baseCurrency;
 }
 
 class _ExpenseGroup {
@@ -395,6 +405,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       id: exp.id,
       description: exp.description,
       amount: exp.amount / 100.0,
+      baseAmount: exp.baseAmount / 100.0,
+      fxRate: exp.fxRate,
+      baseCurrency: _groupCurrency,
       payer: _userLabels[exp.payerId] ?? exp.payerId,
       currency: exp.currency,
       category: exp.category,
@@ -413,10 +426,14 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       expenseId: expense.id,
       description: expense.description,
       amountLabel: _formatCurrency(expense.amount, currency: expense.currency),
+      convertedLabel: expense.isConverted
+          ? _formatCurrency(expense.baseAmount, currency: expense.baseCurrency)
+          : null,
       payer: expense.payer,
       createdAt: expense.createdAt,
       onDelete: () => _confirmDeleteExpense(expense),
       currency: expense.currency,
+      baseCurrency: expense.baseCurrency,
       userLabels: _userLabels,
     );
   }
@@ -1208,6 +1225,15 @@ class _ExpenseCard extends StatelessWidget {
                 _formatCurrency(expense.amount, currency: expense.currency),
                 style: MitlistTypography.monoBody(),
               ),
+              if (expense.isConverted) ...[
+                const SizedBox(height: MitlistSpacing.space1),
+                Text(
+                  '≈ ${_formatCurrency(expense.baseAmount, currency: expense.baseCurrency)}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+              ],
             ],
           ),
         ],

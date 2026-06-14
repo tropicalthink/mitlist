@@ -20,14 +20,19 @@ CreateExpenseRequest _req({
   String groupId = 'group-1',
   String payerId = 'payer-1',
   int amount = 2500, // $25.00 in cents
+  int? baseAmount,
+  double fxRate = 1.0,
+  String currency = 'USD',
 }) =>
     CreateExpenseRequest(
       groupId: groupId,
       payerId: payerId,
       amount: amount,
+      baseAmount: baseAmount ?? amount,
+      fxRate: fxRate,
       description: 'Groceries',
       category: 'food',
-      currency: 'USD',
+      currency: currency,
       notes: '',
       date: DateTime.utc(2026, 1, 15),
     );
@@ -155,6 +160,46 @@ void main() {
 
       // API was called twice total (once fail, once succeed).
       expect(remote.createCalls.length, equals(2));
+    });
+
+    // -------------------------------------------------------------------------
+    // Case 3b: foreign-currency expense survives the outbox round-trip
+    // -------------------------------------------------------------------------
+    test(
+        'createExpenseOfflineFirst: foreign currency baseAmount/fxRate survive enqueue then drain',
+        () async {
+      // €100.00 at 1.10 → $110.00 base.
+      final result = await repo.createExpenseOfflineFirst(_req(
+        amount: 10000,
+        baseAmount: 11000,
+        fxRate: 1.10,
+        currency: 'EUR',
+      ));
+
+      // Optimistic local row carries the converted base amount + rate.
+      expect(result.amount, equals(10000));
+      expect(result.baseAmount, equals(11000));
+      expect(result.fxRate, equals(1.10));
+      expect(result.currency, equals('EUR'));
+
+      // The enqueued JSON payload (drained via _syncCreateExpense) must rebuild
+      // the request with the FX fields intact and forward them to the API.
+      await repo.drainOutboxOnce();
+
+      expect(remote.createCalls.length, equals(1));
+      final sent = remote.createCalls.first;
+      expect(sent.amount, equals(10000));
+      expect(sent.baseAmount, equals(11000),
+          reason: 'base_amount must survive the outbox enqueue→drain cycle');
+      expect(sent.fxRate, equals(1.10),
+          reason: 'fx_rate must survive the outbox enqueue→drain cycle');
+      expect(sent.currency, equals('EUR'));
+
+      // Persisted server row keeps the converted amount.
+      final expenses = await db.getExpensesByGroupOnce('group-1');
+      expect(expenses.length, equals(1));
+      expect(expenses.first.baseAmount, equals(11000));
+      expect(expenses.first.fxRate, equals(1.10));
     });
 
     // -------------------------------------------------------------------------

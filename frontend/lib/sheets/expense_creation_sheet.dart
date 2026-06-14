@@ -23,6 +23,7 @@ import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../widgets/animated_check_toggle.dart';
 import '../widgets/app_icon.dart';
+import '../widgets/app_currency_dropdown.dart';
 import '../widgets/app_input.dart';
 import '../utils/friendly_error.dart';
 import '../widgets/chip.dart';
@@ -73,11 +74,18 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
+  final TextEditingController _fxRateController =
+      TextEditingController(text: '1.0');
   final Map<String, TextEditingController> _splitControllers = {};
   List<GroupMemberProfile> _members = [];
   final Set<String> _selectedMemberIds = {};
   String _splitMode = 'equal';
   String _currency = 'USD';
+
+  /// The household's base currency. Splits and balances are denominated in it;
+  /// [_currency] may differ when recording a foreign-currency expense.
+  String _groupCurrency = 'USD';
+  double _fxRate = 1.0;
   DateTime _date = DateTime.now();
   File? _scannedReceipt;
   bool _membersLoading = true;
@@ -87,9 +95,14 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
 
   String? _descriptionError;
   String? _amountError;
+  String? _fxRateError;
 
   bool get _hasReceipt =>
       widget.receiptImage != null || _scannedReceipt != null;
+
+  /// True when the chosen expense currency differs from the household base
+  /// currency, which is when an FX rate is needed.
+  bool get _isForeignCurrency => _currency != _groupCurrency;
 
   @override
   void initState() {
@@ -132,6 +145,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       final members = await groupService.listMembers(groupId);
       if (!mounted) return;
       setState(() {
+        _groupCurrency = group.currency;
         _currency = group.currency;
         _members = members;
         _membersLoading = false;
@@ -240,12 +254,22 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       return;
     }
 
+    if (_isForeignCurrency && _fxRate <= 0) {
+      setState(() => _fxRateError = 'Enter a conversion rate greater than zero.');
+      return;
+    }
+
+    // Splits and balances live in the household base currency, so the split
+    // summary is reconciled against the converted (base) amount.
+    final baseAmount =
+        _isForeignCurrency ? (amount * _fxRate).round() : amount;
+
     final summary = computeSplitSummary(
       mode: _splitMode,
       selectedIds: _selectedMemberIds,
       controllers: _splitControllers,
-      totalCents: amount,
-      currency: _currency,
+      totalCents: baseAmount,
+      currency: _groupCurrency,
     );
     if (!summary.isValid) {
       // The live split summary already shows the reason in red; just block.
@@ -281,6 +305,8 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
           groupId: groupId,
           payerId: me.id,
           amount: amount,
+          baseAmount: baseAmount,
+          fxRate: _isForeignCurrency ? _fxRate : 1.0,
           description: _descriptionController.text.trim(),
           notes: _notesController.text.trim(),
           currency: _currency,
@@ -379,6 +405,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
     _descriptionController.dispose();
     _amountController.dispose();
     _notesController.dispose();
+    _fxRateController.dispose();
     for (final controller in _splitControllers.values) {
       controller.dispose();
     }
@@ -388,6 +415,11 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
   @override
   Widget build(BuildContext context) {
     final totalCents = _parseAmountToCents(_amountController.text);
+    // The split inputs operate on the base (household) amount, so the live
+    // breakdown previews the converted total when a foreign currency is used.
+    final baseCents = totalCents == null
+        ? null
+        : (_isForeignCurrency ? (totalCents * _fxRate).round() : totalCents);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -436,6 +468,48 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
           },
         ),
         const SizedBox(height: MitlistSpacing.md),
+        AppCurrencyDropdown(
+          value: _currency,
+          onChanged: (value) {
+            if (value == null) return;
+            setState(() {
+              _currency = value;
+              if (!_isForeignCurrency) {
+                _fxRate = 1.0;
+                _fxRateController.text = '1.0';
+                _fxRateError = null;
+              }
+            });
+            _markDirty();
+          },
+        ),
+        if (_isForeignCurrency) ...[
+          const SizedBox(height: MitlistSpacing.md),
+          AppInput(
+            label: 'Rate (1 $_currency = ? $_groupCurrency)',
+            hint: '0.00',
+            controller: _fxRateController,
+            keyboardType:
+                const TextInputType.numberWithOptions(decimal: true),
+            errorText: _fxRateError,
+            onChanged: (value) {
+              _markDirty();
+              setState(() {
+                _fxRate =
+                    double.tryParse(value.replaceAll(',', '.').trim()) ?? 0;
+                _fxRateError = null;
+              });
+            },
+          ),
+          if (totalCents != null && baseCents != null) ...[
+            const SizedBox(height: MitlistSpacing.sm),
+            _ConversionPreview(
+              original: formatCurrency(totalCents, _currency),
+              converted: formatCurrency(baseCents, _groupCurrency),
+            ),
+          ],
+        ],
+        const SizedBox(height: MitlistSpacing.md),
         _DateField(date: _date, onTap: _pickDate),
         const SizedBox(height: MitlistSpacing.md),
         AppInput(
@@ -462,8 +536,8 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
           selectedMemberIds: _selectedMemberIds,
           splitMode: _splitMode,
           controllers: _splitControllers,
-          totalCents: totalCents,
-          currency: _currency,
+          totalCents: baseCents,
+          currency: _groupCurrency,
           onRetry: _retryLoad,
           onModeChanged: (mode) {
             setState(() => _splitMode = mode);
@@ -837,6 +911,37 @@ class _SplitOptions extends StatelessWidget {
         'percentage' => '%',
         _ => 'Shares',
       };
+}
+
+class _ConversionPreview extends StatelessWidget {
+  final String original;
+  final String converted;
+
+  const _ConversionPreview({required this.original, required this.converted});
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        AppIcon(
+          name: 'arrowPath',
+          size: 16,
+          color: colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: MitlistSpacing.xs),
+        Expanded(
+          child: Text(
+            '$original ≈ $converted',
+            style: textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _CurrencyPrefix extends StatelessWidget {
