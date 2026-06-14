@@ -14,6 +14,7 @@ import '../../providers/auth_provider.dart'
     show authServiceProviderAsync, authStateProvider;
 import '../../providers/group_provider.dart';
 import '../../providers/onboarding_provider.dart';
+import '../../providers/scan_provider.dart' show cloudScanProvider;
 import '../../providers/theme_provider.dart';
 import '../../providers/list_provider.dart' show appDatabaseProvider;
 import '../../providers/finance_provider.dart';
@@ -483,6 +484,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
 
   Widget _buildPreferencesCard() {
     final themeMode = ref.watch(themeModeProvider);
+    final allowCloudScan = ref.watch(cloudScanProvider);
 
     return AppCard(
       child: Column(
@@ -515,6 +517,17 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 if (mode != null) {
                   ref.read(themeModeProvider.notifier).set(mode);
                 }
+              },
+            ),
+          ),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          _MenuRow(
+            icon: const AppIcon(name: 'camera'),
+            label: 'Cloud scan assist',
+            trailing: Switch(
+              value: allowCloudScan,
+              onChanged: (value) {
+                ref.read(cloudScanProvider.notifier).set(value);
               },
             ),
           ),
