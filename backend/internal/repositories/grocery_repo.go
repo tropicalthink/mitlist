@@ -264,27 +264,58 @@ type AisleFeedbackItem struct {
 
 // UpsertAislesBatch persists a batch of aisle feedback rows from the client.
 func (r *GroceryRepository) UpsertAislesBatch(ctx context.Context, groupID uuid.UUID, items []AisleFeedbackItem, version int64) error {
-	now := time.Now().UTC()
-	for _, item := range items {
-		query := `
-			INSERT INTO store_aisles
-				(id, group_id, store_id, canonical_item_id, aisle, sort_order, confidence, version, created_at, updated_at)
-			VALUES ($1, $2, $3, $4, $5, $6, 1.0, $7, $8, $8)
-			ON CONFLICT (group_id, store_id, canonical_item_id) DO UPDATE
-				SET aisle      = EXCLUDED.aisle,
-				    sort_order = EXCLUDED.sort_order,
-				    confidence = 1.0,
-				    version    = EXCLUDED.version,
-				    updated_at = EXCLUDED.updated_at`
-		_, err := r.pool.Exec(ctx, query,
-			uuid.New(), groupID, item.StoreID, item.CanonicalItemID,
-			item.Aisle, item.SortOrder, version, now,
-		)
-		if err != nil {
-			return err
-		}
+	if len(items) == 0 {
+		return nil
 	}
-	return nil
+	now := time.Now().UTC()
+	ids := make([]uuid.UUID, len(items))
+	storeIDs := make([]*uuid.UUID, len(items))
+	canonicalIDs := make([]uuid.UUID, len(items))
+	aisles := make([]string, len(items))
+	sortOrders := make([]int32, len(items))
+	for i, item := range items {
+		ids[i] = uuid.New()
+		storeIDs[i] = item.StoreID
+		canonicalIDs[i] = item.CanonicalItemID
+		aisles[i] = item.Aisle
+		sortOrders[i] = int32(item.SortOrder)
+	}
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO store_aisles
+			(id, group_id, store_id, canonical_item_id, aisle, sort_order, confidence, version, created_at, updated_at)
+		SELECT id, $1, store_id, canonical_item_id, aisle, sort_order, 1.0, $2, $3, $3
+		FROM unnest($4::uuid[], $5::uuid[], $6::uuid[], $7::text[], $8::int[]) AS t(id, store_id, canonical_item_id, aisle, sort_order)
+		ON CONFLICT (group_id, store_id, canonical_item_id) DO UPDATE
+			SET aisle      = EXCLUDED.aisle,
+			    sort_order = EXCLUDED.sort_order,
+			    confidence = 1.0,
+			    version    = EXCLUDED.version,
+			    updated_at = EXCLUDED.updated_at
+	`, groupID, version, now, ids, storeIDs, canonicalIDs, aisles, sortOrders)
+	return err
+}
+
+// ResolveAlias looks up a canonical_item_id for an alias string.
+// It checks the household-scoped aliases first, then the global seed aliases
+// (group_id = '00000000-0000-0000-0000-000000000000'), preferring higher weight.
+// aliasText must already be normalised (lowercase, trimmed, single-spaced) by the caller.
+func (r *GroceryRepository) ResolveAlias(ctx context.Context, groupID uuid.UUID, aliasText string) (canonicalItemID uuid.UUID, found bool, err error) {
+	const globalGroupID = "00000000-0000-0000-0000-000000000000"
+	query := `
+		SELECT canonical_item_id
+		FROM item_aliases
+		WHERE (group_id = $1 OR group_id = '` + globalGroupID + `')
+		  AND alias_text = $2
+		  AND deleted_at IS NULL
+		ORDER BY
+		  CASE WHEN group_id = $1 THEN 0 ELSE 1 END,
+		  weight DESC
+		LIMIT 1`
+	var id uuid.UUID
+	if err := r.pool.QueryRow(ctx, query, groupID, aliasText).Scan(&id); err != nil {
+		return uuid.Nil, false, nil //nolint:nilerr // not-found is not an error here
+	}
+	return id, true, nil
 }
 
 // UpsertAlias writes or increments an item_aliases row for a confirmed alias correction.

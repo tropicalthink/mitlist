@@ -1,0 +1,445 @@
+{
+ "version": 1,
+ "entries": [
+  {
+   "query": "erdbeere",
+   "lang": "de",
+   "top5_item_ids": [
+    "bird_seed",
+    "gerbera",
+    "linguine",
+    "remoulade",
+    "grated_parmesan"
+   ]
+  },
+  {
+   "query": "apfel",
+   "lang": "de",
+   "top5_item_ids": [
+    "falafel",
+    "evaporated_skimmed_milk",
+    "coffee_liqueur",
+    "evaporated_milk",
+    "pepper"
+   ]
+  },
+  {
+   "query": "banane",
+   "lang": "de",
+   "top5_item_ids": [
+    "banana",
+    "banana_liqueur",
+    "frozen_bananas",
+    "banana_bread",
+    "banana_yogurt"
+   ]
+  },
+  {
+   "query": "orange",
+   "lang": "de",
+   "top5_item_ids": [
+    "orange",
+    "orange_zest",
+    "burrata",
+    "mango",
+    "diapers"
+   ]
+  },
+  {
+   "query": "weintraube",
+   "lang": "de",
+   "top5_item_ids": [
+    "smetana",
+    "kombu_seaweed",
+    "smoked_meat",
+    "nori_seaweed_sheets",
+    "smoked_herring"
+   ]
+  },
+  {
+   "query": "zitrone",
+   "lang": "de",
+   "top5_item_ids": [
+    "cilantro_coriander",
+    "ancho_chili_dried",
+    "salsa_borracha_spicy",
+    "fresh_habanero_chili",
+    "turkey_strips"
+   ]
+  },
+  {
+   "query": "birne",
+   "lang": "de",
+   "top5_item_ids": [
+    "bird_seed",
+    "bagel",
+    "tagliatelle_ribbon_noodles",
+    "brie_de_meaux",
+    "brie"
+   ]
+  },
+  {
+   "query": "pfirsich",
+   "lang": "de",
+   "top5_item_ids": [
+    "mango_kefir",
+    "kefir",
+    "kefir_mango",
+    "cider",
+    "kefir_drink"
+   ]
+  },
+  {
+   "query": "kirsche",
+   "lang": "de",
+   "top5_item_ids": [
+    "pork_knuckle",
+    "kirschwasser",
+    "pork_trotter",
+    "curry_ketchup",
+    "pork_cheek"
+   ]
+  },
+  {
+   "query": "wassermelone",
+   "lang": "de",
+   "top5_item_ids": [
+    "water",
+    "tonic_water",
+    "water_lily",
+    "watermelon",
+    "vodka"
+   ]
+  },
+  {
+   "query": "strawberry",
+   "lang": "en",
+   "top5_item_ids": [
+    "strawberry",
+    "strawberry_jam",
+    "sloe_berry",
+    "raspberry",
+    "elderberry"
+   ]
+  },
+  {
+   "query": "apple",
+   "lang": "en",
+   "top5_item_ids": [
+    "apple",
+    "apple_turnover",
+    "apple_plum_compote",
+    "apple_wine",
+    "baby_porridge_apple_banana"
+   ]
+  },
+  {
+   "query": "banana",
+   "lang": "en",
+   "top5_item_ids": [
+    "banana",
+    "banana_liqueur",
+    "frozen_bananas",
+    "banana_nectar",
+    "banana_bread"
+   ]
+  },
+  {
+   "query": "grape",
+   "lang": "en",
+   "top5_item_ids": [
+    "grape",
+    "grappa",
+    "pear",
+    "peas",
+    "oat_groat"
+   ]
+  },
+  {
+   "query": "lemon",
+   "lang": "en",
+   "top5_item_ids": [
+    "lemon",
+    "lemon_zest",
+    "lemonade",
+    "lemongrass",
+    "lemons_waxed"
+   ]
+  },
+  {
+   "query": "pear",
+   "lang": "en",
+   "top5_item_ids": [
+    "pear",
+    "peas",
+    "grape",
+    "beef_patty",
+    "peach"
+   ]
+  },
+  {
+   "query": "peach",
+   "lang": "en",
+   "top5_item_ids": [
+    "peach",
+    "pork",
+    "peas",
+    "franzbrotchen",
+    "pear"
+   ]
+  },
+  {
+   "query": "cherry",
+   "lang": "en",
+   "top5_item_ids": [
+    "cherry",
+    "sour_cherry",
+    "cherry_jelly",
+    "cherry_preserve",
+    "cherry_liqueur"
+   ]
+  },
+  {
+   "query": "watermelon",
+   "lang": "en",
+   "top5_item_ids": [
+    "watermelon",
+    "tonic_water",
+    "water_lily",
+    "water",
+    "watermelon_juice"
+   ]
+  },
+  {
+   "query": "blueberry",
+   "lang": "en",
+   "top5_item_ids": [
+    "blueberry",
+    "blueberry_jam",
+    "blueberry_jelly",
+    "blueberry_wine",
+    "blueberry_juice"
+   ]
+  },
+  {
+   "query": "fraise",
+   "lang": "fr",
+   "top5_item_ids": [
+    "creme_fraiche",
+    "onion_red_fresh",
+    "fresh_masa_for_gorditas",
+    "fresh_pasta",
+    "fresno_chili_pepper_fresh"
+   ]
+  },
+  {
+   "query": "pomme",
+   "lang": "fr",
+   "top5_item_ids": [
+    "smoked_meat",
+    "meadowsweet",
+    "kombu_seaweed",
+    "smetana",
+    "meatloaf"
+   ]
+  },
+  {
+   "query": "raisin",
+   "lang": "fr",
+   "top5_item_ids": [
+    "raisin_braid",
+    "raisin_beans",
+    "raisin_stollen",
+    "tamarind",
+    "potted_rose"
+   ]
+  },
+  {
+   "query": "citron",
+   "lang": "fr",
+   "top5_item_ids": [
+    "lemon",
+    "lemon_zest",
+    "lemonade",
+    "lemongrass",
+    "lemons_waxed"
+   ]
+  },
+  {
+   "query": "poire",
+   "lang": "fr",
+   "top5_item_ids": [
+    "roasted_edamame",
+    "saithe",
+    "quince_jelly",
+    "edamame",
+    "sage"
+   ]
+  },
+  {
+   "query": "pêche",
+   "lang": "fr",
+   "top5_item_ids": [
+    "madonna_lily",
+    "yellow_daffodil",
+    "blue_passionflower",
+    "spurge",
+    "strawflower"
+   ]
+  },
+  {
+   "query": "cerise",
+   "lang": "fr",
+   "top5_item_ids": [
+    "lamb_upper_thigh",
+    "farfalle",
+    "whiting",
+    "roasted_hemp_seeds",
+    "rose_petal_jelly"
+   ]
+  },
+  {
+   "query": "pastèque",
+   "lang": "fr",
+   "top5_item_ids": [
+    "madonna_lily",
+    "yellow_daffodil",
+    "blue_passionflower",
+    "spurge",
+    "strawflower"
+   ]
+  },
+  {
+   "query": "myrtille",
+   "lang": "fr",
+   "top5_item_ids": [
+    "pork_mince",
+    "lamb_mince_tartare",
+    "minced_lamb",
+    "meadowsweet",
+    "yeast_braid"
+   ]
+  },
+  {
+   "query": "framboise",
+   "lang": "fr",
+   "top5_item_ids": [
+    "tongue_scraper",
+    "boiled_beef_brisket",
+    "body_lotion",
+    "pork_cartilage",
+    "brisling"
+   ]
+  },
+  {
+   "query": "fresa",
+   "lang": "es",
+   "top5_item_ids": [
+    "fresno_chili_pepper_fresh",
+    "salmon_fillet_in_tomato_cream",
+    "forest_fruit_yogurt",
+    "fruit_yogurt",
+    "salami"
+   ]
+  },
+  {
+   "query": "manzana",
+   "lang": "es",
+   "top5_item_ids": [
+    "edamame",
+    "wasabi_peas",
+    "amaretto",
+    "ajvar",
+    "arborio_rice"
+   ]
+  },
+  {
+   "query": "plátano",
+   "lang": "es",
+   "top5_item_ids": [
+    "madonna_lily",
+    "yellow_daffodil",
+    "blue_passionflower",
+    "spurge",
+    "strawflower"
+   ]
+  },
+  {
+   "query": "naranja",
+   "lang": "es",
+   "top5_item_ids": [
+    "fruit_pouches",
+    "herb_oil",
+    "vegetable_oil",
+    "gooseberry_juice",
+    "canola_oil"
+   ]
+  },
+  {
+   "query": "uva",
+   "lang": "es",
+   "top5_item_ids": [
+    "fruit_tea",
+    "red_wine_vinegar",
+    "ginger_honey",
+    "wine_vinegar",
+    "rose_wine"
+   ]
+  },
+  {
+   "query": "limón",
+   "lang": "es",
+   "top5_item_ids": [
+    "madonna_lily",
+    "yellow_daffodil",
+    "blue_passionflower",
+    "spurge",
+    "strawflower"
+   ]
+  },
+  {
+   "query": "pera",
+   "lang": "es",
+   "top5_item_ids": [
+    "aperol",
+    "parsnip",
+    "quinoa",
+    "beef_patty",
+    "kipper"
+   ]
+  },
+  {
+   "query": "melocotón",
+   "lang": "es",
+   "top5_item_ids": [
+    "madonna_lily",
+    "yellow_daffodil",
+    "blue_passionflower",
+    "spurge",
+    "strawflower"
+   ]
+  },
+  {
+   "query": "cereza",
+   "lang": "es",
+   "top5_item_ids": [
+    "semolina",
+    "lamb_roast",
+    "tequila",
+    "pesto_genovese",
+    "sherry_vinegar"
+   ]
+  },
+  {
+   "query": "sandía",
+   "lang": "es",
+   "top5_item_ids": [
+    "madonna_lily",
+    "yellow_daffodil",
+    "blue_passionflower",
+    "spurge",
+    "strawflower"
+   ]
+  }
+ ]
+}

@@ -49,6 +49,32 @@ func (r *ListRepository) GetListByID(ctx context.Context, id uuid.UUID) (*models
 	return &l, nil
 }
 
+// GetListsByIDs returns lists for the given IDs.
+func (r *ListRepository) GetListsByIDs(ctx context.Context, ids []uuid.UUID) ([]models.List, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, group_id, name, type, archived_at, created_at, updated_at
+		FROM lists
+		WHERE id = ANY($1)
+	`, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var lists []models.List
+	for rows.Next() {
+		var l models.List
+		if err := rows.Scan(&l.ID, &l.GroupID, &l.Name, &l.Type, &l.ArchivedAt, &l.CreatedAt, &l.UpdatedAt); err != nil {
+			return nil, err
+		}
+		lists = append(lists, l)
+	}
+	return lists, rows.Err()
+}
+
 // ListListsByGroup returns all lists belonging to a group.
 func (r *ListRepository) ListListsByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.List, error) {
 	if limit <= 0 {
@@ -90,9 +116,13 @@ func (r *ListRepository) ListItemPreviewLinesByListIDs(ctx context.Context, list
 		placeholders += "$" + fmt.Sprintf("%d", i+2)
 	}
 	query := fmt.Sprintf(`
-		SELECT list_id, name FROM list_items
-		WHERE list_id IN (%s) AND deleted_at IS NULL
-		ORDER BY position ASC, id ASC
+		WITH ranked AS (
+			SELECT list_id, name,
+			       ROW_NUMBER() OVER (PARTITION BY list_id ORDER BY position ASC, id ASC) AS rn
+			FROM list_items
+			WHERE list_id IN (%s) AND deleted_at IS NULL
+		)
+		SELECT list_id, name FROM ranked WHERE rn <= $1
 	`, placeholders)
 
 	args := []any{perList}
@@ -121,9 +151,6 @@ func (r *ListRepository) ListItemPreviewLinesByListIDs(ctx context.Context, list
 
 	for _, id := range listIDs {
 		items := collected[id]
-		if len(items) > perList {
-			items = items[:perList]
-		}
 		out[id] = items
 	}
 	return out, nil
@@ -163,11 +190,76 @@ func (r *ListRepository) CreateItem(ctx context.Context, item *models.ListItem) 
 	item.CreatedAt = now
 	item.UpdatedAt = now
 
-	query := `INSERT INTO list_items (id, list_id, name, quantity, unit, note, price_cents, product_id, store_id, added_by, checked, position, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`
+	query := `INSERT INTO list_items (id, list_id, name, quantity, unit, note, price_cents, product_id, store_id, canonical_item_id, added_by, checked, position, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`
 	_, err := r.pool.Exec(ctx, query,
-		item.ID, item.ListID, item.Name, item.Quantity, item.Unit, item.Note, item.PriceCents, item.ProductID, item.StoreID, item.AddedBy, item.Checked, item.Position, item.CreatedAt, item.UpdatedAt,
+		item.ID, item.ListID, item.Name, item.Quantity, item.Unit, item.Note, item.PriceCents, item.ProductID, item.StoreID, item.CanonicalItemID, item.AddedBy, item.Checked, item.Position, item.CreatedAt, item.UpdatedAt,
 	)
 	return err
+}
+
+// CreateItems inserts multiple list items in one statement.
+func (r *ListRepository) CreateItems(ctx context.Context, items []models.ListItem) error {
+	if len(items) == 0 {
+		return nil
+	}
+	now := time.Now().UTC()
+	ids := make([]uuid.UUID, len(items))
+	listIDs := make([]uuid.UUID, len(items))
+	names := make([]string, len(items))
+	quantities := make([]float64, len(items))
+	units := make([]string, len(items))
+	notes := make([]string, len(items))
+	priceCents := make([]*int, len(items))
+	productIDs := make([]*uuid.UUID, len(items))
+	storeIDs := make([]*uuid.UUID, len(items))
+	addedBy := make([]*uuid.UUID, len(items))
+	checked := make([]bool, len(items))
+	positions := make([]int32, len(items))
+	for i := range items {
+		if items[i].ID == uuid.Nil {
+			items[i].ID = uuid.New()
+		}
+		items[i].CreatedAt = now
+		items[i].UpdatedAt = now
+		ids[i] = items[i].ID
+		listIDs[i] = items[i].ListID
+		names[i] = items[i].Name
+		quantities[i] = items[i].Quantity
+		units[i] = items[i].Unit
+		notes[i] = items[i].Note
+		priceCents[i] = items[i].PriceCents
+		productIDs[i] = items[i].ProductID
+		storeIDs[i] = items[i].StoreID
+		addedBy[i] = items[i].AddedBy
+		checked[i] = items[i].Checked
+		positions[i] = int32(items[i].Position)
+	}
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO list_items (id, list_id, name, quantity, unit, note, price_cents, product_id, store_id, added_by, checked, position, created_at, updated_at)
+		SELECT id, list_id, name, quantity, unit, note, price_cents, product_id, store_id, added_by, checked, position, $1, $1
+		FROM unnest($2::uuid[], $3::uuid[], $4::text[], $5::float8[], $6::text[], $7::text[], $8::int[], $9::uuid[], $10::uuid[], $11::uuid[], $12::bool[], $13::int[]) AS t(
+			id, list_id, name, quantity, unit, note, price_cents, product_id, store_id, added_by, checked, position
+		)
+	`, now, ids, listIDs, names, quantities, units, notes, priceCents, productIDs, storeIDs, addedBy, checked, positions)
+	return err
+}
+
+// BulkMarkItemsChecked marks items checked when the user is a member of the list's group.
+func (r *ListRepository) BulkMarkItemsChecked(ctx context.Context, userID uuid.UUID, itemIDs []uuid.UUID) (int64, error) {
+	if len(itemIDs) == 0 {
+		return 0, nil
+	}
+	res, err := r.pool.Exec(ctx, `
+		UPDATE list_items li
+		SET checked = true, updated_at = NOW()
+		FROM lists l
+		JOIN group_memberships gm ON gm.group_id = l.group_id AND gm.user_id = $1
+		WHERE li.id = ANY($2) AND li.list_id = l.id AND li.deleted_at IS NULL
+	`, userID, itemIDs)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected(), nil
 }
 
 // GetItemByID retrieves a list item by its ID.
@@ -222,6 +314,32 @@ func (r *ListRepository) ListItemsByList(ctx context.Context, listID uuid.UUID, 
 	return items, nil
 }
 
+// ListItemsByListIDs returns items grouped by list_id.
+func (r *ListRepository) ListItemsByListIDs(ctx context.Context, listIDs []uuid.UUID) (map[uuid.UUID][]models.ListItem, error) {
+	out := make(map[uuid.UUID][]models.ListItem)
+	if len(listIDs) == 0 {
+		return out, nil
+	}
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, list_id, name, quantity, unit, COALESCE(note,''), price_cents, product_id, store_id, added_by, claimed_by, checked, position, created_at, updated_at
+		FROM list_items
+		WHERE list_id = ANY($1) AND deleted_at IS NULL
+		ORDER BY list_id ASC, position ASC, id ASC
+	`, listIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var i models.ListItem
+		if err := rows.Scan(&i.ID, &i.ListID, &i.Name, &i.Quantity, &i.Unit, &i.Note, &i.PriceCents, &i.ProductID, &i.StoreID, &i.AddedBy, &i.ClaimedBy, &i.Checked, &i.Position, &i.CreatedAt, &i.UpdatedAt); err != nil {
+			return nil, err
+		}
+		out[i.ListID] = append(out[i.ListID], i)
+	}
+	return out, rows.Err()
+}
+
 // UpdateItem updates a list item.
 func (r *ListRepository) UpdateItem(ctx context.Context, item *models.ListItem) error {
 	query := `UPDATE list_items SET name = $1, quantity = $2, unit = $3, note = $4, price_cents = $5, checked = $6, position = $7, product_id = $8, store_id = $9, updated_at = NOW() WHERE id = $10 AND deleted_at IS NULL`
@@ -273,19 +391,24 @@ func (r *ListRepository) SoftDeleteItemsByList(ctx context.Context, listID uuid.
 }
 
 func (r *ListRepository) BatchUpdateItemPositions(ctx context.Context, items []models.ListItem) error {
-	tx, err := r.pool.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("begin tx: %w", err)
+	if len(items) == 0 {
+		return nil
 	}
-	defer tx.Rollback(ctx)
-
-	for _, item := range items {
-		if _, err := tx.Exec(ctx, `UPDATE list_items SET position = $1, updated_at = NOW() WHERE id = $2`, item.Position, item.ID); err != nil {
-			return err
-		}
+	ids := make([]uuid.UUID, len(items))
+	positions := make([]int32, len(items))
+	for i, item := range items {
+		ids[i] = item.ID
+		positions[i] = int32(item.Position)
 	}
-
-	return tx.Commit(ctx)
+	_, err := r.pool.Exec(ctx, `
+		UPDATE list_items AS li
+		SET position = v.pos, updated_at = NOW()
+		FROM (
+			SELECT unnest($1::uuid[]) AS id, unnest($2::int[]) AS pos
+		) AS v
+		WHERE li.id = v.id
+	`, ids, positions)
+	return err
 }
 
 // ClaimItem sets the claimed_by user on an unchecked list item.

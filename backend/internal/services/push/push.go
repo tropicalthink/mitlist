@@ -22,6 +22,7 @@ import (
 // notifPrefRepo is the minimal repo interface needed to check opt-out preferences.
 type notifPrefRepo interface {
 	GetPreference(ctx context.Context, userID, groupID uuid.UUID) (*models.NotificationPreference, error)
+	GetPreferencesByGroup(ctx context.Context, groupID uuid.UUID) (map[uuid.UUID]*models.NotificationPreference, error)
 }
 
 // Service provides push notification operations.
@@ -114,19 +115,76 @@ func (s *Service) broadcastExcluding(groupID, excludeUserID uuid.UUID, payload s
 		s.log.Error().Err(err).Str("group_id", groupID.String()).Msg("broadcast: failed to list group members")
 		return err
 	}
+
+	var prefs map[uuid.UUID]*models.NotificationPreference
+	if s.notifRepo != nil {
+		prefs, err = s.notifRepo.GetPreferencesByGroup(ctx, groupID)
+		if err != nil {
+			s.log.Warn().Err(err).Str("group_id", groupID.String()).Msg("broadcast: failed to load preferences")
+		}
+	}
+
+	targetUserIDs := make([]uuid.UUID, 0, len(members))
 	for _, m := range members {
 		if m.UserID == excludeUserID {
 			continue
 		}
-		// Respect the global push opt-out preference when the repo is available.
-		if s.notifRepo != nil {
-			pref, err := s.notifRepo.GetPreference(ctx, m.UserID, groupID)
-			if err == nil && !pref.PushEnabled {
+		if prefs != nil {
+			if pref, ok := prefs[m.UserID]; ok && !pref.PushEnabled {
 				continue
 			}
 		}
-		if err := s.SendToUser(m.UserID, payload); err != nil {
-			s.log.Warn().Err(err).Str("user_id", m.UserID.String()).Msg("broadcast: send failed")
+		targetUserIDs = append(targetUserIDs, m.UserID)
+	}
+	if len(targetUserIDs) == 0 {
+		return nil
+	}
+
+	subsByUser, err := s.authRepo.ListPushSubscriptionsByUserIDs(ctx, targetUserIDs)
+	if err != nil {
+		s.log.Error().Err(err).Msg("broadcast: failed to list push subscriptions")
+		return err
+	}
+
+	var tokensByUser map[uuid.UUID][]models.DeviceToken
+	if s.cfg.FirebaseProjectID != "" && s.cfg.FirebaseServiceAccount != "" {
+		tokensByUser, err = s.authRepo.ListDeviceTokensByUserIDs(ctx, targetUserIDs)
+		if err != nil {
+			s.log.Error().Err(err).Msg("broadcast: failed to list device tokens")
+		}
+	}
+
+	for _, userID := range targetUserIDs {
+		for _, sub := range subsByUser[userID] {
+			resp, sendErr := webpush.SendNotification(
+				[]byte(payload),
+				&webpush.Subscription{
+					Endpoint: sub.Endpoint,
+					Keys: webpush.Keys{
+						P256dh: sub.P256dh,
+						Auth:   sub.Auth,
+					},
+				},
+				&webpush.Options{
+					Subscriber:      s.cfg.VapidSubject,
+					VAPIDPublicKey:  s.cfg.VapidPublicKey,
+					VAPIDPrivateKey: s.cfg.VapidPrivateKey,
+					TTL:             86400,
+				},
+			)
+			if sendErr != nil {
+				s.log.Warn().Err(sendErr).Str("user_id", userID.String()).Str("endpoint", sub.Endpoint).Msg("web push failed")
+				if resp != nil {
+					_ = resp.Body.Close()
+				}
+				continue
+			}
+			_ = resp.Body.Close()
+		}
+		for _, dt := range tokensByUser[userID] {
+			if err := s.sendFCM(ctx, dt.Token, payload); err != nil {
+				s.log.Warn().Err(err).Str("user_id", userID.String()).Str("token", dt.Token[:min(8, len(dt.Token))]).Msg("FCM send failed")
+			}
 		}
 	}
 	return nil

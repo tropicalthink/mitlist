@@ -369,18 +369,28 @@ func (r *ChoreRepository) BulkUpdateRotationStates(ctx context.Context, states [
 	if len(states) == 0 {
 		return nil
 	}
-	tx, err := r.pool.Begin(ctx)
+	ids := make([]uuid.UUID, len(states))
+	memberOrders := make([][]uuid.UUID, len(states))
+	currentIndices := make([]int32, len(states))
+	for i, s := range states {
+		ids[i] = s.ID
+		memberOrders[i] = s.MemberOrder
+		currentIndices[i] = int32(s.CurrentIndex)
+	}
+	_, err := r.pool.Exec(ctx, `
+		UPDATE chore_rotation_states AS crs
+		SET member_order = v.member_order, current_index = v.current_index
+		FROM (
+			SELECT unnest($1::uuid[]) AS id,
+			       unnest($2::uuid[][]) AS member_order,
+			       unnest($3::int[]) AS current_index
+		) AS v
+		WHERE crs.id = v.id
+	`, ids, memberOrders, currentIndices)
 	if err != nil {
-		return fmt.Errorf("begin tx: %w", err)
+		return fmt.Errorf("bulk update rotation states: %w", err)
 	}
-	defer tx.Rollback(ctx)
-	for _, s := range states {
-		query := `UPDATE chore_rotation_states SET member_order = $1, current_index = $2 WHERE id = $3`
-		if _, err := tx.Exec(ctx, query, s.MemberOrder, s.CurrentIndex, s.ID); err != nil {
-			return fmt.Errorf("update rotation state %s: %w", s.ID, err)
-		}
-	}
-	return tx.Commit(ctx)
+	return nil
 }
 
 // CreateAssignment inserts a new chore assignment.
@@ -553,7 +563,7 @@ func (r *ChoreRepository) ListDueAssignments(ctx context.Context, from, to time.
 // ListDueAssignmentsByGroup returns pending assignments for a group due within the window.
 func (r *ChoreRepository) ListDueAssignmentsByGroup(ctx context.Context, groupID uuid.UUID, from, to time.Time) ([]models.ChoreAssignment, error) {
 	query := `
-		SELECT a.id, a.chore_id, a.user_id, a.status, a.due_date, a.assigned_at, a.completed_at, a.skip_reason
+		SELECT a.id, a.chore_id, a.user_id, a.status, a.due_date, a.assigned_at, a.completed_at, a.skip_reason, c.name
 		FROM chore_assignments a
 		JOIN chores c ON c.id = a.chore_id
 		WHERE c.group_id = $1 AND a.status = 'pending' AND a.due_date >= $2 AND a.due_date <= $3
@@ -570,7 +580,7 @@ func (r *ChoreRepository) ListDueAssignmentsByGroup(ctx context.Context, groupID
 		var a models.ChoreAssignment
 		if err := rows.Scan(
 			&a.ID, &a.ChoreID, &a.UserID, &a.Status,
-			&a.DueDate, &a.AssignedAt, &a.CompletedAt, &a.SkipReason,
+			&a.DueDate, &a.AssignedAt, &a.CompletedAt, &a.SkipReason, &a.ChoreName,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan due assignment: %w", err)
 		}

@@ -14,9 +14,10 @@ import (
 
 // RecipeHandler exposes recipe and collection endpoints.
 type RecipeHandler struct {
-	service   *services.RecipeService
-	scrapeSvc *services.RecipeScrapingService
-	listSvc   *services.ListService
+	service    *services.RecipeService
+	scrapeSvc  *services.RecipeScrapingService
+	listSvc    *services.ListService
+	grocerySvc *services.GroceryService
 }
 
 // NewRecipeHandler creates a new RecipeHandler.
@@ -26,6 +27,11 @@ func NewRecipeHandler(service *services.RecipeService, scrapeSvc *services.Recip
 		h.listSvc = listSvc[0]
 	}
 	return h
+}
+
+// SetGroceryService injects the grocery service for ingredient resolution.
+func (h *RecipeHandler) SetGroceryService(svc *services.GroceryService) {
+	h.grocerySvc = svc
 }
 
 func (h *RecipeHandler) RegisterRoutes(r chi.Router) {
@@ -418,18 +424,39 @@ func (h *RecipeHandler) AddToList(w http.ResponseWriter, r *http.Request) {
 		scale = float64(*req.Servings) / float64(recipe.Servings)
 	}
 
-	added := make([]models.ListItem, 0, len(selected))
+	// Resolve group ID for canonical lookups (best-effort: skip if list unavailable).
+	var groupID uuid.UUID
+	if h.grocerySvc != nil {
+		if lst, lerr := h.listSvc.GetList(r.Context(), user, req.ListID); lerr == nil {
+			groupID = lst.GroupID
+		}
+	}
+
+	batchInputs := make([]services.ListItemAmountInput, 0, len(selected))
+	note := "From recipe: " + recipe.Title
 	for _, ing := range selected {
 		qty := parseIngredientAmount(ing.Quantity) * scale
 		if qty <= 0 {
 			qty = 1 * scale
 		}
-		item, err := h.listSvc.AddItemAmount(r.Context(), user, req.ListID, ing.Name, qty, ing.Unit, "From recipe: "+recipe.Title)
-		if err != nil {
-			api.RespondError(w, err)
-			return
+		input := services.ListItemAmountInput{
+			Name:   ing.Name,
+			Amount: qty,
+			Unit:   ing.Unit,
+			Note:   note,
 		}
-		added = append(added, *item)
+		// Best-effort canonical resolution — failure does not block the add.
+		if h.grocerySvc != nil && groupID != uuid.Nil {
+			if canonID, rerr := h.grocerySvc.ResolveIngredientName(r.Context(), groupID, ing.Name); rerr == nil {
+				input.CanonicalItemID = canonID
+			}
+		}
+		batchInputs = append(batchInputs, input)
+	}
+	added, err := h.listSvc.AddItemsBatch(r.Context(), user, req.ListID, batchInputs)
+	if err != nil {
+		api.RespondError(w, err)
+		return
 	}
 	api.RespondJSON(w, http.StatusOK, map[string]any{"added": added})
 }
@@ -488,8 +515,17 @@ func (h *RecipeHandler) AddMissingToList(w http.ResponseWriter, r *http.Request)
 		existingNames[normalizeName(item.Name)] = struct{}{}
 	}
 
-	added := make([]models.ListItem, 0)
+	// Resolve group ID for canonical lookups (best-effort: skip if list unavailable).
+	var missingGroupID uuid.UUID
+	if h.grocerySvc != nil {
+		if lst, lerr := h.listSvc.GetList(r.Context(), user, req.ListID); lerr == nil {
+			missingGroupID = lst.GroupID
+		}
+	}
+
 	skipped := make([]string, 0)
+	batchInputs := make([]services.ListItemAmountInput, 0)
+	note := "From recipe: " + recipe.Title
 	for _, ing := range ingredients {
 		if _, exists := existingNames[normalizeName(ing.Name)]; exists {
 			skipped = append(skipped, ing.Name)
@@ -499,12 +535,27 @@ func (h *RecipeHandler) AddMissingToList(w http.ResponseWriter, r *http.Request)
 		if qty <= 0 {
 			qty = 1
 		}
-		item, err := h.listSvc.AddItemAmount(r.Context(), user, req.ListID, ing.Name, qty, ing.Unit, "From recipe: "+recipe.Title)
+		input := services.ListItemAmountInput{
+			Name:   ing.Name,
+			Amount: qty,
+			Unit:   ing.Unit,
+			Note:   note,
+		}
+		// Best-effort canonical resolution — failure does not block the add.
+		if h.grocerySvc != nil && missingGroupID != uuid.Nil {
+			if canonID, rerr := h.grocerySvc.ResolveIngredientName(r.Context(), missingGroupID, ing.Name); rerr == nil {
+				input.CanonicalItemID = canonID
+			}
+		}
+		batchInputs = append(batchInputs, input)
+	}
+	var added []models.ListItem
+	if len(batchInputs) > 0 {
+		added, err = h.listSvc.AddItemsBatch(r.Context(), user, req.ListID, batchInputs)
 		if err != nil {
 			api.RespondError(w, err)
 			return
 		}
-		added = append(added, *item)
 	}
 	api.RespondJSON(w, http.StatusOK, map[string]any{"added": added, "skipped": skipped})
 }

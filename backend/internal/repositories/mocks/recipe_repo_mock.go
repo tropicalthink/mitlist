@@ -26,6 +26,14 @@ func (m *MockRecipeRepo) GetRecipeByID(ctx context.Context, id uuid.UUID) (*mode
 	return nil, args.Error(1)
 }
 
+func (m *MockRecipeRepo) GetRecipesByIDs(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]*models.Recipe, error) {
+	args := m.Called(ctx, ids)
+	if r := args.Get(0); r != nil {
+		return r.(map[uuid.UUID]*models.Recipe), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
 func (m *MockRecipeRepo) ListRecipesByUser(ctx context.Context, userID uuid.UUID, limit, offset int) ([]models.Recipe, error) {
 	args := m.Called(ctx, userID, limit, offset)
 	if r := args.Get(0); r != nil {
@@ -53,6 +61,14 @@ func (m *MockRecipeRepo) ListIngredients(ctx context.Context, recipeID uuid.UUID
 	args := m.Called(ctx, recipeID)
 	if i := args.Get(0); i != nil {
 		return i.([]models.RecipeIngredient), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockRecipeRepo) ListIngredientsByRecipeIDs(ctx context.Context, recipeIDs []uuid.UUID) (map[uuid.UUID][]models.RecipeIngredient, error) {
+	args := m.Called(ctx, recipeIDs)
+	if i := args.Get(0); i != nil {
+		return i.(map[uuid.UUID][]models.RecipeIngredient), args.Error(1)
 	}
 	return nil, args.Error(1)
 }

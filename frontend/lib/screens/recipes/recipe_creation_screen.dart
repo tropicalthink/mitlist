@@ -171,8 +171,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
   bool get _canCreate =>
       !_isSaving && (_mode == _RecipeEntryMode.url ? _hasUrl : _hasTitle);
 
-  bool get _canScrape =>
-      _mode == _RecipeEntryMode.url && _hasUrl && !_isSaving;
+  bool get _canScrape => _mode == _RecipeEntryMode.url && _hasUrl && !_isSaving;
 
   bool get _canGoNext {
     if (_currentStep == 0) {
@@ -204,11 +203,13 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
         _descriptionController.text = clip.description.trim();
       }
 
-      if (clip.prepTimeMinutes != null && clip.prepTimeMinutes! > 0 &&
+      if (clip.prepTimeMinutes != null &&
+          clip.prepTimeMinutes! > 0 &&
           _prepTimeController.text.trim().isEmpty) {
         _prepTimeController.text = clip.prepTimeMinutes.toString();
       }
-      if (clip.cookTimeMinutes != null && clip.cookTimeMinutes! > 0 &&
+      if (clip.cookTimeMinutes != null &&
+          clip.cookTimeMinutes! > 0 &&
           _cookTimeController.text.trim().isEmpty) {
         _cookTimeController.text = clip.cookTimeMinutes.toString();
       }
@@ -269,9 +270,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            parts.isEmpty
-                ? 'Recipe imported'
-                : 'Imported: ${parts.join(', ')}',
+            parts.isEmpty ? 'Recipe imported' : 'Imported: ${parts.join(', ')}',
           ),
         ),
       );
@@ -279,8 +278,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
       if (!mounted) return;
       setState(() => _isScraping = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text("Couldn't fetch details from that link.")),
+        const SnackBar(content: Text("Couldn't fetch details from that link.")),
       );
     }
   }
@@ -386,6 +384,39 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
     }
   }
 
+  List<String> _controllerLines(TextEditingController controller) {
+    return controller.text
+        .split('\n')
+        .map(_stripPrefix)
+        .where((line) => line.isNotEmpty)
+        .toList();
+  }
+
+  void _setControllerLines(
+    TextEditingController controller,
+    List<String> lines, {
+    VoidCallback? afterSet,
+  }) {
+    final text = lines
+        .map((line) => line.trim())
+        .where((line) => line.isNotEmpty)
+        .join('\n');
+    controller.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+    afterSet?.call();
+    setState(() {});
+  }
+
+  void _setIngredientLines(List<String> lines) {
+    _setControllerLines(
+      _ingredientsController,
+      lines,
+      afterSet: () => _onIngredientsChanged(_ingredientsController.text),
+    );
+  }
+
   List<CreateIngredientRequest> _buildIngredients() {
     if (_scrapedIngredients.isNotEmpty) {
       return _scrapedIngredients
@@ -394,7 +425,8 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
                 quantity: i.quantity > 0
                     ? (i.quantity == i.quantity.roundToDouble()
                         ? i.quantity.toInt().toString()
-                        : i.quantity.toStringAsFixed(2)
+                        : i.quantity
+                            .toStringAsFixed(2)
                             .replaceAll(RegExp(r'0+$'), ''))
                     : '',
                 unit: i.unit,
@@ -458,6 +490,14 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
     }
   }
 
+  String get _nextButtonText {
+    return switch (_currentStep) {
+      0 => 'Next: details',
+      1 => 'Next: content',
+      _ => 'Next',
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -507,6 +547,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
   }
 
   Widget _buildStepIndicator(ColorScheme colorScheme) {
+    const labels = ['Source', 'Details', 'Content'];
     return Container(
       decoration: BoxDecoration(
         border: Border(
@@ -528,18 +569,21 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
                 color: i <= _currentStep
                     ? colorScheme.primary
                     : colorScheme.surfaceContainerHighest,
-                margin: const EdgeInsets.symmetric(horizontal: MitlistSpacing.sm),
+                margin:
+                    const EdgeInsets.symmetric(horizontal: MitlistSpacing.sm),
               ),
-            _buildDot(i, colorScheme),
+            _buildDot(i, colorScheme, labels[i]),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildDot(int index, ColorScheme colorScheme) {
+  Widget _buildDot(int index, ColorScheme colorScheme, String label) {
     final isActive = index == _currentStep;
     final isComplete = index < _currentStep;
+    final status =
+        isActive ? 'current' : (isComplete ? 'complete' : 'upcoming');
 
     Color dotColor;
     if (isActive) {
@@ -550,42 +594,45 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
       dotColor = colorScheme.surfaceContainerHighest;
     }
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: dotColor,
-            borderRadius: BorderRadius.zero,
-            border: Border.all(
-              color: isActive || isComplete
-                  ? colorScheme.primary
-                  : colorScheme.outline,
-              width: 2,
+    return Semantics(
+      label: 'Step ${index + 1} of 3, $label, $status',
+      selected: isActive,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: dotColor,
+              borderRadius: BorderRadius.zero,
+              border: Border.all(
+                color: isActive || isComplete
+                    ? colorScheme.primary
+                    : colorScheme.outline,
+                width: 2,
+              ),
             ),
+            child: isComplete
+                ? AppIcon(
+                    name: 'check',
+                    size: 8,
+                    color: colorScheme.onPrimary,
+                  )
+                : null,
           ),
-          child: isComplete
-              ? AppIcon(
-                  name: 'check',
-                  size: 8,
-                  color: colorScheme.onPrimary,
-                )
-              : null,
-        ),
-        const SizedBox(height: MitlistSpacing.xs),
-        Text(
-          ['Source', 'Details', 'Content'][index],
-          style: MitlistTypography.labelXSmall(
-            color: isActive
-                ? colorScheme.primary
-                : colorScheme.onSurfaceVariant,
+          const SizedBox(height: MitlistSpacing.xs),
+          Text(
+            label,
+            style: MitlistTypography.labelXSmall(
+              color:
+                  isActive ? colorScheme.primary : colorScheme.onSurfaceVariant,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -688,8 +735,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
                     label: 'Select image ${index + 1}',
                     button: true,
                     child: GestureDetector(
-                      onTap: () =>
-                          setState(() => _selectedImageUrl = imgUrl),
+                      onTap: () => setState(() => _selectedImageUrl = imgUrl),
                       child: Container(
                         width: 80,
                         height: 80,
@@ -825,7 +871,8 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppInput(
-          label: _mode == _RecipeEntryMode.url ? 'Title override' : 'Recipe title',
+          label:
+              _mode == _RecipeEntryMode.url ? 'Title override' : 'Recipe title',
           hint: 'Sunday pancakes',
           controller: _titleController,
           textInputAction: TextInputAction.next,
@@ -889,7 +936,10 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
         ),
         const SizedBox(height: MitlistSpacing.md),
         AppSwitchListTile(
-          title: 'Share with household',
+          title: 'Save for household',
+          subtitle: _isPublic
+              ? 'Everyone in this household can find and use this recipe.'
+              : 'Keep it private for now. You can share it later.',
           value: _isPublic,
           onChanged:
               _isSaving ? null : (value) => setState(() => _isPublic = value),
@@ -902,21 +952,23 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppInput(
-          label: 'Ingredients',
-          hint: '2 cups flour\n1 cup milk\n3 eggs',
-          controller: _ingredientsController,
-          minLines: 4,
-          maxLines: 8,
-          onChanged: _onIngredientsChanged,
+        _RecipeLineEditor(
+          title: 'Ingredients',
+          helperText: 'Add one ingredient per row.',
+          addLabel: 'Add ingredient',
+          emptyHint: '2 cups flour',
+          lines: _controllerLines(_ingredientsController),
+          onChanged: _setIngredientLines,
         ),
         const SizedBox(height: MitlistSpacing.md),
-        AppInput(
-          label: 'Steps',
-          hint: 'Mix batter\nCook until golden',
-          controller: _stepsController,
-          minLines: 3,
-          maxLines: 6,
+        _RecipeLineEditor(
+          title: 'Steps',
+          helperText: 'Keep each step short enough to follow while cooking.',
+          addLabel: 'Add step',
+          emptyHint: 'Mix batter',
+          numbered: true,
+          lines: _controllerLines(_stepsController),
+          onChanged: (lines) => _setControllerLines(_stepsController, lines),
         ),
         const SizedBox(height: MitlistSpacing.md),
         AppInput(
@@ -934,45 +986,273 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
     return SafeArea(
       top: false,
       child: Container(
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: colorScheme.outline, width: 2),
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(color: colorScheme.outline, width: 2),
+          ),
+        ),
+        padding: const EdgeInsets.all(MitlistSpacing.md),
+        child: Row(
+          children: [
+            if (_currentStep > 0)
+              Expanded(
+                child: AppButton(
+                  text: 'Back',
+                  variant: AppButtonVariant.outline,
+                  color: AppButtonColor.neutral,
+                  onPressed: _goBack,
+                ),
+              )
+            else
+              const Expanded(child: SizedBox.shrink()),
+            const SizedBox(width: MitlistSpacing.md),
+            Expanded(
+              child: _currentStep < 2
+                  ? AppButton(
+                      text: _nextButtonText,
+                      variant: AppButtonVariant.solid,
+                      color: AppButtonColor.primary,
+                      onPressed: _canGoNext ? _goNext : null,
+                    )
+                  : AppButton(
+                      text: _isSaving ? 'Creating…' : 'Create recipe',
+                      variant: AppButtonVariant.solid,
+                      color: AppButtonColor.primary,
+                      size: AppButtonSize.lg,
+                      isLoading: _isSaving,
+                      onPressed: _canCreate ? _onCreate : null,
+                    ),
+            ),
+          ],
         ),
       ),
-      padding: const EdgeInsets.all(MitlistSpacing.md),
-      child: Row(
+    );
+  }
+}
+
+class _RecipeLineEditor extends StatefulWidget {
+  final String title;
+  final String helperText;
+  final String addLabel;
+  final String emptyHint;
+  final bool numbered;
+  final List<String> lines;
+  final ValueChanged<List<String>> onChanged;
+
+  const _RecipeLineEditor({
+    required this.title,
+    required this.helperText,
+    required this.addLabel,
+    required this.emptyHint,
+    required this.lines,
+    required this.onChanged,
+    this.numbered = false,
+  });
+
+  @override
+  State<_RecipeLineEditor> createState() => _RecipeLineEditorState();
+}
+
+class _RecipeLineEditorState extends State<_RecipeLineEditor> {
+  final TextEditingController _draftController = TextEditingController();
+  final FocusNode _draftFocusNode = FocusNode();
+  late List<TextEditingController> _controllers;
+
+  @override
+  void initState() {
+    super.initState();
+    _controllers =
+        widget.lines.map((line) => TextEditingController(text: line)).toList();
+    _draftController.addListener(_handleDraftChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant _RecipeLineEditor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_sameLines(widget.lines, _currentLines())) return;
+    for (final controller in _controllers) {
+      controller.dispose();
+    }
+    _controllers =
+        widget.lines.map((line) => TextEditingController(text: line)).toList();
+  }
+
+  @override
+  void dispose() {
+    _draftController.removeListener(_handleDraftChanged);
+    _draftFocusNode.dispose();
+    _draftController.dispose();
+    for (final controller in _controllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  void _handleDraftChanged() {
+    if (mounted) setState(() {});
+  }
+
+  bool get _canAddDraft => _draftController.text.trim().isNotEmpty;
+
+  String get _itemLabel => widget.numbered ? 'step' : 'ingredient';
+
+  String get _countLabel {
+    final count = _controllers.length;
+    return '$count $_itemLabel${count == 1 ? '' : 's'}';
+  }
+
+  bool _sameLines(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  List<String> _currentLines() {
+    return _controllers
+        .map((controller) => controller.text.trim())
+        .where((line) => line.isNotEmpty)
+        .toList();
+  }
+
+  void _emit() {
+    widget.onChanged(_currentLines());
+  }
+
+  void _addDraft() {
+    final text = _draftController.text.trim();
+    if (text.isEmpty) return;
+    setState(() {
+      _controllers.add(TextEditingController(text: text));
+      _draftController.clear();
+    });
+    _emit();
+    _draftFocusNode.requestFocus();
+  }
+
+  void _removeAt(int index) {
+    setState(() {
+      final controller = _controllers.removeAt(index);
+      controller.dispose();
+    });
+    _emit();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return AppCard(
+      variant: AppCardVariant.outlined,
+      padding: AppCardPadding.md,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (_currentStep > 0)
-            Expanded(
-              child: AppButton(
-                text: 'Back',
-                variant: AppButtonVariant.outline,
-                color: AppButtonColor.neutral,
-                onPressed: _goBack,
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  widget.title,
+                  style: textTheme.titleSmall,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Text(
+                _countLabel,
+                style: textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: MitlistSpacing.xs),
+          Text(
+            widget.helperText,
+            style: textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: MitlistSpacing.md),
+          if (_controllers.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(MitlistSpacing.md),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerLow,
+                border: Border.all(color: colorScheme.outline, width: 1),
+              ),
+              child: Text(
+                'No ${widget.title.toLowerCase()} yet.',
+                style: textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
             )
           else
-            const Expanded(child: SizedBox.shrink()),
-          const SizedBox(width: MitlistSpacing.md),
-          Expanded(
-            child: _currentStep < 2
-                ? AppButton(
-                    text: 'Next',
-                    variant: AppButtonVariant.solid,
-                    color: AppButtonColor.primary,
-                    onPressed: _canGoNext ? _goNext : null,
-                  )
-                : AppButton(
-                    text: _isSaving ? 'Creating…' : 'Create recipe',
-                    variant: AppButtonVariant.solid,
-                    color: AppButtonColor.primary,
-                    size: AppButtonSize.lg,
-                    isLoading: _isSaving,
-                    onPressed: _canCreate ? _onCreate : null,
+            for (var i = 0; i < _controllers.length; i++) ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: MitlistSpacing.space7,
+                    height: MitlistSpacing.space11,
+                    alignment: Alignment.center,
+                    child: Text(
+                      widget.numbered ? '${i + 1}' : '•',
+                      style: textTheme.labelMedium?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
+                  const SizedBox(width: MitlistSpacing.xs),
+                  Expanded(
+                    child: AppInput(
+                      hint: widget.emptyHint,
+                      controller: _controllers[i],
+                      minLines: 1,
+                      maxLines: 3,
+                      onChanged: (_) => _emit(),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Remove ${widget.title.toLowerCase()} ${i + 1}',
+                    icon: const AppIcon(name: 'xMark', size: 18),
+                    onPressed: () => _removeAt(i),
+                  ),
+                ],
+              ),
+              if (i != _controllers.length - 1)
+                const SizedBox(height: MitlistSpacing.sm),
+            ],
+          const SizedBox(height: MitlistSpacing.md),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: AppInput(
+                  hint: widget.emptyHint,
+                  controller: _draftController,
+                  focusNode: _draftFocusNode,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _addDraft(),
+                ),
+              ),
+              const SizedBox(width: MitlistSpacing.sm),
+              AppButton(
+                text: widget.addLabel,
+                size: AppButtonSize.sm,
+                variant: AppButtonVariant.outline,
+                icon: const AppIcon(name: 'plus', size: 16),
+                semanticLabel: widget.addLabel,
+                onPressed: _canAddDraft ? _addDraft : null,
+              ),
+            ],
           ),
         ],
-      ),
       ),
     );
   }

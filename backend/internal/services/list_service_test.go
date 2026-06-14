@@ -389,3 +389,89 @@ func TestListService_ReorderItems(t *testing.T) {
 		assert.IsType(t, &api.ValidationError{}, err)
 	})
 }
+
+func TestListService_BulkCompleteItems(t *testing.T) {
+	ctx := context.Background()
+	user := validUser()
+	itemIDs := []uuid.UUID{uuid.New(), uuid.New()}
+
+	listRepo := new(mocks.MockListRepo)
+	svc := NewListService(listRepo, nil)
+
+	listRepo.On("BulkMarkItemsChecked", ctx, user.ID, itemIDs).Return(int64(2), nil)
+
+	count, err := svc.BulkCompleteItems(ctx, user, itemIDs)
+	require.NoError(t, err)
+	assert.Equal(t, 2, count)
+	listRepo.AssertNotCalled(t, "GetItemByID", ctx, mock.Anything)
+	listRepo.AssertNotCalled(t, "UpdateItem", ctx, mock.Anything)
+}
+
+func TestListService_GetShoppingTrip_BatchesListAndItemQueries(t *testing.T) {
+	ctx := context.Background()
+	user := validUser()
+	groupID := uuid.New()
+	listID1 := uuid.New()
+	listID2 := uuid.New()
+	listIDs := []uuid.UUID{listID1, listID2}
+
+	listRepo := new(mocks.MockListRepo)
+	groupRepo := new(mocks.MockGroupRepo)
+	svc := NewListService(listRepo, groupRepo)
+
+	lists := []models.List{
+		{ID: listID1, GroupID: groupID, Name: "Groceries"},
+		{ID: listID2, GroupID: groupID, Name: "Hardware"},
+	}
+	itemsByList := map[uuid.UUID][]models.ListItem{
+		listID1: {{ID: uuid.New(), ListID: listID1, Name: "Milk"}},
+		listID2: {{ID: uuid.New(), ListID: listID2, Name: "Screws"}},
+	}
+
+	listRepo.On("GetListsByIDs", ctx, listIDs).Return(lists, nil)
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
+	listRepo.On("ListItemsByListIDs", ctx, listIDs).Return(itemsByList, nil)
+
+	result, err := svc.GetShoppingTrip(ctx, user, listIDs)
+	require.NoError(t, err)
+	require.Len(t, result, 2)
+	assert.Equal(t, "Groceries", result[0].ListName)
+	assert.Equal(t, "Milk", result[0].Items[0].Name)
+	assert.Equal(t, "Hardware", result[1].ListName)
+
+	listRepo.AssertNotCalled(t, "GetListByID", ctx, mock.Anything)
+	listRepo.AssertNotCalled(t, "ListItemsByList", ctx, mock.Anything, mock.Anything, mock.Anything)
+}
+
+func TestListService_AddItemsBatch_SingleListFetch(t *testing.T) {
+	ctx := context.Background()
+	user := validUser()
+	listID := uuid.New()
+	groupID := uuid.New()
+	existingID := uuid.New()
+
+	listRepo := new(mocks.MockListRepo)
+	groupRepo := new(mocks.MockGroupRepo)
+	svc := NewListService(listRepo, groupRepo)
+
+	listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
+	listRepo.On("ListItemsByList", ctx, listID, 0, 0).Return([]models.ListItem{
+		{ID: existingID, ListID: listID, Name: "Milk", Unit: "L", Quantity: 1},
+	}, nil)
+	listRepo.On("UpdateItem", ctx, mock.MatchedBy(func(item *models.ListItem) bool {
+		return item.ID == existingID && item.Quantity == 3
+	})).Return(nil)
+	listRepo.On("CreateItem", ctx, mock.MatchedBy(func(item *models.ListItem) bool {
+		return item.Name == "Eggs" && item.Quantity == 6
+	})).Return(nil)
+
+	items, err := svc.AddItemsBatch(ctx, user, listID, []ListItemAmountInput{
+		{Name: "Milk", Amount: 2, Unit: "L"},
+		{Name: "Eggs", Amount: 6, Unit: ""},
+	})
+	require.NoError(t, err)
+	require.Len(t, items, 2)
+	listRepo.AssertNumberOfCalls(t, "GetListByID", 1)
+	listRepo.AssertNotCalled(t, "GetItemByListNameUnit", ctx, mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+}

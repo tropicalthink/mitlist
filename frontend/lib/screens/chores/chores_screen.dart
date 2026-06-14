@@ -11,7 +11,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/chore_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
-import '../../router.dart' show currentGroupIdProvider;
+import '../../router.dart' show BottomNavScaffold, currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../sheets/chore_creation_sheet.dart';
 import '../../sheets/chore_detail_sheet.dart';
@@ -63,6 +63,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       MitlistSpacing.sm + _labelMediumLineHeight + MitlistSpacing.sm;
 
   bool _tabLoadStarted = false;
+  bool _insideShell = true;
 
   @override
   void initState() {
@@ -77,7 +78,12 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
 
   void _activateTabIfNeeded() {
     if (_tabLoadStarted || !mounted) return;
-    if (!shouldActivateShellTab(ref, choresShellTabIndex)) return;
+    final insideShell =
+        context.findAncestorWidgetOfExactType<BottomNavScaffold>() != null;
+    _insideShell = insideShell;
+    if (insideShell && !shouldActivateShellTab(ref, choresShellTabIndex)) {
+      return;
+    }
     _tabLoadStarted = true;
     _loadChores();
   }
@@ -148,7 +154,9 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       // Best-effort context for the fairness strip: who I am (to highlight my
       // share) and how the load has been split over the last 30 days. The UI
       // is already rendered from cache, so these only enrich it.
-      unawaited(_loadFairnessContext(gid));
+      if (_insideShell) {
+        unawaited(_loadFairnessContext(gid));
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -181,10 +189,9 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
               assignmentId: entry.pendingAssignment?.id,
               id: entry.chore.id,
               title: entry.chore.name,
-              assigneeInitials: _initialsFor(
-                  entry.pendingAssignment?.userId, _memberNames),
-              assigneeName:
-                  _memberNames[entry.pendingAssignment?.userId ?? ''],
+              assigneeInitials:
+                  _initialsFor(entry.pendingAssignment?.userId, _memberNames),
+              assigneeName: _memberNames[entry.pendingAssignment?.userId ?? ''],
               dueDate: entry.pendingAssignment?.dueDate ??
                   _fallbackDueDate(now, entry.chore.frequency),
               frequency: entry.chore.frequency,
@@ -451,7 +458,9 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       );
       if (groupId == null) return;
       final lists = await listSvc.listLists(groupId, limit: 50);
-      final shoppingLists = lists.where((l) => l.type == 'shopping' || l.type == 'general').toList();
+      final shoppingLists = lists
+          .where((l) => l.type == 'shopping' || l.type == 'general')
+          .toList();
       if (shoppingLists.isEmpty) {
         if (!mounted) return;
         _showChoreActionError('Create a shopping list first.');
@@ -531,7 +540,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     final confirmed = await showAppDialog<bool>(
       context: context,
       title: 'Delete chore',
-      body: const Text('This will permanently delete this chore and its history. This cannot be undone.'),
+      body: const Text(
+          'This will permanently delete this chore and its history. This cannot be undone.'),
       actions: [
         AppButton(
           text: 'Cancel',
@@ -579,7 +589,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
 
   void _setFilterMe(bool value) {
     setState(() => _filterMe = value);
-    SharedPreferences.getInstance().then((p) => p.setBool('chores_filter_me', value));
+    SharedPreferences.getInstance()
+        .then((p) => p.setBool('chores_filter_me', value));
   }
 
   Map<String, List<_Chore>> _groupBySection(List<_Chore> chores) {
@@ -626,8 +637,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   /// the "your turn" set the hero leads with.
   List<_Chore> _myTurnNow() {
     final now = DateTime.now();
-    final tomorrow = DateTime(now.year, now.month, now.day)
-        .add(const Duration(days: 1));
+    final tomorrow =
+        DateTime(now.year, now.month, now.day).add(const Duration(days: 1));
     return _chores.where((c) {
       if (!c.isMine || c.completed) return false;
       final due = DateTime(c.dueDate.year, c.dueDate.month, c.dueDate.day);
@@ -652,10 +663,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     final totalActive = _chores.where((c) => !c.completed).length;
     final myTurn = _myTurnNow();
 
-    final showHeader = _hasHousehold &&
-        !_isLoading &&
-        _error == null &&
-        _chores.isNotEmpty;
+    final showHeader =
+        _hasHousehold && !_isLoading && _error == null && _chores.isNotEmpty;
 
     return Scaffold(
       appBar: MitlistAppBar.titleText('Chores'),
@@ -752,7 +761,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       title: 'No chores yet',
-                      description: 'Track recurring household tasks. Assign them to anyone in your group.',
+                      description:
+                          'Track recurring household tasks. Assign them to anyone in your group.',
                       actions: [
                         AppButton(
                           text: 'Add a chore',
@@ -785,7 +795,15 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                           myTurn: myTurn,
                           myActiveCount: myActive,
                           totalActiveCount: totalActive,
-                          onTap: myTurn.isEmpty ? null : () => _setFilterMe(true),
+                          overdueCount: sections['Overdue']!
+                              .where((c) => !c.completed)
+                              .length,
+                          todayCount: sections['Today']!
+                              .where((c) => !c.completed)
+                              .length,
+                          filterMe: _filterMe,
+                          onShowMine: () => _setFilterMe(true),
+                          onShowEveryone: () => _setFilterMe(false),
                         ),
                         const SizedBox(height: MitlistSpacing.sm),
                         _FairnessStrip(
@@ -793,22 +811,6 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                           memberNames: _memberNames,
                           myUserId: _myUserId,
                           onTap: _openLoadSheet,
-                        ),
-                        const SizedBox(height: MitlistSpacing.md),
-                        Row(
-                          children: [
-                            AppChip(
-                              label: 'Me ($myActive)',
-                              selected: _filterMe,
-                              onSelected: (_) => _setFilterMe(true),
-                            ),
-                            const SizedBox(width: MitlistSpacing.sm),
-                            AppChip(
-                              label: 'Everyone ($totalActive)',
-                              selected: !_filterMe,
-                              onSelected: (_) => _setFilterMe(false),
-                            ),
-                          ],
                         ),
                       ],
                     ),
@@ -850,7 +852,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                       delegate: _StickyHeaderDelegate(
                         height: _sectionHeaderHeight,
                         child: Container(
-                          color: Theme.of(context).colorScheme.surfaceContainerLow,
+                          color:
+                              Theme.of(context).colorScheme.surfaceContainerLow,
                           padding: const EdgeInsets.symmetric(
                             horizontal: MitlistSpacing.md,
                             vertical: MitlistSpacing.sm,
@@ -860,10 +863,14 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                             section,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style:
-                                Theme.of(context).textTheme.labelMedium?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                    ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelMedium
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
                           ),
                         ),
                       ),
@@ -983,13 +990,21 @@ class _TurnHero extends StatelessWidget {
   final List<_Chore> myTurn;
   final int myActiveCount;
   final int totalActiveCount;
-  final VoidCallback? onTap;
+  final int overdueCount;
+  final int todayCount;
+  final bool filterMe;
+  final VoidCallback onShowMine;
+  final VoidCallback onShowEveryone;
 
   const _TurnHero({
     required this.myTurn,
     required this.myActiveCount,
     required this.totalActiveCount,
-    this.onTap,
+    required this.overdueCount,
+    required this.todayCount,
+    required this.filterMe,
+    required this.onShowMine,
+    required this.onShowEveryone,
   });
 
   @override
@@ -998,40 +1013,41 @@ class _TurnHero extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final caughtUp = myTurn.isEmpty;
 
-    final bg = caughtUp
-        ? colorScheme.surfaceContainerLow
-        : colorScheme.primaryContainer;
-    final fg = caughtUp ? colorScheme.onSurface : colorScheme.onPrimaryContainer;
-    final muted = caughtUp
-        ? colorScheme.onSurfaceVariant
-        : colorScheme.onPrimaryContainer.withValues(alpha: 0.75);
-
-    final names = myTurn.map((c) => c.title).join(', ');
+    final dueNowCount = myTurn.length;
     final shareLabel = totalActiveCount == 0
         ? 'Nothing on you right now'
         : 'Carrying $myActiveCount of $totalActiveCount open chores';
 
     return Semantics(
-      button: onTap != null,
       label: caughtUp
           ? 'You are all caught up'
-          : 'Your turn: $names. $shareLabel',
-      child: Material(
-        color: bg,
-        child: InkWell(
-          onTap: onTap,
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: colorScheme.outlineVariant, width: 2),
-            ),
-            padding: const EdgeInsets.all(MitlistSpacing.md),
-            child: Row(
+          : '$dueNowCount due now. $shareLabel',
+      child: AppCard(
+        variant: caughtUp ? AppCardVariant.outlined : AppCardVariant.filled,
+        tint: caughtUp ? AppCardTint.neutral : AppCardTint.primary,
+        padding: AppCardPadding.md,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppIcon(
-                  name: caughtUp ? 'checkCircle' : 'cleaningServices',
-                  size: 28,
-                  color: caughtUp ? colorScheme.tertiary : colorScheme.primary,
+                Container(
+                  width: MitlistSpacing.space11,
+                  height: MitlistSpacing.space11,
+                  decoration: BoxDecoration(
+                    color: caughtUp
+                        ? colorScheme.surfaceContainerHighest
+                        : colorScheme.surface,
+                    border: Border.all(color: colorScheme.outline, width: 2),
+                  ),
+                  alignment: Alignment.center,
+                  child: AppIcon(
+                    name: caughtUp ? 'checkCircle' : 'cleaningServices',
+                    size: 24,
+                    color:
+                        caughtUp ? colorScheme.tertiary : colorScheme.primary,
+                  ),
                 ),
                 const SizedBox(width: MitlistSpacing.md),
                 Expanded(
@@ -1039,36 +1055,79 @@ class _TurnHero extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        caughtUp ? "You're all caught up" : 'Your turn',
-                        style: textTheme.labelMedium?.copyWith(
-                          color: muted,
-                          fontWeight: FontWeight.w600,
+                        caughtUp ? "You're clear" : 'Your turn',
+                        style: textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: MitlistSpacing.space1),
-                      if (!caughtUp)
-                        Text(
-                          names,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: textTheme.titleMedium?.copyWith(
-                            color: fg,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      if (!caughtUp)
-                        const SizedBox(height: MitlistSpacing.space1),
+                      const SizedBox(height: MitlistSpacing.xs),
                       Text(
-                        caughtUp ? 'Nothing on you right now.' : shareLabel,
-                        style: textTheme.bodySmall?.copyWith(color: muted),
+                        caughtUp
+                            ? shareLabel
+                            : '$dueNowCount ${dueNowCount == 1 ? 'chore needs' : 'chores need'} you now. $shareLabel.',
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-          ),
+            const SizedBox(height: MitlistSpacing.md),
+            Wrap(
+              spacing: MitlistSpacing.sm,
+              runSpacing: MitlistSpacing.sm,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                AppChip(
+                  label: 'Me ($myActiveCount)',
+                  selected: filterMe,
+                  onSelected: (_) => onShowMine(),
+                ),
+                AppChip(
+                  label: 'Everyone ($totalActiveCount)',
+                  selected: !filterMe,
+                  onSelected: (_) => onShowEveryone(),
+                ),
+                _HeaderCountChip(label: 'Overdue', count: overdueCount),
+                _HeaderCountChip(label: 'Today', count: todayCount),
+              ],
+            ),
+          ],
         ),
+      ),
+    );
+  }
+}
+
+class _HeaderCountChip extends StatelessWidget {
+  final String label;
+  final int count;
+
+  const _HeaderCountChip({required this.label, required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: MitlistSpacing.sm,
+        vertical: MitlistSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: Border.all(color: colorScheme.outline, width: 1),
+      ),
+      child: Text(
+        '$label $count',
+        style: MitlistTypography.labelXSmall(
+          color: count > 0 ? colorScheme.primary : colorScheme.onSurfaceVariant,
+        ).copyWith(fontWeight: count > 0 ? FontWeight.w700 : FontWeight.w500),
       ),
     );
   }
@@ -1110,7 +1169,9 @@ class _FairnessStrip extends StatelessWidget {
     final rows = counts.entries.toList()
       ..sort((a, b) {
         final byCount = b.value.compareTo(a.value);
-        return byCount != 0 ? byCount : _nameFor(a.key).compareTo(_nameFor(b.key));
+        return byCount != 0
+            ? byCount
+            : _nameFor(a.key).compareTo(_nameFor(b.key));
       });
     final total = rows.fold<int>(0, (sum, e) => sum + e.value);
 
@@ -1121,8 +1182,9 @@ class _FairnessStrip extends StatelessWidget {
       colorScheme.onSurfaceVariant.withValues(alpha: 0.55),
       colorScheme.outline,
     ];
-    Color toneFor(String userId, int otherIndex) =>
-        userId == myUserId ? colorScheme.primary : otherTones[otherIndex % otherTones.length];
+    Color toneFor(String userId, int otherIndex) => userId == myUserId
+        ? colorScheme.primary
+        : otherTones[otherIndex % otherTones.length];
 
     final header = Row(
       children: [
@@ -1158,7 +1220,8 @@ class _FairnessStrip extends StatelessWidget {
     if (total == 0) {
       body = Text(
         'No chores logged yet. Be the first to mark one done.',
-        style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+        style:
+            textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
       );
     } else {
       var otherIndex = 0;
@@ -1184,7 +1247,8 @@ class _FairnessStrip extends StatelessWidget {
               Text(
                 '${_nameFor(entry.key)} ${entry.value}',
                 style: MitlistTypography.labelXSmall(
-                  color: isMe ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                  color:
+                      isMe ? colorScheme.primary : colorScheme.onSurfaceVariant,
                 ).copyWith(
                   fontWeight: isMe ? FontWeight.w700 : FontWeight.w500,
                 ),
@@ -1357,7 +1421,8 @@ class _ChoreItem extends StatelessWidget {
                       if (chore.lastActionLabel != null &&
                           chore.lastActionLabel!.isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.only(top: MitlistSpacing.space1),
+                          padding:
+                              const EdgeInsets.only(top: MitlistSpacing.space1),
                           child: Text(
                             chore.lastActionLabel!,
                             style: MitlistTypography.labelXSmall(

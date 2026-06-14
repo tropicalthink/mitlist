@@ -52,3 +52,17 @@ func TestCorsMiddlewareRejectsUnexpectedOriginOutsideDevelopment(t *testing.T) {
 
 	require.Empty(t, rec.Header().Get("Access-Control-Allow-Origin"))
 }
+
+func TestCorsMiddlewareRejectsNonHTTPDevelopmentOrigin(t *testing.T) {
+	handler := CorsMiddleware("http://localhost:5173", "development")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/register", nil)
+	req.Header.Set("Origin", "chrome-extension://localhost")
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	require.Empty(t, rec.Header().Get("Access-Control-Allow-Origin"))
+}

@@ -20,22 +20,23 @@ type List struct {
 
 // ListItem represents an item within a list.
 type ListItem struct {
-	ID         uuid.UUID  `json:"id"`
-	ListID     uuid.UUID  `json:"list_id"`
-	Name       string     `json:"name"`
-	Quantity   float64    `json:"quantity"`
-	Unit       string     `json:"unit"`
-	Note       string     `json:"note,omitempty"`
-	PriceCents *int       `json:"price_cents,omitempty"`
-	ProductID  *uuid.UUID `json:"product_id,omitempty"`
-	StoreID    *uuid.UUID `json:"store_id,omitempty"`
-	AddedBy    *uuid.UUID `json:"added_by,omitempty"`
-	ClaimedBy  *uuid.UUID `json:"claimed_by,omitempty"`
-	ClaimedAt  *time.Time `json:"claimed_at,omitempty"`
-	Checked    bool       `json:"checked"`
-	Position   int        `json:"position"`
-	CreatedAt  time.Time  `json:"created_at"`
-	UpdatedAt  time.Time  `json:"updated_at"`
+	ID              uuid.UUID  `json:"id"`
+	ListID          uuid.UUID  `json:"list_id"`
+	Name            string     `json:"name"`
+	Quantity        float64    `json:"quantity"`
+	Unit            string     `json:"unit"`
+	Note            string     `json:"note,omitempty"`
+	PriceCents      *int       `json:"price_cents,omitempty"`
+	ProductID       *uuid.UUID `json:"product_id,omitempty"`
+	StoreID         *uuid.UUID `json:"store_id,omitempty"`
+	CanonicalItemID *uuid.UUID `json:"canonical_item_id,omitempty"`
+	AddedBy         *uuid.UUID `json:"added_by,omitempty"`
+	ClaimedBy       *uuid.UUID `json:"claimed_by,omitempty"`
+	ClaimedAt       *time.Time `json:"claimed_at,omitempty"`
+	Checked         bool       `json:"checked"`
+	Position        int        `json:"position"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
 }
 
 type ShoppingLocation struct {

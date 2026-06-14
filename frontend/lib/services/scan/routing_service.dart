@@ -19,7 +19,11 @@ class RoutingDecision {
 ///  • Very long lines that look like prose → cloud (probably not a grocery list)
 ///  • Otherwise → on-device
 class RoutingService {
-  RoutingDecision decide(List<OcrLine> lines, {bool isOnline = true}) {
+  RoutingDecision decide(List<OcrLine> lines, {bool isOnline = true, bool allowCloud = false}) {
+    if (!allowCloud) {
+      return const RoutingDecision.onDevice('cloud scan disabled');
+    }
+
     final substantive = lines
         .where((l) => l.text.trim().split(RegExp(r'\s+')).isNotEmpty)
         .toList();

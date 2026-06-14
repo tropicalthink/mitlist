@@ -1785,26 +1785,6 @@ class FakePinwallRepository implements PinwallRepository {
   }
 
   @override
-  Future<void> attachPostAttachment({
-    required String groupId,
-    required String postId,
-    required String attachmentId,
-  }) async {}
-
-  @override
-  Future<List<PinwallMediaItem>> listPostAttachments({
-    required String groupId,
-    required String postId,
-  }) async => [];
-
-  @override
-  Future<void> detachPostAttachment({
-    required String groupId,
-    required String postId,
-    required String attachmentId,
-  }) async {}
-
-  @override
   Future<void> createPostOfflineFirst(String groupId,
       {required String content}) async {}
 

@@ -140,6 +140,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   void _setViewMode(_CalendarView mode) {
     if (mode == _viewMode) return;
+    unawaited(Haptics.light());
     setState(() => _viewMode = mode);
     SharedPreferences.getInstance().then((prefs) {
       prefs.setString('calendar_view_mode', mode.name);
@@ -266,7 +267,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           Expanded(
             child: Semantics(
               button: true,
-              label: 'Day view',
+              selected: _viewMode == _CalendarView.week,
+              label: 'Week view',
               child: GestureDetector(
                 onTap: () => _setViewMode(_CalendarView.week),
                 child: Container(
@@ -298,7 +300,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           Expanded(
             child: Semantics(
               button: true,
-              label: 'Agenda view',
+              selected: _viewMode == _CalendarView.month,
+              label: 'Month view',
               child: GestureDetector(
                 onTap: () => _setViewMode(_CalendarView.month),
                 child: Container(
@@ -330,7 +333,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           Expanded(
             child: Semantics(
               button: true,
-              label: 'Month view',
+              selected: _viewMode == _CalendarView.agenda,
+              label: 'Agenda view',
               child: GestureDetector(
                 onTap: () => _setViewMode(_CalendarView.agenda),
                 child: Container(

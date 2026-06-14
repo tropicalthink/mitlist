@@ -195,6 +195,32 @@ func (r *AuthRepository) ListPushSubscriptionsByUser(ctx context.Context, userID
 	return subs, nil
 }
 
+// ListPushSubscriptionsByUserIDs returns push subscriptions grouped by user_id.
+func (r *AuthRepository) ListPushSubscriptionsByUserIDs(ctx context.Context, userIDs []uuid.UUID) (map[uuid.UUID][]models.PushSubscription, error) {
+	out := make(map[uuid.UUID][]models.PushSubscription)
+	if len(userIDs) == 0 {
+		return out, nil
+	}
+	rows, err := r.db.Query(ctx, `
+		SELECT id, user_id, endpoint, p256dh, auth, created_at
+		FROM push_subscriptions
+		WHERE user_id = ANY($1)
+		ORDER BY user_id ASC, created_at DESC, id DESC
+	`, userIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var sub models.PushSubscription
+		if err := rows.Scan(&sub.ID, &sub.UserID, &sub.Endpoint, &sub.P256dh, &sub.Auth, &sub.CreatedAt); err != nil {
+			return nil, err
+		}
+		out[sub.UserID] = append(out[sub.UserID], sub)
+	}
+	return out, rows.Err()
+}
+
 // DeletePushSubscription removes a push subscription by ID.
 func (r *AuthRepository) DeletePushSubscription(ctx context.Context, id uuid.UUID) error {
 	query := `DELETE FROM push_subscriptions WHERE id = $1`
@@ -253,6 +279,32 @@ func (r *AuthRepository) ListDeviceTokensByUser(ctx context.Context, userID uuid
 		tokens = append(tokens, dt)
 	}
 	return tokens, rows.Err()
+}
+
+// ListDeviceTokensByUserIDs returns device tokens grouped by user_id.
+func (r *AuthRepository) ListDeviceTokensByUserIDs(ctx context.Context, userIDs []uuid.UUID) (map[uuid.UUID][]models.DeviceToken, error) {
+	out := make(map[uuid.UUID][]models.DeviceToken)
+	if len(userIDs) == 0 {
+		return out, nil
+	}
+	rows, err := r.db.Query(ctx, `
+		SELECT id, user_id, platform, token, created_at
+		FROM device_tokens
+		WHERE user_id = ANY($1)
+		ORDER BY user_id ASC, created_at DESC
+	`, userIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var dt models.DeviceToken
+		if err := rows.Scan(&dt.ID, &dt.UserID, &dt.Platform, &dt.Token, &dt.CreatedAt); err != nil {
+			return nil, err
+		}
+		out[dt.UserID] = append(out[dt.UserID], dt)
+	}
+	return out, rows.Err()
 }
 
 // DeleteDeviceToken removes a device token by ID, scoped to the owning user.

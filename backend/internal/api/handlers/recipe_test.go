@@ -360,3 +360,89 @@ func TestRecipe_AddMissingToList(t *testing.T) {
 	added := resp["added"].([]any)
 	assert.Len(t, added, 1)
 }
+
+// TestRecipe_AddToList_CanonicalResolution verifies that when a recipe ingredient
+// matches a seeded alias, the created list item carries canonical_item_id.
+func TestRecipe_AddToList_CanonicalResolution(t *testing.T) {
+	clearTables(t)
+	router, _ := newRecipeRouterWithGrocery(t)
+	user := createTestUser(t, "canonicallist@example.com", "password123")
+	token := generateTestToken(user.ID)
+
+	groupRepo := newTestGroupRepo()
+	group := &models.Group{
+		ID:        uuid.New(),
+		Name:      "Recipe Group",
+		CreatedBy: user.ID,
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+	}
+	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	require.NoError(t, groupRepo.CreateMembership(context.Background(), &models.GroupMembership{
+		ID:       uuid.New(),
+		GroupID:  group.ID,
+		UserID:   user.ID,
+		Role:     "admin",
+		JoinedAt: time.Now().UTC(),
+	}))
+
+	// Seed a canonical item and a global alias ("sugar" → canonicalID).
+	canonicalID := uuid.New()
+	now := time.Now().UTC()
+	_, err := testDB.Exec(context.Background(), `
+		INSERT INTO canonical_items (id, group_id, name_de, name_en, category, default_unit, is_global, version, created_at, updated_at)
+		VALUES ($1, '00000000-0000-0000-0000-000000000000', 'Zucker', 'sugar', 'pantry', 'g', true, 1, $2, $2)`,
+		canonicalID, now)
+	require.NoError(t, err)
+
+	_, err = testDB.Exec(context.Background(), `
+		INSERT INTO item_aliases (id, group_id, canonical_item_id, alias_text, lang, source, weight, version, created_at, updated_at)
+		VALUES ($1, '00000000-0000-0000-0000-000000000000', $2, 'sugar', 'en', 'seed', 1, 1, $3, $3)`,
+		uuid.New(), canonicalID, now)
+	require.NoError(t, err)
+
+	recipeRepo := newTestRecipeRepo()
+	rcp := &models.Recipe{
+		ID:        uuid.New(),
+		UserID:    user.ID,
+		Title:     "Sweet Recipe",
+		Servings:  2,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+	require.NoError(t, recipeRepo.CreateRecipe(context.Background(), rcp))
+
+	ing := &models.RecipeIngredient{
+		ID:       uuid.New(),
+		RecipeID: rcp.ID,
+		Name:     "sugar",
+		Quantity: "1 cup",
+		Unit:     "cup",
+		Position: 1,
+	}
+	require.NoError(t, recipeRepo.CreateIngredient(context.Background(), ing))
+
+	listRepo := newTestListRepo()
+	lst := &models.List{
+		ID:        uuid.New(),
+		GroupID:   group.ID,
+		Name:      "Shopping",
+		Type:      "shopping",
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+	require.NoError(t, listRepo.CreateList(context.Background(), lst))
+
+	body := map[string]any{"list_id": lst.ID.String()}
+	rec := execRequest(t, router, "POST", "/api/v1/recipes/"+rcp.ID.String()+"/add-to-list", body, token)
+	requireStatus(t, rec, http.StatusOK)
+
+	var resp map[string]any
+	parseJSONResponse(t, rec, &resp)
+	added := resp["added"].([]any)
+	require.Len(t, added, 1)
+
+	item := added[0].(map[string]any)
+	assert.Equal(t, canonicalID.String(), item["canonical_item_id"],
+		"list item should carry the resolved canonical_item_id")
+}

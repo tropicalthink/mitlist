@@ -44,6 +44,9 @@ func resolveAllowedOrigin(requestOrigin, allowedOrigin, environment string) stri
 	if err != nil {
 		return ""
 	}
+	if originURL.Scheme != "http" && originURL.Scheme != "https" {
+		return ""
+	}
 
 	switch strings.ToLower(originURL.Hostname()) {
 	case "localhost", "127.0.0.1":

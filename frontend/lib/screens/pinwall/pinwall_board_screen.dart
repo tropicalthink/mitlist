@@ -64,6 +64,7 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
   late final Map<String, Offset> _positions;
   late final AnimationController _staggerCtrl;
   late final List<Animation<double>> _noteAnims;
+  bool _didSetInitialTransform = false;
 
   // Shown briefly on first open to hint at pan/zoom
   bool _showHint = true;
@@ -93,8 +94,6 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _centerOnNotes();
-
       final disableAnim = MediaQuery.of(context).disableAnimations;
       if (disableAnim) {
         _staggerCtrl.value = 1.0;
@@ -110,6 +109,15 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
         if (mounted) setState(() => _showHint = false);
       });
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_didSetInitialTransform) {
+      _didSetInitialTransform = true;
+      _centerOnNotes();
+    }
   }
 
   @override
@@ -155,8 +163,8 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
     final ty = size.height / 2 - (minY + clusterH / 2) * scale;
 
     _transformCtrl.value = Matrix4.identity()
-      ..scaleByDouble(scale, scale, 1, 1)
-      ..leftTranslateByDouble(tx, ty, 0, 1);
+      ..translateByDouble(tx, ty, 0, 1)
+      ..scaleByDouble(scale, scale, 1, 1);
   }
 
   void _onNoteDrag(String postId, DragUpdateDetails details) {
@@ -319,8 +327,8 @@ class _CorkGrainPainter extends CustomPainter {
       final drift = (rng.nextDouble() - 0.5) * 0.4;
       canvas.drawLine(
         Offset(x, y),
-        Offset(x + len * (1 + drift),
-            y + len * 0.15 * (rng.nextDouble() - 0.5)),
+        Offset(
+            x + len * (1 + drift), y + len * 0.15 * (rng.nextDouble() - 0.5)),
         grainPaint,
       );
     }
@@ -334,7 +342,8 @@ class _CorkGrainPainter extends CustomPainter {
         ],
         stops: const [0.55, 1.0],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), vignettePaint);
+    canvas.drawRect(
+        Rect.fromLTWH(0, 0, size.width, size.height), vignettePaint);
   }
 
   @override
@@ -516,8 +525,7 @@ class _BoardNoteCard extends ConsumerWidget {
                       if (items.isEmpty) return const SizedBox.shrink();
                       final show = items.take(4).toList();
                       return Padding(
-                        padding:
-                            const EdgeInsets.only(top: MitlistSpacing.xs),
+                        padding: const EdgeInsets.only(top: MitlistSpacing.xs),
                         child: SizedBox(
                           height: 48,
                           child: ListView.separated(
@@ -534,7 +542,11 @@ class _BoardNoteCard extends ConsumerWidget {
                                 child: Image.network(
                                   show[i].url,
                                   fit: BoxFit.cover,
-                                  cacheWidth: (48 * MediaQuery.devicePixelRatioOf(context) * 1.5).round(),
+                                  cacheWidth: (48 *
+                                          MediaQuery.devicePixelRatioOf(
+                                              context) *
+                                          1.5)
+                                      .round(),
                                   errorBuilder: (_, __, ___) => Container(
                                     color: border.withValues(alpha: 0.3),
                                     child: const Icon(
@@ -706,7 +718,8 @@ class _BoardCloseButton extends StatelessWidget {
             color: bg,
             borderRadius: BorderRadius.circular(MitlistTheme.radiusFull),
           ),
-          child: const Icon(Icons.close, size: 18, color: MitlistColors.surfaceSoft),
+          child: const Icon(Icons.close,
+              size: 18, color: MitlistColors.surfaceSoft),
         ),
       ),
     );

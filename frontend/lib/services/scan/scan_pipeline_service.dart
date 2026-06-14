@@ -8,7 +8,9 @@ import 'confidence_service.dart';
 import 'correction_memory_service.dart';
 import 'enhancement_service.dart';
 import 'extraction_service.dart';
+import 'grocery_classifier_service.dart';
 import 'ocr_service.dart';
+import 'static_embedding_service.dart';
 import 'routing_service.dart';
 import 'scan_models.dart';
 
@@ -43,7 +45,11 @@ class ScanPipelineService {
         _ocr = OcrService(),
         _routing = RoutingService(),
         _extraction = ExtractionService(),
-        _resolver = CanonicalResolverService(db),
+        _resolver = CanonicalResolverService(
+          db,
+          classifier: GroceryClassifierService(),
+          embedder: StaticEmbeddingService(),
+        ),
         _corrections = CorrectionMemoryService(db),
         _confidence = ConfidenceService();
 
@@ -55,6 +61,7 @@ class ScanPipelineService {
     required String groupId,
     String? storeId,
     bool isOnline = true,
+    bool allowCloud = false,
   }) async {
     // 1. Enhance.
     final enhanced = _enhancement.enhance(imageBytes);
@@ -63,7 +70,7 @@ class ScanPipelineService {
     final lines = await _ocr.recognise(enhanced);
 
     // 3. Route.
-    final decision = _routing.decide(lines, isOnline: isOnline);
+    final decision = _routing.decide(lines, isOnline: isOnline, allowCloud: allowCloud);
 
     if (!decision.useOnDevice) {
       return _runCloud(imageBytes);

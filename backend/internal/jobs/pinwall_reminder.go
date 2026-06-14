@@ -12,47 +12,34 @@ import (
 
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/repositories"
-	"github.com/mitlist-app/mitlist/internal/services"
 	"github.com/mitlist-app/mitlist/pkg/logger"
 )
 
 // PinwallReminder sends one-time reminders for pinwall posts with remind_at set.
 // Runs every minute.
 type PinwallReminder struct {
-	repo pinwallReminderRepo
-	log  *logger.Logger
-	notif *services.NotificationService
+	repo  pinwallReminderRepo
+	log   *logger.Logger
+	push  Pusher
 }
 
 func NewPinwallReminder(db repositories.DBTX, push Pusher, log *logger.Logger) *PinwallReminder {
 	repo := &pinwallReminderRepoImpl{db: db}
-	notificationRepo := repositories.NewNotificationRepository(db)
-	pushSvc := pushAdapter{push: push}
-	notif := services.NewNotificationService(notificationRepo, nil, pushSvc)
-	return &PinwallReminder{repo: repo, log: log, notif: notif}
-}
-
-type pushAdapter struct {
-	push Pusher
-}
-
-func (a pushAdapter) SendToUser(userID uuid.UUID, payload string) error {
-	return a.push.SendToUser(userID, payload)
-}
-
-func (a pushAdapter) BroadcastToGroup(groupID uuid.UUID, payload string) error {
-	return a.push.BroadcastToGroup(groupID, payload)
-}
-
-func (a pushAdapter) BroadcastToGroupExcluding(groupID, excludeUserID uuid.UUID, payload string) error {
-	return a.push.BroadcastToGroupExcluding(groupID, excludeUserID, payload)
+	return &PinwallReminder{repo: repo, log: log, push: push}
 }
 
 type pinwallReminderRepo interface {
 	ListDueReminders(ctx context.Context, before time.Time, limit int) ([]models.PinwallPost, error)
 	ListGroupMembers(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error)
 	GetUserPreference(ctx context.Context, userID, groupID uuid.UUID) (*models.NotificationPreference, error)
+	GetPreferencesByGroup(ctx context.Context, groupID uuid.UUID) (map[uuid.UUID]*models.NotificationPreference, error)
+	CreateNotificationsBatch(ctx context.Context, notifications []models.Notification) error
 	MarkReminderSent(ctx context.Context, postID uuid.UUID, sentAt time.Time) (bool, error)
+}
+
+type groupReminderCache struct {
+	members []uuid.UUID
+	prefs   map[uuid.UUID]*models.NotificationPreference
 }
 
 func (r *PinwallReminder) Run() {
@@ -69,22 +56,33 @@ func (r *PinwallReminder) Run() {
 		return
 	}
 
+	groupCache := make(map[uuid.UUID]*groupReminderCache)
 	for _, p := range posts {
-		if err := r.sendForPost(ctx, p); err != nil {
+		cache, ok := groupCache[p.GroupID]
+		if !ok {
+			members, err := r.repo.ListGroupMembers(ctx, p.GroupID)
+			if err != nil {
+				r.log.Warn().Err(err).Str("group_id", p.GroupID.String()).Msg("failed to list group members")
+				continue
+			}
+			prefs, err := r.repo.GetPreferencesByGroup(ctx, p.GroupID)
+			if err != nil {
+				r.log.Warn().Err(err).Str("group_id", p.GroupID.String()).Msg("failed to load group preferences")
+				prefs = map[uuid.UUID]*models.NotificationPreference{}
+			}
+			cache = &groupReminderCache{members: members, prefs: prefs}
+			groupCache[p.GroupID] = cache
+		}
+		if err := r.sendForPost(ctx, p, cache); err != nil {
 			r.log.Warn().Err(err).Str("post_id", p.ID.String()).Msg("failed to process pinwall reminder")
 		}
 	}
 }
 
-func (r *PinwallReminder) sendForPost(ctx context.Context, post models.PinwallPost) error {
+func (r *PinwallReminder) sendForPost(ctx context.Context, post models.PinwallPost, cache *groupReminderCache) error {
 	// Guard: remind_at must exist; DB query should enforce this.
 	if post.RemindAt == nil {
 		return nil
-	}
-
-	members, err := r.repo.ListGroupMembers(ctx, post.GroupID)
-	if err != nil {
-		return fmt.Errorf("list group members: %w", err)
 	}
 
 	sentAt := time.Now().UTC()
@@ -97,33 +95,68 @@ func (r *PinwallReminder) sendForPost(ctx context.Context, post models.PinwallPo
 	}
 	data, _ := json.Marshal(payload)
 
-	delivered := 0
-	for _, userID := range members {
-		// UX choice: don't push the author; they already set the reminder time.
+	defaultPref := func(userID uuid.UUID) *models.NotificationPreference {
+		return &models.NotificationPreference{
+			UserID:          userID,
+			GroupID:         post.GroupID,
+			ChoreDue:        true,
+			ChoreDueDayOf:   true,
+			ListItemAdded:   true,
+			ExpenseCreated:  true,
+			MealPlanChanged: true,
+			WeeklyDigest:    true,
+			PinwallReminder: true,
+			PushEnabled:     true,
+		}
+	}
+
+	toDeliver := make([]models.Notification, 0, len(cache.members))
+	for _, userID := range cache.members {
 		if userID == post.UserID {
 			continue
 		}
-
-		pref, err := r.repo.GetUserPreference(ctx, userID, post.GroupID)
-		if err != nil {
-			// Conservative: skip if we can't verify preferences.
-			continue
+		pref := cache.prefs[userID]
+		if pref == nil {
+			pref = defaultPref(userID)
 		}
 		if !pref.PushEnabled || !pref.PinwallReminder {
 			continue
 		}
+		toDeliver = append(toDeliver, models.Notification{
+			ID:        uuid.New(),
+			UserID:    userID,
+			GroupID:   post.GroupID,
+			Type:      "pinwall_reminder",
+			Title:     "Reminder",
+			Body:      post.Content,
+			Data:      data,
+			CreatedAt: sentAt,
+		})
+	}
 
-		n := &models.Notification{
-			UserID:  userID,
-			GroupID: post.GroupID,
-			Type:    "pinwall_reminder",
-			Title:   "Reminder",
-			Body:    post.Content,
-			Data:    data,
-		}
-		if err := r.notif.CreateNotification(ctx, n); err != nil {
-			r.log.Warn().Err(err).Str("user_id", userID.String()).Str("post_id", post.ID.String()).Msg("failed to create reminder notification")
-			continue
+	if len(toDeliver) == 0 {
+		return nil
+	}
+
+	if err := r.repo.CreateNotificationsBatch(ctx, toDeliver); err != nil {
+		return fmt.Errorf("create notifications batch: %w", err)
+	}
+
+	pushPayload := map[string]interface{}{
+		"title": "Reminder",
+		"body":  post.Content,
+		"data":  payload,
+	}
+	pushBytes, _ := json.Marshal(pushPayload)
+	pushStr := string(pushBytes)
+
+	delivered := 0
+	for _, n := range toDeliver {
+		if r.push != nil {
+			if err := r.push.SendToUser(n.UserID, pushStr); err != nil {
+				r.log.Warn().Err(err).Str("user_id", n.UserID.String()).Str("post_id", post.ID.String()).Msg("failed to send reminder push")
+				continue
+			}
 		}
 		delivered++
 	}
@@ -231,6 +264,16 @@ func (r *pinwallReminderRepoImpl) GetUserPreference(ctx context.Context, userID,
 		return nil, err
 	}
 	return &p, nil
+}
+
+func (r *pinwallReminderRepoImpl) GetPreferencesByGroup(ctx context.Context, groupID uuid.UUID) (map[uuid.UUID]*models.NotificationPreference, error) {
+	repo := repositories.NewNotificationRepository(r.db)
+	return repo.GetPreferencesByGroup(ctx, groupID)
+}
+
+func (r *pinwallReminderRepoImpl) CreateNotificationsBatch(ctx context.Context, notifications []models.Notification) error {
+	repo := repositories.NewNotificationRepository(r.db)
+	return repo.CreateNotificationsBatch(ctx, notifications)
 }
 
 func (r *pinwallReminderRepoImpl) MarkReminderSent(ctx context.Context, postID uuid.UUID, sentAt time.Time) (bool, error) {

@@ -197,3 +197,43 @@ func TestMealPlanService_DeleteMealPlan(t *testing.T) {
 		assert.Equal(t, api.ErrNotFound, err)
 	})
 }
+
+func TestMealPlanService_GenerateShoppingList_BatchesRecipeAndIngredientQueries(t *testing.T) {
+	ctx := context.Background()
+	groupID := uuid.New()
+	userID := uuid.New()
+	user := &models.User{ID: userID}
+	recipeID := uuid.New()
+	listID := uuid.New()
+	from := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	to := from.Add(7 * 24 * time.Hour)
+
+	mpRepo := new(mocks.MockMealPlanRepo)
+	groupRepo := new(mocks.MockGroupRepo)
+	recipeRepo := new(mocks.MockRecipeRepo)
+	listRepo := new(mocks.MockListRepo)
+	svc := newMealPlanService(mpRepo, groupRepo, recipeRepo, listRepo)
+
+	plans := []models.MealPlan{{ID: uuid.New(), GroupID: groupID, RecipeID: recipeID, Servings: 2, Date: from}}
+	groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+	mpRepo.On("ListMealPlansByGroup", ctx, groupID, from, to).Return(plans, nil)
+	recipeRepo.On("GetRecipesByIDs", ctx, []uuid.UUID{recipeID}).Return(map[uuid.UUID]*models.Recipe{
+		recipeID: {ID: recipeID, Title: "Soup", Servings: 4},
+	}, nil)
+	recipeRepo.On("ListIngredientsByRecipeIDs", ctx, []uuid.UUID{recipeID}).Return(map[uuid.UUID][]models.RecipeIngredient{
+		recipeID: {{RecipeID: recipeID, Name: "Carrots", Quantity: "2", Unit: "pcs"}},
+	}, nil)
+	listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
+	listRepo.On("ListItemsByList", ctx, listID, 0, 0).Return(nil, nil)
+	listRepo.On("CreateItems", ctx, mock.MatchedBy(func(items []models.ListItem) bool {
+		return len(items) == 1 && items[0].Name == "Carrots"
+	})).Return(nil)
+
+	targetID := listID
+	_, created, err := svc.GenerateShoppingList(ctx, user, groupID, from, to, &targetID)
+	require.NoError(t, err)
+	require.Len(t, created, 1)
+	recipeRepo.AssertNotCalled(t, "GetRecipeByID", ctx, recipeID)
+	recipeRepo.AssertNotCalled(t, "ListIngredients", ctx, recipeID)
+	listRepo.AssertNotCalled(t, "CreateItem", ctx, mock.Anything)
+}

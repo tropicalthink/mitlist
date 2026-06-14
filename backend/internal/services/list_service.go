@@ -444,6 +444,90 @@ func (s *ListService) AddItemAmount(ctx context.Context, user *models.User, list
 	return item, nil
 }
 
+// ListItemAmountInput is a single item to add or merge in AddItemsBatch.
+type ListItemAmountInput struct {
+	Name            string
+	Amount          float64
+	Unit            string
+	Note            string
+	CanonicalItemID *uuid.UUID
+}
+
+// AddItemsBatch adds or merges multiple items into a list with one list/membership fetch.
+func (s *ListService) AddItemsBatch(ctx context.Context, user *models.User, listID uuid.UUID, inputs []ListItemAmountInput) ([]models.ListItem, error) {
+	if err := s.requireActiveVerifiedUser(user); err != nil {
+		return nil, err
+	}
+	if len(inputs) == 0 {
+		return nil, nil
+	}
+
+	list, err := s.listRepo.GetListByID(ctx, listID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, &api.NotFoundError{Resource: "list", ID: listID.String()}
+		}
+		return nil, fmt.Errorf("failed to get list: %w", err)
+	}
+	if err := s.requireMembership(ctx, user.ID, list.GroupID); err != nil {
+		return nil, err
+	}
+
+	existingItems, err := s.listRepo.ListItemsByList(ctx, listID, 0, 0)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list items: %w", err)
+	}
+	type itemKey struct {
+		name string
+		unit string
+	}
+	existingByKey := make(map[itemKey]*models.ListItem, len(existingItems))
+	for i := range existingItems {
+		key := itemKey{name: strings.TrimSpace(existingItems[i].Name), unit: strings.TrimSpace(existingItems[i].Unit)}
+		existingByKey[key] = &existingItems[i]
+	}
+
+	result := make([]models.ListItem, 0, len(inputs))
+	for _, input := range inputs {
+		name := strings.TrimSpace(input.Name)
+		unit := strings.TrimSpace(input.Unit)
+		note := strings.TrimSpace(input.Note)
+		if name == "" {
+			return nil, &api.ValidationError{Field: "name", Message: "item name is required"}
+		}
+		if input.Amount <= 0 {
+			return nil, &api.ValidationError{Field: "amount", Message: "amount must be greater than zero"}
+		}
+		key := itemKey{name: name, unit: unit}
+		if item, ok := existingByKey[key]; ok {
+			item.Quantity += input.Amount
+			item.Checked = false
+			if note != "" {
+				item.Note = note
+			}
+			if err := s.listRepo.UpdateItem(ctx, item); err != nil {
+				return nil, fmt.Errorf("failed to update item: %w", err)
+			}
+			result = append(result, *item)
+			continue
+		}
+		item := models.ListItem{
+			ListID:          listID,
+			Name:            name,
+			Quantity:        input.Amount,
+			Unit:            unit,
+			Note:            note,
+			CanonicalItemID: input.CanonicalItemID,
+		}
+		if err := s.listRepo.CreateItem(ctx, &item); err != nil {
+			return nil, fmt.Errorf("failed to create item: %w", err)
+		}
+		existingByKey[key] = &item
+		result = append(result, item)
+	}
+	return result, nil
+}
+
 // RemoveItemAmount removes an amount from a matching item, deleting it at zero.
 func (s *ListService) RemoveItemAmount(ctx context.Context, user *models.User, listID uuid.UUID, name string, amount float64, unit string) (*models.ListItem, bool, error) {
 	if err := s.requireActiveVerifiedUser(user); err != nil {
@@ -695,32 +779,45 @@ func (s *ListService) GetShoppingTrip(ctx context.Context, user *models.User, li
 	if err := s.requireActiveVerifiedUser(user); err != nil {
 		return nil, err
 	}
+	if len(listIDs) == 0 {
+		return nil, nil
+	}
 
-	var result []ShoppingTripList
+	lists, err := s.listRepo.GetListsByIDs(ctx, listIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get lists: %w", err)
+	}
+	listByID := make(map[uuid.UUID]models.List, len(lists))
+	groupIDs := make(map[uuid.UUID]struct{})
+	for _, list := range lists {
+		listByID[list.ID] = list
+		groupIDs[list.GroupID] = struct{}{}
+	}
 	for _, listID := range listIDs {
-		list, err := s.listRepo.GetListByID(ctx, listID)
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				return nil, &api.NotFoundError{Resource: "list", ID: listID.String()}
-			}
-			return nil, fmt.Errorf("failed to get list: %w", err)
+		if _, ok := listByID[listID]; !ok {
+			return nil, &api.NotFoundError{Resource: "list", ID: listID.String()}
 		}
-		if err := s.requireMembership(ctx, user.ID, list.GroupID); err != nil {
+	}
+	for groupID := range groupIDs {
+		if err := s.requireMembership(ctx, user.ID, groupID); err != nil {
 			return nil, err
 		}
+	}
 
-		items, err := s.listRepo.ListItemsByList(ctx, listID, 0, 0)
-		if err != nil {
-			return nil, fmt.Errorf("failed to list items: %w", err)
-		}
+	itemsByList, err := s.listRepo.ListItemsByListIDs(ctx, listIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list items: %w", err)
+	}
 
+	result := make([]ShoppingTripList, 0, len(listIDs))
+	for _, listID := range listIDs {
+		list := listByID[listID]
 		result = append(result, ShoppingTripList{
 			ListID:   list.ID,
 			ListName: list.Name,
-			Items:    items,
+			Items:    itemsByList[list.ID],
 		})
 	}
-
 	return result, nil
 }
 
@@ -729,33 +826,15 @@ func (s *ListService) BulkCompleteItems(ctx context.Context, user *models.User, 
 	if err := s.requireActiveVerifiedUser(user); err != nil {
 		return 0, err
 	}
-
-	completed := 0
-	for _, itemID := range itemIDs {
-		item, err := s.listRepo.GetItemByID(ctx, itemID)
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				continue
-			}
-			return completed, fmt.Errorf("failed to get item: %w", err)
-		}
-
-		list, err := s.listRepo.GetListByID(ctx, item.ListID)
-		if err != nil {
-			return completed, fmt.Errorf("failed to get list: %w", err)
-		}
-		if err := s.requireMembership(ctx, user.ID, list.GroupID); err != nil {
-			return completed, err
-		}
-
-		item.Checked = true
-		if err := s.listRepo.UpdateItem(ctx, item); err != nil {
-			return completed, fmt.Errorf("failed to update item: %w", err)
-		}
-		completed++
+	if len(itemIDs) == 0 {
+		return 0, nil
 	}
 
-	return completed, nil
+	completed, err := s.listRepo.BulkMarkItemsChecked(ctx, user.ID, itemIDs)
+	if err != nil {
+		return 0, fmt.Errorf("failed to bulk complete items: %w", err)
+	}
+	return int(completed), nil
 }
 
 // SetListArchived archives or unarchives a list.

@@ -255,6 +255,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     ref.invalidate(
         pinwallPostsByGroupProvider(_resolvedGroupId!));
     ref.invalidate(todayMealPlansProvider(_resolvedGroupId!));
+    ref.invalidate(weekMealPlansSummaryProvider(_resolvedGroupId!));
     await _loadData();
 
     try {

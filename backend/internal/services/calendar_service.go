@@ -17,7 +17,7 @@ type CalendarService struct {
 	choreRepo    repositories.ChoreRepo
 	financeRepo  repositories.FinanceRepoIface
 	groupRepo    repositories.GroupRepo
-	pinwallRepo  *repositories.PinwallRepository
+	pinwallRepo  repositories.CalendarPinwallRepo
 }
 
 func NewCalendarService(
@@ -26,7 +26,7 @@ func NewCalendarService(
 	choreRepo repositories.ChoreRepo,
 	financeRepo repositories.FinanceRepoIface,
 	groupRepo repositories.GroupRepo,
-	pinwallRepo *repositories.PinwallRepository,
+	pinwallRepo repositories.CalendarPinwallRepo,
 ) *CalendarService {
 	return &CalendarService{
 		mealPlanRepo: mealPlanRepo,
@@ -58,9 +58,21 @@ func (s *CalendarService) GetCalendar(ctx context.Context, user *models.User, gr
 	if err != nil {
 		return nil, err
 	}
+	recipeIDs := make([]uuid.UUID, 0, len(plans))
+	seenRecipes := make(map[uuid.UUID]struct{}, len(plans))
+	for _, p := range plans {
+		if _, ok := seenRecipes[p.RecipeID]; !ok {
+			seenRecipes[p.RecipeID] = struct{}{}
+			recipeIDs = append(recipeIDs, p.RecipeID)
+		}
+	}
+	recipeTitles, err := s.recipeRepo.GetRecipesByIDs(ctx, recipeIDs)
+	if err != nil {
+		return nil, err
+	}
 	for _, p := range plans {
 		title := "Meal"
-		if recipe, err := s.recipeRepo.GetRecipeByID(ctx, p.RecipeID); err == nil && recipe != nil {
+		if recipe, ok := recipeTitles[p.RecipeID]; ok && recipe != nil {
 			title = recipe.Title
 		}
 		events = append(events, models.CalendarEvent{
@@ -85,14 +97,14 @@ func (s *CalendarService) GetCalendar(ctx context.Context, user *models.User, gr
 		return nil, err
 	}
 	for _, a := range assignments {
-		chore, err := s.choreRepo.GetChoreByID(ctx, a.ChoreID)
-		if err != nil {
-			continue // skip if chore deleted
+		title := a.ChoreName
+		if title == "" {
+			continue
 		}
 		events = append(events, models.CalendarEvent{
 			ID:      a.ID.String(),
 			Type:    models.EventTypeChore,
-			Title:   chore.Name,
+			Title:   title,
 			Date:    *a.DueDate,
 			GroupID: groupID,
 			Chore: &models.CalendarChore{

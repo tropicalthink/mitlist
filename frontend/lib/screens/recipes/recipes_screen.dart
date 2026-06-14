@@ -8,7 +8,7 @@ import '../../models/recipe_models.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/meal_plan_provider.dart';
 import '../../providers/recipe_provider.dart';
-import '../../router.dart' show currentGroupIdProvider;
+import '../../router.dart' show BottomNavScaffold, currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../sheets/recipe_add_to_list_sheet.dart';
 import '../../theme/spacing.dart';
@@ -84,13 +84,11 @@ enum _FilterOption { all, public, private }
 
 enum _RecipeMenuAction { sortNewest, sortOldest, sortAz }
 
-
-
 class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   static const int _pageLimit = 50;
 
   bool _hasHousehold = true;
-  _ViewState _viewState = _ViewState.empty;
+  _ViewState _viewState = _ViewState.loading;
   String? _errorMessage;
   String? _loadMoreErrorMessage;
   final List<_Recipe> _recipes = <_Recipe>[];
@@ -116,7 +114,11 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
 
   void _activateTabIfNeeded() {
     if (_tabLoadStarted || !mounted) return;
-    if (!shouldActivateShellTab(ref, kitchenShellTabIndex)) return;
+    final insideShell =
+        context.findAncestorWidgetOfExactType<BottomNavScaffold>() != null;
+    if (insideShell && !shouldActivateShellTab(ref, kitchenShellTabIndex)) {
+      return;
+    }
     _tabLoadStarted = true;
     _loadKitchen();
   }
@@ -214,6 +216,11 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       _hasMore = true;
     });
 
+    final groupId = await _resolveGroupId();
+    if (groupId != null) {
+      ref.invalidate(weekMealPlansSummaryProvider(groupId));
+    }
+
     try {
       final service = await ref.read(recipeServiceProviderAsync.future);
 
@@ -307,14 +314,21 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   }
 
   Future<String?> _resolveGroupId() async {
-    final groups = await ref.read(cachedGroupsProvider.future);
-    final groupId = resolveActiveGroupId(
-      groups,
-      ref.read(currentGroupIdProvider),
-    );
-    if (!mounted) return null;
-    setState(() => _hasHousehold = groups.isNotEmpty);
-    return isValidGroupId(groupId) ? groupId : null;
+    try {
+      final groups = await ref.read(cachedGroupsProvider.future);
+      final groupId = resolveActiveGroupId(
+        groups,
+        ref.read(currentGroupIdProvider),
+      );
+      if (!mounted) return null;
+      setState(() => _hasHousehold = groups.isNotEmpty);
+      return isValidGroupId(groupId) ? groupId : null;
+    } catch (_) {
+      if (mounted) {
+        setState(() => _hasHousehold = true);
+      }
+      return null;
+    }
   }
 
   @override
@@ -463,6 +477,20 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     final visible = _filteredRecipes;
     return Column(
       children: [
+        _KitchenHeader(
+          recipeCount: _recipes.length,
+          visibleCount: visible.length,
+          sharedCount: _recipes.where((r) => r.isPublic).length,
+          collectionCount: _collections.length,
+          onMealPlan: () async {
+            final router = GoRouter.of(context);
+            final groupId = await _resolveGroupId();
+            if (!mounted) return;
+            if (groupId != null) {
+              unawaited(router.pushNamed('mealPlan'));
+            }
+          },
+        ),
         _buildMealPlanSummary(),
         _buildChipBar(),
         if (_loadMoreErrorMessage != null)
@@ -492,16 +520,21 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   }
 
   Widget _buildMealPlanSummary() {
-    return FutureBuilder<List<dynamic>>(
-      future: _fetchWeekMealPlans(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const SizedBox.shrink();
-        }
-        final plans = snapshot.data ?? [];
-        if (plans.isEmpty) {
-          return const SizedBox.shrink();
-        }
+    final groups = ref.watch(cachedGroupsProvider).valueOrNull;
+    if (groups == null) return const SizedBox.shrink();
+
+    final groupId = resolveActiveGroupId(
+      groups,
+      ref.watch(currentGroupIdProvider),
+    );
+    if (!isValidGroupId(groupId)) return const SizedBox.shrink();
+
+    final async = ref.watch(weekMealPlansSummaryProvider(groupId!));
+    return async.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (plans) {
+        if (plans.isEmpty) return const SizedBox.shrink();
 
         return Padding(
           padding: const EdgeInsets.fromLTRB(
@@ -512,9 +545,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
           ),
           child: AppCard(
             variant: AppCardVariant.filled,
-            onTap: () async {
-              final groupId = await _resolveGroupId();
-              if (!mounted || groupId == null) return;
+            onTap: () {
               if (context.mounted) {
                 unawaited(context.pushNamed('mealPlan'));
               }
@@ -531,7 +562,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                     ),
                   ),
                   const SizedBox(height: MitlistSpacing.sm),
-                  ...plans.take(3).map((p) {
+                  ...plans.take(3).map((plan) {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: MitlistSpacing.xs),
                       child: Row(
@@ -544,7 +575,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                           const SizedBox(width: MitlistSpacing.sm),
                           Expanded(
                             child: Text(
-                              '${p['day']} ${p['slot']}: ${p['title']}',
+                              '${plan.day} ${plan.slot}: ${plan.title}',
                               style: Theme.of(context).textTheme.bodySmall,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -568,36 +599,6 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
         );
       },
     );
-  }
-
-  Future<List<Map<String, String>>> _fetchWeekMealPlans() async {
-    try {
-      final groupId = await _resolveGroupId();
-      if (groupId == null) return [];
-
-      final now = DateTime.now();
-      final weekStart = now.subtract(Duration(days: now.weekday - 1));
-      final weekEnd = weekStart.add(const Duration(days: 6));
-
-      final mealPlanService = await ref.read(mealPlanServiceProviderAsync.future);
-      final plans = await mealPlanService.listMealPlans(
-        groupId,
-        from: weekStart.toIso8601String().split('T')[0],
-        to: weekEnd.toIso8601String().split('T')[0],
-      );
-
-      final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      return plans.map((p) {
-        final dayIndex = p.date.weekday - 1;
-        return {
-          'day': days[dayIndex.clamp(0, 6)],
-          'slot': p.slot,
-          'title': 'Meal',
-        };
-      }).toList();
-    } catch (_) {
-      return [];
-    }
   }
 
   Widget _buildChipBar() {
@@ -722,6 +723,98 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   }
 }
 
+class _KitchenHeader extends StatelessWidget {
+  final int recipeCount;
+  final int visibleCount;
+  final int sharedCount;
+  final int collectionCount;
+  final Future<void> Function() onMealPlan;
+
+  const _KitchenHeader({
+    required this.recipeCount,
+    required this.visibleCount,
+    required this.sharedCount,
+    required this.collectionCount,
+    required this.onMealPlan,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final privateCount = recipeCount - sharedCount;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        MitlistSpacing.md,
+        MitlistSpacing.md,
+        MitlistSpacing.md,
+        MitlistSpacing.xs,
+      ),
+      child: AppCard(
+        variant: AppCardVariant.outlined,
+        padding: AppCardPadding.md,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: MitlistSpacing.space11,
+                  height: MitlistSpacing.space11,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer,
+                    border: Border.all(color: colorScheme.outline, width: 2),
+                  ),
+                  alignment: Alignment.center,
+                  child: AppIcon(
+                    name: 'restaurantMenu',
+                    color: colorScheme.primary,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: MitlistSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        visibleCount == recipeCount
+                            ? '$recipeCount saved recipes'
+                            : '$visibleCount of $recipeCount recipes',
+                        style: textTheme.titleMedium,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: MitlistSpacing.xs),
+                      Text(
+                        '$sharedCount shared, $privateCount private'
+                        '${collectionCount > 0 ? ', $collectionCount cookbooks' : ''}',
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                AppButton(
+                  text: 'Plan',
+                  size: AppButtonSize.sm,
+                  variant: AppButtonVariant.outline,
+                  icon: const AppIcon(name: 'calendarDays', size: 16),
+                  onPressed: onMealPlan,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _LoadingListBody extends StatelessWidget {
   const _LoadingListBody();
 
@@ -800,25 +893,28 @@ class _RecipeCard extends StatelessWidget {
     return Semantics(
       label: 'Image of ${recipe.title}',
       child: Image.network(
-      recipe.imageUrl!,
-      width: MitlistSpacing.space20,
-      height: MitlistSpacing.space20,
-      fit: BoxFit.cover,
-      cacheWidth: (MitlistSpacing.space20 * MediaQuery.devicePixelRatioOf(context) * 1.5).round(),
-      errorBuilder: (context, error, stackTrace) {
-        return Container(
-          width: MitlistSpacing.space20,
-          height: MitlistSpacing.space20,
-          color: colorScheme.surfaceContainerHighest,
-          alignment: Alignment.center,
-          child: AppIcon(
-            name: 'imageNotSupportedOutline',
-            color: colorScheme.onSurfaceVariant,
-          ),
-        );
-      },
-    ),
-  );
+        recipe.imageUrl!,
+        width: MitlistSpacing.space20,
+        height: MitlistSpacing.space20,
+        fit: BoxFit.cover,
+        cacheWidth: (MitlistSpacing.space20 *
+                MediaQuery.devicePixelRatioOf(context) *
+                1.5)
+            .round(),
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: MitlistSpacing.space20,
+            height: MitlistSpacing.space20,
+            color: colorScheme.surfaceContainerHighest,
+            alignment: Alignment.center,
+            child: AppIcon(
+              name: 'imageNotSupportedOutline',
+              color: colorScheme.onSurfaceVariant,
+            ),
+          );
+        },
+      ),
+    );
   }
 
   String _metaLine() {
@@ -830,7 +926,8 @@ class _RecipeCard extends StatelessWidget {
       parts.add('Serves ${recipe.servings}');
     }
     if (recipe.ratingValue > 0) {
-      parts.add('${recipe.ratingValue.toStringAsFixed(1)} ${recipe.ratingCount > 0 ? '(${recipe.ratingCount})' : ''}');
+      parts.add(
+          '${recipe.ratingValue.toStringAsFixed(1)} ${recipe.ratingCount > 0 ? '(${recipe.ratingCount})' : ''}');
     }
     return parts.join(' | ');
   }

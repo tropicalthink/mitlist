@@ -72,6 +72,44 @@ func TestRecipeRepo_GetRecipeByID_NotFound(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestRecipeRepo_GetRecipesByIDs(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewRecipeRepo(mock)
+	id := fixedUUID()
+
+	rows := pgxmock.NewRows([]string{"id", "title", "servings"}).
+		AddRow(id, "Soup", 4)
+
+	mock.ExpectQuery("SELECT id, title, servings FROM recipes WHERE id = ANY").
+		WithArgs([]uuid.UUID{id}).
+		WillReturnRows(rows)
+
+	recipes, err := repo.GetRecipesByIDs(context.Background(), []uuid.UUID{id})
+	require.NoError(t, err)
+	require.Len(t, recipes, 1)
+	assert.Equal(t, "Soup", recipes[id].Title)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestRecipeRepo_ListIngredientsByRecipeIDs(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewRecipeRepo(mock)
+	recipeID := fixedUUID()
+
+	rows := pgxmock.NewRows([]string{"id", "recipe_id", "name", "quantity", "unit", "raw_text", "position"}).
+		AddRow(fixedUUID(), recipeID, "Carrots", "2", "pcs", "", 0)
+
+	mock.ExpectQuery("SELECT .* FROM recipe_ingredients WHERE recipe_id = ANY").
+		WithArgs([]uuid.UUID{recipeID}).
+		WillReturnRows(rows)
+
+	ingredients, err := repo.ListIngredientsByRecipeIDs(context.Background(), []uuid.UUID{recipeID})
+	require.NoError(t, err)
+	require.Len(t, ingredients[recipeID], 1)
+	assert.Equal(t, "Carrots", ingredients[recipeID][0].Name)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestRecipeRepo_ListRecipesByUser(t *testing.T) {
 	mock := newMockDB(t)
 	repo := NewRecipeRepo(mock)

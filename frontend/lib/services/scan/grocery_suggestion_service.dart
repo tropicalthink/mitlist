@@ -1,4 +1,5 @@
 import '../../storage/app_database.dart';
+import 'static_embedding_service.dart';
 
 /// A canonical grocery item surfaced as a typed-entry autocomplete suggestion.
 class GrocerySuggestion {
@@ -23,8 +24,20 @@ class GrocerySuggestion {
 /// canonical item and ranked so that canonical-name matches lead alias matches.
 class GrocerySuggestionService {
   final AppDatabase _db;
+  final StaticEmbeddingService? _embedder;
 
-  GrocerySuggestionService(this._db);
+  /// Minimum cosine for a semantic (embedder) match to be surfaced. Real
+  /// in-catalog queries score ~0.7–1.0; this floor drops weakly-related items
+  /// while keeping genuine synonym/spelling matches. Tune in one place.
+  static const double _semanticFloor = 0.5;
+
+  /// Creates a suggestion service.
+  ///
+  /// The optional [embedder] argument enables semantic blending when alias-prefix
+  /// matching yields few results. Existing call sites that omit it keep compiling
+  /// and behave exactly as before.
+  GrocerySuggestionService(this._db, {StaticEmbeddingService? embedder})
+      : _embedder = embedder;
 
   Future<List<GrocerySuggestion>> suggest(
     String query,
@@ -40,7 +53,6 @@ class GrocerySuggestionService {
       query: q,
       limit: limit * 6,
     );
-    if (aliases.isEmpty) return const [];
 
     // Keep the first matching alias per canonical item; its language decides
     // which name we label the suggestion with (so "milch" → Milch, "milk" →
@@ -52,27 +64,60 @@ class GrocerySuggestionService {
       if (seen.add(a.canonicalItemId)) orderedIds.add(a.canonicalItemId);
     }
 
-    final items = await _db.getCanonicalItemsByIds(orderedIds);
-    final byId = {for (final it in items) it.id: it};
-
     final out = <GrocerySuggestion>[];
-    for (final id in orderedIds) {
-      final it = byId[id];
-      if (it == null) continue;
-      out.add(GrocerySuggestion(
-        canonicalItemId: it.id,
-        name: _displayName(it, q),
-        category: it.category,
-        unit: it.defaultUnit,
-      ));
+    if (orderedIds.isNotEmpty) {
+      final items = await _db.getCanonicalItemsByIds(orderedIds);
+      final byId = {for (final it in items) it.id: it};
+
+      for (final id in orderedIds) {
+        final it = byId[id];
+        if (it == null) continue;
+        out.add(GrocerySuggestion(
+          canonicalItemId: it.id,
+          name: _displayName(it, q),
+          category: it.category,
+          unit: it.defaultUnit,
+        ));
+      }
+
+      // Promote items whose own name starts with the query above pure alias hits.
+      out.sort((a, b) {
+        final an = a.name.toLowerCase().startsWith(q) ? 0 : 1;
+        final bn = b.name.toLowerCase().startsWith(q) ? 0 : 1;
+        return an.compareTo(bn);
+      });
     }
 
-    // Promote items whose own name starts with the query above pure alias hits.
-    out.sort((a, b) {
-      final an = a.name.toLowerCase().startsWith(q) ? 0 : 1;
-      final bn = b.name.toLowerCase().startsWith(q) ? 0 : 1;
-      return an.compareTo(bn);
-    });
+    // Semantic blending: whenever alias-prefix is sparse (including ZERO literal
+    // hits) and an embedder is wired, pad with nearest-neighbour matches. This
+    // is what lets a synonym or differently-spelled term resolve when no alias
+    // starts with the query — the common case the alias prefix alone misses.
+    // Matches below [_semanticFloor] cosine are dropped so weak/unrelated items
+    // never surface (pure-nonsense queries already yield no tokens → no matches).
+    if (_embedder != null && out.length < limit) {
+      final seenIds = {for (final s in out) s.canonicalItemId};
+      final embedMatches = await _embedder.nearest(q, topK: limit * 2);
+      final missingIds = embedMatches
+          .where((m) => m.score >= _semanticFloor)
+          .map((m) => m.itemId)
+          .where((id) => !seenIds.contains(id))
+          .toList();
+      if (missingIds.isNotEmpty) {
+        final extraItems = await _db.getCanonicalItemsByIds(missingIds);
+        final byId = {for (final it in extraItems) it.id: it};
+        for (final id in missingIds) {
+          if (out.length >= limit) break;
+          final it = byId[id];
+          if (it == null) continue;
+          out.add(GrocerySuggestion(
+            canonicalItemId: it.id,
+            name: _displayName(it, q),
+            category: it.category,
+            unit: it.defaultUnit,
+          ));
+        }
+      }
+    }
 
     return out.take(limit).toList();
   }
