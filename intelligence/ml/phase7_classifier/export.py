@@ -41,7 +41,13 @@ def main() -> None:
         raise RuntimeError("No TextVectorization layer found in model.keras")
 
     vocab = vectorizer.get_vocabulary()           # list[str], idx 0="" idx 1="[UNK]"
-    idf = [float(w) for w in vectorizer.idf_weights.numpy()]  # same length as vocab
+    # IDF weights moved into the internal StringLookup sublayer in Keras 3
+    # (TF 2.21); fall back to the older top-level attribute for older TF.
+    if hasattr(vectorizer, "idf_weights") and vectorizer.idf_weights is not None:
+        idf_var = vectorizer.idf_weights
+    else:
+        idf_var = vectorizer._lookup_layer.idf_weights
+    idf = [float(w) for w in idf_var.numpy()]      # same length as vocab
 
     # ------------------------------------------------------------------ #
     # 2. Build a NEW model with float TF-IDF input (reuse dense layers)   #
@@ -94,7 +100,7 @@ def main() -> None:
     samples = ["Vollmilch", "0at M1lk", "Bananen", "Joghurt natur", "Hähnchenbrust"]
     golden = []
     for raw in samples:
-        probs = model.predict([[char_trigrams(raw)]], verbose=0)[0]
+        probs = model.predict(tf.constant([char_trigrams(raw)]), verbose=0)[0]
         top5 = probs.argsort()[-5:][::-1].tolist()
         golden.append({
             "raw": raw,

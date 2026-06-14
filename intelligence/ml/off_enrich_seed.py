@@ -229,7 +229,19 @@ def _mine_off_names(
 
 
 def _build_vocab(seed: list[dict], off_aliases: dict[str, dict[str, list[str]]]) -> list[str]:
-    """Collect all word-level and phrase-level tokens across all names + aliases."""
+    """Collect word- and phrase-level tokens from canonical item NAMES only.
+
+    Scope = item names across all languages (Strategy A). Aliases and OFF
+    strings are intentionally EXCLUDED from the shipped embedder vocab: adding
+    them balloons the on-device ``embedder_vocab.json`` to ~45-90 MB, while the
+    catalog vectors are built from item names and real queries are name-like,
+    so name-derived vocab covers the actual lookups. OOV query words fall back
+    to char-trigrams in the Dart runtime (StaticEmbeddingService.tokenize).
+
+    Aliases still drive ``seed_enriched.json`` / ``off_aliases.json`` — this
+    narrowing affects only the embedder vocab. ``off_aliases`` is accepted for
+    signature stability but no longer contributes vocab tokens.
+    """
     phrase_set: set[str] = set()
     word_set: set[str] = set()
 
@@ -243,13 +255,6 @@ def _build_vocab(seed: list[dict], off_aliases: dict[str, dict[str, list[str]]])
     for item in seed:
         for lang in LANGUAGES:
             _add(item.get(f"name_{lang}", ""))
-            for alias in item.get(f"aliases_{lang}", []):
-                _add(alias)
-
-    for lang_aliases in off_aliases.values():
-        for aliases in lang_aliases.values():
-            for alias in aliases:
-                _add(alias)
 
     # Phrases first (longer/more specific), then single words
     phrases = sorted(p for p in phrase_set if " " in p)
