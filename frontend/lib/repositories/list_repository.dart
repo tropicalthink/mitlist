@@ -61,6 +61,7 @@ class ListRepository {
       await _db.clearListsForGroup(groupId);
     }
     await _db.upsertListsRows(remote.map(_toListsRow));
+    unawaited(_hydrateMissingListPreviews(remote));
     return remote.length;
   }
 
@@ -554,7 +555,55 @@ class ListRepository {
 
   static const int _listCardPreviewLines = 4;
 
+  Future<void> _hydrateMissingListPreviews(List<ItemList> lists) async {
+    for (final list in lists) {
+      if (list.itemPreview.isNotEmpty) continue;
+      if (list.itemCount == 0) continue;
+
+      try {
+        final localRows = await _db.getItemsByListOnce(list.id);
+        if (localRows.isNotEmpty) {
+          await _patchListPreviewFromRows(list.id, localRows);
+          continue;
+        }
+
+        final remoteItems = await _remote.listItems(
+          list.id,
+          limit: _listCardPreviewLines,
+          offset: 0,
+        );
+        if (remoteItems.isEmpty) continue;
+
+        await _db.upsertListItemsRows(remoteItems.map(_toListItemsRow));
+        await _patchListPreviewFromItems(
+          list.id,
+          remoteItems,
+          itemCount: list.itemCount,
+        );
+      } catch (_) {
+        // Preview hydration is best-effort. The list itself has already loaded.
+      }
+    }
+  }
+
   Future<void> _patchListPreviewFromLocalItems(String listId) async {
+    final rows = await _db.getItemsByListOnce(listId);
+    await _patchListPreviewFromRows(listId, rows);
+  }
+
+  Future<void> _patchListPreviewFromRows(
+    String listId,
+    List<ListItemsTableData> rows,
+  ) async {
+    final items = rows.map(_toListItem).toList();
+    await _patchListPreviewFromItems(listId, items, itemCount: rows.length);
+  }
+
+  Future<void> _patchListPreviewFromItems(
+    String listId,
+    List<ListItem> items, {
+    int? itemCount,
+  }) async {
     final groupId = await _db.getListGroupId(listId);
     if (groupId == null) return;
 
@@ -568,15 +617,13 @@ class ListRepository {
     }
     if (existing == null) return;
 
-    final rows = await _db.getItemsByListOnce(listId);
-
-    rows.sort((a, b) {
+    items.sort((a, b) {
       final byPos = a.position.compareTo(b.position);
       return byPos != 0 ? byPos : a.id.compareTo(b.id);
     });
 
-    final preview = rows
-        .map((row) => row.name.trim())
+    final preview = items
+        .map((item) => item.name.trim())
         .where((name) => name.isNotEmpty)
         .take(_listCardPreviewLines)
         .toList();
@@ -587,7 +634,7 @@ class ListRepository {
         groupId: Value(existing.groupId),
         name: Value(existing.name),
         type: Value(existing.type),
-        itemCount: Value(rows.isEmpty ? null : rows.length),
+        itemCount: Value(itemCount ?? existing.itemCount),
         itemPreviewJson: Value(jsonEncode(preview)),
         createdAt: Value(existing.createdAt),
         updatedAt: Value(existing.updatedAt),

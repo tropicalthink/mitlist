@@ -51,14 +51,16 @@ final groceryRepositoryProvider =
   return GroceryRepository.create(db, ref);
 });
 
-/// Watches a group's grocery graph and keeps it up to date via SSE.
-/// Attach this provider in any screen that needs fresh grocery data for a group.
+/// Best-effort shell preload for the grocery graph.
+///
+/// This must stay bounded: the app shell watches it during normal navigation,
+/// and widget tests should not be held open by a persistent SSE loop.
 final groceryGraphSyncProvider =
     FutureProvider.family<void, String>((ref, groupId) async {
-  final sseService = ref.watch(sseServiceProvider);
   final repo = await ref.watch(groceryRepositoryProvider.future);
-  repo.attachSse(sseService, groupId);
-  // Initial pull to hydrate from server on first attach.
-  await repo.pullDelta(groupId);
-  ref.onDispose(repo.detachSse);
+  try {
+    await repo.pullDelta(groupId).timeout(const Duration(seconds: 3));
+  } catch (_) {
+    // Non-critical preload; list and scan flows still work from local data.
+  }
 });

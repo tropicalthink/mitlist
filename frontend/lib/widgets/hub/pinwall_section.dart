@@ -25,7 +25,6 @@ import '../app_button.dart';
 import '../app_dialog.dart';
 import '../mitlist_app_bar.dart';
 
-
 const _kNotePalette = MitlistColors.notePalette;
 const _kNotePaletteDark = MitlistColors.notePaletteDark;
 
@@ -157,24 +156,31 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
         case 'chore':
           final svc = await ref.read(choreServiceProviderAsync.future);
           final chores = await svc.listCurrentChores(groupId);
-          options = chores.take(50).map((c) => _EntityOption(
-                id: c.chore.id,
-                label: c.chore.name,
-              )).toList();
+          options = chores
+              .take(50)
+              .map((c) => _EntityOption(
+                    id: c.chore.id,
+                    label: c.chore.name,
+                  ))
+              .toList();
         case 'list':
           final svc = await ref.read(listServiceProviderAsync.future);
           final lists = await svc.listLists(groupId, limit: 50);
-          options = lists.map((l) => _EntityOption(
-                id: l.id,
-                label: l.name,
-              )).toList();
+          options = lists
+              .map((l) => _EntityOption(
+                    id: l.id,
+                    label: l.name,
+                  ))
+              .toList();
         case 'expense':
           final svc = await ref.read(financeServiceProviderAsync.future);
           final expenses = await svc.listExpenses(groupId, limit: 50);
-          options = expenses.map((e) => _EntityOption(
-                id: e.id,
-                label: e.description,
-              )).toList();
+          options = expenses
+              .map((e) => _EntityOption(
+                    id: e.id,
+                    label: e.description,
+                  ))
+              .toList();
         default:
           return;
       }
@@ -235,9 +241,8 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
           content: content.isEmpty ? ' ' : content,
           remindAt: _remindAt,
           linkedEntityType: _linkedEntityType,
-          linkedEntityId: _linkedEntityId?.isNotEmpty == true
-              ? _linkedEntityId
-              : null);
+          linkedEntityId:
+              _linkedEntityId?.isNotEmpty == true ? _linkedEntityId : null);
       if (!mounted) return;
 
       if (_pendingMedia.isNotEmpty) {
@@ -520,8 +525,7 @@ class _PinwallPostsList extends ConsumerWidget {
       data: (rows) {
         if (rows.isEmpty) {
           return Padding(
-            padding:
-                const EdgeInsets.symmetric(vertical: MitlistSpacing.md),
+            padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.md),
             child: Text(
               'The wall is clear. Pin a note, photo, or reminder for everyone.',
               textAlign: TextAlign.center,
@@ -590,7 +594,9 @@ class _PinwallComposerNote extends StatelessWidget {
     final border = dark
         ? MitlistColors.composerBorderDark
         : MitlistColors.composerBorderLight;
-    final pinColor = dark ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.primary;
+    final pinColor = dark
+        ? Theme.of(context).colorScheme.primaryContainer
+        : Theme.of(context).colorScheme.primary;
     final textColor = dark
         ? MitlistColors.surfaceSoft.withValues(alpha: 0.9)
         : MitlistColors.pinwallNoteTextLight;
@@ -612,7 +618,8 @@ class _PinwallComposerNote extends StatelessWidget {
             border: Border.all(color: border, width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: MitlistColors.neutral950.withValues(alpha: dark ? 0.42 : 0.16),
+                color: MitlistColors.neutral950
+                    .withValues(alpha: dark ? 0.42 : 0.16),
                 blurRadius: 0,
                 offset: const Offset(4, 5),
               ),
@@ -638,8 +645,7 @@ class _PinwallComposerNote extends StatelessWidget {
                     height: 1.5,
                   ),
                   decoration: InputDecoration(
-                    hintText:
-                        'Post a note to the household\u2026',
+                    hintText: 'Post a note to the household\u2026',
                     hintStyle: textTheme.bodyMedium?.copyWith(
                       color: hintColor,
                       height: 1.5,
@@ -675,8 +681,9 @@ class _PinwallComposerNote extends StatelessWidget {
                             ? textColor.withValues(alpha: 0.55)
                             : pinColor,
                       ),
-                      onPressed:
-                          (isPosting || isUploadingMedia) ? null : onPickReminder,
+                      onPressed: (isPosting || isUploadingMedia)
+                          ? null
+                          : onPickReminder,
                     ),
                     if (remindAt != null)
                       IconButton(
@@ -686,8 +693,9 @@ class _PinwallComposerNote extends StatelessWidget {
                           size: 18,
                           color: textColor.withValues(alpha: 0.55),
                         ),
-                        onPressed:
-                            (isPosting || isUploadingMedia) ? null : onClearReminder,
+                        onPressed: (isPosting || isUploadingMedia)
+                            ? null
+                            : onClearReminder,
                       ),
                     if (reminderLabel != null)
                       Flexible(
@@ -717,8 +725,9 @@ class _PinwallComposerNote extends StatelessWidget {
                             ? pinColor
                             : textColor.withValues(alpha: 0.55),
                       ),
-                      onPressed:
-                          (isPosting || isUploadingMedia) ? null : onPickLinkedEntity,
+                      onPressed: (isPosting || isUploadingMedia)
+                          ? null
+                          : onPickLinkedEntity,
                     ),
                     IconButton(
                       tooltip: pendingCount == 0
@@ -817,7 +826,10 @@ class _PinwallNoteCard extends ConsumerWidget {
               child: Image.network(
                 m.url,
                 fit: BoxFit.contain,
-                cacheWidth: (MediaQuery.sizeOf(context).width * MediaQuery.devicePixelRatioOf(context) * 1.5).round(),
+                cacheWidth: (MediaQuery.sizeOf(context).width *
+                        MediaQuery.devicePixelRatioOf(context) *
+                        1.5)
+                    .round(),
                 errorBuilder: (_, __, ___) => Padding(
                   padding: const EdgeInsets.all(MitlistSpacing.md),
                   child: Text(
@@ -941,12 +953,16 @@ class _PinwallNoteCard extends ConsumerWidget {
     switch (type) {
       case 'list':
         if (id != null && id.isNotEmpty) {
-          context.pushNamed('listDetail', pathParameters: {'listId': id});
+          context.go('/lists/$id');
+        } else {
+          context.go('/lists');
         }
       case 'chore':
-        context.pushNamed('chores');
+        // Chores live in a shell tab branch; go() switches to the tab.
+        context.go('/chores');
       case 'expense':
-        context.pushNamed('money');
+        // Money lives in a shell tab branch; go() switches to the tab.
+        context.go('/money');
     }
   }
 
@@ -999,8 +1015,9 @@ class _PinwallNoteCard extends ConsumerWidget {
       ref.invalidate(pinwallPostsByGroupProvider(groupId));
     }
 
-    final textColor =
-        dark ? MitlistColors.surfaceSoft.withValues(alpha: 0.9) : Theme.of(context).colorScheme.onSurface;
+    final textColor = dark
+        ? MitlistColors.surfaceSoft.withValues(alpha: 0.9)
+        : Theme.of(context).colorScheme.onSurface;
     final mutedColor = dark
         ? MitlistColors.surfaceSoft.withValues(alpha: 0.5)
         : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7);
@@ -1033,7 +1050,8 @@ class _PinwallNoteCard extends ConsumerWidget {
               border: Border.all(color: border, width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: MitlistColors.neutral950.withValues(alpha: dark ? 0.42 : 0.16),
+                  color: MitlistColors.neutral950
+                      .withValues(alpha: dark ? 0.42 : 0.16),
                   blurRadius: 0,
                   offset: const Offset(4, 5),
                 ),
@@ -1092,12 +1110,15 @@ class _PinwallNoteCard extends ConsumerWidget {
                           Container(
                             width: 42,
                             height: 42,
-                            color: Theme.of(context).colorScheme.surfaceContainerLow,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerLow,
                             alignment: Alignment.center,
                             child: SizedBox(
                               width: 16,
                               height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 1.5),
+                              child:
+                                  CircularProgressIndicator(strokeWidth: 1.5),
                             ),
                           ),
                         ],
@@ -1116,8 +1137,7 @@ class _PinwallNoteCard extends ConsumerWidget {
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: show.length,
-                          separatorBuilder: (_, __) =>
-                              SizedBox(width: 6),
+                          separatorBuilder: (_, __) => SizedBox(width: 6),
                           itemBuilder: (context, i) {
                             final m = show[i];
                             return GestureDetector(
@@ -1133,9 +1153,15 @@ class _PinwallNoteCard extends ConsumerWidget {
                                     child: Image.network(
                                       m.url,
                                       fit: BoxFit.cover,
-                                      cacheWidth: (42 * MediaQuery.devicePixelRatioOf(context) * 1.5).round(),
+                                      cacheWidth: (42 *
+                                              MediaQuery.devicePixelRatioOf(
+                                                  context) *
+                                              1.5)
+                                          .round(),
                                       errorBuilder: (_, __, ___) => Container(
-                                        color: Theme.of(context).colorScheme.surfaceContainerLow
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .surfaceContainerLow
                                             .withValues(alpha: 0.25),
                                         alignment: Alignment.center,
                                         child: const Icon(
@@ -1157,8 +1183,7 @@ class _PinwallNoteCard extends ConsumerWidget {
                 const SizedBox(height: MitlistSpacing.xs),
                 if (reminderText != null)
                   Padding(
-                    padding:
-                        const EdgeInsets.only(bottom: MitlistSpacing.xs),
+                    padding: const EdgeInsets.only(bottom: MitlistSpacing.xs),
                     child: Row(
                       children: [
                         Icon(
@@ -1188,8 +1213,8 @@ class _PinwallNoteCard extends ConsumerWidget {
                     Expanded(
                       child: Text(
                         '$userLabel \u00b7 $when',
-                        style: textTheme.labelSmall
-                            ?.copyWith(color: mutedColor),
+                        style:
+                            textTheme.labelSmall?.copyWith(color: mutedColor),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -1228,10 +1253,8 @@ class _PinwallNoteCard extends ConsumerWidget {
                         }
                       },
                       itemBuilder: (_) => const [
-                        PopupMenuItem(
-                            value: 'photo', child: Text('Add photo')),
-                        PopupMenuItem(
-                            value: 'delete', child: Text('Delete')),
+                        PopupMenuItem(value: 'photo', child: Text('Add photo')),
+                        PopupMenuItem(value: 'delete', child: Text('Delete')),
                       ],
                       child: Padding(
                         padding: const EdgeInsets.all(MitlistSpacing.sm),
@@ -1284,12 +1307,14 @@ class _PushpinPainter extends CustomPainter {
     final headPaint = Paint()..color = headColor;
     canvas.drawCircle(Offset(cx, 10), 10, headPaint);
 
-    final capPaint = Paint()..color = MitlistColors.neutral950.withValues(alpha: 0.18);
+    final capPaint = Paint()
+      ..color = MitlistColors.neutral950.withValues(alpha: 0.18);
     canvas.drawRect(
         Rect.fromCenter(center: Offset(cx, 18), width: 14, height: 5),
         capPaint);
 
-    final needlePaint = Paint()..color = MitlistColors.neutral950.withValues(alpha: 0.72);
+    final needlePaint = Paint()
+      ..color = MitlistColors.neutral950.withValues(alpha: 0.72);
     final needlePath = Path()
       ..moveTo(cx - 1.5, 19)
       ..lineTo(cx + 1.5, 19)

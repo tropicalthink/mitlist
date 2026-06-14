@@ -31,6 +31,7 @@ class CreateListSheet extends ConsumerStatefulWidget {
 
   final String? initialGroupId;
   final String? initialName;
+
   /// One of 'shopping', 'todo', 'custom'. Null → defaults to shopping.
   final String? initialType;
 
@@ -67,10 +68,10 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
   String? _nameError;
 
   static _ListType _listTypeFromString(String? type) => switch (type) {
-    'todo' => _ListType.todo,
-    'custom' => _ListType.custom,
-    _ => _ListType.shopping,
-  };
+        'todo' => _ListType.todo,
+        'custom' => _ListType.custom,
+        _ => _ListType.shopping,
+      };
 
   @override
   void initState() {
@@ -125,8 +126,8 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
 
       setState(() {
         _groups = groups;
-        final preferred = widget.initialGroupId ??
-            ref.read(currentGroupIdProvider);
+        final preferred =
+            widget.initialGroupId ?? ref.read(currentGroupIdProvider);
         _selectedGroupId = resolveActiveGroupId(groups, preferred);
         _isLoadingGroups = false;
       });
@@ -287,7 +288,9 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
             runSpacing: MitlistSpacing.sm,
             children: _groups.map((group) {
               return AppChip(
-                label: group.name.length > 30 ? '${group.name.substring(0, 28)}\u2026' : group.name,
+                label: group.name.length > 30
+                    ? '${group.name.substring(0, 28)}\u2026'
+                    : group.name,
                 selected: _selectedGroupId == group.id,
                 onSelected: _isSubmitting
                     ? null
@@ -304,7 +307,10 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
             size: AppButtonSize.lg,
             text: _isSubmitting ? 'Creating...' : 'Create',
             isLoading: _isSubmitting,
-            onPressed: !_isLoadingGroups && !_isSubmitting
+            onPressed: !_isLoadingGroups &&
+                    !_isSubmitting &&
+                    _selectedGroupId != null &&
+                    _canCreate
                 ? _attemptCreate
                 : null,
           ),
