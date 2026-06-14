@@ -149,7 +149,7 @@ func TestListRepository_CreateItem(t *testing.T) {
 	}
 
 	mock.ExpectExec("INSERT INTO list_items").
-		WithArgs(pgxmock.AnyArg(), item.ListID, item.Name, item.Quantity, item.Unit, item.Note, item.PriceCents, item.ProductID, item.StoreID, item.AddedBy, item.Checked, item.Position, pgxmock.AnyArg(), pgxmock.AnyArg()).
+		WithArgs(pgxmock.AnyArg(), item.ListID, item.Name, item.Quantity, item.Unit, item.Note, item.PriceCents, item.ProductID, item.StoreID, item.CanonicalItemID, item.AddedBy, item.Checked, item.Position, pgxmock.AnyArg(), pgxmock.AnyArg()).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
 	err := repo.CreateItem(context.Background(), item)

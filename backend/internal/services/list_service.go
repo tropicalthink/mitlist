@@ -446,10 +446,11 @@ func (s *ListService) AddItemAmount(ctx context.Context, user *models.User, list
 
 // ListItemAmountInput is a single item to add or merge in AddItemsBatch.
 type ListItemAmountInput struct {
-	Name   string
-	Amount float64
-	Unit   string
-	Note   string
+	Name            string
+	Amount          float64
+	Unit            string
+	Note            string
+	CanonicalItemID *uuid.UUID
 }
 
 // AddItemsBatch adds or merges multiple items into a list with one list/membership fetch.
@@ -511,11 +512,12 @@ func (s *ListService) AddItemsBatch(ctx context.Context, user *models.User, list
 			continue
 		}
 		item := models.ListItem{
-			ListID:   listID,
-			Name:     name,
-			Quantity: input.Amount,
-			Unit:     unit,
-			Note:     note,
+			ListID:          listID,
+			Name:            name,
+			Quantity:        input.Amount,
+			Unit:            unit,
+			Note:            note,
+			CanonicalItemID: input.CanonicalItemID,
 		}
 		if err := s.listRepo.CreateItem(ctx, &item); err != nil {
 			return nil, fmt.Errorf("failed to create item: %w", err)
