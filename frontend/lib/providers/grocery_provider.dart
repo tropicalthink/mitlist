@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../repositories/grocery_repository.dart';
+import '../services/restock_service.dart';
 import '../services/scan/correction_memory_service.dart';
 import '../services/scan/grocery_suggestion_service.dart';
 import '../services/scan/scan_pipeline_service.dart';
@@ -13,6 +14,11 @@ import 'scan_provider.dart';
 final grocerySuggestionServiceProvider =
     Provider<GrocerySuggestionService>((ref) {
   return GrocerySuggestionService(ref.watch(appDatabaseProvider));
+});
+
+/// On-device purchase-cadence restock predictor. Pure reads, no network.
+final restockServiceProvider = Provider<RestockService>((ref) {
+  return RestockService(ref.watch(appDatabaseProvider));
 });
 
 final scanPipelineProvider = FutureProvider<ScanPipelineService>((ref) async {
