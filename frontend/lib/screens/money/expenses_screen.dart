@@ -11,7 +11,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/finance_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../models/finance_models.dart';
-import '../../router.dart' show currentGroupIdProvider;
+import '../../router.dart' show BottomNavScaffold, currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../utils/shell_tab_load.dart';
 import '../../utils/active_group_context.dart';
@@ -65,7 +65,8 @@ class _ExpenseGroup {
   final List<_Expense> expenses;
   final DateTime date;
 
-  const _ExpenseGroup({required this.label, required this.expenses, required this.date});
+  const _ExpenseGroup(
+      {required this.label, required this.expenses, required this.date});
 }
 
 class _SettlementSuggestion {
@@ -172,7 +173,11 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
   void _activateTabIfNeeded() {
     if (_tabLoadStarted || !mounted) return;
-    if (!shouldActivateShellTab(ref, moneyShellTabIndex)) return;
+    final insideShell =
+        context.findAncestorWidgetOfExactType<BottomNavScaffold>() != null;
+    if (insideShell && !shouldActivateShellTab(ref, moneyShellTabIndex)) {
+      return;
+    }
     _tabLoadStarted = true;
     _loadData();
   }
@@ -236,7 +241,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       final expenses = validGroupId == null
           ? <Expense>[]
           : await repo.getExpensesByGroupOnce(validGroupId);
-      final summary = validGroupId == null ? null : await repo.watchSummaryByGroup(validGroupId).first;
+      final summary = validGroupId == null
+          ? null
+          : await repo.watchSummaryByGroup(validGroupId).first;
 
       if (!mounted) return;
 
@@ -255,13 +262,16 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
       // Background refresh; keep cached UI if this fails.
       if (validGroupId != null) {
-        unawaited(repo.refreshGroup(validGroupId, limit: _pageLimit, offset: 0).catchError((e) {
+        unawaited(repo
+            .refreshGroup(validGroupId, limit: _pageLimit, offset: 0)
+            .catchError((e) {
           _logger.w('Background expenses refresh failed', error: e);
           return 0;
         }));
         if (!_listenersSetUp) {
           _listenersSetUp = true;
-          ref.listenManual(cachedExpensesByGroupProvider(validGroupId), (prev, next) {
+          ref.listenManual(cachedExpensesByGroupProvider(validGroupId),
+              (prev, next) {
             next.whenData((data) {
               if (!mounted) return;
               _timelineExpenses
@@ -271,7 +281,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
               setState(() => _isLoading = false);
             });
           });
-          ref.listenManual(cachedFinanceSummaryByGroupProvider(validGroupId), (prev, next) {
+          ref.listenManual(cachedFinanceSummaryByGroupProvider(validGroupId),
+              (prev, next) {
             next.whenData((s) {
               if (!mounted) return;
               _applyFinanceSummary(s, me?.id);
@@ -414,7 +425,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     final confirmed = await showAppDialog<bool>(
       context: context,
       title: 'Delete expense',
-      body: const Text('This will permanently delete this expense and all associated receipts. This cannot be undone.'),
+      body: const Text(
+          'This will permanently delete this expense and all associated receipts. This cannot be undone.'),
       actions: [
         AppButton(
           text: 'Cancel',
@@ -488,7 +500,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
   void _onTabChanged(int tab) {
     setState(() => _selectedTab = tab);
-    SharedPreferences.getInstance().then((p) => p.setInt('expenses_selected_tab', tab));
+    SharedPreferences.getInstance()
+        .then((p) => p.setInt('expenses_selected_tab', tab));
   }
 
   Future<void> _openCreateExpense() async {
@@ -619,7 +632,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                     ? _ErrorBody(message: _errorMessage, onRetry: _loadData)
                     : !_hasHousehold
                         ? _NoHouseholdBody(
-                            onOpenHouseholds: () => context.goNamed('groupsList'),
+                            onOpenHouseholds: () =>
+                                context.goNamed('groupsList'),
                           )
                         : _selectedTab == 0
                             ? _TimelineBody(
@@ -726,9 +740,9 @@ class _BalanceCard extends StatelessWidget {
     }
 
     final balanceStyle = Theme.of(context).textTheme.headlineLarge?.copyWith(
-      fontFamily: MitlistTypography.monoBody().fontFamily,
-      color: balanceColor,
-    );
+          fontFamily: MitlistTypography.monoBody().fontFamily,
+          color: balanceColor,
+        );
 
     return AppCard(
       variant: AppCardVariant.soft,
@@ -761,7 +775,6 @@ class _BalanceCard extends StatelessWidget {
                 textAlign: compact ? TextAlign.start : TextAlign.end,
                 style: balanceStyle,
               );
-
 
               if (compact) {
                 return Column(
@@ -1125,7 +1138,8 @@ class _PayerBadge extends StatelessWidget {
       height: MitlistSpacing.space10,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant, width: 2),
+        border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant, width: 2),
       ),
       alignment: Alignment.center,
       child: Text(
@@ -1150,7 +1164,8 @@ class _ExpenseCard extends StatelessWidget {
       variant: AppCardVariant.outlined,
       interactive: true,
       onTap: onTap,
-      semanticLabel: '${expense.description}, ${_formatCurrency(expense.amount, currency: expense.currency)}',
+      semanticLabel:
+          '${expense.description}, ${_formatCurrency(expense.amount, currency: expense.currency)}',
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -1346,8 +1361,8 @@ class _SuggestionCard extends StatelessWidget {
                   children: [
                     from,
                     Padding(
-                      padding:
-                          const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: MitlistSpacing.sm),
                       child: AppIcon(name: 'arrowDown', size: 20),
                     ),
                     to,
@@ -1360,8 +1375,8 @@ class _SuggestionCard extends StatelessWidget {
                 children: [
                   Expanded(child: from),
                   Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: MitlistSpacing.sm),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: MitlistSpacing.sm),
                     child: AppIcon(name: 'arrowRight', size: 20),
                   ),
                   Expanded(child: to),
@@ -1411,7 +1426,8 @@ class _SettlementParty extends StatelessWidget {
       padding: const EdgeInsets.all(MitlistSpacing.sm),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHigh,
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant, width: 2),
+        border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant, width: 2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1504,39 +1520,39 @@ class _BalancesExpandableBodyState extends State<_BalancesExpandableBody> {
             behavior: HitTestBehavior.opaque,
             onTap: () => setState(() => _expanded = !_expanded),
             child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: MitlistSpacing.md,
-              vertical: MitlistSpacing.sm,
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Balances',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.labelMedium,
+              padding: const EdgeInsets.symmetric(
+                horizontal: MitlistSpacing.md,
+                vertical: MitlistSpacing.sm,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Balances',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelMedium,
+                    ),
                   ),
-                ),
-                Text(
-                  '${widget.openCount} open',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                const SizedBox(width: MitlistSpacing.sm),
-                AnimatedRotation(
-                  turns: _expanded ? 0.5 : 0,
-                  duration: disableAnimations
-                      ? Duration.zero
-                      : const Duration(milliseconds: 180),
-                  curve: Curves.easeOutCubic,
-                  child: AppIcon(name: 'chevronDown', size: 18),
-                ),
-              ],
+                  Text(
+                    '${widget.openCount} open',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(width: MitlistSpacing.sm),
+                  AnimatedRotation(
+                    turns: _expanded ? 0.5 : 0,
+                    duration: disableAnimations
+                        ? Duration.zero
+                        : const Duration(milliseconds: 180),
+                    curve: Curves.easeOutCubic,
+                    child: AppIcon(name: 'chevronDown', size: 18),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-      ),
-      Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
+        Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
         AnimatedCrossFade(
           firstChild: const SizedBox.shrink(),
           secondChild: Padding(
@@ -1588,7 +1604,8 @@ class _BalancesExpandableBodyState extends State<_BalancesExpandableBody> {
                               ),
                               const SizedBox(width: MitlistSpacing.md),
                               Text(
-                                _formatCurrency(b.amount.abs(), currency: widget.currency),
+                                _formatCurrency(b.amount.abs(),
+                                    currency: widget.currency),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: MitlistTypography.monoBody(

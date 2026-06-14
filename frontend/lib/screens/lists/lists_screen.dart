@@ -8,10 +8,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/list_models.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
-import '../../router.dart' show currentGroupIdProvider;
+import '../../router.dart' show BottomNavScaffold, currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../sheets/create_list_sheet.dart';
-import 'list_detail_screen.dart';
 import '../../theme/list_tile_accent.dart';
 import '../../theme/spacing.dart';
 import '../../utils/shell_tab_load.dart';
@@ -29,6 +28,7 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/list_entrance.dart';
 import '../../widgets/mitlist_app_bar.dart';
+import 'list_detail_screen.dart';
 
 enum _SortOption { newest, oldest, az, mostItems }
 
@@ -90,7 +90,8 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
       if (mounted) {
         setState(() {
           if (savedGrid != null) _isGrid = savedGrid;
-          if (savedFilter != null && savedFilter < _FilterOption.values.length) {
+          if (savedFilter != null &&
+              savedFilter < _FilterOption.values.length) {
             _filter = _FilterOption.values[savedFilter];
           }
           if (savedSort != null && savedSort < _SortOption.values.length) {
@@ -104,7 +105,11 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
 
   void _activateTabIfNeeded() {
     if (_tabLoadStarted || !mounted) return;
-    if (!shouldActivateShellTab(ref, listsShellTabIndex)) return;
+    final insideShell =
+        context.findAncestorWidgetOfExactType<BottomNavScaffold>() != null;
+    if (insideShell && !shouldActivateShellTab(ref, listsShellTabIndex)) {
+      return;
+    }
     _tabLoadStarted = true;
     ref.read(grocerySeedProvider);
     _loadLists();
@@ -290,8 +295,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   }
 
   List<ItemList> get _filteredLists {
-    var result = List<ItemList>.from(
-        _lists.where((l) => !l.isArchived));
+    var result = List<ItemList>.from(_lists.where((l) => !l.isArchived));
 
     if (_filter != _FilterOption.all) {
       final wanted = switch (_filter) {
@@ -307,8 +311,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
       final query = _searchQuery.toLowerCase();
       result = result.where((l) {
         if (l.name.toLowerCase().contains(query)) return true;
-        return l.itemPreview
-            .any((p) => p.toLowerCase().contains(query));
+        return l.itemPreview.any((p) => p.toLowerCase().contains(query));
       }).toList();
     }
 
@@ -341,11 +344,11 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   }
 
   String? _filterToListType() => switch (_filter) {
-    _FilterOption.shopping => 'shopping',
-    _FilterOption.todo => 'todo',
-    _FilterOption.custom => 'custom',
-    _FilterOption.all => null,
-  };
+        _FilterOption.shopping => 'shopping',
+        _FilterOption.todo => 'todo',
+        _FilterOption.custom => 'custom',
+        _FilterOption.all => null,
+      };
 
   Future<void> _showCreateSheet() async {
     unawaited(Haptics.light());
@@ -356,31 +359,6 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     );
     if (created == true) {
       await _loadLists();
-    }
-  }
-
-  Future<void> _quickCreateAndOpen() async {
-    unawaited(Haptics.light());
-    final effectiveGroupId = await _resolveGroupId();
-    if (effectiveGroupId == null || !mounted) return;
-    try {
-      final svc = await ref.read(listServiceProviderAsync.future);
-      final type = _filterToListType() ?? 'shopping';
-      final list = await svc.createList(
-        CreateListRequest(groupId: effectiveGroupId, name: 'New list', type: type),
-      );
-      if (!mounted) return;
-      final changed = await context.pushNamed<bool>(
-        'listDetail',
-        pathParameters: {'listId': list.id},
-        extra: ListDetailRouteArgs(listName: list.name, autoFocusTitle: true),
-      );
-      if (changed == true || mounted) unawaited(_loadLists());
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Couldn’t create list.')),
-      );
     }
   }
 
@@ -443,23 +421,28 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                       break;
                     case _ListMenuAction.sortNewest:
                       _sort = _SortOption.newest;
-                      SharedPreferences.getInstance().then((p) => p.setInt('lists_sort', _sort.index));
+                      SharedPreferences.getInstance()
+                          .then((p) => p.setInt('lists_sort', _sort.index));
                       break;
                     case _ListMenuAction.sortOldest:
                       _sort = _SortOption.oldest;
-                      SharedPreferences.getInstance().then((p) => p.setInt('lists_sort', _sort.index));
+                      SharedPreferences.getInstance()
+                          .then((p) => p.setInt('lists_sort', _sort.index));
                       break;
                     case _ListMenuAction.sortAz:
                       _sort = _SortOption.az;
-                      SharedPreferences.getInstance().then((p) => p.setInt('lists_sort', _sort.index));
+                      SharedPreferences.getInstance()
+                          .then((p) => p.setInt('lists_sort', _sort.index));
                       break;
                     case _ListMenuAction.sortMostItems:
                       _sort = _SortOption.mostItems;
-                      SharedPreferences.getInstance().then((p) => p.setInt('lists_sort', _sort.index));
+                      SharedPreferences.getInstance()
+                          .then((p) => p.setInt('lists_sort', _sort.index));
                       break;
                     case _ListMenuAction.toggleView:
                       _isGrid = !_isGrid;
-                      SharedPreferences.getInstance().then((p) => p.setBool('lists_is_grid', _isGrid));
+                      SharedPreferences.getInstance()
+                          .then((p) => p.setBool('lists_is_grid', _isGrid));
                       break;
                   }
                 });
@@ -472,7 +455,10 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                   value: _ListMenuAction.scanReceipt,
                   child: Row(
                     children: [
-                      AppIcon(name: 'camera', size: 18, color: Theme.of(context).colorScheme.onSurface),
+                      AppIcon(
+                          name: 'camera',
+                          size: 18,
+                          color: Theme.of(context).colorScheme.onSurface),
                       const SizedBox(width: MitlistSpacing.sm),
                       const Text('Scan receipt or list'),
                     ],
@@ -520,8 +506,9 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
       body: _buildBody(),
       floatingActionButton: AppButton(
         size: AppButtonSize.lg,
-        onPressed:
-            _hasHousehold ? _quickCreateAndOpen : () => context.goNamed('groupsList'),
+        onPressed: _hasHousehold
+            ? _showCreateSheet
+            : () => context.goNamed('groupsList'),
         icon: const AppIcon(name: 'plus'),
         text: 'New list',
         tooltip: 'New list',
@@ -603,9 +590,12 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     if (_isLoading) return base;
     final count = switch (option) {
       _FilterOption.all => _lists.length,
-      _FilterOption.shopping => _lists.where((l) => l.type.toLowerCase() == 'shopping').length,
-      _FilterOption.todo => _lists.where((l) => l.type.toLowerCase() == 'todo').length,
-      _FilterOption.custom => _lists.where((l) => l.type.toLowerCase() == 'custom').length,
+      _FilterOption.shopping =>
+        _lists.where((l) => l.type.toLowerCase() == 'shopping').length,
+      _FilterOption.todo =>
+        _lists.where((l) => l.type.toLowerCase() == 'todo').length,
+      _FilterOption.custom =>
+        _lists.where((l) => l.type.toLowerCase() == 'custom').length,
     };
     return count > 0 ? '$base ($count)' : base;
   }
@@ -630,7 +620,8 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
               selected: _filter == option,
               onSelected: (_) {
                 setState(() => _filter = option);
-                SharedPreferences.getInstance().then((p) => p.setInt('lists_filter', _filter.index));
+                SharedPreferences.getInstance()
+                    .then((p) => p.setInt('lists_filter', _filter.index));
               },
             ),
           );
@@ -720,32 +711,35 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
       child: Padding(
         padding: const EdgeInsets.all(MitlistSpacing.md),
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation(Theme.of(context).colorScheme.primary),
+          valueColor:
+              AlwaysStoppedAnimation(Theme.of(context).colorScheme.primary),
         ),
       ),
     );
   }
 
   String get _emptyTitle => switch (_filter) {
-    _FilterOption.shopping => 'No shopping lists',
-    _FilterOption.todo => 'No to-do lists',
-    _FilterOption.custom => 'No custom lists',
-    _FilterOption.all => 'No lists yet',
-  };
+        _FilterOption.shopping => 'No shopping lists',
+        _FilterOption.todo => 'No to-do lists',
+        _FilterOption.custom => 'No custom lists',
+        _FilterOption.all => 'No lists yet',
+      };
 
   String get _emptyDescription => switch (_filter) {
-    _FilterOption.shopping => 'Great for groceries, meal prep, weekend errands.',
-    _FilterOption.todo => 'Tasks, chores, anything with a checkbox.',
-    _FilterOption.custom => 'Free-form — your list, your rules.',
-    _FilterOption.all => 'Add lines inside a list; the first few appear as a snippet on its card.',
-  };
+        _FilterOption.shopping =>
+          'Great for groceries, meal prep, weekend errands.',
+        _FilterOption.todo => 'Tasks, chores, anything with a checkbox.',
+        _FilterOption.custom => 'Free-form — your list, your rules.',
+        _FilterOption.all =>
+          'Add lines inside a list; the first few appear as a snippet on its card.',
+      };
 
   String get _emptyActionLabel => switch (_filter) {
-    _FilterOption.shopping => 'Create a shopping list',
-    _FilterOption.todo => 'Create a to-do list',
-    _FilterOption.custom => 'Create a custom list',
-    _FilterOption.all => 'Create your first list',
-  };
+        _FilterOption.shopping => 'Create a shopping list',
+        _FilterOption.todo => 'Create a to-do list',
+        _FilterOption.custom => 'Create a custom list',
+        _FilterOption.all => 'Create your first list',
+      };
 
   Widget _buildEmptyState() {
     return LayoutBuilder(
@@ -760,18 +754,19 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                 child: _searchQuery.isNotEmpty
                     ? _buildSearchEmptyState()
                     : AppEmptyState(
-                  lottieAsset: 'assets/animations/lottie/checklist.lottie',
-                  icon: const AppIcon(name: 'queueList'),
-                  title: _emptyTitle,
-                  description: _emptyDescription,
-                  actions: [
-                    AppButton(
-                      text: _emptyActionLabel,
-                      icon: const AppIcon(name: 'plus'),
-                      onPressed: _showCreateSheet,
-                    ),
-                  ],
-                ),
+                        lottieAsset:
+                            'assets/animations/lottie/checklist.lottie',
+                        icon: const AppIcon(name: 'queueList'),
+                        title: _emptyTitle,
+                        description: _emptyDescription,
+                        actions: [
+                          AppButton(
+                            text: _emptyActionLabel,
+                            icon: const AppIcon(name: 'plus'),
+                            onPressed: _showCreateSheet,
+                          ),
+                        ],
+                      ),
               ),
             ),
           ),
@@ -948,7 +943,8 @@ class _ListCard extends ConsumerWidget {
     final confirmed = await showAppDialog<bool>(
       context: context,
       title: 'Delete list',
-      body: const Text('This will permanently delete this list and all its items.'),
+      body: const Text(
+          'This will permanently delete this list and all its items.'),
       actions: [
         AppButton(
           text: 'Cancel',
@@ -989,8 +985,8 @@ class _ListCard extends ConsumerWidget {
         label: 'Item name',
         maxLength: 200,
         submitOnSelect: true,
-        onSubmitted: (value) =>
-            Navigator.of(context).pop(value.trim().isEmpty ? null : value.trim()),
+        onSubmitted: (value) => Navigator.of(context)
+            .pop(value.trim().isEmpty ? null : value.trim()),
       ),
       actions: [
         AppButton(
@@ -1067,14 +1063,16 @@ class _ListCard extends ConsumerWidget {
                   children: [
                     // Reserve top-right space for the type badge
                     Padding(
-                      padding: const EdgeInsets.only(right: MitlistSpacing.space5),
+                      padding:
+                          const EdgeInsets.only(right: MitlistSpacing.space5),
                       child: Text(
                         list.name,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: accent.titleColor,
-                              fontWeight: FontWeight.w600,
-                              height: 1.2,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  color: accent.titleColor,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.2,
+                                ),
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -1100,7 +1098,10 @@ class _ListCard extends ConsumerWidget {
                               Expanded(
                                 child: Text(
                                   previewLines[i],
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
                                         color: snippetColor,
                                         height: 1.35,
                                       ),
@@ -1118,7 +1119,10 @@ class _ListCard extends ConsumerWidget {
                         if (itemCount != null && itemCount > 0)
                           Text(
                             '$itemCount item${itemCount == 1 ? '' : 's'}',
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(
                                   color: snippetColor,
                                 ),
                           ),
@@ -1127,7 +1131,8 @@ class _ListCard extends ConsumerWidget {
                           label: 'Quick add item to ${list.name}',
                           child: InkWell(
                             onTap: () => _quickAddItem(context, ref),
-                            borderRadius: BorderRadius.circular(MitlistSpacing.xs),
+                            borderRadius:
+                                BorderRadius.circular(MitlistSpacing.xs),
                             child: Padding(
                               padding: const EdgeInsets.all(MitlistSpacing.xs),
                               child: AppIcon(
@@ -1160,7 +1165,10 @@ class _ListCard extends ConsumerWidget {
                       PopupMenuItem(
                         value: 'rename',
                         child: Row(children: [
-                          AppIcon(name: 'pencilSquare', size: 18, color: Theme.of(ctx).colorScheme.onSurface),
+                          AppIcon(
+                              name: 'pencilSquare',
+                              size: 18,
+                              color: Theme.of(ctx).colorScheme.onSurface),
                           const SizedBox(width: MitlistSpacing.sm),
                           const Text('Rename'),
                         ]),
@@ -1168,15 +1176,24 @@ class _ListCard extends ConsumerWidget {
                       PopupMenuItem(
                         value: 'delete',
                         child: Row(children: [
-                          AppIcon(name: 'trash', size: 18, color: Theme.of(ctx).colorScheme.error),
+                          AppIcon(
+                              name: 'trash',
+                              size: 18,
+                              color: Theme.of(ctx).colorScheme.error),
                           const SizedBox(width: MitlistSpacing.sm),
-                          Text('Delete list', style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(color: Theme.of(ctx).colorScheme.error)),
+                          Text('Delete list',
+                              style: Theme.of(ctx)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                      color: Theme.of(ctx).colorScheme.error)),
                         ]),
                       ),
                     ],
                     child: Padding(
                       padding: const EdgeInsets.all(MitlistSpacing.sm),
-                      child: _TypeBadge(type: list.type, color: accent.titleColor),
+                      child:
+                          _TypeBadge(type: list.type, color: accent.titleColor),
                     ),
                   ),
                 ),
