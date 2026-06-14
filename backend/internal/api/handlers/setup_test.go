@@ -165,6 +165,8 @@ func clearTables(t *testing.T) {
 		"chore_completions", "chore_assignments", "chore_rotation_states", "chores",
 		"chore_template_items", "chore_templates", "template_items", "templates",
 		"list_items", "lists",
+		"item_aliases", "store_aisles", "purchase_history",
+		"item_cooccurrence", "corrections", "canonical_items", "grocery_versions",
 		"activity_logs", "notifications", "notification_preferences",
 		"chat_messages", "chat_sessions",
 		"pending_claims", "group_invites", "group_memberships", "groups",
@@ -198,6 +200,12 @@ func newTestNotificationRepo() *repositories.NotificationRepository {
 }
 func newTestActivityRepo() *repositories.ActivityRepository {
 	return repositories.NewActivityRepository(testDB)
+}
+func newTestGroceryRepo() *repositories.GroceryRepository {
+	return repositories.NewGroceryRepository(testDB)
+}
+func newTestGroceryService() *services.GroceryService {
+	return services.NewGroceryService(newTestGroceryRepo(), newTestGroupRepo())
 }
 func newTestPasswordService() *passwordservice.Service { return passwordservice.New() }
 func newTestMailService() *mailservice.Service         { return mailservice.New(testCfg, logger.New("test")) }
@@ -483,6 +491,36 @@ func newFinanceRouter(t *testing.T) (chi.Router, *FinanceHandler) {
 	r.Get("/api/v1/recurring-expenses/{id}", h.GetRecurringExpense)
 	r.Patch("/api/v1/recurring-expenses/{id}", h.UpdateRecurringExpense)
 	r.Delete("/api/v1/recurring-expenses/{id}", h.DeleteRecurringExpense)
+	return r, h
+}
+
+func newRecipeRouterWithGrocery(t *testing.T) (chi.Router, *RecipeHandler) {
+	recipeRepo := newTestRecipeRepo()
+	svc := services.NewRecipeService(recipeRepo)
+	listSvc := services.NewListService(newTestListRepo(), newTestGroupRepo())
+	h := NewRecipeHandler(svc, services.NewRecipeScrapingService(), listSvc)
+	h.SetGroceryService(newTestGroceryService())
+
+	r := chi.NewRouter()
+	r.Use(testAuthMiddleware)
+	r.Post("/api/v1/recipes", h.CreateRecipe)
+	r.Get("/api/v1/recipes", h.ListRecipes)
+	r.Get("/api/v1/recipes/{id}", h.GetRecipe)
+	r.Patch("/api/v1/recipes/{id}", h.UpdateRecipe)
+	r.Delete("/api/v1/recipes/{id}", h.DeleteRecipe)
+	r.Post("/api/v1/recipes/{id}/share", h.ShareRecipe)
+	r.Get("/api/v1/recipes/{id}/ingredients", h.GetRecipeIngredients)
+	r.Get("/api/v1/recipes/{id}/steps", h.GetRecipeSteps)
+	r.Post("/api/v1/recipes/{id}/add-to-list", h.AddToList)
+	r.Post("/api/v1/recipes/{id}/add-missing-to-list", h.AddMissingToList)
+	r.Post("/api/v1/recipes/clip", h.ClipRecipe)
+	r.Post("/api/v1/collections", h.CreateCollection)
+	r.Get("/api/v1/collections", h.ListCollections)
+	r.Get("/api/v1/collections/{id}", h.GetCollection)
+	r.Patch("/api/v1/collections/{id}", h.UpdateCollection)
+	r.Delete("/api/v1/collections/{id}", h.DeleteCollection)
+	r.Post("/api/v1/collections/{id}/recipes", h.AddToCollection)
+	r.Delete("/api/v1/collections/{id}/recipes/{recipe_id}", h.RemoveFromCollection)
 	return r, h
 }
 
