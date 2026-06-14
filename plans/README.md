@@ -94,7 +94,7 @@ dropped. The cleaner seam is backend-FX / frontend-FX-UX, with the existing
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
-| 023  | Compute group balances in a single base currency (per-expense FX at entry) | P2 | L | — (relies on existing finance test net) | TODO |
+| 023  | Compute group balances in a single base currency (per-expense FX at entry) | P2 | L | — (relies on existing finance test net) | CODE DONE — reviewed APPROVE (2026-06-14, worktree branch `worktree-agent-a15d1aa985cd731ad`, commit `5b188d1a` atop `28655faa`). All criteria re-run by reviewer: `go build ./...` OK, full `go test ./...` green, new `TestCreateExpense_ForeignCurrencyConvertsToBase` (3 subtests) PASS, `TestBalancesEquivalence` green. Scope clean (7 in-scope files, single commit). Migration 000030 adds `base_amount`/`fx_rate`; `normalizeBaseAmount` helper on create+update; `expense_paid` CTE and `calculateBalances` both sum `base_amount`. **Awaiting maintainer merge** (not pushed/merged). Merge 023 before 024. |
 | 024  | Record an expense in a foreign currency; show balances converted to the household currency | P2 | M | 023 | TODO |
 | 025  | Stand up the Flutter l10n pipeline + localize the welcome screen (en, de) | P3 | M | — | DONE (executed 2026-06-13, commit `19044fcb` on branch `advisor/025-i18n-foundation`; intl bumped to ^0.20.2 to satisfy flutter_localizations SDK pin; localization tests pass; frontend_flows_test compile error pre-exists and is unrelated) |
 
@@ -215,6 +215,40 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJE
 
 ### Reconcile log
 
+- **2026-06-14 (post-merge sweep), HEAD `28655faa`** — five commits landed since the
+  last reconcile (`15eedaf6`): `81abf034` **commits the on-device model assets**
+  (the 026 + 028 maintainer model-tails that were uncommitted last session),
+  `48738f5e` ProGuard + `GrocerySuggestionService`, `fa6bcb80` grocery sync + list
+  preview hydration, `4fe06868` UI tooltips/semantic labels, `28655faa` image MIME
+  validation on the assistant upload path. Last three are **maintainer's own work,
+  not plan-driven** (the MIME-validation commit is the `assistant.go`/cors/security
+  middleware diff that was dirty at session start — now committed clean).
+  Reconcile results:
+  - **026 + 028 model tails now DONE on disk.** `git ls-files` confirms the shipped
+    bundle is committed: `frontend/assets/grocery/{embedder_vocab.json,
+    catalog_vectors.json,embedder_golden.json}` (028) and
+    `frontend/assets/models/{grocery_classifier.tflite,grocery_classifier_labels.txt,
+    grocery_classifier_vocab.json}` (026). The "still uncommitted, maintainer decides"
+    caveat from the prior entry is **resolved** — assets are in the tree (~14 MB,
+    committed as plain blobs, not LFS). Device-only checks (Dart↔Python TF-IDF parity,
+    on-device scan smoke) remain the only open tail; they need a real device.
+  - **028/031/032 still green on HEAD.** The two grocery commits touched only
+    `grocery_suggestion_service.dart` + `grocery_provider.dart` — none of the plan
+    service files. 52/52 targeted service tests pass
+    (`restock`/`routing`/`static_embedding`/`grocery_classifier`).
+  - **023 (backend FX) — drift CLEAN, executable now.** None of its in-scope files
+    (`finance.go`/`finance_service.go`/`finance_repo.go` + tests) changed since its
+    `fea883d3` plan SHA; migration **000030 is still free** (highest on disk: `000029`).
+  - **024 (frontend FX) — minor unrelated drift, still good as written.** Of its
+    in-scope files, only `expenses_screen.dart` (a "display only" file) changed, via
+    `4fe06868`'s shell-tab-activation guard — a different region from the currency
+    display 024 edits. Its `finance_models.dart`/`finance_repository.dart`/
+    `expense_creation_sheet.dart`/`app_database.dart` anchors are untouched. Re-excerpt
+    `expenses_screen.dart` if the executor's drift check flags it, but no rewrite needed.
+  - Whole-repo `flutter test` / `go test ./...` regression nets NOT run this sweep
+    (long suites; only additive commits landed). The maintainer should still run them
+    once and confirm no new failures beyond the known `frontend_flows_test.dart`
+    "No GoRouter found in context" baseline.
 - **2026-06-14 (model build-out), HEAD `15eedaf6` + uncommitted** — ran the 026 +
   028 maintainer model-tails end to end. Both build scripts had **never actually
   run** (executors only `py_compile`d them) and were broken on the installed stack:
