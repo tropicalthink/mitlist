@@ -1568,6 +1568,12 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Icon(
+              Icons.search_off_rounded,
+              size: 40,
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+            ),
+            const SizedBox(height: MitlistSpacing.sm),
             Text(
               'No items match your filter',
               textAlign: TextAlign.center,
