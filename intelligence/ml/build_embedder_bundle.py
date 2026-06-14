@@ -45,7 +45,9 @@ ASSET_DIR = ROOT / "frontend" / "assets" / "grocery"
 ASSET_VERSION = 1
 
 # Default teacher model; override via --teacher.
-DEFAULT_TEACHER = str(HERE / "phase8_embeddings")
+# The Phase-8 SentenceTransformer is saved under phase8_embeddings/finetuned/
+# (that dir holds modules.json / config_sentence_transformers.json).
+DEFAULT_TEACHER = str(HERE / "phase8_embeddings" / "finetuned")
 FALLBACK_TEACHER = "intfloat/multilingual-e5-small"
 
 # Target embedding dim after PCA (keeps bundle small, ~2-3 MB for 3 k items).
@@ -131,41 +133,46 @@ def _load_teacher(teacher_path: str):
 
 
 def _distill(teacher, vocab: list[str], target_dim: int) -> tuple[np.ndarray, int]:
-    """Distil the teacher into a static word/phrase-level embedder.
+    """Distil the teacher into a static embedder and emit one vector per vocab entry.
 
-    Uses Model2Vec's distill API to produce a (vocab_size × dim) matrix.
-    PCA is applied to reduce to target_dim if the model dim > target_dim.
+    Model2Vec's ``distill_from_model`` builds a static lookup table from the
+    teacher's *token* embeddings (optionally PCA-reduced to ``target_dim``).
+    We then ``StaticModel.encode`` each custom-vocab string so the returned
+    matrix is row-aligned to ``vocab`` (multi-word phrases are encoded by
+    tokenising + mean-pooling, exactly mirroring the Dart runtime's per-token
+    mean-pool). The result is the (len(vocab) × final_dim) matrix the rest of
+    this script and StaticEmbeddingService.dart expect.
 
-    Returns: (float32 matrix of shape [vocab_size, final_dim], final_dim)
+    Returns: (float32 matrix of shape [len(vocab), final_dim], final_dim)
     """
     try:
-        from model2vec import distill  # type: ignore
+        from model2vec.distill import distill_from_model  # type: ignore
     except ImportError:
         raise SystemExit(
-            "model2vec is required: pip install model2vec\n"
+            "model2vec[distill] is required: pip install 'model2vec[distill]'\n"
             "See https://github.com/MinishLab/model2vec for the API."
         )
 
-    print(f"[build_embedder] Distilling {len(vocab)} vocab tokens via Model2Vec …")
-    # Model2Vec distill() returns a StaticModel whose .embedding (or .vectors)
-    # attribute holds the (vocab_size × dim) float32 matrix.
-    # The API: distill(model, vocabulary=list[str], pca_dims=int|None)
-    static_model = distill(teacher, vocabulary=vocab, pca_dims=target_dim)
+    # Pull the underlying HF transformer + tokenizer out of the SentenceTransformer.
+    transformer = teacher[0]
+    hf_model = transformer.auto_model
+    tokenizer = getattr(transformer, "tokenizer", None) or teacher.tokenizer
 
-    # Model2Vec 0.3+ stores vectors in static_model.embedding (numpy float32).
-    # Fall back to static_model.vectors for older builds.
-    if hasattr(static_model, "embedding"):
-        matrix: np.ndarray = np.array(static_model.embedding, dtype=np.float32)
-    elif hasattr(static_model, "vectors"):
-        matrix = np.array(static_model.vectors, dtype=np.float32)
-    else:
-        raise AttributeError(
-            "Cannot find embedding matrix on StaticModel — "
-            "check Model2Vec version (expected .embedding or .vectors)."
-        )
+    print(f"[build_embedder] Distilling teacher → static table (pca_dims={target_dim}) …")
+    static_model = distill_from_model(
+        model=hf_model,
+        tokenizer=tokenizer,
+        pca_dims=target_dim,
+    )
+
+    print(f"[build_embedder] Encoding {len(vocab)} vocab entries with the static model …")
+    matrix = np.asarray(
+        static_model.encode(vocab, show_progress_bar=True),
+        dtype=np.float32,
+    )
 
     actual_dim = matrix.shape[1]
-    print(f"[build_embedder] Distilled matrix shape: {matrix.shape}")
+    print(f"[build_embedder] Vocab matrix shape: {matrix.shape}")
     return matrix, actual_dim
 
 

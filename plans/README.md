@@ -177,25 +177,22 @@ gte/Apache-2.0, Model2Vec·e5·bge·ingredient-parser/MIT; avoid RecipeNLG/Recip
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
-| 028  | On-device grocery brain: OFF-enriched seed bundle + Model2Vec static embedder + precomputed catalog vectors → semantic autocomplete + resolver fallback + barcode (folds 030; supersedes 027 NO-GO) | P2 | XL | 022 (teacher, build-time only) | CODE DONE — reviewed APPROVE (2026-06-14, worktree branch `worktree-agent-a62a2b9de40ddc3fd`, commit `ff7b18fe`, base `679201ab`). Pure-Dart `StaticEmbeddingService` (no ML runtime; imports only dart:convert + flutter foundation/services), fail-soft `[]` when bundle absent; optional embedder threaded into suggestion + canonical-resolver services (026 classifier Step A preserved verbatim, embedder Step B additive). Maintainer-run build scripts `off_enrich_seed.py` + `build_embedder_bundle.py` (py_compile OK). Gates: `flutter analyze` clean (pre-existing issues only), 24/24 service tests pass. North-star: on-device/build-time only, no request-path inference, Model2Vec (MIT) named. Notes: inlined private `_charTrigrams` (public 026 helper returns truncated String); no fake-embedder wiring test (null-guard + fail-soft make it low-risk). Safe to merge before the embedder bundle ships (fails soft). Maintainer tail: run the two build scripts, drop the versioned bundle into `frontend/assets/grocery/`. |
-| 029  | Recipe → canonical shopping: better Go ingredient parser + SQL alias resolution on scrape/add-to-list (semantic tier-3 on-device, depends 028) | P2 | L | 028 (tier-3 only) | DONE — reviewed APPROVE (2026-06-14, branch `advisor/029-recipe-canonical-shopping`, commit `ad76ee04`). Deterministic Go parser expanded (DE/EN/FR/ES units + prep/parenthetical stripping, total/never-panics); `ResolveAlias` repo query (global sentinel + household-scoped-first, weight DESC) + `ResolveIngredientName` service (lowercase/trim/collapse-spaces normalize); best-effort `canonical_item_id` population in AddToList/AddMissingToList. Gates: `go build ./...` + `go test ./...` PASS (new pgxmock parser/resolver/handler tests). North-star: no request-path ML, SQL alias matching only. Note: `CanonicalItemID` column pre-existed via migration `000028` (no migration invented — out-of-scope plumbing justified on merit); one nit — `recipe_scraping_service_test.go` is not gofmt-clean (other touched files' drift pre-existed). |
-| 031  | Activate dormant signals: predictive restock (`purchase_history`, phase 1) + pantry subtraction (`products`, phase 2) | P2 | M | — | CODE DONE (phase 1) — reviewed APPROVE (2026-06-14, branch `advisor/031-activate-dormant-signals`, commit `44ff4f41`). `RestockService.due()` reads purchase history, groups by canonical id, computes median gap (≥3 purchases), returns overdue sorted; `@visibleForTesting medianInterval` pure. New `getGroupPurchaseHistory` Drift helper (justified — per-item `getRecentPurchases` would N+1; helper was in-scope). `restockServiceProvider`; composer prepends restock chips when query empty, best-effort try/catch, excludes unchecked current items. Gates: `flutter analyze` clean, 11/11 tests pass (median pure logic + in-memory Drift due/not-due/insufficient/excluded/sort). North-star: on-device only, no network/model. Phase 2 (pantry subtraction) deferred per plan. |
-| 032  | Fully on-device scanning: default on-device + gate CrofAI opt-in (phase 1), then on-device VLM for hard cases (phase 2, folds 033) | P1 | L | — | CODE DONE (phase 1) — reviewed APPROVE (2026-06-14, branch `advisor/032-on-device-scan-default`, commit `43c3dd95`). `routing_service.decide(..., allowCloud=false)` short-circuits to on-device unless opted in; `CloudScanNotifier` (SharedPreferences `allow_cloud_scan`, default false, mirrors ThemeModeNotifier) + `cloudScanProvider`; `allowCloud` threaded through `scan_pipeline_service.run()` to both (only 2) call sites; "Cloud scan assist" Switch in account preferences. Gates: `flutter analyze` clean, 10/10 routing tests pass. North-star: stops the one current cloud-inference violation — CrofAI is now opt-in/off by default. Phase 2 (on-device VLM) deferred per plan. |
+| 028  | On-device grocery brain: OFF-enriched seed bundle + Model2Vec static embedder + precomputed catalog vectors → semantic autocomplete + resolver fallback + barcode (folds 030; supersedes 027 NO-GO) | P2 | XL | 022 (teacher, build-time only) | DONE — merged into `new-main-fr` as `391c5c02` (2026-06-14). Code from worktree `worktree-agent-a62a2b9de40ddc3fd`/`ff7b18fe`; reviewed APPROVE. Pure-Dart `StaticEmbeddingService` present on HEAD at `frontend/lib/services/scan/static_embedding_service.dart`, fail-soft `[]` when bundle absent. Reconcile 2026-06-14: 45/45 service+embedder tests pass on HEAD. **Maintainer tail still open** (non-blocking, code fails soft): run `off_enrich_seed.py` + `build_embedder_bundle.py`, drop the versioned embedder bundle into `frontend/assets/grocery/` — currently only `seed.json`/`store_aisles.json` are there, no embedder bundle yet. |
+| 029  | Recipe → canonical shopping: better Go ingredient parser + SQL alias resolution on scrape/add-to-list (semantic tier-3 on-device, depends 028) | P2 | L | 028 (tier-3 only) | DONE — merged into `new-main-fr` as `4660da06` (2026-06-14); code `ad76ee04`, reviewed APPROVE. Reconcile 2026-06-14: `go build ./...` + targeted `go test ./internal/services/... ./internal/repositories/... ./internal/api/...` PASS on HEAD. Deterministic Go parser expanded (DE/EN/FR/ES units + prep/parenthetical stripping, total/never-panics); `ResolveAlias` repo query (global sentinel + household-scoped-first, weight DESC) + `ResolveIngredientName` service (lowercase/trim/collapse-spaces normalize); best-effort `canonical_item_id` population in AddToList/AddMissingToList. Gates: `go build ./...` + `go test ./...` PASS (new pgxmock parser/resolver/handler tests). North-star: no request-path ML, SQL alias matching only. Note: `CanonicalItemID` column pre-existed via migration `000028` (no migration invented — out-of-scope plumbing justified on merit); one nit — `recipe_scraping_service_test.go` is not gofmt-clean (other touched files' drift pre-existed). |
+| 031  | Activate dormant signals: predictive restock (`purchase_history`, phase 1) + pantry subtraction (`products`, phase 2) | P2 | M | — | DONE (phase 1) — merged into `new-main-fr` as `71bd6dfe` (2026-06-14); code `44ff4f41`, reviewed APPROVE. Reconcile 2026-06-14: `restock_service_test.dart` passes on HEAD; `getGroupPurchaseHistory` helper present in `app_database.dart`. Phase 2 (pantry subtraction) still deferred. `RestockService.due()` reads purchase history, groups by canonical id, computes median gap (≥3 purchases), returns overdue sorted; `@visibleForTesting medianInterval` pure. New `getGroupPurchaseHistory` Drift helper (justified — per-item `getRecentPurchases` would N+1; helper was in-scope). `restockServiceProvider`; composer prepends restock chips when query empty, best-effort try/catch, excludes unchecked current items. Gates: `flutter analyze` clean, 11/11 tests pass (median pure logic + in-memory Drift due/not-due/insufficient/excluded/sort). North-star: on-device only, no network/model. Phase 2 (pantry subtraction) deferred per plan. |
+| 032  | Fully on-device scanning: default on-device + gate CrofAI opt-in (phase 1), then on-device VLM for hard cases (phase 2, folds 033) | P1 | L | — | DONE (phase 1) — merged into `new-main-fr` as `15eedaf6` (2026-06-14); code `43c3dd95`, reviewed APPROVE. Reconcile 2026-06-14: `routing_service_test.dart` passes on HEAD. Phase 2 (on-device VLM) still deferred. `routing_service.decide(..., allowCloud=false)` short-circuits to on-device unless opted in; `CloudScanNotifier` (SharedPreferences `allow_cloud_scan`, default false, mirrors ThemeModeNotifier) + `cloudScanProvider`; `allowCloud` threaded through `scan_pipeline_service.run()` to both (only 2) call sites; "Cloud scan assist" Switch in account preferences. Gates: `flutter analyze` clean, 10/10 routing tests pass. North-star: stops the one current cloud-inference violation — CrofAI is now opt-in/off by default. Phase 2 (on-device VLM) deferred per plan. |
 
 Recommended order: **032 phase 1** (stops cost today) → **028** (brain +
 multiplier) → **029** (recipe woah) → **031** (dormant signals) → **032 phase 2**
 (retire cloud). 028 and 032 are written; 029 and 031 registered, written on request.
 
-**All four executed + reviewed APPROVE 2026-06-14** on disposable branches (above)
-— **merging into `new-main-fr` is the maintainer's decision** (the advisor never
-merges). Each frontend plan's verdict rests on `flutter analyze` (clean, pre-existing
-issues only) + its targeted test suite (28→24/24, 031→11/11, 032→10/10); 029 on full
-`go build`/`go test ./...`. The whole-repo `flutter test` regression net could **not
-be completed in this environment** (the dev process kept restarting mid-run and the
-suite is long), so it is NOT part of these verdicts — the maintainer should run
-`cd frontend && flutter test` once after merge and confirm no new failures beyond the
-known `frontend_flows_test.dart` "No GoRouter found in context" baseline. All four
-changes are additive and fail-soft/null-guarded, so regression risk is low.
+**All four merged into `new-main-fr` by the maintainer (2026-06-14)**: 028
+`391c5c02`, 029 `4660da06`, 031 `71bd6dfe`, 032 `15eedaf6`. Reconciled 2026-06-14
+(log below) — code present on HEAD, targeted suites green, no drift. The whole-repo
+`cd frontend && flutter test` regression net was NOT run in this reconcile (long
+suite); the maintainer should still run it once and confirm no new failures beyond
+the known `frontend_flows_test.dart` "No GoRouter found in context" baseline. All
+four changes are additive and fail-soft/null-guarded, so regression risk is low.
 
 ### Direction findings — cycle 6 (2026-06-13), maintainer's decisions
 
@@ -218,6 +215,59 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJE
 
 ### Reconcile log
 
+- **2026-06-14 (model build-out), HEAD `15eedaf6` + uncommitted** — ran the 026 +
+  028 maintainer model-tails end to end. Both build scripts had **never actually
+  run** (executors only `py_compile`d them) and were broken on the installed stack:
+  - **026 `phase7_classifier/export.py`**: two real bugs fixed — Keras 3 / TF 2.21
+    moved IDF weights into the internal `StringLookup` sublayer (`vectorizer._lookup_layer.idf_weights`,
+    with a fallback to the old top-level attr), and the golden-prediction call used a
+    pre-Keras-3 nested-list input (`model.predict(tf.constant([...]))`). Re-export now
+    succeeds: **Flex-free** `grocery_classifier.tflite` (4.9 MB, loads on the plain
+    TFLite interpreter, no Flex delegate; input float32 `(1,8000)` → `(1,3186)`), plus
+    labels + `grocery_classifier_vocab.json` + golden. Golden predictions sane incl. the
+    noisy `0at M1lk → Hafermilch` case. Copied the three app files into
+    `frontend/assets/models/` and **wired the classifier (+ embedder) into the live
+    pipeline** at `scan_pipeline_service.dart:46`
+    (`CanonicalResolverService(db, classifier: …, embedder: …)`).
+  - **028 `build_embedder_bundle.py`**: `_distill` was fundamentally wrong (called
+    `model2vec.distill` with a SentenceTransformer object + assumed the result was
+    vocab-aligned). Rewrote to `distill_from_model(hf_model, tokenizer, pca_dims=128)`
+    → `StaticModel.encode(vocab)` (row-aligned to vocab); fixed the teacher default to
+    `phase8_embeddings/finetuned/`; installed `model2vec[distill]`. The vocab was also
+    far too large to ship (177k tokens → **91 MB** `embedder_vocab.json`); narrowed
+    `off_enrich_seed._build_vocab` to **canonical item names only** (Strategy A,
+    maintainer-chosen) → 15,720 tokens. Final shipped bundle in
+    `frontend/assets/grocery/`: `embedder_vocab.json` 8.06 MB + `catalog_vectors.json`
+    1.68 MB. Verified by reproducing the Dart runtime (tokenize → int8-dequant →
+    mean-pool → cosine) over the shipped JSON: strong semantic hits (`oat milk→oat_milk`,
+    `greek yogurt→greek_yogurt`, `chicken breast→chicken_breast`, `spaghetti→spaghetti`;
+    weak case `vollmilch→yogurt` via trigram fallback), golden top-1 agreement 33/40
+    (int8 vs float golden — acceptable for a tier-3 fallback).
+  - **Gates**: `flutter analyze lib/services/scan/` clean; 52/52 targeted service tests
+    pass (embedder/classifier/routing/restock); `pubspec.yaml` already lists
+    `assets/grocery/` + `assets/models/`.
+  - **Still device-only (cannot run headless)**: the Dart↔Python TF-IDF parity check
+    against `grocery_classifier_golden.json` and the on-device scan smoke test — both
+    need the native TFLite interpreter on a real device/emulator.
+  - **Uncommitted**: edits to `export.py`, `build_embedder_bundle.py`,
+    `off_enrich_seed.py`, `scan_pipeline_service.dart`, plus new model/bundle assets
+    under `frontend/assets/{models,grocery}/`. Advisor did not commit — the maintainer
+    decides (note: the new assets total ~14 MB; confirm they should be committed vs.
+    git-LFS / build-time-generated before adding).
+- **2026-06-14, HEAD `15eedaf6`** — the maintainer merged the whole 028/029/031/032
+  series since the last session (028 `391c5c02`, 029 `4660da06`, 031 `71bd6dfe`,
+  032 `15eedaf6`; all four were "CODE DONE — reviewed APPROVE" awaiting the merge
+  decision). Verified each on HEAD: in-scope code present (`static_embedding_service.dart`,
+  `restock_service.dart`, `routing_service.dart`, the Go `ResolveIngredientName`/`ResolveAlias`
+  resolver), `go build ./...` + targeted `go test ./internal/...` PASS, and 52/52
+  frontend service tests pass (`restock`/`routing`/`static_embedding`/`grocery_classifier`).
+  Statuses flipped CODE DONE → DONE (merged) with their merge SHAs.
+  **Both maintainer model-tails (026 + 028) completed this session** — see the
+  "Model build-out" sub-entry below. **023 and 024 remain TODO and executable**: 023 drift check (`fea883d3..HEAD`)
+  is clean and migration `000030` is still free (highest on disk is `000029`); 024's
+  only drift is plan 031's additive `getGroupPurchaseHistory` helper in an unrelated
+  region of `app_database.dart` — the parts 024 relies on (`expensesTable`, the
+  migration block, `schemaVersion => 4`) are unchanged, so 024 is still good as written.
 - **2026-06-12, HEAD `39ff5149`** — all 17 DONE plans spot-checked, all criteria still hold:
   `go test ./...` PASS; `flutter test` 99/99 PASS (suite grew 58→99 since cycle 2);
   `dart analyze lib/` clean except 2 pre-existing info-level `dart:html` deprecations
