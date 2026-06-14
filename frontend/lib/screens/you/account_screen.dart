@@ -26,6 +26,7 @@ import '../../widgets/app_card.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
+import '../../utils/haptics.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/skeleton.dart';
 import '../../utils/friendly_error.dart';
@@ -211,18 +212,21 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 controller: currentPasswordController,
                 obscureText: true,
                 label: 'Current password',
+                textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: MitlistSpacing.md),
               AppInput(
                 controller: newPasswordController,
                 obscureText: true,
                 label: 'New password',
+                textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: MitlistSpacing.md),
               AppInput(
                 controller: confirmPasswordController,
                 obscureText: true,
                 label: 'Confirm new password',
+                textInputAction: TextInputAction.done,
                 onSubmitted: (_) => submit(),
               ),
               const SizedBox(height: MitlistSpacing.lg),
@@ -595,6 +599,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       final json = expenses.map((e) => e.toJson()).toString();
       await Clipboard.setData(ClipboardData(text: json));
       if (!mounted) return;
+      unawaited(Haptics.light());
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Expenses JSON copied to clipboard')),
       );
