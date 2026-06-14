@@ -4,15 +4,27 @@ import '../repositories/grocery_repository.dart';
 import '../services/scan/correction_memory_service.dart';
 import '../services/scan/grocery_suggestion_service.dart';
 import '../services/scan/scan_pipeline_service.dart';
+import '../services/scan/static_embedding_service.dart';
 export 'outbox_provider.dart' show connectivityServiceProvider;
 import 'list_provider.dart';
 import 'scan_provider.dart';
 
+/// On-device static semantic embedder (pure Dart, no ML runtime).
+///
+/// Loads the Model2Vec-distilled vocab + catalog bundles lazily. Returns an
+/// instance that degrades gracefully (returns []) if the bundle is absent.
+final staticEmbeddingServiceProvider = Provider<StaticEmbeddingService>((ref) {
+  return StaticEmbeddingService();
+});
 
 /// Local, offline grocery autocomplete over the canonical seed (alias-powered).
+/// When the embedder bundle is present, results are semantically blended.
 final grocerySuggestionServiceProvider =
     Provider<GrocerySuggestionService>((ref) {
-  return GrocerySuggestionService(ref.watch(appDatabaseProvider));
+  return GrocerySuggestionService(
+    ref.watch(appDatabaseProvider),
+    embedder: ref.watch(staticEmbeddingServiceProvider),
+  );
 });
 
 final scanPipelineProvider = FutureProvider<ScanPipelineService>((ref) async {

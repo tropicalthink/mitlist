@@ -1,0 +1,28 @@
+{
+  "_comment": "Synthetic 3-D fixture for StaticEmbeddingService unit tests. Vectors are hand-crafted so cosine results can be verified analytically.",
+  "vocab": {
+    "version": 1,
+    "dim": 3,
+    "vocab": ["milch", "oat drink", "banana", "mil", "ilc", "lch"],
+    "vectors_int8": [
+      [127,   0,   0],
+      [  0, 127,   0],
+      [  0,   0, 127],
+      [ 90,  10,   0],
+      [ 10,  90,   0],
+      [  0,  10,  90]
+    ],
+    "scale": 0.007874015748031496
+  },
+  "catalog": {
+    "version": 1,
+    "dim": 3,
+    "item_ids": ["milch_item", "oat_item", "banana_item"],
+    "vectors_int8": [
+      [127,   0,   0],
+      [  0, 127,   0],
+      [  0,   0, 127]
+    ],
+    "scale": 0.007874015748031496
+  }
+}
