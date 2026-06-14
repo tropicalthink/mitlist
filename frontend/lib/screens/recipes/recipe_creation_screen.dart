@@ -490,6 +490,14 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
     }
   }
 
+  String get _nextButtonText {
+    return switch (_currentStep) {
+      0 => 'Next: details',
+      1 => 'Next: content',
+      _ => 'Next',
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -539,6 +547,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
   }
 
   Widget _buildStepIndicator(ColorScheme colorScheme) {
+    const labels = ['Source', 'Details', 'Content'];
     return Container(
       decoration: BoxDecoration(
         border: Border(
@@ -563,16 +572,18 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
                 margin:
                     const EdgeInsets.symmetric(horizontal: MitlistSpacing.sm),
               ),
-            _buildDot(i, colorScheme),
+            _buildDot(i, colorScheme, labels[i]),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildDot(int index, ColorScheme colorScheme) {
+  Widget _buildDot(int index, ColorScheme colorScheme, String label) {
     final isActive = index == _currentStep;
     final isComplete = index < _currentStep;
+    final status =
+        isActive ? 'current' : (isComplete ? 'complete' : 'upcoming');
 
     Color dotColor;
     if (isActive) {
@@ -583,41 +594,45 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
       dotColor = colorScheme.surfaceContainerHighest;
     }
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: dotColor,
-            borderRadius: BorderRadius.zero,
-            border: Border.all(
-              color: isActive || isComplete
-                  ? colorScheme.primary
-                  : colorScheme.outline,
-              width: 2,
+    return Semantics(
+      label: 'Step ${index + 1} of 3, $label, $status',
+      selected: isActive,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: dotColor,
+              borderRadius: BorderRadius.zero,
+              border: Border.all(
+                color: isActive || isComplete
+                    ? colorScheme.primary
+                    : colorScheme.outline,
+                width: 2,
+              ),
             ),
+            child: isComplete
+                ? AppIcon(
+                    name: 'check',
+                    size: 8,
+                    color: colorScheme.onPrimary,
+                  )
+                : null,
           ),
-          child: isComplete
-              ? AppIcon(
-                  name: 'check',
-                  size: 8,
-                  color: colorScheme.onPrimary,
-                )
-              : null,
-        ),
-        const SizedBox(height: MitlistSpacing.xs),
-        Text(
-          ['Source', 'Details', 'Content'][index],
-          style: MitlistTypography.labelXSmall(
-            color:
-                isActive ? colorScheme.primary : colorScheme.onSurfaceVariant,
+          const SizedBox(height: MitlistSpacing.xs),
+          Text(
+            label,
+            style: MitlistTypography.labelXSmall(
+              color:
+                  isActive ? colorScheme.primary : colorScheme.onSurfaceVariant,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -994,7 +1009,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
             Expanded(
               child: _currentStep < 2
                   ? AppButton(
-                      text: 'Next',
+                      text: _nextButtonText,
                       variant: AppButtonVariant.solid,
                       color: AppButtonColor.primary,
                       onPressed: _canGoNext ? _goNext : null,
@@ -1040,6 +1055,7 @@ class _RecipeLineEditor extends StatefulWidget {
 
 class _RecipeLineEditorState extends State<_RecipeLineEditor> {
   final TextEditingController _draftController = TextEditingController();
+  final FocusNode _draftFocusNode = FocusNode();
   late List<TextEditingController> _controllers;
 
   @override
@@ -1047,6 +1063,7 @@ class _RecipeLineEditorState extends State<_RecipeLineEditor> {
     super.initState();
     _controllers =
         widget.lines.map((line) => TextEditingController(text: line)).toList();
+    _draftController.addListener(_handleDraftChanged);
   }
 
   @override
@@ -1062,11 +1079,26 @@ class _RecipeLineEditorState extends State<_RecipeLineEditor> {
 
   @override
   void dispose() {
+    _draftController.removeListener(_handleDraftChanged);
+    _draftFocusNode.dispose();
     _draftController.dispose();
     for (final controller in _controllers) {
       controller.dispose();
     }
     super.dispose();
+  }
+
+  void _handleDraftChanged() {
+    if (mounted) setState(() {});
+  }
+
+  bool get _canAddDraft => _draftController.text.trim().isNotEmpty;
+
+  String get _itemLabel => widget.numbered ? 'step' : 'ingredient';
+
+  String get _countLabel {
+    final count = _controllers.length;
+    return '$count $_itemLabel${count == 1 ? '' : 's'}';
   }
 
   bool _sameLines(List<String> a, List<String> b) {
@@ -1096,6 +1128,7 @@ class _RecipeLineEditorState extends State<_RecipeLineEditor> {
       _draftController.clear();
     });
     _emit();
+    _draftFocusNode.requestFocus();
   }
 
   void _removeAt(int index) {
@@ -1117,11 +1150,23 @@ class _RecipeLineEditorState extends State<_RecipeLineEditor> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            widget.title,
-            style: textTheme.titleSmall,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  widget.title,
+                  style: textTheme.titleSmall,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Text(
+                _countLabel,
+                style: textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: MitlistSpacing.xs),
           Text(
@@ -1191,18 +1236,19 @@ class _RecipeLineEditorState extends State<_RecipeLineEditor> {
                 child: AppInput(
                   hint: widget.emptyHint,
                   controller: _draftController,
+                  focusNode: _draftFocusNode,
                   textInputAction: TextInputAction.done,
                   onSubmitted: (_) => _addDraft(),
                 ),
               ),
               const SizedBox(width: MitlistSpacing.sm),
               AppButton(
-                text: 'Add',
+                text: widget.addLabel,
                 size: AppButtonSize.sm,
                 variant: AppButtonVariant.outline,
                 icon: const AppIcon(name: 'plus', size: 16),
                 semanticLabel: widget.addLabel,
-                onPressed: _addDraft,
+                onPressed: _canAddDraft ? _addDraft : null,
               ),
             ],
           ),
