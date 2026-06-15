@@ -166,10 +166,26 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) {
+        final showBanner = ref.watch(outboxStateProvider).maybeWhen(
+              data: (state) => state.status != OutboxStatus.online,
+              orElse: () => false,
+            );
+
+        var content = child!;
+        if (showBanner) {
+          final mediaQuery = MediaQuery.of(context);
+          content = MediaQuery(
+            data: mediaQuery.copyWith(
+              padding: mediaQuery.padding.copyWith(top: 0),
+            ),
+            child: content,
+          );
+        }
+
         return Column(
           children: [
             const OfflineBanner(),
-            Expanded(child: child!),
+            Expanded(child: content),
           ],
         );
       },

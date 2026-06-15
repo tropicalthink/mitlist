@@ -25,7 +25,7 @@ func TestGroupRepository_CreateGroup(t *testing.T) {
 	}
 
 	mock.ExpectExec("INSERT INTO groups").
-		WithArgs(pgxmock.AnyArg(), group.Name, group.Description, group.Currency, group.CreatedBy, pgxmock.AnyArg(), pgxmock.AnyArg()).
+		WithArgs(pgxmock.AnyArg(), group.Name, group.Description, group.Currency, pgxmock.AnyArg(), group.CreatedBy, pgxmock.AnyArg(), pgxmock.AnyArg()).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
 	err := repo.CreateGroup(context.Background(), group)
@@ -39,8 +39,8 @@ func TestGroupRepository_GetGroupByID(t *testing.T) {
 	repo := NewGroupRepository(mock)
 	id := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "name", "description", "currency", "created_by", "created_at", "updated_at"}).
-		AddRow(id, "Home", nil, "USD", fixedUUID(), fixedTime(), fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "name", "description", "currency", "chore_zones", "created_by", "created_at", "updated_at"}).
+		AddRow(id, "Home", nil, "USD", []string{}, fixedUUID(), fixedTime(), fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM groups WHERE id = .*").
 		WithArgs(id).
@@ -72,8 +72,8 @@ func TestGroupRepository_ListGroupsByUser(t *testing.T) {
 	repo := NewGroupRepository(mock)
 	userID := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "name", "description", "currency", "created_by", "created_at", "updated_at"}).
-		AddRow(fixedUUID(), "Home", nil, "USD", userID, fixedTime(), fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "name", "description", "currency", "chore_zones", "created_by", "created_at", "updated_at"}).
+		AddRow(fixedUUID(), "Home", nil, "USD", []string{}, userID, fixedTime(), fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM groups g JOIN group_memberships gm").
 		WithArgs(userID, 50, 0).
@@ -91,7 +91,7 @@ func TestGroupRepository_UpdateGroup(t *testing.T) {
 	id := fixedUUID()
 
 	mock.ExpectExec("UPDATE groups SET").
-		WithArgs("New Name", pgxmock.AnyArg(), pgxmock.AnyArg(), id, pgxmock.AnyArg()).
+		WithArgs("New Name", pgxmock.AnyArg(), pgxmock.AnyArg(), id, pgxmock.AnyArg(), pgxmock.AnyArg()).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
 	group := &models.Group{ID: id, Name: "New Name"}

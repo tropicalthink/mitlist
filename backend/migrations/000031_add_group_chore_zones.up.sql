@@ -1,0 +1,1 @@
+ALTER TABLE groups ADD COLUMN chore_zones TEXT[] NOT NULL DEFAULT '{}';

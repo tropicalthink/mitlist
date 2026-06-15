@@ -134,6 +134,8 @@ class _Banner extends ConsumerWidget {
       OutboxStatus.online => (colorScheme.onSurfaceVariant, Icons.check, ''),
     };
 
+    final topInset = MediaQuery.paddingOf(context).top;
+
     return Material(
       color: color,
       child: InkWell(
@@ -142,15 +144,14 @@ class _Banner extends ConsumerWidget {
             : state.hasErrors
                 ? showFailedChangesSheet(context)
                 : _showDetails(context),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(
-            horizontal: MitlistSpacing.md,
-            vertical: MitlistSpacing.sm,
-          ),
-          child: SafeArea(
-            top: false,
-            bottom: false,
+        child: Padding(
+          padding: EdgeInsets.only(top: topInset),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(
+              horizontal: MitlistSpacing.md,
+              vertical: MitlistSpacing.sm,
+            ),
             child: Row(
               children: [
                 Icon(icon, size: 16, color: MitlistColors.textOnPrimary),

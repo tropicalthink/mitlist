@@ -16,6 +16,7 @@ import '../widgets/app_dialog.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/app_input.dart';
 import '../widgets/app_switch.dart';
+import '../widgets/chip.dart';
 import '../utils/friendly_error.dart';
 import 'invite_household_sheet.dart';
 
@@ -53,6 +54,10 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
   bool _descChanged = false;
   String _groupCurrency = 'USD';
   bool _currencyChanged = false;
+  List<String> _choreZones = [];
+  bool _zonesChanged = false;
+  final TextEditingController _zoneInputController = TextEditingController();
+  bool _isSavingZones = false;
 
   @override
   void initState() {
@@ -66,6 +71,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
+    _zoneInputController.dispose();
     super.dispose();
   }
 
@@ -91,12 +97,14 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       setState(() {
         _group = group;
         _groupCurrency = group.currency;
+        _choreZones = List<String>.from(group.choreZones);
         _members = members;
         _notificationPref = pref;
         _isLoading = false;
         _nameChanged = false;
         _descChanged = false;
         _currencyChanged = false;
+        _zonesChanged = false;
       });
     } catch (e) {
       if (!mounted) return;
@@ -105,6 +113,56 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _saveZones() async {
+    if (_isSavingZones) return;
+    setState(() => _isSavingZones = true);
+    try {
+      final svc = await ref.read(groupServiceProviderAsync.future);
+      final updated = await svc.updateGroup(
+        widget.groupId,
+        UpdateGroupRequest(choreZones: _choreZones),
+      );
+      if (!mounted) return;
+      ref.invalidate(cachedGroupsProvider);
+      setState(() {
+        _group = updated;
+        _choreZones = List<String>.from(updated.choreZones);
+        _isSavingZones = false;
+        _zonesChanged = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Chore zones updated')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSavingZones = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(friendlyErrorMessage(e))),
+      );
+    }
+  }
+
+  void _addZone() {
+    final zone = _zoneInputController.text.trim();
+    if (zone.isEmpty) return;
+    if (_choreZones.any((z) => z.toLowerCase() == zone.toLowerCase())) {
+      _zoneInputController.clear();
+      return;
+    }
+    setState(() {
+      _choreZones = [..._choreZones, zone];
+      _zonesChanged = true;
+      _zoneInputController.clear();
+    });
+  }
+
+  void _removeZone(String zone) {
+    setState(() {
+      _choreZones = _choreZones.where((z) => z != zone).toList();
+      _zonesChanged = true;
+    });
   }
 
   Future<void> _saveDetails() async {
@@ -137,6 +195,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         _descChanged = false;
         _currencyChanged = false;
       });
+      ref.invalidate(cachedGroupsProvider);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Household updated')),
       );
@@ -256,6 +315,8 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildDetailsSection(),
+          const SizedBox(height: MitlistSpacing.lg),
+          _buildChoreZonesSection(),
           const SizedBox(height: MitlistSpacing.lg),
           _buildMembersSection(),
           const SizedBox(height: MitlistSpacing.lg),
@@ -403,6 +464,73 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
                 text: _isSaving ? 'Saving...' : 'Save',
                 isLoading: _isSaving,
                 onPressed: (nameEmpty || _isSaving) ? null : _saveDetails,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChoreZonesSection() {
+    final textTheme = Theme.of(context).textTheme;
+
+    return AppCard(
+      variant: AppCardVariant.outlined,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Chore zones', style: textTheme.titleSmall),
+          const SizedBox(height: MitlistSpacing.xs),
+          Text(
+            'Areas of your home for grouping chores. They show up when adding a chore.',
+            style: textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          if (_choreZones.isNotEmpty) ...[
+            const SizedBox(height: MitlistSpacing.sm),
+            Wrap(
+              spacing: MitlistSpacing.sm,
+              runSpacing: MitlistSpacing.sm,
+              children: [
+                for (final zone in _choreZones)
+                  AppChip(
+                    label: zone,
+                    onSelected: (_) => _removeZone(zone),
+                  ),
+              ],
+            ),
+          ],
+          const SizedBox(height: MitlistSpacing.md),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: AppInput(
+                  label: 'Add zone',
+                  hint: 'Kitchen, Bathroom…',
+                  controller: _zoneInputController,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _addZone(),
+                ),
+              ),
+              const SizedBox(width: MitlistSpacing.sm),
+              AppButton(
+                text: 'Add',
+                size: AppButtonSize.sm,
+                onPressed: _addZone,
+              ),
+            ],
+          ),
+          if (_zonesChanged) ...[
+            const SizedBox(height: MitlistSpacing.md),
+            SizedBox(
+              width: double.infinity,
+              child: AppButton(
+                text: _isSavingZones ? 'Saving…' : 'Save zones',
+                isLoading: _isSavingZones,
+                onPressed: _isSavingZones ? null : _saveZones,
               ),
             ),
           ],
