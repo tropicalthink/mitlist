@@ -31,6 +31,11 @@ class GrocerySuggestionService {
   /// while keeping genuine synonym/spelling matches. Tune in one place.
   static const double _semanticFloor = 0.5;
 
+  /// Minimum edit-distance similarity for a fuzzy alias match. 0.6 tolerates a
+  /// typo or two in a full word ("banann" → Banane) without surfacing
+  /// unrelated items. Tune in one place.
+  static const double _fuzzyFloor = 0.6;
+
   /// Creates a suggestion service.
   ///
   /// The optional [embedder] argument enables semantic blending when alias-prefix
@@ -64,62 +69,92 @@ class GrocerySuggestionService {
       if (seen.add(a.canonicalItemId)) orderedIds.add(a.canonicalItemId);
     }
 
-    final out = <GrocerySuggestion>[];
-    if (orderedIds.isNotEmpty) {
-      final items = await _db.getCanonicalItemsByIds(orderedIds);
-      final byId = {for (final it in items) it.id: it};
+    final ranked = <_RankedSuggestion>[];
+    final seenIds = <String>{};
 
-      for (final id in orderedIds) {
+    // Adds the given canonical ids (in order) at the given relevance [tier],
+    // skipping any already collected. Records insertion order for stable sort.
+    Future<void> addByIds(List<String> ids, int tier) async {
+      final fresh = ids.where((id) => !seenIds.contains(id)).toList();
+      if (fresh.isEmpty) return;
+      final items = await _db.getCanonicalItemsByIds(fresh);
+      final byId = {for (final it in items) it.id: it};
+      for (final id in fresh) {
         final it = byId[id];
         if (it == null) continue;
-        out.add(GrocerySuggestion(
-          canonicalItemId: it.id,
-          name: _displayName(it, q),
-          category: it.category,
-          unit: it.defaultUnit,
+        if (!seenIds.add(it.id)) continue;
+        ranked.add(_RankedSuggestion(
+          GrocerySuggestion(
+            canonicalItemId: it.id,
+            name: _displayName(it, q),
+            category: it.category,
+            unit: it.defaultUnit,
+          ),
+          tier,
+          ranked.length,
         ));
       }
-
-      // Promote items whose own name starts with the query above pure alias hits.
-      out.sort((a, b) {
-        final an = a.name.toLowerCase().startsWith(q) ? 0 : 1;
-        final bn = b.name.toLowerCase().startsWith(q) ? 0 : 1;
-        return an.compareTo(bn);
-      });
     }
 
-    // Semantic blending: whenever alias-prefix is sparse (including ZERO literal
-    // hits) and an embedder is wired, pad with nearest-neighbour matches. This
-    // is what lets a synonym or differently-spelled term resolve when no alias
-    // starts with the query — the common case the alias prefix alone misses.
-    // Matches below [_semanticFloor] cosine are dropped so weak/unrelated items
-    // never surface (pure-nonsense queries already yield no tokens → no matches).
-    if (_embedder != null && out.length < limit) {
-      final seenIds = {for (final s in out) s.canonicalItemId};
+    // Tier 0 — literal alias/name prefix (partial typing).
+    await addByIds(orderedIds, 0);
+
+    // Tier 1 — fuzzy alias: catch typos the prefix misses ("banann" → Banane,
+    // "tomaden" → Tomaten). SAME indexed first-char + length-window prefilter as
+    // the scanner's resolver, ranked by edit-distance similarity.
+    if (ranked.length < limit) {
+      final fuzzy = await _db.getAliasFuzzyCandidates(groupId: groupId, query: q);
+      final bestSim = <String, double>{};
+      for (final a in fuzzy) {
+        if (seenIds.contains(a.canonicalItemId)) continue;
+        final sim = _similarity(q, a.aliasText);
+        if (sim < _fuzzyFloor) continue;
+        final cur = bestSim[a.canonicalItemId];
+        if (cur == null || sim > cur) bestSim[a.canonicalItemId] = sim;
+      }
+      final fuzzyIds = bestSim.keys.toList()
+        ..sort((x, y) => bestSim[y]!.compareTo(bestSim[x]!));
+      await addByIds(fuzzyIds, 1);
+    }
+
+    // Tier 2 — semantic: when alias prefix/fuzzy are sparse and an embedder is
+    // wired, pad with nearest-neighbour matches (synonyms, differently-spelled
+    // terms). Below [_semanticFloor] cosine is dropped so weak items never show.
+    if (_embedder != null && ranked.length < limit) {
       final embedMatches = await _embedder.nearest(q, topK: limit * 2);
       final missingIds = embedMatches
           .where((m) => m.score >= _semanticFloor)
           .map((m) => m.itemId)
           .where((id) => !seenIds.contains(id))
           .toList();
-      if (missingIds.isNotEmpty) {
-        final extraItems = await _db.getCanonicalItemsByIds(missingIds);
-        final byId = {for (final it in extraItems) it.id: it};
-        for (final id in missingIds) {
-          if (out.length >= limit) break;
-          final it = byId[id];
-          if (it == null) continue;
-          out.add(GrocerySuggestion(
-            canonicalItemId: it.id,
-            name: _displayName(it, q),
-            category: it.category,
-            unit: it.defaultUnit,
-          ));
-        }
-      }
+      await addByIds(missingIds, 2);
     }
 
-    return out.take(limit).toList();
+    if (ranked.isEmpty) return const [];
+
+    // Prior-aware ranking: WITHIN each relevance tier, bubble up what THIS
+    // household actually buys (purchase-history frequency), then exact
+    // name-prefix, then original recall order. Tiers never cross — a fuzzy or
+    // semantic match never outranks a clean prefix hit, however frequent. This
+    // is the on-device household prior (same signal the scanner ensemble uses),
+    // so your staples float to the top as you type.
+    final freq = <String, int>{};
+    final history = await _db.getGroupPurchaseHistory(groupId: groupId);
+    for (final r in history) {
+      final id = r.canonicalItemId;
+      if (id != null) freq[id] = (freq[id] ?? 0) + 1;
+    }
+    ranked.sort((a, b) {
+      if (a.tier != b.tier) return a.tier.compareTo(b.tier);
+      final fa = freq[a.suggestion.canonicalItemId] ?? 0;
+      final fb = freq[b.suggestion.canonicalItemId] ?? 0;
+      if (fa != fb) return fb.compareTo(fa); // more-bought leads
+      final pa = a.suggestion.name.toLowerCase().startsWith(q) ? 0 : 1;
+      final pb = b.suggestion.name.toLowerCase().startsWith(q) ? 0 : 1;
+      if (pa != pb) return pa.compareTo(pb);
+      return a.idx.compareTo(b.idx); // stable: preserve recall order
+    });
+    return ranked.take(limit).map((r) => r.suggestion).toList();
   }
 
   /// Labels a suggestion in the language the user typed. We can't trust the
@@ -151,6 +186,14 @@ class GrocerySuggestionService {
     return _levenshtein(query, name);
   }
 
+  /// Edit-distance similarity in [0, 1]: 1 - distance / max(len).
+  static double _similarity(String a, String b) {
+    if (a == b) return 1.0;
+    if (a.isEmpty || b.isEmpty) return 0.0;
+    final maxLen = a.length > b.length ? a.length : b.length;
+    return 1.0 - _levenshtein(a, b) / maxLen;
+  }
+
   static int _levenshtein(String a, String b) {
     if (a == b) return 0;
     if (a.isEmpty) return b.length;
@@ -176,4 +219,13 @@ class GrocerySuggestionService {
 
   static String _cap(String s) =>
       s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+}
+
+/// A suggestion plus its relevance [tier] (0 prefix, 1 fuzzy, 2 semantic) and
+/// insertion order, used to rank by the household prior within tiers.
+class _RankedSuggestion {
+  final GrocerySuggestion suggestion;
+  final int tier;
+  final int idx;
+  _RankedSuggestion(this.suggestion, this.tier, this.idx);
 }

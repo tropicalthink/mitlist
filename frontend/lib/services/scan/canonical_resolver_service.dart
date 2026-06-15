@@ -1,5 +1,6 @@
 import '../../storage/app_database.dart';
 import 'grocery_classifier_service.dart';
+import 'resolution/ensemble_resolver.dart';
 import 'static_embedding_service.dart';
 
 /// Result of a canonical resolution attempt.
@@ -28,19 +29,38 @@ class ResolveResult {
 ///
 /// The [classifier] and [embedder] arguments are optional; existing call sites
 /// that omit them keep compiling and behave exactly as before.
+///
+/// When [useEnsemble] is true (plan 037), `resolve` delegates to the
+/// [EnsembleResolver] — candidate-union + calibrated scoring + household prior,
+/// which returns a *calibrated* score and stops confidently auto-accepting the
+/// wrong item on alias collisions. The flag defaults **off** so behaviour is
+/// unchanged until the eval proves the new path on real data.
 class CanonicalResolverService {
   final AppDatabase _db;
   final GroceryClassifierService? _classifier;
   final StaticEmbeddingService? _embedder;
+  final bool _useEnsemble;
+  EnsembleResolver? _ensemble;
 
   CanonicalResolverService(
     this._db, {
     GroceryClassifierService? classifier,
     StaticEmbeddingService? embedder,
+    bool useEnsemble = false,
   })  : _classifier = classifier,
-        _embedder = embedder;
+        _embedder = embedder,
+        _useEnsemble = useEnsemble;
 
   Future<ResolveResult> resolve(String itemName, String groupId) async {
+    if (_useEnsemble) {
+      _ensemble ??= EnsembleResolver(
+        _db,
+        classifier: _classifier,
+        embedder: _embedder,
+      );
+      return _ensemble!.resolve(itemName, groupId);
+    }
+
     final normalised = _normalise(itemName);
     if (normalised.isEmpty) {
       return ResolveResult(displayName: itemName, score: 0);
