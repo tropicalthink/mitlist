@@ -16,6 +16,7 @@ import '../../theme/typography.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
+import '../../widgets/app_dropdown.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
 import '../../widgets/mitlist_app_bar.dart';
@@ -220,10 +221,8 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
 
   Future<void> _loadSuggestions() async {
     final db = ref.read(appDatabaseProvider);
-    final presentIds = _items
-        .map((p) => p.canonicalItemId)
-        .whereType<String>()
-        .toList();
+    final presentIds =
+        _items.map((p) => p.canonicalItemId).whereType<String>().toList();
     if (presentIds.isEmpty) return;
     final svc = SuggestionService(db);
     final suggestions = await svc.suggest(
@@ -244,7 +243,8 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
     );
     setState(() {
       _items.add(newItem);
-      _suggestions.removeWhere((s) => s.canonicalItemId == suggestion.canonicalItemId);
+      _suggestions
+          .removeWhere((s) => s.canonicalItemId == suggestion.canonicalItemId);
     });
   }
 
@@ -390,9 +390,11 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
         ),
         actions: [
           if (pendingCount > 0)
-            TextButton(
+            AppButton(
+              text: 'Accept all ($pendingCount)',
               onPressed: _acceptAll,
-              child: Text('Accept all ($pendingCount)'),
+              variant: AppButtonVariant.ghost,
+              size: AppButtonSize.sm,
             ),
         ],
       ),
@@ -402,10 +404,11 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
           if (_stores.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                MitlistSpacing.md, MitlistSpacing.sm, MitlistSpacing.md, 0),
+                  MitlistSpacing.md, MitlistSpacing.sm, MitlistSpacing.md, 0),
               child: Row(
                 children: [
-                  Icon(Icons.store_outlined,
+                  AppIcon(
+                      name: 'storeOutline',
                       size: 16,
                       color: Theme.of(context).colorScheme.onSurfaceVariant),
                   const SizedBox(width: MitlistSpacing.xs),
@@ -416,20 +419,17 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
                     ),
                   ),
                   const SizedBox(width: MitlistSpacing.xs),
-                  DropdownButton<ShoppingLocation>(
-                    value: _activeStore,
-                    underline: const SizedBox.shrink(),
-                    isDense: true,
-                    items: _stores
-                        .map((s) => DropdownMenuItem(
-                              value: s,
-                              child: Text(s.name,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall),
-                            ))
-                        .toList(),
-                    onChanged: _onStoreChanged,
+                  Expanded(
+                    child: AppDropdown<ShoppingLocation>(
+                      value: _activeStore,
+                      items: _stores
+                          .map((s) => DropdownMenuItem(
+                                value: s,
+                                child: Text(s.name),
+                              ))
+                          .toList(),
+                      onChanged: _onStoreChanged,
+                    ),
                   ),
                 ],
               ),
@@ -482,9 +482,8 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
                 }
 
                 // Ignored section
-                final afterSuggestions = _suggestions.isNotEmpty
-                    ? afterItems - 2
-                    : afterItems;
+                final afterSuggestions =
+                    _suggestions.isNotEmpty ? afterItems - 2 : afterItems;
                 if (_ignored.isNotEmpty) {
                   if (afterSuggestions == 0) {
                     return _SectionLabel(
@@ -539,7 +538,8 @@ class _AisleHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.shopping_cart_outlined,
+          AppIcon(
+              name: 'shoppingCartOutline',
               size: 12,
               color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: MitlistSpacing.xs),
@@ -552,7 +552,8 @@ class _AisleHeader extends StatelessWidget {
           const SizedBox(width: MitlistSpacing.xs),
           Expanded(
             child: Divider(
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.25),
+              color:
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.25),
               height: 1,
             ),
           ),
@@ -610,7 +611,7 @@ class _SuggestionRow extends StatelessWidget {
             .map((s) => Tooltip(
                   message: s.reason,
                   child: ActionChip(
-                    avatar: const Icon(Icons.add, size: 14),
+                    avatar: const AppIcon(name: 'plus', size: 14),
                     label: Text(s.displayName),
                     onPressed: () => onAdd(s),
                   ),
@@ -651,7 +652,8 @@ class _PredictionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final stateColor = _stateColor(context);
-    final needsAction = prediction.confidenceLevel != ConfidenceLevel.autoAccept;
+    final needsAction =
+        prediction.confidenceLevel != ConfidenceLevel.autoAccept;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
@@ -675,8 +677,8 @@ class _PredictionTile extends StatelessWidget {
                 // Drag handle (Phase 5)
                 ReorderableDragStartListener(
                   index: index,
-                  child: Icon(
-                    Icons.drag_handle,
+                  child: AppIcon(
+                    name: 'dragHandle',
                     size: 18,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -726,9 +728,8 @@ class _PredictionTile extends StatelessWidget {
                         Text(
                           '"${prediction.rawText}"',
                           style: textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -738,16 +739,18 @@ class _PredictionTile extends StatelessWidget {
                 ),
 
                 if (needsAction)
-                  Icon(Icons.edit_outlined, size: 18, color: stateColor)
+                  AppIcon(name: 'editOutline', size: 18, color: stateColor)
                 else
-                  Icon(Icons.check_circle_outline, size: 18, color: stateColor),
+                  AppIcon(
+                      name: 'checkCircleOutline', size: 18, color: stateColor),
                 const SizedBox(width: MitlistSpacing.xs),
                 Semantics(
                   button: true,
                   label: 'Remove ${prediction.displayName}',
                   child: GestureDetector(
                     onTap: onRemove,
-                    child: Icon(Icons.remove_circle_outline,
+                    child: AppIcon(
+                        name: 'minusCircleOutline',
                         size: 18,
                         color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
@@ -789,7 +792,8 @@ class _IgnoredTile extends StatelessWidget {
   final GroceryPrediction prediction;
   final VoidCallback onRestore;
 
-  const _IgnoredTile({super.key, required this.prediction, required this.onRestore});
+  const _IgnoredTile(
+      {super.key, required this.prediction, required this.onRestore});
 
   @override
   Widget build(BuildContext context) {
@@ -797,7 +801,8 @@ class _IgnoredTile extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: MitlistSpacing.xs),
       child: Row(
         children: [
-          Icon(Icons.remove_done_outlined,
+          AppIcon(
+              name: 'removeDoneOutline',
               size: 14,
               color: Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(width: MitlistSpacing.sm),
@@ -810,12 +815,11 @@ class _IgnoredTile extends StatelessWidget {
                   ),
             ),
           ),
-          TextButton(
+          AppButton(
+            text: 'Restore',
             onPressed: onRestore,
-            style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: MitlistSpacing.sm, vertical: 0)),
-            child: const Text('Restore'),
+            variant: AppButtonVariant.ghost,
+            size: AppButtonSize.sm,
           ),
         ],
       ),
