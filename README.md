@@ -2,7 +2,7 @@
 
 **The shared household. Free. Open source. Your server.**
 
-Lists, chores, money, meal plans — all in one place. Built for flatmates who want less friction and more clarity. No accounts required. No ads. No tracking.
+Lists, chores, money, meal plans — all in one place. Built for flatmates who want less friction and more clarity. Try it as a guest, no sign-up. No ads. No tracking.
 
 ---
 
@@ -48,7 +48,7 @@ You're already paying rent. Why pay another subscription just to split expenses 
 
 ¹ Actual Budget is personal finance (envelope budgeting), not shared household expense splitting.
 
-**mitlist is the only one that combines money, chores, shopping, and meals in a single native mobile app — and the only one with offline-first support and an AI scanner.**
+**mitlist's bet: it's the only one of these that combines money, chores, shopping, and meals in a single offline-first mobile app — with an AI scanner and real-time sync — and self-hosts in one `docker compose`. The trade-off is that it's younger and you have to run it yourself (see [Where mitlist is still rough](#where-mitlist-is-still-rough)).**
 
 ### What each does better than us
 
@@ -65,10 +65,10 @@ You're already paying rent. Why pay another subscription just to split expenses 
 
 | App | Does better |
 |-----|-------------|
-| **Splitwise** | Bank/credit card import, multi-currency with exchange rates, debt simplification algorithm, receipt photos per expense, comments/activity feed per expense, email notifications. 10+ years of polish. |
+| **Splitwise** | Bank/credit card import, **live** exchange rates (mitlist supports multiple currencies but you enter the FX rate by hand), receipt photos per expense, comments/activity feed per expense, email notifications. 10+ years of polish. |
 | **Paprika** | Best-in-class recipe clipping (dedicated site parsers, not just AI), cook mode (full-screen step-by-step with timers), pantry management, nutritional auto-calculation, grocery aisle ordering. The gold standard for recipes. |
 | **Tody** | Gamification (streaks, effort levels), room-by-room chore views, visual progress. Makes chores feel like a game. |
-| **Bring! / AnyList** | Real-time list sync (instant, not polling), barcode scanning with product database, store aisle organization, Apple Watch + Siri integration. |
+| **Bring! / AnyList** | Barcode scanning with a product database, store aisle organization, Apple Watch + Siri integration, and a polished published app you can install today. |
 
 ---
 
@@ -108,16 +108,19 @@ See [backend/README.md](backend/README.md) for detailed configuration.
 - **Meal plans + recipes** — Weekly planner, recipe clipping via AI, auto-generate shopping lists from meal plans.
 - **Pinwall** — Corkboard-style household notices with reminders and entity linking.
 - **Calendar** — Unified view of chores, meal plans, expenses, and reminders.
-- **Offline-first** — Works without internet. Syncs when you're back online.
-- **Scanner** — OCR recipes, receipts, and lists from photos.
-- **Notifications** — Push (web) + in-app notifications for chores, expenses, and reminders.
+- **Offline-first** — Works without internet. Edits queue in an outbox and sync when you're back online; live updates stream over SSE when connected.
+- **Scanner** — OCR recipes, receipts, and lists from photos, with an on-device grocery classifier.
+- **Notifications** — Push to mobile (FCM) and web (VAPID), plus in-app notifications for chores, expenses, and reminders.
+- **Multi-currency** — Record expenses in any currency. You enter the FX rate per expense; balances settle in the group's base currency.
 - **Multi-household** — Switch between households. One account, many groups.
+- **Accounts** — Guest mode to start instantly, or sign in with email/password, Google, or Apple.
+- **5 languages** — English, German, Spanish, French, Dutch.
 
 ---
 
 ## Your data, your rules
 
-- **No account required** — Your server, your data. Connect the app directly to your instance.
+- **Your server, your data** — Connect the app directly to your instance. Guest mode means you can start without handing over an email.
 - **Export everything** — Download expenses as CSV or JSON anytime from the app.
 - **No lock-in** — Delete your account and your data is gone from the server. Export first if you want it.
 - **No telemetry** — We don't collect usage data, analytics, or crash reports from self-hosted instances.
@@ -126,12 +129,31 @@ See [backend/README.md](backend/README.md) for detailed configuration.
 
 ## Download
 
-| Platform | Link |
-|----------|------|
-| iOS | [App Store](#) |
-| Android | [Google Play](#) |
-| Web | [mitlist.app](#) |
+Store builds aren't published yet — the way to run mitlist today is to self-host the backend and build the Flutter app yourself (or open the web PWA against your instance).
+
+| Platform | Status |
+|----------|--------|
+| iOS | Not on the App Store yet — build from source |
+| Android | Not on Google Play yet — build from source |
+| Web | Flutter Web PWA — build and serve, or point at your instance |
 | Self-host | `docker compose --profile prod up -d` |
+
+---
+
+## Where mitlist is still rough
+
+Being honest about what the comparison tables don't show:
+
+- **No published apps.** There are no store listings or hosted instance yet. You self-host and build the client. Fine for tinkerers, not yet for your non-technical flatmate.
+- **FX rates are manual.** Multi-currency works, but you type in the rate. No live rate feed like Splitwise.
+- **No bank or receipt-photo import.** Expenses are entered by hand (or scanned via OCR). No Plaid/GoCardless, no per-expense receipt attachments yet.
+- **No pantry/inventory tracking.** Unlike Grocy, mitlist doesn't track what's in your fridge or expiry dates.
+- **No barcode product lookup.** The scanner reads text; it won't resolve a barcode to a product database.
+- **No expense comments or activity feed.** You can't discuss an individual expense in-app.
+- **Recipe clipping is AI-only.** No dedicated per-site parsers like Paprika, so import quality varies by source.
+- **Younger and less battle-tested.** Splitwise, IHateMoney, and Actual Budget have years of edge cases worked out. mitlist doesn't yet.
+
+If any of these are dealbreakers, one of the apps above will serve you better — and that's fine.
 
 ---
 
