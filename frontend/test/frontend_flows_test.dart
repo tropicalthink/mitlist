@@ -385,7 +385,8 @@ void main() {
 
     await tester.enterText(find.byType(TextField).first, 'sunny-taco-42');
     await _pumpAfter(tester);
-    await tester.tap(find.widgetWithText(AppButton, 'JOIN HOUSEHOLD')); // solid variant renders text as uppercase
+    await tester.tap(find.widgetWithText(AppButton,
+        'JOIN HOUSEHOLD')); // solid variant renders text as uppercase
     await _pumpAfter(tester);
 
     expect(groupService.lastJoinRequest, isNotNull);
@@ -466,8 +467,8 @@ void main() {
               .overrideWith((ref) async => FakeActivityService()),
           choreRepositoryProvider.overrideWith(
               (ref) async => FakeChoreRepository(FakeChoreService())),
-          listRepositoryProvider.overrideWith(
-              (ref) async => FakeListRepository(listService)),
+          listRepositoryProvider
+              .overrideWith((ref) async => FakeListRepository(listService)),
           financeRepositoryProvider.overrideWith(
               (ref) async => FakeFinanceRepository(FakeFinanceService())),
           pinwallRepositoryProvider.overrideWith(
@@ -606,7 +607,8 @@ void main() {
           groupServiceProviderAsync.overrideWith((ref) async => groupService),
           listServiceProviderAsync.overrideWith((ref) async => listService),
           choreServiceProviderAsync.overrideWith((ref) async => choreService),
-          financeServiceProviderAsync.overrideWith((ref) async => financeService),
+          financeServiceProviderAsync
+              .overrideWith((ref) async => financeService),
           recipeServiceProviderAsync.overrideWith((ref) async => recipeService),
           activityServiceProviderAsync
               .overrideWith((ref) async => activityService),
@@ -673,7 +675,8 @@ void main() {
     await tester.enterText(find.byType(TextField).at(0), 'oldpassword');
     await tester.enterText(find.byType(TextField).at(1), 'newpassword123');
     await tester.enterText(find.byType(TextField).at(2), 'newpassword123');
-    await tester.tap(find.text('CHANGE PASSWORD')); // solid variant renders uppercase
+    await tester
+        .tap(find.text('CHANGE PASSWORD')); // solid variant renders uppercase
     await _pumpAfter(tester);
 
     expect(authService.lastChangePasswordRequest, isNotNull);
@@ -706,14 +709,17 @@ void main() {
       ],
     );
 
-    expect(find.text('CONTINUE WITH GOOGLE'), findsOneWidget); // outline variant renders uppercase
-    expect(find.text('CONTINUE WITH APPLE'), findsOneWidget); // outline variant renders uppercase
+    expect(find.text('CONTINUE WITH GOOGLE'),
+        findsOneWidget); // outline variant renders uppercase
+    expect(find.text('CONTINUE WITH APPLE'),
+        findsOneWidget); // outline variant renders uppercase
     expect(find.text('Remember me'), findsOneWidget);
 
     await tester.tap(find.text('Forgot password?'));
     await _pumpAfter(tester);
     await tester.enterText(find.byType(TextField).at(2), 'reset@example.com');
-    await tester.tap(find.text('SEND RESET CODE')); // solid variant renders uppercase
+    await tester
+        .tap(find.text('SEND RESET CODE')); // solid variant renders uppercase
     await _pumpAfter(tester);
 
     expect(authService.lastPasswordResetEmail, 'reset@example.com');
@@ -725,7 +731,8 @@ void main() {
     await tester.enterText(find.byType(TextField).at(3), 'reset-code-123');
     await tester.enterText(find.byType(TextField).at(4), 'freshpassword');
     await tester.enterText(find.byType(TextField).at(5), 'freshpassword');
-    await tester.ensureVisible(find.widgetWithText(AppButton, 'RESET PASSWORD')); // solid variant renders uppercase
+    await tester.ensureVisible(find.widgetWithText(
+        AppButton, 'RESET PASSWORD')); // solid variant renders uppercase
     await tester.tap(find.widgetWithText(AppButton, 'RESET PASSWORD'));
     await _pumpAfter(tester);
 
@@ -817,7 +824,8 @@ void main() {
       overrides: const [],
     );
 
-    await tester.tap(find.text('Terms of Service')); // ghost variant, button text matches exactly
+    await tester.tap(find.text(
+        'Terms of Service')); // ghost variant, button text matches exactly
     await _pumpAfter(tester);
     expect(find.text('Terms of Service'), findsWidgets);
     expect(
@@ -914,11 +922,11 @@ void main() {
 
     expect(find.text('Couldn\u2019t load expenses. Check your connection.'),
         findsOneWidget);
-    expect(find.text('RETRY'), findsOneWidget); // solid variant renders uppercase
+    expect(
+        find.text('RETRY'), findsOneWidget); // solid variant renders uppercase
   });
 
-  testWidgets('chores screen shows error state on API failure',
-      (tester) async {
+  testWidgets('chores screen shows error state on API failure', (tester) async {
     await _setLargeSurface(tester);
     final groupService = FakeGroupService(groups: [group], groupDetail: group);
 
@@ -933,9 +941,10 @@ void main() {
       ],
     );
 
-    expect(find.text('Failed to load chores. Please try again.'),
-        findsOneWidget);
-    expect(find.text('RETRY'), findsOneWidget); // solid variant renders uppercase
+    expect(
+        find.text('Failed to load chores. Please try again.'), findsOneWidget);
+    expect(
+        find.text('RETRY'), findsOneWidget); // solid variant renders uppercase
   });
 
   testWidgets('chore creation prevents submitting with empty name',
@@ -958,7 +967,8 @@ void main() {
     await tester.tap(find.byTooltip('Add chore'));
     await _pumpAfter(tester);
 
-    final createButtons = find.widgetWithText(AppButton, 'ADD CHORE'); // solid variant renders uppercase
+    final createButtons = find.widgetWithText(
+        AppButton, 'ADD CHORE'); // solid variant renders uppercase
     expect(createButtons, findsAtLeast(1));
     final button = tester.widget<AppButton>(createButtons.last);
     expect(button.onPressed, isNull);
@@ -984,7 +994,8 @@ void main() {
     await tester.tap(find.byTooltip('New list'));
     await _pumpAfter(tester);
 
-    final createButton = find.widgetWithText(AppButton, 'CREATE'); // solid variant renders uppercase
+    final createButton = find.widgetWithText(
+        AppButton, 'CREATE'); // solid variant renders uppercase
     expect(createButton, findsOneWidget);
     final button = tester.widget<AppButton>(createButton);
     expect(button.onPressed, isNull);
@@ -1001,7 +1012,8 @@ void main() {
       child: HouseholdHubScreen(groupId: groupId),
       overrides: [
         groupServiceProviderAsync.overrideWith((ref) async => groupService),
-        activityServiceProviderAsync.overrideWith((ref) async => activityService),
+        activityServiceProviderAsync
+            .overrideWith((ref) async => activityService),
         authServiceProviderAsync.overrideWith((ref) async => authService),
         pinwallServiceProviderAsync
             .overrideWith((ref) async => FakePinwallService()),
@@ -1176,7 +1188,7 @@ class FakeChoreService implements ChoreService {
 
   @override
   Future<List<Chore>> listChores(String groupId,
-          {int limit = 50, int offset = 0}) async {
+      {int limit = 50, int offset = 0}) async {
     if (shouldThrow) throw Exception('API error');
     return _chores.skip(offset).take(limit).toList();
   }
@@ -1256,7 +1268,7 @@ class FakeFinanceService implements FinanceService {
 
   @override
   Future<List<Expense>> listExpenses(String groupId,
-          {int limit = 50, int offset = 0}) async {
+      {int limit = 50, int offset = 0}) async {
     if (shouldThrow) throw Exception('API error');
     return _expenses.skip(offset).take(limit).toList();
   }
@@ -1503,8 +1515,7 @@ class FakeMealPlanService implements MealPlanService {
   }
 
   @override
-  Future<MealPlan> updateMealPlan(
-      String id, UpdateMealPlanRequest req) async {
+  Future<MealPlan> updateMealPlan(String id, UpdateMealPlanRequest req) async {
     throw UnimplementedError();
   }
 
@@ -1554,7 +1565,8 @@ class FakePinwallService implements PinwallService {
   Future<List<PinwallMediaItem>> listPostAttachments({
     required String groupId,
     required String postId,
-  }) async => [];
+  }) async =>
+      [];
 
   @override
   Future<void> detachPostAttachment({
@@ -1660,7 +1672,8 @@ class FakeListRepository implements ListRepository {
 
   @override
   Future<int> refreshItems(String listId,
-      {int limit = 500, int offset = 0}) async => 0;
+          {int limit = 500, int offset = 0}) async =>
+      0;
 
   @override
   Future<void> refreshListDetail(String listId) async {}
@@ -1674,6 +1687,7 @@ class FakeListRepository implements ListRepository {
         name: req.name,
         quantity: req.quantity,
         unit: req.unit,
+        canonicalItemId: req.canonicalItemId,
         checked: false,
         position: 0,
         createdAt: DateTime.now(),
@@ -1730,8 +1744,7 @@ class FakeFinanceRepository implements FinanceRepository {
       _service.listExpenses(groupId);
 
   @override
-  Stream<FinanceSummary?> watchSummaryByGroup(String groupId) =>
-      Stream.value(
+  Stream<FinanceSummary?> watchSummaryByGroup(String groupId) => Stream.value(
         FinanceSummary(balances: const [], reimbursements: const []),
       ).asBroadcastStream();
 
@@ -1748,8 +1761,7 @@ class FakeFinanceRepository implements FinanceRepository {
   }
 
   @override
-  Future<Expense> createExpenseOfflineFirst(
-      CreateExpenseRequest req) async {
+  Future<Expense> createExpenseOfflineFirst(CreateExpenseRequest req) async {
     return _service.createExpense(req);
   }
 
@@ -1774,16 +1786,17 @@ class FakePinwallRepository implements PinwallRepository {
       : _controller = StreamController<List<PinwallPost>>.broadcast();
 
   @override
-  Stream<List<PinwallPost>> watchPosts(String groupId) =>
-      _controller.stream;
+  Stream<List<PinwallPost>> watchPosts(String groupId) => _controller.stream;
 
   @override
   Future<List<PinwallPost>> getPostsOnce(String groupId) async =>
       _service.listPosts(groupId);
 
   @override
-  Future<void> refreshPosts(String groupId, {int limit = 20, int offset = 0}) async {
-    final posts = await _service.listPosts(groupId, limit: limit, offset: offset);
+  Future<void> refreshPosts(String groupId,
+      {int limit = 20, int offset = 0}) async {
+    final posts =
+        await _service.listPosts(groupId, limit: limit, offset: offset);
     _controller.add(posts);
   }
 
@@ -1792,8 +1805,7 @@ class FakePinwallRepository implements PinwallRepository {
       {required String content}) async {}
 
   @override
-  Future<void> deletePostOfflineFirst(
-      String groupId, String postId) async {}
+  Future<void> deletePostOfflineFirst(String groupId, String postId) async {}
 
   @override
   Future<void> drainOutboxOnce() async {}

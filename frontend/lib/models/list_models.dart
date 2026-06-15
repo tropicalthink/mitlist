@@ -39,7 +39,9 @@ class ItemList {
       type: json['type'] as String? ?? 'shopping',
       itemCount: json['item_count'] as int?,
       isArchived: json['archived_at'] != null,
-      archivedAt: archivedAtRaw != null ? DateTime.parse(archivedAtRaw as String) : null,
+      archivedAt: archivedAtRaw != null
+          ? DateTime.parse(archivedAtRaw as String)
+          : null,
       itemPreview: preview,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
@@ -66,6 +68,7 @@ class ListItem {
   final String unit;
   final String note;
   final int? priceCents;
+  final String? canonicalItemId;
   final bool checked;
   final int position;
   final String? claimedBy;
@@ -80,6 +83,7 @@ class ListItem {
     required this.unit,
     this.note = '',
     this.priceCents,
+    this.canonicalItemId,
     required this.checked,
     required this.position,
     this.claimedBy,
@@ -96,6 +100,7 @@ class ListItem {
       unit: json['unit'] as String? ?? '',
       note: json['note'] as String? ?? '',
       priceCents: json['price_cents'] as int?,
+      canonicalItemId: json['canonical_item_id'] as String?,
       checked: json['checked'] as bool? ?? false,
       position: json['position'] as int? ?? 0,
       claimedBy: json['claimed_by'] as String?,
@@ -112,6 +117,7 @@ class ListItem {
         'unit': unit,
         if (note.isNotEmpty) 'note': note,
         if (priceCents != null) 'price_cents': priceCents,
+        if (canonicalItemId != null) 'canonical_item_id': canonicalItemId,
         'checked': checked,
         'position': position,
         'created_at': createdAt.toIso8601String(),
@@ -149,14 +155,21 @@ class CreateListItemRequest {
   final String unit;
   final String note;
   final int? priceCents;
+  final String? canonicalItemId;
   const CreateListItemRequest(
-      {required this.name, this.quantity = 1, this.unit = '', this.note = '', this.priceCents});
+      {required this.name,
+      this.quantity = 1,
+      this.unit = '',
+      this.note = '',
+      this.priceCents,
+      this.canonicalItemId});
   Map<String, dynamic> toJson() => {
         'name': name,
         'quantity': quantity,
         'unit': unit,
         if (note.isNotEmpty) 'note': note,
         if (priceCents != null) 'price_cents': priceCents,
+        if (canonicalItemId != null) 'canonical_item_id': canonicalItemId,
       };
 }
 
