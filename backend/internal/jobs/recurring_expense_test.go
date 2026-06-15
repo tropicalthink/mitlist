@@ -59,7 +59,9 @@ func TestRecurringExpenseJob_PayerOnlyMode(t *testing.T) {
 	repo.On("ListDueRecurringExpenses", mock.Anything).Return([]models.RecurringExpense{re}, nil)
 	repo.On("ProcessRecurringExpense",
 		mock.Anything,
-		mock.AnythingOfType("*models.Expense"),
+		mock.MatchedBy(func(e *models.Expense) bool {
+			return e.BaseAmount == e.Amount && e.FxRate == 1 && e.BaseAmount > 0
+		}),
 		mock.MatchedBy(func(splits []models.Split) bool {
 			return len(splits) == 1 &&
 				splits[0].UserID == payerID &&
@@ -111,7 +113,9 @@ func TestRecurringExpenseJob_EqualSplitMode(t *testing.T) {
 	repo.On("ListDueRecurringExpenses", mock.Anything).Return([]models.RecurringExpense{re}, nil)
 	repo.On("ProcessRecurringExpense",
 		mock.Anything,
-		mock.AnythingOfType("*models.Expense"),
+		mock.MatchedBy(func(e *models.Expense) bool {
+			return e.BaseAmount == e.Amount && e.FxRate == 1 && e.BaseAmount > 0
+		}),
 		mock.MatchedBy(func(splits []models.Split) bool {
 			if len(splits) != 3 {
 				return false

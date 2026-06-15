@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 
 import '../config/api_config.dart';
+import 'token_refresh_coordinator.dart';
 import 'token_store.dart';
 
 class _SseUnauthorizedException implements Exception {}
@@ -43,6 +44,7 @@ class SseEvent {
 class SseService {
   final Logger _log = Logger();
   final TokenStore _tokenStore;
+  final TokenRefreshCoordinator _refreshCoordinator;
   final StreamController<SseEvent> _controller =
       StreamController<SseEvent>.broadcast();
 
@@ -51,8 +53,10 @@ class SseService {
   String? _currentGroupId;
   int _generation = 0;
 
-  SseService([TokenStore? tokenStore])
-      : _tokenStore = tokenStore ?? SecureTokenStore();
+  SseService([TokenStore? tokenStore, TokenRefreshCoordinator? refreshCoordinator])
+      : _tokenStore = tokenStore ?? SecureTokenStore.shared,
+        _refreshCoordinator =
+            refreshCoordinator ?? TokenRefreshCoordinator.shared;
 
   Stream<SseEvent> get events => _controller.stream;
 
@@ -91,35 +95,11 @@ class SseService {
   }
 
   Future<bool> _tryRefreshToken() async {
-    final refreshToken = await _tokenStore.getRefreshToken();
-    if (refreshToken == null) return false;
-
-    try {
-      final uri = Uri.parse(
-        '${ApiConfig.baseUrl}${ApiConfig.apiPrefix}/auth/token/refresh',
-      );
-      final client = HttpClient();
-      final req = await client.postUrl(uri);
-      req.headers.contentType = ContentType.json;
-      req.write(jsonEncode({'refresh_token': refreshToken}));
-      final resp = await req.close();
-      if (resp.statusCode != 200) return false;
-
-      final body = await resp.transform(utf8.decoder).join();
-      final data = jsonDecode(body) as Map<String, dynamic>;
-      final newAccess = data['access_token'] as String?;
-      final newRefresh = data['refresh_token'] as String?;
-      if (newAccess == null) return false;
-
-      await _tokenStore.save(
-        accessToken: newAccess,
-        refreshToken: newRefresh ?? refreshToken,
-      );
-      return true;
-    } catch (e) {
-      _log.w('Token refresh in SSE failed: $e');
-      return false;
-    }
+    // Delegate to the shared single-flight coordinator so an SSE refresh and a
+    // concurrent Dio refresh collapse onto one request against one rotated
+    // token, rather than racing and invalidating each other.
+    final pair = await _refreshCoordinator.refresh();
+    return pair != null;
   }
 
   Future<void> _connectOnce(String groupId, int gen) async {

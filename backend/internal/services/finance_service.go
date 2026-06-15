@@ -236,7 +236,48 @@ func (s *FinanceService) UpdateExpense(ctx context.Context, userID uuid.UUID, ex
 	if err := s.normalizeBaseAmount(ctx, expense); err != nil {
 		return err
 	}
-	return s.financeRepo.UpdateExpense(ctx, expense)
+
+	// base_amount unchanged → splits already consistent, plain update is enough.
+	if expense.BaseAmount == existing.BaseAmount {
+		return s.financeRepo.UpdateExpense(ctx, expense)
+	}
+
+	// base_amount changed → rescale existing splits proportionally so their
+	// sum stays equal to base_amount (the invariant all balance math relies on).
+	existingSplits, err := s.financeRepo.ListSplitsByExpense(ctx, expense.ID)
+	if err != nil {
+		return err
+	}
+	rescaled := rescaleSplits(existingSplits, existing.BaseAmount, expense.BaseAmount)
+	return s.financeRepo.UpdateExpenseWithSplits(ctx, expense, rescaled)
+}
+
+// rescaleSplits proportionally rescales splits from oldTotal to newTotal,
+// preserving each split's share and guaranteeing the new amounts sum to
+// newTotal. is_settled and user are preserved. Safe when oldTotal == 0.
+func rescaleSplits(splits []models.Split, oldTotal, newTotal int64) []models.Split {
+	out := make([]models.Split, len(splits))
+	copy(out, splits)
+	if len(out) == 0 {
+		return out
+	}
+	var assigned int64
+	largest := 0
+	for i := range out {
+		var amt int64
+		if oldTotal > 0 {
+			amt = int64(math.Round(float64(out[i].Amount) * float64(newTotal) / float64(oldTotal)))
+		} else {
+			amt = newTotal / int64(len(out))
+		}
+		out[i].Amount = amt
+		assigned += amt
+		if out[i].Amount > out[largest].Amount {
+			largest = i
+		}
+	}
+	out[largest].Amount += newTotal - assigned
+	return out
 }
 
 // DeleteExpense removes an expense (admin only).
