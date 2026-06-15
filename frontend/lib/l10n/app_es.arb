@@ -3849,12 +3849,17 @@
     }
   },
   "notificationsDeleteNotification": "Eliminar notificación",
-  "@notificationsDeleteNotification": { "description": "Etiqueta semántica para eliminar una notificación" },
-
+  "@notificationsDeleteNotification": {
+    "description": "Etiqueta semántica para eliminar una notificación"
+  },
   "accountLanguage": "Idioma",
-  "@accountLanguage": { "description": "Etiqueta de fila de menú para el selector de idioma" },
+  "@accountLanguage": {
+    "description": "Etiqueta de fila de menú para el selector de idioma"
+  },
   "accountLanguageSystem": "Sistema",
-  "@accountLanguageSystem": { "description": "Opción de idioma: seguir el idioma del dispositivo" },
+  "@accountLanguageSystem": {
+    "description": "Opción de idioma: seguir el idioma del dispositivo"
+  },
   "navHome": "Inicio",
   "navChores": "Tareas",
   "navMoney": "Dinero",
@@ -3912,5 +3917,1614 @@
   "captureHintReduceGlare": "Reduce el reflejo",
   "captureHintMoveCloser": "Acércate más",
   "captureHintReady": "Listo para escanear",
-  "captureHintUsable": "Parece utilizable"
+  "captureHintUsable": "Parece utilizable",
+  "activityAddedItemToList": "Añadió un artículo a una lista · {when}",
+  "@activityAddedItemToList": {
+    "description": "Activity: generic item added to list",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityAddedToList": "Añadió {name} a una lista · {when}",
+  "@activityAddedToList": {
+    "description": "Activity: item added to list",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityCompletedChore": "Completó {name} · {when}",
+  "@activityCompletedChore": {
+    "description": "Activity: chore completed",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityCompletedChoreGeneric": "Completó una tarea · {when}",
+  "@activityCompletedChoreGeneric": {
+    "description": "Activity: generic chore completed",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityLoggedExpense": "Registró {name} · {when}",
+  "@activityLoggedExpense": {
+    "description": "Activity: expense logged",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityLoggedExpenseGeneric": "Registró un gasto · {when}",
+  "@activityLoggedExpenseGeneric": {
+    "description": "Activity: generic expense logged",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityMember": "Miembro",
+  "@activityMember": {
+    "description": "Fallback display name for household member"
+  },
+  "activityPlannedMeal": "Planificó {name} · {when}",
+  "@activityPlannedMeal": {
+    "description": "Activity: meal planned",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activitySavedRecipe": "Guardó {name} · {when}",
+  "@activitySavedRecipe": {
+    "description": "Activity: recipe saved",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activitySavedRecipeGeneric": "Guardó una receta · {when}",
+  "@activitySavedRecipeGeneric": {
+    "description": "Activity: generic recipe saved",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityUpdatedMealPlan": "Actualizó el plan de comidas · {when}",
+  "@activityUpdatedMealPlan": {
+    "description": "Activity: meal plan updated",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityYou": "Tú",
+  "@activityYou": {
+    "description": "Display name for current user in activity feed"
+  },
+  "aisleOther": "Otros",
+  "@aisleOther": {
+    "description": "Fallback aisle name for uncategorized items"
+  },
+  "appBottomSheetClose": "Cerrar",
+  "@appBottomSheetClose": {
+    "description": "Semantic label for bottom sheet close"
+  },
+  "appBottomSheetDiscardBody": "Tienes cambios sin guardar.",
+  "@appBottomSheetDiscardBody": {
+    "description": "Discard changes dialog body"
+  },
+  "appBottomSheetDiscardTitle": "¿Descartar cambios?",
+  "@appBottomSheetDiscardTitle": {
+    "description": "Discard changes dialog title"
+  },
+  "appBottomSheetHandle": "Asa",
+  "@appBottomSheetHandle": {
+    "description": "Semantic label for bottom sheet drag handle"
+  },
+  "appBottomSheetKeepEditing": "Seguir editando",
+  "@appBottomSheetKeepEditing": {
+    "description": "Keep editing button"
+  },
+  "authJoinCouldNotLoad": "No se pudieron cargar los detalles de la invitación.",
+  "@authJoinCouldNotLoad": {
+    "description": "Error when invite fails to load"
+  },
+  "authJoinCreateToJoin": "Crear cuenta para unirse",
+  "@authJoinCreateToJoin": {
+    "description": "Create account CTA with invite context"
+  },
+  "authJoinErrorWithHint": "{error}\n\nTambién puedes introducir un código desde el selector de hogares.",
+  "@authJoinErrorWithHint": {
+    "description": "Error with hint about household switcher",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "authJoinGoToHousehold": "Ir al hogar",
+  "@authJoinGoToHousehold": {
+    "description": "Button to navigate to household after joining"
+  },
+  "authJoinGuestWarning": "Las cuentas de invitado no pueden unirse a hogares.",
+  "@authJoinGuestWarning": {
+    "description": "Warning for guest users trying to join"
+  },
+  "authJoinInviteCodeSemantic": "Código de invitación: {code}",
+  "@authJoinInviteCodeSemantic": {
+    "description": "Semantics label for invite code display",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "authJoinInvitedBy": "{name} te invitó",
+  "@authJoinInvitedBy": {
+    "description": "Invitation header",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "authJoinJoinNow": "Unirse ahora",
+  "@authJoinJoinNow": {
+    "description": "CTA to join the household"
+  },
+  "authJoinJoining": "Uniéndose…",
+  "@authJoinJoining": {
+    "description": "Button loading state for join"
+  },
+  "authJoinNotNow": "Ahora no",
+  "@authJoinNotNow": {
+    "description": "Dismiss button for join landing"
+  },
+  "authJoinSignInToJoin": "Inicia sesión para unirte",
+  "@authJoinSignInToJoin": {
+    "description": "Sign in CTA with invite context"
+  },
+  "authJoinTitle": "Unirse al hogar",
+  "@authJoinTitle": {
+    "description": "Join landing screen title"
+  },
+  "authJoinYoureIn": "Ya estás dentro.",
+  "@authJoinYoureIn": {
+    "description": "Success message after joining"
+  },
+  "authLoginApple": "Continuar con Apple",
+  "@authLoginApple": {
+    "description": "OAuth button: Apple"
+  },
+  "authLoginCreateOne": "Crear una",
+  "@authLoginCreateOne": {
+    "description": "Link text to create account"
+  },
+  "authLoginEmail": "Correo electrónico",
+  "@authLoginEmail": {
+    "description": "Email input label"
+  },
+  "authLoginEmailRequired": "El correo electrónico es obligatorio.",
+  "@authLoginEmailRequired": {
+    "description": "Validation: email required"
+  },
+  "authLoginFillAllFields": "Rellena todos los campos.",
+  "@authLoginFillAllFields": {
+    "description": "Validation: all fields required"
+  },
+  "authLoginForgotPassword": "¿Olvidaste la contraseña?",
+  "@authLoginForgotPassword": {
+    "description": "Forgot password link"
+  },
+  "authLoginGenericError": "No se pudo iniciar sesión. Comprueba tu conexión e inténtalo de nuevo.",
+  "@authLoginGenericError": {
+    "description": "Generic login error message"
+  },
+  "authLoginGoogle": "Continuar con Google",
+  "@authLoginGoogle": {
+    "description": "OAuth button: Google"
+  },
+  "authLoginNoAccount": "¿No tienes cuenta?",
+  "@authLoginNoAccount": {
+    "description": "Prompt to switch to signup"
+  },
+  "authLoginOAuthUnsupported": "El inicio de sesión con {provider} solo está disponible en web, Android e iOS por ahora.",
+  "@authLoginOAuthUnsupported": {
+    "description": "Error when OAuth is unsupported on platform",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "authLoginPassword": "Contraseña",
+  "@authLoginPassword": {
+    "description": "Password input label"
+  },
+  "authLoginPasswordRequired": "La contraseña es obligatoria.",
+  "@authLoginPasswordRequired": {
+    "description": "Validation: password required"
+  },
+  "authLoginRememberMe": "Recordarme",
+  "@authLoginRememberMe": {
+    "description": "Remember me checkbox label"
+  },
+  "authLoginRememberMeOff": "Recordarme: desactivado",
+  "@authLoginRememberMeOff": {
+    "description": "Semantic label for remember me unchecked"
+  },
+  "authLoginRememberMeOn": "Recordarme: activado",
+  "@authLoginRememberMeOn": {
+    "description": "Semantic label for remember me checked"
+  },
+  "authLoginResetCodeHint": "Pega el código de tu correo",
+  "@authLoginResetCodeHint": {
+    "description": "Placeholder for reset code input"
+  },
+  "authLoginResetCodeLabel": "Código de restablecimiento",
+  "@authLoginResetCodeLabel": {
+    "description": "Input label for reset code"
+  },
+  "authLoginResetCodeSent": "Si ese correo existe, se ha enviado un código de restablecimiento.",
+  "@authLoginResetCodeSent": {
+    "description": "Success message after requesting reset code"
+  },
+  "authLoginResetFillAllFields": "Rellena el código y ambos campos de contraseña.",
+  "@authLoginResetFillAllFields": {
+    "description": "Validation: all reset fields required"
+  },
+  "authLoginResetPasswordButton": "Restablecer contraseña",
+  "@authLoginResetPasswordButton": {
+    "description": "Button to confirm password reset"
+  },
+  "authLoginResetPasswordTitle": "Restablecer contraseña",
+  "@authLoginResetPasswordTitle": {
+    "description": "Bottom sheet title for password reset"
+  },
+  "authLoginResetSuccess": "Contraseña restablecida. Ya puedes iniciar sesión.",
+  "@authLoginResetSuccess": {
+    "description": "Success message after password reset"
+  },
+  "authLoginSendResetCode": "Enviar código",
+  "@authLoginSendResetCode": {
+    "description": "Button to send password reset code"
+  },
+  "authLoginSignInButton": "Iniciar sesión",
+  "@authLoginSignInButton": {
+    "description": "Sign in submit button"
+  },
+  "authLoginSigningIn": "Iniciando sesión…",
+  "@authLoginSigningIn": {
+    "description": "Sign in button loading state"
+  },
+  "authLoginTitle": "Iniciar sesión",
+  "@authLoginTitle": {
+    "description": "Login screen title"
+  },
+  "authLoginYouExample": "tu@ejemplo.com",
+  "@authLoginYouExample": {
+    "description": "Email placeholder"
+  },
+  "authLoginYourPassword": "Tu contraseña",
+  "@authLoginYourPassword": {
+    "description": "Password placeholder"
+  },
+  "authOnboardingCreateDesc": "Empieza de cero: ponle nombre, invita a tus compañeros y comparte todo en un solo lugar.",
+  "@authOnboardingCreateDesc": {
+    "description": "Description for create household card"
+  },
+  "authOnboardingCreateHousehold": "Crear un hogar",
+  "@authOnboardingCreateHousehold": {
+    "description": "Primary CTA on onboarding"
+  },
+  "authOnboardingCreateOrJoin": "Crea o únete a un hogar para empezar a compartir con tus compañeros.",
+  "@authOnboardingCreateOrJoin": {
+    "description": "Onboarding description"
+  },
+  "authOnboardingHaveCode": "¿Tienes un código de invitación?",
+  "@authOnboardingHaveCode": {
+    "description": "Invite code prompt"
+  },
+  "authOnboardingHomeIconSemantic": "Icono de inicio del hogar",
+  "@authOnboardingHomeIconSemantic": {
+    "description": "Semantic label for home icon"
+  },
+  "authOnboardingJoinDesc": "¿Ya tienes una invitación? Introduce el código y entra directamente.",
+  "@authOnboardingJoinDesc": {
+    "description": "Description for join household card"
+  },
+  "authOnboardingJoinInvite": "Unirse con código de invitación",
+  "@authOnboardingJoinInvite": {
+    "description": "Secondary CTA on onboarding"
+  },
+  "authOnboardingJoinSemantic": "Unirse a un hogar con código de invitación",
+  "@authOnboardingJoinSemantic": {
+    "description": "Semantic label for join card"
+  },
+  "authOnboardingSetupHome": "Configura tu hogar",
+  "@authOnboardingSetupHome": {
+    "description": "Onboarding headline for new users"
+  },
+  "authOnboardingTitle": "Bienvenido",
+  "@authOnboardingTitle": {
+    "description": "Onboarding screen title"
+  },
+  "authSignupAccountCreated": "Cuenta creada. ¡Bienvenido!",
+  "@authSignupAccountCreated": {
+    "description": "Snackbar when account is created"
+  },
+  "authSignupAnd": " y ",
+  "@authSignupAnd": {
+    "description": "Conjunction between legal links"
+  },
+  "authSignupCreateAccount": "Crear cuenta",
+  "@authSignupCreateAccount": {
+    "description": "Submit button for signup"
+  },
+  "authSignupCreatingAccount": "Creando cuenta…",
+  "@authSignupCreatingAccount": {
+    "description": "Loading state for signup button"
+  },
+  "authSignupEmail": "Correo electrónico",
+  "@authSignupEmail": {
+    "description": "Email input label"
+  },
+  "authSignupEmailHint": "tu@ejemplo.com",
+  "@authSignupEmailHint": {
+    "description": "Email placeholder"
+  },
+  "authSignupEmailRequired": "El correo electrónico es obligatorio.",
+  "@authSignupEmailRequired": {
+    "description": "Validation: email required"
+  },
+  "authSignupFillAllFields": "Rellena todos los campos.",
+  "@authSignupFillAllFields": {
+    "description": "Validation: all fields required"
+  },
+  "authSignupFirstName": "Nombre",
+  "@authSignupFirstName": {
+    "description": "First name input label"
+  },
+  "authSignupFirstNameHint": "Alex",
+  "@authSignupFirstNameHint": {
+    "description": "First name placeholder"
+  },
+  "authSignupGenericError": "No se pudo crear la cuenta. Comprueba tu conexión e inténtalo de nuevo.",
+  "@authSignupGenericError": {
+    "description": "Generic signup error message"
+  },
+  "authSignupHaveAccount": "¿Ya tienes cuenta?",
+  "@authSignupHaveAccount": {
+    "description": "Link to login"
+  },
+  "authSignupJoinTitle": "Unirse al hogar",
+  "@authSignupJoinTitle": {
+    "description": "Signup screen title when joining via invite"
+  },
+  "authSignupLastName": "Apellidos",
+  "@authSignupLastName": {
+    "description": "Last name input label"
+  },
+  "authSignupLastNameHint": "García",
+  "@authSignupLastNameHint": {
+    "description": "Last name placeholder"
+  },
+  "authSignupNameHint": "Tu nombre",
+  "@authSignupNameHint": {
+    "description": "Name input placeholder"
+  },
+  "authSignupNameRequired": "El nombre es obligatorio.",
+  "@authSignupNameRequired": {
+    "description": "Validation: name required"
+  },
+  "authSignupPassword": "Contraseña",
+  "@authSignupPassword": {
+    "description": "Password input label"
+  },
+  "authSignupPasswordHint": "Al menos 6 caracteres",
+  "@authSignupPasswordHint": {
+    "description": "Password hint text"
+  },
+  "authSignupPasswordMinLength": "La contraseña debe tener al menos 6 caracteres.",
+  "@authSignupPasswordMinLength": {
+    "description": "Password too short validation"
+  },
+  "authSignupPasswordRequired": "La contraseña es obligatoria.",
+  "@authSignupPasswordRequired": {
+    "description": "Validation: password required"
+  },
+  "authSignupPeriod": ".",
+  "@authSignupPeriod": {
+    "description": "Period after legal links"
+  },
+  "authSignupPrivacyP1": "mitlist almacena los datos de la cuenta y el contenido del hogar necesarios para operar la app.",
+  "@authSignupPrivacyP1": {
+    "description": "Privacy paragraph 1"
+  },
+  "authSignupPrivacyP2": "Los datos compartidos como listas, tareas, gastos y recetas son visibles para otros miembros del mismo hogar.",
+  "@authSignupPrivacyP2": {
+    "description": "Privacy paragraph 2"
+  },
+  "authSignupPrivacyP3": "Solo proporciona información que te sientas cómodo compartiendo en un espacio de hogar compartido.",
+  "@authSignupPrivacyP3": {
+    "description": "Privacy paragraph 3"
+  },
+  "authSignupPrivacyPolicy": "Política de privacidad",
+  "@authSignupPrivacyPolicy": {
+    "description": "Privacy policy link text"
+  },
+  "authSignupSignInLink": "Iniciar sesión",
+  "@authSignupSignInLink": {
+    "description": "Link to sign in"
+  },
+  "authSignupTermsP1": "Usa mitlist de forma responsable. El contenido compartido del hogar es visible para los miembros de ese hogar.",
+  "@authSignupTermsP1": {
+    "description": "Terms paragraph 1"
+  },
+  "authSignupTermsP2": "No subas contenido ilegal, no suplantes a otros ni abuses del servicio. Las cuentas y los datos compartidos pueden eliminarse por uso indebido.",
+  "@authSignupTermsP2": {
+    "description": "Terms paragraph 2"
+  },
+  "authSignupTermsP3": "La app se proporciona tal cual mientras el producto sigue evolucionando. Guarda tus propias copias de seguridad para lo importante.",
+  "@authSignupTermsP3": {
+    "description": "Terms paragraph 3"
+  },
+  "authSignupTermsPrefix": "Al crear una cuenta, aceptas nuestros ",
+  "@authSignupTermsPrefix": {
+    "description": "Text before terms link"
+  },
+  "authSignupTitle": "Crear cuenta",
+  "@authSignupTitle": {
+    "description": "Signup screen title"
+  },
+  "commonPhoto": "Foto",
+  "@commonPhoto": {
+    "description": "Generic photo label"
+  },
+  "commonView": "Ver",
+  "@commonView": {
+    "description": "Generic view button"
+  },
+  "composerItemHint": "p. ej. Leche, 2 aguacates o 500 g de harina",
+  "@composerItemHint": {
+    "description": "Hint for list composer input"
+  },
+  "conflictItemChanged": "Artículo modificado",
+  "@conflictItemChanged": {
+    "description": "Snackbar when conflict item was changed"
+  },
+  "conflictItemLabel": "Artículo: {name}",
+  "@conflictItemLabel": {
+    "description": "Label for conflict item name",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "conflictNoneToResolve": "No hay conflictos que resolver.",
+  "@conflictNoneToResolve": {
+    "description": "Empty state when no sync conflicts"
+  },
+  "cookModeTimerStart": "Temporizador: {label}. Toca para iniciar",
+  "@cookModeTimerStart": {
+    "description": "Timer semantics label",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "costSummaryEqualShare": "Parte igual por persona",
+  "@costSummaryEqualShare": {
+    "description": "Label for equal share amount in cost summary"
+  },
+  "costSummaryGenerateExpense": "Generar gasto",
+  "@costSummaryGenerateExpense": {
+    "description": "Button to generate an expense from cost summary"
+  },
+  "costSummaryItemsWithPrices": "Artículos con precios",
+  "@costSummaryItemsWithPrices": {
+    "description": "Label for items that have prices set"
+  },
+  "costSummaryNoPrices": "Ningún artículo tiene precio aún. Abre las opciones del artículo (⋯) y elige Establecer precio para ver el resumen de costes.",
+  "@costSummaryNoPrices": {
+    "description": "Empty state when no items in cost summary have prices"
+  },
+  "costSummaryNone": "Ninguno",
+  "@costSummaryNone": {
+    "description": "Placeholder when no value is set"
+  },
+  "costSummaryNotAvailable": "N/D",
+  "@costSummaryNotAvailable": {
+    "description": "Placeholder when equal share cannot be calculated"
+  },
+  "createHouseholdCreated": "Hogar creado",
+  "@createHouseholdCreated": {
+    "description": "Snackbar when household is created"
+  },
+  "createHouseholdDescriptionOptional": "Descripción (opcional)",
+  "@createHouseholdDescriptionOptional": {
+    "description": "Placeholder for optional household description"
+  },
+  "createListCreated": "Lista creada",
+  "@createListCreated": {
+    "description": "Snackbar when list is created"
+  },
+  "createListCustomDesc": "Una lista flexible para todo lo que no encaje.",
+  "@createListCustomDesc": {
+    "description": "Description for custom list type"
+  },
+  "createListHouseholdLabel": "Hogar",
+  "@createListHouseholdLabel": {
+    "description": "Household selector label in create list sheet"
+  },
+  "createListNameRequired": "El nombre de la lista es obligatorio",
+  "@createListNameRequired": {
+    "description": "Validation: list name required"
+  },
+  "createListNoHousehold": "No hay ningún hogar disponible.",
+  "@createListNoHousehold": {
+    "description": "Empty state when no households exist"
+  },
+  "createListScanFinished": "Escaneo completado",
+  "@createListScanFinished": {
+    "description": "Snackbar when scan completes"
+  },
+  "createListScanSemantics": "Escanear lista con la cámara",
+  "@createListScanSemantics": {
+    "description": "Semantics label for scan list button"
+  },
+  "createListScanned": "Escaneado \"{name}\"",
+  "@createListScanned": {
+    "description": "Snackbar after scanning into a list",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "createListShoppingDesc": "Ideal para la compra y recados con cantidades.",
+  "@createListShoppingDesc": {
+    "description": "Description for shopping list type"
+  },
+  "createListTodoDesc": "Una lista de tareas sencilla para lo que hay que hacer.",
+  "@createListTodoDesc": {
+    "description": "Description for to-do list type"
+  },
+  "currencyAud": "AUD - Dólar australiano",
+  "@currencyAud": {
+    "description": "Australian Dollar currency label"
+  },
+  "currencyCad": "CAD - Dólar canadiense",
+  "@currencyCad": {
+    "description": "Canadian Dollar currency label"
+  },
+  "currencyChf": "CHF - Franco suizo",
+  "@currencyChf": {
+    "description": "Swiss Franc currency label"
+  },
+  "currencyCzk": "CZK - Corona checa",
+  "@currencyCzk": {
+    "description": "Czech Koruna currency label"
+  },
+  "currencyDkk": "DKK - Corona danesa",
+  "@currencyDkk": {
+    "description": "Danish Krone currency label"
+  },
+  "currencyEur": "EUR - Euro",
+  "@currencyEur": {
+    "description": "Euro currency label"
+  },
+  "currencyGbp": "GBP - Libra esterlina",
+  "@currencyGbp": {
+    "description": "British Pound currency label"
+  },
+  "currencyHuf": "HUF - Florín húngaro",
+  "@currencyHuf": {
+    "description": "Hungarian Forint currency label"
+  },
+  "currencyJpy": "JPY - Yen japonés",
+  "@currencyJpy": {
+    "description": "Japanese Yen currency label"
+  },
+  "currencyNok": "NOK - Corona noruega",
+  "@currencyNok": {
+    "description": "Norwegian Krone currency label"
+  },
+  "currencyPln": "PLN - Złoty polaco",
+  "@currencyPln": {
+    "description": "Polish Zloty currency label"
+  },
+  "currencySek": "SEK - Corona sueca",
+  "@currencySek": {
+    "description": "Swedish Krona currency label"
+  },
+  "currencyUsd": "USD - Dólar estadounidense",
+  "@currencyUsd": {
+    "description": "US Dollar currency label"
+  },
+  "errorBoundaryDesc": "Ha ocurrido un error inesperado. Inténtalo de nuevo.",
+  "@errorBoundaryDesc": {
+    "description": "Error boundary fallback description"
+  },
+  "errorBoundaryTitle": "Algo salió mal",
+  "@errorBoundaryTitle": {
+    "description": "Error boundary fallback title"
+  },
+  "errorConflict": "Alguien más lo ha cambiado. Actualiza e inténtalo de nuevo.",
+  "@errorConflict": {
+    "description": "Friendly error for 409 conflict"
+  },
+  "errorGenericRetry": "Algo salió mal. Inténtalo de nuevo.",
+  "@errorGenericRetry": {
+    "description": "Generic fallback friendly error"
+  },
+  "errorNoPermission": "No tienes permiso para esto.",
+  "@errorNoPermission": {
+    "description": "Friendly error for 403"
+  },
+  "errorNotFound": "No encontrado. Puede que se haya eliminado.",
+  "@errorNotFound": {
+    "description": "Friendly error for 404"
+  },
+  "errorServerHiccup": "Problema del servidor — inténtalo en un momento.",
+  "@errorServerHiccup": {
+    "description": "Friendly error for 5xx responses"
+  },
+  "errorSignInAgain": "Inicia sesión de nuevo.",
+  "@errorSignInAgain": {
+    "description": "Friendly error for 401"
+  },
+  "expenseCreationAddToSplit": "Añadir {name} al reparto",
+  "@expenseCreationAddToSplit": {
+    "description": "Semantics: add member to split",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationAssignShare": "Asigna al menos una parte.",
+  "@expenseCreationAssignShare": {
+    "description": "Validation: assign at least one share"
+  },
+  "expenseCreationCouldNotLoadMembers": "No se pudieron cargar los miembros del hogar.",
+  "@expenseCreationCouldNotLoadMembers": {
+    "description": "Error when household members fail to load"
+  },
+  "expenseCreationJoinHouseholdSplit": "Únete o crea un hogar para repartir este gasto.",
+  "@expenseCreationJoinHouseholdSplit": {
+    "description": "Prompt when no household for expense split"
+  },
+  "expenseCreationRemoveAddSplitter": "Quitar/Añadir {name} del/al reparto",
+  "@expenseCreationRemoveAddSplitter": {
+    "description": "Checkbox label for adding/removing splitters",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationRemoveFromSplit": "Quitar {name} del reparto",
+  "@expenseCreationRemoveFromSplit": {
+    "description": "Semantics: remove member from split",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSharesNegative": "Las partes no pueden ser negativas.",
+  "@expenseCreationSharesNegative": {
+    "description": "Validation: shares must not be negative"
+  },
+  "expenseCreationSplitAmountsNegative": "{assigned} · los importes no pueden ser negativos",
+  "@expenseCreationSplitAmountsNegative": {
+    "description": "Split validation: negative amounts",
+    "placeholders": {
+      "assigned": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitApproxEach": "≈ {amount} cada uno",
+  "@expenseCreationSplitApproxEach": {
+    "description": "Approximate equal split per person",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitAssignedOf": "{assigned} de {total}",
+  "@expenseCreationSplitAssignedOf": {
+    "description": "Split summary: assigned amount of total",
+    "placeholders": {
+      "assigned": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitEach": "{amount} cada uno",
+  "@expenseCreationSplitEach": {
+    "description": "Equal split per person",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitLeftToAssign": "{assigned} · {remaining} por asignar",
+  "@expenseCreationSplitLeftToAssign": {
+    "description": "Split validation: remaining to assign",
+    "placeholders": {
+      "assigned": {
+        "type": "String"
+      },
+      "remaining": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitOver": "{assigned} · {over} de más",
+  "@expenseCreationSplitOver": {
+    "description": "Split validation: over-assigned",
+    "placeholders": {
+      "assigned": {
+        "type": "String"
+      },
+      "over": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitPercentOf100": "{sum}% de 100%",
+  "@expenseCreationSplitPercentOf100": {
+    "description": "Split summary: percent of 100",
+    "placeholders": {
+      "sum": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitPercentRange": "{sum}% asignado · cada parte debe ser 0–100%",
+  "@expenseCreationSplitPercentRange": {
+    "description": "Split validation: percent out of range",
+    "placeholders": {
+      "sum": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitSharesPerShare": "{count} partes · {perShare} por parte",
+  "@expenseCreationSplitSharesPerShare": {
+    "description": "Split summary: shares mode",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      },
+      "perShare": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseDetailCouldNotLoadReceipts": "No se pudieron cargar los recibos.",
+  "@expenseDetailCouldNotLoadReceipts": {
+    "description": "Snackbar when expense receipts fail to load"
+  },
+  "expenseDetailCouldNotLoadSplits": "No se pudieron cargar los repartos.",
+  "@expenseDetailCouldNotLoadSplits": {
+    "description": "Snackbar when expense splits fail to load"
+  },
+  "expenseDetailCouldNotRemoveReceipt": "No se pudo eliminar el recibo.",
+  "@expenseDetailCouldNotRemoveReceipt": {
+    "description": "Snackbar when receipt removal fails"
+  },
+  "expenseDetailFailedLoadReceipt": "No se pudo cargar el recibo",
+  "@expenseDetailFailedLoadReceipt": {
+    "description": "Error when receipt image fails to load"
+  },
+  "expenseDetailNoReceipts": "No hay recibos adjuntos. Añade uno al editar el gasto.",
+  "@expenseDetailNoReceipts": {
+    "description": "Empty state when expense has no receipts"
+  },
+  "expenseDetailNotSplitYet": "Este gasto aún no está repartido.",
+  "@expenseDetailNotSplitYet": {
+    "description": "Empty state when expense has no splits"
+  },
+  "expenseDetailReceipt": "Recibo",
+  "@expenseDetailReceipt": {
+    "description": "Label for receipt attachment"
+  },
+  "expenseDetailRemoving": "Eliminando…",
+  "@expenseDetailRemoving": {
+    "description": "Label while removing receipt"
+  },
+  "expenseDetailView": "Ver",
+  "@expenseDetailView": {
+    "description": "View action label"
+  },
+  "hubActivityEmpty": "Todavía no pasa nada.\nLa actividad de tu hogar aparecerá aquí.",
+  "@hubActivityEmpty": {
+    "description": "Activity wall empty state"
+  },
+  "hubActivityError": "No se pudo cargar la actividad. Desliza hacia abajo en el inicio para actualizar.",
+  "@hubActivityError": {
+    "description": "Activity wall load error"
+  },
+  "hubActivityTitle": "Actividad",
+  "@hubActivityTitle": {
+    "description": "Activity wall section title"
+  },
+  "hubHouseholdsCurrent": "Hogares, actual {name}",
+  "@hubHouseholdsCurrent": {
+    "description": "Semantics label for household switcher",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "hubOnboardingAddChore": "Añadir una tarea",
+  "@hubOnboardingAddChore": {
+    "description": "Add a chore action"
+  },
+  "hubOnboardingCreateList": "Crear una lista",
+  "@hubOnboardingCreateList": {
+    "description": "Create a list action"
+  },
+  "hubOnboardingDescription": "Todo empieza aquí. Elige lo que más importa.",
+  "@hubOnboardingDescription": {
+    "description": "Onboarding card description"
+  },
+  "hubOnboardingDismiss": "Cerrar inicio rápido",
+  "@hubOnboardingDismiss": {
+    "description": "Dismiss quick start tooltip"
+  },
+  "hubOnboardingDone": "Todo listo",
+  "@hubOnboardingDone": {
+    "description": "Onboarding card: done tile"
+  },
+  "hubOnboardingDoneDesc": "Tareas, saldos, listas — todo en un solo lugar, bajo control.",
+  "@hubOnboardingDoneDesc": {
+    "description": "Done tile description"
+  },
+  "hubOnboardingGetStarted": "Empezar",
+  "@hubOnboardingGetStarted": {
+    "description": "Onboarding card header"
+  },
+  "hubOnboardingInvite": "Invitar compañeros",
+  "@hubOnboardingInvite": {
+    "description": "Invite flatmates action"
+  },
+  "hubOnboardingSettle": "Saldar",
+  "@hubOnboardingSettle": {
+    "description": "Onboarding card: settle tile"
+  },
+  "hubOnboardingSettleDesc": "Paga a todos de una vez con liquidaciones sugeridas.",
+  "@hubOnboardingSettleDesc": {
+    "description": "Settle tile description"
+  },
+  "hubOnboardingSwap": "Intercambiar",
+  "@hubOnboardingSwap": {
+    "description": "Onboarding card: swap tile"
+  },
+  "hubOnboardingSwapDesc": "Elige al compañero que menos deba para que se haga cargo de esta tarea.",
+  "@hubOnboardingSwapDesc": {
+    "description": "Swap tile description"
+  },
+  "hubOnboardingTrackExpense": "Registrar un gasto",
+  "@hubOnboardingTrackExpense": {
+    "description": "Track an expense action"
+  },
+  "hubQuickAddChore": "Añadir tarea",
+  "@hubQuickAddChore": {
+    "description": "Quick add: chore option"
+  },
+  "hubQuickAddExpense": "Añadir gasto",
+  "@hubQuickAddExpense": {
+    "description": "Quick add: expense option"
+  },
+  "hubQuickAddList": "Nueva lista",
+  "@hubQuickAddList": {
+    "description": "Quick add: new list option"
+  },
+  "hubQuickAddNote": "Fijar una nota",
+  "@hubQuickAddNote": {
+    "description": "Quick add: pinwall note option"
+  },
+  "hubQuickAddShoppingTrip": "Iniciar compra",
+  "@hubQuickAddShoppingTrip": {
+    "description": "Quick add: shopping trip option"
+  },
+  "hubQuickAddTitle": "Añadir rápido",
+  "@hubQuickAddTitle": {
+    "description": "Quick add bottom sheet title"
+  },
+  "hubQuickAddToList": "Añadir a una lista",
+  "@hubQuickAddToList": {
+    "description": "Quick add: add to list option"
+  },
+  "hubStatsActiveList": "lista activa",
+  "@hubStatsActiveList": {
+    "description": "Stats grid: singular active list"
+  },
+  "hubStatsActiveLists": "listas activas",
+  "@hubStatsActiveLists": {
+    "description": "Stats grid: plural active lists"
+  },
+  "hubStatsAllDone": "todo hecho",
+  "@hubStatsAllDone": {
+    "description": "Stats grid: all done label"
+  },
+  "hubStatsBalance": "Saldo",
+  "@hubStatsBalance": {
+    "description": "Stats grid: balance label"
+  },
+  "hubStatsChores": "Tareas",
+  "@hubStatsChores": {
+    "description": "Stats grid: chores label"
+  },
+  "hubStatsDue": "pendientes",
+  "@hubStatsDue": {
+    "description": "Stats grid: due today label"
+  },
+  "hubStatsLists": "Listas",
+  "@hubStatsLists": {
+    "description": "Stats grid: lists label"
+  },
+  "hubStatsMeals": "Comidas",
+  "@hubStatsMeals": {
+    "description": "Stats grid: meals planned label"
+  },
+  "hubStatsOpen": "abiertas",
+  "@hubStatsOpen": {
+    "description": "Stats grid: open balance label"
+  },
+  "hubStatsOverdue": "vencidas",
+  "@hubStatsOverdue": {
+    "description": "Stats grid: overdue label"
+  },
+  "hubStatsPinwallReminder": "recordatorio del pinwall",
+  "@hubStatsPinwallReminder": {
+    "description": "Stats grid: singular pinwall reminder"
+  },
+  "hubStatsPinwallReminders": "recordatorios del pinwall",
+  "@hubStatsPinwallReminders": {
+    "description": "Stats grid: plural pinwall reminders"
+  },
+  "hubStatsPlanned": "planificadas",
+  "@hubStatsPlanned": {
+    "description": "Stats grid: planned this week"
+  },
+  "hubStatsReminders": "Recordatorios",
+  "@hubStatsReminders": {
+    "description": "Stats grid: reminders label"
+  },
+  "inviteCodeLabel": "Código de invitación: {code}",
+  "@inviteCodeLabel": {
+    "description": "Label displaying the invite code",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "inviteGenerating": "Generando…",
+  "@inviteGenerating": {
+    "description": "Text shown while generating invite code"
+  },
+  "inviteLinkShareText": "¡Únete a mi hogar en mitlist!\nToca: {link}\nO abre mitlist e introduce el código: {code}",
+  "@inviteLinkShareText": {
+    "description": "Shared invite link message",
+    "placeholders": {
+      "link": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "inviteNewCode": "Nuevo código",
+  "@inviteNewCode": {
+    "description": "Button to generate a new invite code"
+  },
+  "inviteQrHint": "Escanea con la cámara del móvil para unirte, o comparte el código de abajo.",
+  "@inviteQrHint": {
+    "description": "Hint for invite QR code"
+  },
+  "inviteQrSemantic": "QR de invitación al hogar",
+  "@inviteQrSemantic": {
+    "description": "Semantics label for invite QR code"
+  },
+  "inviteQrTitle": "Código QR de invitación al hogar",
+  "@inviteQrTitle": {
+    "description": "Title for invite QR code section"
+  },
+  "inviteQrUnavailable": "QR no disponible",
+  "@inviteQrUnavailable": {
+    "description": "Error when QR code cannot be rendered"
+  },
+  "joinCodeFormatHint": "Los códigos tienen el formato PALABRA-PALABRA-42. Pregunta a quien te invitó.",
+  "@joinCodeFormatHint": {
+    "description": "Hint text describing invite code format"
+  },
+  "joinEnterGroup": "Entrar en {name}",
+  "@joinEnterGroup": {
+    "description": "Semantics label to enter a household",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "joinMembersAlreadyInside": "{count, plural, =1{1 miembro ya dentro} other{{count} miembros ya dentro}}",
+  "@joinMembersAlreadyInside": {
+    "description": "Member count after joining household",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "oauthMissingParams": "Faltan parámetros de la devolución de OAuth.",
+  "@oauthMissingParams": {
+    "description": "Error when OAuth callback has missing params"
+  },
+  "oauthSigningYouIn": "Iniciando sesión",
+  "@oauthSigningYouIn": {
+    "description": "Loading text while signing in via OAuth"
+  },
+  "pinwallCouldNotLoad": "No se pudo cargar el pinwall.",
+  "@pinwallCouldNotLoad": {
+    "description": "Error when pinwall posts fail to load"
+  },
+  "pinwallLinkChore": "Una tarea",
+  "@pinwallLinkChore": {
+    "description": "Link action: link a chore"
+  },
+  "pinwallLinkList": "Una lista",
+  "@pinwallLinkList": {
+    "description": "Link action: link a list"
+  },
+  "pinwallLinkedTo": "Vinculado a {entity}",
+  "@pinwallLinkedTo": {
+    "description": "Semantics label for linked entity",
+    "placeholders": {
+      "entity": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeAddToListAddToSelection": "Añadir {name} a la selección",
+  "@recipeAddToListAddToSelection": {
+    "description": "Semantics: select ingredient",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeAddToListCreateListFirst": "Crea una lista primero para añadir ingredientes",
+  "@recipeAddToListCreateListFirst": {
+    "description": "Prompt to create a list before adding ingredients"
+  },
+  "recipeAddToListNoIngredients": "Sin ingredientes",
+  "@recipeAddToListNoIngredients": {
+    "description": "Empty state when recipe has no ingredients"
+  },
+  "recipeAddToListNoIngredientsDesc": "Esta receta no tiene ingredientes analizados",
+  "@recipeAddToListNoIngredientsDesc": {
+    "description": "Description when recipe has no ingredients"
+  },
+  "recipeAddToListNoLists": "Sin listas",
+  "@recipeAddToListNoLists": {
+    "description": "Empty state when no lists available to add ingredients to"
+  },
+  "recipeAddToListRemoveFromSelection": "Quitar {name} de la selección",
+  "@recipeAddToListRemoveFromSelection": {
+    "description": "Semantics: deselect ingredient",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeAddToListTargetList": "Lista de destino",
+  "@recipeAddToListTargetList": {
+    "description": "Dropdown label for target list"
+  },
+  "recipeCreationScanRecipe": "Escanear receta",
+  "@recipeCreationScanRecipe": {
+    "description": "Button text to scan a recipe"
+  },
+  "recipeCreationScanRecipeViaCamera": "Escanear receta con la cámara",
+  "@recipeCreationScanRecipeViaCamera": {
+    "description": "Semantics label for scanning a recipe"
+  },
+  "recipeDetailStepCount": "{count, plural, =1{1 paso} other{{count} pasos}}",
+  "@recipeDetailStepCount": {
+    "description": "Semantics label for recipe step count",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "recurringCouldNotCreate": "No se pudo crear el gasto recurrente.",
+  "@recurringCouldNotCreate": {
+    "description": "Error when creating recurring expense fails"
+  },
+  "recurringCouldNotDelete": "No se pudo eliminar el gasto recurrente.",
+  "@recurringCouldNotDelete": {
+    "description": "Error when deleting recurring expense fails"
+  },
+  "recurringCouldNotUpdate": "No se pudo actualizar el gasto recurrente.",
+  "@recurringCouldNotUpdate": {
+    "description": "Error when updating recurring expense fails"
+  },
+  "recurringTomorrow": "Mañana",
+  "@recurringTomorrow": {
+    "description": "Tomorrow label in recurring expenses date helper"
+  },
+  "scannerCouldNotAnalyze": "No se pudo analizar la imagen. Inténtalo de nuevo con una foto más clara.",
+  "@scannerCouldNotAnalyze": {
+    "description": "Error when AI image analysis fails in scanner"
+  },
+  "sheetConflictDescription": "Este artículo se modificó en otro dispositivo mientras lo editabas. Elige qué versión conservar.",
+  "@sheetConflictDescription": {
+    "description": "Conflict resolution description"
+  },
+  "sheetConflictKeepLocal": "Conservar la tuya",
+  "@sheetConflictKeepLocal": {
+    "description": "Button to keep local version"
+  },
+  "sheetConflictKeepServer": "Conservar del servidor",
+  "@sheetConflictKeepServer": {
+    "description": "Button to keep server version"
+  },
+  "sheetConflictLocal": "Tu versión",
+  "@sheetConflictLocal": {
+    "description": "Local version label"
+  },
+  "sheetConflictServer": "Versión del servidor",
+  "@sheetConflictServer": {
+    "description": "Server version label"
+  },
+  "sheetConflictTitle": "Conflicto de sincronización",
+  "@sheetConflictTitle": {
+    "description": "Conflict resolution sheet title"
+  },
+  "sheetCostSummaryTitle": "Resumen de costes",
+  "@sheetCostSummaryTitle": {
+    "description": "Sheet title for list cost summary"
+  },
+  "sheetCostSummaryTotal": "Total",
+  "@sheetCostSummaryTotal": {
+    "description": "Total cost label"
+  },
+  "sheetCreateHouseholdName": "Nombre del hogar",
+  "@sheetCreateHouseholdName": {
+    "description": "Name input label"
+  },
+  "sheetCreateHouseholdNameHint": "p. ej. Piso 4B",
+  "@sheetCreateHouseholdNameHint": {
+    "description": "Name placeholder"
+  },
+  "sheetCreateHouseholdTitle": "Crear hogar",
+  "@sheetCreateHouseholdTitle": {
+    "description": "Sheet title for creating a household"
+  },
+  "sheetCreateListCreate": "Crear lista",
+  "@sheetCreateListCreate": {
+    "description": "Create list button"
+  },
+  "sheetCreateListName": "Nombre de la lista",
+  "@sheetCreateListName": {
+    "description": "Name input label"
+  },
+  "sheetCreateListNameHint": "p. ej. Compra semanal",
+  "@sheetCreateListNameHint": {
+    "description": "Name placeholder"
+  },
+  "sheetCreateListTitle": "Nueva lista",
+  "@sheetCreateListTitle": {
+    "description": "Sheet title for creating a list"
+  },
+  "sheetCreateListType": "Tipo",
+  "@sheetCreateListType": {
+    "description": "List type selector label"
+  },
+  "sheetCreateListTypeCustom": "Personalizada",
+  "@sheetCreateListTypeCustom": {
+    "description": "Type option: custom list"
+  },
+  "sheetCreateListTypeShopping": "Compra",
+  "@sheetCreateListTypeShopping": {
+    "description": "Type option: shopping list"
+  },
+  "sheetCreateListTypeTodo": "Tareas",
+  "@sheetCreateListTypeTodo": {
+    "description": "Type option: to-do list"
+  },
+  "sheetExpenseDetailSplits": "Repartos",
+  "@sheetExpenseDetailSplits": {
+    "description": "Section header: split details"
+  },
+  "sheetExpenseDetailSplitsCount": "{count, plural, =1{{count} reparto} other{{count} repartos}}",
+  "@sheetExpenseDetailSplitsCount": {
+    "description": "Split count",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "sheetExpenseDetailTitle": "Detalles del gasto",
+  "@sheetExpenseDetailTitle": {
+    "description": "Sheet title for expense detail"
+  },
+  "sheetFailedChangesDescription": "Estos cambios no se pudieron guardar. Puedes reintentar o descartarlos.",
+  "@sheetFailedChangesDescription": {
+    "description": "Failed changes description"
+  },
+  "sheetFailedChangesDiscard": "Descartar",
+  "@sheetFailedChangesDiscard": {
+    "description": "Discard single failed change"
+  },
+  "sheetFailedChangesDiscardAll": "Descartar todo",
+  "@sheetFailedChangesDiscardAll": {
+    "description": "Discard all failed changes"
+  },
+  "sheetFailedChangesEmpty": "No hay cambios fallidos. Todo está sincronizado o esperando reintento.",
+  "@sheetFailedChangesEmpty": {
+    "description": "Empty state when no failed outbox changes"
+  },
+  "sheetFailedChangesOpAddItem": "Añadir artículo",
+  "@sheetFailedChangesOpAddItem": {
+    "description": "Outbox op label: create item"
+  },
+  "sheetFailedChangesOpChange": "Cambio",
+  "@sheetFailedChangesOpChange": {
+    "description": "Outbox op label: unknown change"
+  },
+  "sheetFailedChangesOpCompleteChore": "Completar tarea",
+  "@sheetFailedChangesOpCompleteChore": {
+    "description": "Outbox op label: complete chore"
+  },
+  "sheetFailedChangesOpCreateExpense": "Añadir gasto",
+  "@sheetFailedChangesOpCreateExpense": {
+    "description": "Outbox op label: create expense"
+  },
+  "sheetFailedChangesOpCreatePinwallPost": "Publicar en pinwall",
+  "@sheetFailedChangesOpCreatePinwallPost": {
+    "description": "Outbox op label: create pinwall post"
+  },
+  "sheetFailedChangesOpCreateRecipe": "Añadir receta",
+  "@sheetFailedChangesOpCreateRecipe": {
+    "description": "Outbox op label: create recipe"
+  },
+  "sheetFailedChangesOpDeleteExpense": "Eliminar gasto",
+  "@sheetFailedChangesOpDeleteExpense": {
+    "description": "Outbox op label: delete expense"
+  },
+  "sheetFailedChangesOpDeleteItem": "Eliminar artículo",
+  "@sheetFailedChangesOpDeleteItem": {
+    "description": "Outbox op label: delete item"
+  },
+  "sheetFailedChangesOpDeletePinwallPost": "Eliminar publicación del pinwall",
+  "@sheetFailedChangesOpDeletePinwallPost": {
+    "description": "Outbox op label: delete pinwall post"
+  },
+  "sheetFailedChangesOpDeleteRecipe": "Eliminar receta",
+  "@sheetFailedChangesOpDeleteRecipe": {
+    "description": "Outbox op label: delete recipe"
+  },
+  "sheetFailedChangesOpReorderItems": "Reordenar lista",
+  "@sheetFailedChangesOpReorderItems": {
+    "description": "Outbox op label: reorder items"
+  },
+  "sheetFailedChangesOpRescheduleChore": "Reprogramar tarea",
+  "@sheetFailedChangesOpRescheduleChore": {
+    "description": "Outbox op label: reschedule chore"
+  },
+  "sheetFailedChangesOpSkipChore": "Omitir tarea",
+  "@sheetFailedChangesOpSkipChore": {
+    "description": "Outbox op label: skip chore"
+  },
+  "sheetFailedChangesOpUndoChore": "Deshacer tarea",
+  "@sheetFailedChangesOpUndoChore": {
+    "description": "Outbox op label: undo chore"
+  },
+  "sheetFailedChangesOpUpdateExpense": "Actualizar gasto",
+  "@sheetFailedChangesOpUpdateExpense": {
+    "description": "Outbox op label: update expense"
+  },
+  "sheetFailedChangesOpUpdateItem": "Actualizar artículo",
+  "@sheetFailedChangesOpUpdateItem": {
+    "description": "Outbox op label: update item"
+  },
+  "sheetFailedChangesOpUpdateRecipe": "Actualizar receta",
+  "@sheetFailedChangesOpUpdateRecipe": {
+    "description": "Outbox op label: update recipe"
+  },
+  "sheetFailedChangesRetry": "Reintentar",
+  "@sheetFailedChangesRetry": {
+    "description": "Retry single failed change"
+  },
+  "sheetFailedChangesRetryAll": "Reintentar todo",
+  "@sheetFailedChangesRetryAll": {
+    "description": "Retry all failed changes"
+  },
+  "sheetFailedChangesTitle": "Cambios fallidos",
+  "@sheetFailedChangesTitle": {
+    "description": "Sheet title for failed outbox changes"
+  },
+  "sheetGroupSettingsAddZone": "Añadir zona",
+  "@sheetGroupSettingsAddZone": {
+    "description": "Input label for adding a zone"
+  },
+  "sheetGroupSettingsChoreZonesDesc": "Zonas de tu hogar para agrupar tareas. Aparecen al añadir una tarea.",
+  "@sheetGroupSettingsChoreZonesDesc": {
+    "description": "Description of chore zones"
+  },
+  "sheetGroupSettingsChoreZonesLabel": "Zonas de tareas",
+  "@sheetGroupSettingsChoreZonesLabel": {
+    "description": "Section label for chore zones"
+  },
+  "sheetGroupSettingsChoreZonesUpdated": "Zonas de tareas actualizadas",
+  "@sheetGroupSettingsChoreZonesUpdated": {
+    "description": "Snackbar when chore zones are saved"
+  },
+  "sheetGroupSettingsCouldNotSave": "No se pudieron guardar los ajustes.",
+  "@sheetGroupSettingsCouldNotSave": {
+    "description": "Error when saving fails"
+  },
+  "sheetGroupSettingsDelete": "Eliminar hogar",
+  "@sheetGroupSettingsDelete": {
+    "description": "Button to delete household"
+  },
+  "sheetGroupSettingsDeleteConfirm": "Esto eliminará permanentemente este hogar y todos los datos asociados. No se puede deshacer.",
+  "@sheetGroupSettingsDeleteConfirm": {
+    "description": "Confirmation for deleting household"
+  },
+  "sheetGroupSettingsDescriptionHint": "Unas palabras sobre este hogar",
+  "@sheetGroupSettingsDescriptionHint": {
+    "description": "Hint text for household description"
+  },
+  "sheetGroupSettingsHouseholdDeleted": "Hogar eliminado",
+  "@sheetGroupSettingsHouseholdDeleted": {
+    "description": "Snackbar when household is deleted"
+  },
+  "sheetGroupSettingsInvite": "Invitar",
+  "@sheetGroupSettingsInvite": {
+    "description": "Button to invite a member"
+  },
+  "sheetGroupSettingsLeave": "Abandonar hogar",
+  "@sheetGroupSettingsLeave": {
+    "description": "Button to leave household"
+  },
+  "sheetGroupSettingsLeaveAction": "Abandonar",
+  "@sheetGroupSettingsLeaveAction": {
+    "description": "Confirm leave action"
+  },
+  "sheetGroupSettingsLeaveConfirm": "¿Seguro que quieres abandonar este hogar? Todos tus datos permanecerán en el hogar.",
+  "@sheetGroupSettingsLeaveConfirm": {
+    "description": "Confirmation for leaving household"
+  },
+  "sheetGroupSettingsMemberRemoved": "{name} eliminado",
+  "@sheetGroupSettingsMemberRemoved": {
+    "description": "Snackbar when member is removed",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetGroupSettingsMembersLabel": "Miembros",
+  "@sheetGroupSettingsMembersLabel": {
+    "description": "Section label for household members"
+  },
+  "sheetGroupSettingsName": "Nombre del hogar",
+  "@sheetGroupSettingsName": {
+    "description": "Name input label"
+  },
+  "sheetGroupSettingsRemoveMember": "Eliminar miembro",
+  "@sheetGroupSettingsRemoveMember": {
+    "description": "Dialog title for removing a member"
+  },
+  "sheetGroupSettingsRemoveMemberConfirm": "¿Eliminar a {name} de este hogar?",
+  "@sheetGroupSettingsRemoveMemberConfirm": {
+    "description": "Confirmation dialog body for removing a member",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetGroupSettingsRemoveMemberTooltip": "Eliminar {name}",
+  "@sheetGroupSettingsRemoveMemberTooltip": {
+    "description": "Tooltip to remove a member",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetGroupSettingsSaveZones": "Guardar zonas",
+  "@sheetGroupSettingsSaveZones": {
+    "description": "Button to save chore zones"
+  },
+  "sheetGroupSettingsSaved": "Ajustes guardados",
+  "@sheetGroupSettingsSaved": {
+    "description": "Snackbar when settings are saved"
+  },
+  "sheetGroupSettingsTitle": "Ajustes del hogar",
+  "@sheetGroupSettingsTitle": {
+    "description": "Sheet title for group settings"
+  },
+  "sheetGroupSettingsZoneHint": "Cocina, Baño…",
+  "@sheetGroupSettingsZoneHint": {
+    "description": "Placeholder for zone input"
+  },
+  "sheetInviteCopied": "Enlace de invitación copiado",
+  "@sheetInviteCopied": {
+    "description": "Snackbar when link is copied"
+  },
+  "sheetInviteCopy": "Copiar enlace",
+  "@sheetInviteCopy": {
+    "description": "Copy invite link button"
+  },
+  "sheetInviteShare": "Compartir enlace",
+  "@sheetInviteShare": {
+    "description": "Share invite link button"
+  },
+  "sheetInviteTitle": "Invitar al hogar",
+  "@sheetInviteTitle": {
+    "description": "Sheet title for inviting to household"
+  },
+  "sheetJoinCodeExample": "SUNNY-TACO-42",
+  "@sheetJoinCodeExample": {
+    "description": "Example invite code placeholder"
+  },
+  "sheetJoinCodeHint": "Pega el código de invitación",
+  "@sheetJoinCodeHint": {
+    "description": "Invite code placeholder"
+  },
+  "sheetJoinCodeLabel": "Código de invitación",
+  "@sheetJoinCodeLabel": {
+    "description": "Invite code input label"
+  },
+  "sheetJoinJoin": "Unirse",
+  "@sheetJoinJoin": {
+    "description": "Join button"
+  },
+  "sheetJoinTitle": "Unirse al hogar",
+  "@sheetJoinTitle": {
+    "description": "Sheet title for joining a household"
+  },
+  "sheetRecipeAddToListAdded": "{count, plural, =1{1 artículo añadido} other{{count} artículos añadidos}}",
+  "@sheetRecipeAddToListAdded": {
+    "description": "Snackbar when ingredients are added",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "sheetRecipeAddToListCouldNotAdd": "No se pudieron añadir los ingredientes.",
+  "@sheetRecipeAddToListCouldNotAdd": {
+    "description": "Error when adding ingredients fails"
+  },
+  "sheetRecipeAddToListTitle": "Añadir a la lista",
+  "@sheetRecipeAddToListTitle": {
+    "description": "Sheet title for adding recipe ingredients to list"
+  },
+  "sheetSettlementConfirm": "Confirmar liquidación",
+  "@sheetSettlementConfirm": {
+    "description": "Confirm settlement button"
+  },
+  "sheetSettlementFrom": "De",
+  "@sheetSettlementFrom": {
+    "description": "Party label: from"
+  },
+  "sheetSettlementRecordPayment": "Registra esta liquidación después de realizar el pago.",
+  "@sheetSettlementRecordPayment": {
+    "description": "Settlement helper text"
+  },
+  "sheetSettlementTitle": "Registrar liquidación",
+  "@sheetSettlementTitle": {
+    "description": "Settlement confirmation dialog title"
+  },
+  "sheetSettlementTo": "Para",
+  "@sheetSettlementTo": {
+    "description": "Party label: to"
+  },
+  "smartCaptureLaunchTitle": "Revisar foto",
+  "@smartCaptureLaunchTitle": {
+    "description": "Smart capture launcher review title"
+  },
+  "storePickerLoadError": "No se pudieron cargar las tiendas.",
+  "@storePickerLoadError": {
+    "description": "Store picker load error"
+  },
+  "storePickerNoMatch": "Ninguna tienda coincide con tu búsqueda.",
+  "@storePickerNoMatch": {
+    "description": "No store search results"
+  },
+  "storePickerNoStore": "Sin tienda",
+  "@storePickerNoStore": {
+    "description": "No store option"
+  },
+  "storePickerNoStoreDesc": "Ordenar por categoría en lugar de por disposición de tienda",
+  "@storePickerNoStoreDesc": {
+    "description": "No store option description"
+  },
+  "storePickerSearchHint": "Nombre...",
+  "@storePickerSearchHint": {
+    "description": "Store search hint"
+  },
+  "storePickerSearchLabel": "Buscar tiendas",
+  "@storePickerSearchLabel": {
+    "description": "Store search label"
+  },
+  "storePickerTitle": "Elegir tienda",
+  "@storePickerTitle": {
+    "description": "Store picker sheet title"
+  },
+  "tonightCook": "Cocinar",
+  "@tonightCook": {
+    "description": "Button to start cooking tonight's meal"
+  },
+  "tonightHeader": "Esta noche",
+  "@tonightHeader": {
+    "description": "Tonight card section header"
+  },
+  "tonightNothingPlanned": "Nada planificado para esta noche",
+  "@tonightNothingPlanned": {
+    "description": "Empty state when no meal planned for tonight"
+  },
+  "tonightPlanDinner": "Planificar cena",
+  "@tonightPlanDinner": {
+    "description": "CTA to plan tonight's dinner"
+  },
+  "tonightRecipe": "Receta",
+  "@tonightRecipe": {
+    "description": "Fallback recipe title for tonight card"
+  }
 }

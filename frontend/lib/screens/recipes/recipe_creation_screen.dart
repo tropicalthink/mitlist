@@ -292,8 +292,8 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
     setState(() => _isSaving = true);
 
     try {
-      final recipeService = await ref.read(recipeServiceProviderAsync.future);
       final l10n = AppLocalizations.of(context)!;
+      final recipeService = await ref.read(recipeServiceProviderAsync.future);
       final url = _urlController.text.trim();
       final title = _titleController.text.trim().isEmpty
           ? _titleFromUrl(url, l10n)

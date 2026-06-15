@@ -3470,161 +3470,161 @@ class AppLocalizationsDe extends AppLocalizations {
   String get authOnboardingHomeIconSemantic => 'Haushaltssymbol';
 
   @override
-  String get hubStatsChores => 'Chores';
+  String get hubStatsChores => 'Aufgaben';
 
   @override
-  String get hubStatsDue => 'due';
+  String get hubStatsDue => 'fällig';
 
   @override
-  String get hubStatsMeals => 'Meals';
+  String get hubStatsMeals => 'Mahlzeiten';
 
   @override
-  String get hubStatsPlanned => 'planned';
+  String get hubStatsPlanned => 'geplant';
 
   @override
-  String get hubStatsOverdue => 'overdue';
+  String get hubStatsOverdue => 'überfällig';
 
   @override
-  String get hubStatsAllDone => 'all done';
+  String get hubStatsAllDone => 'alles erledigt';
 
   @override
-  String get hubStatsBalance => 'Balance';
+  String get hubStatsBalance => 'Saldo';
 
   @override
-  String get hubStatsOpen => 'open';
+  String get hubStatsOpen => 'offen';
 
   @override
-  String get hubStatsLists => 'Lists';
+  String get hubStatsLists => 'Listen';
 
   @override
-  String get hubStatsActiveList => 'active list';
+  String get hubStatsActiveList => 'aktive Liste';
 
   @override
-  String get hubStatsActiveLists => 'active lists';
+  String get hubStatsActiveLists => 'aktive Listen';
 
   @override
-  String get hubStatsReminders => 'Reminders';
+  String get hubStatsReminders => 'Erinnerungen';
 
   @override
-  String get hubStatsPinwallReminder => 'pinwall reminder';
+  String get hubStatsPinwallReminder => 'Pinwall-Erinnerung';
 
   @override
-  String get hubStatsPinwallReminders => 'pinwall reminders';
+  String get hubStatsPinwallReminders => 'Pinwall-Erinnerungen';
 
   @override
-  String get hubQuickAddTitle => 'Quick add';
+  String get hubQuickAddTitle => 'Schnell hinzufügen';
 
   @override
-  String get hubQuickAddChore => 'Add chore';
+  String get hubQuickAddChore => 'Aufgabe hinzufügen';
 
   @override
-  String get hubQuickAddExpense => 'Add expense';
+  String get hubQuickAddExpense => 'Ausgabe hinzufügen';
 
   @override
-  String get hubQuickAddNote => 'Pin a note';
+  String get hubQuickAddNote => 'Notiz anpinnen';
 
   @override
-  String get hubQuickAddList => 'New list';
+  String get hubQuickAddList => 'Neue Liste';
 
   @override
-  String get hubActivityTitle => 'Activity';
+  String get hubActivityTitle => 'Aktivität';
 
   @override
   String get hubActivityEmpty =>
-      'Nothing happening yet.\nActivity from your household will appear here.';
+      'Noch nichts los.\nAktivitäten aus deinem Haushalt erscheinen hier.';
 
   @override
   String get hubActivityError =>
-      'Couldn’t load activity. Pull to refresh on the hub.';
+      'Aktivität konnte nicht geladen werden. Zum Aktualisieren auf dem Hub nach unten ziehen.';
 
   @override
-  String get hubOnboardingSwap => 'Swap';
+  String get hubOnboardingSwap => 'Tauschen';
 
   @override
-  String get hubOnboardingSettle => 'Settle';
+  String get hubOnboardingSettle => 'Ausgleichen';
 
   @override
-  String get hubOnboardingDone => 'All done';
+  String get hubOnboardingDone => 'Alles erledigt';
 
   @override
   String get hubOnboardingSwapDesc =>
-      'Pick a flatmate who owes the least to take over this chore.';
+      'Wähle einen Mitbewohner, der am wenigsten schuldet, um diese Aufgabe zu übernehmen.';
 
   @override
   String get hubOnboardingSettleDesc =>
-      'Pay everyone back all at once with suggested settlements.';
+      'Gleiche alle auf einmal aus mit vorgeschlagenen Ausgleichszahlungen.';
 
   @override
   String get hubOnboardingDoneDesc =>
-      'Chores, balances, lists — everything in one place, accounted for.';
+      'Aufgaben, Salden, Listen — alles an einem Ort, vollständig erfasst.';
 
   @override
-  String get appBottomSheetHandle => 'Handle';
+  String get appBottomSheetHandle => 'Griff';
 
   @override
-  String get appBottomSheetClose => 'Close';
+  String get appBottomSheetClose => 'Schließen';
 
   @override
-  String get storePickerTitle => 'Choose store';
+  String get storePickerTitle => 'Geschäft wählen';
 
   @override
-  String get storePickerSearchLabel => 'Search stores';
+  String get storePickerSearchLabel => 'Geschäfte suchen';
 
   @override
   String get storePickerSearchHint => 'Name...';
 
   @override
-  String get storePickerNoMatch => 'No stores match your search.';
+  String get storePickerNoMatch => 'Keine Geschäfte passen zu deiner Suche.';
 
   @override
-  String get storePickerNoStore => 'No store';
+  String get storePickerNoStore => 'Kein Geschäft';
 
   @override
   String get storePickerNoStoreDesc =>
-      'Sort by category instead of a store layout';
+      'Nach Kategorie statt nach Ladenlayout sortieren';
 
   @override
-  String get storePickerLoadError => 'Couldn’t load stores.';
+  String get storePickerLoadError => 'Geschäfte konnten nicht geladen werden.';
 
   @override
-  String get smartCaptureLaunchTitle => 'Check photo';
+  String get smartCaptureLaunchTitle => 'Foto prüfen';
 
   @override
-  String get hubQuickAddToList => 'Add to a list';
+  String get hubQuickAddToList => 'Zur Liste hinzufügen';
 
   @override
-  String get hubQuickAddShoppingTrip => 'Start shopping trip';
+  String get hubQuickAddShoppingTrip => 'Einkauf starten';
 
   @override
-  String get hubOnboardingGetStarted => 'Get started';
+  String get hubOnboardingGetStarted => 'Loslegen';
 
   @override
-  String get hubOnboardingDismiss => 'Dismiss quick start';
+  String get hubOnboardingDismiss => 'Schnellstart schließen';
 
   @override
   String get hubOnboardingDescription =>
-      'Everything starts here. Pick what matters most.';
+      'Alles beginnt hier. Wähle, was am wichtigsten ist.';
 
   @override
-  String get hubOnboardingInvite => 'Invite flatmates';
+  String get hubOnboardingInvite => 'Mitbewohner einladen';
 
   @override
-  String get hubOnboardingCreateList => 'Create a list';
+  String get hubOnboardingCreateList => 'Liste erstellen';
 
   @override
-  String get hubOnboardingAddChore => 'Add a chore';
+  String get hubOnboardingAddChore => 'Aufgabe hinzufügen';
 
   @override
-  String get hubOnboardingTrackExpense => 'Track an expense';
+  String get hubOnboardingTrackExpense => 'Ausgabe erfassen';
 
   @override
-  String get appBottomSheetDiscardTitle => 'Discard changes?';
+  String get appBottomSheetDiscardTitle => 'Änderungen verwerfen?';
 
   @override
-  String get appBottomSheetDiscardBody => 'You have unsaved changes.';
+  String get appBottomSheetDiscardBody => 'Du hast ungespeicherte Änderungen.';
 
   @override
-  String get appBottomSheetKeepEditing => 'Keep editing';
+  String get appBottomSheetKeepEditing => 'Weiter bearbeiten';
 
   @override
   String get sheetExpenseDetailTitle => 'Ausgabendetails';
@@ -4023,7 +4023,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get costSummaryNoPrices => 'Noch keine Artikel mit Preisen...';
 
   @override
-  String get costSummaryNotAvailable => 'N/A';
+  String get costSummaryNotAvailable => 'k. A.';
 
   @override
   String get costSummaryEqualShare => 'Gleicher Anteil pro Person';
@@ -4173,40 +4173,43 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get errorServerHiccup => 'Server hiccup — try again in a moment.';
+  String get errorServerHiccup =>
+      'Serverproblem — versuche es gleich noch einmal.';
 
   @override
   String get errorConflict =>
-      'Someone else changed this. Refresh and try again.';
+      'Jemand anderes hat das geändert. Aktualisiere und versuche es erneut.';
 
   @override
-  String get errorNotFound => 'Not found. It may have been deleted.';
+  String get errorNotFound =>
+      'Nicht gefunden. Es wurde möglicherweise gelöscht.';
 
   @override
-  String get errorNoPermission => 'You don\'t have permission for this.';
+  String get errorNoPermission => 'Du hast keine Berechtigung dafür.';
 
   @override
-  String get errorSignInAgain => 'Please sign in again.';
+  String get errorSignInAgain => 'Bitte melde dich erneut an.';
 
   @override
-  String get errorGenericRetry => 'Something went wrong. Please try again.';
+  String get errorGenericRetry =>
+      'Etwas ist schiefgegangen. Bitte versuche es erneut.';
 
   @override
   String get createListTodoDesc =>
-      'A simple checklist for tasks that need doing.';
+      'Eine einfache Checkliste für Aufgaben, die erledigt werden müssen.';
 
   @override
   String get createListCustomDesc =>
-      'A flexible list for anything that does not fit.';
+      'Eine flexible Liste für alles, was nicht ins Schema passt.';
 
   @override
-  String get createListScanSemantics => 'Scan list via camera';
+  String get createListScanSemantics => 'Liste per Kamera scannen';
 
   @override
-  String get createListHouseholdLabel => 'Household';
+  String get createListHouseholdLabel => 'Haushalt';
 
   @override
-  String get createListNoHousehold => 'No household available.';
+  String get createListNoHousehold => 'Kein Haushalt verfügbar.';
 
   @override
   String get sheetJoinCodeExample => 'SUNNY-TACO-42';
@@ -4216,120 +4219,123 @@ class AppLocalizationsDe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count members already inside',
-      one: '1 member already inside',
+      other: '$count Mitglieder bereits drin',
+      one: '1 Mitglied bereits drin',
     );
     return '$_temp0';
   }
 
   @override
-  String get inviteQrUnavailable => 'QR unavailable';
+  String get inviteQrUnavailable => 'QR nicht verfügbar';
 
   @override
   String expenseCreationSplitAssignedOf(String assigned, String total) {
-    return '$assigned of $total';
+    return '$assigned von $total';
   }
 
   @override
   String expenseCreationSplitAmountsNegative(String assigned) {
-    return '$assigned · amounts can\'t be negative';
+    return '$assigned · Beträge dürfen nicht negativ sein';
   }
 
   @override
   String expenseCreationSplitLeftToAssign(String assigned, String remaining) {
-    return '$assigned · $remaining left to assign';
+    return '$assigned · $remaining noch zuzuweisen';
   }
 
   @override
   String expenseCreationSplitOver(String assigned, String over) {
-    return '$assigned · $over over';
+    return '$assigned · $over zu viel';
   }
 
   @override
   String expenseCreationSplitPercentRange(String sum) {
-    return '$sum% assigned · each share must be 0–100%';
+    return '$sum% zugewiesen · jeder Anteil muss 0–100% sein';
   }
 
   @override
   String expenseCreationSplitPercentOf100(String sum) {
-    return '$sum% of 100%';
+    return '$sum% von 100%';
   }
 
   @override
   String expenseCreationSplitSharesPerShare(num count, String perShare) {
-    return '$count shares · $perShare per share';
+    return '$count Anteile · $perShare pro Anteil';
   }
 
   @override
   String expenseCreationSplitEach(String amount) {
-    return '$amount each';
+    return '$amount pro Person';
   }
 
   @override
   String expenseCreationSplitApproxEach(String amount) {
-    return '≈ $amount each';
+    return '≈ $amount pro Person';
   }
 
   @override
   String expenseCreationRemoveFromSplit(String name) {
-    return 'Remove $name from split';
+    return '$name aus Aufteilung entfernen';
   }
 
   @override
   String expenseCreationAddToSplit(String name) {
-    return 'Add $name to split';
+    return '$name zur Aufteilung hinzufügen';
   }
 
   @override
-  String get expenseDetailCouldNotLoadSplits => 'Couldn\'t load splits.';
+  String get expenseDetailCouldNotLoadSplits =>
+      'Aufteilungen konnten nicht geladen werden.';
 
   @override
-  String get expenseDetailCouldNotLoadReceipts => 'Couldn\'t load receipts.';
+  String get expenseDetailCouldNotLoadReceipts =>
+      'Belege konnten nicht geladen werden.';
 
   @override
-  String get expenseDetailCouldNotRemoveReceipt => 'Couldn\'t remove receipt.';
+  String get expenseDetailCouldNotRemoveReceipt =>
+      'Beleg konnte nicht entfernt werden.';
 
   @override
-  String get expenseDetailRemoving => 'Removing…';
+  String get expenseDetailRemoving => 'Wird entfernt…';
 
   @override
-  String get recipeAddToListTargetList => 'Target list';
+  String get recipeAddToListTargetList => 'Zielliste';
 
   @override
-  String get recipeAddToListNoIngredients => 'No ingredients';
+  String get recipeAddToListNoIngredients => 'Keine Zutaten';
 
   @override
   String get recipeAddToListNoIngredientsDesc =>
-      'This recipe has no parsed ingredients';
+      'Dieses Rezept hat keine erkannten Zutaten';
 
   @override
   String recipeAddToListRemoveFromSelection(String name) {
-    return 'Remove $name from selection';
+    return '$name aus Auswahl entfernen';
   }
 
   @override
   String recipeAddToListAddToSelection(String name) {
-    return 'Add $name to selection';
+    return '$name zur Auswahl hinzufügen';
   }
 
   @override
-  String get pinwallLinkChore => 'A chore';
+  String get pinwallLinkChore => 'Eine Aufgabe';
 
   @override
-  String get pinwallLinkList => 'A list';
+  String get pinwallLinkList => 'Eine Liste';
 
   @override
-  String get pinwallCouldNotLoad => 'Couldn\'t load the pinwall.';
+  String get pinwallCouldNotLoad => 'Pinwall konnte nicht geladen werden.';
 
   @override
-  String get composerItemHint => 'e.g. Milk, 2 avocados, or 500g flour';
+  String get composerItemHint => 'z. B. Milch, 2 Avocados oder 500 g Mehl';
 
   @override
-  String get aisleOther => 'Other';
+  String get aisleOther => 'Sonstiges';
 
   @override
   String hubHouseholdsCurrent(String name) {
-    return 'Households, current $name';
+    return 'Haushalte, aktuell $name';
   }
 
   @override
@@ -4337,48 +4343,48 @@ class AppLocalizationsDe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count steps',
-      one: '1 step',
+      other: '$count Schritte',
+      one: '1 Schritt',
     );
     return '$_temp0';
   }
 
   @override
-  String get currencyUsd => 'USD - US Dollar';
+  String get currencyUsd => 'USD - US-Dollar';
 
   @override
   String get currencyEur => 'EUR - Euro';
 
   @override
-  String get currencyGbp => 'GBP - British Pound';
+  String get currencyGbp => 'GBP - Britisches Pfund';
 
   @override
-  String get currencyJpy => 'JPY - Japanese Yen';
+  String get currencyJpy => 'JPY - Japanischer Yen';
 
   @override
-  String get currencyCad => 'CAD - Canadian Dollar';
+  String get currencyCad => 'CAD - Kanadischer Dollar';
 
   @override
-  String get currencyAud => 'AUD - Australian Dollar';
+  String get currencyAud => 'AUD - Australischer Dollar';
 
   @override
-  String get currencyChf => 'CHF - Swiss Franc';
+  String get currencyChf => 'CHF - Schweizer Franken';
 
   @override
-  String get currencySek => 'SEK - Swedish Krona';
+  String get currencySek => 'SEK - Schwedische Krone';
 
   @override
-  String get currencyNok => 'NOK - Norwegian Krone';
+  String get currencyNok => 'NOK - Norwegische Krone';
 
   @override
-  String get currencyDkk => 'DKK - Danish Krone';
+  String get currencyDkk => 'DKK - Dänische Krone';
 
   @override
-  String get currencyPln => 'PLN - Polish Zloty';
+  String get currencyPln => 'PLN - Polnischer Złoty';
 
   @override
-  String get currencyCzk => 'CZK - Czech Koruna';
+  String get currencyCzk => 'CZK - Tschechische Krone';
 
   @override
-  String get currencyHuf => 'HUF - Hungarian Forint';
+  String get currencyHuf => 'HUF - Ungarischer Forint';
 }
