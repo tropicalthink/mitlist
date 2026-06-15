@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 
 const int kOutboxMaxAttempts = 10;
 
-enum OutboxErrorDisposition { transient, permanent }
+enum OutboxErrorDisposition { transient, permanent, conflict }
 
 OutboxErrorDisposition classifyOutboxError(Object error) {
   if (error is! DioException) return OutboxErrorDisposition.permanent;
@@ -21,6 +21,7 @@ OutboxErrorDisposition classifyOutboxError(Object error) {
   }
   final status = error.response?.statusCode;
   if (status == null) return OutboxErrorDisposition.transient;
+  if (status == 409) return OutboxErrorDisposition.conflict;
   if (status == 408 || status == 429) return OutboxErrorDisposition.transient;
   if (status >= 500) return OutboxErrorDisposition.transient;
   if (status >= 400) return OutboxErrorDisposition.permanent;

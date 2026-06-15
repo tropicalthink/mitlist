@@ -64,6 +64,8 @@ class RecipeRepository {
       type: 'createRecipe',
       payload: {'tempId': tempId, 'request': req.toJson()},
       idempotencyKey: 'createRecipe:$tempId',
+      entityType: 'recipe',
+      entityId: tempId,
     );
 
     if (_autoSync) unawaited(drainOutboxOnce());
@@ -100,6 +102,8 @@ class RecipeRepository {
       type: 'updateRecipe',
       payload: {'recipeId': recipeId, 'patch': req.toJson()},
       idempotencyKey: 'updateRecipe:$recipeId:${DateTime.now().toIso8601String()}',
+      entityType: 'recipe',
+      entityId: recipeId,
     );
 
     if (_autoSync) unawaited(drainOutboxOnce());
@@ -119,6 +123,8 @@ class RecipeRepository {
       type: 'deleteRecipe',
       payload: {'recipeId': recipeId},
       idempotencyKey: 'deleteRecipe:$recipeId',
+      entityType: 'recipe',
+      entityId: recipeId,
     );
 
     if (_autoSync) unawaited(drainOutboxOnce());

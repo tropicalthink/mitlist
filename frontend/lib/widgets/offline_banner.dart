@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/outbox_provider.dart';
+import '../sheets/conflict_resolution_sheet.dart';
+import '../sheets/failed_changes_sheet.dart';
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
@@ -122,13 +124,24 @@ class _Banner extends ConsumerWidget {
               ? 'Couldn\u2019t sync ${state.failedCount} changes'
               : 'Couldn\u2019t sync a change',
         ),
+      OutboxStatus.conflict => (
+          colorScheme.tertiary,
+          Icons.merge_type,
+          state.conflictCount > 1
+              ? '${state.conflictCount} changes need your review'
+              : 'A change needs your review',
+        ),
       OutboxStatus.online => (colorScheme.onSurfaceVariant, Icons.check, ''),
     };
 
     return Material(
       color: color,
       child: InkWell(
-        onTap: () => _showDetails(context),
+        onTap: () => state.hasConflicts
+            ? showConflictResolutionSheet(context)
+            : state.hasErrors
+                ? showFailedChangesSheet(context)
+                : _showDetails(context),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(
@@ -191,6 +204,6 @@ class _Banner extends ConsumerWidget {
 
   void _retry(WidgetRef ref) {
     final coordinator = ref.read(outboxCoordinatorProvider).valueOrNull;
-    coordinator?.drain();
+    coordinator?.retryFailed();
   }
 }
