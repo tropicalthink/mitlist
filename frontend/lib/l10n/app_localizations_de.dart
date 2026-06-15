@@ -2838,6 +2838,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get pinwallBoardLabel => 'Pinwall';
 
   @override
+  String get pinwallSnapshot => 'Auf einen Blick';
+
+  @override
   String get pinwallDragHint =>
       'Notizen zum Verschieben ziehen  ·  Zum Zoomen kneifen';
 

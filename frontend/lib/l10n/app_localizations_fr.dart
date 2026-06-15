@@ -2824,6 +2824,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pinwallBoardLabel => 'Pinwall';
 
   @override
+  String get pinwallSnapshot => 'Vue d\'ensemble';
+
+  @override
   String get pinwallDragHint =>
       'Glisser les notes pour déplacer  ·  Pincer pour zoomer';
 
