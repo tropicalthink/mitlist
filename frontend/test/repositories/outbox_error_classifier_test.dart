@@ -7,12 +7,17 @@ import '../support/fakes.dart';
 
 void main() {
   group('classifyOutboxError —', () {
-    test('4xx (non-429) are permanent', () {
-      for (final code in [400, 401, 403, 404, 409, 422]) {
+    test('4xx (non-409/429) are permanent', () {
+      for (final code in [400, 401, 403, 404, 422]) {
         expect(classifyOutboxError(fakeDioException(statusCode: code)),
             equals(OutboxErrorDisposition.permanent),
             reason: 'status $code should be permanent');
       }
+    });
+
+    test('409 is a conflict (routed to the resolution UI)', () {
+      expect(classifyOutboxError(fakeDioException(statusCode: 409)),
+          equals(OutboxErrorDisposition.conflict));
     });
 
     test('408 and 429 are transient', () {

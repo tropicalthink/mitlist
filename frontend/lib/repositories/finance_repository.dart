@@ -99,6 +99,8 @@ class FinanceRepository {
         'request': req.toJson(),
       },
       idempotencyKey: 'createExpense:$tempId',
+      entityType: 'expense',
+      entityId: tempId,
     );
 
     if (_autoSync) unawaited(drainOutboxOnce());
@@ -135,6 +137,8 @@ class FinanceRepository {
         'patch': req.toJson(),
       },
       idempotencyKey: 'updateExpense:$expenseId:${DateTime.now().toIso8601String()}',
+      entityType: 'expense',
+      entityId: expenseId,
     );
 
     if (_autoSync) unawaited(drainOutboxOnce());
@@ -151,6 +155,8 @@ class FinanceRepository {
       type: 'deleteExpense',
       payload: {'expenseId': expenseId},
       idempotencyKey: 'deleteExpense:$expenseId',
+      entityType: 'expense',
+      entityId: expenseId,
     );
 
     if (_autoSync) unawaited(drainOutboxOnce());

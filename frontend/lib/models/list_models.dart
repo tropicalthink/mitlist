@@ -181,6 +181,12 @@ class UpdateListItemRequest {
   final int? priceCents;
   final bool? checked;
   final int? position;
+
+  /// The `updated_at` the edit was based on, for optimistic concurrency. When
+  /// set, the server returns 409 (with its current state) if the row moved on
+  /// since — so a concurrent edit is detected instead of silently clobbered.
+  final String? expectedUpdatedAt;
+
   const UpdateListItemRequest(
       {this.name,
       this.quantity,
@@ -188,7 +194,8 @@ class UpdateListItemRequest {
       this.note,
       this.priceCents,
       this.checked,
-      this.position});
+      this.position,
+      this.expectedUpdatedAt});
   Map<String, dynamic> toJson() {
     final m = <String, dynamic>{};
     if (name != null) m['name'] = name;
@@ -198,6 +205,7 @@ class UpdateListItemRequest {
     if (priceCents != null) m['price_cents'] = priceCents;
     if (checked != null) m['checked'] = checked;
     if (position != null) m['position'] = position;
+    if (expectedUpdatedAt != null) m['expected_updated_at'] = expectedUpdatedAt;
     return m;
   }
 }

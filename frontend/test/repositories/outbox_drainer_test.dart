@@ -259,5 +259,53 @@ void main() {
       final ops = await db.getOutboxBatch(limit: 10);
       expect(ops.first.attemptCount, equals(kOutboxMaxAttempts));
     });
+
+    // -------------------------------------------------------------------------
+    // Plan 004 — Case D: a 409 records a conflict, removes the op, keeps going.
+    // -------------------------------------------------------------------------
+    test('409 records a conflict, drops the op, and continues the queue',
+        () async {
+      await db.enqueueOutbox(
+        id: 'op-conflict',
+        type: 'updateItem',
+        payload: {
+          'listId': 'l1',
+          'itemId': 'i1',
+          'patch': {'name': 'mine'}
+        },
+        entityType: 'listItem',
+        entityId: 'i1',
+      );
+      await db.enqueueOutbox(id: 'op-next', type: 'updateItem', payload: {});
+
+      var nextRan = false;
+      await OutboxDrainer(db).drain(
+        types: const ['updateItem'],
+        handlers: {
+          'updateItem': (op, payload) async {
+            if (op.id == 'op-conflict') {
+              throw fakeDioException(
+                statusCode: 409,
+                data: {
+                  'error': 'conflict',
+                  'current': {'id': 'i1', 'name': 'theirs'},
+                },
+              );
+            }
+            nextRan = true;
+            await db.deleteOutboxOp(op.id);
+          },
+        },
+      );
+
+      expect(await db.conflictCount(), 1);
+      expect(await db.getOutboxOpById('op-conflict'), isNull,
+          reason: 'conflicting op is removed (stops retrying)');
+      expect(nextRan, isTrue, reason: 'queue keeps draining past the conflict');
+
+      final conflicts = await db.getConflicts();
+      expect(conflicts.single.serverPayloadJson, contains('theirs'));
+      expect(conflicts.single.localPayloadJson, contains('mine'));
+    });
   });
 }

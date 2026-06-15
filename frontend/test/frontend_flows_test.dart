@@ -1723,6 +1723,12 @@ class FakeListRepository implements ListRepository {
 
   @override
   void detachSse() {}
+
+  @override
+  Future<void> resolveConflictAcceptServer(Conflict conflict) async {}
+
+  @override
+  Future<void> resolveConflictKeepLocal(Conflict conflict) async {}
 }
 
 class FakeFinanceRepository implements FinanceRepository {

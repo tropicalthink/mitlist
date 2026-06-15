@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:logger/logger.dart';
 
@@ -92,6 +93,62 @@ class OutboxCoordinator {
       _scheduleRetry(const Duration(seconds: 10));
     } finally {
       _isDraining = false;
+    }
+  }
+
+  /// Re-arms dead-lettered ops and drains. Plain [drain] deliberately skips ops
+  /// at the failure threshold, so the banner's "Retry" must reset them first —
+  /// otherwise the button is a no-op for the very failures it offers to retry.
+  Future<void> retryFailed() async {
+    await _db.resetFailedOutboxOps();
+    await drain();
+  }
+
+  /// Re-arms a single dead-lettered op and drains.
+  Future<void> retryOp(String opId) async {
+    await _db.resetFailedOutboxOps(id: opId);
+    await drain();
+  }
+
+  /// Discards a single failed op (the "give up on this change" path).
+  ///
+  /// For a failed *create* the server never accepted the row, so the optimistic
+  /// local entity is deleted — otherwise it lingers as ghost data the server
+  /// will never have. For a failed update/delete we cannot reconstruct the
+  /// server's value locally, so we drop the op and re-fetch the affected
+  /// collection from the server (best-effort) to reconcile the local row.
+  Future<void> discardFailedOp(String opId) async {
+    final op = await _db.getOutboxOpById(opId);
+    if (op == null) return;
+
+    final entityType = op.entityType;
+    final entityId = op.entityId;
+    final isCreate = op.type.startsWith('create');
+
+    if (isCreate && entityType != null && entityId != null) {
+      await _db.deleteLocalEntity(entityType, entityId);
+    }
+    await _db.deleteOutboxOp(opId);
+
+    if (!isCreate) {
+      await _reconcileAfterDiscard(op);
+    }
+  }
+
+  /// Best-effort server re-fetch so a discarded update/delete stops showing the
+  /// user's abandoned local edit. Swallows errors (offline is fine — a later
+  /// refresh/SSE reconciles).
+  Future<void> _reconcileAfterDiscard(OutboxOp op) async {
+    try {
+      final payload =
+          (jsonDecode(op.payloadJson) as Map).cast<String, dynamic>();
+      switch (op.entityType) {
+        case 'listItem':
+          final listId = payload['listId'] as String?;
+          if (listId != null) await _listRepo.refreshItems(listId);
+      }
+    } catch (_) {
+      // Reconciliation is best-effort; the op is already gone.
     }
   }
 
