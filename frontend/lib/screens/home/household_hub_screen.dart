@@ -105,9 +105,27 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     await ref.read(currentGroupIdProvider.notifier).ensureLoaded();
     final saved = ref.read(currentGroupIdProvider);
     if (saved != null) {
-      _resolvedGroupId = saved;
-      unawaited(_loadData());
-      return;
+      try {
+        final groups = await ref.read(cachedGroupsProvider.future);
+        final gid = resolveActiveGroupId(groups, saved);
+        if (!mounted) return;
+        if (isValidGroupId(gid)) {
+          _resolvedGroupId = gid;
+          if (gid != saved) {
+            unawaited(ref.read(currentGroupIdProvider.notifier).set(gid));
+          }
+          unawaited(_loadData());
+          return;
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _error = e;
+          });
+        }
+        return;
+      }
     }
 
     try {
