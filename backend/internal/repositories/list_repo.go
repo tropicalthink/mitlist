@@ -212,6 +212,7 @@ func (r *ListRepository) CreateItems(ctx context.Context, items []models.ListIte
 	priceCents := make([]*int, len(items))
 	productIDs := make([]*uuid.UUID, len(items))
 	storeIDs := make([]*uuid.UUID, len(items))
+	canonicalItemIDs := make([]*uuid.UUID, len(items))
 	addedBy := make([]*uuid.UUID, len(items))
 	checked := make([]bool, len(items))
 	positions := make([]int32, len(items))
@@ -230,17 +231,18 @@ func (r *ListRepository) CreateItems(ctx context.Context, items []models.ListIte
 		priceCents[i] = items[i].PriceCents
 		productIDs[i] = items[i].ProductID
 		storeIDs[i] = items[i].StoreID
+		canonicalItemIDs[i] = items[i].CanonicalItemID
 		addedBy[i] = items[i].AddedBy
 		checked[i] = items[i].Checked
 		positions[i] = int32(items[i].Position)
 	}
 	_, err := r.pool.Exec(ctx, `
-		INSERT INTO list_items (id, list_id, name, quantity, unit, note, price_cents, product_id, store_id, added_by, checked, position, created_at, updated_at)
-		SELECT id, list_id, name, quantity, unit, note, price_cents, product_id, store_id, added_by, checked, position, $1, $1
-		FROM unnest($2::uuid[], $3::uuid[], $4::text[], $5::float8[], $6::text[], $7::text[], $8::int[], $9::uuid[], $10::uuid[], $11::uuid[], $12::bool[], $13::int[]) AS t(
-			id, list_id, name, quantity, unit, note, price_cents, product_id, store_id, added_by, checked, position
+		INSERT INTO list_items (id, list_id, name, quantity, unit, note, price_cents, product_id, store_id, canonical_item_id, added_by, checked, position, created_at, updated_at)
+		SELECT id, list_id, name, quantity, unit, note, price_cents, product_id, store_id, canonical_item_id, added_by, checked, position, $1, $1
+		FROM unnest($2::uuid[], $3::uuid[], $4::text[], $5::float8[], $6::text[], $7::text[], $8::int[], $9::uuid[], $10::uuid[], $11::uuid[], $12::bool[], $13::int[], $14::uuid[]) AS t(
+			id, list_id, name, quantity, unit, note, price_cents, product_id, store_id, added_by, checked, position, canonical_item_id
 		)
-	`, now, ids, listIDs, names, quantities, units, notes, priceCents, productIDs, storeIDs, addedBy, checked, positions)
+	`, now, ids, listIDs, names, quantities, units, notes, priceCents, productIDs, storeIDs, addedBy, checked, positions, canonicalItemIDs)
 	return err
 }
 
