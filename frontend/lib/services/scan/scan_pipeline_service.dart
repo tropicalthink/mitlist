@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 import 'package:uuid/uuid.dart';
 
-import '../../services/scan_service.dart';
 import '../../storage/app_database.dart';
 import 'canonical_resolver_service.dart';
 import 'confidence_service.dart';
@@ -11,26 +10,17 @@ import 'extraction_service.dart';
 import 'grocery_classifier_service.dart';
 import 'ocr_service.dart';
 import 'static_embedding_service.dart';
-import 'routing_service.dart';
 import 'scan_models.dart';
 
 const _uuid = Uuid();
 
 /// Single entry point for the grocery scan pipeline.
 ///
-/// On-device flow (ML Kit):
-///   enhance → OCR → routing decision → extract → resolve → aisle → confidence
-///
-/// Cloud fallback (CrofAI):
-///   Called when routing says the on-device result is too low quality.
-///   CrofAI items are wrapped into [GroceryPrediction]s without canonical
-///   resolution (they pass through as-is for the user to confirm).
+/// Flow: enhance → OCR → extract → resolve → aisle → confidence
 class ScanPipelineService {
   final AppDatabase _db;
-  final ScanService _cloudFallback;
   final EnhancementService _enhancement;
   final OcrService _ocr;
-  final RoutingService _routing;
   final ExtractionService _extraction;
   final CanonicalResolverService _resolver;
   final CorrectionMemoryService _corrections;
@@ -38,12 +28,9 @@ class ScanPipelineService {
 
   ScanPipelineService({
     required AppDatabase db,
-    required ScanService cloudFallback,
   })  : _db = db,
-        _cloudFallback = cloudFallback,
         _enhancement = EnhancementService(),
         _ocr = OcrService(),
-        _routing = RoutingService(),
         _extraction = ExtractionService(),
         _resolver = CanonicalResolverService(
           db,
@@ -61,7 +48,6 @@ class ScanPipelineService {
     required String groupId,
     String? storeId,
     bool isOnline = true,
-    bool allowCloud = false,
   }) async {
     // 1. Enhance.
     final enhanced = _enhancement.enhance(imageBytes);
@@ -69,24 +55,17 @@ class ScanPipelineService {
     // 2. OCR.
     final lines = await _ocr.recognise(enhanced);
 
-    // 3. Route.
-    final decision = _routing.decide(lines, isOnline: isOnline, allowCloud: allowCloud);
-
-    if (!decision.useOnDevice) {
-      return _runCloud(imageBytes);
-    }
-
-    // 4. Extract qty / unit / price / name.
+    // 3. Extract qty / unit / price / name.
     final parsed = _extraction.extractAll(lines);
 
-    // 5. Canonical resolve + confidence.
+    // 4. Canonical resolve + confidence.
     final predictions = <GroceryPrediction>[];
     final ignored = <GroceryPrediction>[];
 
     for (final item in parsed) {
       final resolved = await _resolver.resolve(item.itemName, groupId);
 
-      // 6. Aisle assignment. With a store selected, use its shipped layout
+      // 5. Aisle assignment. With a store selected, use its shipped layout
       //    (shopping-path sort order); otherwise fall back to the item's
       //    category as a coarse aisle label.
       String? aisle;
@@ -148,38 +127,5 @@ class ScanPipelineService {
       engine: 'mlkit',
       needsReview: needsReview,
     );
-  }
-
-  /// Cloud fallback: calls CrofAI and wraps the items as unresolved predictions.
-  Future<GroceryScanResult> _runCloud(Uint8List imageBytes) async {
-    try {
-      final result =
-          await _cloudFallback.scanImage(imageBytes.toList(), 'image/jpeg');
-      final predictions = result.items.map((item) {
-        final qty = double.tryParse(item.quantity ?? '1') ?? 1;
-        return _confidence.applyTo(
-          GroceryPrediction(
-            id: _uuid.v4(),
-            rawText: item.name,
-            displayName: item.name,
-            quantity: qty,
-            unit: item.unit ?? '',
-            priceCents: item.priceCents,
-          ),
-          // Cloud result: moderate baseline confidence — user should confirm.
-          0.7,
-        );
-      }).toList();
-
-      return GroceryScanResult(
-        imageBytes: imageBytes,
-        items: predictions,
-        engine: 'crofai',
-        needsReview: true,
-      );
-    } catch (_) {
-      // Cloud call failed. Return empty result so user can retry.
-      return const GroceryScanResult(items: [], engine: 'crofai', needsReview: false);
-    }
   }
 }

@@ -80,6 +80,8 @@ class FinanceRepository {
       groupId: req.groupId,
       payerId: req.payerId,
       amount: req.amount,
+      baseAmount: req.baseAmount,
+      fxRate: req.fxRate,
       description: req.description,
       category: req.category,
       currency: req.currency,
@@ -113,6 +115,8 @@ class FinanceRepository {
         groupId: e.groupId,
         payerId: req.payerId ?? e.payerId,
         amount: req.amount ?? e.amount,
+        baseAmount: req.baseAmount ?? e.baseAmount,
+        fxRate: req.fxRate ?? e.fxRate,
         description: req.description ?? e.description,
         category: req.category ?? e.category,
         currency: req.currency ?? e.currency,
@@ -181,6 +185,12 @@ class FinanceRepository {
       groupId: requestRaw['group_id'] as String,
       payerId: requestRaw['payer_id'] as String,
       amount: requestRaw['amount'] as int,
+      baseAmount: requestRaw['base_amount'] == null
+          ? requestRaw['amount'] as int
+          : requestRaw['base_amount'] as int,
+      fxRate: (requestRaw['base_amount'] == null)
+          ? 1.0
+          : (requestRaw['fx_rate'] as num?)?.toDouble() ?? 1.0,
       description: requestRaw['description'] as String,
       category: requestRaw['category'] as String? ?? 'other',
       currency: requestRaw['currency'] as String? ?? 'USD',
@@ -209,6 +219,8 @@ class FinanceRepository {
     final req = api.UpdateExpenseRequest(
       payerId: patch['payer_id'] as String?,
       amount: patch['amount'] as int?,
+      baseAmount: patch['base_amount'] as int?,
+      fxRate: (patch['fx_rate'] as num?)?.toDouble(),
       description: patch['description'] as String?,
       category: patch['category'] as String?,
       currency: patch['currency'] as String?,
@@ -241,6 +253,8 @@ class FinanceRepository {
       groupId: Value(e.groupId),
       payerId: Value(e.payerId),
       amount: Value(e.amount),
+      baseAmount: Value(e.baseAmount),
+      fxRate: Value(e.fxRate),
       description: Value(e.description),
       category: Value(e.category),
       currency: Value(e.currency),
@@ -256,6 +270,8 @@ class FinanceRepository {
       groupId: row.groupId,
       payerId: row.payerId,
       amount: row.amount,
+      baseAmount: row.baseAmount,
+      fxRate: row.fxRate,
       description: row.description,
       category: row.category,
       currency: row.currency,

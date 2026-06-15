@@ -21,6 +21,8 @@ func TestFinanceRepo_CreateExpense(t *testing.T) {
 		GroupID:     fixedUUID(),
 		PayerID:     fixedUUID(),
 		Amount:      1000,
+		BaseAmount:  1000,
+		FxRate:      1,
 		Description: "Dinner",
 		Category:    "food",
 		Currency:    "USD",
@@ -28,7 +30,7 @@ func TestFinanceRepo_CreateExpense(t *testing.T) {
 	}
 
 	mock.ExpectExec("INSERT INTO expenses").
-		WithArgs(pgxmock.AnyArg(), e.GroupID, e.PayerID, e.Amount, e.Description, e.Category, e.Currency, e.Notes, e.Date, pgxmock.AnyArg(), pgxmock.AnyArg()).
+		WithArgs(pgxmock.AnyArg(), e.GroupID, e.PayerID, e.Amount, e.BaseAmount, e.FxRate, e.Description, e.Category, e.Currency, e.Notes, e.Date, pgxmock.AnyArg(), pgxmock.AnyArg()).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
 	err := repo.CreateExpense(context.Background(), e)
@@ -42,8 +44,8 @@ func TestFinanceRepo_GetExpenseByID(t *testing.T) {
 	repo := NewFinanceRepo(mock)
 	id := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "group_id", "payer_id", "amount", "description", "category", "currency", "notes", "date", "created_at", "updated_at"}).
-		AddRow(id, fixedUUID(), fixedUUID(), 1000, "Dinner", "food", "USD", "", fixedTime(), fixedTime(), fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "group_id", "payer_id", "amount", "base_amount", "fx_rate", "description", "category", "currency", "notes", "date", "created_at", "updated_at"}).
+		AddRow(id, fixedUUID(), fixedUUID(), 1000, int64(1000), 1.0, "Dinner", "food", "USD", "", fixedTime(), fixedTime(), fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM expenses WHERE id = .*").
 		WithArgs(id).
@@ -76,8 +78,8 @@ func TestFinanceRepo_ListExpensesByGroup(t *testing.T) {
 	repo := NewFinanceRepo(mock)
 	gid := fixedUUID()
 
-	cols := []string{"id", "group_id", "payer_id", "amount", "description", "category", "currency", "notes", "date", "created_at", "updated_at"}
-	rows := pgxmock.NewRows(cols).AddRow(fixedUUID(), gid, fixedUUID(), 1000, "Dinner", "food", "USD", "", fixedTime(), fixedTime(), fixedTime())
+	cols := []string{"id", "group_id", "payer_id", "amount", "base_amount", "fx_rate", "description", "category", "currency", "notes", "date", "created_at", "updated_at"}
+	rows := pgxmock.NewRows(cols).AddRow(fixedUUID(), gid, fixedUUID(), 1000, int64(1000), 1.0, "Dinner", "food", "USD", "", fixedTime(), fixedTime(), fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM expenses WHERE group_id = .*").
 		WithArgs(gid, 50, 0).
@@ -95,10 +97,10 @@ func TestFinanceRepo_UpdateExpense(t *testing.T) {
 	id := fixedUUID()
 
 	mock.ExpectExec("UPDATE expenses SET").
-		WithArgs(fixedUUID(), int64(2000), "Lunch", "food", "USD", "", fixedTime(), pgxmock.AnyArg(), id).
+		WithArgs(fixedUUID(), int64(2000), int64(2000), 1.0, "Lunch", "food", "USD", "", fixedTime(), pgxmock.AnyArg(), id).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
-	e := &models.Expense{ID: id, PayerID: fixedUUID(), Amount: 2000, Description: "Lunch", Category: "food", Currency: "USD", Date: fixedTime()}
+	e := &models.Expense{ID: id, PayerID: fixedUUID(), Amount: 2000, BaseAmount: 2000, FxRate: 1, Description: "Lunch", Category: "food", Currency: "USD", Date: fixedTime()}
 	err := repo.UpdateExpense(context.Background(), e)
 	require.NoError(t, err)
 	assert.NoError(t, mock.ExpectationsWereMet())
@@ -110,10 +112,10 @@ func TestFinanceRepo_UpdateExpense_NotFound(t *testing.T) {
 	id := fixedUUID()
 
 	mock.ExpectExec("UPDATE expenses SET").
-		WithArgs(fixedUUID(), int64(2000), "Lunch", "food", "USD", "", fixedTime(), pgxmock.AnyArg(), id).
+		WithArgs(fixedUUID(), int64(2000), int64(2000), 1.0, "Lunch", "food", "USD", "", fixedTime(), pgxmock.AnyArg(), id).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 0))
 
-	e := &models.Expense{ID: id, PayerID: fixedUUID(), Amount: 2000, Description: "Lunch", Category: "food", Currency: "USD", Date: fixedTime()}
+	e := &models.Expense{ID: id, PayerID: fixedUUID(), Amount: 2000, BaseAmount: 2000, FxRate: 1, Description: "Lunch", Category: "food", Currency: "USD", Date: fixedTime()}
 	err := repo.UpdateExpense(context.Background(), e)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not found")
@@ -573,6 +575,8 @@ func TestFinanceRepo_CreateExpenseWithSplits(t *testing.T) {
 		GroupID:     fixedUUID(),
 		PayerID:     fixedUUID(),
 		Amount:      1000,
+		BaseAmount:  1000,
+		FxRate:      1,
 		Description: "Dinner",
 		Category:    "food",
 		Currency:    "USD",
@@ -585,7 +589,7 @@ func TestFinanceRepo_CreateExpenseWithSplits(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectExec("INSERT INTO expenses").
-		WithArgs(pgxmock.AnyArg(), e.GroupID, e.PayerID, e.Amount, e.Description, e.Category, e.Currency, e.Notes, e.Date, pgxmock.AnyArg(), pgxmock.AnyArg()).
+		WithArgs(pgxmock.AnyArg(), e.GroupID, e.PayerID, e.Amount, e.BaseAmount, e.FxRate, e.Description, e.Category, e.Currency, e.Notes, e.Date, pgxmock.AnyArg(), pgxmock.AnyArg()).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 	mock.ExpectExec("INSERT INTO splits").
 		WithArgs(pgxmock.AnyArg(), pgxmock.AnyArg(), splits[0].UserID, splits[0].Amount, splits[0].IsSettled, pgxmock.AnyArg()).

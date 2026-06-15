@@ -36,22 +36,22 @@ func (r *FinanceRepo) CreateExpense(ctx context.Context, e *models.Expense) erro
 	e.UpdatedAt = now
 
 	_, err := r.pool.Exec(ctx, `
-		INSERT INTO expenses (id, group_id, payer_id, amount, description, category, currency, notes, date, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-	`, e.ID, e.GroupID, e.PayerID, e.Amount, e.Description, e.Category, e.Currency, e.Notes, e.Date, e.CreatedAt, e.UpdatedAt)
+		INSERT INTO expenses (id, group_id, payer_id, amount, base_amount, fx_rate, description, category, currency, notes, date, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+	`, e.ID, e.GroupID, e.PayerID, e.Amount, e.BaseAmount, e.FxRate, e.Description, e.Category, e.Currency, e.Notes, e.Date, e.CreatedAt, e.UpdatedAt)
 	return err
 }
 
 // GetExpenseByID retrieves an expense by its ID.
 func (r *FinanceRepo) GetExpenseByID(ctx context.Context, id uuid.UUID) (*models.Expense, error) {
 	row := r.pool.QueryRow(ctx, `
-		SELECT id, group_id, payer_id, amount, description, category, currency, notes, date, created_at, updated_at
+		SELECT id, group_id, payer_id, amount, base_amount, fx_rate, description, category, currency, notes, date, created_at, updated_at
 		FROM expenses
 		WHERE id = $1
 	`, id)
 
 	var e models.Expense
-	err := row.Scan(&e.ID, &e.GroupID, &e.PayerID, &e.Amount, &e.Description, &e.Category, &e.Currency, &e.Notes, &e.Date, &e.CreatedAt, &e.UpdatedAt)
+	err := row.Scan(&e.ID, &e.GroupID, &e.PayerID, &e.Amount, &e.BaseAmount, &e.FxRate, &e.Description, &e.Category, &e.Currency, &e.Notes, &e.Date, &e.CreatedAt, &e.UpdatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, fmt.Errorf("expense not found: %w", pgx.ErrNoRows)
@@ -66,7 +66,7 @@ func (r *FinanceRepo) ListExpensesByGroup(ctx context.Context, groupID uuid.UUID
 	limit = clampLimit(limit)
 
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, group_id, payer_id, amount, description, category, currency, notes, date, created_at, updated_at
+		SELECT id, group_id, payer_id, amount, base_amount, fx_rate, description, category, currency, notes, date, created_at, updated_at
 		FROM expenses
 		WHERE group_id = $1
 		ORDER BY date DESC, created_at DESC
@@ -83,7 +83,7 @@ func (r *FinanceRepo) ListExpensesByGroup(ctx context.Context, groupID uuid.UUID
 // ListAllExpensesByGroup returns every expense for group-level financial projections.
 func (r *FinanceRepo) ListAllExpensesByGroup(ctx context.Context, groupID uuid.UUID) ([]models.Expense, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, group_id, payer_id, amount, description, category, currency, notes, date, created_at, updated_at
+		SELECT id, group_id, payer_id, amount, base_amount, fx_rate, description, category, currency, notes, date, created_at, updated_at
 		FROM expenses
 		WHERE group_id = $1
 		ORDER BY date DESC, created_at DESC
@@ -98,7 +98,7 @@ func (r *FinanceRepo) ListAllExpensesByGroup(ctx context.Context, groupID uuid.U
 
 func (r *FinanceRepo) ListExpensesByDateRange(ctx context.Context, groupID uuid.UUID, from, to time.Time) ([]models.Expense, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, group_id, payer_id, amount, description, category, currency, notes, date, created_at, updated_at
+		SELECT id, group_id, payer_id, amount, base_amount, fx_rate, description, category, currency, notes, date, created_at, updated_at
 		FROM expenses
 		WHERE group_id = $1
 		  AND date >= $2
@@ -119,9 +119,9 @@ func (r *FinanceRepo) UpdateExpense(ctx context.Context, e *models.Expense) erro
 
 	cmd, err := r.pool.Exec(ctx, `
 		UPDATE expenses
-		SET payer_id = $1, amount = $2, description = $3, category = $4, currency = $5, notes = $6, date = $7, updated_at = $8
-		WHERE id = $9
-	`, e.PayerID, e.Amount, e.Description, e.Category, e.Currency, e.Notes, e.Date, e.UpdatedAt, e.ID)
+		SET payer_id = $1, amount = $2, base_amount = $3, fx_rate = $4, description = $5, category = $6, currency = $7, notes = $8, date = $9, updated_at = $10
+		WHERE id = $11
+	`, e.PayerID, e.Amount, e.BaseAmount, e.FxRate, e.Description, e.Category, e.Currency, e.Notes, e.Date, e.UpdatedAt, e.ID)
 	if err != nil {
 		return err
 	}
@@ -508,7 +508,7 @@ func (r *FinanceRepo) GetGroupBalanceAggregates(ctx context.Context, groupID uui
 			SELECT to_user_id   AS user_id FROM settlements WHERE group_id = $1
 		),
 		expense_paid AS (
-			SELECT payer_id AS user_id, COALESCE(SUM(amount), 0) AS total
+			SELECT payer_id AS user_id, COALESCE(SUM(base_amount), 0) AS total
 			FROM expenses
 			WHERE group_id = $1
 			GROUP BY payer_id
@@ -615,9 +615,9 @@ func (r *FinanceRepo) CreateExpenseWithSplits(ctx context.Context, e *models.Exp
 	defer tx.Rollback(ctx)
 
 	_, err = tx.Exec(ctx, `
-		INSERT INTO expenses (id, group_id, payer_id, amount, description, category, currency, notes, date, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-	`, e.ID, e.GroupID, e.PayerID, e.Amount, e.Description, e.Category, e.Currency, e.Notes, e.Date, e.CreatedAt, e.UpdatedAt)
+		INSERT INTO expenses (id, group_id, payer_id, amount, base_amount, fx_rate, description, category, currency, notes, date, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+	`, e.ID, e.GroupID, e.PayerID, e.Amount, e.BaseAmount, e.FxRate, e.Description, e.Category, e.Currency, e.Notes, e.Date, e.CreatedAt, e.UpdatedAt)
 	if err != nil {
 		return err
 	}
