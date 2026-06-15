@@ -46,6 +46,7 @@ class ChoresScreen extends ConsumerStatefulWidget {
 class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   bool _isLoading = true;
   bool _hasError = false;
+  bool _refreshFailed = false;
   final List<_Chore> _chores = [];
 
   AppLocalizations get _l10n => AppLocalizations.of(context)!;
@@ -59,11 +60,9 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   List<ChoreLoadEntry> _load = const [];
   String? _myUserId;
 
+  // Baseline line height for the pinned section header's labelMedium text; the
+  // actual header extent is scaled by the user's text scale in build().
   static const double _labelMediumLineHeight = 16.0;
-
-  // Pinned section header (Overdue / Today / This week / Later).
-  static const double _sectionHeaderHeight =
-      MitlistSpacing.sm + _labelMediumLineHeight + MitlistSpacing.sm;
 
   bool _tabLoadStarted = false;
   bool _insideShell = true;
@@ -149,9 +148,13 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       if (!mounted) return;
       _applyCurrentChores(cached, allowSkeleton: cached.isEmpty);
 
-      // Background refresh; keep cache if it fails.
-      unawaited(repo.refreshCurrentChores(gid).catchError((e) {
+      // Background refresh; keep cache if it fails, but surface that the list
+      // may be stale so the user isn't acting on silently-old data.
+      unawaited(repo.refreshCurrentChores(gid).then((_) {
+        if (mounted && _refreshFailed) setState(() => _refreshFailed = false);
+      }).catchError((e) {
         _logger.w('Background chores refresh failed', error: e);
+        if (mounted) setState(() => _refreshFailed = true);
       }));
 
       // Best-effort context for the fairness strip: who I am (to highlight my
@@ -218,6 +221,9 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       _hasHousehold = true;
       _isLoading = allowSkeleton && chores.isEmpty;
       _hasError = false;
+      // Fresh data landed (cache write follows a successful refresh), so any
+      // earlier stale-data notice no longer applies.
+      _refreshFailed = false;
     });
   }
 
@@ -368,8 +374,10 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     try {
       final repo = await ref.read(choreRepositoryProvider.future);
       await repo.refreshCurrentChores(gid);
+      if (mounted && _refreshFailed) setState(() => _refreshFailed = false);
     } catch (e) {
       _logger.w('Quiet chores refresh failed', error: e);
+      if (mounted) setState(() => _refreshFailed = true);
     }
   }
 
@@ -409,6 +417,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         final chore = _chores.where((c) => c.id == id).firstOrNull;
         chore?.completed = false;
       });
+      unawaited(Haptics.failure());
       _showChoreActionError(_l10n.choreFailedComplete);
     } finally {
       _isMutating = false;
@@ -445,6 +454,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       }
     } catch (e) {
       if (!mounted) return;
+      unawaited(Haptics.failure());
       _showChoreActionError(_l10n.choreFailedSkip);
     } finally {
       _isMutating = false;
@@ -518,6 +528,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       await repo.rescheduleOfflineFirst(id, tomorrow, groupId: _groupId);
     } catch (e) {
       if (!mounted) return;
+      unawaited(Haptics.failure());
       _showChoreActionError(_l10n.choreFailedReschedule);
     } finally {
       _isMutating = false;
@@ -688,6 +699,11 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     final showHeader =
         _hasHousehold && !_isLoading && !_hasError && _chores.isNotEmpty;
 
+    // Size the pinned section header against the user's actual text scale so
+    // larger accessibility font settings don't clip the label.
+    final sectionHeaderHeight = MitlistSpacing.sm * 2 +
+        MediaQuery.textScalerOf(context).scale(_labelMediumLineHeight);
+
     return Scaffold(
       appBar: MitlistAppBar.titleText(l10n.choreAppBarTitle),
       floatingActionButton: AppButton(
@@ -801,6 +817,22 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                 ),
               ),
             ] else ...[
+              if (_refreshFailed)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      MitlistSpacing.md,
+                      MitlistSpacing.md,
+                      MitlistSpacing.md,
+                      0,
+                    ),
+                    child: _StaleNotice(
+                      message: l10n.choreRefreshFailed,
+                      retryLabel: l10n.commonRetry,
+                      onRetry: _refreshQuietly,
+                    ),
+                  ),
+                ),
               if (showHeader)
                 SliverToBoxAdapter(
                   child: Padding(
@@ -866,10 +898,19 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                     SliverPersistentHeader(
                       pinned: true,
                       delegate: _StickyHeaderDelegate(
-                        height: _sectionHeaderHeight,
+                        height: sectionHeaderHeight,
                         child: Container(
-                          color:
-                              Theme.of(context).colorScheme.surfaceContainerLow,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerLow,
+                            border: Border(
+                              bottom: BorderSide(
+                                color:
+                                    Theme.of(context).colorScheme.outlineVariant,
+                              ),
+                            ),
+                          ),
                           padding: const EdgeInsets.symmetric(
                             horizontal: MitlistSpacing.md,
                             vertical: MitlistSpacing.sm,
@@ -947,10 +988,9 @@ class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    return Container(
-      color: Theme.of(context).colorScheme.surface,
-      child: child,
-    );
+    // The child provides its own opaque background and divider, so no wrapping
+    // surface is needed here.
+    return child;
   }
 
   @override
@@ -995,7 +1035,7 @@ class _Chore {
   String? turnLabel(AppLocalizations l10n) {
     if (isMine) return l10n.choreYourTurn;
     final name = assigneeName;
-    if (name != null && name.isNotEmpty) return "$name's turn";
+    if (name != null && name.isNotEmpty) return l10n.choreSomeonesTurn(name);
     return null;
   }
 }
@@ -1138,34 +1178,95 @@ class _FairnessStrip extends StatelessWidget {
 
     final total = entries.fold<int>(0, (sum, e) => sum + e.completedCount);
 
-    return AppCard(
-      variant: AppCardVariant.outlined,
-      padding: AppCardPadding.sm,
+    // Inline (not a card): one less border under the hero card. Stays tappable
+    // for the per-member breakdown.
+    return InkWell(
       onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xs),
+        child: Row(
+          children: [
+            AppIcon(
+              name: 'chartBar',
+              size: 16,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: MitlistSpacing.space2),
+            Expanded(
+              child: Text(
+                total == 0
+                    ? l10n.choreHowItSplits
+                    : '${l10n.choreHowItSplits} · ${l10n.choreDoneLast30Days(total)}',
+                style: textTheme.labelMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            AppIcon(
+              name: 'chevronRight',
+              size: 16,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Quiet, dismissible-by-success notice shown when a background refresh fails
+/// but cached chores are still on screen, so the user knows the list may be
+/// stale and can retry without a full reload.
+class _StaleNotice extends StatelessWidget {
+  final String message;
+  final String retryLabel;
+  final VoidCallback onRetry;
+
+  const _StaleNotice({
+    required this.message,
+    required this.retryLabel,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.secondaryContainer,
+        border: Border.all(color: colorScheme.outline, width: 2),
+      ),
+      padding: const EdgeInsets.fromLTRB(
+        MitlistSpacing.md,
+        MitlistSpacing.sm,
+        MitlistSpacing.sm,
+        MitlistSpacing.sm,
+      ),
       child: Row(
         children: [
           AppIcon(
-            name: 'chartBar',
+            name: 'arrowPath',
             size: 16,
-            color: colorScheme.onSurfaceVariant,
+            color: colorScheme.onSecondaryContainer,
           ),
-          const SizedBox(width: MitlistSpacing.space2),
+          const SizedBox(width: MitlistSpacing.sm),
           Expanded(
             child: Text(
-              total == 0
-                  ? l10n.choreHowItSplits
-                  : '${l10n.choreHowItSplits} · $total done, last 30 days',
-              style: textTheme.labelMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+              message,
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSecondaryContainer,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
           ),
-          AppIcon(
-            name: 'chevronRight',
-            size: 16,
-            color: colorScheme.onSurfaceVariant,
+          const SizedBox(width: MitlistSpacing.sm),
+          AppButton(
+            text: retryLabel,
+            size: AppButtonSize.sm,
+            variant: AppButtonVariant.ghost,
+            onPressed: onRetry,
           ),
         ],
       ),
@@ -1242,6 +1343,24 @@ class _ChoreItem extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final isComplete = chore.completed;
     final turnLabel = chore.turnLabel(l10n);
+
+    // A linear screen-reader pass doesn't get the visual cues (section header,
+    // turn pill, supplies icon, due-date column), so fold them into the row's
+    // accessible name. Order: what it is, its state, whose turn, when it's due.
+    final suppliesLabel = chore.supplies.isEmpty
+        ? null
+        : (chore.supplies.length == 1
+            ? l10n.choreSupplySingular(chore.supplies.length)
+            : l10n.choreSupplyPlural(chore.supplies.length));
+    final semanticLabel = <String>[
+      chore.title,
+      if (isComplete) l10n.choreStatusDone,
+      if (turnLabel != null && !isComplete) turnLabel,
+      _frequencyLabel(l10n, chore.frequency, chore.periodInterval),
+      if (suppliesLabel != null) suppliesLabel,
+      _formatDate(chore.dueDate),
+    ].join(', ');
+
     return AppCard(
       variant: AppCardVariant.outlined,
       padding: AppCardPadding.sm,
@@ -1249,7 +1368,7 @@ class _ChoreItem extends StatelessWidget {
         onTap: onTap,
         child: Semantics(
           button: true,
-          label: chore.title,
+          label: semanticLabel,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
