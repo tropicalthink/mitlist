@@ -1,0 +1,65 @@
+{"raw_text": "Bananen", "expected_canonical_id": "banana", "input_type": "print", "note": "clean plural — should be trivial exact/fuzzy"}
+{"raw_text": "Spaghetti 500g", "expected_canonical_id": "spaghetti", "input_type": "print", "note": "clean name + size suffix; extraction must strip 500g"}
+{"raw_text": "Tomaten", "expected_canonical_id": "tomato", "input_type": "print", "note": "clean plural"}
+{"raw_text": "Hähnchenbrust", "expected_canonical_id": "chicken_breast", "input_type": "print", "note": "clean; must not drift to chicken_breast_fillet"}
+{"raw_text": "Orangensaft 1L", "expected_canonical_id": "orange_juice", "input_type": "print", "note": "clean + unit"}
+{"raw_text": "0at M1lk", "expected_canonical_id": "oat_milk", "input_type": "print", "note": "OCR digit-for-letter noise (zero/one); fuzzy alone often fails"}
+{"raw_text": "Erdnussbuttor", "expected_canonical_id": "peanut_butter", "input_type": "print", "note": "single-char typo; fuzzy should recover"}
+{"raw_text": "Kartof feln", "expected_canonical_id": "potato", "input_type": "print", "note": "spurious word split from OCR; whitespace-normalise then fuzzy"}
+{"raw_text": "T0mate", "expected_canonical_id": "tomato", "input_type": "print", "note": "zero-for-o; competes with tomato vs tomato_paste"}
+{"raw_text": "mlch", "expected_canonical_id": "milk", "input_type": "handwriting", "note": "vowel-dropped shorthand; classifier/alias territory"}
+{"raw_text": "kaffe", "expected_canonical_id": "coffee", "input_type": "handwriting", "note": "dropped trailing e; fuzzy"}
+{"raw_text": "jogh natur", "expected_canonical_id": "plain_yogurt", "input_type": "handwriting", "note": "abbrev + qualifier; must beat greek_yogurt/chocolate_yogurt"}
+{"raw_text": "zwiebl", "expected_canonical_id": "onion", "input_type": "handwriting", "note": "missing vowel shorthand"}
+{"raw_text": "wzmehl", "expected_canonical_id": "wheat_flour", "input_type": "handwriting", "note": "consonant-skeleton shorthand for Weizenmehl; hard for fuzzy, classifier territory"}
+{"raw_text": "oat drink", "expected_canonical_id": "oat_milk", "input_type": "print", "note": "English semantic phrasing, not the catalog name; embedder territory"}
+{"raw_text": "sparkling water", "expected_canonical_id": "mineral_water", "input_type": "print", "note": "cross-language semantic; no DE alias match; embedder territory"}
+{"raw_text": "spülmaschinen tabs", "expected_canonical_id": "dishwasher_tablets", "input_type": "print", "note": "spaced compound; alias has it but tests normalisation"}
+{"raw_text": "ban", "expected_canonical_id": "banana", "input_type": "handwriting", "note": "ambiguous prefix (banana/banana_bread/banana_juice); list_context should disambiguate", "list_context": ["milk", "whole_grain_bread"]}
+{"raw_text": "App", "expected_canonical_id": "apple", "input_type": "handwriting", "note": "ambiguous prefix (apple/apple_juice); prior+context should pick the staple", "list_context": ["banana", "milk"]}
+{"raw_text": "Zuck", "expected_canonical_id": "sugar", "input_type": "handwriting", "note": "ambiguous prefix (Zucker/Zuckerhut/Zuckerapfel); baseline likely WRONG without prior — the lift case", "household_purchases": ["sugar", "sugar", "flour"]}
+{"raw_text": "Vollmlch", "expected_canonical_id": "whole_milk", "input_type": "handwriting", "note": "vowel-dropped Vollmilch; whole milk variant vs generic milk"}
+{"raw_text": "gouda kase", "expected_canonical_id": "gouda", "input_type": "handwriting", "note": "missing umlaut (kase=Käse) + brand; fuzzy/classifier"}
+{"raw_text": "Himbeere", "expected_canonical_id": "raspberry", "input_type": "print", "note": "clean German name"}
+{"raw_text": "Blaubeeren", "expected_canonical_id": "blueberry", "input_type": "print", "note": "clean plural"}
+{"raw_text": "Kr0ffl", "expected_canonical_id": "potato", "input_type": "print", "note": "OCR/shorthand for Kartoffel (zero-for-o, dropped vowels)"}
+{"raw_text": "Brokoli", "expected_canonical_id": "broccoli", "input_type": "print", "note": "missing umlaut (ö→o)"}
+{"raw_text": "P4st4", "expected_canonical_id": "pasta", "input_type": "print", "note": "OCR digit noise in both a's"}
+{"raw_text": "W3ißbrot", "expected_canonical_id": "white_bread", "input_type": "print", "note": "OCR three-for-e; compound"}
+{"raw_text": "Vollkrnbrot", "expected_canonical_id": "whole_grain_bread", "input_type": "handwriting", "note": "vowel-dropped shorthand; consonant skeleton"}
+{"raw_text": "kfee", "expected_canonical_id": "coffee", "input_type": "handwriting", "note": "aggressive vowel dropping from Kaffee"}
+{"raw_text": "spnt", "expected_canonical_id": "spinach", "input_type": "handwriting", "note": "consonant-skeleton from Spinat"}
+{"raw_text": "zuker", "expected_canonical_id": "sugar", "input_type": "handwriting", "note": "missing umlaut (Zucker) and spelling typo"}
+{"raw_text": "parmsen", "expected_canonical_id": "parmesan", "input_type": "handwriting", "note": "vowel dropped; fuzzy match territory"}
+{"raw_text": "mozzl", "expected_canonical_id": "mozzarella", "input_type": "handwriting", "note": "aggressive abbreviation of Mozzarella"}
+{"raw_text": "goguda", "expected_canonical_id": "gouda", "input_type": "handwriting", "note": "extra syllable; fuzzy"}
+{"raw_text": "salat", "expected_canonical_id": "head_lettuce", "input_type": "handwriting", "note": "semantic proxy in German; lettuce=Kopfsalat"}
+{"raw_text": "grn ppr", "expected_canonical_id": "bell_pepper", "input_type": "handwriting", "note": "consonant shorthand + word split"}
+{"raw_text": "Apfelsaft", "expected_canonical_id": "apple_juice", "input_type": "print", "note": "clean German compound"}
+{"raw_text": "apple juice", "expected_canonical_id": "apple_juice", "input_type": "print", "note": "English semantic name; catalog has German compound"}
+{"raw_text": "egg noodles", "expected_canonical_id": "egg_noodles", "input_type": "print", "note": "cross-language English variant"}
+{"raw_text": "kase", "expected_canonical_id": "gouda", "input_type": "handwriting", "note": "missing umlaut (Käse=cheese) + brand name; needs list_context to pick gouda over generic", "list_context": ["eggs", "butter", "gouda", "white_bread"]}
+{"raw_text": "Mil", "expected_canonical_id": "whole_milk", "input_type": "handwriting", "note": "ambiguous prefix (milk variants); prior or context needed", "household_purchases": ["whole_milk", "whole_milk", "semi_skimmed_milk"]}
+{"raw_text": "laundry soap", "expected_canonical_id": "laundry_detergent", "input_type": "print", "note": "cross-language semantic; English phrase for German catalog"}
+{"raw_text": "Wsch pwd", "expected_canonical_id": "laundry_detergent", "input_type": "handwriting", "note": "abbreviation shorthand Waschpulver"}
+{"raw_text": "Reismehl", "expected_canonical_id": "rice_flour", "input_type": "print", "note": "clean German compound"}
+{"raw_text": "rznudl", "expected_canonical_id": "egg_noodles", "input_type": "handwriting", "note": "consonant skeleton from Eiernudel shortened"}
+{"raw_text": "Gurkn", "expected_canonical_id": "cucumber", "input_type": "handwriting", "note": "abbreviated German with missing vowel (Gurken)"}
+{"raw_text": "Blmnkohl", "expected_canonical_id": "cauliflower", "input_type": "handwriting", "note": "vowel-dropped Blumenkohl"}
+{"raw_text": "orangsd", "expected_canonical_id": "orange_juice", "input_type": "handwriting", "note": "garbled handwriting for Orangensaft"}
+{"raw_text": "M0w", "expected_canonical_id": "carrot", "input_type": "print", "note": "OCR zero-for-o in Möhre"}
+{"raw_text": "h0nig mlone", "expected_canonical_id": "honeydew_melon", "input_type": "print", "note": "OCR zero-for-o + word split"}
+{"raw_text": "saurm1lch", "expected_canonical_id": "buttermilk", "input_type": "print", "note": "OCR one-for-i + compound (Sauermilch)"}
+{"raw_text": "rce", "expected_canonical_id": "rice", "input_type": "handwriting", "note": "aggressive vowel drop; ambiguous without context"}
+{"raw_text": "Ri", "expected_canonical_id": "rice", "input_type": "handwriting", "note": "minimal prefix (Reis); needs prior to disambiguate from rice_milk", "household_purchases": ["rice", "rice", "pasta"]}
+{"raw_text": "Erbsen", "expected_canonical_id": "peas", "input_type": "print", "note": "clean German plural"}
+{"raw_text": "aepfl", "expected_canonical_id": "apple", "input_type": "handwriting", "note": "missing umlaut (Äpfel) + dropped vowel"}
+{"raw_text": "wlmch", "expected_canonical_id": "whole_milk", "input_type": "handwriting", "note": "consonant skeleton from Vollmilch"}
+{"raw_text": "Sojmlch", "expected_canonical_id": "soy_milk", "input_type": "handwriting", "note": "vowel-dropped compound (Sojamilch)"}
+{"raw_text": "Mandelmlch", "expected_canonical_id": "almond_milk", "input_type": "print", "note": "missing vowel in compound (Mandelmilch)"}
+{"raw_text": "Ztr", "expected_canonical_id": "lemon", "input_type": "handwriting", "note": "consonant skeleton from Zitrone; context-dependent", "list_context": ["orange", "banana", "lemon"]}
+{"raw_text": "ryebrd", "expected_canonical_id": "rye_bread", "input_type": "handwriting", "note": "English abbreviation with dropped vowels"}
+{"raw_text": "srdt", "expected_canonical_id": "sourdough_bread", "input_type": "handwriting", "note": "consonant skeleton from Sauerteigbrot"}
+{"raw_text": "ricmilk", "expected_canonical_id": "rice_milk", "input_type": "print", "note": "compound without space; English phrasing"}
+{"raw_text": "prn", "expected_canonical_id": "pear", "input_type": "handwriting", "note": "consonant skeleton (Birne) with scrambled letters; fuzzy/classifier"}
+{"raw_text": "Z1trone", "expected_canonical_id": "lemon", "input_type": "print", "note": "OCR one-for-i in umlaut-ä position"}
