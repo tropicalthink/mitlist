@@ -3852,11 +3852,14 @@
   "@notificationsDeleteNotification": {
     "description": "Semantic label for deleting a notification"
   },
-
   "accountLanguage": "Taal",
-  "@accountLanguage": { "description": "Menuregel-label voor taalkeuze" },
+  "@accountLanguage": {
+    "description": "Menuregel-label voor taalkeuze"
+  },
   "accountLanguageSystem": "Systeem",
-  "@accountLanguageSystem": { "description": "Taaloptie: volg de taal van het apparaat" },
+  "@accountLanguageSystem": {
+    "description": "Taaloptie: volg de taal van het apparaat"
+  },
   "navHome": "Start",
   "navChores": "Klusjes",
   "navMoney": "Geld",
@@ -3914,5 +3917,1614 @@
   "captureHintReduceGlare": "Verminder schittering",
   "captureHintMoveCloser": "Kom dichterbij",
   "captureHintReady": "Klaar om te scannen",
-  "captureHintUsable": "Ziet er bruikbaar uit"
+  "captureHintUsable": "Ziet er bruikbaar uit",
+  "activityAddedItemToList": "Heeft een item aan een lijst toegevoegd · {when}",
+  "@activityAddedItemToList": {
+    "description": "Activity: generic item added to list",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityAddedToList": "Heeft {name} aan een lijst toegevoegd · {when}",
+  "@activityAddedToList": {
+    "description": "Activity: item added to list",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityCompletedChore": "Heeft {name} voltooid · {when}",
+  "@activityCompletedChore": {
+    "description": "Activity: chore completed",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityCompletedChoreGeneric": "Heeft een klus voltooid · {when}",
+  "@activityCompletedChoreGeneric": {
+    "description": "Activity: generic chore completed",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityLoggedExpense": "Heeft {name} geregistreerd · {when}",
+  "@activityLoggedExpense": {
+    "description": "Activity: expense logged",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityLoggedExpenseGeneric": "Heeft een uitgave geregistreerd · {when}",
+  "@activityLoggedExpenseGeneric": {
+    "description": "Activity: generic expense logged",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityMember": "Lid",
+  "@activityMember": {
+    "description": "Fallback display name for household member"
+  },
+  "activityPlannedMeal": "Heeft {name} gepland · {when}",
+  "@activityPlannedMeal": {
+    "description": "Activity: meal planned",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activitySavedRecipe": "Heeft {name} opgeslagen · {when}",
+  "@activitySavedRecipe": {
+    "description": "Activity: recipe saved",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activitySavedRecipeGeneric": "Heeft een recept opgeslagen · {when}",
+  "@activitySavedRecipeGeneric": {
+    "description": "Activity: generic recipe saved",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityUpdatedMealPlan": "Maaltijdplan bijgewerkt · {when}",
+  "@activityUpdatedMealPlan": {
+    "description": "Activity: meal plan updated",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityYou": "Jij",
+  "@activityYou": {
+    "description": "Display name for current user in activity feed"
+  },
+  "aisleOther": "Overig",
+  "@aisleOther": {
+    "description": "Fallback aisle name for uncategorized items"
+  },
+  "appBottomSheetClose": "Sluiten",
+  "@appBottomSheetClose": {
+    "description": "Semantic label for bottom sheet close"
+  },
+  "appBottomSheetDiscardBody": "Je hebt niet-opgeslagen wijzigingen.",
+  "@appBottomSheetDiscardBody": {
+    "description": "Discard changes dialog body"
+  },
+  "appBottomSheetDiscardTitle": "Wijzigingen negeren?",
+  "@appBottomSheetDiscardTitle": {
+    "description": "Discard changes dialog title"
+  },
+  "appBottomSheetHandle": "Handvat",
+  "@appBottomSheetHandle": {
+    "description": "Semantic label for bottom sheet drag handle"
+  },
+  "appBottomSheetKeepEditing": "Verder bewerken",
+  "@appBottomSheetKeepEditing": {
+    "description": "Keep editing button"
+  },
+  "authJoinCouldNotLoad": "Uitnodigingsdetails konden niet worden geladen.",
+  "@authJoinCouldNotLoad": {
+    "description": "Error when invite fails to load"
+  },
+  "authJoinCreateToJoin": "Account aanmaken om mee te doen",
+  "@authJoinCreateToJoin": {
+    "description": "Create account CTA with invite context"
+  },
+  "authJoinErrorWithHint": "{error}\n\nJe kunt ook een code invoeren via de huishoudenwisselaar.",
+  "@authJoinErrorWithHint": {
+    "description": "Error with hint about household switcher",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "authJoinGoToHousehold": "Naar huishouden",
+  "@authJoinGoToHousehold": {
+    "description": "Button to navigate to household after joining"
+  },
+  "authJoinGuestWarning": "Gastaccounts kunnen niet deelnemen aan huishoudens.",
+  "@authJoinGuestWarning": {
+    "description": "Warning for guest users trying to join"
+  },
+  "authJoinInviteCodeSemantic": "Uitnodigingscode: {code}",
+  "@authJoinInviteCodeSemantic": {
+    "description": "Semantics label for invite code display",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "authJoinInvitedBy": "{name} heeft je uitgenodigd",
+  "@authJoinInvitedBy": {
+    "description": "Invitation header",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "authJoinJoinNow": "Nu deelnemen",
+  "@authJoinJoinNow": {
+    "description": "CTA to join the household"
+  },
+  "authJoinJoining": "Deelnemen…",
+  "@authJoinJoining": {
+    "description": "Button loading state for join"
+  },
+  "authJoinNotNow": "Niet nu",
+  "@authJoinNotNow": {
+    "description": "Dismiss button for join landing"
+  },
+  "authJoinSignInToJoin": "Log in om mee te doen",
+  "@authJoinSignInToJoin": {
+    "description": "Sign in CTA with invite context"
+  },
+  "authJoinTitle": "Deelnemen aan huishouden",
+  "@authJoinTitle": {
+    "description": "Join landing screen title"
+  },
+  "authJoinYoureIn": "Je zit erbij.",
+  "@authJoinYoureIn": {
+    "description": "Success message after joining"
+  },
+  "authLoginApple": "Doorgaan met Apple",
+  "@authLoginApple": {
+    "description": "OAuth button: Apple"
+  },
+  "authLoginCreateOne": "Maak er een",
+  "@authLoginCreateOne": {
+    "description": "Link text to create account"
+  },
+  "authLoginEmail": "E-mail",
+  "@authLoginEmail": {
+    "description": "Email input label"
+  },
+  "authLoginEmailRequired": "E-mail is verplicht.",
+  "@authLoginEmailRequired": {
+    "description": "Validation: email required"
+  },
+  "authLoginFillAllFields": "Vul alle velden in.",
+  "@authLoginFillAllFields": {
+    "description": "Validation: all fields required"
+  },
+  "authLoginForgotPassword": "Wachtwoord vergeten?",
+  "@authLoginForgotPassword": {
+    "description": "Forgot password link"
+  },
+  "authLoginGenericError": "Inloggen mislukt. Controleer je verbinding en probeer het opnieuw.",
+  "@authLoginGenericError": {
+    "description": "Generic login error message"
+  },
+  "authLoginGoogle": "Doorgaan met Google",
+  "@authLoginGoogle": {
+    "description": "OAuth button: Google"
+  },
+  "authLoginNoAccount": "Geen account?",
+  "@authLoginNoAccount": {
+    "description": "Prompt to switch to signup"
+  },
+  "authLoginOAuthUnsupported": "{provider}-inloggen is momenteel alleen beschikbaar op web, Android en iOS.",
+  "@authLoginOAuthUnsupported": {
+    "description": "Error when OAuth is unsupported on platform",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "authLoginPassword": "Wachtwoord",
+  "@authLoginPassword": {
+    "description": "Password input label"
+  },
+  "authLoginPasswordRequired": "Wachtwoord is verplicht.",
+  "@authLoginPasswordRequired": {
+    "description": "Validation: password required"
+  },
+  "authLoginRememberMe": "Onthoud mij",
+  "@authLoginRememberMe": {
+    "description": "Remember me checkbox label"
+  },
+  "authLoginRememberMeOff": "Onthoud mij: uit",
+  "@authLoginRememberMeOff": {
+    "description": "Semantic label for remember me unchecked"
+  },
+  "authLoginRememberMeOn": "Onthoud mij: aan",
+  "@authLoginRememberMeOn": {
+    "description": "Semantic label for remember me checked"
+  },
+  "authLoginResetCodeHint": "Plak de code uit je e-mail",
+  "@authLoginResetCodeHint": {
+    "description": "Placeholder for reset code input"
+  },
+  "authLoginResetCodeLabel": "Herstelcode",
+  "@authLoginResetCodeLabel": {
+    "description": "Input label for reset code"
+  },
+  "authLoginResetCodeSent": "Als dat e-mailadres bestaat, is er een herstelcode verstuurd.",
+  "@authLoginResetCodeSent": {
+    "description": "Success message after requesting reset code"
+  },
+  "authLoginResetFillAllFields": "Vul de code en beide wachtwoordvelden in.",
+  "@authLoginResetFillAllFields": {
+    "description": "Validation: all reset fields required"
+  },
+  "authLoginResetPasswordButton": "Wachtwoord herstellen",
+  "@authLoginResetPasswordButton": {
+    "description": "Button to confirm password reset"
+  },
+  "authLoginResetPasswordTitle": "Wachtwoord herstellen",
+  "@authLoginResetPasswordTitle": {
+    "description": "Bottom sheet title for password reset"
+  },
+  "authLoginResetSuccess": "Wachtwoord hersteld. Je kunt nu inloggen.",
+  "@authLoginResetSuccess": {
+    "description": "Success message after password reset"
+  },
+  "authLoginSendResetCode": "Code versturen",
+  "@authLoginSendResetCode": {
+    "description": "Button to send password reset code"
+  },
+  "authLoginSignInButton": "Inloggen",
+  "@authLoginSignInButton": {
+    "description": "Sign in submit button"
+  },
+  "authLoginSigningIn": "Inloggen…",
+  "@authLoginSigningIn": {
+    "description": "Sign in button loading state"
+  },
+  "authLoginTitle": "Inloggen",
+  "@authLoginTitle": {
+    "description": "Login screen title"
+  },
+  "authLoginYouExample": "jij@voorbeeld.nl",
+  "@authLoginYouExample": {
+    "description": "Email placeholder"
+  },
+  "authLoginYourPassword": "Je wachtwoord",
+  "@authLoginYourPassword": {
+    "description": "Password placeholder"
+  },
+  "authOnboardingCreateDesc": "Begin opnieuw: geef het een naam, nodig huisgenoten uit en deel alles op één plek.",
+  "@authOnboardingCreateDesc": {
+    "description": "Description for create household card"
+  },
+  "authOnboardingCreateHousehold": "Huishouden aanmaken",
+  "@authOnboardingCreateHousehold": {
+    "description": "Primary CTA on onboarding"
+  },
+  "authOnboardingCreateOrJoin": "Maak of sluit je aan bij een huishouden om te delen met huisgenoten.",
+  "@authOnboardingCreateOrJoin": {
+    "description": "Onboarding description"
+  },
+  "authOnboardingHaveCode": "Heb je een uitnodigingscode?",
+  "@authOnboardingHaveCode": {
+    "description": "Invite code prompt"
+  },
+  "authOnboardingHomeIconSemantic": "Huishouden-startpictogram",
+  "@authOnboardingHomeIconSemantic": {
+    "description": "Semantic label for home icon"
+  },
+  "authOnboardingJoinDesc": "Al een uitnodiging? Voer de code in en ga meteen aan de slag.",
+  "@authOnboardingJoinDesc": {
+    "description": "Description for join household card"
+  },
+  "authOnboardingJoinInvite": "Deelnemen met uitnodigingscode",
+  "@authOnboardingJoinInvite": {
+    "description": "Secondary CTA on onboarding"
+  },
+  "authOnboardingJoinSemantic": "Deelnemen aan een huishouden met uitnodigingscode",
+  "@authOnboardingJoinSemantic": {
+    "description": "Semantic label for join card"
+  },
+  "authOnboardingSetupHome": "Richt je thuis in",
+  "@authOnboardingSetupHome": {
+    "description": "Onboarding headline for new users"
+  },
+  "authOnboardingTitle": "Welkom",
+  "@authOnboardingTitle": {
+    "description": "Onboarding screen title"
+  },
+  "authSignupAccountCreated": "Account aangemaakt. Welkom!",
+  "@authSignupAccountCreated": {
+    "description": "Snackbar when account is created"
+  },
+  "authSignupAnd": " en ",
+  "@authSignupAnd": {
+    "description": "Conjunction between legal links"
+  },
+  "authSignupCreateAccount": "Account aanmaken",
+  "@authSignupCreateAccount": {
+    "description": "Submit button for signup"
+  },
+  "authSignupCreatingAccount": "Account wordt aangemaakt…",
+  "@authSignupCreatingAccount": {
+    "description": "Loading state for signup button"
+  },
+  "authSignupEmail": "E-mail",
+  "@authSignupEmail": {
+    "description": "Email input label"
+  },
+  "authSignupEmailHint": "jij@voorbeeld.nl",
+  "@authSignupEmailHint": {
+    "description": "Email placeholder"
+  },
+  "authSignupEmailRequired": "E-mail is verplicht.",
+  "@authSignupEmailRequired": {
+    "description": "Validation: email required"
+  },
+  "authSignupFillAllFields": "Vul alle velden in.",
+  "@authSignupFillAllFields": {
+    "description": "Validation: all fields required"
+  },
+  "authSignupFirstName": "Voornaam",
+  "@authSignupFirstName": {
+    "description": "First name input label"
+  },
+  "authSignupFirstNameHint": "Alex",
+  "@authSignupFirstNameHint": {
+    "description": "First name placeholder"
+  },
+  "authSignupGenericError": "Account aanmaken mislukt. Controleer je verbinding en probeer het opnieuw.",
+  "@authSignupGenericError": {
+    "description": "Generic signup error message"
+  },
+  "authSignupHaveAccount": "Heb je al een account?",
+  "@authSignupHaveAccount": {
+    "description": "Link to login"
+  },
+  "authSignupJoinTitle": "Deelnemen aan huishouden",
+  "@authSignupJoinTitle": {
+    "description": "Signup screen title when joining via invite"
+  },
+  "authSignupLastName": "Achternaam",
+  "@authSignupLastName": {
+    "description": "Last name input label"
+  },
+  "authSignupLastNameHint": "Jansen",
+  "@authSignupLastNameHint": {
+    "description": "Last name placeholder"
+  },
+  "authSignupNameHint": "Je naam",
+  "@authSignupNameHint": {
+    "description": "Name input placeholder"
+  },
+  "authSignupNameRequired": "Naam is verplicht.",
+  "@authSignupNameRequired": {
+    "description": "Validation: name required"
+  },
+  "authSignupPassword": "Wachtwoord",
+  "@authSignupPassword": {
+    "description": "Password input label"
+  },
+  "authSignupPasswordHint": "Minstens 6 tekens",
+  "@authSignupPasswordHint": {
+    "description": "Password hint text"
+  },
+  "authSignupPasswordMinLength": "Wachtwoord moet minstens 6 tekens lang zijn.",
+  "@authSignupPasswordMinLength": {
+    "description": "Password too short validation"
+  },
+  "authSignupPasswordRequired": "Wachtwoord is verplicht.",
+  "@authSignupPasswordRequired": {
+    "description": "Validation: password required"
+  },
+  "authSignupPeriod": ".",
+  "@authSignupPeriod": {
+    "description": "Period after legal links"
+  },
+  "authSignupPrivacyP1": "mitlist slaat de accountgegevens en huishoudeninhoud op die nodig zijn om de app te laten werken.",
+  "@authSignupPrivacyP1": {
+    "description": "Privacy paragraph 1"
+  },
+  "authSignupPrivacyP2": "Gedeelde gegevens zoals lijsten, klussen, uitgaven en recepten zijn zichtbaar voor andere leden van hetzelfde huishouden.",
+  "@authSignupPrivacyP2": {
+    "description": "Privacy paragraph 2"
+  },
+  "authSignupPrivacyP3": "Geef alleen informatie door die je prettig vindt in een gedeelde huishoudenwerkruimte.",
+  "@authSignupPrivacyP3": {
+    "description": "Privacy paragraph 3"
+  },
+  "authSignupPrivacyPolicy": "Privacybeleid",
+  "@authSignupPrivacyPolicy": {
+    "description": "Privacy policy link text"
+  },
+  "authSignupSignInLink": "Inloggen",
+  "@authSignupSignInLink": {
+    "description": "Link to sign in"
+  },
+  "authSignupTermsP1": "Gebruik mitlist verantwoord. Gedeelde huishoudeninhoud is zichtbaar voor de leden van dat huishouden.",
+  "@authSignupTermsP1": {
+    "description": "Terms paragraph 1"
+  },
+  "authSignupTermsP2": "Upload geen onwettige inhoud, doe je niet voor als iemand anders en misbruik de dienst niet. Accounts en gedeelde gegevens kunnen bij misbruik worden verwijderd.",
+  "@authSignupTermsP2": {
+    "description": "Terms paragraph 2"
+  },
+  "authSignupTermsP3": "De app wordt geleverd zoals hij is terwijl het product nog evolueert. Bewaar zelf back-ups van alles wat belangrijk is.",
+  "@authSignupTermsP3": {
+    "description": "Terms paragraph 3"
+  },
+  "authSignupTermsPrefix": "Door een account aan te maken ga je akkoord met onze ",
+  "@authSignupTermsPrefix": {
+    "description": "Text before terms link"
+  },
+  "authSignupTitle": "Account aanmaken",
+  "@authSignupTitle": {
+    "description": "Signup screen title"
+  },
+  "commonPhoto": "Foto",
+  "@commonPhoto": {
+    "description": "Generic photo label"
+  },
+  "commonView": "Bekijken",
+  "@commonView": {
+    "description": "Generic view button"
+  },
+  "composerItemHint": "bijv. Melk, 2 avocado's of 500 g bloem",
+  "@composerItemHint": {
+    "description": "Hint for list composer input"
+  },
+  "conflictItemChanged": "Item gewijzigd",
+  "@conflictItemChanged": {
+    "description": "Snackbar when conflict item was changed"
+  },
+  "conflictItemLabel": "Item: {name}",
+  "@conflictItemLabel": {
+    "description": "Label for conflict item name",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "conflictNoneToResolve": "Geen conflicten om op te lossen.",
+  "@conflictNoneToResolve": {
+    "description": "Empty state when no sync conflicts"
+  },
+  "cookModeTimerStart": "Timer: {label}. Tik om te starten",
+  "@cookModeTimerStart": {
+    "description": "Timer semantics label",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "costSummaryEqualShare": "Gelijk aandeel per persoon",
+  "@costSummaryEqualShare": {
+    "description": "Label for equal share amount in cost summary"
+  },
+  "costSummaryGenerateExpense": "Uitgave genereren",
+  "@costSummaryGenerateExpense": {
+    "description": "Button to generate an expense from cost summary"
+  },
+  "costSummaryItemsWithPrices": "Items met prijzen",
+  "@costSummaryItemsWithPrices": {
+    "description": "Label for items that have prices set"
+  },
+  "costSummaryNoPrices": "Nog geen items met prijzen. Open de itemopties (⋯) en kies Prijs instellen om het kostenoverzicht te zien.",
+  "@costSummaryNoPrices": {
+    "description": "Empty state when no items in cost summary have prices"
+  },
+  "costSummaryNone": "Geen",
+  "@costSummaryNone": {
+    "description": "Placeholder when no value is set"
+  },
+  "costSummaryNotAvailable": "N.v.t.",
+  "@costSummaryNotAvailable": {
+    "description": "Placeholder when equal share cannot be calculated"
+  },
+  "createHouseholdCreated": "Huishouden aangemaakt",
+  "@createHouseholdCreated": {
+    "description": "Snackbar when household is created"
+  },
+  "createHouseholdDescriptionOptional": "Beschrijving (optioneel)",
+  "@createHouseholdDescriptionOptional": {
+    "description": "Placeholder for optional household description"
+  },
+  "createListCreated": "Lijst aangemaakt",
+  "@createListCreated": {
+    "description": "Snackbar when list is created"
+  },
+  "createListCustomDesc": "Een flexibele lijst voor alles wat niet past.",
+  "@createListCustomDesc": {
+    "description": "Description for custom list type"
+  },
+  "createListHouseholdLabel": "Huishouden",
+  "@createListHouseholdLabel": {
+    "description": "Household selector label in create list sheet"
+  },
+  "createListNameRequired": "Lijstnaam is verplicht",
+  "@createListNameRequired": {
+    "description": "Validation: list name required"
+  },
+  "createListNoHousehold": "Geen huishouden beschikbaar.",
+  "@createListNoHousehold": {
+    "description": "Empty state when no households exist"
+  },
+  "createListScanFinished": "Scan voltooid",
+  "@createListScanFinished": {
+    "description": "Snackbar when scan completes"
+  },
+  "createListScanSemantics": "Lijst scannen via camera",
+  "@createListScanSemantics": {
+    "description": "Semantics label for scan list button"
+  },
+  "createListScanned": "\"{name}\" gescand",
+  "@createListScanned": {
+    "description": "Snackbar after scanning into a list",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "createListShoppingDesc": "Het beste voor boodschappen en klusjes met hoeveelheden.",
+  "@createListShoppingDesc": {
+    "description": "Description for shopping list type"
+  },
+  "createListTodoDesc": "Een eenvoudige checklist voor taken die gedaan moeten worden.",
+  "@createListTodoDesc": {
+    "description": "Description for to-do list type"
+  },
+  "currencyAud": "AUD - Australische dollar",
+  "@currencyAud": {
+    "description": "Australian Dollar currency label"
+  },
+  "currencyCad": "CAD - Canadese dollar",
+  "@currencyCad": {
+    "description": "Canadian Dollar currency label"
+  },
+  "currencyChf": "CHF - Zwitserse frank",
+  "@currencyChf": {
+    "description": "Swiss Franc currency label"
+  },
+  "currencyCzk": "CZK - Tsjechische kroon",
+  "@currencyCzk": {
+    "description": "Czech Koruna currency label"
+  },
+  "currencyDkk": "DKK - Deense kroon",
+  "@currencyDkk": {
+    "description": "Danish Krone currency label"
+  },
+  "currencyEur": "EUR - Euro",
+  "@currencyEur": {
+    "description": "Euro currency label"
+  },
+  "currencyGbp": "GBP - Britse pond",
+  "@currencyGbp": {
+    "description": "British Pound currency label"
+  },
+  "currencyHuf": "HUF - Hongaarse forint",
+  "@currencyHuf": {
+    "description": "Hungarian Forint currency label"
+  },
+  "currencyJpy": "JPY - Japanse yen",
+  "@currencyJpy": {
+    "description": "Japanese Yen currency label"
+  },
+  "currencyNok": "NOK - Noorse kroon",
+  "@currencyNok": {
+    "description": "Norwegian Krone currency label"
+  },
+  "currencyPln": "PLN - Poolse złoty",
+  "@currencyPln": {
+    "description": "Polish Zloty currency label"
+  },
+  "currencySek": "SEK - Zweedse kroon",
+  "@currencySek": {
+    "description": "Swedish Krona currency label"
+  },
+  "currencyUsd": "USD - Amerikaanse dollar",
+  "@currencyUsd": {
+    "description": "US Dollar currency label"
+  },
+  "errorBoundaryDesc": "Er is een onverwachte fout opgetreden. Probeer het opnieuw.",
+  "@errorBoundaryDesc": {
+    "description": "Error boundary fallback description"
+  },
+  "errorBoundaryTitle": "Er ging iets mis",
+  "@errorBoundaryTitle": {
+    "description": "Error boundary fallback title"
+  },
+  "errorConflict": "Iemand anders heeft dit gewijzigd. Vernieuw en probeer het opnieuw.",
+  "@errorConflict": {
+    "description": "Friendly error for 409 conflict"
+  },
+  "errorGenericRetry": "Er ging iets mis. Probeer het opnieuw.",
+  "@errorGenericRetry": {
+    "description": "Generic fallback friendly error"
+  },
+  "errorNoPermission": "Je hebt geen toestemming hiervoor.",
+  "@errorNoPermission": {
+    "description": "Friendly error for 403"
+  },
+  "errorNotFound": "Niet gevonden. Het is mogelijk verwijderd.",
+  "@errorNotFound": {
+    "description": "Friendly error for 404"
+  },
+  "errorServerHiccup": "Serverprobleem — probeer het zo meteen opnieuw.",
+  "@errorServerHiccup": {
+    "description": "Friendly error for 5xx responses"
+  },
+  "errorSignInAgain": "Log opnieuw in.",
+  "@errorSignInAgain": {
+    "description": "Friendly error for 401"
+  },
+  "expenseCreationAddToSplit": "{name} toevoegen aan verdeling",
+  "@expenseCreationAddToSplit": {
+    "description": "Semantics: add member to split",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationAssignShare": "Wijs minstens één aandeel toe.",
+  "@expenseCreationAssignShare": {
+    "description": "Validation: assign at least one share"
+  },
+  "expenseCreationCouldNotLoadMembers": "Huishoudleden konden niet worden geladen.",
+  "@expenseCreationCouldNotLoadMembers": {
+    "description": "Error when household members fail to load"
+  },
+  "expenseCreationJoinHouseholdSplit": "Sluit je aan bij of maak een huishouden om deze uitgave te verdelen.",
+  "@expenseCreationJoinHouseholdSplit": {
+    "description": "Prompt when no household for expense split"
+  },
+  "expenseCreationRemoveAddSplitter": "{name} verwijderen/toevoegen bij verdeling",
+  "@expenseCreationRemoveAddSplitter": {
+    "description": "Checkbox label for adding/removing splitters",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationRemoveFromSplit": "{name} verwijderen uit verdeling",
+  "@expenseCreationRemoveFromSplit": {
+    "description": "Semantics: remove member from split",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSharesNegative": "Aandelen kunnen niet negatief zijn.",
+  "@expenseCreationSharesNegative": {
+    "description": "Validation: shares must not be negative"
+  },
+  "expenseCreationSplitAmountsNegative": "{assigned} · bedragen kunnen niet negatief zijn",
+  "@expenseCreationSplitAmountsNegative": {
+    "description": "Split validation: negative amounts",
+    "placeholders": {
+      "assigned": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitApproxEach": "≈ {amount} per persoon",
+  "@expenseCreationSplitApproxEach": {
+    "description": "Approximate equal split per person",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitAssignedOf": "{assigned} van {total}",
+  "@expenseCreationSplitAssignedOf": {
+    "description": "Split summary: assigned amount of total",
+    "placeholders": {
+      "assigned": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitEach": "{amount} per persoon",
+  "@expenseCreationSplitEach": {
+    "description": "Equal split per person",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitLeftToAssign": "{assigned} · {remaining} nog toe te wijzen",
+  "@expenseCreationSplitLeftToAssign": {
+    "description": "Split validation: remaining to assign",
+    "placeholders": {
+      "assigned": {
+        "type": "String"
+      },
+      "remaining": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitOver": "{assigned} · {over} te veel",
+  "@expenseCreationSplitOver": {
+    "description": "Split validation: over-assigned",
+    "placeholders": {
+      "assigned": {
+        "type": "String"
+      },
+      "over": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitPercentOf100": "{sum}% van 100%",
+  "@expenseCreationSplitPercentOf100": {
+    "description": "Split summary: percent of 100",
+    "placeholders": {
+      "sum": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitPercentRange": "{sum}% toegewezen · elk aandeel moet 0–100% zijn",
+  "@expenseCreationSplitPercentRange": {
+    "description": "Split validation: percent out of range",
+    "placeholders": {
+      "sum": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitSharesPerShare": "{count} aandelen · {perShare} per aandeel",
+  "@expenseCreationSplitSharesPerShare": {
+    "description": "Split summary: shares mode",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      },
+      "perShare": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseDetailCouldNotLoadReceipts": "Bonnen konden niet worden geladen.",
+  "@expenseDetailCouldNotLoadReceipts": {
+    "description": "Snackbar when expense receipts fail to load"
+  },
+  "expenseDetailCouldNotLoadSplits": "Verdelingen konden niet worden geladen.",
+  "@expenseDetailCouldNotLoadSplits": {
+    "description": "Snackbar when expense splits fail to load"
+  },
+  "expenseDetailCouldNotRemoveReceipt": "Bon kon niet worden verwijderd.",
+  "@expenseDetailCouldNotRemoveReceipt": {
+    "description": "Snackbar when receipt removal fails"
+  },
+  "expenseDetailFailedLoadReceipt": "Bon laden mislukt",
+  "@expenseDetailFailedLoadReceipt": {
+    "description": "Error when receipt image fails to load"
+  },
+  "expenseDetailNoReceipts": "Geen bonnen bijgevoegd. Voeg er een toe bij het bewerken van de uitgave.",
+  "@expenseDetailNoReceipts": {
+    "description": "Empty state when expense has no receipts"
+  },
+  "expenseDetailNotSplitYet": "Deze uitgave is nog niet verdeeld.",
+  "@expenseDetailNotSplitYet": {
+    "description": "Empty state when expense has no splits"
+  },
+  "expenseDetailReceipt": "Bon",
+  "@expenseDetailReceipt": {
+    "description": "Label for receipt attachment"
+  },
+  "expenseDetailRemoving": "Verwijderen…",
+  "@expenseDetailRemoving": {
+    "description": "Label while removing receipt"
+  },
+  "expenseDetailView": "Bekijken",
+  "@expenseDetailView": {
+    "description": "View action label"
+  },
+  "hubActivityEmpty": "Nog niets aan de hand.\nActiviteit van je huishouden verschijnt hier.",
+  "@hubActivityEmpty": {
+    "description": "Activity wall empty state"
+  },
+  "hubActivityError": "Activiteit kon niet worden geladen. Trek naar beneden op de hub om te vernieuwen.",
+  "@hubActivityError": {
+    "description": "Activity wall load error"
+  },
+  "hubActivityTitle": "Activiteit",
+  "@hubActivityTitle": {
+    "description": "Activity wall section title"
+  },
+  "hubHouseholdsCurrent": "Huishoudens, huidig {name}",
+  "@hubHouseholdsCurrent": {
+    "description": "Semantics label for household switcher",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "hubOnboardingAddChore": "Klus toevoegen",
+  "@hubOnboardingAddChore": {
+    "description": "Add a chore action"
+  },
+  "hubOnboardingCreateList": "Lijst aanmaken",
+  "@hubOnboardingCreateList": {
+    "description": "Create a list action"
+  },
+  "hubOnboardingDescription": "Alles begint hier. Kies wat het belangrijkst is.",
+  "@hubOnboardingDescription": {
+    "description": "Onboarding card description"
+  },
+  "hubOnboardingDismiss": "Snelstart sluiten",
+  "@hubOnboardingDismiss": {
+    "description": "Dismiss quick start tooltip"
+  },
+  "hubOnboardingDone": "Alles klaar",
+  "@hubOnboardingDone": {
+    "description": "Onboarding card: done tile"
+  },
+  "hubOnboardingDoneDesc": "Klussen, saldi, lijsten — alles op één plek, netjes bijgehouden.",
+  "@hubOnboardingDoneDesc": {
+    "description": "Done tile description"
+  },
+  "hubOnboardingGetStarted": "Aan de slag",
+  "@hubOnboardingGetStarted": {
+    "description": "Onboarding card header"
+  },
+  "hubOnboardingInvite": "Huisgenoten uitnodigen",
+  "@hubOnboardingInvite": {
+    "description": "Invite flatmates action"
+  },
+  "hubOnboardingSettle": "Verrekenen",
+  "@hubOnboardingSettle": {
+    "description": "Onboarding card: settle tile"
+  },
+  "hubOnboardingSettleDesc": "Betaal iedereen in één keer terug met voorgestelde verrekeningen.",
+  "@hubOnboardingSettleDesc": {
+    "description": "Settle tile description"
+  },
+  "hubOnboardingSwap": "Ruilen",
+  "@hubOnboardingSwap": {
+    "description": "Onboarding card: swap tile"
+  },
+  "hubOnboardingSwapDesc": "Kies een huisgenoot die het minst verschuldigd is om deze klus over te nemen.",
+  "@hubOnboardingSwapDesc": {
+    "description": "Swap tile description"
+  },
+  "hubOnboardingTrackExpense": "Uitgave bijhouden",
+  "@hubOnboardingTrackExpense": {
+    "description": "Track an expense action"
+  },
+  "hubQuickAddChore": "Klus toevoegen",
+  "@hubQuickAddChore": {
+    "description": "Quick add: chore option"
+  },
+  "hubQuickAddExpense": "Uitgave toevoegen",
+  "@hubQuickAddExpense": {
+    "description": "Quick add: expense option"
+  },
+  "hubQuickAddList": "Nieuwe lijst",
+  "@hubQuickAddList": {
+    "description": "Quick add: new list option"
+  },
+  "hubQuickAddNote": "Notitie vastpinnen",
+  "@hubQuickAddNote": {
+    "description": "Quick add: pinwall note option"
+  },
+  "hubQuickAddShoppingTrip": "Boodschappen starten",
+  "@hubQuickAddShoppingTrip": {
+    "description": "Quick add: shopping trip option"
+  },
+  "hubQuickAddTitle": "Snel toevoegen",
+  "@hubQuickAddTitle": {
+    "description": "Quick add bottom sheet title"
+  },
+  "hubQuickAddToList": "Toevoegen aan lijst",
+  "@hubQuickAddToList": {
+    "description": "Quick add: add to list option"
+  },
+  "hubStatsActiveList": "actieve lijst",
+  "@hubStatsActiveList": {
+    "description": "Stats grid: singular active list"
+  },
+  "hubStatsActiveLists": "actieve lijsten",
+  "@hubStatsActiveLists": {
+    "description": "Stats grid: plural active lists"
+  },
+  "hubStatsAllDone": "alles klaar",
+  "@hubStatsAllDone": {
+    "description": "Stats grid: all done label"
+  },
+  "hubStatsBalance": "Saldo",
+  "@hubStatsBalance": {
+    "description": "Stats grid: balance label"
+  },
+  "hubStatsChores": "Klussen",
+  "@hubStatsChores": {
+    "description": "Stats grid: chores label"
+  },
+  "hubStatsDue": "te doen",
+  "@hubStatsDue": {
+    "description": "Stats grid: due today label"
+  },
+  "hubStatsLists": "Lijsten",
+  "@hubStatsLists": {
+    "description": "Stats grid: lists label"
+  },
+  "hubStatsMeals": "Maaltijden",
+  "@hubStatsMeals": {
+    "description": "Stats grid: meals planned label"
+  },
+  "hubStatsOpen": "open",
+  "@hubStatsOpen": {
+    "description": "Stats grid: open balance label"
+  },
+  "hubStatsOverdue": "te laat",
+  "@hubStatsOverdue": {
+    "description": "Stats grid: overdue label"
+  },
+  "hubStatsPinwallReminder": "prikbordherinnering",
+  "@hubStatsPinwallReminder": {
+    "description": "Stats grid: singular pinwall reminder"
+  },
+  "hubStatsPinwallReminders": "prikbordherinneringen",
+  "@hubStatsPinwallReminders": {
+    "description": "Stats grid: plural pinwall reminders"
+  },
+  "hubStatsPlanned": "gepland",
+  "@hubStatsPlanned": {
+    "description": "Stats grid: planned this week"
+  },
+  "hubStatsReminders": "Herinneringen",
+  "@hubStatsReminders": {
+    "description": "Stats grid: reminders label"
+  },
+  "inviteCodeLabel": "Uitnodigingscode: {code}",
+  "@inviteCodeLabel": {
+    "description": "Label displaying the invite code",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "inviteGenerating": "Genereren…",
+  "@inviteGenerating": {
+    "description": "Text shown while generating invite code"
+  },
+  "inviteLinkShareText": "Doe mee met mijn huishouden op mitlist!\nTik: {link}\nOf open mitlist en voer de code in: {code}",
+  "@inviteLinkShareText": {
+    "description": "Shared invite link message",
+    "placeholders": {
+      "link": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "inviteNewCode": "Nieuwe code",
+  "@inviteNewCode": {
+    "description": "Button to generate a new invite code"
+  },
+  "inviteQrHint": "Scan met je telefooncamera om mee te doen, of deel de code hieronder.",
+  "@inviteQrHint": {
+    "description": "Hint for invite QR code"
+  },
+  "inviteQrSemantic": "Huishoudenuitnodigings-QR",
+  "@inviteQrSemantic": {
+    "description": "Semantics label for invite QR code"
+  },
+  "inviteQrTitle": "Huishoudenuitnodigings-QR-code",
+  "@inviteQrTitle": {
+    "description": "Title for invite QR code section"
+  },
+  "inviteQrUnavailable": "QR niet beschikbaar",
+  "@inviteQrUnavailable": {
+    "description": "Error when QR code cannot be rendered"
+  },
+  "joinCodeFormatHint": "Codes zien eruit als WOORD-WOORD-42. Vraag het aan degene die je heeft uitgenodigd.",
+  "@joinCodeFormatHint": {
+    "description": "Hint text describing invite code format"
+  },
+  "joinEnterGroup": "{name} openen",
+  "@joinEnterGroup": {
+    "description": "Semantics label to enter a household",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "joinMembersAlreadyInside": "{count, plural, =1{1 lid al binnen} other{{count} leden al binnen}}",
+  "@joinMembersAlreadyInside": {
+    "description": "Member count after joining household",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "oauthMissingParams": "Ontbrekende OAuth-callbackparameters.",
+  "@oauthMissingParams": {
+    "description": "Error when OAuth callback has missing params"
+  },
+  "oauthSigningYouIn": "Je wordt ingelogd",
+  "@oauthSigningYouIn": {
+    "description": "Loading text while signing in via OAuth"
+  },
+  "pinwallCouldNotLoad": "Prikbord kon niet worden geladen.",
+  "@pinwallCouldNotLoad": {
+    "description": "Error when pinwall posts fail to load"
+  },
+  "pinwallLinkChore": "Een klus",
+  "@pinwallLinkChore": {
+    "description": "Link action: link a chore"
+  },
+  "pinwallLinkList": "Een lijst",
+  "@pinwallLinkList": {
+    "description": "Link action: link a list"
+  },
+  "pinwallLinkedTo": "Gekoppeld aan {entity}",
+  "@pinwallLinkedTo": {
+    "description": "Semantics label for linked entity",
+    "placeholders": {
+      "entity": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeAddToListAddToSelection": "{name} toevoegen aan selectie",
+  "@recipeAddToListAddToSelection": {
+    "description": "Semantics: select ingredient",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeAddToListCreateListFirst": "Maak eerst een lijst om ingrediënten toe te voegen",
+  "@recipeAddToListCreateListFirst": {
+    "description": "Prompt to create a list before adding ingredients"
+  },
+  "recipeAddToListNoIngredients": "Geen ingrediënten",
+  "@recipeAddToListNoIngredients": {
+    "description": "Empty state when recipe has no ingredients"
+  },
+  "recipeAddToListNoIngredientsDesc": "Dit recept heeft geen verwerkte ingrediënten",
+  "@recipeAddToListNoIngredientsDesc": {
+    "description": "Description when recipe has no ingredients"
+  },
+  "recipeAddToListNoLists": "Geen lijsten",
+  "@recipeAddToListNoLists": {
+    "description": "Empty state when no lists available to add ingredients to"
+  },
+  "recipeAddToListRemoveFromSelection": "{name} verwijderen uit selectie",
+  "@recipeAddToListRemoveFromSelection": {
+    "description": "Semantics: deselect ingredient",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeAddToListTargetList": "Doellijst",
+  "@recipeAddToListTargetList": {
+    "description": "Dropdown label for target list"
+  },
+  "recipeCreationScanRecipe": "Recept scannen",
+  "@recipeCreationScanRecipe": {
+    "description": "Button text to scan a recipe"
+  },
+  "recipeCreationScanRecipeViaCamera": "Recept scannen via camera",
+  "@recipeCreationScanRecipeViaCamera": {
+    "description": "Semantics label for scanning a recipe"
+  },
+  "recipeDetailStepCount": "{count, plural, =1{1 stap} other{{count} stappen}}",
+  "@recipeDetailStepCount": {
+    "description": "Semantics label for recipe step count",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "recurringCouldNotCreate": "Terugkerende uitgave kon niet worden aangemaakt.",
+  "@recurringCouldNotCreate": {
+    "description": "Error when creating recurring expense fails"
+  },
+  "recurringCouldNotDelete": "Terugkerende uitgave kon niet worden verwijderd.",
+  "@recurringCouldNotDelete": {
+    "description": "Error when deleting recurring expense fails"
+  },
+  "recurringCouldNotUpdate": "Terugkerende uitgave kon niet worden bijgewerkt.",
+  "@recurringCouldNotUpdate": {
+    "description": "Error when updating recurring expense fails"
+  },
+  "recurringTomorrow": "Morgen",
+  "@recurringTomorrow": {
+    "description": "Tomorrow label in recurring expenses date helper"
+  },
+  "scannerCouldNotAnalyze": "Afbeelding kon niet worden geanalyseerd. Probeer het opnieuw met een duidelijkere foto.",
+  "@scannerCouldNotAnalyze": {
+    "description": "Error when AI image analysis fails in scanner"
+  },
+  "sheetConflictDescription": "Dit item is op een ander apparaat gewijzigd terwijl je het bewerkte. Kies welke versie je wilt behouden.",
+  "@sheetConflictDescription": {
+    "description": "Conflict resolution description"
+  },
+  "sheetConflictKeepLocal": "Jouwe behouden",
+  "@sheetConflictKeepLocal": {
+    "description": "Button to keep local version"
+  },
+  "sheetConflictKeepServer": "Server behouden",
+  "@sheetConflictKeepServer": {
+    "description": "Button to keep server version"
+  },
+  "sheetConflictLocal": "Jouw versie",
+  "@sheetConflictLocal": {
+    "description": "Local version label"
+  },
+  "sheetConflictServer": "Serverversie",
+  "@sheetConflictServer": {
+    "description": "Server version label"
+  },
+  "sheetConflictTitle": "Synchronisatieconflict",
+  "@sheetConflictTitle": {
+    "description": "Conflict resolution sheet title"
+  },
+  "sheetCostSummaryTitle": "Kostenoverzicht",
+  "@sheetCostSummaryTitle": {
+    "description": "Sheet title for list cost summary"
+  },
+  "sheetCostSummaryTotal": "Totaal",
+  "@sheetCostSummaryTotal": {
+    "description": "Total cost label"
+  },
+  "sheetCreateHouseholdName": "Huishoudennaam",
+  "@sheetCreateHouseholdName": {
+    "description": "Name input label"
+  },
+  "sheetCreateHouseholdNameHint": "bijv. Appartement 4B",
+  "@sheetCreateHouseholdNameHint": {
+    "description": "Name placeholder"
+  },
+  "sheetCreateHouseholdTitle": "Huishouden aanmaken",
+  "@sheetCreateHouseholdTitle": {
+    "description": "Sheet title for creating a household"
+  },
+  "sheetCreateListCreate": "Lijst aanmaken",
+  "@sheetCreateListCreate": {
+    "description": "Create list button"
+  },
+  "sheetCreateListName": "Lijstnaam",
+  "@sheetCreateListName": {
+    "description": "Name input label"
+  },
+  "sheetCreateListNameHint": "bijv. Weekboodschappen",
+  "@sheetCreateListNameHint": {
+    "description": "Name placeholder"
+  },
+  "sheetCreateListTitle": "Nieuwe lijst",
+  "@sheetCreateListTitle": {
+    "description": "Sheet title for creating a list"
+  },
+  "sheetCreateListType": "Type",
+  "@sheetCreateListType": {
+    "description": "List type selector label"
+  },
+  "sheetCreateListTypeCustom": "Aangepast",
+  "@sheetCreateListTypeCustom": {
+    "description": "Type option: custom list"
+  },
+  "sheetCreateListTypeShopping": "Boodschappen",
+  "@sheetCreateListTypeShopping": {
+    "description": "Type option: shopping list"
+  },
+  "sheetCreateListTypeTodo": "Taken",
+  "@sheetCreateListTypeTodo": {
+    "description": "Type option: to-do list"
+  },
+  "sheetExpenseDetailSplits": "Verdelingen",
+  "@sheetExpenseDetailSplits": {
+    "description": "Section header: split details"
+  },
+  "sheetExpenseDetailSplitsCount": "{count, plural, =1{{count} verdeling} other{{count} verdelingen}}",
+  "@sheetExpenseDetailSplitsCount": {
+    "description": "Split count",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "sheetExpenseDetailTitle": "Uitgavedetails",
+  "@sheetExpenseDetailTitle": {
+    "description": "Sheet title for expense detail"
+  },
+  "sheetFailedChangesDescription": "Deze wijzigingen konden niet worden opgeslagen. Je kunt opnieuw proberen of ze negeren.",
+  "@sheetFailedChangesDescription": {
+    "description": "Failed changes description"
+  },
+  "sheetFailedChangesDiscard": "Negeren",
+  "@sheetFailedChangesDiscard": {
+    "description": "Discard single failed change"
+  },
+  "sheetFailedChangesDiscardAll": "Alles negeren",
+  "@sheetFailedChangesDiscardAll": {
+    "description": "Discard all failed changes"
+  },
+  "sheetFailedChangesEmpty": "Geen mislukte wijzigingen. Alles is gesynchroniseerd of wacht op een nieuwe poging.",
+  "@sheetFailedChangesEmpty": {
+    "description": "Empty state when no failed outbox changes"
+  },
+  "sheetFailedChangesOpAddItem": "Item toevoegen",
+  "@sheetFailedChangesOpAddItem": {
+    "description": "Outbox op label: create item"
+  },
+  "sheetFailedChangesOpChange": "Wijziging",
+  "@sheetFailedChangesOpChange": {
+    "description": "Outbox op label: unknown change"
+  },
+  "sheetFailedChangesOpCompleteChore": "Klus voltooien",
+  "@sheetFailedChangesOpCompleteChore": {
+    "description": "Outbox op label: complete chore"
+  },
+  "sheetFailedChangesOpCreateExpense": "Uitgave toevoegen",
+  "@sheetFailedChangesOpCreateExpense": {
+    "description": "Outbox op label: create expense"
+  },
+  "sheetFailedChangesOpCreatePinwallPost": "Op prikbord plaatsen",
+  "@sheetFailedChangesOpCreatePinwallPost": {
+    "description": "Outbox op label: create pinwall post"
+  },
+  "sheetFailedChangesOpCreateRecipe": "Recept toevoegen",
+  "@sheetFailedChangesOpCreateRecipe": {
+    "description": "Outbox op label: create recipe"
+  },
+  "sheetFailedChangesOpDeleteExpense": "Uitgave verwijderen",
+  "@sheetFailedChangesOpDeleteExpense": {
+    "description": "Outbox op label: delete expense"
+  },
+  "sheetFailedChangesOpDeleteItem": "Item verwijderen",
+  "@sheetFailedChangesOpDeleteItem": {
+    "description": "Outbox op label: delete item"
+  },
+  "sheetFailedChangesOpDeletePinwallPost": "Prikbordbericht verwijderen",
+  "@sheetFailedChangesOpDeletePinwallPost": {
+    "description": "Outbox op label: delete pinwall post"
+  },
+  "sheetFailedChangesOpDeleteRecipe": "Recept verwijderen",
+  "@sheetFailedChangesOpDeleteRecipe": {
+    "description": "Outbox op label: delete recipe"
+  },
+  "sheetFailedChangesOpReorderItems": "Lijst herschikken",
+  "@sheetFailedChangesOpReorderItems": {
+    "description": "Outbox op label: reorder items"
+  },
+  "sheetFailedChangesOpRescheduleChore": "Klus opnieuw plannen",
+  "@sheetFailedChangesOpRescheduleChore": {
+    "description": "Outbox op label: reschedule chore"
+  },
+  "sheetFailedChangesOpSkipChore": "Klus overslaan",
+  "@sheetFailedChangesOpSkipChore": {
+    "description": "Outbox op label: skip chore"
+  },
+  "sheetFailedChangesOpUndoChore": "Klus ongedaan maken",
+  "@sheetFailedChangesOpUndoChore": {
+    "description": "Outbox op label: undo chore"
+  },
+  "sheetFailedChangesOpUpdateExpense": "Uitgave bijwerken",
+  "@sheetFailedChangesOpUpdateExpense": {
+    "description": "Outbox op label: update expense"
+  },
+  "sheetFailedChangesOpUpdateItem": "Item bijwerken",
+  "@sheetFailedChangesOpUpdateItem": {
+    "description": "Outbox op label: update item"
+  },
+  "sheetFailedChangesOpUpdateRecipe": "Recept bijwerken",
+  "@sheetFailedChangesOpUpdateRecipe": {
+    "description": "Outbox op label: update recipe"
+  },
+  "sheetFailedChangesRetry": "Opnieuw",
+  "@sheetFailedChangesRetry": {
+    "description": "Retry single failed change"
+  },
+  "sheetFailedChangesRetryAll": "Alles opnieuw",
+  "@sheetFailedChangesRetryAll": {
+    "description": "Retry all failed changes"
+  },
+  "sheetFailedChangesTitle": "Mislukte wijzigingen",
+  "@sheetFailedChangesTitle": {
+    "description": "Sheet title for failed outbox changes"
+  },
+  "sheetGroupSettingsAddZone": "Zone toevoegen",
+  "@sheetGroupSettingsAddZone": {
+    "description": "Input label for adding a zone"
+  },
+  "sheetGroupSettingsChoreZonesDesc": "Ruimtes in je huis om klussen te groeperen. Ze verschijnen bij het toevoegen van een klus.",
+  "@sheetGroupSettingsChoreZonesDesc": {
+    "description": "Description of chore zones"
+  },
+  "sheetGroupSettingsChoreZonesLabel": "Kluszones",
+  "@sheetGroupSettingsChoreZonesLabel": {
+    "description": "Section label for chore zones"
+  },
+  "sheetGroupSettingsChoreZonesUpdated": "Kluszones bijgewerkt",
+  "@sheetGroupSettingsChoreZonesUpdated": {
+    "description": "Snackbar when chore zones are saved"
+  },
+  "sheetGroupSettingsCouldNotSave": "Instellingen konden niet worden opgeslagen.",
+  "@sheetGroupSettingsCouldNotSave": {
+    "description": "Error when saving fails"
+  },
+  "sheetGroupSettingsDelete": "Huishouden verwijderen",
+  "@sheetGroupSettingsDelete": {
+    "description": "Button to delete household"
+  },
+  "sheetGroupSettingsDeleteConfirm": "Dit verwijdert dit huishouden en alle bijbehorende gegevens permanent. Dit kan niet ongedaan worden gemaakt.",
+  "@sheetGroupSettingsDeleteConfirm": {
+    "description": "Confirmation for deleting household"
+  },
+  "sheetGroupSettingsDescriptionHint": "Een paar woorden over dit huishouden",
+  "@sheetGroupSettingsDescriptionHint": {
+    "description": "Hint text for household description"
+  },
+  "sheetGroupSettingsHouseholdDeleted": "Huishouden verwijderd",
+  "@sheetGroupSettingsHouseholdDeleted": {
+    "description": "Snackbar when household is deleted"
+  },
+  "sheetGroupSettingsInvite": "Uitnodigen",
+  "@sheetGroupSettingsInvite": {
+    "description": "Button to invite a member"
+  },
+  "sheetGroupSettingsLeave": "Huishouden verlaten",
+  "@sheetGroupSettingsLeave": {
+    "description": "Button to leave household"
+  },
+  "sheetGroupSettingsLeaveAction": "Verlaten",
+  "@sheetGroupSettingsLeaveAction": {
+    "description": "Confirm leave action"
+  },
+  "sheetGroupSettingsLeaveConfirm": "Weet je zeker dat je dit huishouden wilt verlaten? Al je gegevens blijven in het huishouden bewaard.",
+  "@sheetGroupSettingsLeaveConfirm": {
+    "description": "Confirmation for leaving household"
+  },
+  "sheetGroupSettingsMemberRemoved": "{name} verwijderd",
+  "@sheetGroupSettingsMemberRemoved": {
+    "description": "Snackbar when member is removed",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetGroupSettingsMembersLabel": "Leden",
+  "@sheetGroupSettingsMembersLabel": {
+    "description": "Section label for household members"
+  },
+  "sheetGroupSettingsName": "Huishoudennaam",
+  "@sheetGroupSettingsName": {
+    "description": "Name input label"
+  },
+  "sheetGroupSettingsRemoveMember": "Lid verwijderen",
+  "@sheetGroupSettingsRemoveMember": {
+    "description": "Dialog title for removing a member"
+  },
+  "sheetGroupSettingsRemoveMemberConfirm": "{name} uit dit huishouden verwijderen?",
+  "@sheetGroupSettingsRemoveMemberConfirm": {
+    "description": "Confirmation dialog body for removing a member",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetGroupSettingsRemoveMemberTooltip": "{name} verwijderen",
+  "@sheetGroupSettingsRemoveMemberTooltip": {
+    "description": "Tooltip to remove a member",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetGroupSettingsSaveZones": "Zones opslaan",
+  "@sheetGroupSettingsSaveZones": {
+    "description": "Button to save chore zones"
+  },
+  "sheetGroupSettingsSaved": "Instellingen opgeslagen",
+  "@sheetGroupSettingsSaved": {
+    "description": "Snackbar when settings are saved"
+  },
+  "sheetGroupSettingsTitle": "Huishoudinstellingen",
+  "@sheetGroupSettingsTitle": {
+    "description": "Sheet title for group settings"
+  },
+  "sheetGroupSettingsZoneHint": "Keuken, Badkamer…",
+  "@sheetGroupSettingsZoneHint": {
+    "description": "Placeholder for zone input"
+  },
+  "sheetInviteCopied": "Uitnodigingslink gekopieerd",
+  "@sheetInviteCopied": {
+    "description": "Snackbar when link is copied"
+  },
+  "sheetInviteCopy": "Link kopiëren",
+  "@sheetInviteCopy": {
+    "description": "Copy invite link button"
+  },
+  "sheetInviteShare": "Link delen",
+  "@sheetInviteShare": {
+    "description": "Share invite link button"
+  },
+  "sheetInviteTitle": "Uitnodigen voor huishouden",
+  "@sheetInviteTitle": {
+    "description": "Sheet title for inviting to household"
+  },
+  "sheetJoinCodeExample": "SUNNY-TACO-42",
+  "@sheetJoinCodeExample": {
+    "description": "Example invite code placeholder"
+  },
+  "sheetJoinCodeHint": "Plak uitnodigingscode",
+  "@sheetJoinCodeHint": {
+    "description": "Invite code placeholder"
+  },
+  "sheetJoinCodeLabel": "Uitnodigingscode",
+  "@sheetJoinCodeLabel": {
+    "description": "Invite code input label"
+  },
+  "sheetJoinJoin": "Deelnemen",
+  "@sheetJoinJoin": {
+    "description": "Join button"
+  },
+  "sheetJoinTitle": "Deelnemen aan huishouden",
+  "@sheetJoinTitle": {
+    "description": "Sheet title for joining a household"
+  },
+  "sheetRecipeAddToListAdded": "{count, plural, =1{1 item toegevoegd} other{{count} items toegevoegd}}",
+  "@sheetRecipeAddToListAdded": {
+    "description": "Snackbar when ingredients are added",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "sheetRecipeAddToListCouldNotAdd": "Ingrediënten konden niet worden toegevoegd.",
+  "@sheetRecipeAddToListCouldNotAdd": {
+    "description": "Error when adding ingredients fails"
+  },
+  "sheetRecipeAddToListTitle": "Toevoegen aan lijst",
+  "@sheetRecipeAddToListTitle": {
+    "description": "Sheet title for adding recipe ingredients to list"
+  },
+  "sheetSettlementConfirm": "Verrekening bevestigen",
+  "@sheetSettlementConfirm": {
+    "description": "Confirm settlement button"
+  },
+  "sheetSettlementFrom": "Van",
+  "@sheetSettlementFrom": {
+    "description": "Party label: from"
+  },
+  "sheetSettlementRecordPayment": "Registreer deze verrekening nadat de betaling is gedaan.",
+  "@sheetSettlementRecordPayment": {
+    "description": "Settlement helper text"
+  },
+  "sheetSettlementTitle": "Verrekening registreren",
+  "@sheetSettlementTitle": {
+    "description": "Settlement confirmation dialog title"
+  },
+  "sheetSettlementTo": "Naar",
+  "@sheetSettlementTo": {
+    "description": "Party label: to"
+  },
+  "smartCaptureLaunchTitle": "Foto controleren",
+  "@smartCaptureLaunchTitle": {
+    "description": "Smart capture launcher review title"
+  },
+  "storePickerLoadError": "Winkels konden niet worden geladen.",
+  "@storePickerLoadError": {
+    "description": "Store picker load error"
+  },
+  "storePickerNoMatch": "Geen winkels komen overeen met je zoekopdracht.",
+  "@storePickerNoMatch": {
+    "description": "No store search results"
+  },
+  "storePickerNoStore": "Geen winkel",
+  "@storePickerNoStore": {
+    "description": "No store option"
+  },
+  "storePickerNoStoreDesc": "Sorteer op categorie in plaats van winkelindeling",
+  "@storePickerNoStoreDesc": {
+    "description": "No store option description"
+  },
+  "storePickerSearchHint": "Naam...",
+  "@storePickerSearchHint": {
+    "description": "Store search hint"
+  },
+  "storePickerSearchLabel": "Winkels zoeken",
+  "@storePickerSearchLabel": {
+    "description": "Store search label"
+  },
+  "storePickerTitle": "Winkel kiezen",
+  "@storePickerTitle": {
+    "description": "Store picker sheet title"
+  },
+  "tonightCook": "Koken",
+  "@tonightCook": {
+    "description": "Button to start cooking tonight's meal"
+  },
+  "tonightHeader": "Vanavond",
+  "@tonightHeader": {
+    "description": "Tonight card section header"
+  },
+  "tonightNothingPlanned": "Niets gepland voor vanavond",
+  "@tonightNothingPlanned": {
+    "description": "Empty state when no meal planned for tonight"
+  },
+  "tonightPlanDinner": "Avondeten plannen",
+  "@tonightPlanDinner": {
+    "description": "CTA to plan tonight's dinner"
+  },
+  "tonightRecipe": "Recept",
+  "@tonightRecipe": {
+    "description": "Fallback recipe title for tonight card"
+  }
 }

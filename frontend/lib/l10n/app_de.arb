@@ -44,7 +44,6 @@
   "commonMember": "{count, plural, =1{{count} Mitglied} other{{count} Mitglieder}}",
   "commonItemCount": "{count, plural, =1{1 Eintrag} other{{count} Einträge}}",
   "commonLoadingMembers": "Mitglieder werden geladen…",
-
   "welcomeTagline": "Dein Haushalt, organisiert.",
   "welcomeCardTitle": "Listen, Aufgaben, Geld.\nAlles an einem Ort.",
   "welcomeCardBody": "Gemacht für WGs, die weniger Reibung und mehr Klarheit wollen.",
@@ -53,7 +52,6 @@
   "welcomeGuestLoading": "Wird eingerichtet …",
   "welcomeContinueAsGuest": "Als Gast fortfahren",
   "welcomeGuestFootnote": "Kein Konto nötig. 30 Tage lang alles kostenlos testen.",
-
   "hubAppBarTitle": "Start",
   "hubHouseholdsSheetTitle": "Haushalte",
   "hubSwitchToHousehold": "Zu {name} wechseln",
@@ -68,7 +66,6 @@
   "hubQuickAdd": "Schnell hinzufügen",
   "hubLoadError": "Haushalte konnten nicht geladen werden. Überprüfe deine Verbindung und versuche es erneut.",
   "hubCalendarTooltip": "Kalender",
-
   "myHouseholdsTitle": "Meine Haushalte",
   "groupsJoinWithCode": "Mit Code beitreten",
   "groupsFailedLoad": "Haushalte konnten nicht geladen werden",
@@ -76,7 +73,6 @@
   "groupsEmptyTitle": "Noch keine Haushalte",
   "groupsEmptyDesc": "Erstelle einen, um dein Zuhause zu organisieren.",
   "groupsCreateHousehold": "Haushalt erstellen",
-
   "choreAppBarTitle": "Aufgaben",
   "choreAddChore": "Aufgabe hinzufügen",
   "choreAddHouseholds": "Haushalte",
@@ -139,7 +135,6 @@
   "choreAllCaughtUp": "Du hast alles erledigt",
   "choreCarryingShare": "{my} von {total} offenen Aufgaben",
   "choreNothingShare": "Aktuell nichts für dich",
-
   "choreCreationTitle": "Aufgabe hinzufügen",
   "choreCreationNameHint": "Name der Aufgabe",
   "choreCreationYourRoutines": "Deine Routinen",
@@ -204,7 +199,6 @@
   "choreCreationUnitMonthPlural": "Monate",
   "choreCreationUnitYearSingular": "Jahr",
   "choreCreationUnitYearPlural": "Jahre",
-
   "choreDayMon": "Mo",
   "choreDayTue": "Di",
   "choreDayWed": "Mi",
@@ -212,7 +206,6 @@
   "choreDayFri": "Fr",
   "choreDaySat": "Sa",
   "choreDaySun": "So",
-
   "choreDetailTitle": "Aufgabendetails",
   "choreDetailAssignee": "Zugewiesen an",
   "choreDetailDue": "Fällig",
@@ -235,12 +228,10 @@
   "choreDetailDeleteSubtask": "Teilaufgabe löschen",
   "choreDetailSubtaskMarkNotDone": "Teilaufgabe als unerledigt markieren",
   "choreDetailSubtaskMarkDone": "Teilaufgabe als erledigt markieren",
-
   "choreLoadTitle": "Wer macht die Aufgaben",
   "choreLoadEmpty": "In den letzten {days} Tagen wurden noch keine Aufgaben erledigt. Sobald jemand anfängt, Dinge abzuhaken, erscheint hier die Verteilung.",
   "choreLoadCountSingular": "{count} Aufgabe",
   "choreLoadCountPlural": "{count} Aufgaben",
-
   "recipeAppBarTitle": "Küche",
   "recipeSearchLabel": "Küche durchsuchen",
   "recipeSearchHint": "Rezept, Tag, Zutat",
@@ -270,7 +261,6 @@
   "recipeSharedPrivate": "{shared} geteilt · {private} privat",
   "recipeCookbooksLabel": " · {count} Kochbücher",
   "recipeRatingLabel": "{rating} ({count})",
-
   "recipeCreationTitle": "Neues Rezept",
   "recipeCreationStepSource": "Quelle",
   "recipeCreationStepDetails": "Details",
@@ -335,7 +325,6 @@
   "recipeCreationStepLabel": "{type}",
   "recipeCreationRemoveItem": "{type} {index} entfernen",
   "recipeCreationStepSemantics": "Schritt {index} von {total}, {label}, {status}",
-
   "recipeDetailTitle": "Rezept",
   "recipeDetailDeleteTooltip": "Rezept löschen",
   "recipeDetailAddToList": "Zur Liste hinzufügen",
@@ -347,7 +336,6 @@
   "recipeDetailPrivateLabel": "Privat",
   "recipeDetailBy": "Von {author}",
   "recipeDetailPrep": "Vorbereitung",
-  "recipeDetailCook": "Kochen",
   "recipeDetailServings": "Portionen",
   "recipeDetailUpdated": "Aktualisiert",
   "recipeDetailNotSet": "Nicht angegeben",
@@ -359,7 +347,6 @@
   "recipeDetailWatchVideoSemantics": "Rezeptvideo ansehen",
   "recipeDetailViewOriginal": "Originalrezept anzeigen",
   "recipeDetailViewOriginalSemantics": "Originalrezept im Browser anzeigen",
-
   "cookModeCouldNotLoad": "Rezept konnte nicht geladen werden",
   "cookModeClose": "Schließen",
   "cookModeServings": "Portionen",
@@ -383,7 +370,6 @@
   "cookModeFinished": "Fertig — gute Arbeit",
   "cookModeFinishCooking": "Kochen beenden",
   "cookModeAdvanceStep": "Fertig, zum nächsten Schritt",
-
   "expenseAppBarTitle": "Geld",
   "expenseScanReceiptTooltip": "Beleg scannen",
   "expenseRecurringTooltip": "Wiederkehrend",
@@ -427,7 +413,6 @@
   "expenseIsOwed": "bekommt",
   "expenseOwes": "schuldet",
   "expenseSettled": "ausgeglichen",
-
   "recurringAppBarTitle": "Wiederkehrend",
   "recurringAddRecurring": "Wiederkehrend hinzufügen",
   "recurringAddRecurringTooltip": "Wiederkehrende Ausgabe hinzufügen",
@@ -456,7 +441,6 @@
   "recurringValidationPayer": "Wähle einen Zahler aus.",
   "recurringValidationAmountPositive": "Gib einen gültigen Betrag größer als null ein.",
   "recurringNoHouseholdDesc": "Tritt einem Haushalt bei oder erstelle einen, um wiederkehrende Ausgaben zu verwalten",
-
   "listAppBarTitle": "Listen",
   "listShoppingTripTooltip": "Einkaufstour",
   "listSearchLabel": "Listen durchsuchen",
@@ -498,7 +482,6 @@
   "listQuickAddItemTooltip": "Schnell hinzufügen",
   "listQuickAddItemSemantics": "Eintrag schnell zu {name} hinzufügen",
   "listOptionsTooltip": "Listenoptionen",
-
   "listDetailEditName": "Listenname bearbeiten, {name}",
   "listDetailCloseSearch": "Suche schließen",
   "listDetailSearchTooltip": "Suchen",
@@ -543,7 +526,6 @@
   "listDetailUncheckAll": "Alle demarkieren",
   "listDetailCostSummary": "Kostenübersicht",
   "listDetailScanList": "Liste scannen",
-
   "calendarAppBarTitle": "Kalender",
   "calendarViewWeek": "Woche",
   "calendarViewMonth": "Monat",
@@ -599,7 +581,6 @@
   "calendarCreateHousehold": "Haushalt erstellen",
   "calendarWeekHeader": "{weekStart} – {weekEnd}",
   "calendarMonthHeader": "{month} {year}",
-
   "mealPlanAppBarTitle": "Essensplan",
   "mealPlanGenerateShoppingList": "Einkaufsliste erstellen",
   "mealPlanPreviousWeek": "Vorherige Woche",
@@ -626,7 +607,6 @@
   "mealPlanMoreServings": "Mehr Portionen",
   "mealPlanOpenRecipe": "Rezept für {slot} öffnen",
   "mealPlanAddMealFor": "Mahlzeit für {slot} hinzufügen",
-
   "accountAppBarTitle": "Du",
   "accountFailedLoadProfile": "Profil konnte nicht geladen werden. Bitte versuche es erneut.",
   "accountFailedSaveName": "Name konnte nicht gespeichert werden",
@@ -674,7 +654,6 @@
   "accountCreatingAccount": "Konto wird erstellt…",
   "accountCreateAccount": "Konto erstellen",
   "accountCreatedWelcome": "Konto erstellt. Willkommen!",
-
   "notificationsAppBarTitle": "Benachrichtigungen",
   "notificationsMarkAllRead": "Alle als gelesen markieren",
   "notificationsFailedLoad": "Benachrichtigungen konnten nicht geladen werden.",
@@ -685,7 +664,6 @@
   "notificationsNoNotifications": "Noch keine Benachrichtigungen",
   "notificationsNoNotificationsDesc": "Wenn jemand eine Aufgabe hinzufügt, eine Rechnung aufteilt oder dich erwähnt, erscheint es hier.",
   "notificationsUnreadLabel": "Ungelesen, {title}",
-
   "notifPrefAppBarTitle": "Benachrichtigungseinstellungen",
   "notifPrefFailedLoad": "Benachrichtigungseinstellungen konnten nicht geladen werden.",
   "notifPrefNoHouseholdDesc": "Tritt einem Haushalt bei oder erstelle einen, um Benachrichtigungseinstellungen zu konfigurieren.",
@@ -708,7 +686,6 @@
   "notifPrefPinwallRemindersDesc": "Wenn jemand eine Erinnerung für später anpinnt",
   "notifPrefPushNotifications": "Push-Benachrichtigungen",
   "notifPrefPushNotificationsDesc": "Benachrichtigungen auf diesem Gerät empfangen",
-
   "shoppingTripAppBarTitle": "Einkaufstour",
   "shoppingTripChooseStore": "Geschäft wählen",
   "shoppingTripNoLists": "Noch keine Listen",
@@ -726,7 +703,6 @@
   "shoppingTripFallbackList": "Liste",
   "shoppingTripMarkNotPurchased": "{item} als nicht gekauft markieren",
   "shoppingTripMarkPurchased": "{item} als gekauft markieren",
-
   "scannerAppBarTitle": "Scanner",
   "scannerShoppingAt": "Einkaufen bei",
   "scannerChooseStore": "Wähle dein Geschäft",
@@ -756,7 +732,6 @@
   "scannerCreateChore": "Aufgabe erstellen",
   "scannerUseThis": "Übernehmen",
   "scannerScanAgain": "Erneut scannen",
-
   "smartCaptureBack": "Zurück",
   "smartCaptureShowEnhanced": "Verbessert anzeigen",
   "smartCaptureOriginal": "Original",
@@ -766,7 +741,6 @@
   "smartCaptureReady": "Bereit",
   "smartCaptureUsable": "Brauchbar",
   "smartCaptureRetakeSuggested": "Neuaufnahme empfohlen",
-
   "liveSmartCaptureNoCamera": "Keine Kamera verfügbar.",
   "liveSmartCaptureCouldNotOpen": "Kamera konnte nicht geöffnet werden.",
   "liveSmartCaptureFrameList": "Liste einrahmen",
@@ -774,7 +748,6 @@
   "liveSmartCaptureGallery": "Galerie",
   "liveSmartCaptureScan": "Scannen",
   "liveSmartCaptureCouldNotCapture": "Foto konnte nicht aufgenommen werden.",
-
   "scanReviewAddToList": "Zu {list} hinzufügen",
   "scanReviewReviewItems": "Einträge prüfen",
   "scanReviewAcceptAll": "Alle übernehmen ({count})",
@@ -795,7 +768,6 @@
   "scanReviewQty": "Menge",
   "scanReviewUnit": "Einheit",
   "scanReviewDidYouMean": "Meintest du?",
-
   "shareTargetAppBarTitle": "In mitlist speichern",
   "shareTargetSharedText": "Geteilter Text",
   "shareTargetPasteHint": "Füge den geteilten Text hier ein oder tippe ihn…",
@@ -814,7 +786,6 @@
   "shareTargetValidationText": "Füge etwas ein oder tippe etwas, um zu speichern.",
   "shareTargetValidationNote": "Füge eine Notiz oder mindestens ein Foto hinzu.",
   "shareTargetValidationHousehold": "Erstelle zuerst einen Haushalt oder tritt einem bei.",
-
   "expenseCreationTitle": "Ausgabe hinzufügen",
   "expenseCreationAmountHint": "0,00",
   "expenseCreationRateHint": "Kurs: 1 {currency} = ? {groupCurrency}",
@@ -846,7 +817,6 @@
   "expenseCreationValidationRate": "Gib einen Umrechnungskurs größer als null ein.",
   "expenseCreationReceiptUploadFailed": "Ausgabe gespeichert, aber Beleg-Upload fehlgeschlagen.",
   "expenseCreationExpenseAdded": "Ausgabe hinzugefügt",
-
   "pinwallBoardLabel": "Pinwall",
   "pinwallDragHint": "Notizen zum Verschieben ziehen  ·  Zum Zoomen kneifen",
   "pinwallCloseBoard": "Board schließen",
@@ -889,22 +859,18 @@
   "tonightBreakfast": "Heute · Frühstück",
   "tonightLunch": "Heute · Mittagessen",
   "tonightOpenRecipe": "Heute Abend: {title}. Rezept öffnen",
-
   "calendarTomorrow": "Morgen",
   "scannerCheckScan": "Scan prüfen",
   "scannerCheckGrocery": "Einkaufsliste prüfen",
   "recipeCreationNoItemsYet": "Noch keine {type}.",
   "notificationsDeleteNotification": "Benachrichtigung löschen",
-
   "accountLanguage": "Sprache",
   "accountLanguageSystem": "System",
-
   "navHome": "Start",
   "navChores": "Aufgaben",
   "navMoney": "Geld",
   "navLists": "Listen",
   "navKitchen": "Küche",
-
   "offlineBannerTitle": "Sync-Status",
   "offlineBannerStatusOffline": "Offline",
   "offlineBannerStatusPending": "Ausstehend",
@@ -917,11 +883,9 @@
   "offlineBannerFailedCount": "Konnte {count} Änderungen nicht synchronisieren",
   "offlineBannerFailedOne": "Konnte eine Änderung nicht synchronisieren",
   "offlineBannerRetry": "Wiederholen",
-
   "composerNewItem": "Neuer Eintrag",
   "composerScanList": "Liste scannen",
   "composerAddItem": "Eintrag hinzufügen",
-
   "listItemViewPhoto": "Foto ansehen",
   "listItemReplacePhoto": "Foto ersetzen",
   "listItemAddPhoto": "Foto hinzufügen",
@@ -934,31 +898,23 @@
   "listItemViewPhotoFor": "Foto für {name} ansehen",
   "listItemFailedSave": "Speichern fehlgeschlagen – tippe auf die Sync-Leiste zum Wiederholen",
   "listItemLongPressHint": "Lang drücken für weitere Optionen",
-
   "scanCheckListPhoto": "Listenfoto prüfen",
   "scanReadingList": "Liste wird gelesen…",
   "scanCouldNotProcess": "Bild konnte nicht verarbeitet werden. Bitte versuche es erneut.",
   "scanSnapYourList": "Liste fotografieren",
   "scanTakePhoto": "Foto aufnehmen",
   "scanChooseFromGallery": "Aus Galerie wählen",
-
   "appDialogClose": "Schließen",
   "appDialogPressBack": "Zurück drücken zum Schließen",
-
   "shellNotifications": "Benachrichtigungen",
   "shellAccount": "Konto",
-
   "errorSomethingWentWrong": "Etwas ist schiefgegangen",
-
   "filterRemoveLabel": "{label}-Filter entfernen",
-
   "currencyDropdownLabel": "Währung",
-
   "passwordStrengthWeak": "Schwach",
   "passwordStrengthFair": "Mäßig",
   "passwordStrengthGood": "Gut",
   "passwordStrengthStrong": "Stark",
-
   "checkToggleChecked": "Aktiviert",
   "checkToggleNotChecked": "Deaktiviert",
   "captureHintClearer": "Klareres Foto versuchen",
@@ -968,17 +924,120 @@
   "captureHintMoveCloser": "Näher rangehen",
   "captureHintReady": "Bereit zum Scannen",
   "captureHintUsable": "Sieht brauchbar aus",
-
-  "authLoginTitle": "Anmelden", "authLoginEmail": "E-Mail", "authLoginYouExample": "du@example.com", "authLoginPassword": "Passwort", "authLoginYourPassword": "Dein Passwort", "authLoginForgotPassword": "Passwort vergessen?", "authLoginSignInButton": "Anmelden", "authLoginSigningIn": "Wird angemeldet…", "authLoginNoAccount": "Kein Konto?", "authLoginCreateOne": "Konto erstellen", "authLoginFillAllFields": "Fülle alle Felder aus.",
-  "authLoginEmailRequired": "E-Mail ist erforderlich.", "authLoginPasswordRequired": "Passwort ist erforderlich.", "authLoginGenericError": "Anmeldung fehlgeschlagen. Überprüfe deine Verbindung und versuche es erneut.", "authLoginRememberMe": "Angemeldet bleiben", "authLoginRememberMeOn": "Angemeldet bleiben: ein", "authLoginRememberMeOff": "Angemeldet bleiben: aus", "authLoginGoogle": "Mit Google fortfahren", "authLoginApple": "Mit Apple fortfahren", "authLoginOAuthUnsupported": "{provider}-Anmeldung ist derzeit nur im Web, auf Android und iOS verfügbar.", "authLoginResetPasswordTitle": "Passwort zurücksetzen", "authLoginSendResetCode": "Code senden", "authLoginResetCodeLabel": "Code", "authLoginResetCodeHint": "Füge den Code aus deiner E-Mail ein", "authLoginResetPasswordButton": "Passwort zurücksetzen", "authLoginResetCodeSent": "Falls diese E-Mail existiert, wurde ein Code gesendet.", "authLoginResetFillAllFields": "Fülle den Code und beide Passwortfelder aus.", "authLoginResetSuccess": "Passwort erfolgreich zurückgesetzt. Du kannst dich jetzt anmelden.",
-  "authSignupTitle": "Konto erstellen", "authSignupFirstName": "Vorname", "authSignupFirstNameHint": "Max", "authSignupLastName": "Nachname", "authSignupLastNameHint": "Mustermann", "authSignupEmail": "E-Mail", "authSignupEmailHint": "du@example.com", "authSignupPassword": "Passwort", "authSignupPasswordHint": "Mindestens 6 Zeichen", "authSignupCreateAccount": "Konto erstellen", "authSignupCreatingAccount": "Konto wird erstellt…", "authSignupHaveAccount": "Hast du ein Konto?", "authSignupSignInLink": "Anmelden", "authSignupFillAllFields": "Fülle alle Felder aus.", "authSignupPasswordMinLength": "Passwort muss mindestens 6 Zeichen lang sein.", "authSignupJoinTitle": "Haushalt beitreten", "authSignupAccountCreated": "Konto erstellt. Willkommen!",
-  "authSignupNameRequired": "Name ist erforderlich.", "authSignupEmailRequired": "E-Mail ist erforderlich.", "authSignupPasswordRequired": "Passwort ist erforderlich.", "authSignupGenericError": "Kontoerstellung fehlgeschlagen. Überprüfe deine Verbindung und versuche es erneut.", "authSignupNameHint": "Dein Name", "authSignupTermsPrefix": "Durch die Kontoerstellung stimmst du unseren ", "authSignupAnd": " und ", "authSignupPeriod": ".", "authSignupPrivacyPolicy": "Datenschutzerklärung", "authSignupTermsP1": "Nutze mitlist verantwortungsvoll. Geteilte Haushaltsinhalte sind für die Mitglieder dieses Haushalts sichtbar.", "authSignupTermsP2": "Lade keine rechtswidrigen Inhalte hoch, gib dich nicht als andere aus und missbrauche den Dienst nicht. Konten und geteilte Daten können bei Missbrauch entfernt werden.", "authSignupTermsP3": "Die App wird ohne Gewähr bereitgestellt, solange das Produkt noch in Entwicklung ist. Erstelle eigene Sicherungen für wichtige Inhalte.", "authSignupPrivacyP1": "mitlist speichert die Kontodaten und Haushaltsinhalte, die für den Betrieb der App erforderlich sind.", "authSignupPrivacyP2": "Geteilte Daten wie Listen, Aufgaben, Ausgaben und Rezepte sind für andere Mitglieder desselben Haushalts sichtbar.", "authSignupPrivacyP3": "Gib nur Informationen an, die du in einem gemeinsamen Haushaltsarbeitsbereich teilen möchtest.",
-  "authJoinTitle": "Haushalt beitreten", "authJoinInvitedBy": "{name} hat dich eingeladen", "authJoinJoinNow": "Jetzt beitreten", "authJoinSignInToJoin": "Anmelden zum Beitreten", "authJoinCreateToJoin": "Konto erstellen zum Beitreten", "authJoinGuestWarning": "Gastkonten können keinen Haushalten beitreten.", "authJoinCouldNotLoad": "Einladungsdetails konnten nicht geladen werden.",
-  "authJoinJoining": "Wird beigetreten…", "authJoinNotNow": "Nicht jetzt", "authJoinYoureIn": "Du bist dabei.", "authJoinGoToHousehold": "Zum Haushalt", "authJoinInviteCodeSemantic": "Einladungscode: {code}", "authJoinErrorWithHint": "{error}\n\nDu kannst auch einen Code über die Haushaltsauswahl eingeben.",
-  "authOnboardingTitle": "Willkommen", "authOnboardingSetupHome": "Richte dein Zuhause ein", "authOnboardingCreateOrJoin": "Erstelle oder tritt einem Haushalt bei, um mit Mitbewohnern zu teilen.", "authOnboardingCreateHousehold": "Haushalt erstellen", "authOnboardingJoinInvite": "Mit Einladungscode beitreten", "authOnboardingHaveCode": "Hast du einen Einladungscode?",
-  "authOnboardingCreateDesc": "Fang neu an: Benenne ihn, lade Mitbewohner ein, teile alles an einem Ort.", "authOnboardingJoinDesc": "Schon eine Einladung? Gib den Code ein und leg los.", "authOnboardingJoinSemantic": "Einem Haushalt mit Einladungscode beitreten", "authOnboardingHomeIconSemantic": "Haushaltssymbol",
-
-  "sheetExpenseDetailTitle": "Ausgabendetails", "sheetExpenseDetailSplits": "Aufteilungen", "sheetExpenseDetailSplitsCount": "{count, plural, =1{{count} Aufteilung} other{{count} Aufteilungen}}", "sheetSettlementTitle": "Ausgleich aufzeichnen", "sheetSettlementFrom": "Von", "sheetSettlementTo": "An", "sheetSettlementRecordPayment": "Zeichne diesen Ausgleich auf, nachdem die Zahlung erfolgt ist.", "sheetSettlementConfirm": "Ausgleich bestätigen", "sheetGroupSettingsTitle": "Haushaltseinstellungen", "sheetGroupSettingsName": "Haushaltsname", "sheetGroupSettingsSaved": "Einstellungen gespeichert", "sheetGroupSettingsCouldNotSave": "Einstellungen konnten nicht gespeichert werden.", "sheetGroupSettingsLeave": "Haushalt verlassen", "sheetGroupSettingsLeaveConfirm": "Bist du sicher, dass du diesen Haushalt verlassen möchtest? Alle deine Daten bleiben im Haushalt erhalten.", "sheetGroupSettingsLeaveAction": "Verlassen", "sheetGroupSettingsDelete": "Haushalt löschen", "sheetGroupSettingsDeleteConfirm": "Dies löscht diesen Haushalt und alle zugehörigen Daten dauerhaft. Dies kann nicht rückgängig gemacht werden.", "sheetRecipeAddToListTitle": "Zur Liste hinzufügen", "sheetRecipeAddToListAdded": "{count, plural, =1{1 Eintrag hinzugefügt} other{{count} Einträge hinzugefügt}}", "sheetRecipeAddToListCouldNotAdd": "Zutaten konnten nicht hinzugefügt werden.", "sheetJoinTitle": "Haushalt beitreten", "sheetJoinCodeLabel": "Einladungscode", "sheetJoinCodeHint": "Einladungscode einfügen", "sheetJoinJoin": "Beitreten", "sheetCreateHouseholdTitle": "Haushalt erstellen", "sheetCreateHouseholdName": "Haushaltsname", "sheetCreateHouseholdNameHint": "z. B. WG 4B", "sheetInviteTitle": "In den Haushalt einladen", "sheetInviteCopy": "Link kopieren", "sheetInviteCopied": "Einladungslink kopiert",   "sheetInviteShare": "Link teilen",
+  "authLoginTitle": "Anmelden",
+  "authLoginEmail": "E-Mail",
+  "authLoginYouExample": "du@example.com",
+  "authLoginPassword": "Passwort",
+  "authLoginYourPassword": "Dein Passwort",
+  "authLoginForgotPassword": "Passwort vergessen?",
+  "authLoginSignInButton": "Anmelden",
+  "authLoginSigningIn": "Wird angemeldet…",
+  "authLoginNoAccount": "Kein Konto?",
+  "authLoginCreateOne": "Konto erstellen",
+  "authLoginFillAllFields": "Fülle alle Felder aus.",
+  "authLoginEmailRequired": "E-Mail ist erforderlich.",
+  "authLoginPasswordRequired": "Passwort ist erforderlich.",
+  "authLoginGenericError": "Anmeldung fehlgeschlagen. Überprüfe deine Verbindung und versuche es erneut.",
+  "authLoginRememberMe": "Angemeldet bleiben",
+  "authLoginRememberMeOn": "Angemeldet bleiben: ein",
+  "authLoginRememberMeOff": "Angemeldet bleiben: aus",
+  "authLoginGoogle": "Mit Google fortfahren",
+  "authLoginApple": "Mit Apple fortfahren",
+  "authLoginOAuthUnsupported": "{provider}-Anmeldung ist derzeit nur im Web, auf Android und iOS verfügbar.",
+  "authLoginResetPasswordTitle": "Passwort zurücksetzen",
+  "authLoginSendResetCode": "Code senden",
+  "authLoginResetCodeLabel": "Code",
+  "authLoginResetCodeHint": "Füge den Code aus deiner E-Mail ein",
+  "authLoginResetPasswordButton": "Passwort zurücksetzen",
+  "authLoginResetCodeSent": "Falls diese E-Mail existiert, wurde ein Code gesendet.",
+  "authLoginResetFillAllFields": "Fülle den Code und beide Passwortfelder aus.",
+  "authLoginResetSuccess": "Passwort erfolgreich zurückgesetzt. Du kannst dich jetzt anmelden.",
+  "authSignupTitle": "Konto erstellen",
+  "authSignupFirstName": "Vorname",
+  "authSignupFirstNameHint": "Max",
+  "authSignupLastName": "Nachname",
+  "authSignupLastNameHint": "Mustermann",
+  "authSignupEmail": "E-Mail",
+  "authSignupEmailHint": "du@example.com",
+  "authSignupPassword": "Passwort",
+  "authSignupPasswordHint": "Mindestens 6 Zeichen",
+  "authSignupCreateAccount": "Konto erstellen",
+  "authSignupCreatingAccount": "Konto wird erstellt…",
+  "authSignupHaveAccount": "Hast du ein Konto?",
+  "authSignupSignInLink": "Anmelden",
+  "authSignupFillAllFields": "Fülle alle Felder aus.",
+  "authSignupPasswordMinLength": "Passwort muss mindestens 6 Zeichen lang sein.",
+  "authSignupJoinTitle": "Haushalt beitreten",
+  "authSignupAccountCreated": "Konto erstellt. Willkommen!",
+  "authSignupNameRequired": "Name ist erforderlich.",
+  "authSignupEmailRequired": "E-Mail ist erforderlich.",
+  "authSignupPasswordRequired": "Passwort ist erforderlich.",
+  "authSignupGenericError": "Kontoerstellung fehlgeschlagen. Überprüfe deine Verbindung und versuche es erneut.",
+  "authSignupNameHint": "Dein Name",
+  "authSignupTermsPrefix": "Durch die Kontoerstellung stimmst du unseren ",
+  "authSignupAnd": " und ",
+  "authSignupPeriod": ".",
+  "authSignupPrivacyPolicy": "Datenschutzerklärung",
+  "authSignupTermsP1": "Nutze mitlist verantwortungsvoll. Geteilte Haushaltsinhalte sind für die Mitglieder dieses Haushalts sichtbar.",
+  "authSignupTermsP2": "Lade keine rechtswidrigen Inhalte hoch, gib dich nicht als andere aus und missbrauche den Dienst nicht. Konten und geteilte Daten können bei Missbrauch entfernt werden.",
+  "authSignupTermsP3": "Die App wird ohne Gewähr bereitgestellt, solange das Produkt noch in Entwicklung ist. Erstelle eigene Sicherungen für wichtige Inhalte.",
+  "authSignupPrivacyP1": "mitlist speichert die Kontodaten und Haushaltsinhalte, die für den Betrieb der App erforderlich sind.",
+  "authSignupPrivacyP2": "Geteilte Daten wie Listen, Aufgaben, Ausgaben und Rezepte sind für andere Mitglieder desselben Haushalts sichtbar.",
+  "authSignupPrivacyP3": "Gib nur Informationen an, die du in einem gemeinsamen Haushaltsarbeitsbereich teilen möchtest.",
+  "authJoinTitle": "Haushalt beitreten",
+  "authJoinInvitedBy": "{name} hat dich eingeladen",
+  "authJoinJoinNow": "Jetzt beitreten",
+  "authJoinSignInToJoin": "Anmelden zum Beitreten",
+  "authJoinCreateToJoin": "Konto erstellen zum Beitreten",
+  "authJoinGuestWarning": "Gastkonten können keinen Haushalten beitreten.",
+  "authJoinCouldNotLoad": "Einladungsdetails konnten nicht geladen werden.",
+  "authJoinJoining": "Wird beigetreten…",
+  "authJoinNotNow": "Nicht jetzt",
+  "authJoinYoureIn": "Du bist dabei.",
+  "authJoinGoToHousehold": "Zum Haushalt",
+  "authJoinInviteCodeSemantic": "Einladungscode: {code}",
+  "authJoinErrorWithHint": "{error}\n\nDu kannst auch einen Code über die Haushaltsauswahl eingeben.",
+  "authOnboardingTitle": "Willkommen",
+  "authOnboardingSetupHome": "Richte dein Zuhause ein",
+  "authOnboardingCreateOrJoin": "Erstelle oder tritt einem Haushalt bei, um mit Mitbewohnern zu teilen.",
+  "authOnboardingCreateHousehold": "Haushalt erstellen",
+  "authOnboardingJoinInvite": "Mit Einladungscode beitreten",
+  "authOnboardingHaveCode": "Hast du einen Einladungscode?",
+  "authOnboardingCreateDesc": "Fang neu an: Benenne ihn, lade Mitbewohner ein, teile alles an einem Ort.",
+  "authOnboardingJoinDesc": "Schon eine Einladung? Gib den Code ein und leg los.",
+  "authOnboardingJoinSemantic": "Einem Haushalt mit Einladungscode beitreten",
+  "authOnboardingHomeIconSemantic": "Haushaltssymbol",
+  "sheetExpenseDetailTitle": "Ausgabendetails",
+  "sheetExpenseDetailSplits": "Aufteilungen",
+  "sheetExpenseDetailSplitsCount": "{count, plural, =1{{count} Aufteilung} other{{count} Aufteilungen}}",
+  "sheetSettlementTitle": "Ausgleich aufzeichnen",
+  "sheetSettlementFrom": "Von",
+  "sheetSettlementTo": "An",
+  "sheetSettlementRecordPayment": "Zeichne diesen Ausgleich auf, nachdem die Zahlung erfolgt ist.",
+  "sheetSettlementConfirm": "Ausgleich bestätigen",
+  "sheetGroupSettingsTitle": "Haushaltseinstellungen",
+  "sheetGroupSettingsName": "Haushaltsname",
+  "sheetGroupSettingsSaved": "Einstellungen gespeichert",
+  "sheetGroupSettingsCouldNotSave": "Einstellungen konnten nicht gespeichert werden.",
+  "sheetGroupSettingsLeave": "Haushalt verlassen",
+  "sheetGroupSettingsLeaveConfirm": "Bist du sicher, dass du diesen Haushalt verlassen möchtest? Alle deine Daten bleiben im Haushalt erhalten.",
+  "sheetGroupSettingsLeaveAction": "Verlassen",
+  "sheetGroupSettingsDelete": "Haushalt löschen",
+  "sheetGroupSettingsDeleteConfirm": "Dies löscht diesen Haushalt und alle zugehörigen Daten dauerhaft. Dies kann nicht rückgängig gemacht werden.",
+  "sheetRecipeAddToListTitle": "Zur Liste hinzufügen",
+  "sheetRecipeAddToListAdded": "{count, plural, =1{1 Eintrag hinzugefügt} other{{count} Einträge hinzugefügt}}",
+  "sheetRecipeAddToListCouldNotAdd": "Zutaten konnten nicht hinzugefügt werden.",
+  "sheetJoinTitle": "Haushalt beitreten",
+  "sheetJoinCodeLabel": "Einladungscode",
+  "sheetJoinCodeHint": "Einladungscode einfügen",
+  "sheetJoinJoin": "Beitreten",
+  "sheetCreateHouseholdTitle": "Haushalt erstellen",
+  "sheetCreateHouseholdName": "Haushaltsname",
+  "sheetCreateHouseholdNameHint": "z. B. WG 4B",
+  "sheetInviteTitle": "In den Haushalt einladen",
+  "sheetInviteCopy": "Link kopieren",
+  "sheetInviteCopied": "Einladungslink kopiert",
+  "sheetInviteShare": "Link teilen",
   "sheetCreateListTitle": "Neue Liste",
   "tonightRecipe": "Rezept",
   "tonightHeader": "Heute Abend",
@@ -1000,7 +1059,6 @@
   "inviteLinkShareText": "Tritt meinem Haushalt auf mitlist bei!\nTippe: {link}\nOder öffne mitlist und gib den Code ein: {code}",
   "errorBoundaryTitle": "Etwas ist schiefgegangen",
   "errorBoundaryDesc": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.",
-
   "recurringTomorrow": "Morgen",
   "recurringCouldNotUpdate": "Wiederkehrende Ausgabe konnte nicht aktualisiert werden.",
   "recurringCouldNotDelete": "Wiederkehrende Ausgabe konnte nicht gelöscht werden.",
@@ -1048,5 +1106,570 @@
   "pinwallLinkedTo": "Verknüpft mit {entity}",
   "commonView": "Ansehen",
   "commonPhoto": "Foto",
-  "cookModeTimerStart": "Timer: {label}. Zum Starten tippen", "sheetCreateListName": "Listenname", "sheetCreateListNameHint": "z. B. Wocheneinkauf", "sheetCreateListType": "Typ", "sheetCreateListTypeShopping": "Einkauf", "sheetCreateListTypeTodo": "To-do", "sheetCreateListTypeCustom": "Eigene", "sheetCreateListCreate": "Liste erstellen", "sheetCostSummaryTitle": "Kostenübersicht", "sheetCostSummaryTotal": "Gesamt", "sheetConflictTitle": "Sync-Konflikt", "sheetConflictDescription": "Dieser Eintrag wurde auf einem anderen Gerät geändert, während du ihn bearbeitet hast. Wähle, welche Version behalten werden soll.", "sheetConflictLocal": "Deine Version", "sheetConflictServer": "Server-Version", "sheetConflictKeepLocal": "Deine behalten", "sheetConflictKeepServer": "Server behalten", "sheetFailedChangesTitle": "Fehlgeschlagene Änderungen", "sheetFailedChangesDescription": "Diese Änderungen konnten nicht gespeichert werden. Du kannst sie erneut versuchen oder verwerfen.", "sheetFailedChangesRetryAll": "Alle wiederholen", "sheetFailedChangesDiscardAll": "Alle verwerfen", "sheetFailedChangesDiscard": "Verwerfen", "sheetFailedChangesRetry": "Wiederholen", "sheetFailedChangesEmpty": "Keine fehlgeschlagenen Änderungen. Alles ist synchronisiert oder wartet auf Wiederholung.", "sheetFailedChangesOpAddItem": "Eintrag hinzufügen", "sheetFailedChangesOpUpdateItem": "Eintrag aktualisieren", "sheetFailedChangesOpDeleteItem": "Eintrag löschen", "sheetFailedChangesOpReorderItems": "Liste umsortieren", "sheetFailedChangesOpCreateExpense": "Ausgabe hinzufügen", "sheetFailedChangesOpUpdateExpense": "Ausgabe aktualisieren", "sheetFailedChangesOpDeleteExpense": "Ausgabe löschen", "sheetFailedChangesOpCreateRecipe": "Rezept hinzufügen", "sheetFailedChangesOpUpdateRecipe": "Rezept aktualisieren", "sheetFailedChangesOpDeleteRecipe": "Rezept löschen", "sheetFailedChangesOpCompleteChore": "Aufgabe erledigen", "sheetFailedChangesOpSkipChore": "Aufgabe überspringen", "sheetFailedChangesOpRescheduleChore": "Aufgabe neu planen", "sheetFailedChangesOpUndoChore": "Aufgabe rückgängig", "sheetFailedChangesOpCreatePinwallPost": "An Pinwall posten", "sheetFailedChangesOpDeletePinwallPost": "Pinwall-Beitrag löschen", "sheetFailedChangesOpChange": "Änderung", "sheetGroupSettingsChoreZonesUpdated": "Aufgabenbereiche aktualisiert", "sheetGroupSettingsRemoveMember": "Mitglied entfernen", "sheetGroupSettingsRemoveMemberConfirm": "{name} aus diesem Haushalt entfernen?", "sheetGroupSettingsMemberRemoved": "{name} entfernt", "sheetGroupSettingsHouseholdDeleted": "Haushalt gelöscht", "sheetGroupSettingsDescriptionHint": "Ein paar Worte zu diesem Haushalt", "sheetGroupSettingsChoreZonesLabel": "Aufgabenbereiche", "sheetGroupSettingsChoreZonesDesc": "Bereiche deines Zuhauses zum Gruppieren von Aufgaben. Sie erscheinen beim Hinzufügen einer Aufgabe.", "sheetGroupSettingsAddZone": "Bereich hinzufügen", "sheetGroupSettingsZoneHint": "Küche, Bad\u2026", "sheetGroupSettingsSaveZones": "Bereiche speichern", "sheetGroupSettingsMembersLabel": "Mitglieder", "sheetGroupSettingsInvite": "Einladen", "sheetGroupSettingsRemoveMemberTooltip": "{name} entfernen"
+  "cookModeTimerStart": "Timer: {label}. Zum Starten tippen",
+  "sheetCreateListName": "Listenname",
+  "sheetCreateListNameHint": "z. B. Wocheneinkauf",
+  "sheetCreateListType": "Typ",
+  "sheetCreateListTypeShopping": "Einkauf",
+  "sheetCreateListTypeTodo": "To-do",
+  "sheetCreateListTypeCustom": "Eigene",
+  "sheetCreateListCreate": "Liste erstellen",
+  "sheetCostSummaryTitle": "Kostenübersicht",
+  "sheetCostSummaryTotal": "Gesamt",
+  "sheetConflictTitle": "Sync-Konflikt",
+  "sheetConflictDescription": "Dieser Eintrag wurde auf einem anderen Gerät geändert, während du ihn bearbeitet hast. Wähle, welche Version behalten werden soll.",
+  "sheetConflictLocal": "Deine Version",
+  "sheetConflictServer": "Server-Version",
+  "sheetConflictKeepLocal": "Deine behalten",
+  "sheetConflictKeepServer": "Server behalten",
+  "sheetFailedChangesTitle": "Fehlgeschlagene Änderungen",
+  "sheetFailedChangesDescription": "Diese Änderungen konnten nicht gespeichert werden. Du kannst sie erneut versuchen oder verwerfen.",
+  "sheetFailedChangesRetryAll": "Alle wiederholen",
+  "sheetFailedChangesDiscardAll": "Alle verwerfen",
+  "sheetFailedChangesDiscard": "Verwerfen",
+  "sheetFailedChangesRetry": "Wiederholen",
+  "sheetFailedChangesEmpty": "Keine fehlgeschlagenen Änderungen. Alles ist synchronisiert oder wartet auf Wiederholung.",
+  "sheetFailedChangesOpAddItem": "Eintrag hinzufügen",
+  "sheetFailedChangesOpUpdateItem": "Eintrag aktualisieren",
+  "sheetFailedChangesOpDeleteItem": "Eintrag löschen",
+  "sheetFailedChangesOpReorderItems": "Liste umsortieren",
+  "sheetFailedChangesOpCreateExpense": "Ausgabe hinzufügen",
+  "sheetFailedChangesOpUpdateExpense": "Ausgabe aktualisieren",
+  "sheetFailedChangesOpDeleteExpense": "Ausgabe löschen",
+  "sheetFailedChangesOpCreateRecipe": "Rezept hinzufügen",
+  "sheetFailedChangesOpUpdateRecipe": "Rezept aktualisieren",
+  "sheetFailedChangesOpDeleteRecipe": "Rezept löschen",
+  "sheetFailedChangesOpCompleteChore": "Aufgabe erledigen",
+  "sheetFailedChangesOpSkipChore": "Aufgabe überspringen",
+  "sheetFailedChangesOpRescheduleChore": "Aufgabe neu planen",
+  "sheetFailedChangesOpUndoChore": "Aufgabe rückgängig",
+  "sheetFailedChangesOpCreatePinwallPost": "An Pinwall posten",
+  "sheetFailedChangesOpDeletePinwallPost": "Pinwall-Beitrag löschen",
+  "sheetFailedChangesOpChange": "Änderung",
+  "sheetGroupSettingsChoreZonesUpdated": "Aufgabenbereiche aktualisiert",
+  "sheetGroupSettingsRemoveMember": "Mitglied entfernen",
+  "sheetGroupSettingsRemoveMemberConfirm": "{name} aus diesem Haushalt entfernen?",
+  "sheetGroupSettingsMemberRemoved": "{name} entfernt",
+  "sheetGroupSettingsHouseholdDeleted": "Haushalt gelöscht",
+  "sheetGroupSettingsDescriptionHint": "Ein paar Worte zu diesem Haushalt",
+  "sheetGroupSettingsChoreZonesLabel": "Aufgabenbereiche",
+  "sheetGroupSettingsChoreZonesDesc": "Bereiche deines Zuhauses zum Gruppieren von Aufgaben. Sie erscheinen beim Hinzufügen einer Aufgabe.",
+  "sheetGroupSettingsAddZone": "Bereich hinzufügen",
+  "sheetGroupSettingsZoneHint": "Küche, Bad…",
+  "sheetGroupSettingsSaveZones": "Bereiche speichern",
+  "sheetGroupSettingsMembersLabel": "Mitglieder",
+  "sheetGroupSettingsInvite": "Einladen",
+  "sheetGroupSettingsRemoveMemberTooltip": "{name} entfernen",
+  "aisleOther": "Sonstiges",
+  "@aisleOther": {
+    "description": "Fallback aisle name for uncategorized items"
+  },
+  "appBottomSheetClose": "Schließen",
+  "@appBottomSheetClose": {
+    "description": "Semantic label for bottom sheet close"
+  },
+  "appBottomSheetDiscardBody": "Du hast ungespeicherte Änderungen.",
+  "@appBottomSheetDiscardBody": {
+    "description": "Discard changes dialog body"
+  },
+  "appBottomSheetDiscardTitle": "Änderungen verwerfen?",
+  "@appBottomSheetDiscardTitle": {
+    "description": "Discard changes dialog title"
+  },
+  "appBottomSheetHandle": "Griff",
+  "@appBottomSheetHandle": {
+    "description": "Semantic label for bottom sheet drag handle"
+  },
+  "appBottomSheetKeepEditing": "Weiter bearbeiten",
+  "@appBottomSheetKeepEditing": {
+    "description": "Keep editing button"
+  },
+  "composerItemHint": "z. B. Milch, 2 Avocados oder 500 g Mehl",
+  "@composerItemHint": {
+    "description": "Hint for list composer input"
+  },
+  "costSummaryNotAvailable": "k. A.",
+  "@costSummaryNotAvailable": {
+    "description": "Placeholder when equal share cannot be calculated"
+  },
+  "createListCustomDesc": "Eine flexible Liste für alles, was nicht ins Schema passt.",
+  "@createListCustomDesc": {
+    "description": "Description for custom list type"
+  },
+  "createListHouseholdLabel": "Haushalt",
+  "@createListHouseholdLabel": {
+    "description": "Household selector label in create list sheet"
+  },
+  "createListNoHousehold": "Kein Haushalt verfügbar.",
+  "@createListNoHousehold": {
+    "description": "Empty state when no households exist"
+  },
+  "createListScanSemantics": "Liste per Kamera scannen",
+  "@createListScanSemantics": {
+    "description": "Semantics label for scan list button"
+  },
+  "createListTodoDesc": "Eine einfache Checkliste für Aufgaben, die erledigt werden müssen.",
+  "@createListTodoDesc": {
+    "description": "Description for to-do list type"
+  },
+  "currencyAud": "AUD - Australischer Dollar",
+  "@currencyAud": {
+    "description": "Australian Dollar currency label"
+  },
+  "currencyCad": "CAD - Kanadischer Dollar",
+  "@currencyCad": {
+    "description": "Canadian Dollar currency label"
+  },
+  "currencyChf": "CHF - Schweizer Franken",
+  "@currencyChf": {
+    "description": "Swiss Franc currency label"
+  },
+  "currencyCzk": "CZK - Tschechische Krone",
+  "@currencyCzk": {
+    "description": "Czech Koruna currency label"
+  },
+  "currencyDkk": "DKK - Dänische Krone",
+  "@currencyDkk": {
+    "description": "Danish Krone currency label"
+  },
+  "currencyEur": "EUR - Euro",
+  "@currencyEur": {
+    "description": "Euro currency label"
+  },
+  "currencyGbp": "GBP - Britisches Pfund",
+  "@currencyGbp": {
+    "description": "British Pound currency label"
+  },
+  "currencyHuf": "HUF - Ungarischer Forint",
+  "@currencyHuf": {
+    "description": "Hungarian Forint currency label"
+  },
+  "currencyJpy": "JPY - Japanischer Yen",
+  "@currencyJpy": {
+    "description": "Japanese Yen currency label"
+  },
+  "currencyNok": "NOK - Norwegische Krone",
+  "@currencyNok": {
+    "description": "Norwegian Krone currency label"
+  },
+  "currencyPln": "PLN - Polnischer Złoty",
+  "@currencyPln": {
+    "description": "Polish Zloty currency label"
+  },
+  "currencySek": "SEK - Schwedische Krone",
+  "@currencySek": {
+    "description": "Swedish Krona currency label"
+  },
+  "currencyUsd": "USD - US-Dollar",
+  "@currencyUsd": {
+    "description": "US Dollar currency label"
+  },
+  "errorConflict": "Jemand anderes hat das geändert. Aktualisiere und versuche es erneut.",
+  "@errorConflict": {
+    "description": "Friendly error for 409 conflict"
+  },
+  "errorGenericRetry": "Etwas ist schiefgegangen. Bitte versuche es erneut.",
+  "@errorGenericRetry": {
+    "description": "Generic fallback friendly error"
+  },
+  "errorNoPermission": "Du hast keine Berechtigung dafür.",
+  "@errorNoPermission": {
+    "description": "Friendly error for 403"
+  },
+  "errorNotFound": "Nicht gefunden. Es wurde möglicherweise gelöscht.",
+  "@errorNotFound": {
+    "description": "Friendly error for 404"
+  },
+  "errorServerHiccup": "Serverproblem — versuche es gleich noch einmal.",
+  "@errorServerHiccup": {
+    "description": "Friendly error for 5xx responses"
+  },
+  "errorSignInAgain": "Bitte melde dich erneut an.",
+  "@errorSignInAgain": {
+    "description": "Friendly error for 401"
+  },
+  "expenseCreationAddToSplit": "{name} zur Aufteilung hinzufügen",
+  "@expenseCreationAddToSplit": {
+    "description": "Semantics: add member to split",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationRemoveFromSplit": "{name} aus Aufteilung entfernen",
+  "@expenseCreationRemoveFromSplit": {
+    "description": "Semantics: remove member from split",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitAmountsNegative": "{assigned} · Beträge dürfen nicht negativ sein",
+  "@expenseCreationSplitAmountsNegative": {
+    "description": "Split validation: negative amounts",
+    "placeholders": {
+      "assigned": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitApproxEach": "≈ {amount} pro Person",
+  "@expenseCreationSplitApproxEach": {
+    "description": "Approximate equal split per person",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitAssignedOf": "{assigned} von {total}",
+  "@expenseCreationSplitAssignedOf": {
+    "description": "Split summary: assigned amount of total",
+    "placeholders": {
+      "assigned": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitEach": "{amount} pro Person",
+  "@expenseCreationSplitEach": {
+    "description": "Equal split per person",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitLeftToAssign": "{assigned} · {remaining} noch zuzuweisen",
+  "@expenseCreationSplitLeftToAssign": {
+    "description": "Split validation: remaining to assign",
+    "placeholders": {
+      "assigned": {
+        "type": "String"
+      },
+      "remaining": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitOver": "{assigned} · {over} zu viel",
+  "@expenseCreationSplitOver": {
+    "description": "Split validation: over-assigned",
+    "placeholders": {
+      "assigned": {
+        "type": "String"
+      },
+      "over": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitPercentOf100": "{sum}% von 100%",
+  "@expenseCreationSplitPercentOf100": {
+    "description": "Split summary: percent of 100",
+    "placeholders": {
+      "sum": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitPercentRange": "{sum}% zugewiesen · jeder Anteil muss 0–100% sein",
+  "@expenseCreationSplitPercentRange": {
+    "description": "Split validation: percent out of range",
+    "placeholders": {
+      "sum": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitSharesPerShare": "{count} Anteile · {perShare} pro Anteil",
+  "@expenseCreationSplitSharesPerShare": {
+    "description": "Split summary: shares mode",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      },
+      "perShare": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseDetailCouldNotLoadReceipts": "Belege konnten nicht geladen werden.",
+  "@expenseDetailCouldNotLoadReceipts": {
+    "description": "Snackbar when expense receipts fail to load"
+  },
+  "expenseDetailCouldNotLoadSplits": "Aufteilungen konnten nicht geladen werden.",
+  "@expenseDetailCouldNotLoadSplits": {
+    "description": "Snackbar when expense splits fail to load"
+  },
+  "expenseDetailCouldNotRemoveReceipt": "Beleg konnte nicht entfernt werden.",
+  "@expenseDetailCouldNotRemoveReceipt": {
+    "description": "Snackbar when receipt removal fails"
+  },
+  "expenseDetailRemoving": "Wird entfernt…",
+  "@expenseDetailRemoving": {
+    "description": "Label while removing receipt"
+  },
+  "hubActivityEmpty": "Noch nichts los.\nAktivitäten aus deinem Haushalt erscheinen hier.",
+  "@hubActivityEmpty": {
+    "description": "Activity wall empty state"
+  },
+  "hubActivityError": "Aktivität konnte nicht geladen werden. Zum Aktualisieren auf dem Hub nach unten ziehen.",
+  "@hubActivityError": {
+    "description": "Activity wall load error"
+  },
+  "hubActivityTitle": "Aktivität",
+  "@hubActivityTitle": {
+    "description": "Activity wall section title"
+  },
+  "hubHouseholdsCurrent": "Haushalte, aktuell {name}",
+  "@hubHouseholdsCurrent": {
+    "description": "Semantics label for household switcher",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "hubOnboardingAddChore": "Aufgabe hinzufügen",
+  "@hubOnboardingAddChore": {
+    "description": "Add a chore action"
+  },
+  "hubOnboardingCreateList": "Liste erstellen",
+  "@hubOnboardingCreateList": {
+    "description": "Create a list action"
+  },
+  "hubOnboardingDescription": "Alles beginnt hier. Wähle, was am wichtigsten ist.",
+  "@hubOnboardingDescription": {
+    "description": "Onboarding card description"
+  },
+  "hubOnboardingDismiss": "Schnellstart schließen",
+  "@hubOnboardingDismiss": {
+    "description": "Dismiss quick start tooltip"
+  },
+  "hubOnboardingDone": "Alles erledigt",
+  "@hubOnboardingDone": {
+    "description": "Onboarding card: done tile"
+  },
+  "hubOnboardingDoneDesc": "Aufgaben, Salden, Listen — alles an einem Ort, vollständig erfasst.",
+  "@hubOnboardingDoneDesc": {
+    "description": "Done tile description"
+  },
+  "hubOnboardingGetStarted": "Loslegen",
+  "@hubOnboardingGetStarted": {
+    "description": "Onboarding card header"
+  },
+  "hubOnboardingInvite": "Mitbewohner einladen",
+  "@hubOnboardingInvite": {
+    "description": "Invite flatmates action"
+  },
+  "hubOnboardingSettle": "Ausgleichen",
+  "@hubOnboardingSettle": {
+    "description": "Onboarding card: settle tile"
+  },
+  "hubOnboardingSettleDesc": "Gleiche alle auf einmal aus mit vorgeschlagenen Ausgleichszahlungen.",
+  "@hubOnboardingSettleDesc": {
+    "description": "Settle tile description"
+  },
+  "hubOnboardingSwap": "Tauschen",
+  "@hubOnboardingSwap": {
+    "description": "Onboarding card: swap tile"
+  },
+  "hubOnboardingSwapDesc": "Wähle einen Mitbewohner, der am wenigsten schuldet, um diese Aufgabe zu übernehmen.",
+  "@hubOnboardingSwapDesc": {
+    "description": "Swap tile description"
+  },
+  "hubOnboardingTrackExpense": "Ausgabe erfassen",
+  "@hubOnboardingTrackExpense": {
+    "description": "Track an expense action"
+  },
+  "hubQuickAddChore": "Aufgabe hinzufügen",
+  "@hubQuickAddChore": {
+    "description": "Quick add: chore option"
+  },
+  "hubQuickAddExpense": "Ausgabe hinzufügen",
+  "@hubQuickAddExpense": {
+    "description": "Quick add: expense option"
+  },
+  "hubQuickAddList": "Neue Liste",
+  "@hubQuickAddList": {
+    "description": "Quick add: new list option"
+  },
+  "hubQuickAddNote": "Notiz anpinnen",
+  "@hubQuickAddNote": {
+    "description": "Quick add: pinwall note option"
+  },
+  "hubQuickAddShoppingTrip": "Einkauf starten",
+  "@hubQuickAddShoppingTrip": {
+    "description": "Quick add: shopping trip option"
+  },
+  "hubQuickAddTitle": "Schnell hinzufügen",
+  "@hubQuickAddTitle": {
+    "description": "Quick add bottom sheet title"
+  },
+  "hubQuickAddToList": "Zur Liste hinzufügen",
+  "@hubQuickAddToList": {
+    "description": "Quick add: add to list option"
+  },
+  "hubStatsActiveList": "aktive Liste",
+  "@hubStatsActiveList": {
+    "description": "Stats grid: singular active list"
+  },
+  "hubStatsActiveLists": "aktive Listen",
+  "@hubStatsActiveLists": {
+    "description": "Stats grid: plural active lists"
+  },
+  "hubStatsAllDone": "alles erledigt",
+  "@hubStatsAllDone": {
+    "description": "Stats grid: all done label"
+  },
+  "hubStatsBalance": "Saldo",
+  "@hubStatsBalance": {
+    "description": "Stats grid: balance label"
+  },
+  "hubStatsChores": "Aufgaben",
+  "@hubStatsChores": {
+    "description": "Stats grid: chores label"
+  },
+  "hubStatsDue": "fällig",
+  "@hubStatsDue": {
+    "description": "Stats grid: due today label"
+  },
+  "hubStatsLists": "Listen",
+  "@hubStatsLists": {
+    "description": "Stats grid: lists label"
+  },
+  "hubStatsMeals": "Mahlzeiten",
+  "@hubStatsMeals": {
+    "description": "Stats grid: meals planned label"
+  },
+  "hubStatsOpen": "offen",
+  "@hubStatsOpen": {
+    "description": "Stats grid: open balance label"
+  },
+  "hubStatsOverdue": "überfällig",
+  "@hubStatsOverdue": {
+    "description": "Stats grid: overdue label"
+  },
+  "hubStatsPinwallReminder": "Pinwall-Erinnerung",
+  "@hubStatsPinwallReminder": {
+    "description": "Stats grid: singular pinwall reminder"
+  },
+  "hubStatsPinwallReminders": "Pinwall-Erinnerungen",
+  "@hubStatsPinwallReminders": {
+    "description": "Stats grid: plural pinwall reminders"
+  },
+  "hubStatsPlanned": "geplant",
+  "@hubStatsPlanned": {
+    "description": "Stats grid: planned this week"
+  },
+  "hubStatsReminders": "Erinnerungen",
+  "@hubStatsReminders": {
+    "description": "Stats grid: reminders label"
+  },
+  "inviteQrUnavailable": "QR nicht verfügbar",
+  "@inviteQrUnavailable": {
+    "description": "Error when QR code cannot be rendered"
+  },
+  "joinMembersAlreadyInside": "{count, plural, =1{1 Mitglied bereits drin} other{{count} Mitglieder bereits drin}}",
+  "@joinMembersAlreadyInside": {
+    "description": "Member count after joining household",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "pinwallCouldNotLoad": "Pinwall konnte nicht geladen werden.",
+  "@pinwallCouldNotLoad": {
+    "description": "Error when pinwall posts fail to load"
+  },
+  "pinwallLinkChore": "Eine Aufgabe",
+  "@pinwallLinkChore": {
+    "description": "Link action: link a chore"
+  },
+  "pinwallLinkList": "Eine Liste",
+  "@pinwallLinkList": {
+    "description": "Link action: link a list"
+  },
+  "recipeAddToListAddToSelection": "{name} zur Auswahl hinzufügen",
+  "@recipeAddToListAddToSelection": {
+    "description": "Semantics: select ingredient",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeAddToListNoIngredients": "Keine Zutaten",
+  "@recipeAddToListNoIngredients": {
+    "description": "Empty state when recipe has no ingredients"
+  },
+  "recipeAddToListNoIngredientsDesc": "Dieses Rezept hat keine erkannten Zutaten",
+  "@recipeAddToListNoIngredientsDesc": {
+    "description": "Description when recipe has no ingredients"
+  },
+  "recipeAddToListRemoveFromSelection": "{name} aus Auswahl entfernen",
+  "@recipeAddToListRemoveFromSelection": {
+    "description": "Semantics: deselect ingredient",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeAddToListTargetList": "Zielliste",
+  "@recipeAddToListTargetList": {
+    "description": "Dropdown label for target list"
+  },
+  "recipeDetailStepCount": "{count, plural, =1{1 Schritt} other{{count} Schritte}}",
+  "@recipeDetailStepCount": {
+    "description": "Semantics label for recipe step count",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "sheetJoinCodeExample": "SUNNY-TACO-42",
+  "@sheetJoinCodeExample": {
+    "description": "Example invite code placeholder"
+  },
+  "smartCaptureLaunchTitle": "Foto prüfen",
+  "@smartCaptureLaunchTitle": {
+    "description": "Smart capture launcher review title"
+  },
+  "storePickerLoadError": "Geschäfte konnten nicht geladen werden.",
+  "@storePickerLoadError": {
+    "description": "Store picker load error"
+  },
+  "storePickerNoMatch": "Keine Geschäfte passen zu deiner Suche.",
+  "@storePickerNoMatch": {
+    "description": "No store search results"
+  },
+  "storePickerNoStore": "Kein Geschäft",
+  "@storePickerNoStore": {
+    "description": "No store option"
+  },
+  "storePickerNoStoreDesc": "Nach Kategorie statt nach Ladenlayout sortieren",
+  "@storePickerNoStoreDesc": {
+    "description": "No store option description"
+  },
+  "storePickerSearchHint": "Name...",
+  "@storePickerSearchHint": {
+    "description": "Store search hint"
+  },
+  "storePickerSearchLabel": "Geschäfte suchen",
+  "@storePickerSearchLabel": {
+    "description": "Store search label"
+  },
+  "storePickerTitle": "Geschäft wählen",
+  "@storePickerTitle": {
+    "description": "Store picker sheet title"
+  }
 }

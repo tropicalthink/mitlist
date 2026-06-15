@@ -3170,906 +3170,917 @@ class AppLocalizationsNl extends AppLocalizations {
   String get captureHintUsable => 'Ziet er bruikbaar uit';
 
   @override
-  String get authLoginTitle => 'Sign in';
+  String get authLoginTitle => 'Inloggen';
 
   @override
-  String get authLoginEmail => 'Email';
+  String get authLoginEmail => 'E-mail';
 
   @override
-  String get authLoginYouExample => 'you@example.com';
+  String get authLoginYouExample => 'jij@voorbeeld.nl';
 
   @override
-  String get authLoginPassword => 'Password';
+  String get authLoginPassword => 'Wachtwoord';
 
   @override
-  String get authLoginYourPassword => 'Your password';
+  String get authLoginYourPassword => 'Je wachtwoord';
 
   @override
-  String get authLoginForgotPassword => 'Forgot password?';
+  String get authLoginForgotPassword => 'Wachtwoord vergeten?';
 
   @override
-  String get authLoginSignInButton => 'Sign in';
+  String get authLoginSignInButton => 'Inloggen';
 
   @override
-  String get authLoginSigningIn => 'Signing in…';
+  String get authLoginSigningIn => 'Inloggen…';
 
   @override
-  String get authLoginNoAccount => 'No account?';
+  String get authLoginNoAccount => 'Geen account?';
 
   @override
-  String get authLoginCreateOne => 'Create one';
+  String get authLoginCreateOne => 'Maak er een';
 
   @override
-  String get authLoginFillAllFields => 'Fill out all fields.';
+  String get authLoginFillAllFields => 'Vul alle velden in.';
 
   @override
-  String get authLoginEmailRequired => 'Email is required.';
+  String get authLoginEmailRequired => 'E-mail is verplicht.';
 
   @override
-  String get authLoginPasswordRequired => 'Password is required.';
+  String get authLoginPasswordRequired => 'Wachtwoord is verplicht.';
 
   @override
   String get authLoginGenericError =>
-      'Couldn\'t sign in. Check your connection and try again.';
+      'Inloggen mislukt. Controleer je verbinding en probeer het opnieuw.';
 
   @override
-  String get authLoginRememberMe => 'Remember me';
+  String get authLoginRememberMe => 'Onthoud mij';
 
   @override
-  String get authLoginRememberMeOn => 'Remember me: on';
+  String get authLoginRememberMeOn => 'Onthoud mij: aan';
 
   @override
-  String get authLoginRememberMeOff => 'Remember me: off';
+  String get authLoginRememberMeOff => 'Onthoud mij: uit';
 
   @override
-  String get authLoginGoogle => 'Continue with Google';
+  String get authLoginGoogle => 'Doorgaan met Google';
 
   @override
-  String get authLoginApple => 'Continue with Apple';
+  String get authLoginApple => 'Doorgaan met Apple';
 
   @override
   String authLoginOAuthUnsupported(String provider) {
-    return '$provider sign-in is only available on web, Android, and iOS right now.';
+    return '$provider-inloggen is momenteel alleen beschikbaar op web, Android en iOS.';
   }
 
   @override
-  String get authLoginResetPasswordTitle => 'Reset Password';
+  String get authLoginResetPasswordTitle => 'Wachtwoord herstellen';
 
   @override
-  String get authLoginSendResetCode => 'Send reset code';
+  String get authLoginSendResetCode => 'Code versturen';
 
   @override
-  String get authLoginResetCodeLabel => 'Reset code';
+  String get authLoginResetCodeLabel => 'Herstelcode';
 
   @override
-  String get authLoginResetCodeHint => 'Paste the code from your email';
+  String get authLoginResetCodeHint => 'Plak de code uit je e-mail';
 
   @override
-  String get authLoginResetPasswordButton => 'Reset password';
+  String get authLoginResetPasswordButton => 'Wachtwoord herstellen';
 
   @override
   String get authLoginResetCodeSent =>
-      'If that email exists, a reset code has been sent.';
+      'Als dat e-mailadres bestaat, is er een herstelcode verstuurd.';
 
   @override
   String get authLoginResetFillAllFields =>
-      'Fill out the reset code and both password fields.';
+      'Vul de code en beide wachtwoordvelden in.';
 
   @override
   String get authLoginResetSuccess =>
-      'Password reset successful. You can sign in now.';
+      'Wachtwoord hersteld. Je kunt nu inloggen.';
 
   @override
-  String get authSignupTitle => 'Create account';
+  String get authSignupTitle => 'Account aanmaken';
 
   @override
-  String get authSignupFirstName => 'First name';
+  String get authSignupFirstName => 'Voornaam';
 
   @override
   String get authSignupFirstNameHint => 'Alex';
 
   @override
-  String get authSignupLastName => 'Last name';
+  String get authSignupLastName => 'Achternaam';
 
   @override
-  String get authSignupLastNameHint => 'Smith';
+  String get authSignupLastNameHint => 'Jansen';
 
   @override
-  String get authSignupEmail => 'Email';
+  String get authSignupEmail => 'E-mail';
 
   @override
-  String get authSignupEmailHint => 'you@example.com';
+  String get authSignupEmailHint => 'jij@voorbeeld.nl';
 
   @override
-  String get authSignupPassword => 'Password';
+  String get authSignupPassword => 'Wachtwoord';
 
   @override
-  String get authSignupPasswordHint => 'At least 6 characters';
+  String get authSignupPasswordHint => 'Minstens 6 tekens';
 
   @override
-  String get authSignupCreateAccount => 'Create account';
+  String get authSignupCreateAccount => 'Account aanmaken';
 
   @override
-  String get authSignupCreatingAccount => 'Creating account…';
+  String get authSignupCreatingAccount => 'Account wordt aangemaakt…';
 
   @override
-  String get authSignupHaveAccount => 'Have an account?';
+  String get authSignupHaveAccount => 'Heb je al een account?';
 
   @override
-  String get authSignupSignInLink => 'Sign in';
+  String get authSignupSignInLink => 'Inloggen';
 
   @override
-  String get authSignupFillAllFields => 'Fill out all fields.';
+  String get authSignupFillAllFields => 'Vul alle velden in.';
 
   @override
   String get authSignupPasswordMinLength =>
-      'Password must be at least 6 characters.';
+      'Wachtwoord moet minstens 6 tekens lang zijn.';
 
   @override
-  String get authSignupJoinTitle => 'Join household';
+  String get authSignupJoinTitle => 'Deelnemen aan huishouden';
 
   @override
-  String get authSignupAccountCreated => 'Account created. Welcome!';
+  String get authSignupAccountCreated => 'Account aangemaakt. Welkom!';
 
   @override
-  String get authSignupNameRequired => 'Name is required.';
+  String get authSignupNameRequired => 'Naam is verplicht.';
 
   @override
-  String get authSignupEmailRequired => 'Email is required.';
+  String get authSignupEmailRequired => 'E-mail is verplicht.';
 
   @override
-  String get authSignupPasswordRequired => 'Password is required.';
+  String get authSignupPasswordRequired => 'Wachtwoord is verplicht.';
 
   @override
   String get authSignupGenericError =>
-      'Couldn\'t create account. Check your connection and try again.';
+      'Account aanmaken mislukt. Controleer je verbinding en probeer het opnieuw.';
 
   @override
-  String get authSignupNameHint => 'Your name';
+  String get authSignupNameHint => 'Je naam';
 
   @override
   String get authSignupTermsPrefix =>
-      'By creating an account, you agree to our ';
+      'Door een account aan te maken ga je akkoord met onze ';
 
   @override
-  String get authSignupAnd => ' and ';
+  String get authSignupAnd => ' en ';
 
   @override
   String get authSignupPeriod => '.';
 
   @override
-  String get authSignupPrivacyPolicy => 'Privacy Policy';
+  String get authSignupPrivacyPolicy => 'Privacybeleid';
 
   @override
   String get authSignupTermsP1 =>
-      'Use mitlist responsibly. Shared household content is visible to the members of that household.';
+      'Gebruik mitlist verantwoord. Gedeelde huishoudeninhoud is zichtbaar voor de leden van dat huishouden.';
 
   @override
   String get authSignupTermsP2 =>
-      'Do not upload unlawful content, impersonate others, or abuse the service. Accounts and shared data may be removed for misuse.';
+      'Upload geen onwettige inhoud, doe je niet voor als iemand anders en misbruik de dienst niet. Accounts en gedeelde gegevens kunnen bij misbruik worden verwijderd.';
 
   @override
   String get authSignupTermsP3 =>
-      'The app is provided as-is while the product is still evolving. Keep your own backups for anything critical.';
+      'De app wordt geleverd zoals hij is terwijl het product nog evolueert. Bewaar zelf back-ups van alles wat belangrijk is.';
 
   @override
   String get authSignupPrivacyP1 =>
-      'mitlist stores the account details and household content needed to operate the app.';
+      'mitlist slaat de accountgegevens en huishoudeninhoud op die nodig zijn om de app te laten werken.';
 
   @override
   String get authSignupPrivacyP2 =>
-      'Shared data such as lists, chores, expenses, and recipes is visible to other members of the same household.';
+      'Gedeelde gegevens zoals lijsten, klussen, uitgaven en recepten zijn zichtbaar voor andere leden van hetzelfde huishouden.';
 
   @override
   String get authSignupPrivacyP3 =>
-      'Only provide information you are comfortable keeping in a shared household workspace.';
+      'Geef alleen informatie door die je prettig vindt in een gedeelde huishoudenwerkruimte.';
 
   @override
-  String get authJoinTitle => 'Join household';
+  String get authJoinTitle => 'Deelnemen aan huishouden';
 
   @override
   String authJoinInvitedBy(String name) {
-    return '$name invited you';
+    return '$name heeft je uitgenodigd';
   }
 
   @override
-  String get authJoinJoinNow => 'Join now';
+  String get authJoinJoinNow => 'Nu deelnemen';
 
   @override
-  String get authJoinSignInToJoin => 'Sign in to join';
+  String get authJoinSignInToJoin => 'Log in om mee te doen';
 
   @override
-  String get authJoinCreateToJoin => 'Create account to join';
+  String get authJoinCreateToJoin => 'Account aanmaken om mee te doen';
 
   @override
-  String get authJoinGuestWarning => 'Guest accounts can\'t join households.';
+  String get authJoinGuestWarning =>
+      'Gastaccounts kunnen niet deelnemen aan huishoudens.';
 
   @override
-  String get authJoinCouldNotLoad => 'Couldn\'t load invite details.';
+  String get authJoinCouldNotLoad =>
+      'Uitnodigingsdetails konden niet worden geladen.';
 
   @override
-  String get authJoinJoining => 'Joining…';
+  String get authJoinJoining => 'Deelnemen…';
 
   @override
-  String get authJoinNotNow => 'Not now';
+  String get authJoinNotNow => 'Niet nu';
 
   @override
-  String get authJoinYoureIn => 'You\'re in.';
+  String get authJoinYoureIn => 'Je zit erbij.';
 
   @override
-  String get authJoinGoToHousehold => 'Go to household';
+  String get authJoinGoToHousehold => 'Naar huishouden';
 
   @override
   String authJoinInviteCodeSemantic(String code) {
-    return 'Invite code: $code';
+    return 'Uitnodigingscode: $code';
   }
 
   @override
   String authJoinErrorWithHint(String error) {
-    return '$error\n\nYou can also enter a code from the household switcher.';
+    return '$error\n\nJe kunt ook een code invoeren via de huishoudenwisselaar.';
   }
 
   @override
-  String get authOnboardingTitle => 'Welcome';
+  String get authOnboardingTitle => 'Welkom';
 
   @override
-  String get authOnboardingSetupHome => 'Set up your home';
+  String get authOnboardingSetupHome => 'Richt je thuis in';
 
   @override
   String get authOnboardingCreateOrJoin =>
-      'Create or join a household to start sharing with flatmates.';
+      'Maak of sluit je aan bij een huishouden om te delen met huisgenoten.';
 
   @override
-  String get authOnboardingCreateHousehold => 'Create a household';
+  String get authOnboardingCreateHousehold => 'Huishouden aanmaken';
 
   @override
-  String get authOnboardingJoinInvite => 'Join with invite code';
+  String get authOnboardingJoinInvite => 'Deelnemen met uitnodigingscode';
 
   @override
-  String get authOnboardingHaveCode => 'Have an invite code?';
+  String get authOnboardingHaveCode => 'Heb je een uitnodigingscode?';
 
   @override
   String get authOnboardingCreateDesc =>
-      'Start fresh: name it, invite flatmates, share everything in one place.';
+      'Begin opnieuw: geef het een naam, nodig huisgenoten uit en deel alles op één plek.';
 
   @override
   String get authOnboardingJoinDesc =>
-      'Already got an invite? Enter the code to jump right in.';
+      'Al een uitnodiging? Voer de code in en ga meteen aan de slag.';
 
   @override
-  String get authOnboardingJoinSemantic => 'Join a household with invite code';
+  String get authOnboardingJoinSemantic =>
+      'Deelnemen aan een huishouden met uitnodigingscode';
 
   @override
-  String get authOnboardingHomeIconSemantic => 'Household home icon';
+  String get authOnboardingHomeIconSemantic => 'Huishouden-startpictogram';
 
   @override
-  String get hubStatsChores => 'Chores';
+  String get hubStatsChores => 'Klussen';
 
   @override
-  String get hubStatsDue => 'due';
+  String get hubStatsDue => 'te doen';
 
   @override
-  String get hubStatsMeals => 'Meals';
+  String get hubStatsMeals => 'Maaltijden';
 
   @override
-  String get hubStatsPlanned => 'planned';
+  String get hubStatsPlanned => 'gepland';
 
   @override
-  String get hubStatsOverdue => 'overdue';
+  String get hubStatsOverdue => 'te laat';
 
   @override
-  String get hubStatsAllDone => 'all done';
+  String get hubStatsAllDone => 'alles klaar';
 
   @override
-  String get hubStatsBalance => 'Balance';
+  String get hubStatsBalance => 'Saldo';
 
   @override
   String get hubStatsOpen => 'open';
 
   @override
-  String get hubStatsLists => 'Lists';
+  String get hubStatsLists => 'Lijsten';
 
   @override
-  String get hubStatsActiveList => 'active list';
+  String get hubStatsActiveList => 'actieve lijst';
 
   @override
-  String get hubStatsActiveLists => 'active lists';
+  String get hubStatsActiveLists => 'actieve lijsten';
 
   @override
-  String get hubStatsReminders => 'Reminders';
+  String get hubStatsReminders => 'Herinneringen';
 
   @override
-  String get hubStatsPinwallReminder => 'pinwall reminder';
+  String get hubStatsPinwallReminder => 'prikbordherinnering';
 
   @override
-  String get hubStatsPinwallReminders => 'pinwall reminders';
+  String get hubStatsPinwallReminders => 'prikbordherinneringen';
 
   @override
-  String get hubQuickAddTitle => 'Quick add';
+  String get hubQuickAddTitle => 'Snel toevoegen';
 
   @override
-  String get hubQuickAddChore => 'Add chore';
+  String get hubQuickAddChore => 'Klus toevoegen';
 
   @override
-  String get hubQuickAddExpense => 'Add expense';
+  String get hubQuickAddExpense => 'Uitgave toevoegen';
 
   @override
-  String get hubQuickAddNote => 'Pin a note';
+  String get hubQuickAddNote => 'Notitie vastpinnen';
 
   @override
-  String get hubQuickAddList => 'New list';
+  String get hubQuickAddList => 'Nieuwe lijst';
 
   @override
-  String get hubActivityTitle => 'Activity';
+  String get hubActivityTitle => 'Activiteit';
 
   @override
   String get hubActivityEmpty =>
-      'Nothing happening yet.\nActivity from your household will appear here.';
+      'Nog niets aan de hand.\nActiviteit van je huishouden verschijnt hier.';
 
   @override
   String get hubActivityError =>
-      'Couldn’t load activity. Pull to refresh on the hub.';
+      'Activiteit kon niet worden geladen. Trek naar beneden op de hub om te vernieuwen.';
 
   @override
-  String get hubOnboardingSwap => 'Swap';
+  String get hubOnboardingSwap => 'Ruilen';
 
   @override
-  String get hubOnboardingSettle => 'Settle';
+  String get hubOnboardingSettle => 'Verrekenen';
 
   @override
-  String get hubOnboardingDone => 'All done';
+  String get hubOnboardingDone => 'Alles klaar';
 
   @override
   String get hubOnboardingSwapDesc =>
-      'Pick a flatmate who owes the least to take over this chore.';
+      'Kies een huisgenoot die het minst verschuldigd is om deze klus over te nemen.';
 
   @override
   String get hubOnboardingSettleDesc =>
-      'Pay everyone back all at once with suggested settlements.';
+      'Betaal iedereen in één keer terug met voorgestelde verrekeningen.';
 
   @override
   String get hubOnboardingDoneDesc =>
-      'Chores, balances, lists — everything in one place, accounted for.';
+      'Klussen, saldi, lijsten — alles op één plek, netjes bijgehouden.';
 
   @override
-  String get appBottomSheetHandle => 'Handle';
+  String get appBottomSheetHandle => 'Handvat';
 
   @override
-  String get appBottomSheetClose => 'Close';
+  String get appBottomSheetClose => 'Sluiten';
 
   @override
-  String get storePickerTitle => 'Choose store';
+  String get storePickerTitle => 'Winkel kiezen';
 
   @override
-  String get storePickerSearchLabel => 'Search stores';
+  String get storePickerSearchLabel => 'Winkels zoeken';
 
   @override
-  String get storePickerSearchHint => 'Name...';
+  String get storePickerSearchHint => 'Naam...';
 
   @override
-  String get storePickerNoMatch => 'No stores match your search.';
+  String get storePickerNoMatch =>
+      'Geen winkels komen overeen met je zoekopdracht.';
 
   @override
-  String get storePickerNoStore => 'No store';
+  String get storePickerNoStore => 'Geen winkel';
 
   @override
   String get storePickerNoStoreDesc =>
-      'Sort by category instead of a store layout';
+      'Sorteer op categorie in plaats van winkelindeling';
 
   @override
-  String get storePickerLoadError => 'Couldn’t load stores.';
+  String get storePickerLoadError => 'Winkels konden niet worden geladen.';
 
   @override
-  String get smartCaptureLaunchTitle => 'Check photo';
+  String get smartCaptureLaunchTitle => 'Foto controleren';
 
   @override
-  String get hubQuickAddToList => 'Add to a list';
+  String get hubQuickAddToList => 'Toevoegen aan lijst';
 
   @override
-  String get hubQuickAddShoppingTrip => 'Start shopping trip';
+  String get hubQuickAddShoppingTrip => 'Boodschappen starten';
 
   @override
-  String get hubOnboardingGetStarted => 'Get started';
+  String get hubOnboardingGetStarted => 'Aan de slag';
 
   @override
-  String get hubOnboardingDismiss => 'Dismiss quick start';
+  String get hubOnboardingDismiss => 'Snelstart sluiten';
 
   @override
   String get hubOnboardingDescription =>
-      'Everything starts here. Pick what matters most.';
+      'Alles begint hier. Kies wat het belangrijkst is.';
 
   @override
-  String get hubOnboardingInvite => 'Invite flatmates';
+  String get hubOnboardingInvite => 'Huisgenoten uitnodigen';
 
   @override
-  String get hubOnboardingCreateList => 'Create a list';
+  String get hubOnboardingCreateList => 'Lijst aanmaken';
 
   @override
-  String get hubOnboardingAddChore => 'Add a chore';
+  String get hubOnboardingAddChore => 'Klus toevoegen';
 
   @override
-  String get hubOnboardingTrackExpense => 'Track an expense';
+  String get hubOnboardingTrackExpense => 'Uitgave bijhouden';
 
   @override
-  String get appBottomSheetDiscardTitle => 'Discard changes?';
+  String get appBottomSheetDiscardTitle => 'Wijzigingen negeren?';
 
   @override
-  String get appBottomSheetDiscardBody => 'You have unsaved changes.';
+  String get appBottomSheetDiscardBody =>
+      'Je hebt niet-opgeslagen wijzigingen.';
 
   @override
-  String get appBottomSheetKeepEditing => 'Keep editing';
+  String get appBottomSheetKeepEditing => 'Verder bewerken';
 
   @override
-  String get sheetExpenseDetailTitle => 'Expense details';
+  String get sheetExpenseDetailTitle => 'Uitgavedetails';
 
   @override
-  String get sheetExpenseDetailSplits => 'Splits';
+  String get sheetExpenseDetailSplits => 'Verdelingen';
 
   @override
   String sheetExpenseDetailSplitsCount(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count splits',
-      one: '$count split',
+      other: '$count verdelingen',
+      one: '$count verdeling',
     );
     return '$_temp0';
   }
 
   @override
-  String get sheetSettlementTitle => 'Record settlement';
+  String get sheetSettlementTitle => 'Verrekening registreren';
 
   @override
-  String get sheetSettlementFrom => 'From';
+  String get sheetSettlementFrom => 'Van';
 
   @override
-  String get sheetSettlementTo => 'To';
+  String get sheetSettlementTo => 'Naar';
 
   @override
   String get sheetSettlementRecordPayment =>
-      'Record this settlement after the payment is made.';
+      'Registreer deze verrekening nadat de betaling is gedaan.';
 
   @override
-  String get sheetSettlementConfirm => 'Confirm settlement';
+  String get sheetSettlementConfirm => 'Verrekening bevestigen';
 
   @override
-  String get sheetGroupSettingsTitle => 'Household settings';
+  String get sheetGroupSettingsTitle => 'Huishoudinstellingen';
 
   @override
-  String get sheetGroupSettingsName => 'Household name';
+  String get sheetGroupSettingsName => 'Huishoudennaam';
 
   @override
-  String get sheetGroupSettingsSaved => 'Settings saved';
+  String get sheetGroupSettingsSaved => 'Instellingen opgeslagen';
 
   @override
-  String get sheetGroupSettingsCouldNotSave => 'Couldn\'t save settings.';
+  String get sheetGroupSettingsCouldNotSave =>
+      'Instellingen konden niet worden opgeslagen.';
 
   @override
-  String get sheetGroupSettingsLeave => 'Leave household';
+  String get sheetGroupSettingsLeave => 'Huishouden verlaten';
 
   @override
   String get sheetGroupSettingsLeaveConfirm =>
-      'Are you sure you want to leave this household? All your data will be retained by the household.';
+      'Weet je zeker dat je dit huishouden wilt verlaten? Al je gegevens blijven in het huishouden bewaard.';
 
   @override
-  String get sheetGroupSettingsLeaveAction => 'Leave';
+  String get sheetGroupSettingsLeaveAction => 'Verlaten';
 
   @override
-  String get sheetGroupSettingsDelete => 'Delete household';
+  String get sheetGroupSettingsDelete => 'Huishouden verwijderen';
 
   @override
   String get sheetGroupSettingsDeleteConfirm =>
-      'This will permanently delete this household and all associated data. This cannot be undone.';
+      'Dit verwijdert dit huishouden en alle bijbehorende gegevens permanent. Dit kan niet ongedaan worden gemaakt.';
 
   @override
-  String get sheetRecipeAddToListTitle => 'Add to list';
+  String get sheetRecipeAddToListTitle => 'Toevoegen aan lijst';
 
   @override
   String sheetRecipeAddToListAdded(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count items added',
-      one: '1 item added',
+      other: '$count items toegevoegd',
+      one: '1 item toegevoegd',
     );
     return '$_temp0';
   }
 
   @override
-  String get sheetRecipeAddToListCouldNotAdd => 'Couldn\'t add ingredients.';
+  String get sheetRecipeAddToListCouldNotAdd =>
+      'Ingrediënten konden niet worden toegevoegd.';
 
   @override
-  String get sheetJoinTitle => 'Join household';
+  String get sheetJoinTitle => 'Deelnemen aan huishouden';
 
   @override
-  String get sheetJoinCodeLabel => 'Invite code';
+  String get sheetJoinCodeLabel => 'Uitnodigingscode';
 
   @override
-  String get sheetJoinCodeHint => 'Paste invite code';
+  String get sheetJoinCodeHint => 'Plak uitnodigingscode';
 
   @override
-  String get sheetJoinJoin => 'Join';
+  String get sheetJoinJoin => 'Deelnemen';
 
   @override
-  String get sheetCreateHouseholdTitle => 'Create household';
+  String get sheetCreateHouseholdTitle => 'Huishouden aanmaken';
 
   @override
-  String get sheetCreateHouseholdName => 'Household name';
+  String get sheetCreateHouseholdName => 'Huishoudennaam';
 
   @override
-  String get sheetCreateHouseholdNameHint => 'e.g. Flat 4B';
+  String get sheetCreateHouseholdNameHint => 'bijv. Appartement 4B';
 
   @override
-  String get sheetInviteTitle => 'Invite to household';
+  String get sheetInviteTitle => 'Uitnodigen voor huishouden';
 
   @override
-  String get sheetInviteCopy => 'Copy link';
+  String get sheetInviteCopy => 'Link kopiëren';
 
   @override
-  String get sheetInviteCopied => 'Invite link copied';
+  String get sheetInviteCopied => 'Uitnodigingslink gekopieerd';
 
   @override
-  String get sheetInviteShare => 'Share link';
+  String get sheetInviteShare => 'Link delen';
 
   @override
-  String get sheetCreateListTitle => 'New list';
+  String get sheetCreateListTitle => 'Nieuwe lijst';
 
   @override
-  String get sheetCreateListName => 'List name';
+  String get sheetCreateListName => 'Lijstnaam';
 
   @override
-  String get sheetCreateListNameHint => 'e.g. Weekly groceries';
+  String get sheetCreateListNameHint => 'bijv. Weekboodschappen';
 
   @override
   String get sheetCreateListType => 'Type';
 
   @override
-  String get sheetCreateListTypeShopping => 'Shopping';
+  String get sheetCreateListTypeShopping => 'Boodschappen';
 
   @override
-  String get sheetCreateListTypeTodo => 'To-do';
+  String get sheetCreateListTypeTodo => 'Taken';
 
   @override
-  String get sheetCreateListTypeCustom => 'Custom';
+  String get sheetCreateListTypeCustom => 'Aangepast';
 
   @override
-  String get sheetCreateListCreate => 'Create list';
+  String get sheetCreateListCreate => 'Lijst aanmaken';
 
   @override
-  String get sheetCostSummaryTitle => 'Cost summary';
+  String get sheetCostSummaryTitle => 'Kostenoverzicht';
 
   @override
-  String get sheetCostSummaryTotal => 'Total';
+  String get sheetCostSummaryTotal => 'Totaal';
 
   @override
-  String get sheetConflictTitle => 'Sync conflict';
+  String get sheetConflictTitle => 'Synchronisatieconflict';
 
   @override
   String get sheetConflictDescription =>
-      'This item was changed on another device while you were editing. Choose which version to keep.';
+      'Dit item is op een ander apparaat gewijzigd terwijl je het bewerkte. Kies welke versie je wilt behouden.';
 
   @override
-  String get sheetConflictLocal => 'Your version';
+  String get sheetConflictLocal => 'Jouw versie';
 
   @override
-  String get sheetConflictServer => 'Server version';
+  String get sheetConflictServer => 'Serverversie';
 
   @override
-  String get sheetConflictKeepLocal => 'Keep yours';
+  String get sheetConflictKeepLocal => 'Jouwe behouden';
 
   @override
-  String get sheetConflictKeepServer => 'Keep server';
+  String get sheetConflictKeepServer => 'Server behouden';
 
   @override
-  String get sheetFailedChangesTitle => 'Failed changes';
+  String get sheetFailedChangesTitle => 'Mislukte wijzigingen';
 
   @override
   String get sheetFailedChangesDescription =>
-      'These changes couldn\'t be saved. You can retry or discard them.';
+      'Deze wijzigingen konden niet worden opgeslagen. Je kunt opnieuw proberen of ze negeren.';
 
   @override
-  String get sheetFailedChangesRetryAll => 'Retry all';
+  String get sheetFailedChangesRetryAll => 'Alles opnieuw';
 
   @override
-  String get sheetFailedChangesDiscardAll => 'Discard all';
+  String get sheetFailedChangesDiscardAll => 'Alles negeren';
 
   @override
-  String get sheetFailedChangesDiscard => 'Discard';
+  String get sheetFailedChangesDiscard => 'Negeren';
 
   @override
-  String get sheetFailedChangesRetry => 'Retry';
+  String get sheetFailedChangesRetry => 'Opnieuw';
 
   @override
   String get sheetFailedChangesEmpty =>
-      'No failed changes. Everything is synced or waiting to retry.';
+      'Geen mislukte wijzigingen. Alles is gesynchroniseerd of wacht op een nieuwe poging.';
 
   @override
-  String get sheetFailedChangesOpAddItem => 'Add item';
+  String get sheetFailedChangesOpAddItem => 'Item toevoegen';
 
   @override
-  String get sheetFailedChangesOpUpdateItem => 'Update item';
+  String get sheetFailedChangesOpUpdateItem => 'Item bijwerken';
 
   @override
-  String get sheetFailedChangesOpDeleteItem => 'Delete item';
+  String get sheetFailedChangesOpDeleteItem => 'Item verwijderen';
 
   @override
-  String get sheetFailedChangesOpReorderItems => 'Reorder list';
+  String get sheetFailedChangesOpReorderItems => 'Lijst herschikken';
 
   @override
-  String get sheetFailedChangesOpCreateExpense => 'Add expense';
+  String get sheetFailedChangesOpCreateExpense => 'Uitgave toevoegen';
 
   @override
-  String get sheetFailedChangesOpUpdateExpense => 'Update expense';
+  String get sheetFailedChangesOpUpdateExpense => 'Uitgave bijwerken';
 
   @override
-  String get sheetFailedChangesOpDeleteExpense => 'Delete expense';
+  String get sheetFailedChangesOpDeleteExpense => 'Uitgave verwijderen';
 
   @override
-  String get sheetFailedChangesOpCreateRecipe => 'Add recipe';
+  String get sheetFailedChangesOpCreateRecipe => 'Recept toevoegen';
 
   @override
-  String get sheetFailedChangesOpUpdateRecipe => 'Update recipe';
+  String get sheetFailedChangesOpUpdateRecipe => 'Recept bijwerken';
 
   @override
-  String get sheetFailedChangesOpDeleteRecipe => 'Delete recipe';
+  String get sheetFailedChangesOpDeleteRecipe => 'Recept verwijderen';
 
   @override
-  String get sheetFailedChangesOpCompleteChore => 'Complete chore';
+  String get sheetFailedChangesOpCompleteChore => 'Klus voltooien';
 
   @override
-  String get sheetFailedChangesOpSkipChore => 'Skip chore';
+  String get sheetFailedChangesOpSkipChore => 'Klus overslaan';
 
   @override
-  String get sheetFailedChangesOpRescheduleChore => 'Reschedule chore';
+  String get sheetFailedChangesOpRescheduleChore => 'Klus opnieuw plannen';
 
   @override
-  String get sheetFailedChangesOpUndoChore => 'Undo chore';
+  String get sheetFailedChangesOpUndoChore => 'Klus ongedaan maken';
 
   @override
-  String get sheetFailedChangesOpCreatePinwallPost => 'Post to pinwall';
+  String get sheetFailedChangesOpCreatePinwallPost => 'Op prikbord plaatsen';
 
   @override
-  String get sheetFailedChangesOpDeletePinwallPost => 'Delete pinwall post';
+  String get sheetFailedChangesOpDeletePinwallPost =>
+      'Prikbordbericht verwijderen';
 
   @override
-  String get sheetFailedChangesOpChange => 'Change';
+  String get sheetFailedChangesOpChange => 'Wijziging';
 
   @override
-  String get sheetGroupSettingsChoreZonesUpdated => 'Chore zones updated';
+  String get sheetGroupSettingsChoreZonesUpdated => 'Kluszones bijgewerkt';
 
   @override
-  String get sheetGroupSettingsRemoveMember => 'Remove member';
+  String get sheetGroupSettingsRemoveMember => 'Lid verwijderen';
 
   @override
   String sheetGroupSettingsRemoveMemberConfirm(String name) {
-    return 'Remove $name from this household?';
+    return '$name uit dit huishouden verwijderen?';
   }
 
   @override
   String sheetGroupSettingsMemberRemoved(String name) {
-    return '$name removed';
+    return '$name verwijderd';
   }
 
   @override
-  String get sheetGroupSettingsHouseholdDeleted => 'Household deleted';
+  String get sheetGroupSettingsHouseholdDeleted => 'Huishouden verwijderd';
 
   @override
   String get sheetGroupSettingsDescriptionHint =>
-      'A few words about this household';
+      'Een paar woorden over dit huishouden';
 
   @override
-  String get sheetGroupSettingsChoreZonesLabel => 'Chore zones';
+  String get sheetGroupSettingsChoreZonesLabel => 'Kluszones';
 
   @override
   String get sheetGroupSettingsChoreZonesDesc =>
-      'Areas of your home for grouping chores. They show up when adding a chore.';
+      'Ruimtes in je huis om klussen te groeperen. Ze verschijnen bij het toevoegen van een klus.';
 
   @override
-  String get sheetGroupSettingsAddZone => 'Add zone';
+  String get sheetGroupSettingsAddZone => 'Zone toevoegen';
 
   @override
-  String get sheetGroupSettingsZoneHint => 'Kitchen, Bathroom…';
+  String get sheetGroupSettingsZoneHint => 'Keuken, Badkamer…';
 
   @override
-  String get sheetGroupSettingsSaveZones => 'Save zones';
+  String get sheetGroupSettingsSaveZones => 'Zones opslaan';
 
   @override
-  String get sheetGroupSettingsMembersLabel => 'Members';
+  String get sheetGroupSettingsMembersLabel => 'Leden';
 
   @override
-  String get sheetGroupSettingsInvite => 'Invite';
+  String get sheetGroupSettingsInvite => 'Uitnodigen';
 
   @override
   String sheetGroupSettingsRemoveMemberTooltip(String name) {
-    return 'Remove $name';
+    return '$name verwijderen';
   }
 
   @override
-  String get tonightRecipe => 'Recipe';
+  String get tonightRecipe => 'Recept';
 
   @override
-  String get tonightHeader => 'Tonight';
+  String get tonightHeader => 'Vanavond';
 
   @override
-  String get tonightCook => 'Cook';
+  String get tonightCook => 'Koken';
 
   @override
-  String get tonightNothingPlanned => 'Nothing planned for tonight';
+  String get tonightNothingPlanned => 'Niets gepland voor vanavond';
 
   @override
-  String get tonightPlanDinner => 'Plan dinner';
+  String get tonightPlanDinner => 'Avondeten plannen';
 
   @override
   String activityAddedToList(String name, String when) {
-    return 'Added $name to a list · $when';
+    return 'Heeft $name aan een lijst toegevoegd · $when';
   }
 
   @override
   String activityAddedItemToList(String when) {
-    return 'Added an item to a list · $when';
+    return 'Heeft een item aan een lijst toegevoegd · $when';
   }
 
   @override
   String activityLoggedExpense(String name, String when) {
-    return 'Logged $name · $when';
+    return 'Heeft $name geregistreerd · $when';
   }
 
   @override
   String activityLoggedExpenseGeneric(String when) {
-    return 'Logged an expense · $when';
+    return 'Heeft een uitgave geregistreerd · $when';
   }
 
   @override
   String activityCompletedChore(String name, String when) {
-    return 'Completed $name · $when';
+    return 'Heeft $name voltooid · $when';
   }
 
   @override
   String activityCompletedChoreGeneric(String when) {
-    return 'Completed a chore · $when';
+    return 'Heeft een klus voltooid · $when';
   }
 
   @override
   String activitySavedRecipe(String name, String when) {
-    return 'Saved $name · $when';
+    return 'Heeft $name opgeslagen · $when';
   }
 
   @override
   String activitySavedRecipeGeneric(String when) {
-    return 'Saved a recipe · $when';
+    return 'Heeft een recept opgeslagen · $when';
   }
 
   @override
   String activityPlannedMeal(String name, String when) {
-    return 'Planned $name · $when';
+    return 'Heeft $name gepland · $when';
   }
 
   @override
   String activityUpdatedMealPlan(String when) {
-    return 'Updated meal plan · $when';
+    return 'Maaltijdplan bijgewerkt · $when';
   }
 
   @override
-  String get activityYou => 'You';
+  String get activityYou => 'Jij';
 
   @override
-  String get activityMember => 'Member';
+  String get activityMember => 'Lid';
 
   @override
   String inviteLinkShareText(String link, String code) {
-    return 'Join my household on mitlist!\nTap: $link\nOr open mitlist and enter the code: $code';
+    return 'Doe mee met mijn huishouden op mitlist!\nTik: $link\nOf open mitlist en voer de code in: $code';
   }
 
   @override
-  String get errorBoundaryTitle => 'Something went wrong';
+  String get errorBoundaryTitle => 'Er ging iets mis';
 
   @override
   String get errorBoundaryDesc =>
-      'We hit an unexpected error. Please try again.';
+      'Er is een onverwachte fout opgetreden. Probeer het opnieuw.';
 
   @override
-  String get recurringTomorrow => 'Tomorrow';
+  String get recurringTomorrow => 'Morgen';
 
   @override
-  String get recurringCouldNotUpdate => 'Couldn\'t update recurring expense.';
+  String get recurringCouldNotUpdate =>
+      'Terugkerende uitgave kon niet worden bijgewerkt.';
 
   @override
-  String get recurringCouldNotDelete => 'Couldn\'t delete recurring expense.';
+  String get recurringCouldNotDelete =>
+      'Terugkerende uitgave kon niet worden verwijderd.';
 
   @override
-  String get recurringCouldNotCreate => 'Couldn\'t create recurring expense.';
+  String get recurringCouldNotCreate =>
+      'Terugkerende uitgave kon niet worden aangemaakt.';
 
   @override
-  String get recipeAddToListNoLists => 'No lists';
+  String get recipeAddToListNoLists => 'Geen lijsten';
 
   @override
   String get recipeAddToListCreateListFirst =>
-      'Create a list first to add ingredients';
+      'Maak eerst een lijst om ingrediënten toe te voegen';
 
   @override
   String get costSummaryNoPrices =>
-      'No items have prices yet. Open the item options (⋯) and choose Set price to see the cost summary.';
+      'Nog geen items met prijzen. Open de itemopties (⋯) en kies Prijs instellen om het kostenoverzicht te zien.';
 
   @override
-  String get costSummaryNotAvailable => 'N/A';
+  String get costSummaryNotAvailable => 'N.v.t.';
 
   @override
-  String get costSummaryEqualShare => 'Equal share per person';
+  String get costSummaryEqualShare => 'Gelijk aandeel per persoon';
 
   @override
-  String get costSummaryItemsWithPrices => 'Items with prices';
+  String get costSummaryItemsWithPrices => 'Items met prijzen';
 
   @override
-  String get costSummaryNone => 'None';
+  String get costSummaryNone => 'Geen';
 
   @override
-  String get costSummaryGenerateExpense => 'Generate expense';
+  String get costSummaryGenerateExpense => 'Uitgave genereren';
 
   @override
-  String get createListScanFinished => 'Scan finished';
+  String get createListScanFinished => 'Scan voltooid';
 
   @override
   String createListScanned(String name) {
-    return 'Scanned \"$name\"';
+    return '\"$name\" gescand';
   }
 
   @override
   String get createListShoppingDesc =>
-      'Best for groceries and errands with quantities.';
+      'Het beste voor boodschappen en klusjes met hoeveelheden.';
 
   @override
-  String get createListNameRequired => 'List name is required';
+  String get createListNameRequired => 'Lijstnaam is verplicht';
 
   @override
-  String get createListCreated => 'List created';
+  String get createListCreated => 'Lijst aangemaakt';
 
   @override
-  String get recipeCreationScanRecipe => 'Scan recipe';
+  String get recipeCreationScanRecipe => 'Recept scannen';
 
   @override
-  String get recipeCreationScanRecipeViaCamera => 'Scan recipe via camera';
+  String get recipeCreationScanRecipeViaCamera => 'Recept scannen via camera';
 
   @override
   String get joinCodeFormatHint =>
-      'Codes look like WORD-WORD-42. Ask whoever invited you.';
+      'Codes zien eruit als WOORD-WOORD-42. Vraag het aan degene die je heeft uitgenodigd.';
 
   @override
   String joinEnterGroup(String name) {
-    return 'Enter $name';
+    return '$name openen';
   }
 
   @override
   String inviteCodeLabel(String code) {
-    return 'Invite code: $code';
+    return 'Uitnodigingscode: $code';
   }
 
   @override
-  String get inviteQrTitle => 'Household invite QR code';
+  String get inviteQrTitle => 'Huishoudenuitnodigings-QR-code';
 
   @override
-  String get inviteQrSemantic => 'Household invite QR';
+  String get inviteQrSemantic => 'Huishoudenuitnodigings-QR';
 
   @override
   String get inviteQrHint =>
-      'Scan with a phone camera to join, or share the code below.';
+      'Scan met je telefooncamera om mee te doen, of deel de code hieronder.';
 
   @override
-  String get inviteGenerating => 'Generating…';
+  String get inviteGenerating => 'Genereren…';
 
   @override
-  String get inviteNewCode => 'New code';
+  String get inviteNewCode => 'Nieuwe code';
 
   @override
-  String get createHouseholdCreated => 'Household created';
+  String get createHouseholdCreated => 'Huishouden aangemaakt';
 
   @override
-  String get createHouseholdDescriptionOptional => 'Description (optional)';
+  String get createHouseholdDescriptionOptional => 'Beschrijving (optioneel)';
 
   @override
-  String get conflictNoneToResolve => 'No conflicts to resolve.';
+  String get conflictNoneToResolve => 'Geen conflicten om op te lossen.';
 
   @override
-  String get conflictItemChanged => 'Item changed';
+  String get conflictItemChanged => 'Item gewijzigd';
 
   @override
   String conflictItemLabel(String name) {
@@ -4078,100 +4089,102 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get scannerCouldNotAnalyze =>
-      'Couldn\'t analyze the image. Please try again with a clearer photo.';
+      'Afbeelding kon niet worden geanalyseerd. Probeer het opnieuw met een duidelijkere foto.';
 
   @override
-  String get oauthMissingParams => 'Missing OAuth callback parameters.';
+  String get oauthMissingParams => 'Ontbrekende OAuth-callbackparameters.';
 
   @override
-  String get oauthSigningYouIn => 'Signing you in';
+  String get oauthSigningYouIn => 'Je wordt ingelogd';
 
   @override
-  String get expenseCreationSharesNegative => 'Shares can\'t be negative.';
+  String get expenseCreationSharesNegative =>
+      'Aandelen kunnen niet negatief zijn.';
 
   @override
-  String get expenseCreationAssignShare => 'Assign at least one share.';
+  String get expenseCreationAssignShare => 'Wijs minstens één aandeel toe.';
 
   @override
   String get expenseCreationCouldNotLoadMembers =>
-      'Couldn\'t load household members.';
+      'Huishoudleden konden niet worden geladen.';
 
   @override
   String get expenseCreationJoinHouseholdSplit =>
-      'Join or create a household to split this expense.';
+      'Sluit je aan bij of maak een huishouden om deze uitgave te verdelen.';
 
   @override
   String expenseCreationRemoveAddSplitter(String name) {
-    return 'Remove/Add $name from/to split';
+    return '$name verwijderen/toevoegen bij verdeling';
   }
 
   @override
-  String get expenseDetailFailedLoadReceipt => 'Failed to load receipt';
+  String get expenseDetailFailedLoadReceipt => 'Bon laden mislukt';
 
   @override
-  String get expenseDetailReceipt => 'Receipt';
+  String get expenseDetailReceipt => 'Bon';
 
   @override
-  String get expenseDetailView => 'View';
+  String get expenseDetailView => 'Bekijken';
 
   @override
-  String get expenseDetailNotSplitYet => 'This expense isn\'t split yet.';
+  String get expenseDetailNotSplitYet => 'Deze uitgave is nog niet verdeeld.';
 
   @override
   String get expenseDetailNoReceipts =>
-      'No receipts attached. Add one when editing the expense.';
+      'Geen bonnen bijgevoegd. Voeg er een toe bij het bewerken van de uitgave.';
 
   @override
   String pinwallLinkedTo(String entity) {
-    return 'Linked to $entity';
+    return 'Gekoppeld aan $entity';
   }
 
   @override
-  String get commonView => 'View';
+  String get commonView => 'Bekijken';
 
   @override
-  String get commonPhoto => 'Photo';
+  String get commonPhoto => 'Foto';
 
   @override
   String cookModeTimerStart(String label) {
-    return 'Timer: $label. Tap to start';
+    return 'Timer: $label. Tik om te starten';
   }
 
   @override
-  String get errorServerHiccup => 'Server hiccup — try again in a moment.';
+  String get errorServerHiccup =>
+      'Serverprobleem — probeer het zo meteen opnieuw.';
 
   @override
   String get errorConflict =>
-      'Someone else changed this. Refresh and try again.';
+      'Iemand anders heeft dit gewijzigd. Vernieuw en probeer het opnieuw.';
 
   @override
-  String get errorNotFound => 'Not found. It may have been deleted.';
+  String get errorNotFound => 'Niet gevonden. Het is mogelijk verwijderd.';
 
   @override
-  String get errorNoPermission => 'You don\'t have permission for this.';
+  String get errorNoPermission => 'Je hebt geen toestemming hiervoor.';
 
   @override
-  String get errorSignInAgain => 'Please sign in again.';
+  String get errorSignInAgain => 'Log opnieuw in.';
 
   @override
-  String get errorGenericRetry => 'Something went wrong. Please try again.';
+  String get errorGenericRetry => 'Er ging iets mis. Probeer het opnieuw.';
 
   @override
   String get createListTodoDesc =>
-      'A simple checklist for tasks that need doing.';
+      'Een eenvoudige checklist voor taken die gedaan moeten worden.';
 
   @override
   String get createListCustomDesc =>
-      'A flexible list for anything that does not fit.';
+      'Een flexibele lijst voor alles wat niet past.';
 
   @override
-  String get createListScanSemantics => 'Scan list via camera';
+  String get createListScanSemantics => 'Lijst scannen via camera';
 
   @override
-  String get createListHouseholdLabel => 'Household';
+  String get createListHouseholdLabel => 'Huishouden';
 
   @override
-  String get createListNoHousehold => 'No household available.';
+  String get createListNoHousehold => 'Geen huishouden beschikbaar.';
 
   @override
   String get sheetJoinCodeExample => 'SUNNY-TACO-42';
@@ -4181,120 +4194,123 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count members already inside',
-      one: '1 member already inside',
+      other: '$count leden al binnen',
+      one: '1 lid al binnen',
     );
     return '$_temp0';
   }
 
   @override
-  String get inviteQrUnavailable => 'QR unavailable';
+  String get inviteQrUnavailable => 'QR niet beschikbaar';
 
   @override
   String expenseCreationSplitAssignedOf(String assigned, String total) {
-    return '$assigned of $total';
+    return '$assigned van $total';
   }
 
   @override
   String expenseCreationSplitAmountsNegative(String assigned) {
-    return '$assigned · amounts can\'t be negative';
+    return '$assigned · bedragen kunnen niet negatief zijn';
   }
 
   @override
   String expenseCreationSplitLeftToAssign(String assigned, String remaining) {
-    return '$assigned · $remaining left to assign';
+    return '$assigned · $remaining nog toe te wijzen';
   }
 
   @override
   String expenseCreationSplitOver(String assigned, String over) {
-    return '$assigned · $over over';
+    return '$assigned · $over te veel';
   }
 
   @override
   String expenseCreationSplitPercentRange(String sum) {
-    return '$sum% assigned · each share must be 0–100%';
+    return '$sum% toegewezen · elk aandeel moet 0–100% zijn';
   }
 
   @override
   String expenseCreationSplitPercentOf100(String sum) {
-    return '$sum% of 100%';
+    return '$sum% van 100%';
   }
 
   @override
   String expenseCreationSplitSharesPerShare(num count, String perShare) {
-    return '$count shares · $perShare per share';
+    return '$count aandelen · $perShare per aandeel';
   }
 
   @override
   String expenseCreationSplitEach(String amount) {
-    return '$amount each';
+    return '$amount per persoon';
   }
 
   @override
   String expenseCreationSplitApproxEach(String amount) {
-    return '≈ $amount each';
+    return '≈ $amount per persoon';
   }
 
   @override
   String expenseCreationRemoveFromSplit(String name) {
-    return 'Remove $name from split';
+    return '$name verwijderen uit verdeling';
   }
 
   @override
   String expenseCreationAddToSplit(String name) {
-    return 'Add $name to split';
+    return '$name toevoegen aan verdeling';
   }
 
   @override
-  String get expenseDetailCouldNotLoadSplits => 'Couldn\'t load splits.';
+  String get expenseDetailCouldNotLoadSplits =>
+      'Verdelingen konden niet worden geladen.';
 
   @override
-  String get expenseDetailCouldNotLoadReceipts => 'Couldn\'t load receipts.';
+  String get expenseDetailCouldNotLoadReceipts =>
+      'Bonnen konden niet worden geladen.';
 
   @override
-  String get expenseDetailCouldNotRemoveReceipt => 'Couldn\'t remove receipt.';
+  String get expenseDetailCouldNotRemoveReceipt =>
+      'Bon kon niet worden verwijderd.';
 
   @override
-  String get expenseDetailRemoving => 'Removing…';
+  String get expenseDetailRemoving => 'Verwijderen…';
 
   @override
-  String get recipeAddToListTargetList => 'Target list';
+  String get recipeAddToListTargetList => 'Doellijst';
 
   @override
-  String get recipeAddToListNoIngredients => 'No ingredients';
+  String get recipeAddToListNoIngredients => 'Geen ingrediënten';
 
   @override
   String get recipeAddToListNoIngredientsDesc =>
-      'This recipe has no parsed ingredients';
+      'Dit recept heeft geen verwerkte ingrediënten';
 
   @override
   String recipeAddToListRemoveFromSelection(String name) {
-    return 'Remove $name from selection';
+    return '$name verwijderen uit selectie';
   }
 
   @override
   String recipeAddToListAddToSelection(String name) {
-    return 'Add $name to selection';
+    return '$name toevoegen aan selectie';
   }
 
   @override
-  String get pinwallLinkChore => 'A chore';
+  String get pinwallLinkChore => 'Een klus';
 
   @override
-  String get pinwallLinkList => 'A list';
+  String get pinwallLinkList => 'Een lijst';
 
   @override
-  String get pinwallCouldNotLoad => 'Couldn\'t load the pinwall.';
+  String get pinwallCouldNotLoad => 'Prikbord kon niet worden geladen.';
 
   @override
-  String get composerItemHint => 'e.g. Milk, 2 avocados, or 500g flour';
+  String get composerItemHint => 'bijv. Melk, 2 avocado\'s of 500 g bloem';
 
   @override
-  String get aisleOther => 'Other';
+  String get aisleOther => 'Overig';
 
   @override
   String hubHouseholdsCurrent(String name) {
-    return 'Households, current $name';
+    return 'Huishoudens, huidig $name';
   }
 
   @override
@@ -4302,48 +4318,48 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count steps',
-      one: '1 step',
+      other: '$count stappen',
+      one: '1 stap',
     );
     return '$_temp0';
   }
 
   @override
-  String get currencyUsd => 'USD - US Dollar';
+  String get currencyUsd => 'USD - Amerikaanse dollar';
 
   @override
   String get currencyEur => 'EUR - Euro';
 
   @override
-  String get currencyGbp => 'GBP - British Pound';
+  String get currencyGbp => 'GBP - Britse pond';
 
   @override
-  String get currencyJpy => 'JPY - Japanese Yen';
+  String get currencyJpy => 'JPY - Japanse yen';
 
   @override
-  String get currencyCad => 'CAD - Canadian Dollar';
+  String get currencyCad => 'CAD - Canadese dollar';
 
   @override
-  String get currencyAud => 'AUD - Australian Dollar';
+  String get currencyAud => 'AUD - Australische dollar';
 
   @override
-  String get currencyChf => 'CHF - Swiss Franc';
+  String get currencyChf => 'CHF - Zwitserse frank';
 
   @override
-  String get currencySek => 'SEK - Swedish Krona';
+  String get currencySek => 'SEK - Zweedse kroon';
 
   @override
-  String get currencyNok => 'NOK - Norwegian Krone';
+  String get currencyNok => 'NOK - Noorse kroon';
 
   @override
-  String get currencyDkk => 'DKK - Danish Krone';
+  String get currencyDkk => 'DKK - Deense kroon';
 
   @override
-  String get currencyPln => 'PLN - Polish Zloty';
+  String get currencyPln => 'PLN - Poolse złoty';
 
   @override
-  String get currencyCzk => 'CZK - Czech Koruna';
+  String get currencyCzk => 'CZK - Tsjechische kroon';
 
   @override
-  String get currencyHuf => 'HUF - Hungarian Forint';
+  String get currencyHuf => 'HUF - Hongaarse forint';
 }

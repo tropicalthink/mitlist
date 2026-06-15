@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/colors.dart';
-import '../../theme/spacing.dart';
-import '../../theme/theme.dart';
 
 /// A pushpin drawn at the top of pinwall items. Scales with [size].
 class PinwallPushpin extends StatelessWidget {
@@ -68,74 +66,4 @@ class _PushpinPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_PushpinPainter old) => old.headColor != headColor;
-}
-
-/// A pinned "memo sheet" that sits on the pinwall cork. Visually a step apart
-/// from the colored sticky notes — it's a clean paper card held by a pushpin —
-/// so richer hub summaries (stats, tonight) can live on the board itself
-/// instead of floating above or overlaying it.
-///
-/// Pass [width] for a fixed-size card (board canvas); leave it null to stretch
-/// to the incoming constraints (in-column closed mode).
-class PinnedMemoCard extends StatelessWidget {
-  const PinnedMemoCard({
-    super.key,
-    required this.child,
-    required this.pinColor,
-    this.width,
-    this.rotation = 0,
-  });
-
-  final Widget child;
-  final Color pinColor;
-  final double? width;
-  final double rotation;
-
-  @override
-  Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final bg =
-        dark ? MitlistColors.composerBgDark : MitlistColors.composerBgLight;
-    final border = dark
-        ? MitlistColors.composerBorderDark
-        : MitlistColors.composerBorderLight;
-
-    return Transform.rotate(
-      angle: rotation,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            width: width,
-            padding: const EdgeInsets.fromLTRB(
-              MitlistSpacing.md,
-              MitlistSpacing.lg,
-              MitlistSpacing.md,
-              MitlistSpacing.md,
-            ),
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(MitlistTheme.radiusMd),
-              border: Border.all(color: border, width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: MitlistColors.neutral950
-                      .withValues(alpha: dark ? 0.42 : 0.16),
-                  blurRadius: 0,
-                  offset: const Offset(4, 5),
-                ),
-              ],
-            ),
-            child: child,
-          ),
-          Positioned(
-            top: -14,
-            left: 0,
-            right: 0,
-            child: Center(child: PinwallPushpin(headColor: pinColor)),
-          ),
-        ],
-      ),
-    );
-  }
 }
