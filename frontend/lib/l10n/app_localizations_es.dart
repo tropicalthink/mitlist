@@ -845,6 +845,15 @@ class AppLocalizationsEs extends AppLocalizations {
       'Importa recetas, agrupa libros de cocina, planifica comidas y convierte la semana en una lista de compras.';
 
   @override
+  String get recipeNoMatchTitle => 'Ninguna receta coincide';
+
+  @override
+  String get recipeNoMatchDesc => 'Prueba otra búsqueda o filtro.';
+
+  @override
+  String get recipeShowAllRecipes => 'Mostrar todas las recetas';
+
+  @override
   String recipeMealsPlanned(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

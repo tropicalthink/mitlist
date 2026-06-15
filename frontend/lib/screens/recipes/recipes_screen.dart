@@ -508,7 +508,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
             color: Theme.of(context).colorScheme.primary,
             onRefresh: _loadKitchen,
             child: visible.isEmpty
-                ? _buildEmptyState()
+                ? _buildNoMatchState()
                 : _buildRecipeList(visible),
           ),
         ),
@@ -603,6 +603,48 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     );
   }
 
+  Widget _buildNoMatchState() {
+    final l10n = AppLocalizations.of(context)!;
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(MitlistSpacing.md),
+                child: AppEmptyState(
+                  paddingPreset: AppEmptyStatePadding.md,
+                  icon: const AppIcon(name: 'magnifyingGlass', size: 56),
+                  title: l10n.recipeNoMatchTitle,
+                  description: l10n.recipeNoMatchDesc,
+                  actions: <Widget>[
+                    AppButton(
+                      text: l10n.recipeShowAllRecipes,
+                      variant: AppButtonVariant.outline,
+                      onPressed: _resetFilters,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _resetFilters() {
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _filter = _FilterOption.all;
+      _searchQuery = '';
+      _searchController.clear();
+      _showSearch = false;
+    });
+  }
+
   Widget _buildRecipeList(List<_Recipe> visible) {
     return ListView.separated(
       controller: _scrollController,
@@ -620,7 +662,19 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
               onRetry: _loadMoreRecipes,
             );
           }
-          return const Center(child: CircularProgressIndicator());
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.md),
+            child: Center(
+              child: SizedBox(
+                width: MitlistSpacing.lg,
+                height: MitlistSpacing.lg,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
+          );
         }
 
         final recipe = visible[index];
@@ -827,6 +881,14 @@ class _RecipeCard extends StatelessWidget {
                 MediaQuery.devicePixelRatioOf(context) *
                 1.5)
             .round(),
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            width: MitlistSpacing.space20,
+            height: MitlistSpacing.space20,
+            color: colorScheme.surfaceContainerHighest,
+          );
+        },
         errorBuilder: (context, error, stackTrace) {
           return Container(
             width: MitlistSpacing.space20,
@@ -855,7 +917,7 @@ class _RecipeCard extends StatelessWidget {
       parts.add(l10n.recipeRatingLabel(
           recipe.ratingValue.toStringAsFixed(1), recipe.ratingCount));
     }
-    return parts.join(' | ');
+    return parts.join(' · ');
   }
 
   @override
