@@ -1598,6 +1598,24 @@ abstract class AppLocalizations {
   /// **'Import recipes, group cookbooks, plan meals, and turn the week into a shopping list.'**
   String get recipeBuildKitchenDesc;
 
+  /// Empty state title when a search or filter excludes every recipe
+  ///
+  /// In en, this message translates to:
+  /// **'No recipes match'**
+  String get recipeNoMatchTitle;
+
+  /// Empty state description when a search or filter excludes every recipe
+  ///
+  /// In en, this message translates to:
+  /// **'Try a different search or filter.'**
+  String get recipeNoMatchDesc;
+
+  /// Button that clears the active search and filter to show every recipe
+  ///
+  /// In en, this message translates to:
+  /// **'Show all recipes'**
+  String get recipeShowAllRecipes;
+
   /// Meal plan summary label
   ///
   /// In en, this message translates to:

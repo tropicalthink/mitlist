@@ -1098,6 +1098,9 @@
     "description": "Empty state title for no recipes"
   },
   "recipeBuildKitchenDesc": "Importeer recepten, groepeer kookboeken, plan maaltijden en zet de week om in een boodschappenlijst.",
+  "recipeNoMatchTitle": "Geen recepten komen overeen",
+  "recipeNoMatchDesc": "Probeer een andere zoekopdracht of filter.",
+  "recipeShowAllRecipes": "Alle recepten tonen",
   "@recipeBuildKitchenDesc": {
     "description": "Empty state description for no recipes"
   },

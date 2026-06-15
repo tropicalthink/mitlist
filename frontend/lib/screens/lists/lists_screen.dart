@@ -59,6 +59,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   bool _isLoadingMore = false;
   bool _hasMore = true;
   String? _error;
+  String? _loadMoreError;
   final List<ItemList> _lists = [];
   StreamSubscription<List<ItemList>>? _listsSub;
   final ScrollController _scrollController = ScrollController();
@@ -157,6 +158,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     setState(() {
       _isLoading = true;
       _error = null;
+      _loadMoreError = null;
       _hasMore = true;
     });
 
@@ -239,7 +241,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isLoadingMore = true;
-      _error = null;
+      _loadMoreError = null;
     });
 
     try {
@@ -257,13 +259,13 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
           _hasHousehold = true;
           _hasMore = fetchedCount == _pageLimit;
           _isLoadingMore = false;
-          _error = null;
+          _loadMoreError = null;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = l10n.commonFailedToLoad;
+          _loadMoreError = l10n.commonFailedToLoad;
           _isLoadingMore = false;
         });
       }
@@ -587,14 +589,15 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
 
   String _chipLabel(_FilterOption option, String base) {
     if (_isLoading) return base;
+    final active = _lists.where((l) => !l.isArchived);
     final count = switch (option) {
-      _FilterOption.all => _lists.length,
+      _FilterOption.all => active.length,
       _FilterOption.shopping =>
-        _lists.where((l) => l.type.toLowerCase() == 'shopping').length,
+        active.where((l) => l.type.toLowerCase() == 'shopping').length,
       _FilterOption.todo =>
-        _lists.where((l) => l.type.toLowerCase() == 'todo').length,
+        active.where((l) => l.type.toLowerCase() == 'todo').length,
       _FilterOption.custom =>
-        _lists.where((l) => l.type.toLowerCase() == 'custom').length,
+        active.where((l) => l.type.toLowerCase() == 'custom').length,
     };
     return count > 0 ? '$base ($count)' : base;
   }
@@ -637,16 +640,25 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     );
   }
 
+  // Shared grid geometry so the skeleton and the loaded grid agree on column
+  // count and tile shape — prevents a layout shift when content replaces the
+  // loading state.
+  static const double _minTileWidth = 190.0;
+
+  static int _gridColumns(double maxWidth) =>
+      (maxWidth / _minTileWidth).floor().clamp(2, 5);
+
+  double _gridAspectRatio(BuildContext context) =>
+      MediaQuery.textScalerOf(context).scale(1.0) > 1.2 ? 0.72 : 0.78;
+
   Widget _buildGrid(List<ItemList> lists) {
-    final itemCount = lists.length + (_isLoadingMore || _error != null ? 1 : 0);
+    final itemCount =
+        lists.length + (_isLoadingMore || _loadMoreError != null ? 1 : 0);
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        const minTileWidth = 190.0;
-        final maxWidth = constraints.maxWidth;
-        final columns = (maxWidth / minTileWidth).floor().clamp(2, 5);
-        final aspectRatio =
-            MediaQuery.textScalerOf(context).scale(1.0) > 1.2 ? 0.72 : 0.78;
+        final columns = _gridColumns(constraints.maxWidth);
+        final aspectRatio = _gridAspectRatio(context);
 
         return GridView.builder(
           controller: _scrollController,
@@ -679,7 +691,8 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
       controller: _scrollController,
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(MitlistSpacing.md),
-      itemCount: lists.length + (_isLoadingMore || _error != null ? 1 : 0),
+      itemCount:
+          lists.length + (_isLoadingMore || _loadMoreError != null ? 1 : 0),
       separatorBuilder: (_, __) => const SizedBox(height: MitlistSpacing.md),
       itemBuilder: (_, index) {
         if (index >= lists.length) return _buildPaginationFooter();
@@ -696,13 +709,13 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
 
   Widget _buildPaginationFooter() {
     final l10n = AppLocalizations.of(context)!;
-    if (_error != null) {
+    if (_loadMoreError != null) {
       return Padding(
         padding: const EdgeInsets.all(MitlistSpacing.md),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AppAlert(type: AppAlertType.error, message: _error!),
+            AppAlert(type: AppAlertType.error, message: _loadMoreError!),
             const SizedBox(height: MitlistSpacing.sm),
             AppButton(
               text: l10n.commonRetry,
@@ -786,8 +799,8 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          Icons.search_off_rounded,
+        AppIcon(
+          name: 'magnifyingGlass',
           size: 40,
           color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
         ),
@@ -841,13 +854,18 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   }
 
   Widget _buildSkeleton() {
-    return GridView.count(
-      crossAxisCount: 2,
-      padding: const EdgeInsets.all(MitlistSpacing.md),
-      mainAxisSpacing: MitlistSpacing.md,
-      crossAxisSpacing: MitlistSpacing.md,
-      childAspectRatio: 0.78,
-      children: List.generate(4, (_) => const _SkeletonCard()),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = _gridColumns(constraints.maxWidth);
+        return GridView.count(
+          crossAxisCount: columns,
+          padding: const EdgeInsets.all(MitlistSpacing.md),
+          mainAxisSpacing: MitlistSpacing.md,
+          crossAxisSpacing: MitlistSpacing.md,
+          childAspectRatio: _gridAspectRatio(context),
+          children: List.generate(columns * 2, (_) => const _SkeletonCard()),
+        );
+      },
     );
   }
 }
@@ -1145,11 +1163,13 @@ class _ListCard extends ConsumerWidget {
                               borderRadius:
                                   BorderRadius.circular(MitlistSpacing.xs),
                               child: Padding(
-                                padding:
-                                    const EdgeInsets.all(MitlistSpacing.xs),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: MitlistSpacing.sm,
+                                  vertical: MitlistSpacing.xs,
+                                ),
                                 child: AppIcon(
                                   name: 'addCircleOutline',
-                                  size: 18,
+                                  size: 20,
                                   color: snippetColor.withValues(alpha: 0.7),
                                 ),
                               ),

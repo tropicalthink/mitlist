@@ -843,6 +843,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'Import recipes, group cookbooks, plan meals, and turn the week into a shopping list.';
 
   @override
+  String get recipeNoMatchTitle => 'No recipes match';
+
+  @override
+  String get recipeNoMatchDesc => 'Try a different search or filter.';
+
+  @override
+  String get recipeShowAllRecipes => 'Show all recipes';
+
+  @override
   String recipeMealsPlanned(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
