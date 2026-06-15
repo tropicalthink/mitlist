@@ -1646,7 +1646,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
               'Photograph a handwritten list, fridge note, or screenshot. We\u2019ll pull out the items.',
           actions: [
             AppButton(
-              text: 'Scan a list',
+              text: 'Scan this list',
+              size: AppButtonSize.xl,
               icon: const AppIcon(name: 'camera'),
               onPressed: () => _launchScan(source: ImageSource.camera),
             ),
