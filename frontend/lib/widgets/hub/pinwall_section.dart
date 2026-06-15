@@ -24,6 +24,8 @@ import '../app_bottom_sheet.dart';
 import '../app_button.dart';
 import '../app_dialog.dart';
 import '../mitlist_app_bar.dart';
+import 'stats_grid.dart';
+import 'tonight_card.dart';
 
 const _kNotePalette = MitlistColors.notePalette;
 const _kNotePaletteDark = MitlistColors.notePaletteDark;
@@ -311,6 +313,10 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        StatsGrid(groupId: widget.groupId),
+        const SizedBox(height: MitlistSpacing.lg),
+        TonightCard(groupId: widget.groupId),
+        const SizedBox(height: MitlistSpacing.lg),
         Padding(
           padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
           child: Row(
