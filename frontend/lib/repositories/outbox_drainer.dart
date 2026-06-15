@@ -47,8 +47,39 @@ class OutboxDrainer {
             await _db.markOutboxPermanentFailure(op.id,
                 error: message, threshold: kOutboxMaxAttempts);
             continue;
+          case OutboxErrorDisposition.conflict:
+            // The server rejected the write because the row changed under us
+            // (409-with-current-state). Record a conflict for the user to
+            // resolve, drop the op so it stops retrying, and keep draining.
+            await _recordConflict(fresh, e);
+            await _db.deleteOutboxOp(op.id);
+            continue;
         }
       }
     }
+  }
+
+  /// Persists a conflict from a failed op so the resolution UI can offer
+  /// "keep mine" / "use theirs". [entityType] holds the op type (so keep-mine
+  /// re-enqueues a valid op) and the server's current state comes from the
+  /// 409 response body's `current` field.
+  Future<void> _recordConflict(OutboxOp op, Object error) async {
+    String serverJson = '{}';
+    if (error is DioException) {
+      final data = error.response?.data;
+      if (data is Map && data['current'] != null) {
+        serverJson = jsonEncode(data['current']);
+      }
+    }
+    await _db.insertConflict(
+      ConflictsCompanion.insert(
+        id: op.id,
+        entityType: op.type,
+        entityId: op.entityId ?? op.id,
+        localPayloadJson: op.payloadJson,
+        serverPayloadJson: serverJson,
+        createdAt: DateTime.now(),
+      ),
+    );
   }
 }

@@ -283,6 +283,56 @@ func TestList_UpdateItem(t *testing.T) {
 	assert.Equal(t, "Sourdough", resp["name"])
 }
 
+func TestList_UpdateItem_OptimisticConcurrency(t *testing.T) {
+	clearTables(t)
+	router, _ := newListRouter(t)
+	user := createTestUser(t, "concitem@example.com", "password123")
+	token := generateTestToken(user.ID)
+
+	groupRepo := newTestGroupRepo()
+	group := &models.Group{
+		ID: uuid.New(), Name: "G", CreatedBy: user.ID,
+		CreatedAt: time.Now().UTC(), UpdatedAt: time.Now().UTC(),
+	}
+	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	listRepo := newTestListRepo()
+	list := &models.List{
+		ID: uuid.New(), GroupID: group.ID, Name: "My List", Type: "shopping",
+		CreatedAt: time.Now().UTC(), UpdatedAt: time.Now().UTC(),
+	}
+	require.NoError(t, listRepo.CreateList(context.Background(), list))
+	itemUpdatedAt := time.Now().UTC()
+	item := &models.ListItem{
+		ID: uuid.New(), ListID: list.ID, Name: "Bread", Quantity: 1, Unit: "loaf",
+		CreatedAt: itemUpdatedAt, UpdatedAt: itemUpdatedAt,
+	}
+	require.NoError(t, listRepo.CreateItem(context.Background(), item))
+
+	url := "/api/v1/lists/" + list.ID.String() + "/items/" + item.ID.String()
+
+	// Stale base (the row has moved on since) -> 409 with the current item.
+	staleBody := map[string]any{
+		"name":                "Sourdough",
+		"quantity":            2,
+		"expected_updated_at": itemUpdatedAt.Add(-time.Hour),
+	}
+	rec := execRequest(t, router, "PATCH", url, staleBody, token)
+	requireStatus(t, rec, http.StatusConflict)
+	var conflict map[string]any
+	parseJSONResponse(t, rec, &conflict)
+	assert.Equal(t, "conflict", conflict["error"])
+	assert.NotNil(t, conflict["current"], "409 must carry the current server item")
+
+	// Correct base -> succeeds.
+	freshBody := map[string]any{
+		"name":                "Sourdough",
+		"quantity":            2,
+		"expected_updated_at": itemUpdatedAt,
+	}
+	rec = execRequest(t, router, "PATCH", url, freshBody, token)
+	requireStatus(t, rec, http.StatusOK)
+}
+
 func TestList_DeleteItem(t *testing.T) {
 	clearTables(t)
 	router, _ := newListRouter(t)

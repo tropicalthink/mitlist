@@ -10,6 +10,7 @@ import '../../providers/attachment_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/grocery_provider.dart';
 import '../../providers/list_provider.dart';
+import '../../providers/outbox_provider.dart';
 import '../../services/list_service.dart';
 import '../../services/scan/grocery_suggestion_service.dart';
 import '../../theme/animations.dart';
@@ -1534,6 +1535,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     final photos = _photosByItemId[item.id];
     final thumbUrl =
         (photos != null && photos.isNotEmpty) ? photos.first.url : null;
+    final failedToSync = ref.watch(failedEntityIdsProvider).contains(item.id);
 
     return ListItemRow(
       item: item,
@@ -1544,6 +1546,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       onPhotoTap: thumbUrl != null ? () => _openPhotoViewer(thumbUrl) : null,
       onLongPress: () => _handleItemAction(item),
       reorderIndex: reorderIndex,
+      failedToSync: failedToSync,
     );
   }
 

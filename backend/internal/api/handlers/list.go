@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -381,6 +382,11 @@ func (h *ListHandler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 		StoreID    *uuid.UUID `json:"store_id,omitempty"`
 		Checked    *bool      `json:"checked,omitempty"`
 		Position   *int       `json:"position,omitempty"`
+		// ExpectedUpdatedAt enables optimistic concurrency: the client sends the
+		// updated_at it based its edit on. If the server's row has moved on since
+		// (another member edited it), we return 409 with the current item instead
+		// of silently clobbering their change.
+		ExpectedUpdatedAt *time.Time `json:"expected_updated_at,omitempty"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
@@ -390,6 +396,19 @@ func (h *ListHandler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 	existing, err := h.service.GetItem(r.Context(), user, itemID)
 	if err != nil {
 		api.RespondError(w, err)
+		return
+	}
+
+	// Optimistic-concurrency check. Millisecond tolerance absorbs JSON
+	// serialization drift; real concurrent edits differ by seconds.
+	if req.ExpectedUpdatedAt != nil &&
+		existing.UpdatedAt.Truncate(time.Millisecond).
+			After(req.ExpectedUpdatedAt.Truncate(time.Millisecond)) {
+		api.RespondJSON(w, http.StatusConflict, map[string]any{
+			"error":   "conflict",
+			"message": "This item was changed by someone else.",
+			"current": existing,
+		})
 		return
 	}
 
