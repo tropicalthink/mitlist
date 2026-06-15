@@ -70,6 +70,9 @@ class ChoreRepository {
       entityId: choreId,
     );
     if (groupId != null) {
+      // Optimistic local patch so the Drift stream resolves the chore
+      // immediately; the post-drain refresh reconciles with the server.
+      await _patchCachedAssignmentStatus(groupId, choreId, 'skipped');
       unawaited(_drainAndRefresh(groupId));
     }
   }
@@ -88,6 +91,9 @@ class ChoreRepository {
       entityId: choreId,
     );
     if (groupId != null) {
+      // Optimistic local patch so the new due date (and derived due-status)
+      // shows immediately; the post-drain refresh reconciles with the server.
+      await _patchCachedAssignmentDueDate(groupId, choreId, dueDate);
       unawaited(_drainAndRefresh(groupId));
     }
   }
@@ -144,6 +150,57 @@ class ChoreRepository {
     } catch (_) {
       // Cache patch is best-effort; the drain + refresh reconciles.
     }
+  }
+
+  /// Rewrites the cached current-chores blob so [choreId]'s pending assignment
+  /// carries [dueDate], recomputing the derived `due_status` so overdue/upcoming
+  /// badges update offline. Best-effort; the drain + refresh reconciles.
+  Future<void> _patchCachedAssignmentDueDate(
+    String groupId,
+    String choreId,
+    DateTime dueDate,
+  ) async {
+    final row = await _db.getCurrentChoresOnce(groupId);
+    final raw = row?.choresJson;
+    if (raw == null || raw.isEmpty) return;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return;
+      var changed = false;
+      final iso = dueDate.toIso8601String();
+      final dueStatus = _deriveDueStatus(dueDate);
+      for (final entry in decoded) {
+        if (entry is! Map) continue;
+        final chore = entry['chore'];
+        if (chore is! Map || chore['id'] != choreId) continue;
+        final pending = entry['pending_assignment'];
+        if (pending is Map) {
+          pending['due_date'] = iso;
+          entry['due_status'] = dueStatus;
+          changed = true;
+        }
+      }
+      if (changed) {
+        await _db.upsertCurrentChores(
+          groupId: groupId,
+          choresJson: jsonEncode(decoded),
+        );
+      }
+    } catch (_) {
+      // Cache patch is best-effort; the drain + refresh reconciles.
+    }
+  }
+
+  /// Mirrors the server's `due_status` buckets for an optimistic reschedule.
+  static String _deriveDueStatus(DateTime dueDate) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final due = DateTime(dueDate.year, dueDate.month, dueDate.day);
+    final days = due.difference(today).inDays;
+    if (days < 0) return 'overdue';
+    if (days == 0) return 'due_today';
+    if (days <= 2) return 'due_soon';
+    return 'later';
   }
 
   /// Best-effort immediate sync: push queued ops, then pull server state.

@@ -202,7 +202,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
               category: entry.chore.category,
               isMine: entry.assignedToMe,
               completed: !entry.chore.isActive ||
-                  entry.pendingAssignment?.status.toLowerCase() == 'completed',
+                  const {'completed', 'skipped'}.contains(
+                      entry.pendingAssignment?.status.toLowerCase()),
               lastActionLabel: entry.lastAssignment != null
                   ? _formatLastAction(_l10n, entry.lastAssignment!)
                   : null,

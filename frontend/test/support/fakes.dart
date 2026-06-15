@@ -5,10 +5,12 @@ import 'package:dio/dio.dart';
 import 'package:mitlist/models/finance_models.dart' as finance;
 import 'package:mitlist/models/group_models.dart';
 import 'package:mitlist/models/list_models.dart';
+import 'package:mitlist/services/chore_service.dart';
 import 'package:mitlist/services/connectivity_service.dart';
 import 'package:mitlist/services/finance_service.dart';
 import 'package:mitlist/services/group_service.dart';
 import 'package:mitlist/services/list_service.dart';
+import 'package:mitlist/services/pinwall_service.dart';
 import 'package:mitlist/services/token_store.dart';
 
 // ---------------------------------------------------------------------------
@@ -311,6 +313,32 @@ class FakeGroupService implements GroupService {
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError(
       '${invocation.memberName} not implemented on FakeGroupService');
+}
+
+// ---------------------------------------------------------------------------
+// FakeChoreService
+// ---------------------------------------------------------------------------
+
+/// Minimal fake for [ChoreService]. Every method throws by default, simulating
+/// an offline device — exactly the condition under which the repository's
+/// optimistic cache patches must survive (the swallowed drain/refresh can't
+/// overwrite them).
+class FakeChoreService implements ChoreService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw StateError('offline: ${invocation.memberName}');
+}
+
+// ---------------------------------------------------------------------------
+// FakePinwallService
+// ---------------------------------------------------------------------------
+
+/// Minimal fake for [PinwallService]; all methods throw (offline). The
+/// offline-first create/delete paths never touch it synchronously.
+class FakePinwallService implements PinwallService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw StateError('offline: ${invocation.memberName}');
 }
 
 // ---------------------------------------------------------------------------
