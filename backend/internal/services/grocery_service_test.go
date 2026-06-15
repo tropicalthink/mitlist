@@ -33,7 +33,7 @@ func TestGroceryService_ResolveIngredientName_Found(t *testing.T) {
 	// Alias "flour" normalises to "flour"
 	rows := pgxmock.NewRows([]string{"canonical_item_id"}).AddRow(canonicalID)
 	pool.ExpectQuery("SELECT canonical_item_id").
-		WithArgs(groupID, "flour").
+		WithArgs(groupID, "flour", "00000000-0000-0000-0000-000000000000").
 		WillReturnRows(rows)
 
 	got, err := svc.ResolveIngredientName(context.Background(), groupID, "  Flour  ")
@@ -48,7 +48,7 @@ func TestGroceryService_ResolveIngredientName_NotFound(t *testing.T) {
 	groupID := uuid.New()
 
 	pool.ExpectQuery("SELECT canonical_item_id").
-		WithArgs(groupID, "unknown xyz").
+		WithArgs(groupID, "unknown xyz", "00000000-0000-0000-0000-000000000000").
 		WillReturnError(pgx.ErrNoRows)
 
 	got, err := svc.ResolveIngredientName(context.Background(), groupID, "unknown xyz")
@@ -74,7 +74,7 @@ func TestGroceryService_ResolveIngredientName_NormalisesWhitespace(t *testing.T)
 	// "  all  purpose  flour  " should normalise to "all purpose flour"
 	rows := pgxmock.NewRows([]string{"canonical_item_id"}).AddRow(canonicalID)
 	pool.ExpectQuery("SELECT canonical_item_id").
-		WithArgs(groupID, "all purpose flour").
+		WithArgs(groupID, "all purpose flour", "00000000-0000-0000-0000-000000000000").
 		WillReturnRows(rows)
 
 	got, err := svc.ResolveIngredientName(context.Background(), groupID, "  all  purpose  flour  ")
