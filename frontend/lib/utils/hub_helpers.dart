@@ -1,8 +1,9 @@
 import 'package:intl/intl.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/activity_models.dart';
 
-String formatActivityLine(ActivityLogModel a) {
+String formatActivityLine(ActivityLogModel a, AppLocalizations l10n) {
   final when = relativeDay(a.createdAt);
 
   String? name;
@@ -14,24 +15,24 @@ String formatActivityLine(ActivityLogModel a) {
   switch (a.action) {
     case 'list_item_added':
       return name != null
-          ? 'Added $name to a list \u00b7 $when'
-          : 'Added an item to a list \u00b7 $when';
+          ? l10n.activityAddedToList(name, when)
+          : l10n.activityAddedItemToList(when);
     case 'expense_created':
       return name != null
-          ? 'Logged $name \u00b7 $when'
-          : 'Logged an expense \u00b7 $when';
+          ? l10n.activityLoggedExpense(name, when)
+          : l10n.activityLoggedExpenseGeneric(when);
     case 'chore_completed':
       return name != null
-          ? 'Completed $name \u00b7 $when'
-          : 'Completed a chore \u00b7 $when';
+          ? l10n.activityCompletedChore(name, when)
+          : l10n.activityCompletedChoreGeneric(when);
     case 'recipe_added':
       return name != null
-          ? 'Saved $name \u00b7 $when'
-          : 'Saved a recipe \u00b7 $when';
+          ? l10n.activitySavedRecipe(name, when)
+          : l10n.activitySavedRecipeGeneric(when);
     case 'meal_plan_created':
       return name != null
-          ? 'Planned $name \u00b7 $when'
-          : 'Updated meal plan \u00b7 $when';
+          ? l10n.activityPlannedMeal(name, when)
+          : l10n.activityUpdatedMealPlan(when);
     default:
       return '${a.action} \u00b7 $when';
   }
@@ -48,9 +49,9 @@ String relativeDay(DateTime t) {
   return DateFormat.MMMd().format(t);
 }
 
-String formatUserLabel(String id, String? currentUserId) {
-  if (id == currentUserId) return 'You';
-  return 'Member';
+String formatUserLabel(String id, String? currentUserId, AppLocalizations l10n) {
+  if (id == currentUserId) return l10n.activityYou;
+  return l10n.activityMember;
 }
 
 String avatarInitials(String label) {

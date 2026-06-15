@@ -17,6 +17,7 @@ import '../widgets/app_button.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/app_input.dart';
 import '../utils/friendly_error.dart';
+import '../l10n/app_localizations.dart';
 import '../widgets/chip.dart';
 
 enum _ListType { shopping, todo, custom }
@@ -41,9 +42,10 @@ class CreateListSheet extends ConsumerStatefulWidget {
     String? initialName,
     String? initialType,
   }) async {
+    final l10n = AppLocalizations.of(context)!;
     return showAppBottomSheet<bool>(
       context: context,
-      title: 'New list',
+      title: l10n.sheetCreateListTitle,
       body: CreateListSheet(
         initialGroupId: initialGroupId,
         initialName: initialName,
@@ -113,12 +115,13 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
       }
 
       setState(() => _isScanning = false);
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             _nameController.text.trim().isEmpty
-                ? 'Scan finished'
-                : 'Scanned "${_nameController.text.trim()}"',
+                ? l10n.createListScanFinished
+                : l10n.createListScanned(_nameController.text.trim()),
           ),
         ),
       );
@@ -126,7 +129,7 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
       if (!mounted) return;
       setState(() => _isScanning = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e))),
+        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -149,7 +152,7 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorText = friendlyErrorMessage(e);
+        _errorText = friendlyErrorMessage(e, AppLocalizations.of(context)!);
         _isLoadingGroups = false;
       });
     }
@@ -163,17 +166,18 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
     };
   }
 
-  String get _selectedTypeDescription {
+  String _selectedTypeDescription(AppLocalizations l10n) {
     return switch (_selectedType) {
-      _ListType.shopping => 'Best for groceries and errands with quantities.',
-      _ListType.todo => 'A simple checklist for tasks that need doing.',
-      _ListType.custom => 'A flexible list for anything that does not fit.',
+      _ListType.shopping => l10n.createListShoppingDesc,
+      _ListType.todo => l10n.createListTodoDesc,
+      _ListType.custom => l10n.createListCustomDesc,
     };
   }
 
   Future<void> _attemptCreate() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_nameController.text.trim().isEmpty) {
-      setState(() => _nameError = 'List name is required');
+      setState(() => _nameError = l10n.createListNameRequired);
       return;
     }
     await _onCreate();
@@ -181,6 +185,7 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
 
   Future<void> _onCreate() async {
     if (!_canCreate || _selectedGroupId == null) return;
+    final l10n = AppLocalizations.of(context)!;
 
     setState(() {
       _isSubmitting = true;
@@ -200,12 +205,12 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
       if (!mounted) return;
       Navigator.of(context).pop(true);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('List created')),
+        SnackBar(content: Text(l10n.createListCreated)),
       );
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorText = friendlyErrorMessage(e);
+        _errorText = friendlyErrorMessage(e, AppLocalizations.of(context)!);
         _isSubmitting = false;
       });
     }
@@ -220,12 +225,13 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppButton(
-          text: _isScanning ? 'Scanning…' : 'Scan list',
+          text: _isScanning ? l10n.expenseCreationScanning : l10n.listDetailScanList,
           icon: AppIcon(
             name: _isScanning ? 'hourglassEmpty' : 'documentScanner',
             size: 20,
@@ -233,7 +239,7 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
           variant: AppButtonVariant.outline,
           color: AppButtonColor.neutral,
           onPressed: _isScanning ? null : _onScan,
-          semanticLabel: 'Scan list via camera',
+          semanticLabel: l10n.createListScanSemantics,
         ),
         const SizedBox(height: MitlistSpacing.md),
         if (_errorText != null) ...[
@@ -246,8 +252,8 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
           const SizedBox(height: MitlistSpacing.md),
         ],
         AppInput(
-          label: 'List name',
-          hint: 'e.g. Weekend Groceries',
+          label: l10n.sheetCreateListName,
+          hint: l10n.sheetCreateListNameHint,
           controller: _nameController,
           focusNode: _nameFocusNode,
           enabled: !_isSubmitting,
@@ -261,7 +267,7 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
         ),
         const SizedBox(height: MitlistSpacing.md),
         Text(
-          'Type',
+          l10n.sheetCreateListType,
           style: Theme.of(context).textTheme.labelMedium,
         ),
         const SizedBox(height: MitlistSpacing.sm),
@@ -270,21 +276,21 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
           runSpacing: MitlistSpacing.sm,
           children: [
             AppChip(
-              label: 'Shopping',
+              label: l10n.sheetCreateListTypeShopping,
               selected: _selectedType == _ListType.shopping,
               onSelected: _isSubmitting
                   ? null
                   : (_) => setState(() => _selectedType = _ListType.shopping),
             ),
             AppChip(
-              label: 'To-do',
+              label: l10n.sheetCreateListTypeTodo,
               selected: _selectedType == _ListType.todo,
               onSelected: _isSubmitting
                   ? null
                   : (_) => setState(() => _selectedType = _ListType.todo),
             ),
             AppChip(
-              label: 'Custom',
+              label: l10n.sheetCreateListTypeCustom,
               selected: _selectedType == _ListType.custom,
               onSelected: _isSubmitting
                   ? null
@@ -294,14 +300,14 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
         ),
         const SizedBox(height: MitlistSpacing.xs),
         Text(
-          _selectedTypeDescription,
+          _selectedTypeDescription(l10n),
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
         ),
         const SizedBox(height: MitlistSpacing.md),
         Text(
-          'Household',
+          l10n.createListHouseholdLabel,
           style: Theme.of(context).textTheme.labelMedium,
         ),
         const SizedBox(height: MitlistSpacing.sm),
@@ -312,7 +318,7 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
           )
         else if (_groups.isEmpty)
           Text(
-            'No household available.',
+            l10n.createListNoHousehold,
             style: Theme.of(context).textTheme.bodySmall,
           )
         else
@@ -338,7 +344,7 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
             variant: AppButtonVariant.solid,
             color: AppButtonColor.primary,
             size: AppButtonSize.lg,
-            text: _isSubmitting ? 'Creating...' : 'Create',
+            text: _isSubmitting ? l10n.recipeCreationCreating : l10n.commonCreate,
             isLoading: _isSubmitting,
             onPressed: !_isLoadingGroups &&
                     !_isSubmitting &&

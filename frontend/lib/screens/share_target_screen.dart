@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../l10n/app_localizations.dart';
 import '../theme/spacing.dart';
 import '../utils/haptics.dart';
 import '../providers/attachment_provider.dart';
@@ -45,26 +46,7 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
   String? _error;
   final List<XFile> _pendingMedia = [];
 
-  static const List<_DestinationOption> _options = [
-    _DestinationOption(
-      id: 'lists',
-      label: 'Lists',
-      icon: 'queueList',
-      description: 'Save to a shopping or to-do list',
-    ),
-    _DestinationOption(
-      id: 'pinwall',
-      label: 'Pinwall',
-      icon: 'share',
-      description: 'Post a note (and optional photos) to your household',
-    ),
-    _DestinationOption(
-      id: 'recipes',
-      label: 'Recipes',
-      icon: 'informationCircle',
-      description: 'Add to saved recipes',
-    ),
-  ];
+  late final List<_DestinationOption> _options = [];
 
   void _onDestinationTapped(String id) {
     unawaited(Haptics.light());
@@ -86,9 +68,10 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
     if (groups.isEmpty) return null;
     if (groups.length == 1) return groups.first.id;
 
+    final l10n = AppLocalizations.of(context)!;
     return showAppBottomSheet<String>(
       context: context,
-      title: 'Select household',
+      title: l10n.shareTargetSelectHousehold,
       body: ListView.separated(
         padding: EdgeInsets.zero,
         shrinkWrap: true,
@@ -133,15 +116,16 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
   }
 
   Future<void> _onSave() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_selectedDestination == null) return;
     final text = _textController.text.trim();
     final isPinwall = _selectedDestination == 'pinwall';
     if (!isPinwall && text.isEmpty) {
-      setState(() => _error = 'Paste or type something to save.');
+      setState(() => _error = l10n.shareTargetValidationText);
       return;
     }
     if (isPinwall && text.isEmpty && _pendingMedia.isEmpty) {
-      setState(() => _error = 'Add a note or at least one photo.');
+      setState(() => _error = l10n.shareTargetValidationNote);
       return;
     }
 
@@ -157,7 +141,7 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
         final groupId = await _pickGroupId();
         if (groupId == null) {
           setState(() {
-            _error = 'Create or join a household first.';
+            _error = l10n.shareTargetValidationHousehold;
             _isSaving = false;
           });
           return;
@@ -167,7 +151,7 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
         final groupId = await _pickGroupId();
         if (groupId == null) {
           setState(() {
-            _error = 'Create or join a household first.';
+            _error = l10n.shareTargetValidationHousehold;
             _isSaving = false;
           });
           return;
@@ -204,13 +188,13 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
       if (!mounted) return;
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Saved')),
+        SnackBar(content: Text(l10n.shareTargetSaved)),
       );
       Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Failed to save. Please try again.';
+        _error = l10n.shareTargetFailedSave;
         _isSaving = false;
       });
     }
@@ -218,9 +202,31 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    _options.clear();
+    _options.addAll([
+      _DestinationOption(
+        id: 'lists',
+        label: l10n.shareTargetDestLists,
+        icon: 'queueList',
+        description: l10n.shareTargetDestListsDesc,
+      ),
+      _DestinationOption(
+        id: 'pinwall',
+        label: l10n.shareTargetDestPinwall,
+        icon: 'share',
+        description: l10n.shareTargetDestPinwallDesc,
+      ),
+      _DestinationOption(
+        id: 'recipes',
+        label: l10n.shareTargetDestRecipes,
+        icon: 'informationCircle',
+        description: l10n.shareTargetDestRecipesDesc,
+      ),
+    ]);
     return Scaffold(
       appBar: MitlistAppBar.titleText(
-        'Save to mitlist',
+        l10n.shareTargetAppBarTitle,
         showStandardActions: false,
       ),
       body: Padding(
@@ -231,9 +237,9 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
             TextField(
               controller: _textController,
               maxLines: 4,
-              decoration: const InputDecoration(
-                labelText: 'Shared text',
-                hintText: 'Paste or type the shared text here\u2026',
+              decoration: InputDecoration(
+                labelText: l10n.shareTargetSharedText,
+                hintText: l10n.shareTargetPasteHint,
               ),
             ),
             if (_selectedDestination == 'pinwall') ...[
@@ -244,8 +250,8 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
                     size: AppButtonSize.sm,
                     variant: AppButtonVariant.outline,
                     text: _pendingMedia.isEmpty
-                        ? 'Add photos'
-                        : '${_pendingMedia.length} photo(s) added',
+                        ? l10n.shareTargetAddPhotos
+                        : l10n.shareTargetPhotosAdded(_pendingMedia.length),
                     onPressed: _isSaving ? null : _pickMedia,
                   ),
                   const Spacer(),
@@ -253,7 +259,7 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
                     AppButton(
                       variant: AppButtonVariant.ghost,
                       color: AppButtonColor.neutral,
-                      text: 'Clear',
+                      text: l10n.commonClear,
                       onPressed: _isSaving
                           ? null
                           : () => setState(() => _pendingMedia.clear()),
@@ -278,7 +284,7 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Preview',
+                    l10n.commonPreview,
                     style: Theme.of(context).textTheme.labelMedium,
                   ),
                   const SizedBox(height: MitlistSpacing.sm),
@@ -288,8 +294,7 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
                       const SizedBox(width: MitlistSpacing.sm),
                       Expanded(
                         child: Text(
-                          'Paste text here now, or send content from the '
-                          'share extension when that integration is available.',
+                          l10n.shareTargetPreviewPlaceholder,
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ),
@@ -359,7 +364,7 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
         child: Padding(
           padding: const EdgeInsets.all(MitlistSpacing.md),
           child: AppButton(
-            text: 'Save',
+            text: l10n.commonSave,
             onPressed: (_selectedDestination != null && !_isSaving) ? _onSave : null,
           ),
         ),

@@ -14,6 +14,7 @@ import '../widgets/app_card.dart';
 import '../widgets/app_dialog.dart';
 import '../widgets/app_divider.dart';
 import '../widgets/app_icon.dart';
+import '../l10n/app_localizations.dart';
 import '../widgets/alert.dart';
 
 class ExpenseDetailSheet extends ConsumerStatefulWidget {
@@ -64,9 +65,10 @@ class ExpenseDetailSheet extends ConsumerStatefulWidget {
     String? baseCurrency,
     Map<String, String> userLabels = const {},
   }) async {
+    final l10n = AppLocalizations.of(context)!;
     return showAppBottomSheet(
       context: context,
-      title: 'Expense details',
+      title: l10n.sheetExpenseDetailTitle,
       body: ExpenseDetailSheet(
         groupId: groupId,
         expenseId: expenseId,
@@ -113,9 +115,10 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
       });
     } catch (_) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         setState(() => _loadingSplits = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Couldn't load splits.")),
+          SnackBar(content: Text(l10n.expenseDetailCouldNotLoadSplits)),
         );
       }
     }
@@ -138,11 +141,12 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
       });
     } catch (e) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       setState(() {
         _loadingReceipts = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Couldn't load receipts.")),
+        SnackBar(content: Text(l10n.expenseDetailCouldNotLoadReceipts)),
       );
     }
   }
@@ -151,7 +155,9 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
     if (!mounted) return;
     await showDialog<void>(
       context: context,
-      builder: (context) => Dialog.fullscreen(
+      builder: (context) {
+        final l10nInner = AppLocalizations.of(context)!;
+        return Dialog.fullscreen(
         backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
         child: Stack(
           children: [
@@ -166,7 +172,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
                   errorBuilder: (_, __, ___) => Padding(
                     padding: const EdgeInsets.all(MitlistSpacing.lg),
                     child: Text(
-                      'Failed to load receipt',
+                      l10nInner.expenseDetailFailedLoadReceipt,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface),
                     ),
                   ),
@@ -177,7 +183,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
               child: Align(
                 alignment: Alignment.topLeft,
                 child: IconButton(
-                  tooltip: 'Close',
+                  tooltip: l10nInner.commonClose,
                   onPressed: () => Navigator.of(context).pop(),
                   icon: AppIcon(name: 'xMark', color: Theme.of(context).colorScheme.onSurface),
                 ),
@@ -185,9 +191,10 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
             ),
           ],
         ),
-      ),
-    );
-  }
+      );
+    },
+  );
+}
 
   Future<void> _removeReceipt(ExpenseReceipt receipt) async {
     if (_removing) return;
@@ -219,31 +226,33 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
       await _loadReceipts();
     } catch (_) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       setState(() {
         _removing = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Couldn't remove receipt.")),
+        SnackBar(content: Text(l10n.expenseDetailCouldNotRemoveReceipt)),
       );
     }
   }
 
   Future<void> _showReceiptActions(ExpenseReceipt receipt) async {
     if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
     final action = await showAppBottomSheet<String>(
       context: context,
-      title: 'Receipt',
+      title: l10n.expenseDetailReceipt,
       body: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           ListTile(
             leading: const AppIcon(name: 'openInFull'),
-            title: const Text('View'),
+            title: Text(l10n.expenseDetailView),
             onTap: () => Navigator.of(context).pop('view'),
           ),
           ListTile(
             leading: const AppIcon(name: 'minusCircleOutline'),
-            title: Text(_removing ? 'Removing…' : 'Remove'),
+            title: Text(_removing ? l10n.expenseDetailRemoving : l10n.commonRemove),
             onTap: _removing ? null : () => Navigator.of(context).pop('remove'),
           ),
           const SizedBox(height: MitlistSpacing.sm),
@@ -260,6 +269,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
 
     return Column(
@@ -292,7 +302,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
         ],
         const SizedBox(height: MitlistSpacing.md),
         if (!_loadingSplits && _splits.isNotEmpty) ...[
-          Text('Splits', style: Theme.of(context).textTheme.titleMedium),
+          Text(l10n.sheetExpenseDetailSplits, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: MitlistSpacing.sm),
           AppCard(
             variant: AppCardVariant.outlined,
@@ -311,7 +321,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
         if (!_loadingSplits && _splits.isEmpty)
           AppAlert(
             type: AppAlertType.info,
-            message: 'This expense isn\u2019t split yet.',
+            message: l10n.expenseDetailNotSplitYet,
           ),
         if (_loadingReceipts)
           Padding(
@@ -321,8 +331,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
         else if (_receipts.isEmpty)
           AppAlert(
             type: AppAlertType.info,
-            message:
-                'No receipts attached. Add one when editing the expense.',
+            message: l10n.expenseDetailNoReceipts,
           )
         else
           SizedBox(
@@ -336,7 +345,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
                   onLongPress: () => _showReceiptActions(r),
                   child: Semantics(
                     button: true,
-                    label: 'View receipt',
+                    label: l10n.expenseDetailView,
                     child: ClipRRect(
                       borderRadius: BorderRadius.zero,
                       child: AspectRatio(
@@ -380,23 +389,23 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
               variant: AppButtonVariant.ghost,
               color: AppButtonColor.error,
               size: AppButtonSize.lg,
-              text: _isDeleting ? 'Deleting...' : 'Delete expense',
+              text: _isDeleting ? l10n.commonDeleting : l10n.expenseDeleteTitle,
               isLoading: _isDeleting,
               onPressed: _isDeleting
                   ? null
                   : () async {
                       final confirmed = await showAppDialog<bool>(
                         context: context,
-                        title: 'Delete expense',
-                        body: const Text('This will permanently delete this expense and its records.'),
+                        title: l10n.expenseDeleteTitle,
+                        body: Text(l10n.expenseDeleteBody),
                         actions: [
                           AppButton(
-                            text: 'Cancel',
+                            text: l10n.commonCancel,
                             variant: AppButtonVariant.outline,
                             onPressed: () => Navigator.of(context).pop(false),
                           ),
                           AppButton(
-                            text: 'Delete',
+                            text: l10n.commonDelete,
                             color: AppButtonColor.error,
                             onPressed: () => Navigator.of(context).pop(true),
                           ),

@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../services/scan/capture_quality_service.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
@@ -58,6 +59,7 @@ class _SmartCaptureScreenState extends State<SmartCaptureScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final quality = widget.quality;
     final colorScheme = Theme.of(context).colorScheme;
     final previewBytes =
@@ -71,7 +73,7 @@ class _SmartCaptureScreenState extends State<SmartCaptureScreen> {
         showStandardActions: false,
         leading: IconButton(
           icon: const AppIcon(name: 'arrowLeft'),
-          tooltip: 'Back',
+          tooltip: l10n.smartCaptureBack,
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -116,7 +118,7 @@ class _SmartCaptureScreenState extends State<SmartCaptureScreen> {
                     children: [
                       Expanded(
                         child: AppButton(
-                          text: _showOriginal ? 'Show enhanced' : 'Original',
+                          text: _showOriginal ? l10n.smartCaptureShowEnhanced : l10n.smartCaptureOriginal,
                           variant: AppButtonVariant.outline,
                           color: AppButtonColor.neutral,
                           onPressed: () {
@@ -127,7 +129,7 @@ class _SmartCaptureScreenState extends State<SmartCaptureScreen> {
                       const SizedBox(width: MitlistSpacing.sm),
                       Expanded(
                         child: AppButton(
-                          text: poor ? 'Use anyway' : 'Use scan',
+                          text: poor ? l10n.smartCaptureUseAnyway : l10n.smartCaptureUseScan,
                           variant: poor
                               ? AppButtonVariant.outline
                               : AppButtonVariant.solid,
@@ -139,7 +141,7 @@ class _SmartCaptureScreenState extends State<SmartCaptureScreen> {
                   if (poor) ...[
                     const SizedBox(height: MitlistSpacing.sm),
                     AppButton(
-                      text: 'Retake',
+                      text: l10n.smartCaptureRetake,
                       color: AppButtonColor.neutral,
                       onPressed: () => Navigator.of(context).pop(),
                     ),
@@ -161,6 +163,7 @@ class _QualityPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final color = switch (quality.level) {
       CaptureQualityLevel.good => MitlistColors.success600,
@@ -168,9 +171,9 @@ class _QualityPanel extends StatelessWidget {
       CaptureQualityLevel.poor => colorScheme.error,
     };
     final label = switch (quality.level) {
-      CaptureQualityLevel.good => 'Ready',
-      CaptureQualityLevel.okay => 'Usable',
-      CaptureQualityLevel.poor => 'Retake suggested',
+      CaptureQualityLevel.good => l10n.smartCaptureReady,
+      CaptureQualityLevel.okay => l10n.smartCaptureUsable,
+      CaptureQualityLevel.poor => l10n.smartCaptureRetakeSuggested,
     };
 
     return Container(

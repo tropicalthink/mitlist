@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/auth_models.dart';
 import '../../models/pinwall_media_models.dart';
 import '../../models/pinwall_models.dart';
@@ -14,6 +15,7 @@ import '../../providers/pinwall_provider.dart';
 import '../../providers/chore_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../providers/finance_provider.dart';
+import '../../providers/meal_plan_provider.dart';
 import '../../screens/pinwall/pinwall_board_screen.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
@@ -24,9 +26,6 @@ import '../app_bottom_sheet.dart';
 import '../app_button.dart';
 import '../app_dialog.dart';
 import '../mitlist_app_bar.dart';
-import 'pinned_memo_card.dart';
-import 'stats_grid.dart';
-import 'tonight_card.dart';
 
 const _kNotePalette = MitlistColors.notePalette;
 const _kNotePaletteDark = MitlistColors.notePaletteDark;
@@ -58,6 +57,7 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
   }
 
   Future<void> _pickReminderTime() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_isPosting || _isUploadingMedia) return;
     unawaited(Haptics.light());
 
@@ -67,14 +67,14 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
       initialDate: _remindAt?.isAfter(now) == true ? _remindAt! : now,
       firstDate: now,
       lastDate: now.add(const Duration(days: 365)),
-      helpText: 'Choose reminder date',
+      helpText: l10n.pinwallChooseReminderDate,
     );
     if (!mounted || pickedDate == null) return;
 
     final pickedTime = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(_remindAt ?? now),
-      helpText: 'Choose reminder time',
+      helpText: l10n.pinwallChooseReminderTime,
     );
     if (!mounted || pickedTime == null) return;
 
@@ -87,7 +87,7 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
     );
     if (combined.isBefore(DateTime.now().add(const Duration(minutes: 1)))) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pick a time in the future.')),
+        SnackBar(content: Text(l10n.pinwallPickFutureTime)),
       );
       return;
     }
@@ -100,36 +100,37 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
   }
 
   Future<void> _pickLinkedEntity() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_isPosting || _isUploadingMedia) return;
     unawaited(Haptics.light());
 
     final typeAction = await showAppBottomSheet<String>(
       context: context,
-      title: 'Link to\u2026',
+      title: l10n.pinwallLinkTo,
       body: Builder(builder: (ctx) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             AppButton(
-              text: 'A chore',
+              text: l10n.pinwallLinkChore,
               onPressed: () => Navigator.of(ctx).pop('chore'),
             ),
             const SizedBox(height: MitlistSpacing.sm),
             AppButton(
-              text: 'A list',
+              text: l10n.pinwallLinkList,
               variant: AppButtonVariant.outline,
               onPressed: () => Navigator.of(ctx).pop('list'),
             ),
             const SizedBox(height: MitlistSpacing.sm),
             AppButton(
-              text: 'An expense',
+              text: l10n.pinwallLinkExpense,
               variant: AppButtonVariant.outline,
               onPressed: () => Navigator.of(ctx).pop('expense'),
             ),
             if (_linkedEntityType != null) ...[
               const SizedBox(height: MitlistSpacing.sm),
               AppButton(
-                text: 'Remove link',
+                text: l10n.pinwallRemoveLink,
                 variant: AppButtonVariant.ghost,
                 color: AppButtonColor.error,
                 onPressed: () => Navigator.of(ctx).pop('remove'),
@@ -192,7 +193,7 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
 
       final picked = await showAppBottomSheet<_EntityOption>(
         context: context,
-        title: 'Select a $typeAction',
+        title: l10n.pinwallSelectEntity(typeAction),
         body: Builder(builder: (ctx) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -220,7 +221,7 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Couldn\u2019t load entities.')),
+        SnackBar(content: Text(l10n.pinwallCouldNotLoadEntities)),
       );
     }
   }
@@ -238,6 +239,7 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
     if ((content.isEmpty && _pendingMedia.isEmpty) || _isPosting) return;
 
     setState(() => _isPosting = true);
+    final l10n = AppLocalizations.of(context)!;
     try {
       final svc = await ref.read(pinwallServiceProviderAsync.future);
       final post = await svc.createPost(widget.groupId,
@@ -291,7 +293,7 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
       if (!mounted) return;
       unawaited(Haptics.light());
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pinned to the wall')),
+        SnackBar(content: Text(l10n.pinwallPinned)),
       );
     } finally {
       if (mounted) setState(() => _isPosting = false);
@@ -300,6 +302,7 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
 
@@ -319,7 +322,7 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
           child: Row(
             children: [
               Expanded(
-                child: Text('Pinwall', style: textTheme.titleMedium),
+                child: Text(l10n.pinwallBoardLabel, style: textTheme.titleMedium),
               ),
               _PinwallOpenBoardButton(
                 groupId: widget.groupId,
@@ -366,16 +369,6 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: MitlistSpacing.sm),
-                PinnedMemoCard(
-                  pinColor: Theme.of(context).colorScheme.secondary,
-                  child: StatsGrid(groupId: widget.groupId),
-                ),
-                const SizedBox(height: MitlistSpacing.lg),
-                PinnedMemoCard(
-                  pinColor: Theme.of(context).colorScheme.tertiary,
-                  child: TonightCard(groupId: widget.groupId),
-                ),
-                const SizedBox(height: MitlistSpacing.lg),
                 _PinwallComposerNote(
                   controller: _controller,
                   isPosting: _isPosting,
@@ -390,6 +383,8 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
                   onPost: _post,
                   onPickLinkedEntity: _pickLinkedEntity,
                 ),
+                const SizedBox(height: MitlistSpacing.sm),
+                _PinwallQuickStats(groupId: widget.groupId),
                 const SizedBox(height: MitlistSpacing.lg),
                 RepaintBoundary(
                   child: _PinwallPostsList(
@@ -428,14 +423,11 @@ class _PinwallOpenBoardButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final posts = ref.watch(pinwallPostsByGroupProvider(groupId));
-    final hasPosts =
-        posts.hasValue && posts.value != null && posts.value!.isNotEmpty;
-    if (!hasPosts) return const SizedBox.shrink();
 
     return Semantics(
-      button: true,
-      label: 'Open pinwall board',
+      label: l10n.pinwallOpenBoard,
       child: GestureDetector(
         onTap: () {
           Haptics.light();
@@ -468,7 +460,7 @@ class _PinwallOpenBoardButton extends ConsumerWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                'Open board',
+                l10n.pinwallOpenBoardBtn,
                 style: textTheme.labelSmall?.copyWith(
                   color: dark
                       ? MitlistColors.pinwallNoteTextDark
@@ -500,6 +492,7 @@ class _PinwallPostsList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final posts = ref.watch(pinwallPostsByGroupProvider(groupId));
 
     return posts.when(
@@ -520,14 +513,14 @@ class _PinwallPostsList extends ConsumerWidget {
             const SizedBox(width: MitlistSpacing.sm),
             Expanded(
               child: Text(
-                "Couldn't load the pinwall.",
+                l10n.pinwallCouldNotLoad,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: textTheme.bodySmall,
               ),
             ),
             AppButton(
-              text: 'Retry',
+              text: l10n.commonRetry,
               variant: AppButtonVariant.ghost,
               size: AppButtonSize.sm,
               onPressed: () =>
@@ -541,7 +534,7 @@ class _PinwallPostsList extends ConsumerWidget {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.md),
             child: Text(
-              'The wall is clear. Pin a note, photo, or reminder for everyone.',
+              l10n.pinwallEmptyBoard,
               textAlign: TextAlign.center,
               style: textTheme.bodySmall?.copyWith(
                 color: dark
@@ -601,6 +594,7 @@ class _PinwallComposerNote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final bg =
@@ -659,7 +653,7 @@ class _PinwallComposerNote extends StatelessWidget {
                     height: 1.5,
                   ),
                   decoration: InputDecoration(
-                    hintText: 'Post a note to the household\u2026',
+                    hintText: l10n.pinwallPostHint,
                     hintStyle: textTheme.bodyMedium?.copyWith(
                       color: hintColor,
                       height: 1.5,
@@ -684,8 +678,8 @@ class _PinwallComposerNote extends StatelessWidget {
                   children: [
                     IconButton(
                       tooltip: remindAt == null
-                          ? 'Add reminder'
-                          : 'Reminder set for $reminderLabel. Tap to change.',
+                          ? l10n.pinwallAddReminder
+                          : l10n.pinwallReminderSet(reminderLabel!),
                       icon: Icon(
                         remindAt == null
                             ? Icons.alarm_add_outlined
@@ -701,7 +695,7 @@ class _PinwallComposerNote extends StatelessWidget {
                     ),
                     if (remindAt != null)
                       IconButton(
-                        tooltip: 'Clear reminder',
+                        tooltip: l10n.pinwallClearReminder,
                         icon: Icon(
                           Icons.close,
                           size: 18,
@@ -729,7 +723,7 @@ class _PinwallComposerNote extends StatelessWidget {
                     IconButton(
                       tooltip: linkedEntityLabel != null
                           ? 'Linked to $linkedEntityLabel'
-                          : 'Link to a chore, list\u2026',
+                          : l10n.pinwallLinkToChore,
                       icon: Icon(
                         linkedEntityType != null
                             ? Icons.link
@@ -745,7 +739,7 @@ class _PinwallComposerNote extends StatelessWidget {
                     ),
                     IconButton(
                       tooltip: pendingCount == 0
-                          ? 'Attach photo'
+                          ? l10n.pinwallAttachPhoto
                           : '$pendingCount photo${pendingCount == 1 ? '' : 's'} added',
                       icon: Icon(
                         pendingCount > 0
@@ -767,8 +761,8 @@ class _PinwallComposerNote extends StatelessWidget {
                     Spacer(),
                     AppButton(
                       text: isUploadingMedia
-                          ? 'Uploading\u2026'
-                          : (isPosting ? 'Posting\u2026' : 'Pin it'),
+                          ? l10n.pinwallUploading
+                          : (isPosting ? l10n.pinwallPosting : l10n.pinwallPinIt),
                       icon: Icon(Icons.push_pin_outlined),
                       onPressed:
                           (isPosting || isUploadingMedia) ? null : onPost,
@@ -820,6 +814,7 @@ class _PinwallNoteCard extends ConsumerWidget {
   }
 
   void _openMediaViewer(BuildContext context, PinwallMediaItem m) {
+    final l10n = AppLocalizations.of(context)!;
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => Scaffold(
@@ -828,7 +823,7 @@ class _PinwallNoteCard extends ConsumerWidget {
             showStandardActions: false,
             title: const SizedBox.shrink(),
             leading: IconButton(
-              tooltip: 'Close',
+              tooltip: l10n.commonClose,
               icon: const Icon(Icons.close),
               onPressed: () => Navigator.of(context).pop(),
             ),
@@ -847,7 +842,7 @@ class _PinwallNoteCard extends ConsumerWidget {
                 errorBuilder: (_, __, ___) => Padding(
                   padding: const EdgeInsets.all(MitlistSpacing.md),
                   child: Text(
-                    'Couldn\u2019t load image.',
+                    l10n.pinwallCouldNotLoadImage,
                     style: TextStyle(color: MitlistColors.surfaceSoft),
                     textAlign: TextAlign.center,
                   ),
@@ -866,20 +861,21 @@ class _PinwallNoteCard extends ConsumerWidget {
     required PinwallMediaItem media,
   }) async {
     unawaited(Haptics.light());
+    final l10n = AppLocalizations.of(context)!;
     final action = await showAppBottomSheet<String>(
       context: context,
-      title: 'Photo',
+      title: l10n.commonPhoto,
       body: Builder(builder: (ctx) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             AppButton(
-              text: 'View',
+              text: l10n.commonView,
               onPressed: () => Navigator.of(ctx).pop('view'),
             ),
             const SizedBox(height: MitlistSpacing.sm),
             AppButton(
-              text: 'Remove from post',
+              text: l10n.pinwallRemoveFromPost,
               variant: AppButtonVariant.outline,
               onPressed: () => Navigator.of(ctx).pop('remove'),
             ),
@@ -917,7 +913,7 @@ class _PinwallNoteCard extends ConsumerWidget {
         );
       } catch (_) {
         if (context.mounted) {
-          _showErrorSnack(context, 'Couldn\u2019t remove photo.');
+          _showErrorSnack(context, l10n.pinwallCouldNotRemovePhoto);
         }
       }
     }
@@ -925,6 +921,7 @@ class _PinwallNoteCard extends ConsumerWidget {
 
   Future<void> _addMediaToPost(BuildContext context, WidgetRef ref) async {
     unawaited(Haptics.light());
+    final l10n = AppLocalizations.of(context)!;
     final picker = ImagePicker();
     final files = await picker.pickMultiImage();
     if (files.isEmpty) return;
@@ -955,7 +952,7 @@ class _PinwallNoteCard extends ConsumerWidget {
       );
     } catch (_) {
       if (context.mounted) {
-        _showErrorSnack(context, 'Couldn\u2019t add photo.');
+        _showErrorSnack(context, l10n.pinwallCouldNotAddPhoto);
       }
     }
   }
@@ -980,14 +977,14 @@ class _PinwallNoteCard extends ConsumerWidget {
     }
   }
 
-  String _entityDisplayLabel(String type) {
+  String _entityDisplayLabel(String type, AppLocalizations l10n) {
     switch (type) {
       case 'list':
-        return 'Linked list';
+        return l10n.pinwallLinkedList;
       case 'chore':
-        return 'Linked chore';
+        return l10n.pinwallLinkedChore;
       case 'expense':
-        return 'Linked expense';
+        return l10n.pinwallLinkedExpense;
       default:
         return type;
     }
@@ -995,13 +992,14 @@ class _PinwallNoteCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
 
     final userId = post.userId;
     final content = post.content.trim();
     final createdAt = post.createdAt;
-    final userLabel = formatUserLabel(userId, me?.id);
+    final userLabel = formatUserLabel(userId, me?.id, l10n);
     final when = relativeDay(createdAt);
 
     final idHash = post.id.hashCode;
@@ -1088,10 +1086,10 @@ class _PinwallNoteCard extends ConsumerWidget {
                   Semantics(
                     button: true,
                     label:
-                        'Open linked ${_entityDisplayLabel(post.linkedEntityType!)}',
+                        l10n.pinwallOpenLinkedEntity(_entityDisplayLabel(post.linkedEntityType!, l10n)),
                     child: Tooltip(
                       message:
-                          'Open linked ${_entityDisplayLabel(post.linkedEntityType!)}',
+                          l10n.pinwallOpenLinkedEntity(_entityDisplayLabel(post.linkedEntityType!, l10n)),
                       child: GestureDetector(
                         onTap: () => _navigateToLinkedEntity(context),
                         child: Padding(
@@ -1103,7 +1101,7 @@ class _PinwallNoteCard extends ConsumerWidget {
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
-                                  'Open ${_entityDisplayLabel(post.linkedEntityType!)}',
+                                  'Open ${_entityDisplayLabel(post.linkedEntityType!, l10n)}',
                                   style: textTheme.labelSmall?.copyWith(
                                     color: mutedColor,
                                   ),
@@ -1165,7 +1163,7 @@ class _PinwallNoteCard extends ConsumerWidget {
                                   _showMediaActions(context, ref, media: m),
                               child: Semantics(
                                 button: true,
-                                label: 'View photo',
+                                label: l10n.listItemViewPhoto,
                                 child: ClipRect(
                                   child: AspectRatio(
                                     aspectRatio: 1,
@@ -1216,8 +1214,8 @@ class _PinwallNoteCard extends ConsumerWidget {
                         Expanded(
                           child: Text(
                             reminderSentAt == null
-                                ? 'Reminder \u00b7 $reminderText'
-                                : 'Reminded \u00b7 $reminderText',
+                                ? l10n.pinwallReminderLabel(reminderText)
+                                : l10n.pinwallRemindedLabel(reminderText),
                             style: textTheme.labelSmall
                                 ?.copyWith(color: mutedColor),
                             maxLines: 1,
@@ -1239,7 +1237,7 @@ class _PinwallNoteCard extends ConsumerWidget {
                       ),
                     ),
                     PopupMenuButton<String>(
-                      tooltip: 'Post options',
+                      tooltip: l10n.pinwallPostOptions,
                       onSelected: (v) async {
                         if (v == 'photo') {
                           await _addMediaToPost(context, ref);
@@ -1249,19 +1247,19 @@ class _PinwallNoteCard extends ConsumerWidget {
                           if (!context.mounted) return;
                           final confirmed = await showAppDialog<bool>(
                             context: context,
-                            title: 'Delete pin',
-                            body: const Text(
-                                'This pin will be permanently deleted. This cannot be undone.'),
+                            title: l10n.pinwallDeletePin,
+                            body: Text(
+                                l10n.pinwallDeletePinBody),
                             actions: [
                               AppButton(
-                                text: 'Cancel',
+                                text: l10n.commonCancel,
                                 variant: AppButtonVariant.outline,
                                 onPressed: () =>
                                     Navigator.of(context).pop(false),
                               ),
                               const SizedBox(width: MitlistSpacing.sm),
                               AppButton(
-                                text: 'Delete',
+                                text: l10n.commonDelete,
                                 color: AppButtonColor.error,
                                 onPressed: () =>
                                     Navigator.of(context).pop(true),
@@ -1271,9 +1269,9 @@ class _PinwallNoteCard extends ConsumerWidget {
                           if (confirmed == true) await onDelete();
                         }
                       },
-                      itemBuilder: (_) => const [
-                        PopupMenuItem(value: 'photo', child: Text('Add photo')),
-                        PopupMenuItem(value: 'delete', child: Text('Delete')),
+                      itemBuilder: (_) => [
+                        PopupMenuItem(value: 'photo', child: Text(l10n.pinwallAddPhotoMenu)),
+                        PopupMenuItem(value: 'delete', child: Text(l10n.commonDelete)),
                       ],
                       child: Padding(
                         padding: const EdgeInsets.all(MitlistSpacing.sm),

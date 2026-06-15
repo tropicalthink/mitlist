@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../providers/meal_plan_provider.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
@@ -16,6 +17,7 @@ class TonightCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final async = ref.watch(todayMealPlansProvider(groupId));
 
     return async.when(
@@ -37,18 +39,18 @@ class TonightCard extends ConsumerWidget {
 
         final plan = selected.plan;
         final recipe = selected.recipe;
-        final title = recipe?.title ?? 'Recipe';
+        final title = recipe?.title ?? l10n.tonightRecipe;
 
         final String header;
         switch (plan.slot) {
           case 'breakfast':
-            header = 'Today · Breakfast';
+            header = l10n.tonightBreakfast;
             break;
           case 'lunch':
-            header = 'Today · Lunch';
+            header = l10n.tonightLunch;
             break;
           default:
-            header = 'Tonight';
+            header = l10n.tonightHeader;
         }
 
         final textTheme = Theme.of(context).textTheme;
@@ -65,7 +67,7 @@ class TonightCard extends ConsumerWidget {
             const SizedBox(height: MitlistSpacing.xs),
             Semantics(
               button: true,
-              label: 'Tonight: $title. Open recipe',
+              label: l10n.tonightOpenRecipe(title),
               child: GestureDetector(
                 onTap: () => context.pushNamed(
                   'recipeDetail',
@@ -100,7 +102,7 @@ class TonightCard extends ConsumerWidget {
                       ),
                       const SizedBox(width: MitlistSpacing.sm),
                       AppButton(
-                        text: 'Cook',
+                        text: l10n.tonightCook,
                         size: AppButtonSize.sm,
                         onPressed: () => context.pushNamed(
                           'recipeCook',
@@ -122,6 +124,7 @@ class TonightCard extends ConsumerWidget {
 class _EmptyStateCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
 
     return AppCard(
@@ -131,7 +134,7 @@ class _EmptyStateCard extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              'Nothing planned for tonight',
+              l10n.tonightNothingPlanned,
               style: textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -139,7 +142,7 @@ class _EmptyStateCard extends StatelessWidget {
           ),
           const SizedBox(width: MitlistSpacing.sm),
           AppButton(
-            text: 'Plan dinner',
+            text: l10n.tonightPlanDinner,
             variant: AppButtonVariant.outline,
             size: AppButtonSize.sm,
             onPressed: () => context.pushNamed('mealPlan'),

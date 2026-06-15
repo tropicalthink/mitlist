@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../l10n/app_localizations.dart';
 import '../providers/outbox_provider.dart';
 import '../sheets/conflict_resolution_sheet.dart';
 import '../sheets/failed_changes_sheet.dart';
@@ -37,19 +38,20 @@ class _Banner extends ConsumerWidget {
   const _Banner({required this.state});
 
   void _showDetails(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     showAppBottomSheet(
       context: context,
-      title: 'Sync Status',
+      title: l10n.offlineBannerTitle,
       body: Padding(
         padding: const EdgeInsets.all(MitlistSpacing.md),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _detailRow(context, Icons.cloud_off, 'Offline', state.isOffline, colorScheme),
-            _detailRow(context, Icons.sync, 'Pending sync', state.pendingCount, colorScheme),
-            _detailRow(context, Icons.sync_problem, 'Failed', state.failedCount, colorScheme),
+            _detailRow(context, Icons.cloud_off, l10n.offlineBannerStatusOffline, state.isOffline, colorScheme),
+            _detailRow(context, Icons.sync, l10n.offlineBannerStatusPending, state.pendingCount, colorScheme),
+            _detailRow(context, Icons.sync_problem, l10n.offlineBannerStatusFailed, state.failedCount, colorScheme),
             const SizedBox(height: MitlistSpacing.md),
             if (state.hasErrors)
               AppCard(
@@ -57,7 +59,7 @@ class _Banner extends ConsumerWidget {
                 tint: AppCardTint.warning,
                 padding: AppCardPadding.md,
                 child: Text(
-                  'Changes will be retried automatically when connectivity is restored.',
+                  l10n.offlineBannerRetryHint,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
@@ -67,7 +69,7 @@ class _Banner extends ConsumerWidget {
                 tint: AppCardTint.warning,
                 padding: AppCardPadding.md,
                 child: Text(
-                  'You can keep making changes offline. Everything will sync when you reconnect.',
+                  l10n.offlineBannerOfflineHint,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
@@ -103,26 +105,27 @@ class _Banner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final (color, icon, message) = switch (state.status) {
       OutboxStatus.offline => (
           colorScheme.secondary,
           Icons.cloud_off,
-          'Offline \u2014 changes will sync when you reconnect',
+          l10n.offlineBannerBarOffline,
         ),
       OutboxStatus.syncing => (
           colorScheme.primary,
           Icons.sync,
           state.pendingCount > 1
-              ? 'Syncing ${state.pendingCount} changes\u2026'
-              : 'Syncing changes\u2026',
+              ? l10n.offlineBannerSyncingCount(state.pendingCount)
+              : l10n.offlineBannerSyncing,
         ),
       OutboxStatus.error => (
           colorScheme.error,
           Icons.sync_problem,
           state.failedCount > 1
-              ? 'Couldn\u2019t sync ${state.failedCount} changes'
-              : 'Couldn\u2019t sync a change',
+              ? l10n.offlineBannerFailedCount(state.failedCount)
+              : l10n.offlineBannerFailedOne,
         ),
       OutboxStatus.conflict => (
           colorScheme.tertiary,
@@ -175,7 +178,7 @@ class _Banner extends ConsumerWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'Retry',
+                            l10n.offlineBannerRetry,
                             style: Theme.of(context)
                                 .textTheme
                                 .labelSmall

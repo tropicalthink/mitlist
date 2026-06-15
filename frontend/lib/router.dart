@@ -39,6 +39,7 @@ import 'models/recipe_models.dart';
 import 'screens/meal_plans/meal_plan_screen.dart';
 import 'screens/shopping/shopping_trip_screen.dart';
 import 'screens/scanner/scanner_screen.dart';
+import 'l10n/app_localizations.dart';
 import 'router_redirect.dart';
 
 final currentGroupIdProvider =
@@ -429,6 +430,8 @@ class _BottomNavScaffoldState extends ConsumerState<BottomNavScaffold> {
       );
     }
 
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       body: widget.navigationShell,
       bottomNavigationBar: Container(
@@ -444,24 +447,24 @@ class _BottomNavScaffoldState extends ConsumerState<BottomNavScaffold> {
           currentIndex: widget.navigationShell.currentIndex,
           onTap: _onTap,
           items: [
-            const BottomNavigationBarItem(
-                icon: AppIcon(name: 'home'), label: 'Home'),
+            BottomNavigationBarItem(
+                icon: const AppIcon(name: 'home'), label: l10n.navHome),
             BottomNavigationBarItem(
                 icon: makeBadgeIcon(
                   const AppIcon(name: 'clipboardDocumentList'),
                   count: badgeData.choreCount,
                 ),
-                label: 'Chores'),
-            const BottomNavigationBarItem(
-                icon: AppIcon(name: 'queueList'), label: 'Kitchen'),
+                label: l10n.navChores),
+            BottomNavigationBarItem(
+                icon: const AppIcon(name: 'queueList'), label: l10n.navKitchen),
             BottomNavigationBarItem(
                 icon: makeBadgeIcon(
                   const AppIcon(name: 'banknotes'),
                   count: badgeData.settlementCount,
                 ),
-                label: 'Money'),
-            const BottomNavigationBarItem(
-                icon: AppIcon(name: 'listBullet'), label: 'Lists'),
+                label: l10n.navMoney),
+            BottomNavigationBarItem(
+                icon: const AppIcon(name: 'listBullet'), label: l10n.navLists),
           ],
         ),
       ),

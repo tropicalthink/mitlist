@@ -16,6 +16,7 @@ import '../utils/invite_link.dart';
 import '../widgets/alert.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
+import '../l10n/app_localizations.dart';
 import '../widgets/app_icon.dart';
 
 class InviteHouseholdSheet extends ConsumerStatefulWidget {
@@ -26,9 +27,10 @@ class InviteHouseholdSheet extends ConsumerStatefulWidget {
   static const double _qrSize = MitlistSpacing.space24 * 2;
 
   static Future<void> show(BuildContext context, {required String groupId}) {
+    final l10n = AppLocalizations.of(context)!;
     return showAppBottomSheet<void>(
       context: context,
-      title: 'Invite to household',
+      title: l10n.sheetInviteTitle,
       body: InviteHouseholdSheet(groupId: groupId),
     );
   }
@@ -106,7 +108,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = friendlyErrorMessage(e);
+        _error = friendlyErrorMessage(e, AppLocalizations.of(context)!);
         _isLoading = false;
       });
     }
@@ -136,6 +138,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final code = _invite?.code ?? '';
 
     if (_isLoading && _invite == null) {
@@ -159,7 +162,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
           // Animated code segments
           if (_codeParts.isNotEmpty) ...[
             Semantics(
-              label: 'Invite code: ${code.trim()}',
+              label: l10n.inviteCodeLabel(code.trim()),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -203,7 +206,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
             opacity: _qrAnim,
             child: Center(
               child: Semantics(
-                label: 'Household invite QR code',
+                label: l10n.inviteQrTitle,
                 button: true,
                 child: GestureDetector(
                   onTap: _copyCode,
@@ -227,13 +230,13 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
                               dataModuleStyle:
                                   QrDataModuleStyle(color: qrFg),
                               errorCorrectionLevel: QrErrorCorrectLevel.M,
-                              semanticsLabel: 'Household invite QR',
+                              semanticsLabel: l10n.inviteQrSemantic,
                               errorStateBuilder: (context, _) => SizedBox(
                                 width: InviteHouseholdSheet._qrSize,
                                 height: InviteHouseholdSheet._qrSize,
                                 child: Center(
                                   child: Text(
-                                    'QR unavailable',
+                                    l10n.inviteQrUnavailable,
                                     style: Theme.of(context)
                                         .textTheme
                                         .bodySmall,
@@ -251,7 +254,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
           FadeTransition(
             opacity: _qrAnim,
             child: Text(
-              'Scan with a phone camera to join, or share the code below.',
+              l10n.inviteQrHint,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -268,7 +271,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
                   duration: const Duration(milliseconds: 200),
                   child: AppButton(
                     key: ValueKey(_copied),
-                    text: _copied ? 'Copied!' : 'Copy code',
+                    text: _copied ? l10n.sheetInviteCopied : l10n.sheetInviteCopy,
                     icon: _copied
                         ? const AppIcon(name: 'checkCircle', size: 18)
                         : const AppIcon(name: 'copy', size: 18),
@@ -286,7 +289,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
               Expanded(
                 child: AppButton(
                   variant: AppButtonVariant.outline,
-                  text: _isLoading ? 'Generating…' : 'New code',
+                  text: _isLoading ? l10n.inviteGenerating : l10n.inviteNewCode,
                   isLoading: _isLoading,
                   onPressed: _isLoading ? null : _createInvite,
                 ),
@@ -297,11 +300,11 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
           AppButton(
             variant: AppButtonVariant.solid,
             color: AppButtonColor.primary,
-            text: 'Share invite link',
+            text: l10n.sheetInviteShare,
             icon: const AppIcon(name: 'share', size: 18),
             onPressed: code.isEmpty
                 ? null
-                : () => Share.share(inviteShareText(code)),
+                : () => Share.share(inviteShareText(code, l10n)),
           ),
         ],
       ),

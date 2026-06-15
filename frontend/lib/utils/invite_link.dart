@@ -4,6 +4,8 @@
 // With Dart's Uri, `mitlist://join/ABCD-1234` parses as:
 //   scheme = 'mitlist', host = 'join', pathSegments = ['ABCD-1234']
 
+import '../l10n/app_localizations.dart';
+
 /// A code is "plausible" when it is ≥ 4 characters and contains only
 /// alphanumerics and hyphens.
 final _codePattern = RegExp(r'^[A-Za-z0-9\-]{4,}$');
@@ -33,9 +35,7 @@ String? parseInviteCode(Uri uri) {
 /// Builds a shareable text message containing the invite link and the bare
 /// code so the invite is useful even where custom-scheme links aren't
 /// auto-linkified.
-String inviteShareText(String code) {
+String inviteShareText(String code, AppLocalizations l10n) {
   final c = code.trim().toUpperCase();
-  return 'Join my household on mitlist!\n'
-      'Tap: ${buildInviteLink(c)}\n'
-      'Or open mitlist and enter the code: $c';
+  return l10n.inviteLinkShareText(buildInviteLink(c), c);
 }

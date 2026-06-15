@@ -20,6 +20,7 @@ import '../../widgets/app_icon.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/skeleton.dart';
+import '../../l10n/app_localizations.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
@@ -62,6 +63,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   }
 
   Future<void> _load() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isLoading = true;
       _error = null;
@@ -91,7 +93,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Failed to load notifications.';
+        _error = l10n.notificationsFailedLoad;
         _isLoading = false;
       });
     }
@@ -99,6 +101,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
   Future<void> _loadMore() async {
     if (_isLoadingMore || !_hasMore || _isLoading) return;
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isLoadingMore = true;
       _error = null;
@@ -116,7 +119,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Failed to load more notifications.';
+        _error = l10n.notificationsFailedLoadMore;
         _isLoadingMore = false;
       });
     }
@@ -125,6 +128,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   Future<void> _markAllRead() async {
     if (_isMutating) return;
     _isMutating = true;
+    final l10n = AppLocalizations.of(context)!;
     unawaited(Haptics.light());
     try {
       final service = await ref.read(notificationServiceProviderAsync.future);
@@ -132,7 +136,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       await _load();
     } catch (_) {
       if (!mounted) return;
-      setState(() => _error = 'Failed to mark all as read.');
+      setState(() => _error = l10n.notificationsFailedMarkAllRead);
     } finally {
       _isMutating = false;
     }
@@ -140,6 +144,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
   Future<void> _markRead(NotificationModel n) async {
     if (n.isRead) return;
+    final l10n = AppLocalizations.of(context)!;
     try {
       final service = await ref.read(notificationServiceProviderAsync.future);
       await service.markAsRead(n.id);
@@ -161,7 +166,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _error = 'Failed to mark as read.');
+      setState(() => _error = l10n.notificationsFailedMarkRead);
     }
   }
 
@@ -177,7 +182,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     } catch (e) {
       if (!mounted) return;
       unawaited(Haptics.failure());
-      setState(() => _error = friendlyErrorMessage(e));
+      setState(() => _error = friendlyErrorMessage(e, AppLocalizations.of(context)!));
     } finally {
       _isMutating = false;
     }
@@ -231,20 +236,21 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: MitlistAppBar.titleText(
-        'Notifications',
+        l10n.notificationsAppBarTitle,
         showStandardActions: false,
         leading: IconButton(
           icon: const AppIcon(name: 'arrowLeft'),
-          tooltip: 'Back',
+          tooltip: l10n.commonBack,
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
           AppButton(
             variant: AppButtonVariant.ghost,
             color: AppButtonColor.neutral,
-            text: 'Mark all read',
+            text: l10n.notificationsMarkAllRead,
             onPressed: _isLoading ? null : _markAllRead,
           ),
         ],
@@ -283,7 +289,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                     AppAlert(type: AppAlertType.error, message: _error!),
                     const SizedBox(height: MitlistSpacing.md),
                     AppButton(
-                      text: 'Retry',
+                      text: l10n.commonRetry,
                       onPressed: _load,
                     ),
                     const SizedBox(height: MitlistSpacing.md),
@@ -295,12 +301,12 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                       child: AppEmptyState(
                         lottieAsset: 'assets/animations/lottie/House.lottie',
                         icon: const AppIcon(name: 'homeOutline', size: 56),
-                        title: 'No household yet',
+                        title: l10n.commonNoHousehold,
                         description:
-                            'Create or join a household to receive notifications.',
+                            l10n.notificationsNoHouseholdDesc,
                         actions: [
                           AppButton(
-                            text: 'Go to households',
+                            text: l10n.commonGoToHouseholds,
                             onPressed: () => context.goNamed('groupsList'),
                           ),
                         ],
@@ -311,9 +317,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                       lottieAsset:
                           'assets/animations/lottie/Notifications.lottie',
                       icon: AppIcon(name: 'bellOutline', size: 56),
-                      title: 'No notifications yet',
+                      title: l10n.notificationsNoNotifications,
                       description:
-                          'When someone adds a chore, splits a bill, or mentions you, it will show up here.',
+                          l10n.notificationsNoNotificationsDesc,
                     ),
                 ]),
               ),
@@ -341,7 +347,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                           key: ValueKey(n.id),
                           direction: DismissDirection.endToStart,
                           background: Semantics(
-                            label: 'Delete notification',
+                            label: l10n.commonDelete,
                             child: Container(
                               alignment: Alignment.centerRight,
                               padding: const EdgeInsets.symmetric(
@@ -369,7 +375,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                             onTap: () => _handleNotificationTap(n),
                             semanticLabel: n.isRead
                                 ? n.title
-                                : 'Unread, ${n.title}',
+                                : l10n.notificationsUnreadLabel(n.title),
                             child: Padding(
                               padding:
                                   const EdgeInsets.all(MitlistSpacing.md),

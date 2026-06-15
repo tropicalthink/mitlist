@@ -11,6 +11,7 @@ import '../../theme/animations.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../utils/haptics.dart';
 import '../../utils/hub_helpers.dart';
 import '../../widgets/hub/pinned_memo_card.dart';
@@ -301,6 +302,7 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final boardBg =
         dark ? MitlistColors.pinwallBoardDark : MitlistColors.pinwallBoard;
@@ -370,7 +372,7 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _BoardChip(
-                      label: 'Pinwall',
+                      label: l10n.pinwallBoardLabel,
                       icon: Icons.push_pin_outlined,
                       dark: dark,
                     ),
@@ -394,7 +396,7 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
                 child: IgnorePointer(
                   child: Center(
                     child: _BoardChip(
-                      label: 'Drag notes to move  ·  Pinch to zoom',
+                      label: l10n.pinwallDragHint,
                       icon: Icons.open_with_rounded,
                       dark: dark,
                     ),
@@ -487,6 +489,7 @@ class _EmptyBoardHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final textColor = dark
         ? MitlistColors.pinwallNoteTextDark
         : MitlistColors.pinwallNoteTextLight;
@@ -494,7 +497,7 @@ class _EmptyBoardHint extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(MitlistSpacing.xl),
         child: Text(
-          'The wall is clear.\nPin a note from the hub to get started.',
+          l10n.pinwallEmptyBoard,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: textColor.withValues(alpha: 0.7),
@@ -580,6 +583,7 @@ class _BoardNoteCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
 
@@ -605,7 +609,7 @@ class _BoardNoteCard extends ConsumerWidget {
         : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7);
 
     final content = post.content.trim();
-    final userLabel = formatUserLabel(post.userId, me?.id);
+    final userLabel = formatUserLabel(post.userId, me?.id, l10n);
     final when = relativeDay(post.createdAt);
 
     final remindAt = post.remindAt;
@@ -618,7 +622,7 @@ class _BoardNoteCard extends ConsumerWidget {
     );
 
     return Semantics(
-      label: '$userLabel · $content',
+      label: l10n.pinwallNoteSemantics(userLabel, content),
       child: Transform.rotate(
         angle: rot.toDouble(),
         child: Stack(
@@ -798,12 +802,13 @@ class _BoardCloseButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final bg = dark
         ? MitlistColors.neutral950.withValues(alpha: 0.72)
         : MitlistColors.pinwallBoardBorder.withValues(alpha: 0.75);
     return Semantics(
       button: true,
-      label: 'Close board',
+      label: l10n.pinwallCloseBoard,
       child: GestureDetector(
         onTap: () {
           Haptics.light();

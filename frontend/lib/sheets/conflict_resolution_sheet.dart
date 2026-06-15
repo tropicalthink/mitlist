@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/list_provider.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/outbox_provider.dart';
 import '../storage/app_database.dart';
 import '../theme/spacing.dart';
@@ -14,9 +15,10 @@ import '../widgets/app_card.dart';
 /// Shows unresolved edit conflicts (someone else changed an item while your
 /// change was queued). Per conflict: keep your version or use theirs.
 Future<void> showConflictResolutionSheet(BuildContext context) {
+  final l10n = AppLocalizations.of(context)!;
   return showAppBottomSheet(
     context: context,
-    title: 'Resolve conflicts',
+    title: l10n.sheetConflictTitle,
     body: const _ConflictBody(),
   );
 }
@@ -26,6 +28,7 @@ class _ConflictBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final conflicts = ref.watch(conflictsProvider).valueOrNull ?? const [];
 
     if (conflicts.isEmpty) {
@@ -47,8 +50,7 @@ class _ConflictBody extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
             child: Text(
-              'Someone else changed these while your edit was waiting to sync. '
-              'Choose which version to keep.',
+              l10n.sheetConflictDescription,
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
@@ -68,6 +70,7 @@ class _ConflictCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final mine = _summarize(_patchFields(conflict.localPayloadJson));
     final theirs = _summarize(_fields(conflict.serverPayloadJson));
@@ -81,15 +84,15 @@ class _ConflictCard extends ConsumerWidget {
         children: [
           Text(_title(conflict), style: theme.textTheme.bodyMedium),
           const SizedBox(height: MitlistSpacing.sm),
-          _versionRow(context, 'Your version', mine),
+          _versionRow(context, l10n.sheetConflictLocal, mine),
           const SizedBox(height: MitlistSpacing.xs),
-          _versionRow(context, 'Their version', theirs),
+          _versionRow(context, l10n.sheetConflictServer, theirs),
           const SizedBox(height: MitlistSpacing.sm),
           Row(
             children: [
               Expanded(
                 child: AppButton(
-                  text: 'Keep mine',
+                  text: l10n.sheetConflictKeepLocal,
                   size: AppButtonSize.sm,
                   variant: AppButtonVariant.outline,
                   onPressed: () async {
@@ -102,7 +105,7 @@ class _ConflictCard extends ConsumerWidget {
               const SizedBox(width: MitlistSpacing.sm),
               Expanded(
                 child: AppButton(
-                  text: 'Use theirs',
+                  text: l10n.sheetConflictKeepServer,
                   size: AppButtonSize.sm,
                   variant: AppButtonVariant.soft,
                   onPressed: () async {

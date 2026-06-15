@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../providers/chore_provider.dart';
 import '../../providers/finance_provider.dart';
 import '../../providers/list_provider.dart';
@@ -37,6 +38,7 @@ class _ChoresStatCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final chores = ref.watch(cachedCurrentChoresByGroupProvider(groupId));
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -64,11 +66,11 @@ class _ChoresStatCard extends ConsumerWidget {
     return RepaintBoundary(
       child: _StatCard(
         icon: Icons.cleaning_services_outlined,
-        label: 'Chores',
+        label: l10n.hubStatsChores,
         value: totalChoreCount > 0 ? '$totalChoreCount' : '0',
         subtitle: choresOverdue > 0
-            ? '$choresOverdue overdue'
-            : (choresDue > 0 ? 'due today' : 'all done'),
+            ? '$choresOverdue ${l10n.hubStatsOverdue}'
+            : (choresDue > 0 ? l10n.hubStatsDue : l10n.hubStatsAllDone),
         color: choresOverdue > 0
             ? Theme.of(context).colorScheme.error
             : (choresDue > 0
@@ -87,6 +89,7 @@ class _FinanceStatCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final finance = ref.watch(cachedFinanceSummaryByGroupProvider(groupId));
     final summary = finance.valueOrNull;
     final balance = summary != null
@@ -96,11 +99,11 @@ class _FinanceStatCard extends ConsumerWidget {
     return RepaintBoundary(
       child: _StatCard(
         icon: Icons.receipt_outlined,
-        label: 'Balance',
+        label: l10n.hubStatsBalance,
         value: balance > 0
             ? '+\$${_fmt(balance)}'
             : (balance < 0 ? '-\$${_fmt(-balance)}' : '\$${_fmt(balance)}'),
-        subtitle: balance != 0 ? 'open' : 'settled',
+        subtitle: balance != 0 ? l10n.hubStatsOpen : l10n.expenseSettled,
         color: balance > 0
             ? Theme.of(context).colorScheme.tertiary
             : (balance < 0
@@ -121,6 +124,7 @@ class _ListsStatCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final lists = ref.watch(cachedListsByGroupProvider(groupId));
     final listCount = lists.valueOrNull
             ?.where((l) => l.type == 'shopping' || l.type == 'general')
@@ -130,9 +134,9 @@ class _ListsStatCard extends ConsumerWidget {
     return RepaintBoundary(
       child: _StatCard(
         icon: Icons.shopping_cart_outlined,
-        label: 'Lists',
+        label: l10n.hubStatsLists,
         value: '$listCount',
-        subtitle: listCount == 1 ? 'active list' : 'active lists',
+        subtitle: listCount == 1 ? l10n.hubStatsActiveList : l10n.hubStatsActiveLists,
         color: listCount > 0
             ? Theme.of(context).colorScheme.primary
             : Theme.of(context).colorScheme.tertiary,
@@ -149,6 +153,7 @@ class _PinwallRemindersStatCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final pinwall = ref.watch(pinwallPostsByGroupProvider(groupId));
     final pinnedWithReminders = pinwall.valueOrNull
             ?.where((p) => p.remindAt != null)
@@ -165,11 +170,11 @@ class _PinwallRemindersStatCard extends ConsumerWidget {
           child: RepaintBoundary(
             child: _StatCard(
               icon: Icons.alarm_outlined,
-              label: 'Reminders',
+              label: l10n.hubStatsReminders,
               value: '$pinnedWithReminders',
               subtitle: pinnedWithReminders == 1
-                  ? 'pinwall reminder'
-                  : 'pinwall reminders',
+                  ? l10n.hubStatsPinwallReminder
+                  : l10n.hubStatsPinwallReminders,
               color: Theme.of(context).colorScheme.primary,
               onTap: () {
                 final scroll = PrimaryScrollController.maybeOf(context);

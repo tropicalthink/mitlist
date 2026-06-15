@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/list_models.dart';
 import '../../services/scan/grocery_suggestion_service.dart';
 import '../../theme/animations.dart';
@@ -75,6 +76,7 @@ class ListComposerBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     // Bar sits on the base surface; the input uses an elevated surface token
     // so its background contrasts with the (onSurface) text in both themes.
@@ -118,8 +120,8 @@ class ListComposerBar extends StatelessWidget {
                     minLines: 1,
                     maxLines: 3,
                     decoration: InputDecoration(
-                      labelText: 'New item',
-                      hintText: 'e.g. Milk, 2 avocados, or 500g flour',
+                      labelText: l10n.composerNewItem,
+                      hintText: l10n.composerItemHint,
                       filled: true,
                       fillColor: fieldFill,
                     ),
@@ -134,7 +136,7 @@ class ListComposerBar extends StatelessWidget {
                   variant: AppButtonVariant.outline,
                   onPressed: onScan,
                   size: AppButtonSize.lg,
-                  tooltip: 'Scan list',
+                  tooltip: l10n.composerScanList,
                 ),
                 const SizedBox(width: MitlistSpacing.sm),
                 AppButton(
@@ -144,7 +146,7 @@ class ListComposerBar extends StatelessWidget {
                   ),
                   onPressed: onAdd,
                   size: AppButtonSize.lg,
-                  tooltip: 'Add item',
+                  tooltip: l10n.composerAddItem,
                 ),
               ],
             ),

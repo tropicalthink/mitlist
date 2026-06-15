@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../providers/onboarding_provider.dart';
 import '../../sheets/create_list_sheet.dart';
 import '../../sheets/invite_household_sheet.dart';
@@ -16,6 +17,7 @@ class HubQuickStart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final bodySmall = Theme.of(context).textTheme.bodySmall;
     final titleSmall = Theme.of(context).textTheme.titleSmall;
@@ -69,20 +71,20 @@ class HubQuickStart extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Get started',
+                    l10n.hubOnboardingGetStarted,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
                 Semantics(
                   button: true,
-                  label: 'Dismiss quick start',
+                  label: l10n.hubOnboardingDismiss,
                   child: IconButton(
                     icon: const Icon(Icons.close, size: 20),
                     onPressed: () {
                       dismissHubQuickStart();
                       onDismiss?.call();
                     },
-                    tooltip: 'Dismiss quick start',
+                    tooltip: l10n.hubOnboardingDismiss,
                   ),
                 ),
               ],
@@ -96,7 +98,7 @@ class HubQuickStart extends StatelessWidget {
               MitlistSpacing.sm,
             ),
             child: Text(
-              'Everything starts here. Pick what matters most.',
+              l10n.hubOnboardingDescription,
               style: bodySmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
@@ -117,7 +119,7 @@ class HubQuickStart extends StatelessWidget {
                   Expanded(
                     child: actionTile(
                       icon: Icons.person_add_outlined,
-                      label: 'Invite flatmates',
+                      label: l10n.hubOnboardingInvite,
                       onTap: () async {
                         await Haptics.light();
                         if (context.mounted) {
@@ -136,7 +138,7 @@ class HubQuickStart extends StatelessWidget {
                   Expanded(
                     child: actionTile(
                       icon: Icons.checklist_outlined,
-                      label: 'Create a list',
+                      label: l10n.hubOnboardingCreateList,
                       onTap: () async {
                         await Haptics.light();
                         if (context.mounted) {
@@ -167,7 +169,7 @@ class HubQuickStart extends StatelessWidget {
                   Expanded(
                     child: actionTile(
                       icon: Icons.assignment_turned_in_outlined,
-                      label: 'Add a chore',
+                      label: l10n.hubOnboardingAddChore,
                       onTap: () {
                         Haptics.light();
                         context.goNamed('chores');
@@ -181,7 +183,7 @@ class HubQuickStart extends StatelessWidget {
                   Expanded(
                     child: actionTile(
                       icon: Icons.receipt_long_outlined,
-                      label: 'Track an expense',
+                      label: l10n.hubOnboardingTrackExpense,
                       onTap: () {
                         Haptics.light();
                         context.goNamed('money');

@@ -15,6 +15,7 @@ import '../../providers/auth_provider.dart'
 import '../../providers/group_provider.dart';
 import '../../providers/onboarding_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/locale_provider.dart';
 import '../../providers/list_provider.dart' show appDatabaseProvider;
 import '../../providers/finance_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
@@ -29,6 +30,7 @@ import '../../widgets/app_input.dart';
 import '../../utils/haptics.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/skeleton.dart';
+import '../../l10n/app_localizations.dart';
 import '../../utils/friendly_error.dart';
 
 const String _appVersion = '1.0.0';
@@ -90,7 +92,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _error = 'Failed to load profile. Please try again.';
+        _error = AppLocalizations.of(context)!.accountFailedLoadProfile;
       });
       return;
     }
@@ -130,18 +132,20 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     final newName = _nameController.text.trim();
     setState(() => _isEditingName = false);
     if (newName.isEmpty) { _isSaving = false; return; }
+    final l10n2 = AppLocalizations.of(context)!;
     try {
       final authService = await ref.read(authServiceProviderAsync.future);
       await authService.updateMe(UpdateUserRequest(firstName: newName.split(' ')[0], lastName: newName.contains(' ') ? newName.split(' ').sublist(1).join(' ') : ''));
       setState(() => _name = newName);
     } catch (e) {
-      if (mounted) setState(() => _error = 'Failed to save name');
+      if (mounted) setState(() => _error = l10n2.accountFailedSaveName);
     } finally {
       _isSaving = false;
     }
   }
 
   void _showPasswordSheet() {
+    final l10n = AppLocalizations.of(context)!;
     final currentPasswordController = TextEditingController();
     final newPasswordController = TextEditingController();
     final confirmPasswordController = TextEditingController();
@@ -150,7 +154,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
 
     showAppBottomSheet(
       context: context,
-      title: 'Change password',
+      title: l10n.accountChangePassword,
       body: StatefulBuilder(
         builder: (context, setSheetState) {
           Future<void> submit() async {
@@ -161,16 +165,16 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             if (currentPassword.isEmpty ||
                 newPassword.isEmpty ||
                 confirmPassword.isEmpty) {
-              setSheetState(() => error = 'Fill out all password fields.');
+              setSheetState(() => error = l10n.accountFillPasswordFields);
               return;
             }
             if (newPassword.length < 6) {
               setSheetState(
-                  () => error = 'New password must be at least 6 characters.');
+                  () => error = l10n.accountPasswordMinLength);
               return;
             }
             if (newPassword != confirmPassword) {
-              setSheetState(() => error = 'New passwords do not match.');
+              setSheetState(() => error = l10n.accountPasswordsMismatch);
               return;
             }
 
@@ -190,12 +194,12 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               if (!mounted || !context.mounted) return;
               Navigator.of(context).pop();
               ScaffoldMessenger.of(this.context).showSnackBar(
-                const SnackBar(content: Text('Password changed')),
+                SnackBar(content: Text(l10n.accountPasswordChanged)),
               );
             } catch (e) {
               setSheetState(() {
                 isSaving = false;
-                error = friendlyErrorMessage(e);
+                error = friendlyErrorMessage(e, AppLocalizations.of(context)!);
               });
             }
           }
@@ -211,27 +215,27 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               AppInput(
                 controller: currentPasswordController,
                 obscureText: true,
-                label: 'Current password',
+                label: l10n.accountCurrentPassword,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: MitlistSpacing.md),
               AppInput(
                 controller: newPasswordController,
                 obscureText: true,
-                label: 'New password',
+                label: l10n.accountNewPassword,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: MitlistSpacing.md),
               AppInput(
                 controller: confirmPasswordController,
                 obscureText: true,
-                label: 'Confirm new password',
+                label: l10n.accountConfirmPassword,
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => submit(),
               ),
               const SizedBox(height: MitlistSpacing.lg),
               AppButton(
-                text: isSaving ? 'Saving...' : 'Change password',
+                text: isSaving ? l10n.commonSaving : l10n.accountChangePasswordButton,
                 onPressed: isSaving ? null : submit,
               ),
             ],
@@ -242,26 +246,17 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   void _showTermsSheet() {
+    final l10n = AppLocalizations.of(context)!;
     showAppBottomSheet(
       context: context,
-      title: 'Terms of Service',
+      title: l10n.accountTermsTitle,
       body: Builder(
         builder: (context) => Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Use mitlist responsibly. Shared household content is visible to the members of that household.',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: MitlistSpacing.md),
-            Text(
-              'Do not upload unlawful content, impersonate others, or abuse the service. Accounts and shared data may be removed for misuse.',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: MitlistSpacing.md),
-            Text(
-              'The app is provided as-is while the product is still evolving. Keep your own backups for anything critical.',
+              l10n.accountTermsBody,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           ],
@@ -290,19 +285,20 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   Future<void> _confirmDeleteAccount() async {
     if (_isSaving) return;
     _isSaving = true;
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showAppDialog<bool>(
       context: context,
-      title: 'Delete account',
-      body: const Text('This will permanently delete your account and all associated data. This cannot be undone.'),
+      title: l10n.accountDeleteAccount,
+      body: Text(l10n.accountDeleteAccountBody),
       actions: [
         AppButton(
-          text: 'Cancel',
+          text: l10n.commonCancel,
           variant: AppButtonVariant.outline,
           onPressed: () => Navigator.of(context).pop(false),
         ),
         const SizedBox(width: MitlistSpacing.sm),
         AppButton(
-          text: 'Delete',
+          text: l10n.commonDelete,
           color: AppButtonColor.error,
           onPressed: () => Navigator.of(context).pop(true),
         ),
@@ -322,7 +318,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e))),
+        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     } finally {
       _isSaving = false;
@@ -355,6 +351,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   Widget _buildProfileCard() {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
 
     return AppCard(
@@ -400,7 +397,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 else
                   Semantics(
                     button: true,
-                    label: 'Edit your name',
+                    label: l10n.accountEditYourName,
                     child: GestureDetector(
                       onTap: _startEditingName,
                       child: Text(
@@ -427,6 +424,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   Widget _buildHouseholdCard() {
+    final l10n = AppLocalizations.of(context)!;
     if (_households.length < 2) {
       return const SizedBox.shrink();
     }
@@ -436,7 +434,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Household',
+            l10n.accountHouseholdSection,
             style: Theme.of(context).textTheme.labelMedium,
           ),
           const SizedBox(height: MitlistSpacing.sm),
@@ -444,7 +442,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             final isActive = h.id == _activeHouseholdId;
             return Semantics(
               button: true,
-              label: 'Switch to ${h.name}',
+              label: l10n.accountSwitchToHousehold(h.name),
               child: InkWell(
               onTap: () {
                 setState(() => _activeHouseholdId = h.id);
@@ -482,39 +480,60 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   Widget _buildPreferencesCard() {
+    final l10n = AppLocalizations.of(context)!;
     final themeMode = ref.watch(themeModeProvider);
+    final locale = ref.watch(localeProvider);
 
     return AppCard(
       child: Column(
         children: [
           _MenuRow(
             icon: const AppIcon(name: 'inbox'),
-            label: 'Notification inbox',
+            label: l10n.accountNotificationInbox,
             onTap: () => context.goNamed('notifications'),
           ),
           Divider(color: Theme.of(context).colorScheme.outlineVariant),
           _MenuRow(
             icon: const AppIcon(name: 'cog6Tooth'),
-            label: 'Notification preferences',
+            label: l10n.accountNotificationPreferences,
             onTap: () => context.goNamed('notificationPreferences'),
           ),
           Divider(color: Theme.of(context).colorScheme.outlineVariant),
           _MenuRow(
             icon: const AppIcon(name: 'sun'),
-            label: 'Appearance',
+            label: l10n.accountAppearance,
             trailing: DropdownButton<ThemeMode>(
               value: themeMode,
               underline: const SizedBox.shrink(),
               isDense: true,
-              items: const [
-                DropdownMenuItem(value: ThemeMode.system, child: Text('System')),
-                DropdownMenuItem(value: ThemeMode.light, child: Text('Light')),
-                DropdownMenuItem(value: ThemeMode.dark, child: Text('Dark')),
+              items: [
+                DropdownMenuItem(value: ThemeMode.system, child: Text(l10n.accountAppearanceSystem)),
+                DropdownMenuItem(value: ThemeMode.light, child: Text(l10n.accountAppearanceLight)),
+                DropdownMenuItem(value: ThemeMode.dark, child: Text(l10n.accountAppearanceDark)),
               ],
               onChanged: (mode) {
                 if (mode != null) {
                   ref.read(themeModeProvider.notifier).set(mode);
                 }
+              },
+            ),
+          ),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          _MenuRow(
+            icon: const AppIcon(name: 'language'),
+            label: l10n.accountLanguage,
+            trailing: DropdownButton<Locale?>(
+              value: locale,
+              underline: const SizedBox.shrink(),
+              isDense: true,
+              items: [
+                DropdownMenuItem(value: null, child: Text(l10n.accountLanguageSystem)),
+                ...LocaleNotifier.availableLanguages.entries.map(
+                  (e) => DropdownMenuItem(value: Locale(e.key), child: Text(e.value)),
+                ),
+              ],
+              onChanged: (loc) {
+                ref.read(localeProvider.notifier).set(loc);
               },
             ),
           ),
@@ -524,28 +543,30 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   Widget _buildSecurityCard() {
+    final l10n = AppLocalizations.of(context)!;
     return AppCard(
       child: _MenuRow(
         icon: const AppIcon(name: 'key'),
-        label: 'Change Password',
+        label: l10n.accountChangePasswordRow,
         onTap: _showPasswordSheet,
       ),
     );
   }
 
   Widget _buildAboutCard() {
+    final l10n = AppLocalizations.of(context)!;
     return AppCard(
       child: Column(
         children: [
           _MenuRow(
             icon: const AppIcon(name: 'informationCircle'),
-            label: 'Version',
+            label: l10n.accountVersion,
             value: _appVersion,
           ),
           Divider(color: Theme.of(context).colorScheme.outlineVariant),
           _MenuRow(
             icon: const AppIcon(name: 'identification'),
-            label: 'Terms of Service',
+            label: l10n.accountTermsRow,
             onTap: _showTermsSheet,
           ),
         ],
@@ -582,7 +603,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e))),
+        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     } finally {
       if (mounted) setState(() => _isExporting = false);
@@ -590,6 +611,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   void _copyExpensesJson() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_activeHouseholdId == null) return;
     try {
       final financeService = await ref.read(financeServiceProviderAsync.future);
@@ -601,17 +623,18 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       if (!mounted) return;
       unawaited(Haptics.light());
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Expenses JSON copied to clipboard')),
+        SnackBar(content: Text(l10n.accountJSONCopied)),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e))),
+        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
 
   Future<void> _showConvertGuestSheet() async {
+    final l10n = AppLocalizations.of(context)!;
     final nameCtrl = TextEditingController();
     final emailCtrl = TextEditingController();
     final passCtrl = TextEditingController();
@@ -620,14 +643,14 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
 
     await showAppBottomSheet<void>(
       context: context,
-      title: 'Create your account',
+      title: l10n.accountCreateAccountTitle,
       body: StatefulBuilder(builder: (ctx, setLocal) {
         Future<void> submit() async {
           final name = nameCtrl.text.trim();
           final email = emailCtrl.text.trim();
           final password = passCtrl.text;
           if (name.isEmpty || email.isEmpty || password.isEmpty) {
-            setLocal(() => sheetError = 'Please fill in all fields.');
+            setLocal(() => sheetError = l10n.accountFillAllFields);
             return;
           }
           setLocal(() { isConverting = true; sheetError = null; });
@@ -644,13 +667,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             if (mounted) {
               ref.read(authStateProvider.notifier).state = true;
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Account created. Welcome!')),
+                SnackBar(content: Text(l10n.accountCreatedWelcome)),
               );
             }
           } catch (e) {
             setLocal(() {
               isConverting = false;
-              sheetError = friendlyErrorMessage(e);
+              sheetError = friendlyErrorMessage(e, AppLocalizations.of(context)!);
             });
           }
         }
@@ -660,16 +683,16 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             AppInput(
-              label: 'Your name',
-              hint: 'e.g. Alex Smith',
+              label: l10n.accountYourName,
+              hint: l10n.accountYourNameHint,
               controller: nameCtrl,
               textInputAction: TextInputAction.next,
               maxLength: 100,
             ),
             const SizedBox(height: MitlistSpacing.md),
             AppInput(
-              label: 'Email',
-              hint: 'you@example.com',
+              label: l10n.accountEmail,
+              hint: l10n.accountEmailHint,
               controller: emailCtrl,
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
@@ -677,7 +700,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             ),
             const SizedBox(height: MitlistSpacing.md),
             AppInput(
-              label: 'Password',
+              label: l10n.accountPassword,
               controller: passCtrl,
               obscureText: true,
               textInputAction: TextInputAction.done,
@@ -690,7 +713,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             ],
             const SizedBox(height: MitlistSpacing.lg),
             AppButton(
-              text: isConverting ? 'Creating account…' : 'Create account',
+              text: isConverting ? l10n.accountCreatingAccount : l10n.accountCreateAccount,
               variant: AppButtonVariant.solid,
               color: AppButtonColor.primary,
               size: AppButtonSize.lg,
@@ -708,6 +731,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   Widget _buildGuestUpgradeCard() {
+    final l10n = AppLocalizations.of(context)!;
     if (!_isGuest) return const SizedBox.shrink();
 
     return Padding(
@@ -727,7 +751,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 const SizedBox(width: MitlistSpacing.sm),
                 Expanded(
                   child: Text(
-                    'You\'re on a guest account',
+                    l10n.accountGuestTitle,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
@@ -735,7 +759,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             ),
             const SizedBox(height: MitlistSpacing.sm),
             Text(
-              'Create a full account to keep your data permanently and access all features.',
+              l10n.accountGuestDesc,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -744,7 +768,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             SizedBox(
               width: double.infinity,
               child: AppButton(
-                text: 'Create full account',
+                text: l10n.accountCreateFullAccount,
                 variant: AppButtonVariant.solid,
                 color: AppButtonColor.primary,
                 onPressed: _showConvertGuestSheet,
@@ -757,12 +781,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   Widget _buildDataCard() {
+    final l10n = AppLocalizations.of(context)!;
     return AppCard(
       child: Column(
         children: [
           _MenuRow(
             icon: const AppIcon(name: 'arrowDownTray'),
-            label: 'Export expenses (CSV)',
+            label: l10n.accountExportCSV,
             onTap: _isExporting || _activeHouseholdId == null
                 ? null
                 : () => _exportExpenses('csv'),
@@ -770,7 +795,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           Divider(color: Theme.of(context).colorScheme.outlineVariant),
           _MenuRow(
             icon: const AppIcon(name: 'arrowDownTray'),
-            label: 'Share expenses (JSON)',
+            label: l10n.accountShareJSON,
             onTap: _isExporting || _activeHouseholdId == null
                 ? null
                 : () => _exportExpenses('json'),
@@ -778,7 +803,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           Divider(color: Theme.of(context).colorScheme.outlineVariant),
           _MenuRow(
             icon: const AppIcon(name: 'copy'),
-            label: 'Copy expenses (JSON)',
+            label: l10n.accountCopyJSON,
             onTap: _activeHouseholdId == null
                 ? null
                 : _copyExpensesJson,
@@ -789,12 +814,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   Widget _buildDangerZone() {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         SizedBox(
           width: double.infinity,
           child: AppButton(
-            text: 'Log out',
+            text: l10n.accountLogOut,
             variant: AppButtonVariant.soft,
             color: AppButtonColor.error,
             size: AppButtonSize.lg,
@@ -805,7 +831,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         SizedBox(
           width: double.infinity,
           child: AppButton(
-            text: 'Delete account',
+            text: l10n.accountDeleteAccountButton,
             variant: AppButtonVariant.ghost,
             color: AppButtonColor.error,
             size: AppButtonSize.lg,
@@ -818,9 +844,10 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: MitlistAppBar.titleText(
-        'You',
+        l10n.accountAppBarTitle,
         showStandardActions: false,
       ),
       body: RefreshIndicator(
@@ -834,7 +861,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             AppAlert(type: AppAlertType.error, message: _error!),
             const SizedBox(height: MitlistSpacing.md),
             AppButton(
-              text: 'Retry',
+              text: l10n.commonRetry,
               onPressed: _loadData,
             ),
             const SizedBox(height: MitlistSpacing.md),
