@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/chore_models.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
@@ -86,9 +87,10 @@ class ChoreDetailSheet extends StatefulWidget {
     VoidCallback? onAddSuppliesToList,
     VoidCallback? onDelete,
   }) async {
+    final l10n = AppLocalizations.of(context)!;
     return showAppBottomSheet(
       context: context,
-      title: 'Chore details',
+      title: l10n.choreDetailTitle,
       body: ChoreDetailSheet(
         choreId: choreId,
         title: title,
@@ -139,15 +141,16 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
   }
 
   void _handleSkip() async {
+    final l10n = AppLocalizations.of(context)!;
     final reason = await showAppDialog<String>(
       context: context,
-      title: 'Skip chore',
+      title: l10n.choreDetailSkipTitle,
       body: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           AppInput(
-            label: 'Reason (optional)',
-            hint: 'e.g. Away this week',
+            label: l10n.choreDetailSkipReason,
+            hint: l10n.choreDetailSkipReasonHint,
             onSubmitted: (value) => Navigator.of(context).pop(value),
           ),
           const SizedBox(height: MitlistSpacing.md),
@@ -157,14 +160,14 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
               AppButton(
                 variant: AppButtonVariant.outline,
                 color: AppButtonColor.neutral,
-                text: 'Cancel',
+                text: l10n.commonCancel,
                 onPressed: () => Navigator.of(context).pop(),
               ),
               const SizedBox(width: MitlistSpacing.sm),
               AppButton(
                 variant: AppButtonVariant.outline,
                 color: AppButtonColor.neutral,
-                text: 'Skip',
+                text: l10n.commonSkip,
                 onPressed: () => Navigator.of(context).pop(''),
               ),
             ],
@@ -230,6 +233,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
 
     return Column(
@@ -253,31 +257,31 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
           padding: AppCardPadding.md,
           child: Column(
             children: [
-              _DetailRow(label: 'Assignee', value: widget.assignee),
+              _DetailRow(label: l10n.choreDetailAssignee, value: widget.assignee),
               const AppDivider(),
               _DetailRow(
-                label: 'Due',
+                label: l10n.choreDetailDue,
                 value: DateFormat.yMMMd().format(widget.dueDate),
               ),
               if (widget.trackedCount != null) ...[
                 const AppDivider(),
-                _DetailRow(label: 'Tracked', value: widget.trackedCount.toString()),
+                _DetailRow(label: l10n.choreDetailTracked, value: widget.trackedCount.toString()),
               ],
               if (widget.lastTrackedAt != null) ...[
                 const AppDivider(),
                 _DetailRow(
-                  label: 'Last done',
+                  label: l10n.choreDetailLastDone,
                   value: DateFormat.yMMMd().format(widget.lastTrackedAt!),
                 ),
               ],
               if (widget.lastDoneByLabel != null && widget.lastDoneByLabel!.isNotEmpty) ...[
                 const AppDivider(),
-                _DetailRow(label: 'Last by', value: widget.lastDoneByLabel!),
+                _DetailRow(label: l10n.choreDetailLastBy, value: widget.lastDoneByLabel!),
               ],
               if (widget.averageFrequencyHours != null) ...[
                 const AppDivider(),
                 _DetailRow(
-                  label: 'Average',
+                  label: l10n.choreDetailAverage,
                   value: _formatAverageFrequency(widget.averageFrequencyHours!),
                 ),
               ],
@@ -286,7 +290,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
         ),
         if (_subtasks.isNotEmpty || widget.onAddSubtask != null) ...[
           const SizedBox(height: MitlistSpacing.lg),
-          Text('Subtasks', style: textTheme.titleMedium),
+          Text(l10n.choreDetailSubtasks, style: textTheme.titleMedium),
           const SizedBox(height: MitlistSpacing.sm),
           ..._subtasks.map((subtask) => _SubtaskRow(
                 subtask: subtask,
@@ -298,7 +302,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
           if (_showAddSubtask) ...[
             const SizedBox(height: MitlistSpacing.sm),
             AppInput(
-              hint: 'New subtask',
+              hint: l10n.choreDetailNewSubtask,
               controller: _subtaskController,
               onSubmitted: (_) => _handleAddSubtask(),
             ),
@@ -309,8 +313,8 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
                 variant: AppButtonVariant.ghost,
                 color: AppButtonColor.primary,
                 text: _showAddSubtask
-                    ? (_isSavingSubtask ? 'Saving...' : 'Save')
-                    : 'Add subtask',
+                    ? (_isSavingSubtask ? l10n.commonSaving : l10n.commonSave)
+                    : l10n.commonAdd,
                 isLoading: _isSavingSubtask,
                 icon: const AppIcon(name: 'plus'),
                 onPressed: _isSavingSubtask ? null : _handleAddSubtask,
@@ -319,7 +323,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
         ],
         if (widget.supplies.isNotEmpty || widget.onAddSuppliesToList != null) ...[
           const SizedBox(height: MitlistSpacing.lg),
-          Text('Supplies', style: textTheme.titleMedium),
+          Text(l10n.choreDetailSupplies, style: textTheme.titleMedium),
           const SizedBox(height: MitlistSpacing.sm),
           Wrap(
             spacing: MitlistSpacing.sm,
@@ -339,7 +343,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
                 variant: AppButtonVariant.outline,
                 color: AppButtonColor.primary,
                 size: AppButtonSize.md,
-                text: 'Add supplies to list',
+                text: l10n.choreDetailAddSuppliesToList,
                 onPressed: widget.onAddSuppliesToList,
               ),
             ),
@@ -358,7 +362,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
                 variant: AppButtonVariant.solid,
                 color: AppButtonColor.success,
                 size: AppButtonSize.lg,
-                text: 'Mark done',
+                text: l10n.choreDetailMarkDone,
                 onPressed: widget.onMarkDone,
               ),
             ),
@@ -370,7 +374,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
                 variant: AppButtonVariant.outline,
                 color: AppButtonColor.neutral,
                 size: AppButtonSize.lg,
-                text: 'Skip',
+                text: l10n.commonSkip,
                 onPressed: _handleSkip,
               ),
             ),
@@ -383,7 +387,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
                 variant: AppButtonVariant.outline,
                 color: AppButtonColor.primary,
                 size: AppButtonSize.lg,
-                text: 'Move to tomorrow',
+                text: l10n.choreDetailMoveToTomorrow,
                 onPressed: widget.onRescheduleTomorrow,
               ),
             ),
@@ -396,7 +400,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
                 variant: AppButtonVariant.ghost,
                 color: AppButtonColor.neutral,
                 size: AppButtonSize.lg,
-                text: 'Undo last execution',
+                text: l10n.choreDetailUndoLast,
                 onPressed: widget.onUndo,
               ),
             ),
@@ -409,23 +413,23 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
                 variant: AppButtonVariant.ghost,
                 color: AppButtonColor.error,
                 size: AppButtonSize.lg,
-                text: _isDeleting ? 'Deleting...' : 'Delete chore',
+                text: _isDeleting ? l10n.commonDeleting : l10n.choreDetailDeleteTitleDialog,
                 isLoading: _isDeleting,
                 onPressed: _isDeleting
                     ? null
                     : () async {
                         final confirmed = await showAppDialog<bool>(
                           context: context,
-                          title: 'Delete chore',
-                          body: const Text('This will permanently delete this chore and its history.'),
+                          title: l10n.choreDetailDeleteTitleDialog,
+                          body: Text(l10n.choreDetailDeleteBody),
                           actions: [
                             AppButton(
-                              text: 'Cancel',
+                              text: l10n.commonCancel,
                               variant: AppButtonVariant.outline,
                               onPressed: () => Navigator.of(context).pop(false),
                             ),
                             AppButton(
-                              text: 'Delete',
+                              text: l10n.commonDelete,
                               color: AppButtonColor.error,
                               onPressed: () => Navigator.of(context).pop(true),
                             ),
@@ -502,6 +506,7 @@ class _SubtaskRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xs),
       child: Row(
@@ -509,8 +514,8 @@ class _SubtaskRow extends StatelessWidget {
           AnimatedCheckToggle(
             value: subtask.completed,
             onChanged: (_) => onToggle(),
-            semanticLabelOn: 'Mark subtask as not done',
-            semanticLabelOff: 'Mark subtask as done',
+            semanticLabelOn: l10n.choreDetailSubtaskMarkNotDone,
+            semanticLabelOff: l10n.choreDetailSubtaskMarkDone,
           ),
           Expanded(
             child: Text(
@@ -528,7 +533,7 @@ class _SubtaskRow extends StatelessWidget {
           if (onDelete != null)
             IconButton(
               icon: const AppIcon(name: 'xMark', size: 20),
-              tooltip: 'Delete subtask',
+              tooltip: l10n.choreDetailDeleteSubtask,
               onPressed: onDelete,
             ),
         ],

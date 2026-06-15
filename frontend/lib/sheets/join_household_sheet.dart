@@ -16,6 +16,7 @@ import '../utils/haptics.dart';
 import '../widgets/alert.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
+import '../l10n/app_localizations.dart';
 import '../widgets/app_input.dart';
 
 enum _Phase { entry, joining, success }
@@ -24,9 +25,10 @@ class JoinHouseholdSheet extends ConsumerStatefulWidget {
   const JoinHouseholdSheet({super.key});
 
   static Future<Group?> show(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
     return showAppBottomSheet<Group>(
       context: context,
-      title: 'Join household',
+      title: l10n.sheetJoinTitle,
       body: const JoinHouseholdSheet(),
     );
   }
@@ -136,7 +138,7 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
       unawaited(Haptics.failure());
       setState(() {
         _phase = _Phase.entry;
-        _error = friendlyErrorMessage(e);
+        _error = friendlyErrorMessage(e, AppLocalizations.of(context)!);
       });
     }
   }
@@ -154,6 +156,7 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
   }
 
   Widget _buildEntry() {
+    final l10n = AppLocalizations.of(context)!;
     final isJoining = _phase == _Phase.joining;
     return KeyedSubtree(
       key: const ValueKey('entry'),
@@ -166,8 +169,8 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
             const SizedBox(height: MitlistSpacing.md),
           ],
           AppInput(
-            label: 'Invite code',
-            hint: 'SUNNY-TACO-42',
+            label: l10n.sheetJoinCodeLabel,
+            hint: l10n.sheetJoinCodeExample,
             controller: _codeController,
             enabled: !isJoining,
             textInputAction: TextInputAction.done,
@@ -187,7 +190,7 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
           ),
           const SizedBox(height: MitlistSpacing.xs),
           Text(
-            'Codes look like WORD-WORD-42. Ask whoever invited you.',
+            l10n.joinCodeFormatHint,
             style: MitlistTypography.labelXSmall(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
@@ -199,7 +202,7 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
               variant: AppButtonVariant.solid,
               color: AppButtonColor.primary,
               size: AppButtonSize.lg,
-              text: isJoining ? 'Joining...' : 'Join household',
+              text: isJoining ? l10n.authJoinJoining : l10n.sheetJoinJoin,
               isLoading: isJoining,
               onPressed: _canJoin ? _onJoin : null,
             ),
@@ -210,6 +213,7 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
   }
 
   Widget _buildSuccess() {
+    final l10n = AppLocalizations.of(context)!;
     final group = _joinedGroup;
     if (group == null) return _buildEntry();
     final colorScheme = Theme.of(context).colorScheme;
@@ -282,7 +286,7 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
                 FadeTransition(
                   opacity: _subtitleFade,
                   child: Text(
-                    "You're in.",
+                    l10n.authJoinYoureIn,
                     style: textTheme.bodyLarge?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -305,7 +309,7 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
                   FadeTransition(
                     opacity: _membersFade,
                     child: Text(
-                      '$memberCount ${memberCount == 1 ? 'member' : 'members'} already inside',
+                      l10n.joinMembersAlreadyInside(memberCount),
                       style: textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -324,7 +328,7 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
                     child: AppButton(
                       variant: AppButtonVariant.solid,
                       size: AppButtonSize.lg,
-                      text: 'Enter ${group.name}',
+                      text: l10n.joinEnterGroup(group.name),
                       onPressed: () => Navigator.of(context).pop(group),
                     ),
                   ),

@@ -34,6 +34,7 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/list_entrance.dart';
 import '../../widgets/mitlist_app_bar.dart';
+import '../../l10n/app_localizations.dart';
 
 class ChoresScreen extends ConsumerStatefulWidget {
   const ChoresScreen({super.key});
@@ -44,8 +45,10 @@ class ChoresScreen extends ConsumerStatefulWidget {
 
 class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   bool _isLoading = true;
-  String? _error;
+  bool _hasError = false;
   final List<_Chore> _chores = [];
+
+  AppLocalizations get _l10n => AppLocalizations.of(context)!;
   StreamSubscription<List<CurrentChore>>? _sub;
   bool _filterMe = true;
   bool _isMutating = false;
@@ -98,7 +101,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     if (!mounted) return;
     setState(() {
       _isLoading = true;
-      _error = null;
+      _hasError = false;
     });
     try {
       await ref.read(currentGroupIdProvider.notifier).ensureLoaded();
@@ -160,7 +163,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Failed to load chores. Please try again.';
+        _hasError = true;
         _isLoading = false;
       });
     }
@@ -201,7 +204,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
               completed: !entry.chore.isActive ||
                   entry.pendingAssignment?.status.toLowerCase() == 'completed',
               lastActionLabel: entry.lastAssignment != null
-                  ? _formatLastAction(entry.lastAssignment!)
+                  ? _formatLastAction(_l10n, entry.lastAssignment!)
                   : null,
               supplies: entry.chore.supplies,
             ))
@@ -213,7 +216,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         ..addAll(chores);
       _hasHousehold = true;
       _isLoading = allowSkeleton && chores.isEmpty;
-      _error = null;
+      _hasError = false;
     });
   }
 
@@ -297,7 +300,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
           await service.updateSubtask(subtaskId, completed: completed);
         } catch (e) {
           if (!mounted) return;
-          _showChoreActionError('Failed to update subtask. Please try again.');
+          _showChoreActionError(_l10n.choreFailedUpdateSubtask);
         } finally {
           _isMutating = false;
         }
@@ -311,7 +314,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
           return created.id;
         } catch (e) {
           if (!mounted) return null;
-          _showChoreActionError('Failed to add subtask. Please try again.');
+          _showChoreActionError(_l10n.choreFailedAddSubtask);
           return null;
         } finally {
           _isMutating = false;
@@ -326,7 +329,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         } catch (e) {
           if (!mounted) return;
           unawaited(Haptics.failure());
-          _showChoreActionError(friendlyErrorMessage(e));
+          _showChoreActionError(friendlyErrorMessage(e, AppLocalizations.of(context)!));
         } finally {
           _isMutating = false;
         }
@@ -339,13 +342,13 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   }
 
   String _statusLabel(String? dueStatus, bool completed) {
-    if (completed) return 'Done';
+    if (completed) return _l10n.choreStatusDone;
     return switch (dueStatus) {
-      'overdue' => 'Overdue',
-      'due_today' => 'Due today',
-      'due_soon' => 'Due soon',
-      'later' => 'Scheduled',
-      _ => 'Pending',
+      'overdue' => _l10n.choreStatusOverdue,
+      'due_today' => _l10n.choreStatusDueToday,
+      'due_soon' => _l10n.choreStatusDueSoon,
+      'later' => _l10n.choreStatusScheduled,
+      _ => _l10n.choreStatusPending,
     };
   }
 
@@ -372,6 +375,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   Future<void> _toggleComplete(String id) async {
     if (_isMutating) return;
     _isMutating = true;
+    final l10n = AppLocalizations.of(context)!;
     try {
       final chore = _chores.firstWhere((c) => c.id == id);
       if (chore.completed) {
@@ -388,12 +392,12 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '${chore.title} done',
+            l10n.choreDoneSnackbar(chore.title),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           action: SnackBarAction(
-            label: 'Undo',
+            label: l10n.commonUndo,
             onPressed: () => _undoComplete(id),
           ),
         ),
@@ -404,7 +408,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         final chore = _chores.where((c) => c.id == id).firstOrNull;
         chore?.completed = false;
       });
-      _showChoreActionError('Failed to complete chore. Please try again.');
+      _showChoreActionError(_l10n.choreFailedComplete);
     } finally {
       _isMutating = false;
     }
@@ -422,7 +426,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     } catch (e) {
       if (!mounted) return;
       _showChoreActionError(
-          'Failed to undo chore execution. Please try again.');
+          _l10n.choreFailedUndo);
     }
   }
 
@@ -440,7 +444,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      _showChoreActionError('Failed to skip chore. Please try again.');
+      _showChoreActionError(_l10n.choreFailedSkip);
     } finally {
       _isMutating = false;
     }
@@ -463,13 +467,13 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
           .toList();
       if (shoppingLists.isEmpty) {
         if (!mounted) return;
-        _showChoreActionError('Create a shopping list first.');
+        _showChoreActionError(_l10n.choreCreateListFirst);
         return;
       }
       if (!mounted) return;
       final selectedList = await showAppDialog<String>(
         context: context,
-        title: 'Add supplies to list',
+        title: _l10n.choreAddSuppliesToList,
         body: SizedBox(
           width: double.maxFinite,
           child: ListView.builder(
@@ -494,11 +498,11 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       await choreSvc.addSuppliesToList(choreId, selectedList);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Supplies added to list')),
+        SnackBar(content: Text(_l10n.choreSuppliesAdded)),
       );
     } catch (e) {
       if (!mounted) return;
-      _showChoreActionError('Failed to add supplies. Please try again.');
+      _showChoreActionError(_l10n.choreFailedAddSupplies);
     } finally {
       _isMutating = false;
     }
@@ -513,7 +517,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       await repo.rescheduleOfflineFirst(id, tomorrow, groupId: _groupId);
     } catch (e) {
       if (!mounted) return;
-      _showChoreActionError('Failed to reschedule chore. Please try again.');
+      _showChoreActionError(_l10n.choreFailedReschedule);
     } finally {
       _isMutating = false;
     }
@@ -528,7 +532,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     } catch (e) {
       if (!mounted) return;
       _showChoreActionError(
-          'Failed to undo chore execution. Please try again.');
+          _l10n.choreFailedUndo);
     } finally {
       _isMutating = false;
     }
@@ -539,18 +543,17 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     _isMutating = true;
     final confirmed = await showAppDialog<bool>(
       context: context,
-      title: 'Delete chore',
-      body: const Text(
-          'This will permanently delete this chore and its history. This cannot be undone.'),
+      title: _l10n.choreDeleteTitle,
+      body: Text(_l10n.choreDeleteBody),
       actions: [
         AppButton(
-          text: 'Cancel',
+          text: _l10n.commonCancel,
           variant: AppButtonVariant.outline,
           onPressed: () => Navigator.of(context).pop(false),
         ),
         const SizedBox(width: MitlistSpacing.sm),
         AppButton(
-          text: 'Delete',
+          text: _l10n.commonDelete,
           color: AppButtonColor.error,
           onPressed: () => Navigator.of(context).pop(true),
         ),
@@ -568,7 +571,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     } catch (e) {
       if (!mounted) return;
       unawaited(Haptics.failure());
-      _showChoreActionError(friendlyErrorMessage(e));
+      _showChoreActionError(friendlyErrorMessage(e, AppLocalizations.of(context)!));
     } finally {
       _isMutating = false;
     }
@@ -633,6 +636,22 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     'Later',
   ];
 
+  String _sectionTitle(String key) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (key) {
+      case 'Overdue':
+        return l10n.choreSectionOverdue;
+      case 'Today':
+        return l10n.choreSectionToday;
+      case 'This week':
+        return l10n.choreSectionThisWeek;
+      case 'Later':
+        return l10n.choreSectionLater;
+      default:
+        return key;
+    }
+  }
+
   /// Chores assigned to me that need doing now (overdue or due today). This is
   /// the "your turn" set the hero leads with.
   List<_Chore> _myTurnNow() {
@@ -648,6 +667,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     ref.listen(shellVisitedTabsProvider, (previous, next) {
       _activateTabIfNeeded();
     });
@@ -664,10 +685,10 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     final myTurn = _myTurnNow();
 
     final showHeader =
-        _hasHousehold && !_isLoading && _error == null && _chores.isNotEmpty;
+        _hasHousehold && !_isLoading && !_hasError && _chores.isNotEmpty;
 
     return Scaffold(
-      appBar: MitlistAppBar.titleText('Chores'),
+      appBar: MitlistAppBar.titleText(l10n.choreAppBarTitle),
       floatingActionButton: AppButton(
         size: AppButtonSize.lg,
         onPressed:
@@ -675,8 +696,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         icon: AppIcon(
           name: _hasHousehold ? 'plus' : 'userGroup',
         ),
-        text: _hasHousehold ? 'Add chore' : 'Households',
-        tooltip: _hasHousehold ? 'Add chore' : 'Households',
+        text: _hasHousehold ? l10n.choreAddChore : l10n.choreAddHouseholds,
+        tooltip: _hasHousehold ? l10n.choreAddChore : l10n.choreAddHouseholds,
       ),
       body: RefreshIndicator(
         color: Theme.of(context).colorScheme.primary,
@@ -702,7 +723,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                   ),
                 ),
               ),
-            ] else if (_error != null) ...[
+            ] else if (_hasError) ...[
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.all(MitlistSpacing.md),
@@ -710,11 +731,11 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                     children: [
                       AppAlert(
                         type: AppAlertType.error,
-                        message: _error!,
+                        message: l10n.commonFailedToLoad,
                       ),
                       const SizedBox(height: MitlistSpacing.md),
                       AppButton(
-                        text: 'Retry',
+                        text: l10n.commonRetry,
                         onPressed: () => _loadChores(),
                       ),
                     ],
@@ -734,12 +755,12 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                         size: 56,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
-                      title: 'No household yet',
+                      title: l10n.choreNoHouseholdTitle,
                       description:
-                          'Create or join a household before adding chores.',
+                          l10n.choreNoHouseholdDesc,
                       actions: [
                         AppButton(
-                          text: 'Go to households',
+                          text: l10n.choreGoToHouseholds,
                           onPressed: () => context.goNamed('groupsList'),
                         ),
                       ],
@@ -760,12 +781,12 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                         size: 56,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
-                      title: 'No chores yet',
+                      title: l10n.choreNoChoresTitle,
                       description:
-                          'Track recurring household tasks. Assign them to anyone in your group.',
+                          l10n.choreNoChoresDesc,
                       actions: [
                         AppButton(
-                          text: 'Add a chore',
+                          text: l10n.choreAddAChore,
                           icon: AppIcon(
                             name: 'plus',
                             size: 16,
@@ -825,12 +846,12 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                         size: 48,
                         color: Theme.of(context).colorScheme.tertiary,
                       ),
-                      title: 'Nothing on you right now',
+                      title: l10n.choreNothingOnYou,
                       description:
-                          'Your household has chores, but none are assigned to you.',
+                          l10n.choreNothingOnYouDesc,
                       actions: [
                         AppButton(
-                          text: 'See everyone\'s chores',
+                          text: l10n.choreSeeEveryonesChores,
                           variant: AppButtonVariant.outline,
                           onPressed: () => _setFilterMe(false),
                         ),
@@ -854,7 +875,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                           ),
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            section,
+                            _sectionTitle(section),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: Theme.of(context)
@@ -970,8 +991,8 @@ class _Chore {
 
   /// Short label for whose turn it is: "Your turn", "Sam's turn", or null when
   /// unassigned.
-  String? turnLabel() {
-    if (isMine) return 'Your turn';
+  String? turnLabel(AppLocalizations l10n) {
+    if (isMine) return l10n.choreYourTurn;
     final name = assigneeName;
     if (name != null && name.isNotEmpty) return "$name's turn";
     return null;
@@ -999,19 +1020,20 @@ class _TurnHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final caughtUp = myTurn.isEmpty;
 
     final dueNowCount = myTurn.length;
     final shareLabel = totalActiveCount == 0
-        ? 'Nothing on you right now'
-        : 'Carrying $myActiveCount of $totalActiveCount open chores';
+        ? l10n.choreNothingShare
+        : l10n.choreCarryingShare(myActiveCount, totalActiveCount);
 
     return Semantics(
       label: caughtUp
-          ? 'You are all caught up'
-          : '$dueNowCount due now. $shareLabel',
+          ? l10n.choreAllCaughtUp
+          : '${dueNowCount == 1 ? l10n.choreHeroDescSingular(dueNowCount) : l10n.choreHeroDescPlural(dueNowCount)} $shareLabel',
       child: AppCard(
         variant: caughtUp ? AppCardVariant.outlined : AppCardVariant.filled,
         tint: caughtUp ? AppCardTint.neutral : AppCardTint.primary,
@@ -1045,7 +1067,7 @@ class _TurnHero extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        caughtUp ? "You're clear" : 'Your turn',
+                        caughtUp ? l10n.choreYoureClear : l10n.choreYourTurn,
                         style: textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -1056,7 +1078,7 @@ class _TurnHero extends StatelessWidget {
                       Text(
                         caughtUp
                             ? shareLabel
-                            : '$dueNowCount ${dueNowCount == 1 ? 'chore needs' : 'chores need'} you now. $shareLabel.',
+                            : '${dueNowCount == 1 ? l10n.choreHeroDescSingular(dueNowCount) : l10n.choreHeroDescPlural(dueNowCount)} $shareLabel.',
                         style: textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
@@ -1072,13 +1094,13 @@ class _TurnHero extends StatelessWidget {
             Row(
               children: [
                 AppChip(
-                  label: 'Me ($myActiveCount)',
+                  label: l10n.choreMeLabel(myActiveCount),
                   selected: filterMe,
                   onSelected: (_) => onShowMine(),
                 ),
                 const SizedBox(width: MitlistSpacing.sm),
                 AppChip(
-                  label: 'Everyone ($totalActiveCount)',
+                  label: l10n.choreEveryoneLabel(totalActiveCount),
                   selected: !filterMe,
                   onSelected: (_) => onShowEveryone(),
                 ),
@@ -1109,6 +1131,7 @@ class _FairnessStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -1129,8 +1152,8 @@ class _FairnessStrip extends StatelessWidget {
           Expanded(
             child: Text(
               total == 0
-                  ? 'How it splits'
-                  : 'How it splits · $total done, last 30 days',
+                  ? l10n.choreHowItSplits
+                  : '${l10n.choreHowItSplits} · $total done, last 30 days',
               style: textTheme.labelMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
@@ -1214,9 +1237,10 @@ class _ChoreItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final isComplete = chore.completed;
-    final turnLabel = chore.turnLabel();
+    final turnLabel = chore.turnLabel(l10n);
     return AppCard(
       variant: AppCardVariant.outlined,
       padding: AppCardPadding.sm,
@@ -1231,8 +1255,8 @@ class _ChoreItem extends StatelessWidget {
               AnimatedCheckToggle(
                 value: isComplete,
                 onChanged: (_) => onToggle(),
-                semanticLabelOn: 'Mark ${chore.title} as not done',
-                semanticLabelOff: 'Mark ${chore.title} as done',
+                semanticLabelOn: l10n.choreMarkNotDone(chore.title),
+                semanticLabelOff: l10n.choreMarkDone(chore.title),
               ),
               Expanded(
                 child: Padding(
@@ -1256,7 +1280,7 @@ class _ChoreItem extends StatelessWidget {
                           _MetaChip(
                             icon: 'arrowPath',
                             label: _frequencyLabel(
-                                chore.frequency, chore.periodInterval),
+                                l10n, chore.frequency, chore.periodInterval),
                             color: colorScheme.onSurfaceVariant,
                           ),
                           if (turnLabel != null && !isComplete)
@@ -1272,7 +1296,7 @@ class _ChoreItem extends StatelessWidget {
                             _MetaChip(
                               icon: 'inventoryOutline',
                               label:
-                                  '${chore.supplies.length} ${chore.supplies.length == 1 ? 'supply' : 'supplies'}',
+                                  chore.supplies.length == 1 ? l10n.choreSupplySingular(chore.supplies.length) : l10n.choreSupplyPlural(chore.supplies.length),
                               color: colorScheme.onSurfaceVariant,
                             ),
                         ],
@@ -1430,38 +1454,38 @@ String _formatDate(DateTime date) {
   return DateFormat.MMMd().format(date);
 }
 
-String _frequencyLabel(String frequency, int interval) {
+String _frequencyLabel(AppLocalizations l10n, String frequency, int interval) {
   if (interval > 1) {
     final unit = switch (frequency) {
-      'hourly' => 'hours',
-      'daily' => 'days',
-      'weekly' => 'weeks',
-      'monthly' => 'months',
-      'yearly' => 'years',
+      'hourly' => l10n.choreCreationUnitHourPlural,
+      'daily' => l10n.choreCreationUnitDayPlural,
+      'weekly' => l10n.choreCreationUnitWeekPlural,
+      'monthly' => l10n.choreCreationUnitMonthPlural,
+      'yearly' => l10n.choreCreationUnitYearPlural,
       _ => '',
     };
-    if (unit.isNotEmpty) return 'Every $interval $unit';
+    if (unit.isNotEmpty) return l10n.choreEveryInterval(interval, unit);
   }
   return switch (frequency) {
-    'hourly' => 'Hourly',
-    'daily' => 'Daily',
-    'weekly' => 'Weekly',
-    'monthly' => 'Monthly',
-    'yearly' => 'Yearly',
-    'adaptive' => 'As needed',
-    _ => 'One-off',
+    'hourly' => l10n.choreFrequencyHourly,
+    'daily' => l10n.choreFrequencyDaily,
+    'weekly' => l10n.choreFrequencyWeekly,
+    'monthly' => l10n.choreFrequencyMonthly,
+    'yearly' => l10n.choreFrequencyYearly,
+    'adaptive' => l10n.choreFrequencyAsNeeded,
+    _ => l10n.choreFrequencyOneOff,
   };
 }
 
-String _formatLastAction(ChoreAssignment assignment) {
+String _formatLastAction(AppLocalizations l10n, ChoreAssignment assignment) {
   if (assignment.completedAt != null) {
     final diff = DateTime.now().difference(assignment.completedAt!);
-    if (diff.inDays == 0) return 'Done today';
-    if (diff.inDays == 1) return 'Done yesterday';
-    return 'Done ${diff.inDays}d ago';
+    if (diff.inDays == 0) return l10n.choreDoneToday;
+    if (diff.inDays == 1) return l10n.choreDoneYesterday;
+    return l10n.choreDoneDaysAgo(diff.inDays);
   }
   if (assignment.skipReason != null && assignment.skipReason!.isNotEmpty) {
-    return 'Skipped';
+    return l10n.choreSkipped;
   }
   return '';
 }

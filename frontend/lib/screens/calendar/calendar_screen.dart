@@ -14,6 +14,7 @@ import '../../services/group_id_validator.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../theme/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../utils/active_group_context.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
@@ -106,7 +107,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = friendlyErrorMessage(e);
+        _error = friendlyErrorMessage(e, AppLocalizations.of(context)!);
         _isLoading = false;
       });
     }
@@ -148,23 +149,28 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     _load();
   }
 
-  String _weekLabel() {
-    final end = _weekStart.add(Duration(days: 6));
-    return '${_weekStart.day}.${_weekStart.month}.'
-        ' – ${end.day}.${end.month}.${end.year}';
+  String _weekLabel(AppLocalizations l10n) {
+    final end = _weekStart.add(const Duration(days: 6));
+    final weekStartStr = '${_weekStart.day}.${_weekStart.month}.';
+    final weekEndStr = '${end.day}.${end.month}.${end.year}';
+    return l10n.calendarWeekHeader(weekStartStr, weekEndStr);
   }
 
-  String _monthLabel() {
-    return '${_months[_monthStart.month - 1]} ${_monthStart.year}';
+  String _monthLabel(AppLocalizations l10n) {
+    final months = _months(l10n);
+    return l10n.calendarMonthHeader(months[_monthStart.month - 1], _monthStart.year);
   }
 
-  static const _months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+  List<String> _months(AppLocalizations l10n) => [
+    l10n.calendarMonthJanuary, l10n.calendarMonthFebruary, l10n.calendarMonthMarch,
+    l10n.calendarMonthApril, l10n.calendarMonthMay, l10n.calendarMonthJune,
+    l10n.calendarMonthJuly, l10n.calendarMonthAugust, l10n.calendarMonthSeptember,
+    l10n.calendarMonthOctober, l10n.calendarMonthNovember, l10n.calendarMonthDecember,
   ];
 
-  static const _weekdayHeaders = [
-    'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun',
+  List<String> _weekdayHeaders(AppLocalizations l10n) => [
+    l10n.calendarShortMon, l10n.calendarShortTue, l10n.calendarShortWed,
+    l10n.calendarShortThu, l10n.calendarShortFri, l10n.calendarShortSat, l10n.calendarShortSun,
   ];
 
   Map<DateTime, List<CalendarEvent>> get _eventsByDay {
@@ -178,9 +184,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: MitlistAppBar.titleText(
-        'Calendar',
+        l10n.calendarAppBarTitle,
         showStandardActions: false,
       ),
       body: _buildBody(),
@@ -188,6 +195,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 
   Widget _buildBody() {
+    final l10n = AppLocalizations.of(context)!;
     if (_isLoading) {
       return ListView.builder(
         padding: const EdgeInsets.all(MitlistSpacing.md),
@@ -203,12 +211,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/404.lottie',
           icon: AppIcon(name: 'alertCircleOutline'),
-          title: 'Something went wrong',
+          title: l10n.commonSomethingWentWrong,
           description: _error,
           actions: [
             AppButton(
               variant: AppButtonVariant.outline,
-              text: 'Retry',
+              text: l10n.commonRetry,
               onPressed: _load,
             ),
           ],
@@ -220,11 +228,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/House.lottie',
           icon: const AppIcon(name: 'homeOutline'),
-          title: 'No household yet',
-          description: 'Join or create a household to view the calendar',
+          title: l10n.commonNoHousehold,
+          description: l10n.calendarNoHouseholdDesc,
           actions: [
             AppButton(
-              text: 'Create household',
+              text: l10n.calendarCreateHousehold,
               onPressed: () async {
                 await CreateHouseholdSheet.show(context);
               },
@@ -258,6 +266,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 
   Widget _buildViewToggle() {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
 
     return Padding(
@@ -268,7 +277,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             child: Semantics(
               button: true,
               selected: _viewMode == _CalendarView.week,
-              label: 'Week view',
+              label: l10n.calendarWeekView,
               child: GestureDetector(
                 onTap: () => _setViewMode(_CalendarView.week),
                 child: Container(
@@ -285,7 +294,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     ),
                   ),
                   child: Text(
-                    'Week',
+                    l10n.calendarViewWeek,
                     textAlign: TextAlign.center,
                     style: textTheme.labelMedium?.copyWith(
                       color: _viewMode == _CalendarView.week
@@ -301,7 +310,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             child: Semantics(
               button: true,
               selected: _viewMode == _CalendarView.month,
-              label: 'Month view',
+              label: l10n.calendarMonthView,
               child: GestureDetector(
                 onTap: () => _setViewMode(_CalendarView.month),
                 child: Container(
@@ -318,7 +327,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     ),
                   ),
                   child: Text(
-                    'Month',
+                    l10n.calendarViewMonth,
                     textAlign: TextAlign.center,
                     style: textTheme.labelMedium?.copyWith(
                       color: _viewMode == _CalendarView.month
@@ -334,7 +343,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             child: Semantics(
               button: true,
               selected: _viewMode == _CalendarView.agenda,
-              label: 'Agenda view',
+              label: l10n.calendarAgendaView,
               child: GestureDetector(
                 onTap: () => _setViewMode(_CalendarView.agenda),
                 child: Container(
@@ -351,7 +360,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     ),
                   ),
                   child: Text(
-                    'Agenda',
+                    l10n.calendarViewAgenda,
                     textAlign: TextAlign.center,
                     style: textTheme.labelMedium?.copyWith(
                       color: _viewMode == _CalendarView.agenda
@@ -371,6 +380,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   // ── Week View ───────────────────────────────────────────────────────────
 
   Widget _buildWeekView() {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         Padding(
@@ -379,12 +389,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             children: [
               IconButton(
                 icon: AppIcon(name: 'chevronLeft'),
-                tooltip: 'Previous week',
+                tooltip: l10n.calendarPreviousWeek,
                 onPressed: _prevWeek,
               ),
               Expanded(
                 child: Text(
-                  _weekLabel(),
+                  _weekLabel(l10n),
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -393,7 +403,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               ),
               IconButton(
                 icon: AppIcon(name: 'chevronRight'),
-                tooltip: 'Next week',
+                tooltip: l10n.calendarNextWeek,
                 onPressed: _nextWeek,
               ),
             ],
@@ -423,6 +433,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   // ── Month View ──────────────────────────────────────────────────────────
 
   Widget _buildMonthView() {
+    final l10n = AppLocalizations.of(context)!;
     final daysInMonth =
         DateTime(_monthStart.year, _monthStart.month + 1, 0).day;
     final firstWeekday = _monthStart.weekday;
@@ -436,12 +447,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             children: [
               IconButton(
                 icon: AppIcon(name: 'chevronLeft'),
-                tooltip: 'Previous month',
+                tooltip: l10n.calendarPreviousMonth,
                 onPressed: _prevMonth,
               ),
               Expanded(
                 child: Text(
-                  _monthLabel(),
+                  _monthLabel(l10n),
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -450,7 +461,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               ),
               IconButton(
                 icon: AppIcon(name: 'chevronRight'),
-                tooltip: 'Next month',
+                tooltip: l10n.calendarNextMonth,
                 onPressed: _nextMonth,
               ),
             ],
@@ -461,7 +472,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           padding:
               const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
           child: Row(
-            children: _weekdayHeaders
+            children: _weekdayHeaders(l10n)
                 .map((h) => Expanded(
                       child: Center(
                         child: Text(
@@ -500,7 +511,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
                 return Semantics(
                   button: true,
-                  label: 'Day ${day.day}',
+                  label: l10n.calendarDayLabel(day.day),
                   child: GestureDetector(
                     onTapDown: (details) => _showDayMenu(
                         context, day, dayEvents, details.globalPosition),
@@ -580,8 +591,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     List<CalendarEvent> events,
     Offset position,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     final dayLabel =
-        '${_weekdayName(day.weekday)}, ${day.day}.${day.month}.${day.year}';
+        '${_weekdayName(day.weekday, l10n)}, ${day.day}.${day.month}.${day.year}';
 
     showMenu<String>(
       context: ctx,
@@ -607,18 +619,18 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
             );
           }),
-        PopupMenuDivider(),
+        const PopupMenuDivider(),
         PopupMenuItem<String>(
           value: 'add_chore',
-          child: Text('Add chore'),
+          child: Text(l10n.calendarAddChore),
         ),
         PopupMenuItem<String>(
           value: 'add_expense',
-          child: Text('Add expense'),
+          child: Text(l10n.calendarAddExpense),
         ),
         PopupMenuItem<String>(
           value: 'view_week',
-          child: Text('View in week'),
+          child: Text(l10n.calendarViewInWeek),
         ),
       ],
     ).then((value) {
@@ -642,6 +654,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   // ── Agenda View ─────────────────────────────────────────────────────────
 
   Widget _buildAgendaView() {
+    final l10n = AppLocalizations.of(context)!;
     final sortedDays = _eventsByDay.entries.toList()
       ..sort((a, b) => a.key.compareTo(b.key));
 
@@ -651,12 +664,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           child: AppEmptyState(
             lottieAsset: 'assets/animations/lottie/Calendar.lottie',
             icon: AppIcon(name: 'eventNote', size: 56),
-            title: 'Nothing ahead',
+            title: l10n.calendarNothingAhead,
             description:
-                'Upcoming chores, meal plans, and recurring expenses will appear here.',
+                l10n.calendarNothingAheadDesc,
             actions: [
               AppButton(
-                text: 'Chores',
+                text: l10n.choreAppBarTitle,
                 variant: AppButtonVariant.outline,
                 onPressed: () => context.pushNamed('chores'),
               ),
@@ -695,7 +708,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             const EdgeInsets.only(right: MitlistSpacing.sm),
                       ),
                     Text(
-                      _formatAgendaDate(day),
+                      _formatAgendaDate(day, l10n),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context)
@@ -710,7 +723,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   ],
                 ),
                 const SizedBox(height: MitlistSpacing.sm),
-                ..._agendaDayEvents(dayEvents),
+                ..._agendaDayEvents(dayEvents, l10n),
               ],
             ),
           );
@@ -719,27 +732,28 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
-  String _formatAgendaDate(DateTime day) {
-    if (_isToday(day)) return 'Today';
-    final tomorrow = DateTime.now().add(Duration(days: 1));
+  String _formatAgendaDate(DateTime day, AppLocalizations l10n) {
+    if (_isToday(day)) return l10n.calendarToday;
+    final tomorrow = DateTime.now().add(const Duration(days: 1));
     if (day.year == tomorrow.year &&
         day.month == tomorrow.month &&
         day.day == tomorrow.day) {
-      return 'Tomorrow';
+      return l10n.calendarTomorrow;
     }
-    return '${_weekdayName(day.weekday)}, ${day.day}.${day.month}.';
+    return '${_weekdayName(day.weekday, l10n)}, ${day.day}.${day.month}.';
   }
 
-  String _weekdayName(int weekday) {
-    return const [
-      'Monday', 'Tuesday', 'Wednesday', 'Thursday',
-      'Friday', 'Saturday', 'Sunday'
+  String _weekdayName(int weekday, AppLocalizations l10n) {
+    return [
+      l10n.calendarWeekdayMonday, l10n.calendarWeekdayTuesday, l10n.calendarWeekdayWednesday,
+      l10n.calendarWeekdayThursday, l10n.calendarWeekdayFriday, l10n.calendarWeekdaySaturday,
+      l10n.calendarWeekdaySunday,
     ][weekday - 1];
   }
 
-  List<Widget> _agendaDayEvents(List<CalendarEvent> events) {
+  List<Widget> _agendaDayEvents(List<CalendarEvent> events, AppLocalizations l10n) {
     return events.map((e) {
-      final (icon, color, label) = _eventMeta(context, e);
+      final (icon, color, label) = _eventMeta(context, e, l10n);
       return Padding(
         padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
         child: InkWell(
@@ -765,7 +779,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 if (e.type == CalendarEventType.mealPlan &&
                     e.mealPlan != null)
                   Text(
-                    '${e.mealPlan!.servings} ppl ',
+                    l10n.calendarServingsPpl(e.mealPlan!.servings),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: MitlistTypography.labelXSmall(
@@ -788,32 +802,32 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     }).toList();
   }
 
-  (IconData, Color, String) _eventMeta(BuildContext context, CalendarEvent event) {
+  (IconData, Color, String) _eventMeta(BuildContext context, CalendarEvent event, AppLocalizations l10n) {
     return switch (event.type) {
       CalendarEventType.mealPlan => (
           Icons.restaurant,
           Theme.of(context).colorScheme.primary,
-          event.mealPlan?.slot ?? 'Meal'
+          event.mealPlan?.slot ?? l10n.calendarEventMeal
         ),
       CalendarEventType.chore => (
           Icons.cleaning_services,
           Theme.of(context).colorScheme.secondary,
-          'Chore'
+          l10n.calendarEventChore
         ),
       CalendarEventType.recurringExpense => (
           Icons.repeat,
           Theme.of(context).colorScheme.tertiary,
-          'Recurring'
+          l10n.calendarEventRecurring
         ),
       CalendarEventType.expense => (
           Icons.receipt_outlined,
           Theme.of(context).colorScheme.secondary,
-          'Expense'
+          l10n.calendarEventExpense
         ),
       CalendarEventType.pinwallReminder => (
           Icons.push_pin_outlined,
           Theme.of(context).colorScheme.errorContainer,
-          'Reminder'
+          l10n.calendarEventReminder
         ),
     };
   }
@@ -826,13 +840,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 
   void _showEventDetail(BuildContext context, CalendarEvent event) {
+    final l10n = AppLocalizations.of(context)!;
     switch (event.type) {
       case CalendarEventType.chore:
         if (event.chore != null) {
           ChoreDetailSheet.show(
             context,
             choreId: event.chore!.choreId,
-            title: event.title.isNotEmpty ? event.title : 'Chore',
+            title: event.title.isNotEmpty ? event.title : l10n.calendarEventChore,
             statusLabel: event.chore!.status,
             assignee: '',
             dueDate: event.date,
@@ -853,19 +868,20 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   Future<void> _confirmDeleteChore(String choreId) async {
     if (_isSaving) return;
     _isSaving = true;
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showAppDialog<bool>(
       context: context,
-      title: 'Delete chore',
-      body: Text('This will permanently delete this chore and its history. This cannot be undone.'),
+      title: l10n.choreDeleteTitle,
+      body: Text(l10n.choreDeleteBody),
       actions: [
         AppButton(
-          text: 'Cancel',
+          text: l10n.commonCancel,
           variant: AppButtonVariant.outline,
           onPressed: () => Navigator.of(context).pop(false),
         ),
         const SizedBox(width: MitlistSpacing.sm),
         AppButton(
-          text: 'Delete',
+          text: l10n.commonDelete,
           color: AppButtonColor.error,
           onPressed: () => Navigator.of(context).pop(true),
         ),
@@ -881,7 +897,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       if (!mounted) return;
       unawaited(Haptics.failure());
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e))),
+        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     } finally {
       _isSaving = false;
@@ -904,8 +920,9 @@ class _DayCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
-    final weekday = _weekdayName(day.weekday);
+    final weekday = _weekdayName(day.weekday, l10n);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
@@ -940,7 +957,7 @@ class _DayCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
                     ),
                     child: Text(
-                      'Today',
+                      l10n.calendarToday,
                       style: MitlistTypography.labelXSmall(
                         color: Theme.of(context).colorScheme.onPrimary,
                       ),
@@ -953,7 +970,7 @@ class _DayCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: MitlistSpacing.sm),
                 child: Text(
-                  'Nothing planned',
+                  l10n.calendarNothingPlanned,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: MitlistTypography.labelXSmall(
@@ -972,15 +989,15 @@ class _DayCard extends StatelessWidget {
     );
   }
 
-  String _weekdayName(int weekday) {
-    return const [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday'
+  String _weekdayName(int weekday, AppLocalizations l10n) {
+    return [
+      l10n.calendarWeekdayMonday,
+      l10n.calendarWeekdayTuesday,
+      l10n.calendarWeekdayWednesday,
+      l10n.calendarWeekdayThursday,
+      l10n.calendarWeekdayFriday,
+      l10n.calendarWeekdaySaturday,
+      l10n.calendarWeekdaySunday,
     ][weekday - 1];
   }
 }
@@ -993,31 +1010,32 @@ class _EventRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final (icon, color, label) = switch (event.type) {
       CalendarEventType.mealPlan => (
           Icons.restaurant,
           Theme.of(context).colorScheme.primary,
-          event.mealPlan?.slot ?? 'Meal'
+          event.mealPlan?.slot ?? l10n.calendarEventMeal
         ),
       CalendarEventType.chore => (
           Icons.cleaning_services,
           Theme.of(context).colorScheme.secondary,
-          'Chore'
+          l10n.calendarEventChore
         ),
       CalendarEventType.recurringExpense => (
           Icons.repeat,
           Theme.of(context).colorScheme.tertiary,
-          'Recurring'
+          l10n.calendarEventRecurring
         ),
       CalendarEventType.expense => (
           Icons.receipt_outlined,
           Theme.of(context).colorScheme.secondary,
-          'Expense'
+          l10n.calendarEventExpense
         ),
       CalendarEventType.pinwallReminder => (
           Icons.push_pin_outlined,
           Theme.of(context).colorScheme.errorContainer,
-          'Reminder'
+          l10n.calendarEventReminder
         ),
     };
 
@@ -1049,7 +1067,7 @@ class _EventRow extends StatelessWidget {
               if (event.type == CalendarEventType.mealPlan &&
                   event.mealPlan != null)
                 Text(
-                  '${event.mealPlan!.servings} ppl',
+                  l10n.calendarServingsPpl(event.mealPlan!.servings),
                   style: MitlistTypography.labelXSmall(),
                 ),
               if (event.type == CalendarEventType.recurringExpense &&

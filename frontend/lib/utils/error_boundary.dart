@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../theme/spacing.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_icon.dart';
@@ -23,6 +24,8 @@ class MitlistErrorBoundary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     if (hasError) {
       return Padding(
         padding: const EdgeInsets.all(MitlistSpacing.md),
@@ -30,12 +33,12 @@ class MitlistErrorBoundary extends StatelessWidget {
           isError: true,
           lottieAsset: 'assets/animations/lottie/404.lottie',
           icon: const AppIcon(name: 'exclamationTriangle'),
-          title: 'Something went wrong',
-          description: 'We hit an unexpected error. Please try again.',
+          title: l10n.errorBoundaryTitle,
+          description: l10n.errorBoundaryDesc,
           paddingPreset: AppEmptyStatePadding.md,
           actions: [
             AppButton(
-              text: 'Retry',
+              text: l10n.commonRetry,
               icon: const AppIcon(name: 'arrowPath'),
               onPressed: onRetry,
             ),

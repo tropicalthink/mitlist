@@ -8,15 +8,17 @@ import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_currency_dropdown.dart';
 import '../utils/friendly_error.dart';
+import '../l10n/app_localizations.dart';
 import '../widgets/app_input.dart';
 
 class CreateHouseholdSheet extends ConsumerStatefulWidget {
   const CreateHouseholdSheet({super.key});
 
   static Future<Group?> show(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
     return showAppBottomSheet<Group>(
       context: context,
-      title: 'Create household',
+      title: l10n.sheetCreateHouseholdTitle,
       body: const CreateHouseholdSheet(),
     );
   }
@@ -49,14 +51,15 @@ class _CreateHouseholdSheetState extends ConsumerState<CreateHouseholdSheet> {
       ));
       if (!mounted) return;
       Navigator.of(context).pop(group);
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Household created')),
+        SnackBar(content: Text(l10n.createHouseholdCreated)),
       );
     } catch (e) {
       if (!mounted) return;
       setState(() => _isCreating = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e))),
+        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -70,13 +73,14 @@ class _CreateHouseholdSheetState extends ConsumerState<CreateHouseholdSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppInput(
-          label: 'Household name',
-          hint: 'e.g. Carter St',
+          label: l10n.sheetCreateHouseholdName,
+          hint: l10n.sheetCreateHouseholdNameHint,
           controller: _nameController,
           textInputAction: TextInputAction.next,
           maxLength: 80,
@@ -84,8 +88,8 @@ class _CreateHouseholdSheetState extends ConsumerState<CreateHouseholdSheet> {
         ),
         const SizedBox(height: MitlistSpacing.md),
         AppInput(
-          label: 'Description (optional)',
-          hint: 'A few words about this household',
+          label: l10n.createHouseholdDescriptionOptional,
+          hint: l10n.sheetGroupSettingsDescriptionHint,
           controller: _descriptionController,
           textInputAction: TextInputAction.done,
           maxLength: 300,
@@ -104,7 +108,7 @@ class _CreateHouseholdSheetState extends ConsumerState<CreateHouseholdSheet> {
             variant: AppButtonVariant.solid,
             color: AppButtonColor.primary,
             size: AppButtonSize.lg,
-            text: _isCreating ? 'Creating...' : 'Create household',
+            text: _isCreating ? l10n.recipeCreationCreating : l10n.groupsCreateHousehold,
             isLoading: _isCreating,
             onPressed: _canCreate ? _onCreate : null,
           ),

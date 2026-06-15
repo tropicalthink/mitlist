@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/group_models.dart';
 import '../../providers/group_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
@@ -35,6 +36,8 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
   String? _error;
   Group? _joinedGroup;
 
+  AppLocalizations get l10n => AppLocalizations.of(context)!;
+
   Future<void> _join() async {
     if (_phase != _Phase.idle) return;
     setState(() {
@@ -56,13 +59,14 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
       if (!mounted) return;
       setState(() {
         _phase = _Phase.idle;
-        _error = friendlyErrorMessage(e);
+        _error = friendlyErrorMessage(e, AppLocalizations.of(context)!);
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -73,7 +77,7 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
         leading: IconButton(
           icon: const AppIcon(name: 'xMark'),
           onPressed: () => context.goNamed('home'),
-          tooltip: 'Dismiss',
+          tooltip: l10n.commonDismiss,
         ),
       ),
       body: SafeArea(
@@ -104,7 +108,7 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Join this household?',
+            l10n.authJoinTitle,
             style: textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.w700,
               letterSpacing: -0.5,
@@ -115,7 +119,7 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
 
           // Code displayed in segmented mono style
           Semantics(
-            label: 'Invite code: ${widget.code.trim().toUpperCase()}',
+            label: l10n.authJoinInviteCodeSemantic(widget.code.trim().toUpperCase()),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -158,7 +162,7 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
           if (_error != null) ...[
             AppAlert(
               type: AppAlertType.error,
-              message: '$_error\n\nYou can also enter a code from the household switcher.',
+              message: l10n.authJoinErrorWithHint(_error!),
             ),
             const SizedBox(height: MitlistSpacing.md),
           ],
@@ -167,7 +171,7 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
             variant: AppButtonVariant.solid,
             color: AppButtonColor.primary,
             size: AppButtonSize.lg,
-            text: isJoining ? 'Joining…' : 'Join household',
+            text: isJoining ? l10n.authJoinJoining : l10n.authJoinJoinNow,
             isLoading: isJoining,
             onPressed: isJoining ? null : _join,
           ),
@@ -176,7 +180,7 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
             variant: AppButtonVariant.outline,
             color: AppButtonColor.neutral,
             size: AppButtonSize.lg,
-            text: 'Not now',
+            text: l10n.authJoinNotNow,
             onPressed: () => context.goNamed('home'),
           ),
         ],
@@ -212,7 +216,7 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
           ),
           const SizedBox(height: MitlistSpacing.xs),
           Text(
-            "You're in.",
+            l10n.authJoinYoureIn,
             style: textTheme.bodyLarge?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),
@@ -222,7 +226,7 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
           AppButton(
             variant: AppButtonVariant.solid,
             size: AppButtonSize.lg,
-            text: 'Go to household',
+            text: l10n.authJoinGoToHousehold,
             onPressed: () => context.goNamed('home'),
           ),
         ],

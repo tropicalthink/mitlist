@@ -18,6 +18,7 @@ import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_dropdown.dart';
 import '../widgets/app_icon.dart';
+import '../l10n/app_localizations.dart';
 import '../widgets/empty_state.dart';
 
 class RecipeAddToListSheet extends ConsumerStatefulWidget {
@@ -38,9 +39,10 @@ class RecipeAddToListSheet extends ConsumerStatefulWidget {
     required String recipeTitle,
     required int defaultServings,
   }) async {
+    final l10n = AppLocalizations.of(context)!;
     return showAppBottomSheet(
       context: context,
-      title: 'Add to list',
+      title: l10n.sheetRecipeAddToListTitle,
       body: RecipeAddToListSheet(
         recipeId: recipeId,
         recipeTitle: recipeTitle,
@@ -94,7 +96,7 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = friendlyErrorMessage(e);
+        _error = friendlyErrorMessage(e, AppLocalizations.of(context)!);
         _isLoading = false;
       });
     }
@@ -123,14 +125,15 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
       );
       if (mounted) {
         Navigator.of(context).pop();
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Ingredients added to list')),
+          SnackBar(content: Text(l10n.sheetRecipeAddToListAdded(_selectedIngredientIds.length))),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(friendlyErrorMessage(e))),
+          SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
         );
       }
     } finally {
@@ -140,6 +143,7 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
 
     if (_isLoading) {
@@ -152,12 +156,12 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
     if (_error != null) {
       return AppEmptyState(
         icon: const AppIcon(name: 'alertCircleOutline'),
-        title: 'Failed to load',
+          title: l10n.commonFailedToLoad,
         description: _error,
         actions: [
           AppButton(
             variant: AppButtonVariant.outline,
-            text: 'Retry',
+            text: l10n.commonRetry,
             onPressed: _load,
           ),
         ],
@@ -180,11 +184,11 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
           padding: AppCardPadding.md,
           child: Row(
             children: [
-              Text('Servings', style: Theme.of(context).textTheme.bodyMedium),
+              Text(l10n.recipeDetailServings, style: Theme.of(context).textTheme.bodyMedium),
               const Spacer(),
               IconButton(
                 icon: AppIcon(name: 'minusCircleOutline'),
-                tooltip: 'Decrease servings',
+                tooltip: l10n.cookModeDecreaseServings,
                 onPressed: _servings > 1 ? () => setState(() => _servings--) : null,
               ),
               SizedBox(
@@ -199,7 +203,7 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
               ),
               IconButton(
                 icon: const AppIcon(name: 'addCircleOutline'),
-                tooltip: 'Increase servings',
+                tooltip: l10n.cookModeIncreaseServings,
                 onPressed: _servings < 99 ? () => setState(() => _servings++) : null,
               ),
             ],
@@ -207,14 +211,14 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
         ),
         const SizedBox(height: MitlistSpacing.md),
         if (_lists.isEmpty)
-          const AppEmptyState(
-            icon: AppIcon(name: 'listAltOutline'),
-            title: 'No lists',
-            description: 'Create a list first to add ingredients',
+          AppEmptyState(
+            icon: const AppIcon(name: 'listAltOutline'),
+            title: l10n.recipeAddToListNoLists,
+            description: l10n.recipeAddToListCreateListFirst,
           )
         else
           AppDropdown<String>(
-            label: 'Target list',
+            label: l10n.recipeAddToListTargetList,
             value: _selectedListId,
             items: _lists.map((list) => DropdownMenuItem<String>(
               value: list.id,
@@ -223,13 +227,13 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
             onChanged: (value) => setState(() => _selectedListId = value),
           ),
         const SizedBox(height: MitlistSpacing.md),
-        Text('Ingredients', style: textTheme.titleSmall),
+        Text(l10n.recipeDetailIngredients, style: textTheme.titleSmall),
         const SizedBox(height: MitlistSpacing.sm),
         if (_ingredients.isEmpty)
-          const AppEmptyState(
+          AppEmptyState(
             icon: AppIcon(name: 'restaurantOutline'),
-            title: 'No ingredients',
-            description: 'This recipe has no parsed ingredients',
+            title: l10n.recipeAddToListNoIngredients,
+            description: l10n.recipeAddToListNoIngredientsDesc,
           )
         else
           ..._ingredients.map((ing) {
@@ -257,8 +261,8 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
                         }
                       });
                     },
-                    semanticLabelOn: 'Remove ${ing.name} from selection',
-                    semanticLabelOff: 'Add ${ing.name} to selection',
+                    semanticLabelOn: l10n.recipeAddToListRemoveFromSelection(ing.name),
+                    semanticLabelOff: l10n.recipeAddToListAddToSelection(ing.name),
                   ),
                   const SizedBox(width: MitlistSpacing.sm),
                   Expanded(
@@ -282,7 +286,7 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
           width: double.infinity,
           child: AppButton(
             variant: AppButtonVariant.solid,
-            text: 'Add to list',
+            text: l10n.recipeAddToList,
             isLoading: _isSubmitting,
             onPressed: _selectedListId != null && _selectedIngredientIds.isNotEmpty && !_isSubmitting
                 ? _submit

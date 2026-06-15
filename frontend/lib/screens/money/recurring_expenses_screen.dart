@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/finance_models.dart';
 import '../../providers/finance_provider.dart';
 import '../../providers/group_provider.dart';
@@ -75,13 +76,14 @@ class _RecurringExpensesScreenState
       });
     } catch (e) {
       setState(() {
-        _error = friendlyErrorMessage(e);
+        _error = friendlyErrorMessage(e, AppLocalizations.of(context)!);
         _isLoading = false;
       });
     }
   }
 
   Future<void> _toggleActive(RecurringExpense item) async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _submittingId = item.id);
     try {
       final service = await ref.read(financeServiceProviderAsync.future);
@@ -93,7 +95,7 @@ class _RecurringExpensesScreenState
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Couldn\u2019t update recurring expense.')),
+        SnackBar(content: Text(l10n.recurringCouldNotUpdate)),
       );
     } finally {
       if (mounted) setState(() => _submittingId = null);
@@ -101,6 +103,7 @@ class _RecurringExpensesScreenState
   }
 
   Future<void> _deleteItem(String id) async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _submittingId = id);
     try {
       final service = await ref.read(financeServiceProviderAsync.future);
@@ -109,7 +112,7 @@ class _RecurringExpensesScreenState
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Couldn\u2019t delete recurring expense.')),
+        SnackBar(content: Text(l10n.recurringCouldNotDelete)),
       );
     } finally {
       if (mounted) setState(() => _submittingId = null);
@@ -117,30 +120,32 @@ class _RecurringExpensesScreenState
   }
 
   String _formatFrequency(String frequency) {
+    final l10n = AppLocalizations.of(context)!;
     return switch (frequency) {
-      'daily' => 'Daily',
-      'weekly' => 'Weekly',
-      'biweekly' => 'Every 2 weeks',
-      'monthly' => 'Monthly',
-      'quarterly' => 'Quarterly',
-      'yearly' => 'Yearly',
+      'daily' => l10n.recurringFrequencyDaily,
+      'weekly' => l10n.recurringFrequencyWeekly,
+      'biweekly' => l10n.recurringFrequencyBiweekly,
+      'monthly' => l10n.recurringFrequencyMonthly,
+      'quarterly' => l10n.recurringFrequencyQuarterly,
+      'yearly' => l10n.recurringFrequencyYearly,
       _ => frequency,
     };
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: const MitlistAppBar(title: Text('Recurring')),
+      appBar: MitlistAppBar(title: Text(l10n.recurringAppBarTitle)),
       body: _buildBody(),
       floatingActionButton: !_hasHousehold || _isLoading
           ? null
           : AppButton(
               size: AppButtonSize.lg,
               onPressed: () => _openCreateSheet(),
-              text: 'Add recurring',
+              text: l10n.recurringAddRecurring,
               icon: const AppIcon(name: 'plus'),
-              tooltip: 'Add recurring expense',
+              tooltip: l10n.recurringAddRecurringTooltip,
             ),
     );
   }
@@ -168,6 +173,7 @@ class _RecurringExpensesScreenState
   }
 
   Widget _buildBodyContent() {
+    final l10n = AppLocalizations.of(context)!;
     if (_isLoading) {
       return ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -185,12 +191,12 @@ class _RecurringExpensesScreenState
           child: AppEmptyState(
             lottieAsset: 'assets/animations/lottie/404.lottie',
             icon: const AppIcon(name: 'alertCircleOutline'),
-            title: 'Something went wrong',
+            title: l10n.commonSomethingWentWrong,
             description: _error,
             actions: [
               AppButton(
                 variant: AppButtonVariant.outline,
-                text: 'Retry',
+                text: l10n.commonRetry,
                 onPressed: _load,
               ),
             ],
@@ -200,12 +206,12 @@ class _RecurringExpensesScreenState
     }
     if (!_hasHousehold) {
       return _wrapForRefresh(
-        const Center(
+        Center(
           child: AppEmptyState(
             lottieAsset: 'assets/animations/lottie/House.lottie',
-            icon: AppIcon(name: 'homeOutline'),
-            title: 'No household yet',
-            description: 'Join or create a household to manage recurring expenses',
+            icon: const AppIcon(name: 'homeOutline'),
+            title: l10n.commonNoHousehold,
+            description: l10n.recurringNoHouseholdDesc,
           ),
         ),
       );
@@ -215,12 +221,12 @@ class _RecurringExpensesScreenState
         Center(
           child: AppEmptyState(
             lottieAsset: 'assets/animations/lottie/wallet.lottie',
-            icon: AppIcon(name: 'repeat'),
-            title: 'No recurring expenses',
-            description: 'Add a recurring expense to track regular payments',
+            icon: const AppIcon(name: 'repeat'),
+            title: l10n.recurringNoRecurringTitle,
+            description: l10n.recurringNoRecurringDesc,
             actions: [
               AppButton(
-                text: 'Add expense',
+                text: l10n.recurringAddExpense,
                 variant: AppButtonVariant.outline,
                 size: AppButtonSize.sm,
                 onPressed: _openCreateSheet,
@@ -285,8 +291,9 @@ class _RecurringExpensesScreenState
       await _load();
     } catch (e) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Couldn\u2019t create recurring expense.')),
+        SnackBar(content: Text(l10n.recurringCouldNotCreate)),
       );
     } finally {
       if (mounted) setState(() => _submittingId = null);
@@ -313,6 +320,7 @@ class _RecurringCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
     final isActive = item.isActive;
 
@@ -348,7 +356,7 @@ class _RecurringCard extends StatelessWidget {
                   ),
                   const SizedBox(height: MitlistSpacing.space1),
                   Text(
-                    'Next: ${_formatDate(item.nextDue)}',
+                    l10n.recurringNextDate(_formatDate(item.nextDue, l10n)),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: MitlistTypography.labelXSmall(),
@@ -367,28 +375,27 @@ class _RecurringCard extends StatelessWidget {
                 icon: AppIcon(
                   name: isActive ? 'pauseCircleOutline' : 'playCircleOutline',
                 ),
-                tooltip: isActive ? 'Pause' : 'Resume',
+                tooltip: isActive ? l10n.recurringPauseTooltip : l10n.recurringResumeTooltip,
                 onPressed: onToggle,
               ),
               IconButton(
                 icon: const AppIcon(name: 'trashOutline'),
-                tooltip: 'Delete',
+                tooltip: l10n.recurringDeleteTooltip,
                 onPressed: () async {
                   final confirmed = await showAppDialog<bool>(
                     context: context,
-                    title: 'Delete recurring expense',
-                    body: const Text(
-                      'This will stop future expenses from being created.'),
+                    title: l10n.recurringDeleteTitle,
+                    body: Text(l10n.recurringDeleteBody),
                     actions: [
                       AppButton(
-                        text: 'Cancel',
+                        text: l10n.commonCancel,
                         variant: AppButtonVariant.outline,
                         onPressed: () =>
                             Navigator.of(context).pop(false),
                       ),
                       const SizedBox(width: MitlistSpacing.sm),
                       AppButton(
-                        text: 'Delete',
+                        text: l10n.commonDelete,
                         color: AppButtonColor.error,
                         onPressed: () =>
                             Navigator.of(context).pop(true),
@@ -405,14 +412,14 @@ class _RecurringCard extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
+  String _formatDate(DateTime date, AppLocalizations l10n) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final d = DateTime(date.year, date.month, date.day);
     final diff = d.difference(today).inDays;
-    if (diff == 0) return 'Today';
-    if (diff == 1) return 'Tomorrow';
-    if (diff == -1) return 'Yesterday';
+    if (diff == 0) return l10n.expenseToday;
+    if (diff == 1) return l10n.recurringTomorrow;
+    if (diff == -1) return l10n.expenseYesterday;
     return DateFormat('MMM d, y').format(date);
   }
 }
@@ -425,6 +432,7 @@ class _RecurringCreationSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AnimatedPadding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       duration: const Duration(milliseconds: 150),
@@ -447,7 +455,7 @@ class _RecurringCreationSheet extends StatelessWidget {
               ),
             ),
             Text(
-              'Add recurring expense',
+              l10n.recurringSheetTitle,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: MitlistSpacing.md),
@@ -515,6 +523,8 @@ class _CreateRecurringFormState extends State<_CreateRecurringForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final userLabels = widget.userLabels;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -530,41 +540,41 @@ class _CreateRecurringFormState extends State<_CreateRecurringForm> {
         ],
         AppInput(
           controller: _descriptionController,
-          label: 'Description',
+          label: l10n.recurringSheetDescription,
         ),
         const SizedBox(height: MitlistSpacing.sm),
         AppInput(
           controller: _amountController,
-          label: 'Amount',
+          label: l10n.recurringSheetAmount,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
         ),
         const SizedBox(height: MitlistSpacing.sm),
         DropdownButtonFormField<String>(
           initialValue: _frequency,
-          decoration: const InputDecoration(labelText: 'Frequency'),
-          items: const [
-            DropdownMenuItem(value: 'daily', child: Text('Daily')),
-            DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
-            DropdownMenuItem(value: 'biweekly', child: Text('Every 2 weeks')),
-            DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
-            DropdownMenuItem(value: 'quarterly', child: Text('Quarterly')),
-            DropdownMenuItem(value: 'yearly', child: Text('Yearly')),
+          decoration: InputDecoration(labelText: l10n.recurringSheetFrequency),
+          items: [
+            DropdownMenuItem(value: 'daily', child: Text(l10n.recurringFrequencyDaily)),
+            DropdownMenuItem(value: 'weekly', child: Text(l10n.recurringFrequencyWeekly)),
+            DropdownMenuItem(value: 'biweekly', child: Text(l10n.recurringFrequencyBiweekly)),
+            DropdownMenuItem(value: 'monthly', child: Text(l10n.recurringFrequencyMonthly)),
+            DropdownMenuItem(value: 'quarterly', child: Text(l10n.recurringFrequencyQuarterly)),
+            DropdownMenuItem(value: 'yearly', child: Text(l10n.recurringFrequencyYearly)),
           ],
           onChanged: (v) => setState(() => _frequency = v!),
         ),
         const SizedBox(height: MitlistSpacing.sm),
         DropdownButtonFormField<String>(
           initialValue: _payerId,
-          decoration: const InputDecoration(labelText: 'Payer'),
-          items: widget.userLabels.isEmpty
-              ? const [DropdownMenuItem(value: null, child: Text('Loading members...'))]
-              : widget.userLabels.entries
+          decoration: InputDecoration(labelText: l10n.recurringSheetPayer),
+          items: userLabels.isEmpty
+              ? [DropdownMenuItem(value: null, child: Text(l10n.commonLoadingMembers))]
+              : userLabels.entries
                   .map((e) => DropdownMenuItem(
                         value: e.key,
                         child: Text(e.value),
                       ))
                   .toList(),
-          onChanged: widget.userLabels.isEmpty ? null : (v) => setState(() => _payerId = v),
+          onChanged: userLabels.isEmpty ? null : (v) => setState(() => _payerId = v),
         ),
         const SizedBox(height: MitlistSpacing.md),
         Row(
@@ -573,13 +583,13 @@ class _CreateRecurringFormState extends State<_CreateRecurringForm> {
             AppButton(
               variant: AppButtonVariant.outline,
               color: AppButtonColor.neutral,
-              text: 'Cancel',
+              text: l10n.commonCancel,
               onPressed: () => Navigator.of(context).pop(),
             ),
             const SizedBox(width: MitlistSpacing.sm),
             AppButton(
               variant: AppButtonVariant.solid,
-              text: 'Save',
+              text: l10n.commonSave,
               onPressed: _submit,
             ),
           ],
@@ -589,24 +599,25 @@ class _CreateRecurringFormState extends State<_CreateRecurringForm> {
   }
 
   void _submit() {
+    final l10n = AppLocalizations.of(context)!;
     final description = _descriptionController.text.trim();
     final amountText = _amountController.text.trim();
     if (description.isEmpty) {
-      setState(() => _error = 'Enter a description.');
+      setState(() => _error = l10n.recurringValidationDesc);
       return;
     }
     if (amountText.isEmpty) {
-      setState(() => _error = 'Enter an amount.');
+      setState(() => _error = l10n.recurringValidationAmount);
       return;
     }
     if (_payerId == null) {
-      setState(() => _error = 'Select a payer.');
+      setState(() => _error = l10n.recurringValidationPayer);
       return;
     }
 
     final amount = double.tryParse(amountText.replaceAll(',', '.'));
     if (amount == null || amount <= 0) {
-      setState(() => _error = 'Enter a valid amount greater than zero.');
+      setState(() => _error = l10n.recurringValidationAmountPositive);
       return;
     }
 

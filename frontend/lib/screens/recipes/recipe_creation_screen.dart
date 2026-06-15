@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/recipe_models.dart';
 import '../../providers/recipe_provider.dart';
 import '../../providers/scan_provider.dart';
@@ -102,20 +103,21 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
   }
 
   Future<bool> _onWillPop() async {
+    final l10n = AppLocalizations.of(context)!;
     if (!_isDirty) return true;
     final result = await showAppDialog<bool>(
       context: context,
-      title: 'Discard recipe?',
-      body: const Text('You have unsaved content in this recipe.'),
+      title: l10n.recipeCreationDiscardTitle,
+      body: Text(l10n.recipeCreationDiscardBody),
       actions: [
         AppButton(
-          text: 'Keep editing',
+          text: l10n.recipeCreationKeepEditing,
           variant: AppButtonVariant.outline,
           onPressed: () => Navigator.of(context).pop(false),
         ),
         const SizedBox(width: MitlistSpacing.sm),
         AppButton(
-          text: 'Discard',
+          text: l10n.recipeCreationDiscard,
           color: AppButtonColor.error,
           onPressed: () => Navigator.of(context).pop(true),
         ),
@@ -159,9 +161,10 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
       setState(() => _isScanning = false);
     } catch (_) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       setState(() => _isScanning = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Couldn't scan recipe.")),
+        SnackBar(content: Text(l10n.recipeCreationCouldNotScan)),
       );
     }
   }
@@ -267,18 +270,18 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
         if (ingCount > 0) '$ingCount ingredient${ingCount == 1 ? '' : 's'}',
         if (stepCount > 0) '$stepCount step${stepCount == 1 ? '' : 's'}',
       ];
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            parts.isEmpty ? 'Recipe imported' : 'Imported: ${parts.join(', ')}',
-          ),
+          content: Text(l10n.recipeCreationImported(parts.join(', '))),
         ),
       );
     } catch (e) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       setState(() => _isScraping = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Couldn't fetch details from that link.")),
+        SnackBar(content: Text(l10n.recipeCreationCouldNotFetch)),
       );
     }
   }
@@ -289,16 +292,17 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
     setState(() => _isSaving = true);
 
     try {
+      final l10n = AppLocalizations.of(context)!;
       final recipeService = await ref.read(recipeServiceProviderAsync.future);
       final url = _urlController.text.trim();
       final title = _titleController.text.trim().isEmpty
-          ? _titleFromUrl(url)
+          ? _titleFromUrl(url, l10n)
           : _titleController.text.trim();
 
       await recipeService.createRecipe(
         CreateRecipeRequest(
           title: title,
-          description: _buildDescription(url),
+          description: _buildDescription(url, l10n),
           descriptionShort: _descriptionController.text.trim(),
           author: _scrapedAuthor,
           ratingValue: _scrapedRatingValue,
@@ -330,37 +334,36 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
       if (!mounted) return;
       if (context.mounted) context.pop(true);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Recipe created')),
+        SnackBar(content: Text(l10n.recipeCreationCreated)),
       );
       unawaited(Haptics.success());
     } catch (e) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Couldn't create recipe.")),
+        SnackBar(content: Text(l10n.recipeCreationCouldNotCreate)),
       );
     }
   }
 
-  String _titleFromUrl(String url) {
+  String _titleFromUrl(String url, AppLocalizations l10n) {
     final fallback = url.replaceFirst(RegExp(r'^https?://'), '');
     final host = Uri.tryParse(url)?.host;
     if (host == null || host.isEmpty) {
-      return fallback.isEmpty ? 'Imported recipe' : fallback;
+      return fallback.isEmpty ? l10n.recipeCreationImportedTitle : fallback;
     }
-    return 'Recipe from ${host.replaceFirst('www.', '')}';
+    return l10n.recipeCreationFromHost(host.replaceFirst('www.', ''));
   }
 
-  String _buildDescription(String url) {
+  String _buildDescription(String url, AppLocalizations l10n) {
     final parts = <String>[];
     if (_descriptionController.text.trim().isNotEmpty) {
       parts.add(_descriptionController.text.trim());
     }
-    // Include free-text nutrition only when no structured nutrition was scraped,
-    // since the detail screen has no other place to show it.
     if (_nutritionController.text.trim().isNotEmpty &&
         _scrapedNutrition == null) {
-      parts.add('Nutrition: ${_nutritionController.text.trim()}');
+      parts.add(l10n.recipeCreationNutrition(_nutritionController.text.trim()));
     }
     return parts.join('\n\n');
   }
@@ -490,16 +493,17 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
     }
   }
 
-  String get _nextButtonText {
+  String _nextButtonLabel(AppLocalizations l10n) {
     return switch (_currentStep) {
-      0 => 'Next: details',
-      1 => 'Next: content',
-      _ => 'Next',
+      0 => l10n.recipeCreationNextDetails,
+      1 => l10n.recipeCreationNextContent,
+      _ => l10n.commonNext,
     };
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
 
     return PopScope(
@@ -513,15 +517,15 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
       },
       child: Scaffold(
         appBar: MitlistAppBar(
-          title: const Text(
-            'New recipe',
+          title: Text(
+            l10n.recipeCreationTitle,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           showStandardActions: false,
           leading: IconButton(
             icon: const AppIcon(name: 'xMark'),
-            tooltip: 'Close',
+            tooltip: l10n.commonClose,
             onPressed: () async {
               final allowed = await _onWillPop();
               if (allowed && context.mounted) {
@@ -547,7 +551,12 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
   }
 
   Widget _buildStepIndicator(ColorScheme colorScheme) {
-    const labels = ['Source', 'Details', 'Content'];
+    final l10n = AppLocalizations.of(context)!;
+    final labels = [
+      l10n.recipeCreationStepSource,
+      l10n.recipeCreationStepDetails,
+      l10n.recipeCreationStepContent,
+    ];
     return Container(
       decoration: BoxDecoration(
         border: Border(
@@ -580,6 +589,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
   }
 
   Widget _buildDot(int index, ColorScheme colorScheme, String label) {
+    final l10n = AppLocalizations.of(context)!;
     final isActive = index == _currentStep;
     final isComplete = index < _currentStep;
     final status =
@@ -595,7 +605,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
     }
 
     return Semantics(
-      label: 'Step ${index + 1} of 3, $label, $status',
+      label: l10n.recipeCreationStepSemantics(index + 1, 3, label, status),
       selected: isActive,
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -650,16 +660,17 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
   }
 
   Widget _buildStep1(ColorScheme colorScheme) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Start your recipe',
+          l10n.recipeCreationStartHeadline,
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         const SizedBox(height: MitlistSpacing.xs),
         Text(
-          'Import from a link, type it yourself, or scan a photo.',
+          l10n.recipeCreationStartSubtitle,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
@@ -668,8 +679,8 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
         _buildEntryOption(
           colorScheme: colorScheme,
           icon: 'link',
-          title: 'Import from URL',
-          subtitle: 'Paste a recipe link and we\u2019ll pull the details',
+          title: l10n.recipeCreationImportURL,
+          subtitle: l10n.recipeCreationImportURLDesc,
           selected: _mode == _RecipeEntryMode.url,
           onTap: _isSaving
               ? null
@@ -679,8 +690,8 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
         _buildEntryOption(
           colorScheme: colorScheme,
           icon: 'editNote',
-          title: 'Type it in',
-          subtitle: 'Start with a title and add ingredients later',
+          title: l10n.recipeCreationTypeItIn,
+          subtitle: l10n.recipeCreationTypeItInDesc,
           selected: _mode == _RecipeEntryMode.manual,
           onTap: _isSaving
               ? null
@@ -690,16 +701,16 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
         _buildEntryOption(
           colorScheme: colorScheme,
           icon: _isScanning ? 'hourglassEmpty' : 'documentScanner',
-          title: _isScanning ? 'Scanning\u2026' : 'Scan a photo',
-          subtitle: 'Snap a recipe card or cookbook page',
+          title: _isScanning ? l10n.recipeCreationScanning : l10n.recipeCreationScanPhoto,
+          subtitle: l10n.recipeCreationScanPhotoDesc,
           selected: false,
           onTap: _isScanning || _isSaving ? null : _onScan,
         ),
         const SizedBox(height: MitlistSpacing.lg),
         if (_mode == _RecipeEntryMode.url) ...[
           AppInput(
-            label: 'Recipe URL',
-            hint: 'https://example.com/recipe',
+            label: l10n.recipeCreationURLInput,
+            hint: l10n.recipeCreationURLHint,
             controller: _urlController,
             keyboardType: TextInputType.url,
             textInputAction: TextInputAction.next,
@@ -710,14 +721,14 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
             size: AppButtonSize.sm,
             variant: AppButtonVariant.outline,
             color: AppButtonColor.neutral,
-            text: _isScraping ? 'Fetching\u2026' : 'Fetch details',
+            text: _isScraping ? l10n.recipeCreationFetching : l10n.recipeCreationFetchDetails,
             isLoading: _isScraping,
             onPressed: _canScrape ? _onScrape : null,
           ),
           if (_scrapedImageOptions.length > 1) ...[
             const SizedBox(height: MitlistSpacing.md),
             Text(
-              'Choose an image',
+              l10n.recipeCreationChooseImage,
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: MitlistSpacing.sm),
@@ -732,7 +743,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
                   final imgUrl = _scrapedImageOptions[index];
                   final isSelected = imgUrl == _selectedImageUrl;
                   return Semantics(
-                    label: 'Select image ${index + 1}',
+                    label: l10n.recipeCreationSelectImage(index + 1),
                     button: true,
                     child: GestureDetector(
                       onTap: () => setState(() => _selectedImageUrl = imgUrl),
@@ -783,8 +794,8 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
         ],
         if (_mode == _RecipeEntryMode.manual) ...[
           AppInput(
-            label: 'Recipe title',
-            hint: 'Sunday pancakes',
+            label: l10n.recipeCreationTitleInput,
+            hint: l10n.recipeCreationTitleHint,
             controller: _titleController,
             textInputAction: TextInputAction.next,
             maxLength: 150,
@@ -867,13 +878,14 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
   }
 
   Widget _buildStep2(ColorScheme colorScheme) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppInput(
           label:
-              _mode == _RecipeEntryMode.url ? 'Title override' : 'Recipe title',
-          hint: 'Sunday pancakes',
+              _mode == _RecipeEntryMode.url ? l10n.recipeCreationTitleOverride : l10n.recipeCreationTitleInput,
+          hint: l10n.recipeCreationTitleHint,
           controller: _titleController,
           textInputAction: TextInputAction.next,
           maxLength: 150,
@@ -881,8 +893,8 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
         ),
         const SizedBox(height: MitlistSpacing.md),
         AppInput(
-          label: 'Notes',
-          hint: 'What makes this recipe worth saving',
+          label: l10n.recipeCreationNotesInput,
+          hint: l10n.recipeCreationNotesHint,
           controller: _descriptionController,
           minLines: 2,
           maxLines: 4,
@@ -892,8 +904,8 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
           children: [
             Expanded(
               child: AppInput(
-                label: 'Prep (min)',
-                hint: '10',
+                label: l10n.recipeCreationPrepLabel,
+                hint: l10n.recipeCreationPrepHint,
                 controller: _prepTimeController,
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.next,
@@ -902,8 +914,8 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
             const SizedBox(width: MitlistSpacing.md),
             Expanded(
               child: AppInput(
-                label: 'Cook (min)',
-                hint: '20',
+                label: l10n.recipeCreationCookLabel,
+                hint: l10n.recipeCreationCookHint,
                 controller: _cookTimeController,
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.next,
@@ -916,8 +928,8 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
           children: [
             Expanded(
               child: AppInput(
-                label: 'Servings',
-                hint: '4',
+                label: l10n.recipeCreationServingsLabel,
+                hint: l10n.recipeCreationServingsHint,
                 controller: _servingsController,
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.next,
@@ -926,8 +938,8 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
             const SizedBox(width: MitlistSpacing.md),
             Expanded(
               child: AppInput(
-                label: 'Tags',
-                hint: 'quick, vegetarian',
+                label: l10n.recipeCreationTagsInput,
+                hint: l10n.recipeCreationTagsHint,
                 controller: _tagsController,
                 textInputAction: TextInputAction.next,
               ),
@@ -936,10 +948,10 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
         ),
         const SizedBox(height: MitlistSpacing.md),
         AppSwitchListTile(
-          title: 'Save for household',
+          title: l10n.recipeCreationSaveForHousehold,
           subtitle: _isPublic
-              ? 'Everyone in this household can find and use this recipe.'
-              : 'Keep it private for now. You can share it later.',
+              ? l10n.recipeCreationSaveForHouseholdDesc
+              : l10n.recipeCreationSaveForHouseholdPrivate,
           value: _isPublic,
           onChanged:
               _isSaving ? null : (value) => setState(() => _isPublic = value),
@@ -949,31 +961,32 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
   }
 
   Widget _buildStep3(ColorScheme colorScheme) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _RecipeLineEditor(
-          title: 'Ingredients',
-          helperText: 'Add one ingredient per row.',
-          addLabel: 'Add ingredient',
-          emptyHint: '2 cups flour',
+          title: l10n.recipeCreationIngredients,
+          helperText: l10n.recipeCreationIngredientsHelper,
+          addLabel: l10n.recipeCreationAddIngredient,
+          emptyHint: l10n.recipeCreationIngredientHint,
           lines: _controllerLines(_ingredientsController),
           onChanged: _setIngredientLines,
         ),
         const SizedBox(height: MitlistSpacing.md),
         _RecipeLineEditor(
-          title: 'Steps',
-          helperText: 'Keep each step short enough to follow while cooking.',
-          addLabel: 'Add step',
-          emptyHint: 'Mix batter',
+          title: l10n.recipeCreationSteps,
+          helperText: l10n.recipeCreationStepsHelper,
+          addLabel: l10n.recipeCreationAddStep,
+          emptyHint: l10n.recipeCreationStepHint,
           numbered: true,
           lines: _controllerLines(_stepsController),
           onChanged: (lines) => _setControllerLines(_stepsController, lines),
         ),
         const SizedBox(height: MitlistSpacing.md),
         AppInput(
-          label: 'Nutrition',
-          hint: '520 kcal, 24g protein, high fiber',
+          label: l10n.recipeCreationNutritionInput,
+          hint: l10n.recipeCreationNutritionHint,
           controller: _nutritionController,
           minLines: 2,
           maxLines: 4,
@@ -983,6 +996,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
   }
 
   Widget _buildBottomBar(ColorScheme colorScheme) {
+    final l10n = AppLocalizations.of(context)!;
     return SafeArea(
       top: false,
       child: Container(
@@ -997,7 +1011,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
             if (_currentStep > 0)
               Expanded(
                 child: AppButton(
-                  text: 'Back',
+                  text: l10n.commonBack,
                   variant: AppButtonVariant.outline,
                   color: AppButtonColor.neutral,
                   onPressed: _goBack,
@@ -1009,13 +1023,13 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
             Expanded(
               child: _currentStep < 2
                   ? AppButton(
-                      text: _nextButtonText,
+                      text: _nextButtonLabel(l10n),
                       variant: AppButtonVariant.solid,
                       color: AppButtonColor.primary,
                       onPressed: _canGoNext ? _goNext : null,
                     )
                   : AppButton(
-                      text: _isSaving ? 'Creating…' : 'Create recipe',
+                      text: _isSaving ? l10n.recipeCreationCreating : l10n.recipeCreationCreateRecipe,
                       variant: AppButtonVariant.solid,
                       color: AppButtonColor.primary,
                       size: AppButtonSize.lg,
@@ -1096,9 +1110,10 @@ class _RecipeLineEditorState extends State<_RecipeLineEditor> {
 
   String get _itemLabel => widget.numbered ? 'step' : 'ingredient';
 
-  String get _countLabel {
+  String _countLabel(AppLocalizations l10n) {
     final count = _controllers.length;
-    return '$count $_itemLabel${count == 1 ? '' : 's'}';
+    final type = l10n.recipeCreationStepLabel(_itemLabel);
+    return '$count $type${count == 1 ? '' : 's'}';
   }
 
   bool _sameLines(List<String> a, List<String> b) {
@@ -1141,6 +1156,7 @@ class _RecipeLineEditorState extends State<_RecipeLineEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -1161,7 +1177,7 @@ class _RecipeLineEditorState extends State<_RecipeLineEditor> {
                 ),
               ),
               Text(
-                _countLabel,
+                _countLabel(l10n),
                 style: textTheme.labelSmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
@@ -1185,7 +1201,7 @@ class _RecipeLineEditorState extends State<_RecipeLineEditor> {
                 border: Border.all(color: colorScheme.outline, width: 1),
               ),
               child: Text(
-                'No ${widget.title.toLowerCase()} yet.',
+                l10n.recipeCreationNoItemsYet(widget.title.toLowerCase()),
                 style: textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
@@ -1201,7 +1217,7 @@ class _RecipeLineEditorState extends State<_RecipeLineEditor> {
                     height: MitlistSpacing.space11,
                     alignment: Alignment.center,
                     child: Text(
-                      widget.numbered ? '${i + 1}' : '•',
+                      widget.numbered ? '${i + 1}' : '\u2022',
                       style: textTheme.labelMedium?.copyWith(
                         color: colorScheme.primary,
                         fontWeight: FontWeight.w700,
@@ -1219,7 +1235,7 @@ class _RecipeLineEditorState extends State<_RecipeLineEditor> {
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Remove ${widget.title.toLowerCase()} ${i + 1}',
+                    tooltip: l10n.recipeCreationRemoveItem(_itemLabel, i + 1),
                     icon: const AppIcon(name: 'xMark', size: 18),
                     onPressed: () => _removeAt(i),
                   ),

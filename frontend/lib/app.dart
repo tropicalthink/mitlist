@@ -11,6 +11,7 @@ import 'providers/list_provider.dart' show sseServiceProvider;
 import 'providers/outbox_provider.dart';
 import 'services/api_client.dart' show dioProvider;
 import 'providers/theme_provider.dart';
+import 'providers/locale_provider.dart';
 import 'providers/auth_provider.dart';
 import 'services/error_reporter.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -154,6 +155,7 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
 
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
+    final locale = ref.watch(localeProvider);
 
     return MaterialApp.router(
       title: 'mitlist',
@@ -163,13 +165,30 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
       darkTheme: MitlistTheme.dark,
       themeMode: themeMode,
       routerConfig: router,
+      locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) {
+        final showBanner = ref.watch(outboxStateProvider).maybeWhen(
+              data: (state) => state.status != OutboxStatus.online,
+              orElse: () => false,
+            );
+
+        var content = child!;
+        if (showBanner) {
+          final mediaQuery = MediaQuery.of(context);
+          content = MediaQuery(
+            data: mediaQuery.copyWith(
+              padding: mediaQuery.padding.copyWith(top: 0),
+            ),
+            child: content,
+          );
+        }
+
         return Column(
           children: [
             const OfflineBanner(),
-            Expanded(child: child!),
+            Expanded(child: content),
           ],
         );
       },

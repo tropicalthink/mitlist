@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/recipe_models.dart';
 import '../../providers/recipe_provider.dart';
 import '../../sheets/recipe_add_to_list_sheet.dart';
@@ -82,20 +83,20 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
 
   Future<void> _confirmDelete() async {
     if (_isDeleting) return;
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showAppDialog<bool>(
       context: context,
-      title: 'Delete recipe',
-      body: const Text(
-          'This will permanently delete this recipe. This cannot be undone.'),
+      title: l10n.recipeDetailDeleteTitle,
+      body: Text(l10n.recipeDetailDeleteBody),
       actions: [
         AppButton(
-          text: 'Cancel',
+          text: l10n.commonCancel,
           variant: AppButtonVariant.outline,
           onPressed: () => Navigator.of(context).pop(false),
         ),
         const SizedBox(width: MitlistSpacing.sm),
         AppButton(
-          text: 'Delete',
+          text: l10n.commonDelete,
           color: AppButtonColor.error,
           onPressed: () => Navigator.of(context).pop(true),
         ),
@@ -113,7 +114,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
       setState(() => _isDeleting = false);
       unawaited(Haptics.failure());
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e))),
+        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -146,24 +147,25 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: MitlistAppBar(
-        title: const Text(
-          'Recipe',
+        title: Text(
+          l10n.recipeDetailTitle,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         showStandardActions: false,
         leading: IconButton(
           icon: const AppIcon(name: 'arrowLeft'),
-          tooltip: 'Back',
+          tooltip: l10n.commonBack,
           onPressed: () => context.pop(),
         ),
         actions: [
           if (_recipe != null)
             IconButton(
               icon: const AppIcon(name: 'trash'),
-              tooltip: 'Delete recipe',
+              tooltip: l10n.recipeDetailDeleteTooltip,
               onPressed: _isDeleting ? null : _confirmDelete,
             ),
         ],
@@ -183,7 +185,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                   children: [
                     Expanded(
                       child: AppButton(
-                        text: 'Add to list',
+                        text: l10n.recipeDetailAddToList,
                         size: AppButtonSize.lg,
                         variant: AppButtonVariant.outline,
                         onPressed: _addToList,
@@ -193,7 +195,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                       const SizedBox(width: MitlistSpacing.sm),
                       Expanded(
                         child: AppButton(
-                          text: 'Cook',
+                          text: l10n.recipeDetailCook,
                           size: AppButtonSize.lg,
                           onPressed: _startCook,
                         ),
@@ -207,6 +209,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
   }
 
   Widget _buildBody(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (_isLoading) {
       return _buildLoading();
     }
@@ -214,12 +217,12 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
       return Center(
         child: AppEmptyState(
           icon: const AppIcon(name: 'restaurant', size: 48),
-          title: 'Could not load recipe',
-          description: 'Check your connection and try again.',
+          title: l10n.recipeDetailCouldNotLoad,
+          description: l10n.commonCheckConnection,
           isError: true,
           actions: [
             AppButton(
-              text: 'Retry',
+              text: l10n.commonRetry,
               variant: AppButtonVariant.outline,
               onPressed: _load,
             ),
@@ -255,6 +258,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
   }
 
   Widget _buildContent(BuildContext context, Recipe recipe) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final nutritionMap = _parseNutrition(recipe.nutritionJson);
@@ -264,7 +268,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppChip(
-          label: recipe.isPublic ? 'Shared' : 'Private',
+          label: recipe.isPublic ? l10n.recipeDetailSharedLabel : l10n.recipeDetailPrivateLabel,
           selected: true,
         ),
         const SizedBox(height: MitlistSpacing.md),
@@ -275,7 +279,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
         if (recipe.author.isNotEmpty) ...[
           const SizedBox(height: MitlistSpacing.xs),
           Text(
-            'By ${recipe.author}',
+            l10n.recipeDetailBy(recipe.author),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodySmall?.copyWith(
@@ -290,8 +294,8 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
               AppIcon(name: 'star', size: 16, color: colorScheme.primary),
               const SizedBox(width: MitlistSpacing.xs),
               Text(
-                '${recipe.ratingValue.toStringAsFixed(1)}'
-                '${recipe.ratingCount > 0 ? ' (${recipe.ratingCount})' : ''}',
+                l10n.recipeRatingLabel(
+                    recipe.ratingValue.toStringAsFixed(1), recipe.ratingCount),
                 style: theme.textTheme.bodySmall,
               ),
             ],
@@ -341,14 +345,14 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
           padding: AppCardPadding.md,
           child: Column(
             children: [
-              _DetailRow(label: 'Prep', value: _formatMinutes(recipe.prepTime)),
+              _DetailRow(label: l10n.recipeDetailPrep, value: _formatMinutes(recipe.prepTime, l10n)),
               const AppDivider(),
-              _DetailRow(label: 'Cook', value: _formatMinutes(recipe.cookTime)),
+              _DetailRow(label: l10n.recipeDetailCook, value: _formatMinutes(recipe.cookTime, l10n)),
               const AppDivider(),
-              _DetailRow(label: 'Servings', value: recipe.servings.toString()),
+              _DetailRow(label: l10n.recipeDetailServings, value: recipe.servings.toString()),
               const AppDivider(),
               _DetailRow(
-                label: 'Updated',
+                label: l10n.recipeDetailUpdated,
                 value: DateFormat.yMMMd().format(recipe.updatedAt),
               ),
             ],
@@ -356,7 +360,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
         ),
         if (nutritionMap.isNotEmpty) ...[
           const SizedBox(height: MitlistSpacing.md),
-          _SectionHeader(title: 'Nutrition'),
+          _SectionHeader(title: l10n.recipeDetailNutrition),
           const SizedBox(height: MitlistSpacing.xs),
           Wrap(
             spacing: MitlistSpacing.sm,
@@ -368,7 +372,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
         ],
         if (equipmentList.isNotEmpty) ...[
           const SizedBox(height: MitlistSpacing.md),
-          _SectionHeader(title: 'Equipment'),
+          _SectionHeader(title: l10n.recipeDetailEquipment),
           const SizedBox(height: MitlistSpacing.xs),
           Wrap(
             spacing: MitlistSpacing.sm,
@@ -381,7 +385,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
         if (_ingredients.isNotEmpty) ...[
           const SizedBox(height: MitlistSpacing.md),
           _SectionHeader(
-            title: 'Ingredients',
+            title: l10n.recipeDetailIngredients,
             count: _ingredients.length,
           ),
           const SizedBox(height: MitlistSpacing.xs),
@@ -444,7 +448,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
         if (_steps.isNotEmpty) ...[
           const SizedBox(height: MitlistSpacing.md),
           _SectionHeader(
-            title: 'Steps',
+            title: l10n.recipeDetailSteps,
             count: _steps.length,
           ),
           const SizedBox(height: MitlistSpacing.xs),
@@ -452,7 +456,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
             variant: AppCardVariant.outlined,
             padding: AppCardPadding.none,
             child: Semantics(
-              label: '${_steps.length} step${_steps.length == 1 ? '' : 's'}',
+              label: l10n.recipeDetailStepCount(_steps.length),
               child: Column(
                 children: _steps.asMap().entries.map((entry) {
                   final idx = entry.key;
@@ -505,8 +509,8 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
           const SizedBox(height: MitlistSpacing.md),
           _LinkRow(
             icon: 'playCircleOutline',
-            label: 'Watch video',
-            semanticLabel: 'Watch recipe video',
+            label: l10n.recipeDetailWatchVideo,
+            semanticLabel: l10n.recipeDetailWatchVideoSemantics,
             onTap: () => safeLaunchUrl(recipe.videoUrl),
           ),
         ],
@@ -514,8 +518,8 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
           const SizedBox(height: MitlistSpacing.md),
           _LinkRow(
             icon: 'openInNew',
-            label: 'View original recipe',
-            semanticLabel: 'View original recipe in browser',
+            label: l10n.recipeDetailViewOriginal,
+            semanticLabel: l10n.recipeDetailViewOriginalSemantics,
             onTap: () => safeLaunchUrl(recipe.sourceUrl),
           ),
         ],
@@ -533,9 +537,9 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     return s;
   }
 
-  static String _formatMinutes(int minutes) {
+  static String _formatMinutes(int minutes, AppLocalizations l10n) {
     if (minutes <= 0) {
-      return 'Not set';
+      return l10n.recipeDetailNotSet;
     }
     return '$minutes min';
   }

@@ -2,20 +2,26 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/auth_models.dart';
 import '../../models/pinwall_models.dart';
+import '../../providers/chore_provider.dart';
+import '../../providers/finance_provider.dart';
+import '../../providers/list_provider.dart';
+import '../../providers/meal_plan_provider.dart';
 import '../../providers/pinwall_provider.dart';
 import '../../theme/animations.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/theme.dart';
+import '../../theme/typography.dart';
+import '../../l10n/app_localizations.dart';
 import '../../utils/haptics.dart';
 import '../../utils/hub_helpers.dart';
+import '../../widgets/app_button.dart';
 import '../../widgets/hub/pinned_memo_card.dart';
-import '../../widgets/hub/stats_grid.dart';
-import '../../widgets/hub/tonight_card.dart';
 
 // ─── Board layout constants ──────────────────────────────────────────────────
 
@@ -229,7 +235,6 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
 
   /// All draggable cork items, sorted so the lifted card paints last.
   List<Widget> _buildBoardItems(BuildContext context, {required bool dark}) {
-    final colorScheme = Theme.of(context).colorScheme;
     final layers = <({String id, int order, Widget child})>[
       (
         id: _statsId,
@@ -242,11 +247,7 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
           onLift: () => _lift(_statsId),
           onDrop: _drop,
           onDrag: _onStatsDrag,
-          child: PinnedMemoCard(
-            width: _kSummaryStatsW,
-            pinColor: colorScheme.secondary,
-            child: StatsGrid(groupId: widget.groupId),
-          ),
+          child: _BoardStatsCard(groupId: widget.groupId, dark: dark),
         ),
       ),
       (
@@ -260,11 +261,7 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
           onLift: () => _lift(_tonightId),
           onDrop: _drop,
           onDrag: _onTonightDrag,
-          child: PinnedMemoCard(
-            width: _kSummaryTonightW,
-            pinColor: colorScheme.tertiary,
-            child: TonightCard(groupId: widget.groupId),
-          ),
+          child: _BoardTonightTicket(groupId: widget.groupId, dark: dark),
         ),
       ),
       for (var i = 0; i < widget.posts.length; i++)
@@ -301,6 +298,7 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final boardBg =
         dark ? MitlistColors.pinwallBoardDark : MitlistColors.pinwallBoard;
@@ -370,7 +368,7 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _BoardChip(
-                      label: 'Pinwall',
+                      label: l10n.pinwallBoardLabel,
                       icon: Icons.push_pin_outlined,
                       dark: dark,
                     ),
@@ -394,7 +392,7 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
                 child: IgnorePointer(
                   child: Center(
                     child: _BoardChip(
-                      label: 'Drag notes to move  ·  Pinch to zoom',
+                      label: l10n.pinwallDragHint,
                       icon: Icons.open_with_rounded,
                       dark: dark,
                     ),
@@ -487,6 +485,7 @@ class _EmptyBoardHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final textColor = dark
         ? MitlistColors.pinwallNoteTextDark
         : MitlistColors.pinwallNoteTextLight;
@@ -494,7 +493,7 @@ class _EmptyBoardHint extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(MitlistSpacing.xl),
         child: Text(
-          'The wall is clear.\nPin a note from the hub to get started.',
+          l10n.pinwallEmptyBoard,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: textColor.withValues(alpha: 0.7),
@@ -580,6 +579,7 @@ class _BoardNoteCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
 
@@ -605,7 +605,7 @@ class _BoardNoteCard extends ConsumerWidget {
         : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7);
 
     final content = post.content.trim();
-    final userLabel = formatUserLabel(post.userId, me?.id);
+    final userLabel = formatUserLabel(post.userId, me?.id, l10n);
     final when = relativeDay(post.createdAt);
 
     final remindAt = post.remindAt;
@@ -618,7 +618,7 @@ class _BoardNoteCard extends ConsumerWidget {
     );
 
     return Semantics(
-      label: '$userLabel · $content',
+      label: l10n.pinwallNoteSemantics(userLabel, content),
       child: Transform.rotate(
         angle: rot.toDouble(),
         child: Stack(
@@ -751,6 +751,576 @@ class _BoardNoteCard extends ConsumerWidget {
   }
 }
 
+// ─── Board summary artifacts ─────────────────────────────────────────────────
+
+/// Realistic drop shadow so summary artifacts read as physical paper resting
+/// on the cork, a touch heavier than the sticky notes.
+List<BoxShadow> _boardArtifactShadow(bool dark) => [
+      BoxShadow(
+        color: MitlistColors.neutral950.withValues(alpha: dark ? 0.5 : 0.22),
+        blurRadius: 16,
+        offset: const Offset(5, 9),
+      ),
+    ];
+
+/// The household summary, redesigned as a pinned **manila index card**: a
+/// ruled filing card with a red margin rule and a row of folder tabs, each
+/// line a tappable stat that jumps to its tab.
+class _BoardStatsCard extends ConsumerWidget {
+  const _BoardStatsCard({required this.groupId, required this.dark});
+
+  final String groupId;
+  final bool dark;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    final paper =
+        dark ? MitlistColors.composerBgDark : MitlistColors.composerBgLight;
+    final border = dark
+        ? MitlistColors.composerBorderDark
+        : MitlistColors.composerBorderLight;
+    final ink = dark
+        ? MitlistColors.surfaceSoft.withValues(alpha: 0.92)
+        : MitlistColors.pinwallNoteTextLight;
+    final muted = ink.withValues(alpha: 0.5);
+    final rule = border.withValues(alpha: dark ? 0.5 : 0.75);
+    final marginRule = scheme.error.withValues(alpha: dark ? 0.45 : 0.4);
+
+    // ── Chores: due today + overdue ───────────────────────────────────────
+    final chores = ref.watch(cachedCurrentChoresByGroupProvider(groupId));
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+    final choresDue = chores.valueOrNull?.where((c) {
+          final due = c.pendingAssignment?.dueDate;
+          return due != null &&
+              due.isBefore(tomorrow) &&
+              due.isAfter(today.subtract(const Duration(days: 1))) &&
+              c.pendingAssignment?.status != 'completed';
+        }).length ??
+        0;
+    final choresOverdue = chores.valueOrNull?.where((c) {
+          final due = c.pendingAssignment?.dueDate;
+          return due != null &&
+              due.isBefore(today) &&
+              c.pendingAssignment?.status != 'completed';
+        }).length ??
+        0;
+    final choreTotal = choresDue + choresOverdue;
+
+    // ── Balance ───────────────────────────────────────────────────────────
+    final finance = ref.watch(cachedFinanceSummaryByGroupProvider(groupId));
+    final balance = finance.valueOrNull?.balances
+            .fold<int>(0, (sum, b) => sum + b.total) ??
+        0;
+    String fmtMoney(int cents) => (cents / 100).toStringAsFixed(0);
+
+    // ── Lists ─────────────────────────────────────────────────────────────
+    final lists = ref.watch(cachedListsByGroupProvider(groupId));
+    final listCount = lists.valueOrNull
+            ?.where((l) => l.type == 'shopping' || l.type == 'general')
+            .length ??
+        0;
+
+    // ── Reminders (optional row) ──────────────────────────────────────────
+    final reminders = ref.watch(pinwallPostsByGroupProvider(groupId));
+    final reminderCount =
+        reminders.valueOrNull?.where((p) => p.remindAt != null).length ?? 0;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          width: _kSummaryStatsW,
+          decoration: BoxDecoration(
+            color: paper,
+            borderRadius: BorderRadius.circular(MitlistTheme.radiusMd),
+            border: Border.all(color: border, width: 1.5),
+            boxShadow: _boardArtifactShadow(dark),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header band: folder tabs + "This week".
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  MitlistSpacing.md,
+                  MitlistSpacing.md,
+                  MitlistSpacing.md,
+                  MitlistSpacing.sm,
+                ),
+                child: Row(
+                  children: [
+                    _FolderTab(color: scheme.secondary),
+                    const SizedBox(width: 6),
+                    _FolderTab(color: scheme.tertiary),
+                    const SizedBox(width: 6),
+                    _FolderTab(color: scheme.primary),
+                    const SizedBox(width: MitlistSpacing.sm),
+                    Text(
+                      l10n.choreSectionThisWeek.toUpperCase(),
+                      style: textTheme.labelMedium?.copyWith(
+                        color: muted,
+                        letterSpacing: 1.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Ruled body with the red margin rule.
+              Stack(
+                children: [
+                  Positioned(
+                    top: 0,
+                    bottom: 0,
+                    left: 52,
+                    child: Container(width: 1.5, color: marginRule),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _IndexRow(
+                        icon: Icons.cleaning_services_outlined,
+                        label: l10n.hubStatsChores,
+                        value: '$choreTotal',
+                        subtitle: choresOverdue > 0
+                            ? '$choresOverdue ${l10n.hubStatsOverdue}'
+                            : (choresDue > 0
+                                ? l10n.hubStatsDue
+                                : l10n.hubStatsAllDone),
+                        accent: choresOverdue > 0
+                            ? scheme.error
+                            : (choresDue > 0 ? scheme.secondary : scheme.tertiary),
+                        rule: rule,
+                        ink: ink,
+                        muted: muted,
+                        onTap: () => context.goNamed('chores'),
+                      ),
+                      _IndexRow(
+                        icon: Icons.receipt_outlined,
+                        label: l10n.hubStatsBalance,
+                        value: balance > 0
+                            ? '+\$${fmtMoney(balance)}'
+                            : (balance < 0
+                                ? '-\$${fmtMoney(-balance)}'
+                                : '\$${fmtMoney(balance)}'),
+                        subtitle: balance != 0
+                            ? l10n.hubStatsOpen
+                            : l10n.expenseSettled,
+                        accent: balance > 0
+                            ? scheme.tertiary
+                            : (balance < 0 ? scheme.error : muted),
+                        rule: rule,
+                        ink: ink,
+                        muted: muted,
+                        onTap: () => context.goNamed('money'),
+                      ),
+                      _IndexRow(
+                        icon: Icons.shopping_cart_outlined,
+                        label: l10n.hubStatsLists,
+                        value: '$listCount',
+                        subtitle: listCount == 1
+                            ? l10n.hubStatsActiveList
+                            : l10n.hubStatsActiveLists,
+                        accent: listCount > 0 ? scheme.primary : scheme.tertiary,
+                        rule: reminderCount > 0 ? rule : Colors.transparent,
+                        ink: ink,
+                        muted: muted,
+                        onTap: () => context.goNamed('lists'),
+                      ),
+                      if (reminderCount > 0)
+                        _IndexRow(
+                          icon: Icons.alarm_outlined,
+                          label: l10n.hubStatsReminders,
+                          value: '$reminderCount',
+                          subtitle: reminderCount == 1
+                              ? l10n.hubStatsPinwallReminder
+                              : l10n.hubStatsPinwallReminders,
+                          accent: scheme.primary,
+                          rule: Colors.transparent,
+                          ink: ink,
+                          muted: muted,
+                          onTap: null,
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        Positioned(
+          top: -14,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: PinwallPushpin(
+              headColor: scheme.secondary,
+              size: const Size(26, 32),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// A small folder-divider tab drawn at the top of the index card.
+class _FolderTab extends StatelessWidget {
+  const _FolderTab({required this.color});
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 22,
+      height: 7,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.85),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
+      ),
+    );
+  }
+}
+
+/// One ruled line on the index card.
+class _IndexRow extends StatelessWidget {
+  const _IndexRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.subtitle,
+    required this.accent,
+    required this.rule,
+    required this.ink,
+    required this.muted,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final String subtitle;
+  final Color accent;
+  final Color rule;
+  final Color ink;
+  final Color muted;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: rule, width: 1)),
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap == null
+              ? null
+              : () {
+                  unawaited(Haptics.light());
+                  onTap!();
+                },
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              64,
+              MitlistSpacing.sm + 2,
+              MitlistSpacing.md,
+              MitlistSpacing.sm + 2,
+            ),
+            child: Row(
+              children: [
+                Icon(icon, size: 18, color: accent),
+                const SizedBox(width: MitlistSpacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        label,
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: ink,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        subtitle,
+                        style: textTheme.labelSmall?.copyWith(color: accent),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: MitlistSpacing.sm),
+                Text(
+                  value,
+                  style: textTheme.titleLarge?.copyWith(
+                    color: ink,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  maxLines: 1,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Tonight's meal, redesigned as a pinned **dinner ticket** — a perforated
+/// coupon with a colored stub, the dish, and a Cook action.
+class _BoardTonightTicket extends ConsumerWidget {
+  const _BoardTonightTicket({required this.groupId, required this.dark});
+
+  final String groupId;
+  final bool dark;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    final paper =
+        dark ? MitlistColors.composerBgDark : MitlistColors.composerBgLight;
+    final border = dark
+        ? MitlistColors.composerBorderDark
+        : MitlistColors.composerBorderLight;
+    final boardBg =
+        dark ? MitlistColors.pinwallBoardDark : MitlistColors.pinwallBoard;
+    final ink = dark
+        ? MitlistColors.surfaceSoft.withValues(alpha: 0.92)
+        : MitlistColors.pinwallNoteTextLight;
+    final muted = ink.withValues(alpha: 0.55);
+    final accent = scheme.tertiary;
+
+    final async = ref.watch(todayMealPlansProvider(groupId));
+    final meals = async.valueOrNull;
+
+    // Resolve the meal to feature (dinner → breakfast → lunch → first).
+    TodayMeal? selected;
+    if (meals != null && meals.isNotEmpty) {
+      for (final slot in const ['dinner', 'breakfast', 'lunch']) {
+        try {
+          selected = meals.firstWhere((m) => m.plan.slot == slot);
+          break;
+        } catch (_) {}
+      }
+      selected ??= meals.first;
+    }
+
+    final String eyebrow;
+    switch (selected?.plan.slot) {
+      case 'breakfast':
+        eyebrow = l10n.tonightBreakfast;
+      case 'lunch':
+        eyebrow = l10n.tonightLunch;
+      default:
+        eyebrow = l10n.tonightHeader;
+    }
+
+    final hasMeal = selected != null;
+    final title = hasMeal
+        ? (selected.recipe?.title ?? l10n.tonightRecipe)
+        : l10n.tonightNothingPlanned;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          width: _kSummaryTonightW,
+          decoration: BoxDecoration(
+            color: paper,
+            borderRadius: BorderRadius.circular(MitlistTheme.radiusMd),
+            border: Border.all(color: border, width: 1.5),
+            boxShadow: _boardArtifactShadow(dark),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Colored ticket header stub.
+              Container(
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: dark ? 0.28 : 0.16),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(MitlistTheme.radiusMd - 1.5),
+                  ),
+                ),
+                padding: const EdgeInsets.fromLTRB(
+                  MitlistSpacing.md,
+                  MitlistSpacing.sm,
+                  MitlistSpacing.md,
+                  MitlistSpacing.sm,
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.restaurant_outlined, size: 15, color: accent),
+                    const SizedBox(width: MitlistSpacing.xs),
+                    Text(
+                      eyebrow.toUpperCase(),
+                      style: textTheme.labelMedium?.copyWith(
+                        color: accent,
+                        letterSpacing: 1.4,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  MitlistSpacing.md,
+                  MitlistSpacing.md,
+                  MitlistSpacing.md,
+                  MitlistSpacing.sm,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    GestureDetector(
+                      onTap: hasMeal
+                          ? () {
+                              unawaited(Haptics.light());
+                              context.pushNamed(
+                                'recipeDetail',
+                                pathParameters: {
+                                  'recipeId': selected!.plan.recipeId
+                                },
+                              );
+                            }
+                          : null,
+                      child: Text(
+                        title,
+                        style: textTheme.titleLarge?.copyWith(color: ink),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (hasMeal) ...[
+                      const SizedBox(height: MitlistSpacing.xs),
+                      Text(
+                        l10n.recipeServesLabel(selected.plan.servings),
+                        style: MitlistTypography.monoBody(color: muted),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              // Perforated tear line with punch holes.
+              SizedBox(
+                height: 14,
+                child: CustomPaint(
+                  painter: _PerforationPainter(
+                    dashColor: border,
+                    holeColor: boardBg,
+                  ),
+                ),
+              ),
+              // Stub footer with the action.
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  MitlistSpacing.md,
+                  MitlistSpacing.xs,
+                  MitlistSpacing.md,
+                  MitlistSpacing.md,
+                ),
+                child: Row(
+                  children: [
+                    const Spacer(),
+                    if (hasMeal)
+                      AppButton(
+                        text: l10n.tonightCook,
+                        size: AppButtonSize.sm,
+                        onPressed: () {
+                          unawaited(Haptics.light());
+                          context.pushNamed(
+                            'recipeCook',
+                            pathParameters: {'recipeId': selected!.plan.recipeId},
+                          );
+                        },
+                      )
+                    else
+                      AppButton(
+                        text: l10n.tonightPlanDinner,
+                        variant: AppButtonVariant.outline,
+                        size: AppButtonSize.sm,
+                        onPressed: () {
+                          unawaited(Haptics.light());
+                          context.pushNamed('mealPlan');
+                        },
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        Positioned(
+          top: -14,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: PinwallPushpin(
+              headColor: scheme.tertiary,
+              size: const Size(26, 32),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Dashed horizontal tear line with a punched hole at each end, giving the
+/// tonight card its torn-ticket silhouette.
+class _PerforationPainter extends CustomPainter {
+  const _PerforationPainter({required this.dashColor, required this.holeColor});
+
+  final Color dashColor;
+  final Color holeColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final y = size.height / 2;
+
+    final dash = Paint()
+      ..color = dashColor
+      ..strokeWidth = 1.4
+      ..strokeCap = StrokeCap.round;
+    const dashW = 6.0;
+    const gap = 5.0;
+    for (var x = 14.0; x < size.width - 14; x += dashW + gap) {
+      canvas.drawLine(Offset(x, y), Offset(x + dashW, y), dash);
+    }
+
+    // Punch holes that bite into each edge.
+    final hole = Paint()..color = holeColor;
+    canvas.drawCircle(Offset(0, y), 7, hole);
+    canvas.drawCircle(Offset(size.width, y), 7, hole);
+  }
+
+  @override
+  bool shouldRepaint(_PerforationPainter old) =>
+      old.dashColor != dashColor || old.holeColor != holeColor;
+}
+
 // ─── Overlay chip ─────────────────────────────────────────────────────────────
 
 class _BoardChip extends StatelessWidget {
@@ -798,12 +1368,13 @@ class _BoardCloseButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final bg = dark
         ? MitlistColors.neutral950.withValues(alpha: 0.72)
         : MitlistColors.pinwallBoardBorder.withValues(alpha: 0.75);
     return Semantics(
       button: true,
-      label: 'Close board',
+      label: l10n.pinwallCloseBoard,
       child: GestureDetector(
         onTap: () {
           Haptics.light();

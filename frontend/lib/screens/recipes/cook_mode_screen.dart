@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/recipe_models.dart';
 import '../../providers/recipe_provider.dart';
 import '../../theme/spacing.dart';
@@ -204,11 +205,12 @@ class _CookModeScreenState extends ConsumerState<CookModeScreen> {
   }
 
   void _fireTimerComplete() {
+    final l10n = AppLocalizations.of(context)!;
     unawaited(Haptics.success());
     final disableAnimations = MediaQuery.of(context).disableAnimations;
     if (disableAnimations) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Timer done!')),
+        SnackBar(content: Text(l10n.cookModeTimerDone)),
       );
     } else {
       _flashScreen();
@@ -216,6 +218,7 @@ class _CookModeScreenState extends ConsumerState<CookModeScreen> {
   }
 
   void _flashScreen() {
+    final l10n = AppLocalizations.of(context)!;
     // Full-screen 300ms primary-color flash via overlay.
     final overlay = Overlay.of(context);
     late OverlayEntry entry;
@@ -225,7 +228,7 @@ class _CookModeScreenState extends ConsumerState<CookModeScreen> {
           entry.remove();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Timer done!')),
+              SnackBar(content: Text(l10n.cookModeTimerDone)),
             );
           }
         },
@@ -251,11 +254,12 @@ class _CookModeScreenState extends ConsumerState<CookModeScreen> {
   }
 
   String _timerLabel(int stepIndex, int timerIndex, Duration baseDuration) {
+    final l10n = AppLocalizations.of(context)!;
     if ((_timers[stepIndex]?.length ?? 0) <= timerIndex) {
       return _durationLabel(baseDuration);
     }
     final t = _timers[stepIndex]![timerIndex];
-    if (t.completed) return 'Done';
+    if (t.completed) return l10n.commonDone;
     if (!t.running) return _durationLabel(baseDuration);
     final remaining = t.endTime!.difference(DateTime.now());
     return _durationLabel(remaining < Duration.zero ? Duration.zero : remaining);
@@ -378,6 +382,7 @@ class _CookModeScreenState extends ConsumerState<CookModeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (_isLoading) return const _LoadingView();
     if (_hasError || _recipe == null) {
       return Scaffold(
@@ -385,11 +390,11 @@ class _CookModeScreenState extends ConsumerState<CookModeScreen> {
           child: AppEmptyState(
             lottieAsset: 'assets/animations/lottie/404.lottie',
             icon: const AppIcon(name: 'restaurant'),
-            title: 'Could not load recipe',
-            description: 'Check your connection and try again.',
+            title: l10n.cookModeCouldNotLoad,
+            description: l10n.commonCheckConnection,
             actions: [
               AppButton(
-                text: 'Retry',
+                text: l10n.commonRetry,
                 variant: AppButtonVariant.outline,
                 onPressed: _load,
               ),
@@ -477,6 +482,7 @@ class _MiseEnPlaceView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final equipmentList = parseEquipment(recipe.equipmentJson);
@@ -505,7 +511,7 @@ class _MiseEnPlaceView extends StatelessWidget {
                   ),
                   IconButton(
                     icon: const AppIcon(name: 'xMark'),
-                    tooltip: 'Close',
+                    tooltip: l10n.cookModeClose,
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -520,12 +526,12 @@ class _MiseEnPlaceView extends StatelessWidget {
               child: Row(
                 children: [
                   Text(
-                    'Servings',
+                    l10n.cookModeServings,
                     style: theme.textTheme.bodyMedium,
                   ),
                   const Spacer(),
                   Semantics(
-                    label: 'Decrease servings',
+                    label: l10n.cookModeDecreaseServings,
                     button: true,
                     child: GestureDetector(
                       onTap: selectedServings > 1
@@ -564,7 +570,7 @@ class _MiseEnPlaceView extends StatelessWidget {
                     ),
                   ),
                   Semantics(
-                    label: 'Increase servings',
+                    label: l10n.cookModeIncreaseServings,
                     button: true,
                     child: GestureDetector(
                       onTap: () => onServingsChanged(selectedServings + 1),
@@ -642,7 +648,7 @@ class _MiseEnPlaceView extends StatelessWidget {
                   child: SizedBox(
                     width: double.infinity,
                     child: AppButton(
-                      text: 'Start cooking',
+                      text: l10n.cookModeStartCooking,
                       size: AppButtonSize.lg,
                       onPressed: onStart,
                     ),
@@ -670,10 +676,11 @@ class _GatherRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final disableAnimations = MediaQuery.of(context).disableAnimations;
     return Semantics(
-      label: '$label, ${isGathered ? 'gathered' : 'not gathered'}',
+      label: '$label, ${isGathered ? l10n.cookModeGathered : l10n.cookModeNotGathered}',
       button: true,
       child: InkWell(
         onTap: onTap,
@@ -776,6 +783,7 @@ class _CookFlowView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isLast = currentStepIndex == steps.length - 1;
@@ -837,7 +845,7 @@ class _CookFlowView extends StatelessWidget {
                       right: 0,
                       child: Center(
                         child: Semantics(
-                          label: 'Back to step ${currentStepIndex + 1}',
+                          label: l10n.cookModeBackToStep(currentStepIndex + 1),
                           button: true,
                           child: GestureDetector(
                             onTap: onScrollToCurrentStep,
@@ -855,7 +863,7 @@ class _CookFlowView extends StatelessWidget {
                                 ),
                               ),
                               child: Text(
-                                'Back to step ${currentStepIndex + 1}',
+                                l10n.cookModeBackToStep(currentStepIndex + 1),
                                 style: theme.textTheme.labelMedium?.copyWith(
                                   color: colorScheme.onPrimary,
                                 ),
@@ -904,6 +912,7 @@ class _GlanceBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       height: 48,
       padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
@@ -916,7 +925,7 @@ class _GlanceBar extends StatelessWidget {
       child: Row(
         children: [
           Text(
-            'Step ${stepIndex + 1} of $stepCount',
+            l10n.cookModeStepOf(stepIndex + 1, stepCount),
             style: MitlistTypography.monoBody(color: colorScheme.onSurface),
           ),
           if (activeTimers.isNotEmpty) ...[
@@ -957,7 +966,7 @@ class _GlanceBar extends StatelessWidget {
             const Spacer(),
           IconButton(
             icon: AppIcon(name: 'xMark', color: colorScheme.onSurface),
-            tooltip: 'Exit cook mode',
+            tooltip: l10n.cookModeExitTooltip,
             onPressed: () => Navigator.of(context).pop(),
           ),
         ],
@@ -1014,9 +1023,10 @@ class _StepRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (isDone) {
       return Semantics(
-        label: 'Step $stepNumber done. Tap to revisit',
+        label: l10n.cookModeStepDone(stepNumber),
         button: true,
         child: InkWell(
           onTap: onJump,
@@ -1052,7 +1062,7 @@ class _StepRow extends StatelessWidget {
       final matches = matchIngredients(description, ingredients);
 
       return Semantics(
-        label: 'Current step $stepNumber',
+        label: l10n.cookModeCurrentStep(stepNumber),
         child: Container(
           margin: const EdgeInsets.symmetric(
             horizontal: MitlistSpacing.md,
@@ -1069,7 +1079,7 @@ class _StepRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Step $stepNumber',
+                  l10n.cookModeStepLabel(stepNumber),
                   style: MitlistTypography.monoBody(
                     color: colorScheme.primary,
                   ),
@@ -1087,9 +1097,9 @@ class _StepRow extends StatelessWidget {
                       final label = timerLabel(stepIndex, ti, dur);
                       final isRunning = (timers[stepIndex]?.length ?? 0) > ti &&
                           timers[stepIndex]![ti].running;
-                      final isDoneTimer = label == 'Done';
+                      final isDoneTimer = label == l10n.commonDone;
                       return Semantics(
-                        label: 'Timer: $label. Tap to start',
+                        label: l10n.cookModeTimerStart(label),
                         button: true,
                         child: GestureDetector(
                           onTap: isRunning || isDoneTimer
@@ -1152,7 +1162,7 @@ class _StepRow extends StatelessWidget {
 
     // Upcoming step
     return Semantics(
-      label: 'Step $stepNumber: $description. Tap to jump to this step',
+      label: l10n.cookModeStepJump(stepNumber, description),
       button: true,
       child: InkWell(
         onTap: onJump,
@@ -1271,6 +1281,7 @@ class _BottomZone extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       decoration: BoxDecoration(
         border: Border(
@@ -1295,7 +1306,7 @@ class _BottomZone extends StatelessWidget {
               // Done zone (full-width when no ingredients, otherwise expanded)
               Expanded(
                 child: Semantics(
-                  label: isLast ? 'Finish cooking' : 'Done, advance to next step',
+                  label: isLast ? l10n.cookModeFinishCooking : l10n.cookModeAdvanceStep,
                   button: true,
                   child: GestureDetector(
                     onTap: onAdvance,
@@ -1304,7 +1315,7 @@ class _BottomZone extends StatelessWidget {
                       color: colorScheme.primary,
                       child: Center(
                         child: Text(
-                          isLast ? 'Finish' : 'Done →',
+                          isLast ? l10n.cookModeFinish : l10n.cookModeDoneArrow,
                           style: theme.textTheme.titleMedium?.copyWith(
                             color: colorScheme.onPrimary,
                             fontWeight: FontWeight.w700,
@@ -1338,13 +1349,14 @@ class _IngredientsHandle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Semantics(
-      label: 'Show ingredients',
+      label: l10n.cookModeShowIngredients,
       button: true,
       child: GestureDetector(
         onTap: () => showAppBottomSheet(
           context: context,
-          title: 'Ingredients',
+          title: l10n.cookModeIngredients,
           body: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: ingredients.map((ing) {
@@ -1373,7 +1385,7 @@ class _IngredientsHandle extends StatelessWidget {
               AppIcon(name: 'listBullet', color: colorScheme.primary),
               const SizedBox(height: MitlistSpacing.xs),
               Text(
-                'Ingredients',
+                l10n.cookModeIngredients,
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: colorScheme.primary,
                 ),
@@ -1397,6 +1409,7 @@ class _FinishedView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Scaffold(
@@ -1414,13 +1427,13 @@ class _FinishedView extends StatelessWidget {
                 ),
                 const SizedBox(height: MitlistSpacing.lg),
                 Text(
-                  'Finished — nice work',
+                  l10n.cookModeFinished,
                   style: theme.textTheme.headlineMedium,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: MitlistSpacing.xl),
                 AppButton(
-                  text: 'Done',
+                  text: l10n.commonDone,
                   size: AppButtonSize.lg,
                   onPressed: onExit,
                 ),

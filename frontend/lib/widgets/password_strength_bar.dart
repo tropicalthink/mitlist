@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../theme/animations.dart';
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
@@ -23,16 +24,6 @@ class PasswordStrengthBar extends StatelessWidget {
     return 2;
   }
 
-  static String _label(int strength) {
-    return switch (strength) {
-      1 => 'Weak',
-      2 => 'Fair',
-      3 => 'Good',
-      4 => 'Strong',
-      _ => '',
-    };
-  }
-
   static Color _colorForStrength(int strength) {
     return switch (strength) {
       1 => MitlistColors.error500,
@@ -45,11 +36,18 @@ class PasswordStrengthBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final strength = computeStrength(password);
     final disableAnimations = MediaQuery.of(context).disableAnimations;
     final duration = disableAnimations ? Duration.zero : MitlistAnimations.medium;
     final color = _colorForStrength(strength);
-    final label = _label(strength);
+    final label = switch (strength) {
+      1 => l10n.passwordStrengthWeak,
+      2 => l10n.passwordStrengthFair,
+      3 => l10n.passwordStrengthGood,
+      4 => l10n.passwordStrengthStrong,
+      _ => '',
+    };
     final emptyColor = Theme.of(context).colorScheme.outlineVariant;
 
     return AnimatedOpacity(

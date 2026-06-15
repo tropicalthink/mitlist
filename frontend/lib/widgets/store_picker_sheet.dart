@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../l10n/app_localizations.dart';
 import '../providers/store_provider.dart';
 import '../theme/spacing.dart';
 import 'app_bottom_sheet.dart';
@@ -9,9 +10,10 @@ import 'app_icon.dart';
 /// Lets the household choose which store they're shopping at. The choice drives
 /// shopping-path aisle sorting and is persisted on-device.
 Future<void> showStorePicker(BuildContext context) {
+  final l10n = AppLocalizations.of(context)!;
   return showAppBottomSheet<void>(
     context: context,
-    title: 'Your store',
+    title: l10n.storePickerTitle,
     body: const _StorePickerBody(),
   );
 }
@@ -21,6 +23,7 @@ class _StorePickerBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final catalog = ref.watch(storeCatalogProvider);
     final selected = ref.watch(selectedStoreIdProvider);
     final notifier = ref.read(selectedStoreIdProvider.notifier);
@@ -30,17 +33,17 @@ class _StorePickerBody extends ConsumerWidget {
         padding: EdgeInsets.all(MitlistSpacing.lg),
         child: Center(child: CircularProgressIndicator()),
       ),
-      error: (_, __) => const Padding(
-        padding: EdgeInsets.all(MitlistSpacing.lg),
-        child: Text('Couldn’t load stores.'),
+      error: (_, __) => Padding(
+        padding: const EdgeInsets.all(MitlistSpacing.lg),
+        child: Text(l10n.storePickerLoadError),
       ),
       data: (stores) {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             _StoreTile(
-              label: 'No store',
-              subtitle: 'Sort by category instead of a store layout',
+              label: l10n.storePickerNoStore,
+              subtitle: l10n.storePickerNoStoreDesc,
               selected: selected == null,
               onTap: () {
                 notifier.select(null);

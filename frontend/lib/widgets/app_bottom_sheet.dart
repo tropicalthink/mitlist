@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../theme/animations.dart';
 import '../theme/shadows.dart';
 import '../theme/spacing.dart';
@@ -109,21 +110,19 @@ Future<T?> showAppBottomSheet<T>({
   ValueListenable<bool>? isDirtyListenable,
 }) {
   Future<void> confirmDismiss(BuildContext context) async {
-    // The dialog is pushed on the root navigator (showGeneralDialog), while the
-    // sheet lives on the nested shell navigator. Pop the dialog on the root
-    // navigator so the buttons close the dialog, not the sheet underneath it.
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showAppDialog<bool>(
       context: context,
-      title: 'Discard changes?',
-      body: const Text('You have unsaved changes.'),
+      title: l10n.appBottomSheetDiscardTitle,
+      body: Text(l10n.appBottomSheetDiscardBody),
       actions: [
         AppButton(
-          text: 'Keep editing',
+          text: l10n.appBottomSheetKeepEditing,
           onPressed: () =>
               Navigator.of(context, rootNavigator: true).pop(false),
         ),
         AppButton(
-          text: 'Discard',
+          text: l10n.recipeCreationDiscard,
           color: AppButtonColor.error,
           variant: AppButtonVariant.outline,
           onPressed: () =>

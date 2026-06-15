@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/chore_models.dart';
 import '../theme/spacing.dart';
 import '../widgets/app_bottom_sheet.dart';
@@ -27,7 +28,7 @@ class ChoreLoadSheet extends StatelessWidget {
   }) {
     return showAppBottomSheet<void>(
       context: context,
-      title: 'Who\'s doing the chores',
+      title: AppLocalizations.of(context)!.choreLoadTitle,
       body: ChoreLoadSheet(
         entries: entries,
         memberNames: memberNames,
@@ -44,6 +45,7 @@ class ChoreLoadSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -67,8 +69,7 @@ class ChoreLoadSheet extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.lg),
         child: Text(
-          'No chores have been completed in the last $days days yet. '
-          'Once people start ticking things off, the split shows up here.',
+          l10n.choreLoadEmpty(days),
           style: textTheme.bodyMedium?.copyWith(
             color: colorScheme.onSurfaceVariant,
           ),
@@ -81,7 +82,7 @@ class ChoreLoadSheet extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '$total ${total == 1 ? 'chore' : 'chores'} done in the last $days days',
+          '${total == 1 ? l10n.choreLoadCountSingular(total) : l10n.choreLoadCountPlural(total)} done in the last $days days',
           style: textTheme.bodySmall?.copyWith(
             color: colorScheme.onSurfaceVariant,
           ),

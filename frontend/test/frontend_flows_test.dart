@@ -45,6 +45,7 @@ import 'package:mitlist/screens/recipes/recipe_detail_screen.dart';
 import 'package:mitlist/screens/recipes/recipes_screen.dart';
 import 'package:mitlist/screens/you/account_screen.dart';
 import 'package:mitlist/router.dart';
+import 'package:mitlist/l10n/app_localizations.dart';
 import 'package:mitlist/services/activity_service.dart';
 import 'package:mitlist/services/auth_service.dart';
 import 'package:mitlist/services/chore_service.dart';
@@ -62,7 +63,9 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      'current_group_id': '11111111-1111-1111-1111-111111111111',
+    });
     FlutterSecureStorage.setMockInitialValues({});
   });
 
@@ -305,6 +308,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          authStateProvider.overrideWith((ref) => true),
           appDatabaseProvider.overrideWithValue(
             AppDatabase(
               drift.DatabaseConnection(
@@ -318,7 +322,7 @@ void main() {
           mealPlanServiceProviderAsync
               .overrideWith((ref) async => FakeMealPlanService()),
         ],
-        child: MaterialApp.router(routerConfig: router),
+        child: _testMaterialAppRouter(router),
       ),
     );
     await _pumpUi(tester);
@@ -385,8 +389,7 @@ void main() {
 
     await tester.enterText(find.byType(TextField).first, 'sunny-taco-42');
     await _pumpAfter(tester);
-    await tester.tap(find.widgetWithText(AppButton,
-        'JOIN HOUSEHOLD')); // solid variant renders text as uppercase
+    await tester.tap(find.widgetWithText(AppButton, 'JOIN'));
     await _pumpAfter(tester);
 
     expect(groupService.lastJoinRequest, isNotNull);
@@ -474,7 +477,7 @@ void main() {
           pinwallRepositoryProvider.overrideWith(
               (ref) async => FakePinwallRepository(FakePinwallService())),
         ],
-        child: MaterialApp.router(routerConfig: router),
+        child: _testMaterialAppRouter(router),
       ),
     );
     await _pumpUi(tester);
@@ -616,7 +619,7 @@ void main() {
           notificationServiceProviderAsync
               .overrideWith((ref) async => notificationService),
         ],
-        child: MaterialApp.router(routerConfig: router),
+        child: _testMaterialAppRouter(router),
       ),
     );
     await _pumpUi(tester);
@@ -668,7 +671,7 @@ void main() {
       ],
     );
 
-    expect(find.text('Language'), findsNothing);
+    expect(find.text('Language'), findsOneWidget);
 
     await tester.tap(find.text('Change Password'));
     await _pumpAfter(tester);
@@ -691,7 +694,7 @@ void main() {
 
     expect(find.text('Terms of Service'), findsWidgets);
     expect(
-      find.textContaining('Shared household content is visible'),
+      find.textContaining('Use mitlist responsibly'),
       findsOneWidget,
     );
   });
@@ -797,7 +800,7 @@ void main() {
           routerProvider.overrideWith((ref) => router),
           authServiceProviderAsync.overrideWith((ref) async => authService),
         ],
-        child: MaterialApp.router(routerConfig: router),
+        child: _testMaterialAppRouter(router),
       ),
     );
     await _pumpUi(tester);
@@ -920,8 +923,9 @@ void main() {
       ],
     );
 
-    expect(find.text('Couldn\u2019t load expenses. Check your connection.'),
-        findsOneWidget);
+    await _pumpUi(tester);
+
+    expect(find.textContaining("Couldn't load expenses"), findsOneWidget);
     expect(
         find.text('RETRY'), findsOneWidget); // solid variant renders uppercase
   });
@@ -942,7 +946,7 @@ void main() {
     );
 
     expect(
-        find.text('Failed to load chores. Please try again.'), findsOneWidget);
+        find.text('Failed to load. Please try again.'), findsOneWidget);
     expect(
         find.text('RETRY'), findsOneWidget); // solid variant renders uppercase
   });
@@ -1107,10 +1111,11 @@ Future<AppDatabase> _pumpScreen(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        authStateProvider.overrideWith((ref) => true),
         ...overrides,
         appDatabaseProvider.overrideWithValue(db),
       ],
-      child: MaterialApp(home: child),
+      child: _testMaterialApp(child),
     ),
   );
   await tester.pump();
@@ -1120,6 +1125,22 @@ Future<AppDatabase> _pumpScreen(
   await tester.pump(const Duration(milliseconds: 200));
   await tester.pump(const Duration(milliseconds: 200));
   return db;
+}
+
+Widget _testMaterialApp(Widget child) {
+  return MaterialApp(
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: child,
+  );
+}
+
+Widget _testMaterialAppRouter(GoRouter router) {
+  return MaterialApp.router(
+    routerConfig: router,
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+  );
 }
 
 Future<void> _pumpAfter(WidgetTester tester) async {

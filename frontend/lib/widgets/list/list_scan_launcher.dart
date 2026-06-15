@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../providers/grocery_provider.dart';
 import '../../providers/list_provider.dart' show listRepositoryProvider;
 import '../../providers/store_provider.dart';
@@ -28,13 +29,14 @@ Future<int?> launchListScan(
   String? listName,
   ImageSource? source,
 }) async {
+  final l10n = AppLocalizations.of(context)!;
   final pickedSource = source ?? await _pickImageSource(context);
   if (pickedSource == null || !context.mounted) return null;
 
   final capture = await pickSmartCapture(
     context,
     source: pickedSource,
-    title: 'Check list photo',
+    title: l10n.scanCheckListPhoto,
   );
   if (capture == null || !context.mounted) return null;
 
@@ -63,7 +65,7 @@ Future<int?> launchListScan(
                 const AppSpinner(size: AppSpinnerSize.lg),
                 const SizedBox(height: MitlistSpacing.md),
                 Text(
-                  'Reading your list\u2026',
+                  l10n.scanReadingList,
                   style: textTheme.bodyMedium,
                 ),
               ],
@@ -111,8 +113,8 @@ Future<int?> launchListScan(
     if (!context.mounted) return null;
     Navigator.of(context).pop(); // dismiss loading
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Couldn\u2019t process the image. Please try again.'),
+      SnackBar(
+        content: Text(l10n.scanCouldNotProcess),
       ),
     );
     return null;
@@ -120,20 +122,21 @@ Future<int?> launchListScan(
 }
 
 Future<ImageSource?> _pickImageSource(BuildContext context) {
+  final l10n = AppLocalizations.of(context)!;
   return showAppBottomSheet<ImageSource>(
     context: context,
-    title: 'Snap your list',
+    title: l10n.scanSnapYourList,
     body: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         ListTile(
           leading: const AppIcon(name: 'devicePhoneMobile'),
-          title: const Text('Take a photo'),
+          title: Text(l10n.scanTakePhoto),
           onTap: () => Navigator.of(context).pop(ImageSource.camera),
         ),
         ListTile(
           leading: const AppIcon(name: 'eye'),
-          title: const Text('Choose from gallery'),
+          title: Text(l10n.scanChooseFromGallery),
           onTap: () => Navigator.of(context).pop(ImageSource.gallery),
         ),
       ],

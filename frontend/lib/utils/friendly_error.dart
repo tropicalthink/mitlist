@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 
-String friendlyErrorMessage(Object error) {
+import '../l10n/app_localizations.dart';
+
+String friendlyErrorMessage(Object error, AppLocalizations l10n) {
   if (error is DioException) {
     final response = error.response;
     final statusCode = response?.statusCode;
@@ -10,35 +12,35 @@ String friendlyErrorMessage(Object error) {
     if (error.type == DioExceptionType.connectionTimeout ||
         error.type == DioExceptionType.sendTimeout ||
         error.type == DioExceptionType.receiveTimeout) {
-      return 'Check your connection and try again.';
+      return l10n.commonCheckConnection;
     }
 
     if (error.type == DioExceptionType.connectionError) {
-      return 'Check your connection and try again.';
+      return l10n.commonCheckConnection;
     }
 
     if (statusCode != null) {
       if (statusCode >= 500) {
-        return 'Server hiccup \u2014 try again in a moment.';
+        return l10n.errorServerHiccup;
       }
       if (statusCode == 409) {
-        return 'Someone else changed this. Refresh and try again.';
+        return l10n.errorConflict;
       }
       if (statusCode == 404) {
-        return 'Not found. It may have been deleted.';
+        return l10n.errorNotFound;
       }
       if (statusCode == 403) {
-        return 'You don\u2019t have permission for this.';
+        return l10n.errorNoPermission;
       }
       if (statusCode == 401) {
-        return 'Please sign in again.';
+        return l10n.errorSignInAgain;
       }
     }
   }
 
   if (error is SocketException) {
-    return 'Check your connection and try again.';
+    return l10n.commonCheckConnection;
   }
 
-  return 'Something went wrong. Please try again.';
+  return l10n.errorGenericRetry;
 }

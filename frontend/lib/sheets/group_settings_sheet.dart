@@ -16,7 +16,9 @@ import '../widgets/app_dialog.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/app_input.dart';
 import '../widgets/app_switch.dart';
+import '../widgets/chip.dart';
 import '../utils/friendly_error.dart';
+import '../l10n/app_localizations.dart';
 import 'invite_household_sheet.dart';
 
 class GroupSettingsSheet extends ConsumerStatefulWidget {
@@ -25,9 +27,10 @@ class GroupSettingsSheet extends ConsumerStatefulWidget {
   final String groupId;
 
   static Future<void> show(BuildContext context, {required String groupId}) {
+    final l10n = AppLocalizations.of(context)!;
     return showAppBottomSheet<void>(
       context: context,
-      title: 'Household settings',
+      title: l10n.sheetGroupSettingsTitle,
       body: GroupSettingsSheet(groupId: groupId),
     );
   }
@@ -53,6 +56,10 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
   bool _descChanged = false;
   String _groupCurrency = 'USD';
   bool _currencyChanged = false;
+  List<String> _choreZones = [];
+  bool _zonesChanged = false;
+  final TextEditingController _zoneInputController = TextEditingController();
+  bool _isSavingZones = false;
 
   @override
   void initState() {
@@ -66,6 +73,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
+    _zoneInputController.dispose();
     super.dispose();
   }
 
@@ -91,23 +99,77 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       setState(() {
         _group = group;
         _groupCurrency = group.currency;
+        _choreZones = List<String>.from(group.choreZones);
         _members = members;
         _notificationPref = pref;
         _isLoading = false;
         _nameChanged = false;
         _descChanged = false;
         _currencyChanged = false;
+        _zonesChanged = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = friendlyErrorMessage(e);
+        _error = friendlyErrorMessage(e, AppLocalizations.of(context)!);
         _isLoading = false;
       });
     }
   }
 
+  Future<void> _saveZones() async {
+    if (_isSavingZones) return;
+    setState(() => _isSavingZones = true);
+    try {
+      final svc = await ref.read(groupServiceProviderAsync.future);
+      final updated = await svc.updateGroup(
+        widget.groupId,
+        UpdateGroupRequest(choreZones: _choreZones),
+      );
+      if (!mounted) return;
+      ref.invalidate(cachedGroupsProvider);
+      setState(() {
+        _group = updated;
+        _choreZones = List<String>.from(updated.choreZones);
+        _isSavingZones = false;
+        _zonesChanged = false;
+      });
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.sheetGroupSettingsChoreZonesUpdated)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSavingZones = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
+      );
+    }
+  }
+
+  void _addZone() {
+    final zone = _zoneInputController.text.trim();
+    if (zone.isEmpty) return;
+    if (_choreZones.any((z) => z.toLowerCase() == zone.toLowerCase())) {
+      _zoneInputController.clear();
+      return;
+    }
+    setState(() {
+      _choreZones = [..._choreZones, zone];
+      _zonesChanged = true;
+      _zoneInputController.clear();
+    });
+  }
+
+  void _removeZone(String zone) {
+    setState(() {
+      _choreZones = _choreZones.where((z) => z != zone).toList();
+      _zonesChanged = true;
+    });
+  }
+
   Future<void> _saveDetails() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_isSaving) return;
     final newName = _nameController.text.trim();
     final newDesc = _descriptionController.text.trim();
@@ -137,32 +199,34 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         _descChanged = false;
         _currencyChanged = false;
       });
+      ref.invalidate(cachedGroupsProvider);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Household updated')),
+        SnackBar(content: Text(l10n.sheetGroupSettingsSaved)),
       );
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e))),
+        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
 
   Future<void> _confirmRemoveMember(GroupMemberProfile member) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showAppDialog<bool>(
       context: context,
-      title: 'Remove member',
-      body: Text('Remove ${member.displayName} from this household?'),
+      title: l10n.sheetGroupSettingsRemoveMember,
+      body: Text(l10n.sheetGroupSettingsRemoveMemberConfirm(member.displayName)),
       actions: [
         AppButton(
-          text: 'Cancel',
+          text: l10n.commonCancel,
           variant: AppButtonVariant.outline,
           onPressed: () => Navigator.of(context).pop(false),
         ),
         const SizedBox(width: MitlistSpacing.sm),
         AppButton(
-          text: 'Remove',
+          text: l10n.commonRemove,
           onPressed: () => Navigator.of(context).pop(true),
         ),
       ],
@@ -176,30 +240,31 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         _members = _members.where((m) => m.userId != member.userId).toList();
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${member.displayName} removed')),
+        SnackBar(content: Text(l10n.sheetGroupSettingsMemberRemoved(member.displayName))),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e))),
+        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
 
   Future<void> _confirmDeleteGroup() async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showAppDialog<bool>(
       context: context,
-      title: 'Delete household',
-      body: const Text('This will permanently delete this household and all its data. This cannot be undone.'),
+      title: l10n.sheetGroupSettingsDelete,
+      body: Text(l10n.sheetGroupSettingsDeleteConfirm),
       actions: [
         AppButton(
-          text: 'Cancel',
+          text: l10n.commonCancel,
           variant: AppButtonVariant.outline,
           onPressed: () => Navigator.of(context).pop(false),
         ),
         const SizedBox(width: MitlistSpacing.sm),
         AppButton(
-          text: 'Delete',
+          text: l10n.commonDelete,
           color: AppButtonColor.error,
           onPressed: () => Navigator.of(context).pop(true),
         ),
@@ -215,19 +280,20 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         ..pop()
         ..pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Household deleted')),
+        SnackBar(content: Text(l10n.sheetGroupSettingsHouseholdDeleted)),
       );
     } catch (e) {
       if (!mounted) return;
       setState(() => _isDeleting = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e))),
+        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (_isLoading) {
       return const Padding(
         padding: EdgeInsets.all(MitlistSpacing.md),
@@ -243,7 +309,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
           children: [
             AppAlert(type: AppAlertType.error, message: _error!),
             const SizedBox(height: MitlistSpacing.md),
-            AppButton(text: 'Retry', onPressed: _loadData),
+            AppButton(text: l10n.commonRetry, onPressed: _loadData),
           ],
         ),
       );
@@ -256,6 +322,8 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildDetailsSection(),
+          const SizedBox(height: MitlistSpacing.lg),
+          _buildChoreZonesSection(),
           const SizedBox(height: MitlistSpacing.lg),
           _buildMembersSection(),
           const SizedBox(height: MitlistSpacing.lg),
@@ -298,13 +366,14 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       if (mounted) {
         setState(() => _savingKeys.remove(key));
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(friendlyErrorMessage(e))),
+          SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
         );
       }
     }
   }
 
   Widget _buildNotificationsSection() {
+    final l10n = AppLocalizations.of(context)!;
     final pref = _notificationPref;
     if (pref == null) return const SizedBox.shrink();
 
@@ -313,18 +382,18 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Notifications',
+          Text(l10n.notifPrefGroupName,
               style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: MitlistSpacing.sm),
           const AppDivider(),
-          _notifToggle('Chore due', pref.choreDue, 'chore_due'),
-          _notifToggle('List item added', pref.listItemAdded, 'list_item_added'),
-          _notifToggle('Expense created', pref.expenseCreated, 'expense_created'),
-          _notifToggle('Meal plan changed', pref.mealPlanChanged, 'meal_plan_changed'),
-          _notifToggle('Weekly digest', pref.weeklyDigest, 'weekly_digest'),
-          _notifToggle('Pinwall reminder', pref.pinwallReminder, 'pinwall_reminder'),
+          _notifToggle(l10n.notifPrefChoreDueReminders, pref.choreDue, 'chore_due'),
+          _notifToggle(l10n.notifPrefListItemAdded, pref.listItemAdded, 'list_item_added'),
+          _notifToggle(l10n.notifPrefExpenseCreated, pref.expenseCreated, 'expense_created'),
+          _notifToggle(l10n.notifPrefMealPlanChanged, pref.mealPlanChanged, 'meal_plan_changed'),
+          _notifToggle(l10n.notifPrefWeeklyDigest, pref.weeklyDigest, 'weekly_digest'),
+          _notifToggle(l10n.notifPrefPinwallReminders, pref.pinwallReminder, 'pinwall_reminder'),
           const AppDivider(),
-          _notifToggle('Push enabled', pref.pushEnabled, 'push_enabled'),
+          _notifToggle(l10n.notifPrefPushNotifications, pref.pushEnabled, 'push_enabled'),
         ],
       ),
     );
@@ -361,6 +430,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
   }
 
   Widget _buildDetailsSection() {
+    final l10n = AppLocalizations.of(context)!;
     final hasChanges = _nameChanged || _descChanged || _currencyChanged;
     final nameEmpty = _nameController.text.trim().isEmpty;
 
@@ -369,16 +439,16 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppInput(
-            label: 'Household name',
-            hint: 'Household name',
+            label: l10n.sheetGroupSettingsName,
+            hint: l10n.sheetGroupSettingsName,
             controller: _nameController,
             textInputAction: TextInputAction.next,
             onChanged: (_) => setState(() => _nameChanged = true),
           ),
           const SizedBox(height: MitlistSpacing.md),
           AppInput(
-            label: 'Description',
-            hint: 'A few words about this household',
+            label: l10n.commonDescription,
+            hint: l10n.sheetGroupSettingsDescriptionHint,
             controller: _descriptionController,
             textInputAction: TextInputAction.done,
             onChanged: (_) => setState(() => _descChanged = true),
@@ -400,7 +470,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
             SizedBox(
               width: double.infinity,
               child: AppButton(
-                text: _isSaving ? 'Saving...' : 'Save',
+                text: _isSaving ? l10n.commonSaving : l10n.commonSave,
                 isLoading: _isSaving,
                 onPressed: (nameEmpty || _isSaving) ? null : _saveDetails,
               ),
@@ -411,7 +481,76 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
     );
   }
 
+  Widget _buildChoreZonesSection() {
+    final l10n = AppLocalizations.of(context)!;
+    final textTheme = Theme.of(context).textTheme;
+
+    return AppCard(
+      variant: AppCardVariant.outlined,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.sheetGroupSettingsChoreZonesLabel, style: textTheme.titleSmall),
+          const SizedBox(height: MitlistSpacing.xs),
+          Text(
+            l10n.sheetGroupSettingsChoreZonesDesc,
+            style: textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          if (_choreZones.isNotEmpty) ...[
+            const SizedBox(height: MitlistSpacing.sm),
+            Wrap(
+              spacing: MitlistSpacing.sm,
+              runSpacing: MitlistSpacing.sm,
+              children: [
+                for (final zone in _choreZones)
+                  AppChip(
+                    label: zone,
+                    onSelected: (_) => _removeZone(zone),
+                  ),
+              ],
+            ),
+          ],
+          const SizedBox(height: MitlistSpacing.md),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: AppInput(
+                  label: l10n.sheetGroupSettingsAddZone,
+                  hint: l10n.sheetGroupSettingsZoneHint,
+                  controller: _zoneInputController,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _addZone(),
+                ),
+              ),
+              const SizedBox(width: MitlistSpacing.sm),
+               AppButton(
+                text: l10n.commonAdd,
+                size: AppButtonSize.sm,
+                onPressed: _addZone,
+              ),
+            ],
+          ),
+          if (_zonesChanged) ...[
+            const SizedBox(height: MitlistSpacing.md),
+            SizedBox(
+              width: double.infinity,
+              child: AppButton(
+                text: _isSavingZones ? l10n.commonSaving : l10n.sheetGroupSettingsSaveZones,
+                isLoading: _isSavingZones,
+                onPressed: _isSavingZones ? null : _saveZones,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildMembersSection() {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
 
     return AppCard(
@@ -421,7 +560,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         children: [
           Row(
             children: [
-              Text('Members', style: textTheme.titleSmall),
+              Text(l10n.sheetGroupSettingsMembersLabel, style: textTheme.titleSmall),
               const Spacer(),
               Text(
                 '${_members.length}',
@@ -434,7 +573,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
               AppButton(
                 size: AppButtonSize.sm,
                 variant: AppButtonVariant.ghost,
-                text: 'Invite',
+                text: l10n.sheetGroupSettingsInvite,
                 icon: const AppIcon(name: 'userPlus'),
                 onPressed: () => InviteHouseholdSheet.show(
                   context,
@@ -454,6 +593,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
   }
 
   Widget _buildMemberTile(GroupMemberProfile member) {
+    final l10n = AppLocalizations.of(context)!;
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Container(
@@ -479,7 +619,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       title: Text(member.displayName, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text(member.role, maxLines: 1, overflow: TextOverflow.ellipsis),
       trailing: IconButton(
-        tooltip: 'Remove ${member.displayName}',
+        tooltip: l10n.sheetGroupSettingsRemoveMemberTooltip(member.displayName),
         icon: AppIcon(name: 'minusCircleOutline', size: 20),
         onPressed: () => _confirmRemoveMember(member),
       ),
@@ -487,10 +627,11 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
   }
 
   Widget _buildDangerZone() {
+    final l10n = AppLocalizations.of(context)!;
     return SizedBox(
       width: double.infinity,
       child: AppButton(
-        text: _isDeleting ? 'Deleting...' : 'Delete household',
+        text: _isDeleting ? l10n.commonDeleting : l10n.sheetGroupSettingsDelete,
         variant: AppButtonVariant.soft,
         color: AppButtonColor.error,
         size: AppButtonSize.lg,

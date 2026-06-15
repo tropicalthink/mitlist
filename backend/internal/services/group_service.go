@@ -110,7 +110,8 @@ func (s *GroupService) ListMemberProfiles(ctx context.Context, userID, groupID u
 type UpdateGroupInput struct {
 	Name        *string
 	Description *string
-	Currency    *string `json:"currency"`
+	Currency    *string   `json:"currency"`
+	ChoreZones  *[]string `json:"chore_zones"`
 }
 
 // UpdateGroup updates a group's details; only admins may do so.
@@ -146,6 +147,9 @@ func (s *GroupService) UpdateGroup(ctx context.Context, userID, groupID uuid.UUI
 	}
 	if input.Currency != nil {
 		group.Currency = *input.Currency
+	}
+	if input.ChoreZones != nil {
+		group.ChoreZones = *input.ChoreZones
 	}
 
 	if err := s.groupRepo.UpdateGroup(ctx, group); err != nil {
