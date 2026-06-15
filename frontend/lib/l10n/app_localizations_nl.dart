@@ -376,6 +376,20 @@ class AppLocalizationsNl extends AppLocalizations {
   String get choreYourTurn => 'Jouw beurt';
 
   @override
+  String choreSomeonesTurn(String name) {
+    return '$name is aan de beurt';
+  }
+
+  @override
+  String get choreRefreshFailed =>
+      'Vernieuwen mislukt. Opgeslagen taken worden getoond.';
+
+  @override
+  String choreDoneLast30Days(num count) {
+    return '$count gedaan, afgelopen 30 dagen';
+  }
+
+  @override
   String get choreYoureClear => 'Je bent vrij';
 
   @override
@@ -2814,6 +2828,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get pinwallBoardLabel => 'Prikbord';
+
+  @override
+  String get pinwallSnapshot => 'In één oogopslag';
 
   @override
   String get pinwallDragHint =>

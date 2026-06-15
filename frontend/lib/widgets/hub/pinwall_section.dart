@@ -242,6 +242,32 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
     setState(() => _isPosting = true);
     final l10n = AppLocalizations.of(context)!;
     try {
+      // Plain-text posts (no media, no linked entity) go through the
+      // offline-first path so they pin immediately and work without a
+      // connection. Media/linked posts still require the server.
+      final canQueueOffline =
+          _pendingMedia.isEmpty && (_linkedEntityId?.isEmpty ?? true);
+      if (canQueueOffline) {
+        final repo = await ref.read(pinwallRepositoryProvider.future);
+        await repo.createPostOfflineFirst(
+          widget.groupId,
+          content: content.isEmpty ? ' ' : content,
+          userId: widget.me?.id ?? '',
+          remindAt: _remindAt,
+        );
+        _controller.clear();
+        _clearReminder();
+        // Best-effort immediate sync; offline leaves the queued + synthetic
+        // post in place until connectivity returns.
+        unawaited(repo.drainOutboxOnce().catchError((_) {}));
+        if (!mounted) return;
+        unawaited(Haptics.light());
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.pinwallPinned)),
+        );
+        return;
+      }
+
       final svc = await ref.read(pinwallServiceProviderAsync.future);
       final post = await svc.createPost(widget.groupId,
           content: content.isEmpty ? ' ' : content,
@@ -793,19 +819,40 @@ class _PinwallComposerNote extends StatelessWidget {
 /// Compact, inline "torn paper" list of household stats that sits directly
 /// under the composer note — Chores / Balance / Lists / Tonight, each a
 /// tappable row that jumps to its tab.
-class _PinwallQuickStats extends StatelessWidget {
+///
+/// Collapsed by default so the pinned notes surface sooner; tapping the header
+/// expands the detail rows.
+class _PinwallQuickStats extends StatefulWidget {
   const _PinwallQuickStats({required this.groupId});
 
   final String groupId;
 
   @override
+  State<_PinwallQuickStats> createState() => _PinwallQuickStatsState();
+}
+
+class _PinwallQuickStatsState extends State<_PinwallQuickStats> {
+  bool _expanded = false;
+
+  void _toggle() {
+    unawaited(Haptics.light());
+    setState(() => _expanded = !_expanded);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final textTheme = Theme.of(context).textTheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final bg =
         dark ? MitlistColors.composerBgDark : MitlistColors.composerBgLight;
     final border = dark
         ? MitlistColors.composerBorderDark
         : MitlistColors.composerBorderLight;
+    final textColor = dark
+        ? MitlistColors.surfaceSoft.withValues(alpha: 0.9)
+        : MitlistColors.pinwallNoteTextLight;
+    final mutedColor = textColor.withValues(alpha: 0.6);
 
     return Container(
       decoration: BoxDecoration(
@@ -823,13 +870,61 @@ class _PinwallQuickStats extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _ChoresStatRow(groupId: groupId),
-          _StatRowDivider(color: border),
-          _FinanceStatRow(groupId: groupId),
-          _StatRowDivider(color: border),
-          _ListsStatRow(groupId: groupId),
-          _StatRowDivider(color: border),
-          _TonightStatRow(groupId: groupId),
+          Semantics(
+            button: true,
+            expanded: _expanded,
+            label: l10n.pinwallSnapshot,
+            child: InkWell(
+              onTap: _toggle,
+              borderRadius: BorderRadius.circular(MitlistTheme.radiusMd),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: MitlistSpacing.md,
+                  vertical: MitlistSpacing.sm + 2,
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.insights_outlined, size: 18, color: mutedColor),
+                    const SizedBox(width: MitlistSpacing.sm),
+                    Text(
+                      l10n.pinwallSnapshot,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: textColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Spacer(),
+                    AnimatedRotation(
+                      turns: _expanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 200),
+                      child: Icon(Icons.expand_more,
+                          size: 20, color: mutedColor),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            alignment: Alignment.topCenter,
+            child: _expanded
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _StatRowDivider(color: border),
+                      _ChoresStatRow(groupId: widget.groupId),
+                      _StatRowDivider(color: border),
+                      _FinanceStatRow(groupId: widget.groupId),
+                      _StatRowDivider(color: border),
+                      _ListsStatRow(groupId: widget.groupId),
+                      _StatRowDivider(color: border),
+                      _TonightStatRow(groupId: widget.groupId),
+                    ],
+                  )
+                : const SizedBox(width: double.infinity),
+          ),
         ],
       ),
     );
@@ -1302,9 +1397,11 @@ class _PinwallNoteCard extends ConsumerWidget {
 
     Future<void> onDelete() async {
       unawaited(Haptics.light());
-      final svc = await ref.read(pinwallServiceProviderAsync.future);
-      await svc.deletePost(groupId, post.id);
-      ref.invalidate(pinwallPostsByGroupProvider(groupId));
+      final repo = await ref.read(pinwallRepositoryProvider.future);
+      // Offline-first: removes the note from the cache immediately (the Drift
+      // stream re-paints) and queues the server delete for the next drain.
+      await repo.deletePostOfflineFirst(groupId, post.id);
+      unawaited(repo.drainOutboxOnce().catchError((_) {}));
     }
 
     final textColor = dark

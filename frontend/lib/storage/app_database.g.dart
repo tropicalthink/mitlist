@@ -3309,6 +3309,243 @@ class HubActivityCachesCompanion extends UpdateCompanion<HubActivityCache> {
   }
 }
 
+class $GroupsCachesTable extends GroupsCaches
+    with TableInfo<$GroupsCachesTable, GroupsCache> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $GroupsCachesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _cacheKeyMeta =
+      const VerificationMeta('cacheKey');
+  @override
+  late final GeneratedColumn<String> cacheKey = GeneratedColumn<String>(
+      'cache_key', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _groupsJsonMeta =
+      const VerificationMeta('groupsJson');
+  @override
+  late final GeneratedColumn<String> groupsJson = GeneratedColumn<String>(
+      'groups_json', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [cacheKey, groupsJson, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'groups_caches';
+  @override
+  VerificationContext validateIntegrity(Insertable<GroupsCache> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('cache_key')) {
+      context.handle(_cacheKeyMeta,
+          cacheKey.isAcceptableOrUnknown(data['cache_key']!, _cacheKeyMeta));
+    } else if (isInserting) {
+      context.missing(_cacheKeyMeta);
+    }
+    if (data.containsKey('groups_json')) {
+      context.handle(
+          _groupsJsonMeta,
+          groupsJson.isAcceptableOrUnknown(
+              data['groups_json']!, _groupsJsonMeta));
+    } else if (isInserting) {
+      context.missing(_groupsJsonMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {cacheKey};
+  @override
+  GroupsCache map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return GroupsCache(
+      cacheKey: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}cache_key'])!,
+      groupsJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}groups_json'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $GroupsCachesTable createAlias(String alias) {
+    return $GroupsCachesTable(attachedDatabase, alias);
+  }
+}
+
+class GroupsCache extends DataClass implements Insertable<GroupsCache> {
+  final String cacheKey;
+  final String groupsJson;
+  final DateTime updatedAt;
+  const GroupsCache(
+      {required this.cacheKey,
+      required this.groupsJson,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['cache_key'] = Variable<String>(cacheKey);
+    map['groups_json'] = Variable<String>(groupsJson);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  GroupsCachesCompanion toCompanion(bool nullToAbsent) {
+    return GroupsCachesCompanion(
+      cacheKey: Value(cacheKey),
+      groupsJson: Value(groupsJson),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory GroupsCache.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return GroupsCache(
+      cacheKey: serializer.fromJson<String>(json['cacheKey']),
+      groupsJson: serializer.fromJson<String>(json['groupsJson']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'cacheKey': serializer.toJson<String>(cacheKey),
+      'groupsJson': serializer.toJson<String>(groupsJson),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  GroupsCache copyWith(
+          {String? cacheKey, String? groupsJson, DateTime? updatedAt}) =>
+      GroupsCache(
+        cacheKey: cacheKey ?? this.cacheKey,
+        groupsJson: groupsJson ?? this.groupsJson,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  GroupsCache copyWithCompanion(GroupsCachesCompanion data) {
+    return GroupsCache(
+      cacheKey: data.cacheKey.present ? data.cacheKey.value : this.cacheKey,
+      groupsJson:
+          data.groupsJson.present ? data.groupsJson.value : this.groupsJson,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GroupsCache(')
+          ..write('cacheKey: $cacheKey, ')
+          ..write('groupsJson: $groupsJson, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(cacheKey, groupsJson, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is GroupsCache &&
+          other.cacheKey == this.cacheKey &&
+          other.groupsJson == this.groupsJson &&
+          other.updatedAt == this.updatedAt);
+}
+
+class GroupsCachesCompanion extends UpdateCompanion<GroupsCache> {
+  final Value<String> cacheKey;
+  final Value<String> groupsJson;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const GroupsCachesCompanion({
+    this.cacheKey = const Value.absent(),
+    this.groupsJson = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  GroupsCachesCompanion.insert({
+    required String cacheKey,
+    required String groupsJson,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  })  : cacheKey = Value(cacheKey),
+        groupsJson = Value(groupsJson),
+        updatedAt = Value(updatedAt);
+  static Insertable<GroupsCache> custom({
+    Expression<String>? cacheKey,
+    Expression<String>? groupsJson,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (cacheKey != null) 'cache_key': cacheKey,
+      if (groupsJson != null) 'groups_json': groupsJson,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  GroupsCachesCompanion copyWith(
+      {Value<String>? cacheKey,
+      Value<String>? groupsJson,
+      Value<DateTime>? updatedAt,
+      Value<int>? rowid}) {
+    return GroupsCachesCompanion(
+      cacheKey: cacheKey ?? this.cacheKey,
+      groupsJson: groupsJson ?? this.groupsJson,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (cacheKey.present) {
+      map['cache_key'] = Variable<String>(cacheKey.value);
+    }
+    if (groupsJson.present) {
+      map['groups_json'] = Variable<String>(groupsJson.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GroupsCachesCompanion(')
+          ..write('cacheKey: $cacheKey, ')
+          ..write('groupsJson: $groupsJson, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $OutboxOpsTable extends OutboxOps
     with TableInfo<$OutboxOpsTable, OutboxOp> {
   @override
@@ -8114,6 +8351,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $HubGroupCachesTable hubGroupCaches = $HubGroupCachesTable(this);
   late final $HubActivityCachesTable hubActivityCaches =
       $HubActivityCachesTable(this);
+  late final $GroupsCachesTable groupsCaches = $GroupsCachesTable(this);
   late final $OutboxOpsTable outboxOps = $OutboxOpsTable(this);
   late final $ConflictsTable conflicts = $ConflictsTable(this);
   late final $CanonicalItemsTableTable canonicalItemsTable =
@@ -8146,6 +8384,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         pinwallPostsCaches,
         hubGroupCaches,
         hubActivityCaches,
+        groupsCaches,
         outboxOps,
         conflicts,
         canonicalItemsTable,
@@ -9911,6 +10150,149 @@ typedef $$HubActivityCachesTableProcessedTableManager = ProcessedTableManager<
       BaseReferences<_$AppDatabase, $HubActivityCachesTable, HubActivityCache>
     ),
     HubActivityCache,
+    PrefetchHooks Function()>;
+typedef $$GroupsCachesTableCreateCompanionBuilder = GroupsCachesCompanion
+    Function({
+  required String cacheKey,
+  required String groupsJson,
+  required DateTime updatedAt,
+  Value<int> rowid,
+});
+typedef $$GroupsCachesTableUpdateCompanionBuilder = GroupsCachesCompanion
+    Function({
+  Value<String> cacheKey,
+  Value<String> groupsJson,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+
+class $$GroupsCachesTableFilterComposer
+    extends Composer<_$AppDatabase, $GroupsCachesTable> {
+  $$GroupsCachesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get cacheKey => $composableBuilder(
+      column: $table.cacheKey, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get groupsJson => $composableBuilder(
+      column: $table.groupsJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$GroupsCachesTableOrderingComposer
+    extends Composer<_$AppDatabase, $GroupsCachesTable> {
+  $$GroupsCachesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get cacheKey => $composableBuilder(
+      column: $table.cacheKey, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get groupsJson => $composableBuilder(
+      column: $table.groupsJson, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$GroupsCachesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $GroupsCachesTable> {
+  $$GroupsCachesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get cacheKey =>
+      $composableBuilder(column: $table.cacheKey, builder: (column) => column);
+
+  GeneratedColumn<String> get groupsJson => $composableBuilder(
+      column: $table.groupsJson, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$GroupsCachesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $GroupsCachesTable,
+    GroupsCache,
+    $$GroupsCachesTableFilterComposer,
+    $$GroupsCachesTableOrderingComposer,
+    $$GroupsCachesTableAnnotationComposer,
+    $$GroupsCachesTableCreateCompanionBuilder,
+    $$GroupsCachesTableUpdateCompanionBuilder,
+    (
+      GroupsCache,
+      BaseReferences<_$AppDatabase, $GroupsCachesTable, GroupsCache>
+    ),
+    GroupsCache,
+    PrefetchHooks Function()> {
+  $$GroupsCachesTableTableManager(_$AppDatabase db, $GroupsCachesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$GroupsCachesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$GroupsCachesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$GroupsCachesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> cacheKey = const Value.absent(),
+            Value<String> groupsJson = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              GroupsCachesCompanion(
+            cacheKey: cacheKey,
+            groupsJson: groupsJson,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String cacheKey,
+            required String groupsJson,
+            required DateTime updatedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              GroupsCachesCompanion.insert(
+            cacheKey: cacheKey,
+            groupsJson: groupsJson,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$GroupsCachesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $GroupsCachesTable,
+    GroupsCache,
+    $$GroupsCachesTableFilterComposer,
+    $$GroupsCachesTableOrderingComposer,
+    $$GroupsCachesTableAnnotationComposer,
+    $$GroupsCachesTableCreateCompanionBuilder,
+    $$GroupsCachesTableUpdateCompanionBuilder,
+    (
+      GroupsCache,
+      BaseReferences<_$AppDatabase, $GroupsCachesTable, GroupsCache>
+    ),
+    GroupsCache,
     PrefetchHooks Function()>;
 typedef $$OutboxOpsTableCreateCompanionBuilder = OutboxOpsCompanion Function({
   required String id,
@@ -12306,6 +12688,8 @@ class $AppDatabaseManager {
       $$HubGroupCachesTableTableManager(_db, _db.hubGroupCaches);
   $$HubActivityCachesTableTableManager get hubActivityCaches =>
       $$HubActivityCachesTableTableManager(_db, _db.hubActivityCaches);
+  $$GroupsCachesTableTableManager get groupsCaches =>
+      $$GroupsCachesTableTableManager(_db, _db.groupsCaches);
   $$OutboxOpsTableTableManager get outboxOps =>
       $$OutboxOpsTableTableManager(_db, _db.outboxOps);
   $$ConflictsTableTableManager get conflicts =>
