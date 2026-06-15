@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mitlist/l10n/app_localizations_en.dart';
 import 'package:mitlist/utils/invite_link.dart';
 
 void main() {
@@ -68,9 +69,11 @@ void main() {
   });
 
   group('inviteShareText', () {
+    final l10n = AppLocalizationsEn();
+
     test('contains the bare code at least twice', () {
       const code = 'SUNNY-TACO-42';
-      final text = inviteShareText(code);
+      final text = inviteShareText(code, l10n);
       expect(
         code.allMatches(text).length,
         greaterThanOrEqualTo(2),
@@ -79,18 +82,18 @@ void main() {
     });
 
     test('contains the mitlist:// link', () {
-      final text = inviteShareText('ABCD-1234');
+      final text = inviteShareText('ABCD-1234', l10n);
       expect(text, contains('mitlist://join/ABCD-1234'));
     });
 
     test('lowercased input is uppercased in output', () {
-      final text = inviteShareText('ab-12');
+      final text = inviteShareText('ab-12', l10n);
       expect(text, contains('AB-12'));
       expect(text, isNot(contains('ab-12')));
     });
 
     test('contains a standalone code line (for copy-paste)', () {
-      final text = inviteShareText('TEST-CODE-99');
+      final text = inviteShareText('TEST-CODE-99', l10n);
       expect(text, contains('TEST-CODE-99'));
       // The text includes a line with just the code (no URL formatting)
       expect(text, contains('enter the code: TEST-CODE-99'));

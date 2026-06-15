@@ -1,0 +1,5530 @@
+{
+  "@@locale": "nl",
+  "commonCancel": "Annuleren",
+  "@commonCancel": {
+    "description": "Generic cancel button"
+  },
+  "commonDelete": "Verwijderen",
+  "@commonDelete": {
+    "description": "Generic delete button"
+  },
+  "commonRetry": "Opnieuw",
+  "@commonRetry": {
+    "description": "Generic retry button"
+  },
+  "commonSave": "Opslaan",
+  "@commonSave": {
+    "description": "Generic save button"
+  },
+  "commonBack": "Terug",
+  "@commonBack": {
+    "description": "Generic back button tooltip"
+  },
+  "commonClose": "Sluiten",
+  "@commonClose": {
+    "description": "Generic close button tooltip"
+  },
+  "commonDone": "Klaar",
+  "@commonDone": {
+    "description": "Generic done/ready label"
+  },
+  "commonUndo": "Ongedaan maken",
+  "@commonUndo": {
+    "description": "Generic undo action label"
+  },
+  "commonAdd": "Toevoegen",
+  "@commonAdd": {
+    "description": "Generic add button"
+  },
+  "commonConfirm": "Bevestigen",
+  "@commonConfirm": {
+    "description": "Generic confirm button"
+  },
+  "commonEdit": "Bewerken",
+  "@commonEdit": {
+    "description": "Generic edit button tooltip"
+  },
+  "commonSearch": "Zoeken",
+  "@commonSearch": {
+    "description": "Generic search tooltip/label"
+  },
+  "commonRemove": "Verwijderen",
+  "@commonRemove": {
+    "description": "Generic remove button"
+  },
+  "commonDismiss": "Negeren",
+  "@commonDismiss": {
+    "description": "Generic dismiss button"
+  },
+  "commonClear": "Wissen",
+  "@commonClear": {
+    "description": "Generic clear/reset button"
+  },
+  "commonNext": "Volgende",
+  "@commonNext": {
+    "description": "Generic next/forward button"
+  },
+  "commonSkip": "Overslaan",
+  "@commonSkip": {
+    "description": "Generic skip button"
+  },
+  "commonChange": "Wijzigen",
+  "@commonChange": {
+    "description": "Generic change/switch action"
+  },
+  "commonCreate": "Aanmaken",
+  "@commonCreate": {
+    "description": "Generic create button"
+  },
+  "commonRename": "Hernoemen",
+  "@commonRename": {
+    "description": "Generic rename action"
+  },
+  "commonArchive": "Archiveren",
+  "@commonArchive": {
+    "description": "Generic archive action"
+  },
+  "commonOptions": "Opties",
+  "@commonOptions": {
+    "description": "Generic options menu tooltip"
+  },
+  "commonSettings": "Instellingen",
+  "@commonSettings": {
+    "description": "Generic settings tooltip/label"
+  },
+  "commonName": "Naam",
+  "@commonName": {
+    "description": "Generic name field label"
+  },
+  "commonDescription": "Beschrijving",
+  "@commonDescription": {
+    "description": "Generic description field label"
+  },
+  "commonNotes": "Notities",
+  "@commonNotes": {
+    "description": "Generic notes field label"
+  },
+  "commonAmount": "Bedrag",
+  "@commonAmount": {
+    "description": "Generic amount/price field label"
+  },
+  "commonPreview": "Voorbeeld",
+  "@commonPreview": {
+    "description": "Generic preview label"
+  },
+  "commonShare": "Delen",
+  "@commonShare": {
+    "description": "Generic share action"
+  },
+  "commonCopy": "Kopiëren",
+  "@commonCopy": {
+    "description": "Generic copy action"
+  },
+  "commonListName": "Lijstnaam",
+  "@commonListName": {
+    "description": "Generic list name input label"
+  },
+  "commonSaving": "Opslaan…",
+  "@commonSaving": {
+    "description": "Generic saving-in-progress button text"
+  },
+  "commonAdding": "Toevoegen…",
+  "@commonAdding": {
+    "description": "Generic adding-in-progress button text"
+  },
+  "commonDeleting": "Verwijderen…",
+  "@commonDeleting": {
+    "description": "Generic deleting-in-progress button text"
+  },
+  "commonNoHousehold": "Nog geen huishouden",
+  "@commonNoHousehold": {
+    "description": "Empty state when user has no household"
+  },
+  "commonCreateJoinHousehold": "Maak of word lid van een huishouden voordat je items toevoegt.",
+  "@commonCreateJoinHousehold": {
+    "description": "Description shown when no household exists"
+  },
+  "commonGoToHouseholds": "Ga naar huishoudens",
+  "@commonGoToHouseholds": {
+    "description": "Button to navigate to household management"
+  },
+  "commonSomethingWentWrong": "Er is iets misgegaan",
+  "@commonSomethingWentWrong": {
+    "description": "Generic error title"
+  },
+  "commonFailedToLoad": "Laden mislukt. Probeer het opnieuw.",
+  "@commonFailedToLoad": {
+    "description": "Generic load failure message"
+  },
+  "commonCheckConnection": "Controleer je verbinding en probeer het opnieuw.",
+  "@commonCheckConnection": {
+    "description": "Hint to check network connectivity"
+  },
+  "commonClearSearch": "Zoekopdracht wissen",
+  "@commonClearSearch": {
+    "description": "Button to clear active search filter"
+  },
+  "commonMember": "{count, plural, =1{{count} lid} other{{count} leden}}",
+  "@commonMember": {
+    "description": "Member count with plural forms",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "commonItemCount": "{count, plural, =1{1 item} other{{count} items}}",
+  "@commonItemCount": {
+    "description": "Item count with plural forms",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "commonLoadingMembers": "Leden laden...",
+  "@commonLoadingMembers": {
+    "description": "Placeholder shown while household members load"
+  },
+  "welcomeTagline": "Jullie huishouden, overzichtelijk.",
+  "@welcomeTagline": {
+    "description": "Subtitle under the app name on the welcome screen"
+  },
+  "welcomeCardTitle": "Lijsten, klusjes, geld.\nAlles op één plek.",
+  "@welcomeCardTitle": {
+    "description": "Headline in the welcome card; contains a line break"
+  },
+  "welcomeCardBody": "Gemaakt voor huisgenoten die minder gedoe en meer duidelijkheid willen.",
+  "@welcomeCardBody": {
+    "description": "Supporting body text in the welcome card"
+  },
+  "welcomeCreateHousehold": "Gratis huishouden aanmaken",
+  "@welcomeCreateHousehold": {
+    "description": "Primary CTA button on the welcome screen"
+  },
+  "welcomeSignIn": "Inloggen",
+  "@welcomeSignIn": {
+    "description": "Secondary sign-in button on the welcome screen"
+  },
+  "welcomeGuestLoading": "Instellen...",
+  "@welcomeGuestLoading": {
+    "description": "Loading label shown while guest account is being created"
+  },
+  "welcomeContinueAsGuest": "Doorgaan als gast",
+  "@welcomeContinueAsGuest": {
+    "description": "Ghost button to continue without an account"
+  },
+  "welcomeGuestFootnote": "Geen account nodig. Probeer alles 30 dagen gratis.",
+  "@welcomeGuestFootnote": {
+    "description": "Footnote below the guest button explaining the trial"
+  },
+  "hubAppBarTitle": "Home",
+  "@hubAppBarTitle": {
+    "description": "AppBar title for the household hub screen"
+  },
+  "hubHouseholdsSheetTitle": "Huishoudens",
+  "@hubHouseholdsSheetTitle": {
+    "description": "Bottom sheet title for household switcher"
+  },
+  "hubSwitchToHousehold": "Wissel naar {name}",
+  "@hubSwitchToHousehold": {
+    "description": "Semantics label for switching households",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "hubCreateHousehold": "Huishouden aanmaken",
+  "@hubCreateHousehold": {
+    "description": "Button to create a new household"
+  },
+  "hubJoinHousehold": "Lid worden van huishouden",
+  "@hubJoinHousehold": {
+    "description": "Button to join an existing household"
+  },
+  "hubInviteToHousehold": "Uitnodigen voor huishouden",
+  "@hubInviteToHousehold": {
+    "description": "Button to invite someone to the household"
+  },
+  "hubHouseholdSettings": "Huishoudinstellingen",
+  "@hubHouseholdSettings": {
+    "description": "Button to open household settings"
+  },
+  "hubWelcomeHeadline": "Welkom bij mitlist",
+  "@hubWelcomeHeadline": {
+    "description": "Headline when user has no household yet"
+  },
+  "hubWelcomeDescription": "Maak of word lid van een huishouden om lijsten, klusjes en uitgaven te delen.",
+  "@hubWelcomeDescription": {
+    "description": "Description when user has no household yet"
+  },
+  "hubCreateAHousehold": "Maak een huishouden",
+  "@hubCreateAHousehold": {
+    "description": "Primary CTA to create a household"
+  },
+  "hubJoinWithInviteCode": "Lid worden met uitnodigingscode",
+  "@hubJoinWithInviteCode": {
+    "description": "Secondary CTA to join via invite code"
+  },
+  "hubQuickAdd": "Snel toevoegen",
+  "@hubQuickAdd": {
+    "description": "FAB text and tooltip for quick-add action"
+  },
+  "hubLoadError": "Kon je huishoudens niet laden. Controleer je verbinding en probeer het opnieuw.",
+  "@hubLoadError": {
+    "description": "Error shown when households fail to load"
+  },
+  "hubCalendarTooltip": "Kalender",
+  "@hubCalendarTooltip": {
+    "description": "Tooltip for the calendar icon button"
+  },
+  "myHouseholdsTitle": "Mijn Huishoudens",
+  "@myHouseholdsTitle": {
+    "description": "AppBar title for the groups/landing screen"
+  },
+  "groupsJoinWithCode": "Lid worden met code",
+  "@groupsJoinWithCode": {
+    "description": "Button tooltip to join via invite code"
+  },
+  "groupsFailedLoad": "Huishoudens laden mislukt",
+  "@groupsFailedLoad": {
+    "description": "Error message when household list fails"
+  },
+  "groupsFailedMore": "Meer huishoudens laden mislukt",
+  "@groupsFailedMore": {
+    "description": "Error when pagination fails"
+  },
+  "groupsEmptyTitle": "Nog geen huishoudens",
+  "@groupsEmptyTitle": {
+    "description": "Empty state when no households exist"
+  },
+  "groupsEmptyDesc": "Maak er een aan om je huis te organiseren.",
+  "@groupsEmptyDesc": {
+    "description": "Empty state description for no households"
+  },
+  "groupsCreateHousehold": "Huishouden aanmaken",
+  "@groupsCreateHousehold": {
+    "description": "Button to create first household"
+  },
+  "choreAppBarTitle": "Klusjes",
+  "@choreAppBarTitle": {
+    "description": "AppBar title for chores screen"
+  },
+  "choreAddChore": "Klus toevoegen",
+  "@choreAddChore": {
+    "description": "FAB text and tooltip to add a chore"
+  },
+  "choreAddHouseholds": "Huishoudens",
+  "@choreAddHouseholds": {
+    "description": "FAB text when no household exists"
+  },
+  "choreRetry": "Opnieuw",
+  "@choreRetry": {
+    "description": "Retry button on chores screen"
+  },
+  "choreNoHouseholdTitle": "Nog geen huishouden",
+  "@choreNoHouseholdTitle": {
+    "description": "Empty state when no household"
+  },
+  "choreNoHouseholdDesc": "Maak of word lid van een huishouden voordat je klusjes toevoegt.",
+  "@choreNoHouseholdDesc": {
+    "description": "Empty description when no household"
+  },
+  "choreGoToHouseholds": "Ga naar huishoudens",
+  "@choreGoToHouseholds": {
+    "description": "Navigate to household management"
+  },
+  "choreNoChoresTitle": "Nog geen klusjes",
+  "@choreNoChoresTitle": {
+    "description": "Empty state when household has no chores"
+  },
+  "choreNoChoresDesc": "Houd terugkerende huishoudelijke taken bij. Wijs ze toe aan iedereen in je groep.",
+  "@choreNoChoresDesc": {
+    "description": "Description for no chores empty state"
+  },
+  "choreAddAChore": "Voeg een klus toe",
+  "@choreAddAChore": {
+    "description": "CTA button to add first chore"
+  },
+  "choreSectionOverdue": "Achterstallig",
+  "@choreSectionOverdue": {
+    "description": "Section header for overdue chores"
+  },
+  "choreSectionToday": "Vandaag",
+  "@choreSectionToday": {
+    "description": "Section header for today's chores"
+  },
+  "choreSectionThisWeek": "Deze week",
+  "@choreSectionThisWeek": {
+    "description": "Section header for this week's chores"
+  },
+  "choreSectionLater": "Later",
+  "@choreSectionLater": {
+    "description": "Section header for future chores"
+  },
+  "choreNothingOnYou": "Niets voor jou nu",
+  "@choreNothingOnYou": {
+    "description": "Empty state when user has no assigned chores"
+  },
+  "choreNothingOnYouDesc": "Je huishouden heeft klusjes, maar geen zijn aan jou toegewezen.",
+  "@choreNothingOnYouDesc": {
+    "description": "Description when no chores assigned to user"
+  },
+  "choreSeeEveryonesChores": "Bekijk ieders klusjes",
+  "@choreSeeEveryonesChores": {
+    "description": "Button to show all household chores"
+  },
+  "choreDoneSnackbar": "{choreTitle} gedaan",
+  "@choreDoneSnackbar": {
+    "description": "Snackbar when a chore is marked done",
+    "placeholders": {
+      "choreTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "choreFailedComplete": "Klus kon niet worden afgerond. Probeer het opnieuw.",
+  "@choreFailedComplete": {
+    "description": "Error snackbar when chore completion fails"
+  },
+  "choreFailedUndo": "Klus kon niet ongedaan worden gemaakt. Probeer het opnieuw.",
+  "@choreFailedUndo": {
+    "description": "Error snackbar when undoing chore fails"
+  },
+  "choreFailedSkip": "Klus kon niet worden overgeslagen. Probeer het opnieuw.",
+  "@choreFailedSkip": {
+    "description": "Error snackbar when skipping chore fails"
+  },
+  "choreFailedUpdateSubtask": "Subtaak kon niet worden bijgewerkt. Probeer het opnieuw.",
+  "@choreFailedUpdateSubtask": {
+    "description": "Error snackbar when subtask update fails"
+  },
+  "choreFailedAddSubtask": "Subtaak kon niet worden toegevoegd. Probeer het opnieuw.",
+  "@choreFailedAddSubtask": {
+    "description": "Error snackbar when subtask creation fails"
+  },
+  "choreCreateListFirst": "Maak eerst een boodschappenlijst.",
+  "@choreCreateListFirst": {
+    "description": "Snackbar when trying to add supplies without a list"
+  },
+  "choreAddSuppliesToList": "Benodigdheden aan lijst toevoegen",
+  "@choreAddSuppliesToList": {
+    "description": "Dialog title for adding supplies"
+  },
+  "choreSuppliesAdded": "Benodigdheden aan lijst toegevoegd",
+  "@choreSuppliesAdded": {
+    "description": "Snackbar when supplies are added to a list"
+  },
+  "choreFailedAddSupplies": "Benodigdheden toevoegen mislukt. Probeer het opnieuw.",
+  "@choreFailedAddSupplies": {
+    "description": "Error when adding supplies fails"
+  },
+  "choreFailedReschedule": "Klus opnieuw inplannen mislukt. Probeer het opnieuw.",
+  "@choreFailedReschedule": {
+    "description": "Error when rescheduling chore fails"
+  },
+  "choreDeleteTitle": "Klus verwijderen",
+  "@choreDeleteTitle": {
+    "description": "Dialog title for deleting a chore"
+  },
+  "choreDeleteBody": "Dit verwijdert deze klus en zijn geschiedenis permanent. Dit kan niet ongedaan worden gemaakt.",
+  "@choreDeleteBody": {
+    "description": "Dialog body for chore deletion"
+  },
+  "choreStatusDone": "Klaar",
+  "@choreStatusDone": {
+    "description": "Chore status label: completed"
+  },
+  "choreStatusOverdue": "Achterstallig",
+  "@choreStatusOverdue": {
+    "description": "Chore status label: overdue"
+  },
+  "choreStatusDueToday": "Vandaag te doen",
+  "@choreStatusDueToday": {
+    "description": "Chore status label: due today"
+  },
+  "choreStatusDueSoon": "Binnenkort te doen",
+  "@choreStatusDueSoon": {
+    "description": "Chore status label: due soon"
+  },
+  "choreStatusScheduled": "Ingepland",
+  "@choreStatusScheduled": {
+    "description": "Chore status label: scheduled"
+  },
+  "choreStatusPending": "In afwachting",
+  "@choreStatusPending": {
+    "description": "Chore status label: pending"
+  },
+  "choreYourTurn": "Jouw beurt",
+  "@choreYourTurn": {
+    "description": "Label when it's the current user's turn"
+  },
+  "choreYoureClear": "Je bent vrij",
+  "@choreYoureClear": {
+    "description": "Hero text when user has no active chores"
+  },
+  "choreHeroDescSingular": "{count} klus heeft je nu nodig.",
+  "@choreHeroDescSingular": {
+    "description": "Hero description for 1 chore due",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "choreHeroDescPlural": "{count} klusjes hebben je nu nodig.",
+  "@choreHeroDescPlural": {
+    "description": "Hero description for multiple chores due",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "choreMeLabel": "Ik ({count})",
+  "@choreMeLabel": {
+    "description": "Filter chip for user's own chores",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "choreEveryoneLabel": "Iedereen ({count})",
+  "@choreEveryoneLabel": {
+    "description": "Filter chip for all household chores",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "choreHowItSplits": "Hoe het verdeelt",
+  "@choreHowItSplits": {
+    "description": "Fairness strip header text"
+  },
+  "choreSupplySingular": "{count} benodigdheid",
+  "@choreSupplySingular": {
+    "description": "Supply count label (1)",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "choreSupplyPlural": "{count} benodigdheden",
+  "@choreSupplyPlural": {
+    "description": "Supply count label (2+)",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "choreFrequencyHourly": "Elk uur",
+  "@choreFrequencyHourly": {
+    "description": "Hourly recurrence label"
+  },
+  "choreFrequencyDaily": "Dagelijks",
+  "@choreFrequencyDaily": {
+    "description": "Daily recurrence label"
+  },
+  "choreFrequencyWeekly": "Wekelijks",
+  "@choreFrequencyWeekly": {
+    "description": "Weekly recurrence label"
+  },
+  "choreFrequencyMonthly": "Maandelijks",
+  "@choreFrequencyMonthly": {
+    "description": "Monthly recurrence label"
+  },
+  "choreFrequencyYearly": "Jaarlijks",
+  "@choreFrequencyYearly": {
+    "description": "Yearly recurrence label"
+  },
+  "choreFrequencyAsNeeded": "Naar behoefte",
+  "@choreFrequencyAsNeeded": {
+    "description": "As-needed frequency label"
+  },
+  "choreFrequencyOneOff": "Eenmalig",
+  "@choreFrequencyOneOff": {
+    "description": "One-off frequency label"
+  },
+  "choreEveryInterval": "Elke {interval} {unit}",
+  "@choreEveryInterval": {
+    "description": "Recurrence interval summary",
+    "placeholders": {
+      "interval": {
+        "type": "num"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "choreDoneToday": "Vandaag gedaan",
+  "@choreDoneToday": {
+    "description": "Last action label: done today"
+  },
+  "choreDoneYesterday": "Gisteren gedaan",
+  "@choreDoneYesterday": {
+    "description": "Last action label: done yesterday"
+  },
+  "choreDoneDaysAgo": "{days}d geleden gedaan",
+  "@choreDoneDaysAgo": {
+    "description": "Last action label for days ago",
+    "placeholders": {
+      "days": {
+        "type": "num"
+      }
+    }
+  },
+  "choreSkipped": "Overgeslagen",
+  "@choreSkipped": {
+    "description": "Last action label: skipped"
+  },
+  "choreMarkNotDone": "Markeer {title} als niet gedaan",
+  "@choreMarkNotDone": {
+    "description": "Semantics: toggle chore undone",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "choreMarkDone": "Markeer {title} als gedaan",
+  "@choreMarkDone": {
+    "description": "Semantics: toggle chore done",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "choreAllCaughtUp": "Je bent helemaal bij",
+  "@choreAllCaughtUp": {
+    "description": "Semantics when no chores pending"
+  },
+  "choreCarryingShare": "Draagt {my} van {total} open klusjes",
+  "@choreCarryingShare": {
+    "description": "Share of open chores",
+    "placeholders": {
+      "my": {
+        "type": "num"
+      },
+      "total": {
+        "type": "num"
+      }
+    }
+  },
+  "choreNothingShare": "Niets voor jou nu",
+  "@choreNothingShare": {
+    "description": "Share label when no chores"
+  },
+  "choreCreationTitle": "Klus toevoegen",
+  "@choreCreationTitle": {
+    "description": "Bottom sheet title for chore creation"
+  },
+  "choreCreationNameHint": "Klusnaam",
+  "@choreCreationNameHint": {
+    "description": "Input hint for chore name"
+  },
+  "choreCreationYourRoutines": "Jouw routines",
+  "@choreCreationYourRoutines": {
+    "description": "Label for saved routines section"
+  },
+  "choreCreationStartFromRoutine": "Begin vanuit een routine",
+  "@choreCreationStartFromRoutine": {
+    "description": "Prompt to pick a routine"
+  },
+  "choreCreationSuggestions": "Suggesties",
+  "@choreCreationSuggestions": {
+    "description": "Label for AI suggestions section"
+  },
+  "choreCreationZoneLabel": "Zone",
+  "@choreCreationZoneLabel": {
+    "description": "Label for zone selector"
+  },
+  "choreCreationZoneKitchen": "Keuken",
+  "@choreCreationZoneKitchen": {
+    "description": "Kitchen zone preset"
+  },
+  "choreCreationZoneBathroom": "Badkamer",
+  "@choreCreationZoneBathroom": {
+    "description": "Bathroom zone preset"
+  },
+  "choreCreationZoneLivingRoom": "Woonkamer",
+  "@choreCreationZoneLivingRoom": {
+    "description": "Living room zone preset"
+  },
+  "choreCreationZoneBedroom": "Slaapkamer",
+  "@choreCreationZoneBedroom": {
+    "description": "Bedroom zone preset"
+  },
+  "choreCreationZoneOutdoor": "Buiten",
+  "@choreCreationZoneOutdoor": {
+    "description": "Outdoor zone preset"
+  },
+  "choreCreationZoneShared": "Gedeeld",
+  "@choreCreationZoneShared": {
+    "description": "Shared space zone preset"
+  },
+  "choreCreationRepeatsLabel": "Herhaalt",
+  "@choreCreationRepeatsLabel": {
+    "description": "Label for recurrence selector"
+  },
+  "choreCreationRecurrenceNone": "Geen",
+  "@choreCreationRecurrenceNone": {
+    "description": "No recurrence option"
+  },
+  "choreCreationRecurrenceHourly": "Elk uur",
+  "@choreCreationRecurrenceHourly": {
+    "description": "Hourly recurrence option"
+  },
+  "choreCreationRecurrenceDaily": "Dagelijks",
+  "@choreCreationRecurrenceDaily": {
+    "description": "Daily recurrence option"
+  },
+  "choreCreationRecurrenceWeekly": "Wekelijks",
+  "@choreCreationRecurrenceWeekly": {
+    "description": "Weekly recurrence option"
+  },
+  "choreCreationRecurrenceMonthly": "Maandelijks",
+  "@choreCreationRecurrenceMonthly": {
+    "description": "Monthly recurrence option"
+  },
+  "choreCreationRecurrenceYearly": "Jaarlijks",
+  "@choreCreationRecurrenceYearly": {
+    "description": "Yearly recurrence option"
+  },
+  "choreCreationRecurrenceAdaptive": "Adaptief",
+  "@choreCreationRecurrenceAdaptive": {
+    "description": "Adaptive recurrence option"
+  },
+  "choreCreationHintNone": "Een eenmalige klus. Komt niet vanzelf terug.",
+  "@choreCreationHintNone": {
+    "description": "Description of no recurrence"
+  },
+  "choreCreationHintHourly": "Komt terug elke ingestelde aantal uren.",
+  "@choreCreationHintHourly": {
+    "description": "Description of hourly recurrence"
+  },
+  "choreCreationHintDaily": "Komt terug elke ingestelde aantal dagen.",
+  "@choreCreationHintDaily": {
+    "description": "Description of daily recurrence"
+  },
+  "choreCreationHintWeekly": "Komt elke week terug op de dagen die je kiest.",
+  "@choreCreationHintWeekly": {
+    "description": "Description of weekly recurrence"
+  },
+  "choreCreationHintMonthly": "Komt maandelijks terug op dezelfde datum.",
+  "@choreCreationHintMonthly": {
+    "description": "Description of monthly recurrence"
+  },
+  "choreCreationHintYearly": "Komt jaarlijks terug op dezelfde datum.",
+  "@choreCreationHintYearly": {
+    "description": "Description of yearly recurrence"
+  },
+  "choreCreationHintAdaptive": "Komt terug op basis van wanneer het laatst is gedaan, niet de kalender.",
+  "@choreCreationHintAdaptive": {
+    "description": "Description of adaptive recurrence"
+  },
+  "choreCreationIntervalHint": "1",
+  "@choreCreationIntervalHint": {
+    "description": "Default interval value hint"
+  },
+  "choreCreationMoreOptions": "Meer opties",
+  "@choreCreationMoreOptions": {
+    "description": "Toggle to show more chore options"
+  },
+  "choreCreationAssignLabel": "Toewijzen",
+  "@choreCreationAssignLabel": {
+    "description": "Label for assignee selector"
+  },
+  "choreCreationAssignTakeTurns": "Om de beurt",
+  "@choreCreationAssignTakeTurns": {
+    "description": "Rotation assignment mode"
+  },
+  "choreCreationAssignLeastDone": "Minst gedaan",
+  "@choreCreationAssignLeastDone": {
+    "description": "Least-done assignment mode"
+  },
+  "choreCreationAssignAlphabetical": "Alfabetisch",
+  "@choreCreationAssignAlphabetical": {
+    "description": "Alphabetical assignment mode"
+  },
+  "choreCreationAssignRandom": "Willekeurig",
+  "@choreCreationAssignRandom": {
+    "description": "Random assignment mode"
+  },
+  "choreCreationAssignNoAssignee": "Geen toegewezene",
+  "@choreCreationAssignNoAssignee": {
+    "description": "Unassigned option"
+  },
+  "choreCreationAssignHintTurns": "Rouleert elke keer naar de volgende persoon.",
+  "@choreCreationAssignHintTurns": {
+    "description": "Description of rotation assignment"
+  },
+  "choreCreationAssignHintAlpha": "Gaat in alfabetische volgorde van namen.",
+  "@choreCreationAssignHintAlpha": {
+    "description": "Description of alphabetical assignment"
+  },
+  "choreCreationAssignHintLeast": "Gaat naar wie het het minst heeft gedaan.",
+  "@choreCreationAssignHintLeast": {
+    "description": "Description of least-done assignment"
+  },
+  "choreCreationAssignHintRandom": "Kiest elke keer willekeurig iemand.",
+  "@choreCreationAssignHintRandom": {
+    "description": "Description of random assignment"
+  },
+  "choreCreationAssignHintNone": "Blijft niet-toegewezen. Iedereen in het huishouden kan het oppakken.",
+  "@choreCreationAssignHintNone": {
+    "description": "Description of no-assignee option"
+  },
+  "choreCreationLogWhenDone": "Loggen wanneer gedaan, niet afvinken",
+  "@choreCreationLogWhenDone": {
+    "description": "Toggle to log without marking complete"
+  },
+  "choreCreationLogWhenDoneHelper": "Registreert de datum zonder het als voltooid te markeren. Handig voor taken waarvan je een geschiedenis wilt.",
+  "@choreCreationLogWhenDoneHelper": {
+    "description": "Helper text for log-only toggle"
+  },
+  "choreCreationRollOver": "Doorschuiven bij gemist",
+  "@choreCreationRollOver": {
+    "description": "Toggle for roll-over behavior"
+  },
+  "choreCreationRollOverHelper": "Schuift door naar de volgende vervaldatum in plaats van op te stapelen als achterstallig.",
+  "@choreCreationRollOverHelper": {
+    "description": "Helper text for roll-over toggle"
+  },
+  "choreCreationNotesHint": "Notities (optioneel) — stappen, herinneringen, alles wat nuttig is",
+  "@choreCreationNotesHint": {
+    "description": "Placeholder for chore notes field"
+  },
+  "choreCreationSaveAsRoutine": "Opslaan als routine",
+  "@choreCreationSaveAsRoutine": {
+    "description": "Button to save chore as reusable routine"
+  },
+  "choreCreationSaveAsRoutineSemantic": "Sla deze klus op als herbruikbare routine",
+  "@choreCreationSaveAsRoutineSemantic": {
+    "description": "Semantic label for save-as-routine"
+  },
+  "choreCreationScanChoreSemantic": "Scan klus via camera",
+  "@choreCreationScanChoreSemantic": {
+    "description": "Semantic label for scan chore action"
+  },
+  "choreCreationChoreAdded": "Klus toegevoegd",
+  "@choreCreationChoreAdded": {
+    "description": "Snackbar when chore is created"
+  },
+  "choreCreationChoreAddedNextUp": "Klus toegevoegd · volgende: {assignee}",
+  "@choreCreationChoreAddedNextUp": {
+    "description": "Snackbar when chore is created with assignee",
+    "placeholders": {
+      "assignee": {
+        "type": "String"
+      }
+    }
+  },
+  "choreCreationJoinFirst": "Maak of word eerst lid van een huishouden.",
+  "@choreCreationJoinFirst": {
+    "description": "Snackbar when creating chore without household"
+  },
+  "choreCreationEditRoutine": "Routine bewerken",
+  "@choreCreationEditRoutine": {
+    "description": "Dialog title for editing a routine"
+  },
+  "choreCreationEverySingular": "Elke {unit}",
+  "@choreCreationEverySingular": {
+    "description": "Singular recurrence label",
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "choreCreationEveryPlural": "Elke {n} {unit}",
+  "@choreCreationEveryPlural": {
+    "description": "Plural recurrence label",
+    "placeholders": {
+      "n": {
+        "type": "num"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "choreCreationUnitHourSingular": "uur",
+  "@choreCreationUnitHourSingular": {
+    "description": "Singular hour unit"
+  },
+  "choreCreationUnitHourPlural": "uur",
+  "@choreCreationUnitHourPlural": {
+    "description": "Plural hours unit"
+  },
+  "choreCreationUnitDaySingular": "dag",
+  "@choreCreationUnitDaySingular": {
+    "description": "Singular day unit"
+  },
+  "choreCreationUnitDayPlural": "dagen",
+  "@choreCreationUnitDayPlural": {
+    "description": "Plural days unit"
+  },
+  "choreCreationUnitWeekSingular": "week",
+  "@choreCreationUnitWeekSingular": {
+    "description": "Singular week unit"
+  },
+  "choreCreationUnitWeekPlural": "weken",
+  "@choreCreationUnitWeekPlural": {
+    "description": "Plural weeks unit"
+  },
+  "choreCreationUnitMonthSingular": "maand",
+  "@choreCreationUnitMonthSingular": {
+    "description": "Singular month unit"
+  },
+  "choreCreationUnitMonthPlural": "maanden",
+  "@choreCreationUnitMonthPlural": {
+    "description": "Plural months unit"
+  },
+  "choreCreationUnitYearSingular": "jaar",
+  "@choreCreationUnitYearSingular": {
+    "description": "Singular year unit"
+  },
+  "choreCreationUnitYearPlural": "jaar",
+  "@choreCreationUnitYearPlural": {
+    "description": "Plural years unit"
+  },
+  "choreDayMon": "Ma",
+  "@choreDayMon": {
+    "description": "Monday abbreviation"
+  },
+  "choreDayTue": "Di",
+  "@choreDayTue": {
+    "description": "Tuesday abbreviation"
+  },
+  "choreDayWed": "Wo",
+  "@choreDayWed": {
+    "description": "Wednesday abbreviation"
+  },
+  "choreDayThu": "Do",
+  "@choreDayThu": {
+    "description": "Thursday abbreviation"
+  },
+  "choreDayFri": "Vr",
+  "@choreDayFri": {
+    "description": "Friday abbreviation"
+  },
+  "choreDaySat": "Za",
+  "@choreDaySat": {
+    "description": "Saturday abbreviation"
+  },
+  "choreDaySun": "Zo",
+  "@choreDaySun": {
+    "description": "Sunday abbreviation"
+  },
+  "choreDetailTitle": "Klusdetails",
+  "@choreDetailTitle": {
+    "description": "Bottom sheet title for chore detail"
+  },
+  "choreDetailAssignee": "Toegewezen aan",
+  "@choreDetailAssignee": {
+    "description": "Detail row: assigned to"
+  },
+  "choreDetailDue": "Vervalt",
+  "@choreDetailDue": {
+    "description": "Detail row: due date"
+  },
+  "choreDetailTracked": "Bijgehouden",
+  "@choreDetailTracked": {
+    "description": "Detail row: tracking info"
+  },
+  "choreDetailLastDone": "Laatst gedaan",
+  "@choreDetailLastDone": {
+    "description": "Detail row: last completed"
+  },
+  "choreDetailLastBy": "Laatst door",
+  "@choreDetailLastBy": {
+    "description": "Detail row: last completed by"
+  },
+  "choreDetailAverage": "Gemiddeld",
+  "@choreDetailAverage": {
+    "description": "Detail row: average interval"
+  },
+  "choreDetailSubtasks": "Subtaken",
+  "@choreDetailSubtasks": {
+    "description": "Section header for subtasks"
+  },
+  "choreDetailNewSubtask": "Nieuwe subtaak",
+  "@choreDetailNewSubtask": {
+    "description": "Placeholder for new subtask input"
+  },
+  "choreDetailSupplies": "Benodigdheden",
+  "@choreDetailSupplies": {
+    "description": "Section header for supplies"
+  },
+  "choreDetailAddSuppliesToList": "Benodigdheden aan lijst toevoegen",
+  "@choreDetailAddSuppliesToList": {
+    "description": "Button to add supplies to a shopping list"
+  },
+  "choreDetailMarkDone": "Markeren als gedaan",
+  "@choreDetailMarkDone": {
+    "description": "Button to mark chore as done"
+  },
+  "choreDetailMoveToTomorrow": "Verplaatsen naar morgen",
+  "@choreDetailMoveToTomorrow": {
+    "description": "Button to reschedule for tomorrow"
+  },
+  "choreDetailUndoLast": "Laatste uitvoering ongedaan maken",
+  "@choreDetailUndoLast": {
+    "description": "Button to undo most recent completion"
+  },
+  "choreDetailSkipTitle": "Klus overslaan",
+  "@choreDetailSkipTitle": {
+    "description": "Dialog title for skipping a chore"
+  },
+  "choreDetailSkipReason": "Reden (optioneel)",
+  "@choreDetailSkipReason": {
+    "description": "Optional skip reason input label"
+  },
+  "choreDetailSkipReasonHint": "bv. Deze week weg",
+  "@choreDetailSkipReasonHint": {
+    "description": "Placeholder for skip reason"
+  },
+  "choreDetailDeleteTitleDialog": "Klus verwijderen",
+  "@choreDetailDeleteTitleDialog": {
+    "description": "Dialog title for deleting chore"
+  },
+  "choreDetailDeleteBody": "Dit verwijdert deze klus en zijn geschiedenis permanent.",
+  "@choreDetailDeleteBody": {
+    "description": "Dialog body for chore deletion"
+  },
+  "choreDetailDeleteSubtask": "Subtaak verwijderen",
+  "@choreDetailDeleteSubtask": {
+    "description": "Tooltip for deleting a subtask"
+  },
+  "choreDetailSubtaskMarkNotDone": "Subtaak markeren als niet gedaan",
+  "@choreDetailSubtaskMarkNotDone": {
+    "description": "Toggle subtask to undone"
+  },
+  "choreDetailSubtaskMarkDone": "Subtaak markeren als gedaan",
+  "@choreDetailSubtaskMarkDone": {
+    "description": "Toggle subtask to done"
+  },
+  "choreLoadTitle": "Wie doet de klusjes",
+  "@choreLoadTitle": {
+    "description": "Bottom sheet title for chore load/fairness view"
+  },
+  "choreLoadEmpty": "Er zijn nog geen klusjes voltooid in de afgelopen {days} dagen. Zodra mensen dingen beginnen af te vinken, verschijnt de verdeling hier.",
+  "@choreLoadEmpty": {
+    "description": "Empty state for chore load when no data",
+    "placeholders": {
+      "days": {
+        "type": "num"
+      }
+    }
+  },
+  "choreLoadCountSingular": "{count} klus",
+  "@choreLoadCountSingular": {
+    "description": "Singular chore count in load view",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "choreLoadCountPlural": "{count} klusjes",
+  "@choreLoadCountPlural": {
+    "description": "Plural chore count in load view",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "recipeAppBarTitle": "Keuken",
+  "@recipeAppBarTitle": {
+    "description": "AppBar title for recipes/kitchen screen"
+  },
+  "recipeSearchLabel": "Keuken doorzoeken",
+  "@recipeSearchLabel": {
+    "description": "TextField label for recipe search"
+  },
+  "recipeSearchHint": "Recept, tag, ingrediënt",
+  "@recipeSearchHint": {
+    "description": "TextField hint for recipe search"
+  },
+  "recipeMealPlanTooltip": "Maaltijdplanning",
+  "@recipeMealPlanTooltip": {
+    "description": "Tooltip for meal plan navigation"
+  },
+  "recipeSearchTooltip": "Zoeken",
+  "@recipeSearchTooltip": {
+    "description": "Tooltip for search toggle"
+  },
+  "recipeSortLabel": "Recepten sorteren",
+  "@recipeSortLabel": {
+    "description": "Disabled menu item for sort label"
+  },
+  "recipeSortNewest": "Nieuwste",
+  "@recipeSortNewest": {
+    "description": "Sort by newest"
+  },
+  "recipeSortOldest": "Oudste",
+  "@recipeSortOldest": {
+    "description": "Sort by oldest"
+  },
+  "recipeSortAZ": "A-Z",
+  "@recipeSortAZ": {
+    "description": "Sort alphabetically"
+  },
+  "recipeAddRecipe": "Recept toevoegen",
+  "@recipeAddRecipe": {
+    "description": "FAB text and tooltip to add recipe"
+  },
+  "recipeFailedLoad": "Keuken laden mislukt",
+  "@recipeFailedLoad": {
+    "description": "Error when recipes fail to load"
+  },
+  "recipeFailedMore": "Meer recepten laden mislukt",
+  "@recipeFailedMore": {
+    "description": "Error when recipe pagination fails"
+  },
+  "recipeBuildKitchen": "Bouw je keuken",
+  "@recipeBuildKitchen": {
+    "description": "Empty state title for no recipes"
+  },
+  "recipeBuildKitchenDesc": "Importeer recepten, groepeer kookboeken, plan maaltijden en zet de week om in een boodschappenlijst.",
+  "@recipeBuildKitchenDesc": {
+    "description": "Empty state description for no recipes"
+  },
+  "recipeMealsPlanned": "{count, plural, =1{1 maaltijd gepland deze week} other{{count} maaltijden gepland deze week}}",
+  "@recipeMealsPlanned": {
+    "description": "Meal plan summary label",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "recipePlanButton": "Plannen",
+  "@recipePlanButton": {
+    "description": "Button text for planning recipes into meal plan"
+  },
+  "recipeCountLabel": "{visible} van {total} recepten",
+  "@recipeCountLabel": {
+    "description": "Header count label when filtered",
+    "placeholders": {
+      "visible": {
+        "type": "num"
+      },
+      "total": {
+        "type": "num"
+      }
+    }
+  },
+  "recipeCountLabelAll": "{total} recepten",
+  "@recipeCountLabelAll": {
+    "description": "Header count label when showing all",
+    "placeholders": {
+      "total": {
+        "type": "num"
+      }
+    }
+  },
+  "recipeFilterAll": "Alle",
+  "@recipeFilterAll": {
+    "description": "Filter chip: all recipes"
+  },
+  "recipeFilterShared": "Gedeeld",
+  "@recipeFilterShared": {
+    "description": "Filter chip: shared recipes"
+  },
+  "recipeFilterPrivate": "Privé",
+  "@recipeFilterPrivate": {
+    "description": "Filter chip: private recipes"
+  },
+  "recipeImageSemantics": "Afbeelding van {title}",
+  "@recipeImageSemantics": {
+    "description": "Semantics label for recipe image",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeMinLabel": "{minutes} min",
+  "@recipeMinLabel": {
+    "description": "Cooking time display",
+    "placeholders": {
+      "minutes": {
+        "type": "num"
+      }
+    }
+  },
+  "recipeServesLabel": "Voor {servings} personen",
+  "@recipeServesLabel": {
+    "description": "Servings display",
+    "placeholders": {
+      "servings": {
+        "type": "num"
+      }
+    }
+  },
+  "recipeOpenRecipe": "Open recept {title}",
+  "@recipeOpenRecipe": {
+    "description": "Semantics: open recipe",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeAddToList": "Aan lijst toevoegen",
+  "@recipeAddToList": {
+    "description": "Icon button tooltip: add ingredients to list"
+  },
+  "recipeSharedPrivate": "{shared} gedeeld · {private} privé",
+  "@recipeSharedPrivate": {
+    "description": "Shared/private count detail",
+    "placeholders": {
+      "shared": {
+        "type": "num"
+      },
+      "private": {
+        "type": "num"
+      }
+    }
+  },
+  "recipeCookbooksLabel": " · {count} kookboeken",
+  "@recipeCookbooksLabel": {
+    "description": "Cookbook count suffix",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "recipeRatingLabel": "{rating} ({count})",
+  "@recipeRatingLabel": {
+    "description": "Rating value and count",
+    "placeholders": {
+      "rating": {
+        "type": "String"
+      },
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "recipeCreationTitle": "Nieuw recept",
+  "@recipeCreationTitle": {
+    "description": "AppBar title for recipe creation"
+  },
+  "recipeCreationStepSource": "Bron",
+  "@recipeCreationStepSource": {
+    "description": "Wizard step: source"
+  },
+  "recipeCreationStepDetails": "Details",
+  "@recipeCreationStepDetails": {
+    "description": "Wizard step: details"
+  },
+  "recipeCreationStepContent": "Inhoud",
+  "@recipeCreationStepContent": {
+    "description": "Wizard step: content"
+  },
+  "recipeCreationStartHeadline": "Begin je recept",
+  "@recipeCreationStartHeadline": {
+    "description": "Headline for recipe creation start"
+  },
+  "recipeCreationStartSubtitle": "Importeer van een link, typ het zelf of scan een foto.",
+  "@recipeCreationStartSubtitle": {
+    "description": "Subtitle for recipe creation start"
+  },
+  "recipeCreationImportURL": "Importeren van URL",
+  "@recipeCreationImportURL": {
+    "description": "Card title: import from URL"
+  },
+  "recipeCreationImportURLDesc": "Plak een receptlink en wij halen de details op",
+  "@recipeCreationImportURLDesc": {
+    "description": "Card subtitle: import from URL"
+  },
+  "recipeCreationTypeItIn": "Zelf typen",
+  "@recipeCreationTypeItIn": {
+    "description": "Card title: type recipe manually"
+  },
+  "recipeCreationTypeItInDesc": "Begin met een titel en voeg later ingrediënten toe",
+  "@recipeCreationTypeItInDesc": {
+    "description": "Card subtitle: type manually"
+  },
+  "recipeCreationScanning": "Scannen…",
+  "@recipeCreationScanning": {
+    "description": "Card title: scanning in progress"
+  },
+  "recipeCreationScanPhoto": "Scan een foto",
+  "@recipeCreationScanPhoto": {
+    "description": "Card title: scan recipe photo"
+  },
+  "recipeCreationScanPhotoDesc": "Maak een foto van een receptenkaart of kookboekpagina",
+  "@recipeCreationScanPhotoDesc": {
+    "description": "Card subtitle: scan photo"
+  },
+  "recipeCreationURLInput": "Recept-URL",
+  "@recipeCreationURLInput": {
+    "description": "Input label for recipe URL"
+  },
+  "recipeCreationURLHint": "https://example.com/recept",
+  "@recipeCreationURLHint": {
+    "description": "Placeholder for recipe URL"
+  },
+  "recipeCreationFetching": "Ophalen…",
+  "@recipeCreationFetching": {
+    "description": "Button text while fetching"
+  },
+  "recipeCreationFetchDetails": "Details ophalen",
+  "@recipeCreationFetchDetails": {
+    "description": "Button to fetch recipe from URL"
+  },
+  "recipeCreationChooseImage": "Kies een afbeelding",
+  "@recipeCreationChooseImage": {
+    "description": "CTA to pick an image for scanning"
+  },
+  "recipeCreationSelectImage": "Selecteer afbeelding {index}",
+  "@recipeCreationSelectImage": {
+    "description": "Semantics: select image",
+    "placeholders": {
+      "index": {
+        "type": "num"
+      }
+    }
+  },
+  "recipeCreationTitleInput": "Recepttitel",
+  "@recipeCreationTitleInput": {
+    "description": "Input label for recipe title"
+  },
+  "recipeCreationTitleHint": "Zondagpannenkoeken",
+  "@recipeCreationTitleHint": {
+    "description": "Placeholder for recipe title"
+  },
+  "recipeCreationDiscardTitle": "Recept weggooien?",
+  "@recipeCreationDiscardTitle": {
+    "description": "Dialog title when discarding recipe"
+  },
+  "recipeCreationDiscardBody": "Je hebt niet-opgeslagen inhoud in dit recept.",
+  "@recipeCreationDiscardBody": {
+    "description": "Dialog body when discarding recipe"
+  },
+  "recipeCreationKeepEditing": "Doorgaan met bewerken",
+  "@recipeCreationKeepEditing": {
+    "description": "Button to continue editing"
+  },
+  "recipeCreationDiscard": "Weggooien",
+  "@recipeCreationDiscard": {
+    "description": "Button to discard recipe"
+  },
+  "recipeCreationCouldNotScan": "Kon recept niet scannen.",
+  "@recipeCreationCouldNotScan": {
+    "description": "Snackbar when recipe scan fails"
+  },
+  "recipeCreationImported": "{parts}",
+  "@recipeCreationImported": {
+    "description": "Snackbar when recipe is imported",
+    "placeholders": {
+      "parts": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeCreationCouldNotFetch": "Kon geen details ophalen van die link.",
+  "@recipeCreationCouldNotFetch": {
+    "description": "Snackbar when URL fetch fails"
+  },
+  "recipeCreationCreated": "Recept aangemaakt",
+  "@recipeCreationCreated": {
+    "description": "Snackbar when recipe is created"
+  },
+  "recipeCreationCouldNotCreate": "Kon recept niet aanmaken.",
+  "@recipeCreationCouldNotCreate": {
+    "description": "Snackbar when recipe creation fails"
+  },
+  "recipeCreationImportedTitle": "Geïmporteerd recept",
+  "@recipeCreationImportedTitle": {
+    "description": "Fallback recipe title from import"
+  },
+  "recipeCreationFromHost": "Recept van {host}",
+  "@recipeCreationFromHost": {
+    "description": "Recipe title derived from URL host",
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeCreationNutrition": "Voedingswaarde: {info}",
+  "@recipeCreationNutrition": {
+    "description": "Nutrition info displayed as description",
+    "placeholders": {
+      "info": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeCreationNextDetails": "Volgende: details",
+  "@recipeCreationNextDetails": {
+    "description": "Next button: go to details step"
+  },
+  "recipeCreationNextContent": "Volgende: inhoud",
+  "@recipeCreationNextContent": {
+    "description": "Next button: go to content step"
+  },
+  "recipeCreationTitleOverride": "Titel overschrijven",
+  "@recipeCreationTitleOverride": {
+    "description": "Input label for overriding recipe title"
+  },
+  "recipeCreationNotesInput": "Notities",
+  "@recipeCreationNotesInput": {
+    "description": "Input label for recipe notes"
+  },
+  "recipeCreationNotesHint": "Wat dit recept de moeite waard maakt om te bewaren",
+  "@recipeCreationNotesHint": {
+    "description": "Placeholder for recipe notes"
+  },
+  "recipeCreationPrepLabel": "Voorbereiding (min)",
+  "@recipeCreationPrepLabel": {
+    "description": "Input label for prep time"
+  },
+  "recipeCreationPrepHint": "10",
+  "@recipeCreationPrepHint": {
+    "description": "Placeholder for prep time"
+  },
+  "recipeCreationCookLabel": "Koken (min)",
+  "@recipeCreationCookLabel": {
+    "description": "Input label for cook time"
+  },
+  "recipeCreationCookHint": "20",
+  "@recipeCreationCookHint": {
+    "description": "Placeholder for cook time"
+  },
+  "recipeCreationServingsLabel": "Porties",
+  "@recipeCreationServingsLabel": {
+    "description": "Input label for servings"
+  },
+  "recipeCreationServingsHint": "4",
+  "@recipeCreationServingsHint": {
+    "description": "Placeholder for servings"
+  },
+  "recipeCreationTagsInput": "Tags",
+  "@recipeCreationTagsInput": {
+    "description": "Input label for tags"
+  },
+  "recipeCreationTagsHint": "snel, vegetarisch",
+  "@recipeCreationTagsHint": {
+    "description": "Placeholder for tags"
+  },
+  "recipeCreationSaveForHousehold": "Opslaan voor huishouden",
+  "@recipeCreationSaveForHousehold": {
+    "description": "Switch label for sharing with household"
+  },
+  "recipeCreationSaveForHouseholdDesc": "Iedereen in dit huishouden kan dit recept vinden en gebruiken.",
+  "@recipeCreationSaveForHouseholdDesc": {
+    "description": "Switch subtitle when sharing"
+  },
+  "recipeCreationSaveForHouseholdPrivate": "Houd het voor nu privé. Je kunt het later delen.",
+  "@recipeCreationSaveForHouseholdPrivate": {
+    "description": "Switch subtitle when private"
+  },
+  "recipeCreationIngredients": "Ingrediënten",
+  "@recipeCreationIngredients": {
+    "description": "Section header for ingredients"
+  },
+  "recipeCreationIngredientsHelper": "Voeg één ingrediënt per regel toe.",
+  "@recipeCreationIngredientsHelper": {
+    "description": "Helper text for ingredients"
+  },
+  "recipeCreationAddIngredient": "Ingrediënt toevoegen",
+  "@recipeCreationAddIngredient": {
+    "description": "Button to add an ingredient"
+  },
+  "recipeCreationIngredientHint": "200 g bloem",
+  "@recipeCreationIngredientHint": {
+    "description": "Placeholder for ingredient input"
+  },
+  "recipeCreationSteps": "Stappen",
+  "@recipeCreationSteps": {
+    "description": "Section header for steps"
+  },
+  "recipeCreationStepsHelper": "Houd elke stap kort genoeg om te volgen tijdens het koken.",
+  "@recipeCreationStepsHelper": {
+    "description": "Helper text for steps"
+  },
+  "recipeCreationAddStep": "Stap toevoegen",
+  "@recipeCreationAddStep": {
+    "description": "Button to add a step"
+  },
+  "recipeCreationStepHint": "Beslag mengen",
+  "@recipeCreationStepHint": {
+    "description": "Placeholder for step input"
+  },
+  "recipeCreationNutritionInput": "Voedingswaarde",
+  "@recipeCreationNutritionInput": {
+    "description": "Input label for nutrition info"
+  },
+  "recipeCreationNutritionHint": "520 kcal, 24g eiwit, veel vezels",
+  "@recipeCreationNutritionHint": {
+    "description": "Placeholder for nutrition info"
+  },
+  "recipeCreationCreating": "Aanmaken…",
+  "@recipeCreationCreating": {
+    "description": "Button text while creating recipe"
+  },
+  "recipeCreationCreateRecipe": "Recept aanmaken",
+  "@recipeCreationCreateRecipe": {
+    "description": "Submit button for recipe creation"
+  },
+  "recipeCreationStepLabel": "{type}",
+  "@recipeCreationStepLabel": {
+    "description": "Step/ingredient label",
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeCreationRemoveItem": "Verwijder {type} {index}",
+  "@recipeCreationRemoveItem": {
+    "description": "Tooltip for removing a step/ingredient",
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "index": {
+        "type": "num"
+      }
+    }
+  },
+  "recipeCreationStepSemantics": "Stap {index} van {total}, {label}, {status}",
+  "@recipeCreationStepSemantics": {
+    "description": "Semantics label for step item",
+    "placeholders": {
+      "index": {
+        "type": "num"
+      },
+      "total": {
+        "type": "num"
+      },
+      "label": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeDetailTitle": "Recept",
+  "@recipeDetailTitle": {
+    "description": "AppBar title for recipe detail"
+  },
+  "recipeDetailDeleteTooltip": "Recept verwijderen",
+  "@recipeDetailDeleteTooltip": {
+    "description": "Tooltip for delete recipe button"
+  },
+  "recipeDetailAddToList": "Aan lijst toevoegen",
+  "@recipeDetailAddToList": {
+    "description": "Button to add ingredients to shopping list"
+  },
+  "recipeDetailCook": "Koken",
+  "@recipeDetailCook": {
+    "description": "Detail row: cook time"
+  },
+  "recipeDetailCouldNotLoad": "Kon recept niet laden",
+  "@recipeDetailCouldNotLoad": {
+    "description": "Empty state when recipe fails to load"
+  },
+  "recipeDetailDeleteTitle": "Recept verwijderen",
+  "@recipeDetailDeleteTitle": {
+    "description": "Dialog title for deleting recipe"
+  },
+  "recipeDetailDeleteBody": "Dit verwijdert dit recept permanent. Dit kan niet ongedaan worden gemaakt.",
+  "@recipeDetailDeleteBody": {
+    "description": "Dialog body for recipe deletion"
+  },
+  "recipeDetailSharedLabel": "Gedeeld",
+  "@recipeDetailSharedLabel": {
+    "description": "Chip label for shared recipe"
+  },
+  "recipeDetailPrivateLabel": "Privé",
+  "@recipeDetailPrivateLabel": {
+    "description": "Chip label for private recipe"
+  },
+  "recipeDetailBy": "Door {author}",
+  "@recipeDetailBy": {
+    "description": "Author attribution",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeDetailPrep": "Voorbereiding",
+  "@recipeDetailPrep": {
+    "description": "Detail row: prep time"
+  },
+  "recipeDetailServings": "Porties",
+  "@recipeDetailServings": {
+    "description": "Detail row: servings"
+  },
+  "recipeDetailUpdated": "Bijgewerkt",
+  "@recipeDetailUpdated": {
+    "description": "Detail row: last updated"
+  },
+  "recipeDetailNotSet": "Niet ingesteld",
+  "@recipeDetailNotSet": {
+    "description": "Fallback when a detail is not set"
+  },
+  "recipeDetailNutrition": "Voedingswaarde",
+  "@recipeDetailNutrition": {
+    "description": "Section header: nutrition"
+  },
+  "recipeDetailEquipment": "Uitrusting",
+  "@recipeDetailEquipment": {
+    "description": "Section header: equipment"
+  },
+  "recipeDetailIngredients": "Ingrediënten",
+  "@recipeDetailIngredients": {
+    "description": "Section header: ingredients"
+  },
+  "recipeDetailSteps": "Stappen",
+  "@recipeDetailSteps": {
+    "description": "Section header: steps"
+  },
+  "recipeDetailWatchVideo": "Bekijk video",
+  "@recipeDetailWatchVideo": {
+    "description": "Link label to watch recipe video"
+  },
+  "recipeDetailWatchVideoSemantics": "Bekijk receptvideo",
+  "@recipeDetailWatchVideoSemantics": {
+    "description": "Semantics label for video link"
+  },
+  "recipeDetailViewOriginal": "Bekijk origineel recept",
+  "@recipeDetailViewOriginal": {
+    "description": "Link label to original source"
+  },
+  "recipeDetailViewOriginalSemantics": "Bekijk origineel recept in browser",
+  "@recipeDetailViewOriginalSemantics": {
+    "description": "Semantics label for original link"
+  },
+  "cookModeCouldNotLoad": "Kon recept niet laden",
+  "@cookModeCouldNotLoad": {
+    "description": "Empty state when recipe fails in cook mode"
+  },
+  "cookModeClose": "Sluiten",
+  "@cookModeClose": {
+    "description": "Icon button tooltip to exit cook mode"
+  },
+  "cookModeServings": "Porties",
+  "@cookModeServings": {
+    "description": "Servings label in cook mode"
+  },
+  "cookModeDecreaseServings": "Porties verminderen",
+  "@cookModeDecreaseServings": {
+    "description": "Semantics: decrease servings"
+  },
+  "cookModeIncreaseServings": "Porties vermeerderen",
+  "@cookModeIncreaseServings": {
+    "description": "Semantics: increase servings"
+  },
+  "cookModeStartCooking": "Beginnen met koken",
+  "@cookModeStartCooking": {
+    "description": "Button to begin cooking"
+  },
+  "cookModeGathered": "verzameld",
+  "@cookModeGathered": {
+    "description": "Semantics: ingredient gathered"
+  },
+  "cookModeNotGathered": "niet verzameld",
+  "@cookModeNotGathered": {
+    "description": "Semantics: ingredient not gathered"
+  },
+  "cookModeStepOf": "Stap {step} van {total}",
+  "@cookModeStepOf": {
+    "description": "Glance bar current step",
+    "placeholders": {
+      "step": {
+        "type": "num"
+      },
+      "total": {
+        "type": "num"
+      }
+    }
+  },
+  "cookModeExitTooltip": "Kookmodus verlaten",
+  "@cookModeExitTooltip": {
+    "description": "Tooltip to exit cook mode"
+  },
+  "cookModeTimerDone": "Timer klaar!",
+  "@cookModeTimerDone": {
+    "description": "Snackbar when a timer finishes"
+  },
+  "cookModeDoneArrow": "Klaar →",
+  "@cookModeDoneArrow": {
+    "description": "Button to advance to next step"
+  },
+  "cookModeFinish": "Voltooien",
+  "@cookModeFinish": {
+    "description": "Finish button on last step"
+  },
+  "cookModeStepLabel": "Stap {number}",
+  "@cookModeStepLabel": {
+    "description": "Step number label",
+    "placeholders": {
+      "number": {
+        "type": "num"
+      }
+    }
+  },
+  "cookModeStepDone": "Stap {number} gedaan. Tik om te bekijken",
+  "@cookModeStepDone": {
+    "description": "Semantics: completed step",
+    "placeholders": {
+      "number": {
+        "type": "num"
+      }
+    }
+  },
+  "cookModeCurrentStep": "Huidige stap {number}",
+  "@cookModeCurrentStep": {
+    "description": "Semantics: current step",
+    "placeholders": {
+      "number": {
+        "type": "num"
+      }
+    }
+  },
+  "cookModeStepJump": "Stap {number}: {description}. Tik om naar deze stap te springen",
+  "@cookModeStepJump": {
+    "description": "Semantics: jump to step",
+    "placeholders": {
+      "number": {
+        "type": "num"
+      },
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "cookModeBackToStep": "Terug naar stap {step}",
+  "@cookModeBackToStep": {
+    "description": "Button to return to current step",
+    "placeholders": {
+      "step": {
+        "type": "num"
+      }
+    }
+  },
+  "cookModeShowIngredients": "Toon ingrediënten",
+  "@cookModeShowIngredients": {
+    "description": "Semantics: show ingredients sheet"
+  },
+  "cookModeIngredients": "Ingrediënten",
+  "@cookModeIngredients": {
+    "description": "Ingredients bottom sheet title"
+  },
+  "cookModeFinished": "Voltooid — goed gedaan",
+  "@cookModeFinished": {
+    "description": "Text shown when all steps complete"
+  },
+  "cookModeFinishCooking": "Koken voltooien",
+  "@cookModeFinishCooking": {
+    "description": "Semantics: finish cooking"
+  },
+  "cookModeAdvanceStep": "Klaar, ga naar volgende stap",
+  "@cookModeAdvanceStep": {
+    "description": "Semantics: advance to next step"
+  },
+  "expenseAppBarTitle": "Geld",
+  "@expenseAppBarTitle": {
+    "description": "AppBar title for expenses screen"
+  },
+  "expenseScanReceiptTooltip": "Bon scannen",
+  "@expenseScanReceiptTooltip": {
+    "description": "Tooltip for scan receipt action"
+  },
+  "expenseRecurringTooltip": "Terugkerend",
+  "@expenseRecurringTooltip": {
+    "description": "Tooltip for recurring expenses"
+  },
+  "expenseAddExpense": "Uitgave toevoegen",
+  "@expenseAddExpense": {
+    "description": "FAB text and tooltip to add expense"
+  },
+  "expenseYouAreOwed": "Je krijgt",
+  "@expenseYouAreOwed": {
+    "description": "Balance headline when user is owed money"
+  },
+  "expenseYouOwe": "Je moet",
+  "@expenseYouOwe": {
+    "description": "Balance headline when user owes money"
+  },
+  "expenseAllSquare": "Helemaal vereffend",
+  "@expenseAllSquare": {
+    "description": "Balance headline when net zero"
+  },
+  "expenseSuggestedPayments": "{count, plural, =1{{count} voorgestelde betaling} other{{count} voorgestelde betalingen}} om te vereffenen",
+  "@expenseSuggestedPayments": {
+    "description": "Balance description with suggestion count",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "expenseOpenBalances": "{count, plural, =1{{count} openstaand saldo} other{{count} openstaande saldi}} in het huishouden",
+  "@expenseOpenBalances": {
+    "description": "Balance description with open balance count",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "expenseNoOneOwes": "Niemand hoeft nu iemand te betalen",
+  "@expenseNoOneOwes": {
+    "description": "Balance description when all settled"
+  },
+  "expenseTabTimeline": "Tijdlijn",
+  "@expenseTabTimeline": {
+    "description": "Tab label for expense timeline"
+  },
+  "expenseTabSettlements": "Vereffeningen",
+  "@expenseTabSettlements": {
+    "description": "Tab label for settlements"
+  },
+  "expenseToday": "Vandaag",
+  "@expenseToday": {
+    "description": "Today date section label"
+  },
+  "expenseYesterday": "Gisteren",
+  "@expenseYesterday": {
+    "description": "Yesterday date section label"
+  },
+  "expenseNoExpensesTitle": "Nog geen uitgaven",
+  "@expenseNoExpensesTitle": {
+    "description": "Empty state when no expenses exist"
+  },
+  "expenseNoExpensesDesc": "Houd gedeelde kosten bij met je huishouden.",
+  "@expenseNoExpensesDesc": {
+    "description": "Description for no expenses empty state"
+  },
+  "expenseAddFirstExpense": "Eerste uitgave toevoegen",
+  "@expenseAddFirstExpense": {
+    "description": "CTA to add the first expense"
+  },
+  "expenseLoadError": "Kon uitgaven niet laden. Controleer je verbinding.",
+  "@expenseLoadError": {
+    "description": "Error when expenses fail to load"
+  },
+  "expenseLoadMoreError": "Meer uitgaven laden mislukt.",
+  "@expenseLoadMoreError": {
+    "description": "Error when expense pagination fails"
+  },
+  "expensePaidBy": "Betaald door {payer}",
+  "@expensePaidBy": {
+    "description": "Card subtitle showing who paid",
+    "placeholders": {
+      "payer": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseConvertedAmount": "≈ {amount}",
+  "@expenseConvertedAmount": {
+    "description": "Converted currency amount display",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseDeleteTitle": "Uitgave verwijderen",
+  "@expenseDeleteTitle": {
+    "description": "Dialog title for deleting expense"
+  },
+  "expenseDeleteBody": "Dit verwijdert deze uitgave en alle bijbehorende bonnen permanent. Dit kan niet ongedaan worden gemaakt.",
+  "@expenseDeleteBody": {
+    "description": "Dialog body for expense deletion"
+  },
+  "expenseSettlementRecorded": "Vereffening vastgelegd",
+  "@expenseSettlementRecorded": {
+    "description": "Snackbar when settlement is saved"
+  },
+  "expenseSettlementFailed": "Kon vereffening niet vastleggen.",
+  "@expenseSettlementFailed": {
+    "description": "Snackbar when settlement fails"
+  },
+  "expenseSuggestedPaymentsTitle": "Voorgestelde betalingen",
+  "@expenseSuggestedPaymentsTitle": {
+    "description": "Section title for suggested settlements"
+  },
+  "expenseSuggestedPaymentsDesc": "Berekend op basis van elke uitgave, splitsing en vastgelegde vereffening in dit huishouden.",
+  "@expenseSuggestedPaymentsDesc": {
+    "description": "Description of how suggestions are computed"
+  },
+  "expenseAllSettled": "Alles vereffend!",
+  "@expenseAllSettled": {
+    "description": "Empty state when no settlements needed"
+  },
+  "expenseNoOneOwesRight": "Niemand is iemand iets verschuldigd op dit moment.",
+  "@expenseNoOneOwesRight": {
+    "description": "Description when all settled"
+  },
+  "expenseSameAccount": "Zelfde account",
+  "@expenseSameAccount": {
+    "description": "Label when payment is within same account"
+  },
+  "expenseFrom": "Van",
+  "@expenseFrom": {
+    "description": "Party label: sender"
+  },
+  "expenseTo": "Aan",
+  "@expenseTo": {
+    "description": "Party label: receiver"
+  },
+  "expenseRecordHelper": "Leg deze vereffening vast nadat de betaling is gedaan.",
+  "@expenseRecordHelper": {
+    "description": "Helper text for recording settlement"
+  },
+  "expenseRecording": "Vastleggen...",
+  "@expenseRecording": {
+    "description": "Button text while recording settlement"
+  },
+  "expenseRecordSettlement": "Vereffening vastleggen",
+  "@expenseRecordSettlement": {
+    "description": "Button to confirm settlement"
+  },
+  "expenseBalances": "Saldi",
+  "@expenseBalances": {
+    "description": "Section header for balance list"
+  },
+  "expenseBalancesOpen": "{count} openstaand",
+  "@expenseBalancesOpen": {
+    "description": "Open balance count label",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "expenseExpandBalances": "Saldi uitklappen",
+  "@expenseExpandBalances": {
+    "description": "Semantics: expand balances"
+  },
+  "expenseCollapseBalances": "Saldi inklappen",
+  "@expenseCollapseBalances": {
+    "description": "Semantics: collapse balances"
+  },
+  "expenseNoBalances": "Nog geen saldi. Voeg een uitgave met splitsingen toe om het grootboek te starten.",
+  "@expenseNoBalances": {
+    "description": "Empty state when no balances exist"
+  },
+  "expenseIsOwed": "krijgt",
+  "@expenseIsOwed": {
+    "description": "Balance status: person is owed"
+  },
+  "expenseOwes": "is verschuldigd",
+  "@expenseOwes": {
+    "description": "Balance status: person owes"
+  },
+  "expenseSettled": "vereffend",
+  "@expenseSettled": {
+    "description": "Balance status: settled"
+  },
+  "recurringAppBarTitle": "Terugkerend",
+  "@recurringAppBarTitle": {
+    "description": "AppBar title for recurring expenses"
+  },
+  "recurringAddRecurring": "Terugkerend toevoegen",
+  "@recurringAddRecurring": {
+    "description": "Button to add recurring expense"
+  },
+  "recurringAddRecurringTooltip": "Terugkerende uitgave toevoegen",
+  "@recurringAddRecurringTooltip": {
+    "description": "Tooltip for add recurring button"
+  },
+  "recurringNoRecurringTitle": "Geen terugkerende uitgaven",
+  "@recurringNoRecurringTitle": {
+    "description": "Empty state when no recurring expenses"
+  },
+  "recurringNoRecurringDesc": "Voeg een terugkerende uitgave toe om regelmatige betalingen bij te houden",
+  "@recurringNoRecurringDesc": {
+    "description": "Description for no recurring expenses"
+  },
+  "recurringAddExpense": "Uitgave toevoegen",
+  "@recurringAddExpense": {
+    "description": "CTA to add first recurring expense"
+  },
+  "recurringPauseTooltip": "Pauzeren",
+  "@recurringPauseTooltip": {
+    "description": "Tooltip to pause a recurring expense"
+  },
+  "recurringResumeTooltip": "Hervatten",
+  "@recurringResumeTooltip": {
+    "description": "Tooltip to resume a recurring expense"
+  },
+  "recurringDeleteTooltip": "Verwijderen",
+  "@recurringDeleteTooltip": {
+    "description": "Tooltip to delete a recurring expense"
+  },
+  "recurringNextDate": "Volgende: {date}",
+  "@recurringNextDate": {
+    "description": "Label showing next due date",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "recurringDeleteTitle": "Terugkerende uitgave verwijderen",
+  "@recurringDeleteTitle": {
+    "description": "Dialog title for deleting recurring expense"
+  },
+  "recurringDeleteBody": "Dit stopt het aanmaken van toekomstige uitgaven.",
+  "@recurringDeleteBody": {
+    "description": "Dialog body for deleting recurring expense"
+  },
+  "recurringFrequencyDaily": "Dagelijks",
+  "@recurringFrequencyDaily": {
+    "description": "Daily frequency format"
+  },
+  "recurringFrequencyWeekly": "Wekelijks",
+  "@recurringFrequencyWeekly": {
+    "description": "Weekly frequency format"
+  },
+  "recurringFrequencyBiweekly": "Elke 2 weken",
+  "@recurringFrequencyBiweekly": {
+    "description": "Biweekly frequency format"
+  },
+  "recurringFrequencyMonthly": "Maandelijks",
+  "@recurringFrequencyMonthly": {
+    "description": "Monthly frequency format"
+  },
+  "recurringFrequencyQuarterly": "Per kwartaal",
+  "@recurringFrequencyQuarterly": {
+    "description": "Quarterly frequency format"
+  },
+  "recurringFrequencyYearly": "Jaarlijks",
+  "@recurringFrequencyYearly": {
+    "description": "Yearly frequency format"
+  },
+  "recurringSheetTitle": "Terugkerende uitgave toevoegen",
+  "@recurringSheetTitle": {
+    "description": "Sheet title for creating recurring expense"
+  },
+  "recurringSheetDescription": "Beschrijving",
+  "@recurringSheetDescription": {
+    "description": "Input label for description"
+  },
+  "recurringSheetAmount": "Bedrag",
+  "@recurringSheetAmount": {
+    "description": "Input label for amount"
+  },
+  "recurringSheetFrequency": "Frequentie",
+  "@recurringSheetFrequency": {
+    "description": "Dropdown label for frequency"
+  },
+  "recurringSheetPayer": "Betaler",
+  "@recurringSheetPayer": {
+    "description": "Dropdown label for payer"
+  },
+  "recurringValidationDesc": "Voer een beschrijving in.",
+  "@recurringValidationDesc": {
+    "description": "Validation: description required"
+  },
+  "recurringValidationAmount": "Voer een bedrag in.",
+  "@recurringValidationAmount": {
+    "description": "Validation: amount required"
+  },
+  "recurringValidationPayer": "Selecteer een betaler.",
+  "@recurringValidationPayer": {
+    "description": "Validation: payer required"
+  },
+  "recurringValidationAmountPositive": "Voer een geldig bedrag groter dan nul in.",
+  "@recurringValidationAmountPositive": {
+    "description": "Validation: amount must be positive"
+  },
+  "recurringNoHouseholdDesc": "Word lid of maak een huishouden om terugkerende uitgaven te beheren",
+  "@recurringNoHouseholdDesc": {
+    "description": "No-household description for recurring"
+  },
+  "listAppBarTitle": "Lijsten",
+  "@listAppBarTitle": {
+    "description": "AppBar title for lists screen"
+  },
+  "listShoppingTripTooltip": "Boodschappen doen",
+  "@listShoppingTripTooltip": {
+    "description": "Tooltip for shopping trip navigation"
+  },
+  "listSearchLabel": "Lijsten doorzoeken",
+  "@listSearchLabel": {
+    "description": "TextField label for list search"
+  },
+  "listSearchHint": "Naam, bv. boodschappen",
+  "@listSearchHint": {
+    "description": "TextField hint for list search"
+  },
+  "listScanTooltip": "Bon of lijst scannen",
+  "@listScanTooltip": {
+    "description": "Menu item to scan a list"
+  },
+  "listSortLabel": "Sorteren",
+  "@listSortLabel": {
+    "description": "Disabled menu item for sort"
+  },
+  "listSortNewest": "Nieuwste",
+  "@listSortNewest": {
+    "description": "Sort by newest"
+  },
+  "listSortOldest": "Oudste",
+  "@listSortOldest": {
+    "description": "Sort by oldest"
+  },
+  "listSortAZ": "A–Z",
+  "@listSortAZ": {
+    "description": "Sort alphabetically"
+  },
+  "listSortMostItems": "Meeste items",
+  "@listSortMostItems": {
+    "description": "Sort by item count"
+  },
+  "listSortGridView": "Rasterweergave",
+  "@listSortGridView": {
+    "description": "Toggle grid view"
+  },
+  "listNewList": "Nieuwe lijst",
+  "@listNewList": {
+    "description": "FAB text and tooltip to create list"
+  },
+  "listFilterAll": "Alle",
+  "@listFilterAll": {
+    "description": "Filter chip: all lists"
+  },
+  "listFilterShopping": "Boodschappen",
+  "@listFilterShopping": {
+    "description": "Filter chip: shopping lists"
+  },
+  "listFilterTodo": "Te doen",
+  "@listFilterTodo": {
+    "description": "Filter chip: to-do lists"
+  },
+  "listFilterCustom": "Aangepast",
+  "@listFilterCustom": {
+    "description": "Filter chip: custom lists"
+  },
+  "listEmptyShopping": "Geen boodschappenlijsten",
+  "@listEmptyShopping": {
+    "description": "Empty state for shopping filter"
+  },
+  "listEmptyTodo": "Geen te-doenlijsten",
+  "@listEmptyTodo": {
+    "description": "Empty state for to-do filter"
+  },
+  "listEmptyCustom": "Geen aangepaste lijsten",
+  "@listEmptyCustom": {
+    "description": "Empty state for custom filter"
+  },
+  "listEmptyAll": "Nog geen lijsten",
+  "@listEmptyAll": {
+    "description": "Empty state when no lists exist"
+  },
+  "listEmptyShoppingDesc": "Geweldig voor boodschappen, maaltijdvoorbereiding, weekendboodschappen.",
+  "@listEmptyShoppingDesc": {
+    "description": "Description for shopping empty state"
+  },
+  "listEmptyTodoDesc": "Taken, klusjes, alles met een selectievakje.",
+  "@listEmptyTodoDesc": {
+    "description": "Description for to-do empty state"
+  },
+  "listEmptyCustomDesc": "Vrije vorm — jouw lijst, jouw regels.",
+  "@listEmptyCustomDesc": {
+    "description": "Description for custom empty state"
+  },
+  "listEmptyAllDesc": "Voeg regels toe in een lijst; de eerste paar verschijnen als voorbeeld op de kaart.",
+  "@listEmptyAllDesc": {
+    "description": "Description for general empty state"
+  },
+  "listCreateShopping": "Maak een boodschappenlijst",
+  "@listCreateShopping": {
+    "description": "CTA to create first shopping list"
+  },
+  "listCreateTodo": "Maak een te-doenlijst",
+  "@listCreateTodo": {
+    "description": "CTA to create first to-do list"
+  },
+  "listCreateCustom": "Maak een aangepaste lijst",
+  "@listCreateCustom": {
+    "description": "CTA to create first custom list"
+  },
+  "listCreateFirst": "Maak je eerste lijst",
+  "@listCreateFirst": {
+    "description": "CTA to create first list (all filter)"
+  },
+  "listNoMatch": "Geen lijsten komen overeen met \"{query}\"",
+  "@listNoMatch": {
+    "description": "Search empty result",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "listSearchDesc": "Namen en lijstitems worden doorzocht.",
+  "@listSearchDesc": {
+    "description": "Description for search no-results"
+  },
+  "listRenameTitle": "Lijst hernoemen",
+  "@listRenameTitle": {
+    "description": "Dialog title for renaming a list"
+  },
+  "listCouldNotRename": "Kon lijst niet hernoemen.",
+  "@listCouldNotRename": {
+    "description": "Snackbar when rename fails"
+  },
+  "listDeleteTitle": "Lijst verwijderen",
+  "@listDeleteTitle": {
+    "description": "Dialog title for deleting a list"
+  },
+  "listDeleteBody": "Dit verwijdert deze lijst en al zijn items permanent.",
+  "@listDeleteBody": {
+    "description": "Dialog body for list deletion"
+  },
+  "listCouldNotDelete": "Kon lijst niet verwijderen.",
+  "@listCouldNotDelete": {
+    "description": "Snackbar when delete fails"
+  },
+  "listAddItemTo": "Item toevoegen aan {name}",
+  "@listAddItemTo": {
+    "description": "Dialog title for adding item",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "listItemName": "Itemnaam",
+  "@listItemName": {
+    "description": "Input label for item name"
+  },
+  "listCouldNotAddItem": "Kon item niet toevoegen.",
+  "@listCouldNotAddItem": {
+    "description": "Snackbar when adding item fails"
+  },
+  "listQuickAddItemTooltip": "Snel item toevoegen",
+  "@listQuickAddItemTooltip": {
+    "description": "Tooltip for quick-add button"
+  },
+  "listQuickAddItemSemantics": "Snel item toevoegen aan {name}",
+  "@listQuickAddItemSemantics": {
+    "description": "Semantics for quick-add",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "listOptionsTooltip": "Lijstopties",
+  "@listOptionsTooltip": {
+    "description": "Tooltip for list options menu"
+  },
+  "listDetailEditName": "Lijstnaam bewerken, {name}",
+  "@listDetailEditName": {
+    "description": "Semantics for editing list name",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "listDetailCloseSearch": "Zoeken sluiten",
+  "@listDetailCloseSearch": {
+    "description": "Tooltip to close search"
+  },
+  "listDetailSearchTooltip": "Zoeken",
+  "@listDetailSearchTooltip": {
+    "description": "Tooltip to open search"
+  },
+  "listDetailFilterLabel": "Items filteren",
+  "@listDetailFilterLabel": {
+    "description": "TextField label for filtering items"
+  },
+  "listDetailFilterHint": "Naam, bv. melk",
+  "@listDetailFilterHint": {
+    "description": "TextField hint for filtering items"
+  },
+  "listDetailAllCheckedOff": "Alles afgevinkt",
+  "@listDetailAllCheckedOff": {
+    "description": "Panel shown when all items are checked"
+  },
+  "listDetailClearChecked": "Afgevinkte wissen",
+  "@listDetailClearChecked": {
+    "description": "Button to clear checked items"
+  },
+  "listDetailCheckedOff": "Afgevinkt",
+  "@listDetailCheckedOff": {
+    "description": "Section header for completed items"
+  },
+  "listDetailNothingHere": "Nog niets hier",
+  "@listDetailNothingHere": {
+    "description": "Empty state when list has no items"
+  },
+  "listDetailNothingHereDesc": "Fotografeer een handgeschreven lijst, koelkastbriefje of screenshot. Wij halen de items eruit.",
+  "@listDetailNothingHereDesc": {
+    "description": "Description for empty list"
+  },
+  "listDetailScanThisList": "Scan deze lijst",
+  "@listDetailScanThisList": {
+    "description": "CTA to scan list content"
+  },
+  "listDetailTypeItem": "Typ een item",
+  "@listDetailTypeItem": {
+    "description": "CTA to type an item manually"
+  },
+  "listDetailNoMatch": "Geen items komen overeen met je filter",
+  "@listDetailNoMatch": {
+    "description": "Search empty result for items"
+  },
+  "listDetailCouldNotLoad": "Kon lijst niet laden.",
+  "@listDetailCouldNotLoad": {
+    "description": "Error when list fails to load"
+  },
+  "listDetailCouldNotUpdate": "Kon niet bijwerken. Probeer het opnieuw.",
+  "@listDetailCouldNotUpdate": {
+    "description": "Snackbar when update fails"
+  },
+  "listDetailCouldNotAddItem": "Kon item niet toevoegen. Probeer het opnieuw.",
+  "@listDetailCouldNotAddItem": {
+    "description": "Snackbar when adding item fails"
+  },
+  "listDetailCouldNotClear": "Kon items niet wissen. Probeer het opnieuw.",
+  "@listDetailCouldNotClear": {
+    "description": "Snackbar when clearing items fails"
+  },
+  "listDetailItemDeleted": "{name} verwijderd",
+  "@listDetailItemDeleted": {
+    "description": "Snackbar when item is deleted",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "listDetailCouldNotRestore": "Kon item niet herstellen.",
+  "@listDetailCouldNotRestore": {
+    "description": "Snackbar when restore fails"
+  },
+  "listDetailCouldNotReorder": "Kon items niet herordenen. Probeer het opnieuw.",
+  "@listDetailCouldNotReorder": {
+    "description": "Snackbar when reorder fails"
+  },
+  "listDetailItemsAdded": "{count, plural, =1{1 item toegevoegd aan lijst} other{{count} items toegevoegd aan lijst}}",
+  "@listDetailItemsAdded": {
+    "description": "Snackbar when items are scanned",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "listDetailCouldNotStartScan": "Kon scan niet starten. Probeer opnieuw.",
+  "@listDetailCouldNotStartScan": {
+    "description": "Snackbar when scan fails to start"
+  },
+  "listDetailSetPrice": "Prijs instellen",
+  "@listDetailSetPrice": {
+    "description": "Dialog title for setting item price"
+  },
+  "listDetailPriceInput": "Prijs",
+  "@listDetailPriceInput": {
+    "description": "Input label for price"
+  },
+  "listDetailPriceHint": "0,00",
+  "@listDetailPriceHint": {
+    "description": "Placeholder for price input"
+  },
+  "listDetailCouldNotSetPrice": "Kon prijs niet instellen.",
+  "@listDetailCouldNotSetPrice": {
+    "description": "Snackbar when price set fails"
+  },
+  "listDetailClearTitle": "Lijst wissen",
+  "@listDetailClearTitle": {
+    "description": "Dialog title for clearing list"
+  },
+  "listDetailClearBody": "Dit verwijdert alle {count} {count, plural, =1{item} other{items}}. Dit kan niet ongedaan worden gemaakt.",
+  "@listDetailClearBody": {
+    "description": "Dialog body for clearing list",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "listDetailClearConfirm": "Lijst wissen",
+  "@listDetailClearConfirm": {
+    "description": "Confirmation button to clear list"
+  },
+  "listDetailArchiveTitle": "Lijst archiveren",
+  "@listDetailArchiveTitle": {
+    "description": "Dialog title for archiving list"
+  },
+  "listDetailArchiveBody": "Deze lijst wordt verborgen voor je huishouden.",
+  "@listDetailArchiveBody": {
+    "description": "Dialog body for archiving list"
+  },
+  "listDetailFailedArchive": "Lijst archiveren mislukt.",
+  "@listDetailFailedArchive": {
+    "description": "Snackbar when archive fails"
+  },
+  "listDetailDeleteTitle": "Lijst verwijderen",
+  "@listDetailDeleteTitle": {
+    "description": "Dialog title for deleting list"
+  },
+  "listDetailDeleteBody": "Dit verwijdert deze lijst en al zijn items permanent. Dit kan niet ongedaan worden gemaakt.",
+  "@listDetailDeleteBody": {
+    "description": "Dialog body for deleting list"
+  },
+  "listDetailCouldNotDelete": "Kon lijst niet verwijderen.",
+  "@listDetailCouldNotDelete": {
+    "description": "Snackbar when delete fails"
+  },
+  "listDetailExpenseGenerated": "Uitgave aangemaakt",
+  "@listDetailExpenseGenerated": {
+    "description": "Snackbar when expense is created from list"
+  },
+  "listDetailCouldNotLoadCostSummary": "Kon kostenoverzicht niet laden.",
+  "@listDetailCouldNotLoadCostSummary": {
+    "description": "Snackbar when cost summary fails"
+  },
+  "listDetailCouldNotAddPhoto": "Kon foto niet toevoegen.",
+  "@listDetailCouldNotAddPhoto": {
+    "description": "Snackbar when photo add fails"
+  },
+  "listDetailCouldNotRemovePhoto": "Kon foto niet verwijderen.",
+  "@listDetailCouldNotRemovePhoto": {
+    "description": "Snackbar when photo remove fails"
+  },
+  "listDetailListImage": "Lijstafbeelding",
+  "@listDetailListImage": {
+    "description": "Semantics label for list image"
+  },
+  "listDetailCheckAll": "Alles aanvinken",
+  "@listDetailCheckAll": {
+    "description": "Menu item to check all items"
+  },
+  "listDetailUncheckAll": "Alles uitvinken",
+  "@listDetailUncheckAll": {
+    "description": "Menu item to uncheck all items"
+  },
+  "listDetailCostSummary": "Kostenoverzicht",
+  "@listDetailCostSummary": {
+    "description": "Menu item for cost summary"
+  },
+  "listDetailScanList": "Lijst scannen",
+  "@listDetailScanList": {
+    "description": "Tooltip to scan list"
+  },
+  "calendarAppBarTitle": "Kalender",
+  "@calendarAppBarTitle": {
+    "description": "AppBar title for calendar screen"
+  },
+  "calendarViewWeek": "Week",
+  "@calendarViewWeek": {
+    "description": "Toggle label for week view"
+  },
+  "calendarViewMonth": "Maand",
+  "@calendarViewMonth": {
+    "description": "Toggle label for month view"
+  },
+  "calendarViewAgenda": "Agenda",
+  "@calendarViewAgenda": {
+    "description": "Toggle label for agenda view"
+  },
+  "calendarWeekView": "Weekweergave",
+  "@calendarWeekView": {
+    "description": "Semantics: week view"
+  },
+  "calendarMonthView": "Maandweergave",
+  "@calendarMonthView": {
+    "description": "Semantics: month view"
+  },
+  "calendarAgendaView": "Agendaweergave",
+  "@calendarAgendaView": {
+    "description": "Semantics: agenda view"
+  },
+  "calendarPreviousWeek": "Vorige week",
+  "@calendarPreviousWeek": {
+    "description": "Tooltip for previous week"
+  },
+  "calendarNextWeek": "Volgende week",
+  "@calendarNextWeek": {
+    "description": "Tooltip for next week"
+  },
+  "calendarPreviousMonth": "Vorige maand",
+  "@calendarPreviousMonth": {
+    "description": "Tooltip for previous month"
+  },
+  "calendarNextMonth": "Volgende maand",
+  "@calendarNextMonth": {
+    "description": "Tooltip for next month"
+  },
+  "calendarMonthJanuary": "januari",
+  "@calendarMonthJanuary": {
+    "description": "Month name"
+  },
+  "calendarMonthFebruary": "februari",
+  "@calendarMonthFebruary": {
+    "description": "Month name"
+  },
+  "calendarMonthMarch": "maart",
+  "@calendarMonthMarch": {
+    "description": "Month name"
+  },
+  "calendarMonthApril": "april",
+  "@calendarMonthApril": {
+    "description": "Month name"
+  },
+  "calendarMonthMay": "mei",
+  "@calendarMonthMay": {
+    "description": "Month name"
+  },
+  "calendarMonthJune": "juni",
+  "@calendarMonthJune": {
+    "description": "Month name"
+  },
+  "calendarMonthJuly": "juli",
+  "@calendarMonthJuly": {
+    "description": "Month name"
+  },
+  "calendarMonthAugust": "augustus",
+  "@calendarMonthAugust": {
+    "description": "Month name"
+  },
+  "calendarMonthSeptember": "september",
+  "@calendarMonthSeptember": {
+    "description": "Month name"
+  },
+  "calendarMonthOctober": "oktober",
+  "@calendarMonthOctober": {
+    "description": "Month name"
+  },
+  "calendarMonthNovember": "november",
+  "@calendarMonthNovember": {
+    "description": "Month name"
+  },
+  "calendarMonthDecember": "december",
+  "@calendarMonthDecember": {
+    "description": "Month name"
+  },
+  "calendarShortMon": "Ma",
+  "@calendarShortMon": {
+    "description": "Monday header"
+  },
+  "calendarShortTue": "Di",
+  "@calendarShortTue": {
+    "description": "Tuesday header"
+  },
+  "calendarShortWed": "Wo",
+  "@calendarShortWed": {
+    "description": "Wednesday header"
+  },
+  "calendarShortThu": "Do",
+  "@calendarShortThu": {
+    "description": "Thursday header"
+  },
+  "calendarShortFri": "Vr",
+  "@calendarShortFri": {
+    "description": "Friday header"
+  },
+  "calendarShortSat": "Za",
+  "@calendarShortSat": {
+    "description": "Saturday header"
+  },
+  "calendarShortSun": "Zo",
+  "@calendarShortSun": {
+    "description": "Sunday header"
+  },
+  "calendarWeekdayMonday": "maandag",
+  "@calendarWeekdayMonday": {
+    "description": "Full weekday name"
+  },
+  "calendarWeekdayTuesday": "dinsdag",
+  "@calendarWeekdayTuesday": {
+    "description": "Full weekday name"
+  },
+  "calendarWeekdayWednesday": "woensdag",
+  "@calendarWeekdayWednesday": {
+    "description": "Full weekday name"
+  },
+  "calendarWeekdayThursday": "donderdag",
+  "@calendarWeekdayThursday": {
+    "description": "Full weekday name"
+  },
+  "calendarWeekdayFriday": "vrijdag",
+  "@calendarWeekdayFriday": {
+    "description": "Full weekday name"
+  },
+  "calendarWeekdaySaturday": "zaterdag",
+  "@calendarWeekdaySaturday": {
+    "description": "Full weekday name"
+  },
+  "calendarWeekdaySunday": "zondag",
+  "@calendarWeekdaySunday": {
+    "description": "Full weekday name"
+  },
+  "calendarToday": "Vandaag",
+  "@calendarToday": {
+    "description": "Today label"
+  },
+  "calendarDayLabel": "Dag {day}",
+  "@calendarDayLabel": {
+    "description": "Semantics: specific day",
+    "placeholders": {
+      "day": {
+        "type": "num"
+      }
+    }
+  },
+  "calendarNothingPlanned": "Niets gepland",
+  "@calendarNothingPlanned": {
+    "description": "Empty day text"
+  },
+  "calendarNothingAhead": "Niets vooruit",
+  "@calendarNothingAhead": {
+    "description": "Empty state when no events ahead"
+  },
+  "calendarNothingAheadDesc": "Aankomende klusjes, maaltijdplanningen en terugkerende uitgaven verschijnen hier.",
+  "@calendarNothingAheadDesc": {
+    "description": "Description when no events ahead"
+  },
+  "calendarAddChore": "Klus toevoegen",
+  "@calendarAddChore": {
+    "description": "Menu item to add chore from calendar"
+  },
+  "calendarAddExpense": "Uitgave toevoegen",
+  "@calendarAddExpense": {
+    "description": "Menu item to add expense from calendar"
+  },
+  "calendarViewInWeek": "Bekijk in week",
+  "@calendarViewInWeek": {
+    "description": "Menu item to navigate to week view"
+  },
+  "calendarEventMeal": "Maaltijd",
+  "@calendarEventMeal": {
+    "description": "Default event label: meal"
+  },
+  "calendarEventChore": "Klus",
+  "@calendarEventChore": {
+    "description": "Default event label: chore"
+  },
+  "calendarEventRecurring": "Terugkerend",
+  "@calendarEventRecurring": {
+    "description": "Default event label: recurring"
+  },
+  "calendarEventExpense": "Uitgave",
+  "@calendarEventExpense": {
+    "description": "Default event label: expense"
+  },
+  "calendarEventReminder": "Herinnering",
+  "@calendarEventReminder": {
+    "description": "Default event label: reminder"
+  },
+  "calendarServingsPpl": "{servings} pers. ",
+  "@calendarServingsPpl": {
+    "description": "Meal servings in calendar",
+    "placeholders": {
+      "servings": {
+        "type": "num"
+      }
+    }
+  },
+  "calendarNoHouseholdDesc": "Word lid of maak een huishouden om de kalender te bekijken",
+  "@calendarNoHouseholdDesc": {
+    "description": "No-household description for calendar"
+  },
+  "calendarCreateHousehold": "Huishouden aanmaken",
+  "@calendarCreateHousehold": {
+    "description": "CTA to create household"
+  },
+  "calendarWeekHeader": "{weekStart} – {weekEnd}",
+  "@calendarWeekHeader": {
+    "description": "Week range header",
+    "placeholders": {
+      "weekStart": {
+        "type": "String"
+      },
+      "weekEnd": {
+        "type": "String"
+      }
+    }
+  },
+  "calendarMonthHeader": "{month} {year}",
+  "@calendarMonthHeader": {
+    "description": "Month header label",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      },
+      "year": {
+        "type": "num"
+      }
+    }
+  },
+  "mealPlanAppBarTitle": "Maaltijdplanning",
+  "@mealPlanAppBarTitle": {
+    "description": "AppBar title for meal plan screen"
+  },
+  "mealPlanGenerateShoppingList": "Boodschappenlijst genereren",
+  "@mealPlanGenerateShoppingList": {
+    "description": "Tooltip for generating shopping list"
+  },
+  "mealPlanPreviousWeek": "Vorige week",
+  "@mealPlanPreviousWeek": {
+    "description": "Tooltip for previous week"
+  },
+  "mealPlanNextWeek": "Volgende week",
+  "@mealPlanNextWeek": {
+    "description": "Tooltip for next week"
+  },
+  "mealPlanBreakfast": "Ontbijt",
+  "@mealPlanBreakfast": {
+    "description": "Meal slot: breakfast"
+  },
+  "mealPlanLunch": "Lunch",
+  "@mealPlanLunch": {
+    "description": "Meal slot: lunch"
+  },
+  "mealPlanDinner": "Avondeten",
+  "@mealPlanDinner": {
+    "description": "Meal slot: dinner"
+  },
+  "mealPlanAddMeal": "Maaltijd toevoegen",
+  "@mealPlanAddMeal": {
+    "description": "CTA for empty meal slot"
+  },
+  "mealPlanRecipeFallback": "Recept",
+  "@mealPlanRecipeFallback": {
+    "description": "Fallback title when recipe name missing"
+  },
+  "mealPlanServings": "{servings}p",
+  "@mealPlanServings": {
+    "description": "Compact servings display",
+    "placeholders": {
+      "servings": {
+        "type": "num"
+      }
+    }
+  },
+  "mealPlanShoppingListCreated": "Boodschappenlijst aangemaakt met {count} items",
+  "@mealPlanShoppingListCreated": {
+    "description": "Snackbar when shopping list is created",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "mealPlanTrackCosts": "Kosten bijhouden",
+  "@mealPlanTrackCosts": {
+    "description": "Snackbar action to navigate to money"
+  },
+  "mealPlanCouldNotAdd": "Kon maaltijd niet toevoegen.",
+  "@mealPlanCouldNotAdd": {
+    "description": "Snackbar when adding meal fails"
+  },
+  "mealPlanCouldNotRemove": "Kon maaltijd niet verwijderen.",
+  "@mealPlanCouldNotRemove": {
+    "description": "Snackbar when removing meal fails"
+  },
+  "mealPlanCouldNotUpdate": "Kon maaltijd niet bijwerken.",
+  "@mealPlanCouldNotUpdate": {
+    "description": "Snackbar when updating meal fails"
+  },
+  "mealPlanPickRecipe": "Kies een recept",
+  "@mealPlanPickRecipe": {
+    "description": "Bottom sheet title for recipe picker"
+  },
+  "mealPlanCouldNotLoadRecipes": "Kon recepten niet laden",
+  "@mealPlanCouldNotLoadRecipes": {
+    "description": "Error when recipes fail to load"
+  },
+  "mealPlanNoRecipes": "Nog geen recepten",
+  "@mealPlanNoRecipes": {
+    "description": "Empty state when no recipes exist"
+  },
+  "mealPlanAddRecipesDesc": "Voeg recepten toe om maaltijden te plannen",
+  "@mealPlanAddRecipesDesc": {
+    "description": "Description when no recipes"
+  },
+  "mealPlanSearchRecipes": "Recepten zoeken...",
+  "@mealPlanSearchRecipes": {
+    "description": "Search field hint in recipe picker"
+  },
+  "mealPlanNoMatch": "Geen recepten komen overeen met \"{query}\"",
+  "@mealPlanNoMatch": {
+    "description": "No search results in recipe picker",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "mealPlanServingsSheet": "Porties",
+  "@mealPlanServingsSheet": {
+    "description": "Bottom sheet title for servings adjustment"
+  },
+  "mealPlanFewerServings": "Minder porties",
+  "@mealPlanFewerServings": {
+    "description": "Tooltip to reduce servings"
+  },
+  "mealPlanMoreServings": "Meer porties",
+  "@mealPlanMoreServings": {
+    "description": "Tooltip to increase servings"
+  },
+  "mealPlanOpenRecipe": "Open recept voor {slot}",
+  "@mealPlanOpenRecipe": {
+    "description": "Semantics: open planned recipe",
+    "placeholders": {
+      "slot": {
+        "type": "String"
+      }
+    }
+  },
+  "mealPlanAddMealFor": "Maaltijd toevoegen voor {slot}",
+  "@mealPlanAddMealFor": {
+    "description": "Semantics: add meal to slot",
+    "placeholders": {
+      "slot": {
+        "type": "String"
+      }
+    }
+  },
+  "accountAppBarTitle": "Jij",
+  "@accountAppBarTitle": {
+    "description": "AppBar title for account/profile screen"
+  },
+  "accountFailedLoadProfile": "Profiel laden mislukt. Probeer het opnieuw.",
+  "@accountFailedLoadProfile": {
+    "description": "Error when profile fails to load"
+  },
+  "accountFailedSaveName": "Naam opslaan mislukt",
+  "@accountFailedSaveName": {
+    "description": "Error when name save fails"
+  },
+  "accountEditYourName": "Je naam bewerken",
+  "@accountEditYourName": {
+    "description": "Semantics: edit name field"
+  },
+  "accountChangePassword": "Wachtwoord wijzigen",
+  "@accountChangePassword": {
+    "description": "Bottom sheet title for password change"
+  },
+  "accountFillPasswordFields": "Vul alle wachtwoordvelden in.",
+  "@accountFillPasswordFields": {
+    "description": "Validation: all password fields required"
+  },
+  "accountPasswordMinLength": "Nieuw wachtwoord moet minstens 6 tekens bevatten.",
+  "@accountPasswordMinLength": {
+    "description": "Validation: password too short"
+  },
+  "accountPasswordsMismatch": "Nieuwe wachtwoorden komen niet overeen.",
+  "@accountPasswordsMismatch": {
+    "description": "Validation: passwords don't match"
+  },
+  "accountPasswordChanged": "Wachtwoord gewijzigd",
+  "@accountPasswordChanged": {
+    "description": "Snackbar when password is changed"
+  },
+  "accountCurrentPassword": "Huidig wachtwoord",
+  "@accountCurrentPassword": {
+    "description": "Input label for current password"
+  },
+  "accountNewPassword": "Nieuw wachtwoord",
+  "@accountNewPassword": {
+    "description": "Input label for new password"
+  },
+  "accountConfirmPassword": "Bevestig nieuw wachtwoord",
+  "@accountConfirmPassword": {
+    "description": "Input label for confirm password"
+  },
+  "accountChangePasswordButton": "Wachtwoord wijzigen",
+  "@accountChangePasswordButton": {
+    "description": "Button text to change password"
+  },
+  "accountTermsTitle": "Servicevoorwaarden",
+  "@accountTermsTitle": {
+    "description": "Bottom sheet title for terms"
+  },
+  "accountTermsBody": "Gebruik mitlist verantwoord en respecteer de privacy van je huisgenoten. Misbruik gedeelde functies of gegevens niet. mitlist wordt aangeboden zonder garanties.",
+  "@accountTermsBody": {
+    "description": "Terms of service body text"
+  },
+  "accountDeleteAccount": "Account verwijderen",
+  "@accountDeleteAccount": {
+    "description": "Dialog title for account deletion"
+  },
+  "accountDeleteAccountBody": "Dit verwijdert je account en alle bijbehorende gegevens permanent. Dit kan niet ongedaan worden gemaakt.",
+  "@accountDeleteAccountBody": {
+    "description": "Dialog body for account deletion"
+  },
+  "accountLogOut": "Uitloggen",
+  "@accountLogOut": {
+    "description": "Button to log out"
+  },
+  "accountDeleteAccountButton": "Account verwijderen",
+  "@accountDeleteAccountButton": {
+    "description": "Button to delete your account"
+  },
+  "accountHouseholdSection": "Huishouden",
+  "@accountHouseholdSection": {
+    "description": "Section title for household info"
+  },
+  "accountSwitchToHousehold": "Wissel naar {name}",
+  "@accountSwitchToHousehold": {
+    "description": "Semantics for household switch",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "accountNotificationInbox": "Notificatie-inbox",
+  "@accountNotificationInbox": {
+    "description": "Menu row: notification inbox"
+  },
+  "accountNotificationPreferences": "Notificatievoorkeuren",
+  "@accountNotificationPreferences": {
+    "description": "Menu row: notification preferences"
+  },
+  "accountAppearance": "Weergave",
+  "@accountAppearance": {
+    "description": "Menu row: appearance settings"
+  },
+  "accountAppearanceSystem": "Systeem",
+  "@accountAppearanceSystem": {
+    "description": "Theme option: follow system"
+  },
+  "accountAppearanceLight": "Licht",
+  "@accountAppearanceLight": {
+    "description": "Theme option: light mode"
+  },
+  "accountAppearanceDark": "Donker",
+  "@accountAppearanceDark": {
+    "description": "Theme option: dark mode"
+  },
+  "accountChangePasswordRow": "Wachtwoord wijzigen",
+  "@accountChangePasswordRow": {
+    "description": "Menu row: change password"
+  },
+  "accountVersion": "Versie",
+  "@accountVersion": {
+    "description": "Menu row: app version"
+  },
+  "accountTermsRow": "Servicevoorwaarden",
+  "@accountTermsRow": {
+    "description": "Menu row: terms of service"
+  },
+  "accountGuestTitle": "Je gebruikt een gastaccount",
+  "@accountGuestTitle": {
+    "description": "Card title for guest account status"
+  },
+  "accountGuestDesc": "Maak een volledig account om je gegevens permanent te bewaren en toegang te krijgen tot alle functies.",
+  "@accountGuestDesc": {
+    "description": "Description for guest account upgrade"
+  },
+  "accountCreateFullAccount": "Volledig account aanmaken",
+  "@accountCreateFullAccount": {
+    "description": "Button to upgrade from guest"
+  },
+  "accountExportCSV": "Uitgaven exporteren (CSV)",
+  "@accountExportCSV": {
+    "description": "Menu row: export expenses as CSV"
+  },
+  "accountShareJSON": "Uitgaven delen (JSON)",
+  "@accountShareJSON": {
+    "description": "Menu row: share expenses as JSON"
+  },
+  "accountCopyJSON": "Uitgaven kopiëren (JSON)",
+  "@accountCopyJSON": {
+    "description": "Menu row: copy expenses JSON"
+  },
+  "accountJSONCopied": "Uitgaven JSON gekopieerd naar klembord",
+  "@accountJSONCopied": {
+    "description": "Snackbar when JSON is copied"
+  },
+  "accountCreateAccountTitle": "Maak je account",
+  "@accountCreateAccountTitle": {
+    "description": "Bottom sheet title for account creation"
+  },
+  "accountFillAllFields": "Vul alle velden in.",
+  "@accountFillAllFields": {
+    "description": "Validation: all fields required"
+  },
+  "accountYourName": "Je naam",
+  "@accountYourName": {
+    "description": "Input label for name"
+  },
+  "accountYourNameHint": "bv. Jan Jansen",
+  "@accountYourNameHint": {
+    "description": "Placeholder for name input"
+  },
+  "accountEmail": "E-mail",
+  "@accountEmail": {
+    "description": "Input label for email"
+  },
+  "accountEmailHint": "jij@voorbeeld.nl",
+  "@accountEmailHint": {
+    "description": "Placeholder for email input"
+  },
+  "accountPassword": "Wachtwoord",
+  "@accountPassword": {
+    "description": "Input label for password"
+  },
+  "accountCreatingAccount": "Account aanmaken…",
+  "@accountCreatingAccount": {
+    "description": "Button text while creating account"
+  },
+  "accountCreateAccount": "Account aanmaken",
+  "@accountCreateAccount": {
+    "description": "Button to submit account creation"
+  },
+  "accountCreatedWelcome": "Account aangemaakt. Welkom!",
+  "@accountCreatedWelcome": {
+    "description": "Snackbar after account creation"
+  },
+  "notificationsAppBarTitle": "Notificaties",
+  "@notificationsAppBarTitle": {
+    "description": "AppBar title for notifications screen"
+  },
+  "notificationsMarkAllRead": "Alles als gelezen markeren",
+  "@notificationsMarkAllRead": {
+    "description": "Button to mark all notifications read"
+  },
+  "notificationsFailedLoad": "Notificaties laden mislukt.",
+  "@notificationsFailedLoad": {
+    "description": "Error when notifications fail to load"
+  },
+  "notificationsFailedLoadMore": "Meer notificaties laden mislukt.",
+  "@notificationsFailedLoadMore": {
+    "description": "Error when notification pagination fails"
+  },
+  "notificationsFailedMarkAllRead": "Alles als gelezen markeren mislukt.",
+  "@notificationsFailedMarkAllRead": {
+    "description": "Error when mark-all-read fails"
+  },
+  "notificationsFailedMarkRead": "Als gelezen markeren mislukt.",
+  "@notificationsFailedMarkRead": {
+    "description": "Error when marking single notification fails"
+  },
+  "notificationsNoHouseholdDesc": "Maak of word lid van een huishouden om notificaties te ontvangen.",
+  "@notificationsNoHouseholdDesc": {
+    "description": "No-household description for notifications"
+  },
+  "notificationsNoNotifications": "Nog geen notificaties",
+  "@notificationsNoNotifications": {
+    "description": "Empty state when no notifications"
+  },
+  "notificationsNoNotificationsDesc": "Wanneer iemand een klus toevoegt, een rekening splitst of je vermeldt, verschijnt het hier.",
+  "@notificationsNoNotificationsDesc": {
+    "description": "Description for empty notifications"
+  },
+  "notificationsUnreadLabel": "Ongelezen, {title}",
+  "@notificationsUnreadLabel": {
+    "description": "Semantics label for unread notification",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notifPrefAppBarTitle": "Notificatievoorkeuren",
+  "@notifPrefAppBarTitle": {
+    "description": "AppBar title for notification preferences"
+  },
+  "notifPrefFailedLoad": "Notificatievoorkeuren laden mislukt.",
+  "@notifPrefFailedLoad": {
+    "description": "Error when preferences fail to load"
+  },
+  "notifPrefNoHouseholdDesc": "Word lid of maak een huishouden om notificatievoorkeuren te configureren.",
+  "@notifPrefNoHouseholdDesc": {
+    "description": "No-household description for preferences"
+  },
+  "notifPrefNoPreferences": "Nog geen voorkeuren",
+  "@notifPrefNoPreferences": {
+    "description": "Empty state when no preferences"
+  },
+  "notifPrefNoPreferencesDesc": "Voorkeuren worden aangemaakt wanneer je lid wordt van een huishouden. Als je net lid bent geworden, zouden ze snel moeten verschijnen.",
+  "@notifPrefNoPreferencesDesc": {
+    "description": "Description for empty preferences"
+  },
+  "notifPrefGroupName": "Notificaties",
+  "@notifPrefGroupName": {
+    "description": "Fallback group name for preferences"
+  },
+  "notifPrefChoreDueReminders": "Klus-herinneringen",
+  "@notifPrefChoreDueReminders": {
+    "description": "Toggle label for chore due reminders"
+  },
+  "notifPrefChoreDueRemindersDesc": "Wanneer een klus eraan komt",
+  "@notifPrefChoreDueRemindersDesc": {
+    "description": "Toggle subtitle for chore due reminders"
+  },
+  "notifPrefChoreDueDayOf": "Klus op de dag zelf",
+  "@notifPrefChoreDueDayOf": {
+    "description": "Toggle label for day-of chore reminders"
+  },
+  "notifPrefChoreDueDayOfDesc": "Op de dag dat een klus moet gebeuren",
+  "@notifPrefChoreDueDayOfDesc": {
+    "description": "Toggle subtitle for day-of chore reminders"
+  },
+  "notifPrefListItemAdded": "Lijstitem toegevoegd",
+  "@notifPrefListItemAdded": {
+    "description": "Toggle label for list item notifications"
+  },
+  "notifPrefListItemAddedDesc": "Wanneer iemand iets aan een gedeelde lijst toevoegt",
+  "@notifPrefListItemAddedDesc": {
+    "description": "Toggle subtitle for list item notifications"
+  },
+  "notifPrefExpenseCreated": "Uitgave aangemaakt",
+  "@notifPrefExpenseCreated": {
+    "description": "Toggle label for expense notifications"
+  },
+  "notifPrefExpenseCreatedDesc": "Wanneer een nieuwe uitgave wordt geregistreerd",
+  "@notifPrefExpenseCreatedDesc": {
+    "description": "Toggle subtitle for expense notifications"
+  },
+  "notifPrefMealPlanChanged": "Maaltijdplanning gewijzigd",
+  "@notifPrefMealPlanChanged": {
+    "description": "Toggle label for meal plan notifications"
+  },
+  "notifPrefMealPlanChangedDesc": "Wanneer de maaltijdplanning wordt bijgewerkt",
+  "@notifPrefMealPlanChangedDesc": {
+    "description": "Toggle subtitle for meal plan notifications"
+  },
+  "notifPrefWeeklyDigest": "Wekelijkse samenvatting",
+  "@notifPrefWeeklyDigest": {
+    "description": "Toggle label for weekly digest"
+  },
+  "notifPrefWeeklyDigestDesc": "Een overzicht van huishoudactiviteit",
+  "@notifPrefWeeklyDigestDesc": {
+    "description": "Toggle subtitle for weekly digest"
+  },
+  "notifPrefPinwallReminders": "Prikbord-herinneringen",
+  "@notifPrefPinwallReminders": {
+    "description": "Toggle label for pinwall reminders"
+  },
+  "notifPrefPinwallRemindersDesc": "Wanneer iemand een herinnering voor later vastzet",
+  "@notifPrefPinwallRemindersDesc": {
+    "description": "Toggle subtitle for pinwall reminders"
+  },
+  "notifPrefPushNotifications": "Push-notificaties",
+  "@notifPrefPushNotifications": {
+    "description": "Toggle label for push notifications"
+  },
+  "notifPrefPushNotificationsDesc": "Ontvang notificaties op dit apparaat",
+  "@notifPrefPushNotificationsDesc": {
+    "description": "Toggle subtitle for push notifications"
+  },
+  "shoppingTripAppBarTitle": "Boodschappentocht",
+  "@shoppingTripAppBarTitle": {
+    "description": "AppBar title for shopping trip"
+  },
+  "shoppingTripChooseStore": "Kies winkel",
+  "@shoppingTripChooseStore": {
+    "description": "Tooltip to pick a store"
+  },
+  "shoppingTripNoLists": "Nog geen lijsten",
+  "@shoppingTripNoLists": {
+    "description": "Empty state when no lists"
+  },
+  "shoppingTripNoListsDesc": "Maak een boodschappenlijst om een tocht te starten",
+  "@shoppingTripNoListsDesc": {
+    "description": "Description when no lists"
+  },
+  "shoppingTripAllCaughtUp": "Helemaal bij",
+  "@shoppingTripAllCaughtUp": {
+    "description": "Empty state when no open items"
+  },
+  "shoppingTripAllCaughtUpDesc": "Geen open items in je lijsten. Voeg items toe aan een lijst om ze hier te zien.",
+  "@shoppingTripAllCaughtUpDesc": {
+    "description": "Description when all caught up"
+  },
+  "shoppingTripSortedByAisles": "Gesorteerd op winkelpaden",
+  "@shoppingTripSortedByAisles": {
+    "description": "Default aisle sorting label"
+  },
+  "shoppingTripSortedByStoreAisles": "Gesorteerd op {store} paden",
+  "@shoppingTripSortedByStoreAisles": {
+    "description": "Store-specific aisle sorting label",
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "shoppingTripMarkDone": "Markeren als gedaan",
+  "@shoppingTripMarkDone": {
+    "description": "Button to mark item as purchased"
+  },
+  "shoppingTripBasketBar": "/ {collected} verzameld{price}",
+  "@shoppingTripBasketBar": {
+    "description": "Basket bar: collected count and price",
+    "placeholders": {
+      "collected": {
+        "type": "num"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "shoppingTripItemsWorthDone": "{amount} aan artikelen gemarkeerd als gedaan",
+  "@shoppingTripItemsWorthDone": {
+    "description": "Snackbar when items are checked off with prices",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "shoppingTripAddExpense": "Uitgave toevoegen",
+  "@shoppingTripAddExpense": {
+    "description": "Snackbar action to create expense"
+  },
+  "shoppingTripStampDone": "KLAAR",
+  "@shoppingTripStampDone": {
+    "description": "Stamp text when shopping complete"
+  },
+  "shoppingTripStampItems": "{count, plural, =1{1 item} other{{count} items}}",
+  "@shoppingTripStampItems": {
+    "description": "Stamp item count",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "shoppingTripFallbackList": "Lijst",
+  "@shoppingTripFallbackList": {
+    "description": "Fallback list name"
+  },
+  "shoppingTripMarkNotPurchased": "Markeer {item} als niet gekocht",
+  "@shoppingTripMarkNotPurchased": {
+    "description": "Toggle item to not purchased",
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "shoppingTripMarkPurchased": "Markeer {item} als gekocht",
+  "@shoppingTripMarkPurchased": {
+    "description": "Toggle item to purchased",
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "scannerAppBarTitle": "Scanner",
+  "@scannerAppBarTitle": {
+    "description": "AppBar title for scanner screen"
+  },
+  "scannerShoppingAt": "Winkelen bij",
+  "@scannerShoppingAt": {
+    "description": "Label for store picker"
+  },
+  "scannerChooseStore": "Kies je winkel",
+  "@scannerChooseStore": {
+    "description": "Placeholder for store picker"
+  },
+  "scannerHintText": "Scan een bon, lijst, recept,\nof klus-herinnering",
+  "@scannerHintText": {
+    "description": "Placeholder describing scan capabilities"
+  },
+  "scannerAnalyzing": "Analyseren…",
+  "@scannerAnalyzing": {
+    "description": "Text shown while AI is analyzing image"
+  },
+  "scannerScanGrocery": "Boodschappenlijst scannen",
+  "@scannerScanGrocery": {
+    "description": "Button to scan as grocery list"
+  },
+  "scannerScanReceipt": "Bon, recept of klus scannen",
+  "@scannerScanReceipt": {
+    "description": "Button to scan as receipt/etc"
+  },
+  "scannerAnalyzeThis": "Deze afbeelding analyseren",
+  "@scannerAnalyzeThis": {
+    "description": "Button to analyze selected image"
+  },
+  "scannerTakeOrChoose": "Maak een foto of kies er een",
+  "@scannerTakeOrChoose": {
+    "description": "Button prompt when no image selected"
+  },
+  "scannerPickDifferent": "Kies andere afbeelding",
+  "@scannerPickDifferent": {
+    "description": "Button to change image"
+  },
+  "scannerScanSheetTitle": "Boodschappenlijst scannen",
+  "@scannerScanSheetTitle": {
+    "description": "Bottom sheet title for scan start"
+  },
+  "scannerAddScanTitle": "Scan toevoegen",
+  "@scannerAddScanTitle": {
+    "description": "Alternate bottom sheet title for scan"
+  },
+  "scannerTakePhoto": "Foto maken",
+  "@scannerTakePhoto": {
+    "description": "Option to take a photo"
+  },
+  "scannerChooseFromGallery": "Kies uit galerij",
+  "@scannerChooseFromGallery": {
+    "description": "Option to pick from gallery"
+  },
+  "scannerTypeReceipt": "Bon",
+  "@scannerTypeReceipt": {
+    "description": "Scan type label: receipt"
+  },
+  "scannerTypeShoppingList": "Boodschappenlijst",
+  "@scannerTypeShoppingList": {
+    "description": "Scan type label: shopping list"
+  },
+  "scannerTypeRecipe": "Recept",
+  "@scannerTypeRecipe": {
+    "description": "Scan type label: recipe"
+  },
+  "scannerTypeChore": "Klus",
+  "@scannerTypeChore": {
+    "description": "Scan type label: chore"
+  },
+  "scannerDetectedType": "Gedetecteerd: {type}",
+  "@scannerDetectedType": {
+    "description": "Label showing detected scan type",
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "scannerItemCount": "{count, plural, =1{{count} item} other{{count} items}}",
+  "@scannerItemCount": {
+    "description": "Item count in scan result",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "scannerAndMore": "…en nog {count}",
+  "@scannerAndMore": {
+    "description": "Truncation indicator for long item list",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "scannerStepCount": "{count, plural, =1{{count} stap} other{{count} stappen}}",
+  "@scannerStepCount": {
+    "description": "Step count in scan result",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "scannerTotal": "Totaal: {amount}",
+  "@scannerTotal": {
+    "description": "Total amount in scan result",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "scannerAddToLists": "Aan lijsten toevoegen",
+  "@scannerAddToLists": {
+    "description": "Action: add scan to lists"
+  },
+  "scannerCreateExpense": "Uitgave aanmaken",
+  "@scannerCreateExpense": {
+    "description": "Action: create expense from scan"
+  },
+  "scannerCreateRecipe": "Recept aanmaken",
+  "@scannerCreateRecipe": {
+    "description": "Action: create recipe from scan"
+  },
+  "scannerCreateChore": "Klus aanmaken",
+  "@scannerCreateChore": {
+    "description": "Action: create chore from scan"
+  },
+  "scannerUseThis": "Gebruik dit",
+  "@scannerUseThis": {
+    "description": "Action: use scan result"
+  },
+  "scannerScanAgain": "Opnieuw scannen",
+  "@scannerScanAgain": {
+    "description": "Button to scan another item"
+  },
+  "smartCaptureBack": "Terug",
+  "@smartCaptureBack": {
+    "description": "Back button tooltip"
+  },
+  "smartCaptureShowEnhanced": "Toon verbeterd",
+  "@smartCaptureShowEnhanced": {
+    "description": "Toggle to show enhanced image"
+  },
+  "smartCaptureOriginal": "Origineel",
+  "@smartCaptureOriginal": {
+    "description": "Toggle to show original image"
+  },
+  "smartCaptureUseAnyway": "Toch gebruiken",
+  "@smartCaptureUseAnyway": {
+    "description": "Button to accept imperfect capture"
+  },
+  "smartCaptureUseScan": "Scan gebruiken",
+  "@smartCaptureUseScan": {
+    "description": "Button to use the capture"
+  },
+  "smartCaptureRetake": "Opnieuw",
+  "@smartCaptureRetake": {
+    "description": "Button to retake the photo"
+  },
+  "smartCaptureReady": "Klaar",
+  "@smartCaptureReady": {
+    "description": "Quality label: ready"
+  },
+  "smartCaptureUsable": "Bruikbaar",
+  "@smartCaptureUsable": {
+    "description": "Quality label: usable"
+  },
+  "smartCaptureRetakeSuggested": "Opnieuw aanbevolen",
+  "@smartCaptureRetakeSuggested": {
+    "description": "Quality label: retake suggested"
+  },
+  "liveSmartCaptureNoCamera": "Geen camera beschikbaar.",
+  "@liveSmartCaptureNoCamera": {
+    "description": "Error when camera is unavailable"
+  },
+  "liveSmartCaptureCouldNotOpen": "Kon de camera niet openen.",
+  "@liveSmartCaptureCouldNotOpen": {
+    "description": "Error when camera fails to open"
+  },
+  "liveSmartCaptureFrameList": "Kader de lijst",
+  "@liveSmartCaptureFrameList": {
+    "description": "Hint text for camera framing"
+  },
+  "liveSmartCaptureCameraUnavailable": "Camera niet beschikbaar",
+  "@liveSmartCaptureCameraUnavailable": {
+    "description": "Fallback error when camera is missing"
+  },
+  "liveSmartCaptureGallery": "Galerij",
+  "@liveSmartCaptureGallery": {
+    "description": "Button to pick from gallery"
+  },
+  "liveSmartCaptureScan": "Scannen",
+  "@liveSmartCaptureScan": {
+    "description": "Button to scan/capture"
+  },
+  "liveSmartCaptureCouldNotCapture": "Kon die foto niet vastleggen.",
+  "@liveSmartCaptureCouldNotCapture": {
+    "description": "Error when photo capture fails"
+  },
+  "scanReviewAddToList": "Toevoegen aan {list}",
+  "@scanReviewAddToList": {
+    "description": "AppBar title when adding to list",
+    "placeholders": {
+      "list": {
+        "type": "String"
+      }
+    }
+  },
+  "scanReviewReviewItems": "Items beoordelen",
+  "@scanReviewReviewItems": {
+    "description": "AppBar title when reviewing items"
+  },
+  "scanReviewAcceptAll": "Alles accepteren ({count})",
+  "@scanReviewAcceptAll": {
+    "description": "Button to accept all scanned items",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "scanReviewStoreLabel": "Winkel:",
+  "@scanReviewStoreLabel": {
+    "description": "Store label prefix"
+  },
+  "scanReviewYouMightNeed": "Misschien ook nodig",
+  "@scanReviewYouMightNeed": {
+    "description": "Section label for suggestions"
+  },
+  "scanReviewIgnored": "Genegeerd",
+  "@scanReviewIgnored": {
+    "description": "Section label for ignored items"
+  },
+  "scanReviewNewList": "Nieuwe lijst",
+  "@scanReviewNewList": {
+    "description": "Bottom sheet title for new list creation"
+  },
+  "scanReviewAddToWhichList": "Aan welke lijst toevoegen?",
+  "@scanReviewAddToWhichList": {
+    "description": "Bottom sheet title for list picker"
+  },
+  "scanReviewNewListOption": "Nieuwe lijst…",
+  "@scanReviewNewListOption": {
+    "description": "Option to create a new list"
+  },
+  "scanReviewScannedList": "Gescande lijst",
+  "@scanReviewScannedList": {
+    "description": "Default name for a scanned list"
+  },
+  "scanReviewCreateList": "Lijst aanmaken",
+  "@scanReviewCreateList": {
+    "description": "Button to create the new list"
+  },
+  "scanReviewAdding": "Toevoegen…",
+  "@scanReviewAdding": {
+    "description": "Button text while adding items"
+  },
+  "scanReviewRemoveItem": "Verwijder {item}",
+  "@scanReviewRemoveItem": {
+    "description": "Semantics: remove scanned item",
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "scanReviewRestore": "Herstellen",
+  "@scanReviewRestore": {
+    "description": "Button to restore an ignored item"
+  },
+  "scanReviewEditItem": "Item bewerken",
+  "@scanReviewEditItem": {
+    "description": "Bottom sheet title for editing item"
+  },
+  "scanReviewOCRSaw": "OCR zag: \"{text}\"",
+  "@scanReviewOCRSaw": {
+    "description": "Original OCR text for reference",
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "scanReviewItemName": "Itemnaam",
+  "@scanReviewItemName": {
+    "description": "Input label for item name"
+  },
+  "scanReviewQty": "Aant.",
+  "@scanReviewQty": {
+    "description": "Input label for quantity"
+  },
+  "scanReviewUnit": "Eenheid",
+  "@scanReviewUnit": {
+    "description": "Input label for unit"
+  },
+  "scanReviewDidYouMean": "Bedoelde je?",
+  "@scanReviewDidYouMean": {
+    "description": "Label for alternative suggestions"
+  },
+  "shareTargetAppBarTitle": "Opslaan in mitlist",
+  "@shareTargetAppBarTitle": {
+    "description": "AppBar title for share target screen"
+  },
+  "shareTargetSharedText": "Gedeelde tekst",
+  "@shareTargetSharedText": {
+    "description": "TextField label for shared content"
+  },
+  "shareTargetPasteHint": "Plak of typ de gedeelde tekst hier…",
+  "@shareTargetPasteHint": {
+    "description": "TextField hint for shared content"
+  },
+  "shareTargetAddPhotos": "Foto's toevoegen",
+  "@shareTargetAddPhotos": {
+    "description": "Button to add photos"
+  },
+  "shareTargetPhotosAdded": "{count, plural, =1{1 foto toegevoegd} other{{count} foto's toegevoegd}}",
+  "@shareTargetPhotosAdded": {
+    "description": "Button text showing photo count",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "shareTargetPreviewPlaceholder": "Plak hier nu tekst, of stuur inhoud vanuit de deel-extensie wanneer die integratie beschikbaar is.",
+  "@shareTargetPreviewPlaceholder": {
+    "description": "Preview placeholder text"
+  },
+  "shareTargetDestLists": "Lijsten",
+  "@shareTargetDestLists": {
+    "description": "Destination option: lists"
+  },
+  "shareTargetDestListsDesc": "Opslaan in een boodschappen- of te-doenlijst",
+  "@shareTargetDestListsDesc": {
+    "description": "Description for lists destination"
+  },
+  "shareTargetDestPinwall": "Prikbord",
+  "@shareTargetDestPinwall": {
+    "description": "Destination option: pinwall"
+  },
+  "shareTargetDestPinwallDesc": "Plaats een notitie (en optionele foto's) voor je huishouden",
+  "@shareTargetDestPinwallDesc": {
+    "description": "Description for pinwall destination"
+  },
+  "shareTargetDestRecipes": "Recepten",
+  "@shareTargetDestRecipes": {
+    "description": "Destination option: recipes"
+  },
+  "shareTargetDestRecipesDesc": "Toevoegen aan opgeslagen recepten",
+  "@shareTargetDestRecipesDesc": {
+    "description": "Description for recipes destination"
+  },
+  "shareTargetSelectHousehold": "Selecteer huishouden",
+  "@shareTargetSelectHousehold": {
+    "description": "Bottom sheet title for household picker"
+  },
+  "shareTargetSaved": "Opgeslagen",
+  "@shareTargetSaved": {
+    "description": "Snackbar when content is saved"
+  },
+  "shareTargetFailedSave": "Opslaan mislukt. Probeer het opnieuw.",
+  "@shareTargetFailedSave": {
+    "description": "Error when save fails"
+  },
+  "shareTargetValidationText": "Plak of typ iets om op te slaan.",
+  "@shareTargetValidationText": {
+    "description": "Validation: content required"
+  },
+  "shareTargetValidationNote": "Voeg een notitie of minstens één foto toe.",
+  "@shareTargetValidationNote": {
+    "description": "Validation: note or photo required"
+  },
+  "shareTargetValidationHousehold": "Maak of word eerst lid van een huishouden.",
+  "@shareTargetValidationHousehold": {
+    "description": "Validation: household required"
+  },
+  "expenseCreationTitle": "Uitgave toevoegen",
+  "@expenseCreationTitle": {
+    "description": "Bottom sheet title for expense creation"
+  },
+  "expenseCreationAmountHint": "0,00",
+  "@expenseCreationAmountHint": {
+    "description": "Placeholder for amount input"
+  },
+  "expenseCreationRateHint": "Koers: 1 {currency} = ? {groupCurrency}",
+  "@expenseCreationRateHint": {
+    "description": "Placeholder for FX rate input",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      },
+      "groupCurrency": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationWhatsItFor": "Waar is dit voor?",
+  "@expenseCreationWhatsItFor": {
+    "description": "Placeholder for expense description"
+  },
+  "expenseCreationNotesHint": "Notities (optioneel)",
+  "@expenseCreationNotesHint": {
+    "description": "Placeholder for optional notes"
+  },
+  "expenseCreationDateLabel": "Uitgavedatum. Tik om te wijzigen.",
+  "@expenseCreationDateLabel": {
+    "description": "Semantics label for date picker"
+  },
+  "expenseCreationReceiptButton": "Bon",
+  "@expenseCreationReceiptButton": {
+    "description": "Button text for receipt scan"
+  },
+  "expenseCreationScanning": "Scannen…",
+  "@expenseCreationScanning": {
+    "description": "Button text while scanning receipt"
+  },
+  "expenseCreationScanButton": "Scannen",
+  "@expenseCreationScanButton": {
+    "description": "Button text to scan receipt"
+  },
+  "expenseCreationReceiptAttached": "Bon bijgevoegd. Tik om opnieuw te scannen.",
+  "@expenseCreationReceiptAttached": {
+    "description": "Button text when receipt is attached"
+  },
+  "expenseCreationScanReceiptSemantics": "Scan bon via camera",
+  "@expenseCreationScanReceiptSemantics": {
+    "description": "Semantics label for receipt scan"
+  },
+  "expenseCreationSplitMode": "Verdeelmodus",
+  "@expenseCreationSplitMode": {
+    "description": "Section label for split mode"
+  },
+  "expenseCreationSplitEqual": "Gelijk",
+  "@expenseCreationSplitEqual": {
+    "description": "Equal split mode"
+  },
+  "expenseCreationSplitExact": "Exact",
+  "@expenseCreationSplitExact": {
+    "description": "Exact amounts split mode"
+  },
+  "expenseCreationSplitShares": "Aandelen",
+  "@expenseCreationSplitShares": {
+    "description": "Shares split mode"
+  },
+  "expenseCreationSplitPercent": "Percentage",
+  "@expenseCreationSplitPercent": {
+    "description": "Percentage split mode"
+  },
+  "expenseCreationSplitHintExact": "Voer het exacte bedrag in dat elke persoon verschuldigd is.",
+  "@expenseCreationSplitHintExact": {
+    "description": "Hint for exact split mode"
+  },
+  "expenseCreationSplitHintPercent": "Voer ieders aandeel in; moet optellen tot 100%.",
+  "@expenseCreationSplitHintPercent": {
+    "description": "Hint for percent split mode"
+  },
+  "expenseCreationSplitHintShares": "Verdeel op basis van aandelen, bv. 2 aandelen betaalt dubbel.",
+  "@expenseCreationSplitHintShares": {
+    "description": "Hint for shares split mode"
+  },
+  "expenseCreationSplitHintEqual": "Verdeel het totaal gelijkmatig over geselecteerde leden.",
+  "@expenseCreationSplitHintEqual": {
+    "description": "Hint for equal split mode"
+  },
+  "expenseCreationSplitSharesLabel": "Aandelen",
+  "@expenseCreationSplitSharesLabel": {
+    "description": "Shares column label"
+  },
+  "expenseCreationSplitValuesAmount": "Bedrag",
+  "@expenseCreationSplitValuesAmount": {
+    "description": "Amount column label"
+  },
+  "expenseCreationSplitValuesPercent": "%",
+  "@expenseCreationSplitValuesPercent": {
+    "description": "Percent column label"
+  },
+  "expenseCreationPaidBy": "Betaald door",
+  "@expenseCreationPaidBy": {
+    "description": "Section label for payer selection"
+  },
+  "expenseCreationSplitWith": "Verdelen met",
+  "@expenseCreationSplitWith": {
+    "description": "Section label for split participants"
+  },
+  "expenseCreationSelectSplitter": "Selecteer minstens één persoon om mee te verdelen.",
+  "@expenseCreationSelectSplitter": {
+    "description": "Prompt when no splitters selected"
+  },
+  "expenseCreationEnterAmount": "Voer een bedrag in om elk aandeel te bekijken.",
+  "@expenseCreationEnterAmount": {
+    "description": "Prompt when amount is empty"
+  },
+  "expenseCreationValidationAmount": "Voer een geldig bedrag groter dan nul in.",
+  "@expenseCreationValidationAmount": {
+    "description": "Validation: invalid amount"
+  },
+  "expenseCreationValidationRate": "Voer een wisselkoers groter dan nul in.",
+  "@expenseCreationValidationRate": {
+    "description": "Validation: invalid FX rate"
+  },
+  "expenseCreationReceiptUploadFailed": "Uitgave opgeslagen, maar bon-upload mislukt.",
+  "@expenseCreationReceiptUploadFailed": {
+    "description": "Snackbar: expense saved without receipt"
+  },
+  "expenseCreationExpenseAdded": "Uitgave toegevoegd",
+  "@expenseCreationExpenseAdded": {
+    "description": "Snackbar when expense is created"
+  },
+  "pinwallBoardLabel": "Prikbord",
+  "@pinwallBoardLabel": {
+    "description": "Board chip label for pinwall"
+  },
+  "pinwallDragHint": "Sleep notities om te verplaatsen  ·  Knijp om te zoomen",
+  "@pinwallDragHint": {
+    "description": "Hint text for pinwall interactions"
+  },
+  "pinwallCloseBoard": "Bord sluiten",
+  "@pinwallCloseBoard": {
+    "description": "Button/semantics to close pinwall"
+  },
+  "pinwallEmptyBoard": "Het bord is leeg.\nPrik een notitie vanuit de hub om te beginnen.",
+  "@pinwallEmptyBoard": {
+    "description": "Empty state for pinwall board"
+  },
+  "pinwallNoteSemantics": "{user} · {content}",
+  "@pinwallNoteSemantics": {
+    "description": "Semantics label for a pinwall note",
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "content": {
+        "type": "String"
+      }
+    }
+  },
+  "pinwallReminderLabel": "Herinnering · {text}",
+  "@pinwallReminderLabel": {
+    "description": "Label for active pinwall reminder",
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "pinwallRemindedLabel": "Herinnerd · {text}",
+  "pinwallChooseReminderDate": "Kies herinneringsdatum",
+  "pinwallChooseReminderTime": "Kies herinneringstijd",
+  "pinwallLinkTo": "Koppelen aan…",
+  "pinwallLinkExpense": "Een uitgave",
+  "pinwallRemoveLink": "Koppeling verwijderen",
+  "pinwallSelectEntity": "Selecteer {type}",
+  "pinwallOpenBoard": "Pinwall-bord openen",
+  "pinwallLinkToChore": "Koppelen aan klusje, lijst…",
+  "pinwallPickFutureTime": "Kies een tijd in de toekomst.",
+  "pinwallCouldNotLoadEntities": "Kon entiteiten niet laden.",
+  "pinwallPinned": "Aan de muur geprikt",
+  "pinwallOpenBoardBtn": "Bord openen",
+  "pinwallPostHint": "Plaats een notitie voor het huishouden…",
+  "pinwallAddReminder": "Herinnering toevoegen",
+  "pinwallReminderSet": "Herinnering ingesteld voor {label}. Tik om te wijzigen.",
+  "pinwallClearReminder": "Herinnering wissen",
+  "pinwallAttachPhoto": "Foto bijvoegen",
+  "pinwallUploading": "Uploaden…",
+  "pinwallPosting": "Plaatsen…",
+  "pinwallPinIt": "Vastpinnen",
+  "pinwallCouldNotLoadImage": "Kon afbeelding niet laden.",
+  "pinwallRemoveFromPost": "Uit bericht verwijderen",
+  "pinwallCouldNotRemovePhoto": "Kon foto niet verwijderen.",
+  "pinwallCouldNotAddPhoto": "Kon foto niet toevoegen.",
+  "pinwallLinkedList": "Gekoppelde lijst",
+  "pinwallLinkedChore": "Gekoppeld klusje",
+  "pinwallLinkedExpense": "Gekoppelde uitgave",
+  "pinwallOpenLinkedEntity": "Gekoppelde {entity} openen",
+  "pinwallPostOptions": "Berichtopties",
+  "pinwallDeletePin": "Pin verwijderen",
+  "pinwallDeletePinBody": "Deze pin wordt permanent verwijderd. Dit kan niet ongedaan worden gemaakt.",
+  "pinwallAddPhotoMenu": "Foto toevoegen",
+  "tonightBreakfast": "Vandaag · Ontbijt",
+  "tonightLunch": "Vandaag · Lunch",
+  "tonightOpenRecipe": "Vanavond: {title}. Recept openen",
+  "@pinwallRemindedLabel": {
+    "description": "Label for past pinwall reminder",
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "calendarTomorrow": "Morgen",
+  "@calendarTomorrow": {
+    "description": "Label for tomorrow's date"
+  },
+  "scannerCheckScan": "Scan controleren",
+  "@scannerCheckScan": {
+    "description": "Smart capture review title for general scan"
+  },
+  "scannerCheckGrocery": "Boodschappenlijst controleren",
+  "@scannerCheckGrocery": {
+    "description": "Smart capture review title for grocery list"
+  },
+  "recipeCreationNoItemsYet": "Nog geen {type}.",
+  "@recipeCreationNoItemsYet": {
+    "description": "Empty state for steps/ingredients list",
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsDeleteNotification": "Notificatie verwijderen",
+  "@notificationsDeleteNotification": {
+    "description": "Semantic label for deleting a notification"
+  },
+  "accountLanguage": "Taal",
+  "@accountLanguage": {
+    "description": "Menuregel-label voor taalkeuze"
+  },
+  "accountLanguageSystem": "Systeem",
+  "@accountLanguageSystem": {
+    "description": "Taaloptie: volg de taal van het apparaat"
+  },
+  "navHome": "Start",
+  "navChores": "Klusjes",
+  "navMoney": "Geld",
+  "navLists": "Lijsten",
+  "navKitchen": "Keuken",
+  "offlineBannerTitle": "Sync-status",
+  "offlineBannerStatusOffline": "Offline",
+  "offlineBannerStatusPending": "In afwachting",
+  "offlineBannerStatusFailed": "Mislukt",
+  "offlineBannerRetryHint": "Wijzigingen worden automatisch opnieuw geprobeerd zodra de verbinding is hersteld.",
+  "offlineBannerOfflineHint": "Je kunt offline wijzigingen blijven maken. Alles wordt gesynchroniseerd zodra je opnieuw verbinding maakt.",
+  "offlineBannerBarOffline": "Offline — wijzigingen worden gesynchroniseerd bij verbinding",
+  "offlineBannerSyncingCount": "{count} wijzigingen synchroniseren…",
+  "offlineBannerSyncing": "Wijzigingen synchroniseren…",
+  "offlineBannerFailedCount": "Kon {count} wijzigingen niet synchroniseren",
+  "offlineBannerFailedOne": "Kon een wijziging niet synchroniseren",
+  "offlineBannerRetry": "Opnieuw",
+  "composerNewItem": "Nieuw item",
+  "composerScanList": "Lijst scannen",
+  "composerAddItem": "Item toevoegen",
+  "listItemViewPhoto": "Foto bekijken",
+  "listItemReplacePhoto": "Foto vervangen",
+  "listItemAddPhoto": "Foto toevoegen",
+  "listItemRemovePhoto": "Foto verwijderen",
+  "listItemSetPrice": "Prijs instellen",
+  "listItemDeleteAction": "Verwijderen",
+  "listItemReorder": "Herschikken",
+  "listItemMarkUnchecked": "{name} als niet-afgevinkt markeren",
+  "listItemMarkChecked": "{name} als afgevinkt markeren",
+  "listItemViewPhotoFor": "Foto voor {name} bekijken",
+  "listItemFailedSave": "Opslaan mislukt — tik op de sync-balk om opnieuw te proberen",
+  "listItemLongPressHint": "Lang indrukken voor meer opties",
+  "scanCheckListPhoto": "Controleer lijstfoto",
+  "scanReadingList": "Je lijst lezen…",
+  "scanCouldNotProcess": "Kon de afbeelding niet verwerken. Probeer het opnieuw.",
+  "scanSnapYourList": "Maak een foto van je lijst",
+  "scanTakePhoto": "Maak een foto",
+  "scanChooseFromGallery": "Kies uit galerij",
+  "appDialogClose": "Sluiten",
+  "appDialogPressBack": "Druk op terug om te sluiten",
+  "shellNotifications": "Meldingen",
+  "shellAccount": "Account",
+  "errorSomethingWentWrong": "Er is iets misgegaan",
+  "filterRemoveLabel": "Verwijder filter {label}",
+  "currencyDropdownLabel": "Valuta",
+  "passwordStrengthWeak": "Zwak",
+  "passwordStrengthFair": "Redelijk",
+  "passwordStrengthGood": "Goed",
+  "passwordStrengthStrong": "Sterk",
+  "checkToggleChecked": "Aangevinkt",
+  "checkToggleNotChecked": "Niet aangevinkt",
+  "captureHintClearer": "Probeer een duidelijkere foto",
+  "captureHintHoldSteady": "Houd stil",
+  "captureHintMoreLight": "Zoek meer licht",
+  "captureHintReduceGlare": "Verminder schittering",
+  "captureHintMoveCloser": "Kom dichterbij",
+  "captureHintReady": "Klaar om te scannen",
+  "captureHintUsable": "Ziet er bruikbaar uit",
+  "activityAddedItemToList": "Heeft een item aan een lijst toegevoegd · {when}",
+  "@activityAddedItemToList": {
+    "description": "Activity: generic item added to list",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityAddedToList": "Heeft {name} aan een lijst toegevoegd · {when}",
+  "@activityAddedToList": {
+    "description": "Activity: item added to list",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityCompletedChore": "Heeft {name} voltooid · {when}",
+  "@activityCompletedChore": {
+    "description": "Activity: chore completed",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityCompletedChoreGeneric": "Heeft een klus voltooid · {when}",
+  "@activityCompletedChoreGeneric": {
+    "description": "Activity: generic chore completed",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityLoggedExpense": "Heeft {name} geregistreerd · {when}",
+  "@activityLoggedExpense": {
+    "description": "Activity: expense logged",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityLoggedExpenseGeneric": "Heeft een uitgave geregistreerd · {when}",
+  "@activityLoggedExpenseGeneric": {
+    "description": "Activity: generic expense logged",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityMember": "Lid",
+  "@activityMember": {
+    "description": "Fallback display name for household member"
+  },
+  "activityPlannedMeal": "Heeft {name} gepland · {when}",
+  "@activityPlannedMeal": {
+    "description": "Activity: meal planned",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activitySavedRecipe": "Heeft {name} opgeslagen · {when}",
+  "@activitySavedRecipe": {
+    "description": "Activity: recipe saved",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activitySavedRecipeGeneric": "Heeft een recept opgeslagen · {when}",
+  "@activitySavedRecipeGeneric": {
+    "description": "Activity: generic recipe saved",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityUpdatedMealPlan": "Maaltijdplan bijgewerkt · {when}",
+  "@activityUpdatedMealPlan": {
+    "description": "Activity: meal plan updated",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityYou": "Jij",
+  "@activityYou": {
+    "description": "Display name for current user in activity feed"
+  },
+  "aisleOther": "Overig",
+  "@aisleOther": {
+    "description": "Fallback aisle name for uncategorized items"
+  },
+  "appBottomSheetClose": "Sluiten",
+  "@appBottomSheetClose": {
+    "description": "Semantic label for bottom sheet close"
+  },
+  "appBottomSheetDiscardBody": "Je hebt niet-opgeslagen wijzigingen.",
+  "@appBottomSheetDiscardBody": {
+    "description": "Discard changes dialog body"
+  },
+  "appBottomSheetDiscardTitle": "Wijzigingen negeren?",
+  "@appBottomSheetDiscardTitle": {
+    "description": "Discard changes dialog title"
+  },
+  "appBottomSheetHandle": "Handvat",
+  "@appBottomSheetHandle": {
+    "description": "Semantic label for bottom sheet drag handle"
+  },
+  "appBottomSheetKeepEditing": "Verder bewerken",
+  "@appBottomSheetKeepEditing": {
+    "description": "Keep editing button"
+  },
+  "authJoinCouldNotLoad": "Uitnodigingsdetails konden niet worden geladen.",
+  "@authJoinCouldNotLoad": {
+    "description": "Error when invite fails to load"
+  },
+  "authJoinCreateToJoin": "Account aanmaken om mee te doen",
+  "@authJoinCreateToJoin": {
+    "description": "Create account CTA with invite context"
+  },
+  "authJoinErrorWithHint": "{error}\n\nJe kunt ook een code invoeren via de huishoudenwisselaar.",
+  "@authJoinErrorWithHint": {
+    "description": "Error with hint about household switcher",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "authJoinGoToHousehold": "Naar huishouden",
+  "@authJoinGoToHousehold": {
+    "description": "Button to navigate to household after joining"
+  },
+  "authJoinGuestWarning": "Gastaccounts kunnen niet deelnemen aan huishoudens.",
+  "@authJoinGuestWarning": {
+    "description": "Warning for guest users trying to join"
+  },
+  "authJoinInviteCodeSemantic": "Uitnodigingscode: {code}",
+  "@authJoinInviteCodeSemantic": {
+    "description": "Semantics label for invite code display",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "authJoinInvitedBy": "{name} heeft je uitgenodigd",
+  "@authJoinInvitedBy": {
+    "description": "Invitation header",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "authJoinJoinNow": "Nu deelnemen",
+  "@authJoinJoinNow": {
+    "description": "CTA to join the household"
+  },
+  "authJoinJoining": "Deelnemen…",
+  "@authJoinJoining": {
+    "description": "Button loading state for join"
+  },
+  "authJoinNotNow": "Niet nu",
+  "@authJoinNotNow": {
+    "description": "Dismiss button for join landing"
+  },
+  "authJoinSignInToJoin": "Log in om mee te doen",
+  "@authJoinSignInToJoin": {
+    "description": "Sign in CTA with invite context"
+  },
+  "authJoinTitle": "Deelnemen aan huishouden",
+  "@authJoinTitle": {
+    "description": "Join landing screen title"
+  },
+  "authJoinYoureIn": "Je zit erbij.",
+  "@authJoinYoureIn": {
+    "description": "Success message after joining"
+  },
+  "authLoginApple": "Doorgaan met Apple",
+  "@authLoginApple": {
+    "description": "OAuth button: Apple"
+  },
+  "authLoginCreateOne": "Maak er een",
+  "@authLoginCreateOne": {
+    "description": "Link text to create account"
+  },
+  "authLoginEmail": "E-mail",
+  "@authLoginEmail": {
+    "description": "Email input label"
+  },
+  "authLoginEmailRequired": "E-mail is verplicht.",
+  "@authLoginEmailRequired": {
+    "description": "Validation: email required"
+  },
+  "authLoginFillAllFields": "Vul alle velden in.",
+  "@authLoginFillAllFields": {
+    "description": "Validation: all fields required"
+  },
+  "authLoginForgotPassword": "Wachtwoord vergeten?",
+  "@authLoginForgotPassword": {
+    "description": "Forgot password link"
+  },
+  "authLoginGenericError": "Inloggen mislukt. Controleer je verbinding en probeer het opnieuw.",
+  "@authLoginGenericError": {
+    "description": "Generic login error message"
+  },
+  "authLoginGoogle": "Doorgaan met Google",
+  "@authLoginGoogle": {
+    "description": "OAuth button: Google"
+  },
+  "authLoginNoAccount": "Geen account?",
+  "@authLoginNoAccount": {
+    "description": "Prompt to switch to signup"
+  },
+  "authLoginOAuthUnsupported": "{provider}-inloggen is momenteel alleen beschikbaar op web, Android en iOS.",
+  "@authLoginOAuthUnsupported": {
+    "description": "Error when OAuth is unsupported on platform",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "authLoginPassword": "Wachtwoord",
+  "@authLoginPassword": {
+    "description": "Password input label"
+  },
+  "authLoginPasswordRequired": "Wachtwoord is verplicht.",
+  "@authLoginPasswordRequired": {
+    "description": "Validation: password required"
+  },
+  "authLoginRememberMe": "Onthoud mij",
+  "@authLoginRememberMe": {
+    "description": "Remember me checkbox label"
+  },
+  "authLoginRememberMeOff": "Onthoud mij: uit",
+  "@authLoginRememberMeOff": {
+    "description": "Semantic label for remember me unchecked"
+  },
+  "authLoginRememberMeOn": "Onthoud mij: aan",
+  "@authLoginRememberMeOn": {
+    "description": "Semantic label for remember me checked"
+  },
+  "authLoginResetCodeHint": "Plak de code uit je e-mail",
+  "@authLoginResetCodeHint": {
+    "description": "Placeholder for reset code input"
+  },
+  "authLoginResetCodeLabel": "Herstelcode",
+  "@authLoginResetCodeLabel": {
+    "description": "Input label for reset code"
+  },
+  "authLoginResetCodeSent": "Als dat e-mailadres bestaat, is er een herstelcode verstuurd.",
+  "@authLoginResetCodeSent": {
+    "description": "Success message after requesting reset code"
+  },
+  "authLoginResetFillAllFields": "Vul de code en beide wachtwoordvelden in.",
+  "@authLoginResetFillAllFields": {
+    "description": "Validation: all reset fields required"
+  },
+  "authLoginResetPasswordButton": "Wachtwoord herstellen",
+  "@authLoginResetPasswordButton": {
+    "description": "Button to confirm password reset"
+  },
+  "authLoginResetPasswordTitle": "Wachtwoord herstellen",
+  "@authLoginResetPasswordTitle": {
+    "description": "Bottom sheet title for password reset"
+  },
+  "authLoginResetSuccess": "Wachtwoord hersteld. Je kunt nu inloggen.",
+  "@authLoginResetSuccess": {
+    "description": "Success message after password reset"
+  },
+  "authLoginSendResetCode": "Code versturen",
+  "@authLoginSendResetCode": {
+    "description": "Button to send password reset code"
+  },
+  "authLoginSignInButton": "Inloggen",
+  "@authLoginSignInButton": {
+    "description": "Sign in submit button"
+  },
+  "authLoginSigningIn": "Inloggen…",
+  "@authLoginSigningIn": {
+    "description": "Sign in button loading state"
+  },
+  "authLoginTitle": "Inloggen",
+  "@authLoginTitle": {
+    "description": "Login screen title"
+  },
+  "authLoginYouExample": "jij@voorbeeld.nl",
+  "@authLoginYouExample": {
+    "description": "Email placeholder"
+  },
+  "authLoginYourPassword": "Je wachtwoord",
+  "@authLoginYourPassword": {
+    "description": "Password placeholder"
+  },
+  "authOnboardingCreateDesc": "Begin opnieuw: geef het een naam, nodig huisgenoten uit en deel alles op één plek.",
+  "@authOnboardingCreateDesc": {
+    "description": "Description for create household card"
+  },
+  "authOnboardingCreateHousehold": "Huishouden aanmaken",
+  "@authOnboardingCreateHousehold": {
+    "description": "Primary CTA on onboarding"
+  },
+  "authOnboardingCreateOrJoin": "Maak of sluit je aan bij een huishouden om te delen met huisgenoten.",
+  "@authOnboardingCreateOrJoin": {
+    "description": "Onboarding description"
+  },
+  "authOnboardingHaveCode": "Heb je een uitnodigingscode?",
+  "@authOnboardingHaveCode": {
+    "description": "Invite code prompt"
+  },
+  "authOnboardingHomeIconSemantic": "Huishouden-startpictogram",
+  "@authOnboardingHomeIconSemantic": {
+    "description": "Semantic label for home icon"
+  },
+  "authOnboardingJoinDesc": "Al een uitnodiging? Voer de code in en ga meteen aan de slag.",
+  "@authOnboardingJoinDesc": {
+    "description": "Description for join household card"
+  },
+  "authOnboardingJoinInvite": "Deelnemen met uitnodigingscode",
+  "@authOnboardingJoinInvite": {
+    "description": "Secondary CTA on onboarding"
+  },
+  "authOnboardingJoinSemantic": "Deelnemen aan een huishouden met uitnodigingscode",
+  "@authOnboardingJoinSemantic": {
+    "description": "Semantic label for join card"
+  },
+  "authOnboardingSetupHome": "Richt je thuis in",
+  "@authOnboardingSetupHome": {
+    "description": "Onboarding headline for new users"
+  },
+  "authOnboardingTitle": "Welkom",
+  "@authOnboardingTitle": {
+    "description": "Onboarding screen title"
+  },
+  "authSignupAccountCreated": "Account aangemaakt. Welkom!",
+  "@authSignupAccountCreated": {
+    "description": "Snackbar when account is created"
+  },
+  "authSignupAnd": " en ",
+  "@authSignupAnd": {
+    "description": "Conjunction between legal links"
+  },
+  "authSignupCreateAccount": "Account aanmaken",
+  "@authSignupCreateAccount": {
+    "description": "Submit button for signup"
+  },
+  "authSignupCreatingAccount": "Account wordt aangemaakt…",
+  "@authSignupCreatingAccount": {
+    "description": "Loading state for signup button"
+  },
+  "authSignupEmail": "E-mail",
+  "@authSignupEmail": {
+    "description": "Email input label"
+  },
+  "authSignupEmailHint": "jij@voorbeeld.nl",
+  "@authSignupEmailHint": {
+    "description": "Email placeholder"
+  },
+  "authSignupEmailRequired": "E-mail is verplicht.",
+  "@authSignupEmailRequired": {
+    "description": "Validation: email required"
+  },
+  "authSignupFillAllFields": "Vul alle velden in.",
+  "@authSignupFillAllFields": {
+    "description": "Validation: all fields required"
+  },
+  "authSignupFirstName": "Voornaam",
+  "@authSignupFirstName": {
+    "description": "First name input label"
+  },
+  "authSignupFirstNameHint": "Alex",
+  "@authSignupFirstNameHint": {
+    "description": "First name placeholder"
+  },
+  "authSignupGenericError": "Account aanmaken mislukt. Controleer je verbinding en probeer het opnieuw.",
+  "@authSignupGenericError": {
+    "description": "Generic signup error message"
+  },
+  "authSignupHaveAccount": "Heb je al een account?",
+  "@authSignupHaveAccount": {
+    "description": "Link to login"
+  },
+  "authSignupJoinTitle": "Deelnemen aan huishouden",
+  "@authSignupJoinTitle": {
+    "description": "Signup screen title when joining via invite"
+  },
+  "authSignupLastName": "Achternaam",
+  "@authSignupLastName": {
+    "description": "Last name input label"
+  },
+  "authSignupLastNameHint": "Jansen",
+  "@authSignupLastNameHint": {
+    "description": "Last name placeholder"
+  },
+  "authSignupNameHint": "Je naam",
+  "@authSignupNameHint": {
+    "description": "Name input placeholder"
+  },
+  "authSignupNameRequired": "Naam is verplicht.",
+  "@authSignupNameRequired": {
+    "description": "Validation: name required"
+  },
+  "authSignupPassword": "Wachtwoord",
+  "@authSignupPassword": {
+    "description": "Password input label"
+  },
+  "authSignupPasswordHint": "Minstens 6 tekens",
+  "@authSignupPasswordHint": {
+    "description": "Password hint text"
+  },
+  "authSignupPasswordMinLength": "Wachtwoord moet minstens 6 tekens lang zijn.",
+  "@authSignupPasswordMinLength": {
+    "description": "Password too short validation"
+  },
+  "authSignupPasswordRequired": "Wachtwoord is verplicht.",
+  "@authSignupPasswordRequired": {
+    "description": "Validation: password required"
+  },
+  "authSignupPeriod": ".",
+  "@authSignupPeriod": {
+    "description": "Period after legal links"
+  },
+  "authSignupPrivacyP1": "mitlist slaat de accountgegevens en huishoudeninhoud op die nodig zijn om de app te laten werken.",
+  "@authSignupPrivacyP1": {
+    "description": "Privacy paragraph 1"
+  },
+  "authSignupPrivacyP2": "Gedeelde gegevens zoals lijsten, klussen, uitgaven en recepten zijn zichtbaar voor andere leden van hetzelfde huishouden.",
+  "@authSignupPrivacyP2": {
+    "description": "Privacy paragraph 2"
+  },
+  "authSignupPrivacyP3": "Geef alleen informatie door die je prettig vindt in een gedeelde huishoudenwerkruimte.",
+  "@authSignupPrivacyP3": {
+    "description": "Privacy paragraph 3"
+  },
+  "authSignupPrivacyPolicy": "Privacybeleid",
+  "@authSignupPrivacyPolicy": {
+    "description": "Privacy policy link text"
+  },
+  "authSignupSignInLink": "Inloggen",
+  "@authSignupSignInLink": {
+    "description": "Link to sign in"
+  },
+  "authSignupTermsP1": "Gebruik mitlist verantwoord. Gedeelde huishoudeninhoud is zichtbaar voor de leden van dat huishouden.",
+  "@authSignupTermsP1": {
+    "description": "Terms paragraph 1"
+  },
+  "authSignupTermsP2": "Upload geen onwettige inhoud, doe je niet voor als iemand anders en misbruik de dienst niet. Accounts en gedeelde gegevens kunnen bij misbruik worden verwijderd.",
+  "@authSignupTermsP2": {
+    "description": "Terms paragraph 2"
+  },
+  "authSignupTermsP3": "De app wordt geleverd zoals hij is terwijl het product nog evolueert. Bewaar zelf back-ups van alles wat belangrijk is.",
+  "@authSignupTermsP3": {
+    "description": "Terms paragraph 3"
+  },
+  "authSignupTermsPrefix": "Door een account aan te maken ga je akkoord met onze ",
+  "@authSignupTermsPrefix": {
+    "description": "Text before terms link"
+  },
+  "authSignupTitle": "Account aanmaken",
+  "@authSignupTitle": {
+    "description": "Signup screen title"
+  },
+  "commonPhoto": "Foto",
+  "@commonPhoto": {
+    "description": "Generic photo label"
+  },
+  "commonView": "Bekijken",
+  "@commonView": {
+    "description": "Generic view button"
+  },
+  "composerItemHint": "bijv. Melk, 2 avocado's of 500 g bloem",
+  "@composerItemHint": {
+    "description": "Hint for list composer input"
+  },
+  "conflictItemChanged": "Item gewijzigd",
+  "@conflictItemChanged": {
+    "description": "Snackbar when conflict item was changed"
+  },
+  "conflictItemLabel": "Item: {name}",
+  "@conflictItemLabel": {
+    "description": "Label for conflict item name",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "conflictNoneToResolve": "Geen conflicten om op te lossen.",
+  "@conflictNoneToResolve": {
+    "description": "Empty state when no sync conflicts"
+  },
+  "cookModeTimerStart": "Timer: {label}. Tik om te starten",
+  "@cookModeTimerStart": {
+    "description": "Timer semantics label",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "costSummaryEqualShare": "Gelijk aandeel per persoon",
+  "@costSummaryEqualShare": {
+    "description": "Label for equal share amount in cost summary"
+  },
+  "costSummaryGenerateExpense": "Uitgave genereren",
+  "@costSummaryGenerateExpense": {
+    "description": "Button to generate an expense from cost summary"
+  },
+  "costSummaryItemsWithPrices": "Items met prijzen",
+  "@costSummaryItemsWithPrices": {
+    "description": "Label for items that have prices set"
+  },
+  "costSummaryNoPrices": "Nog geen items met prijzen. Open de itemopties (⋯) en kies Prijs instellen om het kostenoverzicht te zien.",
+  "@costSummaryNoPrices": {
+    "description": "Empty state when no items in cost summary have prices"
+  },
+  "costSummaryNone": "Geen",
+  "@costSummaryNone": {
+    "description": "Placeholder when no value is set"
+  },
+  "costSummaryNotAvailable": "N.v.t.",
+  "@costSummaryNotAvailable": {
+    "description": "Placeholder when equal share cannot be calculated"
+  },
+  "createHouseholdCreated": "Huishouden aangemaakt",
+  "@createHouseholdCreated": {
+    "description": "Snackbar when household is created"
+  },
+  "createHouseholdDescriptionOptional": "Beschrijving (optioneel)",
+  "@createHouseholdDescriptionOptional": {
+    "description": "Placeholder for optional household description"
+  },
+  "createListCreated": "Lijst aangemaakt",
+  "@createListCreated": {
+    "description": "Snackbar when list is created"
+  },
+  "createListCustomDesc": "Een flexibele lijst voor alles wat niet past.",
+  "@createListCustomDesc": {
+    "description": "Description for custom list type"
+  },
+  "createListHouseholdLabel": "Huishouden",
+  "@createListHouseholdLabel": {
+    "description": "Household selector label in create list sheet"
+  },
+  "createListNameRequired": "Lijstnaam is verplicht",
+  "@createListNameRequired": {
+    "description": "Validation: list name required"
+  },
+  "createListNoHousehold": "Geen huishouden beschikbaar.",
+  "@createListNoHousehold": {
+    "description": "Empty state when no households exist"
+  },
+  "createListScanFinished": "Scan voltooid",
+  "@createListScanFinished": {
+    "description": "Snackbar when scan completes"
+  },
+  "createListScanSemantics": "Lijst scannen via camera",
+  "@createListScanSemantics": {
+    "description": "Semantics label for scan list button"
+  },
+  "createListScanned": "\"{name}\" gescand",
+  "@createListScanned": {
+    "description": "Snackbar after scanning into a list",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "createListShoppingDesc": "Het beste voor boodschappen en klusjes met hoeveelheden.",
+  "@createListShoppingDesc": {
+    "description": "Description for shopping list type"
+  },
+  "createListTodoDesc": "Een eenvoudige checklist voor taken die gedaan moeten worden.",
+  "@createListTodoDesc": {
+    "description": "Description for to-do list type"
+  },
+  "currencyAud": "AUD - Australische dollar",
+  "@currencyAud": {
+    "description": "Australian Dollar currency label"
+  },
+  "currencyCad": "CAD - Canadese dollar",
+  "@currencyCad": {
+    "description": "Canadian Dollar currency label"
+  },
+  "currencyChf": "CHF - Zwitserse frank",
+  "@currencyChf": {
+    "description": "Swiss Franc currency label"
+  },
+  "currencyCzk": "CZK - Tsjechische kroon",
+  "@currencyCzk": {
+    "description": "Czech Koruna currency label"
+  },
+  "currencyDkk": "DKK - Deense kroon",
+  "@currencyDkk": {
+    "description": "Danish Krone currency label"
+  },
+  "currencyEur": "EUR - Euro",
+  "@currencyEur": {
+    "description": "Euro currency label"
+  },
+  "currencyGbp": "GBP - Britse pond",
+  "@currencyGbp": {
+    "description": "British Pound currency label"
+  },
+  "currencyHuf": "HUF - Hongaarse forint",
+  "@currencyHuf": {
+    "description": "Hungarian Forint currency label"
+  },
+  "currencyJpy": "JPY - Japanse yen",
+  "@currencyJpy": {
+    "description": "Japanese Yen currency label"
+  },
+  "currencyNok": "NOK - Noorse kroon",
+  "@currencyNok": {
+    "description": "Norwegian Krone currency label"
+  },
+  "currencyPln": "PLN - Poolse złoty",
+  "@currencyPln": {
+    "description": "Polish Zloty currency label"
+  },
+  "currencySek": "SEK - Zweedse kroon",
+  "@currencySek": {
+    "description": "Swedish Krona currency label"
+  },
+  "currencyUsd": "USD - Amerikaanse dollar",
+  "@currencyUsd": {
+    "description": "US Dollar currency label"
+  },
+  "errorBoundaryDesc": "Er is een onverwachte fout opgetreden. Probeer het opnieuw.",
+  "@errorBoundaryDesc": {
+    "description": "Error boundary fallback description"
+  },
+  "errorBoundaryTitle": "Er ging iets mis",
+  "@errorBoundaryTitle": {
+    "description": "Error boundary fallback title"
+  },
+  "errorConflict": "Iemand anders heeft dit gewijzigd. Vernieuw en probeer het opnieuw.",
+  "@errorConflict": {
+    "description": "Friendly error for 409 conflict"
+  },
+  "errorGenericRetry": "Er ging iets mis. Probeer het opnieuw.",
+  "@errorGenericRetry": {
+    "description": "Generic fallback friendly error"
+  },
+  "errorNoPermission": "Je hebt geen toestemming hiervoor.",
+  "@errorNoPermission": {
+    "description": "Friendly error for 403"
+  },
+  "errorNotFound": "Niet gevonden. Het is mogelijk verwijderd.",
+  "@errorNotFound": {
+    "description": "Friendly error for 404"
+  },
+  "errorServerHiccup": "Serverprobleem — probeer het zo meteen opnieuw.",
+  "@errorServerHiccup": {
+    "description": "Friendly error for 5xx responses"
+  },
+  "errorSignInAgain": "Log opnieuw in.",
+  "@errorSignInAgain": {
+    "description": "Friendly error for 401"
+  },
+  "expenseCreationAddToSplit": "{name} toevoegen aan verdeling",
+  "@expenseCreationAddToSplit": {
+    "description": "Semantics: add member to split",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationAssignShare": "Wijs minstens één aandeel toe.",
+  "@expenseCreationAssignShare": {
+    "description": "Validation: assign at least one share"
+  },
+  "expenseCreationCouldNotLoadMembers": "Huishoudleden konden niet worden geladen.",
+  "@expenseCreationCouldNotLoadMembers": {
+    "description": "Error when household members fail to load"
+  },
+  "expenseCreationJoinHouseholdSplit": "Sluit je aan bij of maak een huishouden om deze uitgave te verdelen.",
+  "@expenseCreationJoinHouseholdSplit": {
+    "description": "Prompt when no household for expense split"
+  },
+  "expenseCreationRemoveAddSplitter": "{name} verwijderen/toevoegen bij verdeling",
+  "@expenseCreationRemoveAddSplitter": {
+    "description": "Checkbox label for adding/removing splitters",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationRemoveFromSplit": "{name} verwijderen uit verdeling",
+  "@expenseCreationRemoveFromSplit": {
+    "description": "Semantics: remove member from split",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSharesNegative": "Aandelen kunnen niet negatief zijn.",
+  "@expenseCreationSharesNegative": {
+    "description": "Validation: shares must not be negative"
+  },
+  "expenseCreationSplitAmountsNegative": "{assigned} · bedragen kunnen niet negatief zijn",
+  "@expenseCreationSplitAmountsNegative": {
+    "description": "Split validation: negative amounts",
+    "placeholders": {
+      "assigned": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitApproxEach": "≈ {amount} per persoon",
+  "@expenseCreationSplitApproxEach": {
+    "description": "Approximate equal split per person",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitAssignedOf": "{assigned} van {total}",
+  "@expenseCreationSplitAssignedOf": {
+    "description": "Split summary: assigned amount of total",
+    "placeholders": {
+      "assigned": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitEach": "{amount} per persoon",
+  "@expenseCreationSplitEach": {
+    "description": "Equal split per person",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitLeftToAssign": "{assigned} · {remaining} nog toe te wijzen",
+  "@expenseCreationSplitLeftToAssign": {
+    "description": "Split validation: remaining to assign",
+    "placeholders": {
+      "assigned": {
+        "type": "String"
+      },
+      "remaining": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitOver": "{assigned} · {over} te veel",
+  "@expenseCreationSplitOver": {
+    "description": "Split validation: over-assigned",
+    "placeholders": {
+      "assigned": {
+        "type": "String"
+      },
+      "over": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitPercentOf100": "{sum}% van 100%",
+  "@expenseCreationSplitPercentOf100": {
+    "description": "Split summary: percent of 100",
+    "placeholders": {
+      "sum": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitPercentRange": "{sum}% toegewezen · elk aandeel moet 0–100% zijn",
+  "@expenseCreationSplitPercentRange": {
+    "description": "Split validation: percent out of range",
+    "placeholders": {
+      "sum": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitSharesPerShare": "{count} aandelen · {perShare} per aandeel",
+  "@expenseCreationSplitSharesPerShare": {
+    "description": "Split summary: shares mode",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      },
+      "perShare": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseDetailCouldNotLoadReceipts": "Bonnen konden niet worden geladen.",
+  "@expenseDetailCouldNotLoadReceipts": {
+    "description": "Snackbar when expense receipts fail to load"
+  },
+  "expenseDetailCouldNotLoadSplits": "Verdelingen konden niet worden geladen.",
+  "@expenseDetailCouldNotLoadSplits": {
+    "description": "Snackbar when expense splits fail to load"
+  },
+  "expenseDetailCouldNotRemoveReceipt": "Bon kon niet worden verwijderd.",
+  "@expenseDetailCouldNotRemoveReceipt": {
+    "description": "Snackbar when receipt removal fails"
+  },
+  "expenseDetailFailedLoadReceipt": "Bon laden mislukt",
+  "@expenseDetailFailedLoadReceipt": {
+    "description": "Error when receipt image fails to load"
+  },
+  "expenseDetailNoReceipts": "Geen bonnen bijgevoegd. Voeg er een toe bij het bewerken van de uitgave.",
+  "@expenseDetailNoReceipts": {
+    "description": "Empty state when expense has no receipts"
+  },
+  "expenseDetailNotSplitYet": "Deze uitgave is nog niet verdeeld.",
+  "@expenseDetailNotSplitYet": {
+    "description": "Empty state when expense has no splits"
+  },
+  "expenseDetailReceipt": "Bon",
+  "@expenseDetailReceipt": {
+    "description": "Label for receipt attachment"
+  },
+  "expenseDetailRemoving": "Verwijderen…",
+  "@expenseDetailRemoving": {
+    "description": "Label while removing receipt"
+  },
+  "expenseDetailView": "Bekijken",
+  "@expenseDetailView": {
+    "description": "View action label"
+  },
+  "hubActivityEmpty": "Nog niets aan de hand.\nActiviteit van je huishouden verschijnt hier.",
+  "@hubActivityEmpty": {
+    "description": "Activity wall empty state"
+  },
+  "hubActivityError": "Activiteit kon niet worden geladen. Trek naar beneden op de hub om te vernieuwen.",
+  "@hubActivityError": {
+    "description": "Activity wall load error"
+  },
+  "hubActivityTitle": "Activiteit",
+  "@hubActivityTitle": {
+    "description": "Activity wall section title"
+  },
+  "hubHouseholdsCurrent": "Huishoudens, huidig {name}",
+  "@hubHouseholdsCurrent": {
+    "description": "Semantics label for household switcher",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "hubOnboardingAddChore": "Klus toevoegen",
+  "@hubOnboardingAddChore": {
+    "description": "Add a chore action"
+  },
+  "hubOnboardingCreateList": "Lijst aanmaken",
+  "@hubOnboardingCreateList": {
+    "description": "Create a list action"
+  },
+  "hubOnboardingDescription": "Alles begint hier. Kies wat het belangrijkst is.",
+  "@hubOnboardingDescription": {
+    "description": "Onboarding card description"
+  },
+  "hubOnboardingDismiss": "Snelstart sluiten",
+  "@hubOnboardingDismiss": {
+    "description": "Dismiss quick start tooltip"
+  },
+  "hubOnboardingDone": "Alles klaar",
+  "@hubOnboardingDone": {
+    "description": "Onboarding card: done tile"
+  },
+  "hubOnboardingDoneDesc": "Klussen, saldi, lijsten — alles op één plek, netjes bijgehouden.",
+  "@hubOnboardingDoneDesc": {
+    "description": "Done tile description"
+  },
+  "hubOnboardingGetStarted": "Aan de slag",
+  "@hubOnboardingGetStarted": {
+    "description": "Onboarding card header"
+  },
+  "hubOnboardingInvite": "Huisgenoten uitnodigen",
+  "@hubOnboardingInvite": {
+    "description": "Invite flatmates action"
+  },
+  "hubOnboardingSettle": "Verrekenen",
+  "@hubOnboardingSettle": {
+    "description": "Onboarding card: settle tile"
+  },
+  "hubOnboardingSettleDesc": "Betaal iedereen in één keer terug met voorgestelde verrekeningen.",
+  "@hubOnboardingSettleDesc": {
+    "description": "Settle tile description"
+  },
+  "hubOnboardingSwap": "Ruilen",
+  "@hubOnboardingSwap": {
+    "description": "Onboarding card: swap tile"
+  },
+  "hubOnboardingSwapDesc": "Kies een huisgenoot die het minst verschuldigd is om deze klus over te nemen.",
+  "@hubOnboardingSwapDesc": {
+    "description": "Swap tile description"
+  },
+  "hubOnboardingTrackExpense": "Uitgave bijhouden",
+  "@hubOnboardingTrackExpense": {
+    "description": "Track an expense action"
+  },
+  "hubQuickAddChore": "Klus toevoegen",
+  "@hubQuickAddChore": {
+    "description": "Quick add: chore option"
+  },
+  "hubQuickAddExpense": "Uitgave toevoegen",
+  "@hubQuickAddExpense": {
+    "description": "Quick add: expense option"
+  },
+  "hubQuickAddList": "Nieuwe lijst",
+  "@hubQuickAddList": {
+    "description": "Quick add: new list option"
+  },
+  "hubQuickAddNote": "Notitie vastpinnen",
+  "@hubQuickAddNote": {
+    "description": "Quick add: pinwall note option"
+  },
+  "hubQuickAddShoppingTrip": "Boodschappen starten",
+  "@hubQuickAddShoppingTrip": {
+    "description": "Quick add: shopping trip option"
+  },
+  "hubQuickAddTitle": "Snel toevoegen",
+  "@hubQuickAddTitle": {
+    "description": "Quick add bottom sheet title"
+  },
+  "hubQuickAddToList": "Toevoegen aan lijst",
+  "@hubQuickAddToList": {
+    "description": "Quick add: add to list option"
+  },
+  "hubStatsActiveList": "actieve lijst",
+  "@hubStatsActiveList": {
+    "description": "Stats grid: singular active list"
+  },
+  "hubStatsActiveLists": "actieve lijsten",
+  "@hubStatsActiveLists": {
+    "description": "Stats grid: plural active lists"
+  },
+  "hubStatsAllDone": "alles klaar",
+  "@hubStatsAllDone": {
+    "description": "Stats grid: all done label"
+  },
+  "hubStatsBalance": "Saldo",
+  "@hubStatsBalance": {
+    "description": "Stats grid: balance label"
+  },
+  "hubStatsChores": "Klussen",
+  "@hubStatsChores": {
+    "description": "Stats grid: chores label"
+  },
+  "hubStatsDue": "te doen",
+  "@hubStatsDue": {
+    "description": "Stats grid: due today label"
+  },
+  "hubStatsLists": "Lijsten",
+  "@hubStatsLists": {
+    "description": "Stats grid: lists label"
+  },
+  "hubStatsMeals": "Maaltijden",
+  "@hubStatsMeals": {
+    "description": "Stats grid: meals planned label"
+  },
+  "hubStatsOpen": "open",
+  "@hubStatsOpen": {
+    "description": "Stats grid: open balance label"
+  },
+  "hubStatsOverdue": "te laat",
+  "@hubStatsOverdue": {
+    "description": "Stats grid: overdue label"
+  },
+  "hubStatsPinwallReminder": "prikbordherinnering",
+  "@hubStatsPinwallReminder": {
+    "description": "Stats grid: singular pinwall reminder"
+  },
+  "hubStatsPinwallReminders": "prikbordherinneringen",
+  "@hubStatsPinwallReminders": {
+    "description": "Stats grid: plural pinwall reminders"
+  },
+  "hubStatsPlanned": "gepland",
+  "@hubStatsPlanned": {
+    "description": "Stats grid: planned this week"
+  },
+  "hubStatsReminders": "Herinneringen",
+  "@hubStatsReminders": {
+    "description": "Stats grid: reminders label"
+  },
+  "inviteCodeLabel": "Uitnodigingscode: {code}",
+  "@inviteCodeLabel": {
+    "description": "Label displaying the invite code",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "inviteGenerating": "Genereren…",
+  "@inviteGenerating": {
+    "description": "Text shown while generating invite code"
+  },
+  "inviteLinkShareText": "Doe mee met mijn huishouden op mitlist!\nTik: {link}\nOf open mitlist en voer de code in: {code}",
+  "@inviteLinkShareText": {
+    "description": "Shared invite link message",
+    "placeholders": {
+      "link": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "inviteNewCode": "Nieuwe code",
+  "@inviteNewCode": {
+    "description": "Button to generate a new invite code"
+  },
+  "inviteQrHint": "Scan met je telefooncamera om mee te doen, of deel de code hieronder.",
+  "@inviteQrHint": {
+    "description": "Hint for invite QR code"
+  },
+  "inviteQrSemantic": "Huishoudenuitnodigings-QR",
+  "@inviteQrSemantic": {
+    "description": "Semantics label for invite QR code"
+  },
+  "inviteQrTitle": "Huishoudenuitnodigings-QR-code",
+  "@inviteQrTitle": {
+    "description": "Title for invite QR code section"
+  },
+  "inviteQrUnavailable": "QR niet beschikbaar",
+  "@inviteQrUnavailable": {
+    "description": "Error when QR code cannot be rendered"
+  },
+  "joinCodeFormatHint": "Codes zien eruit als WOORD-WOORD-42. Vraag het aan degene die je heeft uitgenodigd.",
+  "@joinCodeFormatHint": {
+    "description": "Hint text describing invite code format"
+  },
+  "joinEnterGroup": "{name} openen",
+  "@joinEnterGroup": {
+    "description": "Semantics label to enter a household",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "joinMembersAlreadyInside": "{count, plural, =1{1 lid al binnen} other{{count} leden al binnen}}",
+  "@joinMembersAlreadyInside": {
+    "description": "Member count after joining household",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "oauthMissingParams": "Ontbrekende OAuth-callbackparameters.",
+  "@oauthMissingParams": {
+    "description": "Error when OAuth callback has missing params"
+  },
+  "oauthSigningYouIn": "Je wordt ingelogd",
+  "@oauthSigningYouIn": {
+    "description": "Loading text while signing in via OAuth"
+  },
+  "pinwallCouldNotLoad": "Prikbord kon niet worden geladen.",
+  "@pinwallCouldNotLoad": {
+    "description": "Error when pinwall posts fail to load"
+  },
+  "pinwallLinkChore": "Een klus",
+  "@pinwallLinkChore": {
+    "description": "Link action: link a chore"
+  },
+  "pinwallLinkList": "Een lijst",
+  "@pinwallLinkList": {
+    "description": "Link action: link a list"
+  },
+  "pinwallLinkedTo": "Gekoppeld aan {entity}",
+  "@pinwallLinkedTo": {
+    "description": "Semantics label for linked entity",
+    "placeholders": {
+      "entity": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeAddToListAddToSelection": "{name} toevoegen aan selectie",
+  "@recipeAddToListAddToSelection": {
+    "description": "Semantics: select ingredient",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeAddToListCreateListFirst": "Maak eerst een lijst om ingrediënten toe te voegen",
+  "@recipeAddToListCreateListFirst": {
+    "description": "Prompt to create a list before adding ingredients"
+  },
+  "recipeAddToListNoIngredients": "Geen ingrediënten",
+  "@recipeAddToListNoIngredients": {
+    "description": "Empty state when recipe has no ingredients"
+  },
+  "recipeAddToListNoIngredientsDesc": "Dit recept heeft geen verwerkte ingrediënten",
+  "@recipeAddToListNoIngredientsDesc": {
+    "description": "Description when recipe has no ingredients"
+  },
+  "recipeAddToListNoLists": "Geen lijsten",
+  "@recipeAddToListNoLists": {
+    "description": "Empty state when no lists available to add ingredients to"
+  },
+  "recipeAddToListRemoveFromSelection": "{name} verwijderen uit selectie",
+  "@recipeAddToListRemoveFromSelection": {
+    "description": "Semantics: deselect ingredient",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeAddToListTargetList": "Doellijst",
+  "@recipeAddToListTargetList": {
+    "description": "Dropdown label for target list"
+  },
+  "recipeCreationScanRecipe": "Recept scannen",
+  "@recipeCreationScanRecipe": {
+    "description": "Button text to scan a recipe"
+  },
+  "recipeCreationScanRecipeViaCamera": "Recept scannen via camera",
+  "@recipeCreationScanRecipeViaCamera": {
+    "description": "Semantics label for scanning a recipe"
+  },
+  "recipeDetailStepCount": "{count, plural, =1{1 stap} other{{count} stappen}}",
+  "@recipeDetailStepCount": {
+    "description": "Semantics label for recipe step count",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "recurringCouldNotCreate": "Terugkerende uitgave kon niet worden aangemaakt.",
+  "@recurringCouldNotCreate": {
+    "description": "Error when creating recurring expense fails"
+  },
+  "recurringCouldNotDelete": "Terugkerende uitgave kon niet worden verwijderd.",
+  "@recurringCouldNotDelete": {
+    "description": "Error when deleting recurring expense fails"
+  },
+  "recurringCouldNotUpdate": "Terugkerende uitgave kon niet worden bijgewerkt.",
+  "@recurringCouldNotUpdate": {
+    "description": "Error when updating recurring expense fails"
+  },
+  "recurringTomorrow": "Morgen",
+  "@recurringTomorrow": {
+    "description": "Tomorrow label in recurring expenses date helper"
+  },
+  "scannerCouldNotAnalyze": "Afbeelding kon niet worden geanalyseerd. Probeer het opnieuw met een duidelijkere foto.",
+  "@scannerCouldNotAnalyze": {
+    "description": "Error when AI image analysis fails in scanner"
+  },
+  "sheetConflictDescription": "Dit item is op een ander apparaat gewijzigd terwijl je het bewerkte. Kies welke versie je wilt behouden.",
+  "@sheetConflictDescription": {
+    "description": "Conflict resolution description"
+  },
+  "sheetConflictKeepLocal": "Jouwe behouden",
+  "@sheetConflictKeepLocal": {
+    "description": "Button to keep local version"
+  },
+  "sheetConflictKeepServer": "Server behouden",
+  "@sheetConflictKeepServer": {
+    "description": "Button to keep server version"
+  },
+  "sheetConflictLocal": "Jouw versie",
+  "@sheetConflictLocal": {
+    "description": "Local version label"
+  },
+  "sheetConflictServer": "Serverversie",
+  "@sheetConflictServer": {
+    "description": "Server version label"
+  },
+  "sheetConflictTitle": "Synchronisatieconflict",
+  "@sheetConflictTitle": {
+    "description": "Conflict resolution sheet title"
+  },
+  "sheetCostSummaryTitle": "Kostenoverzicht",
+  "@sheetCostSummaryTitle": {
+    "description": "Sheet title for list cost summary"
+  },
+  "sheetCostSummaryTotal": "Totaal",
+  "@sheetCostSummaryTotal": {
+    "description": "Total cost label"
+  },
+  "sheetCreateHouseholdName": "Huishoudennaam",
+  "@sheetCreateHouseholdName": {
+    "description": "Name input label"
+  },
+  "sheetCreateHouseholdNameHint": "bijv. Appartement 4B",
+  "@sheetCreateHouseholdNameHint": {
+    "description": "Name placeholder"
+  },
+  "sheetCreateHouseholdTitle": "Huishouden aanmaken",
+  "@sheetCreateHouseholdTitle": {
+    "description": "Sheet title for creating a household"
+  },
+  "sheetCreateListCreate": "Lijst aanmaken",
+  "@sheetCreateListCreate": {
+    "description": "Create list button"
+  },
+  "sheetCreateListName": "Lijstnaam",
+  "@sheetCreateListName": {
+    "description": "Name input label"
+  },
+  "sheetCreateListNameHint": "bijv. Weekboodschappen",
+  "@sheetCreateListNameHint": {
+    "description": "Name placeholder"
+  },
+  "sheetCreateListTitle": "Nieuwe lijst",
+  "@sheetCreateListTitle": {
+    "description": "Sheet title for creating a list"
+  },
+  "sheetCreateListType": "Type",
+  "@sheetCreateListType": {
+    "description": "List type selector label"
+  },
+  "sheetCreateListTypeCustom": "Aangepast",
+  "@sheetCreateListTypeCustom": {
+    "description": "Type option: custom list"
+  },
+  "sheetCreateListTypeShopping": "Boodschappen",
+  "@sheetCreateListTypeShopping": {
+    "description": "Type option: shopping list"
+  },
+  "sheetCreateListTypeTodo": "Taken",
+  "@sheetCreateListTypeTodo": {
+    "description": "Type option: to-do list"
+  },
+  "sheetExpenseDetailSplits": "Verdelingen",
+  "@sheetExpenseDetailSplits": {
+    "description": "Section header: split details"
+  },
+  "sheetExpenseDetailSplitsCount": "{count, plural, =1{{count} verdeling} other{{count} verdelingen}}",
+  "@sheetExpenseDetailSplitsCount": {
+    "description": "Split count",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "sheetExpenseDetailTitle": "Uitgavedetails",
+  "@sheetExpenseDetailTitle": {
+    "description": "Sheet title for expense detail"
+  },
+  "sheetFailedChangesDescription": "Deze wijzigingen konden niet worden opgeslagen. Je kunt opnieuw proberen of ze negeren.",
+  "@sheetFailedChangesDescription": {
+    "description": "Failed changes description"
+  },
+  "sheetFailedChangesDiscard": "Negeren",
+  "@sheetFailedChangesDiscard": {
+    "description": "Discard single failed change"
+  },
+  "sheetFailedChangesDiscardAll": "Alles negeren",
+  "@sheetFailedChangesDiscardAll": {
+    "description": "Discard all failed changes"
+  },
+  "sheetFailedChangesEmpty": "Geen mislukte wijzigingen. Alles is gesynchroniseerd of wacht op een nieuwe poging.",
+  "@sheetFailedChangesEmpty": {
+    "description": "Empty state when no failed outbox changes"
+  },
+  "sheetFailedChangesOpAddItem": "Item toevoegen",
+  "@sheetFailedChangesOpAddItem": {
+    "description": "Outbox op label: create item"
+  },
+  "sheetFailedChangesOpChange": "Wijziging",
+  "@sheetFailedChangesOpChange": {
+    "description": "Outbox op label: unknown change"
+  },
+  "sheetFailedChangesOpCompleteChore": "Klus voltooien",
+  "@sheetFailedChangesOpCompleteChore": {
+    "description": "Outbox op label: complete chore"
+  },
+  "sheetFailedChangesOpCreateExpense": "Uitgave toevoegen",
+  "@sheetFailedChangesOpCreateExpense": {
+    "description": "Outbox op label: create expense"
+  },
+  "sheetFailedChangesOpCreatePinwallPost": "Op prikbord plaatsen",
+  "@sheetFailedChangesOpCreatePinwallPost": {
+    "description": "Outbox op label: create pinwall post"
+  },
+  "sheetFailedChangesOpCreateRecipe": "Recept toevoegen",
+  "@sheetFailedChangesOpCreateRecipe": {
+    "description": "Outbox op label: create recipe"
+  },
+  "sheetFailedChangesOpDeleteExpense": "Uitgave verwijderen",
+  "@sheetFailedChangesOpDeleteExpense": {
+    "description": "Outbox op label: delete expense"
+  },
+  "sheetFailedChangesOpDeleteItem": "Item verwijderen",
+  "@sheetFailedChangesOpDeleteItem": {
+    "description": "Outbox op label: delete item"
+  },
+  "sheetFailedChangesOpDeletePinwallPost": "Prikbordbericht verwijderen",
+  "@sheetFailedChangesOpDeletePinwallPost": {
+    "description": "Outbox op label: delete pinwall post"
+  },
+  "sheetFailedChangesOpDeleteRecipe": "Recept verwijderen",
+  "@sheetFailedChangesOpDeleteRecipe": {
+    "description": "Outbox op label: delete recipe"
+  },
+  "sheetFailedChangesOpReorderItems": "Lijst herschikken",
+  "@sheetFailedChangesOpReorderItems": {
+    "description": "Outbox op label: reorder items"
+  },
+  "sheetFailedChangesOpRescheduleChore": "Klus opnieuw plannen",
+  "@sheetFailedChangesOpRescheduleChore": {
+    "description": "Outbox op label: reschedule chore"
+  },
+  "sheetFailedChangesOpSkipChore": "Klus overslaan",
+  "@sheetFailedChangesOpSkipChore": {
+    "description": "Outbox op label: skip chore"
+  },
+  "sheetFailedChangesOpUndoChore": "Klus ongedaan maken",
+  "@sheetFailedChangesOpUndoChore": {
+    "description": "Outbox op label: undo chore"
+  },
+  "sheetFailedChangesOpUpdateExpense": "Uitgave bijwerken",
+  "@sheetFailedChangesOpUpdateExpense": {
+    "description": "Outbox op label: update expense"
+  },
+  "sheetFailedChangesOpUpdateItem": "Item bijwerken",
+  "@sheetFailedChangesOpUpdateItem": {
+    "description": "Outbox op label: update item"
+  },
+  "sheetFailedChangesOpUpdateRecipe": "Recept bijwerken",
+  "@sheetFailedChangesOpUpdateRecipe": {
+    "description": "Outbox op label: update recipe"
+  },
+  "sheetFailedChangesRetry": "Opnieuw",
+  "@sheetFailedChangesRetry": {
+    "description": "Retry single failed change"
+  },
+  "sheetFailedChangesRetryAll": "Alles opnieuw",
+  "@sheetFailedChangesRetryAll": {
+    "description": "Retry all failed changes"
+  },
+  "sheetFailedChangesTitle": "Mislukte wijzigingen",
+  "@sheetFailedChangesTitle": {
+    "description": "Sheet title for failed outbox changes"
+  },
+  "sheetGroupSettingsAddZone": "Zone toevoegen",
+  "@sheetGroupSettingsAddZone": {
+    "description": "Input label for adding a zone"
+  },
+  "sheetGroupSettingsChoreZonesDesc": "Ruimtes in je huis om klussen te groeperen. Ze verschijnen bij het toevoegen van een klus.",
+  "@sheetGroupSettingsChoreZonesDesc": {
+    "description": "Description of chore zones"
+  },
+  "sheetGroupSettingsChoreZonesLabel": "Kluszones",
+  "@sheetGroupSettingsChoreZonesLabel": {
+    "description": "Section label for chore zones"
+  },
+  "sheetGroupSettingsChoreZonesUpdated": "Kluszones bijgewerkt",
+  "@sheetGroupSettingsChoreZonesUpdated": {
+    "description": "Snackbar when chore zones are saved"
+  },
+  "sheetGroupSettingsCouldNotSave": "Instellingen konden niet worden opgeslagen.",
+  "@sheetGroupSettingsCouldNotSave": {
+    "description": "Error when saving fails"
+  },
+  "sheetGroupSettingsDelete": "Huishouden verwijderen",
+  "@sheetGroupSettingsDelete": {
+    "description": "Button to delete household"
+  },
+  "sheetGroupSettingsDeleteConfirm": "Dit verwijdert dit huishouden en alle bijbehorende gegevens permanent. Dit kan niet ongedaan worden gemaakt.",
+  "@sheetGroupSettingsDeleteConfirm": {
+    "description": "Confirmation for deleting household"
+  },
+  "sheetGroupSettingsDescriptionHint": "Een paar woorden over dit huishouden",
+  "@sheetGroupSettingsDescriptionHint": {
+    "description": "Hint text for household description"
+  },
+  "sheetGroupSettingsHouseholdDeleted": "Huishouden verwijderd",
+  "@sheetGroupSettingsHouseholdDeleted": {
+    "description": "Snackbar when household is deleted"
+  },
+  "sheetGroupSettingsInvite": "Uitnodigen",
+  "@sheetGroupSettingsInvite": {
+    "description": "Button to invite a member"
+  },
+  "sheetGroupSettingsLeave": "Huishouden verlaten",
+  "@sheetGroupSettingsLeave": {
+    "description": "Button to leave household"
+  },
+  "sheetGroupSettingsLeaveAction": "Verlaten",
+  "@sheetGroupSettingsLeaveAction": {
+    "description": "Confirm leave action"
+  },
+  "sheetGroupSettingsLeaveConfirm": "Weet je zeker dat je dit huishouden wilt verlaten? Al je gegevens blijven in het huishouden bewaard.",
+  "@sheetGroupSettingsLeaveConfirm": {
+    "description": "Confirmation for leaving household"
+  },
+  "sheetGroupSettingsMemberRemoved": "{name} verwijderd",
+  "@sheetGroupSettingsMemberRemoved": {
+    "description": "Snackbar when member is removed",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetGroupSettingsMembersLabel": "Leden",
+  "@sheetGroupSettingsMembersLabel": {
+    "description": "Section label for household members"
+  },
+  "sheetGroupSettingsName": "Huishoudennaam",
+  "@sheetGroupSettingsName": {
+    "description": "Name input label"
+  },
+  "sheetGroupSettingsRemoveMember": "Lid verwijderen",
+  "@sheetGroupSettingsRemoveMember": {
+    "description": "Dialog title for removing a member"
+  },
+  "sheetGroupSettingsRemoveMemberConfirm": "{name} uit dit huishouden verwijderen?",
+  "@sheetGroupSettingsRemoveMemberConfirm": {
+    "description": "Confirmation dialog body for removing a member",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetGroupSettingsRemoveMemberTooltip": "{name} verwijderen",
+  "@sheetGroupSettingsRemoveMemberTooltip": {
+    "description": "Tooltip to remove a member",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetGroupSettingsSaveZones": "Zones opslaan",
+  "@sheetGroupSettingsSaveZones": {
+    "description": "Button to save chore zones"
+  },
+  "sheetGroupSettingsSaved": "Instellingen opgeslagen",
+  "@sheetGroupSettingsSaved": {
+    "description": "Snackbar when settings are saved"
+  },
+  "sheetGroupSettingsTitle": "Huishoudinstellingen",
+  "@sheetGroupSettingsTitle": {
+    "description": "Sheet title for group settings"
+  },
+  "sheetGroupSettingsZoneHint": "Keuken, Badkamer…",
+  "@sheetGroupSettingsZoneHint": {
+    "description": "Placeholder for zone input"
+  },
+  "sheetInviteCopied": "Uitnodigingslink gekopieerd",
+  "@sheetInviteCopied": {
+    "description": "Snackbar when link is copied"
+  },
+  "sheetInviteCopy": "Link kopiëren",
+  "@sheetInviteCopy": {
+    "description": "Copy invite link button"
+  },
+  "sheetInviteShare": "Link delen",
+  "@sheetInviteShare": {
+    "description": "Share invite link button"
+  },
+  "sheetInviteTitle": "Uitnodigen voor huishouden",
+  "@sheetInviteTitle": {
+    "description": "Sheet title for inviting to household"
+  },
+  "sheetJoinCodeExample": "SUNNY-TACO-42",
+  "@sheetJoinCodeExample": {
+    "description": "Example invite code placeholder"
+  },
+  "sheetJoinCodeHint": "Plak uitnodigingscode",
+  "@sheetJoinCodeHint": {
+    "description": "Invite code placeholder"
+  },
+  "sheetJoinCodeLabel": "Uitnodigingscode",
+  "@sheetJoinCodeLabel": {
+    "description": "Invite code input label"
+  },
+  "sheetJoinJoin": "Deelnemen",
+  "@sheetJoinJoin": {
+    "description": "Join button"
+  },
+  "sheetJoinTitle": "Deelnemen aan huishouden",
+  "@sheetJoinTitle": {
+    "description": "Sheet title for joining a household"
+  },
+  "sheetRecipeAddToListAdded": "{count, plural, =1{1 item toegevoegd} other{{count} items toegevoegd}}",
+  "@sheetRecipeAddToListAdded": {
+    "description": "Snackbar when ingredients are added",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "sheetRecipeAddToListCouldNotAdd": "Ingrediënten konden niet worden toegevoegd.",
+  "@sheetRecipeAddToListCouldNotAdd": {
+    "description": "Error when adding ingredients fails"
+  },
+  "sheetRecipeAddToListTitle": "Toevoegen aan lijst",
+  "@sheetRecipeAddToListTitle": {
+    "description": "Sheet title for adding recipe ingredients to list"
+  },
+  "sheetSettlementConfirm": "Verrekening bevestigen",
+  "@sheetSettlementConfirm": {
+    "description": "Confirm settlement button"
+  },
+  "sheetSettlementFrom": "Van",
+  "@sheetSettlementFrom": {
+    "description": "Party label: from"
+  },
+  "sheetSettlementRecordPayment": "Registreer deze verrekening nadat de betaling is gedaan.",
+  "@sheetSettlementRecordPayment": {
+    "description": "Settlement helper text"
+  },
+  "sheetSettlementTitle": "Verrekening registreren",
+  "@sheetSettlementTitle": {
+    "description": "Settlement confirmation dialog title"
+  },
+  "sheetSettlementTo": "Naar",
+  "@sheetSettlementTo": {
+    "description": "Party label: to"
+  },
+  "smartCaptureLaunchTitle": "Foto controleren",
+  "@smartCaptureLaunchTitle": {
+    "description": "Smart capture launcher review title"
+  },
+  "storePickerLoadError": "Winkels konden niet worden geladen.",
+  "@storePickerLoadError": {
+    "description": "Store picker load error"
+  },
+  "storePickerNoMatch": "Geen winkels komen overeen met je zoekopdracht.",
+  "@storePickerNoMatch": {
+    "description": "No store search results"
+  },
+  "storePickerNoStore": "Geen winkel",
+  "@storePickerNoStore": {
+    "description": "No store option"
+  },
+  "storePickerNoStoreDesc": "Sorteer op categorie in plaats van winkelindeling",
+  "@storePickerNoStoreDesc": {
+    "description": "No store option description"
+  },
+  "storePickerSearchHint": "Naam...",
+  "@storePickerSearchHint": {
+    "description": "Store search hint"
+  },
+  "storePickerSearchLabel": "Winkels zoeken",
+  "@storePickerSearchLabel": {
+    "description": "Store search label"
+  },
+  "storePickerTitle": "Winkel kiezen",
+  "@storePickerTitle": {
+    "description": "Store picker sheet title"
+  },
+  "tonightCook": "Koken",
+  "@tonightCook": {
+    "description": "Button to start cooking tonight's meal"
+  },
+  "tonightHeader": "Vanavond",
+  "@tonightHeader": {
+    "description": "Tonight card section header"
+  },
+  "tonightNothingPlanned": "Niets gepland voor vanavond",
+  "@tonightNothingPlanned": {
+    "description": "Empty state when no meal planned for tonight"
+  },
+  "tonightPlanDinner": "Avondeten plannen",
+  "@tonightPlanDinner": {
+    "description": "CTA to plan tonight's dinner"
+  },
+  "tonightRecipe": "Recept",
+  "@tonightRecipe": {
+    "description": "Fallback recipe title for tonight card"
+  }
+}

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/list_models.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
@@ -37,6 +38,7 @@ class ListItemRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -63,9 +65,9 @@ class ListItemRow extends StatelessWidget {
             children: [
               if (reorderIndex != null) ...[
                 Semantics(
-                  label: 'Reorder',
+                  label: l10n.listItemReorder,
                   child: Tooltip(
-                    message: 'Reorder',
+                    message: l10n.listItemReorder,
                     child: ReorderableDragStartListener(
                       index: reorderIndex!,
                       child: SizedBox(
@@ -86,14 +88,14 @@ class ListItemRow extends StatelessWidget {
               AnimatedCheckToggle(
                 value: item.checked,
                 onChanged: onToggle,
-                semanticLabelOn: 'Mark ${item.name} as unchecked',
-                semanticLabelOff: 'Mark ${item.name} as checked',
+                semanticLabelOn: l10n.listItemMarkUnchecked(item.name),
+                semanticLabelOff: l10n.listItemMarkChecked(item.name),
               ),
               const SizedBox(width: MitlistSpacing.sm),
               if (photoUrl != null) ...[
                 Semantics(
                   button: true,
-                  label: 'View photo for ${item.name}',
+                  label: l10n.listItemViewPhotoFor(item.name),
                   child: GestureDetector(
                     onTap: onPhotoTap,
                     child: SizedBox(
@@ -137,7 +139,7 @@ class ListItemRow extends StatelessWidget {
                     ),
                     if (failedToSync)
                       Text(
-                        'Failed to save — tap the sync bar to retry',
+                        l10n.listItemFailedSave,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: textTheme.bodySmall?.copyWith(
@@ -215,7 +217,7 @@ class ListItemRow extends StatelessWidget {
 
     return Semantics(
       button: true,
-      hint: 'Long press for more options',
+      hint: l10n.listItemLongPressHint,
       child: row,
     );
   }

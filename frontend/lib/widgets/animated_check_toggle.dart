@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../theme/animations.dart';
 import '../theme/shadows.dart';
 import '../theme/spacing.dart';
@@ -62,6 +63,7 @@ class _AnimatedCheckToggleState extends State<AnimatedCheckToggle>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final disableAnimations = MediaQuery.of(context).disableAnimations;
     final colorScheme = Theme.of(context).colorScheme;
     final progress = disableAnimations ? (widget.value ? 1.0 : 0.0) : _controller.value;
@@ -70,8 +72,8 @@ class _AnimatedCheckToggleState extends State<AnimatedCheckToggle>
     final borderColor = _lerpColor(colorScheme.outline, colorScheme.primary, progress);
 
     final label = widget.value
-        ? (widget.semanticLabelOn ?? 'Checked')
-        : (widget.semanticLabelOff ?? 'Not checked');
+        ? (widget.semanticLabelOn ?? l10n.checkToggleChecked)
+        : (widget.semanticLabelOff ?? l10n.checkToggleNotChecked);
 
     Widget toggle = SizedBox(
       width: MitlistSpacing.space11,

@@ -6,6 +6,7 @@ class Group {
   final bool? isPersonal;
   final int? memberCount;
   final String currency;
+  final List<String> choreZones;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -16,6 +17,7 @@ class Group {
     this.isPersonal,
     this.memberCount,
     this.currency = 'USD',
+    this.choreZones = const [],
     required this.createdAt,
     required this.updatedAt,
   });
@@ -28,6 +30,10 @@ class Group {
       isPersonal: json['is_personal'] as bool?,
       memberCount: json['member_count'] as int?,
       currency: json['currency'] as String? ?? 'USD',
+      choreZones: (json['chore_zones'] as List<dynamic>?)
+              ?.map((z) => z as String)
+              .toList() ??
+          const [],
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -41,6 +47,7 @@ class Group {
       if (isPersonal != null) 'is_personal': isPersonal,
       if (memberCount != null) 'member_count': memberCount,
       'currency': currency,
+      'chore_zones': choreZones,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -81,11 +88,13 @@ class UpdateGroupRequest {
   final String? name;
   final String? description;
   final String? currency;
+  final List<String>? choreZones;
 
   const UpdateGroupRequest({
     this.name,
     this.description,
     this.currency,
+    this.choreZones,
   });
 
   factory UpdateGroupRequest.fromJson(Map<String, dynamic> json) {
@@ -93,6 +102,9 @@ class UpdateGroupRequest {
       name: json['name'] as String?,
       description: json['description'] as String?,
       currency: json['currency'] as String?,
+      choreZones: (json['chore_zones'] as List<dynamic>?)
+          ?.map((z) => z as String)
+          .toList(),
     );
   }
 
@@ -101,6 +113,7 @@ class UpdateGroupRequest {
       'name': name,
       'description': description,
       'currency': currency,
+      if (choreZones != null) 'chore_zones': choreZones,
     };
   }
 }

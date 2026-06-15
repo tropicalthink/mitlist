@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/finance_provider.dart';
 import '../../repositories/finance_repository.dart';
@@ -236,12 +237,15 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       final me = validGroupId == null ? null : await authService.getMe();
 
       if (validGroupId != null) {
+        final youLabel = mounted
+            ? AppLocalizations.of(context)!.activityYou
+            : 'You';
         // Load member names and group currency in parallel.
         await Future.wait([
           groupService.listMembers(validGroupId).then((members) {
             _memberNames = {
               for (final m in members)
-                m.userId: m.userId == me?.id ? 'You' : m.displayName,
+                m.userId: m.userId == me?.id ? youLabel : m.displayName,
             };
           }).catchError((_) {}),
           groupService.getGroup(validGroupId).then((group) {
@@ -261,7 +265,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       if (!mounted) return;
 
       _groupId = validGroupId;
-      _applyFinanceSummary(summary, me?.id);
+      _applyFinanceSummary(summary, me?.id, AppLocalizations.of(context)!);
       _timelineExpenses
         ..clear()
         ..addAll(expenses.map(_mapExpense));
@@ -295,7 +299,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
               (prev, next) {
             next.whenData((s) {
               if (!mounted) return;
-              _applyFinanceSummary(s, me?.id);
+              _applyFinanceSummary(s, me?.id, AppLocalizations.of(context)!);
               setState(() {});
             });
           });
@@ -307,7 +311,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Couldn\u2019t load expenses. Check your connection.';
+        final l10n = AppLocalizations.of(context)!;
+        _errorMessage = l10n.expenseLoadError;
         _isLoading = false;
       });
     }
@@ -347,7 +352,11 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     });
   }
 
-  void _applyFinanceSummary(FinanceSummary? summary, String? currentUserId) {
+  void _applyFinanceSummary(
+    FinanceSummary? summary,
+    String? currentUserId,
+    AppLocalizations l10n,
+  ) {
     if (summary == null) {
       _balance = 0;
       _openBalanceCount = 0;
@@ -369,10 +378,10 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
               from: suggestion.fromUserId,
               to: suggestion.toUserId,
               fromLabel: suggestion.fromUserId == currentUserId
-                  ? 'You'
+                  ? l10n.activityYou
                   : suggestion.fromDisplayName,
               toLabel: suggestion.toUserId == currentUserId
-                  ? 'You'
+                  ? l10n.activityYou
                   : suggestion.toDisplayName,
               amount: suggestion.amount / 100.0,
             ))
@@ -381,7 +390,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         .map((balance) => _BalanceEntry(
               userId: balance.userId,
               name:
-                  balance.userId == currentUserId ? 'You' : balance.displayName,
+                  balance.userId == currentUserId ? l10n.activityYou : balance.displayName,
               amount: balance.total / 100.0,
             ))
         .toList();
@@ -390,7 +399,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       // Member names are the base layer; summary display names take precedence.
       ..._memberNames,
       for (final b in summary.balances)
-        b.userId: b.userId == currentUserId ? 'You' : b.displayName,
+        b.userId: b.userId == currentUserId ? l10n.activityYou : b.displayName,
     };
   }
 
@@ -473,20 +482,20 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   }
 
   Future<void> _confirmDeleteExpense(_Expense expense) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showAppDialog<bool>(
       context: context,
-      title: 'Delete expense',
-      body: const Text(
-          'This will permanently delete this expense and all associated receipts. This cannot be undone.'),
+      title: l10n.expenseDeleteTitle,
+      body: Text(l10n.expenseDeleteBody),
       actions: [
         AppButton(
-          text: 'Cancel',
+          text: l10n.commonCancel,
           variant: AppButtonVariant.outline,
           onPressed: () => Navigator.of(context).pop(false),
         ),
         const SizedBox(width: MitlistSpacing.sm),
         AppButton(
-          text: 'Delete',
+          text: l10n.commonDelete,
           color: AppButtonColor.error,
           onPressed: () => Navigator.of(context).pop(true),
         ),
@@ -502,7 +511,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       if (!mounted) return;
       unawaited(Haptics.failure());
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e))),
+        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -525,7 +534,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
             ))
         .toList();
     _timelineGroups.sort((a, b) {
-      final order = ['Today', 'Yesterday'];
+      final l10n = AppLocalizations.of(context)!;
+      final order = [l10n.expenseToday, l10n.expenseYesterday];
       final ai = order.indexOf(a.label);
       final bi = order.indexOf(b.label);
       if (ai >= 0 && bi >= 0) return ai.compareTo(bi);
@@ -536,10 +546,11 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   }
 
   String _dateLabel(DateTime date, DateTime now) {
+    final l10n = AppLocalizations.of(context)!;
     final today = DateTime(now.year, now.month, now.day);
     final d = DateTime(date.year, date.month, date.day);
-    if (d == today) return 'Today';
-    if (d == today.subtract(Duration(days: 1))) return 'Yesterday';
+    if (d == today) return l10n.expenseToday;
+    if (d == today.subtract(Duration(days: 1))) return l10n.expenseYesterday;
     return DateFormat('MMMM d').format(date);
   }
 
@@ -590,13 +601,15 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       await _loadData();
       if (!mounted) return;
       unawaited(Haptics.success());
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Settlement recorded')),
+        SnackBar(content: Text(l10n.expenseSettlementRecorded)),
       );
     } catch (e) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Couldn\u2019t record settlement.')),
+        SnackBar(content: Text(l10n.expenseSettlementFailed)),
       );
     } finally {
       if (mounted) {
@@ -632,21 +645,23 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
     _maybePlayConfetti();
 
+    final l10n = AppLocalizations.of(context)!;
+
     final canSettle = _hasHousehold && !_isLoading && _errorMessage == null;
     final showSettlementsNudge = canSettle && (_suggestions.isNotEmpty);
 
     return Scaffold(
       appBar: MitlistAppBar.titleText(
-        'Money',
+        l10n.expenseAppBarTitle,
         actions: [
           IconButton(
             icon: const AppIcon(name: 'camera'),
-            tooltip: 'Scan receipt',
+            tooltip: l10n.expenseScanReceiptTooltip,
             onPressed: () => context.pushNamed('scanner'),
           ),
           IconButton(
             icon: const AppIcon(name: 'repeat'),
-            tooltip: 'Recurring',
+            tooltip: l10n.expenseRecurringTooltip,
             onPressed: () => context.pushNamed('recurringExpenses'),
           ),
         ],
@@ -713,9 +728,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
           : AppButton(
               size: AppButtonSize.lg,
               onPressed: _openCreateExpense,
-              text: 'Add expense',
+              text: l10n.expenseAddExpense,
               icon: const AppIcon(name: 'plus'),
-              tooltip: 'Add expense',
+              tooltip: l10n.expenseAddExpense,
             ),
     );
   }
@@ -744,24 +759,25 @@ class _BalanceCard extends StatelessWidget {
     this.onTap,
   });
 
-  String get _headline {
-    if (balance > 0) return 'You are owed';
-    if (balance < 0) return 'You owe';
-    return 'All square';
+  String _headline(AppLocalizations l10n) {
+    if (balance > 0) return l10n.expenseYouAreOwed;
+    if (balance < 0) return l10n.expenseYouOwe;
+    return l10n.expenseAllSquare;
   }
 
-  String get _description {
+  String _description(AppLocalizations l10n) {
     if (suggestionCount > 0) {
-      return '$suggestionCount suggested payment${suggestionCount == 1 ? '' : 's'} to settle up';
+      return l10n.expenseSuggestedPayments(suggestionCount);
     }
     if (openBalanceCount > 0) {
-      return '$openBalanceCount open balance${openBalanceCount == 1 ? '' : 's'} in the household';
+      return l10n.expenseOpenBalances(openBalanceCount);
     }
-    return 'No one needs to pay anyone right now';
+    return l10n.expenseNoOneOwes;
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (isLoading) {
       return AppCard(
         child: Row(
@@ -808,11 +824,11 @@ class _BalanceCard extends StatelessWidget {
               final details = Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(_headline,
+                  Text(_headline(l10n),
                       style: Theme.of(context).textTheme.titleSmall),
                   const SizedBox(height: MitlistSpacing.xs),
                   Text(
-                    _description,
+                    _description(l10n),
                     maxLines: compact ? 3 : 2,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall,
@@ -875,17 +891,18 @@ class _ChipBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Wrap(
       spacing: MitlistSpacing.sm,
       runSpacing: MitlistSpacing.sm,
       children: [
         AppChip(
-          label: 'Timeline',
+          label: l10n.expenseTabTimeline,
           selected: selectedTab == 0,
           onSelected: (_) => onTabChanged(0),
         ),
         AppChip(
-          label: 'Settlements',
+          label: l10n.expenseTabSettlements,
           selected: selectedTab == 1,
           onSelected: (_) => onTabChanged(1),
         ),
@@ -944,17 +961,18 @@ class _ErrorBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(MitlistSpacing.md),
       child: Column(
         children: [
           AppAlert(
             type: AppAlertType.error,
-            message: message ?? 'Failed to load expenses. Please try again.',
+            message: message ?? l10n.commonFailedToLoad,
           ),
           const SizedBox(height: MitlistSpacing.md),
           AppButton(
-            text: 'Retry',
+            text: l10n.commonRetry,
             onPressed: onRetry,
           ),
         ],
@@ -970,17 +988,18 @@ class _NoHouseholdBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(MitlistSpacing.md),
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/House.lottie',
           icon: AppIcon(name: 'home', size: 56),
-          title: 'No household yet',
-          description: 'Create or join a household before tracking expenses.',
+          title: l10n.commonNoHousehold,
+          description: l10n.commonCreateJoinHousehold,
           actions: [
             AppButton(
-              text: 'Go to households',
+              text: l10n.commonGoToHouseholds,
               onPressed: onOpenHouseholds,
             ),
           ],
@@ -1015,6 +1034,7 @@ class _TimelineBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (groups.isEmpty) {
       return RefreshIndicator(
         color: Theme.of(context).colorScheme.primary,
@@ -1032,11 +1052,11 @@ class _TimelineBody extends StatelessWidget {
                   child: AppEmptyState(
                     lottieAsset: 'assets/animations/lottie/wallet.lottie',
                     icon: AppIcon(name: 'receiptPercent', size: 56),
-                    title: 'No expenses yet',
-                    description: 'Track shared costs with your household.',
+                    title: l10n.expenseNoExpensesTitle,
+                    description: l10n.expenseNoExpensesDesc,
                     actions: [
                       AppButton(
-                        text: 'Add first expense',
+                        text: l10n.expenseAddFirstExpense,
                         onPressed: onAddExpense,
                       ),
                     ],
@@ -1119,7 +1139,7 @@ class _TimelineBody extends StatelessWidget {
                 child: hasPageError
                     ? AppAlert(
                         type: AppAlertType.error,
-                        message: 'Failed to load more expenses.',
+                        message: l10n.expenseLoadMoreError,
                       )
                     : Center(
                         child: AppSpinner(
@@ -1211,6 +1231,7 @@ class _ExpenseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AppCard(
       variant: AppCardVariant.outlined,
       interactive: true,
@@ -1243,7 +1264,7 @@ class _ExpenseCard extends StatelessWidget {
                 ),
                 const SizedBox(height: MitlistSpacing.space1),
                 Text(
-                  'Paid by ${expense.payer}',
+                  l10n.expensePaidBy(expense.payer),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall,
@@ -1262,7 +1283,7 @@ class _ExpenseCard extends StatelessWidget {
               if (expense.isConverted) ...[
                 const SizedBox(height: MitlistSpacing.space1),
                 Text(
-                  '≈ ${_formatCurrency(expense.baseAmount, currency: expense.baseCurrency)}',
+                  l10n.expenseConvertedAmount(_formatCurrency(expense.baseAmount, currency: expense.baseCurrency)),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
@@ -1301,6 +1322,7 @@ class _SettlementsBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return RefreshIndicator(
       color: Theme.of(context).colorScheme.primary,
       onRefresh: onRefresh,
@@ -1311,12 +1333,12 @@ class _SettlementsBody extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Suggested payments',
+              l10n.expenseSuggestedPaymentsTitle,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: MitlistSpacing.xs),
             Text(
-              'Calculated from every expense, split, and recorded settlement in this household.',
+              l10n.expenseSuggestedPaymentsDesc,
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: MitlistSpacing.md),
@@ -1339,8 +1361,8 @@ class _SettlementsBody extends StatelessWidget {
                   AppEmptyState(
                     lottieAsset: 'assets/animations/lottie/Checkmark.lottie',
                     icon: const AppIcon(name: 'checkCircle', size: 56),
-                    title: 'All settled up!',
-                    description: 'No one owes anyone right now.',
+                    title: l10n.expenseAllSettled,
+                    description: l10n.expenseNoOneOwesRight,
                   ),
                   ConfettiWidget(
                     confettiController: confettiController,
@@ -1381,6 +1403,7 @@ class _SuggestionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AppCard(
       variant: AppCardVariant.elevated,
       animated: true,
@@ -1407,12 +1430,12 @@ class _SuggestionCard extends StatelessWidget {
               final from = _SettlementParty(
                 label: suggestion.fromLabel,
                 helper:
-                    suggestion.from == suggestion.to ? 'Same account' : 'From',
+                    suggestion.from == suggestion.to ? l10n.expenseSameAccount : l10n.expenseFrom,
                 tone: Theme.of(context).colorScheme.error,
               );
               final to = _SettlementParty(
                 label: suggestion.toLabel,
-                helper: 'To',
+                helper: l10n.expenseTo,
                 tone: Theme.of(context).colorScheme.tertiary,
               );
 
@@ -1446,7 +1469,7 @@ class _SuggestionCard extends StatelessWidget {
           ),
           const SizedBox(height: MitlistSpacing.md),
           Text(
-            'Record this settlement after the payment is made.',
+            l10n.expenseRecordHelper,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -1457,7 +1480,7 @@ class _SuggestionCard extends StatelessWidget {
             child: AppButton(
               variant: AppButtonVariant.solid,
               color: AppButtonColor.success,
-              text: isSettling ? 'Recording...' : 'Record settlement',
+              text: isSettling ? l10n.expenseRecording : l10n.expenseRecordSettlement,
               isLoading: isSettling,
               onPressed: isSettling ? null : onRecord,
             ),
@@ -1569,13 +1592,14 @@ class _BalancesExpandableBodyState extends State<_BalancesExpandableBody> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final disableAnimations = MediaQuery.of(context).disableAnimations;
 
     return Column(
       children: [
         Semantics(
           button: true,
-          label: _expanded ? 'Collapse balances' : 'Expand balances',
+          label: _expanded ? l10n.expenseCollapseBalances : l10n.expenseExpandBalances,
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () => setState(() => _expanded = !_expanded),
@@ -1588,14 +1612,14 @@ class _BalancesExpandableBodyState extends State<_BalancesExpandableBody> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Balances',
+                      l10n.expenseBalances,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.labelMedium,
                     ),
                   ),
                   Text(
-                    '${widget.openCount} open',
+                    l10n.expenseBalancesOpen(widget.openCount),
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   const SizedBox(width: MitlistSpacing.sm),
@@ -1624,7 +1648,7 @@ class _BalancesExpandableBodyState extends State<_BalancesExpandableBody> {
             ),
             child: widget.sortedBalances.isEmpty
                 ? Text(
-                    'No balances yet. Add an expense with splits to start the ledger.',
+                    l10n.expenseNoBalances,
                     style: Theme.of(context).textTheme.bodySmall,
                   )
                 : Column(
@@ -1650,10 +1674,10 @@ class _BalancesExpandableBodyState extends State<_BalancesExpandableBody> {
                                     ),
                                     Text(
                                       b.amount > 0
-                                          ? 'is owed'
+                                          ? l10n.expenseIsOwed
                                           : b.amount < 0
-                                              ? 'owes'
-                                              : 'settled',
+                                              ? l10n.expenseOwes
+                                              : l10n.expenseSettled,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style:

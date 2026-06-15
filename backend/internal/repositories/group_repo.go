@@ -31,11 +31,15 @@ func (r *GroupRepository) CreateGroup(ctx context.Context, group *models.Group) 
 	group.UpdatedAt = now
 
 	query := `
-		INSERT INTO groups (id, name, description, currency, created_by, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO groups (id, name, description, currency, chore_zones, created_by, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
+	choreZones := group.ChoreZones
+	if choreZones == nil {
+		choreZones = []string{}
+	}
 	_, err := r.pool.Exec(ctx, query,
-		group.ID, group.Name, group.Description, group.Currency, group.CreatedBy, group.CreatedAt, group.UpdatedAt,
+		group.ID, group.Name, group.Description, group.Currency, choreZones, group.CreatedBy, group.CreatedAt, group.UpdatedAt,
 	)
 	return err
 }
@@ -43,14 +47,14 @@ func (r *GroupRepository) CreateGroup(ctx context.Context, group *models.Group) 
 // GetGroupByID retrieves a group by its ID.
 func (r *GroupRepository) GetGroupByID(ctx context.Context, id uuid.UUID) (*models.Group, error) {
 	query := `
-		SELECT id, name, description, currency, created_by, created_at, updated_at
+		SELECT id, name, description, currency, chore_zones, created_by, created_at, updated_at
 		FROM groups
 		WHERE id = $1
 	`
 	row := r.pool.QueryRow(ctx, query, id)
 
 	var g models.Group
-	err := row.Scan(&g.ID, &g.Name, &g.Description, &g.Currency, &g.CreatedBy, &g.CreatedAt, &g.UpdatedAt)
+	err := row.Scan(&g.ID, &g.Name, &g.Description, &g.Currency, &g.ChoreZones, &g.CreatedBy, &g.CreatedAt, &g.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +67,7 @@ func (r *GroupRepository) ListGroupsByUser(ctx context.Context, userID uuid.UUID
 		limit = 50
 	}
 	query := `
-		SELECT g.id, g.name, g.description, g.currency, g.created_by, g.created_at, g.updated_at
+		SELECT g.id, g.name, g.description, g.currency, g.chore_zones, g.created_by, g.created_at, g.updated_at
 		FROM groups g
 		JOIN group_memberships gm ON g.id = gm.group_id
 		WHERE gm.user_id = $1
@@ -79,7 +83,7 @@ func (r *GroupRepository) ListGroupsByUser(ctx context.Context, userID uuid.UUID
 	var groups []models.Group
 	for rows.Next() {
 		var g models.Group
-		if err := rows.Scan(&g.ID, &g.Name, &g.Description, &g.Currency, &g.CreatedBy, &g.CreatedAt, &g.UpdatedAt); err != nil {
+		if err := rows.Scan(&g.ID, &g.Name, &g.Description, &g.Currency, &g.ChoreZones, &g.CreatedBy, &g.CreatedAt, &g.UpdatedAt); err != nil {
 			return nil, err
 		}
 		groups = append(groups, g)
@@ -93,12 +97,16 @@ func (r *GroupRepository) ListGroupsByUser(ctx context.Context, userID uuid.UUID
 // UpdateGroup updates an existing group.
 func (r *GroupRepository) UpdateGroup(ctx context.Context, group *models.Group) error {
 	group.UpdatedAt = time.Now().UTC()
+	choreZones := group.ChoreZones
+	if choreZones == nil {
+		choreZones = []string{}
+	}
 	query := `
 		UPDATE groups
-		SET name = $1, description = $2, currency = COALESCE($5, currency), updated_at = $3
+		SET name = $1, description = $2, currency = COALESCE($5, currency), chore_zones = $6, updated_at = $3
 		WHERE id = $4
 	`
-	res, err := r.pool.Exec(ctx, query, group.Name, group.Description, group.UpdatedAt, group.ID, group.Currency)
+	res, err := r.pool.Exec(ctx, query, group.Name, group.Description, group.UpdatedAt, group.ID, group.Currency, choreZones)
 	if err != nil {
 		return err
 	}

@@ -1,0 +1,5530 @@
+{
+  "@@locale": "fr",
+  "commonCancel": "Annuler",
+  "@commonCancel": {
+    "description": "Generic cancel button"
+  },
+  "commonDelete": "Supprimer",
+  "@commonDelete": {
+    "description": "Generic delete button"
+  },
+  "commonRetry": "Réessayer",
+  "@commonRetry": {
+    "description": "Generic retry button"
+  },
+  "commonSave": "Enregistrer",
+  "@commonSave": {
+    "description": "Generic save button"
+  },
+  "commonBack": "Retour",
+  "@commonBack": {
+    "description": "Generic back button tooltip"
+  },
+  "commonClose": "Fermer",
+  "@commonClose": {
+    "description": "Generic close button tooltip"
+  },
+  "commonDone": "Terminé",
+  "@commonDone": {
+    "description": "Generic done/ready label"
+  },
+  "commonUndo": "Annuler",
+  "@commonUndo": {
+    "description": "Generic undo action label"
+  },
+  "commonAdd": "Ajouter",
+  "@commonAdd": {
+    "description": "Generic add button"
+  },
+  "commonConfirm": "Confirmer",
+  "@commonConfirm": {
+    "description": "Generic confirm button"
+  },
+  "commonEdit": "Modifier",
+  "@commonEdit": {
+    "description": "Generic edit button tooltip"
+  },
+  "commonSearch": "Rechercher",
+  "@commonSearch": {
+    "description": "Generic search tooltip/label"
+  },
+  "commonRemove": "Retirer",
+  "@commonRemove": {
+    "description": "Generic remove button"
+  },
+  "commonDismiss": "Ignorer",
+  "@commonDismiss": {
+    "description": "Generic dismiss button"
+  },
+  "commonClear": "Effacer",
+  "@commonClear": {
+    "description": "Generic clear/reset button"
+  },
+  "commonNext": "Suivant",
+  "@commonNext": {
+    "description": "Generic next/forward button"
+  },
+  "commonSkip": "Passer",
+  "@commonSkip": {
+    "description": "Generic skip button"
+  },
+  "commonChange": "Changer",
+  "@commonChange": {
+    "description": "Generic change/switch action"
+  },
+  "commonCreate": "Créer",
+  "@commonCreate": {
+    "description": "Generic create button"
+  },
+  "commonRename": "Renommer",
+  "@commonRename": {
+    "description": "Generic rename action"
+  },
+  "commonArchive": "Archiver",
+  "@commonArchive": {
+    "description": "Generic archive action"
+  },
+  "commonOptions": "Options",
+  "@commonOptions": {
+    "description": "Generic options menu tooltip"
+  },
+  "commonSettings": "Paramètres",
+  "@commonSettings": {
+    "description": "Generic settings tooltip/label"
+  },
+  "commonName": "Nom",
+  "@commonName": {
+    "description": "Generic name field label"
+  },
+  "commonDescription": "Description",
+  "@commonDescription": {
+    "description": "Generic description field label"
+  },
+  "commonNotes": "Notes",
+  "@commonNotes": {
+    "description": "Generic notes field label"
+  },
+  "commonAmount": "Montant",
+  "@commonAmount": {
+    "description": "Generic amount/price field label"
+  },
+  "commonPreview": "Aperçu",
+  "@commonPreview": {
+    "description": "Generic preview label"
+  },
+  "commonShare": "Partager",
+  "@commonShare": {
+    "description": "Generic share action"
+  },
+  "commonCopy": "Copier",
+  "@commonCopy": {
+    "description": "Generic copy action"
+  },
+  "commonListName": "Nom de la liste",
+  "@commonListName": {
+    "description": "Generic list name input label"
+  },
+  "commonSaving": "Enregistrement…",
+  "@commonSaving": {
+    "description": "Generic saving-in-progress button text"
+  },
+  "commonAdding": "Ajout…",
+  "@commonAdding": {
+    "description": "Generic adding-in-progress button text"
+  },
+  "commonDeleting": "Suppression…",
+  "@commonDeleting": {
+    "description": "Generic deleting-in-progress button text"
+  },
+  "commonNoHousehold": "Pas encore de foyer",
+  "@commonNoHousehold": {
+    "description": "Empty state when user has no household"
+  },
+  "commonCreateJoinHousehold": "Crée ou rejoins un foyer avant d'ajouter des éléments.",
+  "@commonCreateJoinHousehold": {
+    "description": "Description shown when no household exists"
+  },
+  "commonGoToHouseholds": "Voir les foyers",
+  "@commonGoToHouseholds": {
+    "description": "Button to navigate to household management"
+  },
+  "commonSomethingWentWrong": "Une erreur est survenue",
+  "@commonSomethingWentWrong": {
+    "description": "Generic error title"
+  },
+  "commonFailedToLoad": "Échec du chargement. Réessaie.",
+  "@commonFailedToLoad": {
+    "description": "Generic load failure message"
+  },
+  "commonCheckConnection": "Vérifie ta connexion et réessaie.",
+  "@commonCheckConnection": {
+    "description": "Hint to check network connectivity"
+  },
+  "commonClearSearch": "Effacer la recherche",
+  "@commonClearSearch": {
+    "description": "Button to clear active search filter"
+  },
+  "commonMember": "{count, plural, =1{{count} membre} other{{count} membres}}",
+  "@commonMember": {
+    "description": "Member count with plural forms",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "commonItemCount": "{count, plural, =0{Aucun élément} =1{1 élément} other{{count} éléments}}",
+  "@commonItemCount": {
+    "description": "Item count with plural forms",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "commonLoadingMembers": "Chargement des membres...",
+  "@commonLoadingMembers": {
+    "description": "Placeholder shown while household members load"
+  },
+  "welcomeTagline": "Ton foyer, organisé.",
+  "@welcomeTagline": {
+    "description": "Subtitle under the app name on the welcome screen"
+  },
+  "welcomeCardTitle": "Listes, tâches, argent.\nTout au même endroit.",
+  "@welcomeCardTitle": {
+    "description": "Headline in the welcome card; contains a line break"
+  },
+  "welcomeCardBody": "Conçu pour les colocs qui veulent moins de frictions et plus de clarté.",
+  "@welcomeCardBody": {
+    "description": "Supporting body text in the welcome card"
+  },
+  "welcomeCreateHousehold": "Créer un foyer gratuit",
+  "@welcomeCreateHousehold": {
+    "description": "Primary CTA button on the welcome screen"
+  },
+  "welcomeSignIn": "Se connecter",
+  "@welcomeSignIn": {
+    "description": "Secondary sign-in button on the welcome screen"
+  },
+  "welcomeGuestLoading": "Configuration...",
+  "@welcomeGuestLoading": {
+    "description": "Loading label shown while guest account is being created"
+  },
+  "welcomeContinueAsGuest": "Continuer en tant qu'invité",
+  "@welcomeContinueAsGuest": {
+    "description": "Ghost button to continue without an account"
+  },
+  "welcomeGuestFootnote": "Pas de compte nécessaire. Essaie tout gratuitement pendant 30 jours.",
+  "@welcomeGuestFootnote": {
+    "description": "Footnote below the guest button explaining the trial"
+  },
+  "hubAppBarTitle": "Accueil",
+  "@hubAppBarTitle": {
+    "description": "AppBar title for the household hub screen"
+  },
+  "hubHouseholdsSheetTitle": "Foyers",
+  "@hubHouseholdsSheetTitle": {
+    "description": "Bottom sheet title for household switcher"
+  },
+  "hubSwitchToHousehold": "Passer à {name}",
+  "@hubSwitchToHousehold": {
+    "description": "Semantics label for switching households",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "hubCreateHousehold": "Créer un foyer",
+  "@hubCreateHousehold": {
+    "description": "Button to create a new household"
+  },
+  "hubJoinHousehold": "Rejoindre un foyer",
+  "@hubJoinHousehold": {
+    "description": "Button to join an existing household"
+  },
+  "hubInviteToHousehold": "Inviter au foyer",
+  "@hubInviteToHousehold": {
+    "description": "Button to invite someone to the household"
+  },
+  "hubHouseholdSettings": "Paramètres du foyer",
+  "@hubHouseholdSettings": {
+    "description": "Button to open household settings"
+  },
+  "hubWelcomeHeadline": "Bienvenue sur mitlist",
+  "@hubWelcomeHeadline": {
+    "description": "Headline when user has no household yet"
+  },
+  "hubWelcomeDescription": "Crée ou rejoins un foyer pour partager des listes, des tâches et les dépenses.",
+  "@hubWelcomeDescription": {
+    "description": "Description when user has no household yet"
+  },
+  "hubCreateAHousehold": "Créer un foyer",
+  "@hubCreateAHousehold": {
+    "description": "Primary CTA to create a household"
+  },
+  "hubJoinWithInviteCode": "Rejoindre avec un code d'invitation",
+  "@hubJoinWithInviteCode": {
+    "description": "Secondary CTA to join via invite code"
+  },
+  "hubQuickAdd": "Ajout rapide",
+  "@hubQuickAdd": {
+    "description": "FAB text and tooltip for quick-add action"
+  },
+  "hubLoadError": "Impossible de charger tes foyers. Vérifie ta connexion et réessaie.",
+  "@hubLoadError": {
+    "description": "Error shown when households fail to load"
+  },
+  "hubCalendarTooltip": "Calendrier",
+  "@hubCalendarTooltip": {
+    "description": "Tooltip for the calendar icon button"
+  },
+  "myHouseholdsTitle": "Mes foyers",
+  "@myHouseholdsTitle": {
+    "description": "AppBar title for the groups/landing screen"
+  },
+  "groupsJoinWithCode": "Rejoindre avec un code",
+  "@groupsJoinWithCode": {
+    "description": "Button tooltip to join via invite code"
+  },
+  "groupsFailedLoad": "Échec du chargement des foyers",
+  "@groupsFailedLoad": {
+    "description": "Error message when household list fails"
+  },
+  "groupsFailedMore": "Échec du chargement de plus de foyers",
+  "@groupsFailedMore": {
+    "description": "Error when pagination fails"
+  },
+  "groupsEmptyTitle": "Pas encore de foyer",
+  "@groupsEmptyTitle": {
+    "description": "Empty state when no households exist"
+  },
+  "groupsEmptyDesc": "Crées-en un pour commencer à organiser ton chez-toi.",
+  "@groupsEmptyDesc": {
+    "description": "Empty state description for no households"
+  },
+  "groupsCreateHousehold": "Créer un foyer",
+  "@groupsCreateHousehold": {
+    "description": "Button to create first household"
+  },
+  "choreAppBarTitle": "Tâches",
+  "@choreAppBarTitle": {
+    "description": "AppBar title for chores screen"
+  },
+  "choreAddChore": "Ajouter une tâche",
+  "@choreAddChore": {
+    "description": "FAB text and tooltip to add a chore"
+  },
+  "choreAddHouseholds": "Foyers",
+  "@choreAddHouseholds": {
+    "description": "FAB text when no household exists"
+  },
+  "choreRetry": "Réessayer",
+  "@choreRetry": {
+    "description": "Retry button on chores screen"
+  },
+  "choreNoHouseholdTitle": "Pas encore de foyer",
+  "@choreNoHouseholdTitle": {
+    "description": "Empty state when no household"
+  },
+  "choreNoHouseholdDesc": "Crée ou rejoins un foyer avant d'ajouter des tâches.",
+  "@choreNoHouseholdDesc": {
+    "description": "Empty description when no household"
+  },
+  "choreGoToHouseholds": "Voir les foyers",
+  "@choreGoToHouseholds": {
+    "description": "Navigate to household management"
+  },
+  "choreNoChoresTitle": "Pas encore de tâches",
+  "@choreNoChoresTitle": {
+    "description": "Empty state when household has no chores"
+  },
+  "choreNoChoresDesc": "Suis les tâches récurrentes du foyer. Attribue-les à n'importe qui dans ton groupe.",
+  "@choreNoChoresDesc": {
+    "description": "Description for no chores empty state"
+  },
+  "choreAddAChore": "Ajouter une tâche",
+  "@choreAddAChore": {
+    "description": "CTA button to add first chore"
+  },
+  "choreSectionOverdue": "En retard",
+  "@choreSectionOverdue": {
+    "description": "Section header for overdue chores"
+  },
+  "choreSectionToday": "Aujourd'hui",
+  "@choreSectionToday": {
+    "description": "Section header for today's chores"
+  },
+  "choreSectionThisWeek": "Cette semaine",
+  "@choreSectionThisWeek": {
+    "description": "Section header for this week's chores"
+  },
+  "choreSectionLater": "Plus tard",
+  "@choreSectionLater": {
+    "description": "Section header for future chores"
+  },
+  "choreNothingOnYou": "Rien pour toi en ce moment",
+  "@choreNothingOnYou": {
+    "description": "Empty state when user has no assigned chores"
+  },
+  "choreNothingOnYouDesc": "Votre foyer a des tâches, mais aucune ne t'est attribuée.",
+  "@choreNothingOnYouDesc": {
+    "description": "Description when no chores assigned to user"
+  },
+  "choreSeeEveryonesChores": "Voir les tâches de tout le monde",
+  "@choreSeeEveryonesChores": {
+    "description": "Button to show all household chores"
+  },
+  "choreDoneSnackbar": "{choreTitle} terminée",
+  "@choreDoneSnackbar": {
+    "description": "Snackbar when a chore is marked done",
+    "placeholders": {
+      "choreTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "choreFailedComplete": "Impossible de terminer la tâche. Réessaie.",
+  "@choreFailedComplete": {
+    "description": "Error snackbar when chore completion fails"
+  },
+  "choreFailedUndo": "Impossible d'annuler l'exécution de la tâche. Réessaie.",
+  "@choreFailedUndo": {
+    "description": "Error snackbar when undoing chore fails"
+  },
+  "choreFailedSkip": "Impossible de passer la tâche. Réessaie.",
+  "@choreFailedSkip": {
+    "description": "Error snackbar when skipping chore fails"
+  },
+  "choreFailedUpdateSubtask": "Impossible de modifier la sous-tâche. Réessaie.",
+  "@choreFailedUpdateSubtask": {
+    "description": "Error snackbar when subtask update fails"
+  },
+  "choreFailedAddSubtask": "Impossible d'ajouter la sous-tâche. Réessaie.",
+  "@choreFailedAddSubtask": {
+    "description": "Error snackbar when subtask creation fails"
+  },
+  "choreCreateListFirst": "Crée d'abord une liste de courses.",
+  "@choreCreateListFirst": {
+    "description": "Snackbar when trying to add supplies without a list"
+  },
+  "choreAddSuppliesToList": "Ajouter les fournitures à la liste",
+  "@choreAddSuppliesToList": {
+    "description": "Dialog title for adding supplies"
+  },
+  "choreSuppliesAdded": "Fournitures ajoutées à la liste",
+  "@choreSuppliesAdded": {
+    "description": "Snackbar when supplies are added to a list"
+  },
+  "choreFailedAddSupplies": "Impossible d'ajouter les fournitures. Réessaie.",
+  "@choreFailedAddSupplies": {
+    "description": "Error when adding supplies fails"
+  },
+  "choreFailedReschedule": "Impossible de replanifier la tâche. Réessaie.",
+  "@choreFailedReschedule": {
+    "description": "Error when rescheduling chore fails"
+  },
+  "choreDeleteTitle": "Supprimer la tâche",
+  "@choreDeleteTitle": {
+    "description": "Dialog title for deleting a chore"
+  },
+  "choreDeleteBody": "Cela supprimera définitivement cette tâche et son historique. Cette action est irréversible.",
+  "@choreDeleteBody": {
+    "description": "Dialog body for chore deletion"
+  },
+  "choreStatusDone": "Terminée",
+  "@choreStatusDone": {
+    "description": "Chore status label: completed"
+  },
+  "choreStatusOverdue": "En retard",
+  "@choreStatusOverdue": {
+    "description": "Chore status label: overdue"
+  },
+  "choreStatusDueToday": "À faire aujourd'hui",
+  "@choreStatusDueToday": {
+    "description": "Chore status label: due today"
+  },
+  "choreStatusDueSoon": "À faire bientôt",
+  "@choreStatusDueSoon": {
+    "description": "Chore status label: due soon"
+  },
+  "choreStatusScheduled": "Planifiée",
+  "@choreStatusScheduled": {
+    "description": "Chore status label: scheduled"
+  },
+  "choreStatusPending": "En attente",
+  "@choreStatusPending": {
+    "description": "Chore status label: pending"
+  },
+  "choreYourTurn": "À ton tour",
+  "@choreYourTurn": {
+    "description": "Label when it's the current user's turn"
+  },
+  "choreYoureClear": "Tu es tranquille",
+  "@choreYoureClear": {
+    "description": "Hero text when user has no active chores"
+  },
+  "choreHeroDescSingular": "{count} tâche t'attend.",
+  "@choreHeroDescSingular": {
+    "description": "Hero description for 1 chore due",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "choreHeroDescPlural": "{count} tâches t'attendent.",
+  "@choreHeroDescPlural": {
+    "description": "Hero description for multiple chores due",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "choreMeLabel": "Moi ({count})",
+  "@choreMeLabel": {
+    "description": "Filter chip for user's own chores",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "choreEveryoneLabel": "Tous ({count})",
+  "@choreEveryoneLabel": {
+    "description": "Filter chip for all household chores",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "choreHowItSplits": "Répartition",
+  "@choreHowItSplits": {
+    "description": "Fairness strip header text"
+  },
+  "choreSupplySingular": "{count} fourniture",
+  "@choreSupplySingular": {
+    "description": "Supply count label (1)",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "choreSupplyPlural": "{count} fournitures",
+  "@choreSupplyPlural": {
+    "description": "Supply count label (2+)",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "choreFrequencyHourly": "Toutes les heures",
+  "@choreFrequencyHourly": {
+    "description": "Hourly recurrence label"
+  },
+  "choreFrequencyDaily": "Quotidienne",
+  "@choreFrequencyDaily": {
+    "description": "Daily recurrence label"
+  },
+  "choreFrequencyWeekly": "Hebdomadaire",
+  "@choreFrequencyWeekly": {
+    "description": "Weekly recurrence label"
+  },
+  "choreFrequencyMonthly": "Mensuelle",
+  "@choreFrequencyMonthly": {
+    "description": "Monthly recurrence label"
+  },
+  "choreFrequencyYearly": "Annuelle",
+  "@choreFrequencyYearly": {
+    "description": "Yearly recurrence label"
+  },
+  "choreFrequencyAsNeeded": "Au besoin",
+  "@choreFrequencyAsNeeded": {
+    "description": "As-needed frequency label"
+  },
+  "choreFrequencyOneOff": "Ponctuelle",
+  "@choreFrequencyOneOff": {
+    "description": "One-off frequency label"
+  },
+  "choreEveryInterval": "Tous les {interval} {unit}",
+  "@choreEveryInterval": {
+    "description": "Recurrence interval summary",
+    "placeholders": {
+      "interval": {
+        "type": "num"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "choreDoneToday": "Faite aujourd'hui",
+  "@choreDoneToday": {
+    "description": "Last action label: done today"
+  },
+  "choreDoneYesterday": "Faite hier",
+  "@choreDoneYesterday": {
+    "description": "Last action label: done yesterday"
+  },
+  "choreDoneDaysAgo": "Faite il y a {days} j",
+  "@choreDoneDaysAgo": {
+    "description": "Last action label for days ago",
+    "placeholders": {
+      "days": {
+        "type": "num"
+      }
+    }
+  },
+  "choreSkipped": "Passée",
+  "@choreSkipped": {
+    "description": "Last action label: skipped"
+  },
+  "choreMarkNotDone": "Marquer {title} comme non faite",
+  "@choreMarkNotDone": {
+    "description": "Semantics: toggle chore undone",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "choreMarkDone": "Marquer {title} comme faite",
+  "@choreMarkDone": {
+    "description": "Semantics: toggle chore done",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "choreAllCaughtUp": "Tu es à jour",
+  "@choreAllCaughtUp": {
+    "description": "Semantics when no chores pending"
+  },
+  "choreCarryingShare": "Tu as {my} tâche(s) sur {total} ouvertes",
+  "@choreCarryingShare": {
+    "description": "Share of open chores",
+    "placeholders": {
+      "my": {
+        "type": "num"
+      },
+      "total": {
+        "type": "num"
+      }
+    }
+  },
+  "choreNothingShare": "Rien pour toi en ce moment",
+  "@choreNothingShare": {
+    "description": "Share label when no chores"
+  },
+  "choreCreationTitle": "Ajouter une tâche",
+  "@choreCreationTitle": {
+    "description": "Bottom sheet title for chore creation"
+  },
+  "choreCreationNameHint": "Nom de la tâche",
+  "@choreCreationNameHint": {
+    "description": "Input hint for chore name"
+  },
+  "choreCreationYourRoutines": "Tes routines",
+  "@choreCreationYourRoutines": {
+    "description": "Label for saved routines section"
+  },
+  "choreCreationStartFromRoutine": "Commencer à partir d'une routine",
+  "@choreCreationStartFromRoutine": {
+    "description": "Prompt to pick a routine"
+  },
+  "choreCreationSuggestions": "Suggestions",
+  "@choreCreationSuggestions": {
+    "description": "Label for AI suggestions section"
+  },
+  "choreCreationZoneLabel": "Zone",
+  "@choreCreationZoneLabel": {
+    "description": "Label for zone selector"
+  },
+  "choreCreationZoneKitchen": "Cuisine",
+  "@choreCreationZoneKitchen": {
+    "description": "Kitchen zone preset"
+  },
+  "choreCreationZoneBathroom": "Salle de bain",
+  "@choreCreationZoneBathroom": {
+    "description": "Bathroom zone preset"
+  },
+  "choreCreationZoneLivingRoom": "Salon",
+  "@choreCreationZoneLivingRoom": {
+    "description": "Living room zone preset"
+  },
+  "choreCreationZoneBedroom": "Chambre",
+  "@choreCreationZoneBedroom": {
+    "description": "Bedroom zone preset"
+  },
+  "choreCreationZoneOutdoor": "Extérieur",
+  "@choreCreationZoneOutdoor": {
+    "description": "Outdoor zone preset"
+  },
+  "choreCreationZoneShared": "Partagé",
+  "@choreCreationZoneShared": {
+    "description": "Shared space zone preset"
+  },
+  "choreCreationRepeatsLabel": "Répétition",
+  "@choreCreationRepeatsLabel": {
+    "description": "Label for recurrence selector"
+  },
+  "choreCreationRecurrenceNone": "Aucune",
+  "@choreCreationRecurrenceNone": {
+    "description": "No recurrence option"
+  },
+  "choreCreationRecurrenceHourly": "Toutes les heures",
+  "@choreCreationRecurrenceHourly": {
+    "description": "Hourly recurrence option"
+  },
+  "choreCreationRecurrenceDaily": "Quotidienne",
+  "@choreCreationRecurrenceDaily": {
+    "description": "Daily recurrence option"
+  },
+  "choreCreationRecurrenceWeekly": "Hebdomadaire",
+  "@choreCreationRecurrenceWeekly": {
+    "description": "Weekly recurrence option"
+  },
+  "choreCreationRecurrenceMonthly": "Mensuelle",
+  "@choreCreationRecurrenceMonthly": {
+    "description": "Monthly recurrence option"
+  },
+  "choreCreationRecurrenceYearly": "Annuelle",
+  "@choreCreationRecurrenceYearly": {
+    "description": "Yearly recurrence option"
+  },
+  "choreCreationRecurrenceAdaptive": "Adaptative",
+  "@choreCreationRecurrenceAdaptive": {
+    "description": "Adaptive recurrence option"
+  },
+  "choreCreationHintNone": "Une tâche ponctuelle. Elle ne reviendra pas toute seule.",
+  "@choreCreationHintNone": {
+    "description": "Description of no recurrence"
+  },
+  "choreCreationHintHourly": "Revient toutes les X heures.",
+  "@choreCreationHintHourly": {
+    "description": "Description of hourly recurrence"
+  },
+  "choreCreationHintDaily": "Revient tous les X jours.",
+  "@choreCreationHintDaily": {
+    "description": "Description of daily recurrence"
+  },
+  "choreCreationHintWeekly": "Revient chaque semaine les jours que tu choisis.",
+  "@choreCreationHintWeekly": {
+    "description": "Description of weekly recurrence"
+  },
+  "choreCreationHintMonthly": "Revient chaque mois à la même date.",
+  "@choreCreationHintMonthly": {
+    "description": "Description of monthly recurrence"
+  },
+  "choreCreationHintYearly": "Revient chaque année à la même date.",
+  "@choreCreationHintYearly": {
+    "description": "Description of yearly recurrence"
+  },
+  "choreCreationHintAdaptive": "Revient en fonction de la dernière fois qu'elle a été faite, pas du calendrier.",
+  "@choreCreationHintAdaptive": {
+    "description": "Description of adaptive recurrence"
+  },
+  "choreCreationIntervalHint": "1",
+  "@choreCreationIntervalHint": {
+    "description": "Default interval value hint"
+  },
+  "choreCreationMoreOptions": "Plus d'options",
+  "@choreCreationMoreOptions": {
+    "description": "Toggle to show more chore options"
+  },
+  "choreCreationAssignLabel": "Attribution",
+  "@choreCreationAssignLabel": {
+    "description": "Label for assignee selector"
+  },
+  "choreCreationAssignTakeTurns": "À tour de rôle",
+  "@choreCreationAssignTakeTurns": {
+    "description": "Rotation assignment mode"
+  },
+  "choreCreationAssignLeastDone": "Moins faite",
+  "@choreCreationAssignLeastDone": {
+    "description": "Least-done assignment mode"
+  },
+  "choreCreationAssignAlphabetical": "Alphabétique",
+  "@choreCreationAssignAlphabetical": {
+    "description": "Alphabetical assignment mode"
+  },
+  "choreCreationAssignRandom": "Aléatoire",
+  "@choreCreationAssignRandom": {
+    "description": "Random assignment mode"
+  },
+  "choreCreationAssignNoAssignee": "Sans attribution",
+  "@choreCreationAssignNoAssignee": {
+    "description": "Unassigned option"
+  },
+  "choreCreationAssignHintTurns": "Passe à la personne suivante à chaque fois.",
+  "@choreCreationAssignHintTurns": {
+    "description": "Description of rotation assignment"
+  },
+  "choreCreationAssignHintAlpha": "Suit l'ordre alphabétique des prénoms.",
+  "@choreCreationAssignHintAlpha": {
+    "description": "Description of alphabetical assignment"
+  },
+  "choreCreationAssignHintLeast": "Va à la personne qui l'a le moins faite.",
+  "@choreCreationAssignHintLeast": {
+    "description": "Description of least-done assignment"
+  },
+  "choreCreationAssignHintRandom": "Choisit quelqu'un au hasard à chaque fois.",
+  "@choreCreationAssignHintRandom": {
+    "description": "Description of random assignment"
+  },
+  "choreCreationAssignHintNone": "Reste sans attribution. N'importe qui dans le foyer peut la prendre.",
+  "@choreCreationAssignHintNone": {
+    "description": "Description of no-assignee option"
+  },
+  "choreCreationLogWhenDone": "Noter quand c'est fait, sans cocher",
+  "@choreCreationLogWhenDone": {
+    "description": "Toggle to log without marking complete"
+  },
+  "choreCreationLogWhenDoneHelper": "Enregistre la date sans la marquer comme terminée. Utile pour les tâches dont tu veux garder un historique.",
+  "@choreCreationLogWhenDoneHelper": {
+    "description": "Helper text for log-only toggle"
+  },
+  "choreCreationRollOver": "Reporter si manquée",
+  "@choreCreationRollOver": {
+    "description": "Toggle for roll-over behavior"
+  },
+  "choreCreationRollOverHelper": "Décale à la prochaine échéance au lieu de s'accumuler en retard.",
+  "@choreCreationRollOverHelper": {
+    "description": "Helper text for roll-over toggle"
+  },
+  "choreCreationNotesHint": "Notes (optionnel) — étapes, rappels, tout ce qui est utile",
+  "@choreCreationNotesHint": {
+    "description": "Placeholder for chore notes field"
+  },
+  "choreCreationSaveAsRoutine": "Enregistrer comme routine",
+  "@choreCreationSaveAsRoutine": {
+    "description": "Button to save chore as reusable routine"
+  },
+  "choreCreationSaveAsRoutineSemantic": "Enregistrer cette tâche comme routine réutilisable",
+  "@choreCreationSaveAsRoutineSemantic": {
+    "description": "Semantic label for save-as-routine"
+  },
+  "choreCreationScanChoreSemantic": "Scanner une tâche via l'appareil photo",
+  "@choreCreationScanChoreSemantic": {
+    "description": "Semantic label for scan chore action"
+  },
+  "choreCreationChoreAdded": "Tâche ajoutée",
+  "@choreCreationChoreAdded": {
+    "description": "Snackbar when chore is created"
+  },
+  "choreCreationChoreAddedNextUp": "Tâche ajoutée · prochaine : {assignee}",
+  "@choreCreationChoreAddedNextUp": {
+    "description": "Snackbar when chore is created with assignee",
+    "placeholders": {
+      "assignee": {
+        "type": "String"
+      }
+    }
+  },
+  "choreCreationJoinFirst": "Crée ou rejoins d'abord un foyer.",
+  "@choreCreationJoinFirst": {
+    "description": "Snackbar when creating chore without household"
+  },
+  "choreCreationEditRoutine": "Modifier la routine",
+  "@choreCreationEditRoutine": {
+    "description": "Dialog title for editing a routine"
+  },
+  "choreCreationEverySingular": "Tous les {unit}",
+  "@choreCreationEverySingular": {
+    "description": "Singular recurrence label",
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "choreCreationEveryPlural": "Tous les {n} {unit}",
+  "@choreCreationEveryPlural": {
+    "description": "Plural recurrence label",
+    "placeholders": {
+      "n": {
+        "type": "num"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "choreCreationUnitHourSingular": "heure",
+  "@choreCreationUnitHourSingular": {
+    "description": "Singular hour unit"
+  },
+  "choreCreationUnitHourPlural": "heures",
+  "@choreCreationUnitHourPlural": {
+    "description": "Plural hours unit"
+  },
+  "choreCreationUnitDaySingular": "jour",
+  "@choreCreationUnitDaySingular": {
+    "description": "Singular day unit"
+  },
+  "choreCreationUnitDayPlural": "jours",
+  "@choreCreationUnitDayPlural": {
+    "description": "Plural days unit"
+  },
+  "choreCreationUnitWeekSingular": "semaine",
+  "@choreCreationUnitWeekSingular": {
+    "description": "Singular week unit"
+  },
+  "choreCreationUnitWeekPlural": "semaines",
+  "@choreCreationUnitWeekPlural": {
+    "description": "Plural weeks unit"
+  },
+  "choreCreationUnitMonthSingular": "mois",
+  "@choreCreationUnitMonthSingular": {
+    "description": "Singular month unit"
+  },
+  "choreCreationUnitMonthPlural": "mois",
+  "@choreCreationUnitMonthPlural": {
+    "description": "Plural months unit"
+  },
+  "choreCreationUnitYearSingular": "an",
+  "@choreCreationUnitYearSingular": {
+    "description": "Singular year unit"
+  },
+  "choreCreationUnitYearPlural": "ans",
+  "@choreCreationUnitYearPlural": {
+    "description": "Plural years unit"
+  },
+  "choreDayMon": "Lun",
+  "@choreDayMon": {
+    "description": "Monday abbreviation"
+  },
+  "choreDayTue": "Mar",
+  "@choreDayTue": {
+    "description": "Tuesday abbreviation"
+  },
+  "choreDayWed": "Mer",
+  "@choreDayWed": {
+    "description": "Wednesday abbreviation"
+  },
+  "choreDayThu": "Jeu",
+  "@choreDayThu": {
+    "description": "Thursday abbreviation"
+  },
+  "choreDayFri": "Ven",
+  "@choreDayFri": {
+    "description": "Friday abbreviation"
+  },
+  "choreDaySat": "Sam",
+  "@choreDaySat": {
+    "description": "Saturday abbreviation"
+  },
+  "choreDaySun": "Dim",
+  "@choreDaySun": {
+    "description": "Sunday abbreviation"
+  },
+  "choreDetailTitle": "Détails de la tâche",
+  "@choreDetailTitle": {
+    "description": "Bottom sheet title for chore detail"
+  },
+  "choreDetailAssignee": "Attribuée à",
+  "@choreDetailAssignee": {
+    "description": "Detail row: assigned to"
+  },
+  "choreDetailDue": "Échéance",
+  "@choreDetailDue": {
+    "description": "Detail row: due date"
+  },
+  "choreDetailTracked": "Suivi",
+  "@choreDetailTracked": {
+    "description": "Detail row: tracking info"
+  },
+  "choreDetailLastDone": "Dernière fois",
+  "@choreDetailLastDone": {
+    "description": "Detail row: last completed"
+  },
+  "choreDetailLastBy": "Dernier par",
+  "@choreDetailLastBy": {
+    "description": "Detail row: last completed by"
+  },
+  "choreDetailAverage": "Moyenne",
+  "@choreDetailAverage": {
+    "description": "Detail row: average interval"
+  },
+  "choreDetailSubtasks": "Sous-tâches",
+  "@choreDetailSubtasks": {
+    "description": "Section header for subtasks"
+  },
+  "choreDetailNewSubtask": "Nouvelle sous-tâche",
+  "@choreDetailNewSubtask": {
+    "description": "Placeholder for new subtask input"
+  },
+  "choreDetailSupplies": "Fournitures",
+  "@choreDetailSupplies": {
+    "description": "Section header for supplies"
+  },
+  "choreDetailAddSuppliesToList": "Ajouter les fournitures à la liste",
+  "@choreDetailAddSuppliesToList": {
+    "description": "Button to add supplies to a shopping list"
+  },
+  "choreDetailMarkDone": "Marquer comme faite",
+  "@choreDetailMarkDone": {
+    "description": "Button to mark chore as done"
+  },
+  "choreDetailMoveToTomorrow": "Reporter à demain",
+  "@choreDetailMoveToTomorrow": {
+    "description": "Button to reschedule for tomorrow"
+  },
+  "choreDetailUndoLast": "Annuler la dernière exécution",
+  "@choreDetailUndoLast": {
+    "description": "Button to undo most recent completion"
+  },
+  "choreDetailSkipTitle": "Passer la tâche",
+  "@choreDetailSkipTitle": {
+    "description": "Dialog title for skipping a chore"
+  },
+  "choreDetailSkipReason": "Raison (optionnel)",
+  "@choreDetailSkipReason": {
+    "description": "Optional skip reason input label"
+  },
+  "choreDetailSkipReasonHint": "ex. Absent cette semaine",
+  "@choreDetailSkipReasonHint": {
+    "description": "Placeholder for skip reason"
+  },
+  "choreDetailDeleteTitleDialog": "Supprimer la tâche",
+  "@choreDetailDeleteTitleDialog": {
+    "description": "Dialog title for deleting chore"
+  },
+  "choreDetailDeleteBody": "Cela supprimera définitivement cette tâche et son historique.",
+  "@choreDetailDeleteBody": {
+    "description": "Dialog body for chore deletion"
+  },
+  "choreDetailDeleteSubtask": "Supprimer la sous-tâche",
+  "@choreDetailDeleteSubtask": {
+    "description": "Tooltip for deleting a subtask"
+  },
+  "choreDetailSubtaskMarkNotDone": "Marquer la sous-tâche comme non faite",
+  "@choreDetailSubtaskMarkNotDone": {
+    "description": "Toggle subtask to undone"
+  },
+  "choreDetailSubtaskMarkDone": "Marquer la sous-tâche comme faite",
+  "@choreDetailSubtaskMarkDone": {
+    "description": "Toggle subtask to done"
+  },
+  "choreLoadTitle": "Qui fait les tâches",
+  "@choreLoadTitle": {
+    "description": "Bottom sheet title for chore load/fairness view"
+  },
+  "choreLoadEmpty": "Aucune tâche n'a été terminée ces {days} derniers jours. Quand les gens commenceront à cocher des choses, la répartition apparaîtra ici.",
+  "@choreLoadEmpty": {
+    "description": "Empty state for chore load when no data",
+    "placeholders": {
+      "days": {
+        "type": "num"
+      }
+    }
+  },
+  "choreLoadCountSingular": "{count} tâche",
+  "@choreLoadCountSingular": {
+    "description": "Singular chore count in load view",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "choreLoadCountPlural": "{count} tâches",
+  "@choreLoadCountPlural": {
+    "description": "Plural chore count in load view",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "recipeAppBarTitle": "Cuisine",
+  "@recipeAppBarTitle": {
+    "description": "AppBar title for recipes/kitchen screen"
+  },
+  "recipeSearchLabel": "Rechercher dans la cuisine",
+  "@recipeSearchLabel": {
+    "description": "TextField label for recipe search"
+  },
+  "recipeSearchHint": "Recette, étiquette, ingrédient",
+  "@recipeSearchHint": {
+    "description": "TextField hint for recipe search"
+  },
+  "recipeMealPlanTooltip": "Plan de repas",
+  "@recipeMealPlanTooltip": {
+    "description": "Tooltip for meal plan navigation"
+  },
+  "recipeSearchTooltip": "Rechercher",
+  "@recipeSearchTooltip": {
+    "description": "Tooltip for search toggle"
+  },
+  "recipeSortLabel": "Trier les recettes",
+  "@recipeSortLabel": {
+    "description": "Disabled menu item for sort label"
+  },
+  "recipeSortNewest": "Plus récentes",
+  "@recipeSortNewest": {
+    "description": "Sort by newest"
+  },
+  "recipeSortOldest": "Plus anciennes",
+  "@recipeSortOldest": {
+    "description": "Sort by oldest"
+  },
+  "recipeSortAZ": "A-Z",
+  "@recipeSortAZ": {
+    "description": "Sort alphabetically"
+  },
+  "recipeAddRecipe": "Ajouter une recette",
+  "@recipeAddRecipe": {
+    "description": "FAB text and tooltip to add recipe"
+  },
+  "recipeFailedLoad": "Impossible de charger la cuisine",
+  "@recipeFailedLoad": {
+    "description": "Error when recipes fail to load"
+  },
+  "recipeFailedMore": "Impossible de charger plus de recettes",
+  "@recipeFailedMore": {
+    "description": "Error when recipe pagination fails"
+  },
+  "recipeBuildKitchen": "Construis ta cuisine",
+  "@recipeBuildKitchen": {
+    "description": "Empty state title for no recipes"
+  },
+  "recipeBuildKitchenDesc": "Importe des recettes, regroupe des livres de cuisine, planifie des repas et transforme la semaine en liste de courses.",
+  "@recipeBuildKitchenDesc": {
+    "description": "Empty state description for no recipes"
+  },
+  "recipeMealsPlanned": "{count, plural, =1{1 repas prévu cette semaine} other{{count} repas prévus cette semaine}}",
+  "@recipeMealsPlanned": {
+    "description": "Meal plan summary label",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "recipePlanButton": "Planifier",
+  "@recipePlanButton": {
+    "description": "Button text for planning recipes into meal plan"
+  },
+  "recipeCountLabel": "{visible} sur {total} recettes",
+  "@recipeCountLabel": {
+    "description": "Header count label when filtered",
+    "placeholders": {
+      "visible": {
+        "type": "num"
+      },
+      "total": {
+        "type": "num"
+      }
+    }
+  },
+  "recipeCountLabelAll": "{total} recettes",
+  "@recipeCountLabelAll": {
+    "description": "Header count label when showing all",
+    "placeholders": {
+      "total": {
+        "type": "num"
+      }
+    }
+  },
+  "recipeFilterAll": "Toutes",
+  "@recipeFilterAll": {
+    "description": "Filter chip: all recipes"
+  },
+  "recipeFilterShared": "Partagées",
+  "@recipeFilterShared": {
+    "description": "Filter chip: shared recipes"
+  },
+  "recipeFilterPrivate": "Privées",
+  "@recipeFilterPrivate": {
+    "description": "Filter chip: private recipes"
+  },
+  "recipeImageSemantics": "Image de {title}",
+  "@recipeImageSemantics": {
+    "description": "Semantics label for recipe image",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeMinLabel": "{minutes} min",
+  "@recipeMinLabel": {
+    "description": "Cooking time display",
+    "placeholders": {
+      "minutes": {
+        "type": "num"
+      }
+    }
+  },
+  "recipeServesLabel": "Pour {servings} pers.",
+  "@recipeServesLabel": {
+    "description": "Servings display",
+    "placeholders": {
+      "servings": {
+        "type": "num"
+      }
+    }
+  },
+  "recipeOpenRecipe": "Ouvrir la recette {title}",
+  "@recipeOpenRecipe": {
+    "description": "Semantics: open recipe",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeAddToList": "Ajouter à la liste",
+  "@recipeAddToList": {
+    "description": "Icon button tooltip: add ingredients to list"
+  },
+  "recipeSharedPrivate": "{shared} partagées · {private} privées",
+  "@recipeSharedPrivate": {
+    "description": "Shared/private count detail",
+    "placeholders": {
+      "shared": {
+        "type": "num"
+      },
+      "private": {
+        "type": "num"
+      }
+    }
+  },
+  "recipeCookbooksLabel": " · {count} livres de cuisine",
+  "@recipeCookbooksLabel": {
+    "description": "Cookbook count suffix",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "recipeRatingLabel": "{rating} ({count})",
+  "@recipeRatingLabel": {
+    "description": "Rating value and count",
+    "placeholders": {
+      "rating": {
+        "type": "String"
+      },
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "recipeCreationTitle": "Nouvelle recette",
+  "@recipeCreationTitle": {
+    "description": "AppBar title for recipe creation"
+  },
+  "recipeCreationStepSource": "Source",
+  "@recipeCreationStepSource": {
+    "description": "Wizard step: source"
+  },
+  "recipeCreationStepDetails": "Détails",
+  "@recipeCreationStepDetails": {
+    "description": "Wizard step: details"
+  },
+  "recipeCreationStepContent": "Contenu",
+  "@recipeCreationStepContent": {
+    "description": "Wizard step: content"
+  },
+  "recipeCreationStartHeadline": "Commence ta recette",
+  "@recipeCreationStartHeadline": {
+    "description": "Headline for recipe creation start"
+  },
+  "recipeCreationStartSubtitle": "Importe depuis un lien, écris-la toi-même ou scanne une photo.",
+  "@recipeCreationStartSubtitle": {
+    "description": "Subtitle for recipe creation start"
+  },
+  "recipeCreationImportURL": "Importer depuis une URL",
+  "@recipeCreationImportURL": {
+    "description": "Card title: import from URL"
+  },
+  "recipeCreationImportURLDesc": "Colle un lien de recette et on récupère les détails",
+  "@recipeCreationImportURLDesc": {
+    "description": "Card subtitle: import from URL"
+  },
+  "recipeCreationTypeItIn": "Écrire à la main",
+  "@recipeCreationTypeItIn": {
+    "description": "Card title: type recipe manually"
+  },
+  "recipeCreationTypeItInDesc": "Commence avec un titre et ajoute les ingrédients plus tard",
+  "@recipeCreationTypeItInDesc": {
+    "description": "Card subtitle: type manually"
+  },
+  "recipeCreationScanning": "Scan en cours…",
+  "@recipeCreationScanning": {
+    "description": "Card title: scanning in progress"
+  },
+  "recipeCreationScanPhoto": "Scanner une photo",
+  "@recipeCreationScanPhoto": {
+    "description": "Card title: scan recipe photo"
+  },
+  "recipeCreationScanPhotoDesc": "Prends en photo une fiche recette ou une page de livre",
+  "@recipeCreationScanPhotoDesc": {
+    "description": "Card subtitle: scan photo"
+  },
+  "recipeCreationURLInput": "URL de la recette",
+  "@recipeCreationURLInput": {
+    "description": "Input label for recipe URL"
+  },
+  "recipeCreationURLHint": "https://exemple.com/recette",
+  "@recipeCreationURLHint": {
+    "description": "Placeholder for recipe URL"
+  },
+  "recipeCreationFetching": "Récupération…",
+  "@recipeCreationFetching": {
+    "description": "Button text while fetching"
+  },
+  "recipeCreationFetchDetails": "Récupérer les détails",
+  "@recipeCreationFetchDetails": {
+    "description": "Button to fetch recipe from URL"
+  },
+  "recipeCreationChooseImage": "Choisir une image",
+  "@recipeCreationChooseImage": {
+    "description": "CTA to pick an image for scanning"
+  },
+  "recipeCreationSelectImage": "Sélectionner l'image {index}",
+  "@recipeCreationSelectImage": {
+    "description": "Semantics: select image",
+    "placeholders": {
+      "index": {
+        "type": "num"
+      }
+    }
+  },
+  "recipeCreationTitleInput": "Titre de la recette",
+  "@recipeCreationTitleInput": {
+    "description": "Input label for recipe title"
+  },
+  "recipeCreationTitleHint": "Crêpes du dimanche",
+  "@recipeCreationTitleHint": {
+    "description": "Placeholder for recipe title"
+  },
+  "recipeCreationDiscardTitle": "Abandonner la recette ?",
+  "@recipeCreationDiscardTitle": {
+    "description": "Dialog title when discarding recipe"
+  },
+  "recipeCreationDiscardBody": "Tu as du contenu non enregistré dans cette recette.",
+  "@recipeCreationDiscardBody": {
+    "description": "Dialog body when discarding recipe"
+  },
+  "recipeCreationKeepEditing": "Continuer à modifier",
+  "@recipeCreationKeepEditing": {
+    "description": "Button to continue editing"
+  },
+  "recipeCreationDiscard": "Abandonner",
+  "@recipeCreationDiscard": {
+    "description": "Button to discard recipe"
+  },
+  "recipeCreationCouldNotScan": "Impossible de scanner la recette.",
+  "@recipeCreationCouldNotScan": {
+    "description": "Snackbar when recipe scan fails"
+  },
+  "recipeCreationImported": "{parts}",
+  "@recipeCreationImported": {
+    "description": "Snackbar when recipe is imported",
+    "placeholders": {
+      "parts": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeCreationCouldNotFetch": "Impossible de récupérer les détails depuis ce lien.",
+  "@recipeCreationCouldNotFetch": {
+    "description": "Snackbar when URL fetch fails"
+  },
+  "recipeCreationCreated": "Recette créée",
+  "@recipeCreationCreated": {
+    "description": "Snackbar when recipe is created"
+  },
+  "recipeCreationCouldNotCreate": "Impossible de créer la recette.",
+  "@recipeCreationCouldNotCreate": {
+    "description": "Snackbar when recipe creation fails"
+  },
+  "recipeCreationImportedTitle": "Recette importée",
+  "@recipeCreationImportedTitle": {
+    "description": "Fallback recipe title from import"
+  },
+  "recipeCreationFromHost": "Recette de {host}",
+  "@recipeCreationFromHost": {
+    "description": "Recipe title derived from URL host",
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeCreationNutrition": "Nutrition : {info}",
+  "@recipeCreationNutrition": {
+    "description": "Nutrition info displayed as description",
+    "placeholders": {
+      "info": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeCreationNextDetails": "Suivant : détails",
+  "@recipeCreationNextDetails": {
+    "description": "Next button: go to details step"
+  },
+  "recipeCreationNextContent": "Suivant : contenu",
+  "@recipeCreationNextContent": {
+    "description": "Next button: go to content step"
+  },
+  "recipeCreationTitleOverride": "Modifier le titre",
+  "@recipeCreationTitleOverride": {
+    "description": "Input label for overriding recipe title"
+  },
+  "recipeCreationNotesInput": "Notes",
+  "@recipeCreationNotesInput": {
+    "description": "Input label for recipe notes"
+  },
+  "recipeCreationNotesHint": "Ce qui rend cette recette mémorable",
+  "@recipeCreationNotesHint": {
+    "description": "Placeholder for recipe notes"
+  },
+  "recipeCreationPrepLabel": "Préparation (min)",
+  "@recipeCreationPrepLabel": {
+    "description": "Input label for prep time"
+  },
+  "recipeCreationPrepHint": "10",
+  "@recipeCreationPrepHint": {
+    "description": "Placeholder for prep time"
+  },
+  "recipeCreationCookLabel": "Cuisson (min)",
+  "@recipeCreationCookLabel": {
+    "description": "Input label for cook time"
+  },
+  "recipeCreationCookHint": "20",
+  "@recipeCreationCookHint": {
+    "description": "Placeholder for cook time"
+  },
+  "recipeCreationServingsLabel": "Portions",
+  "@recipeCreationServingsLabel": {
+    "description": "Input label for servings"
+  },
+  "recipeCreationServingsHint": "4",
+  "@recipeCreationServingsHint": {
+    "description": "Placeholder for servings"
+  },
+  "recipeCreationTagsInput": "Étiquettes",
+  "@recipeCreationTagsInput": {
+    "description": "Input label for tags"
+  },
+  "recipeCreationTagsHint": "rapide, végétarien",
+  "@recipeCreationTagsHint": {
+    "description": "Placeholder for tags"
+  },
+  "recipeCreationSaveForHousehold": "Enregistrer pour le foyer",
+  "@recipeCreationSaveForHousehold": {
+    "description": "Switch label for sharing with household"
+  },
+  "recipeCreationSaveForHouseholdDesc": "Tout le monde dans ce foyer peut trouver et utiliser cette recette.",
+  "@recipeCreationSaveForHouseholdDesc": {
+    "description": "Switch subtitle when sharing"
+  },
+  "recipeCreationSaveForHouseholdPrivate": "Garde-la privée pour l'instant. Tu pourras la partager plus tard.",
+  "@recipeCreationSaveForHouseholdPrivate": {
+    "description": "Switch subtitle when private"
+  },
+  "recipeCreationIngredients": "Ingrédients",
+  "@recipeCreationIngredients": {
+    "description": "Section header for ingredients"
+  },
+  "recipeCreationIngredientsHelper": "Ajoute un ingrédient par ligne.",
+  "@recipeCreationIngredientsHelper": {
+    "description": "Helper text for ingredients"
+  },
+  "recipeCreationAddIngredient": "Ajouter un ingrédient",
+  "@recipeCreationAddIngredient": {
+    "description": "Button to add an ingredient"
+  },
+  "recipeCreationIngredientHint": "200g de farine",
+  "@recipeCreationIngredientHint": {
+    "description": "Placeholder for ingredient input"
+  },
+  "recipeCreationSteps": "Étapes",
+  "@recipeCreationSteps": {
+    "description": "Section header for steps"
+  },
+  "recipeCreationStepsHelper": "Garde chaque étape assez courte pour la suivre en cuisinant.",
+  "@recipeCreationStepsHelper": {
+    "description": "Helper text for steps"
+  },
+  "recipeCreationAddStep": "Ajouter une étape",
+  "@recipeCreationAddStep": {
+    "description": "Button to add a step"
+  },
+  "recipeCreationStepHint": "Mélanger la pâte",
+  "@recipeCreationStepHint": {
+    "description": "Placeholder for step input"
+  },
+  "recipeCreationNutritionInput": "Nutrition",
+  "@recipeCreationNutritionInput": {
+    "description": "Input label for nutrition info"
+  },
+  "recipeCreationNutritionHint": "520 kcal, 24g protéines, riche en fibres",
+  "@recipeCreationNutritionHint": {
+    "description": "Placeholder for nutrition info"
+  },
+  "recipeCreationCreating": "Création…",
+  "@recipeCreationCreating": {
+    "description": "Button text while creating recipe"
+  },
+  "recipeCreationCreateRecipe": "Créer la recette",
+  "@recipeCreationCreateRecipe": {
+    "description": "Submit button for recipe creation"
+  },
+  "recipeCreationStepLabel": "{type}",
+  "@recipeCreationStepLabel": {
+    "description": "Step/ingredient label",
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeCreationRemoveItem": "Retirer {type} {index}",
+  "@recipeCreationRemoveItem": {
+    "description": "Tooltip for removing a step/ingredient",
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "index": {
+        "type": "num"
+      }
+    }
+  },
+  "recipeCreationStepSemantics": "Étape {index} sur {total}, {label}, {status}",
+  "@recipeCreationStepSemantics": {
+    "description": "Semantics label for step item",
+    "placeholders": {
+      "index": {
+        "type": "num"
+      },
+      "total": {
+        "type": "num"
+      },
+      "label": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeDetailTitle": "Recette",
+  "@recipeDetailTitle": {
+    "description": "AppBar title for recipe detail"
+  },
+  "recipeDetailDeleteTooltip": "Supprimer la recette",
+  "@recipeDetailDeleteTooltip": {
+    "description": "Tooltip for delete recipe button"
+  },
+  "recipeDetailAddToList": "Ajouter à la liste",
+  "@recipeDetailAddToList": {
+    "description": "Button to add ingredients to shopping list"
+  },
+  "recipeDetailCook": "Cuisson",
+  "@recipeDetailCook": {
+    "description": "Detail row: cook time"
+  },
+  "recipeDetailCouldNotLoad": "Impossible de charger la recette",
+  "@recipeDetailCouldNotLoad": {
+    "description": "Empty state when recipe fails to load"
+  },
+  "recipeDetailDeleteTitle": "Supprimer la recette",
+  "@recipeDetailDeleteTitle": {
+    "description": "Dialog title for deleting recipe"
+  },
+  "recipeDetailDeleteBody": "Cela supprimera définitivement cette recette. Cette action est irréversible.",
+  "@recipeDetailDeleteBody": {
+    "description": "Dialog body for recipe deletion"
+  },
+  "recipeDetailSharedLabel": "Partagée",
+  "@recipeDetailSharedLabel": {
+    "description": "Chip label for shared recipe"
+  },
+  "recipeDetailPrivateLabel": "Privée",
+  "@recipeDetailPrivateLabel": {
+    "description": "Chip label for private recipe"
+  },
+  "recipeDetailBy": "Par {author}",
+  "@recipeDetailBy": {
+    "description": "Author attribution",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeDetailPrep": "Préparation",
+  "@recipeDetailPrep": {
+    "description": "Detail row: prep time"
+  },
+  "recipeDetailServings": "Portions",
+  "@recipeDetailServings": {
+    "description": "Detail row: servings"
+  },
+  "recipeDetailUpdated": "Mise à jour",
+  "@recipeDetailUpdated": {
+    "description": "Detail row: last updated"
+  },
+  "recipeDetailNotSet": "Non défini",
+  "@recipeDetailNotSet": {
+    "description": "Fallback when a detail is not set"
+  },
+  "recipeDetailNutrition": "Nutrition",
+  "@recipeDetailNutrition": {
+    "description": "Section header: nutrition"
+  },
+  "recipeDetailEquipment": "Équipement",
+  "@recipeDetailEquipment": {
+    "description": "Section header: equipment"
+  },
+  "recipeDetailIngredients": "Ingrédients",
+  "@recipeDetailIngredients": {
+    "description": "Section header: ingredients"
+  },
+  "recipeDetailSteps": "Étapes",
+  "@recipeDetailSteps": {
+    "description": "Section header: steps"
+  },
+  "recipeDetailWatchVideo": "Voir la vidéo",
+  "@recipeDetailWatchVideo": {
+    "description": "Link label to watch recipe video"
+  },
+  "recipeDetailWatchVideoSemantics": "Voir la vidéo de la recette",
+  "@recipeDetailWatchVideoSemantics": {
+    "description": "Semantics label for video link"
+  },
+  "recipeDetailViewOriginal": "Voir la recette originale",
+  "@recipeDetailViewOriginal": {
+    "description": "Link label to original source"
+  },
+  "recipeDetailViewOriginalSemantics": "Voir la recette originale dans le navigateur",
+  "@recipeDetailViewOriginalSemantics": {
+    "description": "Semantics label for original link"
+  },
+  "cookModeCouldNotLoad": "Impossible de charger la recette",
+  "@cookModeCouldNotLoad": {
+    "description": "Empty state when recipe fails in cook mode"
+  },
+  "cookModeClose": "Fermer",
+  "@cookModeClose": {
+    "description": "Icon button tooltip to exit cook mode"
+  },
+  "cookModeServings": "Portions",
+  "@cookModeServings": {
+    "description": "Servings label in cook mode"
+  },
+  "cookModeDecreaseServings": "Diminuer les portions",
+  "@cookModeDecreaseServings": {
+    "description": "Semantics: decrease servings"
+  },
+  "cookModeIncreaseServings": "Augmenter les portions",
+  "@cookModeIncreaseServings": {
+    "description": "Semantics: increase servings"
+  },
+  "cookModeStartCooking": "Commencer à cuisiner",
+  "@cookModeStartCooking": {
+    "description": "Button to begin cooking"
+  },
+  "cookModeGathered": "rassemblé",
+  "@cookModeGathered": {
+    "description": "Semantics: ingredient gathered"
+  },
+  "cookModeNotGathered": "non rassemblé",
+  "@cookModeNotGathered": {
+    "description": "Semantics: ingredient not gathered"
+  },
+  "cookModeStepOf": "Étape {step} sur {total}",
+  "@cookModeStepOf": {
+    "description": "Glance bar current step",
+    "placeholders": {
+      "step": {
+        "type": "num"
+      },
+      "total": {
+        "type": "num"
+      }
+    }
+  },
+  "cookModeExitTooltip": "Quitter le mode cuisine",
+  "@cookModeExitTooltip": {
+    "description": "Tooltip to exit cook mode"
+  },
+  "cookModeTimerDone": "Minuteur terminé !",
+  "@cookModeTimerDone": {
+    "description": "Snackbar when a timer finishes"
+  },
+  "cookModeDoneArrow": "Fait →",
+  "@cookModeDoneArrow": {
+    "description": "Button to advance to next step"
+  },
+  "cookModeFinish": "Terminer",
+  "@cookModeFinish": {
+    "description": "Finish button on last step"
+  },
+  "cookModeStepLabel": "Étape {number}",
+  "@cookModeStepLabel": {
+    "description": "Step number label",
+    "placeholders": {
+      "number": {
+        "type": "num"
+      }
+    }
+  },
+  "cookModeStepDone": "Étape {number} terminée. Appuie pour revoir",
+  "@cookModeStepDone": {
+    "description": "Semantics: completed step",
+    "placeholders": {
+      "number": {
+        "type": "num"
+      }
+    }
+  },
+  "cookModeCurrentStep": "Étape en cours {number}",
+  "@cookModeCurrentStep": {
+    "description": "Semantics: current step",
+    "placeholders": {
+      "number": {
+        "type": "num"
+      }
+    }
+  },
+  "cookModeStepJump": "Étape {number} : {description}. Appuie pour aller à cette étape",
+  "@cookModeStepJump": {
+    "description": "Semantics: jump to step",
+    "placeholders": {
+      "number": {
+        "type": "num"
+      },
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "cookModeBackToStep": "Retour à l'étape {step}",
+  "@cookModeBackToStep": {
+    "description": "Button to return to current step",
+    "placeholders": {
+      "step": {
+        "type": "num"
+      }
+    }
+  },
+  "cookModeShowIngredients": "Afficher les ingrédients",
+  "@cookModeShowIngredients": {
+    "description": "Semantics: show ingredients sheet"
+  },
+  "cookModeIngredients": "Ingrédients",
+  "@cookModeIngredients": {
+    "description": "Ingredients bottom sheet title"
+  },
+  "cookModeFinished": "Terminé — beau travail",
+  "@cookModeFinished": {
+    "description": "Text shown when all steps complete"
+  },
+  "cookModeFinishCooking": "Terminer la cuisson",
+  "@cookModeFinishCooking": {
+    "description": "Semantics: finish cooking"
+  },
+  "cookModeAdvanceStep": "Fait, passer à l'étape suivante",
+  "@cookModeAdvanceStep": {
+    "description": "Semantics: advance to next step"
+  },
+  "expenseAppBarTitle": "Argent",
+  "@expenseAppBarTitle": {
+    "description": "AppBar title for expenses screen"
+  },
+  "expenseScanReceiptTooltip": "Scanner un reçu",
+  "@expenseScanReceiptTooltip": {
+    "description": "Tooltip for scan receipt action"
+  },
+  "expenseRecurringTooltip": "Récurrent",
+  "@expenseRecurringTooltip": {
+    "description": "Tooltip for recurring expenses"
+  },
+  "expenseAddExpense": "Ajouter une dépense",
+  "@expenseAddExpense": {
+    "description": "FAB text and tooltip to add expense"
+  },
+  "expenseYouAreOwed": "On te doit",
+  "@expenseYouAreOwed": {
+    "description": "Balance headline when user is owed money"
+  },
+  "expenseYouOwe": "Tu dois",
+  "@expenseYouOwe": {
+    "description": "Balance headline when user owes money"
+  },
+  "expenseAllSquare": "Tout est réglé",
+  "@expenseAllSquare": {
+    "description": "Balance headline when net zero"
+  },
+  "expenseSuggestedPayments": "{count, plural, =1{{count} paiement suggéré} other{{count} paiements suggérés}} pour équilibrer",
+  "@expenseSuggestedPayments": {
+    "description": "Balance description with suggestion count",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "expenseOpenBalances": "{count, plural, =1{{count} balance ouverte} other{{count} balances ouvertes}} dans le foyer",
+  "@expenseOpenBalances": {
+    "description": "Balance description with open balance count",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "expenseNoOneOwes": "Personne ne doit rien à personne pour le moment",
+  "@expenseNoOneOwes": {
+    "description": "Balance description when all settled"
+  },
+  "expenseTabTimeline": "Chronologie",
+  "@expenseTabTimeline": {
+    "description": "Tab label for expense timeline"
+  },
+  "expenseTabSettlements": "Règlements",
+  "@expenseTabSettlements": {
+    "description": "Tab label for settlements"
+  },
+  "expenseToday": "Aujourd'hui",
+  "@expenseToday": {
+    "description": "Today date section label"
+  },
+  "expenseYesterday": "Hier",
+  "@expenseYesterday": {
+    "description": "Yesterday date section label"
+  },
+  "expenseNoExpensesTitle": "Pas encore de dépenses",
+  "@expenseNoExpensesTitle": {
+    "description": "Empty state when no expenses exist"
+  },
+  "expenseNoExpensesDesc": "Suis les frais partagés avec ton foyer.",
+  "@expenseNoExpensesDesc": {
+    "description": "Description for no expenses empty state"
+  },
+  "expenseAddFirstExpense": "Ajouter une première dépense",
+  "@expenseAddFirstExpense": {
+    "description": "CTA to add the first expense"
+  },
+  "expenseLoadError": "Impossible de charger les dépenses. Vérifie ta connexion.",
+  "@expenseLoadError": {
+    "description": "Error when expenses fail to load"
+  },
+  "expenseLoadMoreError": "Impossible de charger plus de dépenses.",
+  "@expenseLoadMoreError": {
+    "description": "Error when expense pagination fails"
+  },
+  "expensePaidBy": "Payé par {payer}",
+  "@expensePaidBy": {
+    "description": "Card subtitle showing who paid",
+    "placeholders": {
+      "payer": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseConvertedAmount": "≈ {amount}",
+  "@expenseConvertedAmount": {
+    "description": "Converted currency amount display",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseDeleteTitle": "Supprimer la dépense",
+  "@expenseDeleteTitle": {
+    "description": "Dialog title for deleting expense"
+  },
+  "expenseDeleteBody": "Cela supprimera définitivement cette dépense et tous les reçus associés. Cette action est irréversible.",
+  "@expenseDeleteBody": {
+    "description": "Dialog body for expense deletion"
+  },
+  "expenseSettlementRecorded": "Règlement enregistré",
+  "@expenseSettlementRecorded": {
+    "description": "Snackbar when settlement is saved"
+  },
+  "expenseSettlementFailed": "Impossible d'enregistrer le règlement.",
+  "@expenseSettlementFailed": {
+    "description": "Snackbar when settlement fails"
+  },
+  "expenseSuggestedPaymentsTitle": "Paiements suggérés",
+  "@expenseSuggestedPaymentsTitle": {
+    "description": "Section title for suggested settlements"
+  },
+  "expenseSuggestedPaymentsDesc": "Calculé à partir de chaque dépense, partage et règlement enregistré dans ce foyer.",
+  "@expenseSuggestedPaymentsDesc": {
+    "description": "Description of how suggestions are computed"
+  },
+  "expenseAllSettled": "Tout est réglé !",
+  "@expenseAllSettled": {
+    "description": "Empty state when no settlements needed"
+  },
+  "expenseNoOneOwesRight": "Personne ne doit rien à personne pour le moment.",
+  "@expenseNoOneOwesRight": {
+    "description": "Description when all settled"
+  },
+  "expenseSameAccount": "Même compte",
+  "@expenseSameAccount": {
+    "description": "Label when payment is within same account"
+  },
+  "expenseFrom": "De",
+  "@expenseFrom": {
+    "description": "Party label: sender"
+  },
+  "expenseTo": "À",
+  "@expenseTo": {
+    "description": "Party label: receiver"
+  },
+  "expenseRecordHelper": "Enregistre ce règlement après que le paiement a été effectué.",
+  "@expenseRecordHelper": {
+    "description": "Helper text for recording settlement"
+  },
+  "expenseRecording": "Enregistrement...",
+  "@expenseRecording": {
+    "description": "Button text while recording settlement"
+  },
+  "expenseRecordSettlement": "Enregistrer le règlement",
+  "@expenseRecordSettlement": {
+    "description": "Button to confirm settlement"
+  },
+  "expenseBalances": "Balances",
+  "@expenseBalances": {
+    "description": "Section header for balance list"
+  },
+  "expenseBalancesOpen": "{count} ouvertes",
+  "@expenseBalancesOpen": {
+    "description": "Open balance count label",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "expenseExpandBalances": "Afficher les balances",
+  "@expenseExpandBalances": {
+    "description": "Semantics: expand balances"
+  },
+  "expenseCollapseBalances": "Masquer les balances",
+  "@expenseCollapseBalances": {
+    "description": "Semantics: collapse balances"
+  },
+  "expenseNoBalances": "Pas encore de balances. Ajoute une dépense avec des partages pour démarrer le livre de comptes.",
+  "@expenseNoBalances": {
+    "description": "Empty state when no balances exist"
+  },
+  "expenseIsOwed": "a une créance sur",
+  "@expenseIsOwed": {
+    "description": "Balance status: person is owed"
+  },
+  "expenseOwes": "doit",
+  "@expenseOwes": {
+    "description": "Balance status: person owes"
+  },
+  "expenseSettled": "réglé",
+  "@expenseSettled": {
+    "description": "Balance status: settled"
+  },
+  "recurringAppBarTitle": "Récurrent",
+  "@recurringAppBarTitle": {
+    "description": "AppBar title for recurring expenses"
+  },
+  "recurringAddRecurring": "Ajouter une dépense récurrente",
+  "@recurringAddRecurring": {
+    "description": "Button to add recurring expense"
+  },
+  "recurringAddRecurringTooltip": "Ajouter une dépense récurrente",
+  "@recurringAddRecurringTooltip": {
+    "description": "Tooltip for add recurring button"
+  },
+  "recurringNoRecurringTitle": "Pas de dépenses récurrentes",
+  "@recurringNoRecurringTitle": {
+    "description": "Empty state when no recurring expenses"
+  },
+  "recurringNoRecurringDesc": "Ajoute une dépense récurrente pour suivre les paiements réguliers",
+  "@recurringNoRecurringDesc": {
+    "description": "Description for no recurring expenses"
+  },
+  "recurringAddExpense": "Ajouter une dépense",
+  "@recurringAddExpense": {
+    "description": "CTA to add first recurring expense"
+  },
+  "recurringPauseTooltip": "Mettre en pause",
+  "@recurringPauseTooltip": {
+    "description": "Tooltip to pause a recurring expense"
+  },
+  "recurringResumeTooltip": "Reprendre",
+  "@recurringResumeTooltip": {
+    "description": "Tooltip to resume a recurring expense"
+  },
+  "recurringDeleteTooltip": "Supprimer",
+  "@recurringDeleteTooltip": {
+    "description": "Tooltip to delete a recurring expense"
+  },
+  "recurringNextDate": "Prochain : {date}",
+  "@recurringNextDate": {
+    "description": "Label showing next due date",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "recurringDeleteTitle": "Supprimer la dépense récurrente",
+  "@recurringDeleteTitle": {
+    "description": "Dialog title for deleting recurring expense"
+  },
+  "recurringDeleteBody": "Cela empêchera la création de futures dépenses.",
+  "@recurringDeleteBody": {
+    "description": "Dialog body for deleting recurring expense"
+  },
+  "recurringFrequencyDaily": "Quotidienne",
+  "@recurringFrequencyDaily": {
+    "description": "Daily frequency format"
+  },
+  "recurringFrequencyWeekly": "Hebdomadaire",
+  "@recurringFrequencyWeekly": {
+    "description": "Weekly frequency format"
+  },
+  "recurringFrequencyBiweekly": "Toutes les 2 semaines",
+  "@recurringFrequencyBiweekly": {
+    "description": "Biweekly frequency format"
+  },
+  "recurringFrequencyMonthly": "Mensuelle",
+  "@recurringFrequencyMonthly": {
+    "description": "Monthly frequency format"
+  },
+  "recurringFrequencyQuarterly": "Trimestrielle",
+  "@recurringFrequencyQuarterly": {
+    "description": "Quarterly frequency format"
+  },
+  "recurringFrequencyYearly": "Annuelle",
+  "@recurringFrequencyYearly": {
+    "description": "Yearly frequency format"
+  },
+  "recurringSheetTitle": "Ajouter une dépense récurrente",
+  "@recurringSheetTitle": {
+    "description": "Sheet title for creating recurring expense"
+  },
+  "recurringSheetDescription": "Description",
+  "@recurringSheetDescription": {
+    "description": "Input label for description"
+  },
+  "recurringSheetAmount": "Montant",
+  "@recurringSheetAmount": {
+    "description": "Input label for amount"
+  },
+  "recurringSheetFrequency": "Fréquence",
+  "@recurringSheetFrequency": {
+    "description": "Dropdown label for frequency"
+  },
+  "recurringSheetPayer": "Payeur",
+  "@recurringSheetPayer": {
+    "description": "Dropdown label for payer"
+  },
+  "recurringValidationDesc": "Saisis une description.",
+  "@recurringValidationDesc": {
+    "description": "Validation: description required"
+  },
+  "recurringValidationAmount": "Saisis un montant.",
+  "@recurringValidationAmount": {
+    "description": "Validation: amount required"
+  },
+  "recurringValidationPayer": "Choisis un payeur.",
+  "@recurringValidationPayer": {
+    "description": "Validation: payer required"
+  },
+  "recurringValidationAmountPositive": "Saisis un montant valide supérieur à zéro.",
+  "@recurringValidationAmountPositive": {
+    "description": "Validation: amount must be positive"
+  },
+  "recurringNoHouseholdDesc": "Rejoins ou crée un foyer pour gérer les dépenses récurrentes",
+  "@recurringNoHouseholdDesc": {
+    "description": "No-household description for recurring"
+  },
+  "listAppBarTitle": "Listes",
+  "@listAppBarTitle": {
+    "description": "AppBar title for lists screen"
+  },
+  "listShoppingTripTooltip": "Courses",
+  "@listShoppingTripTooltip": {
+    "description": "Tooltip for shopping trip navigation"
+  },
+  "listSearchLabel": "Rechercher dans les listes",
+  "@listSearchLabel": {
+    "description": "TextField label for list search"
+  },
+  "listSearchHint": "Nom, ex. courses",
+  "@listSearchHint": {
+    "description": "TextField hint for list search"
+  },
+  "listScanTooltip": "Scanner un reçu ou une liste",
+  "@listScanTooltip": {
+    "description": "Menu item to scan a list"
+  },
+  "listSortLabel": "Trier",
+  "@listSortLabel": {
+    "description": "Disabled menu item for sort"
+  },
+  "listSortNewest": "Plus récentes",
+  "@listSortNewest": {
+    "description": "Sort by newest"
+  },
+  "listSortOldest": "Plus anciennes",
+  "@listSortOldest": {
+    "description": "Sort by oldest"
+  },
+  "listSortAZ": "A–Z",
+  "@listSortAZ": {
+    "description": "Sort alphabetically"
+  },
+  "listSortMostItems": "Plus d'éléments",
+  "@listSortMostItems": {
+    "description": "Sort by item count"
+  },
+  "listSortGridView": "Vue grille",
+  "@listSortGridView": {
+    "description": "Toggle grid view"
+  },
+  "listNewList": "Nouvelle liste",
+  "@listNewList": {
+    "description": "FAB text and tooltip to create list"
+  },
+  "listFilterAll": "Toutes",
+  "@listFilterAll": {
+    "description": "Filter chip: all lists"
+  },
+  "listFilterShopping": "Courses",
+  "@listFilterShopping": {
+    "description": "Filter chip: shopping lists"
+  },
+  "listFilterTodo": "Tâches",
+  "@listFilterTodo": {
+    "description": "Filter chip: to-do lists"
+  },
+  "listFilterCustom": "Personnalisé",
+  "@listFilterCustom": {
+    "description": "Filter chip: custom lists"
+  },
+  "listEmptyShopping": "Pas de listes de courses",
+  "@listEmptyShopping": {
+    "description": "Empty state for shopping filter"
+  },
+  "listEmptyTodo": "Pas de listes de tâches",
+  "@listEmptyTodo": {
+    "description": "Empty state for to-do filter"
+  },
+  "listEmptyCustom": "Pas de listes personnalisées",
+  "@listEmptyCustom": {
+    "description": "Empty state for custom filter"
+  },
+  "listEmptyAll": "Pas encore de listes",
+  "@listEmptyAll": {
+    "description": "Empty state when no lists exist"
+  },
+  "listEmptyShoppingDesc": "Idéal pour les courses, la préparation des repas, les courses du week-end.",
+  "@listEmptyShoppingDesc": {
+    "description": "Description for shopping empty state"
+  },
+  "listEmptyTodoDesc": "Tâches, corvées, tout ce qui se coche.",
+  "@listEmptyTodoDesc": {
+    "description": "Description for to-do empty state"
+  },
+  "listEmptyCustomDesc": "Forme libre — ta liste, tes règles.",
+  "@listEmptyCustomDesc": {
+    "description": "Description for custom empty state"
+  },
+  "listEmptyAllDesc": "Ajoute des lignes dans une liste ; les premières apparaissent en aperçu sur sa carte.",
+  "@listEmptyAllDesc": {
+    "description": "Description for general empty state"
+  },
+  "listCreateShopping": "Créer une liste de courses",
+  "@listCreateShopping": {
+    "description": "CTA to create first shopping list"
+  },
+  "listCreateTodo": "Créer une liste de tâches",
+  "@listCreateTodo": {
+    "description": "CTA to create first to-do list"
+  },
+  "listCreateCustom": "Créer une liste personnalisée",
+  "@listCreateCustom": {
+    "description": "CTA to create first custom list"
+  },
+  "listCreateFirst": "Créer ta première liste",
+  "@listCreateFirst": {
+    "description": "CTA to create first list (all filter)"
+  },
+  "listNoMatch": "Aucune liste ne correspond à « {query} »",
+  "@listNoMatch": {
+    "description": "Search empty result",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "listSearchDesc": "Les noms et les éléments de liste sont recherchés.",
+  "@listSearchDesc": {
+    "description": "Description for search no-results"
+  },
+  "listRenameTitle": "Renommer la liste",
+  "@listRenameTitle": {
+    "description": "Dialog title for renaming a list"
+  },
+  "listCouldNotRename": "Impossible de renommer la liste.",
+  "@listCouldNotRename": {
+    "description": "Snackbar when rename fails"
+  },
+  "listDeleteTitle": "Supprimer la liste",
+  "@listDeleteTitle": {
+    "description": "Dialog title for deleting a list"
+  },
+  "listDeleteBody": "Cela supprimera définitivement cette liste et tous ses éléments.",
+  "@listDeleteBody": {
+    "description": "Dialog body for list deletion"
+  },
+  "listCouldNotDelete": "Impossible de supprimer la liste.",
+  "@listCouldNotDelete": {
+    "description": "Snackbar when delete fails"
+  },
+  "listAddItemTo": "Ajouter un élément à {name}",
+  "@listAddItemTo": {
+    "description": "Dialog title for adding item",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "listItemName": "Nom de l'élément",
+  "@listItemName": {
+    "description": "Input label for item name"
+  },
+  "listCouldNotAddItem": "Impossible d'ajouter l'élément.",
+  "@listCouldNotAddItem": {
+    "description": "Snackbar when adding item fails"
+  },
+  "listQuickAddItemTooltip": "Ajout rapide",
+  "@listQuickAddItemTooltip": {
+    "description": "Tooltip for quick-add button"
+  },
+  "listQuickAddItemSemantics": "Ajout rapide à {name}",
+  "@listQuickAddItemSemantics": {
+    "description": "Semantics for quick-add",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "listOptionsTooltip": "Options de la liste",
+  "@listOptionsTooltip": {
+    "description": "Tooltip for list options menu"
+  },
+  "listDetailEditName": "Modifier le nom de la liste, {name}",
+  "@listDetailEditName": {
+    "description": "Semantics for editing list name",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "listDetailCloseSearch": "Fermer la recherche",
+  "@listDetailCloseSearch": {
+    "description": "Tooltip to close search"
+  },
+  "listDetailSearchTooltip": "Rechercher",
+  "@listDetailSearchTooltip": {
+    "description": "Tooltip to open search"
+  },
+  "listDetailFilterLabel": "Filtrer les éléments",
+  "@listDetailFilterLabel": {
+    "description": "TextField label for filtering items"
+  },
+  "listDetailFilterHint": "Nom, ex. lait",
+  "@listDetailFilterHint": {
+    "description": "TextField hint for filtering items"
+  },
+  "listDetailAllCheckedOff": "Tout est coché",
+  "@listDetailAllCheckedOff": {
+    "description": "Panel shown when all items are checked"
+  },
+  "listDetailClearChecked": "Effacer les éléments cochés",
+  "@listDetailClearChecked": {
+    "description": "Button to clear checked items"
+  },
+  "listDetailCheckedOff": "Cochés",
+  "@listDetailCheckedOff": {
+    "description": "Section header for completed items"
+  },
+  "listDetailNothingHere": "Rien ici pour l'instant",
+  "@listDetailNothingHere": {
+    "description": "Empty state when list has no items"
+  },
+  "listDetailNothingHereDesc": "Photographie une liste manuscrite, une note sur le frigo ou une capture d'écran. On extrait les éléments.",
+  "@listDetailNothingHereDesc": {
+    "description": "Description for empty list"
+  },
+  "listDetailScanThisList": "Scanner cette liste",
+  "@listDetailScanThisList": {
+    "description": "CTA to scan list content"
+  },
+  "listDetailTypeItem": "Saisir un élément",
+  "@listDetailTypeItem": {
+    "description": "CTA to type an item manually"
+  },
+  "listDetailNoMatch": "Aucun élément ne correspond à ton filtre",
+  "@listDetailNoMatch": {
+    "description": "Search empty result for items"
+  },
+  "listDetailCouldNotLoad": "Impossible de charger la liste.",
+  "@listDetailCouldNotLoad": {
+    "description": "Error when list fails to load"
+  },
+  "listDetailCouldNotUpdate": "Impossible de mettre à jour. Réessaie.",
+  "@listDetailCouldNotUpdate": {
+    "description": "Snackbar when update fails"
+  },
+  "listDetailCouldNotAddItem": "Impossible d'ajouter l'élément. Réessaie.",
+  "@listDetailCouldNotAddItem": {
+    "description": "Snackbar when adding item fails"
+  },
+  "listDetailCouldNotClear": "Impossible d'effacer les éléments. Réessaie.",
+  "@listDetailCouldNotClear": {
+    "description": "Snackbar when clearing items fails"
+  },
+  "listDetailItemDeleted": "{name} supprimé",
+  "@listDetailItemDeleted": {
+    "description": "Snackbar when item is deleted",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "listDetailCouldNotRestore": "Impossible de restaurer l'élément.",
+  "@listDetailCouldNotRestore": {
+    "description": "Snackbar when restore fails"
+  },
+  "listDetailCouldNotReorder": "Impossible de réorganiser les éléments. Réessaie.",
+  "@listDetailCouldNotReorder": {
+    "description": "Snackbar when reorder fails"
+  },
+  "listDetailItemsAdded": "{count, plural, =1{1 élément ajouté à la liste} other{{count} éléments ajoutés à la liste}}",
+  "@listDetailItemsAdded": {
+    "description": "Snackbar when items are scanned",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "listDetailCouldNotStartScan": "Impossible de lancer le scan. Réessaie.",
+  "@listDetailCouldNotStartScan": {
+    "description": "Snackbar when scan fails to start"
+  },
+  "listDetailSetPrice": "Définir le prix",
+  "@listDetailSetPrice": {
+    "description": "Dialog title for setting item price"
+  },
+  "listDetailPriceInput": "Prix",
+  "@listDetailPriceInput": {
+    "description": "Input label for price"
+  },
+  "listDetailPriceHint": "0,00",
+  "@listDetailPriceHint": {
+    "description": "Placeholder for price input"
+  },
+  "listDetailCouldNotSetPrice": "Impossible de définir le prix.",
+  "@listDetailCouldNotSetPrice": {
+    "description": "Snackbar when price set fails"
+  },
+  "listDetailClearTitle": "Vider la liste",
+  "@listDetailClearTitle": {
+    "description": "Dialog title for clearing list"
+  },
+  "listDetailClearBody": "Cela supprimera {count, plural, =1{l'élément} other{les {count} éléments}}. Cette action est irréversible.",
+  "@listDetailClearBody": {
+    "description": "Dialog body for clearing list",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "listDetailClearConfirm": "Vider la liste",
+  "@listDetailClearConfirm": {
+    "description": "Confirmation button to clear list"
+  },
+  "listDetailArchiveTitle": "Archiver la liste",
+  "@listDetailArchiveTitle": {
+    "description": "Dialog title for archiving list"
+  },
+  "listDetailArchiveBody": "Cette liste sera masquée de ton foyer.",
+  "@listDetailArchiveBody": {
+    "description": "Dialog body for archiving list"
+  },
+  "listDetailFailedArchive": "Impossible d'archiver la liste.",
+  "@listDetailFailedArchive": {
+    "description": "Snackbar when archive fails"
+  },
+  "listDetailDeleteTitle": "Supprimer la liste",
+  "@listDetailDeleteTitle": {
+    "description": "Dialog title for deleting list"
+  },
+  "listDetailDeleteBody": "Cela supprimera définitivement cette liste et tous ses éléments. Cette action est irréversible.",
+  "@listDetailDeleteBody": {
+    "description": "Dialog body for deleting list"
+  },
+  "listDetailCouldNotDelete": "Impossible de supprimer la liste.",
+  "@listDetailCouldNotDelete": {
+    "description": "Snackbar when delete fails"
+  },
+  "listDetailExpenseGenerated": "Dépense générée",
+  "@listDetailExpenseGenerated": {
+    "description": "Snackbar when expense is created from list"
+  },
+  "listDetailCouldNotLoadCostSummary": "Impossible de charger le récapitulatif des coûts.",
+  "@listDetailCouldNotLoadCostSummary": {
+    "description": "Snackbar when cost summary fails"
+  },
+  "listDetailCouldNotAddPhoto": "Impossible d'ajouter la photo.",
+  "@listDetailCouldNotAddPhoto": {
+    "description": "Snackbar when photo add fails"
+  },
+  "listDetailCouldNotRemovePhoto": "Impossible de retirer la photo.",
+  "@listDetailCouldNotRemovePhoto": {
+    "description": "Snackbar when photo remove fails"
+  },
+  "listDetailListImage": "Image de la liste",
+  "@listDetailListImage": {
+    "description": "Semantics label for list image"
+  },
+  "listDetailCheckAll": "Tout cocher",
+  "@listDetailCheckAll": {
+    "description": "Menu item to check all items"
+  },
+  "listDetailUncheckAll": "Tout décocher",
+  "@listDetailUncheckAll": {
+    "description": "Menu item to uncheck all items"
+  },
+  "listDetailCostSummary": "Récapitulatif des coûts",
+  "@listDetailCostSummary": {
+    "description": "Menu item for cost summary"
+  },
+  "listDetailScanList": "Scanner la liste",
+  "@listDetailScanList": {
+    "description": "Tooltip to scan list"
+  },
+  "calendarAppBarTitle": "Calendrier",
+  "@calendarAppBarTitle": {
+    "description": "AppBar title for calendar screen"
+  },
+  "calendarViewWeek": "Semaine",
+  "@calendarViewWeek": {
+    "description": "Toggle label for week view"
+  },
+  "calendarViewMonth": "Mois",
+  "@calendarViewMonth": {
+    "description": "Toggle label for month view"
+  },
+  "calendarViewAgenda": "Agenda",
+  "@calendarViewAgenda": {
+    "description": "Toggle label for agenda view"
+  },
+  "calendarWeekView": "Vue semaine",
+  "@calendarWeekView": {
+    "description": "Semantics: week view"
+  },
+  "calendarMonthView": "Vue mois",
+  "@calendarMonthView": {
+    "description": "Semantics: month view"
+  },
+  "calendarAgendaView": "Vue agenda",
+  "@calendarAgendaView": {
+    "description": "Semantics: agenda view"
+  },
+  "calendarPreviousWeek": "Semaine précédente",
+  "@calendarPreviousWeek": {
+    "description": "Tooltip for previous week"
+  },
+  "calendarNextWeek": "Semaine suivante",
+  "@calendarNextWeek": {
+    "description": "Tooltip for next week"
+  },
+  "calendarPreviousMonth": "Mois précédent",
+  "@calendarPreviousMonth": {
+    "description": "Tooltip for previous month"
+  },
+  "calendarNextMonth": "Mois suivant",
+  "@calendarNextMonth": {
+    "description": "Tooltip for next month"
+  },
+  "calendarMonthJanuary": "Janvier",
+  "@calendarMonthJanuary": {
+    "description": "Month name"
+  },
+  "calendarMonthFebruary": "Février",
+  "@calendarMonthFebruary": {
+    "description": "Month name"
+  },
+  "calendarMonthMarch": "Mars",
+  "@calendarMonthMarch": {
+    "description": "Month name"
+  },
+  "calendarMonthApril": "Avril",
+  "@calendarMonthApril": {
+    "description": "Month name"
+  },
+  "calendarMonthMay": "Mai",
+  "@calendarMonthMay": {
+    "description": "Month name"
+  },
+  "calendarMonthJune": "Juin",
+  "@calendarMonthJune": {
+    "description": "Month name"
+  },
+  "calendarMonthJuly": "Juillet",
+  "@calendarMonthJuly": {
+    "description": "Month name"
+  },
+  "calendarMonthAugust": "Août",
+  "@calendarMonthAugust": {
+    "description": "Month name"
+  },
+  "calendarMonthSeptember": "Septembre",
+  "@calendarMonthSeptember": {
+    "description": "Month name"
+  },
+  "calendarMonthOctober": "Octobre",
+  "@calendarMonthOctober": {
+    "description": "Month name"
+  },
+  "calendarMonthNovember": "Novembre",
+  "@calendarMonthNovember": {
+    "description": "Month name"
+  },
+  "calendarMonthDecember": "Décembre",
+  "@calendarMonthDecember": {
+    "description": "Month name"
+  },
+  "calendarShortMon": "Lun",
+  "@calendarShortMon": {
+    "description": "Monday header"
+  },
+  "calendarShortTue": "Mar",
+  "@calendarShortTue": {
+    "description": "Tuesday header"
+  },
+  "calendarShortWed": "Mer",
+  "@calendarShortWed": {
+    "description": "Wednesday header"
+  },
+  "calendarShortThu": "Jeu",
+  "@calendarShortThu": {
+    "description": "Thursday header"
+  },
+  "calendarShortFri": "Ven",
+  "@calendarShortFri": {
+    "description": "Friday header"
+  },
+  "calendarShortSat": "Sam",
+  "@calendarShortSat": {
+    "description": "Saturday header"
+  },
+  "calendarShortSun": "Dim",
+  "@calendarShortSun": {
+    "description": "Sunday header"
+  },
+  "calendarWeekdayMonday": "Lundi",
+  "@calendarWeekdayMonday": {
+    "description": "Full weekday name"
+  },
+  "calendarWeekdayTuesday": "Mardi",
+  "@calendarWeekdayTuesday": {
+    "description": "Full weekday name"
+  },
+  "calendarWeekdayWednesday": "Mercredi",
+  "@calendarWeekdayWednesday": {
+    "description": "Full weekday name"
+  },
+  "calendarWeekdayThursday": "Jeudi",
+  "@calendarWeekdayThursday": {
+    "description": "Full weekday name"
+  },
+  "calendarWeekdayFriday": "Vendredi",
+  "@calendarWeekdayFriday": {
+    "description": "Full weekday name"
+  },
+  "calendarWeekdaySaturday": "Samedi",
+  "@calendarWeekdaySaturday": {
+    "description": "Full weekday name"
+  },
+  "calendarWeekdaySunday": "Dimanche",
+  "@calendarWeekdaySunday": {
+    "description": "Full weekday name"
+  },
+  "calendarToday": "Aujourd'hui",
+  "@calendarToday": {
+    "description": "Today label"
+  },
+  "calendarDayLabel": "Jour {day}",
+  "@calendarDayLabel": {
+    "description": "Semantics: specific day",
+    "placeholders": {
+      "day": {
+        "type": "num"
+      }
+    }
+  },
+  "calendarNothingPlanned": "Rien de prévu",
+  "@calendarNothingPlanned": {
+    "description": "Empty day text"
+  },
+  "calendarNothingAhead": "Rien à venir",
+  "@calendarNothingAhead": {
+    "description": "Empty state when no events ahead"
+  },
+  "calendarNothingAheadDesc": "Les tâches à venir, les plans de repas et les dépenses récurrentes apparaîtront ici.",
+  "@calendarNothingAheadDesc": {
+    "description": "Description when no events ahead"
+  },
+  "calendarAddChore": "Ajouter une tâche",
+  "@calendarAddChore": {
+    "description": "Menu item to add chore from calendar"
+  },
+  "calendarAddExpense": "Ajouter une dépense",
+  "@calendarAddExpense": {
+    "description": "Menu item to add expense from calendar"
+  },
+  "calendarViewInWeek": "Voir dans la semaine",
+  "@calendarViewInWeek": {
+    "description": "Menu item to navigate to week view"
+  },
+  "calendarEventMeal": "Repas",
+  "@calendarEventMeal": {
+    "description": "Default event label: meal"
+  },
+  "calendarEventChore": "Tâche",
+  "@calendarEventChore": {
+    "description": "Default event label: chore"
+  },
+  "calendarEventRecurring": "Récurrent",
+  "@calendarEventRecurring": {
+    "description": "Default event label: recurring"
+  },
+  "calendarEventExpense": "Dépense",
+  "@calendarEventExpense": {
+    "description": "Default event label: expense"
+  },
+  "calendarEventReminder": "Rappel",
+  "@calendarEventReminder": {
+    "description": "Default event label: reminder"
+  },
+  "calendarServingsPpl": "{servings} pers. ",
+  "@calendarServingsPpl": {
+    "description": "Meal servings in calendar",
+    "placeholders": {
+      "servings": {
+        "type": "num"
+      }
+    }
+  },
+  "calendarNoHouseholdDesc": "Rejoins ou crée un foyer pour voir le calendrier",
+  "@calendarNoHouseholdDesc": {
+    "description": "No-household description for calendar"
+  },
+  "calendarCreateHousehold": "Créer un foyer",
+  "@calendarCreateHousehold": {
+    "description": "CTA to create household"
+  },
+  "calendarWeekHeader": "{weekStart} – {weekEnd}",
+  "@calendarWeekHeader": {
+    "description": "Week range header",
+    "placeholders": {
+      "weekStart": {
+        "type": "String"
+      },
+      "weekEnd": {
+        "type": "String"
+      }
+    }
+  },
+  "calendarMonthHeader": "{month} {year}",
+  "@calendarMonthHeader": {
+    "description": "Month header label",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      },
+      "year": {
+        "type": "num"
+      }
+    }
+  },
+  "mealPlanAppBarTitle": "Plan de repas",
+  "@mealPlanAppBarTitle": {
+    "description": "AppBar title for meal plan screen"
+  },
+  "mealPlanGenerateShoppingList": "Générer une liste de courses",
+  "@mealPlanGenerateShoppingList": {
+    "description": "Tooltip for generating shopping list"
+  },
+  "mealPlanPreviousWeek": "Semaine précédente",
+  "@mealPlanPreviousWeek": {
+    "description": "Tooltip for previous week"
+  },
+  "mealPlanNextWeek": "Semaine suivante",
+  "@mealPlanNextWeek": {
+    "description": "Tooltip for next week"
+  },
+  "mealPlanBreakfast": "Petit-déjeuner",
+  "@mealPlanBreakfast": {
+    "description": "Meal slot: breakfast"
+  },
+  "mealPlanLunch": "Déjeuner",
+  "@mealPlanLunch": {
+    "description": "Meal slot: lunch"
+  },
+  "mealPlanDinner": "Dîner",
+  "@mealPlanDinner": {
+    "description": "Meal slot: dinner"
+  },
+  "mealPlanAddMeal": "Ajouter un repas",
+  "@mealPlanAddMeal": {
+    "description": "CTA for empty meal slot"
+  },
+  "mealPlanRecipeFallback": "Recette",
+  "@mealPlanRecipeFallback": {
+    "description": "Fallback title when recipe name missing"
+  },
+  "mealPlanServings": "{servings}p",
+  "@mealPlanServings": {
+    "description": "Compact servings display",
+    "placeholders": {
+      "servings": {
+        "type": "num"
+      }
+    }
+  },
+  "mealPlanShoppingListCreated": "Liste de courses créée avec {count} éléments",
+  "@mealPlanShoppingListCreated": {
+    "description": "Snackbar when shopping list is created",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "mealPlanTrackCosts": "Suivre les coûts",
+  "@mealPlanTrackCosts": {
+    "description": "Snackbar action to navigate to money"
+  },
+  "mealPlanCouldNotAdd": "Impossible d'ajouter le repas.",
+  "@mealPlanCouldNotAdd": {
+    "description": "Snackbar when adding meal fails"
+  },
+  "mealPlanCouldNotRemove": "Impossible de retirer le repas.",
+  "@mealPlanCouldNotRemove": {
+    "description": "Snackbar when removing meal fails"
+  },
+  "mealPlanCouldNotUpdate": "Impossible de modifier le repas.",
+  "@mealPlanCouldNotUpdate": {
+    "description": "Snackbar when updating meal fails"
+  },
+  "mealPlanPickRecipe": "Choisir une recette",
+  "@mealPlanPickRecipe": {
+    "description": "Bottom sheet title for recipe picker"
+  },
+  "mealPlanCouldNotLoadRecipes": "Impossible de charger les recettes",
+  "@mealPlanCouldNotLoadRecipes": {
+    "description": "Error when recipes fail to load"
+  },
+  "mealPlanNoRecipes": "Pas encore de recettes",
+  "@mealPlanNoRecipes": {
+    "description": "Empty state when no recipes exist"
+  },
+  "mealPlanAddRecipesDesc": "Ajoute des recettes pour planifier les repas",
+  "@mealPlanAddRecipesDesc": {
+    "description": "Description when no recipes"
+  },
+  "mealPlanSearchRecipes": "Rechercher des recettes...",
+  "@mealPlanSearchRecipes": {
+    "description": "Search field hint in recipe picker"
+  },
+  "mealPlanNoMatch": "Aucune recette ne correspond à « {query} »",
+  "@mealPlanNoMatch": {
+    "description": "No search results in recipe picker",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "mealPlanServingsSheet": "Portions",
+  "@mealPlanServingsSheet": {
+    "description": "Bottom sheet title for servings adjustment"
+  },
+  "mealPlanFewerServings": "Moins de portions",
+  "@mealPlanFewerServings": {
+    "description": "Tooltip to reduce servings"
+  },
+  "mealPlanMoreServings": "Plus de portions",
+  "@mealPlanMoreServings": {
+    "description": "Tooltip to increase servings"
+  },
+  "mealPlanOpenRecipe": "Ouvrir la recette pour {slot}",
+  "@mealPlanOpenRecipe": {
+    "description": "Semantics: open planned recipe",
+    "placeholders": {
+      "slot": {
+        "type": "String"
+      }
+    }
+  },
+  "mealPlanAddMealFor": "Ajouter un repas pour {slot}",
+  "@mealPlanAddMealFor": {
+    "description": "Semantics: add meal to slot",
+    "placeholders": {
+      "slot": {
+        "type": "String"
+      }
+    }
+  },
+  "accountAppBarTitle": "Toi",
+  "@accountAppBarTitle": {
+    "description": "AppBar title for account/profile screen"
+  },
+  "accountFailedLoadProfile": "Impossible de charger le profil. Réessaie.",
+  "@accountFailedLoadProfile": {
+    "description": "Error when profile fails to load"
+  },
+  "accountFailedSaveName": "Impossible d'enregistrer le nom",
+  "@accountFailedSaveName": {
+    "description": "Error when name save fails"
+  },
+  "accountEditYourName": "Modifier ton nom",
+  "@accountEditYourName": {
+    "description": "Semantics: edit name field"
+  },
+  "accountChangePassword": "Changer le mot de passe",
+  "@accountChangePassword": {
+    "description": "Bottom sheet title for password change"
+  },
+  "accountFillPasswordFields": "Remplis tous les champs du mot de passe.",
+  "@accountFillPasswordFields": {
+    "description": "Validation: all password fields required"
+  },
+  "accountPasswordMinLength": "Le nouveau mot de passe doit contenir au moins 6 caractères.",
+  "@accountPasswordMinLength": {
+    "description": "Validation: password too short"
+  },
+  "accountPasswordsMismatch": "Les nouveaux mots de passe ne correspondent pas.",
+  "@accountPasswordsMismatch": {
+    "description": "Validation: passwords don't match"
+  },
+  "accountPasswordChanged": "Mot de passe modifié",
+  "@accountPasswordChanged": {
+    "description": "Snackbar when password is changed"
+  },
+  "accountCurrentPassword": "Mot de passe actuel",
+  "@accountCurrentPassword": {
+    "description": "Input label for current password"
+  },
+  "accountNewPassword": "Nouveau mot de passe",
+  "@accountNewPassword": {
+    "description": "Input label for new password"
+  },
+  "accountConfirmPassword": "Confirmer le nouveau mot de passe",
+  "@accountConfirmPassword": {
+    "description": "Input label for confirm password"
+  },
+  "accountChangePasswordButton": "Changer le mot de passe",
+  "@accountChangePasswordButton": {
+    "description": "Button text to change password"
+  },
+  "accountTermsTitle": "Conditions d'utilisation",
+  "@accountTermsTitle": {
+    "description": "Bottom sheet title for terms"
+  },
+  "accountTermsBody": "Utilise mitlist de manière responsable et respecte la vie privée des membres de ton foyer. N'abuse pas des fonctionnalités ou des données partagées. mitlist est fourni tel quel sans garantie.",
+  "@accountTermsBody": {
+    "description": "Terms of service body text"
+  },
+  "accountDeleteAccount": "Supprimer le compte",
+  "@accountDeleteAccount": {
+    "description": "Dialog title for account deletion"
+  },
+  "accountDeleteAccountBody": "Cela supprimera définitivement ton compte et toutes les données associées. Cette action est irréversible.",
+  "@accountDeleteAccountBody": {
+    "description": "Dialog body for account deletion"
+  },
+  "accountLogOut": "Se déconnecter",
+  "@accountLogOut": {
+    "description": "Button to log out"
+  },
+  "accountDeleteAccountButton": "Supprimer le compte",
+  "@accountDeleteAccountButton": {
+    "description": "Button to delete your account"
+  },
+  "accountHouseholdSection": "Foyer",
+  "@accountHouseholdSection": {
+    "description": "Section title for household info"
+  },
+  "accountSwitchToHousehold": "Passer à {name}",
+  "@accountSwitchToHousehold": {
+    "description": "Semantics for household switch",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "accountNotificationInbox": "Boîte de notifications",
+  "@accountNotificationInbox": {
+    "description": "Menu row: notification inbox"
+  },
+  "accountNotificationPreferences": "Préférences de notifications",
+  "@accountNotificationPreferences": {
+    "description": "Menu row: notification preferences"
+  },
+  "accountAppearance": "Apparence",
+  "@accountAppearance": {
+    "description": "Menu row: appearance settings"
+  },
+  "accountAppearanceSystem": "Système",
+  "@accountAppearanceSystem": {
+    "description": "Theme option: follow system"
+  },
+  "accountAppearanceLight": "Clair",
+  "@accountAppearanceLight": {
+    "description": "Theme option: light mode"
+  },
+  "accountAppearanceDark": "Sombre",
+  "@accountAppearanceDark": {
+    "description": "Theme option: dark mode"
+  },
+  "accountChangePasswordRow": "Changer le mot de passe",
+  "@accountChangePasswordRow": {
+    "description": "Menu row: change password"
+  },
+  "accountVersion": "Version",
+  "@accountVersion": {
+    "description": "Menu row: app version"
+  },
+  "accountTermsRow": "Conditions d'utilisation",
+  "@accountTermsRow": {
+    "description": "Menu row: terms of service"
+  },
+  "accountGuestTitle": "Tu utilises un compte invité",
+  "@accountGuestTitle": {
+    "description": "Card title for guest account status"
+  },
+  "accountGuestDesc": "Crée un compte complet pour garder tes données définitivement et accéder à toutes les fonctionnalités.",
+  "@accountGuestDesc": {
+    "description": "Description for guest account upgrade"
+  },
+  "accountCreateFullAccount": "Créer un compte complet",
+  "@accountCreateFullAccount": {
+    "description": "Button to upgrade from guest"
+  },
+  "accountExportCSV": "Exporter les dépenses (CSV)",
+  "@accountExportCSV": {
+    "description": "Menu row: export expenses as CSV"
+  },
+  "accountShareJSON": "Partager les dépenses (JSON)",
+  "@accountShareJSON": {
+    "description": "Menu row: share expenses as JSON"
+  },
+  "accountCopyJSON": "Copier les dépenses (JSON)",
+  "@accountCopyJSON": {
+    "description": "Menu row: copy expenses JSON"
+  },
+  "accountJSONCopied": "JSON des dépenses copié dans le presse-papier",
+  "@accountJSONCopied": {
+    "description": "Snackbar when JSON is copied"
+  },
+  "accountCreateAccountTitle": "Créer ton compte",
+  "@accountCreateAccountTitle": {
+    "description": "Bottom sheet title for account creation"
+  },
+  "accountFillAllFields": "Remplis tous les champs.",
+  "@accountFillAllFields": {
+    "description": "Validation: all fields required"
+  },
+  "accountYourName": "Ton nom",
+  "@accountYourName": {
+    "description": "Input label for name"
+  },
+  "accountYourNameHint": "ex. Alex Dupont",
+  "@accountYourNameHint": {
+    "description": "Placeholder for name input"
+  },
+  "accountEmail": "Email",
+  "@accountEmail": {
+    "description": "Input label for email"
+  },
+  "accountEmailHint": "toi@exemple.com",
+  "@accountEmailHint": {
+    "description": "Placeholder for email input"
+  },
+  "accountPassword": "Mot de passe",
+  "@accountPassword": {
+    "description": "Input label for password"
+  },
+  "accountCreatingAccount": "Création du compte…",
+  "@accountCreatingAccount": {
+    "description": "Button text while creating account"
+  },
+  "accountCreateAccount": "Créer le compte",
+  "@accountCreateAccount": {
+    "description": "Button to submit account creation"
+  },
+  "accountCreatedWelcome": "Compte créé. Bienvenue !",
+  "@accountCreatedWelcome": {
+    "description": "Snackbar after account creation"
+  },
+  "notificationsAppBarTitle": "Notifications",
+  "@notificationsAppBarTitle": {
+    "description": "AppBar title for notifications screen"
+  },
+  "notificationsMarkAllRead": "Tout marquer comme lu",
+  "@notificationsMarkAllRead": {
+    "description": "Button to mark all notifications read"
+  },
+  "notificationsFailedLoad": "Impossible de charger les notifications.",
+  "@notificationsFailedLoad": {
+    "description": "Error when notifications fail to load"
+  },
+  "notificationsFailedLoadMore": "Impossible de charger plus de notifications.",
+  "@notificationsFailedLoadMore": {
+    "description": "Error when notification pagination fails"
+  },
+  "notificationsFailedMarkAllRead": "Impossible de tout marquer comme lu.",
+  "@notificationsFailedMarkAllRead": {
+    "description": "Error when mark-all-read fails"
+  },
+  "notificationsFailedMarkRead": "Impossible de marquer comme lu.",
+  "@notificationsFailedMarkRead": {
+    "description": "Error when marking single notification fails"
+  },
+  "notificationsNoHouseholdDesc": "Crée ou rejoins un foyer pour recevoir des notifications.",
+  "@notificationsNoHouseholdDesc": {
+    "description": "No-household description for notifications"
+  },
+  "notificationsNoNotifications": "Pas encore de notifications",
+  "@notificationsNoNotifications": {
+    "description": "Empty state when no notifications"
+  },
+  "notificationsNoNotificationsDesc": "Quand quelqu'un ajoute une tâche, partage une facture ou te mentionne, ça apparaîtra ici.",
+  "@notificationsNoNotificationsDesc": {
+    "description": "Description for empty notifications"
+  },
+  "notificationsUnreadLabel": "Non lu, {title}",
+  "@notificationsUnreadLabel": {
+    "description": "Semantics label for unread notification",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notifPrefAppBarTitle": "Préférences de notifications",
+  "@notifPrefAppBarTitle": {
+    "description": "AppBar title for notification preferences"
+  },
+  "notifPrefFailedLoad": "Impossible de charger les préférences de notifications.",
+  "@notifPrefFailedLoad": {
+    "description": "Error when preferences fail to load"
+  },
+  "notifPrefNoHouseholdDesc": "Rejoins ou crée un foyer pour configurer les préférences de notifications.",
+  "@notifPrefNoHouseholdDesc": {
+    "description": "No-household description for preferences"
+  },
+  "notifPrefNoPreferences": "Pas encore de préférences",
+  "@notifPrefNoPreferences": {
+    "description": "Empty state when no preferences"
+  },
+  "notifPrefNoPreferencesDesc": "Les préférences sont créées quand tu rejoins un foyer. Si tu viens de rejoindre, elles devraient apparaître bientôt.",
+  "@notifPrefNoPreferencesDesc": {
+    "description": "Description for empty preferences"
+  },
+  "notifPrefGroupName": "Notifications",
+  "@notifPrefGroupName": {
+    "description": "Fallback group name for preferences"
+  },
+  "notifPrefChoreDueReminders": "Rappels de tâches à échéance",
+  "@notifPrefChoreDueReminders": {
+    "description": "Toggle label for chore due reminders"
+  },
+  "notifPrefChoreDueRemindersDesc": "Quand une tâche approche de son échéance",
+  "@notifPrefChoreDueRemindersDesc": {
+    "description": "Toggle subtitle for chore due reminders"
+  },
+  "notifPrefChoreDueDayOf": "Tâche due le jour même",
+  "@notifPrefChoreDueDayOf": {
+    "description": "Toggle label for day-of chore reminders"
+  },
+  "notifPrefChoreDueDayOfDesc": "Le jour où une tâche est due",
+  "@notifPrefChoreDueDayOfDesc": {
+    "description": "Toggle subtitle for day-of chore reminders"
+  },
+  "notifPrefListItemAdded": "Élément ajouté à une liste",
+  "@notifPrefListItemAdded": {
+    "description": "Toggle label for list item notifications"
+  },
+  "notifPrefListItemAddedDesc": "Quand quelqu'un ajoute à une liste partagée",
+  "@notifPrefListItemAddedDesc": {
+    "description": "Toggle subtitle for list item notifications"
+  },
+  "notifPrefExpenseCreated": "Dépense créée",
+  "@notifPrefExpenseCreated": {
+    "description": "Toggle label for expense notifications"
+  },
+  "notifPrefExpenseCreatedDesc": "Quand une nouvelle dépense est enregistrée",
+  "@notifPrefExpenseCreatedDesc": {
+    "description": "Toggle subtitle for expense notifications"
+  },
+  "notifPrefMealPlanChanged": "Plan de repas modifié",
+  "@notifPrefMealPlanChanged": {
+    "description": "Toggle label for meal plan notifications"
+  },
+  "notifPrefMealPlanChangedDesc": "Quand le plan de repas est mis à jour",
+  "@notifPrefMealPlanChangedDesc": {
+    "description": "Toggle subtitle for meal plan notifications"
+  },
+  "notifPrefWeeklyDigest": "Résumé hebdomadaire",
+  "@notifPrefWeeklyDigest": {
+    "description": "Toggle label for weekly digest"
+  },
+  "notifPrefWeeklyDigestDesc": "Un résumé de l'activité du foyer",
+  "@notifPrefWeeklyDigestDesc": {
+    "description": "Toggle subtitle for weekly digest"
+  },
+  "notifPrefPinwallReminders": "Rappels Pinwall",
+  "@notifPrefPinwallReminders": {
+    "description": "Toggle label for pinwall reminders"
+  },
+  "notifPrefPinwallRemindersDesc": "Quand quelqu'un épingle un rappel pour plus tard",
+  "@notifPrefPinwallRemindersDesc": {
+    "description": "Toggle subtitle for pinwall reminders"
+  },
+  "notifPrefPushNotifications": "Notifications push",
+  "@notifPrefPushNotifications": {
+    "description": "Toggle label for push notifications"
+  },
+  "notifPrefPushNotificationsDesc": "Recevoir les notifications sur cet appareil",
+  "@notifPrefPushNotificationsDesc": {
+    "description": "Toggle subtitle for push notifications"
+  },
+  "shoppingTripAppBarTitle": "Courses",
+  "@shoppingTripAppBarTitle": {
+    "description": "AppBar title for shopping trip"
+  },
+  "shoppingTripChooseStore": "Choisir le magasin",
+  "@shoppingTripChooseStore": {
+    "description": "Tooltip to pick a store"
+  },
+  "shoppingTripNoLists": "Pas encore de listes",
+  "@shoppingTripNoLists": {
+    "description": "Empty state when no lists"
+  },
+  "shoppingTripNoListsDesc": "Crée une liste de courses pour commencer",
+  "@shoppingTripNoListsDesc": {
+    "description": "Description when no lists"
+  },
+  "shoppingTripAllCaughtUp": "Tout est réglé",
+  "@shoppingTripAllCaughtUp": {
+    "description": "Empty state when no open items"
+  },
+  "shoppingTripAllCaughtUpDesc": "Aucun élément ouvert dans tes listes. Ajoute des éléments à une liste pour les voir ici.",
+  "@shoppingTripAllCaughtUpDesc": {
+    "description": "Description when all caught up"
+  },
+  "shoppingTripSortedByAisles": "Trié par rayons du magasin",
+  "@shoppingTripSortedByAisles": {
+    "description": "Default aisle sorting label"
+  },
+  "shoppingTripSortedByStoreAisles": "Trié par les rayons de {store}",
+  "@shoppingTripSortedByStoreAisles": {
+    "description": "Store-specific aisle sorting label",
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "shoppingTripMarkDone": "Marquer comme acheté",
+  "@shoppingTripMarkDone": {
+    "description": "Button to mark item as purchased"
+  },
+  "shoppingTripBasketBar": "/ {collected} collectés{price}",
+  "@shoppingTripBasketBar": {
+    "description": "Basket bar: collected count and price",
+    "placeholders": {
+      "collected": {
+        "type": "num"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "shoppingTripItemsWorthDone": "{amount} d'articles marqués comme achetés",
+  "@shoppingTripItemsWorthDone": {
+    "description": "Snackbar when items are checked off with prices",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "shoppingTripAddExpense": "Ajouter une dépense",
+  "@shoppingTripAddExpense": {
+    "description": "Snackbar action to create expense"
+  },
+  "shoppingTripStampDone": "FAIT",
+  "@shoppingTripStampDone": {
+    "description": "Stamp text when shopping complete"
+  },
+  "shoppingTripStampItems": "{count, plural, =1{1 article} other{{count} articles}}",
+  "@shoppingTripStampItems": {
+    "description": "Stamp item count",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "shoppingTripFallbackList": "Liste",
+  "@shoppingTripFallbackList": {
+    "description": "Fallback list name"
+  },
+  "shoppingTripMarkNotPurchased": "Marquer {item} comme non acheté",
+  "@shoppingTripMarkNotPurchased": {
+    "description": "Toggle item to not purchased",
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "shoppingTripMarkPurchased": "Marquer {item} comme acheté",
+  "@shoppingTripMarkPurchased": {
+    "description": "Toggle item to purchased",
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "scannerAppBarTitle": "Scanner",
+  "@scannerAppBarTitle": {
+    "description": "AppBar title for scanner screen"
+  },
+  "scannerShoppingAt": "Courses à",
+  "@scannerShoppingAt": {
+    "description": "Label for store picker"
+  },
+  "scannerChooseStore": "Choisis ton magasin",
+  "@scannerChooseStore": {
+    "description": "Placeholder for store picker"
+  },
+  "scannerHintText": "Scanne un reçu, une liste, une recette,\nou un rappel de tâche",
+  "@scannerHintText": {
+    "description": "Placeholder describing scan capabilities"
+  },
+  "scannerAnalyzing": "Analyse en cours…",
+  "@scannerAnalyzing": {
+    "description": "Text shown while AI is analyzing image"
+  },
+  "scannerScanGrocery": "Scanner une liste de courses",
+  "@scannerScanGrocery": {
+    "description": "Button to scan as grocery list"
+  },
+  "scannerScanReceipt": "Scanner un reçu, une recette ou une tâche",
+  "@scannerScanReceipt": {
+    "description": "Button to scan as receipt/etc"
+  },
+  "scannerAnalyzeThis": "Analyser cette image",
+  "@scannerAnalyzeThis": {
+    "description": "Button to analyze selected image"
+  },
+  "scannerTakeOrChoose": "Prends une photo ou choisis-en une",
+  "@scannerTakeOrChoose": {
+    "description": "Button prompt when no image selected"
+  },
+  "scannerPickDifferent": "Choisir une autre image",
+  "@scannerPickDifferent": {
+    "description": "Button to change image"
+  },
+  "scannerScanSheetTitle": "Scanner une liste de courses",
+  "@scannerScanSheetTitle": {
+    "description": "Bottom sheet title for scan start"
+  },
+  "scannerAddScanTitle": "Ajouter un scan",
+  "@scannerAddScanTitle": {
+    "description": "Alternate bottom sheet title for scan"
+  },
+  "scannerTakePhoto": "Prendre une photo",
+  "@scannerTakePhoto": {
+    "description": "Option to take a photo"
+  },
+  "scannerChooseFromGallery": "Choisir dans la galerie",
+  "@scannerChooseFromGallery": {
+    "description": "Option to pick from gallery"
+  },
+  "scannerTypeReceipt": "Reçu",
+  "@scannerTypeReceipt": {
+    "description": "Scan type label: receipt"
+  },
+  "scannerTypeShoppingList": "Liste de courses",
+  "@scannerTypeShoppingList": {
+    "description": "Scan type label: shopping list"
+  },
+  "scannerTypeRecipe": "Recette",
+  "@scannerTypeRecipe": {
+    "description": "Scan type label: recipe"
+  },
+  "scannerTypeChore": "Tâche",
+  "@scannerTypeChore": {
+    "description": "Scan type label: chore"
+  },
+  "scannerDetectedType": "Détecté : {type}",
+  "@scannerDetectedType": {
+    "description": "Label showing detected scan type",
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "scannerItemCount": "{count, plural, =1{{count} élément} other{{count} éléments}}",
+  "@scannerItemCount": {
+    "description": "Item count in scan result",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "scannerAndMore": "…et {count} de plus",
+  "@scannerAndMore": {
+    "description": "Truncation indicator for long item list",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "scannerStepCount": "{count, plural, =1{{count} étape} other{{count} étapes}}",
+  "@scannerStepCount": {
+    "description": "Step count in scan result",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "scannerTotal": "Total : {amount}",
+  "@scannerTotal": {
+    "description": "Total amount in scan result",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "scannerAddToLists": "Ajouter aux listes",
+  "@scannerAddToLists": {
+    "description": "Action: add scan to lists"
+  },
+  "scannerCreateExpense": "Créer une dépense",
+  "@scannerCreateExpense": {
+    "description": "Action: create expense from scan"
+  },
+  "scannerCreateRecipe": "Créer une recette",
+  "@scannerCreateRecipe": {
+    "description": "Action: create recipe from scan"
+  },
+  "scannerCreateChore": "Créer une tâche",
+  "@scannerCreateChore": {
+    "description": "Action: create chore from scan"
+  },
+  "scannerUseThis": "Utiliser ceci",
+  "@scannerUseThis": {
+    "description": "Action: use scan result"
+  },
+  "scannerScanAgain": "Scanner à nouveau",
+  "@scannerScanAgain": {
+    "description": "Button to scan another item"
+  },
+  "smartCaptureBack": "Retour",
+  "@smartCaptureBack": {
+    "description": "Back button tooltip"
+  },
+  "smartCaptureShowEnhanced": "Afficher amélioré",
+  "@smartCaptureShowEnhanced": {
+    "description": "Toggle to show enhanced image"
+  },
+  "smartCaptureOriginal": "Original",
+  "@smartCaptureOriginal": {
+    "description": "Toggle to show original image"
+  },
+  "smartCaptureUseAnyway": "Utiliser quand même",
+  "@smartCaptureUseAnyway": {
+    "description": "Button to accept imperfect capture"
+  },
+  "smartCaptureUseScan": "Utiliser le scan",
+  "@smartCaptureUseScan": {
+    "description": "Button to use the capture"
+  },
+  "smartCaptureRetake": "Reprendre",
+  "@smartCaptureRetake": {
+    "description": "Button to retake the photo"
+  },
+  "smartCaptureReady": "Prêt",
+  "@smartCaptureReady": {
+    "description": "Quality label: ready"
+  },
+  "smartCaptureUsable": "Utilisable",
+  "@smartCaptureUsable": {
+    "description": "Quality label: usable"
+  },
+  "smartCaptureRetakeSuggested": "Reprise suggérée",
+  "@smartCaptureRetakeSuggested": {
+    "description": "Quality label: retake suggested"
+  },
+  "liveSmartCaptureNoCamera": "Aucun appareil photo disponible.",
+  "@liveSmartCaptureNoCamera": {
+    "description": "Error when camera is unavailable"
+  },
+  "liveSmartCaptureCouldNotOpen": "Impossible d'ouvrir l'appareil photo.",
+  "@liveSmartCaptureCouldNotOpen": {
+    "description": "Error when camera fails to open"
+  },
+  "liveSmartCaptureFrameList": "Cadre la liste",
+  "@liveSmartCaptureFrameList": {
+    "description": "Hint text for camera framing"
+  },
+  "liveSmartCaptureCameraUnavailable": "Appareil photo indisponible",
+  "@liveSmartCaptureCameraUnavailable": {
+    "description": "Fallback error when camera is missing"
+  },
+  "liveSmartCaptureGallery": "Galerie",
+  "@liveSmartCaptureGallery": {
+    "description": "Button to pick from gallery"
+  },
+  "liveSmartCaptureScan": "Scanner",
+  "@liveSmartCaptureScan": {
+    "description": "Button to scan/capture"
+  },
+  "liveSmartCaptureCouldNotCapture": "Impossible de capturer cette photo.",
+  "@liveSmartCaptureCouldNotCapture": {
+    "description": "Error when photo capture fails"
+  },
+  "scanReviewAddToList": "Ajouter à {list}",
+  "@scanReviewAddToList": {
+    "description": "AppBar title when adding to list",
+    "placeholders": {
+      "list": {
+        "type": "String"
+      }
+    }
+  },
+  "scanReviewReviewItems": "Vérifier les éléments",
+  "@scanReviewReviewItems": {
+    "description": "AppBar title when reviewing items"
+  },
+  "scanReviewAcceptAll": "Tout accepter ({count})",
+  "@scanReviewAcceptAll": {
+    "description": "Button to accept all scanned items",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "scanReviewStoreLabel": "Magasin :",
+  "@scanReviewStoreLabel": {
+    "description": "Store label prefix"
+  },
+  "scanReviewYouMightNeed": "Tu pourrais aussi avoir besoin de",
+  "@scanReviewYouMightNeed": {
+    "description": "Section label for suggestions"
+  },
+  "scanReviewIgnored": "Ignorés",
+  "@scanReviewIgnored": {
+    "description": "Section label for ignored items"
+  },
+  "scanReviewNewList": "Nouvelle liste",
+  "@scanReviewNewList": {
+    "description": "Bottom sheet title for new list creation"
+  },
+  "scanReviewAddToWhichList": "Ajouter à quelle liste ?",
+  "@scanReviewAddToWhichList": {
+    "description": "Bottom sheet title for list picker"
+  },
+  "scanReviewNewListOption": "Nouvelle liste…",
+  "@scanReviewNewListOption": {
+    "description": "Option to create a new list"
+  },
+  "scanReviewScannedList": "Liste scannée",
+  "@scanReviewScannedList": {
+    "description": "Default name for a scanned list"
+  },
+  "scanReviewCreateList": "Créer la liste",
+  "@scanReviewCreateList": {
+    "description": "Button to create the new list"
+  },
+  "scanReviewAdding": "Ajout…",
+  "@scanReviewAdding": {
+    "description": "Button text while adding items"
+  },
+  "scanReviewRemoveItem": "Retirer {item}",
+  "@scanReviewRemoveItem": {
+    "description": "Semantics: remove scanned item",
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "scanReviewRestore": "Restaurer",
+  "@scanReviewRestore": {
+    "description": "Button to restore an ignored item"
+  },
+  "scanReviewEditItem": "Modifier l'élément",
+  "@scanReviewEditItem": {
+    "description": "Bottom sheet title for editing item"
+  },
+  "scanReviewOCRSaw": "OCR a vu : « {text} »",
+  "@scanReviewOCRSaw": {
+    "description": "Original OCR text for reference",
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "scanReviewItemName": "Nom de l'élément",
+  "@scanReviewItemName": {
+    "description": "Input label for item name"
+  },
+  "scanReviewQty": "Qté",
+  "@scanReviewQty": {
+    "description": "Input label for quantity"
+  },
+  "scanReviewUnit": "Unité",
+  "@scanReviewUnit": {
+    "description": "Input label for unit"
+  },
+  "scanReviewDidYouMean": "Tu voulais dire ?",
+  "@scanReviewDidYouMean": {
+    "description": "Label for alternative suggestions"
+  },
+  "shareTargetAppBarTitle": "Enregistrer dans mitlist",
+  "@shareTargetAppBarTitle": {
+    "description": "AppBar title for share target screen"
+  },
+  "shareTargetSharedText": "Texte partagé",
+  "@shareTargetSharedText": {
+    "description": "TextField label for shared content"
+  },
+  "shareTargetPasteHint": "Colle ou saisis le texte partagé ici…",
+  "@shareTargetPasteHint": {
+    "description": "TextField hint for shared content"
+  },
+  "shareTargetAddPhotos": "Ajouter des photos",
+  "@shareTargetAddPhotos": {
+    "description": "Button to add photos"
+  },
+  "shareTargetPhotosAdded": "{count, plural, =1{1 photo ajoutée} other{{count} photos ajoutées}}",
+  "@shareTargetPhotosAdded": {
+    "description": "Button text showing photo count",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "shareTargetPreviewPlaceholder": "Colle le texte ici maintenant, ou envoie du contenu depuis l'extension de partage quand cette intégration sera disponible.",
+  "@shareTargetPreviewPlaceholder": {
+    "description": "Preview placeholder text"
+  },
+  "shareTargetDestLists": "Listes",
+  "@shareTargetDestLists": {
+    "description": "Destination option: lists"
+  },
+  "shareTargetDestListsDesc": "Enregistrer dans une liste de courses ou de tâches",
+  "@shareTargetDestListsDesc": {
+    "description": "Description for lists destination"
+  },
+  "shareTargetDestPinwall": "Pinwall",
+  "@shareTargetDestPinwall": {
+    "description": "Destination option: pinwall"
+  },
+  "shareTargetDestPinwallDesc": "Poster une note (et des photos optionnelles) dans ton foyer",
+  "@shareTargetDestPinwallDesc": {
+    "description": "Description for pinwall destination"
+  },
+  "shareTargetDestRecipes": "Recettes",
+  "@shareTargetDestRecipes": {
+    "description": "Destination option: recipes"
+  },
+  "shareTargetDestRecipesDesc": "Ajouter aux recettes enregistrées",
+  "@shareTargetDestRecipesDesc": {
+    "description": "Description for recipes destination"
+  },
+  "shareTargetSelectHousehold": "Choisir le foyer",
+  "@shareTargetSelectHousehold": {
+    "description": "Bottom sheet title for household picker"
+  },
+  "shareTargetSaved": "Enregistré",
+  "@shareTargetSaved": {
+    "description": "Snackbar when content is saved"
+  },
+  "shareTargetFailedSave": "Impossible d'enregistrer. Réessaie.",
+  "@shareTargetFailedSave": {
+    "description": "Error when save fails"
+  },
+  "shareTargetValidationText": "Colle ou saisis quelque chose à enregistrer.",
+  "@shareTargetValidationText": {
+    "description": "Validation: content required"
+  },
+  "shareTargetValidationNote": "Ajoute une note ou au moins une photo.",
+  "@shareTargetValidationNote": {
+    "description": "Validation: note or photo required"
+  },
+  "shareTargetValidationHousehold": "Crée ou rejoins d'abord un foyer.",
+  "@shareTargetValidationHousehold": {
+    "description": "Validation: household required"
+  },
+  "expenseCreationTitle": "Ajouter une dépense",
+  "@expenseCreationTitle": {
+    "description": "Bottom sheet title for expense creation"
+  },
+  "expenseCreationAmountHint": "0,00",
+  "@expenseCreationAmountHint": {
+    "description": "Placeholder for amount input"
+  },
+  "expenseCreationRateHint": "Taux : 1 {currency} = ? {groupCurrency}",
+  "@expenseCreationRateHint": {
+    "description": "Placeholder for FX rate input",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      },
+      "groupCurrency": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationWhatsItFor": "C'est pour quoi ?",
+  "@expenseCreationWhatsItFor": {
+    "description": "Placeholder for expense description"
+  },
+  "expenseCreationNotesHint": "Notes (optionnel)",
+  "@expenseCreationNotesHint": {
+    "description": "Placeholder for optional notes"
+  },
+  "expenseCreationDateLabel": "Date de la dépense. Appuie pour changer.",
+  "@expenseCreationDateLabel": {
+    "description": "Semantics label for date picker"
+  },
+  "expenseCreationReceiptButton": "Reçu",
+  "@expenseCreationReceiptButton": {
+    "description": "Button text for receipt scan"
+  },
+  "expenseCreationScanning": "Scan en cours…",
+  "@expenseCreationScanning": {
+    "description": "Button text while scanning receipt"
+  },
+  "expenseCreationScanButton": "Scanner",
+  "@expenseCreationScanButton": {
+    "description": "Button text to scan receipt"
+  },
+  "expenseCreationReceiptAttached": "Reçu joint. Appuie pour rescanner.",
+  "@expenseCreationReceiptAttached": {
+    "description": "Button text when receipt is attached"
+  },
+  "expenseCreationScanReceiptSemantics": "Scanner un reçu via l'appareil photo",
+  "@expenseCreationScanReceiptSemantics": {
+    "description": "Semantics label for receipt scan"
+  },
+  "expenseCreationSplitMode": "Mode de partage",
+  "@expenseCreationSplitMode": {
+    "description": "Section label for split mode"
+  },
+  "expenseCreationSplitEqual": "Égal",
+  "@expenseCreationSplitEqual": {
+    "description": "Equal split mode"
+  },
+  "expenseCreationSplitExact": "Exact",
+  "@expenseCreationSplitExact": {
+    "description": "Exact amounts split mode"
+  },
+  "expenseCreationSplitShares": "Parts",
+  "@expenseCreationSplitShares": {
+    "description": "Shares split mode"
+  },
+  "expenseCreationSplitPercent": "Pourcentage",
+  "@expenseCreationSplitPercent": {
+    "description": "Percentage split mode"
+  },
+  "expenseCreationSplitHintExact": "Saisis le montant exact que chaque personne doit.",
+  "@expenseCreationSplitHintExact": {
+    "description": "Hint for exact split mode"
+  },
+  "expenseCreationSplitHintPercent": "Saisis la part de chacun ; le total doit faire 100 %.",
+  "@expenseCreationSplitHintPercent": {
+    "description": "Hint for percent split mode"
+  },
+  "expenseCreationSplitHintShares": "Partage par parts, ex. 2 parts paie le double.",
+  "@expenseCreationSplitHintShares": {
+    "description": "Hint for shares split mode"
+  },
+  "expenseCreationSplitHintEqual": "Divise le total de manière égale entre les membres sélectionnés.",
+  "@expenseCreationSplitHintEqual": {
+    "description": "Hint for equal split mode"
+  },
+  "expenseCreationSplitSharesLabel": "Parts",
+  "@expenseCreationSplitSharesLabel": {
+    "description": "Shares column label"
+  },
+  "expenseCreationSplitValuesAmount": "Montant",
+  "@expenseCreationSplitValuesAmount": {
+    "description": "Amount column label"
+  },
+  "expenseCreationSplitValuesPercent": "%",
+  "@expenseCreationSplitValuesPercent": {
+    "description": "Percent column label"
+  },
+  "expenseCreationPaidBy": "Payé par",
+  "@expenseCreationPaidBy": {
+    "description": "Section label for payer selection"
+  },
+  "expenseCreationSplitWith": "Partager avec",
+  "@expenseCreationSplitWith": {
+    "description": "Section label for split participants"
+  },
+  "expenseCreationSelectSplitter": "Sélectionne au moins une personne avec qui partager.",
+  "@expenseCreationSelectSplitter": {
+    "description": "Prompt when no splitters selected"
+  },
+  "expenseCreationEnterAmount": "Saisis un montant ci-dessus pour prévisualiser chaque part.",
+  "@expenseCreationEnterAmount": {
+    "description": "Prompt when amount is empty"
+  },
+  "expenseCreationValidationAmount": "Saisis un montant valide supérieur à zéro.",
+  "@expenseCreationValidationAmount": {
+    "description": "Validation: invalid amount"
+  },
+  "expenseCreationValidationRate": "Saisis un taux de conversion supérieur à zéro.",
+  "@expenseCreationValidationRate": {
+    "description": "Validation: invalid FX rate"
+  },
+  "expenseCreationReceiptUploadFailed": "Dépense enregistrée, mais l'envoi du reçu a échoué.",
+  "@expenseCreationReceiptUploadFailed": {
+    "description": "Snackbar: expense saved without receipt"
+  },
+  "expenseCreationExpenseAdded": "Dépense ajoutée",
+  "@expenseCreationExpenseAdded": {
+    "description": "Snackbar when expense is created"
+  },
+  "pinwallBoardLabel": "Pinwall",
+  "@pinwallBoardLabel": {
+    "description": "Board chip label for pinwall"
+  },
+  "pinwallDragHint": "Glisser les notes pour déplacer  ·  Pincer pour zoomer",
+  "@pinwallDragHint": {
+    "description": "Hint text for pinwall interactions"
+  },
+  "pinwallCloseBoard": "Fermer le tableau",
+  "@pinwallCloseBoard": {
+    "description": "Button/semantics to close pinwall"
+  },
+  "pinwallEmptyBoard": "Le tableau est vide.\nÉpingle une note depuis l'accueil pour commencer.",
+  "@pinwallEmptyBoard": {
+    "description": "Empty state for pinwall board"
+  },
+  "pinwallNoteSemantics": "{user} · {content}",
+  "@pinwallNoteSemantics": {
+    "description": "Semantics label for a pinwall note",
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "content": {
+        "type": "String"
+      }
+    }
+  },
+  "pinwallReminderLabel": "Rappel · {text}",
+  "@pinwallReminderLabel": {
+    "description": "Label for active pinwall reminder",
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "pinwallRemindedLabel": "Rappelé · {text}",
+  "pinwallChooseReminderDate": "Choisir la date du rappel",
+  "pinwallChooseReminderTime": "Choisir l'heure du rappel",
+  "pinwallLinkTo": "Lier à…",
+  "pinwallLinkExpense": "Une dépense",
+  "pinwallRemoveLink": "Supprimer le lien",
+  "pinwallSelectEntity": "Sélectionner un(e) {type}",
+  "pinwallOpenBoard": "Ouvrir le tableau pinwall",
+  "pinwallLinkToChore": "Lier à une tâche, liste…",
+  "pinwallPickFutureTime": "Choisissez une heure future.",
+  "pinwallCouldNotLoadEntities": "Impossible de charger les entités.",
+  "pinwallPinned": "Épinglé au mur",
+  "pinwallOpenBoardBtn": "Ouvrir le tableau",
+  "pinwallPostHint": "Publier une note pour le foyer…",
+  "pinwallAddReminder": "Ajouter un rappel",
+  "pinwallReminderSet": "Rappel défini pour {label}. Appuyez pour modifier.",
+  "pinwallClearReminder": "Effacer le rappel",
+  "pinwallAttachPhoto": "Joindre une photo",
+  "pinwallUploading": "Téléversement…",
+  "pinwallPosting": "Publication…",
+  "pinwallPinIt": "Épingler",
+  "pinwallCouldNotLoadImage": "Impossible de charger l'image.",
+  "pinwallRemoveFromPost": "Retirer de la publication",
+  "pinwallCouldNotRemovePhoto": "Impossible de retirer la photo.",
+  "pinwallCouldNotAddPhoto": "Impossible d'ajouter la photo.",
+  "pinwallLinkedList": "Liste liée",
+  "pinwallLinkedChore": "Tâche liée",
+  "pinwallLinkedExpense": "Dépense liée",
+  "pinwallOpenLinkedEntity": "Ouvrir {entity} lié(e)",
+  "pinwallPostOptions": "Options de publication",
+  "pinwallDeletePin": "Supprimer l'épingle",
+  "pinwallDeletePinBody": "Cette épingle sera définitivement supprimée. Cette action est irréversible.",
+  "pinwallAddPhotoMenu": "Ajouter une photo",
+  "tonightBreakfast": "Aujourd'hui · Petit-déjeuner",
+  "tonightLunch": "Aujourd'hui · Déjeuner",
+  "tonightOpenRecipe": "Ce soir : {title}. Ouvrir la recette",
+  "@pinwallRemindedLabel": {
+    "description": "Label for past pinwall reminder",
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "calendarTomorrow": "Demain",
+  "@calendarTomorrow": {
+    "description": "Label for tomorrow's date"
+  },
+  "scannerCheckScan": "Vérifier le scan",
+  "@scannerCheckScan": {
+    "description": "Smart capture review title for general scan"
+  },
+  "scannerCheckGrocery": "Vérifier la liste de courses",
+  "@scannerCheckGrocery": {
+    "description": "Smart capture review title for grocery list"
+  },
+  "recipeCreationNoItemsYet": "Pas encore de {type}.",
+  "@recipeCreationNoItemsYet": {
+    "description": "Empty state for steps/ingredients list",
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsDeleteNotification": "Supprimer la notification",
+  "@notificationsDeleteNotification": {
+    "description": "Semantic label for deleting a notification"
+  },
+  "accountLanguage": "Langue",
+  "@accountLanguage": {
+    "description": "Label de ligne de menu pour le sélecteur de langue"
+  },
+  "accountLanguageSystem": "Système",
+  "@accountLanguageSystem": {
+    "description": "Option de langue : suivre la langue de l'appareil"
+  },
+  "navHome": "Accueil",
+  "navChores": "Tâches",
+  "navMoney": "Argent",
+  "navLists": "Listes",
+  "navKitchen": "Cuisine",
+  "offlineBannerTitle": "Statut de synchronisation",
+  "offlineBannerStatusOffline": "Hors ligne",
+  "offlineBannerStatusPending": "En attente",
+  "offlineBannerStatusFailed": "Échoué",
+  "offlineBannerRetryHint": "Les modifications seront réessayées automatiquement lorsque la connexion sera rétablie.",
+  "offlineBannerOfflineHint": "Vous pouvez continuer à faire des modifications hors ligne. Tout sera synchronisé lors de la reconnexion.",
+  "offlineBannerBarOffline": "Hors ligne — les modifications seront synchronisées à la reconnexion",
+  "offlineBannerSyncingCount": "Synchronisation de {count} modifications…",
+  "offlineBannerSyncing": "Synchronisation des modifications…",
+  "offlineBannerFailedCount": "Impossible de synchroniser {count} modifications",
+  "offlineBannerFailedOne": "Impossible de synchroniser une modification",
+  "offlineBannerRetry": "Réessayer",
+  "composerNewItem": "Nouvel article",
+  "composerScanList": "Scanner la liste",
+  "composerAddItem": "Ajouter un article",
+  "listItemViewPhoto": "Voir la photo",
+  "listItemReplacePhoto": "Remplacer la photo",
+  "listItemAddPhoto": "Ajouter une photo",
+  "listItemRemovePhoto": "Supprimer la photo",
+  "listItemSetPrice": "Définir le prix",
+  "listItemDeleteAction": "Supprimer",
+  "listItemReorder": "Réorganiser",
+  "listItemMarkUnchecked": "Marquer {name} comme non coché",
+  "listItemMarkChecked": "Marquer {name} comme coché",
+  "listItemViewPhotoFor": "Voir la photo de {name}",
+  "listItemFailedSave": "Échec de l'enregistrement — appuyez sur la barre de synchronisation pour réessayer",
+  "listItemLongPressHint": "Appui long pour plus d'options",
+  "scanCheckListPhoto": "Vérifier la photo de la liste",
+  "scanReadingList": "Lecture de votre liste…",
+  "scanCouldNotProcess": "Impossible de traiter l'image. Veuillez réessayer.",
+  "scanSnapYourList": "Prendre votre liste en photo",
+  "scanTakePhoto": "Prendre une photo",
+  "scanChooseFromGallery": "Choisir dans la galerie",
+  "appDialogClose": "Fermer",
+  "appDialogPressBack": "Appuyez sur retour pour fermer",
+  "shellNotifications": "Notifications",
+  "shellAccount": "Compte",
+  "errorSomethingWentWrong": "Quelque chose s'est mal passé",
+  "filterRemoveLabel": "Supprimer le filtre {label}",
+  "currencyDropdownLabel": "Devise",
+  "passwordStrengthWeak": "Faible",
+  "passwordStrengthFair": "Moyen",
+  "passwordStrengthGood": "Bon",
+  "passwordStrengthStrong": "Fort",
+  "checkToggleChecked": "Coché",
+  "checkToggleNotChecked": "Non coché",
+  "captureHintClearer": "Essayez une photo plus nette",
+  "captureHintHoldSteady": "Restez stable",
+  "captureHintMoreLight": "Trouvez plus de lumière",
+  "captureHintReduceGlare": "Réduisez les reflets",
+  "captureHintMoveCloser": "Rapprochez-vous",
+  "captureHintReady": "Prêt à scanner",
+  "captureHintUsable": "Semble utilisable",
+  "activityAddedItemToList": "A ajouté un élément à une liste · {when}",
+  "@activityAddedItemToList": {
+    "description": "Activity: generic item added to list",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityAddedToList": "A ajouté {name} à une liste · {when}",
+  "@activityAddedToList": {
+    "description": "Activity: item added to list",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityCompletedChore": "A terminé {name} · {when}",
+  "@activityCompletedChore": {
+    "description": "Activity: chore completed",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityCompletedChoreGeneric": "A terminé une tâche · {when}",
+  "@activityCompletedChoreGeneric": {
+    "description": "Activity: generic chore completed",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityLoggedExpense": "A enregistré {name} · {when}",
+  "@activityLoggedExpense": {
+    "description": "Activity: expense logged",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityLoggedExpenseGeneric": "A enregistré une dépense · {when}",
+  "@activityLoggedExpenseGeneric": {
+    "description": "Activity: generic expense logged",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityMember": "Membre",
+  "@activityMember": {
+    "description": "Fallback display name for household member"
+  },
+  "activityPlannedMeal": "A planifié {name} · {when}",
+  "@activityPlannedMeal": {
+    "description": "Activity: meal planned",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activitySavedRecipe": "A enregistré {name} · {when}",
+  "@activitySavedRecipe": {
+    "description": "Activity: recipe saved",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activitySavedRecipeGeneric": "A enregistré une recette · {when}",
+  "@activitySavedRecipeGeneric": {
+    "description": "Activity: generic recipe saved",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityUpdatedMealPlan": "A mis à jour le plan de repas · {when}",
+  "@activityUpdatedMealPlan": {
+    "description": "Activity: meal plan updated",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "activityYou": "Toi",
+  "@activityYou": {
+    "description": "Display name for current user in activity feed"
+  },
+  "aisleOther": "Autre",
+  "@aisleOther": {
+    "description": "Fallback aisle name for uncategorized items"
+  },
+  "appBottomSheetClose": "Fermer",
+  "@appBottomSheetClose": {
+    "description": "Semantic label for bottom sheet close"
+  },
+  "appBottomSheetDiscardBody": "Tu as des modifications non enregistrées.",
+  "@appBottomSheetDiscardBody": {
+    "description": "Discard changes dialog body"
+  },
+  "appBottomSheetDiscardTitle": "Abandonner les modifications ?",
+  "@appBottomSheetDiscardTitle": {
+    "description": "Discard changes dialog title"
+  },
+  "appBottomSheetHandle": "Poignée",
+  "@appBottomSheetHandle": {
+    "description": "Semantic label for bottom sheet drag handle"
+  },
+  "appBottomSheetKeepEditing": "Continuer à modifier",
+  "@appBottomSheetKeepEditing": {
+    "description": "Keep editing button"
+  },
+  "authJoinCouldNotLoad": "Impossible de charger les détails de l'invitation.",
+  "@authJoinCouldNotLoad": {
+    "description": "Error when invite fails to load"
+  },
+  "authJoinCreateToJoin": "Créer un compte pour rejoindre",
+  "@authJoinCreateToJoin": {
+    "description": "Create account CTA with invite context"
+  },
+  "authJoinErrorWithHint": "{error}\n\nTu peux aussi saisir un code depuis le sélecteur de foyers.",
+  "@authJoinErrorWithHint": {
+    "description": "Error with hint about household switcher",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "authJoinGoToHousehold": "Aller au foyer",
+  "@authJoinGoToHousehold": {
+    "description": "Button to navigate to household after joining"
+  },
+  "authJoinGuestWarning": "Les comptes invités ne peuvent pas rejoindre de foyers.",
+  "@authJoinGuestWarning": {
+    "description": "Warning for guest users trying to join"
+  },
+  "authJoinInviteCodeSemantic": "Code d'invitation : {code}",
+  "@authJoinInviteCodeSemantic": {
+    "description": "Semantics label for invite code display",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "authJoinInvitedBy": "{name} t'a invité",
+  "@authJoinInvitedBy": {
+    "description": "Invitation header",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "authJoinJoinNow": "Rejoindre maintenant",
+  "@authJoinJoinNow": {
+    "description": "CTA to join the household"
+  },
+  "authJoinJoining": "Connexion en cours…",
+  "@authJoinJoining": {
+    "description": "Button loading state for join"
+  },
+  "authJoinNotNow": "Pas maintenant",
+  "@authJoinNotNow": {
+    "description": "Dismiss button for join landing"
+  },
+  "authJoinSignInToJoin": "Connecte-toi pour rejoindre",
+  "@authJoinSignInToJoin": {
+    "description": "Sign in CTA with invite context"
+  },
+  "authJoinTitle": "Rejoindre un foyer",
+  "@authJoinTitle": {
+    "description": "Join landing screen title"
+  },
+  "authJoinYoureIn": "Tu es dedans.",
+  "@authJoinYoureIn": {
+    "description": "Success message after joining"
+  },
+  "authLoginApple": "Continuer avec Apple",
+  "@authLoginApple": {
+    "description": "OAuth button: Apple"
+  },
+  "authLoginCreateOne": "En créer un",
+  "@authLoginCreateOne": {
+    "description": "Link text to create account"
+  },
+  "authLoginEmail": "E-mail",
+  "@authLoginEmail": {
+    "description": "Email input label"
+  },
+  "authLoginEmailRequired": "L'e-mail est requis.",
+  "@authLoginEmailRequired": {
+    "description": "Validation: email required"
+  },
+  "authLoginFillAllFields": "Remplis tous les champs.",
+  "@authLoginFillAllFields": {
+    "description": "Validation: all fields required"
+  },
+  "authLoginForgotPassword": "Mot de passe oublié ?",
+  "@authLoginForgotPassword": {
+    "description": "Forgot password link"
+  },
+  "authLoginGenericError": "Connexion impossible. Vérifie ta connexion et réessaie.",
+  "@authLoginGenericError": {
+    "description": "Generic login error message"
+  },
+  "authLoginGoogle": "Continuer avec Google",
+  "@authLoginGoogle": {
+    "description": "OAuth button: Google"
+  },
+  "authLoginNoAccount": "Pas de compte ?",
+  "@authLoginNoAccount": {
+    "description": "Prompt to switch to signup"
+  },
+  "authLoginOAuthUnsupported": "La connexion {provider} n'est disponible que sur le web, Android et iOS pour l'instant.",
+  "@authLoginOAuthUnsupported": {
+    "description": "Error when OAuth is unsupported on platform",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "authLoginPassword": "Mot de passe",
+  "@authLoginPassword": {
+    "description": "Password input label"
+  },
+  "authLoginPasswordRequired": "Le mot de passe est requis.",
+  "@authLoginPasswordRequired": {
+    "description": "Validation: password required"
+  },
+  "authLoginRememberMe": "Se souvenir de moi",
+  "@authLoginRememberMe": {
+    "description": "Remember me checkbox label"
+  },
+  "authLoginRememberMeOff": "Se souvenir de moi : désactivé",
+  "@authLoginRememberMeOff": {
+    "description": "Semantic label for remember me unchecked"
+  },
+  "authLoginRememberMeOn": "Se souvenir de moi : activé",
+  "@authLoginRememberMeOn": {
+    "description": "Semantic label for remember me checked"
+  },
+  "authLoginResetCodeHint": "Colle le code de ton e-mail",
+  "@authLoginResetCodeHint": {
+    "description": "Placeholder for reset code input"
+  },
+  "authLoginResetCodeLabel": "Code de réinitialisation",
+  "@authLoginResetCodeLabel": {
+    "description": "Input label for reset code"
+  },
+  "authLoginResetCodeSent": "Si cet e-mail existe, un code de réinitialisation a été envoyé.",
+  "@authLoginResetCodeSent": {
+    "description": "Success message after requesting reset code"
+  },
+  "authLoginResetFillAllFields": "Remplis le code et les deux champs de mot de passe.",
+  "@authLoginResetFillAllFields": {
+    "description": "Validation: all reset fields required"
+  },
+  "authLoginResetPasswordButton": "Réinitialiser le mot de passe",
+  "@authLoginResetPasswordButton": {
+    "description": "Button to confirm password reset"
+  },
+  "authLoginResetPasswordTitle": "Réinitialiser le mot de passe",
+  "@authLoginResetPasswordTitle": {
+    "description": "Bottom sheet title for password reset"
+  },
+  "authLoginResetSuccess": "Mot de passe réinitialisé. Tu peux te connecter maintenant.",
+  "@authLoginResetSuccess": {
+    "description": "Success message after password reset"
+  },
+  "authLoginSendResetCode": "Envoyer le code",
+  "@authLoginSendResetCode": {
+    "description": "Button to send password reset code"
+  },
+  "authLoginSignInButton": "Se connecter",
+  "@authLoginSignInButton": {
+    "description": "Sign in submit button"
+  },
+  "authLoginSigningIn": "Connexion en cours…",
+  "@authLoginSigningIn": {
+    "description": "Sign in button loading state"
+  },
+  "authLoginTitle": "Se connecter",
+  "@authLoginTitle": {
+    "description": "Login screen title"
+  },
+  "authLoginYouExample": "toi@exemple.com",
+  "@authLoginYouExample": {
+    "description": "Email placeholder"
+  },
+  "authLoginYourPassword": "Ton mot de passe",
+  "@authLoginYourPassword": {
+    "description": "Password placeholder"
+  },
+  "authOnboardingCreateDesc": "Repartir de zéro : nomme-le, invite tes colocs, partage tout au même endroit.",
+  "@authOnboardingCreateDesc": {
+    "description": "Description for create household card"
+  },
+  "authOnboardingCreateHousehold": "Créer un foyer",
+  "@authOnboardingCreateHousehold": {
+    "description": "Primary CTA on onboarding"
+  },
+  "authOnboardingCreateOrJoin": "Crée ou rejoins un foyer pour commencer à partager avec tes colocs.",
+  "@authOnboardingCreateOrJoin": {
+    "description": "Onboarding description"
+  },
+  "authOnboardingHaveCode": "Tu as un code d'invitation ?",
+  "@authOnboardingHaveCode": {
+    "description": "Invite code prompt"
+  },
+  "authOnboardingHomeIconSemantic": "Icône d'accueil du foyer",
+  "@authOnboardingHomeIconSemantic": {
+    "description": "Semantic label for home icon"
+  },
+  "authOnboardingJoinDesc": "Déjà une invitation ? Saisis le code et entre directement.",
+  "@authOnboardingJoinDesc": {
+    "description": "Description for join household card"
+  },
+  "authOnboardingJoinInvite": "Rejoindre avec un code d'invitation",
+  "@authOnboardingJoinInvite": {
+    "description": "Secondary CTA on onboarding"
+  },
+  "authOnboardingJoinSemantic": "Rejoindre un foyer avec un code d'invitation",
+  "@authOnboardingJoinSemantic": {
+    "description": "Semantic label for join card"
+  },
+  "authOnboardingSetupHome": "Configure ton foyer",
+  "@authOnboardingSetupHome": {
+    "description": "Onboarding headline for new users"
+  },
+  "authOnboardingTitle": "Bienvenue",
+  "@authOnboardingTitle": {
+    "description": "Onboarding screen title"
+  },
+  "authSignupAccountCreated": "Compte créé. Bienvenue !",
+  "@authSignupAccountCreated": {
+    "description": "Snackbar when account is created"
+  },
+  "authSignupAnd": " et ",
+  "@authSignupAnd": {
+    "description": "Conjunction between legal links"
+  },
+  "authSignupCreateAccount": "Créer un compte",
+  "@authSignupCreateAccount": {
+    "description": "Submit button for signup"
+  },
+  "authSignupCreatingAccount": "Création du compte…",
+  "@authSignupCreatingAccount": {
+    "description": "Loading state for signup button"
+  },
+  "authSignupEmail": "E-mail",
+  "@authSignupEmail": {
+    "description": "Email input label"
+  },
+  "authSignupEmailHint": "toi@exemple.com",
+  "@authSignupEmailHint": {
+    "description": "Email placeholder"
+  },
+  "authSignupEmailRequired": "L'e-mail est requis.",
+  "@authSignupEmailRequired": {
+    "description": "Validation: email required"
+  },
+  "authSignupFillAllFields": "Remplis tous les champs.",
+  "@authSignupFillAllFields": {
+    "description": "Validation: all fields required"
+  },
+  "authSignupFirstName": "Prénom",
+  "@authSignupFirstName": {
+    "description": "First name input label"
+  },
+  "authSignupFirstNameHint": "Alex",
+  "@authSignupFirstNameHint": {
+    "description": "First name placeholder"
+  },
+  "authSignupGenericError": "Impossible de créer le compte. Vérifie ta connexion et réessaie.",
+  "@authSignupGenericError": {
+    "description": "Generic signup error message"
+  },
+  "authSignupHaveAccount": "Tu as déjà un compte ?",
+  "@authSignupHaveAccount": {
+    "description": "Link to login"
+  },
+  "authSignupJoinTitle": "Rejoindre un foyer",
+  "@authSignupJoinTitle": {
+    "description": "Signup screen title when joining via invite"
+  },
+  "authSignupLastName": "Nom",
+  "@authSignupLastName": {
+    "description": "Last name input label"
+  },
+  "authSignupLastNameHint": "Martin",
+  "@authSignupLastNameHint": {
+    "description": "Last name placeholder"
+  },
+  "authSignupNameHint": "Ton nom",
+  "@authSignupNameHint": {
+    "description": "Name input placeholder"
+  },
+  "authSignupNameRequired": "Le nom est requis.",
+  "@authSignupNameRequired": {
+    "description": "Validation: name required"
+  },
+  "authSignupPassword": "Mot de passe",
+  "@authSignupPassword": {
+    "description": "Password input label"
+  },
+  "authSignupPasswordHint": "Au moins 6 caractères",
+  "@authSignupPasswordHint": {
+    "description": "Password hint text"
+  },
+  "authSignupPasswordMinLength": "Le mot de passe doit contenir au moins 6 caractères.",
+  "@authSignupPasswordMinLength": {
+    "description": "Password too short validation"
+  },
+  "authSignupPasswordRequired": "Le mot de passe est requis.",
+  "@authSignupPasswordRequired": {
+    "description": "Validation: password required"
+  },
+  "authSignupPeriod": ".",
+  "@authSignupPeriod": {
+    "description": "Period after legal links"
+  },
+  "authSignupPrivacyP1": "mitlist stocke les détails du compte et le contenu du foyer nécessaires au fonctionnement de l'app.",
+  "@authSignupPrivacyP1": {
+    "description": "Privacy paragraph 1"
+  },
+  "authSignupPrivacyP2": "Les données partagées comme les listes, tâches, dépenses et recettes sont visibles par les autres membres du même foyer.",
+  "@authSignupPrivacyP2": {
+    "description": "Privacy paragraph 2"
+  },
+  "authSignupPrivacyP3": "Ne fournis que les informations que tu es prêt à partager dans un espace de foyer partagé.",
+  "@authSignupPrivacyP3": {
+    "description": "Privacy paragraph 3"
+  },
+  "authSignupPrivacyPolicy": "Politique de confidentialité",
+  "@authSignupPrivacyPolicy": {
+    "description": "Privacy policy link text"
+  },
+  "authSignupSignInLink": "Se connecter",
+  "@authSignupSignInLink": {
+    "description": "Link to sign in"
+  },
+  "authSignupTermsP1": "Utilise mitlist de manière responsable. Le contenu partagé du foyer est visible par les membres de ce foyer.",
+  "@authSignupTermsP1": {
+    "description": "Terms paragraph 1"
+  },
+  "authSignupTermsP2": "Ne téléverse pas de contenu illégal, n'usurpe pas l'identité d'autrui et n'abuse pas du service. Les comptes et données partagées peuvent être supprimés en cas d'abus.",
+  "@authSignupTermsP2": {
+    "description": "Terms paragraph 2"
+  },
+  "authSignupTermsP3": "L'app est fournie en l'état pendant que le produit évolue encore. Garde tes propres sauvegardes pour tout ce qui est important.",
+  "@authSignupTermsP3": {
+    "description": "Terms paragraph 3"
+  },
+  "authSignupTermsPrefix": "En créant un compte, tu acceptes nos ",
+  "@authSignupTermsPrefix": {
+    "description": "Text before terms link"
+  },
+  "authSignupTitle": "Créer un compte",
+  "@authSignupTitle": {
+    "description": "Signup screen title"
+  },
+  "commonPhoto": "Photo",
+  "@commonPhoto": {
+    "description": "Generic photo label"
+  },
+  "commonView": "Voir",
+  "@commonView": {
+    "description": "Generic view button"
+  },
+  "composerItemHint": "ex. Lait, 2 avocats ou 500 g de farine",
+  "@composerItemHint": {
+    "description": "Hint for list composer input"
+  },
+  "conflictItemChanged": "Élément modifié",
+  "@conflictItemChanged": {
+    "description": "Snackbar when conflict item was changed"
+  },
+  "conflictItemLabel": "Élément : {name}",
+  "@conflictItemLabel": {
+    "description": "Label for conflict item name",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "conflictNoneToResolve": "Aucun conflit à résoudre.",
+  "@conflictNoneToResolve": {
+    "description": "Empty state when no sync conflicts"
+  },
+  "cookModeTimerStart": "Minuteur : {label}. Appuie pour démarrer",
+  "@cookModeTimerStart": {
+    "description": "Timer semantics label",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "costSummaryEqualShare": "Part égale par personne",
+  "@costSummaryEqualShare": {
+    "description": "Label for equal share amount in cost summary"
+  },
+  "costSummaryGenerateExpense": "Générer une dépense",
+  "@costSummaryGenerateExpense": {
+    "description": "Button to generate an expense from cost summary"
+  },
+  "costSummaryItemsWithPrices": "Éléments avec prix",
+  "@costSummaryItemsWithPrices": {
+    "description": "Label for items that have prices set"
+  },
+  "costSummaryNoPrices": "Aucun élément n'a encore de prix. Ouvre les options de l'élément (⋯) et choisis Définir le prix pour voir le récapitulatif des coûts.",
+  "@costSummaryNoPrices": {
+    "description": "Empty state when no items in cost summary have prices"
+  },
+  "costSummaryNone": "Aucun",
+  "@costSummaryNone": {
+    "description": "Placeholder when no value is set"
+  },
+  "costSummaryNotAvailable": "N/D",
+  "@costSummaryNotAvailable": {
+    "description": "Placeholder when equal share cannot be calculated"
+  },
+  "createHouseholdCreated": "Foyer créé",
+  "@createHouseholdCreated": {
+    "description": "Snackbar when household is created"
+  },
+  "createHouseholdDescriptionOptional": "Description (optionnel)",
+  "@createHouseholdDescriptionOptional": {
+    "description": "Placeholder for optional household description"
+  },
+  "createListCreated": "Liste créée",
+  "@createListCreated": {
+    "description": "Snackbar when list is created"
+  },
+  "createListCustomDesc": "Une liste flexible pour tout ce qui ne rentre pas dans les cases.",
+  "@createListCustomDesc": {
+    "description": "Description for custom list type"
+  },
+  "createListHouseholdLabel": "Foyer",
+  "@createListHouseholdLabel": {
+    "description": "Household selector label in create list sheet"
+  },
+  "createListNameRequired": "Le nom de la liste est requis",
+  "@createListNameRequired": {
+    "description": "Validation: list name required"
+  },
+  "createListNoHousehold": "Aucun foyer disponible.",
+  "@createListNoHousehold": {
+    "description": "Empty state when no households exist"
+  },
+  "createListScanFinished": "Scan terminé",
+  "@createListScanFinished": {
+    "description": "Snackbar when scan completes"
+  },
+  "createListScanSemantics": "Scanner une liste via l'appareil photo",
+  "@createListScanSemantics": {
+    "description": "Semantics label for scan list button"
+  },
+  "createListScanned": "\"{name}\" scanné",
+  "@createListScanned": {
+    "description": "Snackbar after scanning into a list",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "createListShoppingDesc": "Idéal pour les courses et les commissions avec quantités.",
+  "@createListShoppingDesc": {
+    "description": "Description for shopping list type"
+  },
+  "createListTodoDesc": "Une simple liste de tâches pour ce qu'il faut faire.",
+  "@createListTodoDesc": {
+    "description": "Description for to-do list type"
+  },
+  "currencyAud": "AUD - Dollar australien",
+  "@currencyAud": {
+    "description": "Australian Dollar currency label"
+  },
+  "currencyCad": "CAD - Dollar canadien",
+  "@currencyCad": {
+    "description": "Canadian Dollar currency label"
+  },
+  "currencyChf": "CHF - Franc suisse",
+  "@currencyChf": {
+    "description": "Swiss Franc currency label"
+  },
+  "currencyCzk": "CZK - Couronne tchèque",
+  "@currencyCzk": {
+    "description": "Czech Koruna currency label"
+  },
+  "currencyDkk": "DKK - Couronne danoise",
+  "@currencyDkk": {
+    "description": "Danish Krone currency label"
+  },
+  "currencyEur": "EUR - Euro",
+  "@currencyEur": {
+    "description": "Euro currency label"
+  },
+  "currencyGbp": "GBP - Livre sterling",
+  "@currencyGbp": {
+    "description": "British Pound currency label"
+  },
+  "currencyHuf": "HUF - Forint hongrois",
+  "@currencyHuf": {
+    "description": "Hungarian Forint currency label"
+  },
+  "currencyJpy": "JPY - Yen japonais",
+  "@currencyJpy": {
+    "description": "Japanese Yen currency label"
+  },
+  "currencyNok": "NOK - Couronne norvégienne",
+  "@currencyNok": {
+    "description": "Norwegian Krone currency label"
+  },
+  "currencyPln": "PLN - Złoty polonais",
+  "@currencyPln": {
+    "description": "Polish Zloty currency label"
+  },
+  "currencySek": "SEK - Couronne suédoise",
+  "@currencySek": {
+    "description": "Swedish Krona currency label"
+  },
+  "currencyUsd": "USD - Dollar américain",
+  "@currencyUsd": {
+    "description": "US Dollar currency label"
+  },
+  "errorBoundaryDesc": "Une erreur inattendue s'est produite. Réessaie.",
+  "@errorBoundaryDesc": {
+    "description": "Error boundary fallback description"
+  },
+  "errorBoundaryTitle": "Une erreur est survenue",
+  "@errorBoundaryTitle": {
+    "description": "Error boundary fallback title"
+  },
+  "errorConflict": "Quelqu'un d'autre a modifié ceci. Actualise et réessaie.",
+  "@errorConflict": {
+    "description": "Friendly error for 409 conflict"
+  },
+  "errorGenericRetry": "Une erreur est survenue. Réessaie.",
+  "@errorGenericRetry": {
+    "description": "Generic fallback friendly error"
+  },
+  "errorNoPermission": "Tu n'as pas la permission pour cela.",
+  "@errorNoPermission": {
+    "description": "Friendly error for 403"
+  },
+  "errorNotFound": "Introuvable. Il a peut-être été supprimé.",
+  "@errorNotFound": {
+    "description": "Friendly error for 404"
+  },
+  "errorServerHiccup": "Problème serveur — réessaie dans un instant.",
+  "@errorServerHiccup": {
+    "description": "Friendly error for 5xx responses"
+  },
+  "errorSignInAgain": "Reconnecte-toi.",
+  "@errorSignInAgain": {
+    "description": "Friendly error for 401"
+  },
+  "expenseCreationAddToSplit": "Ajouter {name} au partage",
+  "@expenseCreationAddToSplit": {
+    "description": "Semantics: add member to split",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationAssignShare": "Attribue au moins une part.",
+  "@expenseCreationAssignShare": {
+    "description": "Validation: assign at least one share"
+  },
+  "expenseCreationCouldNotLoadMembers": "Impossible de charger les membres du foyer.",
+  "@expenseCreationCouldNotLoadMembers": {
+    "description": "Error when household members fail to load"
+  },
+  "expenseCreationJoinHouseholdSplit": "Rejoins ou crée un foyer pour partager cette dépense.",
+  "@expenseCreationJoinHouseholdSplit": {
+    "description": "Prompt when no household for expense split"
+  },
+  "expenseCreationRemoveAddSplitter": "Retirer/Ajouter {name} du/au partage",
+  "@expenseCreationRemoveAddSplitter": {
+    "description": "Checkbox label for adding/removing splitters",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationRemoveFromSplit": "Retirer {name} du partage",
+  "@expenseCreationRemoveFromSplit": {
+    "description": "Semantics: remove member from split",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSharesNegative": "Les parts ne peuvent pas être négatives.",
+  "@expenseCreationSharesNegative": {
+    "description": "Validation: shares must not be negative"
+  },
+  "expenseCreationSplitAmountsNegative": "{assigned} · les montants ne peuvent pas être négatifs",
+  "@expenseCreationSplitAmountsNegative": {
+    "description": "Split validation: negative amounts",
+    "placeholders": {
+      "assigned": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitApproxEach": "≈ {amount} chacun",
+  "@expenseCreationSplitApproxEach": {
+    "description": "Approximate equal split per person",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitAssignedOf": "{assigned} sur {total}",
+  "@expenseCreationSplitAssignedOf": {
+    "description": "Split summary: assigned amount of total",
+    "placeholders": {
+      "assigned": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitEach": "{amount} chacun",
+  "@expenseCreationSplitEach": {
+    "description": "Equal split per person",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitLeftToAssign": "{assigned} · {remaining} restant à attribuer",
+  "@expenseCreationSplitLeftToAssign": {
+    "description": "Split validation: remaining to assign",
+    "placeholders": {
+      "assigned": {
+        "type": "String"
+      },
+      "remaining": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitOver": "{assigned} · {over} en trop",
+  "@expenseCreationSplitOver": {
+    "description": "Split validation: over-assigned",
+    "placeholders": {
+      "assigned": {
+        "type": "String"
+      },
+      "over": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitPercentOf100": "{sum} % de 100 %",
+  "@expenseCreationSplitPercentOf100": {
+    "description": "Split summary: percent of 100",
+    "placeholders": {
+      "sum": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitPercentRange": "{sum} % attribué · chaque part doit être entre 0 et 100 %",
+  "@expenseCreationSplitPercentRange": {
+    "description": "Split validation: percent out of range",
+    "placeholders": {
+      "sum": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseCreationSplitSharesPerShare": "{count} parts · {perShare} par part",
+  "@expenseCreationSplitSharesPerShare": {
+    "description": "Split summary: shares mode",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      },
+      "perShare": {
+        "type": "String"
+      }
+    }
+  },
+  "expenseDetailCouldNotLoadReceipts": "Impossible de charger les reçus.",
+  "@expenseDetailCouldNotLoadReceipts": {
+    "description": "Snackbar when expense receipts fail to load"
+  },
+  "expenseDetailCouldNotLoadSplits": "Impossible de charger les parts.",
+  "@expenseDetailCouldNotLoadSplits": {
+    "description": "Snackbar when expense splits fail to load"
+  },
+  "expenseDetailCouldNotRemoveReceipt": "Impossible de supprimer le reçu.",
+  "@expenseDetailCouldNotRemoveReceipt": {
+    "description": "Snackbar when receipt removal fails"
+  },
+  "expenseDetailFailedLoadReceipt": "Échec du chargement du reçu",
+  "@expenseDetailFailedLoadReceipt": {
+    "description": "Error when receipt image fails to load"
+  },
+  "expenseDetailNoReceipts": "Aucun reçu joint. Ajoute-en un en modifiant la dépense.",
+  "@expenseDetailNoReceipts": {
+    "description": "Empty state when expense has no receipts"
+  },
+  "expenseDetailNotSplitYet": "Cette dépense n'est pas encore partagée.",
+  "@expenseDetailNotSplitYet": {
+    "description": "Empty state when expense has no splits"
+  },
+  "expenseDetailReceipt": "Reçu",
+  "@expenseDetailReceipt": {
+    "description": "Label for receipt attachment"
+  },
+  "expenseDetailRemoving": "Suppression…",
+  "@expenseDetailRemoving": {
+    "description": "Label while removing receipt"
+  },
+  "expenseDetailView": "Voir",
+  "@expenseDetailView": {
+    "description": "View action label"
+  },
+  "hubActivityEmpty": "Rien pour l'instant.\nL'activité de ton foyer apparaîtra ici.",
+  "@hubActivityEmpty": {
+    "description": "Activity wall empty state"
+  },
+  "hubActivityError": "Impossible de charger l'activité. Tire vers le bas sur l'accueil pour actualiser.",
+  "@hubActivityError": {
+    "description": "Activity wall load error"
+  },
+  "hubActivityTitle": "Activité",
+  "@hubActivityTitle": {
+    "description": "Activity wall section title"
+  },
+  "hubHouseholdsCurrent": "Foyers, actuel {name}",
+  "@hubHouseholdsCurrent": {
+    "description": "Semantics label for household switcher",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "hubOnboardingAddChore": "Ajouter une tâche",
+  "@hubOnboardingAddChore": {
+    "description": "Add a chore action"
+  },
+  "hubOnboardingCreateList": "Créer une liste",
+  "@hubOnboardingCreateList": {
+    "description": "Create a list action"
+  },
+  "hubOnboardingDescription": "Tout commence ici. Choisis ce qui compte le plus.",
+  "@hubOnboardingDescription": {
+    "description": "Onboarding card description"
+  },
+  "hubOnboardingDismiss": "Fermer le démarrage rapide",
+  "@hubOnboardingDismiss": {
+    "description": "Dismiss quick start tooltip"
+  },
+  "hubOnboardingDone": "Tout est fait",
+  "@hubOnboardingDone": {
+    "description": "Onboarding card: done tile"
+  },
+  "hubOnboardingDoneDesc": "Tâches, soldes, listes — tout au même endroit, bien suivi.",
+  "@hubOnboardingDoneDesc": {
+    "description": "Done tile description"
+  },
+  "hubOnboardingGetStarted": "Commencer",
+  "@hubOnboardingGetStarted": {
+    "description": "Onboarding card header"
+  },
+  "hubOnboardingInvite": "Inviter des colocs",
+  "@hubOnboardingInvite": {
+    "description": "Invite flatmates action"
+  },
+  "hubOnboardingSettle": "Régler",
+  "@hubOnboardingSettle": {
+    "description": "Onboarding card: settle tile"
+  },
+  "hubOnboardingSettleDesc": "Rembourse tout le monde d'un coup avec des règlements suggérés.",
+  "@hubOnboardingSettleDesc": {
+    "description": "Settle tile description"
+  },
+  "hubOnboardingSwap": "Échanger",
+  "@hubOnboardingSwap": {
+    "description": "Onboarding card: swap tile"
+  },
+  "hubOnboardingSwapDesc": "Choisis le coloc qui doit le moins pour reprendre cette tâche.",
+  "@hubOnboardingSwapDesc": {
+    "description": "Swap tile description"
+  },
+  "hubOnboardingTrackExpense": "Suivre une dépense",
+  "@hubOnboardingTrackExpense": {
+    "description": "Track an expense action"
+  },
+  "hubQuickAddChore": "Ajouter une tâche",
+  "@hubQuickAddChore": {
+    "description": "Quick add: chore option"
+  },
+  "hubQuickAddExpense": "Ajouter une dépense",
+  "@hubQuickAddExpense": {
+    "description": "Quick add: expense option"
+  },
+  "hubQuickAddList": "Nouvelle liste",
+  "@hubQuickAddList": {
+    "description": "Quick add: new list option"
+  },
+  "hubQuickAddNote": "Épingler une note",
+  "@hubQuickAddNote": {
+    "description": "Quick add: pinwall note option"
+  },
+  "hubQuickAddShoppingTrip": "Lancer les courses",
+  "@hubQuickAddShoppingTrip": {
+    "description": "Quick add: shopping trip option"
+  },
+  "hubQuickAddTitle": "Ajout rapide",
+  "@hubQuickAddTitle": {
+    "description": "Quick add bottom sheet title"
+  },
+  "hubQuickAddToList": "Ajouter à une liste",
+  "@hubQuickAddToList": {
+    "description": "Quick add: add to list option"
+  },
+  "hubStatsActiveList": "liste active",
+  "@hubStatsActiveList": {
+    "description": "Stats grid: singular active list"
+  },
+  "hubStatsActiveLists": "listes actives",
+  "@hubStatsActiveLists": {
+    "description": "Stats grid: plural active lists"
+  },
+  "hubStatsAllDone": "tout fait",
+  "@hubStatsAllDone": {
+    "description": "Stats grid: all done label"
+  },
+  "hubStatsBalance": "Solde",
+  "@hubStatsBalance": {
+    "description": "Stats grid: balance label"
+  },
+  "hubStatsChores": "Tâches",
+  "@hubStatsChores": {
+    "description": "Stats grid: chores label"
+  },
+  "hubStatsDue": "à faire",
+  "@hubStatsDue": {
+    "description": "Stats grid: due today label"
+  },
+  "hubStatsLists": "Listes",
+  "@hubStatsLists": {
+    "description": "Stats grid: lists label"
+  },
+  "hubStatsMeals": "Repas",
+  "@hubStatsMeals": {
+    "description": "Stats grid: meals planned label"
+  },
+  "hubStatsOpen": "ouvertes",
+  "@hubStatsOpen": {
+    "description": "Stats grid: open balance label"
+  },
+  "hubStatsOverdue": "en retard",
+  "@hubStatsOverdue": {
+    "description": "Stats grid: overdue label"
+  },
+  "hubStatsPinwallReminder": "rappel pinwall",
+  "@hubStatsPinwallReminder": {
+    "description": "Stats grid: singular pinwall reminder"
+  },
+  "hubStatsPinwallReminders": "rappels pinwall",
+  "@hubStatsPinwallReminders": {
+    "description": "Stats grid: plural pinwall reminders"
+  },
+  "hubStatsPlanned": "planifiés",
+  "@hubStatsPlanned": {
+    "description": "Stats grid: planned this week"
+  },
+  "hubStatsReminders": "Rappels",
+  "@hubStatsReminders": {
+    "description": "Stats grid: reminders label"
+  },
+  "inviteCodeLabel": "Code d'invitation : {code}",
+  "@inviteCodeLabel": {
+    "description": "Label displaying the invite code",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "inviteGenerating": "Génération…",
+  "@inviteGenerating": {
+    "description": "Text shown while generating invite code"
+  },
+  "inviteLinkShareText": "Rejoins mon foyer sur mitlist !\nAppuie : {link}\nOu ouvre mitlist et saisis le code : {code}",
+  "@inviteLinkShareText": {
+    "description": "Shared invite link message",
+    "placeholders": {
+      "link": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "inviteNewCode": "Nouveau code",
+  "@inviteNewCode": {
+    "description": "Button to generate a new invite code"
+  },
+  "inviteQrHint": "Scanne avec l'appareil photo pour rejoindre, ou partage le code ci-dessous.",
+  "@inviteQrHint": {
+    "description": "Hint for invite QR code"
+  },
+  "inviteQrSemantic": "QR d'invitation au foyer",
+  "@inviteQrSemantic": {
+    "description": "Semantics label for invite QR code"
+  },
+  "inviteQrTitle": "Code QR d'invitation au foyer",
+  "@inviteQrTitle": {
+    "description": "Title for invite QR code section"
+  },
+  "inviteQrUnavailable": "QR indisponible",
+  "@inviteQrUnavailable": {
+    "description": "Error when QR code cannot be rendered"
+  },
+  "joinCodeFormatHint": "Les codes ressemblent à MOT-MOT-42. Demande à la personne qui t'a invité.",
+  "@joinCodeFormatHint": {
+    "description": "Hint text describing invite code format"
+  },
+  "joinEnterGroup": "Entrer dans {name}",
+  "@joinEnterGroup": {
+    "description": "Semantics label to enter a household",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "joinMembersAlreadyInside": "{count, plural, =1{1 membre déjà présent} other{{count} membres déjà présents}}",
+  "@joinMembersAlreadyInside": {
+    "description": "Member count after joining household",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "oauthMissingParams": "Paramètres de retour OAuth manquants.",
+  "@oauthMissingParams": {
+    "description": "Error when OAuth callback has missing params"
+  },
+  "oauthSigningYouIn": "Connexion en cours",
+  "@oauthSigningYouIn": {
+    "description": "Loading text while signing in via OAuth"
+  },
+  "pinwallCouldNotLoad": "Impossible de charger le pinwall.",
+  "@pinwallCouldNotLoad": {
+    "description": "Error when pinwall posts fail to load"
+  },
+  "pinwallLinkChore": "Une tâche",
+  "@pinwallLinkChore": {
+    "description": "Link action: link a chore"
+  },
+  "pinwallLinkList": "Une liste",
+  "@pinwallLinkList": {
+    "description": "Link action: link a list"
+  },
+  "pinwallLinkedTo": "Lié à {entity}",
+  "@pinwallLinkedTo": {
+    "description": "Semantics label for linked entity",
+    "placeholders": {
+      "entity": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeAddToListAddToSelection": "Ajouter {name} à la sélection",
+  "@recipeAddToListAddToSelection": {
+    "description": "Semantics: select ingredient",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeAddToListCreateListFirst": "Crée d'abord une liste pour ajouter des ingrédients",
+  "@recipeAddToListCreateListFirst": {
+    "description": "Prompt to create a list before adding ingredients"
+  },
+  "recipeAddToListNoIngredients": "Pas d'ingrédients",
+  "@recipeAddToListNoIngredients": {
+    "description": "Empty state when recipe has no ingredients"
+  },
+  "recipeAddToListNoIngredientsDesc": "Cette recette n'a pas d'ingrédients analysés",
+  "@recipeAddToListNoIngredientsDesc": {
+    "description": "Description when recipe has no ingredients"
+  },
+  "recipeAddToListNoLists": "Pas de listes",
+  "@recipeAddToListNoLists": {
+    "description": "Empty state when no lists available to add ingredients to"
+  },
+  "recipeAddToListRemoveFromSelection": "Retirer {name} de la sélection",
+  "@recipeAddToListRemoveFromSelection": {
+    "description": "Semantics: deselect ingredient",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "recipeAddToListTargetList": "Liste cible",
+  "@recipeAddToListTargetList": {
+    "description": "Dropdown label for target list"
+  },
+  "recipeCreationScanRecipe": "Scanner une recette",
+  "@recipeCreationScanRecipe": {
+    "description": "Button text to scan a recipe"
+  },
+  "recipeCreationScanRecipeViaCamera": "Scanner une recette via l'appareil photo",
+  "@recipeCreationScanRecipeViaCamera": {
+    "description": "Semantics label for scanning a recipe"
+  },
+  "recipeDetailStepCount": "{count, plural, =1{1 étape} other{{count} étapes}}",
+  "@recipeDetailStepCount": {
+    "description": "Semantics label for recipe step count",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "recurringCouldNotCreate": "Impossible de créer la dépense récurrente.",
+  "@recurringCouldNotCreate": {
+    "description": "Error when creating recurring expense fails"
+  },
+  "recurringCouldNotDelete": "Impossible de supprimer la dépense récurrente.",
+  "@recurringCouldNotDelete": {
+    "description": "Error when deleting recurring expense fails"
+  },
+  "recurringCouldNotUpdate": "Impossible de mettre à jour la dépense récurrente.",
+  "@recurringCouldNotUpdate": {
+    "description": "Error when updating recurring expense fails"
+  },
+  "recurringTomorrow": "Demain",
+  "@recurringTomorrow": {
+    "description": "Tomorrow label in recurring expenses date helper"
+  },
+  "scannerCouldNotAnalyze": "Impossible d'analyser l'image. Réessaie avec une photo plus nette.",
+  "@scannerCouldNotAnalyze": {
+    "description": "Error when AI image analysis fails in scanner"
+  },
+  "sheetConflictDescription": "Cet élément a été modifié sur un autre appareil pendant que tu l'éditais. Choisis quelle version garder.",
+  "@sheetConflictDescription": {
+    "description": "Conflict resolution description"
+  },
+  "sheetConflictKeepLocal": "Garder la tienne",
+  "@sheetConflictKeepLocal": {
+    "description": "Button to keep local version"
+  },
+  "sheetConflictKeepServer": "Garder celle du serveur",
+  "@sheetConflictKeepServer": {
+    "description": "Button to keep server version"
+  },
+  "sheetConflictLocal": "Ta version",
+  "@sheetConflictLocal": {
+    "description": "Local version label"
+  },
+  "sheetConflictServer": "Version serveur",
+  "@sheetConflictServer": {
+    "description": "Server version label"
+  },
+  "sheetConflictTitle": "Conflit de synchronisation",
+  "@sheetConflictTitle": {
+    "description": "Conflict resolution sheet title"
+  },
+  "sheetCostSummaryTitle": "Récapitulatif des coûts",
+  "@sheetCostSummaryTitle": {
+    "description": "Sheet title for list cost summary"
+  },
+  "sheetCostSummaryTotal": "Total",
+  "@sheetCostSummaryTotal": {
+    "description": "Total cost label"
+  },
+  "sheetCreateHouseholdName": "Nom du foyer",
+  "@sheetCreateHouseholdName": {
+    "description": "Name input label"
+  },
+  "sheetCreateHouseholdNameHint": "ex. Appart 4B",
+  "@sheetCreateHouseholdNameHint": {
+    "description": "Name placeholder"
+  },
+  "sheetCreateHouseholdTitle": "Créer un foyer",
+  "@sheetCreateHouseholdTitle": {
+    "description": "Sheet title for creating a household"
+  },
+  "sheetCreateListCreate": "Créer la liste",
+  "@sheetCreateListCreate": {
+    "description": "Create list button"
+  },
+  "sheetCreateListName": "Nom de la liste",
+  "@sheetCreateListName": {
+    "description": "Name input label"
+  },
+  "sheetCreateListNameHint": "ex. Courses hebdo",
+  "@sheetCreateListNameHint": {
+    "description": "Name placeholder"
+  },
+  "sheetCreateListTitle": "Nouvelle liste",
+  "@sheetCreateListTitle": {
+    "description": "Sheet title for creating a list"
+  },
+  "sheetCreateListType": "Type",
+  "@sheetCreateListType": {
+    "description": "List type selector label"
+  },
+  "sheetCreateListTypeCustom": "Personnalisée",
+  "@sheetCreateListTypeCustom": {
+    "description": "Type option: custom list"
+  },
+  "sheetCreateListTypeShopping": "Courses",
+  "@sheetCreateListTypeShopping": {
+    "description": "Type option: shopping list"
+  },
+  "sheetCreateListTypeTodo": "À faire",
+  "@sheetCreateListTypeTodo": {
+    "description": "Type option: to-do list"
+  },
+  "sheetExpenseDetailSplits": "Parts",
+  "@sheetExpenseDetailSplits": {
+    "description": "Section header: split details"
+  },
+  "sheetExpenseDetailSplitsCount": "{count, plural, =1{{count} part} other{{count} parts}}",
+  "@sheetExpenseDetailSplitsCount": {
+    "description": "Split count",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "sheetExpenseDetailTitle": "Détails de la dépense",
+  "@sheetExpenseDetailTitle": {
+    "description": "Sheet title for expense detail"
+  },
+  "sheetFailedChangesDescription": "Ces modifications n'ont pas pu être enregistrées. Tu peux réessayer ou les abandonner.",
+  "@sheetFailedChangesDescription": {
+    "description": "Failed changes description"
+  },
+  "sheetFailedChangesDiscard": "Abandonner",
+  "@sheetFailedChangesDiscard": {
+    "description": "Discard single failed change"
+  },
+  "sheetFailedChangesDiscardAll": "Tout abandonner",
+  "@sheetFailedChangesDiscardAll": {
+    "description": "Discard all failed changes"
+  },
+  "sheetFailedChangesEmpty": "Aucune modification échouée. Tout est synchronisé ou en attente de nouvelle tentative.",
+  "@sheetFailedChangesEmpty": {
+    "description": "Empty state when no failed outbox changes"
+  },
+  "sheetFailedChangesOpAddItem": "Ajouter un élément",
+  "@sheetFailedChangesOpAddItem": {
+    "description": "Outbox op label: create item"
+  },
+  "sheetFailedChangesOpChange": "Modification",
+  "@sheetFailedChangesOpChange": {
+    "description": "Outbox op label: unknown change"
+  },
+  "sheetFailedChangesOpCompleteChore": "Terminer la tâche",
+  "@sheetFailedChangesOpCompleteChore": {
+    "description": "Outbox op label: complete chore"
+  },
+  "sheetFailedChangesOpCreateExpense": "Ajouter une dépense",
+  "@sheetFailedChangesOpCreateExpense": {
+    "description": "Outbox op label: create expense"
+  },
+  "sheetFailedChangesOpCreatePinwallPost": "Publier sur le pinwall",
+  "@sheetFailedChangesOpCreatePinwallPost": {
+    "description": "Outbox op label: create pinwall post"
+  },
+  "sheetFailedChangesOpCreateRecipe": "Ajouter une recette",
+  "@sheetFailedChangesOpCreateRecipe": {
+    "description": "Outbox op label: create recipe"
+  },
+  "sheetFailedChangesOpDeleteExpense": "Supprimer la dépense",
+  "@sheetFailedChangesOpDeleteExpense": {
+    "description": "Outbox op label: delete expense"
+  },
+  "sheetFailedChangesOpDeleteItem": "Supprimer l'élément",
+  "@sheetFailedChangesOpDeleteItem": {
+    "description": "Outbox op label: delete item"
+  },
+  "sheetFailedChangesOpDeletePinwallPost": "Supprimer la publication pinwall",
+  "@sheetFailedChangesOpDeletePinwallPost": {
+    "description": "Outbox op label: delete pinwall post"
+  },
+  "sheetFailedChangesOpDeleteRecipe": "Supprimer la recette",
+  "@sheetFailedChangesOpDeleteRecipe": {
+    "description": "Outbox op label: delete recipe"
+  },
+  "sheetFailedChangesOpReorderItems": "Réorganiser la liste",
+  "@sheetFailedChangesOpReorderItems": {
+    "description": "Outbox op label: reorder items"
+  },
+  "sheetFailedChangesOpRescheduleChore": "Replanifier la tâche",
+  "@sheetFailedChangesOpRescheduleChore": {
+    "description": "Outbox op label: reschedule chore"
+  },
+  "sheetFailedChangesOpSkipChore": "Passer la tâche",
+  "@sheetFailedChangesOpSkipChore": {
+    "description": "Outbox op label: skip chore"
+  },
+  "sheetFailedChangesOpUndoChore": "Annuler la tâche",
+  "@sheetFailedChangesOpUndoChore": {
+    "description": "Outbox op label: undo chore"
+  },
+  "sheetFailedChangesOpUpdateExpense": "Mettre à jour la dépense",
+  "@sheetFailedChangesOpUpdateExpense": {
+    "description": "Outbox op label: update expense"
+  },
+  "sheetFailedChangesOpUpdateItem": "Mettre à jour l'élément",
+  "@sheetFailedChangesOpUpdateItem": {
+    "description": "Outbox op label: update item"
+  },
+  "sheetFailedChangesOpUpdateRecipe": "Mettre à jour la recette",
+  "@sheetFailedChangesOpUpdateRecipe": {
+    "description": "Outbox op label: update recipe"
+  },
+  "sheetFailedChangesRetry": "Réessayer",
+  "@sheetFailedChangesRetry": {
+    "description": "Retry single failed change"
+  },
+  "sheetFailedChangesRetryAll": "Tout réessayer",
+  "@sheetFailedChangesRetryAll": {
+    "description": "Retry all failed changes"
+  },
+  "sheetFailedChangesTitle": "Modifications échouées",
+  "@sheetFailedChangesTitle": {
+    "description": "Sheet title for failed outbox changes"
+  },
+  "sheetGroupSettingsAddZone": "Ajouter une zone",
+  "@sheetGroupSettingsAddZone": {
+    "description": "Input label for adding a zone"
+  },
+  "sheetGroupSettingsChoreZonesDesc": "Zones de ton logement pour regrouper les tâches. Elles apparaissent lors de l'ajout d'une tâche.",
+  "@sheetGroupSettingsChoreZonesDesc": {
+    "description": "Description of chore zones"
+  },
+  "sheetGroupSettingsChoreZonesLabel": "Zones de tâches",
+  "@sheetGroupSettingsChoreZonesLabel": {
+    "description": "Section label for chore zones"
+  },
+  "sheetGroupSettingsChoreZonesUpdated": "Zones de tâches mises à jour",
+  "@sheetGroupSettingsChoreZonesUpdated": {
+    "description": "Snackbar when chore zones are saved"
+  },
+  "sheetGroupSettingsCouldNotSave": "Impossible d'enregistrer les paramètres.",
+  "@sheetGroupSettingsCouldNotSave": {
+    "description": "Error when saving fails"
+  },
+  "sheetGroupSettingsDelete": "Supprimer le foyer",
+  "@sheetGroupSettingsDelete": {
+    "description": "Button to delete household"
+  },
+  "sheetGroupSettingsDeleteConfirm": "Cela supprimera définitivement ce foyer et toutes les données associées. Cette action est irréversible.",
+  "@sheetGroupSettingsDeleteConfirm": {
+    "description": "Confirmation for deleting household"
+  },
+  "sheetGroupSettingsDescriptionHint": "Quelques mots sur ce foyer",
+  "@sheetGroupSettingsDescriptionHint": {
+    "description": "Hint text for household description"
+  },
+  "sheetGroupSettingsHouseholdDeleted": "Foyer supprimé",
+  "@sheetGroupSettingsHouseholdDeleted": {
+    "description": "Snackbar when household is deleted"
+  },
+  "sheetGroupSettingsInvite": "Inviter",
+  "@sheetGroupSettingsInvite": {
+    "description": "Button to invite a member"
+  },
+  "sheetGroupSettingsLeave": "Quitter le foyer",
+  "@sheetGroupSettingsLeave": {
+    "description": "Button to leave household"
+  },
+  "sheetGroupSettingsLeaveAction": "Quitter",
+  "@sheetGroupSettingsLeaveAction": {
+    "description": "Confirm leave action"
+  },
+  "sheetGroupSettingsLeaveConfirm": "Es-tu sûr de vouloir quitter ce foyer ? Toutes tes données resteront dans le foyer.",
+  "@sheetGroupSettingsLeaveConfirm": {
+    "description": "Confirmation for leaving household"
+  },
+  "sheetGroupSettingsMemberRemoved": "{name} retiré",
+  "@sheetGroupSettingsMemberRemoved": {
+    "description": "Snackbar when member is removed",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetGroupSettingsMembersLabel": "Membres",
+  "@sheetGroupSettingsMembersLabel": {
+    "description": "Section label for household members"
+  },
+  "sheetGroupSettingsName": "Nom du foyer",
+  "@sheetGroupSettingsName": {
+    "description": "Name input label"
+  },
+  "sheetGroupSettingsRemoveMember": "Retirer le membre",
+  "@sheetGroupSettingsRemoveMember": {
+    "description": "Dialog title for removing a member"
+  },
+  "sheetGroupSettingsRemoveMemberConfirm": "Retirer {name} de ce foyer ?",
+  "@sheetGroupSettingsRemoveMemberConfirm": {
+    "description": "Confirmation dialog body for removing a member",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetGroupSettingsRemoveMemberTooltip": "Retirer {name}",
+  "@sheetGroupSettingsRemoveMemberTooltip": {
+    "description": "Tooltip to remove a member",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetGroupSettingsSaveZones": "Enregistrer les zones",
+  "@sheetGroupSettingsSaveZones": {
+    "description": "Button to save chore zones"
+  },
+  "sheetGroupSettingsSaved": "Paramètres enregistrés",
+  "@sheetGroupSettingsSaved": {
+    "description": "Snackbar when settings are saved"
+  },
+  "sheetGroupSettingsTitle": "Paramètres du foyer",
+  "@sheetGroupSettingsTitle": {
+    "description": "Sheet title for group settings"
+  },
+  "sheetGroupSettingsZoneHint": "Cuisine, Salle de bain…",
+  "@sheetGroupSettingsZoneHint": {
+    "description": "Placeholder for zone input"
+  },
+  "sheetInviteCopied": "Lien d'invitation copié",
+  "@sheetInviteCopied": {
+    "description": "Snackbar when link is copied"
+  },
+  "sheetInviteCopy": "Copier le lien",
+  "@sheetInviteCopy": {
+    "description": "Copy invite link button"
+  },
+  "sheetInviteShare": "Partager le lien",
+  "@sheetInviteShare": {
+    "description": "Share invite link button"
+  },
+  "sheetInviteTitle": "Inviter au foyer",
+  "@sheetInviteTitle": {
+    "description": "Sheet title for inviting to household"
+  },
+  "sheetJoinCodeExample": "SUNNY-TACO-42",
+  "@sheetJoinCodeExample": {
+    "description": "Example invite code placeholder"
+  },
+  "sheetJoinCodeHint": "Coller le code d'invitation",
+  "@sheetJoinCodeHint": {
+    "description": "Invite code placeholder"
+  },
+  "sheetJoinCodeLabel": "Code d'invitation",
+  "@sheetJoinCodeLabel": {
+    "description": "Invite code input label"
+  },
+  "sheetJoinJoin": "Rejoindre",
+  "@sheetJoinJoin": {
+    "description": "Join button"
+  },
+  "sheetJoinTitle": "Rejoindre un foyer",
+  "@sheetJoinTitle": {
+    "description": "Sheet title for joining a household"
+  },
+  "sheetRecipeAddToListAdded": "{count, plural, =1{1 élément ajouté} other{{count} éléments ajoutés}}",
+  "@sheetRecipeAddToListAdded": {
+    "description": "Snackbar when ingredients are added",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "sheetRecipeAddToListCouldNotAdd": "Impossible d'ajouter les ingrédients.",
+  "@sheetRecipeAddToListCouldNotAdd": {
+    "description": "Error when adding ingredients fails"
+  },
+  "sheetRecipeAddToListTitle": "Ajouter à la liste",
+  "@sheetRecipeAddToListTitle": {
+    "description": "Sheet title for adding recipe ingredients to list"
+  },
+  "sheetSettlementConfirm": "Confirmer le règlement",
+  "@sheetSettlementConfirm": {
+    "description": "Confirm settlement button"
+  },
+  "sheetSettlementFrom": "De",
+  "@sheetSettlementFrom": {
+    "description": "Party label: from"
+  },
+  "sheetSettlementRecordPayment": "Enregistre ce règlement après le paiement.",
+  "@sheetSettlementRecordPayment": {
+    "description": "Settlement helper text"
+  },
+  "sheetSettlementTitle": "Enregistrer un règlement",
+  "@sheetSettlementTitle": {
+    "description": "Settlement confirmation dialog title"
+  },
+  "sheetSettlementTo": "À",
+  "@sheetSettlementTo": {
+    "description": "Party label: to"
+  },
+  "smartCaptureLaunchTitle": "Vérifier la photo",
+  "@smartCaptureLaunchTitle": {
+    "description": "Smart capture launcher review title"
+  },
+  "storePickerLoadError": "Impossible de charger les magasins.",
+  "@storePickerLoadError": {
+    "description": "Store picker load error"
+  },
+  "storePickerNoMatch": "Aucun magasin ne correspond à ta recherche.",
+  "@storePickerNoMatch": {
+    "description": "No store search results"
+  },
+  "storePickerNoStore": "Pas de magasin",
+  "@storePickerNoStore": {
+    "description": "No store option"
+  },
+  "storePickerNoStoreDesc": "Trier par catégorie plutôt que par disposition du magasin",
+  "@storePickerNoStoreDesc": {
+    "description": "No store option description"
+  },
+  "storePickerSearchHint": "Nom...",
+  "@storePickerSearchHint": {
+    "description": "Store search hint"
+  },
+  "storePickerSearchLabel": "Rechercher des magasins",
+  "@storePickerSearchLabel": {
+    "description": "Store search label"
+  },
+  "storePickerTitle": "Choisir un magasin",
+  "@storePickerTitle": {
+    "description": "Store picker sheet title"
+  },
+  "tonightCook": "Cuisiner",
+  "@tonightCook": {
+    "description": "Button to start cooking tonight's meal"
+  },
+  "tonightHeader": "Ce soir",
+  "@tonightHeader": {
+    "description": "Tonight card section header"
+  },
+  "tonightNothingPlanned": "Rien de prévu pour ce soir",
+  "@tonightNothingPlanned": {
+    "description": "Empty state when no meal planned for tonight"
+  },
+  "tonightPlanDinner": "Planifier le dîner",
+  "@tonightPlanDinner": {
+    "description": "CTA to plan tonight's dinner"
+  },
+  "tonightRecipe": "Recette",
+  "@tonightRecipe": {
+    "description": "Fallback recipe title for tonight card"
+  }
+}

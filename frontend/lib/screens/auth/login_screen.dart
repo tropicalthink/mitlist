@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../config/api_config.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/auth_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/shadows.dart';
@@ -37,6 +38,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   String? _emailError;
   String? _passwordError;
 
+  AppLocalizations get l10n => AppLocalizations.of(context)!;
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -58,9 +61,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     if (email.isEmpty || password.isEmpty) {
       setState(() {
-        _errorMessage = 'Please enter both email and password.';
-        if (email.isEmpty) _emailError = 'Email is required.';
-        if (password.isEmpty) _passwordError = 'Password is required.';
+        _errorMessage = l10n.authLoginFillAllFields;
+        if (email.isEmpty) _emailError = l10n.authLoginEmailRequired;
+        if (password.isEmpty) _passwordError = l10n.authLoginPasswordRequired;
       });
       return;
     }
@@ -88,7 +91,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return;
     } catch (e) {
       setState(() {
-        _errorMessage = 'Couldn\u2019t sign in. Check your connection and try again.';
+        _errorMessage = l10n.authLoginGenericError;
       });
     } finally {
       if (mounted && !_isSuccess) setState(() => _isLoading = false);
@@ -107,13 +110,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     showAppBottomSheet(
       context: context,
-      title: 'Reset Password',
+      title: l10n.authLoginResetPasswordTitle,
       body: StatefulBuilder(
         builder: (context, setSheetState) {
           Future<void> submit() async {
             final email = emailController.text.trim();
             if (email.isEmpty) {
-              setSheetState(() => error = 'Email is required.');
+              setSheetState(() => error = l10n.authLoginEmailRequired);
               return;
             }
 
@@ -129,13 +132,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               if (!mounted) return;
               setSheetState(() {
                 isSubmitting = false;
-                successMessage =
-                    'If that email exists, a reset code has been sent.';
+                successMessage = l10n.authLoginResetCodeSent;
               });
             } catch (e) {
               setSheetState(() {
                 isSubmitting = false;
-                error = 'Couldn\u2019t sign in. Check your connection and try again.';
+                error = l10n.authLoginGenericError;
               });
             }
           }
@@ -146,17 +148,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             final confirmPassword = confirmPasswordController.text.trim();
 
             if (token.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty) {
-              setSheetState(() => error = 'Fill out the reset code and both password fields.');
+              setSheetState(() => error = l10n.authLoginResetFillAllFields);
               return;
             }
             if (newPassword.length < 6) {
               setSheetState(
-                () => error = 'New password must be at least 6 characters.',
+                () => error = l10n.authSignupPasswordMinLength,
               );
               return;
             }
             if (newPassword != confirmPassword) {
-              setSheetState(() => error = 'New passwords do not match.');
+              setSheetState(() => error = l10n.accountPasswordsMismatch);
               return;
             }
 
@@ -172,12 +174,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               if (!mounted) return;
               setSheetState(() {
                 isResetting = false;
-                successMessage = 'Password reset successful. You can sign in now.';
+                successMessage = l10n.authLoginResetSuccess;
               });
             } catch (e) {
               setSheetState(() {
                 isResetting = false;
-                error = 'Couldn\u2019t sign in. Check your connection and try again.';
+                error = l10n.authLoginGenericError;
               });
             }
           }
@@ -195,8 +197,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: MitlistSpacing.md),
               ],
               AppInput(
-                label: 'Email',
-                hint: 'you@example.com',
+                label: l10n.authLoginEmail,
+                hint: l10n.authLoginYouExample,
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.done,
@@ -205,20 +207,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               const SizedBox(height: MitlistSpacing.lg),
               AppButton(
-                text: 'Send reset code',
+                text: l10n.authLoginSendResetCode,
                 onPressed: isSubmitting ? null : submit,
                 isLoading: isSubmitting,
               ),
               const SizedBox(height: MitlistSpacing.lg),
               AppInput(
-                label: 'Reset code',
-                hint: 'Paste the code from your email',
+                label: l10n.authLoginResetCodeLabel,
+                hint: l10n.authLoginResetCodeHint,
                 controller: tokenController,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: MitlistSpacing.space3),
               AppInput(
-                label: 'New password',
+                label: l10n.accountNewPassword,
                 hint: '........',
                 controller: newPasswordController,
                 obscureText: true,
@@ -226,7 +228,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               const SizedBox(height: MitlistSpacing.space3),
               AppInput(
-                label: 'Confirm new password',
+                label: l10n.accountConfirmPassword,
                 hint: '........',
                 controller: confirmPasswordController,
                 obscureText: true,
@@ -235,7 +237,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               const SizedBox(height: MitlistSpacing.lg),
               AppButton(
-                text: 'Reset password',
+                text: l10n.authLoginResetPasswordButton,
                 onPressed: isResetting ? null : confirmReset,
                 isLoading: isResetting,
               ),
@@ -254,8 +256,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _startOAuth(String provider) async {
     if (!supportsBrowserRedirect && !supportsNativeOAuthLaunch) {
       setState(() {
-        _errorMessage =
-            '$provider sign-in is only available on web, Android, and iOS right now.';
+        _errorMessage = l10n.authLoginOAuthUnsupported(provider);
       });
       return;
     }
@@ -292,13 +293,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         return;
       }
       setState(() {
-        _errorMessage = friendlyErrorMessage(e);
+        _errorMessage = friendlyErrorMessage(e, AppLocalizations.of(context)!);
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
@@ -332,8 +335,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         AppInput(
-                          label: 'Email',
-                          hint: 'you@example.com',
+                          label: l10n.authLoginEmail,
+                          hint: l10n.authLoginYouExample,
                           controller: _emailController,
                           focusNode: _emailFocus,
                           keyboardType: TextInputType.emailAddress,
@@ -344,7 +347,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         const SizedBox(height: MitlistSpacing.space3),
                         AppInput(
-                          label: 'Password',
+                          label: l10n.authLoginPassword,
                           hint: '••••••••',
                           controller: _passwordController,
                           focusNode: _passwordFocus,
@@ -365,7 +368,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         SizedBox(
                           width: double.infinity,
                           child: AppButton(
-                            text: 'Sign in',
+                            text: l10n.welcomeSignIn,
                             variant: AppButtonVariant.solid,
                             color: AppButtonColor.primary,
                             size: AppButtonSize.lg,
@@ -391,18 +394,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       : (value) {
                                           setState(() => _rememberMe = value);
                                         },
-                                  semanticLabelOn: 'Remember me: on',
-                                  semanticLabelOff: 'Remember me: off',
+                                  semanticLabelOn: l10n.authLoginRememberMeOn,
+                                  semanticLabelOff: l10n.authLoginRememberMeOff,
                                 ),
                                 const SizedBox(width: MitlistSpacing.sm),
-                                const Text('Remember me'),
+                                Text(l10n.authLoginRememberMe),
                               ],
                             ),
                           ),
                         ),
                         const SizedBox(height: MitlistSpacing.space4),
                         AppButton(
-                          text: 'Continue with Google',
+                          text: l10n.authLoginGoogle,
                           icon: const AppIcon(name: 'login', size: 20),
                           variant: AppButtonVariant.outline,
                           color: AppButtonColor.neutral,
@@ -410,7 +413,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         const SizedBox(height: MitlistSpacing.space3),
                         AppButton(
-                          text: 'Continue with Apple',
+                          text: l10n.authLoginApple,
                           icon: const AppIcon(name: 'apple', size: 20),
                           variant: AppButtonVariant.outline,
                           color: AppButtonColor.neutral,
@@ -423,7 +426,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             AppButton(
                               variant: AppButtonVariant.ghost,
                               color: AppButtonColor.primary,
-                              text: 'Create account',
+                              text: l10n.authSignupCreateAccount,
                               onPressed: () => context.goNamed('signup'),
                             ),
                           ],
@@ -435,7 +438,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             AppButton(
                               variant: AppButtonVariant.ghost,
                               color: AppButtonColor.neutral,
-                              text: 'Forgot password?',
+                              text: l10n.authLoginForgotPassword,
                               onPressed: _showPasswordResetSheet,
                             ),
                           ],

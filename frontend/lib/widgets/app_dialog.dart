@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../theme/animations.dart';
 import '../theme/shadows.dart';
 import '../theme/spacing.dart';
@@ -70,6 +71,7 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       decoration: BoxDecoration(
         border: Border(
@@ -95,7 +97,7 @@ class _Header extends StatelessWidget {
             icon: Icon(Icons.close),
             iconSize: MitlistSpacing.space5,
             color: Theme.of(context).colorScheme.onSurface,
-            tooltip: 'Close',
+            tooltip: l10n.appDialogClose,
             constraints: BoxConstraints(
               minWidth: MitlistSpacing.space11,
               minHeight: MitlistSpacing.space11,
@@ -113,12 +115,13 @@ class _Footer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.all(MitlistSpacing.lg),
       child: Align(
         alignment: Alignment.centerRight,
         child: Text(
-          'Press back to close',
+          l10n.appDialogPressBack,
           style: MitlistTypography.labelXSmall(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),

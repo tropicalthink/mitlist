@@ -28,6 +28,7 @@ import '../../widgets/list/list_composer_bar.dart';
 import '../../widgets/list/list_item_actions_sheet.dart';
 import '../../widgets/list/list_item_row.dart';
 import '../../widgets/list/list_scan_launcher.dart';
+import '../../l10n/app_localizations.dart';
 import '../../widgets/odometer.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/mitlist_app_bar.dart';
@@ -160,8 +161,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       if (mounted) setState(() => _listName = newName);
     } catch (_) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Couldn’t rename list.')),
+          SnackBar(content: Text(l10n.listCouldNotRename)),
         );
       }
     }
@@ -332,9 +334,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       }
     } catch (e) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Couldn\u2019t load list.';
+        _errorMessage = l10n.listDetailCouldNotLoad;
       });
     }
   }
@@ -404,8 +407,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       setState(() => _photosByItemId[item.id] = photos);
     } catch (e) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: const Text('Couldn\u2019t add photo.')),
+        SnackBar(content: Text(l10n.listDetailCouldNotAddPhoto)),
       );
     } finally {
       _isSaving = false;
@@ -415,8 +419,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   Future<void> _openPhotoViewer(String url) async {
     await showDialog<void>(
       context: context,
-      builder: (context) => Dialog.fullscreen(
-        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+      builder: (ctx) => Dialog.fullscreen(
+        backgroundColor: Theme.of(ctx).colorScheme.surfaceContainerHighest,
         child: Stack(
           children: [
             Center(
@@ -424,17 +428,17 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                 minScale: 0.5,
                 maxScale: 4,
                 child: Semantics(
-                  label: 'List image',
+                  label: AppLocalizations.of(ctx)!.listDetailListImage,
                   child: Image.network(url,
                       fit: BoxFit.contain,
-                      cacheWidth: (MediaQuery.sizeOf(context).width *
-                              MediaQuery.devicePixelRatioOf(context) *
+                      cacheWidth: (MediaQuery.sizeOf(ctx).width *
+                              MediaQuery.devicePixelRatioOf(ctx) *
                               1.5)
                           .round(),
                       errorBuilder: (_, __, ___) => Center(
                             child: AppIcon(
                                 name: 'brokenImage',
-                                color: Theme.of(context).colorScheme.onSurface,
+                                color: Theme.of(ctx).colorScheme.onSurface,
                                 size: 48),
                           )),
                 ),
@@ -446,9 +450,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                 child: IconButton(
                   icon: AppIcon(
                       name: 'xMark',
-                      color: Theme.of(context).colorScheme.onSurface),
-                  tooltip: 'Close',
-                  onPressed: () => Navigator.of(context).pop(),
+                      color: Theme.of(ctx).colorScheme.onSurface),
+                  tooltip: AppLocalizations.of(ctx)!.commonClose,
+                  onPressed: () => Navigator.of(ctx).pop(),
                 ),
               ),
             ),
@@ -496,8 +500,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       setState(() => _photosByItemId[item.id] = updated);
     } catch (e) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: const Text('Couldn\u2019t remove photo.')),
+        SnackBar(content: Text(l10n.listDetailCouldNotRemovePhoto)),
       );
     } finally {
       _isSaving = false;
@@ -535,9 +540,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     } catch (e) {
       if (!mounted) return;
       _cancelSettle(item.id);
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: const Text('Couldn\u2019t update. Please try again.')),
+            content: Text(l10n.listDetailCouldNotUpdate)),
       );
     }
   }
@@ -662,8 +668,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       _composerFocusNode.requestFocus();
     } catch (e) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Couldn\u2019t add item. Please try again.')),
+        SnackBar(content: Text(l10n.listDetailCouldNotAddItem)),
       );
     } finally {
       _isSaving = false;
@@ -694,21 +701,22 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     if (_isSaving) return;
     if (!onlyChecked) {
       final count = _items.length;
+      final l10n = AppLocalizations.of(context)!;
       final confirmed = await showAppDialog<bool>(
         context: context,
-        title: 'Clear list',
+        title: l10n.listDetailClearTitle,
         body: Text(
-          'This will remove all $count item${count == 1 ? '' : 's'}. This cannot be undone.',
+          l10n.listDetailClearBody(count),
         ),
         actions: [
           AppButton(
-            text: 'Cancel',
+            text: l10n.commonCancel,
             variant: AppButtonVariant.outline,
             onPressed: () => Navigator.of(context).pop(false),
           ),
           const SizedBox(width: MitlistSpacing.sm),
           AppButton(
-            text: 'Clear list',
+            text: l10n.listDetailClearConfirm,
             color: AppButtonColor.error,
             onPressed: () => Navigator.of(context).pop(true),
           ),
@@ -730,8 +738,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       setState(() => _dirty = true);
     } catch (e) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Couldn\u2019t clear items. Please try again.')),
+        SnackBar(content: Text(l10n.listDetailCouldNotClear)),
       );
     } finally {
       _isSaving = false;
@@ -760,7 +769,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       if (!mounted) return;
       unawaited(Haptics.failure());
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e))),
+        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
       _isSaving = false;
       return;
@@ -771,15 +780,16 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       return;
     }
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '${item.name} deleted',
+          l10n.listDetailItemDeleted(item.name),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         action: SnackBarAction(
-          label: 'Undo',
+          label: l10n.commonUndo,
           onPressed: () => _restoreDeletedItem(item),
         ),
       ),
@@ -816,8 +826,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       });
     } catch (_) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Couldn’t restore item.')),
+        SnackBar(content: Text(l10n.listDetailCouldNotRestore)),
       );
     }
   }
@@ -825,6 +836,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   Future<void> _setItemPrice(ListItem item) async {
     if (_isSaving) return;
     _isSaving = true;
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(
       text: item.priceCents != null
           ? (item.priceCents! / 100).toStringAsFixed(2)
@@ -832,26 +844,26 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     );
     final priceStr = await showAppDialog<String>(
       context: context,
-      title: 'Set price',
+      title: l10n.listDetailSetPrice,
       body: TextField(
         controller: controller,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
         autofocus: true,
         decoration: InputDecoration(
-          labelText: 'Price',
+          labelText: l10n.listDetailPriceInput,
           prefixText: _currencySymbol,
-          hintText: '0.00',
+          hintText: l10n.listDetailPriceHint,
         ),
       ),
       actions: [
         AppButton(
-          text: 'Cancel',
+          text: l10n.commonCancel,
           variant: AppButtonVariant.outline,
           onPressed: () => Navigator.of(context).pop(null),
         ),
         const SizedBox(width: MitlistSpacing.sm),
         AppButton(
-          text: 'Save',
+          text: l10n.commonSave,
           onPressed: () => Navigator.of(context).pop(controller.text.trim()),
         ),
       ],
@@ -880,7 +892,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: const Text('Couldn\u2019t set price.')),
+        SnackBar(content: Text(l10n.listDetailCouldNotSetPrice)),
       );
     } finally {
       _isSaving = false;
@@ -915,19 +927,20 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
   Future<void> _archiveList() async {
     if (_isSaving) return;
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showAppDialog<bool>(
       context: context,
-      title: 'Archive list',
-      body: const Text('This list will be hidden from your household.'),
+      title: l10n.listDetailArchiveTitle,
+      body: Text(l10n.listDetailArchiveBody),
       actions: [
         AppButton(
-          text: 'Cancel',
+          text: l10n.commonCancel,
           variant: AppButtonVariant.outline,
           onPressed: () => Navigator.of(context).pop(false),
         ),
         const SizedBox(width: MitlistSpacing.sm),
         AppButton(
-          text: 'Archive',
+          text: l10n.commonArchive,
           onPressed: () => Navigator.of(context).pop(true),
         ),
       ],
@@ -945,7 +958,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to archive list.')),
+        SnackBar(content: Text(l10n.listDetailFailedArchive)),
       );
     } finally {
       _isSaving = false;
@@ -955,20 +968,21 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   Future<void> _deleteList() async {
     if (_isSaving) return;
     _isSaving = true;
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showAppDialog<bool>(
       context: context,
-      title: 'Delete list',
-      body: const Text(
-          'This will permanently delete this list and all its items. This cannot be undone.'),
+      title: l10n.listDetailDeleteTitle,
+      body: Text(
+          l10n.listDetailDeleteBody),
       actions: [
         AppButton(
-          text: 'Cancel',
+          text: l10n.commonCancel,
           variant: AppButtonVariant.outline,
           onPressed: () => Navigator.of(context).pop(false),
         ),
         const SizedBox(width: MitlistSpacing.sm),
         AppButton(
-          text: 'Delete',
+          text: l10n.commonDelete,
           color: AppButtonColor.error,
           onPressed: () => Navigator.of(context).pop(true),
         ),
@@ -991,7 +1005,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Couldn\u2019t delete list.')),
+        SnackBar(content: Text(l10n.listDetailCouldNotDelete)),
       );
     } finally {
       _isSaving = false;
@@ -1000,6 +1014,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
   Future<void> _showCostSummary() async {
     if (_service == null) return;
+    final l10n = AppLocalizations.of(context)!;
     try {
       final summary = await _service!.getCostSummary(widget.listId);
       final totalCents = summary['total_cents'] as int? ?? 0;
@@ -1022,13 +1037,13 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   await _service!.generateExpense(widget.listId);
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Expense generated')),
+                      SnackBar(content: Text(l10n.listDetailExpenseGenerated)),
                     );
                   }
                 } catch (e) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(friendlyErrorMessage(e))),
+                      SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
                     );
                   }
                 } finally {
@@ -1040,7 +1055,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Couldn\u2019t load cost summary.')),
+          SnackBar(content: Text(l10n.listDetailCouldNotLoadCostSummary)),
         );
       }
     }
@@ -1131,9 +1146,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       await repo.reorderItemsOfflineFirst(widget.listId, itemIdsInOrder);
     } catch (e) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Couldn\u2019t reorder items. Please try again.'),
+        SnackBar(
+          content: Text(l10n.listDetailCouldNotReorder),
         ),
       );
     }
@@ -1152,8 +1168,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     }
     if (groupId == null || userId == null) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Couldn\u2019t start scan. Try again.')),
+        SnackBar(content: Text(l10n.listDetailCouldNotStartScan)),
       );
       return;
     }
@@ -1168,9 +1185,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       source: source,
     );
     if (!mounted || addedCount == null || addedCount <= 0) return;
-    final message = addedCount == 1
-        ? '1 item added to list'
-        : '$addedCount items added to list';
+    final l10n2 = AppLocalizations.of(context)!;
+    final message = l10n2.listDetailItemsAdded(addedCount);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
@@ -1211,6 +1227,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       Theme.of(context).brightness,
     );
 
+    final l10n = AppLocalizations.of(context)!;
     final headerHeight = kToolbarHeight + 6 + (_showSearch ? 52.0 : 0);
 
     return Scaffold(
@@ -1223,7 +1240,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
               showStandardActions: false,
               leading: IconButton(
                 icon: const AppIcon(name: 'arrowLeft'),
-                tooltip: 'Back',
+                tooltip: l10n.commonBack,
                 onPressed: () => Navigator.of(context).pop(_dirty),
               ),
               title: _editingTitle
@@ -1242,7 +1259,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     )
                   : Semantics(
                       button: true,
-                      label: 'Edit list name, $_listName',
+                      label: l10n.listDetailEditName(_listName),
                       child: GestureDetector(
                         onTap: _startEditingTitle,
                         child: Text(
@@ -1260,7 +1277,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                         ? Theme.of(context).colorScheme.primary
                         : null,
                   ),
-                  tooltip: _showSearch ? 'Close search' : 'Search',
+                   tooltip: _showSearch ? l10n.listDetailCloseSearch : l10n.listDetailSearchTooltip,
                   onPressed: () {
                     unawaited(Haptics.light());
                     setState(() {
@@ -1274,43 +1291,43 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                 ),
                 IconButton(
                   icon: const AppIcon(name: 'camera'),
-                  tooltip: 'Scan list',
+                   tooltip: l10n.listDetailScanList,
                   onPressed: () => _launchScan(),
                 ),
                 PopupMenuButton<String>(
                   icon: const AppIcon(name: 'ellipsisVertical'),
-                  tooltip: 'List options',
+                   tooltip: l10n.listOptionsTooltip,
                   onSelected: _onMenuSelected,
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
+                   itemBuilder: (context) => [
+                    PopupMenuItem(
                       value: 'rename',
-                      child: Text('Rename'),
+                      child: Text(l10n.commonRename),
                     ),
                     const PopupMenuDivider(),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'complete_all',
-                      child: Text('Check all'),
+                      child: Text(l10n.listDetailCheckAll),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'cost_summary',
-                      child: Text('Cost summary'),
+                      child: Text(l10n.listDetailCostSummary),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'uncheck_all',
-                      child: Text('Uncheck all'),
+                      child: Text(l10n.listDetailUncheckAll),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'clear_all',
-                      child: Text('Clear list'),
+                      child: Text(l10n.listDetailClearTitle),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'archive',
-                      child: Text('Archive'),
+                      child: Text(l10n.commonArchive),
                     ),
                     PopupMenuItem(
                       value: 'delete',
                       child: Text(
-                        'Delete',
+                        l10n.commonDelete,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: Theme.of(context).colorScheme.error,
                             ),
@@ -1336,9 +1353,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                 child: TextField(
                   controller: _searchController,
                   autofocus: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Filter items',
-                    hintText: 'Name, e.g. milk',
+                  decoration: InputDecoration(
+                    labelText: l10n.listDetailFilterLabel,
+                    hintText: l10n.listDetailFilterHint,
                     isDense: true,
                   ),
                   onChanged: (value) => setState(() => _searchQuery = value),
@@ -1427,6 +1444,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   /// Quiet landing for a fully checked-off list: acknowledgment plus the two
   /// actions that actually come next mid-errand.
   Widget _buildAllDonePanel() {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     return Padding(
@@ -1437,14 +1455,14 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           const SizedBox(width: MitlistSpacing.sm),
           Expanded(
             child: Text(
-              'All checked off',
+              l10n.listDetailAllCheckedOff,
               style: textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
           ),
           AppButton(
-            text: 'Clear checked',
+            text: l10n.listDetailClearChecked,
             variant: AppButtonVariant.outline,
             color: AppButtonColor.neutral,
             onPressed: () => _clearItems(onlyChecked: true),
@@ -1455,6 +1473,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Widget _buildDoneHeader(int doneCount, TextTheme textTheme) {
+    final l10n = AppLocalizations.of(context)!;
     final headerStyle = textTheme.titleSmall?.copyWith(
           fontWeight: FontWeight.w700,
         ) ??
@@ -1473,7 +1492,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           ),
           child: Row(
             children: [
-              Text('Checked off', style: headerStyle),
+              Text(l10n.listDetailCheckedOff, style: headerStyle),
               const SizedBox(width: MitlistSpacing.sm),
               MitlistOdometer(value: doneCount, textStyle: headerStyle),
               const Spacer(),
@@ -1604,6 +1623,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Widget _buildError() {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(MitlistSpacing.md),
@@ -1616,13 +1636,13 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 AppButton(
-                  text: 'Retry',
+                  text: l10n.commonRetry,
                   variant: AppButtonVariant.outline,
                   onPressed: _load,
                 ),
                 const SizedBox(width: MitlistSpacing.md),
                 AppButton(
-                  text: 'Dismiss',
+                  text: l10n.commonDismiss,
                   variant: AppButtonVariant.ghost,
                   onPressed: () => setState(() => _errorMessage = null),
                 ),
@@ -1635,24 +1655,25 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Widget _buildEmpty() {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(MitlistSpacing.md),
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/checklist.lottie',
           icon: AppIcon(name: 'queueList'),
-          title: 'Nothing here yet',
+          title: l10n.listDetailNothingHere,
           description:
-              'Photograph a handwritten list, fridge note, or screenshot. We\u2019ll pull out the items.',
+              l10n.listDetailNothingHereDesc,
           actions: [
             AppButton(
-              text: 'Scan this list',
+              text: l10n.listDetailScanThisList,
               size: AppButtonSize.xl,
               icon: const AppIcon(name: 'camera'),
               onPressed: () => _launchScan(source: ImageSource.camera),
             ),
             AppButton(
-              text: 'Type an item',
+              text: l10n.listDetailTypeItem,
               variant: AppButtonVariant.outline,
               onPressed: () => _composerFocusNode.requestFocus(),
             ),
@@ -1663,6 +1684,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Widget _buildSearchEmpty() {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -1679,7 +1701,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
             ),
             const SizedBox(height: MitlistSpacing.sm),
             Text(
-              'No items match your filter',
+              l10n.listDetailNoMatch,
               textAlign: TextAlign.center,
               style: textTheme.bodyLarge?.copyWith(
                 color: colorScheme.onSurfaceVariant,
@@ -1687,7 +1709,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
             ),
             const SizedBox(height: MitlistSpacing.md),
             AppButton(
-              text: 'Clear search',
+              text: l10n.commonClearSearch,
               variant: AppButtonVariant.outline,
               onPressed: () {
                 setState(() {

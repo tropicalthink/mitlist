@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/recipe_models.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/meal_plan_provider.dart';
@@ -209,6 +210,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   }
 
   Future<void> _loadKitchen() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _viewState = _ViewState.loading;
       _errorMessage = null;
@@ -237,7 +239,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       } catch (_) {
         if (!mounted) return;
         setState(() {
-          _errorMessage = 'Failed to load kitchen';
+          _errorMessage = l10n.recipeFailedLoad;
           _viewState = _ViewState.error;
         });
       }
@@ -256,7 +258,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to load kitchen';
+        _errorMessage = l10n.recipeFailedLoad;
         _viewState = _ViewState.error;
       });
     }
@@ -287,6 +289,8 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       return;
     }
 
+    final l10n = AppLocalizations.of(context)!;
+
     setState(() {
       _isLoadingMore = true;
       _loadMoreErrorMessage = null;
@@ -307,7 +311,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _loadMoreErrorMessage = 'Failed to load more recipes';
+        _loadMoreErrorMessage = l10n.recipeFailedMore;
         _isLoadingMore = false;
       });
     }
@@ -333,6 +337,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     ref.listen(shellVisitedTabsProvider, (previous, next) {
       _activateTabIfNeeded();
     });
@@ -342,7 +347,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
         leading: _showSearch
             ? IconButton(
                 icon: const AppIcon(name: 'arrowLeft'),
-                tooltip: 'Back',
+                tooltip: l10n.commonBack,
                 onPressed: _clearSearch,
               )
             : null,
@@ -350,15 +355,15 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
             ? TextField(
                 controller: _searchController,
                 autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: 'Search kitchen',
-                  hintText: 'Recipe, tag, ingredient',
+                decoration: InputDecoration(
+                  labelText: l10n.recipeSearchLabel,
+                  hintText: l10n.recipeSearchHint,
                   border: InputBorder.none,
                 ),
                 onChanged: _onSearchChanged,
               )
-            : const Text(
-                'Kitchen',
+            : Text(
+                l10n.recipeAppBarTitle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -366,7 +371,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
           if (!_showSearch) ...[
             IconButton(
               icon: const AppIcon(name: 'calendarDays'),
-              tooltip: 'Meal plan',
+              tooltip: l10n.recipeMealPlanTooltip,
               onPressed: () async {
                 final router = GoRouter.of(context);
                 final groupId = await _resolveGroupId();
@@ -378,12 +383,12 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
             ),
             IconButton(
               icon: const AppIcon(name: 'magnifyingGlass'),
-              tooltip: 'Search',
+              tooltip: l10n.recipeSearchTooltip,
               onPressed: () => setState(() => _showSearch = true),
             ),
             PopupMenuButton<_RecipeMenuAction>(
               icon: const AppIcon(name: 'ellipsisVertical'),
-              tooltip: 'Options',
+              tooltip: l10n.commonOptions,
               onSelected: (action) {
                 setState(() {
                   switch (action) {
@@ -403,31 +408,31 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                 PopupMenuItem(
                   enabled: false,
                   child: Text(
-                    'Sort recipes',
+                    l10n.recipeSortLabel,
                     style: Theme.of(context).textTheme.labelMedium,
                   ),
                 ),
                 CheckedPopupMenuItem(
                   value: _RecipeMenuAction.sortNewest,
                   checked: _sort == _SortOption.newest,
-                  child: const Text('Newest'),
+                  child: Text(l10n.recipeSortNewest),
                 ),
                 CheckedPopupMenuItem(
                   value: _RecipeMenuAction.sortOldest,
                   checked: _sort == _SortOption.oldest,
-                  child: const Text('Oldest'),
+                  child: Text(l10n.recipeSortOldest),
                 ),
                 CheckedPopupMenuItem(
                   value: _RecipeMenuAction.sortAz,
                   checked: _sort == _SortOption.az,
-                  child: const Text('A-Z'),
+                  child: Text(l10n.recipeSortAZ),
                 ),
               ],
             ),
           ] else ...[
             IconButton(
               icon: const AppIcon(name: 'xMark'),
-              tooltip: 'Clear search',
+              tooltip: l10n.commonClearSearch,
               onPressed: _clearSearch,
             ),
           ],
@@ -437,24 +442,25 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       floatingActionButton: AppButton(
         size: AppButtonSize.lg,
         icon: const AppIcon(name: 'plus'),
-        text: 'Add recipe',
+        text: l10n.recipeAddRecipe,
         onPressed: _onAddRecipe,
-        tooltip: 'Add recipe',
+        tooltip: l10n.recipeAddRecipe,
       ),
     );
   }
 
   Widget _buildBody() {
+    final l10n = AppLocalizations.of(context)!;
     if (!_hasHousehold) {
       return Center(
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/House.lottie',
           icon: AppIcon(name: 'home', size: 56),
-          title: 'No household yet',
-          description: 'Create or join a household before adding recipes.',
+          title: l10n.commonNoHousehold,
+          description: l10n.commonCreateJoinHousehold,
           actions: [
             AppButton(
-              text: 'Go to households',
+              text: l10n.commonGoToHouseholds,
               onPressed: () => context.goNamed('groupsList'),
             ),
           ],
@@ -482,16 +488,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
           visibleCount: visible.length,
           sharedCount: _recipes.where((r) => r.isPublic).length,
           collectionCount: _collections.length,
-          onMealPlan: () async {
-            final router = GoRouter.of(context);
-            final groupId = await _resolveGroupId();
-            if (!mounted) return;
-            if (groupId != null) {
-              unawaited(router.pushNamed('mealPlan'));
-            }
-          },
         ),
-        _buildMealPlanSummary(),
         _buildChipBar(),
         if (_loadMoreErrorMessage != null)
           Padding(
@@ -519,77 +516,21 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     );
   }
 
-  Widget _buildMealPlanSummary() {
-    final groups = ref.watch(cachedGroupsProvider).valueOrNull;
-    if (groups == null) return const SizedBox.shrink();
-
-    final groupId = resolveActiveGroupId(
-      groups,
-      ref.watch(currentGroupIdProvider),
-    );
-    if (!isValidGroupId(groupId)) return const SizedBox.shrink();
-
-    final async = ref.watch(weekMealPlansSummaryProvider(groupId!));
-    return async.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (plans) {
-        if (plans.isEmpty) return const SizedBox.shrink();
-        final colorScheme = Theme.of(context).colorScheme;
-        final label = plans.length == 1
-            ? '1 meal planned this week'
-            : '${plans.length} meals planned this week';
-        return InkWell(
-          onTap: () {
-            if (context.mounted) unawaited(context.pushNamed('mealPlan'));
-          },
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              MitlistSpacing.md,
-              MitlistSpacing.sm,
-              MitlistSpacing.md,
-              0,
-            ),
-            child: Row(
-              children: [
-                AppIcon(
-                  name: 'calendarDays',
-                  size: 14,
-                  color: colorScheme.primary,
-                ),
-                const SizedBox(width: MitlistSpacing.xs),
-                Text(
-                  label,
-                  style: MitlistTypography.labelXSmall(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(width: MitlistSpacing.xs),
-                AppIcon(
-                  name: 'chevronRight',
-                  size: 12,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildChipBar() {
-    const filters = <_FilterOption, String>{
-      _FilterOption.all: 'All',
-      _FilterOption.public: 'Shared',
-      _FilterOption.private: 'Private',
+    final l10n = AppLocalizations.of(context)!;
+    final filters = <_FilterOption, String Function()>{
+      _FilterOption.all: () => l10n.recipeFilterAll,
+      _FilterOption.public: () => l10n.recipeFilterShared,
+      _FilterOption.private: () => l10n.recipeFilterPrivate,
     };
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(
-        horizontal: MitlistSpacing.md,
-        vertical: MitlistSpacing.sm,
+      padding: const EdgeInsets.fromLTRB(
+        MitlistSpacing.md,
+        0,
+        MitlistSpacing.md,
+        MitlistSpacing.sm,
       ),
       child: Row(
         children: filters.entries.map((entry) {
@@ -597,7 +538,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
           return Padding(
             padding: const EdgeInsets.only(right: MitlistSpacing.sm),
             child: AppChip(
-              label: entry.value,
+              label: entry.value(),
               selected: _filter == option,
               onSelected: (_) => setState(() => _filter = option),
             ),
@@ -608,6 +549,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   }
 
   Widget _buildErrorState() {
+    final l10n = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       child: Padding(
@@ -616,11 +558,11 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
           children: <Widget>[
             AppAlert(
               type: AppAlertType.error,
-              message: _errorMessage ?? 'Something went wrong.',
+              message: _errorMessage ?? l10n.commonSomethingWentWrong,
             ),
             const SizedBox(height: MitlistSpacing.md),
             AppButton(
-              text: 'Retry',
+              text: l10n.commonRetry,
               onPressed: _loadKitchen,
             ),
           ],
@@ -630,6 +572,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   }
 
   Widget _buildEmptyState() {
+    final l10n = AppLocalizations.of(context)!;
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         return SingleChildScrollView(
@@ -642,12 +585,11 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                 child: AppEmptyState(
                   lottieAsset: 'assets/animations/lottie/Recipes.lottie',
                   icon: const AppIcon(name: 'restaurantMenu', size: 56),
-                  title: 'Build your kitchen',
-                  description:
-                      'Import recipes, group cookbooks, plan meals, and turn the week into a shopping list.',
+                  title: l10n.recipeBuildKitchen,
+                  description: l10n.recipeBuildKitchenDesc,
                   actions: <Widget>[
                     AppButton(
-                      text: 'Add recipe',
+                      text: l10n.recipeAddRecipe,
                       icon: const AppIcon(name: 'plus'),
                       onPressed: _onAddRecipe,
                     ),
@@ -700,41 +642,67 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   }
 }
 
-class _KitchenHeader extends StatelessWidget {
+class _KitchenHeader extends ConsumerWidget {
   final int recipeCount;
   final int visibleCount;
   final int sharedCount;
   final int collectionCount;
-  final Future<void> Function() onMealPlan;
 
   const _KitchenHeader({
     required this.recipeCount,
     required this.visibleCount,
     required this.sharedCount,
     required this.collectionCount,
-    required this.onMealPlan,
   });
 
+  Future<void> _openMealPlan(BuildContext context, WidgetRef ref) async {
+    unawaited(Haptics.light());
+    final groups = ref.read(cachedGroupsProvider).valueOrNull;
+    if (groups == null) return;
+    final groupId = resolveActiveGroupId(
+      groups,
+      ref.read(currentGroupIdProvider),
+    );
+    if (!context.mounted || !isValidGroupId(groupId)) return;
+    await context.pushNamed('mealPlan');
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final privateCount = recipeCount - sharedCount;
 
     final countLabel = visibleCount == recipeCount
-        ? '$recipeCount recipes'
-        : '$visibleCount of $recipeCount recipes';
+        ? l10n.recipeCountLabelAll(recipeCount)
+        : l10n.recipeCountLabel(visibleCount, recipeCount);
 
-    final detailLabel = '$sharedCount shared · $privateCount private'
-        '${collectionCount > 0 ? ' · $collectionCount cookbooks' : ''}';
+    final groups = ref.watch(cachedGroupsProvider).valueOrNull;
+    final groupId = groups == null
+        ? null
+        : resolveActiveGroupId(groups, ref.watch(currentGroupIdProvider));
+    final mealPlansAsync = isValidGroupId(groupId)
+        ? ref.watch(weekMealPlansSummaryProvider(groupId!))
+        : null;
+    final mealPlanCount = mealPlansAsync?.whenOrNull(
+      data: (plans) => plans.isEmpty ? null : plans.length,
+    );
+
+    final detailLabel = l10n.recipeSharedPrivate(sharedCount, privateCount) +
+        (collectionCount > 0 ? l10n.recipeCookbooksLabel(collectionCount) : '') +
+        (mealPlanCount != null
+            ? ' · ${l10n.recipeMealsPlanned(mealPlanCount)}'
+            : '');
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         MitlistSpacing.md,
         MitlistSpacing.md,
         MitlistSpacing.md,
-        0,
+        MitlistSpacing.sm,
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: Column(
@@ -751,7 +719,7 @@ class _KitchenHeader extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
@@ -759,11 +727,12 @@ class _KitchenHeader extends StatelessWidget {
           ),
           const SizedBox(width: MitlistSpacing.sm),
           AppButton(
-            text: 'Plan',
+            text: l10n.recipePlanButton,
             size: AppButtonSize.sm,
             variant: AppButtonVariant.outline,
             icon: const AppIcon(name: 'calendarDays', size: 16),
-            onPressed: onMealPlan,
+            tooltip: l10n.recipeMealPlanTooltip,
+            onPressed: () => _openMealPlan(context, ref),
           ),
         ],
       ),
@@ -830,6 +799,7 @@ class _RecipeCard extends StatelessWidget {
   });
 
   Widget _thumbnail(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final hasImage = recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty;
 
@@ -847,7 +817,7 @@ class _RecipeCard extends StatelessWidget {
     }
 
     return Semantics(
-      label: 'Image of ${recipe.title}',
+      label: l10n.recipeImageSemantics(recipe.title),
       child: Image.network(
         recipe.imageUrl!,
         width: MitlistSpacing.space20,
@@ -873,23 +843,24 @@ class _RecipeCard extends StatelessWidget {
     );
   }
 
-  String _metaLine() {
+  String _metaLine(AppLocalizations l10n) {
     final parts = <String>[];
     if (recipe.totalMinutes > 0) {
-      parts.add('${recipe.totalMinutes} min');
+      parts.add(l10n.recipeMinLabel(recipe.totalMinutes));
     }
     if (recipe.servings > 0) {
-      parts.add('Serves ${recipe.servings}');
+      parts.add(l10n.recipeServesLabel(recipe.servings));
     }
-    if (recipe.ratingValue > 0) {
-      parts.add(
-          '${recipe.ratingValue.toStringAsFixed(1)} ${recipe.ratingCount > 0 ? '(${recipe.ratingCount})' : ''}');
+    if (recipe.ratingValue > 0 && recipe.ratingCount > 0) {
+      parts.add(l10n.recipeRatingLabel(
+          recipe.ratingValue.toStringAsFixed(1), recipe.ratingCount));
     }
     return parts.join(' | ');
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final tags = recipe.tags;
 
@@ -897,7 +868,7 @@ class _RecipeCard extends StatelessWidget {
       interactive: true,
       animated: true,
       onTap: onTap,
-      semanticLabel: 'Open recipe ${recipe.title}',
+      semanticLabel: l10n.recipeOpenRecipe(recipe.title),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -916,7 +887,7 @@ class _RecipeCard extends StatelessWidget {
                 ),
                 const SizedBox(height: MitlistSpacing.space6),
                 Text(
-                  _metaLine(),
+                  _metaLine(l10n),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -931,7 +902,7 @@ class _RecipeCard extends StatelessWidget {
             ),
           ),
           IconButton(
-            tooltip: 'Add to list',
+            tooltip: l10n.recipeAddToList,
             icon: const AppIcon(name: 'shoppingCart'),
             onPressed: onAddToList,
           ),
@@ -1018,6 +989,7 @@ class _LoadMoreErrorTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1028,7 +1000,7 @@ class _LoadMoreErrorTile extends StatelessWidget {
         ),
         const SizedBox(height: MitlistSpacing.sm),
         AppButton(
-          text: 'Retry',
+          text: l10n.commonRetry,
           onPressed: onRetry,
         ),
       ],

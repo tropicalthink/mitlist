@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../theme/spacing.dart';
 import '../theme/theme.dart';
 import '../theme/typography.dart';
@@ -15,6 +16,7 @@ class AppFilterPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
@@ -38,7 +40,7 @@ class AppFilterPill extends StatelessWidget {
           const SizedBox(width: MitlistSpacing.space1),
           Semantics(
             button: true,
-            label: 'Remove $label filter',
+            label: l10n.filterRemoveLabel(label),
             child: GestureDetector(
               onTap: onRemove,
               behavior: HitTestBehavior.opaque,

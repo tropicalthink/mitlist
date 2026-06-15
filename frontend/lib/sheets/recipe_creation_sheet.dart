@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../models/recipe_models.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/recipe_provider.dart';
 import '../providers/scan_provider.dart';
 import '../theme/spacing.dart';
@@ -35,9 +36,10 @@ class RecipeCreationSheet extends ConsumerStatefulWidget {
     String? initialIngredients,
     String? initialSteps,
   }) async {
+    final l10n = AppLocalizations.of(context)!;
     return showAppBottomSheet<bool>(
       context: context,
-      title: 'New recipe',
+      title: l10n.recipeCreationTitle,
       body: RecipeCreationSheet(
         initialTitle: initialTitle,
         initialIngredients: initialIngredients,
@@ -109,12 +111,13 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
       if (!mounted) return;
       setState(() => _isScanning = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e))),
+        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
 
   Future<void> _onCreate() async {
+    final l10n = AppLocalizations.of(context)!;
     if (!_canCreate) return;
 
     setState(() => _isSaving = true);
@@ -132,14 +135,14 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
       if (!mounted) return;
       Navigator.of(context).pop(true);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Recipe created')),
+        SnackBar(content: Text(l10n.recipeCreationCreated)),
       );
       unawaited(Haptics.success());
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e))),
+        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -178,13 +181,14 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppButton(
-            text: _isScanning ? 'Scanning...' : 'Scan recipe',
+            text: _isScanning ? l10n.recipeCreationScanning : l10n.recipeCreationScanRecipe,
             icon: AppIcon(
               name: _isScanning ? 'hourglassEmpty' : 'documentScanner',
               size: 20,
@@ -192,12 +196,12 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
             variant: AppButtonVariant.outline,
             color: AppButtonColor.neutral,
             onPressed: _isScanning ? null : _onScan,
-            semanticLabel: 'Scan recipe via camera',
+            semanticLabel: l10n.recipeCreationScanRecipeViaCamera,
           ),
           const SizedBox(height: MitlistSpacing.md),
           AppInput(
-            label: 'Recipe title',
-            hint: 'Sunday pancakes',
+            label: l10n.recipeCreationTitleInput,
+            hint: l10n.recipeCreationTitleHint,
             controller: _titleController,
             textInputAction: TextInputAction.next,
             maxLength: 150,
@@ -205,16 +209,16 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
           ),
           const SizedBox(height: MitlistSpacing.md),
           AppInput(
-            label: 'Ingredients',
-            hint: '2 cups flour\n1 cup milk\n3 eggs',
+            label: l10n.recipeCreationIngredients,
+            hint: l10n.recipeCreationIngredientHint,
             controller: _ingredientsController,
             minLines: 3,
             maxLines: 6,
           ),
           const SizedBox(height: MitlistSpacing.md),
           AppInput(
-            label: 'Steps',
-            hint: 'Mix batter\nCook until golden',
+            label: l10n.recipeCreationSteps,
+            hint: l10n.recipeCreationStepHint,
             controller: _stepsController,
             minLines: 2,
             maxLines: 4,
@@ -226,7 +230,7 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
               variant: AppButtonVariant.solid,
               color: AppButtonColor.primary,
               size: AppButtonSize.lg,
-              text: _isSaving ? 'Creating...' : 'Create recipe',
+              text: _isSaving ? l10n.recipeCreationCreating : l10n.recipeCreationCreateRecipe,
               isLoading: _isSaving,
               onPressed: _canCreate ? _onCreate : null,
             ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/activity_models.dart';
 import '../../theme/spacing.dart';
 import '../../utils/hub_helpers.dart';
@@ -20,6 +21,7 @@ class ActivityWall extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -30,7 +32,7 @@ class ActivityWall extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                'Activity',
+                l10n.hubActivityTitle,
                 style: textTheme.titleMedium,
               ),
             ),
@@ -40,12 +42,11 @@ class ActivityWall extends StatelessWidget {
         if (activityError)
           AppAlert(
             type: AppAlertType.error,
-            message:
-                'Couldn\u2019t load activity. Pull to refresh on the hub.',
+            message: l10n.hubActivityError,
           )
         else if (activities.isEmpty)
           Text(
-            'No activity yet. Complete a chore or add to a list to get things moving.',
+            l10n.hubActivityEmpty,
             style: textTheme.bodySmall
                 ?.copyWith(color: colorScheme.onSurfaceVariant),
           )
@@ -97,11 +98,12 @@ class _WallItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
-    final userLabel = formatUserLabel(item.userId ?? '', currentUserId);
+    final userLabel = formatUserLabel(item.userId ?? '', currentUserId, l10n);
     final when = relativeDay(item.createdAt);
-    final message = formatActivityLine(item);
+    final message = formatActivityLine(item, l10n);
     final tappable = isNavigableAction(item.entityType);
 
     return InkWell(

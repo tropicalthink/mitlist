@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../theme/shadows.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
@@ -13,6 +14,8 @@ void showUndoToast(
   required VoidCallback onUndo,
 }) {
   final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+  final l10n = AppLocalizations.of(context)!;
 
   final snackBar = SnackBar(
     backgroundColor: Colors.transparent,
@@ -60,7 +63,7 @@ void showUndoToast(
                 color: Theme.of(context).colorScheme.primary,
               ),
             ),
-            child: const Text('UNDO'),
+            child: Text(l10n.commonUndo),
           ),
         ],
       ),

@@ -6,6 +6,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../services/scan/capture_boundary_service.dart';
 import '../../services/scan/capture_preprocessor_service.dart';
 import '../../services/scan/capture_quality_service.dart';
@@ -90,7 +91,7 @@ class _LiveSmartCaptureScreenState extends State<LiveSmartCaptureScreen>
       if (!mounted) return;
       if (cameras.isEmpty) {
         setState(() {
-          _error = 'No camera available.';
+          _error = AppLocalizations.of(context)!.liveSmartCaptureNoCamera;
           _initializing = false;
         });
         return;
@@ -119,7 +120,7 @@ class _LiveSmartCaptureScreenState extends State<LiveSmartCaptureScreen>
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _error = 'Couldn\u2019t open the camera.';
+        _error = AppLocalizations.of(context)!.liveSmartCaptureCouldNotOpen;
         _initializing = false;
       });
     }
@@ -132,10 +133,10 @@ class _LiveSmartCaptureScreenState extends State<LiveSmartCaptureScreen>
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _quality ??= const CaptureQualityResult(
+        _quality ??= CaptureQualityResult(
           level: CaptureQualityLevel.okay,
           score: 0.5,
-          hint: 'Frame the list',
+          hint: AppLocalizations.of(context)!.liveSmartCaptureFrameList,
           sharpness: 0,
           brightness: 0.5,
           contrast: 0,
@@ -197,7 +198,7 @@ class _LiveSmartCaptureScreenState extends State<LiveSmartCaptureScreen>
       await _startQualityStream(controller);
     } catch (_) {
       if (mounted) {
-        setState(() => _error = 'Couldn\u2019t capture that photo.');
+        setState(() => _error = AppLocalizations.of(context)!.liveSmartCaptureCouldNotCapture);
       }
     } finally {
       if (mounted) setState(() => _capturing = false);
@@ -238,6 +239,7 @@ class _LiveSmartCaptureScreenState extends State<LiveSmartCaptureScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final controller = _controller;
     final ready = controller != null && controller.value.isInitialized;
     final quality = _quality;
@@ -262,14 +264,14 @@ class _LiveSmartCaptureScreenState extends State<LiveSmartCaptureScreen>
               Center(
                 child: _initializing
                     ? const AppSpinner(size: AppSpinnerSize.lg)
-                    : Text(_error ?? 'Camera unavailable'),
+                    : Text(_error ?? l10n.liveSmartCaptureCameraUnavailable),
               ),
             Positioned(
               left: MitlistSpacing.md,
               top: MitlistSpacing.md,
               child: IconButton(
                 icon: const AppIcon(name: 'arrowLeft'),
-                tooltip: 'Back',
+                tooltip: l10n.commonBack,
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
@@ -290,7 +292,7 @@ class _LiveSmartCaptureScreenState extends State<LiveSmartCaptureScreen>
                     children: [
                       Expanded(
                         child: AppButton(
-                          text: 'Gallery',
+                          text: l10n.liveSmartCaptureGallery,
                           variant: AppButtonVariant.outline,
                           color: AppButtonColor.neutral,
                           onPressed: _capturing ? null : _pickGallery,
@@ -301,7 +303,7 @@ class _LiveSmartCaptureScreenState extends State<LiveSmartCaptureScreen>
                         width: 92,
                         height: 64,
                         child: AppButton(
-                          text: _capturing ? '' : 'Scan',
+                          text: _capturing ? '' : l10n.liveSmartCaptureScan,
                           isLoading: _capturing,
                           variant: quality?.level == CaptureQualityLevel.good
                               ? AppButtonVariant.solid
@@ -312,7 +314,7 @@ class _LiveSmartCaptureScreenState extends State<LiveSmartCaptureScreen>
                       const SizedBox(width: MitlistSpacing.md),
                       Expanded(
                         child: AppButton(
-                          text: 'Use anyway',
+                          text: l10n.smartCaptureUseAnyway,
                           variant: AppButtonVariant.ghost,
                           onPressed: ready && !_capturing ? _capture : null,
                         ),
@@ -363,13 +365,14 @@ class _LiveHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final q = quality;
     final b = boundary;
     final text = error ??
         (b?.level == CaptureBoundaryLevel.found ? q?.hint : b?.hint) ??
         q?.hint ??
-        'Frame the list';
+        l10n.liveSmartCaptureFrameList;
     final isReady = q?.level == CaptureQualityLevel.good &&
         b?.level == CaptureBoundaryLevel.found;
 

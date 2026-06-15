@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/auth_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/shadows.dart';
@@ -33,6 +34,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   String? _nameError;
   String? _emailError;
   String? _passwordError;
+
+  AppLocalizations get l10n => AppLocalizations.of(context)!;
 
   @override
   void initState() {
@@ -68,10 +71,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
     if (name.isEmpty || email.isEmpty || password.isEmpty) {
       setState(() {
-        _errorMessage = 'Please fill in all fields.';
-        if (name.isEmpty) _nameError = 'Name is required.';
-        if (email.isEmpty) _emailError = 'Email is required.';
-        if (password.isEmpty) _passwordError = 'Password is required.';
+        _errorMessage = l10n.authSignupFillAllFields;
+        if (name.isEmpty) _nameError = l10n.authSignupNameRequired;
+        if (email.isEmpty) _emailError = l10n.authSignupEmailRequired;
+        if (password.isEmpty) _passwordError = l10n.authSignupPasswordRequired;
       });
       return;
     }
@@ -113,7 +116,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       return;
     } catch (e) {
       setState(() {
-        _errorMessage = 'Couldn\u2019t create account. Check your connection and try again.';
+        _errorMessage = l10n.authSignupGenericError;
       });
     } finally {
       if (mounted && !_isSuccess) setState(() => _isLoading = false);
@@ -143,6 +146,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
@@ -176,8 +181,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         AppInput(
-                          label: 'Name',
-                          hint: 'Your name',
+                          label: l10n.commonName,
+                          hint: l10n.authSignupNameHint,
                           controller: _nameController,
                           focusNode: _nameFocus,
                           textInputAction: TextInputAction.next,
@@ -187,8 +192,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                         ),
                         const SizedBox(height: MitlistSpacing.space3),
                         AppInput(
-                          label: 'Email',
-                          hint: 'you@example.com',
+                          label: l10n.authSignupEmail,
+                          hint: l10n.authSignupEmailHint,
                           controller: _emailController,
                           focusNode: _emailFocus,
                           keyboardType: TextInputType.emailAddress,
@@ -199,7 +204,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                         ),
                         const SizedBox(height: MitlistSpacing.space3),
                         AppInput(
-                          label: 'Password',
+                          label: l10n.authSignupPassword,
                           hint: '••••••••',
                           controller: _passwordController,
                           focusNode: _passwordFocus,
@@ -224,7 +229,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                         SizedBox(
                           width: double.infinity,
                           child: AppButton(
-                            text: 'Create account',
+                            text: l10n.authSignupCreateAccount,
                             variant: AppButtonVariant.solid,
                             color: AppButtonColor.primary,
                             size: AppButtonSize.lg,
@@ -238,14 +243,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                           alignment: WrapAlignment.center,
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            Text(
-                              'Already have an account?',
+                             Text(
+                              l10n.authSignupHaveAccount,
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                             AppButton(
                               variant: AppButtonVariant.ghost,
                               color: AppButtonColor.primary,
-                              text: 'Sign in',
+                              text: l10n.authSignupSignInLink,
                               onPressed: () => context.goNamed('login'),
                             ),
                           ],
@@ -256,7 +261,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             Text(
-                              'By creating an account, you agree to our ',
+                              l10n.authSignupTermsPrefix,
                               style: Theme.of(context)
                                   .textTheme
                                   .bodySmall
@@ -267,18 +272,18 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                             AppButton(
                               variant: AppButtonVariant.ghost,
                               color: AppButtonColor.neutral,
-                              text: 'Terms of Service',
+                              text: l10n.accountTermsTitle,
                               onPressed: () => _showLegalSheet(
-                                title: 'Terms of Service',
-                                paragraphs: const [
-                                  'Use mitlist responsibly. Shared household content is visible to the members of that household.',
-                                  'Do not upload unlawful content, impersonate others, or abuse the service. Accounts and shared data may be removed for misuse.',
-                                  'The app is provided as-is while the product is still evolving. Keep your own backups for anything critical.',
+                                title: l10n.accountTermsTitle,
+                                paragraphs: [
+                                  l10n.authSignupTermsP1,
+                                  l10n.authSignupTermsP2,
+                                  l10n.authSignupTermsP3,
                                 ],
                               ),
                             ),
                             Text(
-                              ' and ',
+                              l10n.authSignupAnd,
                               style: Theme.of(context)
                                   .textTheme
                                   .bodySmall
@@ -289,18 +294,18 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                             AppButton(
                               variant: AppButtonVariant.ghost,
                               color: AppButtonColor.neutral,
-                              text: 'Privacy Policy',
+                              text: l10n.authSignupPrivacyPolicy,
                               onPressed: () => _showLegalSheet(
-                                title: 'Privacy Policy',
-                                paragraphs: const [
-                                  'mitlist stores the account details and household content needed to operate the app.',
-                                  'Shared data such as lists, chores, expenses, and recipes is visible to other members of the same household.',
-                                  'Only provide information you are comfortable keeping in a shared household workspace.',
+                                title: l10n.authSignupPrivacyPolicy,
+                                paragraphs: [
+                                  l10n.authSignupPrivacyP1,
+                                  l10n.authSignupPrivacyP2,
+                                  l10n.authSignupPrivacyP3,
                                 ],
                               ),
                             ),
                             Text(
-                              '.',
+                              l10n.authSignupPeriod,
                               style: Theme.of(context)
                                   .textTheme
                                   .bodySmall

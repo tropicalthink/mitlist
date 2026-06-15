@@ -12,6 +12,7 @@ type Group struct {
 	Name        string    `json:"name"`
 	Description *string   `json:"description,omitempty"`
 	Currency    string    `json:"currency"`
+	ChoreZones  []string  `json:"chore_zones"`
 	CreatedBy   uuid.UUID `json:"created_by"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../providers/group_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../sheets/create_household_sheet.dart';
@@ -143,6 +144,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final bodyMedium = Theme.of(context).textTheme.bodyMedium;
 
@@ -151,7 +153,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       padding: AppCardPadding.lg,
       interactive: true,
       onTap: _onCreateHousehold,
-      semanticLabel: 'Create a household',
+      semanticLabel: l10n.authOnboardingCreateHousehold,
       child: Row(
         children: [
           Expanded(
@@ -159,12 +161,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Create a household',
+                  l10n.authOnboardingCreateHousehold,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: MitlistSpacing.xs),
                 Text(
-                  'Start fresh: name it, invite flatmates, share everything in one place.',
+                  l10n.authOnboardingCreateDesc,
                   style: bodyMedium?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
@@ -186,7 +188,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       padding: AppCardPadding.lg,
       interactive: true,
       onTap: _onJoinHousehold,
-      semanticLabel: 'Join a household with invite code',
+      semanticLabel: l10n.authOnboardingJoinSemantic,
       child: Row(
         children: [
           Expanded(
@@ -194,12 +196,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Join with invite code',
+                  l10n.authOnboardingJoinInvite,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: MitlistSpacing.xs),
                 Text(
-                  'Already got an invite? Enter the code to jump right in.',
+                  l10n.authOnboardingJoinDesc,
                   style: bodyMedium?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
@@ -228,7 +230,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
               _buildAnimatedItem(
                 0,
                 Semantics(
-                  label: 'Household home icon',
+                  label: l10n.authOnboardingHomeIconSemantic,
                   child: Container(
                     width: 120,
                     height: 120,

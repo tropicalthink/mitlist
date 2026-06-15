@@ -13,6 +13,7 @@ import '../../widgets/skeleton.dart';
 import '../../models/group_models.dart';
 import '../../providers/group_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
+import '../../l10n/app_localizations.dart';
 import '../../sheets/create_household_sheet.dart';
 import '../../sheets/join_household_sheet.dart';
 
@@ -93,7 +94,7 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to load households';
+        _errorMessage = AppLocalizations.of(context)!.groupsFailedLoad;
         _isLoading = false;
       });
     }
@@ -118,7 +119,7 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to load more households';
+        _errorMessage = AppLocalizations.of(context)!.groupsFailedMore;
         _isLoadingMore = false;
       });
     }
@@ -149,12 +150,13 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: MitlistAppBar.titleText(
-        'My Households',
+        l10n.myHouseholdsTitle,
         actions: [
           IconButton(
-            tooltip: 'Settings',
+            tooltip: l10n.commonSettings,
             onPressed: () => context.goNamed('you'),
             icon: AppIcon(name: 'cog6Tooth'),
           ),
@@ -175,15 +177,15 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
             color: AppButtonColor.neutral,
             onPressed: _openJoinSheet,
             icon: const AppIcon(name: 'qrCode'),
-            tooltip: 'Join with code',
+            tooltip: l10n.groupsJoinWithCode,
           ),
           const SizedBox(height: MitlistSpacing.md),
           AppButton(
             size: _isExtended ? AppButtonSize.lg : AppButtonSize.md,
             onPressed: _openCreateSheet,
             icon: const AppIcon(name: 'plus'),
-            text: _isExtended ? 'Create' : null,
-            tooltip: 'Create household',
+            text: _isExtended ? l10n.commonCreate : null,
+            tooltip: l10n.groupsCreateHousehold,
           ),
         ],
       ),
@@ -227,6 +229,7 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
   Widget _buildError(VoidCallback onRetry) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final l10n = AppLocalizations.of(context)!;
         final availableHeight = constraints.maxHeight;
         final contentHeight = availableHeight - (MitlistSpacing.md * 2);
         return ListView(
@@ -239,13 +242,13 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const AppAlert(
+                  AppAlert(
                     type: AppAlertType.error,
-                    message: 'Failed to load households',
+                    message: _errorMessage!,
                   ),
                   const SizedBox(height: MitlistSpacing.md),
                   AppButton(
-                    text: 'Retry',
+                    text: l10n.commonRetry,
                     onPressed: onRetry,
                   ),
                 ],
@@ -260,6 +263,7 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
   Widget _buildEmpty() {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final l10n = AppLocalizations.of(context)!;
         return ListView(
           controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
@@ -275,11 +279,11 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
                     size: 56,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-                  title: 'No households yet',
-                  description: 'Create one to start organizing your home.',
+                  title: l10n.groupsEmptyTitle,
+                  description: l10n.groupsEmptyDesc,
                   actions: [
                     AppButton(
-                      text: 'Create household',
+                      text: l10n.groupsCreateHousehold,
                       onPressed: _openCreateSheet,
                     ),
                   ],
@@ -346,6 +350,7 @@ class _GroupCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isPersonal = group.isPersonal == true;
     final memberCount = group.memberCount;
     final content = Row(
@@ -368,7 +373,7 @@ class _GroupCard extends StatelessWidget {
               if (memberCount != null) ...[
                 const SizedBox(height: MitlistSpacing.xs),
                 Text(
-                  '$memberCount member${memberCount == 1 ? '' : 's'}',
+                  l10n.commonMember(memberCount),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall,
