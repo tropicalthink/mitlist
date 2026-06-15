@@ -65,16 +65,20 @@ class OutboxCoordinator {
   /// Drain all pending outbox operations once.
   ///
   /// Safe to call multiple times; internally guarded by [_isDraining].
-  Future<void> drain() async {
+  Future<void> drain({bool force = false}) async {
     if (_isDraining) return;
     // Set the flag BEFORE the first await so concurrent synchronous callers
     // are blocked even while isOnline() is still resolving.
     _isDraining = true;
     try {
-      final online = await _connectivity.isOnline();
-      if (!online) {
-        _logger.i('Offline; skipping outbox drain');
-        return;
+      // [force] is used by an explicit user "Retry" — attempt even if the
+      // reachability probe is being conservative; the user knows they're online.
+      if (!force) {
+        final online = await _connectivity.isOnline();
+        if (!online) {
+          _logger.i('Offline; skipping outbox drain');
+          return;
+        }
       }
       // Drain in dependency order: lists first (other entities may reference them)
       await _listRepo.drainOutboxOnce();
@@ -101,13 +105,13 @@ class OutboxCoordinator {
   /// otherwise the button is a no-op for the very failures it offers to retry.
   Future<void> retryFailed() async {
     await _db.resetFailedOutboxOps();
-    await drain();
+    await drain(force: true);
   }
 
   /// Re-arms a single dead-lettered op and drains.
   Future<void> retryOp(String opId) async {
     await _db.resetFailedOutboxOps(id: opId);
-    await drain();
+    await drain(force: true);
   }
 
   /// Discards a single failed op (the "give up on this change" path).
