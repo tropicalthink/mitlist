@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,6 +25,7 @@ import '../../sheets/create_list_sheet.dart';
 import '../../sheets/chore_creation_sheet.dart';
 import '../../widgets/empty_state.dart';
 import 'scan_review_screen.dart';
+import 'smart_capture_launcher.dart';
 
 class ScannerScreen extends ConsumerStatefulWidget {
   /// Pass the current household group id to enable grocery-pipeline mode.
@@ -44,8 +44,6 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   String? _error;
   ScanResult? _result;
 
-  final ImagePicker _picker = ImagePicker();
-
   @override
   void initState() {
     super.initState();
@@ -53,15 +51,15 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final picked = await _picker.pickImage(
+    final capture = await pickSmartCapture(
+      context,
       source: source,
-      maxWidth: 2048,
-      maxHeight: 2048,
+      title: 'Check scan',
     );
-    if (picked == null || !mounted) return;
+    if (capture == null || !mounted) return;
 
     setState(() {
-      _imageFile = File(picked.path);
+      _imageFile = File(capture.originalPath);
       _isAnalyzing = true;
       _error = null;
       _result = null;
@@ -69,8 +67,8 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
 
     try {
       final service = await ref.read(scanServiceProviderAsync.future);
-      final bytes = await _imageFile!.readAsBytes();
-      final result = await service.scanImage(bytes, 'image/jpeg');
+      final result =
+          await service.scanImage(capture.processedBytes, 'image/jpeg');
 
       if (!mounted) return;
       setState(() {
@@ -80,7 +78,8 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Couldn\u2019t analyze the image. Please try again with a clearer photo.';
+        _error =
+            'Couldn\u2019t analyze the image. Please try again with a clearer photo.';
         _isAnalyzing = false;
       });
     }
@@ -97,23 +96,22 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       return;
     }
 
-    final picked = await _picker.pickImage(
+    final capture = await pickSmartCapture(
+      context,
       source: source,
-      maxWidth: 2048,
-      maxHeight: 2048,
+      title: 'Check grocery list',
     );
-    if (picked == null || !mounted) return;
+    if (capture == null || !mounted) return;
 
     setState(() => _isAnalyzing = true);
 
     try {
-      final bytes = Uint8List.fromList(await File(picked.path).readAsBytes());
       final pipeline = await ref.read(scanPipelineProvider.future);
       final connectivity = ref.read(connectivityServiceProvider);
       final isOnline = await connectivity.isOnline();
 
       final result = await pipeline.run(
-        imageBytes: bytes,
+        imageBytes: capture.processedBytes,
         groupId: groupId,
         storeId: ref.read(selectedStoreIdProvider),
         isOnline: isOnline,
@@ -185,9 +183,8 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
 
   void _openRecipeCreation() async {
     final r = _result!;
-    final ingredients = r.items.isNotEmpty
-        ? r.items.map((i) => i.name).join('\n')
-        : null;
+    final ingredients =
+        r.items.isNotEmpty ? r.items.map((i) => i.name).join('\n') : null;
     final steps = r.steps.isNotEmpty ? r.steps.join('\n') : null;
     final created = await context.pushNamed<bool>(
       'recipeCreate',
@@ -204,9 +201,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
 
   void _openChoreCreation() async {
     final r = _result!;
-    final description = r.steps.isNotEmpty
-        ? r.steps.join('\n')
-        : null;
+    final description = r.steps.isNotEmpty ? r.steps.join('\n') : null;
     final created = await ChoreCreationSheet.show(
       context,
       initialTitle: r.title,
@@ -219,11 +214,23 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
 
   void _showSourcePicker({bool groceryMode = false}) {
     final onCamera = groceryMode
-        ? () { Navigator.of(context).pop(); _scanGroceryList(ImageSource.camera); }
-        : () { Navigator.of(context).pop(); _pickImage(ImageSource.camera); };
+        ? () {
+            Navigator.of(context).pop();
+            _scanGroceryList(ImageSource.camera);
+          }
+        : () {
+            Navigator.of(context).pop();
+            _pickImage(ImageSource.camera);
+          };
     final onGallery = groceryMode
-        ? () { Navigator.of(context).pop(); _scanGroceryList(ImageSource.gallery); }
-        : () { Navigator.of(context).pop(); _pickImage(ImageSource.gallery); };
+        ? () {
+            Navigator.of(context).pop();
+            _scanGroceryList(ImageSource.gallery);
+          }
+        : () {
+            Navigator.of(context).pop();
+            _pickImage(ImageSource.gallery);
+          };
 
     showAppBottomSheet<void>(
       context: context,
@@ -350,7 +357,8 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
           if (_isAnalyzing)
             Center(
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.lg),
+                padding:
+                    const EdgeInsets.symmetric(vertical: MitlistSpacing.lg),
                 child: Column(
                   children: [
                     CircularProgressIndicator(
@@ -364,26 +372,42 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
               ),
             )
           else if (_result == null) ...[
-            AppButton(
-              text: _imageFile != null ? 'Analyze this image' : 'Take a photo or choose one',
-              icon: _imageFile == null
-                  ? AppIcon(name: 'devicePhoneMobile',
-                      color: Theme.of(context).colorScheme.onPrimary)
-                  : AppIcon(name: 'magnifyingGlass',
-                      color: Theme.of(context).colorScheme.onPrimary),
-              onPressed: _imageFile != null
-                  ? () => _pickImage(ImageSource.gallery)
-                  : _showSourcePicker,
-            ),
-            if (widget.groupId != null) ...[
-              const SizedBox(height: MitlistSpacing.sm),
+            if (widget.groupId != null && _imageFile == null) ...[
               AppButton(
                 text: 'Scan grocery list',
-                variant: AppButtonVariant.outline,
-                icon: const AppIcon(name: 'shoppingCart'),
+                size: AppButtonSize.xl,
+                icon: AppIcon(
+                  name: 'camera',
+                  color: Theme.of(context).colorScheme.onPrimary,
+                ),
                 onPressed: () => _showSourcePicker(groceryMode: true),
               ),
-            ],
+              const SizedBox(height: MitlistSpacing.sm),
+              AppButton(
+                text: 'Scan receipt, recipe, or chore',
+                variant: AppButtonVariant.outline,
+                icon: const AppIcon(name: 'documentScanner'),
+                onPressed: _showSourcePicker,
+              ),
+            ] else
+              AppButton(
+                text: _imageFile != null
+                    ? 'Analyze this image'
+                    : 'Take a photo or choose one',
+                size: _imageFile == null ? AppButtonSize.xl : AppButtonSize.md,
+                icon: _imageFile == null
+                    ? AppIcon(
+                        name: 'devicePhoneMobile',
+                        color: Theme.of(context).colorScheme.onPrimary,
+                      )
+                    : AppIcon(
+                        name: 'magnifyingGlass',
+                        color: Theme.of(context).colorScheme.onPrimary,
+                      ),
+                onPressed: _imageFile != null
+                    ? () => _pickImage(ImageSource.gallery)
+                    : _showSourcePicker,
+              ),
           ],
 
           if (_imageFile != null && _result == null && !_isAnalyzing) ...[
@@ -468,16 +492,15 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
             ...r.items.take(8).map((item) {
               var label = item.name;
               if (item.quantity != null && item.quantity!.isNotEmpty) {
-                label = '${item.quantity}${item.unit != null ? ' ${item.unit}' : ''} $label';
+                label =
+                    '${item.quantity}${item.unit != null ? ' ${item.unit}' : ''} $label';
               }
               String? priceLabel;
               if (item.priceCents != null && item.priceCents! > 0) {
-                priceLabel =
-                    '\$${(item.priceCents! / 100).toStringAsFixed(2)}';
+                priceLabel = '\$${(item.priceCents! / 100).toStringAsFixed(2)}';
               }
               return Padding(
-                padding:
-                    const EdgeInsets.only(bottom: MitlistSpacing.xs),
+                padding: const EdgeInsets.only(bottom: MitlistSpacing.xs),
                 child: Row(
                   children: [
                     Expanded(
@@ -517,8 +540,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
             ),
             const SizedBox(height: MitlistSpacing.sm),
             ...r.steps.take(5).map((step) => Padding(
-                  padding: const EdgeInsets.only(
-                      bottom: MitlistSpacing.xs),
+                  padding: const EdgeInsets.only(bottom: MitlistSpacing.xs),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

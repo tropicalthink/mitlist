@@ -109,6 +109,7 @@ class ListRepository {
       checked: false,
       position: 0,
       priceCents: req.priceCents,
+      canonicalItemId: req.canonicalItemId,
       createdAt: now,
       updatedAt: now,
     );
@@ -126,8 +127,11 @@ class ListRepository {
         'unit': req.unit,
         'note': req.note,
         if (req.priceCents != null) 'priceCents': req.priceCents,
+        if (req.canonicalItemId != null) 'canonicalItemId': req.canonicalItemId,
       },
       idempotencyKey: 'createItem:$tempId',
+      entityType: 'listItem',
+      entityId: tempId,
     );
 
     // Best-effort immediate sync.
@@ -165,6 +169,15 @@ class ListRepository {
       _recordPurchaseSignal(listId, itemId, existingRow);
     }
 
+    // Optimistic-concurrency base: the server updated_at this edit was based
+    // on. Skip it when an edit is already queued for this item — that chain is
+    // all ours, so there's no foreign server base to guard against (and using
+    // the locally-bumped value would self-conflict).
+    final hasPendingEdit =
+        await _db.pendingOpCountForEntity('updateItem', itemId) > 0;
+    final expectedUpdatedAt =
+        hasPendingEdit ? null : existing.updatedAt.toUtc().toIso8601String();
+
     await _db.enqueueOutbox(
       id: _uuid.v4(),
       type: 'updateItem',
@@ -172,9 +185,12 @@ class ListRepository {
         'listId': listId,
         'itemId': itemId,
         'patch': req.toJson(),
+        if (expectedUpdatedAt != null) 'expectedUpdatedAt': expectedUpdatedAt,
       },
       idempotencyKey:
           'updateItem:$itemId:${patched.updatedAt.toIso8601String()}',
+      entityType: 'listItem',
+      entityId: itemId,
     );
 
     if (_autoSync) unawaited(drainOutboxOnce());
@@ -211,6 +227,7 @@ class ListRepository {
             checked: existing.checked,
             position: i,
             priceCents: existing.priceCents,
+            canonicalItemId: existing.canonicalItemId,
             claimedBy: existing.claimedBy,
             createdAt: existing.createdAt,
             updatedAt: DateTime.now(),
@@ -231,6 +248,8 @@ class ListRepository {
       },
       idempotencyKey:
           'reorderItems:$listId:${DateTime.now().toIso8601String()}',
+      entityType: 'list',
+      entityId: listId,
     );
 
     if (_autoSync) unawaited(drainOutboxOnce());
@@ -250,6 +269,8 @@ class ListRepository {
         'itemId': itemId,
       },
       idempotencyKey: 'deleteItem:$itemId',
+      entityType: 'listItem',
+      entityId: itemId,
     );
 
     if (_autoSync) unawaited(drainOutboxOnce());
@@ -296,6 +317,7 @@ class ListRepository {
         unit: payload['unit'] as String? ?? '',
         note: payload['note'] as String? ?? '',
         priceCents: payload['priceCents'] as int?,
+        canonicalItemId: payload['canonicalItemId'] as String?,
       ),
     );
 
@@ -331,6 +353,7 @@ class ListRepository {
         priceCents: patch['price_cents'] as int? ?? patch['priceCents'] as int?,
         checked: patch['checked'] as bool?,
         position: patch['position'] as int?,
+        expectedUpdatedAt: payload['expectedUpdatedAt'] as String?,
       ),
     );
 
@@ -365,6 +388,51 @@ class ListRepository {
     await _remote.reorderItems(listId, ReorderItemsRequest(itemIds: itemIds));
     await _db.deleteOutboxOp(opId);
     await _patchListPreviewFromLocalItems(listId);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Conflict resolution (edit conflicts: 409-with-server-state)
+  // ---------------------------------------------------------------------------
+
+  /// "Use theirs": overwrite the local row with the server's current state and
+  /// mark the conflict resolved.
+  Future<void> resolveConflictAcceptServer(Conflict conflict) async {
+    try {
+      final server = (jsonDecode(conflict.serverPayloadJson) as Map)
+          .cast<String, dynamic>();
+      final item = ListItem.fromJson(server);
+      await _db.upsertListItemsRows([_toListItemsRow(item)]);
+      await _patchListPreviewFromLocalItems(item.listId);
+    } catch (_) {
+      // If the server payload can't be parsed, still clear the conflict.
+    }
+    await _db.resolveConflict(conflict.id);
+  }
+
+  /// "Keep mine": re-apply the local edit on top of the server's version by
+  /// re-enqueueing the op with the server's current updated_at as the base, so
+  /// it no longer conflicts. Falls back gracefully for unknown op types.
+  Future<void> resolveConflictKeepLocal(Conflict conflict) async {
+    try {
+      if (conflict.entityType == 'updateItem') {
+        final local = (jsonDecode(conflict.localPayloadJson) as Map)
+            .cast<String, dynamic>();
+        final server = (jsonDecode(conflict.serverPayloadJson) as Map)
+            .cast<String, dynamic>();
+        local['expectedUpdatedAt'] = server['updated_at'];
+        await _db.enqueueOutbox(
+          id: _uuid.v4(),
+          type: 'updateItem',
+          payload: local,
+          entityType: 'listItem',
+          entityId: local['itemId'] as String?,
+        );
+      }
+    } catch (_) {
+      // Best-effort; the conflict is cleared regardless so it doesn't linger.
+    }
+    await _db.resolveConflict(conflict.id);
+    if (_autoSync) unawaited(drainOutboxOnce());
   }
 
   // ---------------------------------------------------------------------------
@@ -467,6 +535,7 @@ class ListRepository {
       checked: Value(item.checked),
       position: Value(item.position),
       priceCents: Value(item.priceCents),
+      canonicalItemId: Value(item.canonicalItemId),
       createdAt: Value(item.createdAt),
       updatedAt: Value(item.updatedAt),
     );
@@ -483,6 +552,7 @@ class ListRepository {
       checked: row.checked,
       position: row.position,
       priceCents: row.priceCents,
+      canonicalItemId: row.canonicalItemId,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     );

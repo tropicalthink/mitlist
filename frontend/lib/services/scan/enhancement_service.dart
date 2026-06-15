@@ -1,17 +1,20 @@
 import 'dart:typed_data';
-import 'package:image/image.dart' as img;
+
+import 'capture_preprocessor_service.dart';
 
 /// Applies light image enhancement before OCR: grayscale + contrast boost.
 /// Returns the original bytes unchanged if decoding fails.
 class EnhancementService {
+  final CapturePreprocessorService _preprocessor;
+
+  EnhancementService({
+    CapturePreprocessorService preprocessor =
+        const CapturePreprocessorService(),
+  }) : _preprocessor = preprocessor;
+
   Uint8List enhance(Uint8List bytes) {
     try {
-      final decoded = img.decodeImage(bytes);
-      if (decoded == null) return bytes;
-      img.grayscale(decoded);
-      img.adjustColor(decoded, contrast: 1.3, brightness: 1.05);
-      final out = img.encodeJpg(decoded, quality: 90);
-      return Uint8List.fromList(out);
+      return _preprocessor.preprocess(bytes).processedBytes;
     } catch (_) {
       return bytes;
     }

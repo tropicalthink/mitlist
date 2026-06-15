@@ -22,6 +22,7 @@ import '../../widgets/app_input.dart';
 import '../../widgets/mitlist_app_bar.dart';
 
 const _uuid = Uuid();
+const _newListSentinel = '__new__';
 
 /// A single entry in the flat, reorderable list — either an aisle section
 /// header or an actual prediction item.
@@ -285,12 +286,7 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
   // ---------------------------------------------------------------------------
 
   Future<void> _addToList() async {
-    final String? listId;
-    if (widget.targetListId != null) {
-      listId = widget.targetListId;
-    } else {
-      listId = await _showListPicker();
-    }
+    final listId = await _resolveTargetListId();
     if (listId == null || !mounted) return;
 
     setState(() => _isAdding = true);
@@ -324,6 +320,7 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
             name: p.displayName,
             quantity: p.quantity,
             unit: p.unit,
+            canonicalItemId: p.canonicalItemId,
           ),
         )));
 
@@ -331,6 +328,35 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
       setState(() => _isAdding = false);
       Navigator.of(context).pop(_items.length);
     }
+  }
+
+  Future<String?> _resolveTargetListId() async {
+    final targetListId = widget.targetListId;
+    if (targetListId != null) return targetListId;
+
+    final picked = await _showListPicker();
+    if (picked == null || !mounted) return null;
+    if (picked != _newListSentinel) return picked;
+
+    return _createTargetList();
+  }
+
+  Future<String?> _createTargetList() async {
+    final name = await showAppBottomSheet<String>(
+      context: context,
+      title: 'New list',
+      body: const _NewListSheet(),
+    );
+    if (name == null || name.trim().isEmpty || !mounted) return null;
+
+    final service = await ref.read(listServiceProviderAsync.future);
+    final created = await service.createList(
+      CreateListRequest(groupId: widget.groupId, name: name.trim()),
+    );
+
+    final repo = await ref.read(listRepositoryProvider.future);
+    await repo.refreshLists(widget.groupId);
+    return created.id;
   }
 
   Future<String?> _showListPicker() async {
@@ -354,7 +380,7 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
           ListTile(
             leading: const AppIcon(name: 'plus'),
             title: const Text('New list…'),
-            onTap: () => Navigator.of(context).pop('__new__'),
+            onTap: () => Navigator.of(context).pop(_newListSentinel),
           ),
         ],
       ),
@@ -517,6 +543,56 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _NewListSheet extends StatefulWidget {
+  const _NewListSheet();
+
+  @override
+  State<_NewListSheet> createState() => _NewListSheetState();
+}
+
+class _NewListSheetState extends State<_NewListSheet> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: 'Scanned list');
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final value = _controller.text.trim();
+    if (value.isEmpty) return;
+    Navigator.of(context).pop(value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AppInput(
+          controller: _controller,
+          label: 'List name',
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _submit(),
+        ),
+        const SizedBox(height: MitlistSpacing.md),
+        AppButton(
+          text: 'Create list',
+          onPressed: _submit,
+        ),
+      ],
     );
   }
 }

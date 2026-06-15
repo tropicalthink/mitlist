@@ -1,15 +1,14 @@
 import 'dart:async';
 
-import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../providers/grocery_provider.dart';
+import '../../providers/list_provider.dart' show listRepositoryProvider;
 import '../../providers/store_provider.dart';
 import '../../screens/scanner/scan_review_screen.dart';
+import '../../screens/scanner/smart_capture_launcher.dart';
 import '../../theme/spacing.dart';
 import '../app_bottom_sheet.dart';
 import '../app_icon.dart';
@@ -32,13 +31,12 @@ Future<int?> launchListScan(
   final pickedSource = source ?? await _pickImageSource(context);
   if (pickedSource == null || !context.mounted) return null;
 
-  final picker = ImagePicker();
-  final picked = await picker.pickImage(
+  final capture = await pickSmartCapture(
+    context,
     source: pickedSource,
-    maxWidth: 2048,
-    maxHeight: 2048,
+    title: 'Check list photo',
   );
-  if (picked == null || !context.mounted) return null;
+  if (capture == null || !context.mounted) return null;
 
   if (!context.mounted) return null;
   unawaited(showDialog<void>(
@@ -77,15 +75,21 @@ Future<int?> launchListScan(
   ));
 
   try {
-    final bytes = Uint8List.fromList(await File(picked.path).readAsBytes());
     final pipeline = await ref.read(scanPipelineProvider.future);
+    final repo = await ref.read(listRepositoryProvider.future);
+    final listContextCanonicalIds = (await repo.getItemsByListOnce(listId))
+        .map((item) => item.canonicalItemId)
+        .whereType<String>()
+        .toSet()
+        .toList(growable: false);
     final connectivity = ref.read(connectivityServiceProvider);
     final isOnline = await connectivity.isOnline();
 
     final result = await pipeline.run(
-      imageBytes: bytes,
+      imageBytes: capture.processedBytes,
       groupId: groupId,
       storeId: ref.read(selectedStoreIdProvider),
+      listContextCanonicalIds: listContextCanonicalIds,
       isOnline: isOnline,
     );
 
