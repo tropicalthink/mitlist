@@ -117,7 +117,6 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
         groupId: groupId,
         storeId: ref.read(selectedStoreIdProvider),
         isOnline: isOnline,
-        allowCloud: ref.read(cloudScanProvider),
       );
 
       if (!mounted) return;
