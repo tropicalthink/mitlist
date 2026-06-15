@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -225,6 +227,78 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
     setState(() => _activeId = null);
   }
 
+  /// All draggable cork items, sorted so the lifted card paints last.
+  List<Widget> _buildBoardItems(BuildContext context, {required bool dark}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final layers = <({String id, int order, Widget child})>[
+      (
+        id: _statsId,
+        order: 0,
+        child: _BoardDraggableItem(
+          key: const ValueKey(_statsId),
+          position: _statsPos,
+          isActive: _activeId == _statsId,
+          entrance: _summaryAnim,
+          onLift: () => _lift(_statsId),
+          onDrop: _drop,
+          onDrag: _onStatsDrag,
+          child: PinnedMemoCard(
+            width: _kSummaryStatsW,
+            pinColor: colorScheme.secondary,
+            child: StatsGrid(groupId: widget.groupId),
+          ),
+        ),
+      ),
+      (
+        id: _tonightId,
+        order: 1,
+        child: _BoardDraggableItem(
+          key: const ValueKey(_tonightId),
+          position: _tonightPos,
+          isActive: _activeId == _tonightId,
+          entrance: _summaryAnim,
+          onLift: () => _lift(_tonightId),
+          onDrop: _drop,
+          onDrag: _onTonightDrag,
+          child: PinnedMemoCard(
+            width: _kSummaryTonightW,
+            pinColor: colorScheme.tertiary,
+            child: TonightCard(groupId: widget.groupId),
+          ),
+        ),
+      ),
+      for (var i = 0; i < widget.posts.length; i++)
+        (
+          id: widget.posts[i].id,
+          order: 2 + i,
+          child: _BoardDraggableItem(
+            key: ValueKey(widget.posts[i].id),
+            position: _positions[widget.posts[i].id]!,
+            isActive: _activeId == widget.posts[i].id,
+            entrance: _noteAnims[i],
+            onLift: () => _lift(widget.posts[i].id),
+            onDrop: _drop,
+            onDrag: (d) => _onNoteDrag(widget.posts[i].id, d),
+            child: _BoardNoteCard(
+              index: i,
+              groupId: widget.groupId,
+              me: widget.me,
+              post: widget.posts[i],
+            ),
+          ),
+        ),
+    ];
+
+    layers.sort((a, b) {
+      final aLifted = a.id == _activeId;
+      final bLifted = b.id == _activeId;
+      if (aLifted != bLifted) return aLifted ? 1 : -1;
+      return a.order.compareTo(b.order);
+    });
+
+    return layers.map((l) => l.child).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
@@ -273,58 +347,14 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
                     child: Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        // Pinned hub summary — part of the board: draggable,
-                        // and pans/zooms with everything else.
-                        Positioned(
-                          left: _statsPos.dx,
-                          top: _statsPos.dy,
-                          child: GestureDetector(
-                            onPanUpdate: _onStatsDrag,
-                            behavior: HitTestBehavior.opaque,
-                            child: PinnedMemoCard(
-                              width: _kSummaryStatsW,
-                              pinColor:
-                                  Theme.of(context).colorScheme.secondary,
-                              child: StatsGrid(groupId: widget.groupId),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          left: _tonightPos.dx,
-                          top: _tonightPos.dy,
-                          child: GestureDetector(
-                            onPanUpdate: _onTonightDrag,
-                            behavior: HitTestBehavior.opaque,
-                            child: PinnedMemoCard(
-                              width: _kSummaryTonightW,
-                              pinColor:
-                                  Theme.of(context).colorScheme.tertiary,
-                              child: TonightCard(groupId: widget.groupId),
-                            ),
-                          ),
-                        ),
+                        ..._buildBoardItems(context, dark: dark),
                         if (widget.posts.isEmpty)
                           Positioned(
                             left: _kMargin,
                             top: _kMargin + _kSummaryBandH,
                             width: _kSummaryRight - _kMargin,
                             child: _EmptyBoardHint(dark: dark),
-                          )
-                        else
-                          for (var i = 0; i < widget.posts.length; i++)
-                            _AnimatedNote(
-                              key: ValueKey(widget.posts[i].id),
-                              animation: _noteAnims[i],
-                              position: _positions[widget.posts[i].id]!,
-                              onDrag: (d) =>
-                                  _onNoteDrag(widget.posts[i].id, d),
-                              child: _BoardNoteCard(
-                                index: i,
-                                groupId: widget.groupId,
-                                me: widget.me,
-                                post: widget.posts[i],
-                              ),
-                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -476,38 +506,59 @@ class _EmptyBoardHint extends StatelessWidget {
   }
 }
 
-// ─── Animated note wrapper ────────────────────────────────────────────────────
+// ─── Draggable board item (lift + raise-to-front + entrance) ─────────────────
 
-class _AnimatedNote extends StatelessWidget {
-  const _AnimatedNote({
+class _BoardDraggableItem extends StatelessWidget {
+  const _BoardDraggableItem({
     super.key,
-    required this.animation,
     required this.position,
+    required this.isActive,
+    required this.onLift,
+    required this.onDrop,
     required this.onDrag,
     required this.child,
+    this.entrance,
   });
 
-  final Animation<double> animation;
   final Offset position;
+  final bool isActive;
+  final VoidCallback onLift;
+  final VoidCallback onDrop;
   final void Function(DragUpdateDetails) onDrag;
   final Widget child;
+  final Animation<double>? entrance;
 
   @override
   Widget build(BuildContext context) {
+    Widget body = GestureDetector(
+      onPanStart: (_) => onLift(),
+      onPanUpdate: onDrag,
+      onPanEnd: (_) => onDrop(),
+      onPanCancel: onDrop,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedScale(
+        scale: isActive ? 1.04 : 1.0,
+        duration: MitlistAnimations.micro,
+        curve: MitlistAnimations.easeEnter,
+        child: child,
+      ),
+    );
+
+    final anim = entrance;
+    if (anim != null) {
+      body = FadeTransition(
+        opacity: anim,
+        child: ScaleTransition(
+          scale: Tween(begin: 0.72, end: 1.0).animate(anim),
+          child: body,
+        ),
+      );
+    }
+
     return Positioned(
       left: position.dx,
       top: position.dy,
-      child: FadeTransition(
-        opacity: animation,
-        child: ScaleTransition(
-          scale: Tween(begin: 0.72, end: 1.0).animate(animation),
-          child: GestureDetector(
-            onPanUpdate: onDrag,
-            behavior: HitTestBehavior.opaque,
-            child: child,
-          ),
-        ),
-      ),
+      child: body,
     );
   }
 }

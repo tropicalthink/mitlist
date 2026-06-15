@@ -1,3 +1,5 @@
+import '../utils/uuid_validation.dart';
+
 class ItemList {
   final String id;
   final String groupId;
@@ -169,7 +171,7 @@ class CreateListItemRequest {
         'unit': unit,
         if (note.isNotEmpty) 'note': note,
         if (priceCents != null) 'price_cents': priceCents,
-        if (canonicalItemId != null) 'canonical_item_id': canonicalItemId,
+        if (isApiUuid(canonicalItemId)) 'canonical_item_id': canonicalItemId,
       };
 }
 
