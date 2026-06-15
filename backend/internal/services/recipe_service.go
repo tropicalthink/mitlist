@@ -24,14 +24,14 @@ func NewRecipeService(recipeRepo repositories.RecipeRepoIface) *RecipeService {
 
 func (s *RecipeService) requireOwner(recipe *models.Recipe, userID uuid.UUID) error {
 	if recipe.UserID != userID {
-		return api.ErrPermissionDenied
+		return &api.PermissionDeniedError{Action: "modify recipe"}
 	}
 	return nil
 }
 
 func (s *RecipeService) requireCollectionOwner(collection *models.Collection, userID uuid.UUID) error {
 	if collection.UserID != userID {
-		return api.ErrPermissionDenied
+		return &api.PermissionDeniedError{Action: "modify collection"}
 	}
 	return nil
 }
@@ -69,7 +69,7 @@ func (s *RecipeService) GetRecipe(ctx context.Context, userID, recipeID uuid.UUI
 		return recipe, nil
 	}
 	if err.Error() == "recipe share not found" {
-		return nil, api.ErrPermissionDenied
+		return nil, &api.PermissionDeniedError{Action: "view recipe"}
 	}
 	return nil, err
 }

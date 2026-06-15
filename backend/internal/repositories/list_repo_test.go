@@ -349,11 +349,44 @@ func TestListRepository_CreateItems(t *testing.T) {
 	listID := fixedUUID()
 
 	mock.ExpectExec("INSERT INTO list_items").
-		WithArgs(pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg()).
+		WithArgs(pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg()).
 		WillReturnResult(pgxmock.NewResult("INSERT", 2))
 
 	err := repo.CreateItems(context.Background(), []models.ListItem{
 		{ListID: listID, Name: "Milk", Quantity: 1},
+		{ListID: listID, Name: "Eggs", Quantity: 6},
+	})
+	require.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestListRepository_CreateItems_CarriesCanonicalItemID(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewListRepository(mock)
+	listID := fixedUUID()
+	canonicalID := uuid.MustParse("33333333-3333-3333-3333-333333333333")
+
+	mock.ExpectExec("INSERT INTO list_items .*canonical_item_id.*SELECT .*canonical_item_id").
+		WithArgs(
+			pgxmock.AnyArg(), // now
+			pgxmock.AnyArg(), // ids
+			pgxmock.AnyArg(), // listIDs
+			pgxmock.AnyArg(), // names
+			pgxmock.AnyArg(), // quantities
+			pgxmock.AnyArg(), // units
+			pgxmock.AnyArg(), // notes
+			pgxmock.AnyArg(), // priceCents
+			pgxmock.AnyArg(), // productIDs
+			pgxmock.AnyArg(), // storeIDs
+			pgxmock.AnyArg(), // addedBy
+			pgxmock.AnyArg(), // checked
+			pgxmock.AnyArg(), // positions
+			[]*uuid.UUID{&canonicalID, nil}, // canonicalItemIDs
+		).
+		WillReturnResult(pgxmock.NewResult("INSERT", 2))
+
+	err := repo.CreateItems(context.Background(), []models.ListItem{
+		{ListID: listID, Name: "Milk", Quantity: 1, CanonicalItemID: &canonicalID},
 		{ListID: listID, Name: "Eggs", Quantity: 6},
 	})
 	require.NoError(t, err)
