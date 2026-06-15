@@ -605,14 +605,13 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ---- Name + scan ----
+        // ── Name + scan ───────────────────────────────────────────────
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Expanded(
               child: AppInput(
-                label: 'Chore name',
-                hint: 'e.g. Vacuum living room',
+                hint: 'Chore name',
                 controller: _nameController,
                 textInputAction: TextInputAction.next,
                 maxLength: 100,
@@ -629,28 +628,32 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
             ),
           ],
         ),
-        const SizedBox(height: MitlistSpacing.lg),
+        const SizedBox(height: MitlistSpacing.md),
 
-        // ---- Routines ----
+        // ── Templates ─────────────────────────────────────────────────
         if (_savedTemplates.isNotEmpty) ...[
           Text('Your routines', style: textTheme.labelMedium),
           const SizedBox(height: MitlistSpacing.sm),
-          Wrap(
-            spacing: MitlistSpacing.sm,
-            runSpacing: MitlistSpacing.sm,
-            children: [
-              for (final t in _savedTemplates)
-                GestureDetector(
-                  onLongPress: () => _onEditTemplate(t),
-                  child: AppChip(
-                    label: t.name,
-                    selected: _appliedSavedId == t.id,
-                    onSelected: (_) => _applySavedTemplate(t),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (final t in _savedTemplates)
+                  Padding(
+                    padding: const EdgeInsets.only(right: MitlistSpacing.xs),
+                    child: GestureDetector(
+                      onLongPress: () => _onEditTemplate(t),
+                      child: AppChip(
+                        label: t.name,
+                        selected: _appliedSavedId == t.id,
+                        onSelected: (_) => _applySavedTemplate(t),
+                      ),
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: MitlistSpacing.md),
+          const SizedBox(height: MitlistSpacing.sm),
         ],
         Text(
           _savedTemplates.isEmpty ? 'Start from a routine' : 'Suggestions',
@@ -669,28 +672,11 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
               ),
           ],
         ),
-        const SizedBox(height: MitlistSpacing.lg),
+        const SizedBox(height: MitlistSpacing.md),
 
-        // ---- Notes ----
-        AppInput(
-          label: 'Notes (optional)',
-          hint: 'Steps, reminders, anything useful',
-          controller: _descriptionController,
-          textInputAction: TextInputAction.newline,
-          keyboardType: TextInputType.multiline,
-          minLines: 1,
-          maxLines: 5,
-          maxLength: 500,
-          onChanged: (_) => _markDirty(),
-        ),
-        const SizedBox(height: MitlistSpacing.lg),
-
-        // ---- Zone ----
-        Text('Zone', style: textTheme.labelMedium),
-        const SizedBox(height: MitlistSpacing.sm),
-        Wrap(
-          spacing: MitlistSpacing.sm,
-          runSpacing: MitlistSpacing.sm,
+        // ── Zone (inline row) ─────────────────────────────────────────
+        _ChipRow(
+          label: 'Zone',
           children: [
             for (final zone in _zonePresets)
               AppChip(
@@ -703,14 +689,11 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
               ),
           ],
         ),
-        const SizedBox(height: MitlistSpacing.lg),
-
-        // ---- Repeats ----
-        Text('Repeats', style: textTheme.labelMedium),
         const SizedBox(height: MitlistSpacing.sm),
-        Wrap(
-          spacing: MitlistSpacing.sm,
-          runSpacing: MitlistSpacing.sm,
+
+        // ── Repeats (inline row) ──────────────────────────────────────
+        _ChipRow(
+          label: 'Repeats',
           children: [
             for (final option in const [
               (_Recurrence.none, 'None'),
@@ -735,77 +718,85 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           ],
         ),
         if (_recurrence != _Recurrence.none) ...[
-          const SizedBox(height: MitlistSpacing.sm),
-          Text(
-            _recurrenceHint,
-            style: textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: MitlistSpacing.md),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              SizedBox(
-                width: 80,
-                child: AppInput(
-                  label: 'Every',
-                  hint: '1',
-                  controller: _intervalController,
-                  keyboardType: TextInputType.number,
-                  textInputAction: TextInputAction.done,
-                  onChanged: (_) => setState(() {}),
-                ),
-              ),
-              const SizedBox(width: MitlistSpacing.md),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: MitlistSpacing.space3),
-                  child: Text(
-                    _intervalSummary,
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+          const SizedBox(height: MitlistSpacing.xs),
+          Padding(
+            padding: const EdgeInsets.only(left: MitlistSpacing.space14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _recurrenceHint,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: MitlistSpacing.sm),
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 72,
+                      child: AppInput(
+                        hint: '1',
+                        controller: _intervalController,
+                        keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.done,
+                        onChanged: (_) => setState(() {}),
+                      ),
+                    ),
+                    const SizedBox(width: MitlistSpacing.sm),
+                    Text(
+                      _intervalSummary,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+                if (_recurrence == _Recurrence.weekly) ...[
+                  const SizedBox(height: MitlistSpacing.sm),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (final day in const [
+                          ('monday', 'Mon'),
+                          ('tuesday', 'Tue'),
+                          ('wednesday', 'Wed'),
+                          ('thursday', 'Thu'),
+                          ('friday', 'Fri'),
+                          ('saturday', 'Sat'),
+                          ('sunday', 'Sun'),
+                        ])
+                          Padding(
+                            padding:
+                                const EdgeInsets.only(right: MitlistSpacing.xs),
+                            child: AppChip(
+                              label: day.$2,
+                              selected: _weekdays.contains(day.$1),
+                              onSelected: (_) {
+                                setState(() {
+                                  if (_weekdays.contains(day.$1) &&
+                                      _weekdays.length > 1) {
+                                    _weekdays.remove(day.$1);
+                                  } else {
+                                    _weekdays.add(day.$1);
+                                  }
+                                });
+                                _markDirty();
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ],
-        if (_recurrence == _Recurrence.weekly) ...[
-          const SizedBox(height: MitlistSpacing.md),
-          Wrap(
-            spacing: MitlistSpacing.sm,
-            runSpacing: MitlistSpacing.sm,
-            children: const [
-              ('monday', 'Mon'),
-              ('tuesday', 'Tue'),
-              ('wednesday', 'Wed'),
-              ('thursday', 'Thu'),
-              ('friday', 'Fri'),
-              ('saturday', 'Sat'),
-              ('sunday', 'Sun'),
-            ].map((day) {
-              return AppChip(
-                label: day.$2,
-                selected: _weekdays.contains(day.$1),
-                onSelected: (_) {
-                  setState(() {
-                    if (_weekdays.contains(day.$1) && _weekdays.length > 1) {
-                      _weekdays.remove(day.$1);
-                    } else {
-                      _weekdays.add(day.$1);
-                    }
-                  });
-                  _markDirty();
-                },
-              );
-            }).toList(),
-          ),
-        ],
-        const SizedBox(height: MitlistSpacing.lg),
+        const SizedBox(height: MitlistSpacing.md),
 
-        // ---- More options (collapsible) ----
+        // ── More options (collapsible) ────────────────────────────────
         GestureDetector(
           onTap: () => setState(() => _showAdvanced = !_showAdvanced),
           behavior: HitTestBehavior.opaque,
@@ -840,15 +831,12 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           curve: Curves.easeInOut,
           child: _showAdvanced
               ? Padding(
-                  padding: const EdgeInsets.only(top: MitlistSpacing.md),
+                  padding: const EdgeInsets.only(top: MitlistSpacing.sm),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Who does it?', style: textTheme.labelMedium),
-                      const SizedBox(height: MitlistSpacing.sm),
-                      Wrap(
-                        spacing: MitlistSpacing.sm,
-                        runSpacing: MitlistSpacing.sm,
+                      _ChipRow(
+                        label: 'Assign',
                         children: [
                           for (final option in const [
                             (_AssignmentPolicy.roundRobin, 'Take turns'),
@@ -870,11 +858,16 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
                             ),
                         ],
                       ),
-                      const SizedBox(height: MitlistSpacing.sm),
-                      Text(
-                        _assignmentHint,
-                        style: textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                      const SizedBox(height: MitlistSpacing.xs),
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          left: MitlistSpacing.space14,
+                        ),
+                        child: Text(
+                          _assignmentHint,
+                          style: textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
                       const SizedBox(height: MitlistSpacing.md),
@@ -904,9 +897,22 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
                 )
               : const SizedBox.shrink(),
         ),
-        const SizedBox(height: MitlistSpacing.lg),
+        const SizedBox(height: MitlistSpacing.md),
 
-        // ---- Actions ----
+        // ── Notes ─────────────────────────────────────────────────────
+        AppInput(
+          hint: 'Notes (optional) — steps, reminders, anything useful',
+          controller: _descriptionController,
+          textInputAction: TextInputAction.newline,
+          keyboardType: TextInputType.multiline,
+          minLines: 1,
+          maxLines: 5,
+          maxLength: 500,
+          onChanged: (_) => _markDirty(),
+        ),
+        const SizedBox(height: MitlistSpacing.md),
+
+        // ── Actions ───────────────────────────────────────────────────
         Align(
           alignment: Alignment.centerLeft,
           child: AppButton(
@@ -930,6 +936,48 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
             text: _isSaving ? 'Adding…' : 'Add chore',
             isLoading: _isSaving,
             onPressed: _canCreate ? _onCreate : null,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// A labelled single-row chip picker. The label is fixed-width so multiple
+/// `_ChipRow`s stack with their chips left-aligned.
+class _ChipRow extends StatelessWidget {
+  final String label;
+  final List<Widget> children;
+
+  const _ChipRow({required this.label, required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: MitlistSpacing.space14, // 56px — keeps chips aligned across rows
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+          ),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (final child in children)
+                  Padding(
+                    padding: const EdgeInsets.only(right: MitlistSpacing.xs),
+                    child: child,
+                  ),
+              ],
+            ),
           ),
         ),
       ],

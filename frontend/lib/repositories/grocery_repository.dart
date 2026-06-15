@@ -6,6 +6,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
+import '../utils/uuid_validation.dart';
 import '../services/api_client.dart';
 import '../services/sse_service.dart';
 import '../storage/app_database.dart';
@@ -253,6 +254,7 @@ class GroceryRepository {
     String scope = 'household',
     String lang = 'de',
   }) async {
+    if (!isApiUuid(canonicalItemId)) return 0;
     try {
       final r = await _dio.post(
         '/groups/$groupId/grocery/corrections',
