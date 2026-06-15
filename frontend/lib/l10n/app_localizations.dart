@@ -5013,6 +5013,12 @@ abstract class AppLocalizations {
   /// **'Pinwall'**
   String get pinwallBoardLabel;
 
+  /// Header for the collapsible household stats summary under the composer
+  ///
+  /// In en, this message translates to:
+  /// **'At a glance'**
+  String get pinwallSnapshot;
+
   /// Hint text for pinwall interactions
   ///
   /// In en, this message translates to:

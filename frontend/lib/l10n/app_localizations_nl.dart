@@ -2816,6 +2816,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get pinwallBoardLabel => 'Prikbord';
 
   @override
+  String get pinwallSnapshot => 'In één oogopslag';
+
+  @override
   String get pinwallDragHint =>
       'Sleep notities om te verplaatsen  ·  Knijp om te zoomen';
 

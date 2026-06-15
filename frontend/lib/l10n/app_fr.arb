@@ -460,6 +460,9 @@
   "@choreYourTurn": {
     "description": "Label when it's the current user's turn"
   },
+  "choreSomeonesTurn": "Au tour de {name}",
+  "choreRefreshFailed": "Échec de l'actualisation. Affichage des tâches enregistrées.",
+  "choreDoneLast30Days": "{count} faites, 30 derniers jours",
   "choreYoureClear": "Tu es tranquille",
   "@choreYoureClear": {
     "description": "Hero text when user has no active chores"
@@ -3746,6 +3749,7 @@
   "@expenseCreationExpenseAdded": {
     "description": "Snackbar when expense is created"
   },
+  "pinwallSnapshot": "Vue d'ensemble",
   "pinwallBoardLabel": "Pinwall",
   "@pinwallBoardLabel": {
     "description": "Board chip label for pinwall"

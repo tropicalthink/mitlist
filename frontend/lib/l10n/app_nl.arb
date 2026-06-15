@@ -460,6 +460,9 @@
   "@choreYourTurn": {
     "description": "Label when it's the current user's turn"
   },
+  "choreSomeonesTurn": "{name} is aan de beurt",
+  "choreRefreshFailed": "Vernieuwen mislukt. Opgeslagen taken worden getoond.",
+  "choreDoneLast30Days": "{count} gedaan, afgelopen 30 dagen",
   "choreYoureClear": "Je bent vrij",
   "@choreYoureClear": {
     "description": "Hero text when user has no active chores"
@@ -3746,6 +3749,7 @@
   "@expenseCreationExpenseAdded": {
     "description": "Snackbar when expense is created"
   },
+  "pinwallSnapshot": "In één oogopslag",
   "pinwallBoardLabel": "Prikbord",
   "@pinwallBoardLabel": {
     "description": "Board chip label for pinwall"
