@@ -150,6 +150,19 @@ class HubGroupCaches extends Table {
   Set<Column<Object>>? get primaryKey => {groupId};
 }
 
+/// Single-row cache of the current user's full household list (the payload of
+/// `GroupService.listGroups`). Keyed by a constant so the entire list is read
+/// and replaced atomically. Lets every screen resolve the active group offline
+/// instead of failing on a network call.
+class GroupsCaches extends Table {
+  TextColumn get cacheKey => text().named('cache_key')();
+  TextColumn get groupsJson => text().named('groups_json')();
+  DateTimeColumn get updatedAt => dateTime().named('updated_at')();
+
+  @override
+  Set<Column<Object>>? get primaryKey => {cacheKey};
+}
+
 class HubActivityCaches extends Table {
   TextColumn get groupId => text().named('group_id')();
   TextColumn get activitiesJson => text().named('activities_json')();
@@ -298,6 +311,7 @@ class GroceryVersionsTable extends Table {
     PinwallPostsCaches,
     HubGroupCaches,
     HubActivityCaches,
+    GroupsCaches,
     OutboxOps,
     Conflicts,
     CanonicalItemsTable,
@@ -314,7 +328,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   /// Creates all hot-query indexes.  Called from both onCreate and the v4
   /// onUpgrade block so that fresh installs and upgrades both get the indexes.
@@ -423,6 +437,10 @@ FROM list_items_table;
             // review UI can label/roll back ops. Nullable, no backfill needed.
             await m.addColumn(outboxOps, outboxOps.entityType);
             await m.addColumn(outboxOps, outboxOps.entityId);
+          }
+          if (from < 7) {
+            // Persist the household list so group resolution works offline.
+            await m.createTable(groupsCaches);
           }
         },
         beforeOpen: (details) async {
@@ -864,6 +882,32 @@ FROM list_items_table;
     );
   }
 
+  /// Constant key for the single-row household-list cache.
+  static const groupsCacheKey = 'me';
+
+  Stream<GroupsCache?> watchGroupsList() {
+    return (select(groupsCaches)
+          ..where((t) => t.cacheKey.equals(groupsCacheKey)))
+        .watchSingleOrNull();
+  }
+
+  Future<GroupsCache?> getGroupsListOnce() {
+    return (select(groupsCaches)
+          ..where((t) => t.cacheKey.equals(groupsCacheKey)))
+        .getSingleOrNull();
+  }
+
+  Future<void> upsertGroupsList(String groupsJson) async {
+    await into(groupsCaches).insert(
+      GroupsCachesCompanion(
+        cacheKey: const Value(groupsCacheKey),
+        groupsJson: Value(groupsJson),
+        updatedAt: Value(DateTime.now()),
+      ),
+      mode: InsertMode.insertOrReplace,
+    );
+  }
+
   Stream<HubActivityCache?> watchHubActivities(String groupId) {
     return (select(hubActivityCaches)..where((t) => t.groupId.equals(groupId)))
         .watchSingleOrNull();
@@ -894,6 +938,7 @@ FROM list_items_table;
     return transaction(() async {
       await delete(hubActivityCaches).go();
       await delete(hubGroupCaches).go();
+      await delete(groupsCaches).go();
       await delete(pinwallPostsCaches).go();
       await delete(currentChoresCaches).go();
       await delete(financeSummaries).go();

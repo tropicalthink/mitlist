@@ -374,6 +374,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get choreYourTurn => 'Your turn';
 
   @override
+  String choreSomeonesTurn(String name) {
+    return '$name\'s turn';
+  }
+
+  @override
+  String get choreRefreshFailed => 'Couldn\'t refresh. Showing saved chores.';
+
+  @override
+  String choreDoneLast30Days(num count) {
+    return '$count done, last 30 days';
+  }
+
+  @override
   String get choreYoureClear => 'You\'re clear';
 
   @override
@@ -2789,6 +2802,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pinwallBoardLabel => 'Pinwall';
+
+  @override
+  String get pinwallSnapshot => 'At a glance';
 
   @override
   String get pinwallDragHint => 'Drag notes to move  ·  Pinch to zoom';

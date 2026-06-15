@@ -764,6 +764,24 @@ abstract class AppLocalizations {
   /// **'Your turn'**
   String get choreYourTurn;
 
+  /// Label when it's another member's turn
+  ///
+  /// In en, this message translates to:
+  /// **'{name}\'s turn'**
+  String choreSomeonesTurn(String name);
+
+  /// Inline notice when a background refresh fails but cached chores are shown
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t refresh. Showing saved chores.'**
+  String get choreRefreshFailed;
+
+  /// Fairness strip summary of completed chores over 30 days
+  ///
+  /// In en, this message translates to:
+  /// **'{count} done, last 30 days'**
+  String choreDoneLast30Days(num count);
+
   /// Hero text when user has no active chores
   ///
   /// In en, this message translates to:
@@ -5012,6 +5030,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pinwall'**
   String get pinwallBoardLabel;
+
+  /// Header for the collapsible household stats summary under the composer
+  ///
+  /// In en, this message translates to:
+  /// **'At a glance'**
+  String get pinwallSnapshot;
 
   /// Hint text for pinwall interactions
   ///
