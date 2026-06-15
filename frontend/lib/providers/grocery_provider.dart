@@ -8,7 +8,6 @@ import '../services/scan/scan_pipeline_service.dart';
 import '../services/scan/static_embedding_service.dart';
 export 'outbox_provider.dart' show connectivityServiceProvider;
 import 'list_provider.dart';
-import 'scan_provider.dart';
 
 /// On-device static semantic embedder (pure Dart, no ML runtime).
 ///
@@ -35,8 +34,7 @@ final restockServiceProvider = Provider<RestockService>((ref) {
 
 final scanPipelineProvider = FutureProvider<ScanPipelineService>((ref) async {
   final db = ref.watch(appDatabaseProvider);
-  final cloudSvc = await ref.watch(scanServiceProviderAsync.future);
-  return ScanPipelineService(db: db, cloudFallback: cloudSvc);
+  return ScanPipelineService(db: db);
 });
 
 final correctionMemoryProvider = Provider<CorrectionMemoryService>((ref) {

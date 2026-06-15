@@ -29,6 +29,7 @@ func TestFinanceService_CreateExpense(t *testing.T) {
 
 		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "admin"}, nil)
 		groupRepo.On("GetMembership", ctx, groupID, payerID).Return(&models.GroupMembership{Role: "member"}, nil)
+		groupRepo.On("GetGroupByID", ctx, groupID).Return(&models.Group{ID: groupID, Currency: "USD"}, nil)
 		financeRepo.On("CreateExpenseWithSplits", ctx, mock.AnythingOfType("*models.Expense"), mock.AnythingOfType("[]models.Split")).Return(nil)
 
 		splitUserIDs := []uuid.UUID{userID, payerID}
@@ -43,6 +44,7 @@ func TestFinanceService_CreateExpense(t *testing.T) {
 		svc := NewFinanceService(financeRepo, groupRepo)
 
 		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		groupRepo.On("GetGroupByID", ctx, groupID).Return(&models.Group{ID: groupID, Currency: "USD"}, nil)
 		financeRepo.On("CreateExpenseWithSplits", ctx, mock.AnythingOfType("*models.Expense"), mock.AnythingOfType("[]models.Split")).Return(nil)
 
 		expense := &models.Expense{GroupID: groupID, PayerID: userID, Amount: 100, Currency: "USD"}
@@ -81,6 +83,79 @@ func TestFinanceService_CreateExpense(t *testing.T) {
 		err := svc.CreateExpense(ctx, userID, &models.Expense{GroupID: groupID, PayerID: userID, Amount: 100, Currency: "USD"}, nil)
 		require.Error(t, err)
 		assert.ErrorIs(t, err, api.ErrPermissionDenied)
+	})
+}
+
+func TestCreateExpense_ForeignCurrencyConvertsToBase(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+	groupID := uuid.New()
+
+	t.Run("foreign currency converts amount to base at fx rate", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		groupRepo.On("GetGroupByID", ctx, groupID).Return(&models.Group{ID: groupID, Currency: "USD"}, nil)
+
+		var captured *models.Expense
+		var capturedSplits []models.Split
+		financeRepo.On("CreateExpenseWithSplits", ctx, mock.AnythingOfType("*models.Expense"), mock.AnythingOfType("[]models.Split")).
+			Run(func(args mock.Arguments) {
+				captured = args.Get(1).(*models.Expense)
+				capturedSplits = args.Get(2).([]models.Split)
+			}).Return(nil)
+
+		expense := &models.Expense{GroupID: groupID, PayerID: userID, Amount: 5000, Currency: "EUR", FxRate: 1.10}
+		err := svc.CreateExpense(ctx, userID, expense, []uuid.UUID{userID})
+		require.NoError(t, err)
+		require.NotNil(t, captured)
+		assert.Equal(t, int64(5500), captured.BaseAmount)
+		assert.InDelta(t, 1.10, captured.FxRate, 1e-9)
+
+		var sum int64
+		for _, s := range capturedSplits {
+			sum += s.Amount
+		}
+		assert.Equal(t, int64(5500), sum, "split shares must sum to base amount")
+	})
+
+	t.Run("foreign currency with non-positive fx rate is rejected", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		groupRepo.On("GetGroupByID", ctx, groupID).Return(&models.Group{ID: groupID, Currency: "USD"}, nil)
+
+		expense := &models.Expense{GroupID: groupID, PayerID: userID, Amount: 5000, Currency: "EUR", FxRate: 0}
+		err := svc.CreateExpense(ctx, userID, expense, []uuid.UUID{userID})
+		require.Error(t, err)
+		assert.Equal(t, api.ErrValidation, err)
+	})
+
+	t.Run("same-currency expense forces fx rate 1 and base equals amount", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		groupRepo.On("GetGroupByID", ctx, groupID).Return(&models.Group{ID: groupID, Currency: "USD"}, nil)
+
+		var captured *models.Expense
+		financeRepo.On("CreateExpenseWithSplits", ctx, mock.AnythingOfType("*models.Expense"), mock.AnythingOfType("[]models.Split")).
+			Run(func(args mock.Arguments) {
+				captured = args.Get(1).(*models.Expense)
+			}).Return(nil)
+
+		// A bogus rate is passed in but must be ignored for same-currency expenses.
+		expense := &models.Expense{GroupID: groupID, PayerID: userID, Amount: 5000, Currency: "USD", FxRate: 2.5}
+		err := svc.CreateExpense(ctx, userID, expense, []uuid.UUID{userID})
+		require.NoError(t, err)
+		require.NotNil(t, captured)
+		assert.Equal(t, int64(5000), captured.BaseAmount)
+		assert.InDelta(t, 1.0, captured.FxRate, 1e-9)
 	})
 }
 
@@ -460,7 +535,7 @@ func TestCalculateBalances(t *testing.T) {
 
 	t.Run("two users one 100 expense split equally", func(t *testing.T) {
 		expenses := []models.Expense{
-			{ID: expenseID, PayerID: payerID, Amount: 100},
+			{ID: expenseID, PayerID: payerID, Amount: 100, BaseAmount: 100},
 		}
 		splits := []models.Split{
 			{ExpenseID: expenseID, UserID: payerID, Amount: 50, IsSettled: true},
@@ -492,7 +567,7 @@ func TestCalculateBalances(t *testing.T) {
 
 	t.Run("settlement of 50 adjusts balances correctly", func(t *testing.T) {
 		expenses := []models.Expense{
-			{ID: expenseID, PayerID: payerID, Amount: 100},
+			{ID: expenseID, PayerID: payerID, Amount: 100, BaseAmount: 100},
 		}
 		splits := []models.Split{
 			{ExpenseID: expenseID, UserID: payerID, Amount: 50, IsSettled: true},
@@ -516,7 +591,7 @@ func TestCalculateBalances(t *testing.T) {
 		// IsSettled on a split does NOT affect balance calculation — it's a display flag.
 		// This test pins current behavior.
 		expenses := []models.Expense{
-			{ID: expenseID, PayerID: payerID, Amount: 100},
+			{ID: expenseID, PayerID: payerID, Amount: 100, BaseAmount: 100},
 		}
 		splits := []models.Split{
 			{ExpenseID: expenseID, UserID: secondID, Amount: 100, IsSettled: true},
@@ -538,8 +613,8 @@ func TestCalculateBalances(t *testing.T) {
 		thirdID := uuid.MustParse("00000000-0000-0000-0000-000000000003")
 		exp2ID := uuid.New()
 		expenses := []models.Expense{
-			{ID: expenseID, PayerID: payerID, Amount: 90},
-			{ID: exp2ID, PayerID: secondID, Amount: 60},
+			{ID: expenseID, PayerID: payerID, Amount: 90, BaseAmount: 90},
+			{ID: exp2ID, PayerID: secondID, Amount: 60, BaseAmount: 60},
 		}
 		splits := []models.Split{
 			{ExpenseID: expenseID, UserID: payerID, Amount: 30, IsSettled: true},
@@ -640,8 +715,8 @@ func TestBalancesEquivalence(t *testing.T) {
 
 	// Feed fixture through calculateBalances (path A)
 	expenses := []models.Expense{
-		{ID: expE1, PayerID: userA, Amount: 9000},
-		{ID: expE2, PayerID: userB, Amount: 5000},
+		{ID: expE1, PayerID: userA, Amount: 9000, BaseAmount: 9000},
+		{ID: expE2, PayerID: userB, Amount: 5000, BaseAmount: 5000},
 	}
 	splits := []models.Split{
 		{ExpenseID: expE1, UserID: userA, Amount: 3000, IsSettled: true},
@@ -730,6 +805,7 @@ func TestFinanceService_UpdateExpense(t *testing.T) {
 
 		financeRepo.On("GetExpenseByID", ctx, expenseID).Return(existingExpense, nil)
 		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		groupRepo.On("GetGroupByID", ctx, groupID).Return(&models.Group{ID: groupID, Currency: "USD"}, nil)
 		financeRepo.On("UpdateExpense", ctx, mock.AnythingOfType("*models.Expense")).Return(nil)
 
 		expense := &models.Expense{ID: expenseID, PayerID: userID, Amount: 200, Currency: "USD"}
@@ -760,6 +836,7 @@ func TestFinanceService_UpdateExpense(t *testing.T) {
 		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "admin"}, nil)
 		// requireMember call for new payer (otherUserID)
 		groupRepo.On("GetMembership", ctx, groupID, otherUserID).Return(&models.GroupMembership{Role: "member"}, nil)
+		groupRepo.On("GetGroupByID", ctx, groupID).Return(&models.Group{ID: groupID, Currency: "USD"}, nil)
 		financeRepo.On("UpdateExpense", ctx, mock.AnythingOfType("*models.Expense")).Return(nil)
 
 		expense := &models.Expense{ID: expenseID, PayerID: otherUserID, Amount: 100, Currency: "USD"}

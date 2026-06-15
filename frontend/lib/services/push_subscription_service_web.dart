@@ -1,12 +1,12 @@
 // ignore_for_file: avoid_web_libraries_in_flutter
 
 import 'dart:convert';
-import 'dart:html' as html;
-import 'dart:typed_data';
+import 'dart:js_interop';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:web/web.dart';
 import '../config/api_config.dart';
 import 'token_store.dart';
 
@@ -32,15 +32,17 @@ class PushSubscriptionService {
       final vapidResp = await vapidDio.get('/vapid');
       final publicKey = vapidResp.data['public_key'] as String;
 
-      final sw = html.window.navigator.serviceWorker;
-      if (sw == null) return;
-      await sw.register('service_worker.js');
-      final reg = await sw.ready;
-      final subscription = await reg.pushManager?.subscribe({
-        'userVisibleOnly': true,
-        'applicationServerKey': _urlBase64ToUint8List(publicKey),
-      });
-      if (subscription == null) return;
+      final sw = window.navigator.serviceWorker;
+      await sw.register('service_worker.js'.toJS).toDart;
+      final reg = await sw.ready.toDart;
+      final subscription = await reg.pushManager
+          .subscribe(
+            PushSubscriptionOptionsInit(
+              userVisibleOnly: true,
+              applicationServerKey: _urlBase64ToUint8List(publicKey).toJS,
+            ),
+          )
+          .toDart;
 
       final authDio = Dio(BaseOptions(
         baseUrl: '${ApiConfig.baseUrl}${ApiConfig.apiPrefix}',
@@ -59,7 +61,7 @@ class PushSubscriptionService {
       if (p256dhKey == null || authKey == null) return;
 
       await authDio.post('/auth/push-subscriptions', data: {
-        'endpoint': subscription.endpoint ?? '',
+        'endpoint': subscription.endpoint,
         'p256dh': _encodeKey(p256dhKey),
         'auth': _encodeKey(authKey),
       });
@@ -70,9 +72,9 @@ class PushSubscriptionService {
     }
   }
 
-  static String _encodeKey(ByteBuffer? key) {
+  static String _encodeKey(JSArrayBuffer? key) {
     if (key == null) return '';
-    return base64.encode(Uint8List.view(key));
+    return base64.encode(Uint8List.view(key.toDart));
   }
 
   static Uint8List _urlBase64ToUint8List(String input) {

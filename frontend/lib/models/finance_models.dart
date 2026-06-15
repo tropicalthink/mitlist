@@ -5,6 +5,8 @@ class Expense {
   final String groupId;
   final String payerId;
   final int amount;
+  final int baseAmount;
+  final double fxRate;
   final String description;
   final String category;
   final String currency;
@@ -17,6 +19,8 @@ class Expense {
     required this.groupId,
     required this.payerId,
     required this.amount,
+    required this.baseAmount,
+    this.fxRate = 1.0,
     required this.description,
     required this.category,
     required this.currency,
@@ -30,6 +34,10 @@ class Expense {
         groupId: json['group_id'] as String,
         payerId: json['payer_id'] as String,
         amount: parseJsonInt64(json['amount'], fieldName: 'amount'),
+        baseAmount: json['base_amount'] == null
+            ? parseJsonInt64(json['amount'], fieldName: 'amount')
+            : parseJsonInt64(json['base_amount'], fieldName: 'base_amount'),
+        fxRate: (json['fx_rate'] as num?)?.toDouble() ?? 1.0,
         description: json['description'] as String,
         category: json['category'] as String? ?? 'other',
         currency: json['currency'] as String? ?? 'USD',
@@ -43,6 +51,8 @@ class Expense {
         'group_id': groupId,
         'payer_id': payerId,
         'amount': amount,
+        'base_amount': baseAmount,
+        'fx_rate': fxRate,
         'description': description,
         'category': category,
         'currency': currency,
@@ -177,6 +187,8 @@ class CreateExpenseRequest {
   final String groupId;
   final String payerId;
   final int amount;
+  final int baseAmount;
+  final double fxRate;
   final String description;
   final String category;
   final String currency;
@@ -190,6 +202,8 @@ class CreateExpenseRequest {
     required this.groupId,
     required this.payerId,
     required this.amount,
+    required this.baseAmount,
+    this.fxRate = 1.0,
     required this.description,
     this.category = 'other',
     this.currency = 'USD',
@@ -204,6 +218,8 @@ class CreateExpenseRequest {
         'group_id': groupId,
         'payer_id': payerId,
         'amount': amount,
+        'base_amount': baseAmount,
+        'fx_rate': fxRate,
         'description': description,
         'category': category,
         'currency': currency,
@@ -239,6 +255,8 @@ class CreateExpenseSplitRequest {
 class UpdateExpenseRequest {
   final String? payerId;
   final int? amount;
+  final int? baseAmount;
+  final double? fxRate;
   final String? description;
   final String? category;
   final String? currency;
@@ -248,6 +266,8 @@ class UpdateExpenseRequest {
   const UpdateExpenseRequest({
     this.payerId,
     this.amount,
+    this.baseAmount,
+    this.fxRate,
     this.description,
     this.category,
     this.currency,
@@ -259,6 +279,8 @@ class UpdateExpenseRequest {
     final m = <String, dynamic>{};
     if (payerId != null) m['payer_id'] = payerId;
     if (amount != null) m['amount'] = amount;
+    if (baseAmount != null) m['base_amount'] = baseAmount;
+    if (fxRate != null) m['fx_rate'] = fxRate;
     if (description != null) m['description'] = description;
     if (category != null) m['category'] = category;
     if (currency != null) m['currency'] = currency;

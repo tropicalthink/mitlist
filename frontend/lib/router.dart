@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/auth_provider.dart';
+import 'providers/group_provider.dart' show cachedGroupsProvider;
 import 'widgets/app_icon.dart';
 import 'providers/nav_badge_provider.dart';
 import 'providers/grocery_provider.dart' show groceryGraphSyncProvider;
+import 'utils/active_group_context.dart';
 import 'utils/shell_tab_load.dart';
 
 import 'screens/home/groups_list_screen.dart';
@@ -94,8 +98,29 @@ final _recipesNavKey = GlobalKey<NavigatorState>(debugLabel: 'recipes');
 
 const _sessionBootstrapPath = sessionBootstrapPath;
 
+Future<void> _reconcileActiveGroupAfterAuth(Ref ref) async {
+  await ref.read(currentGroupIdProvider.notifier).ensureLoaded();
+  try {
+    final groups = await ref.read(cachedGroupsProvider.future);
+    final resolved = resolveActiveGroupId(
+      groups,
+      ref.read(currentGroupIdProvider),
+    );
+    if (resolved != ref.read(currentGroupIdProvider)) {
+      await ref.read(currentGroupIdProvider.notifier).set(resolved);
+    }
+  } catch (_) {}
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   ref.watch(authBootstrapListenerProvider);
+  ref.listen<bool>(authStateProvider, (previous, next) {
+    if (!next && previous == true) {
+      unawaited(ref.read(currentGroupIdProvider.notifier).set(null));
+    } else if (next && previous != true) {
+      unawaited(_reconcileActiveGroupAfterAuth(ref));
+    }
+  });
   final refreshListenable = _RouterRefreshListenable(ref);
 
   return GoRouter(

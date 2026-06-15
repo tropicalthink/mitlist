@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../providers/grocery_provider.dart';
-import '../../providers/scan_provider.dart' show cloudScanProvider;
 import '../../providers/store_provider.dart';
 import '../../screens/scanner/scan_review_screen.dart';
 import '../../theme/spacing.dart';
@@ -88,7 +87,6 @@ Future<int?> launchListScan(
       groupId: groupId,
       storeId: ref.read(selectedStoreIdProvider),
       isOnline: isOnline,
-      allowCloud: ref.read(cloudScanProvider),
     );
 
     if (!context.mounted) return null;
