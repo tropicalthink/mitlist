@@ -18,6 +18,7 @@ class GroceryClassifierInference {
   List<double>? _idf;
   String? _stripChars;
   bool _unavailable = false;
+  Future<void>? _loadFuture;
 
   GroceryClassifierInference({
     String modelAsset = 'assets/models/grocery_classifier.tflite',
@@ -27,7 +28,12 @@ class GroceryClassifierInference {
         _labelsAsset = labelsAsset,
         _vocabAsset = vocabAsset;
 
-  Future<void> _ensureLoaded() async {
+  Future<void> _ensureLoaded() {
+    _loadFuture ??= _doLoad();
+    return _loadFuture!;
+  }
+
+  Future<void> _doLoad() async {
     if (_unavailable || _interpreter != null) return;
 
     try {
@@ -93,5 +99,6 @@ class GroceryClassifierInference {
   void dispose() {
     _interpreter?.close();
     _interpreter = null;
+    _loadFuture = null;
   }
 }
