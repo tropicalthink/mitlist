@@ -242,6 +242,32 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
     setState(() => _isPosting = true);
     final l10n = AppLocalizations.of(context)!;
     try {
+      // Plain-text posts (no media, no linked entity) go through the
+      // offline-first path so they pin immediately and work without a
+      // connection. Media/linked posts still require the server.
+      final canQueueOffline =
+          _pendingMedia.isEmpty && (_linkedEntityId?.isEmpty ?? true);
+      if (canQueueOffline) {
+        final repo = await ref.read(pinwallRepositoryProvider.future);
+        await repo.createPostOfflineFirst(
+          widget.groupId,
+          content: content.isEmpty ? ' ' : content,
+          userId: widget.me?.id ?? '',
+          remindAt: _remindAt,
+        );
+        _controller.clear();
+        _clearReminder();
+        // Best-effort immediate sync; offline leaves the queued + synthetic
+        // post in place until connectivity returns.
+        unawaited(repo.drainOutboxOnce().catchError((_) {}));
+        if (!mounted) return;
+        unawaited(Haptics.light());
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.pinwallPinned)),
+        );
+        return;
+      }
+
       final svc = await ref.read(pinwallServiceProviderAsync.future);
       final post = await svc.createPost(widget.groupId,
           content: content.isEmpty ? ' ' : content,
@@ -1302,9 +1328,11 @@ class _PinwallNoteCard extends ConsumerWidget {
 
     Future<void> onDelete() async {
       unawaited(Haptics.light());
-      final svc = await ref.read(pinwallServiceProviderAsync.future);
-      await svc.deletePost(groupId, post.id);
-      ref.invalidate(pinwallPostsByGroupProvider(groupId));
+      final repo = await ref.read(pinwallRepositoryProvider.future);
+      // Offline-first: removes the note from the cache immediately (the Drift
+      // stream re-paints) and queues the server delete for the next drain.
+      await repo.deletePostOfflineFirst(groupId, post.id);
+      unawaited(repo.drainOutboxOnce().catchError((_) {}));
     }
 
     final textColor = dark

@@ -37,14 +37,40 @@ class PinwallRepository {
     );
   }
 
-  Future<void> createPostOfflineFirst(String groupId, {required String content}) async {
+  /// Queues a post creation and inserts a synthetic "pending" post into the
+  /// cache so it appears immediately offline. Text-only — media attachments
+  /// require the network and are handled by the online path. The post-drain
+  /// [refreshPosts] replaces the temp post with the server's canonical row.
+  /// Returns the temporary local id.
+  Future<String> createPostOfflineFirst(
+    String groupId, {
+    required String content,
+    required String userId,
+    DateTime? remindAt,
+  }) async {
+    final tempId = 'local-${_uuid.v4()}';
     await _db.enqueueOutbox(
       id: _uuid.v4(),
       type: 'createPinwallPost',
-      payload: {'groupId': groupId, 'content': content},
-      idempotencyKey: 'createPinwallPost:$groupId:${DateTime.now().millisecondsSinceEpoch}',
+      payload: {
+        'groupId': groupId,
+        'content': content,
+        'tempId': tempId,
+        if (remindAt != null) 'remindAt': remindAt.toUtc().toIso8601String(),
+      },
+      idempotencyKey: 'createPinwallPost:$groupId:$tempId',
       entityType: 'pinwallPost',
+      entityId: tempId,
     );
+    await _insertCachedPost(PinwallPost(
+      id: tempId,
+      groupId: groupId,
+      userId: userId,
+      content: content,
+      createdAt: DateTime.now(),
+      remindAt: remindAt,
+    ));
+    return tempId;
   }
 
   Future<void> deletePostOfflineFirst(String groupId, String postId) async {
@@ -56,6 +82,43 @@ class PinwallRepository {
       entityType: 'pinwallPost',
       entityId: postId,
     );
+    // Optimistic removal so the note disappears immediately offline.
+    await _removeCachedPost(groupId, postId);
+  }
+
+  /// Prepends [post] to the cached posts blob (most-recent-first).
+  Future<void> _insertCachedPost(PinwallPost post) async {
+    final row = await _db.getPinwallPostsOnce(post.groupId);
+    final raw = row?.postsJson;
+    List<dynamic> list;
+    if (raw == null || raw.isEmpty) {
+      list = [];
+    } else {
+      final decoded = jsonDecode(raw);
+      list = decoded is List ? decoded : [];
+    }
+    list.insert(0, post.toJson());
+    await _db.upsertPinwallPosts(
+      groupId: post.groupId,
+      postsJson: jsonEncode(list),
+    );
+  }
+
+  Future<void> _removeCachedPost(String groupId, String postId) async {
+    final row = await _db.getPinwallPostsOnce(groupId);
+    final raw = row?.postsJson;
+    if (raw == null || raw.isEmpty) return;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return;
+      decoded.removeWhere((e) => e is Map && e['id'] == postId);
+      await _db.upsertPinwallPosts(
+        groupId: groupId,
+        postsJson: jsonEncode(decoded),
+      );
+    } catch (_) {
+      // Best-effort; the drain + refresh reconciles.
+    }
   }
 
   Future<void> drainOutboxOnce() async {
@@ -63,9 +126,11 @@ class PinwallRepository {
       types: const ['createPinwallPost', 'deletePinwallPost'],
       handlers: {
         'createPinwallPost': (op, payload) async {
+          final remindRaw = payload['remindAt'] as String?;
           await _remote.createPost(
             payload['groupId'] as String,
             content: payload['content'] as String,
+            remindAt: remindRaw != null ? DateTime.parse(remindRaw) : null,
           );
           await refreshPosts(payload['groupId'] as String);
           await _db.deleteOutboxOp(op.id);
