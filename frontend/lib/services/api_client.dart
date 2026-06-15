@@ -5,6 +5,7 @@ import 'package:logger/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/api_config.dart';
 import '../providers/auth_provider.dart';
+import 'token_refresh_coordinator.dart';
 import 'token_store.dart';
 
 const _retryKey = 'has_retried';
@@ -62,61 +63,24 @@ class AuthInterceptor extends Interceptor {
 }
 
 /// Custom Dio interceptor for token refresh.
+///
+/// On a 401, delegates to the shared [TokenRefreshCoordinator] (single-flight,
+/// shared with the SSE service) so concurrent 401s collapse onto one refresh
+/// against one rotated token, then retries the original request.
 class TokenRefreshInterceptor extends Interceptor {
   final Dio dio;
   final Logger _logger = Logger();
   final Ref? _ref;
   final TokenStore _tokenStore;
+  final TokenRefreshCoordinator _coordinator;
 
-  TokenRefreshInterceptor(this.dio, [this._ref, TokenStore? tokenStore])
-      : _tokenStore = tokenStore ?? SecureTokenStore();
-
-  static Future<TokenPairResult?>? _refreshInFlight;
-
-  Future<TokenPairResult?> _refreshTokensOnce(Dio dio) async {
-    if (_refreshInFlight != null) {
-      return await _refreshInFlight!;
-    }
-    final refreshToken = await _tokenStore.getRefreshToken();
-    if (refreshToken == null) {
-      return null;
-    }
-
-    final future = () async {
-      try {
-        final response = await dio.post(
-          '/auth/token/refresh',
-          options: Options(extra: {_retryKey: true}),
-          data: {'refresh_token': refreshToken},
-        );
-        if (response.statusCode == 200 &&
-            response.data is Map<String, dynamic> &&
-            (response.data as Map<String, dynamic>)
-                .containsKey('access_token') &&
-            (response.data as Map<String, dynamic>)
-                .containsKey('refresh_token')) {
-          final data = response.data as Map<String, dynamic>;
-          return TokenPairResult(
-            accessToken: data['access_token'] as String,
-            refreshToken: data['refresh_token'] as String,
-          );
-        }
-      } catch (e) {
-        // log below
-        if (kDebugMode) {
-          _logger.e('Token refresh failed: ${_redactedDioError(e)}');
-        }
-      }
-      return null;
-    }();
-
-    _refreshInFlight = future;
-    try {
-      return await future;
-    } finally {
-      _refreshInFlight = null;
-    }
-  }
+  TokenRefreshInterceptor(
+    this.dio, [
+    this._ref,
+    TokenStore? tokenStore,
+    TokenRefreshCoordinator? coordinator,
+  ])  : _tokenStore = tokenStore ?? SecureTokenStore.shared,
+        _coordinator = coordinator ?? TokenRefreshCoordinator.shared;
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
@@ -135,18 +99,17 @@ class TokenRefreshInterceptor extends Interceptor {
       return;
     }
 
-    final tokenPair = await _refreshTokensOnce(dio);
+    // Snapshot the token we're refreshing against so we can tell, on failure,
+    // whether someone else rotated it underneath us.
+    final attemptedRefreshToken = await _tokenStore.getRefreshToken();
+    final tokenPair = await _coordinator.refresh();
     if (tokenPair == null) {
-      await _onRefreshFailure();
+      await _onRefreshFailure(attemptedRefreshToken);
       handler.next(err);
       return;
     }
 
-    await _tokenStore.save(
-      accessToken: tokenPair.accessToken,
-      refreshToken: tokenPair.refreshToken,
-    );
-
+    // The coordinator already persisted the rotated pair to the shared store.
     final options = err.requestOptions;
     options.headers[ApiConfig.authorizationHeader] =
         '${ApiConfig.authorizationPrefix}${tokenPair.accessToken}';
@@ -162,23 +125,24 @@ class TokenRefreshInterceptor extends Interceptor {
       }
     }
 
-    await _onRefreshFailure();
+    await _onRefreshFailure(attemptedRefreshToken);
     handler.next(err);
   }
 
-  Future<void> _onRefreshFailure() async {
+  Future<void> _onRefreshFailure(String? attemptedRefreshToken) async {
+    // Defensive: if the stored refresh token changed since we started, another
+    // path successfully rotated it — don't wipe a freshly-valid session.
+    final current = await _tokenStore.getRefreshToken();
+    if (attemptedRefreshToken != null &&
+        current != null &&
+        current != attemptedRefreshToken) {
+      return;
+    }
     await _tokenStore.clear();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(ApiConfig.userDataKey);
     _ref?.read(authStateProvider.notifier).state = false;
   }
-}
-
-class TokenPairResult {
-  final String accessToken;
-  final String refreshToken;
-  const TokenPairResult(
-      {required this.accessToken, required this.refreshToken});
 }
 
 /// Shared Dio instance for all API services.
@@ -198,7 +162,7 @@ Dio resolveDio([Ref? ref]) {
 
 /// Creates a configured Dio instance for API requests.
 Dio createApiClient([Ref? ref, TokenStore? tokenStore]) {
-  final store = tokenStore ?? SecureTokenStore();
+  final store = tokenStore ?? SecureTokenStore.shared;
   final dio = Dio(
     BaseOptions(
       baseUrl: '${ApiConfig.baseUrl}${ApiConfig.apiPrefix}',

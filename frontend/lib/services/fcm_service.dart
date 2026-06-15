@@ -29,7 +29,7 @@ const _prefDeviceTokenId = 'fcm_device_token_id';
 ///             Push Notifications + Background Modes capabilities in Xcode.
 class FcmService {
   static final Logger _log = Logger();
-  static final TokenStore _tokenStore = SecureTokenStore();
+  static final TokenStore _tokenStore = SecureTokenStore.shared;
 
   static final StreamController<RemoteMessage> _foregroundController =
       StreamController<RemoteMessage>.broadcast();
