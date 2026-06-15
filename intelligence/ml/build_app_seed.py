@@ -4,8 +4,9 @@
 Source: intelligence/ml/data/seed.json   (raw canonical array, 4 languages)
 Target: frontend/assets/grocery/seed.json ({version, items:[...]} shape)
 
-The app's GrocerySeedLoader expects each item to have a stable `id`, and only
-reads name_de/name_en + aliases_de/aliases_en. `category` is used as the aisle
+The app's GrocerySeedLoader expects each item to have a stable `id`, and reads
+name_de/name_en/name_fr/name_es + aliases for all four languages. `category` is
+used as the aisle
 fallback label, so the 40 fine-grained source categories are mapped down to the
 coarse aisle vocabulary the app already uses.
 """
@@ -14,7 +15,7 @@ import json, re, unicodedata, collections, pathlib
 HERE = pathlib.Path(__file__).resolve().parent
 SRC = HERE / "data" / "seed.json"
 DST = HERE.parent.parent / "frontend" / "assets" / "grocery" / "seed.json"
-ASSET_VERSION = 2
+ASSET_VERSION = 3
 
 # Fine category -> coarse aisle label (matches existing app vocabulary).
 CATEGORY_TO_AISLE = {
@@ -63,10 +64,14 @@ def main():
             "id": iid,
             "name_de": it.get("name_de", ""),
             "name_en": it.get("name_en", ""),
+            "name_fr": it.get("name_fr", ""),
+            "name_es": it.get("name_es", ""),
             "category": aisle,
             "default_unit": it.get("default_unit", ""),
             "aliases_de": it.get("aliases_de", []),
             "aliases_en": it.get("aliases_en", []),
+            "aliases_fr": it.get("aliases_fr", []),
+            "aliases_es": it.get("aliases_es", []),
         })
 
     if unmapped:

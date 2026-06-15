@@ -121,9 +121,17 @@ class GrocerySeedLoader {
       for (final a in (item['aliases_en'] as List? ?? [])) {
         addAlias(a as String, 'en');
       }
-      // Also alias by canonical German and English name.
+      for (final a in (item['aliases_fr'] as List? ?? [])) {
+        addAlias(a as String, 'fr');
+      }
+      for (final a in (item['aliases_es'] as List? ?? [])) {
+        addAlias(a as String, 'es');
+      }
+      // Also alias by canonical name in each shipped language.
       addAlias(item['name_de'] as String, 'de');
       addAlias(item['name_en'] as String, 'en');
+      addAlias(item['name_fr'] as String, 'fr');
+      addAlias(item['name_es'] as String, 'es');
     }
 
     // Insert in chunks so a full-seed reingest doesn't hold ~120k companions

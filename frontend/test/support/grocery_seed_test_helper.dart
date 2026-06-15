@@ -70,8 +70,16 @@ Future<void> ingestRealSeed(AppDatabase db) async {
     for (final a in (item['aliases_en'] as List? ?? [])) {
       addAlias(a as String?, 'en');
     }
+    for (final a in (item['aliases_fr'] as List? ?? [])) {
+      addAlias(a as String?, 'fr');
+    }
+    for (final a in (item['aliases_es'] as List? ?? [])) {
+      addAlias(a as String?, 'es');
+    }
     addAlias(item['name_de'] as String?, 'de');
     addAlias(item['name_en'] as String?, 'en');
+    addAlias(item['name_fr'] as String?, 'fr');
+    addAlias(item['name_es'] as String?, 'es');
   }
 
   for (final chunk in chunked(canonical, 1000)) {
