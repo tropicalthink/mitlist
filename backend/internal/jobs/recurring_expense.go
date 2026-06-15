@@ -67,6 +67,8 @@ func (j *RecurringExpenseJob) processRecurringExpense(ctx context.Context, re mo
 		GroupID:     re.GroupID,
 		PayerID:     re.PayerID,
 		Amount:      re.Amount,
+		BaseAmount:  re.Amount, // recurring expenses are base-currency; fx_rate=1
+		FxRate:      1,
 		Description: re.Description,
 		Category:    re.Category,
 		Currency:    re.Currency,
@@ -228,9 +230,9 @@ func (r *recurringExpenseRepoImpl) ProcessRecurringExpense(ctx context.Context, 
 	defer tx.Rollback(ctx)
 
 	_, err = tx.Exec(ctx, `
-		INSERT INTO expenses (id, group_id, payer_id, amount, description, category, currency, notes, date, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-	`, expense.ID, expense.GroupID, expense.PayerID, expense.Amount, expense.Description, expense.Category, expense.Currency, "", expense.Date, expense.CreatedAt, expense.UpdatedAt)
+		INSERT INTO expenses (id, group_id, payer_id, amount, base_amount, fx_rate, description, category, currency, notes, date, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+	`, expense.ID, expense.GroupID, expense.PayerID, expense.Amount, expense.BaseAmount, expense.FxRate, expense.Description, expense.Category, expense.Currency, "", expense.Date, expense.CreatedAt, expense.UpdatedAt)
 	if err != nil {
 		return fmt.Errorf("create expense: %w", err)
 	}
