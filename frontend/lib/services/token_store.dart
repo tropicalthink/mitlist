@@ -30,6 +30,15 @@ class SecureTokenStore implements TokenStore {
   SecureTokenStore([FlutterSecureStorage? storage])
       : _storage = storage ?? const FlutterSecureStorage();
 
+  /// Process-wide shared instance used by production code paths (the Dio auth
+  /// interceptor, the SSE service, auth/fcm services). Sharing one instance
+  /// keeps the in-memory cache consistent so a token rotation written by one
+  /// path is immediately visible to the others.
+  ///
+  /// Tests should construct [SecureTokenStore] directly (or inject a fake) to
+  /// get an isolated cache; this getter is intentionally not used there.
+  static final SecureTokenStore shared = SecureTokenStore();
+
   @override
   Future<String?> getAccessToken() async {
     _cachedAccessToken ??=

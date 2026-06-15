@@ -741,75 +741,54 @@ class _KitchenHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
     final privateCount = recipeCount - sharedCount;
+
+    final countLabel = visibleCount == recipeCount
+        ? '$recipeCount recipes'
+        : '$visibleCount of $recipeCount recipes';
+
+    final detailLabel = '$sharedCount shared · $privateCount private'
+        '${collectionCount > 0 ? ' · $collectionCount cookbooks' : ''}';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         MitlistSpacing.md,
         MitlistSpacing.md,
         MitlistSpacing.md,
-        MitlistSpacing.xs,
+        0,
       ),
-      child: AppCard(
-        variant: AppCardVariant.outlined,
-        padding: AppCardPadding.md,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: MitlistSpacing.space11,
-                  height: MitlistSpacing.space11,
-                  decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer,
-                    border: Border.all(color: colorScheme.outline, width: 2),
-                  ),
-                  alignment: Alignment.center,
-                  child: AppIcon(
-                    name: 'restaurantMenu',
-                    color: colorScheme.primary,
-                    size: 22,
-                  ),
+                Text(
+                  countLabel,
+                  style: Theme.of(context).textTheme.titleSmall,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(width: MitlistSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        visibleCount == recipeCount
-                            ? '$recipeCount saved recipes'
-                            : '$visibleCount of $recipeCount recipes',
-                        style: textTheme.titleMedium,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                Text(
+                  detailLabel,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
                       ),
-                      const SizedBox(height: MitlistSpacing.xs),
-                      Text(
-                        '$sharedCount shared, $privateCount private'
-                        '${collectionCount > 0 ? ', $collectionCount cookbooks' : ''}',
-                        style: textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                AppButton(
-                  text: 'Plan',
-                  size: AppButtonSize.sm,
-                  variant: AppButtonVariant.outline,
-                  icon: const AppIcon(name: 'calendarDays', size: 16),
-                  onPressed: onMealPlan,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+          const SizedBox(width: MitlistSpacing.sm),
+          AppButton(
+            text: 'Plan',
+            size: AppButtonSize.sm,
+            variant: AppButtonVariant.outline,
+            icon: const AppIcon(name: 'calendarDays', size: 16),
+            onPressed: onMealPlan,
+          ),
+        ],
       ),
     );
   }

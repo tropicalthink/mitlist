@@ -304,7 +304,7 @@ func (r *GroceryRepository) ResolveAlias(ctx context.Context, groupID uuid.UUID,
 	query := `
 		SELECT canonical_item_id
 		FROM item_aliases
-		WHERE (group_id = $1 OR group_id = '` + globalGroupID + `')
+		WHERE (group_id = $1 OR group_id = $3)
 		  AND alias_text = $2
 		  AND deleted_at IS NULL
 		ORDER BY
@@ -312,7 +312,7 @@ func (r *GroceryRepository) ResolveAlias(ctx context.Context, groupID uuid.UUID,
 		  weight DESC
 		LIMIT 1`
 	var id uuid.UUID
-	if err := r.pool.QueryRow(ctx, query, groupID, aliasText).Scan(&id); err != nil {
+	if err := r.pool.QueryRow(ctx, query, groupID, aliasText, globalGroupID).Scan(&id); err != nil {
 		return uuid.Nil, false, nil //nolint:nilerr // not-found is not an error here
 	}
 	return id, true, nil

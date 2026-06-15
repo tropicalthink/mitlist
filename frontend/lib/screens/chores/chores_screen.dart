@@ -795,12 +795,6 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                           myTurn: myTurn,
                           myActiveCount: myActive,
                           totalActiveCount: totalActive,
-                          overdueCount: sections['Overdue']!
-                              .where((c) => !c.completed)
-                              .length,
-                          todayCount: sections['Today']!
-                              .where((c) => !c.completed)
-                              .length,
                           filterMe: _filterMe,
                           onShowMine: () => _setFilterMe(true),
                           onShowEveryone: () => _setFilterMe(false),
@@ -990,8 +984,6 @@ class _TurnHero extends StatelessWidget {
   final List<_Chore> myTurn;
   final int myActiveCount;
   final int totalActiveCount;
-  final int overdueCount;
-  final int todayCount;
   final bool filterMe;
   final VoidCallback onShowMine;
   final VoidCallback onShowEveryone;
@@ -1000,8 +992,6 @@ class _TurnHero extends StatelessWidget {
     required this.myTurn,
     required this.myActiveCount,
     required this.totalActiveCount,
-    required this.overdueCount,
-    required this.todayCount,
     required this.filterMe,
     required this.onShowMine,
     required this.onShowEveryone,
@@ -1079,55 +1069,23 @@ class _TurnHero extends StatelessWidget {
               ],
             ),
             const SizedBox(height: MitlistSpacing.md),
-            Wrap(
-              spacing: MitlistSpacing.sm,
-              runSpacing: MitlistSpacing.sm,
-              crossAxisAlignment: WrapCrossAlignment.center,
+            Row(
               children: [
                 AppChip(
                   label: 'Me ($myActiveCount)',
                   selected: filterMe,
                   onSelected: (_) => onShowMine(),
                 ),
+                const SizedBox(width: MitlistSpacing.sm),
                 AppChip(
                   label: 'Everyone ($totalActiveCount)',
                   selected: !filterMe,
                   onSelected: (_) => onShowEveryone(),
                 ),
-                _HeaderCountChip(label: 'Overdue', count: overdueCount),
-                _HeaderCountChip(label: 'Today', count: todayCount),
               ],
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _HeaderCountChip extends StatelessWidget {
-  final String label;
-  final int count;
-
-  const _HeaderCountChip({required this.label, required this.count});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: MitlistSpacing.sm,
-        vertical: MitlistSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border.all(color: colorScheme.outline, width: 1),
-      ),
-      child: Text(
-        '$label $count',
-        style: MitlistTypography.labelXSmall(
-          color: count > 0 ? colorScheme.primary : colorScheme.onSurfaceVariant,
-        ).copyWith(fontWeight: count > 0 ? FontWeight.w700 : FontWeight.w500),
       ),
     );
   }
@@ -1149,141 +1107,42 @@ class _FairnessStrip extends StatelessWidget {
     required this.onTap,
   });
 
-  String _nameFor(String userId) {
-    if (userId == myUserId) return 'You';
-    final name = memberNames[userId];
-    if (name != null && name.isNotEmpty) return name;
-    return userId.length <= 6 ? userId : userId.substring(0, 6);
-  }
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    // Merge so every known member shows, including those at zero.
-    final counts = <String, int>{for (final id in memberNames.keys) id: 0};
-    for (final e in entries) {
-      counts[e.userId] = e.completedCount;
-    }
-    final rows = counts.entries.toList()
-      ..sort((a, b) {
-        final byCount = b.value.compareTo(a.value);
-        return byCount != 0
-            ? byCount
-            : _nameFor(a.key).compareTo(_nameFor(b.key));
-      });
-    final total = rows.fold<int>(0, (sum, e) => sum + e.value);
-
-    // Neutral tones cycled for everyone who isn't you, so adjacent segments
-    // stay distinguishable while "you" keeps the brand color.
-    final otherTones = <Color>[
-      colorScheme.onSurfaceVariant,
-      colorScheme.onSurfaceVariant.withValues(alpha: 0.55),
-      colorScheme.outline,
-    ];
-    Color toneFor(String userId, int otherIndex) => userId == myUserId
-        ? colorScheme.primary
-        : otherTones[otherIndex % otherTones.length];
-
-    final header = Row(
-      children: [
-        AppIcon(
-          name: 'chartBar',
-          size: 16,
-          color: colorScheme.onSurfaceVariant,
-        ),
-        const SizedBox(width: MitlistSpacing.space2),
-        Text(
-          'How it splits',
-          style: textTheme.labelMedium?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const Spacer(),
-        Text(
-          'Last 30 days',
-          style: MitlistTypography.labelXSmall(
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(width: MitlistSpacing.space1),
-        AppIcon(
-          name: 'chevronRight',
-          size: 16,
-          color: colorScheme.onSurfaceVariant,
-        ),
-      ],
-    );
-
-    Widget body;
-    if (total == 0) {
-      body = Text(
-        'No chores logged yet. Be the first to mark one done.',
-        style:
-            textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-      );
-    } else {
-      var otherIndex = 0;
-      final segments = <Widget>[];
-      final legend = <Widget>[];
-      for (final entry in rows) {
-        if (entry.value <= 0) continue;
-        final isMe = entry.key == myUserId;
-        final color = toneFor(entry.key, isMe ? 0 : otherIndex);
-        if (!isMe) otherIndex++;
-        segments.add(
-          Expanded(
-            flex: entry.value,
-            child: Container(color: color),
-          ),
-        );
-        legend.add(
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(width: 8, height: 8, color: color),
-              const SizedBox(width: MitlistSpacing.space1),
-              Text(
-                '${_nameFor(entry.key)} ${entry.value}',
-                style: MitlistTypography.labelXSmall(
-                  color:
-                      isMe ? colorScheme.primary : colorScheme.onSurfaceVariant,
-                ).copyWith(
-                  fontWeight: isMe ? FontWeight.w700 : FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        );
-      }
-      body = Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            height: MitlistSpacing.space2,
-            child: Row(children: segments),
-          ),
-          const SizedBox(height: MitlistSpacing.space2),
-          Wrap(
-            spacing: MitlistSpacing.md,
-            runSpacing: MitlistSpacing.space1,
-            children: legend,
-          ),
-        ],
-      );
-    }
+    final total = entries.fold<int>(0, (sum, e) => sum + e.completedCount);
 
     return AppCard(
       variant: AppCardVariant.outlined,
       padding: AppCardPadding.sm,
       onTap: onTap,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          header,
-          const SizedBox(height: MitlistSpacing.sm),
-          body,
+          AppIcon(
+            name: 'chartBar',
+            size: 16,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: MitlistSpacing.space2),
+          Expanded(
+            child: Text(
+              total == 0
+                  ? 'How it splits'
+                  : 'How it splits · $total done, last 30 days',
+              style: textTheme.labelMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          AppIcon(
+            name: 'chevronRight',
+            size: 16,
+            color: colorScheme.onSurfaceVariant,
+          ),
         ],
       ),
     );

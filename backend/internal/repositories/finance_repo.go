@@ -131,6 +131,50 @@ func (r *FinanceRepo) UpdateExpense(ctx context.Context, e *models.Expense) erro
 	return nil
 }
 
+// UpdateExpenseWithSplits updates an expense and replaces all of its splits
+// in a single transaction, keeping base_amount and the split sum consistent.
+func (r *FinanceRepo) UpdateExpenseWithSplits(ctx context.Context, e *models.Expense, splits []models.Split) error {
+	e.UpdatedAt = time.Now().UTC()
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	cmd, err := tx.Exec(ctx, `
+		UPDATE expenses
+		SET payer_id = $1, amount = $2, base_amount = $3, fx_rate = $4, description = $5, category = $6, currency = $7, notes = $8, date = $9, updated_at = $10
+		WHERE id = $11
+	`, e.PayerID, e.Amount, e.BaseAmount, e.FxRate, e.Description, e.Category, e.Currency, e.Notes, e.Date, e.UpdatedAt, e.ID)
+	if err != nil {
+		return err
+	}
+	if cmd.RowsAffected() == 0 {
+		return fmt.Errorf("expense not found: %w", pgx.ErrNoRows)
+	}
+
+	if _, err = tx.Exec(ctx, `DELETE FROM splits WHERE expense_id = $1`, e.ID); err != nil {
+		return err
+	}
+	for i := range splits {
+		s := &splits[i]
+		if s.ID == uuid.Nil {
+			s.ID = uuid.New()
+		}
+		s.ExpenseID = e.ID
+		if s.CreatedAt.IsZero() {
+			s.CreatedAt = e.UpdatedAt
+		}
+		if _, err = tx.Exec(ctx, `
+			INSERT INTO splits (id, expense_id, user_id, amount, is_settled, created_at)
+			VALUES ($1, $2, $3, $4, $5, $6)
+		`, s.ID, s.ExpenseID, s.UserID, s.Amount, s.IsSettled, s.CreatedAt); err != nil {
+			return err
+		}
+	}
+	return tx.Commit(ctx)
+}
+
 // DeleteExpense removes an expense and its dependent splits.
 func (r *FinanceRepo) DeleteExpense(ctx context.Context, id uuid.UUID) error {
 	tx, err := r.pool.Begin(ctx)

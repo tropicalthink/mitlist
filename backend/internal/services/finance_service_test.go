@@ -796,9 +796,9 @@ func TestFinanceService_UpdateExpense(t *testing.T) {
 	expenseID := uuid.New()
 	groupID := uuid.New()
 
-	existingExpense := &models.Expense{ID: expenseID, GroupID: groupID, PayerID: userID, Amount: 100, Currency: "USD"}
+	existingExpense := &models.Expense{ID: expenseID, GroupID: groupID, PayerID: userID, Amount: 100, BaseAmount: 100, FxRate: 1, Currency: "USD"}
 
-	t.Run("member updating own-payer expense succeeds", func(t *testing.T) {
+	t.Run("member updating own-payer expense amount rescales splits", func(t *testing.T) {
 		financeRepo := new(mocks.MockFinanceRepo)
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := NewFinanceService(financeRepo, groupRepo)
@@ -806,7 +806,10 @@ func TestFinanceService_UpdateExpense(t *testing.T) {
 		financeRepo.On("GetExpenseByID", ctx, expenseID).Return(existingExpense, nil)
 		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
 		groupRepo.On("GetGroupByID", ctx, groupID).Return(&models.Group{ID: groupID, Currency: "USD"}, nil)
-		financeRepo.On("UpdateExpense", ctx, mock.AnythingOfType("*models.Expense")).Return(nil)
+		financeRepo.On("ListSplitsByExpense", ctx, expenseID).Return([]models.Split{
+			{ID: uuid.New(), ExpenseID: expenseID, UserID: userID, Amount: 100},
+		}, nil)
+		financeRepo.On("UpdateExpenseWithSplits", ctx, mock.AnythingOfType("*models.Expense"), mock.AnythingOfType("[]models.Split")).Return(nil)
 
 		expense := &models.Expense{ID: expenseID, PayerID: userID, Amount: 200, Currency: "USD"}
 		err := svc.UpdateExpense(ctx, userID, expense)
@@ -1136,5 +1139,121 @@ func TestFinanceService_CreateRecurringExpense_SplitValidation(t *testing.T) {
 		var valErr *api.ValidationError
 		require.ErrorAs(t, err, &valErr)
 		assert.Contains(t, valErr.Message, "member of this group")
+	})
+}
+
+func TestFinanceService_UpdateExpense_RescalesSplits(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+	groupID := uuid.New()
+	otherID := uuid.New()
+
+	t.Run("amount up rescales splits proportionally", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		expenseID := uuid.New()
+		existing := &models.Expense{ID: expenseID, GroupID: groupID, PayerID: userID, Amount: 100, BaseAmount: 100, FxRate: 1, Currency: "USD"}
+		financeRepo.On("GetExpenseByID", ctx, expenseID).Return(existing, nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		groupRepo.On("GetGroupByID", ctx, groupID).Return(&models.Group{ID: groupID, Currency: "USD"}, nil)
+		financeRepo.On("ListSplitsByExpense", ctx, expenseID).Return([]models.Split{
+			{ID: uuid.New(), ExpenseID: expenseID, UserID: userID, Amount: 50},
+			{ID: uuid.New(), ExpenseID: expenseID, UserID: otherID, Amount: 50},
+		}, nil)
+
+		var captured []models.Split
+		financeRepo.On("UpdateExpenseWithSplits", ctx, mock.AnythingOfType("*models.Expense"), mock.AnythingOfType("[]models.Split")).
+			Run(func(args mock.Arguments) {
+				captured = args.Get(2).([]models.Split)
+			}).Return(nil)
+
+		updated := &models.Expense{ID: expenseID, PayerID: userID, Amount: 200, Currency: "USD"}
+		err := svc.UpdateExpense(ctx, userID, updated)
+		require.NoError(t, err)
+
+		require.Len(t, captured, 2)
+		var sum int64
+		for _, s := range captured {
+			sum += s.Amount
+			assert.Equal(t, int64(100), s.Amount)
+		}
+		assert.Equal(t, int64(200), sum, "split sum must equal new base_amount")
+		financeRepo.AssertCalled(t, "UpdateExpenseWithSplits", ctx, mock.Anything, mock.Anything)
+	})
+
+	t.Run("odd remainder lands on one split", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		expenseID := uuid.New()
+		existing := &models.Expense{ID: expenseID, GroupID: groupID, PayerID: userID, Amount: 100, BaseAmount: 100, FxRate: 1, Currency: "USD"}
+		financeRepo.On("GetExpenseByID", ctx, expenseID).Return(existing, nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		groupRepo.On("GetGroupByID", ctx, groupID).Return(&models.Group{ID: groupID, Currency: "USD"}, nil)
+		financeRepo.On("ListSplitsByExpense", ctx, expenseID).Return([]models.Split{
+			{ID: uuid.New(), ExpenseID: expenseID, UserID: userID, Amount: 50},
+			{ID: uuid.New(), ExpenseID: expenseID, UserID: otherID, Amount: 50},
+		}, nil)
+
+		var captured []models.Split
+		financeRepo.On("UpdateExpenseWithSplits", ctx, mock.AnythingOfType("*models.Expense"), mock.AnythingOfType("[]models.Split")).
+			Run(func(args mock.Arguments) {
+				captured = args.Get(2).([]models.Split)
+			}).Return(nil)
+
+		updated := &models.Expense{ID: expenseID, PayerID: userID, Amount: 101, Currency: "USD"}
+		err := svc.UpdateExpense(ctx, userID, updated)
+		require.NoError(t, err)
+
+		require.Len(t, captured, 2)
+		var sum int64
+		for _, s := range captured {
+			sum += s.Amount
+		}
+		assert.Equal(t, int64(101), sum, "split sum must equal new base_amount exactly")
+	})
+
+	t.Run("unchanged base_amount uses plain update", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		expenseID := uuid.New()
+		existing := &models.Expense{ID: expenseID, GroupID: groupID, PayerID: userID, Amount: 100, BaseAmount: 100, FxRate: 1, Currency: "USD"}
+		financeRepo.On("GetExpenseByID", ctx, expenseID).Return(existing, nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		groupRepo.On("GetGroupByID", ctx, groupID).Return(&models.Group{ID: groupID, Currency: "USD"}, nil)
+		financeRepo.On("UpdateExpense", ctx, mock.AnythingOfType("*models.Expense")).Return(nil)
+
+		updated := &models.Expense{ID: expenseID, PayerID: userID, Amount: 100, Description: "new desc", Currency: "USD"}
+		err := svc.UpdateExpense(ctx, userID, updated)
+		require.NoError(t, err)
+		financeRepo.AssertCalled(t, "UpdateExpense", ctx, mock.Anything)
+		financeRepo.AssertNotCalled(t, "UpdateExpenseWithSplits", mock.Anything, mock.Anything, mock.Anything)
+	})
+}
+
+func TestRescaleSplits(t *testing.T) {
+	t.Run("oldTotal zero distributes newTotal evenly with exact sum", func(t *testing.T) {
+		splits := []models.Split{
+			{UserID: uuid.New(), Amount: 0},
+			{UserID: uuid.New(), Amount: 0},
+			{UserID: uuid.New(), Amount: 0},
+		}
+		out := rescaleSplits(splits, 0, 100)
+		require.Len(t, out, 3)
+		var sum int64
+		for _, s := range out {
+			sum += s.Amount
+		}
+		assert.Equal(t, int64(100), sum)
+	})
+
+	t.Run("empty splits returns empty", func(t *testing.T) {
+		out := rescaleSplits(nil, 100, 200)
+		assert.Empty(t, out)
 	})
 }
