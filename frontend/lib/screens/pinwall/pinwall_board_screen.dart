@@ -10,6 +10,8 @@ import '../../theme/spacing.dart';
 import '../../theme/theme.dart';
 import '../../utils/haptics.dart';
 import '../../utils/hub_helpers.dart';
+import '../../widgets/hub/stats_grid.dart';
+import '../../widgets/hub/tonight_card.dart';
 
 // ─── Board layout constants ──────────────────────────────────────────────────
 
@@ -243,21 +245,41 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
               ),
             ),
 
-            // Top controls
+            // Top controls + pinned hub summary
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(MitlistSpacing.md),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _BoardChip(
-                      label: 'Pinwall',
-                      icon: Icons.push_pin_outlined,
-                      dark: dark,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _BoardChip(
+                          label: 'Pinwall',
+                          icon: Icons.push_pin_outlined,
+                          dark: dark,
+                        ),
+                        _BoardCloseButton(
+                          dark: dark,
+                          onClose: () => Navigator.of(context).pop(),
+                        ),
+                      ],
                     ),
-                    _BoardCloseButton(
-                      dark: dark,
-                      onClose: () => Navigator.of(context).pop(),
+                    const SizedBox(height: MitlistSpacing.md),
+                    Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 520),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            StatsGrid(groupId: widget.groupId),
+                            const SizedBox(height: MitlistSpacing.md),
+                            TonightCard(groupId: widget.groupId),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
