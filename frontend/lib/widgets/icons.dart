@@ -83,7 +83,8 @@ class AppIcons {
   static const IconData eventNote = Icons.event_note;
   static const IconData homeOutline = Icons.home_outlined;
   static const IconData image = Icons.image;
-  static const IconData imageNotSupportedOutline = Icons.image_not_supported_outlined;
+  static const IconData imageNotSupportedOutline =
+      Icons.image_not_supported_outlined;
   static const IconData inventoryOutline = Icons.inventory_2_outlined;
   static const IconData login = Icons.login;
   static const IconData bellOutline = Icons.notifications_none_outlined;
@@ -111,6 +112,11 @@ class AppIcons {
   static const IconData star = Icons.star;
   static const IconData qrCode = Icons.qr_code_2;
   static const IconData sun = Icons.light_mode;
+  static const IconData storeOutline = Icons.store_outlined;
+  static const IconData shoppingCartOutline = Icons.shopping_cart_outlined;
+  static const IconData editOutline = Icons.edit_outlined;
+  static const IconData removeDoneOutline = Icons.remove_done_outlined;
+  static const IconData dragHandle = Icons.drag_handle;
 
   /// Resolves a semantic [name] to its placeholder [IconData].
   ///
@@ -217,6 +223,11 @@ class AppIcons {
       'warningAmber' => warningAmber,
       'qrCode' => qrCode,
       'sun' => sun,
+      'storeOutline' => storeOutline,
+      'shoppingCartOutline' => shoppingCartOutline,
+      'editOutline' => editOutline,
+      'removeDoneOutline' => removeDoneOutline,
+      'dragHandle' => dragHandle,
       _ => null,
     };
   }
