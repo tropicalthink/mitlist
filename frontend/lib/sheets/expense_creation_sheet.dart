@@ -81,6 +81,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
   final Set<String> _selectedMemberIds = {};
   String _splitMode = 'equal';
   String _currency = 'USD';
+  String? _payerId;
 
   /// The household's base currency. Splits and balances are denominated in it;
   /// [_currency] may differ when recording a foreign-currency expense.
@@ -126,6 +127,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
   /// currency shown on the amount field.
   Future<void> _loadGroupContext() async {
     try {
+      final authService = await ref.read(authServiceProviderAsync.future);
       final groupService = await ref.read(groupServiceProviderAsync.future);
       final groups = await ref.read(cachedGroupsProvider.future);
       if (!mounted) return;
@@ -141,6 +143,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
         setState(() => _membersLoading = false);
         return;
       }
+      final me = await authService.getMe();
       final group = await groupService.getGroup(groupId);
       final members = await groupService.listMembers(groupId);
       if (!mounted) return;
@@ -150,6 +153,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
         _members = members;
         _membersLoading = false;
         _membersFailed = false;
+        _payerId ??= me.id;
         _selectedMemberIds
           ..clear()
           ..addAll(members.map((m) => m.userId));
@@ -303,7 +307,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       final expense = await financeService.createExpense(
         CreateExpenseRequest(
           groupId: groupId,
-          payerId: me.id,
+          payerId: _payerId ?? me.id,
           amount: amount,
           baseAmount: baseAmount,
           fxRate: _isForeignCurrency ? _fxRate : 1.0,
@@ -415,79 +419,57 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
   @override
   Widget build(BuildContext context) {
     final totalCents = _parseAmountToCents(_amountController.text);
-    // The split inputs operate on the base (household) amount, so the live
-    // breakdown previews the converted total when a foreign currency is used.
     final baseCents = totalCents == null
         ? null
         : (_isForeignCurrency ? (totalCents * _fxRate).round() : totalCents);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppButton(
-          text: _isScanning ? 'Scanning…' : 'Scan receipt',
-          icon: AppIcon(
-            name: _isScanning ? 'hourglassEmpty' : 'documentScanner',
-            size: 20,
-          ),
-          variant: AppButtonVariant.outline,
-          color: AppButtonColor.neutral,
-          onPressed: _isScanning ? null : _onScan,
-          semanticLabel: 'Scan receipt via camera',
-        ),
-        if (_hasReceipt) ...[
-          const SizedBox(height: MitlistSpacing.sm),
-          _ReceiptAttachedRow(),
-        ],
-        const SizedBox(height: MitlistSpacing.md),
-        AppInput(
-          label: 'Description',
-          hint: 'e.g. Dinner at Luigi\'s',
-          controller: _descriptionController,
-          textInputAction: TextInputAction.next,
-          maxLength: 200,
-          errorText: _descriptionError,
-          onChanged: (_) {
-            _markDirty();
-            setState(() => _descriptionError = null);
-          },
-        ),
-        const SizedBox(height: MitlistSpacing.md),
-        AppInput(
-          label: 'Amount ($_currency)',
-          hint: '0.00',
-          controller: _amountController,
-          textInputAction: TextInputAction.done,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          prefixIcon: _CurrencyPrefix(currency: _currency),
-          errorText: _amountError,
-          onChanged: (_) {
-            _markDirty();
-            setState(() => _amountError = null);
-          },
-        ),
-        const SizedBox(height: MitlistSpacing.md),
-        AppCurrencyDropdown(
-          value: _currency,
-          onChanged: (value) {
-            if (value == null) return;
-            setState(() {
-              _currency = value;
-              if (!_isForeignCurrency) {
-                _fxRate = 1.0;
-                _fxRateController.text = '1.0';
-                _fxRateError = null;
-              }
-            });
-            _markDirty();
-          },
+        // ── Amount + currency (hero row) ──────────────────────────────
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: AppInput(
+                size: AppInputSize.lg,
+                hint: '0.00',
+                controller: _amountController,
+                textInputAction: TextInputAction.next,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                prefixIcon: _CurrencyPrefix(currency: _currency),
+                errorText: _amountError,
+                onChanged: (_) {
+                  _markDirty();
+                  setState(() => _amountError = null);
+                },
+              ),
+            ),
+            const SizedBox(width: MitlistSpacing.sm),
+            AppCurrencyDropdown(
+              value: _currency,
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() {
+                  _currency = value;
+                  if (!_isForeignCurrency) {
+                    _fxRate = 1.0;
+                    _fxRateController.text = '1.0';
+                    _fxRateError = null;
+                  }
+                });
+                _markDirty();
+              },
+            ),
+          ],
         ),
         if (_isForeignCurrency) ...[
-          const SizedBox(height: MitlistSpacing.md),
+          const SizedBox(height: MitlistSpacing.sm),
           AppInput(
-            label: 'Rate (1 $_currency = ? $_groupCurrency)',
-            hint: '0.00',
+            hint: 'Rate: 1 $_currency = ? $_groupCurrency',
             controller: _fxRateController,
             keyboardType:
                 const TextInputType.numberWithOptions(decimal: true),
@@ -502,19 +484,81 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
             },
           ),
           if (totalCents != null && baseCents != null) ...[
-            const SizedBox(height: MitlistSpacing.sm),
+            const SizedBox(height: MitlistSpacing.xs),
             _ConversionPreview(
               original: formatCurrency(totalCents, _currency),
               converted: formatCurrency(baseCents, _groupCurrency),
             ),
           ],
         ],
-        const SizedBox(height: MitlistSpacing.md),
-        _DateField(date: _date, onTap: _pickDate),
-        const SizedBox(height: MitlistSpacing.md),
+        // ── Description ───────────────────────────────────────────────
+        const SizedBox(height: MitlistSpacing.sm),
         AppInput(
-          label: 'Notes',
-          hint: 'Optional context, receipt note, or reimbursement detail',
+          hint: 'What\'s this for?',
+          controller: _descriptionController,
+          textInputAction: TextInputAction.next,
+          maxLength: 200,
+          errorText: _descriptionError,
+          onChanged: (_) {
+            _markDirty();
+            setState(() => _descriptionError = null);
+          },
+        ),
+        // ── Paid by ───────────────────────────────────────────────────
+        if (!_membersLoading && _members.isNotEmpty) ...[
+          const SizedBox(height: MitlistSpacing.md),
+          _PaidByRow(
+            members: _members,
+            payerId: _payerId,
+            onChanged: (id) {
+              setState(() => _payerId = id);
+              _markDirty();
+            },
+          ),
+        ],
+        // ── Date + Scan row ───────────────────────────────────────────
+        const SizedBox(height: MitlistSpacing.sm),
+        Row(
+          children: [
+            Expanded(
+              child: AppButton(
+                text: MaterialLocalizations.of(context).formatMediumDate(_date),
+                icon: const AppIcon(name: 'calendarDays', size: 18),
+                variant: AppButtonVariant.outline,
+                color: AppButtonColor.neutral,
+                onPressed: _pickDate,
+                semanticLabel: 'Expense date. Tap to change.',
+              ),
+            ),
+            const SizedBox(width: MitlistSpacing.sm),
+            AppButton(
+              text: _isScanning
+                  ? 'Scanning…'
+                  : _hasReceipt
+                      ? 'Receipt'
+                      : 'Scan',
+              icon: AppIcon(
+                name: _hasReceipt
+                    ? 'checkCircle'
+                    : _isScanning
+                        ? 'hourglassEmpty'
+                        : 'documentScanner',
+                size: 18,
+                color: _hasReceipt ? colorScheme.tertiary : null,
+              ),
+              variant: AppButtonVariant.outline,
+              color: _hasReceipt ? AppButtonColor.neutral : AppButtonColor.neutral,
+              onPressed: _isScanning ? null : _onScan,
+              semanticLabel: _hasReceipt
+                  ? 'Receipt attached. Tap to re-scan.'
+                  : 'Scan receipt via camera',
+            ),
+          ],
+        ),
+        // ── Notes ─────────────────────────────────────────────────────
+        const SizedBox(height: MitlistSpacing.sm),
+        AppInput(
+          hint: 'Notes (optional)',
           controller: _notesController,
           textInputAction: TextInputAction.newline,
           keyboardType: TextInputType.multiline,
@@ -522,11 +566,12 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
           maxLines: 4,
           onChanged: (_) => _markDirty(),
         ),
+        // ── Split ─────────────────────────────────────────────────────
         const SizedBox(height: MitlistSpacing.lg),
         Divider(
           height: 1,
           thickness: 1,
-          color: Theme.of(context).colorScheme.outlineVariant,
+          color: colorScheme.outlineVariant,
         ),
         const SizedBox(height: MitlistSpacing.lg),
         _SplitOptions(
@@ -966,50 +1011,46 @@ class _CurrencyPrefix extends StatelessWidget {
   }
 }
 
-class _DateField extends StatelessWidget {
-  final DateTime date;
-  final VoidCallback onTap;
+class _PaidByRow extends StatelessWidget {
+  final List<GroupMemberProfile> members;
+  final String? payerId;
+  final ValueChanged<String> onChanged;
 
-  const _DateField({required this.date, required this.onTap});
+  const _PaidByRow({
+    required this.members,
+    required this.payerId,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final label = MaterialLocalizations.of(context).formatMediumDate(date);
+    final colorScheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'DATE',
-          style: textTheme.labelMedium,
+          'Paid by',
+          style: textTheme.labelMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
         ),
-        const SizedBox(height: MitlistSpacing.sm),
-        AppButton(
-          text: label,
-          icon: const AppIcon(name: 'calendarDays', size: 20),
-          variant: AppButtonVariant.outline,
-          color: AppButtonColor.neutral,
-          onPressed: onTap,
-          semanticLabel: 'Expense date: $label. Tap to change.',
-        ),
-      ],
-    );
-  }
-}
-
-class _ReceiptAttachedRow extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Row(
-      children: [
-        AppIcon(name: 'checkCircle', size: 16, color: colorScheme.tertiary),
-        const SizedBox(width: MitlistSpacing.xs),
-        Text(
-          'Receipt attached',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: colorScheme.tertiary,
-              ),
+        const SizedBox(height: MitlistSpacing.xs),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: members.map((member) {
+              final selected = member.userId == payerId;
+              return Padding(
+                padding: const EdgeInsets.only(right: MitlistSpacing.xs),
+                child: AppChip(
+                  label: member.displayName,
+                  selected: selected,
+                  onSelected: (_) => onChanged(member.userId),
+                ),
+              );
+            }).toList(),
+          ),
         ),
       ],
     );

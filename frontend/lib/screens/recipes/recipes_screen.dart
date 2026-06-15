@@ -535,65 +535,42 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       error: (_, __) => const SizedBox.shrink(),
       data: (plans) {
         if (plans.isEmpty) return const SizedBox.shrink();
-
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(
-            MitlistSpacing.md,
-            MitlistSpacing.sm,
-            MitlistSpacing.md,
-            0,
-          ),
-          child: AppCard(
-            variant: AppCardVariant.filled,
-            onTap: () {
-              if (context.mounted) {
-                unawaited(context.pushNamed('mealPlan'));
-              }
-            },
-            child: Padding(
-              padding: const EdgeInsets.all(MitlistSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'This week',
-                    style: MitlistTypography.labelXSmall(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+        final colorScheme = Theme.of(context).colorScheme;
+        final label = plans.length == 1
+            ? '1 meal planned this week'
+            : '${plans.length} meals planned this week';
+        return InkWell(
+          onTap: () {
+            if (context.mounted) unawaited(context.pushNamed('mealPlan'));
+          },
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              MitlistSpacing.md,
+              MitlistSpacing.sm,
+              MitlistSpacing.md,
+              0,
+            ),
+            child: Row(
+              children: [
+                AppIcon(
+                  name: 'calendarDays',
+                  size: 14,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: MitlistSpacing.xs),
+                Text(
+                  label,
+                  style: MitlistTypography.labelXSmall(
+                    color: colorScheme.onSurfaceVariant,
                   ),
-                  const SizedBox(height: MitlistSpacing.sm),
-                  ...plans.take(3).map((plan) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: MitlistSpacing.xs),
-                      child: Row(
-                        children: [
-                          AppIcon(
-                            name: 'calendarDays',
-                            size: 14,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          const SizedBox(width: MitlistSpacing.sm),
-                          Expanded(
-                            child: Text(
-                              '${plan.day} ${plan.slot}: ${plan.title}',
-                              style: Theme.of(context).textTheme.bodySmall,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                  if (plans.length > 3)
-                    Text(
-                      '+ ${plans.length - 3} more',
-                      style: MitlistTypography.labelXSmall(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                ],
-              ),
+                ),
+                const SizedBox(width: MitlistSpacing.xs),
+                AppIcon(
+                  name: 'chevronRight',
+                  size: 12,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ],
             ),
           ),
         );

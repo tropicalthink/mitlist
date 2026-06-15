@@ -24,6 +24,7 @@ import '../app_bottom_sheet.dart';
 import '../app_button.dart';
 import '../app_dialog.dart';
 import '../mitlist_app_bar.dart';
+import 'pinned_memo_card.dart';
 import 'stats_grid.dart';
 import 'tonight_card.dart';
 
@@ -313,10 +314,6 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        StatsGrid(groupId: widget.groupId),
-        const SizedBox(height: MitlistSpacing.lg),
-        TonightCard(groupId: widget.groupId),
-        const SizedBox(height: MitlistSpacing.lg),
         Padding(
           padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
           child: Row(
@@ -368,6 +365,17 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const SizedBox(height: MitlistSpacing.sm),
+                PinnedMemoCard(
+                  pinColor: Theme.of(context).colorScheme.secondary,
+                  child: StatsGrid(groupId: widget.groupId),
+                ),
+                const SizedBox(height: MitlistSpacing.lg),
+                PinnedMemoCard(
+                  pinColor: Theme.of(context).colorScheme.tertiary,
+                  child: TonightCard(groupId: widget.groupId),
+                ),
+                const SizedBox(height: MitlistSpacing.lg),
                 _PinwallComposerNote(
                   controller: _controller,
                   isPosting: _isPosting,
@@ -779,7 +787,7 @@ class _PinwallComposerNote extends StatelessWidget {
           left: 0,
           right: 0,
           child: Center(
-            child: _Pushpin(headColor: pinColor),
+            child: PinwallPushpin(headColor: pinColor),
           ),
         ),
       ],
@@ -1283,65 +1291,13 @@ class _PinwallNoteCard extends ConsumerWidget {
             left: 0,
             right: 0,
             child: Center(
-              child: _Pushpin(headColor: pinColor),
+              child: PinwallPushpin(headColor: pinColor),
             ),
           ),
         ],
       ),
     );
   }
-}
-
-class _Pushpin extends StatelessWidget {
-  const _Pushpin({required this.headColor});
-
-  final Color headColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(22, 28),
-      painter: _PushpinPainter(headColor: headColor),
-    );
-  }
-}
-
-class _PushpinPainter extends CustomPainter {
-  const _PushpinPainter({required this.headColor});
-
-  final Color headColor;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
-
-    final headPaint = Paint()..color = headColor;
-    canvas.drawCircle(Offset(cx, 10), 10, headPaint);
-
-    final capPaint = Paint()
-      ..color = MitlistColors.neutral950.withValues(alpha: 0.18);
-    canvas.drawRect(
-        Rect.fromCenter(center: Offset(cx, 18), width: 14, height: 5),
-        capPaint);
-
-    final needlePaint = Paint()
-      ..color = MitlistColors.neutral950.withValues(alpha: 0.72);
-    final needlePath = Path()
-      ..moveTo(cx - 1.5, 19)
-      ..lineTo(cx + 1.5, 19)
-      ..lineTo(cx, size.height)
-      ..close();
-    canvas.drawPath(needlePath, needlePaint);
-
-    final outlinePaint = Paint()
-      ..color = MitlistColors.neutral950.withValues(alpha: 0.72)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-    canvas.drawCircle(Offset(cx, 10), 10, outlinePaint);
-  }
-
-  @override
-  bool shouldRepaint(_PushpinPainter old) => old.headColor != headColor;
 }
 
 class _EntityOption {

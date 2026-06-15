@@ -70,6 +70,7 @@ func (h *ChoreHandler) CreateChore(w http.ResponseWriter, r *http.Request) {
 		AssignmentType   string      `json:"assignment_type"`
 		AssignmentConfig []uuid.UUID `json:"assignment_config"`
 		IsActive         *bool       `json:"is_active"`
+		Supplies         []string    `json:"supplies"`
 		Category         *string     `json:"category"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
@@ -95,6 +96,7 @@ func (h *ChoreHandler) CreateChore(w http.ResponseWriter, r *http.Request) {
 		AssignmentType:   req.AssignmentType,
 		AssignmentConfig: req.AssignmentConfig,
 		IsActive:         isActive,
+		Supplies:         req.Supplies,
 		Category:         req.Category,
 	}
 	if err := h.service.CreateChore(r.Context(), user, chore); err != nil {
@@ -255,6 +257,7 @@ func (h *ChoreHandler) UpdateChore(w http.ResponseWriter, r *http.Request) {
 		AssignmentType   string      `json:"assignment_type"`
 		AssignmentConfig []uuid.UUID `json:"assignment_config"`
 		IsActive         *bool       `json:"is_active"`
+		Supplies         []string    `json:"supplies"`
 		Category         *string     `json:"category"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
@@ -279,6 +282,10 @@ func (h *ChoreHandler) UpdateChore(w http.ResponseWriter, r *http.Request) {
 	if req.IsActive != nil {
 		isActive = *req.IsActive
 	}
+	supplies := existing.Supplies
+	if req.Supplies != nil {
+		supplies = req.Supplies
+	}
 	chore := &models.Chore{
 		ID:               id,
 		Name:             req.Name,
@@ -293,6 +300,7 @@ func (h *ChoreHandler) UpdateChore(w http.ResponseWriter, r *http.Request) {
 		AssignmentType:   req.AssignmentType,
 		AssignmentConfig: req.AssignmentConfig,
 		IsActive:         isActive,
+		Supplies:         supplies,
 		Category:         req.Category,
 	}
 	chore, err = h.service.UpdateChore(r.Context(), user, chore)
