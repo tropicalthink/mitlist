@@ -14,6 +14,7 @@ import '../../router.dart' show currentGroupIdProvider;
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../theme/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../utils/active_group_context.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
@@ -63,9 +64,10 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
         ref.read(currentGroupIdProvider),
       );
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       if (groupId == null || groupId.isEmpty) {
         setState(() {
-          _error = 'Create or join a household first';
+          _error = l10n.shareTargetValidationHousehold;
           _isLoading = false;
         });
         return;
@@ -75,7 +77,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = friendlyErrorMessage(e);
+        _error = friendlyErrorMessage(e, AppLocalizations.of(context)!);
         _isLoading = false;
       });
     }
@@ -102,7 +104,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
       });
       await _preloadRecipes(plans);
     } catch (e) {
-      setState(() => _error = friendlyErrorMessage(e));
+      setState(() => _error = friendlyErrorMessage(e, AppLocalizations.of(context)!));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -157,7 +159,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: const Text('Couldn\u2019t add meal.')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.mealPlanCouldNotAdd)),
         );
       }
     } finally {
@@ -175,7 +177,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: const Text('Couldn\u2019t remove meal.')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.mealPlanCouldNotRemove)),
         );
       }
     } finally {
@@ -207,7 +209,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: const Text('Couldn\u2019t update meal.')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.mealPlanCouldNotUpdate)),
         );
       }
     } finally {
@@ -231,11 +233,12 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
       final listId = result['list_id'] as String?;
       final itemCount = (result['item_count'] as int?) ?? 0;
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Shopping list created with $itemCount items'),
+            content: Text(l10n.mealPlanShoppingListCreated(itemCount)),
             action: SnackBarAction(
-              label: 'Track costs',
+              label: l10n.mealPlanTrackCosts,
               onPressed: () => context.pushNamed('money'),
             ),
           ),
@@ -247,7 +250,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(friendlyErrorMessage(e))),
+          SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
         );
       }
     } finally {
@@ -262,6 +265,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
     final weekEnd = _weekStart.add(const Duration(days: 6));
 
@@ -269,14 +273,14 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
       appBar: MitlistAppBar(
         leading: IconButton(
           icon: const AppIcon(name: 'arrowLeft'),
-          tooltip: 'Back',
+          tooltip: l10n.commonBack,
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('Meal Plan'),
+        title: Text(l10n.mealPlanAppBarTitle),
         actions: [
           IconButton(
             icon: const AppIcon(name: 'shoppingCart'),
-            tooltip: 'Generate shopping list',
+            tooltip: l10n.mealPlanGenerateShoppingList,
             onPressed: _generateShoppingList,
           ),
         ],
@@ -289,12 +293,12 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
               children: [
                 IconButton(
                   icon: const AppIcon(name: 'chevronLeft'),
-                  tooltip: 'Previous week',
+                  tooltip: l10n.mealPlanPreviousWeek,
                   onPressed: _prevWeek,
                 ),
                 Expanded(
                   child: Text(
-                    '${DateFormat.yMMMd().format(_weekStart)} – ${DateFormat.yMMMd().format(weekEnd)}',
+                    '${DateFormat.yMMMd().format(_weekStart)} \u2013 ${DateFormat.yMMMd().format(weekEnd)}',
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -303,7 +307,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
                 ),
                 IconButton(
                   icon: const AppIcon(name: 'chevronRight'),
-                  tooltip: 'Next week',
+                  tooltip: l10n.mealPlanNextWeek,
                   onPressed: _nextWeek,
                 ),
               ],
@@ -319,12 +323,12 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
                 child: AppEmptyState(
                   lottieAsset: 'assets/animations/lottie/404.lottie',
                   icon: const AppIcon(name: 'alertCircleOutline'),
-                  title: 'Something went wrong',
+                  title: l10n.commonSomethingWentWrong,
                   description: _error,
                   actions: [
                     AppButton(
                       variant: AppButtonVariant.outline,
-                      text: 'Retry',
+                      text: l10n.commonRetry,
                       onPressed: _load,
                     ),
                   ],
@@ -506,14 +510,14 @@ class _SlotRow extends StatelessWidget {
     this.onOpen,
   });
 
-  String get _slotLabel {
+  String _slotLabel(AppLocalizations l10n) {
     switch (slot) {
       case 'breakfast':
-        return 'Breakfast';
+        return l10n.mealPlanBreakfast;
       case 'lunch':
-        return 'Lunch';
+        return l10n.mealPlanLunch;
       case 'dinner':
-        return 'Dinner';
+        return l10n.mealPlanDinner;
       default:
         return slot;
     }
@@ -521,13 +525,15 @@ class _SlotRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
+    final slotLabel = _slotLabel(l10n);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
       child: Semantics(
         button: true,
-        label: plan != null ? 'Open recipe for $_slotLabel' : 'Add meal for $_slotLabel',
+        label: plan != null ? l10n.mealPlanOpenRecipe(slotLabel) : l10n.mealPlanAddMealFor(slotLabel),
         child: InkWell(
           onTap: plan == null ? onAdd : onOpen,
           borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
@@ -550,14 +556,14 @@ class _SlotRow extends StatelessWidget {
               SizedBox(
                 width: 64,
                 child: Text(
-                  _slotLabel,
+                  slotLabel,
                   style: textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ),
               Expanded(
                 child: plan == null
                     ? Text(
-                        'Add meal',
+                        l10n.mealPlanAddMeal,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: textTheme.bodyMedium?.copyWith(
@@ -569,7 +575,7 @@ class _SlotRow extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            recipe?.title ?? 'Recipe',
+                            recipe?.title ?? l10n.mealPlanRecipeFallback,
                             style: textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w500,
                             ),
@@ -598,19 +604,19 @@ class _SlotRow extends StatelessWidget {
                     borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
                   ),
                   child: Text(
-                    '${plan!.servings}p',
+                    l10n.mealPlanServings(plan!.servings),
                     style: MitlistTypography.labelXSmall(),
                   ),
                 ),
                 const SizedBox(width: MitlistSpacing.xs),
                 IconButton(
                   icon: const AppIcon(name: 'pencil', size: 18),
-                  tooltip: 'Edit',
+                  tooltip: l10n.commonEdit,
                   onPressed: onEdit,
                 ),
                 IconButton(
                   icon: AppIcon(name: 'xMark', size: 18),
-                  tooltip: 'Remove',
+                  tooltip: l10n.commonRemove,
                   onPressed: onRemove,
                 ),
               ] else
@@ -629,9 +635,10 @@ class _RecipePickerSheet extends ConsumerStatefulWidget {
   const _RecipePickerSheet({this.selectedRecipeId});
 
   static Future<Recipe?> show(BuildContext context, {String? selectedRecipeId}) async {
+    final l10n = AppLocalizations.of(context)!;
     return showAppBottomSheet<Recipe?>(
       context: context,
-      title: 'Pick a recipe',
+      title: l10n.mealPlanPickRecipe,
       body: _RecipePickerSheet(selectedRecipeId: selectedRecipeId),
     );
   }
@@ -672,7 +679,7 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
       });
     } catch (e) {
       setState(() {
-        _error = friendlyErrorMessage(e);
+        _error = friendlyErrorMessage(e, AppLocalizations.of(context)!);
         _isLoading = false;
       });
     }
@@ -692,6 +699,7 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (_isLoading) {
       return const SizedBox(
         height: 200,
@@ -702,23 +710,23 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
       return AppEmptyState(
         lottieAsset: 'assets/animations/lottie/404.lottie',
         icon: const AppIcon(name: 'alertCircleOutline'),
-                        title: 'Couldn\u2019t load recipes',
+                        title: l10n.mealPlanCouldNotLoadRecipes,
         description: _error,
         actions: [
           AppButton(
             variant: AppButtonVariant.outline,
-            text: 'Retry',
+            text: l10n.commonRetry,
             onPressed: _load,
           ),
         ],
       );
     }
     if (_recipes.isEmpty) {
-      return const AppEmptyState(
+      return AppEmptyState(
         lottieAsset: 'assets/animations/lottie/Recipes.lottie',
-        icon: AppIcon(name: 'restaurantOutline'),
-        title: 'No recipes yet',
-        description: 'Add recipes to plan meals',
+        icon: const AppIcon(name: 'restaurantOutline'),
+        title: l10n.mealPlanNoRecipes,
+        description: l10n.mealPlanAddRecipesDesc,
       );
     }
     return Column(
@@ -729,12 +737,12 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
           child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Search recipes...',
+              hintText: l10n.mealPlanSearchRecipes,
               prefixIcon: const AppIcon(name: 'magnifyingGlass', size: 20),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
                       icon: AppIcon(name: 'clear', size: 20),
-                      tooltip: 'Clear search',
+                      tooltip: l10n.commonClearSearch,
                       onPressed: () => _searchController.clear(),
                     )
                   : null,
@@ -751,7 +759,7 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
           child: _filteredRecipes.isEmpty
               ? Center(
                   child: Text(
-                    'No recipes match "$_searchQuery"',
+                    l10n.mealPlanNoMatch(_searchQuery),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -768,7 +776,7 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
                               child: Semantics(
-                                label: 'Image of ${r.title}',
+                                label: l10n.recipeImageSemantics(r.title),
                                 child: Image.network(
                                   r.imageUrl!,
                                   width: 48,
@@ -802,9 +810,10 @@ class _ServingsPickerSheet extends StatefulWidget {
   const _ServingsPickerSheet({required this.defaultServings});
 
   static Future<int?> show(BuildContext context, {required int defaultServings}) async {
+    final l10n = AppLocalizations.of(context)!;
     return showAppBottomSheet<int?>(
       context: context,
-      title: 'Servings',
+      title: l10n.mealPlanServingsSheet,
       body: _ServingsPickerSheet(defaultServings: defaultServings),
     );
   }
@@ -824,6 +833,7 @@ class _ServingsPickerSheetState extends State<_ServingsPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -832,7 +842,7 @@ class _ServingsPickerSheetState extends State<_ServingsPickerSheet> {
           children: [
             IconButton(
               icon: const AppIcon(name: 'minusCircleOutline'),
-              tooltip: 'Fewer servings',
+              tooltip: l10n.mealPlanFewerServings,
               onPressed: _servings > 1
                   ? () => setState(() => _servings--)
                   : null,
@@ -843,7 +853,7 @@ class _ServingsPickerSheetState extends State<_ServingsPickerSheet> {
             ),
             IconButton(
               icon: const AppIcon(name: 'addCircleOutline'),
-              tooltip: 'More servings',
+              tooltip: l10n.mealPlanMoreServings,
               onPressed: () => setState(() => _servings++),
             ),
           ],
@@ -853,7 +863,7 @@ class _ServingsPickerSheetState extends State<_ServingsPickerSheet> {
           width: double.infinity,
           child: AppButton(
             variant: AppButtonVariant.solid,
-            text: 'Confirm',
+            text: l10n.commonConfirm,
             onPressed: () => Navigator.of(context).pop(_servings),
           ),
         ),

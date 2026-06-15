@@ -3,6 +3,8 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import '../../l10n/app_localizations.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -49,10 +51,11 @@ class ExpenseCreationSheet extends ConsumerStatefulWidget {
     String? initialAmount,
     File? receiptImage,
   }) async {
+    final l10n = AppLocalizations.of(context)!;
     final dirty = ValueNotifier<bool>(false);
     final future = showAppBottomSheet<bool>(
       context: context,
-      title: 'Add expense',
+      title: l10n.expenseCreationTitle,
       isDirtyListenable: dirty,
       body: ExpenseCreationSheet(
         initialDescription: initialDescription,
@@ -226,7 +229,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
         _isScanning = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e))),
+        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -250,16 +253,17 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       !_isSaving;
 
   Future<void> _onCreate() async {
+    final l10n = AppLocalizations.of(context)!;
     if (!_canCreate) return;
 
     final amount = _parseAmountToCents(_amountController.text);
     if (amount == null) {
-      setState(() => _amountError = 'Enter a valid amount greater than zero.');
+      setState(() => _amountError = l10n.expenseCreationValidationAmount);
       return;
     }
 
     if (_isForeignCurrency && _fxRate <= 0) {
-      setState(() => _fxRateError = 'Enter a conversion rate greater than zero.');
+      setState(() => _fxRateError = l10n.expenseCreationValidationRate);
       return;
     }
 
@@ -269,6 +273,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
         _isForeignCurrency ? (amount * _fxRate).round() : amount;
 
     final summary = computeSplitSummary(
+      l10n: l10n,
       mode: _splitMode,
       selectedIds: _selectedMemberIds,
       controllers: _splitControllers,
@@ -296,7 +301,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       if (groupId == null) {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Create or join a household first.')),
+          SnackBar(content: Text(l10n.choreCreationJoinFirst)),
         );
         return;
       }
@@ -342,8 +347,8 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
         } catch (e) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Expense saved, but receipt upload failed.'),
+              SnackBar(
+                content: Text(l10n.expenseCreationReceiptUploadFailed),
               ),
             );
           }
@@ -354,14 +359,14 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       widget.dirtyNotifier?.value = false;
       Navigator.of(context).pop(true);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Expense added')),
+        SnackBar(content: Text(l10n.expenseCreationExpenseAdded)),
       );
       unawaited(Haptics.success());
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e))),
+        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -423,6 +428,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
         ? null
         : (_isForeignCurrency ? (totalCents * _fxRate).round() : totalCents);
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -435,7 +441,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
             Expanded(
               child: AppInput(
                 size: AppInputSize.lg,
-                hint: '0.00',
+                hint: l10n.expenseCreationAmountHint,
                 controller: _amountController,
                 textInputAction: TextInputAction.next,
                 keyboardType:
@@ -469,7 +475,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
         if (_isForeignCurrency) ...[
           const SizedBox(height: MitlistSpacing.sm),
           AppInput(
-            hint: 'Rate: 1 $_currency = ? $_groupCurrency',
+            hint: l10n.expenseCreationRateHint(_currency, _groupCurrency),
             controller: _fxRateController,
             keyboardType:
                 const TextInputType.numberWithOptions(decimal: true),
@@ -494,7 +500,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
         // ── Description ───────────────────────────────────────────────
         const SizedBox(height: MitlistSpacing.sm),
         AppInput(
-          hint: 'What\'s this for?',
+          hint: l10n.expenseCreationWhatsItFor,
           controller: _descriptionController,
           textInputAction: TextInputAction.next,
           maxLength: 200,
@@ -527,16 +533,16 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
                 variant: AppButtonVariant.outline,
                 color: AppButtonColor.neutral,
                 onPressed: _pickDate,
-                semanticLabel: 'Expense date. Tap to change.',
+                semanticLabel: l10n.expenseCreationDateLabel,
               ),
             ),
             const SizedBox(width: MitlistSpacing.sm),
             AppButton(
               text: _isScanning
-                  ? 'Scanning…'
+                  ? l10n.expenseCreationScanning
                   : _hasReceipt
-                      ? 'Receipt'
-                      : 'Scan',
+                      ? l10n.expenseCreationReceiptButton
+                      : l10n.expenseCreationScanButton,
               icon: AppIcon(
                 name: _hasReceipt
                     ? 'checkCircle'
@@ -550,15 +556,15 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
               color: _hasReceipt ? AppButtonColor.neutral : AppButtonColor.neutral,
               onPressed: _isScanning ? null : _onScan,
               semanticLabel: _hasReceipt
-                  ? 'Receipt attached. Tap to re-scan.'
-                  : 'Scan receipt via camera',
+                  ? l10n.expenseCreationReceiptAttached
+                  : l10n.expenseCreationScanReceiptSemantics,
             ),
           ],
         ),
         // ── Notes ─────────────────────────────────────────────────────
         const SizedBox(height: MitlistSpacing.sm),
         AppInput(
-          hint: 'Notes (optional)',
+          hint: l10n.expenseCreationNotesHint,
           controller: _notesController,
           textInputAction: TextInputAction.newline,
           keyboardType: TextInputType.multiline,
@@ -610,7 +616,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
             variant: AppButtonVariant.solid,
             color: AppButtonColor.primary,
             size: AppButtonSize.lg,
-            text: _isSaving ? 'Adding…' : 'Add expense',
+            text: _isSaving ? l10n.commonAdding : l10n.expenseAddExpense,
             isLoading: _isSaving,
             onPressed: _canCreate ? _onCreate : null,
           ),
@@ -631,6 +637,7 @@ class SplitSummary {
 /// Computes a human-readable, live breakdown of how the expense divides, plus
 /// whether the split is internally consistent (sums to the total / to 100%).
 SplitSummary computeSplitSummary({
+  required AppLocalizations l10n,
   required String mode,
   required Set<String> selectedIds,
   required Map<String, TextEditingController> controllers,
@@ -639,13 +646,10 @@ SplitSummary computeSplitSummary({
 }) {
   final n = selectedIds.length;
   if (n == 0) {
-    return const SplitSummary('Select at least one person to split with.', false);
+    return SplitSummary(l10n.expenseCreationSelectSplitter, false);
   }
   if (totalCents == null) {
-    return const SplitSummary(
-      'Enter an amount above to preview each share.',
-      false,
-    );
+    return SplitSummary(l10n.expenseCreationEnterAmount, false);
   }
 
   double parseValue(String userId) =>
@@ -662,20 +666,31 @@ SplitSummary computeSplitSummary({
         assignedCents += (v * 100).round();
       }
       final remaining = totalCents - assignedCents;
-      final assignedLabel =
-          '${formatCurrency(assignedCents, currency)} of ${formatCurrency(totalCents, currency)}';
+      final assignedLabel = l10n.expenseCreationSplitAssignedOf(
+        formatCurrency(assignedCents, currency),
+        formatCurrency(totalCents, currency),
+      );
       if (negative) {
-        return SplitSummary('$assignedLabel · amounts can\'t be negative', false);
+        return SplitSummary(
+          l10n.expenseCreationSplitAmountsNegative(assignedLabel),
+          false,
+        );
       }
       if (remaining > 0) {
         return SplitSummary(
-          '$assignedLabel · ${formatCurrency(remaining, currency)} left to assign',
+          l10n.expenseCreationSplitLeftToAssign(
+            assignedLabel,
+            formatCurrency(remaining, currency),
+          ),
           false,
         );
       }
       if (remaining < 0) {
         return SplitSummary(
-          '$assignedLabel · ${formatCurrency(-remaining, currency)} over',
+          l10n.expenseCreationSplitOver(
+            assignedLabel,
+            formatCurrency(-remaining, currency),
+          ),
           false,
         );
       }
@@ -694,12 +709,12 @@ SplitSummary computeSplitSummary({
           : sum.toStringAsFixed(1);
       if (outOfRange) {
         return SplitSummary(
-          '$sumLabel% assigned · each share must be 0–100%',
+          l10n.expenseCreationSplitPercentRange(sumLabel),
           false,
         );
       }
       final balanced = (sum - 100).abs() < 0.05;
-      return SplitSummary('$sumLabel% of 100%', balanced);
+      return SplitSummary(l10n.expenseCreationSplitPercentOf100(sumLabel), balanced);
 
     case 'shares':
       var totalShares = 0;
@@ -710,22 +725,34 @@ SplitSummary computeSplitSummary({
         totalShares += v;
       }
       if (negative) {
-        return const SplitSummary('Shares can\'t be negative.', false);
+        return SplitSummary(l10n.expenseCreationSharesNegative, false);
       }
       if (totalShares <= 0) {
-        return const SplitSummary('Assign at least one share.', false);
+        return SplitSummary(l10n.expenseCreationAssignShare, false);
       }
       final perShare = (totalCents / totalShares).round();
       return SplitSummary(
-        '$totalShares shares · ${formatCurrency(perShare, currency)} per share',
+        l10n.expenseCreationSplitSharesPerShare(
+          totalShares,
+          formatCurrency(perShare, currency),
+        ),
         true,
       );
 
     default: // equal
       final perPerson = totalCents ~/ n;
       final remainder = totalCents - perPerson * n;
-      final each = '${formatCurrency(perPerson, currency)} each';
-      return SplitSummary(remainder == 0 ? each : '≈ $each', true);
+      final each = l10n.expenseCreationSplitEach(
+        formatCurrency(perPerson, currency),
+      );
+      return SplitSummary(
+        remainder == 0
+            ? each
+            : l10n.expenseCreationSplitApproxEach(
+                formatCurrency(perPerson, currency),
+              ),
+        true,
+      );
   }
 }
 
@@ -760,6 +787,7 @@ class _SplitOptions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -767,7 +795,7 @@ class _SplitOptions extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Split with', style: textTheme.labelMedium),
+          Text(l10n.expenseCreationSplitWith, style: textTheme.labelMedium),
           const SizedBox(height: MitlistSpacing.md),
           for (var i = 0; i < 3; i++)
             const Padding(
@@ -783,12 +811,12 @@ class _SplitOptions extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Couldn\'t load household members.',
+            l10n.expenseCreationCouldNotLoadMembers,
             style: textTheme.bodyMedium,
           ),
           const SizedBox(height: MitlistSpacing.sm),
           AppButton(
-            text: 'Retry',
+            text: l10n.commonRetry,
             variant: AppButtonVariant.outline,
             color: AppButtonColor.neutral,
             size: AppButtonSize.sm,
@@ -800,7 +828,7 @@ class _SplitOptions extends StatelessWidget {
 
     if (members.isEmpty) {
       return Text(
-        'Join or create a household to split this expense.',
+        l10n.expenseCreationJoinHouseholdSplit,
         style: textTheme.bodySmall?.copyWith(
           color: colorScheme.onSurfaceVariant,
         ),
@@ -808,6 +836,7 @@ class _SplitOptions extends StatelessWidget {
     }
 
     final summary = computeSplitSummary(
+      l10n: l10n,
       mode: splitMode,
       selectedIds: selectedMemberIds,
       controllers: controllers,
@@ -823,29 +852,29 @@ class _SplitOptions extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Split mode', style: textTheme.labelMedium),
+        Text(l10n.expenseCreationSplitMode, style: textTheme.labelMedium),
         const SizedBox(height: MitlistSpacing.sm),
         Wrap(
           spacing: MitlistSpacing.sm,
           runSpacing: MitlistSpacing.sm,
           children: [
             AppChip(
-              label: 'Equal',
+              label: l10n.expenseCreationSplitEqual,
               selected: splitMode == 'equal',
               onSelected: (_) => onModeChanged('equal'),
             ),
             AppChip(
-              label: 'Exact',
+              label: l10n.expenseCreationSplitExact,
               selected: splitMode == 'amount',
               onSelected: (_) => onModeChanged('amount'),
             ),
             AppChip(
-              label: 'Shares',
+              label: l10n.expenseCreationSplitShares,
               selected: splitMode == 'shares',
               onSelected: (_) => onModeChanged('shares'),
             ),
             AppChip(
-              label: 'Percent',
+              label: l10n.expenseCreationSplitPercent,
               selected: splitMode == 'percentage',
               onSelected: (_) => onModeChanged('percentage'),
             ),
@@ -853,7 +882,7 @@ class _SplitOptions extends StatelessWidget {
         ),
         const SizedBox(height: MitlistSpacing.sm),
         Text(
-          _modeHint(splitMode),
+          _modeHint(splitMode, context),
           style: textTheme.bodySmall?.copyWith(
             color: colorScheme.onSurfaceVariant,
           ),
@@ -868,7 +897,7 @@ class _SplitOptions extends StatelessWidget {
                 SizedBox(
                   width: 96,
                   child: Text(
-                    _valueLabel(splitMode).toUpperCase(),
+                    _valueLabel(splitMode, context).toUpperCase(),
                     textAlign: TextAlign.end,
                     style: textTheme.labelMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
@@ -887,8 +916,8 @@ class _SplitOptions extends StatelessWidget {
                 AnimatedCheckToggle(
                   value: selected,
                   onChanged: (value) => onMemberChanged(member.userId, value),
-                  semanticLabelOn: 'Remove ${member.displayName} from split',
-                  semanticLabelOff: 'Add ${member.displayName} to split',
+                  semanticLabelOn: l10n.expenseCreationRemoveFromSplit(member.displayName),
+                  semanticLabelOff: l10n.expenseCreationAddToSplit(member.displayName),
                 ),
                 Expanded(
                   child: Text(
@@ -903,7 +932,7 @@ class _SplitOptions extends StatelessWidget {
                   SizedBox(
                     width: 96,
                     child: Semantics(
-                      label: '${member.displayName} ${_valueLabel(splitMode)}',
+                      label: '${member.displayName} ${_valueLabel(splitMode, context)}',
                       child: AppInput(
                         hint: splitMode == 'percentage' ? '50' : '1',
                         controller: controllers[member.userId],
@@ -944,17 +973,17 @@ class _SplitOptions extends StatelessWidget {
     );
   }
 
-  String _modeHint(String mode) => switch (mode) {
-        'amount' => 'Enter the exact amount each person owes.',
-        'percentage' => 'Enter each person\'s share; must total 100%.',
-        'shares' => 'Split by shares, e.g. 2 shares pays double.',
-        _ => 'Split the total evenly among selected members.',
+  String _modeHint(String mode, BuildContext context) => switch (mode) {
+        'amount' => AppLocalizations.of(context)!.expenseCreationSplitHintExact,
+        'percentage' => AppLocalizations.of(context)!.expenseCreationSplitHintPercent,
+        'shares' => AppLocalizations.of(context)!.expenseCreationSplitHintShares,
+        _ => AppLocalizations.of(context)!.expenseCreationSplitHintEqual,
       };
 
-  String _valueLabel(String mode) => switch (mode) {
-        'amount' => 'Amount',
-        'percentage' => '%',
-        _ => 'Shares',
+  String _valueLabel(String mode, BuildContext context) => switch (mode) {
+        'amount' => AppLocalizations.of(context)!.expenseCreationSplitValuesAmount,
+        'percentage' => AppLocalizations.of(context)!.expenseCreationSplitValuesPercent,
+        _ => AppLocalizations.of(context)!.expenseCreationSplitSharesLabel,
       };
 }
 
@@ -1024,13 +1053,14 @@ class _PaidByRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Paid by',
+          l10n.expenseCreationPaidBy,
           style: textTheme.labelMedium?.copyWith(
             color: colorScheme.onSurfaceVariant,
           ),

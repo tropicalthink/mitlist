@@ -23,6 +23,7 @@ import '../../widgets/store_picker_sheet.dart';
 import '../../sheets/expense_creation_sheet.dart';
 import '../../sheets/create_list_sheet.dart';
 import '../../sheets/chore_creation_sheet.dart';
+import '../../l10n/app_localizations.dart';
 import '../../widgets/empty_state.dart';
 import 'scan_review_screen.dart';
 import 'smart_capture_launcher.dart';
@@ -51,10 +52,11 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
+    final l10n = AppLocalizations.of(context)!;
     final capture = await pickSmartCapture(
       context,
       source: source,
-      title: 'Check scan',
+      title: l10n.scannerCheckScan,
     );
     if (capture == null || !mounted) return;
 
@@ -78,8 +80,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error =
-            'Couldn\u2019t analyze the image. Please try again with a clearer photo.';
+        _error = l10n.scannerCouldNotAnalyze;
         _isAnalyzing = false;
       });
     }
@@ -88,6 +89,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   /// Grocery-intelligence pipeline: runs on-device OCR + canonical resolution
   /// then pushes to the [ScanReviewScreen].
   Future<void> _scanGroceryList(ImageSource source) async {
+    final l10n = AppLocalizations.of(context)!;
     final groupId = widget.groupId;
     final userId = widget.userId;
     if (groupId == null || userId == null) {
@@ -99,7 +101,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     final capture = await pickSmartCapture(
       context,
       source: source,
-      title: 'Check grocery list',
+      title: l10n.scannerCheckGrocery,
     );
     if (capture == null || !mounted) return;
 
@@ -132,7 +134,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Couldn\u2019t process the image. Please try again.';
+        _error = l10n.scanCouldNotProcess;
         _isAnalyzing = false;
       });
     }
@@ -213,6 +215,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   }
 
   void _showSourcePicker({bool groceryMode = false}) {
+    final l10n = AppLocalizations.of(context)!;
     final onCamera = groceryMode
         ? () {
             Navigator.of(context).pop();
@@ -234,18 +237,18 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
 
     showAppBottomSheet<void>(
       context: context,
-      title: groceryMode ? 'Scan grocery list' : 'Add scan',
+      title: groceryMode ? l10n.scannerScanSheetTitle : l10n.scannerAddScanTitle,
       body: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           ListTile(
             leading: const AppIcon(name: 'devicePhoneMobile'),
-            title: const Text('Take a photo'),
+            title: Text(l10n.scannerTakePhoto),
             onTap: onCamera,
           ),
           ListTile(
             leading: const AppIcon(name: 'eye'),
-            title: const Text('Choose from gallery'),
+            title: Text(l10n.scannerChooseFromGallery),
             onTap: onGallery,
           ),
         ],
@@ -254,6 +257,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   }
 
   Widget _buildStoreSelector() {
+    final l10n = AppLocalizations.of(context)!;
     final selectedId = ref.watch(selectedStoreIdProvider);
     final catalog = ref.watch(storeCatalogProvider);
     final storeName = selectedId == null
@@ -282,13 +286,13 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Shopping at',
+                  l10n.scannerShoppingAt,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
                 ),
                 Text(
-                  storeName ?? 'Choose your store',
+                  storeName ?? l10n.scannerChooseStore,
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
               ],
@@ -302,15 +306,16 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       appBar: MitlistAppBar.titleText(
-        'Scanner',
+        l10n.scannerAppBarTitle,
         showStandardActions: false,
         leading: IconButton(
           icon: AppIcon(name: 'arrowLeft'),
-          tooltip: 'Back',
+          tooltip: l10n.commonBack,
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -342,7 +347,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
                   ),
                   const SizedBox(height: MitlistSpacing.md),
                   Text(
-                    'Scan a receipt, list, recipe,\nor chore reminder',
+                    l10n.scannerHintText,
                     textAlign: TextAlign.center,
                     style: textTheme.bodyMedium?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -366,7 +371,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
                           Theme.of(context).colorScheme.primary),
                     ),
                     const SizedBox(height: MitlistSpacing.md),
-                    Text('Analyzing…'),
+                    Text(l10n.scannerAnalyzing),
                   ],
                 ),
               ),
@@ -374,7 +379,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
           else if (_result == null) ...[
             if (widget.groupId != null && _imageFile == null) ...[
               AppButton(
-                text: 'Scan grocery list',
+                text: l10n.scannerScanGrocery,
                 size: AppButtonSize.xl,
                 icon: AppIcon(
                   name: 'camera',
@@ -384,7 +389,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
               ),
               const SizedBox(height: MitlistSpacing.sm),
               AppButton(
-                text: 'Scan receipt, recipe, or chore',
+                text: l10n.scannerScanReceipt,
                 variant: AppButtonVariant.outline,
                 icon: const AppIcon(name: 'documentScanner'),
                 onPressed: _showSourcePicker,
@@ -392,8 +397,8 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
             ] else
               AppButton(
                 text: _imageFile != null
-                    ? 'Analyze this image'
-                    : 'Take a photo or choose one',
+                    ? l10n.scannerAnalyzeThis
+                    : l10n.scannerTakeOrChoose,
                 size: _imageFile == null ? AppButtonSize.xl : AppButtonSize.md,
                 icon: _imageFile == null
                     ? AppIcon(
@@ -413,7 +418,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
           if (_imageFile != null && _result == null && !_isAnalyzing) ...[
             const SizedBox(height: MitlistSpacing.sm),
             AppButton(
-              text: 'Pick different image',
+              text: l10n.scannerPickDifferent,
               variant: AppButtonVariant.outline,
               color: AppButtonColor.neutral,
               onPressed: _showSourcePicker,
@@ -428,7 +433,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
               paddingPreset: AppEmptyStatePadding.md,
               actions: [
                 AppButton(
-                  text: 'Retry',
+                  text: l10n.commonRetry,
                   onPressed: () => _pickImage(ImageSource.gallery),
                 ),
               ],
@@ -445,13 +450,14 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   }
 
   Widget _buildResultCard() {
+    final l10n = AppLocalizations.of(context)!;
     final r = _result!;
     final textTheme = Theme.of(context).textTheme;
     final typeLabel = switch (r.type) {
-      'receipt' => 'Receipt',
-      'list' => 'Shopping list',
-      'recipe' => 'Recipe',
-      'chore' => 'Chore',
+      'receipt' => l10n.scannerTypeReceipt,
+      'list' => l10n.scannerTypeShoppingList,
+      'recipe' => l10n.scannerTypeRecipe,
+      'chore' => l10n.scannerTypeChore,
       _ => r.type,
     };
 
@@ -468,7 +474,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
               ),
               const SizedBox(width: MitlistSpacing.sm),
               Text(
-                'Detected: $typeLabel',
+                l10n.scannerDetectedType(typeLabel),
                 style: textTheme.titleMedium,
               ),
             ],
@@ -483,7 +489,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
           if (r.items.isNotEmpty) ...[
             const SizedBox(height: MitlistSpacing.md),
             Text(
-              '${r.items.length} item${r.items.length == 1 ? '' : 's'}',
+              l10n.scannerItemCount(r.items.length),
               style: textTheme.labelMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -524,7 +530,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
             }),
             if (r.items.length > 8)
               Text(
-                '…and ${r.items.length - 8} more',
+                l10n.scannerAndMore(r.items.length - 8),
                 style: textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -533,7 +539,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
           if (r.steps.isNotEmpty) ...[
             const SizedBox(height: MitlistSpacing.md),
             Text(
-              '${r.steps.length} step${r.steps.length == 1 ? '' : 's'}',
+              l10n.scannerStepCount(r.steps.length),
               style: textTheme.labelMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -565,7 +571,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
           if (r.amount != null && r.amount! > 0) ...[
             const SizedBox(height: MitlistSpacing.sm),
             Text(
-              'Total: \$${(r.amount! / 100).toStringAsFixed(2)}',
+              l10n.scannerTotal((r.amount! / 100).toStringAsFixed(2)),
               style: textTheme.titleMedium?.copyWith(
                 color: Theme.of(context).colorScheme.primary,
               ),
@@ -574,17 +580,17 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
           const SizedBox(height: MitlistSpacing.lg),
           AppButton(
             text: switch (r.type) {
-              'list' => 'Add to lists',
-              'receipt' => 'Create expense',
-              'recipe' => 'Create recipe',
-              'chore' => 'Create chore',
-              _ => 'Use this',
+              'list' => l10n.scannerAddToLists,
+              'receipt' => l10n.scannerCreateExpense,
+              'recipe' => l10n.scannerCreateRecipe,
+              'chore' => l10n.scannerCreateChore,
+              _ => l10n.scannerUseThis,
             },
             onPressed: _useResult,
           ),
           const SizedBox(height: MitlistSpacing.sm),
           AppButton(
-            text: 'Scan again',
+            text: l10n.scannerScanAgain,
             variant: AppButtonVariant.outline,
             color: AppButtonColor.neutral,
             onPressed: () => setState(() {

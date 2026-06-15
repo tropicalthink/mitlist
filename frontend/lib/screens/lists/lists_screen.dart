@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/list_models.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
@@ -53,13 +54,6 @@ class ListsScreen extends ConsumerStatefulWidget {
 
 class _ListsScreenState extends ConsumerState<ListsScreen> {
   static const int _pageLimit = 50;
-
-  static const _filters = <_FilterOption, String>{
-    _FilterOption.all: 'All',
-    _FilterOption.shopping: 'Shopping',
-    _FilterOption.todo: 'To-do',
-    _FilterOption.custom: 'Custom',
-  };
 
   bool _isLoading = true;
   bool _isLoadingMore = false;
@@ -159,6 +153,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   }
 
   Future<void> _loadLists() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isLoading = true;
       _error = null;
@@ -216,7 +211,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         // If we have cached content, don't replace it with an error state.
         if (!hadCache && mounted) {
           setState(() {
-            _error = 'Couldn\u2019t load lists. Check your connection.';
+            _error = l10n.commonFailedToLoad;
           });
         }
       }
@@ -231,7 +226,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = friendlyErrorMessage(e);
+          _error = friendlyErrorMessage(e, AppLocalizations.of(context)!);
           _isLoading = false;
         });
       }
@@ -241,6 +236,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   Future<void> _loadMoreLists() async {
     if (_isLoadingMore || !_hasMore || _isLoading) return;
 
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isLoadingMore = true;
       _error = null;
@@ -267,7 +263,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = 'Failed to load more lists';
+          _error = l10n.commonFailedToLoad;
           _isLoadingMore = false;
         });
       }
@@ -364,6 +360,8 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     ref.listen(shellVisitedTabsProvider, (previous, next) {
       _activateTabIfNeeded();
     });
@@ -379,7 +377,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         leading: _showSearch
             ? IconButton(
                 icon: const AppIcon(name: 'arrowLeft'),
-                tooltip: 'Back',
+                tooltip: l10n.commonBack,
                 onPressed: _clearSearch,
               )
             : null,
@@ -387,15 +385,15 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
             ? TextField(
                 controller: _searchController,
                 autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: 'Search lists',
-                  hintText: 'Name, e.g. groceries',
+                decoration: InputDecoration(
+                  labelText: l10n.listSearchLabel,
+                  hintText: l10n.listSearchHint,
                   border: InputBorder.none,
                 ),
                 onChanged: _onSearchChanged,
               )
-            : const Text(
-                'Lists',
+            : Text(
+                l10n.listAppBarTitle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -403,17 +401,17 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
           if (!_showSearch) ...[
             IconButton(
               icon: const AppIcon(name: 'shoppingCart'),
-              tooltip: 'Shopping trip',
+              tooltip: l10n.listShoppingTripTooltip,
               onPressed: () => context.pushNamed('shoppingTrip'),
             ),
             IconButton(
               icon: const AppIcon(name: 'magnifyingGlass'),
-              tooltip: 'Search',
+              tooltip: l10n.commonSearch,
               onPressed: () => setState(() => _showSearch = true),
             ),
             PopupMenuButton<_ListMenuAction>(
               icon: const AppIcon(name: 'ellipsisVertical'),
-              tooltip: 'Options',
+              tooltip: l10n.commonOptions,
               onSelected: (action) {
                 setState(() {
                   switch (action) {
@@ -460,7 +458,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                           size: 18,
                           color: Theme.of(context).colorScheme.onSurface),
                       const SizedBox(width: MitlistSpacing.sm),
-                      const Text('Scan receipt or list'),
+                      Text(l10n.listScanTooltip),
                     ],
                   ),
                 ),
@@ -468,35 +466,35 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                 PopupMenuItem(
                   enabled: false,
                   child: Text(
-                    'Sort',
+                    l10n.listSortLabel,
                     style: Theme.of(context).textTheme.labelMedium,
                   ),
                 ),
                 CheckedPopupMenuItem(
                   value: _ListMenuAction.sortNewest,
                   checked: _sort == _SortOption.newest,
-                  child: const Text('Newest'),
+                  child: Text(l10n.listSortNewest),
                 ),
                 CheckedPopupMenuItem(
                   value: _ListMenuAction.sortOldest,
                   checked: _sort == _SortOption.oldest,
-                  child: const Text('Oldest'),
+                  child: Text(l10n.listSortOldest),
                 ),
                 CheckedPopupMenuItem(
                   value: _ListMenuAction.sortAz,
                   checked: _sort == _SortOption.az,
-                  child: const Text('A–Z'),
+                  child: Text(l10n.listSortAZ),
                 ),
                 CheckedPopupMenuItem(
                   value: _ListMenuAction.sortMostItems,
                   checked: _sort == _SortOption.mostItems,
-                  child: const Text('Most items'),
+                  child: Text(l10n.listSortMostItems),
                 ),
                 const PopupMenuDivider(),
                 CheckedPopupMenuItem(
                   value: _ListMenuAction.toggleView,
                   checked: _isGrid,
-                  child: const Text('Grid view'),
+                  child: Text(l10n.listSortGridView),
                 ),
               ],
             ),
@@ -510,8 +508,8 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
             ? _showCreateSheet
             : () => context.goNamed('groupsList'),
         icon: const AppIcon(name: 'plus'),
-        text: 'New list',
-        tooltip: 'New list',
+        text: l10n.listNewList,
+        tooltip: l10n.listNewList,
       ),
     );
   }
@@ -527,6 +525,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         onRefresh: _loadLists,
         child: LayoutBuilder(
           builder: (context, constraints) {
+            final l10n = AppLocalizations.of(context)!;
             return SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               child: ConstrainedBox(
@@ -540,7 +539,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                         AppAlert(type: AppAlertType.error, message: _error!),
                         const SizedBox(height: MitlistSpacing.md),
                         AppButton(
-                          text: 'Retry',
+                          text: l10n.commonRetry,
                           icon: const AppIcon(name: 'arrowPath'),
                           onPressed: _loadLists,
                         ),
@@ -603,6 +602,14 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   Widget _buildChipBar() {
     if (!_hasHousehold) return const SizedBox.shrink();
 
+    final l10n = AppLocalizations.of(context)!;
+    final labelMap = <_FilterOption, String>{
+      _FilterOption.all: l10n.listFilterAll,
+      _FilterOption.shopping: l10n.listFilterShopping,
+      _FilterOption.todo: l10n.listFilterTodo,
+      _FilterOption.custom: l10n.listFilterCustom,
+    };
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(
@@ -610,7 +617,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         vertical: MitlistSpacing.sm,
       ),
       child: Row(
-        children: _filters.entries.map((entry) {
+        children: labelMap.entries.map((entry) {
           final option = entry.key;
           final label = _chipLabel(option, entry.value);
           return Padding(
@@ -688,6 +695,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   }
 
   Widget _buildPaginationFooter() {
+    final l10n = AppLocalizations.of(context)!;
     if (_error != null) {
       return Padding(
         padding: const EdgeInsets.all(MitlistSpacing.md),
@@ -697,7 +705,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
             AppAlert(type: AppAlertType.error, message: _error!),
             const SizedBox(height: MitlistSpacing.sm),
             AppButton(
-              text: 'Retry',
+              text: l10n.commonRetry,
               variant: AppButtonVariant.outline,
               size: AppButtonSize.sm,
               onPressed: _loadMoreLists,
@@ -718,30 +726,26 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     );
   }
 
-  String get _emptyTitle => switch (_filter) {
-        _FilterOption.shopping => 'No shopping lists',
-        _FilterOption.todo => 'No to-do lists',
-        _FilterOption.custom => 'No custom lists',
-        _FilterOption.all => 'No lists yet',
-      };
-
-  String get _emptyDescription => switch (_filter) {
-        _FilterOption.shopping =>
-          'Great for groceries, meal prep, weekend errands.',
-        _FilterOption.todo => 'Tasks, chores, anything with a checkbox.',
-        _FilterOption.custom => 'Free-form — your list, your rules.',
-        _FilterOption.all =>
-          'Add lines inside a list; the first few appear as a snippet on its card.',
-      };
-
-  String get _emptyActionLabel => switch (_filter) {
-        _FilterOption.shopping => 'Create a shopping list',
-        _FilterOption.todo => 'Create a to-do list',
-        _FilterOption.custom => 'Create a custom list',
-        _FilterOption.all => 'Create your first list',
-      };
-
   Widget _buildEmptyState() {
+    final l10n = AppLocalizations.of(context)!;
+    final emptyTitle = switch (_filter) {
+      _FilterOption.shopping => l10n.listEmptyShopping,
+      _FilterOption.todo => l10n.listEmptyTodo,
+      _FilterOption.custom => l10n.listEmptyCustom,
+      _FilterOption.all => l10n.listEmptyAll,
+    };
+    final emptyDesc = switch (_filter) {
+      _FilterOption.shopping => l10n.listEmptyShoppingDesc,
+      _FilterOption.todo => l10n.listEmptyTodoDesc,
+      _FilterOption.custom => l10n.listEmptyCustomDesc,
+      _FilterOption.all => l10n.listEmptyAllDesc,
+    };
+    final actionLabel = switch (_filter) {
+      _FilterOption.shopping => l10n.listCreateShopping,
+      _FilterOption.todo => l10n.listCreateTodo,
+      _FilterOption.custom => l10n.listCreateCustom,
+      _FilterOption.all => l10n.listCreateFirst,
+    };
     return LayoutBuilder(
       builder: (context, constraints) {
         return SingleChildScrollView(
@@ -757,11 +761,11 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                         lottieAsset:
                             'assets/animations/lottie/checklist.lottie',
                         icon: const AppIcon(name: 'queueList'),
-                        title: _emptyTitle,
-                        description: _emptyDescription,
+                        title: emptyTitle,
+                        description: emptyDesc,
                         actions: [
                           AppButton(
-                            text: _emptyActionLabel,
+                            text: actionLabel,
                             icon: const AppIcon(name: 'plus'),
                             onPressed: _showCreateSheet,
                           ),
@@ -775,9 +779,8 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     );
   }
 
-  /// Shown when a search matches nothing: name the dead end and offer the way
-  /// out, instead of the create-a-list pitch.
   Widget _buildSearchEmptyState() {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
     return Column(
@@ -790,7 +793,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         ),
         const SizedBox(height: MitlistSpacing.sm),
         Text(
-          'No lists match "$_searchQuery"',
+          l10n.listNoMatch(_searchQuery),
           textAlign: TextAlign.center,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
@@ -800,7 +803,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         ),
         const SizedBox(height: MitlistSpacing.xs),
         Text(
-          'Names and list items are searched.',
+          l10n.listSearchDesc,
           textAlign: TextAlign.center,
           style: textTheme.bodySmall?.copyWith(
             color: colorScheme.onSurfaceVariant,
@@ -808,7 +811,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         ),
         const SizedBox(height: MitlistSpacing.md),
         AppButton(
-          text: 'Clear search',
+          text: l10n.commonClearSearch,
           variant: AppButtonVariant.outline,
           onPressed: _clearSearch,
         ),
@@ -817,17 +820,18 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   }
 
   Widget _buildNoHouseholdState() {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(MitlistSpacing.md),
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/House.lottie',
           icon: const AppIcon(name: 'userGroup'),
-          title: 'No household yet',
-          description: 'Create or join a household before adding lists.',
+          title: l10n.commonNoHousehold,
+          description: l10n.commonCreateJoinHousehold,
           actions: [
             AppButton(
-              text: 'Go to households',
+              text: l10n.commonGoToHouseholds,
               onPressed: () => context.goNamed('groupsList'),
             ),
           ],
@@ -868,6 +872,7 @@ class _ListCard extends ConsumerWidget {
 
   Future<void> _showActions(BuildContext context, WidgetRef ref) async {
     unawaited(Haptics.medium());
+    final l10n = AppLocalizations.of(context)!;
     final action = await showAppDialog<String>(
       context: context,
       title: list.name,
@@ -876,7 +881,7 @@ class _ListCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           AppButton(
-            text: 'Rename',
+            text: l10n.commonRename,
             icon: const AppIcon(name: 'pencilSquare', size: 18),
             variant: AppButtonVariant.outline,
             color: AppButtonColor.neutral,
@@ -884,7 +889,7 @@ class _ListCard extends ConsumerWidget {
           ),
           const SizedBox(height: MitlistSpacing.sm),
           AppButton(
-            text: 'Delete list',
+            text: l10n.listDeleteTitle,
             icon: const AppIcon(name: 'trash', size: 18),
             variant: AppButtonVariant.outline,
             color: AppButtonColor.error,
@@ -902,24 +907,25 @@ class _ListCard extends ConsumerWidget {
   }
 
   Future<void> _renameList(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: list.name);
     final newName = await showAppDialog<String>(
       context: context,
-      title: 'Rename list',
+      title: l10n.listRenameTitle,
       body: AppInput(
-        label: 'List name',
+        label: l10n.commonListName,
         controller: controller,
         maxLength: 100,
         textInputAction: TextInputAction.done,
       ),
       actions: [
         AppButton(
-          text: 'Cancel',
+          text: l10n.commonCancel,
           variant: AppButtonVariant.outline,
           onPressed: () => Navigator.of(context).pop(null),
         ),
         AppButton(
-          text: 'Save',
+          text: l10n.commonSave,
           onPressed: () => Navigator.of(context).pop(controller.text.trim()),
         ),
       ],
@@ -933,26 +939,26 @@ class _ListCard extends ConsumerWidget {
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Couldn’t rename list.')),
+          SnackBar(content: Text(l10n.listCouldNotRename)),
         );
       }
     }
   }
 
   Future<void> _deleteList(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showAppDialog<bool>(
       context: context,
-      title: 'Delete list',
-      body: const Text(
-          'This will permanently delete this list and all its items.'),
+      title: l10n.listDeleteTitle,
+      body: Text(l10n.listDeleteBody),
       actions: [
         AppButton(
-          text: 'Cancel',
+          text: l10n.commonCancel,
           variant: AppButtonVariant.outline,
           onPressed: () => Navigator.of(context).pop(false),
         ),
         AppButton(
-          text: 'Delete',
+          text: l10n.commonDelete,
           color: AppButtonColor.error,
           onPressed: () => Navigator.of(context).pop(true),
         ),
@@ -968,21 +974,22 @@ class _ListCard extends ConsumerWidget {
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Couldn’t delete list.')),
+          SnackBar(content: Text(l10n.listCouldNotDelete)),
         );
       }
     }
   }
 
   Future<void> _quickAddItem(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController();
     final name = await showAppDialog<String>(
       context: context,
-      title: 'Add item to ${list.name}',
+      title: l10n.listAddItemTo(list.name),
       body: GrocerySuggestionField(
         controller: controller,
         groupId: list.groupId,
-        label: 'Item name',
+        label: l10n.listItemName,
         maxLength: 200,
         submitOnSelect: true,
         onSubmitted: (value) => Navigator.of(context)
@@ -990,12 +997,12 @@ class _ListCard extends ConsumerWidget {
       ),
       actions: [
         AppButton(
-          text: 'Cancel',
+          text: l10n.commonCancel,
           variant: AppButtonVariant.outline,
           onPressed: () => Navigator.of(context).pop(null),
         ),
         AppButton(
-          text: 'Add',
+          text: l10n.commonAdd,
           onPressed: () => Navigator.of(context).pop(controller.text.trim()),
         ),
       ],
@@ -1009,7 +1016,7 @@ class _ListCard extends ConsumerWidget {
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Couldn\u2019t add item.')),
+          SnackBar(content: Text(l10n.listCouldNotAddItem)),
         );
       }
     }
@@ -1017,6 +1024,7 @@ class _ListCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final accent = ListTileAccent.fromSeed(
       list.id,
       Theme.of(context).brightness,
@@ -1118,7 +1126,7 @@ class _ListCard extends ConsumerWidget {
                       children: [
                         if (itemCount != null && itemCount > 0)
                           Text(
-                            '$itemCount item${itemCount == 1 ? '' : 's'}',
+                            l10n.commonItemCount(itemCount),
                             style: Theme.of(context)
                                 .textTheme
                                 .labelSmall
@@ -1128,10 +1136,10 @@ class _ListCard extends ConsumerWidget {
                           ),
                         const Spacer(),
                         Tooltip(
-                          message: 'Quick add item',
+                          message: l10n.listQuickAddItemTooltip,
                           child: Semantics(
                             button: true,
-                            label: 'Quick add item to ${list.name}',
+                            label: l10n.listQuickAddItemSemantics(list.name),
                             child: InkWell(
                               onTap: () => _quickAddItem(context, ref),
                               borderRadius:
@@ -1156,7 +1164,7 @@ class _ListCard extends ConsumerWidget {
                   top: -4,
                   right: -4,
                   child: PopupMenuButton<String>(
-                    tooltip: 'List options',
+                    tooltip: l10n.listOptionsTooltip,
                     padding: EdgeInsets.zero,
                     onSelected: (action) async {
                       if (!context.mounted) return;
@@ -1175,7 +1183,7 @@ class _ListCard extends ConsumerWidget {
                               size: 18,
                               color: Theme.of(ctx).colorScheme.onSurface),
                           const SizedBox(width: MitlistSpacing.sm),
-                          const Text('Rename'),
+                          Text(l10n.commonRename),
                         ]),
                       ),
                       PopupMenuItem(
@@ -1186,7 +1194,7 @@ class _ListCard extends ConsumerWidget {
                               size: 18,
                               color: Theme.of(ctx).colorScheme.error),
                           const SizedBox(width: MitlistSpacing.sm),
-                          Text('Delete list',
+                          Text(l10n.listDeleteTitle,
                               style: Theme.of(ctx)
                                   .textTheme
                                   .bodyMedium

@@ -2,6 +2,7 @@ import 'dart:ui' show PlatformDispatcher;
 
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../theme/spacing.dart';
 import '../widgets/app_button.dart';
 import '../services/error_reporter.dart';
@@ -63,6 +64,7 @@ class _ErrorFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
 
     return Material(
@@ -76,13 +78,13 @@ class _ErrorFallback extends StatelessWidget {
                   size: 48, color: colorScheme.error),
               const SizedBox(height: MitlistSpacing.md),
               Text(
-                'Something went wrong',
+                l10n.errorSomethingWentWrong,
                 style: Theme.of(context).textTheme.titleMedium,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: MitlistSpacing.sm),
               Text(
-                'An unexpected error occurred. The team has been notified.',
+                l10n.errorSomethingWentWrong,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -90,7 +92,7 @@ class _ErrorFallback extends StatelessWidget {
               ),
               const SizedBox(height: MitlistSpacing.lg),
               AppButton(
-                text: 'Try again',
+                text: l10n.commonRetry,
                 icon: const Icon(Icons.refresh),
                 variant: AppButtonVariant.outline,
                 onPressed: onRetry,

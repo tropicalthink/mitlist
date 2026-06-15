@@ -8,6 +8,7 @@ import '../../models/list_models.dart';
 import '../../providers/grocery_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../repositories/grocery_repository.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/scan/scan_models.dart';
 import '../../services/scan/suggestion_service.dart';
 import '../../theme/colors.dart';
@@ -135,12 +136,14 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
   // Phase 5: drag-to-reorder
   // ---------------------------------------------------------------------------
 
+  String get _otherAisle => AppLocalizations.of(context)!.aisleOther;
+
   List<_FlatEntry> _buildFlatEntries() {
     String? currentAisle;
     final entries = <_FlatEntry>[];
     for (int i = 0; i < _items.length; i++) {
       final item = _items[i];
-      final aisle = item.aisle ?? 'Other';
+      final aisle = item.aisle ?? _otherAisle;
       if (aisle != currentAisle) {
         entries.add(_FlatEntry.header(aisle));
         currentAisle = aisle;
@@ -190,7 +193,7 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
     for (int i = nearFlat; i >= 0; i--) {
       if (entries[i].isHeader) return entries[i].aisleLabel!;
     }
-    return _items.isNotEmpty ? (_items.first.aisle ?? 'Other') : 'Other';
+    return _items.isNotEmpty ? (_items.first.aisle ?? _otherAisle) : _otherAisle;
   }
 
   void _renumberSortOrders() {
@@ -208,7 +211,7 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
               id: _uuid.v4(),
               canonicalItemId: p.canonicalItemId!,
               storeId: storeId,
-              aisle: p.aisle ?? 'Other',
+              aisle: p.aisle ?? _otherAisle,
               sortOrder: p.aisleSortOrder,
             ))
         .toList();
@@ -342,9 +345,10 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
   }
 
   Future<String?> _createTargetList() async {
+    final l10n = AppLocalizations.of(context)!;
     final name = await showAppBottomSheet<String>(
       context: context,
-      title: 'New list',
+      title: l10n.scanReviewNewList,
       body: const _NewListSheet(),
     );
     if (name == null || name.trim().isEmpty || !mounted) return null;
@@ -360,6 +364,7 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
   }
 
   Future<String?> _showListPicker() async {
+    final l10n = AppLocalizations.of(context)!;
     final r = await ref.read(listRepositoryProvider.future);
     final lists = await r.getListsByGroupOnce(widget.groupId);
 
@@ -367,7 +372,7 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
 
     return showAppBottomSheet<String>(
       context: context,
-      title: 'Add to which list?',
+      title: l10n.scanReviewAddToWhichList,
       body: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -379,7 +384,7 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
           const SizedBox(height: MitlistSpacing.sm),
           ListTile(
             leading: const AppIcon(name: 'plus'),
-            title: const Text('New list…'),
+            title: Text(l10n.scanReviewNewListOption),
             onTap: () => Navigator.of(context).pop(_newListSentinel),
           ),
         ],
@@ -393,17 +398,18 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final pendingCount = _items
         .where((p) => p.confidenceLevel != ConfidenceLevel.autoAccept)
         .length;
     final flatEntries = _buildFlatEntries();
 
     final appBarTitle = widget.targetListName != null
-        ? 'Add to ${widget.targetListName}'
-        : 'Review items';
+        ? l10n.scanReviewAddToList(widget.targetListName!)
+        : l10n.scanReviewReviewItems;
     final ctaLabel = widget.targetListId != null
-        ? 'Add ${_items.length} item${_items.length == 1 ? '' : 's'}'
-        : 'Add ${_items.length} item${_items.length == 1 ? '' : 's'} to list';
+        ? l10n.commonItemCount(_items.length)
+        : '${l10n.commonItemCount(_items.length)} ${l10n.recipeAddToList.toLowerCase()}';
 
     return Scaffold(
       appBar: MitlistAppBar.titleText(
@@ -411,13 +417,13 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
         showStandardActions: false,
         leading: IconButton(
           icon: const AppIcon(name: 'arrowLeft'),
-          tooltip: 'Back',
+          tooltip: l10n.commonBack,
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
           if (pendingCount > 0)
             AppButton(
-              text: 'Accept all ($pendingCount)',
+              text: l10n.scanReviewAcceptAll(pendingCount),
               onPressed: _acceptAll,
               variant: AppButtonVariant.ghost,
               size: AppButtonSize.sm,
@@ -439,7 +445,7 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
                       color: Theme.of(context).colorScheme.onSurfaceVariant),
                   const SizedBox(width: MitlistSpacing.xs),
                   Text(
-                    'Store:',
+                    l10n.scanReviewStoreLabel,
                     style: MitlistTypography.labelXSmall(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
@@ -495,7 +501,7 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
                   if (afterItems == 0) {
                     return _SectionLabel(
                       key: const ValueKey('sug_header'),
-                      label: 'You might also need',
+                      label: l10n.scanReviewYouMightNeed,
                     );
                   }
                   if (afterItems == 1) {
@@ -514,7 +520,7 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
                   if (afterSuggestions == 0) {
                     return _SectionLabel(
                       key: const ValueKey('ign_header'),
-                      label: 'Ignored',
+                      label: l10n.scanReviewIgnored,
                     );
                   }
                   final ignoredIdx = afterSuggestions - 1;
@@ -536,7 +542,7 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
             child: Padding(
               padding: const EdgeInsets.all(MitlistSpacing.md),
               child: AppButton(
-                text: _isAdding ? 'Adding…' : ctaLabel,
+                text: _isAdding ? l10n.commonAdding : ctaLabel,
                 onPressed: _items.isEmpty || _isAdding ? null : _addToList,
               ),
             ),
@@ -560,7 +566,7 @@ class _NewListSheetState extends State<_NewListSheet> {
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController(text: 'Scanned list');
+    _controller = TextEditingController(text: AppLocalizations.of(context)!.scanReviewScannedList);
   }
 
   @override
@@ -577,19 +583,20 @@ class _NewListSheetState extends State<_NewListSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         AppInput(
           controller: _controller,
-          label: 'List name',
+          label: l10n.commonListName,
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => _submit(),
         ),
         const SizedBox(height: MitlistSpacing.md),
         AppButton(
-          text: 'Create list',
+          text: l10n.scanReviewCreateList,
           onPressed: _submit,
         ),
       ],
@@ -822,7 +829,7 @@ class _PredictionTile extends StatelessWidget {
                 const SizedBox(width: MitlistSpacing.xs),
                 Semantics(
                   button: true,
-                  label: 'Remove ${prediction.displayName}',
+                  label: AppLocalizations.of(context)!.scanReviewRemoveItem(prediction.displayName),
                   child: GestureDetector(
                     onTap: onRemove,
                     child: AppIcon(
@@ -852,9 +859,10 @@ class _PredictionTile extends StatelessWidget {
       q == q.roundToDouble() ? q.round().toString() : q.toString();
 
   void _openEditor(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     showAppBottomSheet<void>(
       context: context,
-      title: 'Edit item',
+      title: l10n.scanReviewEditItem,
       body: _ItemEditorSheet(prediction: prediction, onSave: onChanged),
     );
   }
@@ -892,7 +900,7 @@ class _IgnoredTile extends StatelessWidget {
             ),
           ),
           AppButton(
-            text: 'Restore',
+            text: AppLocalizations.of(context)!.scanReviewRestore,
             onPressed: onRestore,
             variant: AppButtonVariant.ghost,
             size: AppButtonSize.sm,
@@ -960,6 +968,7 @@ class _ItemEditorSheetState extends State<_ItemEditorSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -969,31 +978,31 @@ class _ItemEditorSheetState extends State<_ItemEditorSheet> {
           Padding(
             padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
             child: Text(
-              'OCR saw: "${widget.prediction.rawText}"',
+              l10n.scanReviewOCRSaw(widget.prediction.rawText),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
             ),
           ),
-        AppInput(controller: _nameCtrl, label: 'Item name'),
+        AppInput(controller: _nameCtrl, label: l10n.scanReviewItemName),
         const SizedBox(height: MitlistSpacing.sm),
         Row(
           children: [
             Expanded(
               child: AppInput(
                 controller: _qtyCtrl,
-                label: 'Qty',
+                label: l10n.scanReviewQty,
                 keyboardType: TextInputType.number,
               ),
             ),
             const SizedBox(width: MitlistSpacing.sm),
-            Expanded(child: AppInput(controller: _unitCtrl, label: 'Unit')),
+            Expanded(child: AppInput(controller: _unitCtrl, label: l10n.scanReviewUnit)),
           ],
         ),
         const SizedBox(height: MitlistSpacing.md),
         if (widget.prediction.alternatives.isNotEmpty) ...[
           Text(
-            'Did you mean?',
+            l10n.scanReviewDidYouMean,
             style: MitlistTypography.labelXSmall(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
@@ -1010,7 +1019,7 @@ class _ItemEditorSheetState extends State<_ItemEditorSheet> {
           ),
           const SizedBox(height: MitlistSpacing.md),
         ],
-        AppButton(text: 'Confirm', onPressed: _save),
+        AppButton(text: l10n.commonConfirm, onPressed: _save),
       ],
     );
   }

@@ -21,6 +21,7 @@ import '../widgets/app_icon.dart';
 import '../widgets/app_input.dart';
 import '../utils/friendly_error.dart';
 import '../widgets/chip.dart';
+import '../l10n/app_localizations.dart';
 
 enum _Recurrence { none, hourly, daily, weekly, monthly, yearly, adaptive }
 
@@ -50,9 +51,10 @@ class ChoreCreationSheet extends ConsumerStatefulWidget {
     String? initialDescription,
   }) async {
     final dirty = ValueNotifier<bool>(false);
+    final l10n = AppLocalizations.of(context)!;
     final future = showAppBottomSheet<bool>(
       context: context,
-      title: 'Add chore',
+      title: l10n.choreCreationTitle,
       isDirtyListenable: dirty,
       body: ChoreCreationSheet(
         initialTitle: initialTitle,
@@ -82,6 +84,8 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
   bool _isScanning = false;
   bool _showAdvanced = false;
   String? _category;
+
+  AppLocalizations get _l10n => AppLocalizations.of(context)!;
 
   @override
   void initState() {
@@ -140,7 +144,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       if (!mounted) return;
       setState(() => _isScanning = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e))),
+        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -160,7 +164,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       if (groups.isEmpty) {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Create or join a household first.')),
+          SnackBar(content: Text(_l10n.choreCreationJoinFirst)),
         );
         return;
       }
@@ -222,7 +226,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            assignee == null ? 'Chore added' : 'Chore added · next up: $assignee',
+            assignee == null ? _l10n.choreCreationChoreAdded : _l10n.choreCreationChoreAddedNextUp(assignee),
           ),
         ),
       );
@@ -231,7 +235,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       if (!mounted) return;
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e))),
+        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -289,41 +293,40 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
   // ---- Plain-language descriptions of the current selection ----
 
   String get _recurrenceHint => switch (_recurrence) {
-        _Recurrence.none => 'A one-time chore. It won\'t come back on its own.',
-        _Recurrence.hourly => 'Comes back every set number of hours.',
-        _Recurrence.daily => 'Comes back every set number of days.',
-        _Recurrence.weekly => 'Comes back each week on the days you pick.',
-        _Recurrence.monthly => 'Comes back monthly on the same date.',
-        _Recurrence.yearly => 'Comes back yearly on the same date.',
-        _Recurrence.adaptive =>
-          'Comes back based on when it was last done, not the calendar.',
+        _Recurrence.none => _l10n.choreCreationHintNone,
+        _Recurrence.hourly => _l10n.choreCreationHintHourly,
+        _Recurrence.daily => _l10n.choreCreationHintDaily,
+        _Recurrence.weekly => _l10n.choreCreationHintWeekly,
+        _Recurrence.monthly => _l10n.choreCreationHintMonthly,
+        _Recurrence.yearly => _l10n.choreCreationHintYearly,
+        _Recurrence.adaptive => _l10n.choreCreationHintAdaptive,
       };
 
   String get _assignmentHint => switch (_assignmentPolicy) {
-        _AssignmentPolicy.roundRobin => 'Rotates to the next person each time.',
+        _AssignmentPolicy.roundRobin => _l10n.choreCreationAssignHintTurns,
         _AssignmentPolicy.alphabetical =>
-          'Goes in alphabetical order of names.',
-        _AssignmentPolicy.leastDone => 'Goes to whoever has done it least.',
-        _AssignmentPolicy.random => 'Picks someone at random each time.',
-        _AssignmentPolicy.noAssignment =>
-          'Stays unassigned. Anyone in the household can pick it up.',
+          _l10n.choreCreationAssignHintAlpha,
+        _AssignmentPolicy.leastDone => _l10n.choreCreationAssignHintLeast,
+        _AssignmentPolicy.random => _l10n.choreCreationAssignHintRandom,
+        _AssignmentPolicy.noAssignment => _l10n.choreCreationAssignHintNone,
       };
 
   /// Live, singular-aware summary of the repeat interval, e.g. "Every 2 weeks".
   String get _intervalSummary {
     final n = _periodInterval;
-    final (singular, plural) = switch (_recurrence) {
-      _Recurrence.hourly => ('hour', 'hours'),
-      _Recurrence.weekly => ('week', 'weeks'),
-      _Recurrence.monthly => ('month', 'months'),
-      _Recurrence.yearly => ('year', 'years'),
-      _ => ('day', 'days'),
+    final unit = switch (_recurrence) {
+      _Recurrence.hourly => n == 1 ? _l10n.choreCreationUnitHourSingular : _l10n.choreCreationUnitHourPlural,
+      _Recurrence.weekly => n == 1 ? _l10n.choreCreationUnitWeekSingular : _l10n.choreCreationUnitWeekPlural,
+      _Recurrence.monthly => n == 1 ? _l10n.choreCreationUnitMonthSingular : _l10n.choreCreationUnitMonthPlural,
+      _Recurrence.yearly => n == 1 ? _l10n.choreCreationUnitYearSingular : _l10n.choreCreationUnitYearPlural,
+      _ => n == 1 ? _l10n.choreCreationUnitDaySingular : _l10n.choreCreationUnitDayPlural,
     };
-    return n == 1 ? 'Every $singular' : 'Every $n $plural';
+    return n == 1 ? _l10n.choreCreationEverySingular(unit) : _l10n.choreCreationEveryPlural(n, unit);
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
     final groupZones = _activeGroupZones();
@@ -338,7 +341,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           children: [
             Expanded(
               child: AppInput(
-                hint: 'Chore name',
+                hint: l10n.choreCreationNameHint,
                 controller: _nameController,
                 textInputAction: TextInputAction.next,
                 maxLength: 100,
@@ -359,7 +362,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
 
         if (groupZones.isNotEmpty) ...[
           _ChipRow(
-            label: 'Zone',
+            label: l10n.choreCreationZoneLabel,
             children: [
               for (final zone in groupZones)
                 AppChip(
@@ -377,16 +380,16 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
 
         // ── Repeats (inline row) ──────────────────────────────────────
         _ChipRow(
-          label: 'Repeats',
+          label: l10n.choreCreationRepeatsLabel,
           children: [
-            for (final option in const [
-              (_Recurrence.none, 'None'),
-              (_Recurrence.daily, 'Daily'),
-              (_Recurrence.weekly, 'Weekly'),
-              (_Recurrence.monthly, 'Monthly'),
-              (_Recurrence.yearly, 'Yearly'),
-              (_Recurrence.hourly, 'Hourly'),
-              (_Recurrence.adaptive, 'Adaptive'),
+            for (final option in [
+              (_Recurrence.none, l10n.choreCreationRecurrenceNone),
+              (_Recurrence.daily, l10n.choreCreationRecurrenceDaily),
+              (_Recurrence.weekly, l10n.choreCreationRecurrenceWeekly),
+              (_Recurrence.monthly, l10n.choreCreationRecurrenceMonthly),
+              (_Recurrence.yearly, l10n.choreCreationRecurrenceYearly),
+              (_Recurrence.hourly, l10n.choreCreationRecurrenceHourly),
+              (_Recurrence.adaptive, l10n.choreCreationRecurrenceAdaptive),
             ])
               AppChip(
                 label: option.$2,
@@ -417,7 +420,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
                     SizedBox(
                       width: 72,
                       child: AppInput(
-                        hint: '1',
+                        hint: l10n.choreCreationIntervalHint,
                         controller: _intervalController,
                         keyboardType: TextInputType.number,
                         textInputAction: TextInputAction.done,
@@ -439,14 +442,14 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
-                        for (final day in const [
-                          ('monday', 'Mon'),
-                          ('tuesday', 'Tue'),
-                          ('wednesday', 'Wed'),
-                          ('thursday', 'Thu'),
-                          ('friday', 'Fri'),
-                          ('saturday', 'Sat'),
-                          ('sunday', 'Sun'),
+                        for (final day in [
+                          ('monday', l10n.choreDayMon),
+                          ('tuesday', l10n.choreDayTue),
+                          ('wednesday', l10n.choreDayWed),
+                          ('thursday', l10n.choreDayThu),
+                          ('friday', l10n.choreDayFri),
+                          ('saturday', l10n.choreDaySat),
+                          ('sunday', l10n.choreDaySun),
                         ])
                           Padding(
                             padding:
@@ -487,7 +490,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'More options',
+                  l10n.choreCreationMoreOptions,
                   style: textTheme.labelMedium?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
@@ -517,14 +520,14 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _ChipRow(
-                        label: 'Assign',
+                        label: l10n.choreCreationAssignLabel,
                         children: [
-                          for (final option in const [
-                            (_AssignmentPolicy.roundRobin, 'Take turns'),
-                            (_AssignmentPolicy.leastDone, 'Least done'),
-                            (_AssignmentPolicy.alphabetical, 'Alphabetical'),
-                            (_AssignmentPolicy.random, 'Random'),
-                            (_AssignmentPolicy.noAssignment, 'No assignee'),
+                          for (final option in [
+                            (_AssignmentPolicy.roundRobin, l10n.choreCreationAssignTakeTurns),
+                            (_AssignmentPolicy.leastDone, l10n.choreCreationAssignLeastDone),
+                            (_AssignmentPolicy.alphabetical, l10n.choreCreationAssignAlphabetical),
+                            (_AssignmentPolicy.random, l10n.choreCreationAssignRandom),
+                            (_AssignmentPolicy.noAssignment, l10n.choreCreationAssignNoAssignee),
                           ])
                             AppChip(
                               label: option.$2,
@@ -555,9 +558,9 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
                           setState(() => _trackDateOnly = value);
                           _markDirty();
                         },
-                        title: 'Log when done, don\'t tick off',
+                        title: l10n.choreCreationLogWhenDone,
                         helper:
-                            'Records the date without marking it complete. Good for tasks you want a history of.',
+                            l10n.choreCreationLogWhenDoneHelper,
                       ),
                       const SizedBox(height: MitlistSpacing.md),
                       _OptionToggle(
@@ -566,9 +569,9 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
                           setState(() => _rollover = value);
                           _markDirty();
                         },
-                        title: 'Roll over if missed',
+                        title: l10n.choreCreationRollOver,
                         helper:
-                            'Shifts to the next due date instead of piling up as overdue.',
+                            l10n.choreCreationRollOverHelper,
                       ),
                     ],
                   ),
@@ -579,7 +582,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
 
         // ── Notes ─────────────────────────────────────────────────────
         AppInput(
-          hint: 'Notes (optional) — steps, reminders, anything useful',
+          hint: l10n.choreCreationNotesHint,
           controller: _descriptionController,
           textInputAction: TextInputAction.newline,
           keyboardType: TextInputType.multiline,
@@ -596,7 +599,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
             variant: AppButtonVariant.solid,
             color: AppButtonColor.primary,
             size: AppButtonSize.lg,
-            text: _isSaving ? 'Adding…' : 'Add chore',
+            text: _isSaving ? l10n.commonAdding : l10n.choreAddChore,
             isLoading: _isSaving,
             onPressed: _canCreate ? _onCreate : null,
           ),
@@ -710,9 +713,10 @@ class _ScanIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     return Semantics(
-      label: 'Scan chore via camera',
+      label: l10n.choreCreationScanChoreSemantic,
       button: true,
       child: GestureDetector(
         onTap: onPressed,

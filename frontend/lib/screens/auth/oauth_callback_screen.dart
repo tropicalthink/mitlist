@@ -7,6 +7,7 @@ import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import '../../utils/friendly_error.dart';
+import '../../l10n/app_localizations.dart';
 
 class OAuthCallbackScreen extends ConsumerStatefulWidget {
   const OAuthCallbackScreen({
@@ -30,6 +31,7 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
   }
 
   Future<void> _complete() async {
+    final l10n = AppLocalizations.of(context)!;
     final provider = widget.queryParameters['provider'];
     final code = widget.queryParameters['code'];
     final state = widget.queryParameters['state'];
@@ -45,7 +47,7 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
 
     if (provider == null || code == null || state == null) {
       if (accessToken == null || refreshToken == null) {
-        setState(() => _error = 'Missing OAuth callback parameters.');
+        setState(() => _error = l10n.oauthMissingParams);
         return;
       }
     }
@@ -82,15 +84,16 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
       ref.read(authStateProvider.notifier).state = true;
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = friendlyErrorMessage(e));
+      setState(() => _error = friendlyErrorMessage(e, AppLocalizations.of(context)!));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: MitlistAppBar.titleText(
-        'Signing you in',
+        l10n.oauthSigningYouIn,
         showStandardActions: false,
       ),
       body: Center(

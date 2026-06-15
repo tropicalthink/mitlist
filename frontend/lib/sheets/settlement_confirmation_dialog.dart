@@ -4,6 +4,7 @@ import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_dialog.dart';
+import '../l10n/app_localizations.dart';
 import '../widgets/app_icon.dart';
 
 class SettlementConfirmationDialog extends StatefulWidget {
@@ -24,9 +25,10 @@ class SettlementConfirmationDialog extends StatefulWidget {
     required String payer,
     required String payee,
   }) async {
+    final l10n = AppLocalizations.of(context)!;
     return showAppDialog<bool>(
       context: context,
-      title: 'Confirm payment',
+      title: l10n.sheetSettlementTitle,
       body: SettlementConfirmationDialog(
         amount: amount,
         payer: payer,
@@ -46,6 +48,7 @@ class _SettlementConfirmationDialogState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final amount = widget.amount;
     final payer = widget.payer;
     final payee = widget.payee;
@@ -84,7 +87,7 @@ class _SettlementConfirmationDialogState
         Row(
           children: [
             Expanded(
-              child: _PartyBlock(label: 'From', name: payer),
+              child: _PartyBlock(label: l10n.sheetSettlementFrom, name: payer),
             ),
             const SizedBox(width: MitlistSpacing.md),
             AppIcon(
@@ -94,7 +97,7 @@ class _SettlementConfirmationDialogState
             ),
             const SizedBox(width: MitlistSpacing.md),
             Expanded(
-              child: _PartyBlock(label: 'To', name: payee),
+              child: _PartyBlock(label: l10n.sheetSettlementTo, name: payee),
             ),
           ],
         ),
@@ -106,7 +109,7 @@ class _SettlementConfirmationDialogState
                 variant: AppButtonVariant.outline,
                 color: AppButtonColor.primary,
                 size: AppButtonSize.lg,
-                text: 'Cancel',
+                text: l10n.commonCancel,
                 onPressed: _isConfirming
                     ? null
                     : () => Navigator.of(context).pop(false),
@@ -118,7 +121,7 @@ class _SettlementConfirmationDialogState
                 variant: AppButtonVariant.solid,
                 color: AppButtonColor.success,
                 size: AppButtonSize.lg,
-                text: _isConfirming ? 'Confirming...' : 'Confirm',
+                text: _isConfirming ? 'Confirming...' : l10n.commonConfirm,
                 isLoading: _isConfirming,
                 onPressed: _isConfirming || payer == payee
                     ? null

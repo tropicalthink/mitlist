@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/spacing.dart';
+import '../l10n/app_localizations.dart';
 import '../utils/format_currency.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
@@ -32,9 +33,10 @@ class CostSummarySheet extends StatelessWidget {
     required VoidCallback? onGenerateExpense,
     String currencyCode = 'USD',
   }) async {
+    final l10n = AppLocalizations.of(context)!;
     return showAppBottomSheet(
       context: context,
-      title: 'Cost summary',
+      title: l10n.sheetCostSummaryTitle,
       body: CostSummarySheet(
         listName: listName,
         totalCents: totalCents,
@@ -52,6 +54,7 @@ class CostSummarySheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final hasPrices = totalCents > 0;
 
     return Column(
@@ -69,24 +72,24 @@ class CostSummarySheet extends StatelessWidget {
           _InfoRow(
             iconName: 'infoOutline',
             message:
-                'No items have prices yet. Open the item options (⋯) and choose Set price to see the cost summary.',
+                l10n.costSummaryNoPrices,
           ),
         ] else ...[
           _CostRow(
-            label: 'Total cost',
+            label: l10n.sheetCostSummaryTotal,
             value: _formatCents(totalCents),
             isTotal: true,
           ),
           const SizedBox(height: MitlistSpacing.sm),
           _CostRow(
-            label: 'Equal share per person',
-            value: equalShareCents > 0 ? _formatCents(equalShareCents) : 'N/A',
+            label: l10n.costSummaryEqualShare,
+            value: equalShareCents > 0 ? _formatCents(equalShareCents) : l10n.costSummaryNotAvailable,
             isTotal: false,
           ),
           const SizedBox(height: MitlistSpacing.sm),
           _CostRow(
-            label: 'Items with prices',
-            value: itemCount > 0 ? '$itemCount' : 'None',
+            label: l10n.costSummaryItemsWithPrices,
+            value: itemCount > 0 ? '$itemCount' : l10n.costSummaryNone,
             isTotal: false,
           ),
           const SizedBox(height: MitlistSpacing.md),
@@ -96,7 +99,7 @@ class CostSummarySheet extends StatelessWidget {
               child: AppButton(
                 variant: AppButtonVariant.solid,
                 color: AppButtonColor.primary,
-                text: 'Generate expense',
+                text: l10n.costSummaryGenerateExpense,
                 onPressed: onGenerateExpense,
               ),
             ),

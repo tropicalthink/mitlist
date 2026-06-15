@@ -54,7 +54,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
       if (!mounted) return;
       setState(() => _isGuestLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e))),
+        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }

@@ -15,6 +15,7 @@ import '../../widgets/app_icon.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/skeleton.dart';
+import '../../l10n/app_localizations.dart';
 
 class NotificationPreferencesScreen extends ConsumerStatefulWidget {
   const NotificationPreferencesScreen({super.key});
@@ -40,6 +41,7 @@ class _NotificationPreferencesScreenState
   }
 
   Future<void> _load() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isLoading = true;
       _error = null;
@@ -75,7 +77,7 @@ class _NotificationPreferencesScreenState
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Failed to load notification preferences.';
+        _error = l10n.notifPrefFailedLoad;
         _isLoading = false;
       });
     }
@@ -126,8 +128,9 @@ class _NotificationPreferencesScreenState
   }
 
   Widget _buildPreferenceCard(NotificationPreferenceModel pref) {
+    final l10n = AppLocalizations.of(context)!;
     final groupName =
-        _groupNames[pref.groupId] ?? 'Notifications';
+        _groupNames[pref.groupId] ?? l10n.notifPrefGroupName;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
@@ -151,16 +154,16 @@ class _NotificationPreferencesScreenState
               ),
             _ToggleRow(
               icon: 'bell',
-              label: 'Chore due reminders',
-              subtitle: 'When a chore is coming due',
+              label: l10n.notifPrefChoreDueReminders,
+              subtitle: l10n.notifPrefChoreDueRemindersDesc,
               value: pref.choreDue,
               saving: _savingKeys['${pref.id}:chore_due'] == true,
               onChanged: (v) => _toggle(pref.id, 'chore_due', v),
             ),
             _ToggleRow(
               icon: 'calendarDays',
-              label: 'Chore due day-of',
-              subtitle: 'On the day a chore is due',
+              label: l10n.notifPrefChoreDueDayOf,
+              subtitle: l10n.notifPrefChoreDueDayOfDesc,
               value: pref.choreDueDayOf,
               saving:
                   _savingKeys['${pref.id}:chore_due_day_of'] == true,
@@ -169,8 +172,8 @@ class _NotificationPreferencesScreenState
             ),
             _ToggleRow(
               icon: 'clipboardDocumentList',
-              label: 'List item added',
-              subtitle: 'When someone adds to a shared list',
+              label: l10n.notifPrefListItemAdded,
+              subtitle: l10n.notifPrefListItemAddedDesc,
               value: pref.listItemAdded,
               saving:
                   _savingKeys['${pref.id}:list_item_added'] == true,
@@ -179,8 +182,8 @@ class _NotificationPreferencesScreenState
             ),
             _ToggleRow(
               icon: 'banknotes',
-              label: 'Expense created',
-              subtitle: 'When a new expense is logged',
+              label: l10n.notifPrefExpenseCreated,
+              subtitle: l10n.notifPrefExpenseCreatedDesc,
               value: pref.expenseCreated,
               saving:
                   _savingKeys['${pref.id}:expense_created'] == true,
@@ -189,8 +192,8 @@ class _NotificationPreferencesScreenState
             ),
             _ToggleRow(
               icon: 'calendarDays',
-              label: 'Meal plan changed',
-              subtitle: 'When the meal plan is updated',
+              label: l10n.notifPrefMealPlanChanged,
+              subtitle: l10n.notifPrefMealPlanChangedDesc,
               value: pref.mealPlanChanged,
               saving:
                   _savingKeys['${pref.id}:meal_plan_changed'] == true,
@@ -199,8 +202,8 @@ class _NotificationPreferencesScreenState
             ),
             _ToggleRow(
               icon: 'chartBar',
-              label: 'Weekly digest',
-              subtitle: 'A summary of household activity',
+              label: l10n.notifPrefWeeklyDigest,
+              subtitle: l10n.notifPrefWeeklyDigestDesc,
               value: pref.weeklyDigest,
               saving:
                   _savingKeys['${pref.id}:weekly_digest'] == true,
@@ -209,8 +212,8 @@ class _NotificationPreferencesScreenState
             ),
             _ToggleRow(
               icon: 'bell',
-              label: 'Pinwall reminders',
-              subtitle: 'When someone pins a reminder for later',
+              label: l10n.notifPrefPinwallReminders,
+              subtitle: l10n.notifPrefPinwallRemindersDesc,
               value: pref.pinwallReminder,
               saving:
                   _savingKeys['${pref.id}:pinwall_reminder'] == true,
@@ -220,8 +223,8 @@ class _NotificationPreferencesScreenState
             Divider(color: Theme.of(context).colorScheme.outlineVariant),
             _ToggleRow(
               icon: 'devicePhoneMobile',
-              label: 'Push notifications',
-              subtitle: 'Receive notifications on this device',
+              label: l10n.notifPrefPushNotifications,
+              subtitle: l10n.notifPrefPushNotificationsDesc,
               value: pref.pushEnabled,
               saving:
                   _savingKeys['${pref.id}:push_enabled'] == true,
@@ -236,13 +239,14 @@ class _NotificationPreferencesScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: MitlistAppBar.titleText(
-        'Notification Preferences',
+        l10n.notifPrefAppBarTitle,
         showStandardActions: false,
         leading: IconButton(
           icon: const AppIcon(name: 'arrowLeft'),
-          tooltip: 'Back',
+          tooltip: l10n.commonBack,
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -278,7 +282,7 @@ class _NotificationPreferencesScreenState
                         type: AppAlertType.error, message: _error!),
                     const SizedBox(height: MitlistSpacing.md),
                     AppButton(
-                      text: 'Retry',
+                      text: l10n.commonRetry,
                       onPressed: _load,
                     ),
                     const SizedBox(height: MitlistSpacing.md),
@@ -289,11 +293,11 @@ class _NotificationPreferencesScreenState
                       child: AppEmptyState(
                         lottieAsset: 'assets/animations/lottie/House.lottie',
                         icon: const AppIcon(name: 'homeOutline', size: 56),
-                        title: 'No household yet',
-                        description: 'Join or create a household to configure notification preferences.',
+                        title: l10n.commonNoHousehold,
+                        description: l10n.notifPrefNoHouseholdDesc,
                         actions: [
                           AppButton(
-                            text: 'Go to households',
+                            text: l10n.commonGoToHouseholds,
                             onPressed: () => context.goNamed('groupsList'),
                           ),
                         ],
@@ -305,9 +309,9 @@ class _NotificationPreferencesScreenState
                     AppEmptyState(
                       lottieAsset: 'assets/animations/lottie/Notifications.lottie',
                       icon: AppIcon(name: 'tune', size: 56),
-                      title: 'No preferences yet',
+                      title: l10n.notifPrefNoPreferences,
                       description:
-                          'Preferences are created when you join a household. If you just joined, they should appear shortly.',
+                          l10n.notifPrefNoPreferencesDesc,
                     ),
                   ],
                 ),

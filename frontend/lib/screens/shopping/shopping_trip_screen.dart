@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/list_models.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
@@ -129,7 +130,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
       unawaited(_recomputeAisles());
     } catch (e) {
       setState(() {
-        _error = friendlyErrorMessage(e);
+        _error = friendlyErrorMessage(e, AppLocalizations.of(context)!);
         _isLoading = false;
       });
     }
@@ -183,12 +184,12 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
 
   /// Groups all open items by aisle, ordered by shopping path. Items without a
   /// known aisle for this store collect under "Other" at the end.
-  List<_AisleGroup> _buildAisleGroups() {
+  List<_AisleGroup> _buildAisleGroups(String otherAisle) {
     final byAisle = <String, _AisleGroup>{};
     for (final items in _itemsByList.values) {
       for (final item in items) {
         final info = _aisleByItemId[item.id];
-        final name = info?.aisle ?? 'Other';
+        final name = info?.aisle ?? otherAisle;
         final sort = info?.sortOrder ?? 100000;
         final group = byAisle.putIfAbsent(
           name,
@@ -203,8 +204,8 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
     }
     final groups = byAisle.values.toList()
       ..sort((a, b) {
-        if (a.aisle == 'Other') return 1;
-        if (b.aisle == 'Other') return -1;
+        if (a.aisle == otherAisle) return 1;
+        if (b.aisle == otherAisle) return -1;
         return a.sortOrder.compareTo(b.sortOrder);
       });
     for (final g in groups) {
@@ -259,12 +260,13 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
       if (!mounted) return;
 
       if (totalCents > 0) {
+        final l10n = AppLocalizations.of(context)!;
         final totalStr = (totalCents / 100).toStringAsFixed(2);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('€$totalStr worth of items marked as done'),
+            content: Text(l10n.shoppingTripItemsWorthDone('€$totalStr')),
             action: SnackBarAction(
-              label: 'Add expense',
+              label: l10n.shoppingTripAddExpense,
               onPressed: () => context.pushNamed('money'),
             ),
           ),
@@ -273,7 +275,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(friendlyErrorMessage(e))),
+          SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
         );
       }
     } finally {
@@ -295,11 +297,12 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
   }
 
   String _listName(String listId) {
+    final l10n = AppLocalizations.of(context)!;
     final list = _lists.cast<ItemList?>().firstWhere(
           (l) => l?.id == listId,
           orElse: () => null,
         );
-    return list?.name ?? 'List';
+    return list?.name ?? l10n.shoppingTripFallbackList;
   }
 
   int get _totalItems {
@@ -329,6 +332,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
 
     // Re-plan the aisle order whenever the chosen store changes.
@@ -338,14 +342,14 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
       appBar: MitlistAppBar(
         leading: IconButton(
           icon: const AppIcon(name: 'arrowLeft'),
-          tooltip: 'Back',
+          tooltip: l10n.commonBack,
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('Shopping Trip'),
+        title: Text(l10n.shoppingTripAppBarTitle),
         actions: [
           IconButton(
             icon: const AppIcon(name: 'shoppingCart'),
-            tooltip: 'Choose store',
+            tooltip: l10n.shoppingTripChooseStore,
             onPressed: () => showStorePicker(context),
           ),
         ],
@@ -364,6 +368,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
   }
 
   Widget _buildBody(TextTheme textTheme) {
+    final l10n = AppLocalizations.of(context)!;
     if (_isLoading) {
       return _buildSkeleton();
     }
@@ -372,11 +377,11 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/House.lottie',
           icon: const AppIcon(name: 'homeOutline'),
-          title: 'No household yet',
-          description: 'Create or join a household before starting a shopping trip.',
+          title: l10n.commonNoHousehold,
+          description: l10n.commonCreateJoinHousehold,
           actions: [
             AppButton(
-              text: 'Go to households',
+              text: l10n.commonGoToHouseholds,
               onPressed: () => context.goNamed('groupsList'),
             ),
           ],
@@ -388,12 +393,12 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/404.lottie',
           icon: const AppIcon(name: 'alertCircleOutline'),
-          title: 'Something went wrong',
+          title: l10n.commonSomethingWentWrong,
           description: _error,
           actions: [
             AppButton(
               variant: AppButtonVariant.outline,
-              text: 'Retry',
+              text: l10n.commonRetry,
               onPressed: _load,
             ),
           ],
@@ -401,22 +406,22 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
       );
     }
     if (_lists.isEmpty) {
-      return const Center(
+      return Center(
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/checklist.lottie',
-          icon: AppIcon(name: 'shoppingBagOutline'),
-          title: 'No lists yet',
-          description: 'Create a shopping list to start a trip',
+          icon: const AppIcon(name: 'shoppingBagOutline'),
+          title: l10n.shoppingTripNoLists,
+          description: l10n.shoppingTripNoListsDesc,
         ),
       );
     }
     if (_totalItems == 0) {
-      return const Center(
+      return Center(
         child: AppEmptyState(
           lottieAsset: 'assets/animations/lottie/Checkmark.lottie',
-          icon: AppIcon(name: 'checkCircleOutline'),
-          title: 'All caught up',
-          description: 'No open items across your lists. Add items to a list to see them here.',
+          icon: const AppIcon(name: 'checkCircleOutline'),
+          title: l10n.shoppingTripAllCaughtUp,
+          description: l10n.shoppingTripAllCaughtUpDesc,
         ),
       );
     }
@@ -451,7 +456,8 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
   /// Trip grouped by store aisle in shopping-path order. A header banner names
   /// the store and offers a tap target to change it.
   Widget _buildAisleView() {
-    final groups = _buildAisleGroups();
+    final l10n = AppLocalizations.of(context)!;
+    final groups = _buildAisleGroups(l10n.aisleOther);
     final colorScheme = Theme.of(context).colorScheme;
     final storeName = ref.watch(storeCatalogProvider).maybeWhen(
           data: (stores) {
@@ -481,15 +487,15 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
                   Expanded(
                     child: Text(
                       storeName == null
-                          ? 'Sorted by store aisles'
-                          : 'Sorted by $storeName aisles',
+                          ? l10n.shoppingTripSortedByAisles
+                          : l10n.shoppingTripSortedByStoreAisles(storeName),
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(
                             color: colorScheme.onSurfaceVariant,
                           ),
                     ),
                   ),
                   Text(
-                    'Change',
+                    l10n.commonChange,
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
                           color: colorScheme.primary,
                         ),
@@ -575,6 +581,7 @@ class _BasketBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final disableAnimations = MediaQuery.of(context).disableAnimations;
@@ -652,7 +659,7 @@ class _BasketBar extends StatelessWidget {
                   const SizedBox(width: MitlistSpacing.xs),
                   Expanded(
                     child: Text(
-                      '/ $totalCount collected$priceSuffix',
+                      l10n.shoppingTripBasketBar(totalCount, priceSuffix),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: textTheme.bodyMedium?.copyWith(
@@ -662,7 +669,7 @@ class _BasketBar extends StatelessWidget {
                   ),
                   const SizedBox(width: MitlistSpacing.sm),
                   AppButton(
-                    text: 'Mark done',
+                    text: l10n.shoppingTripMarkDone,
                     icon: const AppIcon(name: 'checkCircleOutline'),
                     onPressed: onDone,
                     isLoading: isSubmitting,
@@ -858,6 +865,7 @@ class _ItemRowState extends State<_ItemRow>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final disableAnimations = MediaQuery.of(context).disableAnimations;
@@ -898,8 +906,8 @@ class _ItemRowState extends State<_ItemRow>
                   AnimatedCheckToggle(
                     value: widget.isChecked,
                     onChanged: (_) => widget.onToggle(),
-                    semanticLabelOn: 'Mark ${widget.item.name} as not purchased',
-                    semanticLabelOff: 'Mark ${widget.item.name} as purchased',
+                    semanticLabelOn: l10n.shoppingTripMarkNotPurchased(widget.item.name),
+                    semanticLabelOff: l10n.shoppingTripMarkPurchased(widget.item.name),
                   ),
                   Expanded(
                     child: CustomPaint(
@@ -1026,6 +1034,7 @@ class _DoneStampState extends State<_DoneStamp>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final priceStr = widget.totalCents > 0
@@ -1092,7 +1101,7 @@ class _DoneStampState extends State<_DoneStamp>
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'DONE',
+                l10n.shoppingTripStampDone,
                 style: textTheme.displaySmall?.copyWith(
                   color: colorScheme.primary,
                   fontWeight: FontWeight.w700,
@@ -1101,7 +1110,7 @@ class _DoneStampState extends State<_DoneStamp>
               ),
               const SizedBox(height: MitlistSpacing.xs),
               Text(
-                widget.count == 1 ? '1 item' : '${widget.count} items',
+                l10n.shoppingTripStampItems(widget.count),
                 style: textTheme.titleSmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),

@@ -14,6 +14,7 @@ import '../../providers/finance_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/pinwall_provider.dart';
+import '../../l10n/app_localizations.dart';
 import '../../repositories/hub_repository.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
@@ -348,10 +349,11 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
 
     await showAppBottomSheet<void>(
       context: hubContext,
-      title: 'Households',
+      title: AppLocalizations.of(hubContext)!.hubHouseholdsSheetTitle,
       body: Builder(
         builder: (ctx) {
           sheetContext = ctx;
+          final l10n = AppLocalizations.of(ctx)!;
           final displayGroups = groups.isNotEmpty
               ? groups
               : (_data != null
@@ -400,7 +402,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                 for (final h in displayGroups)
                   Semantics(
                     button: true,
-                    label: 'Switch to ${h.name}',
+                    label: AppLocalizations.of(ctx)!.hubSwitchToHousehold(h.name),
                     child: InkWell(
                       onTap: groups.length >= 2
                           ? () {
@@ -433,7 +435,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                                   ),
                                   if (h.memberCount != null)
                                     Text(
-                                      '${h.memberCount} ${h.memberCount == 1 ? 'member' : 'members'}',
+                                      l10n.commonMember(h.memberCount!),
                                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                                           ),
@@ -461,7 +463,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
               ],
               actionTile(
                 iconName: 'addHomeOutline',
-                label: 'Create household',
+                label: l10n.hubCreateHousehold,
                 onTap: () {
                   Navigator.of(sheetContext).pop();
                   WidgetsBinding.instance
@@ -475,7 +477,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
               ),
               actionTile(
                 iconName: 'keyOutline',
-                label: 'Join household',
+                label: l10n.hubJoinHousehold,
                 onTap: () {
                   Navigator.of(sheetContext).pop();
                   WidgetsBinding.instance
@@ -489,7 +491,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
               ),
               actionTile(
                 iconName: 'userPlus',
-                label: 'Invite to household',
+                label: l10n.hubInviteToHousehold,
                 onTap: () {
                   Navigator.of(sheetContext).pop();
                   WidgetsBinding.instance
@@ -504,7 +506,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
               ),
               actionTile(
                 iconName: 'cog6ToothOutline',
-                label: 'Household settings',
+                label: l10n.hubHouseholdSettings,
                 onTap: () {
                   Navigator.of(sheetContext).pop();
                   WidgetsBinding.instance
@@ -563,6 +565,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
   }
 
   Widget _buildEmptyState(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final bodyMedium = Theme.of(context).textTheme.bodyMedium;
 
@@ -585,13 +588,13 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
             ),
             const SizedBox(height: MitlistSpacing.md),
             Text(
-              'Welcome to mitlist',
+              l10n.hubWelcomeHeadline,
               style: Theme.of(context).textTheme.headlineSmall,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: MitlistSpacing.sm),
             Text(
-              'Create or join a household to start sharing lists, chores, and expenses.',
+              l10n.hubWelcomeDescription,
               style: bodyMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
@@ -604,7 +607,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                 variant: AppButtonVariant.solid,
                 color: AppButtonColor.primary,
                 size: AppButtonSize.lg,
-                text: 'Create a household',
+                text: l10n.hubCreateAHousehold,
                 icon: const AppIcon(name: 'addHomeOutline'),
                 onPressed: _onCreateHousehold,
               ),
@@ -616,7 +619,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                 variant: AppButtonVariant.outline,
                 color: AppButtonColor.neutral,
                 size: AppButtonSize.lg,
-                text: 'Join with invite code',
+                text: l10n.hubJoinWithInviteCode,
                 icon: const AppIcon(name: 'keyOutline'),
                 onPressed: _onJoinHousehold,
               ),
@@ -628,7 +631,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
   }
 
   Widget _buildAppBarTitle(BuildContext context) {
-    final name = _data?.name ?? 'Home';
+    final l10n = AppLocalizations.of(context)!;
+    final name = _data?.name ?? l10n.hubAppBarTitle;
     final titleTextStyle =
         Theme.of(context).appBarTheme.titleTextStyle ??
             Theme.of(context).textTheme.titleLarge;
@@ -643,7 +647,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
 
     return Semantics(
       button: true,
-      label: 'Households, current $name',
+      label: l10n.hubHouseholdsCurrent(name),
       child: Align(
         alignment: Alignment.centerLeft,
         child: InkWell(
@@ -681,6 +685,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       floatingActionButton: _isLoading || _error != null || _resolvedGroupId == null
           ? null
@@ -688,8 +693,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
               size: AppButtonSize.lg,
               onPressed: () => showQuickAddSheet(context),
               icon: const AppIcon(name: 'plus'),
-              text: 'Quick add',
-              tooltip: 'Quick add',
+              text: l10n.hubQuickAdd,
+              tooltip: l10n.hubQuickAdd,
             ),
       body: _isLoading
           ? const HubSkeleton()
@@ -700,14 +705,13 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const AppAlert(
+                        AppAlert(
                           type: AppAlertType.error,
-                          message:
-                              'Couldn\u2019t load your households. Check your connection and try again.',
+                          message: l10n.hubLoadError,
                         ),
                         const SizedBox(height: MitlistSpacing.md),
                         AppButton(
-                          text: 'Retry',
+                          text: l10n.commonRetry,
                           onPressed: () {
                             setState(() {
                               _isLoading = true;
@@ -729,14 +733,13 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const AppAlert(
+                        AppAlert(
                           type: AppAlertType.error,
-                          message:
-                              'Couldn\u2019t load this household. Check your connection and try again.',
+                          message: l10n.hubLoadError,
                         ),
                         const SizedBox(height: MitlistSpacing.md),
                         AppButton(
-                          text: 'Retry',
+                          text: l10n.commonRetry,
                           onPressed: _loadData,
                         ),
                       ],
@@ -757,7 +760,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                         title: _buildAppBarTitle(context),
                         actions: [
                           IconButton(
-                            tooltip: 'Calendar',
+                            tooltip: l10n.hubCalendarTooltip,
                             icon: const AppIcon(name: 'calendarDays'),
                             onPressed: () => context.pushNamed('calendar'),
                           ),
