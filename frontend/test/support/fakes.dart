@@ -281,6 +281,22 @@ class FakeGroupService implements GroupService {
     updatedAt: DateTime.utc(2026, 1, 1),
   );
 
+  /// Number of times [listGroups] has been called.
+  int listCalls = 0;
+
+  /// When non-null, [listGroups] throws this (simulates being offline).
+  Exception? throwOnList;
+
+  /// The list returned by [listGroups] when not throwing.
+  List<Group> listResult = const [];
+
+  @override
+  Future<List<Group>> listGroups({int limit = 50, int offset = 0}) async {
+    listCalls++;
+    if (throwOnList != null) throw throwOnList!;
+    return listResult;
+  }
+
   @override
   Future<Group> joinGroup(JoinGroupRequest request) async {
     joinCalls.add(request);
