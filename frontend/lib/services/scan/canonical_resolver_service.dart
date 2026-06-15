@@ -9,12 +9,16 @@ class ResolveResult {
   final String displayName;
   final double score; // 0–1
   final List<String> alternatives;
+  final double? autoThreshold;
+  final double? reviewThreshold;
 
   const ResolveResult({
     this.canonicalItemId,
     required this.displayName,
     required this.score,
     this.alternatives = const [],
+    this.autoThreshold,
+    this.reviewThreshold,
   });
 }
 
@@ -51,14 +55,22 @@ class CanonicalResolverService {
         _embedder = embedder,
         _useEnsemble = useEnsemble;
 
-  Future<ResolveResult> resolve(String itemName, String groupId) async {
+  Future<ResolveResult> resolve(
+    String itemName,
+    String groupId, {
+    List<String> listContext = const [],
+  }) async {
     if (_useEnsemble) {
       _ensemble ??= EnsembleResolver(
         _db,
         classifier: _classifier,
         embedder: _embedder,
       );
-      return _ensemble!.resolve(itemName, groupId);
+      return _ensemble!.resolve(
+        itemName,
+        groupId,
+        listContext: listContext,
+      );
     }
 
     final normalised = _normalise(itemName);
@@ -112,7 +124,8 @@ class CanonicalResolverService {
       return _resolveWithFallback(itemName, groupId, fuzzyResult);
     }
 
-    final canonical = await _db.getCanonicalItemById(best.alias.canonicalItemId);
+    final canonical =
+        await _db.getCanonicalItemById(best.alias.canonicalItemId);
     if (canonical == null) {
       final fuzzyResult =
           ResolveResult(displayName: _titleCase(itemName), score: 0);
@@ -225,8 +238,12 @@ class CanonicalResolverService {
   static int _editDistance(String s, String t) {
     final m = s.length, n = t.length;
     final d = List.generate(m + 1, (i) => List.filled(n + 1, 0));
-    for (var i = 0; i <= m; i++) { d[i][0] = i; }
-    for (var j = 0; j <= n; j++) { d[0][j] = j; }
+    for (var i = 0; i <= m; i++) {
+      d[i][0] = i;
+    }
+    for (var j = 0; j <= n; j++) {
+      d[0][j] = j;
+    }
     for (var i = 1; i <= m; i++) {
       for (var j = 1; j <= n; j++) {
         final cost = s[i - 1] == t[j - 1] ? 0 : 1;

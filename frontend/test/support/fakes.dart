@@ -165,6 +165,7 @@ class FakeListService implements ListService {
       quantity: req.quantity,
       unit: req.unit,
       note: req.note,
+      canonicalItemId: req.canonicalItemId,
       checked: false,
       position: 0,
       createdAt: now,

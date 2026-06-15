@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../providers/grocery_provider.dart';
+import '../../providers/list_provider.dart' show listRepositoryProvider;
 import '../../providers/store_provider.dart';
 import '../../screens/scanner/scan_review_screen.dart';
 import '../../theme/spacing.dart';
@@ -79,6 +80,12 @@ Future<int?> launchListScan(
   try {
     final bytes = Uint8List.fromList(await File(picked.path).readAsBytes());
     final pipeline = await ref.read(scanPipelineProvider.future);
+    final repo = await ref.read(listRepositoryProvider.future);
+    final listContextCanonicalIds = (await repo.getItemsByListOnce(listId))
+        .map((item) => item.canonicalItemId)
+        .whereType<String>()
+        .toSet()
+        .toList(growable: false);
     final connectivity = ref.read(connectivityServiceProvider);
     final isOnline = await connectivity.isOnline();
 
@@ -86,6 +93,7 @@ Future<int?> launchListScan(
       imageBytes: bytes,
       groupId: groupId,
       storeId: ref.read(selectedStoreIdProvider),
+      listContextCanonicalIds: listContextCanonicalIds,
       isOnline: isOnline,
     );
 

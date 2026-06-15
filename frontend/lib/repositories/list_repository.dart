@@ -109,6 +109,7 @@ class ListRepository {
       checked: false,
       position: 0,
       priceCents: req.priceCents,
+      canonicalItemId: req.canonicalItemId,
       createdAt: now,
       updatedAt: now,
     );
@@ -126,6 +127,7 @@ class ListRepository {
         'unit': req.unit,
         'note': req.note,
         if (req.priceCents != null) 'priceCents': req.priceCents,
+        if (req.canonicalItemId != null) 'canonicalItemId': req.canonicalItemId,
       },
       idempotencyKey: 'createItem:$tempId',
     );
@@ -211,6 +213,7 @@ class ListRepository {
             checked: existing.checked,
             position: i,
             priceCents: existing.priceCents,
+            canonicalItemId: existing.canonicalItemId,
             claimedBy: existing.claimedBy,
             createdAt: existing.createdAt,
             updatedAt: DateTime.now(),
@@ -296,6 +299,7 @@ class ListRepository {
         unit: payload['unit'] as String? ?? '',
         note: payload['note'] as String? ?? '',
         priceCents: payload['priceCents'] as int?,
+        canonicalItemId: payload['canonicalItemId'] as String?,
       ),
     );
 
@@ -467,6 +471,7 @@ class ListRepository {
       checked: Value(item.checked),
       position: Value(item.position),
       priceCents: Value(item.priceCents),
+      canonicalItemId: Value(item.canonicalItemId),
       createdAt: Value(item.createdAt),
       updatedAt: Value(item.updatedAt),
     );
@@ -483,6 +488,7 @@ class ListRepository {
       checked: row.checked,
       position: row.position,
       priceCents: row.priceCents,
+      canonicalItemId: row.canonicalItemId,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     );

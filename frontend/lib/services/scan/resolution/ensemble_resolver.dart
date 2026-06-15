@@ -67,17 +67,16 @@ class EnsembleResolver {
     scored.sort((a, b) => b.p.compareTo(a.p));
 
     final best = scored.first;
-    final alternatives = scored
-        .skip(1)
-        .take(3)
-        .map((s) => _preferredName(s.c.item))
-        .toList();
+    final alternatives =
+        scored.skip(1).take(3).map((s) => _preferredName(s.c.item)).toList();
 
     return ResolveResult(
       canonicalItemId: best.c.canonicalItemId,
       displayName: _preferredName(best.c.item),
       score: best.p,
       alternatives: alternatives,
+      autoThreshold: scorer.tauAuto,
+      reviewThreshold: scorer.tauReview,
     );
   }
 
@@ -110,8 +109,8 @@ class EnsembleResolver {
       var maxC = 0;
       final raw = <String, int>{};
       for (final id in listContext) {
-        final rows =
-            await _db.getTopCooccurrences(groupId: groupId, itemId: id, limit: 15);
+        final rows = await _db.getTopCooccurrences(
+            groupId: groupId, itemId: id, limit: 15);
         for (final r in rows) {
           final other = r.itemAId == id ? r.itemBId : r.itemAId;
           raw[other] = (raw[other] ?? 0) + r.count;

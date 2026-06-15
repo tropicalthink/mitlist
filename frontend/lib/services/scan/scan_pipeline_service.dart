@@ -52,6 +52,7 @@ class ScanPipelineService {
     required Uint8List imageBytes,
     required String groupId,
     String? storeId,
+    List<String> listContextCanonicalIds = const [],
     bool isOnline = true,
   }) async {
     // 1. Enhance.
@@ -66,9 +67,15 @@ class ScanPipelineService {
     // 4. Canonical resolve + confidence.
     final predictions = <GroceryPrediction>[];
     final ignored = <GroceryPrediction>[];
+    final aisleByCanonicalId = <String, StoreAislesTableData?>{};
+    final canonicalById = <String, CanonicalItemsTableData?>{};
 
     for (final item in parsed) {
-      final resolved = await _resolver.resolve(item.itemName, groupId);
+      final resolved = await _resolver.resolve(
+        item.itemName,
+        groupId,
+        listContext: listContextCanonicalIds,
+      );
 
       // 5. Aisle assignment. With a store selected, use its shipped layout
       //    (shopping-path sort order); otherwise fall back to the item's
@@ -76,19 +83,28 @@ class ScanPipelineService {
       String? aisle;
       int aisleSortOrder = 99;
       if (resolved.canonicalItemId != null) {
+        final canonicalItemId = resolved.canonicalItemId!;
         if (storeId != null) {
-          final aisleRow = await _db.getStoreAisle(
-            groupId: groupId,
-            storeId: storeId,
-            canonicalItemId: resolved.canonicalItemId!,
-          );
-          aisle = aisleRow?.aisle;
-          aisleSortOrder = aisleRow?.sortOrder ?? 99;
+          final row = aisleByCanonicalId.containsKey(canonicalItemId)
+              ? aisleByCanonicalId[canonicalItemId]
+              : await _db.getStoreAisle(
+                  groupId: groupId,
+                  storeId: storeId,
+                  canonicalItemId: canonicalItemId,
+                );
+          if (!aisleByCanonicalId.containsKey(canonicalItemId)) {
+            aisleByCanonicalId[canonicalItemId] = row;
+          }
+          aisle = row?.aisle;
+          aisleSortOrder = row?.sortOrder ?? 99;
         }
 
         // Fall back to category-level default from canonical item.
         if (aisle == null) {
-          final canonical = await _db.getCanonicalItemById(resolved.canonicalItemId!);
+          final canonical = canonicalById.containsKey(canonicalItemId)
+              ? canonicalById[canonicalItemId]
+              : await _db.getCanonicalItemById(canonicalItemId);
+          canonicalById[canonicalItemId] = canonical;
           aisle = canonical?.category;
         }
       }
@@ -108,6 +124,8 @@ class ScanPipelineService {
           aisleSortOrder: aisleSortOrder,
         ),
         resolved.score,
+        autoThreshold: resolved.autoThreshold,
+        reviewThreshold: resolved.reviewThreshold,
       );
 
       if (item.markStatus == MarkStatus.crossedOut ||

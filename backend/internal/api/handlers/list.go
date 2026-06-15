@@ -301,13 +301,14 @@ func (h *ListHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Name       string     `json:"name"`
-		Quantity   float64    `json:"quantity"`
-		Unit       string     `json:"unit"`
-		Note       string     `json:"note"`
-		PriceCents *int       `json:"price_cents"`
-		ProductID  *uuid.UUID `json:"product_id"`
-		StoreID    *uuid.UUID `json:"store_id"`
+		Name            string     `json:"name"`
+		Quantity        float64    `json:"quantity"`
+		Unit            string     `json:"unit"`
+		Note            string     `json:"note"`
+		PriceCents      *int       `json:"price_cents"`
+		ProductID       *uuid.UUID `json:"product_id"`
+		StoreID         *uuid.UUID `json:"store_id"`
+		CanonicalItemID *uuid.UUID `json:"canonical_item_id"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
@@ -315,15 +316,16 @@ func (h *ListHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	item := &models.ListItem{
-		ListID:     listID,
-		Name:       req.Name,
-		Quantity:   req.Quantity,
-		Unit:       req.Unit,
-		Note:       req.Note,
-		PriceCents: req.PriceCents,
-		ProductID:  req.ProductID,
-		StoreID:    req.StoreID,
-		AddedBy:    &user.ID,
+		ListID:          listID,
+		Name:            req.Name,
+		Quantity:        req.Quantity,
+		Unit:            req.Unit,
+		Note:            req.Note,
+		PriceCents:      req.PriceCents,
+		ProductID:       req.ProductID,
+		StoreID:         req.StoreID,
+		CanonicalItemID: req.CanonicalItemID,
+		AddedBy:         &user.ID,
 	}
 	if err := h.service.CreateItem(r.Context(), user, item); err != nil {
 		api.RespondError(w, err)
