@@ -398,31 +398,6 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
       ),
       body: Column(
         children: [
-          // Engine badge
-          if (widget.scanResult.engine == 'crofai')
-            Container(
-              width: double.infinity,
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              padding: const EdgeInsets.symmetric(
-                horizontal: MitlistSpacing.md,
-                vertical: MitlistSpacing.xs,
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.cloud_outlined,
-                      size: 14,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant),
-                  const SizedBox(width: MitlistSpacing.xs),
-                  Text(
-                    'Recognised via cloud fallback',
-                    style: MitlistTypography.labelXSmall(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
           // Store picker (Phase 5)
           if (_stores.isNotEmpty)
             Padding(

@@ -64,8 +64,8 @@ shipped on-device models.
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
-| 021  | Train and export the Phase 7 grocery OCR classifier (clean canonical label space) | P1 | M | — | CODE DONE (2026-06-13, branch `advisor/021-022-intelligence-training-code`, commit `4ec19dd2`; code edits applied + reviewed, data-logic verified independently — corrections now contribute 24,220 rows vs 0 before, 3,186 clean classes, 0 singletons. Training run left to the maintainer.) |
-| 022  | Train the Phase 8 grocery embedding model and export it for on-device use | P2 | M | 021 (shared deps only) | CODE DONE (2026-06-13, same commit `4ec19dd2`; `export.py` repaired to optimum→onnx2tf, `python3`, no `tf2onnx`. `train.py` left untouched — Step 3 projection-head check is runtime-conditional, run it after training. Training run left to the maintainer.) |
+| 021  | Train and export the Phase 7 grocery OCR classifier (clean canonical label space) | P1 | M | — | DONE — training run completed by the maintainer; trained `grocery_classifier.tflite` + `grocery_classifier_labels.txt` + `grocery_classifier_vocab.json` are committed on `new-main-fr` (under `intelligence/ml/models/` and re-exported into `frontend/assets/models/`). Cycle 7 (026) and the 2026-06-14 model build-out built on these outputs and shipped them on-device. Original code edits: `4ec19dd2` (corrections → 24,220 rows, 3,186 clean classes, 0 singletons). |
+| 022  | Train the Phase 8 grocery embedding model and export it for on-device use | P2 | M | 021 (shared deps only) | DONE (training) — the Phase 8 embedding model was trained (used as the build-time distillation teacher for plan 028's Model2Vec static embedder). **On-device shipping went the 028 route, NOT this plan's direct ONNX export**: plan 027 ruled the raw 470 MB optimum→onnx2tf path NO-GO on-device (wrong artifact / ~192 MB / won't convert). The shipped on-device embedder is 028's distilled `embedder_vocab.json` + `catalog_vectors.json` in `frontend/assets/grocery/`. Original code edits: `4ec19dd2`. |
 
 Cycle-5 environment constraint (applies to both): the training datasets are
 **git-ignored**, so 021/022 must run in the user's main working tree
@@ -94,8 +94,8 @@ dropped. The cleaner seam is backend-FX / frontend-FX-UX, with the existing
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
-| 023  | Compute group balances in a single base currency (per-expense FX at entry) | P2 | L | — (relies on existing finance test net) | CODE DONE — reviewed APPROVE (2026-06-14, worktree branch `worktree-agent-a15d1aa985cd731ad`, commit `5b188d1a` atop `28655faa`). All criteria re-run by reviewer: `go build ./...` OK, full `go test ./...` green, new `TestCreateExpense_ForeignCurrencyConvertsToBase` (3 subtests) PASS, `TestBalancesEquivalence` green. Scope clean (7 in-scope files, single commit). Migration 000030 adds `base_amount`/`fx_rate`; `normalizeBaseAmount` helper on create+update; `expense_paid` CTE and `calculateBalances` both sum `base_amount`. **Awaiting maintainer merge** (not pushed/merged). Merge 023 before 024. |
-| 024  | Record an expense in a foreign currency; show balances converted to the household currency | P2 | M | 023 | CODE DONE — reviewed APPROVE (2026-06-14, worktree branch `worktree-agent-afb53b3a865f42496`, commit `b004e93f` atop `28655faa`). All criteria re-run by reviewer: `flutter pub get` OK, `dart analyze lib/` clean (only the 2 pre-existing `dart:html` infos), codegen regenerated `app_database.g.dart`, full `flutter test` **276/276 green** incl. new `finance_models_test.dart` + foreign-currency outbox round-trip case. Scope clean (11 files, all `frontend/`; lib files in-scope, test edits to `fakes.dart`/`frontend_flows_test.dart` are required compile fixes for the new required field). Drift v4→v5 backfills `base_amount = amount`; outbox `_syncCreateExpense` carries `base_amount`/`fx_rate` with safe fallbacks; currency picker + FX rate + live converted preview on the creation sheet; original≈converted display in list/detail (splits rendered in base currency). **Awaiting maintainer merge** (not pushed/merged). Merge AFTER 023. |
+| 023  | Compute group balances in a single base currency (per-expense FX at entry) | P2 | L | — (relies on existing finance test net) | DONE — merged into `new-main-fr` (2026-06-14, merge commit `23fdded2`; executor commit `5b188d1a`). Reviewed APPROVE, then merged + re-verified on the merged tree: `go build ./...` OK, full `go test ./...` green. Migration 000030 adds `base_amount`/`fx_rate`; `normalizeBaseAmount` helper on create+update; `expense_paid` CTE and `calculateBalances` both sum `base_amount`. **Maintainer tail**: apply migration 000030 against the real DB (advisor verified it statically only — no live Postgres). |
+| 024  | Record an expense in a foreign currency; show balances converted to the household currency | P2 | M | 023 | DONE — merged into `new-main-fr` (2026-06-14, merge commit `7999bcd9`; executor commit `b004e93f`). Reviewed APPROVE, then merged after 023 + re-verified on the merged tree: `dart analyze lib/` clean ("No issues found!"), full `flutter test` **276/276 green** incl. new `finance_models_test.dart` + foreign-currency outbox round-trip case. Drift v4→v5 backfills `base_amount = amount`; outbox `_syncCreateExpense` carries `base_amount`/`fx_rate` with safe fallbacks; currency picker + FX rate + live converted preview on the creation sheet; original≈converted display in list/detail (splits in base currency). **Maintainer tail**: one manual create-foreign-expense check against a running 023 backend (frontend tests are self-contained and don't prove the end-to-end contract). |
 | 025  | Stand up the Flutter l10n pipeline + localize the welcome screen (en, de) | P3 | M | — | DONE (executed 2026-06-13, commit `19044fcb` on branch `advisor/025-i18n-foundation`; intl bumped to ^0.20.2 to satisfy flutter_localizations SDK pin; localization tests pass; frontend_flows_test compile error pre-exists and is unrelated) |
 
 Cycle-6 ordering: 023 before 024 (the backend must accept/store
@@ -117,7 +117,7 @@ re-export spike.
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
-| 026  | Wire the Phase 7 classifier into on-device resolution (Flex-free re-export + Dart TF-IDF + resolver fallback) | P2 | L | 021 (trained model on disk) | CODE DONE — reviewed APPROVE (2026-06-13, worktree branch `worktree-agent-a5d0f7cedb76cbea3`, commit `e69a32f9`). All gates re-run by reviewer: `flutter pub get` OK (tflite_flutter ^0.11.0 resolves against the pinned SDK), zero project analyzer errors, 14/14 service tests pass, `export.py` py_compiles + is Flex-free. Maintainer tail remains: re-run `python export.py`, copy `.tflite`/`vocab.json`/labels into `frontend/assets/models/`, parity-check vs `grocery_classifier_golden.json`, then pass the classifier into `CanonicalResolverService` at `scan_pipeline_service.dart:46`. Base is `c862d307`; merges cleanly onto `57a8c11e` (no shared files). |
+| 026  | Wire the Phase 7 classifier into on-device resolution (Flex-free re-export + Dart TF-IDF + resolver fallback) | P2 | L | 021 (trained model on disk) | DONE — maintainer tail completed and merged on `new-main-fr`. The classifier + embedder are wired into the live pipeline (`scan_pipeline_service.dart:50-51`: `classifier: GroceryClassifierService(), embedder: StaticEmbeddingService()`), the Flex-free `.tflite`/labels/vocab are committed in `frontend/assets/models/`, and the maintainer went beyond the plan to implement **real TFLite inference** with a native/web conditional-import split (`grocery_classifier_inference_native.dart` / `_stub.dart` / `grocery_classifier_math.dart`, commit `33f68219`; web returns `const []`). Original executor code: `e69a32f9` (reviewed APPROVE 2026-06-13). |
 | 027  | Verify and re-export the Phase 8 embeddings; decide on-device shippability (spike) | P3 | M | 022 (trained model on disk) | DONE — DECISION: **NO-GO on-device** (2026-06-13, run by advisor at maintainer's request). `verify_dim.py` → dim **128** (ST head present, train.py:83-88). But the `optimum→onnx→onnx2tf` path is unshippable for THREE independent reasons (below). Embeddings stay **server-side or dropped**; the Phase 7 classifier (026) is the sole on-device resolution model. Note: an `export.py` with the float16/size logic + `verify_dim.py` already existed in HEAD `c862d307` (maintainer's own training-run work); the cycle-7 executor's `worktree-agent-a01c59b35e0e71d18`/`4e3ca898` reproduced it and is superseded (worktree removed). |
 
 Cycle-7 notes:
@@ -215,9 +215,44 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJE
 
 ### Reconcile log
 
+- **2026-06-14 (post-merge reconcile sweep), HEAD `7999bcd9`** — backlog is now
+  **fully clear of TODO/BLOCKED/IN PROGRESS**. Retired three stale `CODE DONE`
+  rows whose maintainer tails have since completed and merged (verified on HEAD):
+  - **026 → DONE**: classifier + embedder wired at `scan_pipeline_service.dart:50-51`;
+    Flex-free assets committed in `frontend/assets/models/`; maintainer additionally
+    shipped real TFLite inference with a native/web conditional-import split
+    (`grocery_classifier_inference_{native,stub}.dart`, `grocery_classifier_math.dart`,
+    commit `33f68219`).
+  - **021 → DONE**: trained classifier outputs committed (`intelligence/ml/models/` +
+    `frontend/assets/models/`); cycle 7 + the model build-out built on them.
+  - **022 → DONE (training)**: Phase 8 model trained and used as the build-time
+    teacher for 028's Model2Vec distillation. On-device shipping went the 028 route
+    (027 NO-GO on the raw ONNX), so the shipped embedder is 028's
+    `embedder_vocab.json`/`catalog_vectors.json`, not this plan's direct export.
+  - Two advisor executor worktrees (`a15d1aa9…`, `afb53b3a…`) already pruned (the
+    merges removed their only-difference, so the harness auto-cleaned them);
+    `git worktree list` shows zero `agent-` worktrees remaining.
+  - **No open plans remain.** Re-pitchable deferred work (not TODO): 031 phase 2
+    (pantry subtraction), 032 phase 2 (on-device VLM), and the cycle-6 direction
+    findings (spending insights, predictive restock reads). `plans/README.md` edits
+    from this session + the merge sweep are uncommitted in the working tree for the
+    maintainer to commit.
+- **2026-06-14 (merged 023 + 024), HEAD `7999bcd9`** — maintainer approved the
+  merge. Base had moved to `120005f4` (maintainer added grocery-classifier
+  inference + a web service-worker refactor since the executors ran); confirmed
+  zero file overlap with either plan, so both were clean three-way `--no-ff`
+  merges. 023 → `23fdded2`, 024 → `7999bcd9` (023 first per the dependency).
+  Re-verified on the **merged** tree: backend `go build ./...` + full
+  `go test ./...` green; frontend `dart analyze lib/` "No issues found!" (the old
+  `dart:html` infos were cleared by the maintainer's web refactor) + full
+  `flutter test` **276/276**. Two maintainer tails remain (non-blocking, noted in
+  the rows): apply migration 000030 against the real DB, and one manual
+  foreign-currency create against a running backend to prove the end-to-end
+  contract. Index rows flipped to DONE.
 - **2026-06-14 (executed 023 + 024 — multi-currency FX), HEAD `28655faa`** — both
   multi-currency plans dispatched to executors in isolated worktrees and reviewed
-  APPROVE. **Neither is merged** — they sit on their worktree branches awaiting the
+  APPROVE. (Merged the same day — see the entry above.) **At review time neither
+  was merged** — they sit on their worktree branches awaiting the
   maintainer's decision.
   - **023 (backend FX)** — branch `worktree-agent-a15d1aa985cd731ad`, commit
     `5b188d1a`. Migration 000030 adds `base_amount`/`fx_rate`; `normalizeBaseAmount`
