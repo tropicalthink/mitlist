@@ -43,6 +43,7 @@ class PinwallRepository {
       type: 'createPinwallPost',
       payload: {'groupId': groupId, 'content': content},
       idempotencyKey: 'createPinwallPost:$groupId:${DateTime.now().millisecondsSinceEpoch}',
+      entityType: 'pinwallPost',
     );
   }
 
@@ -52,6 +53,8 @@ class PinwallRepository {
       type: 'deletePinwallPost',
       payload: {'groupId': groupId, 'postId': postId},
       idempotencyKey: 'deletePinwallPost:$postId',
+      entityType: 'pinwallPost',
+      entityId: postId,
     );
   }
 

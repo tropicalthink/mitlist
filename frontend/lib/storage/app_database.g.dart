@@ -3363,6 +3363,18 @@ class $OutboxOpsTable extends OutboxOps
   late final GeneratedColumn<String> lastError = GeneratedColumn<String>(
       'last_error', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _entityTypeMeta =
+      const VerificationMeta('entityType');
+  @override
+  late final GeneratedColumn<String> entityType = GeneratedColumn<String>(
+      'entity_type', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _entityIdMeta =
+      const VerificationMeta('entityId');
+  @override
+  late final GeneratedColumn<String> entityId = GeneratedColumn<String>(
+      'entity_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -3372,7 +3384,9 @@ class $OutboxOpsTable extends OutboxOps
         createdAt,
         lastAttemptAt,
         attemptCount,
-        lastError
+        lastError,
+        entityType,
+        entityId
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3431,6 +3445,16 @@ class $OutboxOpsTable extends OutboxOps
       context.handle(_lastErrorMeta,
           lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta));
     }
+    if (data.containsKey('entity_type')) {
+      context.handle(
+          _entityTypeMeta,
+          entityType.isAcceptableOrUnknown(
+              data['entity_type']!, _entityTypeMeta));
+    }
+    if (data.containsKey('entity_id')) {
+      context.handle(_entityIdMeta,
+          entityId.isAcceptableOrUnknown(data['entity_id']!, _entityIdMeta));
+    }
     return context;
   }
 
@@ -3456,6 +3480,10 @@ class $OutboxOpsTable extends OutboxOps
           .read(DriftSqlType.int, data['${effectivePrefix}attempt_count'])!,
       lastError: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}last_error']),
+      entityType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}entity_type']),
+      entityId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}entity_id']),
     );
   }
 
@@ -3474,6 +3502,14 @@ class OutboxOp extends DataClass implements Insertable<OutboxOp> {
   final DateTime? lastAttemptAt;
   final int attemptCount;
   final String? lastError;
+
+  /// The domain entity this op mutates, e.g. 'listItem', 'expense'. Lets the
+  /// failed-changes review UI label an op and the per-row flag find it.
+  final String? entityType;
+
+  /// The id of the mutated entity (temp id for creates). Used to roll back the
+  /// optimistic local row when a failed change is discarded.
+  final String? entityId;
   const OutboxOp(
       {required this.id,
       required this.type,
@@ -3482,7 +3518,9 @@ class OutboxOp extends DataClass implements Insertable<OutboxOp> {
       required this.createdAt,
       this.lastAttemptAt,
       required this.attemptCount,
-      this.lastError});
+      this.lastError,
+      this.entityType,
+      this.entityId});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -3499,6 +3537,12 @@ class OutboxOp extends DataClass implements Insertable<OutboxOp> {
     map['attempt_count'] = Variable<int>(attemptCount);
     if (!nullToAbsent || lastError != null) {
       map['last_error'] = Variable<String>(lastError);
+    }
+    if (!nullToAbsent || entityType != null) {
+      map['entity_type'] = Variable<String>(entityType);
+    }
+    if (!nullToAbsent || entityId != null) {
+      map['entity_id'] = Variable<String>(entityId);
     }
     return map;
   }
@@ -3519,6 +3563,12 @@ class OutboxOp extends DataClass implements Insertable<OutboxOp> {
       lastError: lastError == null && nullToAbsent
           ? const Value.absent()
           : Value(lastError),
+      entityType: entityType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(entityType),
+      entityId: entityId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(entityId),
     );
   }
 
@@ -3534,6 +3584,8 @@ class OutboxOp extends DataClass implements Insertable<OutboxOp> {
       lastAttemptAt: serializer.fromJson<DateTime?>(json['lastAttemptAt']),
       attemptCount: serializer.fromJson<int>(json['attemptCount']),
       lastError: serializer.fromJson<String?>(json['lastError']),
+      entityType: serializer.fromJson<String?>(json['entityType']),
+      entityId: serializer.fromJson<String?>(json['entityId']),
     );
   }
   @override
@@ -3548,6 +3600,8 @@ class OutboxOp extends DataClass implements Insertable<OutboxOp> {
       'lastAttemptAt': serializer.toJson<DateTime?>(lastAttemptAt),
       'attemptCount': serializer.toJson<int>(attemptCount),
       'lastError': serializer.toJson<String?>(lastError),
+      'entityType': serializer.toJson<String?>(entityType),
+      'entityId': serializer.toJson<String?>(entityId),
     };
   }
 
@@ -3559,7 +3613,9 @@ class OutboxOp extends DataClass implements Insertable<OutboxOp> {
           DateTime? createdAt,
           Value<DateTime?> lastAttemptAt = const Value.absent(),
           int? attemptCount,
-          Value<String?> lastError = const Value.absent()}) =>
+          Value<String?> lastError = const Value.absent(),
+          Value<String?> entityType = const Value.absent(),
+          Value<String?> entityId = const Value.absent()}) =>
       OutboxOp(
         id: id ?? this.id,
         type: type ?? this.type,
@@ -3571,6 +3627,8 @@ class OutboxOp extends DataClass implements Insertable<OutboxOp> {
             lastAttemptAt.present ? lastAttemptAt.value : this.lastAttemptAt,
         attemptCount: attemptCount ?? this.attemptCount,
         lastError: lastError.present ? lastError.value : this.lastError,
+        entityType: entityType.present ? entityType.value : this.entityType,
+        entityId: entityId.present ? entityId.value : this.entityId,
       );
   OutboxOp copyWithCompanion(OutboxOpsCompanion data) {
     return OutboxOp(
@@ -3589,6 +3647,9 @@ class OutboxOp extends DataClass implements Insertable<OutboxOp> {
           ? data.attemptCount.value
           : this.attemptCount,
       lastError: data.lastError.present ? data.lastError.value : this.lastError,
+      entityType:
+          data.entityType.present ? data.entityType.value : this.entityType,
+      entityId: data.entityId.present ? data.entityId.value : this.entityId,
     );
   }
 
@@ -3602,14 +3663,16 @@ class OutboxOp extends DataClass implements Insertable<OutboxOp> {
           ..write('createdAt: $createdAt, ')
           ..write('lastAttemptAt: $lastAttemptAt, ')
           ..write('attemptCount: $attemptCount, ')
-          ..write('lastError: $lastError')
+          ..write('lastError: $lastError, ')
+          ..write('entityType: $entityType, ')
+          ..write('entityId: $entityId')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode => Object.hash(id, type, payloadJson, idempotencyKey,
-      createdAt, lastAttemptAt, attemptCount, lastError);
+      createdAt, lastAttemptAt, attemptCount, lastError, entityType, entityId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3621,7 +3684,9 @@ class OutboxOp extends DataClass implements Insertable<OutboxOp> {
           other.createdAt == this.createdAt &&
           other.lastAttemptAt == this.lastAttemptAt &&
           other.attemptCount == this.attemptCount &&
-          other.lastError == this.lastError);
+          other.lastError == this.lastError &&
+          other.entityType == this.entityType &&
+          other.entityId == this.entityId);
 }
 
 class OutboxOpsCompanion extends UpdateCompanion<OutboxOp> {
@@ -3633,6 +3698,8 @@ class OutboxOpsCompanion extends UpdateCompanion<OutboxOp> {
   final Value<DateTime?> lastAttemptAt;
   final Value<int> attemptCount;
   final Value<String?> lastError;
+  final Value<String?> entityType;
+  final Value<String?> entityId;
   final Value<int> rowid;
   const OutboxOpsCompanion({
     this.id = const Value.absent(),
@@ -3643,6 +3710,8 @@ class OutboxOpsCompanion extends UpdateCompanion<OutboxOp> {
     this.lastAttemptAt = const Value.absent(),
     this.attemptCount = const Value.absent(),
     this.lastError = const Value.absent(),
+    this.entityType = const Value.absent(),
+    this.entityId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   OutboxOpsCompanion.insert({
@@ -3654,6 +3723,8 @@ class OutboxOpsCompanion extends UpdateCompanion<OutboxOp> {
     this.lastAttemptAt = const Value.absent(),
     this.attemptCount = const Value.absent(),
     this.lastError = const Value.absent(),
+    this.entityType = const Value.absent(),
+    this.entityId = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         type = Value(type),
@@ -3668,6 +3739,8 @@ class OutboxOpsCompanion extends UpdateCompanion<OutboxOp> {
     Expression<DateTime>? lastAttemptAt,
     Expression<int>? attemptCount,
     Expression<String>? lastError,
+    Expression<String>? entityType,
+    Expression<String>? entityId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -3679,6 +3752,8 @@ class OutboxOpsCompanion extends UpdateCompanion<OutboxOp> {
       if (lastAttemptAt != null) 'last_attempt_at': lastAttemptAt,
       if (attemptCount != null) 'attempt_count': attemptCount,
       if (lastError != null) 'last_error': lastError,
+      if (entityType != null) 'entity_type': entityType,
+      if (entityId != null) 'entity_id': entityId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -3692,6 +3767,8 @@ class OutboxOpsCompanion extends UpdateCompanion<OutboxOp> {
       Value<DateTime?>? lastAttemptAt,
       Value<int>? attemptCount,
       Value<String?>? lastError,
+      Value<String?>? entityType,
+      Value<String?>? entityId,
       Value<int>? rowid}) {
     return OutboxOpsCompanion(
       id: id ?? this.id,
@@ -3702,6 +3779,8 @@ class OutboxOpsCompanion extends UpdateCompanion<OutboxOp> {
       lastAttemptAt: lastAttemptAt ?? this.lastAttemptAt,
       attemptCount: attemptCount ?? this.attemptCount,
       lastError: lastError ?? this.lastError,
+      entityType: entityType ?? this.entityType,
+      entityId: entityId ?? this.entityId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3733,6 +3812,12 @@ class OutboxOpsCompanion extends UpdateCompanion<OutboxOp> {
     if (lastError.present) {
       map['last_error'] = Variable<String>(lastError.value);
     }
+    if (entityType.present) {
+      map['entity_type'] = Variable<String>(entityType.value);
+    }
+    if (entityId.present) {
+      map['entity_id'] = Variable<String>(entityId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -3750,6 +3835,8 @@ class OutboxOpsCompanion extends UpdateCompanion<OutboxOp> {
           ..write('lastAttemptAt: $lastAttemptAt, ')
           ..write('attemptCount: $attemptCount, ')
           ..write('lastError: $lastError, ')
+          ..write('entityType: $entityType, ')
+          ..write('entityId: $entityId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -9834,6 +9921,8 @@ typedef $$OutboxOpsTableCreateCompanionBuilder = OutboxOpsCompanion Function({
   Value<DateTime?> lastAttemptAt,
   Value<int> attemptCount,
   Value<String?> lastError,
+  Value<String?> entityType,
+  Value<String?> entityId,
   Value<int> rowid,
 });
 typedef $$OutboxOpsTableUpdateCompanionBuilder = OutboxOpsCompanion Function({
@@ -9845,6 +9934,8 @@ typedef $$OutboxOpsTableUpdateCompanionBuilder = OutboxOpsCompanion Function({
   Value<DateTime?> lastAttemptAt,
   Value<int> attemptCount,
   Value<String?> lastError,
+  Value<String?> entityType,
+  Value<String?> entityId,
   Value<int> rowid,
 });
 
@@ -9881,6 +9972,12 @@ class $$OutboxOpsTableFilterComposer
 
   ColumnFilters<String> get lastError => $composableBuilder(
       column: $table.lastError, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get entityType => $composableBuilder(
+      column: $table.entityType, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get entityId => $composableBuilder(
+      column: $table.entityId, builder: (column) => ColumnFilters(column));
 }
 
 class $$OutboxOpsTableOrderingComposer
@@ -9918,6 +10015,12 @@ class $$OutboxOpsTableOrderingComposer
 
   ColumnOrderings<String> get lastError => $composableBuilder(
       column: $table.lastError, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get entityType => $composableBuilder(
+      column: $table.entityType, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get entityId => $composableBuilder(
+      column: $table.entityId, builder: (column) => ColumnOrderings(column));
 }
 
 class $$OutboxOpsTableAnnotationComposer
@@ -9952,6 +10055,12 @@ class $$OutboxOpsTableAnnotationComposer
 
   GeneratedColumn<String> get lastError =>
       $composableBuilder(column: $table.lastError, builder: (column) => column);
+
+  GeneratedColumn<String> get entityType => $composableBuilder(
+      column: $table.entityType, builder: (column) => column);
+
+  GeneratedColumn<String> get entityId =>
+      $composableBuilder(column: $table.entityId, builder: (column) => column);
 }
 
 class $$OutboxOpsTableTableManager extends RootTableManager<
@@ -9985,6 +10094,8 @@ class $$OutboxOpsTableTableManager extends RootTableManager<
             Value<DateTime?> lastAttemptAt = const Value.absent(),
             Value<int> attemptCount = const Value.absent(),
             Value<String?> lastError = const Value.absent(),
+            Value<String?> entityType = const Value.absent(),
+            Value<String?> entityId = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               OutboxOpsCompanion(
@@ -9996,6 +10107,8 @@ class $$OutboxOpsTableTableManager extends RootTableManager<
             lastAttemptAt: lastAttemptAt,
             attemptCount: attemptCount,
             lastError: lastError,
+            entityType: entityType,
+            entityId: entityId,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -10007,6 +10120,8 @@ class $$OutboxOpsTableTableManager extends RootTableManager<
             Value<DateTime?> lastAttemptAt = const Value.absent(),
             Value<int> attemptCount = const Value.absent(),
             Value<String?> lastError = const Value.absent(),
+            Value<String?> entityType = const Value.absent(),
+            Value<String?> entityId = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               OutboxOpsCompanion.insert(
@@ -10018,6 +10133,8 @@ class $$OutboxOpsTableTableManager extends RootTableManager<
             lastAttemptAt: lastAttemptAt,
             attemptCount: attemptCount,
             lastError: lastError,
+            entityType: entityType,
+            entityId: entityId,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0

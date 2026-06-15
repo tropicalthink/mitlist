@@ -35,7 +35,7 @@ class FakeConnectivityService implements ConnectivityService {
   Stream<bool> get onStatusChange => _controller.stream;
 
   @override
-  Future<bool> isOnline() async => _online;
+  Future<bool> isOnline({bool forceProbe = false}) async => _online;
 
   @override
   void dispose() {
@@ -301,13 +301,13 @@ class FakeGroupService implements GroupService {
 // DioException helper
 // ---------------------------------------------------------------------------
 
-DioException fakeDioException({int statusCode = 500}) {
+DioException fakeDioException({int statusCode = 500, Object? data}) {
   return DioException(
     requestOptions: RequestOptions(path: '/fake'),
     response: Response(
       requestOptions: RequestOptions(path: '/fake'),
       statusCode: statusCode,
-      data: {'detail': 'server error'},
+      data: data ?? {'detail': 'server error'},
     ),
     type: DioExceptionType.badResponse,
   );
