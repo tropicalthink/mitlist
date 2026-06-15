@@ -894,6 +894,25 @@ FROM list_items_table;
         .getSingleOrNull();
   }
 
+  /// Returns ALL non-deleted aliases (household + global) whose text exactly
+  /// equals [aliasText]. Unlike [findAlias] (which returns only the
+  /// top-weighted single row), this surfaces every canonical item a word maps
+  /// to — e.g. "spaghetti" is both the canonical name of `spaghetti` and an
+  /// alias of `egg_spaghetti`. The ensemble resolver needs every colliding
+  /// candidate so the scorer can disambiguate, rather than silently taking
+  /// whichever won an arbitrary weight tie.
+  Future<List<ItemAliasesTableData>> findAliasesByText({
+    required String groupId,
+    required String aliasText,
+  }) {
+    return (select(itemAliasesTable)
+          ..where((t) =>
+              (t.groupId.equals(groupId) | t.groupId.equals('__global__')) &
+              t.aliasText.equals(aliasText) &
+              t.deletedAt.isNull()))
+        .get();
+  }
+
   /// Loads all non-deleted aliases for a household + global seed aliases.
   /// Used by the fuzzy resolver when no exact match is found.
   ///
