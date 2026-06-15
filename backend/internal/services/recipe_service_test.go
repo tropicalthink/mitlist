@@ -91,6 +91,8 @@ func TestRecipeService_GetRecipe(t *testing.T) {
 		_, err := svc.GetRecipe(ctx, userID, recipeID)
 		require.Error(t, err)
 		assert.ErrorIs(t, err, api.ErrPermissionDenied)
+		var pd *api.PermissionDeniedError
+		assert.ErrorAs(t, err, &pd)
 	})
 }
 
@@ -119,6 +121,8 @@ func TestRecipeService_UpdateRecipe(t *testing.T) {
 		err := svc.UpdateRecipe(ctx, userID, &models.Recipe{ID: recipeID})
 		require.Error(t, err)
 		assert.ErrorIs(t, err, api.ErrPermissionDenied)
+		var pd *api.PermissionDeniedError
+		assert.ErrorAs(t, err, &pd)
 	})
 }
 
