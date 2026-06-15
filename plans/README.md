@@ -194,6 +194,48 @@ suite); the maintainer should still run it once and confirm no new failures beyo
 the known `frontend_flows_test.dart` "No GoRouter found in context" baseline. All
 four changes are additive and fail-soft/null-guarded, so regression risk is low.
 
+### Cycle 8 — harden the new feature surface + de-glue UX (2026-06-15, against commit `45ae60c2`)
+
+Scope: after the 023–032 feature wave merged, a 4-agent hardening + UX-cohesion
+audit of the recently-added surface (multi-currency FX, grocery brain/scan,
+recipes, cook mode). The maintainer's brief: "we added so much surface area for
+bugs — harden all that and improve the UX so stuff doesn't feel glued on."
+Selected for plans: H1, H2+H3, H4, C1; second-tier items folded **only where
+they share files** (H6 into the scan plan), the rest deferred (listed below).
+
+| Plan | Title | Priority | Effort | Depends on | Status |
+|------|-------|----------|--------|------------|--------|
+| 033  | Recurring expenses + expense edits keep base_amount and splits consistent (H1 + H5 fold) | P1 | M | — | BLOCKED — executor worktree branched from `origin/new-main-fr` (`3e1260d4`), which **predates the unpushed local 023/024 FX merges**; `base_amount`/`fx_rate`/`normalizeBaseAmount` don't exist there, so the plan cannot apply. Executor correctly STOPPED, left tree clean. **Plan is correct against local `new-main-fr`** — re-dispatch once the worktree base includes the FX work (push `new-main-fr`). |
+| 034  | Fix canonical_item_id loss in batch insert + map recipe permission denials to 403 (H2 + H3 + alias-sentinel fold) | P1 | M | — | DONE (executed + reviewed APPROVE 2026-06-15; worktree branch `worktree-agent-a6c1e8ac4fbcf1630`, 3 commits ending `88670d56`). In-scope files are byte-identical between the stale worktree base and local HEAD, so the diff applies cleanly to `new-main-fr`. Re-verified in-worktree: `go build`/`go vet`/full `go test ./...` green; canonical_item_id in batch INSERT (`[]*uuid.UUID{&id, nil}` arg test), recipe denials return `*PermissionDeniedError` (`ErrorAs` test), alias sentinel parameterised `$3`. One documented in-scope-adjacent deviation: `services/grocery_service_test.go` got the same mechanical 3rd-arg update (3 pre-existing tests asserted `WithArgs(groupID, alias)` on the same query) — necessary for `go test ./...` green, approved on merit. **NOT merged — your decision.** |
+| 035  | De-glue the scan review screen onto App* + fix the classifier load race (H4 + H6 fold) | P2 | M | — | TODO (executor running on stale base; `scan_review_screen.dart` differs by 25 lines there — the cloud-scan code you removed locally still exists on `origin`, so this will likely STOP on drift; re-dispatch after the base is current) |
+| 036  | Close the cook-mode loop with a real finish moment (C1; backend cook-event loop scoped as a design note) | P2 | M | — | TODO |
+
+Cycle-8 ordering: **033 and 034 first** — they are P1 correctness fixes on money
+and resolution paths (silent balance corruption and silent canonical-link loss).
+They are independent of each other and of 035/036 (disjoint files: jobs/finance
+vs list/recipe/grocery repos vs frontend scan vs frontend cook). 035 and 036 are
+P2 UX polish and can run anytime. All four are stamped at `45ae60c2` (HEAD after
+the cloud-scan removal `45ae60c2`); each has a first-step drift check.
+
+**The H1 bug is the standout**: plan 023's migration defaults `base_amount = 0`,
+and the recurring-expense job (`jobs/recurring_expense.go`) never sets it, so
+every materialised recurring expense credits the payer **0** while splits debit
+owers in full — silent, compounding balance corruption. 033 fixes it and flags a
+production backfill (`UPDATE expenses SET base_amount = amount WHERE base_amount
+= 0 AND amount > 0`) as a maintainer tail.
+
+Cycle-8 findings deferred (folded nowhere — share no files with 033–036; not
+rejected, just not selected this round):
+- **H7 — FX-rate input hardening** (`expense_creation_sheet.dart`): the foreign
+  FX-rate field validates only on save and accepts any positive double (no
+  sanity bound, silent parse-to-0). Real but minor; the field already has a live
+  conversion preview. Re-pitchable as a forms-polish pass.
+- **C3 — FX audit-trail display** (`expenses_screen.dart` / expense detail):
+  surface the entered original amount + rate alongside the base amount so a
+  foreign expense is self-explanatory in the list/detail. Pure display polish.
+- **C2 — scan signposting**: no crisp, evidenced UX gap was captured during the
+  audit; not specified into a plan rather than invent one.
+
 ### Direction findings — cycle 6 (2026-06-13), maintainer's decisions
 
 Presented but NOT selected (re-pitchable; don't re-detail verbatim):
@@ -487,7 +529,7 @@ impeccable-critique gate). Record so they aren't re-pitched verbatim:
 
 ## Findings carried to the next cycle (surfaced during execution, 2026-06-11)
 
-- **Recipe ownership denials map to HTTP 500**: `recipe_service.go` `requireOwner`/`requireCollectionOwner` return the bare `api.ErrPermissionDenied` sentinel, which `HTTPStatusForError` doesn't match (it only `errors.As`-matches `*api.PermissionDeniedError`). Same class of bug 007 fixed for membership checks; one-line fixes + handler-level test. Also audit `handlers/sse.go:64` (returns the bare sentinel directly).
+- **Recipe ownership denials map to HTTP 500**: `recipe_service.go` `requireOwner`/`requireCollectionOwner` return the bare `api.ErrPermissionDenied` sentinel, which `HTTPStatusForError` doesn't match (it only `errors.As`-matches `*api.PermissionDeniedError`). Same class of bug 007 fixed for membership checks; one-line fixes + handler-level test. **→ Now planned as cycle-8 plan 034.** (Still audit `handlers/sse.go:64`, which returns the bare sentinel directly — out of 034's scope.)
 - **`backend/README.md:22`** repeats the misleading `docker compose up -d` pattern that 008 fixed in the root README.
 - **gofmt drift**: ~13 files under `backend/internal/services/` are not gofmt-clean (pre-existing, not from this cycle). A one-shot `gofmt -w` commit would fix it; consider a CI/pre-commit check when CI lands.
 - **Pre-existing flutter test failures** (11): missing `libsqlite3.so` on dev hosts, a RenderFlex overflow in `chores_screen.dart:714`, and stale widget-text finders in `frontend_flows_test.dart`. These predate this cycle and mask real regressions — worth a dedicated test-repair plan.
