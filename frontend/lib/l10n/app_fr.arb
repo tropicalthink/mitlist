@@ -1098,6 +1098,9 @@
     "description": "Empty state title for no recipes"
   },
   "recipeBuildKitchenDesc": "Importe des recettes, regroupe des livres de cuisine, planifie des repas et transforme la semaine en liste de courses.",
+  "recipeNoMatchTitle": "Aucune recette ne correspond",
+  "recipeNoMatchDesc": "Essaie une autre recherche ou un autre filtre.",
+  "recipeShowAllRecipes": "Afficher toutes les recettes",
   "@recipeBuildKitchenDesc": {
     "description": "Empty state description for no recipes"
   },
