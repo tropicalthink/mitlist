@@ -49,6 +49,8 @@ class ChoreRepository {
       type: 'completeChore',
       payload: {'choreId': choreId},
       idempotencyKey: 'completeChore:$choreId',
+      entityType: 'chore',
+      entityId: choreId,
     );
     if (groupId != null) {
       // Optimistic local patch so the Drift stream reflects the completion
@@ -64,6 +66,8 @@ class ChoreRepository {
       type: 'skipChore',
       payload: {'choreId': choreId, if (reason != null) 'reason': reason},
       idempotencyKey: 'skipChore:$choreId',
+      entityType: 'chore',
+      entityId: choreId,
     );
     if (groupId != null) {
       unawaited(_drainAndRefresh(groupId));
@@ -80,6 +84,8 @@ class ChoreRepository {
         'dueDate': dueDate.toUtc().toIso8601String(),
       },
       idempotencyKey: 'rescheduleChore:$choreId:${dueDate.toIso8601String()}',
+      entityType: 'chore',
+      entityId: choreId,
     );
     if (groupId != null) {
       unawaited(_drainAndRefresh(groupId));
@@ -92,6 +98,8 @@ class ChoreRepository {
       type: 'undoChore',
       payload: {'choreId': choreId},
       idempotencyKey: 'undoChore:$choreId',
+      entityType: 'chore',
+      entityId: choreId,
     );
     if (groupId != null) {
       await _patchCachedAssignmentStatus(groupId, choreId, 'pending');

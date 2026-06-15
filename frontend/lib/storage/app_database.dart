@@ -53,6 +53,14 @@ class OutboxOps extends Table {
       integer().named('attempt_count').withDefault(const Constant(0))();
   TextColumn get lastError => text().named('last_error').nullable()();
 
+  /// The domain entity this op mutates, e.g. 'listItem', 'expense'. Lets the
+  /// failed-changes review UI label an op and the per-row flag find it.
+  TextColumn get entityType => text().named('entity_type').nullable()();
+
+  /// The id of the mutated entity (temp id for creates). Used to roll back the
+  /// optimistic local row when a failed change is discarded.
+  TextColumn get entityId => text().named('entity_id').nullable()();
+
   @override
   Set<Column<Object>>? get primaryKey => {id};
 }
@@ -306,7 +314,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   /// Creates all hot-query indexes.  Called from both onCreate and the v4
   /// onUpgrade block so that fresh installs and upgrades both get the indexes.
@@ -410,6 +418,12 @@ FROM list_items_table;
             await customStatement(
                 'UPDATE expenses_table SET base_amount = amount WHERE base_amount = 0;');
           }
+          if (from < 6) {
+            // Track which entity each outbox op mutates so the failed-changes
+            // review UI can label/roll back ops. Nullable, no backfill needed.
+            await m.addColumn(outboxOps, outboxOps.entityType);
+            await m.addColumn(outboxOps, outboxOps.entityId);
+          }
         },
         beforeOpen: (details) async {
           await customStatement('pragma foreign_keys = ON;');
@@ -464,6 +478,8 @@ FROM list_items_table;
     required String type,
     required Map<String, dynamic> payload,
     String? idempotencyKey,
+    String? entityType,
+    String? entityId,
   }) async {
     await into(outboxOps).insert(
       OutboxOpsCompanion.insert(
@@ -471,6 +487,8 @@ FROM list_items_table;
         type: type,
         payloadJson: jsonEncode(payload),
         idempotencyKey: Value(idempotencyKey),
+        entityType: Value(entityType),
+        entityId: Value(entityId),
         createdAt: DateTime.now(),
       ),
       mode: InsertMode.insertOrIgnore,
@@ -506,6 +524,17 @@ FROM list_items_table;
     return (select(outboxOps)..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
+  /// Number of queued ops of [type] already targeting [entityId]. Used to skip
+  /// the optimistic-concurrency base when an edit chains onto an unsynced one
+  /// (the chain is all ours, so there's no reliable server base to compare).
+  Future<int> pendingOpCountForEntity(String type, String entityId) async {
+    final result = await customSelect(
+      'SELECT COUNT(*) AS c FROM outbox_ops WHERE type = ? AND entity_id = ?',
+      variables: [Variable<String>(type), Variable<String>(entityId)],
+    ).getSingle();
+    return (result.data['c'] as int?) ?? 0;
+  }
+
   Future<void> markOutboxAttempt(String id, {String? error}) async {
     await (update(outboxOps)..where((t) => t.id.equals(id))).write(
       OutboxOpsCompanion(
@@ -536,6 +565,21 @@ FROM list_items_table;
     await (delete(outboxOps)..where((t) => t.id.equals(id))).go();
   }
 
+  /// Removes the optimistic local row for an [entityType]/[entityId] pair when
+  /// a failed *create* is discarded — the server never accepted it, so the row
+  /// is pure ghost data. Unknown/cache-backed types are a no-op.
+  Future<void> deleteLocalEntity(String entityType, String entityId) async {
+    switch (entityType) {
+      case 'listItem':
+        await (delete(listItemsTable)..where((t) => t.id.equals(entityId)))
+            .go();
+      case 'expense':
+        await (delete(expensesTable)..where((t) => t.id.equals(entityId))).go();
+      case 'recipe':
+        await (delete(recipesTable)..where((t) => t.id.equals(entityId))).go();
+    }
+  }
+
   Future<int> outboxCount() async {
     final result = await customSelect(
       'SELECT COUNT(*) AS c FROM outbox_ops',
@@ -551,12 +595,82 @@ FROM list_items_table;
     return (result.data['c'] as int?) ?? 0;
   }
 
+  /// All dead-lettered ops (attempt_count >= maxAttempts), newest first, for
+  /// the failed-changes review surface.
+  Future<List<OutboxOp>> getFailedOutboxOps({int maxAttempts = 10}) {
+    return (select(outboxOps)
+          ..where((t) => t.attemptCount.isBiggerOrEqualValue(maxAttempts))
+          ..orderBy([
+            (t) => OrderingTerm(
+                expression: t.lastAttemptAt, mode: OrderingMode.desc)
+          ]))
+        .get();
+  }
+
+  /// Reactive view of dead-lettered ops, used by the per-row failed flag and
+  /// the review sheet so the UI updates as the user retries/discards.
+  Stream<List<OutboxOp>> watchFailedOutboxOps({int maxAttempts = 10}) {
+    return (select(outboxOps)
+          ..where((t) => t.attemptCount.isBiggerOrEqualValue(maxAttempts))
+          ..orderBy([
+            (t) => OrderingTerm(
+                expression: t.lastAttemptAt, mode: OrderingMode.desc)
+          ]))
+        .watch();
+  }
+
+  /// Re-arms dead-lettered ops for another drain pass: resets attempt_count to
+  /// 0 and clears the backoff timestamp/error so [getOutboxBatchByTypes] picks
+  /// them up again. Pass an [id] to re-arm a single op, or omit to re-arm all.
+  Future<void> resetFailedOutboxOps({String? id, int maxAttempts = 10}) async {
+    final query = update(outboxOps)
+      ..where((t) => id != null
+          ? t.id.equals(id)
+          : t.attemptCount.isBiggerOrEqualValue(maxAttempts));
+    await query.write(
+      const OutboxOpsCompanion(
+        attemptCount: Value(0),
+        lastAttemptAt: Value(null),
+        lastError: Value(null),
+      ),
+    );
+  }
+
   Future<int> outboxFailedCount({int maxAttempts = 10}) async {
     final result = await customSelect(
       'SELECT COUNT(*) AS c FROM outbox_ops WHERE attempt_count >= ?',
       variables: [Variable.withInt(maxAttempts)],
     ).getSingle();
     return (result.data['c'] as int?) ?? 0;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Conflicts (edit conflicts surfaced by the server's 409-with-current-state)
+  // ---------------------------------------------------------------------------
+
+  Future<List<Conflict>> getConflicts() async {
+    return (select(conflicts)..where((t) => t.resolvedAt.isNull())).get();
+  }
+
+  Stream<List<Conflict>> watchConflicts() {
+    return (select(conflicts)..where((t) => t.resolvedAt.isNull())).watch();
+  }
+
+  Future<int> conflictCount() async {
+    final result = await customSelect(
+      'SELECT COUNT(*) AS c FROM conflicts WHERE resolved_at IS NULL',
+    ).getSingle();
+    return (result.data['c'] as int?) ?? 0;
+  }
+
+  Future<void> resolveConflict(String id) async {
+    await (update(conflicts)..where((t) => t.id.equals(id))).write(
+      ConflictsCompanion(resolvedAt: Value(DateTime.now())),
+    );
+  }
+
+  Future<void> insertConflict(ConflictsCompanion entry) async {
+    await into(conflicts).insert(entry, mode: InsertMode.insertOrReplace);
   }
 
   Future<void> rewriteOutboxPayloadIds({

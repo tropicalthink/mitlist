@@ -18,6 +18,7 @@ class ListItemRow extends StatelessWidget {
     this.onPhotoTap,
     this.onLongPress,
     this.reorderIndex,
+    this.failedToSync = false,
   });
 
   final ListItem item;
@@ -28,6 +29,11 @@ class ListItemRow extends StatelessWidget {
   final VoidCallback? onPhotoTap;
   final VoidCallback? onLongPress;
   final int? reorderIndex;
+
+  /// When true this item has a change the server rejected (a dead-lettered
+  /// outbox op). Shown so the optimistic local row isn't silently passed off as
+  /// saved. Tap the sync banner to retry or discard it.
+  final bool failedToSync;
 
   @override
   Widget build(BuildContext context) {
@@ -129,7 +135,17 @@ class ListItemRow extends StatelessWidget {
                       style: textTheme.bodyLarge?.copyWith(height: 1.25),
                       color: colorScheme.onSurface,
                     ),
-                    if (item.note.isNotEmpty)
+                    if (failedToSync)
+                      Text(
+                        'Failed to save — tap the sync bar to retry',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.error,
+                          height: 1.3,
+                        ),
+                      )
+                    else if (item.note.isNotEmpty)
                       Text(
                         item.note,
                         maxLines: 1,
@@ -142,6 +158,15 @@ class ListItemRow extends StatelessWidget {
                   ],
                 ),
               ),
+              if (failedToSync)
+                Padding(
+                  padding: const EdgeInsets.only(left: MitlistSpacing.sm),
+                  child: Icon(
+                    Icons.sync_problem,
+                    size: 18,
+                    color: colorScheme.error,
+                  ),
+                ),
               if (item.quantity > 1 || item.unit.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(left: MitlistSpacing.sm),

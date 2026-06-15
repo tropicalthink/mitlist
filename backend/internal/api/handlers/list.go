@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -301,13 +302,14 @@ func (h *ListHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Name       string     `json:"name"`
-		Quantity   float64    `json:"quantity"`
-		Unit       string     `json:"unit"`
-		Note       string     `json:"note"`
-		PriceCents *int       `json:"price_cents"`
-		ProductID  *uuid.UUID `json:"product_id"`
-		StoreID    *uuid.UUID `json:"store_id"`
+		Name            string     `json:"name"`
+		Quantity        float64    `json:"quantity"`
+		Unit            string     `json:"unit"`
+		Note            string     `json:"note"`
+		PriceCents      *int       `json:"price_cents"`
+		ProductID       *uuid.UUID `json:"product_id"`
+		StoreID         *uuid.UUID `json:"store_id"`
+		CanonicalItemID *uuid.UUID `json:"canonical_item_id"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
@@ -315,15 +317,16 @@ func (h *ListHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	item := &models.ListItem{
-		ListID:     listID,
-		Name:       req.Name,
-		Quantity:   req.Quantity,
-		Unit:       req.Unit,
-		Note:       req.Note,
-		PriceCents: req.PriceCents,
-		ProductID:  req.ProductID,
-		StoreID:    req.StoreID,
-		AddedBy:    &user.ID,
+		ListID:          listID,
+		Name:            req.Name,
+		Quantity:        req.Quantity,
+		Unit:            req.Unit,
+		Note:            req.Note,
+		PriceCents:      req.PriceCents,
+		ProductID:       req.ProductID,
+		StoreID:         req.StoreID,
+		CanonicalItemID: req.CanonicalItemID,
+		AddedBy:         &user.ID,
 	}
 	if err := h.service.CreateItem(r.Context(), user, item); err != nil {
 		api.RespondError(w, err)
@@ -379,6 +382,11 @@ func (h *ListHandler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 		StoreID    *uuid.UUID `json:"store_id,omitempty"`
 		Checked    *bool      `json:"checked,omitempty"`
 		Position   *int       `json:"position,omitempty"`
+		// ExpectedUpdatedAt enables optimistic concurrency: the client sends the
+		// updated_at it based its edit on. If the server's row has moved on since
+		// (another member edited it), we return 409 with the current item instead
+		// of silently clobbering their change.
+		ExpectedUpdatedAt *time.Time `json:"expected_updated_at,omitempty"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
@@ -388,6 +396,19 @@ func (h *ListHandler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 	existing, err := h.service.GetItem(r.Context(), user, itemID)
 	if err != nil {
 		api.RespondError(w, err)
+		return
+	}
+
+	// Optimistic-concurrency check. Millisecond tolerance absorbs JSON
+	// serialization drift; real concurrent edits differ by seconds.
+	if req.ExpectedUpdatedAt != nil &&
+		existing.UpdatedAt.Truncate(time.Millisecond).
+			After(req.ExpectedUpdatedAt.Truncate(time.Millisecond)) {
+		api.RespondJSON(w, http.StatusConflict, map[string]any{
+			"error":   "conflict",
+			"message": "This item was changed by someone else.",
+			"current": existing,
+		})
 		return
 	}
 

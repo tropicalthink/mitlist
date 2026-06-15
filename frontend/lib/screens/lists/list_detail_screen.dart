@@ -10,6 +10,7 @@ import '../../providers/attachment_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/grocery_provider.dart';
 import '../../providers/list_provider.dart';
+import '../../providers/outbox_provider.dart';
 import '../../services/list_service.dart';
 import '../../services/scan/grocery_suggestion_service.dart';
 import '../../theme/animations.dart';
@@ -177,8 +178,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     final query = _newItemController.text.trim();
 
     // Local grocery seed first — instant, offline.
-    final grocery =
-        await ref.read(grocerySuggestionServiceProvider).suggest(query, groupId);
+    final grocery = await ref
+        .read(grocerySuggestionServiceProvider)
+        .suggest(query, groupId);
 
     // When the composer is empty, prepend restock predictions ("usually every N
     // days") — on-device only, no network or model in the request path.
@@ -214,8 +216,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
     try {
       final service = await ref.read(listServiceProviderAsync.future);
-      final products = await service
-          .listProducts(groupId, search: query.isEmpty ? null : query);
+      final products = await service.listProducts(groupId,
+          search: query.isEmpty ? null : query);
       if (!mounted) return;
       setState(() => _productSuggestions = products.take(8).toList());
     } catch (_) {
@@ -342,9 +344,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     final service = _service;
     if (groupId == null || service == null) return;
 
-    final toLoad = items
-        .where((item) => !_photoLoadAttempted.contains(item.id))
-        .toList();
+    final toLoad =
+        items.where((item) => !_photoLoadAttempted.contains(item.id)).toList();
     if (toLoad.isEmpty) return;
     for (final item in toLoad) {
       _photoLoadAttempted.add(item.id);
@@ -368,10 +369,16 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     if (_isSaving) return;
     _isSaving = true;
     final groupId = _groupId;
-    if (groupId == null) { _isSaving = false; return; }
+    if (groupId == null) {
+      _isSaving = false;
+      return;
+    }
     final picker = ImagePicker();
     final file = await picker.pickImage(source: ImageSource.gallery);
-    if (file == null) { _isSaving = false; return; }
+    if (file == null) {
+      _isSaving = false;
+      return;
+    }
 
     try {
       final bytes = await file.readAsBytes();
@@ -418,17 +425,28 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                 maxScale: 4,
                 child: Semantics(
                   label: 'List image',
-                  child: Image.network(url, fit: BoxFit.contain, cacheWidth: (MediaQuery.sizeOf(context).width * MediaQuery.devicePixelRatioOf(context) * 1.5).round(), errorBuilder: (_, __, ___) => Center(
-                    child: AppIcon(name: 'brokenImage', color: Theme.of(context).colorScheme.onSurface, size: 48),
-                  )),
-              ),
+                  child: Image.network(url,
+                      fit: BoxFit.contain,
+                      cacheWidth: (MediaQuery.sizeOf(context).width *
+                              MediaQuery.devicePixelRatioOf(context) *
+                              1.5)
+                          .round(),
+                      errorBuilder: (_, __, ___) => Center(
+                            child: AppIcon(
+                                name: 'brokenImage',
+                                color: Theme.of(context).colorScheme.onSurface,
+                                size: 48),
+                          )),
+                ),
               ),
             ),
             SafeArea(
               child: Align(
                 alignment: Alignment.topLeft,
                 child: IconButton(
-                  icon: AppIcon(name: 'xMark', color: Theme.of(context).colorScheme.onSurface),
+                  icon: AppIcon(
+                      name: 'xMark',
+                      color: Theme.of(context).colorScheme.onSurface),
                   tooltip: 'Close',
                   onPressed: () => Navigator.of(context).pop(),
                 ),
@@ -444,9 +462,15 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     if (_isSaving) return;
     _isSaving = true;
     final groupId = _groupId;
-    if (groupId == null) { _isSaving = false; return; }
+    if (groupId == null) {
+      _isSaving = false;
+      return;
+    }
     final photos = _photosByItemId[item.id];
-    if (photos == null || photos.isEmpty) { _isSaving = false; return; }
+    if (photos == null || photos.isEmpty) {
+      _isSaving = false;
+      return;
+    }
     final attachmentId = photos.first.attachmentId;
 
     try {
@@ -464,8 +488,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           groupId: groupId,
           attachmentId: attachmentId,
         );
-                  } catch (_) {
-                  }
+      } catch (_) {}
 
       final updated =
           await svc.listItemPhotos(groupId: groupId, itemId: item.id);
@@ -513,7 +536,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       if (!mounted) return;
       _cancelSettle(item.id);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: const Text('Couldn\u2019t update. Please try again.')),
+        SnackBar(
+            content: const Text('Couldn\u2019t update. Please try again.')),
       );
     }
   }
@@ -599,10 +623,16 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     if (_isSaving) return;
     _isSaving = true;
     final text = _newItemController.text.trim();
-    if (text.isEmpty) { _isSaving = false; return; }
+    if (text.isEmpty) {
+      _isSaving = false;
+      return;
+    }
 
     final service = _service;
-    if (service == null) { _isSaving = false; return; }
+    if (service == null) {
+      _isSaving = false;
+      return;
+    }
 
     try {
       final repo = await ref.read(listRepositoryProvider.future);
@@ -688,7 +718,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     }
     _isSaving = true;
     final service = _service;
-    if (service == null) { _isSaving = false; return; }
+    if (service == null) {
+      _isSaving = false;
+      return;
+    }
     try {
       await service.clearItems(widget.listId, onlyChecked: onlyChecked);
       final repo = await ref.read(listRepositoryProvider.future);
@@ -710,7 +743,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     _isSaving = true;
     _cancelSettle(item.id);
     final service = _service;
-    if (service == null) { _isSaving = false; return; }
+    if (service == null) {
+      _isSaving = false;
+      return;
+    }
 
     try {
       final repo = await ref.read(listRepositoryProvider.future);
@@ -730,7 +766,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       return;
     }
 
-    if (!mounted) { _isSaving = false; return; }
+    if (!mounted) {
+      _isSaving = false;
+      return;
+    }
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -761,6 +800,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           unit: item.unit,
           note: item.note,
           priceCents: item.priceCents,
+          canonicalItemId: item.canonicalItemId,
         ),
       );
       if (item.checked) {
@@ -795,8 +835,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       title: 'Set price',
       body: TextField(
         controller: controller,
-        keyboardType:
-            const TextInputType.numberWithOptions(decimal: true),
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
         autofocus: true,
         decoration: InputDecoration(
           labelText: 'Price',
@@ -813,15 +852,20 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         const SizedBox(width: MitlistSpacing.sm),
         AppButton(
           text: 'Save',
-          onPressed: () =>
-              Navigator.of(context).pop(controller.text.trim()),
+          onPressed: () => Navigator.of(context).pop(controller.text.trim()),
         ),
       ],
     );
     controller.dispose();
-    if (priceStr == null || priceStr.isEmpty) { _isSaving = false; return; }
+    if (priceStr == null || priceStr.isEmpty) {
+      _isSaving = false;
+      return;
+    }
     final price = double.tryParse(priceStr.replaceAll(',', '.'));
-    if (price == null || price < 0) { _isSaving = false; return; }
+    if (price == null || price < 0) {
+      _isSaving = false;
+      return;
+    }
     final cents = (price * 100).round();
 
     try {
@@ -890,7 +934,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     );
     if (confirmed != true || !mounted) return;
     _isSaving = true;
-    if (_service == null) { _isSaving = false; return; }
+    if (_service == null) {
+      _isSaving = false;
+      return;
+    }
     try {
       await _service!.archiveList(widget.listId);
       if (!mounted) return;
@@ -911,7 +958,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     final confirmed = await showAppDialog<bool>(
       context: context,
       title: 'Delete list',
-      body: const Text('This will permanently delete this list and all its items. This cannot be undone.'),
+      body: const Text(
+          'This will permanently delete this list and all its items. This cannot be undone.'),
       actions: [
         AppButton(
           text: 'Cancel',
@@ -926,8 +974,14 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         ),
       ],
     );
-    if (confirmed != true || !mounted) { _isSaving = false; return; }
-    if (_service == null) { _isSaving = false; return; }
+    if (confirmed != true || !mounted) {
+      _isSaving = false;
+      return;
+    }
+    if (_service == null) {
+      _isSaving = false;
+      return;
+    }
     try {
       await _service!.deleteList(widget.listId);
       final repo = await ref.read(listRepositoryProvider.future);
@@ -1059,6 +1113,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           checked: item.checked,
           position: pos++,
           priceCents: item.priceCents,
+          canonicalItemId: item.canonicalItemId,
           claimedBy: item.claimedBy,
           createdAt: item.createdAt,
           updatedAt: item.updatedAt,
@@ -1286,8 +1341,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     hintText: 'Name, e.g. milk',
                     isDense: true,
                   ),
-                  onChanged: (value) =>
-                      setState(() => _searchQuery = value),
+                  onChanged: (value) => setState(() => _searchQuery = value),
                 ),
               ),
           ],
@@ -1481,6 +1535,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     final photos = _photosByItemId[item.id];
     final thumbUrl =
         (photos != null && photos.isNotEmpty) ? photos.first.url : null;
+    final failedToSync = ref.watch(failedEntityIdsProvider).contains(item.id);
 
     return ListItemRow(
       item: item,
@@ -1488,20 +1543,35 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       currencySymbol: _currencySymbol,
       claimedLabel: item.claimedBy != null ? '\u00b7 claimed' : null,
       onToggle: (val) => _toggleItem(item, val),
-      onPhotoTap:
-          thumbUrl != null ? () => _openPhotoViewer(thumbUrl) : null,
+      onPhotoTap: thumbUrl != null ? () => _openPhotoViewer(thumbUrl) : null,
       onLongPress: () => _handleItemAction(item),
       reorderIndex: reorderIndex,
+      failedToSync: failedToSync,
     );
   }
 
   String get _currencySymbol {
     const symbols = {
-      'USD': '\$', 'EUR': '€', 'GBP': '£', 'JPY': '¥',
-      'CAD': 'CA\$', 'AUD': 'A\$', 'NZD': 'NZ\$', 'CHF': 'CHF',
-      'CNY': '¥', 'HKD': 'HK\$', 'SGD': 'S\$', 'SEK': 'kr',
-      'NOK': 'kr', 'DKK': 'kr', 'INR': '₹', 'BRL': 'R\$',
-      'MXN': 'MX\$', 'ZAR': 'R', 'KRW': '₩', 'TRY': '₺',
+      'USD': '\$',
+      'EUR': '€',
+      'GBP': '£',
+      'JPY': '¥',
+      'CAD': 'CA\$',
+      'AUD': 'A\$',
+      'NZD': 'NZ\$',
+      'CHF': 'CHF',
+      'CNY': '¥',
+      'HKD': 'HK\$',
+      'SGD': 'S\$',
+      'SEK': 'kr',
+      'NOK': 'kr',
+      'DKK': 'kr',
+      'INR': '₹',
+      'BRL': 'R\$',
+      'MXN': 'MX\$',
+      'ZAR': 'R',
+      'KRW': '₩',
+      'TRY': '₺',
     };
     return symbols[_groupCurrency] ?? _groupCurrency;
   }
@@ -1576,7 +1646,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
               'Photograph a handwritten list, fridge note, or screenshot. We\u2019ll pull out the items.',
           actions: [
             AppButton(
-              text: 'Scan a list',
+              text: 'Scan this list',
+              size: AppButtonSize.xl,
               icon: const AppIcon(name: 'camera'),
               onPressed: () => _launchScan(source: ImageSource.camera),
             ),
