@@ -323,11 +323,16 @@ func TestList_UpdateItem_OptimisticConcurrency(t *testing.T) {
 	assert.Equal(t, "conflict", conflict["error"])
 	assert.NotNil(t, conflict["current"], "409 must carry the current server item")
 
-	// Correct base -> succeeds.
+	// Correct base, truncated to the second -> succeeds. This is the key
+	// regression: the Flutter client stores updated_at in Drift, whose default
+	// DateTime storage is unix SECONDS, so the base it sends back has its
+	// sub-second component dropped. That must NOT read as a conflict against the
+	// sub-second DB value — otherwise every edit 409s.
+	secondBase := itemUpdatedAt.Truncate(time.Second)
 	freshBody := map[string]any{
 		"name":                "Sourdough",
 		"quantity":            2,
-		"expected_updated_at": itemUpdatedAt,
+		"expected_updated_at": secondBase,
 	}
 	rec = execRequest(t, router, "PATCH", url, freshBody, token)
 	requireStatus(t, rec, http.StatusOK)
