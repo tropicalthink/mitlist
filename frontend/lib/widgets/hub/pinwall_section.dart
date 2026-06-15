@@ -819,19 +819,40 @@ class _PinwallComposerNote extends StatelessWidget {
 /// Compact, inline "torn paper" list of household stats that sits directly
 /// under the composer note — Chores / Balance / Lists / Tonight, each a
 /// tappable row that jumps to its tab.
-class _PinwallQuickStats extends StatelessWidget {
+///
+/// Collapsed by default so the pinned notes surface sooner; tapping the header
+/// expands the detail rows.
+class _PinwallQuickStats extends StatefulWidget {
   const _PinwallQuickStats({required this.groupId});
 
   final String groupId;
 
   @override
+  State<_PinwallQuickStats> createState() => _PinwallQuickStatsState();
+}
+
+class _PinwallQuickStatsState extends State<_PinwallQuickStats> {
+  bool _expanded = false;
+
+  void _toggle() {
+    unawaited(Haptics.light());
+    setState(() => _expanded = !_expanded);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final textTheme = Theme.of(context).textTheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final bg =
         dark ? MitlistColors.composerBgDark : MitlistColors.composerBgLight;
     final border = dark
         ? MitlistColors.composerBorderDark
         : MitlistColors.composerBorderLight;
+    final textColor = dark
+        ? MitlistColors.surfaceSoft.withValues(alpha: 0.9)
+        : MitlistColors.pinwallNoteTextLight;
+    final mutedColor = textColor.withValues(alpha: 0.6);
 
     return Container(
       decoration: BoxDecoration(
@@ -849,13 +870,61 @@ class _PinwallQuickStats extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _ChoresStatRow(groupId: groupId),
-          _StatRowDivider(color: border),
-          _FinanceStatRow(groupId: groupId),
-          _StatRowDivider(color: border),
-          _ListsStatRow(groupId: groupId),
-          _StatRowDivider(color: border),
-          _TonightStatRow(groupId: groupId),
+          Semantics(
+            button: true,
+            expanded: _expanded,
+            label: l10n.pinwallSnapshot,
+            child: InkWell(
+              onTap: _toggle,
+              borderRadius: BorderRadius.circular(MitlistTheme.radiusMd),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: MitlistSpacing.md,
+                  vertical: MitlistSpacing.sm + 2,
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.insights_outlined, size: 18, color: mutedColor),
+                    const SizedBox(width: MitlistSpacing.sm),
+                    Text(
+                      l10n.pinwallSnapshot,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: textColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Spacer(),
+                    AnimatedRotation(
+                      turns: _expanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 200),
+                      child: Icon(Icons.expand_more,
+                          size: 20, color: mutedColor),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            alignment: Alignment.topCenter,
+            child: _expanded
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _StatRowDivider(color: border),
+                      _ChoresStatRow(groupId: widget.groupId),
+                      _StatRowDivider(color: border),
+                      _FinanceStatRow(groupId: widget.groupId),
+                      _StatRowDivider(color: border),
+                      _ListsStatRow(groupId: widget.groupId),
+                      _StatRowDivider(color: border),
+                      _TonightStatRow(groupId: widget.groupId),
+                    ],
+                  )
+                : const SizedBox(width: double.infinity),
+          ),
         ],
       ),
     );

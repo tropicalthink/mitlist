@@ -377,6 +377,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get choreYourTurn => 'À ton tour';
 
   @override
+  String choreSomeonesTurn(String name) {
+    return 'Au tour de $name';
+  }
+
+  @override
+  String get choreRefreshFailed =>
+      'Échec de l\'actualisation. Affichage des tâches enregistrées.';
+
+  @override
+  String choreDoneLast30Days(num count) {
+    return '$count faites, 30 derniers jours';
+  }
+
+  @override
   String get choreYoureClear => 'Tu es tranquille';
 
   @override

@@ -376,6 +376,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get choreYourTurn => 'Te toca a ti';
 
   @override
+  String choreSomeonesTurn(String name) {
+    return 'Turno de $name';
+  }
+
+  @override
+  String get choreRefreshFailed =>
+      'No se pudo actualizar. Mostrando tareas guardadas.';
+
+  @override
+  String choreDoneLast30Days(num count) {
+    return '$count hechas, últimos 30 días';
+  }
+
+  @override
   String get choreYoureClear => 'Estás al día';
 
   @override
