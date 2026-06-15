@@ -399,11 +399,14 @@ func (h *ListHandler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Optimistic-concurrency check. Millisecond tolerance absorbs JSON
-	// serialization drift; real concurrent edits differ by seconds.
+	// Optimistic-concurrency check. Compared at second granularity: the client
+	// stores updated_at in Drift, whose default DateTime storage is unix
+	// SECONDS, so the round-tripped base loses sub-second precision. Truncating
+	// both sides to the second avoids a false conflict on every edit while still
+	// catching genuine concurrent edits (which differ by seconds).
 	if req.ExpectedUpdatedAt != nil &&
-		existing.UpdatedAt.Truncate(time.Millisecond).
-			After(req.ExpectedUpdatedAt.Truncate(time.Millisecond)) {
+		existing.UpdatedAt.Truncate(time.Second).
+			After(req.ExpectedUpdatedAt.Truncate(time.Second)) {
 		api.RespondJSON(w, http.StatusConflict, map[string]any{
 			"error":   "conflict",
 			"message": "This item was changed by someone else.",
