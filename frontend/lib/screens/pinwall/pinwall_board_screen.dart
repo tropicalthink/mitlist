@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -5,11 +7,13 @@ import 'package:intl/intl.dart';
 import '../../models/auth_models.dart';
 import '../../models/pinwall_models.dart';
 import '../../providers/pinwall_provider.dart';
+import '../../theme/animations.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/theme.dart';
 import '../../utils/haptics.dart';
 import '../../utils/hub_helpers.dart';
+import '../../widgets/hub/pinned_memo_card.dart';
 import '../../widgets/hub/stats_grid.dart';
 import '../../widgets/hub/tonight_card.dart';
 
@@ -20,6 +24,14 @@ const double _kBoardH = 2400;
 const double _kCardW = 180;
 const double _kCardH = 240;
 const double _kMargin = 80;
+
+// Pinned hub-summary band that sits on the cork above the notes.
+const double _kSummaryStatsW = 600;
+const double _kSummaryTonightW = 420;
+const double _kSummaryGap = 40;
+const double _kSummaryBandH = 300;
+double get _kSummaryRight =>
+    _kMargin + _kSummaryStatsW + _kSummaryGap + _kSummaryTonightW;
 
 // ─── Entry point ─────────────────────────────────────────────────────────────
 
@@ -64,9 +76,21 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
   final TransformationController _transformCtrl = TransformationController();
 
   late final Map<String, Offset> _positions;
+  // Pinned hub-summary cards are draggable too, so they get their own state.
+  Offset _statsPos = const Offset(_kMargin, _kMargin);
+  Offset _tonightPos =
+      const Offset(_kMargin + _kSummaryStatsW + _kSummaryGap, _kMargin);
   late final AnimationController _staggerCtrl;
   late final List<Animation<double>> _noteAnims;
+  // Entrance for the pinned summary memos — first beat of the stagger.
+  late final CurvedAnimation _summaryAnim;
+  // Id of the item currently being dragged, lifted and raised to the front so
+  // it can't slide under its neighbours.
+  String? _activeId;
   bool _didSetInitialTransform = false;
+
+  static const String _statsId = '__stats__';
+  static const String _tonightId = '__tonight__';
 
   // Shown briefly on first open to hint at pan/zoom
   bool _showHint = true;
@@ -94,6 +118,11 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
         curve: Interval(start, end, curve: Curves.easeOutCubic),
       );
     });
+
+    _summaryAnim = CurvedAnimation(
+      parent: _staggerCtrl,
+      curve: const Interval(0.0, 0.4, curve: Curves.easeOutCubic),
+    );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final disableAnim = MediaQuery.of(context).disableAnimations;
@@ -124,6 +153,7 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
 
   @override
   void dispose() {
+    _summaryAnim.dispose();
     _transformCtrl.dispose();
     _staggerCtrl.dispose();
     super.dispose();
@@ -135,7 +165,7 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
     final row = index ~/ cols;
 
     final baseX = _kMargin + col * (_kCardW + 60.0);
-    final baseY = _kMargin + row * (_kCardH + 50.0);
+    final baseY = _kMargin + _kSummaryBandH + row * (_kCardH + 50.0);
 
     final h = widget.posts[index].id.hashCode.abs();
     final jx = ((h % 80) - 40).toDouble();
@@ -145,11 +175,12 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
   }
 
   void _centerOnNotes() {
-    if (widget.posts.isEmpty) return;
     final size = MediaQuery.of(context).size;
 
-    double minX = double.infinity, minY = double.infinity;
-    double maxX = 0, maxY = 0;
+    // Start from the pinned summary band so it's always in view, then expand
+    // to include the notes cluster.
+    double minX = _kMargin, minY = _kMargin;
+    double maxX = _kSummaryRight, maxY = _kMargin + _kSummaryBandH;
     for (final p in _positions.values) {
       if (p.dx < minX) minX = p.dx;
       if (p.dy < minY) minY = p.dy;
@@ -169,12 +200,103 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
       ..scaleByDouble(scale, scale, 1, 1);
   }
 
+  // Inside InteractiveViewer's transform, drag deltas are already reported in
+  // canvas-local space, so we add them directly (no scale division).
   void _onNoteDrag(String postId, DragUpdateDetails details) {
-    final scale = _transformCtrl.value.getMaxScaleOnAxis();
     setState(() {
       final cur = _positions[postId] ?? Offset.zero;
-      _positions[postId] = cur + details.delta / scale;
+      _positions[postId] = cur + details.delta;
     });
+  }
+
+  void _onStatsDrag(DragUpdateDetails details) {
+    setState(() => _statsPos += details.delta);
+  }
+
+  void _onTonightDrag(DragUpdateDetails details) {
+    setState(() => _tonightPos += details.delta);
+  }
+
+  void _lift(String id) {
+    unawaited(Haptics.light());
+    setState(() => _activeId = id);
+  }
+
+  void _drop() {
+    if (_activeId == null) return;
+    setState(() => _activeId = null);
+  }
+
+  /// All draggable cork items, sorted so the lifted card paints last.
+  List<Widget> _buildBoardItems(BuildContext context, {required bool dark}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final layers = <({String id, int order, Widget child})>[
+      (
+        id: _statsId,
+        order: 0,
+        child: _BoardDraggableItem(
+          key: const ValueKey(_statsId),
+          position: _statsPos,
+          isActive: _activeId == _statsId,
+          entrance: _summaryAnim,
+          onLift: () => _lift(_statsId),
+          onDrop: _drop,
+          onDrag: _onStatsDrag,
+          child: PinnedMemoCard(
+            width: _kSummaryStatsW,
+            pinColor: colorScheme.secondary,
+            child: StatsGrid(groupId: widget.groupId),
+          ),
+        ),
+      ),
+      (
+        id: _tonightId,
+        order: 1,
+        child: _BoardDraggableItem(
+          key: const ValueKey(_tonightId),
+          position: _tonightPos,
+          isActive: _activeId == _tonightId,
+          entrance: _summaryAnim,
+          onLift: () => _lift(_tonightId),
+          onDrop: _drop,
+          onDrag: _onTonightDrag,
+          child: PinnedMemoCard(
+            width: _kSummaryTonightW,
+            pinColor: colorScheme.tertiary,
+            child: TonightCard(groupId: widget.groupId),
+          ),
+        ),
+      ),
+      for (var i = 0; i < widget.posts.length; i++)
+        (
+          id: widget.posts[i].id,
+          order: 2 + i,
+          child: _BoardDraggableItem(
+            key: ValueKey(widget.posts[i].id),
+            position: _positions[widget.posts[i].id]!,
+            isActive: _activeId == widget.posts[i].id,
+            entrance: _noteAnims[i],
+            onLift: () => _lift(widget.posts[i].id),
+            onDrop: _drop,
+            onDrag: (d) => _onNoteDrag(widget.posts[i].id, d),
+            child: _BoardNoteCard(
+              index: i,
+              groupId: widget.groupId,
+              me: widget.me,
+              post: widget.posts[i],
+            ),
+          ),
+        ),
+    ];
+
+    layers.sort((a, b) {
+      final aLifted = a.id == _activeId;
+      final bLifted = b.id == _activeId;
+      if (aLifted != bLifted) return aLifted ? 1 : -1;
+      return a.order.compareTo(b.order);
+    });
+
+    return layers.map((l) => l.child).toList();
   }
 
   @override
@@ -214,72 +336,47 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
                 minScale: 0.2,
                 maxScale: 2.0,
                 constrained: false,
+                // Free-pan a canvas larger than the viewport; without this the
+                // initial centered transform is clamped and snaps on first touch.
+                boundaryMargin: const EdgeInsets.all(double.infinity),
                 child: SizedBox(
                   width: _kBoardW,
                   height: _kBoardH,
                   child: _CorkCanvas(
                     dark: dark,
-                    child: widget.posts.isEmpty
-                        ? _EmptyBoardHint(dark: dark)
-                        : Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              for (var i = 0; i < widget.posts.length; i++)
-                                _AnimatedNote(
-                                  key: ValueKey(widget.posts[i].id),
-                                  animation: _noteAnims[i],
-                                  position: _positions[widget.posts[i].id]!,
-                                  onDrag: (d) =>
-                                      _onNoteDrag(widget.posts[i].id, d),
-                                  child: _BoardNoteCard(
-                                    index: i,
-                                    groupId: widget.groupId,
-                                    me: widget.me,
-                                    post: widget.posts[i],
-                                  ),
-                                ),
-                            ],
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        ..._buildBoardItems(context, dark: dark),
+                        if (widget.posts.isEmpty)
+                          Positioned(
+                            left: _kMargin,
+                            top: _kMargin + _kSummaryBandH,
+                            width: _kSummaryRight - _kMargin,
+                            child: _EmptyBoardHint(dark: dark),
                           ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
 
-            // Top controls + pinned hub summary
+            // Top controls
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(MitlistSpacing.md),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _BoardChip(
-                          label: 'Pinwall',
-                          icon: Icons.push_pin_outlined,
-                          dark: dark,
-                        ),
-                        _BoardCloseButton(
-                          dark: dark,
-                          onClose: () => Navigator.of(context).pop(),
-                        ),
-                      ],
+                    _BoardChip(
+                      label: 'Pinwall',
+                      icon: Icons.push_pin_outlined,
+                      dark: dark,
                     ),
-                    const SizedBox(height: MitlistSpacing.md),
-                    Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 520),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            StatsGrid(groupId: widget.groupId),
-                            const SizedBox(height: MitlistSpacing.md),
-                            TonightCard(groupId: widget.groupId),
-                          ],
-                        ),
-                      ),
+                    _BoardCloseButton(
+                      dark: dark,
+                      onClose: () => Navigator.of(context).pop(),
                     ),
                   ],
                 ),
@@ -409,38 +506,59 @@ class _EmptyBoardHint extends StatelessWidget {
   }
 }
 
-// ─── Animated note wrapper ────────────────────────────────────────────────────
+// ─── Draggable board item (lift + raise-to-front + entrance) ─────────────────
 
-class _AnimatedNote extends StatelessWidget {
-  const _AnimatedNote({
+class _BoardDraggableItem extends StatelessWidget {
+  const _BoardDraggableItem({
     super.key,
-    required this.animation,
     required this.position,
+    required this.isActive,
+    required this.onLift,
+    required this.onDrop,
     required this.onDrag,
     required this.child,
+    this.entrance,
   });
 
-  final Animation<double> animation;
   final Offset position;
+  final bool isActive;
+  final VoidCallback onLift;
+  final VoidCallback onDrop;
   final void Function(DragUpdateDetails) onDrag;
   final Widget child;
+  final Animation<double>? entrance;
 
   @override
   Widget build(BuildContext context) {
+    Widget body = GestureDetector(
+      onPanStart: (_) => onLift(),
+      onPanUpdate: onDrag,
+      onPanEnd: (_) => onDrop(),
+      onPanCancel: onDrop,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedScale(
+        scale: isActive ? 1.04 : 1.0,
+        duration: MitlistAnimations.micro,
+        curve: MitlistAnimations.easeEnter,
+        child: child,
+      ),
+    );
+
+    final anim = entrance;
+    if (anim != null) {
+      body = FadeTransition(
+        opacity: anim,
+        child: ScaleTransition(
+          scale: Tween(begin: 0.72, end: 1.0).animate(anim),
+          child: body,
+        ),
+      );
+    }
+
     return Positioned(
       left: position.dx,
       top: position.dy,
-      child: FadeTransition(
-        opacity: animation,
-        child: ScaleTransition(
-          scale: Tween(begin: 0.72, end: 1.0).animate(animation),
-          child: GestureDetector(
-            onPanUpdate: onDrag,
-            behavior: HitTestBehavior.opaque,
-            child: child,
-          ),
-        ),
-      ),
+      child: body,
     );
   }
 }
@@ -619,59 +737,18 @@ class _BoardNoteCard extends ConsumerWidget {
               top: -14,
               left: 0,
               right: 0,
-              child: Center(child: _BoardPushpin(headColor: pinColor)),
+              child: Center(
+                child: PinwallPushpin(
+                  headColor: pinColor,
+                  size: const Size(26, 32),
+                ),
+              ),
             ),
           ],
         ),
       ),
     );
   }
-}
-
-// ─── Pushpin ──────────────────────────────────────────────────────────────────
-
-class _BoardPushpin extends StatelessWidget {
-  const _BoardPushpin({required this.headColor});
-  final Color headColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(26, 32),
-      painter: _BoardPushpinPainter(headColor: headColor),
-    );
-  }
-}
-
-class _BoardPushpinPainter extends CustomPainter {
-  const _BoardPushpinPainter({required this.headColor});
-  final Color headColor;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
-    canvas.drawCircle(Offset(cx, 11), 11, Paint()..color = headColor);
-    canvas.drawRect(
-        Rect.fromCenter(center: Offset(cx, 20), width: 15, height: 5),
-        Paint()..color = MitlistColors.neutral950.withValues(alpha: 0.18));
-    final needle = Path()
-      ..moveTo(cx - 1.5, 21)
-      ..lineTo(cx + 1.5, 21)
-      ..lineTo(cx, size.height)
-      ..close();
-    canvas.drawPath(needle,
-        Paint()..color = MitlistColors.neutral950.withValues(alpha: 0.72));
-    canvas.drawCircle(
-        Offset(cx, 11),
-        11,
-        Paint()
-          ..color = MitlistColors.neutral950.withValues(alpha: 0.72)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.5);
-  }
-
-  @override
-  bool shouldRepaint(_BoardPushpinPainter old) => old.headColor != headColor;
 }
 
 // ─── Overlay chip ─────────────────────────────────────────────────────────────
