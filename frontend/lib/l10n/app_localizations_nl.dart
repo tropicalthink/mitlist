@@ -853,6 +853,15 @@ class AppLocalizationsNl extends AppLocalizations {
       'Importeer recepten, groepeer kookboeken, plan maaltijden en zet de week om in een boodschappenlijst.';
 
   @override
+  String get recipeNoMatchTitle => 'Geen recepten komen overeen';
+
+  @override
+  String get recipeNoMatchDesc => 'Probeer een andere zoekopdracht of filter.';
+
+  @override
+  String get recipeShowAllRecipes => 'Alle recepten tonen';
+
+  @override
   String recipeMealsPlanned(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

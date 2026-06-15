@@ -1098,6 +1098,9 @@
     "description": "Empty state title for no recipes"
   },
   "recipeBuildKitchenDesc": "Importa recetas, agrupa libros de cocina, planifica comidas y convierte la semana en una lista de compras.",
+  "recipeNoMatchTitle": "Ninguna receta coincide",
+  "recipeNoMatchDesc": "Prueba otra búsqueda o filtro.",
+  "recipeShowAllRecipes": "Mostrar todas las recetas",
   "@recipeBuildKitchenDesc": {
     "description": "Empty state description for no recipes"
   },
