@@ -29,8 +29,6 @@ import '../../widgets/hub/activity_wall.dart';
 import '../../widgets/hub/hub_skeleton.dart';
 import '../../widgets/hub/pinwall_section.dart';
 import '../../widgets/hub/quick_add_sheet.dart';
-import '../../widgets/hub/stats_grid.dart';
-import '../../widgets/hub/tonight_card.dart';
 import '../../providers/meal_plan_provider.dart';
 import '../../widgets/shell_trailing_actions.dart';
 import '../../sheets/create_household_sheet.dart';
@@ -771,10 +769,6 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                         padding: const EdgeInsets.all(MitlistSpacing.md),
                         sliver: SliverList(
                           delegate: SliverChildListDelegate([
-                            StatsGrid(groupId: _resolvedGroupId!),
-                            const SizedBox(height: MitlistSpacing.lg),
-                            TonightCard(groupId: _resolvedGroupId!),
-                            const SizedBox(height: MitlistSpacing.lg),
                             PinwallSection(
                                 groupId: _resolvedGroupId!, me: _me),
                             const SizedBox(height: MitlistSpacing.lg),

@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/finance_provider.dart';
+import '../../repositories/finance_repository.dart';
 import '../../providers/group_provider.dart';
 import '../../models/finance_models.dart';
 import '../../router.dart' show BottomNavScaffold, currentGroupIdProvider;
@@ -140,6 +141,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   static const int _pageLimit = 50;
 
   bool _isLoading = true;
+  bool _isRefreshing = false;
   bool _isLoadingMore = false;
   bool _hasMore = true;
   String? _errorMessage;
@@ -216,6 +218,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
+      _isRefreshing = false;
       _errorMessage = null;
       _hasPageError = false;
       _hasMore = true;
@@ -267,28 +270,25 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       setState(() {
         _hasHousehold = validGroupId != null;
         _hasMore = expenses.length == _pageLimit;
-        _isLoading = false;
+        // Keep skeleton until remote refresh when cache is empty; cached rows
+        // render immediately when present.
+        _isLoading = validGroupId != null && expenses.isEmpty;
+        _isRefreshing = validGroupId != null;
       });
 
       // Background refresh; keep cached UI if this fails.
       if (validGroupId != null) {
-        unawaited(repo
-            .refreshGroup(validGroupId, limit: _pageLimit, offset: 0)
-            .catchError((e) {
-          _logger.w('Background expenses refresh failed', error: e);
-          return 0;
-        }));
+        unawaited(_refreshExpensesPage(repo, validGroupId));
         if (!_listenersSetUp) {
           _listenersSetUp = true;
           ref.listenManual(cachedExpensesByGroupProvider(validGroupId),
               (prev, next) {
             next.whenData((data) {
               if (!mounted) return;
-              _timelineExpenses
-                ..clear()
-                ..addAll(data.map(_mapExpense));
-              _rebuildTimelineGroups();
-              setState(() => _isLoading = false);
+              // refreshGroup clears local rows before upserting; ignore the
+              // transient empty emission so the empty state does not flash.
+              if (data.isEmpty && _isRefreshing) return;
+              _applyTimelineExpenses(data);
             });
           });
           ref.listenManual(cachedFinanceSummaryByGroupProvider(validGroupId),
@@ -311,6 +311,40 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _refreshExpensesPage(FinanceRepository repo, String groupId) async {
+    try {
+      final fetchedCount = await repo.refreshGroup(
+        groupId,
+        limit: _pageLimit,
+        offset: 0,
+      );
+      if (!mounted) return;
+      setState(() {
+        _isRefreshing = false;
+        _isLoading = false;
+        _hasMore = fetchedCount == _pageLimit;
+      });
+    } catch (e) {
+      _logger.w('Background expenses refresh failed', error: e);
+      if (!mounted) return;
+      setState(() {
+        _isRefreshing = false;
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _applyTimelineExpenses(List<Expense> expenses) {
+    _timelineExpenses
+      ..clear()
+      ..addAll(expenses.map(_mapExpense));
+    _rebuildTimelineGroups();
+    setState(() {
+      _isLoading = false;
+      _isRefreshing = false;
+    });
   }
 
   void _applyFinanceSummary(FinanceSummary? summary, String? currentUserId) {
