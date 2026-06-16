@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -248,7 +249,11 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   }
 
   Future<void> _openChoreDetail(String id) async {
-    final chore = _chores.firstWhere((item) => item.id == id);
+    final chore = _chores.firstWhereOrNull((item) => item.id == id);
+    if (chore == null) {
+      _logger.w('openChoreDetail: chore $id not in local list');
+      return;
+    }
     ChoreDetails? details;
     List<ChoreSubtask> subtasks = [];
     try {
@@ -386,8 +391,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     _isMutating = true;
     final l10n = AppLocalizations.of(context)!;
     try {
-      final chore = _chores.firstWhere((c) => c.id == id);
-      if (chore.completed) {
+      final chore = _chores.firstWhereOrNull((c) => c.id == id);
+      if (chore == null || chore.completed) {
         return;
       }
       // Optimistic: strike through instantly; the repo patches its cache and
