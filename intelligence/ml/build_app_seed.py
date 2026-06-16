@@ -81,15 +81,25 @@ def load_blocklist(path: pathlib.Path) -> set[tuple[str, str]]:
 
 
 def no_space_variant(alias: str) -> str | None:
-    """If alias contains spaces, return a no-space variant; else if alias has
-    no spaces and looks like a multi-word concatenation, return None (we can't
-    reliably split without a dictionary). Only insert the simpler direction:
-    multi-word → single-token (e.g. 'corn flakes' → 'cornflakes')."""
-    if " " in alias:
-        variant = alias.replace(" ", "")
-        if variant != alias:
-            return variant
-    return None
+    """Emit a joined variant ONLY for genuine 2-word alphabetic compounds a user
+    might type as one word (e.g. 'corn flakes' -> 'cornflakes', 'olive oil' ->
+    'oliveoil'). FTS5 word-prefix already covers typing a word *inside* a
+    multi-word alias; the no-space variant only earns its place for the joined
+    spelling of a true compound. Skip phrases (>2 words), quantity-prefixed
+    aliases ('500g erdbeere'), short/edge tokens, and long results — generating
+    a variant for every spaced alias roughly doubled the on-device alias table."""
+    parts = alias.split()
+    if len(parts) != 2:
+        return None
+    a, b = parts
+    if len(a) < 3 or len(b) < 3:
+        return None
+    if not (a.isalpha() and b.isalpha()):
+        return None
+    variant = a + b
+    if len(variant) > 24 or variant == alias:
+        return None
+    return variant
 
 
 def merge_aliases_for_item(item: dict, curated: list[dict], blocklist: set[tuple[str, str]]) -> dict:
