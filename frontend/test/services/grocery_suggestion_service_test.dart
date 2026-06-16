@@ -124,4 +124,48 @@ void main() {
     final result = await ids('tomat');
     expect(result.first, 'tomato');
   });
+
+  // ---------------------------------------------------------------------------
+  // Word-level FTS5 recall (plan 012 A2)
+  // ---------------------------------------------------------------------------
+
+  test('word-prefix: query matching mid-word finds item via FTS5', () async {
+    // 'breast pads' is a multi-word alias; typing 'pad' should match it via
+    // the FTS5 word-prefix path even though 'pad' is not a prefix of the whole
+    // alias string "breast pads".
+    await item('breast_pads', 'Brustpads', 'Breast Pads',
+        ['breast pads', 'nursing pads', 'brusteinlage']);
+    final result = await ids('pad');
+    expect(result, contains('breast_pads'),
+        reason: 'FTS5 word-prefix should match "pad" inside "breast pads"');
+  });
+
+  test('word-prefix: brand alias resolves when typing brand name', () async {
+    // Simulate a curated brand alias: "pringles" on "potato_chips".
+    await item('potato_chips', 'Kartoffelchips', 'Potato Chips',
+        ['pringles', 'lay\'s', 'chips']);
+    final result = await ids('pring');
+    expect(result, contains('potato_chips'),
+        reason: 'FTS5 word-prefix should match "pring*" on alias "pringles"');
+  });
+
+  test('word-prefix: multi-word query narrows to correct item', () async {
+    // "corn fl" should match "corn flakes" but not "potato chips"
+    await item('corn_flakes', 'Cornflakes', 'Corn Flakes',
+        ['cornflakes', 'corn flakes', 'breakfast cereal']);
+    await item('potato_chips2', 'Chips', 'Potato Chips', ['chips', 'crisps']);
+    final result = await ids('corn fl');
+    expect(result, contains('corn_flakes'),
+        reason: 'FTS5 multi-word prefix should match "corn" AND "fl*" in alias');
+    expect(result, isNot(contains('potato_chips2')),
+        reason: 'potato chips should not match "corn fl"');
+  });
+
+  test('whole-string prefix hits still lead word-prefix hits', () async {
+    // "banana" aliases both 'banana' and 'banana chips' style item.
+    // Typing "ban" — banana has a whole-string alias starting with "ban",
+    // so it should still appear in results (Tier 0) regardless of FTS.
+    final result = await ids('ban');
+    expect(result, contains('banana'));
+  });
 }
