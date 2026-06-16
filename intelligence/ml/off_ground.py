@@ -37,9 +37,27 @@ HERE = pathlib.Path(__file__).resolve().parent
 DATA = HERE / "data"
 SEED = DATA / "seed.json"
 
-MIN_SCANS = 30                 # per-product popularity floor (maintainer choice)
+# Bumped when the generated aliases change so the app re-ingests them (the seed
+# loader gates OFF ingestion on this, separate from the seed asset version).
+OFF_VERSION = 1
+
+MIN_SCANS = 10                 # per-product popularity floor (override with --min-scans).
+                               # 10 catches household brands (Cadbury, Kit Kat,
+                               # Ritter Sport, Cheerios, San Pellegrino, Katjes…)
+                               # the 30 cutoff missed, at negligible extra noise.
 MARKETS = ("en:germany", "en:france", "en:spain",
            "en:united-kingdom", "en:united-states")
+
+# Known-wrong brand→item mappings to drop (a few SKUs in a category that isn't
+# the brand's identity slip past the thresholds). Hand-pruned from the review
+# TSV; cheaper than over-tightening thresholds and losing good rows.
+BRAND_EXCLUDE = {
+    "cheetos",     # corn puffs, not cookies
+    "curly",       # peanut puffs (Vico), not cookies
+    "paulaner",    # beer (a radler SKU landed it in cola)
+    "selection",   # generic word, not a brand identity
+    "decathlon",   # sports retailer, not a food brand
+}
 
 # Brand → single canonical item only when the brand is this concentrated:
 BRAND_MIN_PRODUCTS = 2         # winning item must back >=N products
@@ -175,9 +193,12 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--off-parquet", required=True,
                     help="OFF food.parquet (or a pre-filtered subset parquet)")
+    ap.add_argument("--min-scans", type=int, default=MIN_SCANS,
+                    help=f"per-product popularity floor (default {MIN_SCANS})")
     ap.add_argument("--out-aliases", default=str(DATA / "off_aliases.json"))
     ap.add_argument("--out-review", default=str(DATA / "off_brand_review.tsv"))
     args = ap.parse_args()
+    min_scans = args.min_scans
 
     import duckdb  # local import so the module loads without the dep
 
@@ -191,7 +212,7 @@ def main() -> None:
     rows = con.execute(f"""
         SELECT brands, categories_tags, unique_scans_n AS n
         FROM read_parquet('{args.off_parquet}')
-        WHERE unique_scans_n >= {MIN_SCANS}
+        WHERE unique_scans_n >= {min_scans}
           AND len(list_filter(countries_tags, c -> c IN {markets})) > 0
           AND brands IS NOT NULL AND length(brands) > 1
     """).fetchall()
@@ -204,7 +225,7 @@ def main() -> None:
     brand_total: Counter = Counter()
     for brands, tags, n in rows:
         b = norm_brand(brands.split(",")[0])  # primary brand
-        if len(b) < 3 or b in BRAND_STOPLIST:
+        if len(b) < 3 or b in BRAND_STOPLIST or b in BRAND_EXCLUDE:
             continue
         brand_total[b] += 1
         item_id = resolve(tags)
@@ -235,7 +256,8 @@ def main() -> None:
             out_items[item_id] = {"und": uniq}
 
     payload = {"_attribution": OFF_ATTRIBUTION, "_license": "ODbL-1.0",
-               "_generator": "off_ground.py", "items": out_items}
+               "_generator": "off_ground.py", "version": OFF_VERSION,
+               "items": out_items}
     pathlib.Path(args.out_aliases).write_text(
         json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
 

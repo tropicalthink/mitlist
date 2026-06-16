@@ -3987,6 +3987,24 @@ abstract class AppLocalizations {
   /// **'Terms of Service'**
   String get accountTermsRow;
 
+  /// Menu row: open data attribution
+  ///
+  /// In en, this message translates to:
+  /// **'Open data'**
+  String get accountOpenDataRow;
+
+  /// Bottom sheet title for open data attribution
+  ///
+  /// In en, this message translates to:
+  /// **'Open data attribution'**
+  String get accountOpenDataTitle;
+
+  /// Open data attribution body text (Open Food Facts / ODbL)
+  ///
+  /// In en, this message translates to:
+  /// **'Some grocery brand names come from Open Food Facts (openfoodfacts.org), used under the Open Database License (ODbL) v1.0. The derived brand list is kept separable from mitlist\'s own data.'**
+  String get accountOpenDataBody;
+
   /// Card title for guest account status
   ///
   /// In en, this message translates to:

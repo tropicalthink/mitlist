@@ -8,8 +8,10 @@ import '../storage/app_database.dart';
 
 const _seedAsset = 'assets/grocery/seed.json';
 const _storeAislesAsset = 'assets/grocery/store_aisles.json';
+const _offAliasesAsset = 'assets/grocery/off_aliases.json';
 const _globalGroupId = '__global__';
 const _storeAislesVersionKey = '__store_aisles__';
+const _offAliasesVersionKey = '__off_aliases__';
 const _uuid = Uuid();
 
 class GrocerySeedLoader {
@@ -17,13 +19,19 @@ class GrocerySeedLoader {
 
   GrocerySeedLoader(this._db);
 
-  /// Load the bundled grocery seed into Drift.
+  /// Load the bundled grocery assets into Drift.
   ///
-  /// Safe to call on every cold start. The bundled asset carries a `version`;
-  /// if it is newer than the version already ingested, the previous global
-  /// seed is cleared and the new one re-ingested. Household-scoped data is
-  /// never touched. Skips work entirely when already up to date.
+  /// Safe to call on every cold start. Each asset (canonical seed, store aisles,
+  /// OFF brand aliases) carries its own `version` and is ingested independently
+  /// — so adding a new asset to an existing install ingests it even when the
+  /// seed itself is already up to date. Household-scoped data is never touched.
   Future<void> loadIfNeeded() async {
+    await _loadSeedIfNeeded();
+    await _loadStoreAislesIfNeeded();
+    await _loadOffAliasesIfNeeded();
+  }
+
+  Future<void> _loadSeedIfNeeded() async {
     final raw = await rootBundle.loadString(_seedAsset);
     final json = jsonDecode(raw) as Map<String, dynamic>;
     final assetVersion = (json['version'] as num?)?.toInt() ?? 0;
@@ -37,8 +45,55 @@ class GrocerySeedLoader {
     }
     await _ingestSeed(json);
     await _db.setGroceryVersion(_globalGroupId, assetVersion);
+  }
 
-    await _loadStoreAislesIfNeeded();
+  /// Ingests the OpenFoodFacts-derived brand aliases (ODbL, shipped as a
+  /// separable, attributed asset) so typing a brand — "pringles", "haribo",
+  /// "coca cola" — resolves to the right canonical item. Version-gated and
+  /// global; stored with `source='off'` so a reseed never drops them and they
+  /// can be re-ingested independently. Fail-soft: a missing/old asset is a
+  /// no-op (older builds shipped without it).
+  Future<void> _loadOffAliasesIfNeeded() async {
+    final String raw;
+    try {
+      raw = await rootBundle.loadString(_offAliasesAsset);
+    } catch (_) {
+      return; // asset not bundled in this build
+    }
+    final json = jsonDecode(raw) as Map<String, dynamic>;
+    final assetVersion = (json['version'] as num?)?.toInt() ?? 0;
+    final installed = await _db.getGroceryVersion(_offAliasesVersionKey);
+    if (installed >= assetVersion) return;
+
+    await _db.clearGlobalAliasesBySource(_globalGroupId, 'off');
+
+    final items = (json['items'] as Map<String, dynamic>? ?? {});
+    final now = DateTime.now();
+    final rows = <ItemAliasesTableCompanion>[];
+    items.forEach((canonicalId, byLang) {
+      (byLang as Map<String, dynamic>).forEach((lang, list) {
+        for (final a in (list as List)) {
+          final normalized = (a as String).toLowerCase().trim();
+          if (normalized.isEmpty) continue;
+          rows.add(ItemAliasesTableCompanion.insert(
+            id: _uuid.v4(),
+            groupId: _globalGroupId,
+            canonicalItemId: canonicalId,
+            aliasText: normalized,
+            lang: Value(lang),
+            source: const Value('off'),
+            weight: const Value(1),
+            version: const Value(0),
+            createdAt: now,
+            updatedAt: now,
+          ));
+        }
+      });
+    });
+    for (final chunk in _chunked(rows, 2000)) {
+      await _db.upsertItemAliases(chunk);
+    }
+    await _db.setGroceryVersion(_offAliasesVersionKey, assetVersion);
   }
 
   /// Ingests the shipped global store layouts (item → aisle + shopping-path

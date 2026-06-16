@@ -2210,6 +2210,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountTermsRow => 'Terms of Service';
 
   @override
+  String get accountOpenDataRow => 'Open data';
+
+  @override
+  String get accountOpenDataTitle => 'Open data attribution';
+
+  @override
+  String get accountOpenDataBody =>
+      'Some grocery brand names come from Open Food Facts (openfoodfacts.org), used under the Open Database License (ODbL) v1.0. The derived brand list is kept separable from mitlist\'s own data.';
+
+  @override
   String get accountGuestTitle => 'You\'re on a guest account';
 
   @override

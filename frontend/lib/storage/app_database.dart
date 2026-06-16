@@ -1191,6 +1191,17 @@ FROM list_items_table;
     });
   }
 
+  /// Deletes the global aliases that came from a given [source] (e.g. 'off').
+  /// Used to re-ingest a versioned external alias set without disturbing the
+  /// seed aliases or household corrections.
+  Future<void> clearGlobalAliasesBySource(
+      String globalGroupId, String source) async {
+    await (delete(itemAliasesTable)
+          ..where((t) =>
+              t.groupId.equals(globalGroupId) & t.source.equals(source)))
+        .go();
+  }
+
   // ---------------------------------------------------------------------------
   // Grocery graph — aliases (hot lookup path)
   // ---------------------------------------------------------------------------
