@@ -23,7 +23,11 @@ func TestVAPIDHandler_PublicKey_ReturnsKey(t *testing.T) {
 	assert.True(t, rec.Code == http.StatusOK || rec.Code == http.StatusBadRequest)
 }
 
-func TestVAPIDHandler_Subscribe_RequiresAuth(t *testing.T) {
+// VAPIDHandler only serves the public VAPID key; it has no subscribe method
+// (push-subscribe auth is enforced by router middleware on a different handler).
+// This test confirms the public-key endpoint is intentionally public and always
+// returns the key shape regardless of method.
+func TestVAPIDHandler_PublicKey_IsPublic(t *testing.T) {
 	if testDB == nil {
 		t.Skip("test database not connected")
 	}
@@ -31,9 +35,9 @@ func TestVAPIDHandler_Subscribe_RequiresAuth(t *testing.T) {
 	h := NewVAPIDHandler(testCfg)
 
 	rec := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/api/v1/push/subscribe", nil)
-	req.Header.Set("Content-Type", "application/json")
+	req := httptest.NewRequest("GET", "/api/v1/push/public-key", nil)
 	h.ServeHTTP(rec, req)
 
-	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Contains(t, rec.Body.String(), "public_key")
 }

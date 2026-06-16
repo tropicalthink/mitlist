@@ -34,9 +34,8 @@ func TestCoreJourney_HouseholdWorkflow(t *testing.T) {
 	require.NotEmpty(t, token)
 
 	groupBody := map[string]any{
-		"name":             "Journey Household",
-		"default_currency": "USD",
-		"default_language": "en",
+		"name":     "Journey Household",
+		"currency": "USD",
 	}
 	rec = execRequest(t, groupRouter, "POST", "/api/v1/groups", groupBody, token)
 	requireStatus(t, rec, http.StatusCreated)

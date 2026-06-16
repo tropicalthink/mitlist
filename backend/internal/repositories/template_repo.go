@@ -186,6 +186,10 @@ func (r *TemplateRepository) DeleteTemplateItem(ctx context.Context, id uuid.UUI
 // CreateChoreTemplate inserts a new chore template.
 func (r *TemplateRepository) CreateChoreTemplate(ctx context.Context, ct *models.ChoreTemplate) error {
 	ct.ID = uuid.New()
+	periodConfig := ct.PeriodConfig
+	if periodConfig == nil {
+		periodConfig = []string{}
+	}
 	query := `
 		INSERT INTO chore_templates (
 			id, group_id, name, description, rotation_type, frequency,
@@ -197,7 +201,7 @@ func (r *TemplateRepository) CreateChoreTemplate(ctx context.Context, ct *models
 	`
 	return r.pool.QueryRow(ctx, query,
 		ct.ID, ct.GroupID, ct.Name, ct.Description, ct.RotationType, ct.Frequency,
-		ct.PeriodInterval, ct.PeriodConfig, ct.TrackDateOnly, ct.Rollover, ct.AssignmentType, ct.Category,
+		ct.PeriodInterval, periodConfig, ct.TrackDateOnly, ct.Rollover, ct.AssignmentType, ct.Category,
 	).Scan(&ct.CreatedAt, &ct.UpdatedAt)
 }
 

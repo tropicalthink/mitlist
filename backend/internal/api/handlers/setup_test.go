@@ -239,6 +239,12 @@ func createTestUser(t *testing.T, email, password string) *models.User {
 	return user
 }
 
+func addTestMembership(t *testing.T, groupID, userID uuid.UUID, role string) {
+	t.Helper()
+	require.NoError(t, newTestGroupRepo().CreateMembership(context.Background(),
+		&models.GroupMembership{GroupID: groupID, UserID: userID, Role: role}))
+}
+
 func generateTestToken(userID uuid.UUID) string {
 	access, _, err := testJWT.GenerateTokenPair(userID.String(), nil)
 	if err != nil {

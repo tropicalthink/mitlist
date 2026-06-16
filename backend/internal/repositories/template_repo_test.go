@@ -265,7 +265,7 @@ func TestTemplateRepository_CreateChoreTemplate(t *testing.T) {
 	mock.ExpectQuery("INSERT INTO chore_templates").
 		WithArgs(
 			pgxmock.AnyArg(), ct.GroupID, ct.Name, ct.Description, ct.RotationType, ct.Frequency,
-			ct.PeriodInterval, ct.PeriodConfig, ct.TrackDateOnly, ct.Rollover, ct.AssignmentType, ct.Category,
+			ct.PeriodInterval, []string{}, ct.TrackDateOnly, ct.Rollover, ct.AssignmentType, ct.Category,
 		).
 		WillReturnRows(rows)
 

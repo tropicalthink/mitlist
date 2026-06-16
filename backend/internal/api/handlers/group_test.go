@@ -19,7 +19,7 @@ func TestGroup_CreateGroup(t *testing.T) {
 	user := createTestUser(t, "group@example.com", "password123")
 	token := generateTestToken(user.ID)
 
-	body := map[string]any{"name": "My Group", "default_currency": "USD", "default_language": "en"}
+	body := map[string]any{"name": "My Group", "currency": "USD"}
 	rec := execRequest(t, router, "POST", "/api/v1/groups", body, token)
 	requireStatus(t, rec, http.StatusCreated)
 
@@ -44,14 +44,16 @@ func TestGroup_ListGroups(t *testing.T) {
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
-	require.NoError(t, groupRepo.CreateGroup(context.Background(), &models.Group{
+	listedGroup := &models.Group{
 		ID:        uuid.New(),
 		Name:      "Test Group",
 		Currency:  "USD",
 		CreatedBy: user.ID,
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
-	}))
+	}
+	require.NoError(t, groupRepo.CreateGroup(context.Background(), listedGroup))
+	addTestMembership(t, listedGroup.ID, user.ID, "admin")
 
 	rec := execRequest(t, router, "GET", "/api/v1/groups?limit=10&offset=0", nil, token)
 	requireStatus(t, rec, http.StatusOK)
@@ -77,6 +79,7 @@ func TestGroup_GetGroup(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 
 	rec := execRequest(t, router, "GET", "/api/v1/groups/"+group.ID.String(), nil, token)
 	requireStatus(t, rec, http.StatusOK)
@@ -92,8 +95,10 @@ func TestGroup_GetGroup_NotFound(t *testing.T) {
 	user := createTestUser(t, "nf@example.com", "password123")
 	token := generateTestToken(user.ID)
 
+	// GetGroup checks membership before existence to avoid leaking whether a
+	// group exists, so a nonexistent group yields 403 for a non-member.
 	rec := execRequest(t, router, "GET", "/api/v1/groups/"+uuid.New().String(), nil, token)
-	requireStatus(t, rec, http.StatusNotFound)
+	requireStatus(t, rec, http.StatusForbidden)
 }
 
 func TestGroup_UpdateGroup(t *testing.T) {
@@ -112,6 +117,7 @@ func TestGroup_UpdateGroup(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 
 	body := map[string]any{"name": "New Name"}
 	rec := execRequest(t, router, "PATCH", "/api/v1/groups/"+group.ID.String(), body, token)
@@ -138,12 +144,15 @@ func TestGroup_DeleteGroup(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 
 	rec := execRequest(t, router, "DELETE", "/api/v1/groups/"+group.ID.String(), nil, token)
 	requireStatus(t, rec, http.StatusNoContent)
 
+	// Membership is checked before existence (privacy-preserving), so a deleted
+	// group the user no longer belongs to yields 403 rather than 404.
 	rec = execRequest(t, router, "GET", "/api/v1/groups/"+group.ID.String(), nil, token)
-	requireStatus(t, rec, http.StatusNotFound)
+	requireStatus(t, rec, http.StatusForbidden)
 }
 
 func TestGroup_JoinGroup(t *testing.T) {
@@ -194,6 +203,7 @@ func TestGroup_RemoveMember(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, owner.ID, "admin")
 	require.NoError(t, groupRepo.CreateMembership(context.Background(), &models.GroupMembership{
 		ID:       uuid.New(),
 		GroupID:  group.ID,
@@ -223,6 +233,7 @@ func TestGroup_UpdateMemberRole(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, owner.ID, "admin")
 	require.NoError(t, groupRepo.CreateMembership(context.Background(), &models.GroupMembership{
 		ID:       uuid.New(),
 		GroupID:  group.ID,

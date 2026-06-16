@@ -33,9 +33,9 @@ func TestChoreRepository_CreateChore(t *testing.T) {
 	mock.ExpectQuery("INSERT INTO chores").
 		WithArgs(
 			pgxmock.AnyArg(), chore.GroupID, chore.Name, chore.Description,
-			chore.RotationType, chore.Frequency, chore.PeriodInterval, chore.PeriodConfig,
+			chore.RotationType, chore.Frequency, chore.PeriodInterval, []string{},
 			chore.StartDate, chore.TrackDateOnly, chore.Rollover, chore.AssignmentType,
-			chore.AssignmentConfig, chore.IsActive, chore.Supplies, chore.Category,
+			[]uuid.UUID{}, chore.IsActive, chore.Supplies, chore.Category,
 		).
 		WillReturnRows(rows)
 

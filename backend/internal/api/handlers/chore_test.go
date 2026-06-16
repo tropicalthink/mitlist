@@ -28,6 +28,7 @@ func TestChore_CreateChore(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 
 	body := map[string]any{
 		"group_id":      group.ID.String(),
@@ -59,6 +60,7 @@ func TestChore_ListChores(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 	choreRepo := newTestChoreRepo()
 	require.NoError(t, choreRepo.CreateChore(context.Background(), &models.Chore{
 		ID:           uuid.New(),
@@ -94,6 +96,7 @@ func TestChore_ListCurrentChores(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 	choreRepo := newTestChoreRepo()
 	chore := &models.Chore{
 		ID:           uuid.New(),
@@ -152,6 +155,7 @@ func TestChore_UpdateChore(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 	choreRepo := newTestChoreRepo()
 	chore := &models.Chore{
 		ID:           uuid.New(),
@@ -189,6 +193,7 @@ func TestChore_DeleteChore(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 	choreRepo := newTestChoreRepo()
 	chore := &models.Chore{
 		ID:           uuid.New(),
@@ -221,6 +226,7 @@ func TestChore_RotateChore(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 	choreRepo := newTestChoreRepo()
 	chore := &models.Chore{
 		ID:           uuid.New(),
@@ -259,6 +265,7 @@ func TestChore_CompleteChore(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 	choreRepo := newTestChoreRepo()
 	chore := &models.Chore{
 		ID:           uuid.New(),
@@ -299,6 +306,7 @@ func TestChore_RescheduleChore(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 	choreRepo := newTestChoreRepo()
 	chore := &models.Chore{
 		ID:           uuid.New(),
@@ -340,6 +348,7 @@ func TestChore_GetAssignments(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 	choreRepo := newTestChoreRepo()
 	chore := &models.Chore{
 		ID:           uuid.New(),

@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mitlist-app/mitlist/internal/api"
+	"github.com/mitlist-app/mitlist/internal/middleware"
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/mitlist-app/mitlist/internal/services"
@@ -80,6 +82,7 @@ func TestMealPlanHandler_ListMealPlans_ReturnsEmpty(t *testing.T) {
 	}
 	groupRepo := newTestGroupRepo()
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 
 	_, h := newMealPlanRouter(t)
 
@@ -128,17 +131,17 @@ func TestMealPlanHandler_DeleteMealPlan_NotFound(t *testing.T) {
 	user := createTestUser(t, "mp-delete@test.com", "password123")
 	token := generateTestToken(user.ID)
 
-	_, h := newMealPlanRouter(t)
+	router, _ := newMealPlanRouter(t)
 
+	// Route through the router so chi populates the {id} URL param.
 	id := uuid.New()
-	rec := httptest.NewRecorder()
-	req := buildRequest(t, "DELETE", "/api/v1/meal-plans/"+id.String(), nil, token)
-	req = req.WithContext(setTestUserContext(req.Context(), user))
-	h.DeleteMealPlan(rec, req)
+	rec := execRequest(t, router, "DELETE", "/api/v1/meal-plans/"+id.String(), nil, token)
 
 	assert.Equal(t, http.StatusNotFound, rec.Code)
 }
 
 func setTestUserContext(ctx context.Context, user *models.User) context.Context {
+	ctx = middleware.WithUserID(ctx, user.ID.String())
+	ctx = api.WithUser(ctx, user)
 	return ctx
 }

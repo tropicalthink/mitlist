@@ -120,8 +120,10 @@ func TestAuth_DeleteMe(t *testing.T) {
 	rec := execRequest(t, router, "DELETE", "/api/v1/auth/me", nil, token)
 	requireStatus(t, rec, http.StatusNoContent)
 
+	// After deletion the user no longer exists, so the token can no longer
+	// resolve to a user and the request is rejected as unauthorized.
 	rec = execRequest(t, router, "GET", "/api/v1/auth/me", nil, token)
-	requireStatus(t, rec, http.StatusBadRequest)
+	requireStatus(t, rec, http.StatusUnauthorized)
 }
 
 func TestAuth_ChangePassword(t *testing.T) {
