@@ -370,7 +370,7 @@ func (r *ListRepository) SoftDeleteItemsByID(ctx context.Context, ids []uuid.UUI
 		if i > 0 {
 			placeholders += ","
 		}
-		placeholders += fmt.Sprintf("$%d", i+2)
+		placeholders += fmt.Sprintf("$%d", i+3)
 	}
 	query := fmt.Sprintf(`UPDATE list_items SET deleted_at = $1, updated_at = $2 WHERE id IN (%s) AND deleted_at IS NULL`, placeholders)
 	args := []any{now, now}
