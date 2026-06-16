@@ -20,7 +20,7 @@ class ListTileAccent {
   /// Snippet / secondary lines on the tinted card: blends title into tile
   /// so we never use flat gray on a pastel (better contrast + hue harmony).
   Color get snippetOnTile => Color.alphaBlend(
-        titleColor.withValues(alpha: 0.58),
+        titleColor.withValues(alpha: 0.68),
         tileBackground,
       );
 

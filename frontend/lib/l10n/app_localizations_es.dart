@@ -2761,6 +2761,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get expenseCreationSplitMode => 'Modo de reparto';
 
   @override
+  String expenseCreationSplitTotal(String amount) {
+    return 'Total $amount';
+  }
+
+  @override
   String get expenseCreationSplitEqual => 'Igual';
 
   @override
@@ -3926,6 +3931,11 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String activityAddedToList(String name, String when) {
     return 'Añadió $name a una lista · $when';
+  }
+
+  @override
+  String activityAddedToNamedList(String name, String list, String when) {
+    return 'Added $name to $list · $when';
   }
 
   @override

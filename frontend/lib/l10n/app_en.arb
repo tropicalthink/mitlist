@@ -1639,6 +1639,8 @@
   "@expenseCreationScanReceiptSemantics": { "description": "Semantics label for receipt scan" },
   "expenseCreationSplitMode": "Split mode",
   "@expenseCreationSplitMode": { "description": "Section label for split mode" },
+  "expenseCreationSplitTotal": "Total {amount}",
+  "@expenseCreationSplitTotal": { "description": "Running total shown beside the split mode label, e.g. 'Total $42.00'", "placeholders": { "amount": { "type": "String" } } },
   "expenseCreationSplitEqual": "Equal",
   "@expenseCreationSplitEqual": { "description": "Equal split mode" },
   "expenseCreationSplitExact": "Exact",
@@ -2473,6 +2475,8 @@
 
   "activityAddedToList": "Added {name} to a list \u00b7 {when}",
   "@activityAddedToList": { "description": "Activity: item added to list", "placeholders": { "name": { "type": "String" }, "when": { "type": "String" } } },
+  "activityAddedToNamedList": "Added {name} to {list} \u00b7 {when}",
+  "@activityAddedToNamedList": { "description": "Activity: item added to a named list", "placeholders": { "name": { "type": "String" }, "list": { "type": "String" }, "when": { "type": "String" } } },
   "activityAddedItemToList": "Added an item to a list \u00b7 {when}",
   "@activityAddedItemToList": { "description": "Activity: generic item added to list", "placeholders": { "when": { "type": "String" } } },
   "activityLoggedExpense": "Logged {name} \u00b7 {when}",

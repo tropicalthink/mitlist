@@ -67,7 +67,7 @@ class MitlistTheme {
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: MitlistColors.surfacePrimary,
-        selectedItemColor: MitlistColors.primary500,
+        selectedItemColor: MitlistColors.primary700,
         unselectedItemColor: MitlistColors.textTertiary,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
@@ -86,7 +86,7 @@ class MitlistTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: MitlistColors.primary500,
-          foregroundColor: MitlistColors.textOnPrimary,
+          foregroundColor: MitlistColors.neutral950,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           minimumSize: const Size(0, 44),
@@ -104,7 +104,7 @@ class MitlistTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: MitlistColors.primary600,
+          foregroundColor: MitlistColors.primary700,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           minimumSize: const Size(0, 44),
@@ -116,7 +116,7 @@ class MitlistTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: MitlistColors.primary600,
+          foregroundColor: MitlistColors.primary700,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           minimumSize: const Size(0, 44),
           shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
@@ -158,7 +158,7 @@ class MitlistTheme {
         backgroundColor: MitlistColors.surfacePrimary,
         elevation: 0,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(radiusLg)),
+          borderRadius: BorderRadius.zero,
           side: BorderSide(color: MitlistColors.borderPrimary, width: 2),
         ),
         titleTextStyle: textTheme.titleLarge,
@@ -167,7 +167,7 @@ class MitlistTheme {
         backgroundColor: MitlistColors.surfacePrimary,
         elevation: 0,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(radiusLg)),
+          borderRadius: BorderRadius.zero,
           side: BorderSide(color: MitlistColors.borderPrimary, width: 2),
         ),
       ),
@@ -193,7 +193,7 @@ class MitlistTheme {
         labelStyle: textTheme.labelSmall,
         secondaryLabelStyle: textTheme.labelSmall?.copyWith(color: MitlistColors.textOnPrimary),
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(radiusMd)),
+          borderRadius: BorderRadius.zero,
           side: BorderSide(color: MitlistColors.borderPrimary, width: 2),
         ),
         side: const BorderSide(color: MitlistColors.borderPrimary, width: 2),
@@ -210,7 +210,7 @@ class MitlistTheme {
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: MitlistColors.primary500,
-        foregroundColor: MitlistColors.textOnPrimary,
+        foregroundColor: MitlistColors.neutral950,
         elevation: 0,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.zero,
@@ -358,7 +358,7 @@ class MitlistTheme {
         backgroundColor: MitlistColors.neutral900,
         elevation: 0,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(radiusLg)),
+          borderRadius: BorderRadius.zero,
           side: BorderSide(color: MitlistColors.surfaceSoft, width: 2),
         ),
         titleTextStyle: textTheme.titleLarge,
@@ -367,7 +367,7 @@ class MitlistTheme {
         backgroundColor: MitlistColors.neutral900,
         elevation: 0,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(radiusLg)),
+          borderRadius: BorderRadius.zero,
           side: BorderSide(color: MitlistColors.surfaceSoft, width: 2),
         ),
       ),
@@ -393,7 +393,7 @@ class MitlistTheme {
         labelStyle: textTheme.labelSmall,
         secondaryLabelStyle: textTheme.labelSmall?.copyWith(color: MitlistColors.neutral950),
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(radiusMd)),
+          borderRadius: BorderRadius.zero,
           side: BorderSide(color: MitlistColors.surfaceSoft, width: 2),
         ),
         side: const BorderSide(color: MitlistColors.surfaceSoft, width: 2),

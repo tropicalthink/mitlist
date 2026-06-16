@@ -24,7 +24,10 @@ type ActivityEvent struct {
 	Title      string       `json:"title"`
 	CreatedAt  time.Time    `json:"created_at"`
 	UserID     *uuid.UUID   `json:"user_id,omitempty"`
+	UserName   *string      `json:"user_name,omitempty"`
 	GroupID    uuid.UUID    `json:"group_id"`
 	EntityType string       `json:"entity_type"`
 	EntityId   string       `json:"entity_id"`
+	// Context is a secondary label for the event, e.g. the list an item was added to.
+	Context *string `json:"context,omitempty"`
 }

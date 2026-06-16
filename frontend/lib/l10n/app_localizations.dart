@@ -4929,6 +4929,12 @@ abstract class AppLocalizations {
   /// **'Split mode'**
   String get expenseCreationSplitMode;
 
+  /// Running total shown beside the split mode label, e.g. 'Total $42.00'
+  ///
+  /// In en, this message translates to:
+  /// **'Total {amount}'**
+  String expenseCreationSplitTotal(String amount);
+
   /// Equal split mode
   ///
   /// In en, this message translates to:
@@ -7034,6 +7040,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Added {name} to a list · {when}'**
   String activityAddedToList(String name, String when);
+
+  /// Activity: item added to a named list
+  ///
+  /// In en, this message translates to:
+  /// **'Added {name} to {list} · {when}'**
+  String activityAddedToNamedList(String name, String list, String when);
 
   /// Activity: generic item added to list
   ///

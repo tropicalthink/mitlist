@@ -804,6 +804,7 @@
   "expenseCreationReceiptAttached": "Beleg angehängt. Zum erneuten Scannen tippen.",
   "expenseCreationScanReceiptSemantics": "Beleg per Kamera scannen",
   "expenseCreationSplitMode": "Aufteilungsmodus",
+  "expenseCreationSplitTotal": "Gesamt {amount}",
   "expenseCreationSplitEqual": "Gleich",
   "expenseCreationSplitExact": "Exakt",
   "expenseCreationSplitShares": "Anteile",
