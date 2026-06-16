@@ -1,4 +1,5 @@
 import '../../../storage/app_database.dart';
+import '../../canonical_display.dart';
 import '../canonical_resolver_service.dart' show ResolveResult;
 import '../grocery_classifier_service.dart';
 import '../static_embedding_service.dart';
@@ -131,11 +132,8 @@ class EnsembleResolver {
     );
   }
 
-  static String _preferredName(CanonicalItemsTableData item) {
-    if (item.nameDe.isNotEmpty) return _titleCase(item.nameDe);
-    if (item.nameEn.isNotEmpty) return _titleCase(item.nameEn);
-    return item.id;
-  }
+  static String _preferredName(CanonicalItemsTableData item) =>
+      _titleCase(canonicalDisplayName(item));
 
   static String _titleCase(String s) =>
       s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);

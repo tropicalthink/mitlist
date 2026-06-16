@@ -90,6 +90,8 @@ class GrocerySeedLoader {
         groupId: _globalGroupId,
         nameDe: Value(item['name_de'] as String? ?? ''),
         nameEn: Value(item['name_en'] as String? ?? ''),
+        nameFr: Value(item['name_fr'] as String? ?? ''),
+        nameEs: Value(item['name_es'] as String? ?? ''),
         category: Value(item['category'] as String? ?? ''),
         defaultUnit: Value(item['default_unit'] as String? ?? ''),
         isGlobal: const Value(true),

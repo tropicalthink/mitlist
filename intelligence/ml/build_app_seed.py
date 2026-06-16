@@ -25,7 +25,7 @@ CURATED_ALIASES = HERE / "data" / "curated_aliases.jsonl"
 # (plan 012 A4, typo-like subset only; cross-word mappings stay deferred).
 CURATED_MINED = HERE / "data" / "curated_aliases_mined.jsonl"
 ALIAS_BLOCKLIST = HERE / "data" / "alias_blocklist.jsonl"
-ASSET_VERSION = 4
+ASSET_VERSION = 5
 
 # Fine category -> coarse aisle label (matches existing app vocabulary).
 CATEGORY_TO_AISLE = {
