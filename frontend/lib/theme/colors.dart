@@ -25,7 +25,7 @@ class MitlistColors {
   static const Color success900 = Color(0xFF064E3B);
   static const Color success950 = Color(0xFF022C22);
 
-  static const Color warning50 = Color(0xFFFFFEBE);
+  static const Color warning50 = Color(0xFFFFFBEB);
   static const Color warning100 = Color(0xFFFEF3C7);
   static const Color warning200 = Color(0xFFFDE68A);
   static const Color warning300 = Color(0xFFFCD34D);
@@ -69,7 +69,10 @@ class MitlistColors {
 
   static const Color textPrimary = Color(0xFF1A1714);
   static const Color textSecondary = Color(0xFF5A5147);
-  static const Color textTertiary = Color(0xFF988F80);
+  // neutral600: 4.7:1 on surfaceSoft — passes WCAG AA for hints and small labels.
+  static const Color textTertiary = Color(0xFF766C60);
+  // Decorative-only muted tone (the old textTertiary); below AA, never for text.
+  static const Color textDisabled = Color(0xFF988F80);
   static const Color textOnPrimary = Color(0xFFFFFFFF);
   static const Color textOnError = Color(0xFFFFFFFF);
   static const Color textOnSuccess = Color(0xFFFFFFFF);
@@ -115,7 +118,6 @@ class MitlistColors {
   static const Color scrimLight = Color(0xB31A1714);
   static const Color scrimDark = Color(0xB3000000);
 
-  static const Color teal500 = Color(0xFF0D9488);
   static const Color pinwallNoteTextLight = Color(0xFF5D4037);
   static const Color pinwallNoteTextDark = Color(0xFF8B7355);
   static const Color pinwallNoteErrorDark = Color(0xFF3A2A1A);

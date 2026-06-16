@@ -3676,6 +3676,7 @@
   "@expenseCreationSplitMode": {
     "description": "Section label for split mode"
   },
+  "expenseCreationSplitTotal": "Total {amount}",
   "expenseCreationSplitEqual": "Égal",
   "@expenseCreationSplitEqual": {
     "description": "Equal split mode"

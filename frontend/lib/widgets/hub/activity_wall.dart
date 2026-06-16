@@ -101,7 +101,8 @@ class _WallItem extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
-    final userLabel = formatUserLabel(item.userId ?? '', currentUserId, l10n);
+    final userLabel = formatUserLabel(item.userId ?? '', currentUserId, l10n,
+        name: item.userName);
     final when = relativeDay(item.createdAt);
     final message = formatActivityLine(item, l10n);
     final tappable = isNavigableAction(item.entityType);

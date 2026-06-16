@@ -69,10 +69,10 @@ class MitlistTypography {
         color: color ?? MitlistColors.textTertiary,
       );
 
-  static TextStyle monoBody({Color? color}) => TextStyle(
+  static TextStyle monoBody({Color? color, FontWeight weight = FontWeight.w700}) => TextStyle(
         fontFamily: monoFamily,
         fontSize: 14,
-        fontWeight: FontWeight.w700,
+        fontWeight: weight,
         height: 1.43,
         letterSpacing: 0,
         color: color ?? MitlistColors.textPrimary,
