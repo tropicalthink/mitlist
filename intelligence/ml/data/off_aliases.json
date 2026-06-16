@@ -2,7 +2,7 @@
  "_attribution": "Data source: Open Food Facts (https://world.openfoodfacts.org), licensed under the Open Database License (ODbL) v1.0 (https://opendatacommons.org/licenses/odbl/). This derived brand index is kept separable from the canonical seed per ODbL share-alike.",
  "_license": "ODbL-1.0",
  "_generator": "off_ground.py",
- "version": 1,
+ "version": 2,
  "items": {
   "chocolate_hazelnut_spread": {
    "und": [
@@ -16,6 +16,16 @@
     "noiseraie",
     "nutella",
     "rigoni di asiago"
+   ],
+   "en": [
+    "hazelnut chocolate spread",
+    "hazelnut spread with cocoa"
+   ],
+   "de": [
+    "nuss-nugat-creme"
+   ],
+   "fr": [
+    "nocciolata"
    ]
   },
   "cola": {
@@ -29,12 +39,28 @@
     "dr pepper",
     "freeway",
     "pepsi"
+   ],
+   "en": [
+    "coca cola",
+    "coke",
+    "spezi"
+   ],
+   "de": [
+    "coca cola",
+    "spezi"
+   ],
+   "fr": [
+    "coca cola",
+    "coke"
    ]
   },
   "ketchup": {
    "und": [
     "heinz",
     "hela"
+   ],
+   "fr": [
+    "ketchup à la tomate"
    ]
   },
   "breakfast_cereal": {
@@ -57,6 +83,32 @@
     "special k",
     "turtle",
     "weetabix"
+   ],
+   "en": [
+    "all-bran fibre plus",
+    "chocapic",
+    "choco hoops",
+    "cinnamon toast crunch",
+    "honey hoops",
+    "honey nut cheerios",
+    "raisin bran",
+    "rice krispies",
+    "rice snaps",
+    "shredded wheat",
+    "shreddies",
+    "special",
+    "special flakes"
+   ],
+   "fr": [
+    "chocapic",
+    "coco pops",
+    "céréales petit déjeuner",
+    "nestle",
+    "nestle céréales"
+   ],
+   "es": [
+    "chocapic",
+    "special"
    ]
   },
   "granola_bar": {
@@ -79,6 +131,14 @@
     "rxbar",
     "sportyfeel",
     "trek"
+   ],
+   "en": [
+    "chocolate peanut butter",
+    "chocolate sea salt",
+    "protein bar"
+   ],
+   "fr": [
+    "protein bar"
    ]
   },
   "cookies": {
@@ -186,6 +246,109 @@
     "tower gate",
     "triscuit",
     "tuc"
+   ],
+   "en": [
+    "all butter shortbread fingers",
+    "baked snack crackers",
+    "biscoff",
+    "bourbon creams",
+    "chocolate cookies",
+    "chocolate sandwich cookies",
+    "cream crackers",
+    "custard creams",
+    "digestive",
+    "digestives",
+    "ginger nuts",
+    "madeleines",
+    "multigrain crackers",
+    "oatcakes",
+    "petites madeleines",
+    "shortbread fingers",
+    "speculoos"
+   ],
+   "fr": [
+    "assortiment de biscuits",
+    "barre pâtissière",
+    "beurre pocket",
+    "biscoff",
+    "biscuit adapté à bébé",
+    "biscuits aux céréales",
+    "biscuits crackers",
+    "biscuits feuilletés",
+    "biscuits fourrés au chocolat",
+    "biscuits fourrés parfum chocolat",
+    "biscuits pur beurre",
+    "biscuits sablés au beurre",
+    "biscuits sablés pur beurre",
+    "biscuits sésame",
+    "biscuits à l'avoine",
+    "boudoirs",
+    "cake aux fruits",
+    "cake choc",
+    "choco brownie",
+    "cookies chocolat",
+    "cookies pépites de chocolat",
+    "cream crackers",
+    "digestive",
+    "financiers",
+    "flan pâtissier",
+    "fondant au chocolat",
+    "galette pur beurre",
+    "galettes au beurre",
+    "galettes au bon beurre",
+    "galettes bretonnes",
+    "galettes bretonnes pur beurre",
+    "galettes de pont-aven",
+    "galettes pur beurre",
+    "gaufres au miel",
+    "gaufres liégeoises aux perles",
+    "gâteau au fromage blanc",
+    "gâteau marbré au chocolat",
+    "langues de chat",
+    "madeleine",
+    "madeleines",
+    "madeleines coquilles",
+    "madeleines longues",
+    "madeleines moelleuses",
+    "madeleines pépites de chocolat",
+    "marbré au chocolat",
+    "moelleux au chocolat",
+    "moelleux chocolat",
+    "pain d'épices au miel",
+    "palets bretons",
+    "palets bretons pur beurre",
+    "palets pur beurre",
+    "palmiers",
+    "palmiers pur beurre",
+    "panettone",
+    "panettone classico",
+    "petites madeleines",
+    "petits beurre",
+    "pâte sablée",
+    "quatre quarts pur beurre",
+    "quatre-quarts",
+    "quatre-quarts pur beurre",
+    "sablés",
+    "sablés pur beurre",
+    "speculoos",
+    "spéculoos",
+    "tiramisu",
+    "véritable petit beurre"
+   ],
+   "es": [
+    "biscoff",
+    "bizcochos de soletilla",
+    "campurrianas",
+    "digestive",
+    "digestive avena",
+    "dinosaurus",
+    "galletas digestive",
+    "maría dorada",
+    "speculoos",
+    "tortas de aceite"
+   ],
+   "de": [
+    "gewürz-spekulatius"
    ]
   },
   "cream_cheese": {
@@ -198,6 +361,25 @@
     "petits filous pots",
     "philadelphia",
     "tartare"
+   ],
+   "fr": [
+    "ail fines herbes",
+    "faisselle",
+    "fromage blanc nature",
+    "fromage frais aux fruits",
+    "skyr nature"
+   ],
+   "de": [
+    "frischkäse kräuter",
+    "körniger frischkäse",
+    "speisequark",
+    "speisequark magerstufe"
+   ],
+   "en": [
+    "fromage blanc nature",
+    "körniger frischkäse",
+    "philadelphia",
+    "skyr nature"
    ]
   },
   "pasta": {
@@ -238,6 +420,52 @@
     "vitasia",
     "yum yum",
     "zapetti"
+   ],
+   "en": [
+    "buldak spicy ramen",
+    "durum wheat semolina pasta",
+    "gnocchi à poêler",
+    "macaroni cheese",
+    "medium egg noodles",
+    "penne rigate",
+    "pipe rigate",
+    "soba wok style",
+    "superior quality pasta"
+   ],
+   "de": [
+    "nudeln fusilli",
+    "penne rigate",
+    "teigwaren aus hartweizengrieß",
+    "teigwaren aus vollkorn-hartweizengrieß"
+   ],
+   "fr": [
+    "fusilli au blé complet",
+    "gnocchi à poêler",
+    "nouilles instantanées",
+    "nouilles instantanées saveur boeuf",
+    "nouilles instantanées saveur poulet",
+    "penne rigate",
+    "pâtes alimentaires",
+    "pâtes alimentaires complètes",
+    "ravioles du dauphiné",
+    "ravioli aux légumes",
+    "ravioli bolognaise",
+    "ravioli fromages",
+    "ravioli légumes",
+    "ravioli pur boeuf",
+    "ravioli pur bœuf",
+    "ravioli ricotta épinards",
+    "shirataki de konjac",
+    "spaghetti au blé complet",
+    "spaghetti blé complet",
+    "spécialité céréalière",
+    "tagliatelles aux oeufs frais",
+    "tagliatelles aux œufs frais",
+    "tortellini ricotta épinards"
+   ],
+   "es": [
+    "penne rigate",
+    "spaghetti integral"
    ]
   },
   "potato_chips": {
@@ -259,11 +487,59 @@
     "tyrrells",
     "tyrrell’s",
     "walkers"
+   ],
+   "en": [
+    "chips nature",
+    "chips paysanne nature",
+    "chips à l'ancienne nature",
+    "kettle cooked potato chips",
+    "potato crisps",
+    "ready salted crisps",
+    "salt vinegar",
+    "sour cream onion"
+   ],
+   "es": [
+    "dipster",
+    "patatas fritas",
+    "salt vinegar",
+    "sour cream onion"
+   ],
+   "fr": [
+    "chips extra craquantes nature",
+    "chips nature",
+    "chips paysanne nature",
+    "chips paysannes nature",
+    "chips saveur barbecue",
+    "chips saveur poulet rôti",
+    "chips à l'ancienne",
+    "chips à l'ancienne nature",
+    "recette à l'ancienne nature",
+    "sour cream onion",
+    "tuiles goût paprika"
+   ],
+   "de": [
+    "sour cream onion"
    ]
   },
   "tortilla_chips": {
    "und": [
     "doritos"
+   ],
+   "en": [
+    "blue corn tortilla chips",
+    "lightly salted tortilla chips",
+    "nacho cheese",
+    "tortillas chips"
+   ],
+   "fr": [
+    "nacho cheese",
+    "tortilla chips nature",
+    "tortillas chips",
+    "tortillas chips nature"
+   ],
+   "es": [
+    "aperitivo de maíz frito",
+    "aperitivo frito de maíz"
    ]
   },
   "chocolate_bar": {
@@ -294,6 +570,29 @@
     "toblerone",
     "twix",
     "villars"
+   ],
+   "fr": [
+    "bueno",
+    "lindor",
+    "lindor lait",
+    "m m's peanut",
+    "orangettes",
+    "rocher",
+    "schoko-bons"
+   ],
+   "de": [
+    "gefüllte vollmilchschokolade mit milchfüllung",
+    "schoko-bons"
+   ],
+   "en": [
+    "bueno",
+    "bueno white",
+    "maltesers",
+    "peanut m m's",
+    "schoko-bons"
+   ],
+   "es": [
+    "bueno"
    ]
   },
   "dark_chocolate": {
@@ -303,6 +602,11 @@
     "lindt & sprungli",
     "lindt & sprüngli",
     "lindt excellence"
+   ],
+   "fr": [
+    "chocolat noir cacao",
+    "chocolat noir extra-fin",
+    "noir dessert"
    ]
   },
   "peanut_butter": {
@@ -313,6 +617,34 @@
     "meridian",
     "skippy",
     "whole earth"
+   ],
+   "en": [
+    "creamy peanut butter",
+    "erdnussbutter crunchy",
+    "peanut butter creamy",
+    "peanut butter smooth",
+    "peanut butter spread",
+    "pindakaas",
+    "smooth peanut butter"
+   ],
+   "fr": [
+    "beurre de cacahuète crémeux",
+    "beurre de cacahuètes",
+    "beurre de cacahuètes croustillant",
+    "beurre de cacahuètes crunchy",
+    "beurre de cacahuètes crémeux",
+    "creamy peanut butter",
+    "peanut butter creamy",
+    "peanut butter smooth",
+    "purée cacahuète",
+    "purée de cacahuète",
+    "purée de cacahuètes",
+    "pâte d'arachide",
+    "smooth peanut butter"
+   ],
+   "de": [
+    "erdnussbutter crunchy",
+    "erdnussmus"
    ]
   },
   "mustard": {
@@ -325,6 +657,21 @@
     "frenchs",
     "maille",
     "reine de dijon"
+   ],
+   "en": [
+    "english mustard",
+    "senf mittelscharf",
+    "wholegrain mustard",
+    "yellow mustard"
+   ],
+   "fr": [
+    "moutarde de dijon forte",
+    "moutarde mi-forte",
+    "moutarde à l'ancienne",
+    "yellow mustard"
+   ],
+   "de": [
+    "senf mittelscharf"
    ]
   },
   "gummy_bears": {
@@ -333,6 +680,10 @@
     "katjes",
     "lutti",
     "trolli"
+   ],
+   "fr": [
+    "confiserie assortie",
+    "confiserie gélifiée fantaisie"
    ]
   },
   "mayonnaise": {
@@ -343,6 +694,24 @@
     "hellmanns",
     "lesieur",
     "ligeresa"
+   ],
+   "en": [
+    "maionese",
+    "real mayo",
+    "real mayonnaise",
+    "seriously good mayonnaise",
+    "vegan mayo"
+   ],
+   "fr": [
+    "mayonnaise allégée",
+    "mayonnaise comme",
+    "real mayonnaise"
+   ],
+   "de": [
+    "delikatess mayonnaise"
+   ],
+   "es": [
+    "gran mayonesa"
    ]
   },
   "muesli": {
@@ -367,12 +736,46 @@
     "terres et cereales bio",
     "terres et céréales",
     "terres et céréales bio"
+   ],
+   "en": [
+    "cereals mix",
+    "super berry granola"
+   ],
+   "fr": [
+    "muesli au chocolat",
+    "muesli aux fruits",
+    "muesli avoine chocolat",
+    "muesli chocolat",
+    "muesli chocolat noir",
+    "muesli croustillant",
+    "muesli croustillant aux fruits",
+    "muesli croustillant chocolat",
+    "muesli croustillant fruits rouges",
+    "muesli croustillant noix",
+    "muesli crunchy",
+    "muesli fruits",
+    "muesli superfruits"
+   ],
+   "de": [
+    "knusper müsli",
+    "knusper müsli schoko",
+    "schoko müsli"
+   ],
+   "es": [
+    "muesli crujiente",
+    "muesli frutas"
    ]
   },
   "popcorn": {
    "und": [
     "proper corn",
     "skinny pop"
+   ],
+   "en": [
+    "sweet salty popcorn"
+   ],
+   "fr": [
+    "pop corn"
    ]
   },
   "mineral_water": {
@@ -402,6 +805,29 @@
     "st yorre",
     "vittel",
     "wattwiller"
+   ],
+   "en": [
+    "acqua minerale naturale",
+    "sparkling natural mineral water"
+   ],
+   "fr": [
+    "acqua naturale",
+    "eau de source",
+    "eau minerale naturelle",
+    "eau minérale naturelle",
+    "eau minérale naturelle gazeuse",
+    "eau minérale naturelle pétillante",
+    "eau pétillante"
+   ],
+   "de": [
+    "mineralwasser medium",
+    "mineralwasser still",
+    "natürliches mineralwasser",
+    "natürliches mineralwasser ohne kohlensäure"
+   ],
+   "es": [
+    "agua con gas",
+    "agua mineral grande"
    ]
   },
   "olive_oil": {
@@ -430,11 +856,32 @@
     "soléou",
     "terra creta",
     "terra delyssa"
+   ],
+   "de": [
+    "natives olivenöl",
+    "olivenöl nativ"
+   ],
+   "fr": [
+    "aceite de oliva virgen",
+    "huile d'olive extra vierge",
+    "huile d'olive vierge",
+    "huile d’olive vierge",
+    "natives olivenöl"
+   ],
+   "en": [
+    "huile d'olive vierge",
+    "natives olivenöl"
+   ],
+   "es": [
+    "aceite de oliva virgen"
    ]
   },
   "pretzel": {
    "und": [
     "ancel"
+   ],
+   "fr": [
+    "sticks bretzels"
    ]
   },
   "drinking_yogurt": {
@@ -442,6 +889,9 @@
     "actimel",
     "hipro",
     "yop gf"
+   ],
+   "fr": [
+    "actimel"
    ]
   },
   "soy_milk": {
@@ -455,6 +905,25 @@
    "und": [
     "flahavan's",
     "flahavans"
+   ],
+   "en": [
+    "oat flakes",
+    "scottish porridge oats"
+   ],
+   "es": [
+    "copos de avena integral",
+    "copos de avena suaves"
+   ],
+   "fr": [
+    "flocons d'avoine complets",
+    "flocons d'avoine complète",
+    "flocons d'avoine petits",
+    "gros flocons d'avoine",
+    "petits flocons d'avoine"
+   ],
+   "de": [
+    "haferflocken feinblatt",
+    "haferflocken kernig"
    ]
   },
   "fruit_kefir": {
@@ -462,6 +931,13 @@
     "biotiful gut health",
     "pastoret",
     "yeo valley organic"
+   ]
+  },
+  "corn_flakes": {
+   "fr": [
+    "corn flakes nature",
+    "céréales corn flakes",
+    "pétales de maïs"
    ]
   }
  }

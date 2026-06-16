@@ -1,0 +1,341 @@
+term	lang	item_id	item_name	products	share	items
+rice krispies	en	breakfast_cereal	Breakfast Cereal	9	1.0	1
+shredded wheat	en	breakfast_cereal	Breakfast Cereal	8	1.0	1
+special	en	breakfast_cereal	Breakfast Cereal	6	1.0	1
+honey nut cheerios	en	breakfast_cereal	Breakfast Cereal	5	1.0	1
+shreddies	en	breakfast_cereal	Breakfast Cereal	5	1.0	1
+cinnamon toast crunch	en	breakfast_cereal	Breakfast Cereal	4	1.0	1
+choco hoops	en	breakfast_cereal	Breakfast Cereal	4	1.0	1
+honey hoops	en	breakfast_cereal	Breakfast Cereal	4	1.0	1
+special flakes	en	breakfast_cereal	Breakfast Cereal	4	1.0	1
+all-bran fibre plus	en	breakfast_cereal	Breakfast Cereal	4	1.0	1
+rice snaps	en	breakfast_cereal	Breakfast Cereal	4	1.0	1
+chocapic	en	breakfast_cereal	Breakfast Cereal	4	1.0	1
+raisin bran	en	breakfast_cereal	Breakfast Cereal	4	1.0	1
+special	es	breakfast_cereal	Breakfast Cereal	5	1.0	1
+chocapic	es	breakfast_cereal	Breakfast Cereal	5	1.0	1
+nestle céréales	fr	breakfast_cereal	Breakfast Cereal	12	1.0	1
+céréales petit déjeuner	fr	breakfast_cereal	Breakfast Cereal	4	1.0	1
+coco pops	fr	breakfast_cereal	Breakfast Cereal	4	1.0	1
+nestle	fr	breakfast_cereal	Breakfast Cereal	4	1.0	1
+chocapic	fr	breakfast_cereal	Breakfast Cereal	4	1.0	1
+schoko-bons	de	chocolate_bar	Chocolate Bar	5	1.0	1
+gefüllte vollmilchschokolade mit milchfüllung	de	chocolate_bar	Chocolate Bar	4	1.0	1
+bueno	en	chocolate_bar	Chocolate Bar	9	1.0	1
+schoko-bons	en	chocolate_bar	Chocolate Bar	5	1.0	1
+peanut m m's	en	chocolate_bar	Chocolate Bar	4	1.0	1
+bueno white	en	chocolate_bar	Chocolate Bar	4	1.0	1
+maltesers	en	chocolate_bar	Chocolate Bar	4	1.0	1
+bueno	es	chocolate_bar	Chocolate Bar	5	1.0	1
+bueno	fr	chocolate_bar	Chocolate Bar	7	1.0	1
+lindor lait	fr	chocolate_bar	Chocolate Bar	5	1.0	1
+lindor	fr	chocolate_bar	Chocolate Bar	5	1.0	1
+m m's peanut	fr	chocolate_bar	Chocolate Bar	5	1.0	1
+schoko-bons	fr	chocolate_bar	Chocolate Bar	5	1.0	1
+orangettes	fr	chocolate_bar	Chocolate Bar	4	1.0	1
+rocher	fr	chocolate_bar	Chocolate Bar	4	1.0	1
+nuss-nugat-creme	de	chocolate_hazelnut_spread	Chocolate Hazelnut Spread	7	1.0	1
+hazelnut spread with cocoa	en	chocolate_hazelnut_spread	Chocolate Hazelnut Spread	8	1.0	1
+hazelnut chocolate spread	en	chocolate_hazelnut_spread	Chocolate Hazelnut Spread	8	1.0	1
+nocciolata	fr	chocolate_hazelnut_spread	Chocolate Hazelnut Spread	4	1.0	1
+spezi	de	cola	Cola	7	1.0	1
+coca cola	de	cola	Cola	6	1.0	1
+coca cola	en	cola	Cola	11	1.0	1
+coke	en	cola	Cola	8	1.0	1
+spezi	en	cola	Cola	4	1.0	1
+coca cola	fr	cola	Cola	13	1.0	1
+coke	fr	cola	Cola	4	1.0	1
+gewürz-spekulatius	de	cookies	Cookies	5	1.0	1
+cream crackers	en	cookies	Cookies	14	1.0	1
+biscoff	en	cookies	Cookies	11	1.0	1
+digestives	en	cookies	Cookies	10	1.0	1
+digestive	en	cookies	Cookies	9	1.0	1
+speculoos	en	cookies	Cookies	8	1.0	1
+baked snack crackers	en	cookies	Cookies	6	1.0	1
+oatcakes	en	cookies	Cookies	6	1.0	1
+multigrain crackers	en	cookies	Cookies	6	1.0	1
+petites madeleines	en	cookies	Cookies	6	1.0	1
+bourbon creams	en	cookies	Cookies	6	1.0	1
+all butter shortbread fingers	en	cookies	Cookies	5	1.0	1
+chocolate sandwich cookies	en	cookies	Cookies	4	1.0	1
+ginger nuts	en	cookies	Cookies	4	1.0	1
+madeleines	en	cookies	Cookies	4	1.0	1
+custard creams	en	cookies	Cookies	4	1.0	1
+chocolate cookies	en	cookies	Cookies	4	1.0	1
+shortbread fingers	en	cookies	Cookies	4	1.0	1
+digestive avena	es	cookies	Cookies	8	1.0	1
+digestive	es	cookies	Cookies	8	1.0	1
+campurrianas	es	cookies	Cookies	6	1.0	1
+bizcochos de soletilla	es	cookies	Cookies	5	1.0	1
+speculoos	es	cookies	Cookies	4	1.0	1
+biscoff	es	cookies	Cookies	4	1.0	1
+galletas digestive	es	cookies	Cookies	4	1.0	1
+dinosaurus	es	cookies	Cookies	4	1.0	1
+tortas de aceite	es	cookies	Cookies	4	1.0	1
+maría dorada	es	cookies	Cookies	4	1.0	1
+madeleines	fr	cookies	Cookies	16	1.0	1
+speculoos	fr	cookies	Cookies	16	1.0	1
+galettes pur beurre	fr	cookies	Cookies	13	1.0	1
+madeleine	fr	cookies	Cookies	12	1.0	1
+palmiers	fr	cookies	Cookies	12	1.0	1
+galettes bretonnes	fr	cookies	Cookies	12	1.0	1
+palets bretons	fr	cookies	Cookies	12	1.0	1
+galettes bretonnes pur beurre	fr	cookies	Cookies	11	1.0	1
+boudoirs	fr	cookies	Cookies	11	1.0	1
+biscuits feuilletés	fr	cookies	Cookies	10	1.0	1
+palets bretons pur beurre	fr	cookies	Cookies	10	1.0	1
+quatre-quarts pur beurre	fr	cookies	Cookies	10	1.0	1
+pain d'épices au miel	fr	cookies	Cookies	10	1.0	1
+sablés	fr	cookies	Cookies	9	1.0	1
+spéculoos	fr	cookies	Cookies	9	1.0	1
+sablés pur beurre	fr	cookies	Cookies	8	1.0	1
+madeleines coquilles	fr	cookies	Cookies	8	1.0	1
+petits beurre	fr	cookies	Cookies	8	1.0	1
+digestive	fr	cookies	Cookies	8	1.0	1
+moelleux au chocolat	fr	cookies	Cookies	7	1.0	1
+biscuits aux céréales	fr	cookies	Cookies	7	1.0	1
+galettes au beurre	fr	cookies	Cookies	7	1.0	1
+biscuits fourrés parfum chocolat	fr	cookies	Cookies	7	1.0	1
+quatre-quarts	fr	cookies	Cookies	7	1.0	1
+pâte sablée	fr	cookies	Cookies	6	1.0	1
+madeleines moelleuses	fr	cookies	Cookies	6	1.0	1
+gâteau marbré au chocolat	fr	cookies	Cookies	6	1.0	1
+cookies pépites de chocolat	fr	cookies	Cookies	6	1.0	1
+langues de chat	fr	cookies	Cookies	6	1.0	1
+fondant au chocolat	fr	cookies	Cookies	6	1.0	1
+biscuits sablés au beurre	fr	cookies	Cookies	5	1.0	1
+tiramisu	fr	cookies	Cookies	5	1.0	1
+madeleines longues	fr	cookies	Cookies	5	1.0	1
+panettone	fr	cookies	Cookies	5	1.0	1
+biscuits fourrés au chocolat	fr	cookies	Cookies	5	1.0	1
+petites madeleines	fr	cookies	Cookies	5	1.0	1
+gaufres au miel	fr	cookies	Cookies	5	1.0	1
+cake aux fruits	fr	cookies	Cookies	5	1.0	1
+madeleines pépites de chocolat	fr	cookies	Cookies	5	1.0	1
+cream crackers	fr	cookies	Cookies	5	1.0	1
+biscoff	fr	cookies	Cookies	5	1.0	1
+biscuits pur beurre	fr	cookies	Cookies	4	1.0	1
+biscuits sablés pur beurre	fr	cookies	Cookies	4	1.0	1
+gaufres liégeoises aux perles	fr	cookies	Cookies	4	1.0	1
+panettone classico	fr	cookies	Cookies	4	1.0	1
+barre pâtissière	fr	cookies	Cookies	4	1.0	1
+marbré au chocolat	fr	cookies	Cookies	4	1.0	1
+biscuits crackers	fr	cookies	Cookies	4	1.0	1
+véritable petit beurre	fr	cookies	Cookies	4	1.0	1
+biscuit adapté à bébé	fr	cookies	Cookies	4	1.0	1
+galette pur beurre	fr	cookies	Cookies	4	1.0	1
+galettes de pont-aven	fr	cookies	Cookies	4	1.0	1
+assortiment de biscuits	fr	cookies	Cookies	4	1.0	1
+biscuits sésame	fr	cookies	Cookies	4	1.0	1
+galettes au bon beurre	fr	cookies	Cookies	4	1.0	1
+cookies chocolat	fr	cookies	Cookies	4	1.0	1
+quatre quarts pur beurre	fr	cookies	Cookies	4	1.0	1
+gâteau au fromage blanc	fr	cookies	Cookies	4	1.0	1
+beurre pocket	fr	cookies	Cookies	4	1.0	1
+palmiers pur beurre	fr	cookies	Cookies	4	1.0	1
+palets pur beurre	fr	cookies	Cookies	4	1.0	1
+financiers	fr	cookies	Cookies	4	1.0	1
+flan pâtissier	fr	cookies	Cookies	4	1.0	1
+biscuits à l'avoine	fr	cookies	Cookies	4	1.0	1
+moelleux chocolat	fr	cookies	Cookies	4	1.0	1
+cake choc	fr	cookies	Cookies	4	1.0	1
+choco brownie	fr	cookies	Cookies	4	1.0	1
+pétales de maïs	fr	corn_flakes	Corn Flakes	9	1.0	1
+céréales corn flakes	fr	corn_flakes	Corn Flakes	4	1.0	1
+corn flakes nature	fr	corn_flakes	Corn Flakes	4	1.0	1
+körniger frischkäse	de	cream_cheese	Cream Cheese	10	1.0	1
+speisequark magerstufe	de	cream_cheese	Cream Cheese	6	1.0	1
+speisequark	de	cream_cheese	Cream Cheese	4	1.0	1
+frischkäse kräuter	de	cream_cheese	Cream Cheese	4	1.0	1
+körniger frischkäse	en	cream_cheese	Cream Cheese	9	1.0	1
+skyr nature	en	cream_cheese	Cream Cheese	6	1.0	1
+fromage blanc nature	en	cream_cheese	Cream Cheese	4	1.0	1
+philadelphia	en	cream_cheese	Cream Cheese	4	1.0	1
+fromage blanc nature	fr	cream_cheese	Cream Cheese	17	1.0	1
+skyr nature	fr	cream_cheese	Cream Cheese	8	1.0	1
+faisselle	fr	cream_cheese	Cream Cheese	7	1.0	1
+fromage frais aux fruits	fr	cream_cheese	Cream Cheese	4	1.0	1
+ail fines herbes	fr	cream_cheese	Cream Cheese	4	1.0	1
+chocolat noir extra-fin	fr	dark_chocolate	Dark Chocolate	5	1.0	1
+chocolat noir cacao	fr	dark_chocolate	Dark Chocolate	4	1.0	1
+noir dessert	fr	dark_chocolate	Dark Chocolate	4	1.0	1
+actimel	fr	drinking_yogurt	Drinking Yogurt	5	1.0	1
+protein bar	en	granola_bar	Granola Bar	14	0.93	2
+chocolate peanut butter	en	granola_bar	Granola Bar	4	1.0	1
+chocolate sea salt	en	granola_bar	Granola Bar	4	1.0	1
+protein bar	fr	granola_bar	Granola Bar	6	1.0	1
+confiserie gélifiée fantaisie	fr	gummy_bears	Gummy Bears	8	1.0	1
+confiserie assortie	fr	gummy_bears	Gummy Bears	7	1.0	1
+ketchup à la tomate	fr	ketchup	Ketchup	4	1.0	1
+delikatess mayonnaise	de	mayonnaise	Mayonnaise	5	1.0	1
+real mayonnaise	en	mayonnaise	Mayonnaise	22	1.0	1
+maionese	en	mayonnaise	Mayonnaise	5	1.0	1
+real mayo	en	mayonnaise	Mayonnaise	4	1.0	1
+seriously good mayonnaise	en	mayonnaise	Mayonnaise	4	1.0	1
+vegan mayo	en	mayonnaise	Mayonnaise	4	1.0	1
+gran mayonesa	es	mayonnaise	Mayonnaise	4	1.0	1
+real mayonnaise	fr	mayonnaise	Mayonnaise	14	1.0	1
+mayonnaise allégée	fr	mayonnaise	Mayonnaise	4	1.0	1
+mayonnaise comme	fr	mayonnaise	Mayonnaise	4	1.0	1
+natürliches mineralwasser	de	mineral_water	Mineral Water	9	1.0	1
+mineralwasser still	de	mineral_water	Mineral Water	6	1.0	1
+natürliches mineralwasser ohne kohlensäure	de	mineral_water	Mineral Water	4	1.0	1
+mineralwasser medium	de	mineral_water	Mineral Water	4	1.0	1
+sparkling natural mineral water	en	mineral_water	Mineral Water	5	1.0	1
+acqua minerale naturale	en	mineral_water	Mineral Water	4	1.0	1
+agua mineral grande	es	mineral_water	Mineral Water	6	1.0	1
+agua con gas	es	mineral_water	Mineral Water	4	1.0	1
+eau minérale naturelle	fr	mineral_water	Mineral Water	54	1.0	1
+eau minerale naturelle	fr	mineral_water	Mineral Water	14	1.0	1
+eau de source	fr	mineral_water	Mineral Water	12	1.0	1
+eau minérale naturelle pétillante	fr	mineral_water	Mineral Water	7	1.0	1
+eau pétillante	fr	mineral_water	Mineral Water	4	1.0	1
+eau minérale naturelle gazeuse	fr	mineral_water	Mineral Water	4	1.0	1
+acqua naturale	fr	mineral_water	Mineral Water	4	1.0	1
+schoko müsli	de	muesli	Muesli	9	1.0	1
+knusper müsli schoko	de	muesli	Muesli	4	1.0	1
+knusper müsli	de	muesli	Muesli	4	1.0	1
+cereals mix	en	muesli	Muesli	5	1.0	1
+super berry granola	en	muesli	Muesli	4	1.0	1
+muesli crujiente	es	muesli	Muesli	4	1.0	1
+muesli frutas	es	muesli	Muesli	4	1.0	1
+muesli croustillant chocolat	fr	muesli	Muesli	9	1.0	1
+muesli chocolat	fr	muesli	Muesli	5	1.0	1
+muesli croustillant	fr	muesli	Muesli	5	1.0	1
+muesli croustillant noix	fr	muesli	Muesli	5	1.0	1
+muesli aux fruits	fr	muesli	Muesli	4	1.0	1
+muesli crunchy	fr	muesli	Muesli	4	1.0	1
+muesli croustillant fruits rouges	fr	muesli	Muesli	4	1.0	1
+muesli avoine chocolat	fr	muesli	Muesli	4	1.0	1
+muesli croustillant aux fruits	fr	muesli	Muesli	4	1.0	1
+muesli chocolat noir	fr	muesli	Muesli	4	1.0	1
+muesli fruits	fr	muesli	Muesli	4	1.0	1
+muesli au chocolat	fr	muesli	Muesli	4	1.0	1
+muesli superfruits	fr	muesli	Muesli	4	1.0	1
+senf mittelscharf	de	mustard	Mustard	5	1.0	1
+yellow mustard	en	mustard	Mustard	12	1.0	1
+english mustard	en	mustard	Mustard	6	1.0	1
+wholegrain mustard	en	mustard	Mustard	5	1.0	1
+senf mittelscharf	en	mustard	Mustard	4	1.0	1
+moutarde à l'ancienne	fr	mustard	Mustard	16	1.0	1
+moutarde de dijon forte	fr	mustard	Mustard	11	1.0	1
+moutarde mi-forte	fr	mustard	Mustard	8	1.0	1
+yellow mustard	fr	mustard	Mustard	4	1.0	1
+natives olivenöl	de	olive_oil	Olive Oil	13	1.0	1
+olivenöl nativ	de	olive_oil	Olive Oil	4	1.0	1
+huile d'olive vierge	en	olive_oil	Olive Oil	7	1.0	1
+natives olivenöl	en	olive_oil	Olive Oil	6	1.0	1
+aceite de oliva virgen	es	olive_oil	Olive Oil	13	1.0	1
+huile d'olive vierge	fr	olive_oil	Olive Oil	97	1.0	1
+huile d’olive vierge	fr	olive_oil	Olive Oil	6	1.0	1
+huile d'olive extra vierge	fr	olive_oil	Olive Oil	5	1.0	1
+aceite de oliva virgen	fr	olive_oil	Olive Oil	5	1.0	1
+natives olivenöl	fr	olive_oil	Olive Oil	4	1.0	1
+teigwaren aus hartweizengrieß	de	pasta	Pasta	11	1.0	1
+penne rigate	de	pasta	Pasta	10	1.0	1
+nudeln fusilli	de	pasta	Pasta	4	1.0	1
+teigwaren aus vollkorn-hartweizengrieß	de	pasta	Pasta	4	1.0	1
+penne rigate	en	pasta	Pasta	19	1.0	1
+superior quality pasta	en	pasta	Pasta	15	1.0	1
+durum wheat semolina pasta	en	pasta	Pasta	10	1.0	1
+medium egg noodles	en	pasta	Pasta	8	1.0	1
+soba wok style	en	pasta	Pasta	5	1.0	1
+macaroni cheese	en	pasta	Pasta	4	1.0	1
+pipe rigate	en	pasta	Pasta	4	1.0	1
+buldak spicy ramen	en	pasta	Pasta	4	1.0	1
+gnocchi à poêler	en	pasta	Pasta	4	1.0	1
+penne rigate	es	pasta	Pasta	7	1.0	1
+spaghetti integral	es	pasta	Pasta	4	1.0	1
+penne rigate	fr	pasta	Pasta	21	1.0	1
+ravioli pur boeuf	fr	pasta	Pasta	10	1.0	1
+ravioli pur bœuf	fr	pasta	Pasta	9	1.0	1
+ravioli bolognaise	fr	pasta	Pasta	8	1.0	1
+ravioli légumes	fr	pasta	Pasta	7	1.0	1
+pâtes alimentaires	fr	pasta	Pasta	6	1.0	1
+ravioli fromages	fr	pasta	Pasta	6	1.0	1
+ravioles du dauphiné	fr	pasta	Pasta	6	1.0	1
+ravioli aux légumes	fr	pasta	Pasta	6	1.0	1
+tortellini ricotta épinards	fr	pasta	Pasta	6	1.0	1
+nouilles instantanées	fr	pasta	Pasta	6	1.0	1
+tagliatelles aux œufs frais	fr	pasta	Pasta	5	1.0	1
+spaghetti au blé complet	fr	pasta	Pasta	5	1.0	1
+spécialité céréalière	fr	pasta	Pasta	5	1.0	1
+gnocchi à poêler	fr	pasta	Pasta	5	1.0	1
+ravioli ricotta épinards	fr	pasta	Pasta	5	1.0	1
+spaghetti blé complet	fr	pasta	Pasta	4	1.0	1
+shirataki de konjac	fr	pasta	Pasta	4	1.0	1
+tagliatelles aux oeufs frais	fr	pasta	Pasta	4	1.0	1
+nouilles instantanées saveur boeuf	fr	pasta	Pasta	4	1.0	1
+pâtes alimentaires complètes	fr	pasta	Pasta	4	1.0	1
+nouilles instantanées saveur poulet	fr	pasta	Pasta	4	1.0	1
+fusilli au blé complet	fr	pasta	Pasta	4	1.0	1
+erdnussbutter crunchy	de	peanut_butter	Peanut Butter	7	1.0	1
+erdnussmus	de	peanut_butter	Peanut Butter	6	1.0	1
+smooth peanut butter	en	peanut_butter	Peanut Butter	29	1.0	1
+creamy peanut butter	en	peanut_butter	Peanut Butter	22	0.92	2
+peanut butter spread	en	peanut_butter	Peanut Butter	11	1.0	1
+peanut butter creamy	en	peanut_butter	Peanut Butter	8	1.0	1
+peanut butter smooth	en	peanut_butter	Peanut Butter	8	1.0	1
+pindakaas	en	peanut_butter	Peanut Butter	6	1.0	1
+erdnussbutter crunchy	en	peanut_butter	Peanut Butter	4	1.0	1
+beurre de cacahuètes	fr	peanut_butter	Peanut Butter	20	1.0	1
+beurre de cacahuètes crémeux	fr	peanut_butter	Peanut Butter	9	1.0	1
+smooth peanut butter	fr	peanut_butter	Peanut Butter	8	1.0	1
+purée de cacahuètes	fr	peanut_butter	Peanut Butter	8	1.0	1
+creamy peanut butter	fr	peanut_butter	Peanut Butter	6	0.86	2
+pâte d'arachide	fr	peanut_butter	Peanut Butter	6	1.0	1
+beurre de cacahuète crémeux	fr	peanut_butter	Peanut Butter	6	1.0	1
+beurre de cacahuètes crunchy	fr	peanut_butter	Peanut Butter	6	1.0	1
+peanut butter creamy	fr	peanut_butter	Peanut Butter	5	1.0	1
+purée de cacahuète	fr	peanut_butter	Peanut Butter	5	1.0	1
+peanut butter smooth	fr	peanut_butter	Peanut Butter	5	1.0	1
+beurre de cacahuètes croustillant	fr	peanut_butter	Peanut Butter	4	1.0	1
+purée cacahuète	fr	peanut_butter	Peanut Butter	4	1.0	1
+sweet salty popcorn	en	popcorn	Popcorn	8	1.0	1
+pop corn	fr	popcorn	Popcorn	5	1.0	1
+sour cream onion	de	potato_chips	Potato Chips	4	1.0	1
+chips nature	en	potato_chips	Potato Chips	8	1.0	1
+ready salted crisps	en	potato_chips	Potato Chips	7	1.0	1
+potato crisps	en	potato_chips	Potato Chips	6	1.0	1
+salt vinegar	en	potato_chips	Potato Chips	6	1.0	1
+sour cream onion	en	potato_chips	Potato Chips	6	0.86	2
+chips à l'ancienne nature	en	potato_chips	Potato Chips	6	1.0	1
+kettle cooked potato chips	en	potato_chips	Potato Chips	4	1.0	1
+chips paysanne nature	en	potato_chips	Potato Chips	4	1.0	1
+patatas fritas	es	potato_chips	Potato Chips	12	1.0	1
+dipster	es	potato_chips	Potato Chips	5	1.0	1
+sour cream onion	es	potato_chips	Potato Chips	4	1.0	1
+salt vinegar	es	potato_chips	Potato Chips	4	1.0	1
+chips nature	fr	potato_chips	Potato Chips	20	1.0	1
+chips à l'ancienne nature	fr	potato_chips	Potato Chips	13	1.0	1
+chips saveur barbecue	fr	potato_chips	Potato Chips	12	1.0	1
+chips paysanne nature	fr	potato_chips	Potato Chips	7	1.0	1
+sour cream onion	fr	potato_chips	Potato Chips	6	0.86	2
+chips à l'ancienne	fr	potato_chips	Potato Chips	6	1.0	1
+chips saveur poulet rôti	fr	potato_chips	Potato Chips	6	1.0	1
+tuiles goût paprika	fr	potato_chips	Potato Chips	5	1.0	1
+recette à l'ancienne nature	fr	potato_chips	Potato Chips	5	1.0	1
+chips paysannes nature	fr	potato_chips	Potato Chips	5	1.0	1
+chips extra craquantes nature	fr	potato_chips	Potato Chips	4	1.0	1
+sticks bretzels	fr	pretzel	Pretzel	5	1.0	1
+haferflocken kernig	de	rolled_oats	Rolled Oats	6	1.0	1
+haferflocken feinblatt	de	rolled_oats	Rolled Oats	4	1.0	1
+scottish porridge oats	en	rolled_oats	Rolled Oats	6	1.0	1
+oat flakes	en	rolled_oats	Rolled Oats	4	1.0	1
+copos de avena integral	es	rolled_oats	Rolled Oats	6	1.0	1
+copos de avena suaves	es	rolled_oats	Rolled Oats	5	1.0	1
+flocons d'avoine complète	fr	rolled_oats	Rolled Oats	15	1.0	1
+flocons d'avoine complets	fr	rolled_oats	Rolled Oats	7	1.0	1
+gros flocons d'avoine	fr	rolled_oats	Rolled Oats	5	1.0	1
+petits flocons d'avoine	fr	rolled_oats	Rolled Oats	4	1.0	1
+flocons d'avoine petits	fr	rolled_oats	Rolled Oats	4	1.0	1
+lightly salted tortilla chips	en	tortilla_chips	Tortilla Chips	6	1.0	1
+nacho cheese	en	tortilla_chips	Tortilla Chips	4	1.0	1
+blue corn tortilla chips	en	tortilla_chips	Tortilla Chips	4	1.0	1
+tortillas chips	en	tortilla_chips	Tortilla Chips	4	1.0	1
+aperitivo frito de maíz	es	tortilla_chips	Tortilla Chips	4	1.0	1
+aperitivo de maíz frito	es	tortilla_chips	Tortilla Chips	4	1.0	1
+tortillas chips	fr	tortilla_chips	Tortilla Chips	6	1.0	1
+tortilla chips nature	fr	tortilla_chips	Tortilla Chips	5	1.0	1
+tortillas chips nature	fr	tortilla_chips	Tortilla Chips	5	1.0	1
+nacho cheese	fr	tortilla_chips	Tortilla Chips	4	1.0	1
