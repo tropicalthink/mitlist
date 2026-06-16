@@ -59,14 +59,33 @@ class GrocerySuggestionService {
       limit: limit * 6,
     );
 
+    // Word-level FTS5 prefix search — catches items where the query matches a
+    // *word* inside a multi-word alias ("pad" → "breast pads") or a brand alias
+    // that is not a whole-string prefix of its alias ("pringles" → "potato_chips"
+    // once the brand alias is seeded). Run in parallel with the prefix search
+    // and merge before ranking.
+    final wordAliases = await _db.searchAliasWordPrefix(
+      groupId: groupId,
+      query: q,
+      limit: limit * 8,
+    );
+
     // Keep the first matching alias per canonical item; its language decides
     // which name we label the suggestion with (so "milch" → Milch, "milk" →
     // Milk for the same canonical item).
     // Collapse alias hits to distinct canonical items, preserving order.
+    // Whole-string prefix results lead (Tier 0), word-prefix supplements (Tier 0b).
     final orderedIds = <String>[];
     final seen = <String>{};
     for (final a in aliases) {
       if (seen.add(a.canonicalItemId)) orderedIds.add(a.canonicalItemId);
+    }
+    // Word-prefix hits that aren't already in prefix results.
+    final wordOnlyIds = <String>[];
+    for (final a in wordAliases) {
+      if (!seen.contains(a.canonicalItemId)) {
+        if (seen.add(a.canonicalItemId)) wordOnlyIds.add(a.canonicalItemId);
+      }
     }
 
     final ranked = <_RankedSuggestion>[];
@@ -96,8 +115,11 @@ class GrocerySuggestionService {
       }
     }
 
-    // Tier 0 — literal alias/name prefix (partial typing).
+    // Tier 0 — literal whole-string alias/name prefix (partial typing).
     await addByIds(orderedIds, 0);
+    // Tier 0 (word) — word-level FTS5 prefix that the whole-string pass missed.
+    // Same tier as literal prefix so clean word hits still lead fuzzy hits.
+    await addByIds(wordOnlyIds, 0);
 
     // Tier 1 — fuzzy alias: catch typos the prefix misses ("banann" → Banane,
     // "tomaden" → Tomaten). SAME indexed first-char + length-window prefilter as
