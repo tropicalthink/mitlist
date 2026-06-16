@@ -6,14 +6,18 @@ import '../models/activity_models.dart';
 String formatActivityLine(ActivityLogModel a, AppLocalizations l10n) {
   final when = relativeDay(a.createdAt);
 
-  String? name;
-  if (a.metadata is Map) {
+  String? name = a.title;
+  if (name == null && a.metadata is Map) {
     final m = a.metadata as Map;
     name = (m['name'] ?? m['title'] ?? m['item_name']) as String?;
   }
+  final list = a.context;
 
   switch (a.action) {
     case 'list_item_added':
+      if (name != null && list != null) {
+        return l10n.activityAddedToNamedList(name, list, when);
+      }
       return name != null
           ? l10n.activityAddedToList(name, when)
           : l10n.activityAddedItemToList(when);
@@ -49,8 +53,10 @@ String relativeDay(DateTime t) {
   return DateFormat.MMMd().format(t);
 }
 
-String formatUserLabel(String id, String? currentUserId, AppLocalizations l10n) {
-  if (id == currentUserId) return l10n.activityYou;
+String formatUserLabel(String id, String? currentUserId, AppLocalizations l10n,
+    {String? name}) {
+  if (id.isNotEmpty && id == currentUserId) return l10n.activityYou;
+  if (name != null && name.trim().isNotEmpty) return name.trim();
   return l10n.activityMember;
 }
 

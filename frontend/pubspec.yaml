@@ -40,6 +40,7 @@ dependencies:
   lottie: ^3.3.0
   intl: ^0.20.2
   shared_preferences: ^2.3.5
+  collection: ^1.19.0
   confetti: ^0.8.0
   dio: ^5.4.0
   retrofit: ^4.1.0

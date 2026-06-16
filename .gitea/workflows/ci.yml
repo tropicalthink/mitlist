@@ -1,0 +1,64 @@
+# CI: run tests + static analysis on every pull request.
+# Does NOT run build_runner (codegen is pinned-broken; generated files are committed).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - new-main-fr
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: mitlist
+          POSTGRES_PASSWORD: mitlist
+          POSTGRES_DB: mitlist_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mitlist"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      TEST_DATABASE_URL: postgres://mitlist:mitlist@localhost:5432/mitlist_test?sslmode=disable
+      TEST_REDIS_URL: redis://localhost:6379
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.1'   # match backend/go.mod
+      - name: Build
+        run: cd backend && go build ./...
+      - name: Vet
+        run: cd backend && go vet ./...
+      - name: Test
+        run: cd backend && go test ./...
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Pub get
+        run: cd frontend && flutter pub get
+      - name: Analyze
+        run: cd frontend && dart analyze lib/
+      - name: Test
+        run: cd frontend && flutter test

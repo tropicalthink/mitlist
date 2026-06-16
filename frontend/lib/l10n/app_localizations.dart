@@ -3531,6 +3531,18 @@ abstract class AppLocalizations {
   /// **'Day {day}'**
   String calendarDayLabel(num day);
 
+  /// Semantics: event count for a day
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 event} other{{count} events}}'**
+  String calendarDayEvents(num count);
+
+  /// Semantics hint: long-press opens the day options menu
+  ///
+  /// In en, this message translates to:
+  /// **'Opens day options'**
+  String get calendarDayMenuHint;
+
   /// Empty day text
   ///
   /// In en, this message translates to:
@@ -4928,6 +4940,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Split mode'**
   String get expenseCreationSplitMode;
+
+  /// Running total shown beside the split mode label, e.g. 'Total $42.00'
+  ///
+  /// In en, this message translates to:
+  /// **'Total {amount}'**
+  String expenseCreationSplitTotal(String amount);
 
   /// Equal split mode
   ///
@@ -7034,6 +7052,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Added {name} to a list · {when}'**
   String activityAddedToList(String name, String when);
+
+  /// Activity: item added to a named list
+  ///
+  /// In en, this message translates to:
+  /// **'Added {name} to {list} · {when}'**
+  String activityAddedToNamedList(String name, String list, String when);
 
   /// Activity: generic item added to list
   ///

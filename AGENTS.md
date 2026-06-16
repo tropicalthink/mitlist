@@ -20,6 +20,26 @@ dart analyze lib/           # Type check all Dart
 flutter test                # Run tests
 ```
 
+### Regenerating generated code (Drift / retrofit / json)
+
+Generated files (`*.g.dart`, e.g. `lib/storage/app_database.g.dart`) are committed,
+so normal builds, `dart analyze`, and `flutter test` work without running codegen.
+
+`dart run build_runner build` currently fails on a retrofit/retrofit_generator
+version mismatch (`Parser.DartMappable` non-exhaustive switch). To regenerate:
+
+1. In `frontend/pubspec.yaml`, temporarily add:
+   ```yaml
+   dependency_overrides:
+     retrofit: 4.8.0
+   ```
+2. `flutter pub get`
+3. `dart run build_runner build --delete-conflicting-outputs`
+4. Revert the `pubspec.yaml` / `pubspec.lock` changes (`git checkout -- pubspec.yaml pubspec.lock`),
+   keeping only the regenerated `*.g.dart` files.
+
+Do not commit the `dependency_overrides` block.
+
 ### Backend
 ```bash
 cd backend

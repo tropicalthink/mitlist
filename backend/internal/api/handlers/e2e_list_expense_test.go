@@ -52,6 +52,7 @@ func TestE2E_ListToExpenseFlow(t *testing.T) {
 	group := &models.Group{
 		ID:        uuid.New(),
 		Name:      "E2E Household",
+		Currency:  "USD",
 		CreatedBy: user.ID,
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
@@ -99,7 +100,8 @@ func TestE2E_ListToExpenseFlow(t *testing.T) {
 	var summaryResp map[string]any
 	parseJSONResponse(t, rec, &summaryResp)
 	assert.Equal(t, float64(847), summaryResp["total_cents"])
-	assert.Equal(t, float64(282), summaryResp["equal_share_cents"])
+	// The group has a single member, so the equal share is the full total.
+	assert.Equal(t, float64(847), summaryResp["equal_share_cents"])
 
 	// 4. Generate expense from list
 	rec = execRequest(t, r, "POST", "/api/v1/lists/"+listID+"/generate-expense", map[string]any{
@@ -111,12 +113,30 @@ func TestE2E_ListToExpenseFlow(t *testing.T) {
 	assert.Equal(t, "Groceries shopping", expenseResp["description"])
 	assert.Equal(t, float64(847), expenseResp["amount"])
 
-	// 5. Verify expense appears in group expenses
+	// 5. generate-expense returns a computed draft expense without persisting it,
+	// so the group's expense list is still empty until the draft is explicitly
+	// created via the expenses endpoint.
 	rec = execRequest(t, r, "GET", "/api/v1/expenses?group_id="+group.ID.String(), nil, token)
 	requireStatus(t, rec, http.StatusOK)
-	var expensesResp map[string]any
-	parseJSONResponse(t, rec, &expensesResp)
-	expenses := expensesResp["expenses"].([]any)
+	var expenses []map[string]any
+	parseJSONResponse(t, rec, &expenses)
+	require.Len(t, expenses, 0)
+
+	// 6. Persist the generated expense and verify it now appears in the list.
+	rec = execRequest(t, r, "POST", "/api/v1/expenses", map[string]any{
+		"group_id":       group.ID.String(),
+		"payer_id":       user.ID.String(),
+		"amount":         847,
+		"description":    "Groceries shopping",
+		"category":       "groceries",
+		"currency":       "USD",
+		"split_user_ids": []string{user.ID.String()},
+	}, token)
+	requireStatus(t, rec, http.StatusCreated)
+
+	rec = execRequest(t, r, "GET", "/api/v1/expenses?group_id="+group.ID.String(), nil, token)
+	requireStatus(t, rec, http.StatusOK)
+	parseJSONResponse(t, rec, &expenses)
 	require.Len(t, expenses, 1)
-	assert.Equal(t, "Groceries shopping", expenses[0].(map[string]any)["description"])
+	assert.Equal(t, "Groceries shopping", expenses[0]["description"])
 }

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -1145,10 +1146,10 @@ class _TonightStatRow extends ConsumerWidget {
     } else {
       TodayMeal? selected;
       for (final slot in const ['dinner', 'breakfast', 'lunch']) {
-        try {
-          selected = meals.firstWhere((m) => m.plan.slot == slot);
+        selected = meals.firstWhereOrNull((m) => m.plan.slot == slot);
+        if (selected != null) {
           break;
-        } catch (_) {}
+        }
       }
       selected ??= meals.first;
       value = selected.recipe?.title ?? l10n.tonightRecipe;
