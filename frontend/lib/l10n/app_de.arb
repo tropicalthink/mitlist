@@ -571,6 +571,8 @@
   "calendarWeekdaySunday": "Sonntag",
   "calendarToday": "Heute",
   "calendarDayLabel": "Tag {day}",
+  "calendarDayEvents": "{count, plural, =1{1 Termin} other{{count} Termine}}",
+  "calendarDayMenuHint": "Öffnet Tagesoptionen",
   "calendarNothingPlanned": "Nichts geplant",
   "calendarNothingAhead": "Nichts anstehend",
   "calendarNothingAheadDesc": "Anstehende Aufgaben, Essenspläne und wiederkehrende Ausgaben erscheinen hier.",

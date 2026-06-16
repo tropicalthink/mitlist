@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/calendar_models.dart';
@@ -32,6 +33,22 @@ import '../../sheets/create_household_sheet.dart';
 
 enum _CalendarView { week, month, agenda }
 
+/// Single source of truth for how each event type is drawn (icon + accent).
+/// Shared by the month dots, the agenda rows, and the week-view event rows so
+/// the three never drift apart.
+({IconData icon, Color color}) _eventVisual(
+    ColorScheme cs, CalendarEventType type) {
+  return switch (type) {
+    CalendarEventType.mealPlan => (icon: Icons.restaurant, color: cs.primary),
+    CalendarEventType.chore =>
+      (icon: Icons.cleaning_services, color: cs.secondary),
+    CalendarEventType.recurringExpense => (icon: Icons.repeat, color: cs.tertiary),
+    CalendarEventType.expense => (icon: Icons.receipt_outlined, color: cs.secondary),
+    CalendarEventType.pinwallReminder =>
+      (icon: Icons.push_pin_outlined, color: cs.error),
+  };
+}
+
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
 
@@ -45,6 +62,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   String? _error;
   bool _hasHousehold = true;
   final List<CalendarEvent> _events = [];
+  // Events grouped by calendar day, recomputed only when [_events] changes —
+  // not on every cell access during a build.
+  Map<DateTime, List<CalendarEvent>> _eventsByDay = const {};
   _CalendarView _viewMode = _CalendarView.week;
 
   late DateTime _weekStart;
@@ -99,18 +119,30 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           await ref.read(calendarServiceProviderAsync.future);
       final events =
           await calendarService.getCalendar(groupId!, from, to);
+      if (!mounted) return;
       setState(() {
         _events
           ..clear()
           ..addAll(events);
+        _rebuildEventIndex();
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = friendlyErrorMessage(e, AppLocalizations.of(context)!);
         _isLoading = false;
       });
     }
+  }
+
+  void _rebuildEventIndex() {
+    final map = <DateTime, List<CalendarEvent>>{};
+    for (final e in _events) {
+      final d = DateTime(e.date.year, e.date.month, e.date.day);
+      map.putIfAbsent(d, () => []).add(e);
+    }
+    _eventsByDay = map;
   }
 
   void _prevWeek() {
@@ -151,8 +183,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   String _weekLabel(AppLocalizations l10n) {
     final end = _weekStart.add(const Duration(days: 6));
-    final weekStartStr = '${_weekStart.day}.${_weekStart.month}.';
-    final weekEndStr = '${end.day}.${end.month}.${end.year}';
+    final weekStartStr = DateFormat.MMMd(_localeName).format(_weekStart);
+    final weekEndStr = DateFormat.yMMMd(_localeName).format(end);
     return l10n.calendarWeekHeader(weekStartStr, weekEndStr);
   }
 
@@ -173,14 +205,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     l10n.calendarShortThu, l10n.calendarShortFri, l10n.calendarShortSat, l10n.calendarShortSun,
   ];
 
-  Map<DateTime, List<CalendarEvent>> get _eventsByDay {
-    final map = <DateTime, List<CalendarEvent>>{};
-    for (final e in _events) {
-      final d = DateTime(e.date.year, e.date.month, e.date.day);
-      map.putIfAbsent(d, () => []).add(e);
-    }
-    return map;
-  }
+  String get _localeName => Localizations.localeOf(context).toString();
 
   @override
   Widget build(BuildContext context) {
@@ -197,6 +222,20 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   Widget _buildBody() {
     final l10n = AppLocalizations.of(context)!;
     if (_isLoading) {
+      if (_viewMode == _CalendarView.month) {
+        return GridView.builder(
+          padding: const EdgeInsets.all(MitlistSpacing.md),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 7,
+            childAspectRatio: 0.9,
+            mainAxisSpacing: MitlistSpacing.xs,
+            crossAxisSpacing: MitlistSpacing.xs,
+          ),
+          itemCount: 35,
+          itemBuilder: (_, __) =>
+              AppSkeleton(width: double.infinity, height: double.infinity),
+        );
+      }
       return ListView.builder(
         padding: const EdgeInsets.all(MitlistSpacing.md),
         itemCount: 7,
@@ -267,111 +306,25 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   Widget _buildViewToggle() {
     final l10n = AppLocalizations.of(context)!;
-    final textTheme = Theme.of(context).textTheme;
+    final tabs = <(_CalendarView, String, String)>[
+      (_CalendarView.week, l10n.calendarViewWeek, l10n.calendarWeekView),
+      (_CalendarView.month, l10n.calendarViewMonth, l10n.calendarMonthView),
+      (_CalendarView.agenda, l10n.calendarViewAgenda, l10n.calendarAgendaView),
+    ];
 
     return Padding(
-      padding: const EdgeInsets.all(MitlistSpacing.md),
+      padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
       child: Row(
         children: [
-          Expanded(
-            child: Semantics(
-              button: true,
-              selected: _viewMode == _CalendarView.week,
-              label: l10n.calendarWeekView,
-              child: GestureDetector(
-                onTap: () => _setViewMode(_CalendarView.week),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      vertical: MitlistSpacing.sm),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(
-                        color: _viewMode == _CalendarView.week
-                            ? Theme.of(context).colorScheme.primary
-                            : Colors.transparent,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                  child: Text(
-                    l10n.calendarViewWeek,
-                    textAlign: TextAlign.center,
-                    style: textTheme.labelMedium?.copyWith(
-                      color: _viewMode == _CalendarView.week
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
+          for (final (mode, label, semanticLabel) in tabs)
+            Expanded(
+              child: _ViewTab(
+                label: label,
+                semanticLabel: semanticLabel,
+                selected: _viewMode == mode,
+                onTap: () => _setViewMode(mode),
               ),
             ),
-          ),
-          Expanded(
-            child: Semantics(
-              button: true,
-              selected: _viewMode == _CalendarView.month,
-              label: l10n.calendarMonthView,
-              child: GestureDetector(
-                onTap: () => _setViewMode(_CalendarView.month),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      vertical: MitlistSpacing.sm),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(
-                        color: _viewMode == _CalendarView.month
-                            ? Theme.of(context).colorScheme.primary
-                            : Colors.transparent,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                  child: Text(
-                    l10n.calendarViewMonth,
-                    textAlign: TextAlign.center,
-                    style: textTheme.labelMedium?.copyWith(
-                      color: _viewMode == _CalendarView.month
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: Semantics(
-              button: true,
-              selected: _viewMode == _CalendarView.agenda,
-              label: l10n.calendarAgendaView,
-              child: GestureDetector(
-                onTap: () => _setViewMode(_CalendarView.agenda),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      vertical: MitlistSpacing.sm),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(
-                        color: _viewMode == _CalendarView.agenda
-                            ? Theme.of(context).colorScheme.primary
-                            : Colors.transparent,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                  child: Text(
-                    l10n.calendarViewAgenda,
-                    textAlign: TextAlign.center,
-                    style: textTheme.labelMedium?.copyWith(
-                      color: _viewMode == _CalendarView.agenda
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -488,82 +441,90 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         ),
         const SizedBox(height: MitlistSpacing.sm),
         Expanded(
-          child: Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: MitlistSpacing.sm),
-            child: GridView.builder(
-              gridDelegate:
-                  SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 7,
-                childAspectRatio: 0.9,
-              ),
-              itemCount: totalCells,
-              itemBuilder: (context, index) {
-                final dayNum = index - (firstWeekday - 1) + 1;
-                if (dayNum < 1 || dayNum > daysInMonth) {
-                  return const SizedBox.shrink();
-                }
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: MitlistSpacing.sm),
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 7,
+                    childAspectRatio: 0.9,
+                  ),
+                  itemCount: totalCells,
+                  itemBuilder: (context, index) {
+                    final dayNum = index - (firstWeekday - 1) + 1;
+                    if (dayNum < 1 || dayNum > daysInMonth) {
+                      return const SizedBox.shrink();
+                    }
 
-                final day = DateTime(
-                    _monthStart.year, _monthStart.month, dayNum);
-                final dayEvents = _eventsByDay[day] ?? [];
-                final isToday = _isToday(day);
+                    final day = DateTime(
+                        _monthStart.year, _monthStart.month, dayNum);
+                    final dayEvents = _eventsByDay[day] ?? const [];
+                    final isToday = _isToday(day);
+                    final cs = Theme.of(context).colorScheme;
 
-                return Semantics(
-                  button: true,
-                  label: l10n.calendarDayLabel(day.day),
-                  child: GestureDetector(
-                    onTapDown: (details) => _showDayMenu(
-                        context, day, dayEvents, details.globalPosition),
-                    onTap: () {
-                      setState(() {
-                        _weekStart = _weekStartForDay(day);
-                        _viewMode = _CalendarView.week;
-                      });
-                      _load();
-                    },
-                  child: Container(
-                    margin: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      color: isToday
-                          ? Theme.of(context).colorScheme.primaryContainer
-                          : Colors.transparent,
-                      border: Border.all(
-                        color: isToday
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.outlineVariant,
-                        width: isToday ? 2 : 1,
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: MitlistSpacing.xs),
-                        Text(
-                          '$dayNum',
-                          style:
-                              MitlistTypography.labelXSmall(
+                    return Semantics(
+                      button: true,
+                      label: dayEvents.isEmpty
+                          ? l10n.calendarDayLabel(day.day)
+                          : '${l10n.calendarDayLabel(day.day)}, '
+                              '${l10n.calendarDayEvents(dayEvents.length)}',
+                      hint: l10n.calendarDayMenuHint,
+                      child: InkWell(
+                        onTap: () => _openWeekForDay(day),
+                        onLongPress: () => _showDayMenuForCell(day, dayEvents),
+                        borderRadius:
+                            BorderRadius.circular(MitlistTheme.radiusSm),
+                        child: Container(
+                          margin: const EdgeInsets.all(MitlistSpacing.space0_5),
+                          decoration: BoxDecoration(
                             color: isToday
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                        if (dayEvents.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              '${dayEvents.length}',
-                              style: MitlistTypography.labelXSmall(
-                                color: _dotColor(context, dayEvents.first.type),
-                              ),
+                                ? cs.primaryContainer
+                                : Colors.transparent,
+                            borderRadius:
+                                BorderRadius.circular(MitlistTheme.radiusSm),
+                            border: Border.all(
+                              color: isToday
+                                  ? cs.primary
+                                  : cs.outlineVariant,
+                              width: isToday ? 2 : 1,
                             ),
                           ),
-                      ],
-                    ),
-                  ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: MitlistSpacing.xs),
+                              Text(
+                                '$dayNum',
+                                style: MitlistTypography.labelXSmall(
+                                  color: isToday
+                                      ? cs.primary
+                                      : cs.onSurface,
+                                ),
+                              ),
+                              if (dayEvents.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                      top: MitlistSpacing.space0_5),
+                                  child: Text(
+                                    '${dayEvents.length}',
+                                    style: MitlistTypography.labelXSmall(
+                                      color: _eventVisual(
+                                              cs, dayEvents.first.type)
+                                          .color,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              );
-              },
+              ),
             ),
           ),
         ),
@@ -571,18 +532,25 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
-  DateTime _weekStartForDay(DateTime day) {
-    return day.subtract(Duration(days: day.weekday - 1));
+  void _openWeekForDay(DateTime day) {
+    setState(() {
+      _weekStart = _weekStartForDay(day);
+      _viewMode = _CalendarView.week;
+    });
+    _load();
   }
 
-  Color _dotColor(BuildContext context, CalendarEventType type) {
-    return switch (type) {
-      CalendarEventType.mealPlan => Theme.of(context).colorScheme.primary,
-      CalendarEventType.chore => Theme.of(context).colorScheme.secondary,
-      CalendarEventType.recurringExpense => Theme.of(context).colorScheme.tertiary,
-      CalendarEventType.expense => Theme.of(context).colorScheme.secondary,
-      CalendarEventType.pinwallReminder => Theme.of(context).colorScheme.errorContainer,
-    };
+  void _showDayMenuForCell(DateTime day, List<CalendarEvent> events) {
+    unawaited(Haptics.light());
+    final box = context.findRenderObject() as RenderBox?;
+    final origin = box != null
+        ? box.localToGlobal(box.size.center(Offset.zero))
+        : Offset.zero;
+    _showDayMenu(context, day, events, origin);
+  }
+
+  DateTime _weekStartForDay(DateTime day) {
+    return day.subtract(Duration(days: day.weekday - 1));
   }
 
   void _showDayMenu(
@@ -592,8 +560,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     Offset position,
   ) {
     final l10n = AppLocalizations.of(context)!;
-    final dayLabel =
-        '${_weekdayName(day.weekday, l10n)}, ${day.day}.${day.month}.${day.year}';
+    final dayLabel = DateFormat.yMMMMEEEEd(_localeName).format(day);
 
     showMenu<String>(
       context: ctx,
@@ -740,15 +707,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         day.day == tomorrow.day) {
       return l10n.calendarTomorrow;
     }
-    return '${_weekdayName(day.weekday, l10n)}, ${day.day}.${day.month}.';
-  }
-
-  String _weekdayName(int weekday, AppLocalizations l10n) {
-    return [
-      l10n.calendarWeekdayMonday, l10n.calendarWeekdayTuesday, l10n.calendarWeekdayWednesday,
-      l10n.calendarWeekdayThursday, l10n.calendarWeekdayFriday, l10n.calendarWeekdaySaturday,
-      l10n.calendarWeekdaySunday,
-    ][weekday - 1];
+    return DateFormat.MMMMEEEEd(_localeName).format(day);
   }
 
   List<Widget> _agendaDayEvents(List<CalendarEvent> events, AppLocalizations l10n) {
@@ -803,33 +762,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 
   (IconData, Color, String) _eventMeta(BuildContext context, CalendarEvent event, AppLocalizations l10n) {
-    return switch (event.type) {
-      CalendarEventType.mealPlan => (
-          Icons.restaurant,
-          Theme.of(context).colorScheme.primary,
-          event.mealPlan?.slot ?? l10n.calendarEventMeal
-        ),
-      CalendarEventType.chore => (
-          Icons.cleaning_services,
-          Theme.of(context).colorScheme.secondary,
-          l10n.calendarEventChore
-        ),
-      CalendarEventType.recurringExpense => (
-          Icons.repeat,
-          Theme.of(context).colorScheme.tertiary,
-          l10n.calendarEventRecurring
-        ),
-      CalendarEventType.expense => (
-          Icons.receipt_outlined,
-          Theme.of(context).colorScheme.secondary,
-          l10n.calendarEventExpense
-        ),
-      CalendarEventType.pinwallReminder => (
-          Icons.push_pin_outlined,
-          Theme.of(context).colorScheme.errorContainer,
-          l10n.calendarEventReminder
-        ),
+    final visual = _eventVisual(Theme.of(context).colorScheme, event.type);
+    final label = switch (event.type) {
+      CalendarEventType.mealPlan => event.mealPlan?.slot ?? l10n.calendarEventMeal,
+      CalendarEventType.chore => l10n.calendarEventChore,
+      CalendarEventType.recurringExpense => l10n.calendarEventRecurring,
+      CalendarEventType.expense => l10n.calendarEventExpense,
+      CalendarEventType.pinwallReminder => l10n.calendarEventReminder,
     };
+    return (visual.icon, visual.color, label);
   }
 
   bool _isToday(DateTime d) {
@@ -861,7 +802,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       case CalendarEventType.expense:
         context.pushNamed('money');
       case CalendarEventType.pinwallReminder:
-        break;
+        // Reminders live on the pinwall (home tab); take the user there.
+        context.goNamed('home');
     }
   }
 
@@ -922,7 +864,8 @@ class _DayCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
-    final weekday = _weekdayName(day.weekday, l10n);
+    final localeName = Localizations.localeOf(context).toString();
+    final weekday = DateFormat.EEEE(localeName).format(day);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
@@ -942,7 +885,7 @@ class _DayCard extends StatelessWidget {
                 ),
                 const SizedBox(width: MitlistSpacing.sm),
                 Text(
-                  '${day.day}.${day.month}.',
+                  DateFormat.MMMd(localeName).format(day),
                   style: MitlistTypography.labelXSmall(),
                 ),
                 if (isToday) ...[
@@ -988,18 +931,6 @@ class _DayCard extends StatelessWidget {
       ),
     );
   }
-
-  String _weekdayName(int weekday, AppLocalizations l10n) {
-    return [
-      l10n.calendarWeekdayMonday,
-      l10n.calendarWeekdayTuesday,
-      l10n.calendarWeekdayWednesday,
-      l10n.calendarWeekdayThursday,
-      l10n.calendarWeekdayFriday,
-      l10n.calendarWeekdaySaturday,
-      l10n.calendarWeekdaySunday,
-    ][weekday - 1];
-  }
 }
 
 class _EventRow extends StatelessWidget {
@@ -1011,32 +942,16 @@ class _EventRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final (icon, color, label) = switch (event.type) {
-      CalendarEventType.mealPlan => (
-          Icons.restaurant,
-          Theme.of(context).colorScheme.primary,
-          event.mealPlan?.slot ?? l10n.calendarEventMeal
-        ),
-      CalendarEventType.chore => (
-          Icons.cleaning_services,
-          Theme.of(context).colorScheme.secondary,
-          l10n.calendarEventChore
-        ),
-      CalendarEventType.recurringExpense => (
-          Icons.repeat,
-          Theme.of(context).colorScheme.tertiary,
-          l10n.calendarEventRecurring
-        ),
-      CalendarEventType.expense => (
-          Icons.receipt_outlined,
-          Theme.of(context).colorScheme.secondary,
-          l10n.calendarEventExpense
-        ),
-      CalendarEventType.pinwallReminder => (
-          Icons.push_pin_outlined,
-          Theme.of(context).colorScheme.errorContainer,
-          l10n.calendarEventReminder
-        ),
+    final visual = _eventVisual(Theme.of(context).colorScheme, event.type);
+    final icon = visual.icon;
+    final color = visual.color;
+    final label = switch (event.type) {
+      CalendarEventType.mealPlan =>
+        event.mealPlan?.slot ?? l10n.calendarEventMeal,
+      CalendarEventType.chore => l10n.calendarEventChore,
+      CalendarEventType.recurringExpense => l10n.calendarEventRecurring,
+      CalendarEventType.expense => l10n.calendarEventExpense,
+      CalendarEventType.pinwallReminder => l10n.calendarEventReminder,
     };
 
     return Padding(
@@ -1077,6 +992,56 @@ class _EventRow extends StatelessWidget {
                   style: MitlistTypography.labelXSmall(),
                 ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A single calendar view-mode tab. Keeps a 44px touch target, gives ink
+/// feedback on press, and exposes button/selected state to assistive tech.
+class _ViewTab extends StatelessWidget {
+  final String label;
+  final String semanticLabel;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ViewTab({
+    required this.label,
+    required this.semanticLabel,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final color = selected ? cs.primary : cs.onSurfaceVariant;
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: semanticLabel,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 44),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: selected ? cs.primary : Colors.transparent,
+                width: 2,
+              ),
+            ),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: color,
+                ),
           ),
         ),
       ),

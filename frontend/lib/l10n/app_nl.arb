@@ -2589,6 +2589,8 @@
     "description": "Today label"
   },
   "calendarDayLabel": "Dag {day}",
+  "calendarDayEvents": "{count, plural, =1{1 afspraak} other{{count} afspraken}}",
+  "calendarDayMenuHint": "Opent dagopties",
   "@calendarDayLabel": {
     "description": "Semantics: specific day",
     "placeholders": {
