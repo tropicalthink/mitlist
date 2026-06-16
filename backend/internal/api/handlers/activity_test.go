@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -8,6 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/services"
@@ -90,7 +92,7 @@ func TestActivityHandler_List_ReturnsEmpty(t *testing.T) {
 		CreatedBy: user.ID,
 	}
 	groupRepo := newTestGroupRepo()
-	groupRepo.CreateGroup(nil, group)
+	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
 
 	_, h := newActivityRouter(t)
 
