@@ -142,7 +142,7 @@ func runMigrations(databaseURL string) error {
 		dsn = "pgx5" + dsn[len("postgresql"):]
 	}
 
-	mig, err := migrate.New("file://../../migrations", dsn)
+	mig, err := migrate.New("file://../../../migrations", dsn)
 	if err != nil {
 		return err
 	}

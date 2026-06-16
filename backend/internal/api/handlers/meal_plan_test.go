@@ -79,7 +79,7 @@ func TestMealPlanHandler_ListMealPlans_ReturnsEmpty(t *testing.T) {
 		CreatedBy: user.ID,
 	}
 	groupRepo := newTestGroupRepo()
-	require.NoError(t, groupRepo.CreateGroup(nil, group))
+	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
 
 	_, h := newMealPlanRouter(t)
 
