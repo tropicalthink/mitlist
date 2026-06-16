@@ -25,6 +25,14 @@ func NewChoreRepository(pool DBTX) *ChoreRepository {
 // CreateChore inserts a new chore.
 func (r *ChoreRepository) CreateChore(ctx context.Context, chore *models.Chore) error {
 	chore.ID = uuid.New()
+	periodConfig := chore.PeriodConfig
+	if periodConfig == nil {
+		periodConfig = []string{}
+	}
+	assignmentConfig := chore.AssignmentConfig
+	if assignmentConfig == nil {
+		assignmentConfig = []uuid.UUID{}
+	}
 	query := `
 		INSERT INTO chores (
 			id, group_id, name, description, rotation_type, frequency,
@@ -36,9 +44,9 @@ func (r *ChoreRepository) CreateChore(ctx context.Context, chore *models.Chore) 
 	`
 	return r.pool.QueryRow(ctx, query,
 		chore.ID, chore.GroupID, chore.Name, chore.Description,
-		chore.RotationType, chore.Frequency, chore.PeriodInterval, chore.PeriodConfig,
+		chore.RotationType, chore.Frequency, chore.PeriodInterval, periodConfig,
 		chore.StartDate, chore.TrackDateOnly, chore.Rollover, chore.AssignmentType,
-		chore.AssignmentConfig, chore.IsActive, chore.Supplies, chore.Category,
+		assignmentConfig, chore.IsActive, chore.Supplies, chore.Category,
 	).Scan(&chore.CreatedAt, &chore.UpdatedAt)
 }
 

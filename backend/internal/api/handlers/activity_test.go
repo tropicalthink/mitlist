@@ -93,6 +93,7 @@ func TestActivityHandler_List_ReturnsEmpty(t *testing.T) {
 	}
 	groupRepo := newTestGroupRepo()
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 
 	_, h := newActivityRouter(t)
 
@@ -104,5 +105,6 @@ func TestActivityHandler_List_ReturnsEmpty(t *testing.T) {
 	requireStatus(t, rec, http.StatusOK)
 	var result map[string]any
 	parseJSONResponse(t, rec, &result)
-	assert.NotNil(t, result["activities"])
+	_, ok := result["events"]
+	assert.True(t, ok, "response should contain an events key")
 }

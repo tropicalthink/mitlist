@@ -386,10 +386,19 @@ func TestRecipe_AddToList_CanonicalResolution(t *testing.T) {
 		JoinedAt: time.Now().UTC(),
 	}))
 
-	// Seed a canonical item and a global alias ("sugar" → canonicalID).
-	canonicalID := uuid.New()
+	// The global grocery rows reference the all-zero "global" group id via a FK,
+	// so that group must exist before seeding canonical_items / item_aliases.
 	now := time.Now().UTC()
 	_, err := testDB.Exec(context.Background(), `
+		INSERT INTO groups (id, name, created_by, created_at, updated_at)
+		VALUES ('00000000-0000-0000-0000-000000000000', 'Global', $1, $2, $2)
+		ON CONFLICT (id) DO NOTHING`,
+		user.ID, now)
+	require.NoError(t, err)
+
+	// Seed a canonical item and a global alias ("sugar" → canonicalID).
+	canonicalID := uuid.New()
+	_, err = testDB.Exec(context.Background(), `
 		INSERT INTO canonical_items (id, group_id, name_de, name_en, category, default_unit, is_global, version, created_at, updated_at)
 		VALUES ($1, '00000000-0000-0000-0000-000000000000', 'Zucker', 'sugar', 'pantry', 'g', true, 1, $2, $2)`,
 		canonicalID, now)

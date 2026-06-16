@@ -28,6 +28,7 @@ func TestShare_CreateListFromShare(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 
 	body := map[string]any{
 		"group_id": group.ID.String(),

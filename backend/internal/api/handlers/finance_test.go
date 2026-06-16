@@ -24,11 +24,13 @@ func TestFinance_CreateExpense(t *testing.T) {
 	group := &models.Group{
 		ID:        uuid.New(),
 		Name:      "Fin Group",
+		Currency:  "USD",
 		CreatedBy: user.ID,
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 
 	body := map[string]any{
 		"group_id":     group.ID.String(),
@@ -224,6 +226,7 @@ func TestFinance_ListExpenses(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 	financeRepo := newTestFinanceRepo()
 	require.NoError(t, financeRepo.CreateExpense(context.Background(), &models.Expense{
 		ID:          uuid.New(),
@@ -271,6 +274,7 @@ func TestFinance_DeleteExpense(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 	financeRepo := newTestFinanceRepo()
 	expense := &models.Expense{
 		ID:          uuid.New(),
@@ -305,6 +309,7 @@ func TestFinance_CreateSplit(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 	financeRepo := newTestFinanceRepo()
 	expense := &models.Expense{
 		ID:          uuid.New(),
@@ -340,6 +345,9 @@ func TestFinance_CreateSettlement(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
+	member := createTestUser(t, "settle-member@example.com", "password123")
+	addTestMembership(t, group.ID, member.ID, "member")
 	financeRepo := newTestFinanceRepo()
 	expense := &models.Expense{
 		ID:          uuid.New(),
@@ -356,7 +364,7 @@ func TestFinance_CreateSettlement(t *testing.T) {
 	require.NoError(t, financeRepo.CreateExpense(context.Background(), expense))
 
 	body := map[string]any{
-		"from_user_id": user.ID.String(),
+		"from_user_id": member.ID.String(),
 		"to_user_id":   user.ID.String(),
 		"amount":       5000,
 	}
@@ -379,6 +387,7 @@ func TestFinance_CreateRecurringExpense(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 
 	body := map[string]any{
 		"group_id":     group.ID.String(),
@@ -413,6 +422,7 @@ func TestFinance_ListRecurringExpenses(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 	financeRepo := newTestFinanceRepo()
 	require.NoError(t, financeRepo.CreateRecurringExpense(context.Background(), &models.RecurringExpense{
 		ID:          uuid.New(),
