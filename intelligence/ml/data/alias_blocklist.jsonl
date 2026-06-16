@@ -7,3 +7,5 @@
 {"alias":"tail","wrong_canonical_id":"oxtail","reason":"Bare 'tail' is too generic and causes false positives; removed from oxtail alias collision chain"}
 {"alias":"tail","wrong_canonical_id":"lamb_tail","reason":"Bare 'tail' causes false positives in multi-language search"}
 {"alias":"tail","wrong_canonical_id":"monkfish_tail","reason":"Bare 'tail' causes false positives in multi-language search"}
+{"alias": "müsli", "wrong_canonical_id": "hamster_food_muesli"}
+{"alias": "muesli", "wrong_canonical_id": "hamster_food_muesli"}
