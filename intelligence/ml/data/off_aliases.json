@@ -1,5 +1,400 @@
 {
- "_attribution": "Data source: Open Food Facts (https://world.openfoodfacts.org), licensed under the Open Database License (ODbL) v1.0 (https://opendatacommons.org/licenses/odbl/). This derived index is kept separable from the canonical seed per ODbL share-alike requirements.",
+ "_attribution": "Data source: Open Food Facts (https://world.openfoodfacts.org), licensed under the Open Database License (ODbL) v1.0 (https://opendatacommons.org/licenses/odbl/). This derived brand index is kept separable from the canonical seed per ODbL share-alike.",
  "_license": "ODbL-1.0",
- "items": {}
+ "_generator": "off_ground.py",
+ "items": {
+  "chocolate_hazelnut_spread": {
+   "und": [
+    "bovetti",
+    "cebon",
+    "choco nussa",
+    "idilia foods",
+    "ivoria",
+    "l'artisan tartineur",
+    "lartisan tartineur",
+    "le jardin de corentin",
+    "lucien georgelin",
+    "nocilla",
+    "noiseraie",
+    "novi",
+    "nutella",
+    "rigoni di asiago"
+   ]
+  },
+  "ketchup": {
+   "und": [
+    "heinz"
+   ]
+  },
+  "breakfast_cereal": {
+   "und": [
+    "cruesli",
+    "fitness",
+    "general mills",
+    "kellog's",
+    "kellogg's",
+    "kelloggs",
+    "kellogs",
+    "m&s food",
+    "nestle",
+    "post",
+    "special k",
+    "weetabix"
+   ]
+  },
+  "granola_bar": {
+   "und": [
+    "corny",
+    "deliciously ella",
+    "eat natural",
+    "isostar",
+    "joyfuel",
+    "nakd",
+    "nature valley",
+    "nākd",
+    "rxbar",
+    "sportyfeel",
+    "trek"
+   ]
+  },
+  "cream_cheese": {
+   "und": [
+    "caprice des dieux",
+    "exquisa",
+    "petits filous pots",
+    "philadelphia",
+    "rians",
+    "tartare"
+   ]
+  },
+  "peanut_butter": {
+   "und": [
+    "go nuts",
+    "grandessa",
+    "jean herve",
+    "jean hervé",
+    "jif",
+    "kraft",
+    "mcennedy",
+    "menguy's",
+    "menguys",
+    "meridian",
+    "pip & nut",
+    "prozis",
+    "skippy",
+    "trader joe's",
+    "trader joes",
+    "whole earth"
+   ]
+  },
+  "potato_chips": {
+   "und": [
+    "bret's",
+    "brets",
+    "funny-frisch",
+    "intersnack",
+    "kettle",
+    "lay's",
+    "lays",
+    "pringles",
+    "tyrells",
+    "tyrell’s",
+    "tyrrell's",
+    "tyrrells",
+    "tyrrell’s",
+    "walkers"
+   ]
+  },
+  "tortilla_chips": {
+   "und": [
+    "doritos"
+   ]
+  },
+  "chocolate_bar": {
+   "und": [
+    "balisto",
+    "bounty",
+    "ferrero",
+    "ferrero rocher",
+    "kinder",
+    "lindt",
+    "m&m's",
+    "m&ms",
+    "magnum",
+    "mars",
+    "mars wrigley",
+    "maruja",
+    "nutella b-ready",
+    "snickers",
+    "suchard",
+    "toblerone",
+    "twix",
+    "villars"
+   ]
+  },
+  "cookies": {
+   "und": [
+    "allergo",
+    "alsa",
+    "arluy",
+    "artiach",
+    "babybio",
+    "balconi",
+    "belin",
+    "belvita",
+    "biscoff",
+    "biscuiterie de l'abbaye",
+    "biscuiterie de labbaye",
+    "bisson",
+    "bonne maman",
+    "britannia",
+    "brossard",
+    "brun",
+    "carr's",
+    "carrs",
+    "cereal bio",
+    "cheetos",
+    "cuetara",
+    "curly",
+    "cuétara",
+    "delacre",
+    "evernat",
+    "excelo",
+    "favorina",
+    "florbu",
+    "florbú",
+    "galbusera",
+    "gerble",
+    "gerblé",
+    "gran cereale",
+    "gran pavesi",
+    "granola",
+    "gullon",
+    "gullón",
+    "harry's",
+    "harrys",
+    "henry's",
+    "henrys",
+    "ikea",
+    "jacob's",
+    "jacobs",
+    "kallo",
+    "kambly",
+    "karelea",
+    "karéléa",
+    "ker cadelac",
+    "ker cadélac",
+    "kiddylicious",
+    "la mere poulard",
+    "la mère poulard",
+    "le moulin du pivert",
+    "le ster",
+    "leibniz",
+    "lotus",
+    "maison colibri",
+    "maretti",
+    "mcvitie's",
+    "mcvities",
+    "michel et augustin",
+    "misura",
+    "mondelez",
+    "mulino bianco",
+    "n.a! nature addicts",
+    "nairn's",
+    "nairns",
+    "nutella biscuits",
+    "oreo",
+    "papadopoulos",
+    "pavesi",
+    "pural",
+    "reflets de france",
+    "regent's park",
+    "regents park",
+    "ritz",
+    "rivercote",
+    "savour bakes",
+    "sondey",
+    "st michel",
+    "tower gate",
+    "tuc"
+   ]
+  },
+  "cola": {
+   "und": [
+    "coca cola",
+    "coca-cola",
+    "coke zero",
+    "pepsi"
+   ]
+  },
+  "olive_oil": {
+   "und": [
+    "carapelli",
+    "cauvin",
+    "connetable",
+    "connétable",
+    "costa d'oro",
+    "costa doro",
+    "filippo berio",
+    "garbit",
+    "le savoureux",
+    "le tresor des dieux",
+    "le trésor des dieux",
+    "monini",
+    "parmentier",
+    "phare d'eckmühl",
+    "phare deckmuhl",
+    "primadonna",
+    "puget",
+    "soleou",
+    "soléou",
+    "terra delyssa"
+   ]
+  },
+  "dark_chocolate": {
+   "und": [
+    "ethiquable",
+    "fin carre",
+    "fin carré",
+    "green & black's",
+    "green & blacks",
+    "j. d. gross",
+    "kaoka",
+    "lindt & sprungli",
+    "lindt & sprüngli",
+    "lindt excellence"
+   ]
+  },
+  "pasta": {
+   "und": [
+    "ajinomoto",
+    "alpina",
+    "alpina savoie",
+    "barilla",
+    "combino",
+    "comptoir du pastier",
+    "de cecco",
+    "ebro foods",
+    "fiorini",
+    "giovanni rana",
+    "la molisana",
+    "lustucru",
+    "lustucru selection",
+    "nissin",
+    "nongshim",
+    "panzani",
+    "rana",
+    "rummo",
+    "saint jean",
+    "samyang",
+    "suzi wan",
+    "tanoshi",
+    "tien shan",
+    "turini",
+    "vitasia",
+    "yum yum"
+   ]
+  },
+  "mineral_water": {
+   "und": [
+    "ain atlas",
+    "badoit",
+    "cevital",
+    "contrex",
+    "courmayeur",
+    "cristaline",
+    "evian",
+    "mondariz",
+    "mont blanc",
+    "saguaro",
+    "sant'anna",
+    "santanna",
+    "sidi ali",
+    "st yorre",
+    "vittel",
+    "volvic",
+    "wattwiller"
+   ]
+  },
+  "mayonnaise": {
+   "und": [
+    "benedicta",
+    "bénédicta",
+    "hellmann's",
+    "hellmanns",
+    "lesieur"
+   ]
+  },
+  "pretzel": {
+   "und": [
+    "dr. oetker"
+   ]
+  },
+  "drinking_yogurt": {
+   "und": [
+    "actimel",
+    "hipro",
+    "yop gf"
+   ]
+  },
+  "mustard": {
+   "und": [
+    "maille",
+    "reine de dijon"
+   ]
+  },
+  "gummy_bears": {
+   "und": [
+    "haribo",
+    "lutti"
+   ]
+  },
+  "muesli": {
+   "und": [
+    "alpen",
+    "bio&me",
+    "charles vignon",
+    "dorset cereals",
+    "favrichon",
+    "j favrichon",
+    "joseph favrichon",
+    "lizi's",
+    "lizis",
+    "sante",
+    "t&c terres & cereales bio",
+    "t&c terres & céréales bio",
+    "terres & cereales bio",
+    "terres & céréales bio",
+    "terres et cereales",
+    "terres et céréales"
+   ]
+  },
+  "soy_milk": {
+   "und": [
+    "alpro",
+    "sojade",
+    "sojasun"
+   ]
+  },
+  "fruit_kefir": {
+   "und": [
+    "biotiful gut health",
+    "muller",
+    "müller",
+    "pastoret",
+    "yeo valley"
+   ]
+  },
+  "popcorn": {
+   "und": [
+    "proper corn"
+   ]
+  },
+  "rolled_oats": {
+   "und": [
+    "flahavan's",
+    "flahavans"
+   ]
+  }
+ }
 }

@@ -1,5 +1,6 @@
 .env
 .venv/
+.venv-off/
 __pycache__/
 *.pyc
 progress.db
