@@ -477,6 +477,84 @@ func (r *ChoreRepository) CompleteAssignment(ctx context.Context, id uuid.UUID, 
 	return tag.RowsAffected() > 0, nil
 }
 
+// CompleteAssignmentAndAdvance atomically (a) CAS-completes/skips the given
+// assignment, (b) records a completion if `completion` is non-nil, and
+// (c) advances rotation (update state + create next assignment) if both
+// `nextState` and `nextAssignment` are non-nil. Returns processed=false (no
+// error) when the CAS matched no pending row (already processed / concurrent
+// completion), leaving the DB untouched.
+func (r *ChoreRepository) CompleteAssignmentAndAdvance(
+	ctx context.Context,
+	assignmentID uuid.UUID,
+	status string,
+	completedAt time.Time,
+	skipReason *string,
+	completion *models.ChoreCompletion,
+	nextState *models.ChoreRotationState,
+	nextAssignment *models.ChoreAssignment,
+) (processed bool, err error) {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return false, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	tag, err := tx.Exec(ctx, `
+		UPDATE chore_assignments
+		SET status = $1, completed_at = $2, skip_reason = $3, updated_at = NOW()
+		WHERE id = $4 AND status = 'pending'
+	`, status, completedAt, skipReason, assignmentID)
+	if err != nil {
+		return false, fmt.Errorf("failed to complete assignment: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return false, nil // already processed; rollback is a no-op
+	}
+
+	if completion != nil {
+		if completion.ID == uuid.Nil {
+			completion.ID = uuid.New()
+		}
+		if _, err = tx.Exec(ctx, `
+			INSERT INTO chore_completions (id, assignment_id, completed_by, completed_at, notes)
+			VALUES ($1, $2, $3, $4, $5)
+		`, completion.ID, completion.AssignmentID, completion.CompletedBy,
+			completion.CompletedAt, completion.Notes); err != nil {
+			return false, fmt.Errorf("failed to record completion: %w", err)
+		}
+	}
+
+	if nextState != nil && nextAssignment != nil {
+		ut, err := tx.Exec(ctx, `
+			UPDATE chore_rotation_states
+			SET member_order = $1, current_index = $2
+			WHERE id = $3
+		`, nextState.MemberOrder, nextState.CurrentIndex, nextState.ID)
+		if err != nil {
+			return false, fmt.Errorf("failed to update rotation state: %w", err)
+		}
+		if ut.RowsAffected() == 0 {
+			return false, fmt.Errorf("rotation state not found")
+		}
+		if nextAssignment.ID == uuid.Nil {
+			nextAssignment.ID = uuid.New()
+		}
+		if _, err = tx.Exec(ctx, `
+			INSERT INTO chore_assignments (id, chore_id, user_id, status, due_date, assigned_at, completed_at, skip_reason)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		`, nextAssignment.ID, nextAssignment.ChoreID, nextAssignment.UserID,
+			nextAssignment.Status, nextAssignment.DueDate, nextAssignment.AssignedAt,
+			nextAssignment.CompletedAt, nextAssignment.SkipReason); err != nil {
+			return false, fmt.Errorf("failed to create assignment: %w", err)
+		}
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return false, fmt.Errorf("failed to commit chore completion: %w", err)
+	}
+	return true, nil
+}
+
 // DeleteAssignment deletes an assignment by ID.
 func (r *ChoreRepository) DeleteAssignment(ctx context.Context, id uuid.UUID) error {
 	tag, err := r.pool.Exec(ctx, `DELETE FROM chore_assignments WHERE id = $1`, id)
