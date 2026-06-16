@@ -1,4 +1,5 @@
 import '../../storage/app_database.dart';
+import '../canonical_display.dart';
 import 'grocery_classifier_service.dart';
 import 'resolution/ensemble_resolver.dart';
 import 'static_embedding_service.dart';
@@ -211,12 +212,8 @@ class CanonicalResolverService {
     return fuzzyResult;
   }
 
-  String _preferredName(CanonicalItemsTableData item) {
-    // Prefer German name (first market) falling back to English.
-    if (item.nameDe.isNotEmpty) return _titleCase(item.nameDe);
-    if (item.nameEn.isNotEmpty) return _titleCase(item.nameEn);
-    return item.id;
-  }
+  String _preferredName(CanonicalItemsTableData item) =>
+      _titleCase(canonicalDisplayName(item));
 
   static String _normalise(String s) =>
       s.toLowerCase().trim().replaceAll(RegExp(r'\s+'), ' ');

@@ -70,12 +70,16 @@ class _GrocerySuggestionFieldState
   }
 
   void _select(GrocerySuggestion s) {
-    widget.controller.text = s.name;
-    widget.controller.selection =
-        TextSelection.collapsed(offset: s.name.length);
+    // Preserve the brand/word the user typed ("Pringles") and link the
+    // canonical item ("Chips") underneath; only fall back to the canonical
+    // name when the typed text is a fragment or typo (see labelForSelection).
+    final label =
+        GrocerySuggestionService.labelForSelection(widget.controller.text, s.name);
+    widget.controller.text = label;
+    widget.controller.selection = TextSelection.collapsed(offset: label.length);
     setState(() => _suggestions = const []);
     widget.onSelected?.call(s);
-    if (widget.submitOnSelect) widget.onSubmitted?.call(s.name);
+    if (widget.submitOnSelect) widget.onSubmitted?.call(label);
   }
 
   @override

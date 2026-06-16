@@ -1,4 +1,5 @@
 import '../../storage/app_database.dart';
+import '../canonical_display.dart';
 import 'static_embedding_service.dart';
 
 /// A canonical grocery item surfaced as a typed-entry autocomplete suggestion.
@@ -180,27 +181,41 @@ class GrocerySuggestionService {
   }
 
   /// Labels a suggestion in the language the user typed. We can't trust the
-  /// matched alias's stored `lang` — the seed cross-links each item's English
-  /// and German spellings under both languages — so we infer intent directly
-  /// from the query: whichever of the two canonical names the typed text is
-  /// closer to wins. English is the default on a tie or when a name is missing.
+  /// matched alias's stored `lang` — the seed cross-links each item's name in
+  /// every shipped market (de/en/fr/es) under multiple languages — so we infer
+  /// intent directly from the query: whichever canonical name the typed text is
+  /// closest to wins. Ties break toward the user's locale, then English.
   static String _displayName(CanonicalItemsTableData it, String query) {
-    final en = it.nameEn;
-    final de = it.nameDe;
-    if (en.isEmpty) return _cap(de.isEmpty ? it.id : de);
-    if (de.isEmpty) return _cap(en);
+    final candidates = <String, String>{
+      'en': it.nameEn,
+      'de': it.nameDe,
+      'fr': it.nameFr,
+      'es': it.nameEs,
+    }..removeWhere((_, name) => name.isEmpty);
+    if (candidates.isEmpty) return _cap(it.id);
 
-    final base = _closerToQuery(query, en, de) ? en : de;
-    return _cap(base);
+    final q = query.toLowerCase();
+    String? bestLang;
+    var bestScore = 1 << 30;
+    for (final entry in candidates.entries) {
+      final score = _matchScore(q, entry.value.toLowerCase());
+      final better = score < bestScore ||
+          (score == bestScore &&
+              _localeRank(entry.key) < _localeRank(bestLang!));
+      if (better) {
+        bestScore = score;
+        bestLang = entry.key;
+      }
+    }
+    return _cap(candidates[bestLang]!);
   }
 
-  /// True when [query] is closer to [en] than to [de]. A prefix relation
-  /// counts as the best possible match; otherwise we fall back to edit
-  /// distance. Ties resolve to English (the `<=`).
-  static bool _closerToQuery(String query, String en, String de) {
-    final scoreEn = _matchScore(query, en.toLowerCase());
-    final scoreDe = _matchScore(query, de.toLowerCase());
-    return scoreEn <= scoreDe;
+  /// Tie-break preference among equally-close names: the user's locale first,
+  /// then English, then any remaining market. Lower is preferred.
+  static int _localeRank(String lang) {
+    if (lang == groceryDisplayLang) return 0;
+    if (lang == 'en') return 1;
+    return 2;
   }
 
   static int _matchScore(String query, String name) {
@@ -241,6 +256,28 @@ class GrocerySuggestionService {
 
   static String _cap(String s) =>
       s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+
+  /// Chooses the list-item label when a suggestion is tapped.
+  ///
+  /// The brand the user typed is preserved when it's a distinct, well-formed
+  /// token — e.g. "Pringles" stays "Pringles" while the canonical "Chips" is
+  /// linked underneath for aisle/dedupe/restock intelligence. It is replaced by
+  /// the canonical [canonicalName] only when the typed text reads as a fragment
+  /// or typo of it (e.g. "mlch" → "Milch", "banann" → "Banane"), so
+  /// autocomplete still cleans up sloppy input. Casing of the typed brand is
+  /// preserved (only the first letter is upper-cased).
+  static String labelForSelection(String typed, String canonicalName) {
+    final t = typed.trim();
+    if (t.isEmpty) return canonicalName;
+    final lt = t.toLowerCase();
+    final lc = canonicalName.toLowerCase();
+    if (lt == lc) return canonicalName; // identical → canonical casing
+    if (lc.startsWith(lt)) return canonicalName; // a prefix → a correction
+    final dist = _levenshtein(lt, lc);
+    final maxLen = lt.length > lc.length ? lt.length : lc.length;
+    if (dist <= (maxLen <= 5 ? 1 : 2)) return canonicalName; // close typo
+    return _cap(t); // distinct word/brand → keep what the user typed
+  }
 }
 
 /// A suggestion plus its relevance [tier] (0 prefix, 1 fuzzy, 2 semantic) and

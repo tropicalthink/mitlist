@@ -182,6 +182,8 @@ class CanonicalItemsTable extends Table {
   TextColumn get groupId => text().named('group_id')();
   TextColumn get nameDe => text().named('name_de').withDefault(const Constant(''))();
   TextColumn get nameEn => text().named('name_en').withDefault(const Constant(''))();
+  TextColumn get nameFr => text().named('name_fr').withDefault(const Constant(''))();
+  TextColumn get nameEs => text().named('name_es').withDefault(const Constant(''))();
   TextColumn get category => text().withDefault(const Constant(''))();
   TextColumn get defaultUnit => text().named('default_unit').withDefault(const Constant(''))();
   TextColumn get productId => text().named('product_id').nullable()();
@@ -328,7 +330,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   /// Creates all hot-query indexes.  Called from both onCreate and the v4
   /// onUpgrade block so that fresh installs and upgrades both get the indexes.
@@ -499,6 +501,14 @@ FROM list_items_table;
             await customStatement(
                 'INSERT INTO item_aliases_fts(rowid, alias_text) '
                 'SELECT rowid, alias_text FROM item_aliases_table;');
+          }
+          if (from < 9) {
+            // Store the French and Spanish canonical names so the suggestion
+            // UI can show the item in the user's locale (es/fr markets are
+            // shipped in the seed). Default ''; the next seed reingest (version
+            // bump) backfills the values for global rows.
+            await m.addColumn(canonicalItemsTable, canonicalItemsTable.nameFr);
+            await m.addColumn(canonicalItemsTable, canonicalItemsTable.nameEs);
           }
         },
         beforeOpen: (details) async {

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show visibleForTesting;
 
 import '../storage/app_database.dart';
+import 'canonical_display.dart';
 
 /// A single item predicted to need restocking based on past purchase cadence.
 class RestockSuggestion {
@@ -143,13 +144,8 @@ class RestockService {
     return gaps[gaps.length ~/ 2];
   }
 
-  static String _displayName(CanonicalItemsTableData it) {
-    final en = it.nameEn;
-    final de = it.nameDe;
-    if (en.isNotEmpty) return _cap(en);
-    if (de.isNotEmpty) return _cap(de);
-    return it.id;
-  }
+  static String _displayName(CanonicalItemsTableData it) =>
+      _cap(canonicalDisplayName(it));
 
   static String _cap(String s) =>
       s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
