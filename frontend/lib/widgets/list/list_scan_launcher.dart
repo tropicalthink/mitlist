@@ -88,7 +88,13 @@ Future<int?> launchListScan(
     final isOnline = await connectivity.isOnline();
 
     final result = await pipeline.run(
-      imageBytes: capture.processedBytes,
+      // Feed the ORIGINAL capture, not the preview-binarized bytes: the
+      // pipeline's first two steps are perspective-rectify (needs the clean
+      // photo to find the document quad) and enhance/binarize. Passing the
+      // already-binarized preview defeated rectification (Canny on a dithered
+      // binary finds no quad → no crop) and double-binarized the frame, which
+      // is what produced garbage OCR. processedBytes stays for the preview UI.
+      imageBytes: capture.originalBytes,
       groupId: groupId,
       storeId: ref.read(selectedStoreIdProvider),
       listContextCanonicalIds: listContextCanonicalIds,

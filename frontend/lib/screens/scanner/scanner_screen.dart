@@ -113,7 +113,10 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       final isOnline = await connectivity.isOnline();
 
       final result = await pipeline.run(
-        imageBytes: capture.processedBytes,
+        // Original capture, not the preview-binarized bytes — the pipeline
+        // rectifies (needs the clean photo to find the document quad) and
+        // binarizes internally. See list_scan_launcher for the full rationale.
+        imageBytes: capture.originalBytes,
         groupId: groupId,
         storeId: ref.read(selectedStoreIdProvider),
         isOnline: isOnline,
