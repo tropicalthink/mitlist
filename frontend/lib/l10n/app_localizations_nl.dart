@@ -1097,6 +1097,11 @@ class AppLocalizationsNl extends AppLocalizations {
       'Houd het voor nu privé. Je kunt het later delen.';
 
   @override
+  String recipeCreationSharedWithGroups(String names) {
+    return 'Gedeeld met $names';
+  }
+
+  @override
   String get recipeCreationIngredients => 'Ingrediënten';
 
   @override
@@ -1681,6 +1686,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get listOptionsTooltip => 'Lijstopties';
+
+  @override
+  String listSharedWith(String name) {
+    return 'Gedeeld met $name';
+  }
 
   @override
   String listDetailEditName(String name) {

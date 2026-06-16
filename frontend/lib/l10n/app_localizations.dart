@@ -2000,6 +2000,12 @@ abstract class AppLocalizations {
   /// **'Keep it private for now. You can share it later.'**
   String get recipeCreationSaveForHouseholdPrivate;
 
+  /// Switch subtitle listing group names when recipe is public
+  ///
+  /// In en, this message translates to:
+  /// **'Shared with {names}'**
+  String recipeCreationSharedWithGroups(String names);
+
   /// Section header for ingredients
   ///
   /// In en, this message translates to:
@@ -3032,6 +3038,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'List options'**
   String get listOptionsTooltip;
+
+  /// Label showing which household a list is shared with
+  ///
+  /// In en, this message translates to:
+  /// **'Shared with {name}'**
+  String listSharedWith(String name);
 
   /// Semantics for editing list name
   ///

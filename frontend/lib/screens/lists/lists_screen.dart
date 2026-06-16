@@ -1056,6 +1056,9 @@ class _ListCard extends ConsumerWidget {
     final isTodo = list.type.toLowerCase() == 'todo';
 
     final itemCount = list.itemCount;
+    final groups = ref.watch(cachedGroupsProvider).valueOrNull ?? const [];
+    final groupName =
+        groups.where((g) => g.id == list.groupId).firstOrNull?.name;
 
     return Material(
       color: accent.tileBackground,
@@ -1140,6 +1143,33 @@ class _ListCard extends ConsumerWidget {
                         ),
                     ],
                     const SizedBox(height: MitlistSpacing.sm),
+                    if (groupName != null) ...[
+                      Row(
+                        children: [
+                          AppIcon(
+                            name: 'userGroup',
+                            size: 11,
+                            color: snippetColor.withValues(alpha: 0.55),
+                          ),
+                          const SizedBox(width: MitlistSpacing.xs),
+                          Expanded(
+                            child: Text(
+                              l10n.listSharedWith(groupName),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                    color: snippetColor.withValues(alpha: 0.55),
+                                    fontSize: 10,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: MitlistSpacing.xs),
+                    ],
                     Row(
                       children: [
                         if (itemCount != null && itemCount > 0)

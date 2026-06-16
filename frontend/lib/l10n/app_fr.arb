@@ -1439,6 +1439,8 @@
   "@recipeCreationSaveForHouseholdPrivate": {
     "description": "Switch subtitle when private"
   },
+  "recipeCreationSharedWithGroups": "Partagé avec {names}",
+  "@recipeCreationSharedWithGroups": { "description": "Switch subtitle listing group names when recipe is public", "placeholders": { "names": { "type": "String" } } },
   "recipeCreationIngredients": "Ingrédients",
   "@recipeCreationIngredients": {
     "description": "Section header for ingredients"
@@ -2240,6 +2242,8 @@
   "@listOptionsTooltip": {
     "description": "Tooltip for list options menu"
   },
+  "listSharedWith": "Partagé avec {name}",
+  "@listSharedWith": { "description": "Label showing which household a list is shared with", "placeholders": { "name": { "type": "String" } } },
   "listDetailEditName": "Modifier le nom de la liste, {name}",
   "@listDetailEditName": {
     "description": "Semantics for editing list name",

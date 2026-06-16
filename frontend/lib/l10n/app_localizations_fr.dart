@@ -1095,6 +1095,11 @@ class AppLocalizationsFr extends AppLocalizations {
       'Garde-la privée pour l\'instant. Tu pourras la partager plus tard.';
 
   @override
+  String recipeCreationSharedWithGroups(String names) {
+    return 'Partagé avec $names';
+  }
+
+  @override
   String get recipeCreationIngredients => 'Ingrédients';
 
   @override
@@ -1681,6 +1686,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get listOptionsTooltip => 'Options de la liste';
+
+  @override
+  String listSharedWith(String name) {
+    return 'Partagé avec $name';
+  }
 
   @override
   String listDetailEditName(String name) {

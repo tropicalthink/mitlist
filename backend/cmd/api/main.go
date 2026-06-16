@@ -76,6 +76,17 @@ func main() {
 	})
 	srv.Router().Mount("/internal/health", healthHandler)
 
+	// Web → app redirect: browsers open this URL, server redirects to the deep link.
+	// Shared links use https://mitlist.me/join/<code>; this makes them tappable.
+	srv.Router().Get("/join/{code}", func(w http.ResponseWriter, r *http.Request) {
+		code := chi.URLParam(r, "code")
+		if len(code) < 4 {
+			http.Error(w, "invalid invite code", http.StatusBadRequest)
+			return
+		}
+		http.Redirect(w, r, "mitlist://join/"+code, http.StatusFound)
+	})
+
 	authHandler := handlers.NewAuthHandler(cfg, cnt.UserService(), cnt.GuestService(), cnt.OAuthService(), cnt.JWT(), cnt.Redis().Client())
 	srv.Router().Route(cfg.APIPrefix+"/v1", func(r chi.Router) {
 		authHandler.RegisterRoutes(r)

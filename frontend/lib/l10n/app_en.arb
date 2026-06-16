@@ -643,6 +643,8 @@
   "@recipeCreationSaveForHouseholdDesc": { "description": "Switch subtitle when sharing" },
   "recipeCreationSaveForHouseholdPrivate": "Keep it private for now. You can share it later.",
   "@recipeCreationSaveForHouseholdPrivate": { "description": "Switch subtitle when private" },
+  "recipeCreationSharedWithGroups": "Shared with {names}",
+  "@recipeCreationSharedWithGroups": { "description": "Switch subtitle listing group names when recipe is public", "placeholders": { "names": { "type": "String" } } },
   "recipeCreationIngredients": "Ingredients",
   "@recipeCreationIngredients": { "description": "Section header for ingredients" },
   "recipeCreationIngredientsHelper": "Add one ingredient per row.",
@@ -994,6 +996,8 @@
   "@listQuickAddItemSemantics": { "description": "Semantics for quick-add", "placeholders": { "name": { "type": "String" } } },
   "listOptionsTooltip": "List options",
   "@listOptionsTooltip": { "description": "Tooltip for list options menu" },
+  "listSharedWith": "Shared with {name}",
+  "@listSharedWith": { "description": "Label showing which household a list is shared with", "placeholders": { "name": { "type": "String" } } },
 
   "listDetailEditName": "Edit list name, {name}",
   "@listDetailEditName": { "description": "Semantics for editing list name", "placeholders": { "name": { "type": "String" } } },

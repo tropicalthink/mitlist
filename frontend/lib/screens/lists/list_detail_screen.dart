@@ -1366,8 +1366,41 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       ),
       body: Column(
         children: [
+          if (_groupId != null) _buildGroupBanner(),
           Expanded(child: _buildBody()),
           if (!_isLoading && _errorMessage == null) _buildBottomBar(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGroupBanner() {
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final groups = ref.watch(cachedGroupsProvider).valueOrNull ?? const [];
+    final groupName = groups.where((g) => g.id == _groupId).firstOrNull?.name;
+    if (groupName == null) return const SizedBox.shrink();
+    return Container(
+      width: double.infinity,
+      color: colorScheme.surfaceContainerLow,
+      padding: const EdgeInsets.symmetric(
+        horizontal: MitlistSpacing.md,
+        vertical: MitlistSpacing.xs,
+      ),
+      child: Row(
+        children: [
+          AppIcon(name: 'userGroup', size: 13, color: colorScheme.onSurfaceVariant),
+          const SizedBox(width: MitlistSpacing.xs),
+          Expanded(
+            child: Text(
+              l10n.listSharedWith(groupName),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );
