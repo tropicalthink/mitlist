@@ -21,6 +21,9 @@ HERE = pathlib.Path(__file__).resolve().parent
 SRC = HERE / "data" / "seed.json"
 DST = HERE.parent.parent / "frontend" / "assets" / "grocery" / "seed.json"
 CURATED_ALIASES = HERE / "data" / "curated_aliases.jsonl"
+# Mined OCR/typo + fr/es name-variant aliases auto-promoted from corrections
+# (plan 012 A4, typo-like subset only; cross-word mappings stay deferred).
+CURATED_MINED = HERE / "data" / "curated_aliases_mined.jsonl"
 ALIAS_BLOCKLIST = HERE / "data" / "alias_blocklist.jsonl"
 ASSET_VERSION = 4
 
@@ -154,6 +157,9 @@ def main():
 
     # Load enrichment data
     curated_by_id = load_curated_aliases(CURATED_ALIASES)
+    if CURATED_MINED.exists():
+        for cid, entries in load_curated_aliases(CURATED_MINED).items():
+            curated_by_id.setdefault(cid, []).extend(entries)
     blocklist = load_blocklist(ALIAS_BLOCKLIST)
 
     # Validate all curated canonical_ids exist in the seed
