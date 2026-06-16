@@ -145,7 +145,22 @@ func TestNotification_UpdatePreferences(t *testing.T) {
 	user := createTestUser(t, "uppref@example.com", "password123")
 	token := generateTestToken(user.ID)
 
-	body := map[string]any{"type": "test", "enabled": true, "channel": "push"}
+	groupRepo := newTestGroupRepo()
+	group := &models.Group{
+		ID:        uuid.New(),
+		Name:      "Pref Group",
+		CreatedBy: user.ID,
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+	}
+	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
+
+	body := map[string]any{
+		"group_id":     group.ID.String(),
+		"chore_due":    true,
+		"push_enabled": true,
+	}
 	rec := execRequest(t, router, "PATCH", "/notifications/preferences", body, token)
 	requireStatus(t, rec, http.StatusNoContent)
 }

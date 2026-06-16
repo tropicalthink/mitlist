@@ -27,32 +27,37 @@ func (r *ActivityRepository) ListRecentActivity(ctx context.Context, groupID uui
 		limit = 10
 	}
 	query := `
-		SELECT id, type, title, created_at, user_id, group_id, entity_type, entity_id FROM (
-			SELECT li.id::text, 'list_item_added' as type, li.name as title, li.created_at, li.added_by as user_id, l.group_id, 'list' as entity_type, l.id::text as entity_id
+		SELECT events.id, events.type, events.title, events.created_at, events.user_id, events.group_id,
+		       events.entity_type, events.entity_id, events.context,
+		       NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), '') AS user_name
+		FROM (
+			SELECT li.id::text, 'list_item_added' as type, li.name as title, li.created_at, li.added_by as user_id, l.group_id, 'list' as entity_type, l.id::text as entity_id, l.name as context
 			FROM list_items li
 			JOIN lists l ON l.id = li.list_id
 			WHERE l.group_id = $1
 			UNION ALL
-			SELECT id::text, 'expense_created', description, created_at, payer_id, group_id, 'expense', id::text
+			SELECT id::text, 'expense_created', description, created_at, payer_id, group_id, 'expense', id::text, NULL::text
 			FROM expenses
 			WHERE group_id = $1
 			UNION ALL
-			SELECT c.id::text, 'chore_completed', ch.name, c.completed_at as created_at, c.completed_by as user_id, ch.group_id, 'chore', ch.id::text
+			SELECT c.id::text, 'chore_completed', ch.name, c.completed_at as created_at, c.completed_by as user_id, ch.group_id, 'chore', ch.id::text, NULL::text
 			FROM chore_completions c
 			JOIN chore_assignments a ON a.id = c.assignment_id
 			JOIN chores ch ON ch.id = a.chore_id
 			WHERE ch.group_id = $1
 			UNION ALL
-			SELECT id::text, 'meal_plan_created', 'Meal planned', created_at, cook_user_id, group_id, 'meal_plan', id::text
-			FROM meal_plans
-			WHERE group_id = $1
+			SELECT mp.id::text, 'meal_plan_created', r.title, mp.created_at, mp.cook_user_id, mp.group_id, 'meal_plan', mp.id::text, mp.slot
+			FROM meal_plans mp
+			JOIN recipes r ON r.id = mp.recipe_id
+			WHERE mp.group_id = $1
 			UNION ALL
-			SELECT rcp.id::text, 'recipe_added', rcp.title, rcp.created_at, rcp.user_id, gm.group_id, 'recipe', rcp.id::text
+			SELECT rcp.id::text, 'recipe_added', rcp.title, rcp.created_at, rcp.user_id, gm.group_id, 'recipe', rcp.id::text, NULL::text
 			FROM recipes rcp
 			JOIN group_memberships gm ON gm.user_id = rcp.user_id
 			WHERE gm.group_id = $1
 		) events
-		ORDER BY created_at DESC
+		LEFT JOIN users u ON u.id = events.user_id
+		ORDER BY events.created_at DESC
 		LIMIT $2
 	`
 	rows, err := r.pool.Query(ctx, query, groupID, limit)
@@ -65,10 +70,13 @@ func (r *ActivityRepository) ListRecentActivity(ctx context.Context, groupID uui
 	for rows.Next() {
 		var e models.ActivityEvent
 		var userID *uuid.UUID
-		if err := rows.Scan(&e.ID, &e.Type, &e.Title, &e.CreatedAt, &userID, &e.GroupID, &e.EntityType, &e.EntityId); err != nil {
+		var context, userName *string
+		if err := rows.Scan(&e.ID, &e.Type, &e.Title, &e.CreatedAt, &userID, &e.GroupID, &e.EntityType, &e.EntityId, &context, &userName); err != nil {
 			return nil, fmt.Errorf("scan activity event: %w", err)
 		}
 		e.UserID = userID
+		e.Context = context
+		e.UserName = userName
 		events = append(events, e)
 	}
 	if err := rows.Err(); err != nil {

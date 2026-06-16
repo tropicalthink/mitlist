@@ -28,6 +28,7 @@ func TestList_CreateList(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 
 	body := map[string]any{"group_id": group.ID.String(), "name": "Shopping", "type": "shopping"}
 	rec := execRequest(t, router, "POST", "/api/v1/lists", body, token)
@@ -62,6 +63,7 @@ func TestList_GetList(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 	listRepo := newTestListRepo()
 	list := &models.List{
 		ID:        uuid.New(),
@@ -106,6 +108,7 @@ func TestList_UpdateList(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 	listRepo := newTestListRepo()
 	list := &models.List{
 		ID:        uuid.New(),
@@ -141,6 +144,7 @@ func TestList_DeleteList(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 	listRepo := newTestListRepo()
 	list := &models.List{
 		ID:        uuid.New(),
@@ -174,6 +178,7 @@ func TestList_CreateItem(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 	listRepo := newTestListRepo()
 	list := &models.List{
 		ID:        uuid.New(),
@@ -209,6 +214,7 @@ func TestList_ListItems(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 	listRepo := newTestListRepo()
 	list := &models.List{
 		ID:        uuid.New(),
@@ -253,6 +259,7 @@ func TestList_UpdateItem(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 	listRepo := newTestListRepo()
 	list := &models.List{
 		ID:        uuid.New(),
@@ -295,6 +302,7 @@ func TestList_UpdateItem_OptimisticConcurrency(t *testing.T) {
 		CreatedAt: time.Now().UTC(), UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 	listRepo := newTestListRepo()
 	list := &models.List{
 		ID: uuid.New(), GroupID: group.ID, Name: "My List", Type: "shopping",
@@ -353,6 +361,7 @@ func TestList_DeleteItem(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 	listRepo := newTestListRepo()
 	list := &models.List{
 		ID:        uuid.New(),
@@ -393,6 +402,7 @@ func TestList_AddRemoveAndClearItems(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 	listRepo := newTestListRepo()
 	list := &models.List{
 		ID:        uuid.New(),
@@ -444,6 +454,7 @@ func TestList_ReorderItems(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 	listRepo := newTestListRepo()
 	list := &models.List{
 		ID:        uuid.New(),

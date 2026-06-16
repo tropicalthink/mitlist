@@ -28,6 +28,7 @@ func TestTemplate_CreateTemplate(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 
 	body := map[string]any{"group_id": group.ID.String(), "name": "Weekly Shop"}
 	rec := execRequest(t, router, "POST", "/api/v1/templates", body, token)
@@ -53,6 +54,7 @@ func TestTemplate_ListTemplates(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 	templateRepo := newTestTemplateRepo()
 	require.NoError(t, templateRepo.CreateTemplate(context.Background(), &models.Template{
 		ID:        uuid.New(),
@@ -95,6 +97,7 @@ func TestTemplate_DeleteTemplate(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 	templateRepo := newTestTemplateRepo()
 	tpl := &models.Template{
 		ID:        uuid.New(),
@@ -124,6 +127,7 @@ func TestTemplate_CreateChoreTemplate(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 
 	body := map[string]any{
 		"group_id":      group.ID.String(),
@@ -154,6 +158,7 @@ func TestTemplate_ListChoreTemplates(t *testing.T) {
 		UpdatedAt: time.Now().UTC(),
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
 	templateRepo := newTestTemplateRepo()
 	require.NoError(t, templateRepo.CreateChoreTemplate(context.Background(), &models.ChoreTemplate{
 		ID:           uuid.New(),

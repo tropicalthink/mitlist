@@ -110,19 +110,19 @@ func CodeForError(err error) string {
 		return "ok"
 	}
 	var nf *NotFoundError
-	if errors.As(err, &nf) {
+	if errors.As(err, &nf) || errors.Is(err, ErrNotFound) {
 		return "not_found"
 	}
 	var pd *PermissionDeniedError
-	if errors.As(err, &pd) {
+	if errors.As(err, &pd) || errors.Is(err, ErrPermissionDenied) {
 		return "permission_denied"
 	}
 	var ve *ValidationError
-	if errors.As(err, &ve) {
+	if errors.As(err, &ve) || errors.Is(err, ErrValidation) {
 		return "validation_error"
 	}
 	var ce *ConflictError
-	if errors.As(err, &ce) {
+	if errors.As(err, &ce) || errors.Is(err, ErrConflict) {
 		return "conflict"
 	}
 	if errors.Is(err, ErrUnauthorized) {
@@ -137,19 +137,19 @@ func HTTPStatusForError(err error) int {
 		return http.StatusOK
 	}
 	var nf *NotFoundError
-	if errors.As(err, &nf) {
+	if errors.As(err, &nf) || errors.Is(err, ErrNotFound) {
 		return http.StatusNotFound
 	}
 	var pd *PermissionDeniedError
-	if errors.As(err, &pd) {
+	if errors.As(err, &pd) || errors.Is(err, ErrPermissionDenied) {
 		return http.StatusForbidden
 	}
 	var ve *ValidationError
-	if errors.As(err, &ve) {
+	if errors.As(err, &ve) || errors.Is(err, ErrValidation) {
 		return http.StatusBadRequest
 	}
 	var ce *ConflictError
-	if errors.As(err, &ce) {
+	if errors.As(err, &ce) || errors.Is(err, ErrConflict) {
 		return http.StatusConflict
 	}
 	if errors.Is(err, ErrUnauthorized) {

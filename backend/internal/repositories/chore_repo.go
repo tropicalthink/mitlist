@@ -25,6 +25,14 @@ func NewChoreRepository(pool DBTX) *ChoreRepository {
 // CreateChore inserts a new chore.
 func (r *ChoreRepository) CreateChore(ctx context.Context, chore *models.Chore) error {
 	chore.ID = uuid.New()
+	periodConfig := chore.PeriodConfig
+	if periodConfig == nil {
+		periodConfig = []string{}
+	}
+	assignmentConfig := chore.AssignmentConfig
+	if assignmentConfig == nil {
+		assignmentConfig = []uuid.UUID{}
+	}
 	query := `
 		INSERT INTO chores (
 			id, group_id, name, description, rotation_type, frequency,
@@ -36,9 +44,9 @@ func (r *ChoreRepository) CreateChore(ctx context.Context, chore *models.Chore) 
 	`
 	return r.pool.QueryRow(ctx, query,
 		chore.ID, chore.GroupID, chore.Name, chore.Description,
-		chore.RotationType, chore.Frequency, chore.PeriodInterval, chore.PeriodConfig,
+		chore.RotationType, chore.Frequency, chore.PeriodInterval, periodConfig,
 		chore.StartDate, chore.TrackDateOnly, chore.Rollover, chore.AssignmentType,
-		chore.AssignmentConfig, chore.IsActive, chore.Supplies, chore.Category,
+		assignmentConfig, chore.IsActive, chore.Supplies, chore.Category,
 	).Scan(&chore.CreatedAt, &chore.UpdatedAt)
 }
 
@@ -467,7 +475,7 @@ func (r *ChoreRepository) UpdateAssignment(ctx context.Context, assignment *mode
 func (r *ChoreRepository) CompleteAssignment(ctx context.Context, id uuid.UUID, status string, completedAt time.Time, skipReason *string) (bool, error) {
 	query := `
 		UPDATE chore_assignments
-		SET status = $1, completed_at = $2, skip_reason = $3, updated_at = NOW()
+		SET status = $1, completed_at = $2, skip_reason = $3
 		WHERE id = $4 AND status = 'pending'
 	`
 	tag, err := r.pool.Exec(ctx, query, status, completedAt, skipReason, id)
@@ -475,6 +483,84 @@ func (r *ChoreRepository) CompleteAssignment(ctx context.Context, id uuid.UUID, 
 		return false, fmt.Errorf("failed to complete assignment: %w", err)
 	}
 	return tag.RowsAffected() > 0, nil
+}
+
+// CompleteAssignmentAndAdvance atomically (a) CAS-completes/skips the given
+// assignment, (b) records a completion if `completion` is non-nil, and
+// (c) advances rotation (update state + create next assignment) if both
+// `nextState` and `nextAssignment` are non-nil. Returns processed=false (no
+// error) when the CAS matched no pending row (already processed / concurrent
+// completion), leaving the DB untouched.
+func (r *ChoreRepository) CompleteAssignmentAndAdvance(
+	ctx context.Context,
+	assignmentID uuid.UUID,
+	status string,
+	completedAt time.Time,
+	skipReason *string,
+	completion *models.ChoreCompletion,
+	nextState *models.ChoreRotationState,
+	nextAssignment *models.ChoreAssignment,
+) (processed bool, err error) {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return false, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	tag, err := tx.Exec(ctx, `
+		UPDATE chore_assignments
+		SET status = $1, completed_at = $2, skip_reason = $3
+		WHERE id = $4 AND status = 'pending'
+	`, status, completedAt, skipReason, assignmentID)
+	if err != nil {
+		return false, fmt.Errorf("failed to complete assignment: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return false, nil // already processed; rollback is a no-op
+	}
+
+	if completion != nil {
+		if completion.ID == uuid.Nil {
+			completion.ID = uuid.New()
+		}
+		if _, err = tx.Exec(ctx, `
+			INSERT INTO chore_completions (id, assignment_id, completed_by, completed_at, notes)
+			VALUES ($1, $2, $3, $4, $5)
+		`, completion.ID, completion.AssignmentID, completion.CompletedBy,
+			completion.CompletedAt, completion.Notes); err != nil {
+			return false, fmt.Errorf("failed to record completion: %w", err)
+		}
+	}
+
+	if nextState != nil && nextAssignment != nil {
+		ut, err := tx.Exec(ctx, `
+			UPDATE chore_rotation_states
+			SET member_order = $1, current_index = $2
+			WHERE id = $3
+		`, nextState.MemberOrder, nextState.CurrentIndex, nextState.ID)
+		if err != nil {
+			return false, fmt.Errorf("failed to update rotation state: %w", err)
+		}
+		if ut.RowsAffected() == 0 {
+			return false, fmt.Errorf("rotation state not found")
+		}
+		if nextAssignment.ID == uuid.Nil {
+			nextAssignment.ID = uuid.New()
+		}
+		if _, err = tx.Exec(ctx, `
+			INSERT INTO chore_assignments (id, chore_id, user_id, status, due_date, assigned_at, completed_at, skip_reason)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		`, nextAssignment.ID, nextAssignment.ChoreID, nextAssignment.UserID,
+			nextAssignment.Status, nextAssignment.DueDate, nextAssignment.AssignedAt,
+			nextAssignment.CompletedAt, nextAssignment.SkipReason); err != nil {
+			return false, fmt.Errorf("failed to create assignment: %w", err)
+		}
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return false, fmt.Errorf("failed to commit chore completion: %w", err)
+	}
+	return true, nil
 }
 
 // DeleteAssignment deletes an assignment by ID.

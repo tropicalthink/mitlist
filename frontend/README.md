@@ -9,6 +9,9 @@ cd frontend
 flutter pub get
 ```
 
+Generated `*.g.dart` files are committed. To regenerate them, see "Regenerating
+generated code" in `AGENTS.md` (a temporary retrofit override is required).
+
 ## Running
 
 ```bash

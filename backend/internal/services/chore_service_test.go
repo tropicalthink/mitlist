@@ -245,17 +245,39 @@ func TestChoreService_CompleteChore(t *testing.T) {
 
 		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 		choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{ID: choreID, GroupID: groupID}, nil)
-		choreRepo.On("GetPendingAssignmentByChore", ctx, choreID).Return(&models.ChoreAssignment{ID: assignID, ChoreID: choreID}, nil)
-		choreRepo.On("CompleteAssignment", ctx, assignID, "completed", mock.AnythingOfType("time.Time"), (*string)(nil)).Return(true, nil)
-		choreRepo.On("CreateCompletion", ctx, mock.AnythingOfType("*models.ChoreCompletion")).Return(nil)
+		choreRepo.On("GetPendingAssignmentByChore", ctx, choreID).Return(&models.ChoreAssignment{ID: assignID, ChoreID: choreID, UserID: member1}, nil)
 		choreRepo.On("GetRotationState", ctx, choreID).Return(&models.ChoreRotationState{
 			ChoreID: choreID, MemberOrder: []uuid.UUID{member1}, CurrentIndex: 0,
 		}, nil)
-		choreRepo.On("UpdateRotationState", ctx, mock.AnythingOfType("*models.ChoreRotationState")).Return(nil)
-		choreRepo.On("CreateAssignment", ctx, mock.AnythingOfType("*models.ChoreAssignment")).Return(nil)
+		choreRepo.On("CompleteAssignmentAndAdvance", ctx, assignID, "completed", mock.AnythingOfType("time.Time"), (*string)(nil),
+			mock.AnythingOfType("*models.ChoreCompletion"),
+			mock.AnythingOfType("*models.ChoreRotationState"),
+			mock.AnythingOfType("*models.ChoreAssignment")).Return(true, nil)
 
 		err := svc.CompleteChore(ctx, user, choreID, nil)
 		require.NoError(t, err)
+		choreRepo.AssertExpectations(t)
+	})
+
+	t.Run("conflict when already processed", func(t *testing.T) {
+		choreRepo := new(mocks.MockChoreRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewChoreService(choreRepo, groupRepo, nil)
+
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
+		choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{ID: choreID, GroupID: groupID}, nil)
+		choreRepo.On("GetPendingAssignmentByChore", ctx, choreID).Return(&models.ChoreAssignment{ID: assignID, ChoreID: choreID, UserID: member1}, nil)
+		choreRepo.On("GetRotationState", ctx, choreID).Return(&models.ChoreRotationState{
+			ChoreID: choreID, MemberOrder: []uuid.UUID{member1}, CurrentIndex: 0,
+		}, nil)
+		choreRepo.On("CompleteAssignmentAndAdvance", ctx, assignID, "completed", mock.AnythingOfType("time.Time"), (*string)(nil),
+			mock.AnythingOfType("*models.ChoreCompletion"),
+			mock.AnythingOfType("*models.ChoreRotationState"),
+			mock.AnythingOfType("*models.ChoreAssignment")).Return(false, nil)
+
+		err := svc.CompleteChore(ctx, user, choreID, nil)
+		var conflict *api.ConflictError
+		require.ErrorAs(t, err, &conflict)
 	})
 }
 
@@ -274,16 +296,18 @@ func TestChoreService_SkipChore(t *testing.T) {
 
 		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
 		choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{ID: choreID, GroupID: groupID}, nil)
-		choreRepo.On("GetPendingAssignmentByChore", ctx, choreID).Return(&models.ChoreAssignment{ID: assignID, ChoreID: choreID}, nil)
-		choreRepo.On("CompleteAssignment", ctx, assignID, "skipped", mock.AnythingOfType("time.Time"), (*string)(nil)).Return(true, nil)
+		choreRepo.On("GetPendingAssignmentByChore", ctx, choreID).Return(&models.ChoreAssignment{ID: assignID, ChoreID: choreID, UserID: member1}, nil)
 		choreRepo.On("GetRotationState", ctx, choreID).Return(&models.ChoreRotationState{
 			ChoreID: choreID, MemberOrder: []uuid.UUID{member1}, CurrentIndex: 0,
 		}, nil)
-		choreRepo.On("UpdateRotationState", ctx, mock.AnythingOfType("*models.ChoreRotationState")).Return(nil)
-		choreRepo.On("CreateAssignment", ctx, mock.AnythingOfType("*models.ChoreAssignment")).Return(nil)
+		choreRepo.On("CompleteAssignmentAndAdvance", ctx, assignID, "skipped", mock.AnythingOfType("time.Time"), (*string)(nil),
+			(*models.ChoreCompletion)(nil),
+			mock.AnythingOfType("*models.ChoreRotationState"),
+			mock.AnythingOfType("*models.ChoreAssignment")).Return(true, nil)
 
 		err := svc.SkipChore(ctx, user, choreID, nil)
 		require.NoError(t, err)
+		choreRepo.AssertExpectations(t)
 	})
 }
 

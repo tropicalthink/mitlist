@@ -402,24 +402,6 @@ func (s *ChoreService) CompleteChore(ctx context.Context, user *models.User, cho
 
 	now := time.Now().UTC()
 
-	ok, err := s.choreRepo.CompleteAssignment(ctx, assignment.ID, "completed", now, nil)
-	if err != nil {
-		return fmt.Errorf("failed to complete assignment: %w", err)
-	}
-	if !ok {
-		return &api.ConflictError{Message: "assignment already processed"}
-	}
-
-	completion := &models.ChoreCompletion{
-		AssignmentID: assignment.ID,
-		CompletedBy:  user.ID,
-		CompletedAt:  now,
-		Notes:        notes,
-	}
-	if err := s.choreRepo.CreateCompletion(ctx, completion); err != nil {
-		return fmt.Errorf("failed to record completion: %w", err)
-	}
-
 	state, err := s.choreRepo.GetRotationState(ctx, choreID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -428,9 +410,26 @@ func (s *ChoreService) CompleteChore(ctx context.Context, user *models.User, cho
 		return fmt.Errorf("failed to get rotation state: %w", err)
 	}
 
-	if err := s.rotateAndAssign(ctx, chore, state); err != nil {
+	nextState, nextAssignment, err := s.planRotation(ctx, chore, state, now, &assignment.UserID)
+	if err != nil {
 		return err
 	}
+
+	completion := &models.ChoreCompletion{
+		AssignmentID: assignment.ID,
+		CompletedBy:  user.ID,
+		CompletedAt:  now,
+		Notes:        notes,
+	}
+
+	processed, err := s.choreRepo.CompleteAssignmentAndAdvance(ctx, assignment.ID, "completed", now, nil, completion, nextState, nextAssignment)
+	if err != nil {
+		return fmt.Errorf("failed to complete chore: %w", err)
+	}
+	if !processed {
+		return &api.ConflictError{Message: "assignment already processed"}
+	}
+
 	s.publishChore("chore:completed", chore.GroupID, choreID)
 	go s.broadcastChorePush(chore.GroupID, choreID, user.ID,
 		"Chore completed",
@@ -467,14 +466,6 @@ func (s *ChoreService) SkipChore(ctx context.Context, user *models.User, choreID
 
 	now := time.Now().UTC()
 
-	ok, err := s.choreRepo.CompleteAssignment(ctx, assignment.ID, "skipped", now, skipReason)
-	if err != nil {
-		return fmt.Errorf("failed to skip assignment: %w", err)
-	}
-	if !ok {
-		return &api.ConflictError{Message: "assignment already processed"}
-	}
-
 	state, err := s.choreRepo.GetRotationState(ctx, choreID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -483,9 +474,19 @@ func (s *ChoreService) SkipChore(ctx context.Context, user *models.User, choreID
 		return fmt.Errorf("failed to get rotation state: %w", err)
 	}
 
-	if err := s.rotateAndAssign(ctx, chore, state); err != nil {
+	nextState, nextAssignment, err := s.planRotation(ctx, chore, state, now, nil)
+	if err != nil {
 		return err
 	}
+
+	processed, err := s.choreRepo.CompleteAssignmentAndAdvance(ctx, assignment.ID, "skipped", now, skipReason, nil, nextState, nextAssignment)
+	if err != nil {
+		return fmt.Errorf("failed to skip chore: %w", err)
+	}
+	if !processed {
+		return &api.ConflictError{Message: "assignment already processed"}
+	}
+
 	s.publishChore("chore:skipped", chore.GroupID, choreID)
 	go s.broadcastChorePush(chore.GroupID, choreID, user.ID,
 		"Chore skipped",
@@ -672,6 +673,78 @@ func (s *ChoreService) rotateAndAssign(ctx context.Context, chore *models.Chore,
 		return fmt.Errorf("failed to create assignment: %w", err)
 	}
 	return nil
+}
+
+// planRotation mirrors rotateAndAssign's decision but performs NO writes,
+// returning the rotation state and next assignment objects to persist atomically
+// (or nil, nil for chores that do not auto-assign a successor).
+//
+// completedUserID is the user whose completion (not skip) is being recorded in
+// the same transaction; pass nil for skips. It exists only to preserve the
+// legacy "who-least-did-first" count (see nextAssigneeForCompletion).
+func (s *ChoreService) planRotation(ctx context.Context, chore *models.Chore, state *models.ChoreRotationState, now time.Time, completedUserID *uuid.UUID) (*models.ChoreRotationState, *models.ChoreAssignment, error) {
+	assigneeID, nextIndex, err := s.nextAssigneeForCompletion(ctx, chore, state, completedUserID)
+	if err != nil {
+		return nil, nil, err
+	}
+	if assigneeID == nil {
+		return nil, nil, nil
+	}
+	state.CurrentIndex = nextIndex
+	next := &models.ChoreAssignment{
+		ChoreID:    chore.ID,
+		UserID:     *assigneeID,
+		Status:     "pending",
+		DueDate:    nextDue(now, chore),
+		AssignedAt: now,
+	}
+	return state, next, nil
+}
+
+// nextAssigneeForCompletion is identical to nextAssignee for all assignment
+// types except "who-least-did-first". For that policy, the decision is made
+// BEFORE the completing assignment is marked completed in the DB, so its row is
+// still "pending" and would not be counted. To preserve the legacy behavior
+// (where the just-completed assignment WAS counted, because completion happened
+// first), we add 1 to completedUserID's count. completedUserID is nil for skips
+// (skipped assignments were never counted by the legacy code, so no adjustment).
+func (s *ChoreService) nextAssigneeForCompletion(ctx context.Context, chore *models.Chore, state *models.ChoreRotationState, completedUserID *uuid.UUID) (*uuid.UUID, int, error) {
+	if chore.AssignmentType != "who-least-did-first" {
+		return s.nextAssignee(ctx, chore, state)
+	}
+	if len(state.MemberOrder) == 0 {
+		return nil, state.CurrentIndex, &api.ValidationError{Field: "member_order", Message: "no members in rotation"}
+	}
+	assignments, err := s.choreRepo.ListAssignments(ctx, chore.ID, 500, 0)
+	if err != nil {
+		return nil, state.CurrentIndex, fmt.Errorf("failed to list assignments for least-done policy: %w", err)
+	}
+	counts := map[uuid.UUID]int{}
+	for _, userID := range state.MemberOrder {
+		counts[userID] = 0
+	}
+	for _, assignment := range assignments {
+		if assignment.Status == "completed" {
+			if _, ok := counts[assignment.UserID]; ok {
+				counts[assignment.UserID]++
+			}
+		}
+	}
+	// Account for the assignment being completed now (still "pending" in the DB
+	// at decision time), matching the legacy ordering where it was counted.
+	if completedUserID != nil {
+		if _, ok := counts[*completedUserID]; ok {
+			counts[*completedUserID]++
+		}
+	}
+	chosen := state.MemberOrder[0]
+	for _, userID := range state.MemberOrder[1:] {
+		if counts[userID] < counts[chosen] {
+			chosen = userID
+		}
+	}
+	nextIndex := (indexOfUUID(state.MemberOrder, chosen) + 1) % len(state.MemberOrder)
+	return &chosen, nextIndex, nil
 }
 
 func (s *ChoreService) nextAssignee(ctx context.Context, chore *models.Chore, state *models.ChoreRotationState) (*uuid.UUID, int, error) {

@@ -1,6 +1,7 @@
 import 'dart:async' show StreamSubscription, unawaited;
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
@@ -146,7 +147,10 @@ class ListRepository {
   ) async {
     // Optimistic local patch
     final existingRow = (await _db.getItemsByListOnce(listId))
-        .firstWhere((e) => e.id == itemId);
+        .firstWhereOrNull((e) => e.id == itemId);
+    if (existingRow == null) {
+      throw StateError('list item $itemId not found in local cache');
+    }
     final existing = _toListItem(existingRow);
     final patched = ListItem(
       id: existing.id,

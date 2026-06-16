@@ -77,9 +77,14 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
-  final TextEditingController _fxRateController =
-      TextEditingController(text: '1.0');
+  // Starts empty: a foreign expense must get an explicit rate, never an
+  // accidental 1:1 conversion.
+  final TextEditingController _fxRateController = TextEditingController();
   final Map<String, TextEditingController> _splitControllers = {};
+
+  /// Lets a blocked submit scroll the live split summary into view instead of
+  /// failing silently with only a haptic buzz.
+  final GlobalKey _splitSummaryKey = GlobalKey();
   List<GroupMemberProfile> _members = [];
   final Set<String> _selectedMemberIds = {};
   String _splitMode = 'equal';
@@ -89,7 +94,9 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
   /// The household's base currency. Splits and balances are denominated in it;
   /// [_currency] may differ when recording a foreign-currency expense.
   String _groupCurrency = 'USD';
-  double _fxRate = 1.0;
+  // 0 until the user enters a rate, so an untouched foreign expense fails
+  // validation rather than recording at 1:1.
+  double _fxRate = 0.0;
   DateTime _date = DateTime.now();
   File? _scannedReceipt;
   bool _membersLoading = true;
@@ -239,7 +246,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
     final picked = await showDatePicker(
       context: context,
       initialDate: _date,
-      firstDate: DateTime(now.year - 2),
+      firstDate: DateTime(now.year - 5),
       lastDate: now,
     );
     if (picked == null || !mounted) return;
@@ -281,8 +288,20 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       currency: _groupCurrency,
     );
     if (!summary.isValid) {
-      // The live split summary already shows the reason in red; just block.
+      // The live split summary shows the reason in red. Bring it into view so a
+      // blocked submit points at its cause instead of buzzing silently.
       unawaited(Haptics.medium());
+      final summaryContext = _splitSummaryKey.currentContext;
+      if (summaryContext != null) {
+        unawaited(
+          Scrollable.ensureVisible(
+            summaryContext,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            alignment: 0.5,
+          ),
+        );
+      }
       return;
     }
 
@@ -424,9 +443,13 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
   @override
   Widget build(BuildContext context) {
     final totalCents = _parseAmountToCents(_amountController.text);
+    // Foreign expenses have no known base value until a positive rate is set,
+    // so the split preview waits rather than reconciling against a 1:1 guess.
     final baseCents = totalCents == null
         ? null
-        : (_isForeignCurrency ? (totalCents * _fxRate).round() : totalCents);
+        : _isForeignCurrency
+            ? (_fxRate > 0 ? (totalCents * _fxRate).round() : null)
+            : totalCents;
     final colorScheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
 
@@ -462,9 +485,14 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
                 setState(() {
                   _currency = value;
                   if (!_isForeignCurrency) {
+                    // Back to base currency: no conversion needed.
                     _fxRate = 1.0;
-                    _fxRateController.text = '1.0';
+                    _fxRateController.clear();
                     _fxRateError = null;
+                  } else {
+                    // Switched to a foreign currency: require a fresh rate.
+                    _fxRate = 0.0;
+                    _fxRateController.clear();
                   }
                 });
                 _markDirty();
@@ -497,8 +525,8 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
             ),
           ],
         ],
-        // ── Description ───────────────────────────────────────────────
-        const SizedBox(height: MitlistSpacing.sm),
+        // ── Description + payer (what & who) ──────────────────────────
+        const SizedBox(height: MitlistSpacing.lg),
         AppInput(
           hint: l10n.expenseCreationWhatsItFor,
           controller: _descriptionController,
@@ -511,7 +539,10 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
           },
         ),
         // ── Paid by ───────────────────────────────────────────────────
-        if (!_membersLoading && _members.isNotEmpty) ...[
+        if (_membersLoading) ...[
+          const SizedBox(height: MitlistSpacing.md),
+          const _PaidBySkeleton(),
+        ] else if (_members.isNotEmpty) ...[
           const SizedBox(height: MitlistSpacing.md),
           _PaidByRow(
             members: _members,
@@ -522,8 +553,8 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
             },
           ),
         ],
-        // ── Date + Scan row ───────────────────────────────────────────
-        const SizedBox(height: MitlistSpacing.sm),
+        // ── Date + Scan + notes (details) ─────────────────────────────
+        const SizedBox(height: MitlistSpacing.lg),
         Row(
           children: [
             Expanded(
@@ -550,10 +581,13 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
                         ? 'hourglassEmpty'
                         : 'documentScanner',
                 size: 18,
-                color: _hasReceipt ? colorScheme.tertiary : null,
               ),
-              variant: AppButtonVariant.outline,
-              color: _hasReceipt ? AppButtonColor.neutral : AppButtonColor.neutral,
+              // A scanned receipt reads as a completed step: filled-soft success
+              // instead of the neutral outline of the "not yet" state.
+              variant:
+                  _hasReceipt ? AppButtonVariant.soft : AppButtonVariant.outline,
+              color:
+                  _hasReceipt ? AppButtonColor.success : AppButtonColor.neutral,
               onPressed: _isScanning ? null : _onScan,
               semanticLabel: _hasReceipt
                   ? l10n.expenseCreationReceiptAttached
@@ -561,9 +595,10 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
             ),
           ],
         ),
-        // ── Notes ─────────────────────────────────────────────────────
+        // ── Notes (optional, recedes) ─────────────────────────────────
         const SizedBox(height: MitlistSpacing.sm),
         AppInput(
+          variant: AppInputVariant.soft,
           hint: l10n.expenseCreationNotesHint,
           controller: _notesController,
           textInputAction: TextInputAction.newline,
@@ -581,6 +616,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
         ),
         const SizedBox(height: MitlistSpacing.lg),
         _SplitOptions(
+          summaryKey: _splitSummaryKey,
           members: _members,
           loading: _membersLoading,
           failed: _membersFailed,
@@ -757,6 +793,7 @@ SplitSummary computeSplitSummary({
 }
 
 class _SplitOptions extends StatelessWidget {
+  final Key summaryKey;
   final List<GroupMemberProfile> members;
   final bool loading;
   final bool failed;
@@ -771,6 +808,7 @@ class _SplitOptions extends StatelessWidget {
   final VoidCallback onValueChanged;
 
   const _SplitOptions({
+    required this.summaryKey,
     required this.members,
     required this.loading,
     required this.failed,
@@ -852,7 +890,29 @@ class _SplitOptions extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(l10n.expenseCreationSplitMode, style: textTheme.labelMedium),
+        // Keep the total the split reconciles against in view, so editing many
+        // member rows never means scrolling back up to remember the amount.
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                l10n.expenseCreationSplitMode,
+                style: textTheme.labelMedium,
+              ),
+            ),
+            const SizedBox(width: MitlistSpacing.sm),
+            Text(
+              totalCents == null
+                  ? l10n.expenseCreationSplitTotal('—')
+                  : l10n.expenseCreationSplitTotal(
+                      formatCurrency(totalCents!, currency),
+                    ),
+              style: textTheme.labelMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: MitlistSpacing.sm),
         Wrap(
           spacing: MitlistSpacing.sm,
@@ -895,7 +955,7 @@ class _SplitOptions extends StatelessWidget {
               children: [
                 const Spacer(),
                 SizedBox(
-                  width: 96,
+                  width: splitMode == 'amount' ? 116 : 96,
                   child: Text(
                     _valueLabel(splitMode, context).toUpperCase(),
                     textAlign: TextAlign.end,
@@ -930,11 +990,21 @@ class _SplitOptions extends StatelessWidget {
                 if (splitMode != 'equal') ...[
                   const SizedBox(width: MitlistSpacing.sm),
                   SizedBox(
-                    width: 96,
+                    width: splitMode == 'amount' ? 116 : 96,
                     child: Semantics(
                       label: '${member.displayName} ${_valueLabel(splitMode, context)}',
                       child: AppInput(
-                        hint: splitMode == 'percentage' ? '50' : '1',
+                        // Money fields read as money: a currency prefix and a
+                        // "0.00" hint, matching the main amount input. Shares
+                        // and percent are bare counts.
+                        prefixIcon: splitMode == 'amount'
+                            ? _CurrencyPrefix(currency: currency)
+                            : null,
+                        hint: switch (splitMode) {
+                          'percentage' => '50',
+                          'amount' => '0.00',
+                          _ => '1',
+                        },
                         controller: controllers[member.userId],
                         enabled: selected,
                         keyboardType: const TextInputType.numberWithOptions(
@@ -951,6 +1021,7 @@ class _SplitOptions extends StatelessWidget {
         }),
         const SizedBox(height: MitlistSpacing.sm),
         Row(
+          key: summaryKey,
           children: [
             AppIcon(
               name: summary.isValid ? 'checkCircle' : 'alertCircleOutline',
@@ -1097,6 +1168,38 @@ class _SplitRowSkeleton extends StatelessWidget {
         AppSkeleton(width: 24, height: 24),
         SizedBox(width: MitlistSpacing.sm),
         AppSkeleton(width: 120, height: 16),
+      ],
+    );
+  }
+}
+
+/// Reserves the "Paid by" row while members load so it doesn't pop in and shift
+/// the form, matching the skeleton treatment used by the split list.
+class _PaidBySkeleton extends StatelessWidget {
+  const _PaidBySkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.expenseCreationPaidBy,
+          style: textTheme.labelMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: MitlistSpacing.xs),
+        Row(
+          children: const [
+            AppSkeleton(width: 88, height: 32),
+            SizedBox(width: MitlistSpacing.xs),
+            AppSkeleton(width: 72, height: 32),
+          ],
+        ),
       ],
     );
   }

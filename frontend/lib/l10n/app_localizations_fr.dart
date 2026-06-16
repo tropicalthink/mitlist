@@ -1962,6 +1962,20 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String calendarDayEvents(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count événements',
+      one: '1 événement',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get calendarDayMenuHint => 'Ouvre les options du jour';
+
+  @override
   String get calendarNothingPlanned => 'Rien de prévu';
 
   @override
@@ -2777,6 +2791,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get expenseCreationSplitMode => 'Mode de partage';
+
+  @override
+  String expenseCreationSplitTotal(String amount) {
+    return 'Total $amount';
+  }
 
   @override
   String get expenseCreationSplitEqual => 'Égal';
@@ -3946,6 +3965,11 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String activityAddedToList(String name, String when) {
     return 'A ajouté $name à une liste · $when';
+  }
+
+  @override
+  String activityAddedToNamedList(String name, String list, String when) {
+    return 'Added $name to $list · $when';
   }
 
   @override

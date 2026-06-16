@@ -142,7 +142,7 @@ func runMigrations(databaseURL string) error {
 		dsn = "pgx5" + dsn[len("postgresql"):]
 	}
 
-	mig, err := migrate.New("file://../../migrations", dsn)
+	mig, err := migrate.New("file://../../../migrations", dsn)
 	if err != nil {
 		return err
 	}
@@ -237,6 +237,12 @@ func createTestUser(t *testing.T, email, password string) *models.User {
 	}
 	require.NoError(t, userRepo.Create(ctx, user))
 	return user
+}
+
+func addTestMembership(t *testing.T, groupID, userID uuid.UUID, role string) {
+	t.Helper()
+	require.NoError(t, newTestGroupRepo().CreateMembership(context.Background(),
+		&models.GroupMembership{GroupID: groupID, UserID: userID, Role: role}))
 }
 
 func generateTestToken(userID uuid.UUID) string {
