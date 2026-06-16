@@ -1973,6 +1973,20 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String calendarDayEvents(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Termine',
+      one: '1 Termin',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get calendarDayMenuHint => 'Öffnet Tagesoptionen';
+
+  @override
   String get calendarNothingPlanned => 'Nichts geplant';
 
   @override

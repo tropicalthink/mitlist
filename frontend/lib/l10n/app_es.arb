@@ -2589,6 +2589,8 @@
     "description": "Today label"
   },
   "calendarDayLabel": "Día {day}",
+  "calendarDayEvents": "{count, plural, =1{1 evento} other{{count} eventos}}",
+  "calendarDayMenuHint": "Abre las opciones del día",
   "@calendarDayLabel": {
     "description": "Semantics: specific day",
     "placeholders": {
