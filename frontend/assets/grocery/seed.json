@@ -22,7 +22,10 @@
 "strawberry",
 "erdbe",
 "erdbeer",
-"erdbeeree"
+"erdbeeree",
+"erdbeere (strawberry)",
+"erdbeere strawberry",
+"erdbeerestrawberry"
 ],
 "aliases_en": [
 "strawberry",
@@ -37,7 +40,13 @@
 "erdbeere",
 "straw",
 "strawbe",
-"strawberrye"
+"strawberrye",
+"strawbery",
+"strawberrry",
+"fraise strawberry",
+"strawberri",
+"straw berry",
+"fraisestrawberry"
 ],
 "aliases_fr": [
 "fraise",
@@ -51,7 +60,13 @@
 "strawberry",
 "fra1se",
 "frais",
-"fraisee"
+"fraisee",
+"fraize",
+"strawberry fraise",
+"frse",
+"fraise gariguette",
+"strawberryfraise",
+"fraisegariguette"
 ],
 "aliases_es": [
 "fresa",
@@ -63,7 +78,11 @@
 "frsa",
 "frresa",
 "strawberry",
-"fresae"
+"fresae",
+"freza",
+"fresca",
+"fres",
+"fres a"
 ]
 },
 {
@@ -85,7 +104,24 @@
 "apel",
 "appfel",
 "apple",
-"apfele"
+"apfele",
+"aepfel",
+"apfeel",
+"ápfel",
+"apf",
+"äpfel",
+"apfel (apple)",
+"apfel (pomme)",
+"apfel (manzana)",
+"äpfel apples",
+"äpfel (apples)",
+"äpfel (pommes)",
+"apple apfel",
+"apfel fruit",
+"åpfel",
+"äpfelapples",
+"appleapfel",
+"apfelfruit"
 ],
 "aliases_en": [
 "apple",
@@ -98,7 +134,29 @@
 "aple",
 "appple",
 "apfel",
-"applee"
+"applee",
+"aples",
+"appel",
+"appie",
+"appels",
+"applse",
+"appies",
+"appls",
+"apfel apple",
+"apfel orange apple",
+"apple manzana",
+"pommes apples",
+"pommes (apples)",
+"apple pomme",
+"banana apfel",
+"apoles",
+"pple",
+"apl",
+"apfelapple",
+"applemanzana",
+"pommesapples",
+"applepomme",
+"bananaapfel"
 ],
 "aliases_fr": [
 "pomme",
@@ -112,7 +170,15 @@
 "poomme",
 "apple",
 "pornme",
-"pommee"
+"pommee",
+"pomrne",
+"pme",
+"pom",
+"pomme apple",
+"apfel pomme",
+"pomm",
+"pommeapple",
+"apfelpomme"
 ],
 "aliases_es": [
 "manzana",
@@ -127,7 +193,21 @@
 "apple",
 "rnanzana",
 "manza",
-"manzanae"
+"manzanae",
+"manzaanas",
+"mansana",
+"manzanna",
+"manz",
+"apfel banana",
+"manzana apple",
+"apple (red)",
+"red apple",
+"manzna",
+"manzánas",
+"manz ana",
+"apfelbanana",
+"manzanaapple",
+"redapple"
 ]
 },
 {
@@ -149,7 +229,16 @@
 "baanane",
 "banana",
 "banan",
-"bananee"
+"bananee",
+"bananne",
+"bananen",
+"ban",
+"banane (banana)",
+"banane (banane)",
+"banane frucht",
+"bnne",
+"bnan",
+"bananefrucht"
 ],
 "aliases_en": [
 "banana",
@@ -162,7 +251,19 @@
 "baanana",
 "banane",
 "banan",
-"bananae"
+"bananae",
+"bannana",
+"bananna",
+"banona",
+"banaaa",
+"banann",
+"banna",
+"bnana",
+"bananaa",
+"banana plátano",
+"plátano banana",
+"bananaplátano",
+"plátanobanana"
 ],
 "aliases_fr": [
 "banane",
@@ -175,7 +276,14 @@
 "baanane",
 "banana",
 "banan",
-"bananee"
+"bananee",
+"bannane",
+"bnane",
+"banane banana",
+"banana banane",
+"bann",
+"bananebanana",
+"bananabanane"
 ],
 "aliases_es": [
 "plátano",
@@ -192,7 +300,19 @@
 "banana",
 "plátn",
 "plata",
-"platanoe"
+"platanoe",
+"plátno",
+"plátana",
+"platanoo",
+"plát",
+"banane plátano",
+"yellow banana",
+"banana bunch",
+"plátao",
+"pla tano",
+"bananeplátano",
+"yellowbanana",
+"bananabunch"
 ]
 },
 {
@@ -214,7 +334,9 @@
 "ornge",
 "orrange",
 "orang",
-"orangee"
+"orangee",
+"orange fruit",
+"orangefruit"
 ],
 "aliases_en": [
 "orange",
@@ -227,7 +349,17 @@
 "ornge",
 "orrange",
 "orang",
-"orangee"
+"orangee",
+"orrnge",
+"ornage",
+"orannge",
+"or-ange",
+"or_nge",
+"orange naranja",
+"naranja orange",
+"organge",
+"orangenaranja",
+"naranjaorange"
 ],
 "aliases_fr": [
 "orange",
@@ -240,7 +372,9 @@
 "ornge",
 "orrange",
 "orang",
-"orangee"
+"orangee",
+"oragne",
+"oronge"
 ],
 "aliases_es": [
 "naranja",
@@ -254,7 +388,12 @@
 "naaranja",
 "orange",
 "naran",
-"naranjae"
+"naranjae",
+"naranga",
+"naranjja",
+"naran.",
+"nar",
+"na ranja"
 ]
 },
 {
@@ -305,7 +444,10 @@
 "rasin",
 "raaisin",
 "grape",
-"ra1sin"
+"ra1sin",
+"raisim",
+"raisin sec",
+"raisinsec"
 ],
 "aliases_es": [
 "uva",
@@ -316,7 +458,9 @@
 "500g uva",
 "vua",
 "uvva",
-"grape"
+"grape",
+"uva pasa",
+"uvapasa"
 ]
 },
 {
@@ -342,7 +486,9 @@
 "zirone",
 "ziitrone",
 "lemon",
-"z1trone"
+"z1trone",
+"zitrone (lemon)",
+"ztrne"
 ],
 "aliases_en": [
 "lemon",
@@ -356,7 +502,12 @@
 "leon",
 "leemon",
 "zitrone",
-"lernon"
+"lernon",
+"lemonn",
+"lemmon",
+"zitrone lemon",
+"lem",
+"zitronelemon"
 ],
 "aliases_fr": [
 "citron",
@@ -371,7 +522,13 @@
 "ciron",
 "ciitron",
 "lemon",
-"c1tron"
+"c1tron",
+"citrom",
+"lemon citron",
+"citrn",
+"citron jaune",
+"citronjaune",
+"lemoncitron"
 ],
 "aliases_es": [
 "limón",
@@ -388,7 +545,9 @@
 "liimon",
 "lemon",
 "lirnon",
-"l1mon"
+"l1mon",
+"lim",
+"limn"
 ]
 },
 {
@@ -411,7 +570,11 @@
 "bine",
 "biirne",
 "pear",
-"b1rne"
+"b1rne",
+"birn",
+"birne (pear)",
+"birne pear",
+"birnepear"
 ],
 "aliases_en": [
 "pear",
@@ -423,7 +586,9 @@
 "epar",
 "per",
 "peear",
-"birne"
+"birne",
+"poire pear",
+"poirepear"
 ],
 "aliases_fr": [
 "poire",
@@ -437,7 +602,9 @@
 "pore",
 "pooire",
 "pear",
-"po1re"
+"po1re",
+"poiree",
+"poirre"
 ],
 "aliases_es": [
 "pera",
@@ -449,7 +616,8 @@
 "epra",
 "pea",
 "peera",
-"pear"
+"pear",
+"pela"
 ]
 },
 {
@@ -475,7 +643,11 @@
 "pfrsich",
 "pffirsich",
 "peach",
-"pf1rsich"
+"pf1rsich",
+"pfrisch",
+"pfirsich (peach)",
+"pfirsich peach",
+"pfirsichpeach"
 ],
 "aliases_en": [
 "peach",
@@ -488,7 +660,8 @@
 "epach",
 "pech",
 "peeach",
-"pfirsich"
+"pfirsich",
+"peachh"
 ],
 "aliases_fr": [
 "pêche",
@@ -502,7 +675,11 @@
 "epche",
 "pehe",
 "peeche",
-"peach"
+"peach",
+"pèche",
+"pêch",
+"pche",
+"pêcheblanches"
 ],
 "aliases_es": [
 "melocotón",
@@ -520,7 +697,10 @@
 "meocoton",
 "meelocoton",
 "peach",
-"rnelocoton"
+"rnelocoton",
+"melocotn",
+"melocot",
+"melo coton"
 ]
 },
 {
@@ -546,7 +726,9 @@
 "kische",
 "kiirsche",
 "cherry",
-"k1rsche"
+"k1rsche",
+"kirsche cherry",
+"kirschecherry"
 ],
 "aliases_en": [
 "cherry",
@@ -560,7 +742,9 @@
 "500g cherry",
 "hcerry",
 "chherry",
-"kirsche"
+"kirsche",
+"cerise cherry",
+"cerisecherry"
 ],
 "aliases_fr": [
 "cerise",
@@ -574,7 +758,10 @@
 "ceise",
 "ceerise",
 "cherry",
-"cer1se"
+"cer1se",
+"cerisee",
+"ceruse",
+"cerse"
 ],
 "aliases_es": [
 "cereza",
@@ -587,7 +774,8 @@
 "ecreza",
 "ceeza",
 "ceereza",
-"cherry"
+"cherry",
+"cer ez a"
 ]
 },
 {
@@ -614,7 +802,8 @@
 "wasermelone",
 "waassermelone",
 "watermelon",
-"wasserrnelone"
+"wasserrnelone",
+"wasser melone"
 ],
 "aliases_en": [
 "watermelon",
@@ -630,7 +819,10 @@
 "waermelon",
 "waatermelon",
 "wassermelone",
-"waterrnelon"
+"waterrnelon",
+"watermeion",
+"watermellon",
+"water melon"
 ],
 "aliases_fr": [
 "pastèque",
@@ -647,7 +839,9 @@
 "apsteque",
 "pateque",
 "paasteque",
-"watermelon"
+"watermelon",
+"pastèq",
+"pastq"
 ],
 "aliases_es": [
 "sandía",
@@ -663,7 +857,11 @@
 "sadia",
 "saandia",
 "watermelon",
-"sand1a"
+"sand1a",
+"sndía",
+"sand",
+"sand.",
+"sand ia"
 ]
 },
 {
@@ -694,7 +892,10 @@
 "125g blaubeere",
 "b1aubeere",
 "hdlbr",
-"h.b."
+"h.b.",
+"blaubeere blueberry",
+"blbeere",
+"blaubeereblueberry"
 ],
 "aliases_en": [
 "blueberry",
@@ -716,7 +917,9 @@
 "blueb",
 "125g blueberry",
 "250g blueberry",
-"b1ueberry"
+"b1ueberry",
+"blveberry",
+"blue berry"
 ],
 "aliases_fr": [
 "myrtille",
@@ -738,7 +941,11 @@
 "mytille",
 "myyrtille",
 "myrtl",
-"m.t."
+"m.t.",
+"myrtill",
+"myrt",
+"myrtille sauvage",
+"myrtillesauvage"
 ],
 "aliases_es": [
 "arandano azul",
@@ -761,6 +968,7 @@
 "arandan0 azu1",
 "arndn",
 "a.d.",
+"aránd",
 "arandanoazul",
 "arandnazl",
 "arandanoazúl",
@@ -794,7 +1002,9 @@
 "hiimbeere",
 "raspberry",
 "hirnbeere",
-"h1mbeere"
+"h1mbeere",
+"himbeere raspberry",
+"himbeereraspberry"
 ],
 "aliases_en": [
 "raspberry",
@@ -810,7 +1020,9 @@
 "arspberry",
 "rapberry",
 "raaspberry",
-"himbeere"
+"himbeere",
+"rasp",
+"rasp berry"
 ],
 "aliases_fr": [
 "framboise",
@@ -827,7 +1039,8 @@
 "frramboise",
 "raspberry",
 "frarnboise",
-"frambo1se"
+"frambo1se",
+"frambois"
 ],
 "aliases_es": [
 "frambuesa",
@@ -842,7 +1055,8 @@
 "frmbuesa",
 "frrambuesa",
 "raspberry",
-"frarnbuesa"
+"frarnbuesa",
+"frambess"
 ]
 },
 {
@@ -863,7 +1077,9 @@
 "ikwi",
 "kii",
 "kiiwi",
-"k1wi"
+"k1wi",
+"kiwi fruit",
+"kiwifruit"
 ],
 "aliases_en": [
 "kiwi",
@@ -887,7 +1103,9 @@
 "ikwi",
 "kii",
 "kiiwi",
-"k1wi"
+"k1wi",
+"kiwii",
+"kiwsi"
 ],
 "aliases_es": [
 "kiwi",
@@ -899,7 +1117,8 @@
 "ikwi",
 "kii",
 "kiiwi",
-"k1wi"
+"k1wi",
+"kiw"
 ]
 },
 {
@@ -921,7 +1140,11 @@
 "amngo",
 "mago",
 "maango",
-"rnango"
+"rnango",
+"mango (mango)",
+"mango (mangue)",
+"mango fruit",
+"mangofruit"
 ],
 "aliases_en": [
 "mango",
@@ -935,7 +1158,8 @@
 "amngo",
 "mago",
 "maango",
-"rnango"
+"rnango",
+"manggo"
 ],
 "aliases_fr": [
 "mangue",
@@ -949,7 +1173,10 @@
 "mague",
 "maangue",
 "mango",
-"rnangue"
+"rnangue",
+"manguee",
+"mngu",
+"mang"
 ],
 "aliases_es": [
 "mango",
@@ -962,7 +1189,11 @@
 "amngo",
 "mago",
 "maango",
-"rnango"
+"rnango",
+"manjo",
+"mngo",
+"mnngo",
+"mang o"
 ]
 },
 {
@@ -984,7 +1215,10 @@
 "naanas",
 "annas",
 "annanas",
-"pineapple"
+"pineapple",
+"ananas (pineapple)",
+"ananas pineapple",
+"ananaspineapple"
 ],
 "aliases_en": [
 "pineapple",
@@ -1000,7 +1234,11 @@
 "pieapple",
 "piineapple",
 "ananas",
-"p1neapple"
+"p1neapple",
+"pineaple",
+"pinnaple",
+"pineappie",
+"pine apple"
 ],
 "aliases_fr": [
 "ananas",
@@ -1013,7 +1251,11 @@
 "naanas",
 "annas",
 "annanas",
-"pineapple"
+"pineapple",
+"anans",
+"anahs",
+"anan",
+"ananassurgelé"
 ],
 "aliases_es": [
 "piña",
@@ -1028,7 +1270,12 @@
 "pia",
 "piina",
 "pineapple",
-"p1na"
+"p1na",
+"piñã",
+"p iña",
+"piñ",
+"píña",
+"ananá"
 ]
 },
 {
@@ -1153,7 +1400,9 @@
 "paaya",
 "paapaya",
 "papay",
-"papayae"
+"papayae",
+"papaya fruit",
+"papayafruit"
 ],
 "aliases_en": [
 "papaya",
@@ -1165,7 +1414,8 @@
 "paaya",
 "paapaya",
 "papay",
-"papayae"
+"papayae",
+"ppya"
 ],
 "aliases_fr": [
 "papaye",
@@ -1239,7 +1489,8 @@
 "poomegranate",
 "granatapfel",
 "pornegranate",
-"pomagranate"
+"pomagranate",
+"pomegrante"
 ],
 "aliases_fr": [
 "grenade",
@@ -1304,6 +1555,8 @@
 "liette",
 "1piece limette",
 "liimette",
+"limette (lime)",
+"limetten",
 "limettefrucht",
 "grünezitrone"
 ],
@@ -1328,6 +1581,9 @@
 "l1me",
 "lyme",
 "lim",
+"lmee",
+"limee",
+"lme",
 "limefruit",
 "lemonlime",
 "keylime"
@@ -1353,13 +1609,15 @@
 "citron-vert",
 "1piece citron vert",
 "c1tron vert",
+"citrons verts",
 "ctrtvrt",
 "limonvert",
 "ctrnvrt",
 "citronverts",
 "ictronvert",
 "cironvert",
-"ciitronvert"
+"ciitronvert",
+"citronsverts"
 ],
 "aliases_es": [
 "limón",
@@ -1488,7 +1746,8 @@
 "tsachelbeere",
 "stchelbeere",
 "sttachelbeere",
-"gooseberry"
+"gooseberry",
+"stachelbeeren"
 ],
 "aliases_en": [
 "gooseberry",
@@ -1505,7 +1764,8 @@
 "ogoseberry",
 "goseberry",
 "goooseberry",
-"stachelbeere"
+"stachelbeere",
+"goose berry"
 ],
 "aliases_fr": [
 "groseille a maquereau",
@@ -1526,6 +1786,8 @@
 "groseilleamaquereau",
 "groseille-a-maquereau",
 "groseille a rnaquereau",
+"groseill",
+"groseille",
 "grsllmqr"
 ],
 "aliases_es": [
@@ -1589,7 +1851,8 @@
 "lederberry",
 "elerberry",
 "ellderberry",
-"holunderbeere"
+"holunderbeere",
+"elder berry"
 ],
 "aliases_fr": [
 "baie de sureau",
@@ -1741,7 +2004,8 @@
 "200g cranberry",
 "rcanberry",
 "crnberry",
-"crranberry"
+"crranberry",
+"cran berry"
 ],
 "aliases_fr": [
 "canneberge",
@@ -1774,11 +2038,13 @@
 "arandanoagrio",
 "arandano-agrio",
 "arandano agr1o",
+"arándano rojo",
 "arándanoagrio",
 "arandanoagrios",
 "raandanoagrio",
 "arndanoagrio",
-"arrandanoagrio"
+"arrandanoagrio",
+"arándanorojo"
 ]
 },
 {
@@ -1804,7 +2070,9 @@
 "apr1kose",
 "aprik",
 "aprikos",
-"aprikosee"
+"aprikosee",
+"aprikose apricot",
+"aprikoseapricot"
 ],
 "aliases_en": [
 "apricot",
@@ -1836,7 +2104,8 @@
 "apricot",
 "abr1cot",
 "abric",
-"abricote"
+"abricote",
+"abri cot"
 ],
 "aliases_es": [
 "albaricoque",
@@ -1853,7 +2122,8 @@
 "albar1coque",
 "albar",
 "albaric",
-"albaricoquee"
+"albaricoquee",
+"albaricoqe"
 ]
 },
 {
@@ -1878,7 +2148,9 @@
 "nektar1ne",
 "nekta",
 "nektari",
-"nektarinee"
+"nektarinee",
+"nektarine nectarine",
+"nektarinenectarine"
 ],
 "aliases_en": [
 "nectarine",
@@ -1950,7 +2222,9 @@
 "plum",
 "pflaurne",
 "pflau",
-"pflaumee"
+"pflaumee",
+"pflaume plum",
+"pflaumeplum"
 ],
 "aliases_en": [
 "plum",
@@ -1975,7 +2249,8 @@
 "prne",
 "prrune",
 "plum",
-"prunee"
+"prunee",
+"pruneau"
 ],
 "aliases_es": [
 "ciruela",
@@ -1991,7 +2266,10 @@
 "plum",
 "c1ruela",
 "cirue",
-"ciruelae"
+"ciruelae",
+"cirula",
+"ciruela pasa",
+"ciruelapasa"
 ]
 },
 {
@@ -2062,6 +2340,7 @@
 "mirabelle plum",
 "rnirabelle",
 "m1rabelle",
+"prune (plum) mirabelle",
 "mirabelleplum"
 ],
 "aliases_es": [
@@ -2206,7 +2485,9 @@
 "feeige",
 "fig",
 "fe1ge",
-"feigee"
+"feigee",
+"feige fig",
+"feigefig"
 ],
 "aliases_en": [
 "fig",
@@ -2419,7 +2700,8 @@
 "akki",
 "kai",
 "kaaki",
-"kak1"
+"kak1",
+"kak"
 ],
 "aliases_es": [
 "caqui",
@@ -2580,7 +2862,8 @@
 "maandarine",
 "mandarin",
 "rnandarine",
-"mandar1ne"
+"mandar1ne",
+"mandarn"
 ],
 "aliases_es": [
 "mandarina",
@@ -2599,7 +2882,8 @@
 "maandarina",
 "mandarin",
 "rnandarina",
-"mandar1na"
+"mandar1na",
+"móndarinas"
 ]
 },
 {
@@ -2971,7 +3255,9 @@
 "rbombeere",
 "brmbeere",
 "brrombeere",
-"brornbeere"
+"brornbeere",
+"brombeere blackberry",
+"brombeereblackberry"
 ],
 "aliases_en": [
 "blackberry",
@@ -3097,7 +3383,8 @@
 "dati1es",
 "adtiles",
 "dailes",
-"daatiles"
+"daatiles",
+"dat"
 ]
 },
 {
@@ -3333,7 +3620,8 @@
 "parnplemousse",
 "pml",
 "p0melo",
-"1pomelo"
+"1pomelo",
+"pamplemous"
 ],
 "aliases_es": [
 "pomelo",
@@ -3426,7 +3714,9 @@
 "grotte",
 "grriotte",
 "gr1otte",
-"sourcherry"
+"cerise griotte",
+"sourcherry",
+"cerisegriotte"
 ],
 "aliases_es": [
 "guinda",
@@ -4419,7 +4709,10 @@
 "coconut",
 "kokos",
 "kokosnu",
-"kokosnusse"
+"kokosnusse",
+"kokosnuss coconut",
+"kok",
+"kokosnusscoconut"
 ],
 "aliases_en": [
 "coconut",
@@ -4452,7 +4745,11 @@
 "coconut",
 "no1x de coco",
 "noix",
-"noix de"
+"noix de",
+"noix dcoco",
+"noix coco",
+"noixdcoco",
+"noixcoco"
 ],
 "aliases_es": [
 "coco",
@@ -4465,7 +4762,9 @@
 "coo",
 "cooco",
 "coconut",
-"cocoe"
+"cocoe",
+"koko",
+"coc"
 ]
 },
 {
@@ -4497,6 +4796,7 @@
 "avoca",
 "1Stück avocado",
 "av0cad0",
+"avocado (avocado)",
 "avocadoreif",
 "avocadohass"
 ],
@@ -4545,6 +4845,11 @@
 "av0cat",
 "1Stück avocat",
 "vaocat",
+"avo",
+"avocxt",
+"avoc",
+"avocate",
+"avocatsbio",
 "avocatmûr",
 "avocathass"
 ],
@@ -4569,6 +4874,9 @@
 "2piece aguacate",
 "1Stück aguacate",
 "gauacate",
+"agucate",
+"aguact",
+"aguácate",
 "aguacatemaduro",
 "aguacatehass"
 ]
@@ -4596,7 +4904,9 @@
 "madarine",
 "maandarine",
 "rnandarine",
-"mandar1ne"
+"mandar1ne",
+"mandarinen tangerine",
+"mandarinentangerine"
 ],
 "aliases_en": [
 "tangerine",
@@ -4645,7 +4955,8 @@
 "madarina",
 "maandarina",
 "rnandarina",
-"mandar1na"
+"mandar1na",
+"mand"
 ]
 },
 {
@@ -4897,7 +5208,8 @@
 "500g chataignes",
 "hcataignes",
 "c.h.",
-"chtaignes"
+"chtaignes",
+"chtaigne"
 ],
 "aliases_es": [
 "castañas",
@@ -5611,7 +5923,9 @@
 "spinats",
 "psinat",
 "spnat",
-"sppinat"
+"sppinat",
+"spinat (spinach)",
+"spin"
 ],
 "aliases_en": [
 "spinach",
@@ -5632,7 +5946,13 @@
 "psinach",
 "spnach",
 "sppinach",
-"leafspinach"
+"spinich",
+"splnach",
+"spinnach",
+"spinach espinacas",
+"spinch",
+"leafspinach",
+"spinachespinacas"
 ],
 "aliases_fr": [
 "épinard",
@@ -5652,7 +5972,11 @@
 "epina",
 "250g epinard",
 "peinard",
-"epnard"
+"epnard",
+"spinach épinard",
+"pinards",
+"épinrd",
+"spinachépinard"
 ],
 "aliases_es": [
 "espinaca",
@@ -5671,7 +5995,15 @@
 "esspinaca",
 "spinach",
 "esp1naca",
-"espinacafresca"
+"espinac",
+"espináca",
+"espínacas",
+"esp",
+"spnacas",
+"findus espinacas",
+"espin aca",
+"espinacafresca",
+"findusespinacas"
 ]
 },
 {
@@ -5700,7 +6032,9 @@
 "rbokkoli",
 "brkkoli",
 "brrokkoli",
-"brokkol1"
+"brokkol1",
+"brokkli",
+"brokli"
 ],
 "aliases_en": [
 "broccoli",
@@ -5720,7 +6054,14 @@
 "br0cc01i",
 "rboccoli",
 "brccoli",
-"brroccoli"
+"brroccoli",
+"broccoll",
+"broccoli brócoli",
+"broccoli brocolis",
+"broccolini",
+"broccolirabe",
+"broccolibrócoli",
+"broccolibrocolis"
 ],
 "aliases_fr": [
 "brocoli",
@@ -5741,7 +6082,10 @@
 "brcoli",
 "brrocoli",
 "broccoli",
-"choubrocoli"
+"broccoli brocoli",
+"brccli",
+"choubrocoli",
+"broccolibrocoli"
 ],
 "aliases_es": [
 "brócoli",
@@ -5762,6 +6106,12 @@
 "rbocoli",
 "brcoli",
 "brrocoli",
+"brécol",
+"broc",
+"brcol",
+"brecoli",
+"brócol",
+"brócol.",
 "brócoliverde"
 ]
 },
@@ -5816,6 +6166,7 @@
 "500g carrot",
 "carrott",
 "baby carrot",
+"carrrot",
 "babycarrot"
 ],
 "aliases_fr": [
@@ -5838,7 +6189,11 @@
 "ca rotte",
 "500g carotte",
 "carotte râpée",
-"carotterâpée"
+"carrote",
+"carote",
+"carrot carotte",
+"carotterâpée",
+"carrotcarotte"
 ],
 "aliases_es": [
 "zanahoria",
@@ -5860,7 +6215,20 @@
 "zana horia",
 "500g zanahoria",
 "zanahoria baby",
-"zanahoriababy"
+"zanaoria",
+"zanoria",
+"zanahroia",
+"zanahora",
+"sanahoria",
+"karotte zanahoria",
+"zanahoria carrot",
+"zanahori",
+"zanahoria fresh",
+"zanah oria",
+"zanahoriababy",
+"karottezanahoria",
+"zanahoriacarrot",
+"zanahoriafresh"
 ]
 },
 {
@@ -5907,7 +6275,14 @@
 "toato",
 "toomato",
 "tornato",
-"vinetomato"
+"tomatoe",
+"tomatto",
+"tomaot",
+"tomat o",
+"tom",
+"tomate tomato",
+"vinetomato",
+"tomatetomato"
 ],
 "aliases_fr": [
 "tomate",
@@ -5927,6 +6302,9 @@
 "toomate",
 "tomato",
 "tornate",
+"tomtat",
+"tomatee",
+"tomae",
 "tomatecerise"
 ],
 "aliases_es": [
@@ -5945,7 +6323,18 @@
 "toate",
 "toomate",
 "tomato",
-"tornate"
+"tornate",
+"tomatte",
+"tonate",
+"tomáte",
+"tomathe",
+"tamate",
+"tomt",
+"tomato tomate",
+"tomte",
+"tómate",
+"tom ate",
+"tomatotomate"
 ]
 },
 {
@@ -5969,7 +6358,15 @@
 "1Stück gurke",
 "ugrke",
 "guke",
-"guurke"
+"guurke",
+"gurke (cucumber)",
+"salatgurke (klassiker)",
+"gurken cucumber",
+"gurke (concombre)",
+"gke",
+"gurkn",
+"gurcke",
+"gurkencucumber"
 ],
 "aliases_en": [
 "cucumber",
@@ -5989,7 +6386,14 @@
 "cuucumber",
 "gurke",
 "cucurnber",
-"englishcucumber"
+"cucmber",
+"cucumberr",
+"concombre cucumber",
+"cucumher",
+"cuc",
+"cucmbr",
+"englishcucumber",
+"concombrecucumber"
 ],
 "aliases_fr": [
 "concombre",
@@ -6008,7 +6412,15 @@
 "cocombre",
 "cooncombre",
 "cucumber",
-"concornbre"
+"concornbre",
+"concomre",
+"conc",
+"concombre slicer",
+"concombire",
+"conbre",
+"concombr",
+"concombne",
+"concombreslicer"
 ],
 "aliases_es": [
 "pepino",
@@ -6028,6 +6440,9 @@
 "peino",
 "peepino",
 "cucumber",
+"cucumber (pepino)",
+"pepiníllo",
+"pep",
 "pepinolargo"
 ]
 },
@@ -6055,7 +6470,10 @@
 "zwiebe1",
 "wziebel",
 "zwebel",
-"zwwiebel"
+"zwwiebel",
+"zwibel",
+"zwiebl",
+"zwiebael"
 ],
 "aliases_en": [
 "onion",
@@ -6076,7 +6494,15 @@
 "onon",
 "zwiebel",
 "on1on",
-"yellowonion"
+"onin",
+"oninon",
+"onino",
+"onio n",
+"zwiebel onion",
+"oion",
+"oniom",
+"yellowonion",
+"zwiebelonion"
 ],
 "aliases_fr": [
 "oignon",
@@ -6097,7 +6523,13 @@
 "oiignon",
 "onion",
 "o1gnon",
-"oignonjaune"
+"ognon",
+"oiglon",
+"ognion",
+"oignn",
+"onion oignon",
+"oignonjaune",
+"onionoignon"
 ],
 "aliases_es": [
 "cebolla",
@@ -6118,7 +6550,25 @@
 "ceolla",
 "ceebolla",
 "onion",
-"cebollablanca"
+"cebola",
+"cbolla",
+"cebollla",
+"ceboya",
+"sebolla",
+"cevolla",
+"cebolle",
+"cebll",
+"zwiebel cebolla",
+"onion cebolla",
+"cebolla onion",
+"cebolla roja",
+"cebollá",
+"cebo lla",
+"cebollablanca",
+"zwiebelcebolla",
+"onioncebolla",
+"cebollaonion",
+"cebollaroja"
 ]
 },
 {
@@ -6146,7 +6596,18 @@
 "nkoblauch",
 "knblauch",
 "knnoblauch",
-"zeheknoblauch"
+"knoflauch",
+"knoblach",
+"knob",
+"knoblauch (garlic)",
+"knoblauch (ail)",
+"knoblauch (ajo)",
+"knoblauch (cloves)",
+"knoblauch garlic",
+"knoblauch ajo",
+"zeheknoblauch",
+"knoblauchgarlic",
+"knoblauchajo"
 ],
 "aliases_en": [
 "garlic",
@@ -6166,7 +6627,14 @@
 "galic",
 "gaarlic",
 "knoblauch",
-"garlicclove"
+"garlicc",
+"grilic",
+"gralic",
+"garlc",
+"gariic",
+"garlic ajo",
+"garlicclove",
+"garlicajo"
 ],
 "aliases_fr": [
 "ail",
@@ -6184,7 +6652,10 @@
 "ial",
 "ai",
 "aiil",
-"garlic"
+"garlic",
+"garlic ail",
+"ailfrais",
+"garlicail"
 ],
 "aliases_es": [
 "ajo",
@@ -6200,7 +6671,12 @@
 "1Stück ajo",
 "jao",
 "ajjo",
-"garlic"
+"garlic",
+"ail ajo",
+"garlic (ajo)",
+"ajo garlic",
+"ailajo",
+"ajogarlic"
 ]
 },
 {
@@ -6228,7 +6704,17 @@
 "parika",
 "paaprika",
 "papr1ka",
-"bellpepper"
+"papirka",
+"papriia",
+"papika",
+"paprika (bell pepper)",
+"paprika (poivron)",
+"paprika (pimientos)",
+"paprika bell peppers",
+"paprka",
+"paprika schote",
+"bellpepper",
+"paprikaschote"
 ],
 "aliases_en": [
 "bell pepper",
@@ -6249,12 +6735,17 @@
 "paprika",
 "bellpepper",
 "bell-pepper",
+"beii peper",
+"bell peper",
+"pp",
 "bllpppr",
 "bellpep",
 "bellpeppers",
 "ebllpepper",
 "belpepper",
-"beellpepper"
+"beellpepper",
+"beiipeper",
+"bellpeper"
 ],
 "aliases_fr": [
 "poivron",
@@ -6275,8 +6766,16 @@
 "povron",
 "pooivron",
 "bell pepper",
+"poiveron",
+"poiron",
+"poivrns",
+"pivrn",
+"piment doux",
+"poivronsrouges",
+"paprikadoux",
 "poivronrouge",
-"bellpepper"
+"bellpepper",
+"pimentdoux"
 ],
 "aliases_es": [
 "pimiento",
@@ -6297,8 +6796,15 @@
 "piimiento",
 "bell pepper",
 "pirniento",
+"piminto",
+"pimiento pepper",
+"pprik",
+"pep",
+"pimenton",
+"pimentón",
 "pimientomorrón",
-"bellpepper"
+"bellpepper",
+"pimientopepper"
 ]
 },
 {
@@ -6329,7 +6835,8 @@
 "eierf",
 "1piece eierfrucht",
 "brgn",
-"a."
+"a.",
+"aubergine (eggplant)"
 ],
 "aliases_en": [
 "eggplant",
@@ -6351,7 +6858,9 @@
 "eggp1ant",
 "gegplant",
 "ggplnt",
-"eggpl ant"
+"eggpl ant",
+"eggplantt",
+"eggpiant"
 ],
 "aliases_fr": [
 "aubergine",
@@ -6373,7 +6882,12 @@
 "eggplant",
 "auberg1ne",
 "brgn",
-"au ber gi ne"
+"au ber gi ne",
+"auberglne",
+"auberginee",
+"aubgine",
+"auberine",
+"auberge"
 ],
 "aliases_es": [
 "berenjena",
@@ -6395,7 +6909,10 @@
 "eggplant",
 "be ren je na",
 "1 berenjena",
-"aubergine"
+"aubergine",
+"berengena",
+"berenjna",
+"berénjena"
 ]
 },
 {
@@ -6425,6 +6942,8 @@
 "zuchini",
 "zuucchini",
 "zucch1ni",
+"zucchinni",
+"zucchini (courgette)",
 "grünezucchini"
 ],
 "aliases_en": [
@@ -6445,7 +6964,8 @@
 "uzcchini",
 "zuchini",
 "zuucchini",
-"zucch1ni"
+"zucch1ni",
+"zuccini"
 ],
 "aliases_fr": [
 "courgette",
@@ -6463,7 +6983,17 @@
 "c0urgette",
 "ocurgette",
 "corgette",
-"coourgette"
+"coourgette",
+"courgete",
+"cour",
+"zucchini courgette",
+"courgte",
+"courgt",
+"courget",
+"courgette verte",
+"courgettesvertes",
+"zucchinicourgette",
+"courgetteverte"
 ],
 "aliases_es": [
 "calabacín",
@@ -6483,7 +7013,11 @@
 "ca1abacin",
 "aclabacin",
 "caabacin",
-"caalabacin"
+"caalabacin",
+"calabacn",
+"calabac",
+"calabacita",
+"calabacínespañol"
 ]
 },
 {
@@ -6511,7 +7045,11 @@
 "lbumenkohl",
 "blmenkohl",
 "bllumenkohl",
-"blurnenkohl"
+"blurnenkohl",
+"blumenkohi",
+"blumenkoh",
+"blumenkhol",
+"blumen kohl"
 ],
 "aliases_en": [
 "cauliflower",
@@ -6531,6 +7069,9 @@
 "califlower",
 "caauliflower",
 "blumenkohl",
+"cauiifiower",
+"cauliflowr",
+"caul",
 "whitecauliflower"
 ],
 "aliases_fr": [
@@ -6552,6 +7093,10 @@
 "ch0u-f1eur",
 "hcou-fleur",
 "chu-fleur",
+"choux fleurs",
+"chouxfleur",
+"choux fleur",
+"chouxfleurs",
 "choufle"
 ],
 "aliases_es": [
@@ -6573,6 +7118,9 @@
 "coiflor",
 "cooliflor",
 "cauliflower",
+"coliflpr",
+"coliflor (cauliflower)",
+"colifíor",
 "coliflorblanca"
 ]
 },
@@ -6620,6 +7168,11 @@
 "poato",
 "pootato",
 "kartoffel",
+"potatoe",
+"potatoo",
+"pottato",
+"potatio",
+"ptto",
 "russetpotato"
 ],
 "aliases_fr": [
@@ -6640,7 +7193,8 @@
 "opmme de terre",
 "pome de terre",
 "poomme de terre",
-"potato"
+"potato",
+"pomme de tere"
 ],
 "aliases_es": [
 "papa",
@@ -6656,7 +7210,12 @@
 "appa",
 "paa",
 "paapa",
-"potato"
+"potato",
+"kartoffel patata",
+"papa potato",
+"patat",
+"kartoffelpatata",
+"papapotato"
 ]
 },
 {
@@ -6736,13 +7295,17 @@
 "aptate douce",
 "paate douce",
 "paatate douce",
+"patate dce",
+"swt ptato",
 "patatedouce",
 "patatesdouces",
 "patatesucrée",
 "patatedouces",
 "aptatedouce",
 "paatedouce",
-"paatatedouce"
+"paatatedouce",
+"patatedce",
+"swtptato"
 ],
 "aliases_es": [
 "batata",
@@ -6789,7 +7352,8 @@
 "se11erie",
 "esllerie",
 "selerie",
-"seellerie"
+"seellerie",
+"sellerie (celery)"
 ],
 "aliases_en": [
 "celery",
@@ -6809,6 +7373,10 @@
 "ceery",
 "ceelery",
 "sellerie",
+"ceiery",
+"celerry",
+"cel",
+"cslry",
 "celerystick"
 ],
 "aliases_fr": [
@@ -6830,7 +7398,12 @@
 "ecleri",
 "ceeri",
 "ceeleri",
-"céleribranche"
+"celery céleri",
+"céleri-rave",
+"céleri rave",
+"céleribranche",
+"celerycéleri",
+"célerirave"
 ],
 "aliases_es": [
 "apio",
@@ -6850,6 +7423,7 @@
 "appio",
 "celery",
 "ap1o",
+"apío",
 "apioverde"
 ]
 },
@@ -6882,6 +7456,8 @@
 "khlrsch",
 "k.r.",
 "kohl röschen",
+"rosenkhol",
+"rosen kohl",
 "brusselssprouts"
 ],
 "aliases_en": [
@@ -6934,8 +7510,10 @@
 "brussels sprouts",
 "choudebruxelles",
 "300g choux de bruxelles",
+"chouxde bruxelles",
 "chouxbruxelles",
-"brusselssprouts"
+"brusselssprouts",
+"chouxdebruxelles"
 ],
 "aliases_es": [
 "coles de bruselas",
@@ -6990,6 +7568,7 @@
 "1bunch rettich",
 "radieschen",
 "rdscn",
+"ret",
 "rettichweiß"
 ],
 "aliases_en": [
@@ -7037,6 +7616,7 @@
 "raadis",
 "200g radis",
 "radi",
+"radisnoirs",
 "radisrouge",
 "radisblanc",
 "radisrose"
@@ -7142,7 +7722,8 @@
 "puerr0",
 "uperro",
 "purro",
-"puuerro"
+"puuerro",
+"puer"
 ]
 },
 {
@@ -7186,7 +7767,9 @@
 "fenne1",
 "efnnel",
 "fenel",
-"feennel"
+"feennel",
+"fennel bulb",
+"fennelbulb"
 ],
 "aliases_fr": [
 "fenouil",
@@ -7205,7 +7788,8 @@
 "efnouil",
 "feouil",
 "feenouil",
-"fenou1l"
+"fenou1l",
+"fnouil"
 ],
 "aliases_es": [
 "hinojo",
@@ -7223,7 +7807,8 @@
 "ihnojo",
 "hiojo",
 "hiinojo",
-"h1nojo"
+"h1nojo",
+"hinojó"
 ]
 },
 {
@@ -7265,6 +7850,7 @@
 "500g chard",
 "hcard",
 "chhard",
+"bette",
 "swisschard"
 ],
 "aliases_fr": [
@@ -7299,7 +7885,8 @@
 "ace1ga",
 "caelga",
 "aclga",
-"accelga"
+"accelga",
+"acelgás"
 ]
 },
 {
@@ -7352,6 +7939,7 @@
 "ebetroot",
 "betroot",
 "beeetroot",
+"beet root",
 "rotebete"
 ],
 "aliases_fr": [
@@ -7368,7 +7956,11 @@
 "better",
 "ebtterave",
 "beterave",
-"beetterave"
+"beetterave",
+"bettrave",
+"betteravefraîche",
+"betteravesrouges",
+"betteraves rouges"
 ],
 "aliases_es": [
 "remolacha",
@@ -7386,7 +7978,9 @@
 "ermolacha",
 "reolacha",
 "reemolacha",
-"rernolacha"
+"rernolacha",
+"remolácha",
+"remolch"
 ]
 },
 {
@@ -7417,7 +8011,8 @@
 "kale",
 "palrnkohl",
 "grünkohl",
-"grnkl"
+"grnkl",
+"grünkohl (kale)"
 ],
 "aliases_en": [
 "kale",
@@ -7462,11 +8057,13 @@
 "choufrise",
 "300g choufrisé",
 "choux frisés",
+"chou kale",
 "choufrises",
 "hcoufrise",
 "chufrise",
 "chhoufrise",
-"chouxfrisés"
+"chouxfrisés",
+"choukale"
 ],
 "aliases_es": [
 "col rizada",
@@ -7523,7 +8120,12 @@
 "ruc",
 "Rucola (de)",
 "rúcula",
-"rükola"
+"rükola",
+"rukola",
+"rucola (salat)",
+"ruccola",
+"rucola salat",
+"rucolasalat"
 ],
 "aliases_en": [
 "arugula",
@@ -7545,7 +8147,9 @@
 "argula",
 "arrugula",
 "aru",
-"rocket"
+"rocket",
+"rucola salad",
+"rucolasalad"
 ],
 "aliases_fr": [
 "roquette",
@@ -7898,7 +8502,8 @@
 "okhlrabi",
 "kolrabi",
 "koohlrabi",
-"kohlrab1"
+"kohlrab1",
+"speisekohlrabi"
 ],
 "aliases_en": [
 "kohlrabi",
@@ -8002,7 +8607,9 @@
 "sha110t",
 "hsallot",
 "shllot",
-"shhallot"
+"shhallot",
+"shallot onion",
+"shallotonion"
 ],
 "aliases_fr": [
 "échalote",
@@ -8022,7 +8629,8 @@
 "echal",
 "200g echalote",
 "echa10te",
-"cehalote"
+"cehalote",
+"echalot"
 ],
 "aliases_es": [
 "chalote",
@@ -8039,7 +8647,8 @@
 "cha10te",
 "hcalote",
 "chlote",
-"chhalote"
+"chhalote",
+"eschalote"
 ]
 },
 {
@@ -8214,6 +8823,8 @@
 "mahe",
 "maache",
 "rnache",
+"mche",
+"mâchefraîche",
 "lambslettuce"
 ],
 "aliases_es": [
@@ -8235,6 +8846,7 @@
 "caonigos",
 "caanonigos",
 "canon1gos",
+"canónigo",
 "lambslettuce"
 ]
 },
@@ -8265,6 +8877,7 @@
 "e.",
 "eisbergsalats",
 "eisber",
+"salat",
 "EisbergSalat",
 "iceberglettuce"
 ],
@@ -8287,6 +8900,7 @@
 "iceber",
 "icebe",
 "1piece iceberg lettuce",
+"lettuce iceberg",
 "iceberglettuce",
 "icebrglttce",
 "iceburglettuce",
@@ -8296,7 +8910,8 @@
 "laitueiceberg",
 "iceberglettucce",
 "iceberglechuga",
-"icbrglttc"
+"icbrglttc",
+"lettuceiceberg"
 ],
 "aliases_fr": [
 "laitue iceberg",
@@ -8317,6 +8932,7 @@
 "laitue icebergs",
 "laitue",
 "laitu",
+"lttue iceberg",
 "laitueiceberg",
 "ltticeberg",
 "laitueiceburg",
@@ -8327,7 +8943,8 @@
 "laitueicebergg",
 "lactueiceberg",
 "laitueiceberrg",
-"laitueicebergs"
+"laitueicebergs",
+"lttueiceberg"
 ],
 "aliases_es": [
 "lechuga iceberg",
@@ -8533,7 +9150,9 @@
 "poireos",
 "poireaux 3 stk",
 "poireax 3",
-"poiero"
+"poiero",
+"poir",
+"poireauxfrais"
 ],
 "aliases_es": [
 "puerros",
@@ -8635,7 +9254,10 @@
 "calabaza 1 unidad",
 "calavaza",
 "calabaza 1 unid",
-"calabazaentera"
+"calabaza pumpkin",
+"calab",
+"calabazaentera",
+"calabazapumpkin"
 ]
 },
 {
@@ -8665,6 +9287,10 @@
 "champi",
 "champ",
 "250g champignon",
+"champignons (white)",
+"champignons (hongos)",
+"champgn",
+"chmpgn",
 "champignonsweiss",
 "champignonweiß"
 ],
@@ -8687,8 +9313,18 @@
 "mushro",
 "mushr",
 "250g mushrooms",
+"champignon mushrooms",
+"mushrooms champignons",
+"champignons mushrooms",
+"mushrum",
+"mushroons",
+"flat mushroom",
 "mushroomswhite",
-"mushroomsbrown"
+"mushroomsbrown",
+"champignonmushrooms",
+"mushroomschampignons",
+"champignonsmushrooms",
+"flatmushroom"
 ],
 "aliases_fr": [
 "champignons de paris",
@@ -8708,7 +9344,10 @@
 "champignons de pariss",
 "champi",
 "champ",
-"250g champignons de paris"
+"250g champignons de paris",
+"champignom",
+"champfgnon",
+"champignonsfrais"
 ],
 "aliases_es": [
 "champiñones",
@@ -8729,6 +9368,12 @@
 "c.",
 "champinoness",
 "champi",
+"champiñón",
+"championes",
+"chmpiñn",
+"champíñon",
+"champiñ",
+"champiñón de parís",
 "champiñonesblanco",
 "champiñoneslaminados"
 ]
@@ -8760,6 +9405,7 @@
 "sparge",
 "sparg",
 "500g spargel",
+"spargl",
 "spargelgrün",
 "spargelweiss"
 ],
@@ -8782,9 +9428,11 @@
 "aspara",
 "aspar",
 "500g asparagus",
+"asperges asparagus",
 "asparagusbunch",
 "asparagusgreen",
-"asparaguswhite"
+"asparaguswhite",
+"aspergesasparagus"
 ],
 "aliases_fr": [
 "asperge",
@@ -8805,6 +9453,7 @@
 "asper",
 "500g asperge",
 "saperge",
+"aspergesblanches",
 "aspergeverte",
 "aspergeblanche"
 ],
@@ -8824,6 +9473,10 @@
 "espárragos blancos",
 "esparragos 500 gr",
 "esparrágo",
+"esprragos",
+"esparragus",
+"espárrago",
+"esparrago",
 "espárragosverdes",
 "espárragosblancos"
 ]
@@ -8857,6 +9510,8 @@
 "rebsen",
 "400g erbsen",
 "erbs",
+"erbsnp",
+"zuckererbsen",
 "erbsentiefkühl",
 "erbsenfrisch"
 ],
@@ -8931,8 +9586,12 @@
 "ugisantes",
 "400g guisantes",
 "peas",
+"guísantes",
+"guisnts",
+"bonduelle guisantes",
 "guisantescongelados",
-"guisantesfrescos"
+"guisantesfrescos",
+"bonduelleguisantes"
 ]
 },
 {
@@ -8990,6 +9649,7 @@
 "gren beans",
 "greenbeans",
 "green-beans",
+"grnbean",
 "grnbns",
 "greenbean",
 "greenbeens",
@@ -9020,12 +9680,20 @@
 "haric0ts verts",
 "haricotsverts",
 "haricots-verts",
+"haricots",
+"har",
+"harico verts",
+"haricot vrt",
+"haricot",
+"haricotverts",
 "hrctsvrts",
 "haricotvert",
 "haricotsvers",
 "hricotsverts",
 "haricotsvert",
-"haricotsvertss"
+"haricotsvertss",
+"haricoverts",
+"haricotvrt"
 ],
 "aliases_es": [
 "judías verdes",
@@ -9048,12 +9716,18 @@
 "400g judias verdes",
 "judías-verdes",
 "judía verde",
+"judías",
+"jud",
+"judas vrds",
+"alubias verdes",
 "jdsvrds",
 "judiaverde",
 "judiasverdes",
 "judiasverde",
 "judiasverdess",
-"judíaverde"
+"judíaverde",
+"judasvrds",
+"alubiasverdes"
 ]
 },
 {
@@ -9105,6 +9779,7 @@
 "c0rn",
 "ocrn",
 "con",
+"cornn",
 "sweetcorn",
 "cornfresh"
 ],
@@ -9143,8 +9818,10 @@
 "maiz 2 mazorcas",
 "maíz 2 unid",
 "maiiz",
+"maíz corn",
 "maízdulce",
-"maízfresco"
+"maízfresco",
+"maízcorn"
 ]
 },
 {
@@ -9238,6 +9915,7 @@
 "alcach",
 "alcac",
 "2piece alcachofa",
+"alcachófa",
 "alcachofaverde"
 ]
 },
@@ -9379,6 +10057,8 @@
 "kopfsa",
 "kopfs",
 "1piece kopfsalat",
+"kopfsalad",
+"kopfsal",
 "headlettuce",
 "kopfsalatfrisch"
 ],
@@ -9452,6 +10132,7 @@
 "lechug",
 "lechu",
 "1piece lechuga de cabeza",
+"lechuga",
 "lechugacabeza"
 ]
 },
@@ -9503,12 +10184,14 @@
 "roomaine lettuce",
 "romanasalat",
 "romaine-lettuce",
+"romain lettuce",
 "rmnlttc",
 "coslettuce",
 "romainelettuces",
 "ormainelettuce",
 "roainelettuce",
-"roomainelettuce"
+"roomainelettuce",
+"romainlettuce"
 ],
 "aliases_fr": [
 "laitue romaine",
@@ -9529,11 +10212,13 @@
 "romaine lettuce",
 "laitueromaine",
 "laitue-romaine",
+"laitue romain",
 "laitueromaines",
 "alitueromaine",
 "latueromaine",
 "laaitueromaine",
-"romainelettuce"
+"romainelettuce",
+"laitueromain"
 ],
 "aliases_es": [
 "lechuga romana",
@@ -9554,12 +10239,14 @@
 "leechuga romana",
 "romaine lettuce",
 "lechuga-romana",
+"lechuga roman",
 "lchgrmn",
 "lechugaromanas",
 "elchugaromana",
 "lehugaromana",
 "leechugaromana",
-"romainelettuce"
+"romainelettuce",
+"lechugaroman"
 ]
 },
 {
@@ -10238,7 +10925,8 @@
 "chhicory",
 "chicorée",
 "chicoree",
-"ch1cory"
+"ch1cory",
+"chicoryroot"
 ],
 "aliases_fr": [
 "chicorée",
@@ -10256,7 +10944,8 @@
 "chcoree",
 "chhicoree",
 "chicory",
-"ch1coree"
+"ch1coree",
+"chicon"
 ],
 "aliases_es": [
 "achicoria",
@@ -10680,7 +11369,8 @@
 "ingwers",
 "ingwe",
 "nigwer",
-"inngwer"
+"inngwer",
+"ingwer (gingembre)"
 ],
 "aliases_en": [
 "ginger",
@@ -10702,7 +11392,9 @@
 "g.",
 "gingers",
 "ignger",
-"giger"
+"giger",
+"gigner",
+"gingr"
 ],
 "aliases_fr": [
 "gingembre",
@@ -10725,7 +11417,9 @@
 "gigembre",
 "giingembre",
 "gingernbre",
-"gingembreracine"
+"gingembre frais",
+"gingembreracine",
+"gingembrefrais"
 ],
 "aliases_es": [
 "jengibre",
@@ -10748,6 +11442,8 @@
 "jengi",
 "ejngibre",
 "jegibre",
+"jenjibr",
+"jenjíbre",
 "jengibreraíz"
 ]
 },
@@ -10779,7 +11475,10 @@
 "petersi1ie",
 "eptersilie",
 "petersilien",
-"petersil"
+"petersil",
+"petersilie (persil)",
+"petersilie parsley",
+"petersilieparsley"
 ],
 "aliases_en": [
 "parsley",
@@ -10801,7 +11500,8 @@
 "1Bund parsley",
 "pars1ey",
 "1Stück parsley",
-"aprsley"
+"aprsley",
+"prsley"
 ],
 "aliases_fr": [
 "persil",
@@ -10823,7 +11523,9 @@
 "persi1",
 "eprsil",
 "parsley",
-"1Stück persil"
+"1Stück persil",
+"persl",
+"prsill"
 ],
 "aliases_es": [
 "perejil",
@@ -10845,7 +11547,10 @@
 "perej",
 "1Bund perejil",
 "perejiles",
-"1Stück perejil"
+"1Stück perejil",
+"prejil",
+"perjil",
+"perejl"
 ]
 },
 {
@@ -10921,6 +11626,7 @@
 "anneth",
 "dill",
 "1Stück aneth",
+"anethfrais",
 "anethherbe"
 ],
 "aliases_es": [
@@ -10974,7 +11680,8 @@
 "schnittlauchs",
 "schnit",
 "schnlch",
-"schnittlauche"
+"schnittlauche",
+"schnitt lauch"
 ],
 "aliases_en": [
 "chives",
@@ -11018,7 +11725,8 @@
 "ciboul",
 "1Bund ciboulette",
 "chives",
-"1Stück ciboulette"
+"1Stück ciboulette",
+"ciblette"
 ],
 "aliases_es": [
 "cebollino",
@@ -11111,6 +11819,7 @@
 "c0riandre",
 "ocriandre",
 "coiandre",
+"coriandr",
 "coriandreherbe"
 ],
 "aliases_es": [
@@ -11131,7 +11840,9 @@
 "cilantros",
 "cilant",
 "cilan",
-"1Bund cilantro"
+"1Bund cilantro",
+"clantro",
+"culantrillo"
 ]
 },
 {
@@ -11162,7 +11873,8 @@
 "1Bund minze",
 "imnze",
 "minzen",
-"mint"
+"mint",
+"mntr"
 ],
 "aliases_en": [
 "mint",
@@ -11184,7 +11896,8 @@
 "1Bund mint",
 "imnt",
 "1Stück mint",
-"mit"
+"mit",
+"int"
 ],
 "aliases_fr": [
 "menthe",
@@ -11260,7 +11973,9 @@
 "thymi",
 "1Bund thymian",
 "1 zweig thymian",
-"thymiane"
+"thymiane",
+"thymian thyme",
+"thymianthyme"
 ],
 "aliases_en": [
 "thyme",
@@ -11305,6 +12020,7 @@
 "thyrn",
 "1 branche thym",
 "1Stück thym",
+"thymfraisbio",
 "thymherbe"
 ],
 "aliases_es": [
@@ -11358,7 +12074,10 @@
 "rosma",
 "1Bund rosmarin",
 "1 zweig rosmarin",
-"rosmarine"
+"rosmarine",
+"rosmarin rosemary",
+"rosmr",
+"rosmarinrosemary"
 ],
 "aliases_en": [
 "rosemary",
@@ -11403,6 +12122,7 @@
 "r0marin",
 "1 branche romarin",
 "rosemary",
+"romarn",
 "romarinbranche"
 ],
 "aliases_es": [
@@ -11425,7 +12145,8 @@
 "1Bund romero",
 "r0mer0",
 "1 rama romero",
-"1Stück romero"
+"1Stück romero",
+"romro"
 ]
 },
 {
@@ -11742,6 +12463,7 @@
 "m.",
 "meerrettichs",
 "meerre",
+"krenrettich",
 "rábanopicante"
 ],
 "aliases_en": [
@@ -11866,7 +12588,8 @@
 "lernongrass",
 "lmngrs",
 "lemonras",
-"citronnelle"
+"citronnelle",
+"lemon grass"
 ],
 "aliases_fr": [
 "citronnelle",
@@ -12134,10 +12857,12 @@
 "chickpea",
 "pois-chiche",
 "po1s chiche",
+"pois chc",
 "poischiches",
 "opischiche",
 "poschiche",
-"pooischiche"
+"pooischiche",
+"poischc"
 ],
 "aliases_es": [
 "garbanzo",
@@ -12155,7 +12880,9 @@
 "agrbanzo",
 "gabanzo",
 "gaarbanzo",
-"chickpea"
+"chickpea",
+"garbz",
+"garb"
 ]
 },
 {
@@ -12409,6 +13136,7 @@
 "toopinambour",
 "jerusalem artichoke",
 "topinarnbour",
+"topinambourfrais",
 "jerusalemartichoke"
 ],
 "aliases_es": [
@@ -12859,6 +13587,7 @@
 "brrussels sprout",
 "rosenkohlsprosse",
 "brussels-sprout",
+"brusselsprout",
 "brsslsspr",
 "brsslssprt",
 "brusselssprouts",
@@ -13054,12 +13783,15 @@
 "snow",
 "nsow peas",
 "snw peas",
+"mangetout",
+"snap peas",
 "snoupeas",
 "snowpees",
 "mangetoutpeas",
 "snowpeass",
 "nsowpeas",
-"snwpeas"
+"snwpeas",
+"snappeas"
 ],
 "aliases_fr": [
 "pois mange-tout",
@@ -13141,6 +13873,7 @@
 "rgune erbsen",
 "500g grüne erbsen",
 "grüne erb",
+"erbsen",
 "grnrbsn",
 "grueneerbsen",
 "gruneerbsen",
@@ -13377,7 +14110,14 @@
 "bailikum",
 "baasilikum",
 "basilikurn",
-"bas1likum"
+"bas1likum",
+"basilikun",
+"bas",
+"basilikum frisch",
+"basilikum basil",
+"bsil",
+"basilikumfrisch",
+"basilikumbasil"
 ],
 "aliases_en": [
 "basil",
@@ -13392,7 +14132,9 @@
 "bail",
 "baasil",
 "basilikum",
-"bas1l"
+"bas1l",
+"basilico basil",
+"basilicobasil"
 ],
 "aliases_fr": [
 "basilic",
@@ -13407,7 +14149,9 @@
 "absilic",
 "bailic",
 "baasilic",
-"bas1lic"
+"bas1lic",
+"basli",
+"bouquetsbasilic"
 ],
 "aliases_es": [
 "albahaca",
@@ -13422,7 +14166,9 @@
 "a1bahaca",
 "labahaca",
 "alahaca",
-"allbahaca"
+"allbahaca",
+"albahc",
+"albhaca"
 ]
 },
 {
@@ -13477,6 +14223,9 @@
 "koriandergrun",
 "1 bunch cilantro",
 "coriander",
+"ciliantro",
+"cilantr",
+"clntro",
 "coriandrefraîche"
 ],
 "aliases_fr": [
@@ -13500,6 +14249,7 @@
 "cooriandre fraiche",
 "coriandre",
 "crndr",
+"cilntro",
 "crndrfrch",
 "coriandrefraiche",
 "coriandrefraiches",
@@ -13528,6 +14278,8 @@
 "1 manojo cilantro",
 "coriander",
 "1Stück cilantro",
+"cilantr o",
+"cilandro",
 "coriandrefraîche"
 ]
 },
@@ -13585,7 +14337,8 @@
 "estrag0n",
 "setragon",
 "esragon",
-"esstragon"
+"esstragon",
+"estragn"
 ],
 "aliases_es": [
 "estragon",
@@ -13670,6 +14423,8 @@
 "larier",
 "laaurier",
 "laur1er",
+"laurier feuille",
+"laurierfeuille",
 "bayleaf"
 ],
 "aliases_es": [
@@ -13687,7 +14442,9 @@
 "alurel",
 "larel",
 "laaurel",
-"bayleaf"
+"laurel hacendado",
+"bayleaf",
+"laurelhacendado"
 ]
 },
 {
@@ -13712,7 +14469,9 @@
 "0regan0",
 "roegano",
 "organo",
-"orregano"
+"orregano",
+"oregano oregano",
+"oreganooregano"
 ],
 "aliases_en": [
 "oregano",
@@ -13728,7 +14487,11 @@
 "0regan0",
 "roegano",
 "organo",
-"orregano"
+"orregano",
+"oregano spice",
+"orego",
+"oreg",
+"oreganospice"
 ],
 "aliases_fr": [
 "origan",
@@ -13762,7 +14525,13 @@
 "0regan0",
 "roegano",
 "organo",
-"orregano"
+"orregano",
+"orégano oregano",
+"oriva",
+"oré",
+"oregano hacendado",
+"oréganooregano",
+"oreganohacendado"
 ]
 },
 {
@@ -13790,7 +14559,8 @@
 "amjoran",
 "maoran",
 "maajoran",
-"rnajoran"
+"rnajoran",
+"majoran (marjolaine)"
 ],
 "aliases_en": [
 "marjoram",
@@ -14004,7 +14774,8 @@
 "ecrfeuil",
 "cefeuil",
 "ceerfeuil",
-"cerfeu1l"
+"cerfeu1l",
+"cerfeuiltubéreux"
 ],
 "aliases_es": [
 "perifollo",
@@ -14147,6 +14918,7 @@
 "pffefferminze",
 "pfefferrninze",
 "pfefferm1nze",
+"pfefferminz (menthe)",
 "menthepoivrée"
 ],
 "aliases_en": [
@@ -14245,7 +15017,8 @@
 "kress",
 "rkesse",
 "krsse",
-"krresse"
+"krresse",
+"gartenkresse"
 ],
 "aliases_en": [
 "cress",
@@ -14276,7 +15049,8 @@
 "cress0n",
 "rcesson",
 "crsson",
-"crresson"
+"crresson",
+"criss"
 ],
 "aliases_es": [
 "berro",
@@ -15398,7 +16172,8 @@
 "ukmmel",
 "kumel",
 "kuummel",
-"kurnmel"
+"kurnmel",
+"kmmel"
 ],
 "aliases_en": [
 "caraway",
@@ -16280,6 +17055,7 @@
 "rtinkmilch",
 "vollmilch",
 "vllmlch",
+"vollmilch (whole milk)",
 "ganzemilch"
 ],
 "aliases_en": [
@@ -16303,12 +17079,16 @@
 "1000ml whole milk",
 "wh0le milk",
 "whloe milk",
+"whole mlik",
+"whole mil",
 "whlemlk",
 "wholmilk",
 "wholeleche",
 "whlmlk",
 "wholemilks",
-"whloemilk"
+"whloemilk",
+"wholemlik",
+"wholemil"
 ],
 "aliases_fr": [
 "lait entier",
@@ -16331,12 +17111,19 @@
 "lat entier",
 "lt entr",
 "lait en",
+"lait entie",
+"lait entier milk",
+"lalt entier",
+"vlaiment entér",
 "laitentir",
 "laitwhole",
 "lecheentera",
 "laitentiers",
 "alitentier",
-"latentier"
+"latentier",
+"laitentie",
+"laltentier",
+"vlaimententér"
 ],
 "aliases_es": [
 "leche entera",
@@ -16359,6 +17146,14 @@
 "leeche entera",
 "leche en",
 "whole milk",
+"leche enterra",
+"whole milk leche",
+"leche entier",
+"leche whole milk",
+"leche entera milk",
+"leche ent.",
+"lche ent",
+"lech ent",
 "lchntr",
 "lecheentr",
 "lechewhole",
@@ -16367,7 +17162,11 @@
 "elcheentera",
 "leheentera",
 "leecheentera",
-"wholemilk"
+"wholemilk",
+"lecheenterra",
+"lecheentier",
+"lcheent",
+"lechent"
 ]
 },
 {
@@ -16466,6 +17265,7 @@
 "leeche uht",
 "uht milk",
 "lecheuht",
+"uht",
 "lchuht",
 "lecheuhts",
 "elcheuht",
@@ -16547,7 +17347,12 @@
 "lait d",
 "1l lait demi-ecreme",
 "1ait demi-ecreme",
-"laitdemi"
+"lait demi-ecréme",
+"lait demi ecreme",
+"lait demi écrémé",
+"laitdemi écrémé",
+"laitdemi",
+"laitdemiécrémé"
 ],
 "aliases_es": [
 "leche semidesnatada",
@@ -16567,6 +17372,7 @@
 "semi-skimmed milk",
 "leche sernidesnatada",
 "leche sem1desnatada",
+"leche semi desnatada",
 "lchsmdsntd",
 "lechesemidesnatadas",
 "elchesemidesnatada",
@@ -16623,6 +17429,7 @@
 "skkimmed milk",
 "magermilch",
 "skirnmed milk",
+"skimmilk",
 "skmmdmlk",
 "skimmedmilks",
 "ksimmedmilk",
@@ -16649,11 +17456,14 @@
 "1l lait ecreme",
 "1ait ecreme",
 "alit ecreme",
+"lait écremé",
+"lait écrémé skim",
 "laitécrémé",
 "laitmaigre",
 "laitecreme",
 "laitecremes",
-"alitecreme"
+"alitecreme",
+"laitécremé"
 ],
 "aliases_es": [
 "leche desnatada",
@@ -16671,6 +17481,7 @@
 "lehe desnatada",
 "leeche desnatada",
 "skimmed milk",
+"mag",
 "lchdsntd",
 "lechedesnatadas",
 "elchedesnatada",
@@ -16774,6 +17585,7 @@
 "leeche sin lactosa",
 "lactose-free milk",
 "leche s1n lactosa",
+"lch sin lct",
 "lechedeslactosada"
 ]
 },
@@ -16806,6 +17618,8 @@
 "schlag sahne",
 "schlagssahne",
 "schlagrahm",
+"schlagfahne",
+"schlags",
 "whippingcream"
 ],
 "aliases_en": [
@@ -17072,6 +17886,9 @@
 "buuttermilk",
 "butt3rmilk",
 "butter-milk",
+"buttermik",
+"butttermilk",
+"but ter milk",
 "culturedbuttermilk",
 "buttermlk",
 "sueromantequilla"
@@ -17097,8 +17914,10 @@
 "0.5l babeurre",
 "babeurre boisson",
 "babeurr",
+"buttr mlk",
 "laitfermenté",
-"babeurreboisson"
+"babeurreboisson",
+"buttrmlk"
 ],
 "aliases_es": [
 "suero de mantequilla",
@@ -17310,6 +18129,7 @@
 "laait en poudre",
 "powdered milk",
 "la1t en poudre",
+"laitdepoudre",
 "powderedmilk"
 ],
 "aliases_es": [
@@ -17601,13 +18421,15 @@
 "allmond milk",
 "1mndmlk",
 "a.",
+"almond mil",
 "lmndmlk",
 "almonddrink",
 "almndmlk",
 "almondmilks",
 "lamondmilk",
 "alondmilk",
-"allmondmilk"
+"allmondmilk",
+"almondmil"
 ],
 "aliases_fr": [
 "lait d'amande",
@@ -17630,8 +18452,12 @@
 "laitd'amande",
 "ltdmnd",
 "l.",
+"lait d'amnde",
+"lait amande",
+"lait d amande",
 "boissonamande",
-"almondmilk"
+"almondmilk",
+"laitamande"
 ],
 "aliases_es": [
 "leche de almendra",
@@ -17654,7 +18480,10 @@
 "lchdlmndr",
 "l.",
 "1000ml leche de almendra",
-"almondmilk"
+"leche almendra",
+"lechealmendras",
+"almondmilk",
+"lechealmendra"
 ]
 },
 {
@@ -17813,6 +18642,7 @@
 "hafermilch",
 "tmlk",
 "o.",
+"oatmlk",
 "oatdrink",
 "oatmilks",
 "aotmilk",
@@ -18868,6 +19698,7 @@
 "kaffeemi1ch",
 "akffeemilch",
 "kafeemilch",
+"kaffee milch",
 "kafemilch",
 "cafemilch"
 ],
@@ -19287,9 +20118,11 @@
 "srrm schmnd",
 "s.s.",
 "sauerrahmschmand",
+"sauerrahm sahne",
 "sourcreamsauerrahm",
 "sauerrahmsauer",
-"srrmschmnd"
+"srrmschmnd",
+"sauerrahmsahne"
 ],
 "aliases_en": [
 "sour cream",
@@ -19312,6 +20145,8 @@
 "sour crem",
 "soured cream",
 "crème aigre",
+"sour creaam",
+"sour creem",
 "sourcreme",
 "sourcreamm",
 "sourecream",
@@ -19320,7 +20155,8 @@
 "sowercream",
 "sourcrem",
 "souredcream",
-"crèmeaigre"
+"crèmeaigre",
+"sourcreaam"
 ],
 "aliases_fr": [
 "crème aigre",
@@ -19442,6 +20278,7 @@
 "cremfraiche",
 "crème fraîche 200g",
 "fraiche creme",
+"creme freshe",
 "crèmefraîche",
 "crmfrch",
 "cremefreche",
@@ -19450,7 +20287,8 @@
 "fraishecream",
 "crèmefraiche",
 "cremefraîche",
-"fraichecreme"
+"fraichecreme",
+"cremefreshe"
 ],
 "aliases_fr": [
 "crème fraîche",
@@ -19473,6 +20311,11 @@
 "crme fraiche",
 "crème fraiche",
 "creme fraîche",
+"creem fraiche",
+"crème fraîche épaisse",
+"crèm frêtch",
+"crm frche",
+"cr frche",
 "crèmefraîche",
 "crmfrch",
 "cremfreche",
@@ -19481,7 +20324,10 @@
 "rcemefraiche",
 "crmefraiche",
 "crèmefraiche",
-"cremefraîche"
+"cremefraîche",
+"creemfraiche",
+"crèmfrêtch",
+"crmfrche"
 ],
 "aliases_es": [
 "crème fraîche",
@@ -20025,6 +20871,7 @@
 "creme entiere (all)s",
 "creme",
 "200ml creme entiere (all)",
+"crèmeentière",
 "crèmeent",
 "cremeent"
 ],
@@ -20628,6 +21475,8 @@
 "grek yogurt",
 "500g greekyogurt",
 "yaourt grec",
+"yogur yogurt griego",
+"yogrt greek",
 "grkygrt",
 "greekyoughurt",
 "greekyoghurt",
@@ -20636,7 +21485,8 @@
 "greekyogurts",
 "rgeekyogurt",
 "grekyogurt",
-"yaourtgrec"
+"yaourtgrec",
+"yogrtgreek"
 ],
 "aliases_fr": [
 "yaourt grec",
@@ -20689,13 +21539,18 @@
 "yoogur griego",
 "500g yogurgriego",
 "greek yogurt griego",
+"yog grg",
+"yogurt griego",
+"yogur griego natural",
 "ygrgrg",
 "griegoyogur",
 "yogurgrie",
 "yogurgriegos",
 "oygurgriego",
 "yourgriego",
-"yoogurgriego"
+"yoogurgriego",
+"yoggrg",
+"yogurtgriego"
 ]
 },
 {
@@ -21217,6 +22072,9 @@
 "yaourt natur",
 "plain yogurt",
 "yaourts nature",
+"yaourt natrure",
+"yaourt nature plain",
+"yaourt nat",
 "yrtntr",
 "yogourtnature",
 "yoghourtnature",
@@ -21226,7 +22084,9 @@
 "yaourtnaturale",
 "yaourtnatur",
 "plainyogurt",
-"yaourtsnature"
+"yaourtsnature",
+"yaourtnatrure",
+"yaourtnat"
 ],
 "aliases_es": [
 "yogur natural",
@@ -21249,13 +22109,18 @@
 "oygur natural",
 "yogurnatural",
 "yogur naturl",
+"yog natural",
+"yogur natural (plain)",
+"yogurt natural (plain)",
+"nat",
 "ygrntrl",
 "yogurtnatural",
 "yogurnatura",
 "yoghurnatural",
 "yogurnaturals",
 "oygurnatural",
-"yogurnaturl"
+"yogurnaturl",
+"yognatural"
 ]
 },
 {
@@ -21530,7 +22395,19 @@
 "ubtter",
 "buttern",
 "buutter",
-"buerbutter"
+"bytter",
+"butrer",
+"butt",
+"bu",
+"butter (beurre)",
+"butter (mantequilla)",
+"butter (butter)",
+"butter butter",
+"butter beurre",
+"butte-",
+"buerbutter",
+"butterbutter",
+"butterbeurre"
 ],
 "aliases_en": [
 "butter",
@@ -21553,9 +22430,19 @@
 "butters",
 "butte",
 "ubtter",
+"butterr",
+"butter (salt)",
+"but ter",
+"butt er",
+"beurre butter",
+"butter mantequilla",
+"beurre (butter)",
+"butr",
 "butterstick",
 "saltedbutter",
-"unsaltedbutter"
+"unsaltedbutter",
+"beurrebutter",
+"buttermantequilla"
 ],
 "aliases_fr": [
 "beurre",
@@ -21578,8 +22465,22 @@
 "eburre",
 "butter",
 "berre",
+"beur re",
+"beurree",
+"beu rre",
+"beune",
+"beurer",
+"beurrre",
+"beuure",
+"beu",
+"beur.",
+"beurre mantequilla",
+"beurrf",
+"beurre douv",
 "beurredoux",
-"beurresalé"
+"beurresalé",
+"beurremantequilla",
+"beurredouv"
 ],
 "aliases_es": [
 "mantequilla",
@@ -21601,7 +22502,20 @@
 "manteq",
 "mante",
 "250g mantequilla",
-"mantquilla"
+"mantquilla",
+"manteql",
+"mantequilla butter",
+"butter, mantequilla",
+"mantequilla (butter)",
+"manteca butter",
+"mantequlla",
+"mantqill",
+"mantéqulla",
+"mant",
+"man tequilla",
+"mantequillademanteca",
+"mantequillabutter",
+"mantecabutter"
 ]
 },
 {
@@ -21631,6 +22545,7 @@
 "butte",
 "250g butter (gesalzen)",
 "butter (gesa1zen)",
+"butter (salted)",
 "bttrgslzn",
 "butergesalzen",
 "gesalzenebutter",
@@ -21713,6 +22628,7 @@
 "matequilla salada",
 "maantequilla salada",
 "mantequilla-salada",
+"manteq. salada",
 "mntqllsld",
 "mantquillasalada",
 "saladamantequilla",
@@ -21815,6 +22731,9 @@
 "beurre-doux",
 "br dx",
 "beurre do",
+"beurre doux unsalted",
+"beurre doux (unsalted)",
+"beurr doux",
 "beuredoux",
 "douxbeurre",
 "unsaltedbutter",
@@ -21822,7 +22741,8 @@
 "beurredouxs",
 "eburredoux",
 "berredoux",
-"beeurredoux"
+"beeurredoux",
+"beurrdoux"
 ],
 "aliases_es": [
 "mantequilla sin sal",
@@ -21845,6 +22765,7 @@
 "mantequilla-sin-sal",
 "mantequilla si",
 "mantequilla sin",
+"mantequillasin sal",
 "mantequilladulce",
 "unsaltedbutter",
 "mantequillasin"
@@ -22859,6 +23780,7 @@
 "rkauterbutter",
 "125g kräuterbutter",
 "kräuter",
+"kräuter butter",
 "kräuterbutteraufstrich"
 ],
 "aliases_en": [
@@ -22960,6 +23882,7 @@
 "nkoblauchbutter",
 "knblauchbutter",
 "knnoblauchbutter",
+"knoblauch butter",
 "garlicbutter"
 ],
 "aliases_en": [
@@ -24905,6 +25828,7 @@
 "whhipped cream spray",
 "whiped crem spray",
 "whiped cream spray",
+"whip cream spray",
 "sahnesprühsahne"
 ],
 "aliases_fr": [
@@ -25166,7 +26090,10 @@
 "m1lchreis",
 "0 milchreis",
 "milchreis 400g",
-"ricepudding"
+"müller milchreis",
+"milch reis",
+"ricepudding",
+"müllermilchreis"
 ],
 "aliases_en": [
 "rice pudding",
@@ -25894,12 +26821,17 @@
 "frischkase",
 "c.ch.",
 "creem cheese",
+"creaam cheese",
+"cream cheese (crème)",
+"cream chess",
 "crmchs",
 "creamcheeses",
 "rceamcheese",
 "cramcheese",
 "crreamcheese",
-"creemcheese"
+"creemcheese",
+"creaamcheese",
+"creamchess"
 ],
 "aliases_fr": [
 "fromage frais",
@@ -25950,6 +26882,7 @@
 "quueso crema",
 "keso crema",
 "quescrema",
+"fr",
 "quesocremas",
 "uqesocrema",
 "qusocrema",
@@ -25985,7 +26918,13 @@
 "rnozzarella",
 "m.z.",
 "moz-zarella",
-"125g mozzarella"
+"125g mozzarella",
+"mozzarella (buffalo)",
+"mozzarella cheese",
+"mozzarella light",
+"mzzrlla",
+"mozzarellacheese",
+"mozzarellalight"
 ],
 "aliases_en": [
 "mozzarella",
@@ -26007,7 +26946,15 @@
 "rnozzarella",
 "m.z.",
 "moz-zarella",
-"125g mozzarella"
+"125g mozzarella",
+"mozzareila",
+"mozzarella käse",
+"queso mozzarella",
+"mozzarella fromage",
+"moz",
+"mozzarellakäse",
+"quesomozzarella",
+"mozzarellafromage"
 ],
 "aliases_fr": [
 "mozzarella",
@@ -26074,7 +27021,16 @@
 "oguda",
 "goda",
 "goouda",
-"gda"
+"gda",
+"goude",
+"gauda",
+"gouda kase",
+"goudda",
+"gou da",
+"gouda (gouda)",
+"gouda käse",
+"goudakase",
+"goudakäse"
 ],
 "aliases_en": [
 "gouda",
@@ -26090,6 +27046,7 @@
 "goouda",
 "gda",
 "gouda cheese",
+"goudaa",
 "goudacheese"
 ],
 "aliases_fr": [
@@ -26147,7 +27104,8 @@
 "ementaler",
 "emmmentaler",
 "ernmentaler",
-"emmtlr"
+"emmtlr",
+"emmental de savoie"
 ],
 "aliases_en": [
 "emmental",
@@ -26169,6 +27127,7 @@
 "emmtl",
 "emmental cheese",
 "emmenthal",
+"emmental (emmental)",
 "emmentalcheese"
 ],
 "aliases_fr": [
@@ -26187,7 +27146,11 @@
 "emental",
 "emmmental",
 "ernmental",
-"emmtl"
+"emmtl",
+"emmantal",
+"emnental",
+"emmental switzer",
+"emmentalswitzer"
 ],
 "aliases_es": [
 "emmental",
@@ -26232,7 +27195,8 @@
 "caamembert",
 "carnembert",
 "cmbrt",
-"125g camembert"
+"125g camembert",
+"camembert (camembert)"
 ],
 "aliases_en": [
 "camembert",
@@ -26250,7 +27214,8 @@
 "caamembert",
 "carnembert",
 "cmbrt",
-"125g camembert"
+"125g camembert",
+"camember"
 ],
 "aliases_fr": [
 "camembert",
@@ -26268,7 +27233,12 @@
 "caamembert",
 "carnembert",
 "cmbrt",
-"125g camembert"
+"125g camembert",
+"camenbert",
+"camernbert",
+"camembert creamy",
+"camembert de normandie",
+"camembertcreamy"
 ],
 "aliases_es": [
 "camembert",
@@ -26313,7 +27283,16 @@
 "pamesan",
 "paarmesan",
 "parrnesan",
-"parm"
+"parm",
+"parmesankäse",
+"parmesann",
+"parmesam",
+"parmesa",
+"parmesan (parmesan)",
+"parmesan (parmigiano)",
+"parmesan (grated)",
+"parmesan reggiano",
+"parmesanreggiano"
 ],
 "aliases_en": [
 "parmesan",
@@ -26332,7 +27311,11 @@
 "parrnesan",
 "parm",
 "parmesan cheese",
-"parmesancheese"
+"parmasan",
+"parmasen",
+"parmesan parmigiano",
+"parmesancheese",
+"parmesanparmigiano"
 ],
 "aliases_fr": [
 "parmesan",
@@ -26349,7 +27332,9 @@
 "pamesan",
 "paarmesan",
 "parrnesan",
-"parm"
+"parm",
+"parmezan",
+"parmigiano"
 ],
 "aliases_es": [
 "parmesano",
@@ -26368,7 +27353,11 @@
 "pamesano",
 "paarmesano",
 "parrnesano",
-"parm"
+"parm",
+"queso parmesano",
+"queso parmesan",
+"quesoparmesano",
+"quesoparmesan"
 ]
 },
 {
@@ -26393,7 +27382,9 @@
 "hceddar",
 "chddar",
 "chheddar",
-"chdr"
+"chdr",
+"cheddar käse",
+"cheddarkäse"
 ],
 "aliases_en": [
 "cheddar",
@@ -26412,6 +27403,8 @@
 "chdr",
 "cheddar cheese",
 "chedder",
+"chedar",
+"ched",
 "cheddarcheese"
 ],
 "aliases_fr": [
@@ -26428,7 +27421,11 @@
 "hceddar",
 "chddar",
 "chheddar",
-"chdr"
+"chdr",
+"cheddar old",
+"cheddar fort",
+"cheddarold",
+"cheddarfort"
 ],
 "aliases_es": [
 "cheddar",
@@ -26444,7 +27441,9 @@
 "hceddar",
 "chddar",
 "chheddar",
-"chdr"
+"chdr",
+"cheddar queso",
+"cheddarqueso"
 ]
 },
 {
@@ -26499,11 +27498,14 @@
 "b1ue cheese",
 "blu cheese",
 "blue-cheese",
+"blue cheeese",
+"blue cheese (bleu)",
 "bluecheez",
 "bluecheeze",
 "bluecese",
 "bluecheeses",
-"blucheese"
+"blucheese",
+"bluecheeese"
 ],
 "aliases_fr": [
 "fromage bleu",
@@ -26584,7 +27586,8 @@
 "f.t.",
 "fet",
 "fetaa",
-"fetta"
+"fetta",
+"feta (feta)"
 ],
 "aliases_en": [
 "feta",
@@ -26614,7 +27617,9 @@
 "f.t.",
 "fet",
 "fetaa",
-"fetta"
+"fetta",
+"feta greek",
+"fetagreek"
 ],
 "aliases_es": [
 "queso feta",
@@ -26695,6 +27700,7 @@
 "cttchs",
 "cottagechese",
 "cottage cheez",
+"cott",
 "cttgchs",
 "cottagecheeses",
 "octtagecheese",
@@ -26723,6 +27729,8 @@
 "fromage cottage",
 "frmgct",
 "f.c.",
+"fromage blac",
+"fromage blanc cottage",
 "frmgblnc",
 "fromagblanc",
 "cottagecheese",
@@ -26732,7 +27740,8 @@
 "frmageblanc",
 "frromageblanc",
 "frornageblanc",
-"fromagecottage"
+"fromagecottage",
+"fromageblac"
 ],
 "aliases_es": [
 "requesón",
@@ -26796,6 +27805,7 @@
 "edamer",
 "edarn",
 "edam cheese",
+"edam (edam)",
 "edamcheese"
 ],
 "aliases_fr": [
@@ -26810,7 +27820,8 @@
 "e.",
 "deam",
 "eddam",
-"edarn"
+"edarn",
+"edam dutch cheese"
 ],
 "aliases_es": [
 "edam",
@@ -26879,11 +27890,14 @@
 "ziegenkäse",
 "gtchs",
 "g.",
+"goat cheeese",
+"goat cheese (chèvre)",
 "gotecheese",
 "goatchese",
 "goatcheeses",
 "ogatcheese",
-"gooatcheese"
+"gooatcheese",
+"goatcheeese"
 ],
 "aliases_fr": [
 "chèvre",
@@ -26906,7 +27920,13 @@
 "fromage de chèvre",
 "frmg d chvr",
 "f.",
-"goatcheese"
+"chèvre logs",
+"fromage chèvre",
+"chèvr",
+"fromagedèschèvre",
+"goatcheese",
+"chèvrelogs",
+"fromagechèvre"
 ],
 "aliases_es": [
 "queso de cabra",
@@ -26929,6 +27949,8 @@
 "quueso de cabra",
 "qcab",
 "q.",
+"queso cabra",
+"quesocabra",
 "goatcheese"
 ]
 },
@@ -27099,7 +28121,10 @@
 "ircotta",
 "riotta",
 "riicotta",
-"r1cotta"
+"r1cotta",
+"rlcottas",
+"ricotto",
+"ricotta (ricotta)"
 ],
 "aliases_fr": [
 "ricotta",
@@ -27117,7 +28142,9 @@
 "ircotta",
 "riotta",
 "riicotta",
-"r1cotta"
+"r1cotta",
+"rcotta",
+"ricottafraîche"
 ],
 "aliases_es": [
 "ricotta",
@@ -27162,6 +28189,8 @@
 "slahsahne",
 "schlaghsahne",
 "sahne zum schlagen",
+"schlagasne",
+"schlagsahn",
 "schlagsachne"
 ],
 "aliases_en": [
@@ -27205,6 +28234,7 @@
 "crème 200",
 "crem liquide",
 "crème épaisse",
+"crème liquide heavy",
 "crmlqd",
 "crèmeentière",
 "crèmeliquide",
@@ -27371,6 +28401,7 @@
 "bries",
 "rbie",
 "bre",
+"brie (brie)",
 "briekäse",
 "briekase",
 "briefrz"
@@ -27420,6 +28451,8 @@
 "bries",
 "rbie",
 "bre",
+"brié",
+"brie (brie cheese)",
 "briefermier"
 ],
 "aliases_es": [
@@ -28322,6 +29355,7 @@
 "racle",
 "raclettkäse",
 "rcltks",
+"raclette kase",
 "raclettecheese"
 ],
 "aliases_en": [
@@ -28345,6 +29379,7 @@
 "raaclette cheese",
 "rcltch",
 "ra.cc.",
+"fromage raclette",
 "raclettecheese",
 "rclttchs",
 "raclettechese",
@@ -28352,7 +29387,8 @@
 "raclettecheeses",
 "arclettecheese",
 "ralettecheese",
-"raaclettecheese"
+"raaclettecheese",
+"fromageraclette"
 ],
 "aliases_fr": [
 "fromage à raclette",
@@ -28375,6 +29411,7 @@
 "froma",
 "frglt",
 "300g fromage à raclette",
+"fromagederaclette",
 "frmgrclt",
 "raclettecheese",
 "frmgrcltt"
@@ -28450,6 +29487,7 @@
 "haalloumi",
 "hallourni",
 "halloum1",
+"halloumi (halloumi)",
 "fromagehalloumi"
 ],
 "aliases_fr": [
@@ -28541,6 +29579,7 @@
 "rguyere",
 "gryere",
 "grruyere",
+"gruyere (gruyère)",
 "fromagegruyère",
 "gruyèrecheese"
 ],
@@ -28611,7 +29650,10 @@
 "topfen",
 "qua",
 "quarg",
-"quarkcheese"
+"quark (requesón)",
+"landliebe quark",
+"quarkcheese",
+"landliebequark"
 ],
 "aliases_en": [
 "quark",
@@ -28651,6 +29693,7 @@
 "fromage blanc",
 "qua",
 "quarg",
+"fromage blanc quark",
 "fromagequark",
 "fromageblanc"
 ],
@@ -28900,8 +29943,10 @@
 "goorgonzola",
 "gorgonz",
 "gorgonzolen",
+"gorgonzola piccante",
 "gorgonzolacheese",
-"gorgonzolakäse"
+"gorgonzolakäse",
+"gorgonzolapiccante"
 ],
 "aliases_en": [
 "gorgonzola",
@@ -29140,6 +30185,7 @@
 "chvre",
 "chhevre",
 "goat cheese log",
+"bûche de chèvre",
 "goatcheese",
 "chèvrefrais"
 ],
@@ -29851,7 +30897,8 @@
 "bre de meaux",
 "brrie de meaux",
 "brie de rneaux",
-"br1e de meaux"
+"br1e de meaux",
+"meaux"
 ],
 "aliases_es": [
 "brie de meaux",
@@ -30980,8 +32027,10 @@
 "tilser",
 "tilsi",
 "tilsit doux",
+"tilsit creamery",
 "tilsitfromage",
-"tilsitdoux"
+"tilsitdoux",
+"tilsitcreamery"
 ],
 "aliases_es": [
 "tilsit",
@@ -31722,6 +32771,7 @@
 "froma",
 "frmgptdr",
 "fromageapâtedure",
+"fromagedure",
 "fromagedur",
 "hardcheese"
 ],
@@ -32800,12 +33850,15 @@
 "fr0mage b1anc",
 "rfomage blanc",
 "frmage blanc",
+"frmage blnc",
+"from agebl anc",
 "frmgblnc",
 "fromageblan",
 "whitecheese",
 "fromageblancs",
 "rfomageblanc",
-"frmageblanc"
+"frmageblanc",
+"frmageblnc"
 ],
 "aliases_es": [
 "queso blanco",
@@ -33202,6 +34255,8 @@
 "rouefort",
 "rooquefort",
 "rokefort",
+"roqefort",
+"roquefort (roquefort)",
 "roquefortcheese"
 ],
 "aliases_fr": [
@@ -33224,8 +34279,12 @@
 "rouefort",
 "rooquefort",
 "rokefort",
+"roquefor",
+"roquefort aop",
+"roquefort blue cheese",
 "fromageroquefort",
-"roquefortcheese"
+"roquefortcheese",
+"roquefortaop"
 ],
 "aliases_es": [
 "roquefort",
@@ -33539,6 +34598,7 @@
 "burra",
 "ubrrata",
 "burata",
+"burr",
 "burratafromage",
 "burratamozzarella"
 ],
@@ -33750,6 +34810,10 @@
 "froma",
 "150g fromage rape",
 "fr0mage rape",
+"fromage râpe",
+"fromage cheese râpé",
+"frmge rapé",
+"fromge râpé",
 "fromagerâpé",
 "fromagerape",
 "fromagerapé",
@@ -33757,7 +34821,10 @@
 "frommgrâpé",
 "rapéfromage",
 "fromagerapay",
-"fromagerapes"
+"fromagerapes",
+"fromagerâpe",
+"frmgerapé",
+"fromgerâpé"
 ],
 "aliases_es": [
 "queso rallado",
@@ -33778,6 +34845,7 @@
 "queso",
 "ques0 ra11ad0",
 "uqeso rallado",
+"queso rall.",
 "quesorallado",
 "quesorayado",
 "quesoralado",
@@ -34135,8 +35203,10 @@
 "250ml kaesesosse",
 "käse",
 "käse-soße",
+"käse sauce",
 "soßekäse",
-"käsesoß"
+"käsesoß",
+"käsesauce"
 ],
 "aliases_en": [
 "cheese sauce",
@@ -34569,7 +35639,24 @@
 "joghu",
 "ojghurt",
 "johurt",
-"jooghurt"
+"jooghurt",
+"jogghurt",
+"joghurtt",
+"joguhrt",
+"jo",
+"joghurt (yogurt)",
+"joghurt (yaourt)",
+"joghurt (yogur)",
+"joghurt erdbeere",
+"joghurt yogurt",
+"yogurt joghurt",
+"joghurt (griechisch)",
+"joghurtwurst",
+"jgurt",
+"jogrt",
+"joghurterdbeere",
+"joghurtyogurt",
+"yogurtjoghurt"
 ],
 "aliases_en": [
 "yogurt",
@@ -34588,7 +35675,17 @@
 "oygurt",
 "yourt",
 "yoogurt",
-"joghurt"
+"joghurt",
+"yogrut",
+"yoggurt",
+"yougurt",
+"yogart",
+"yogurtt",
+"yghurt",
+"yogurt yaourt",
+"yaourt (yogurt)",
+"yogurt (joghurt)",
+"yogurtyaourt"
 ],
 "aliases_fr": [
 "yaourt",
@@ -34606,7 +35703,18 @@
 "yaourts",
 "ayourt",
 "yaurt",
-"yaaourt"
+"yaaourt",
+"yauort",
+"ya ourt",
+"yahourt",
+"yagourt",
+"yhaourt",
+"yaourt yogur",
+"yaourt yogurt",
+"yauourt",
+"yaourtnature",
+"yaourtyogur",
+"yaourtyogurt"
 ],
 "aliases_es": [
 "yogur",
@@ -34620,7 +35728,19 @@
 "yogurs",
 "oygur",
 "your",
-"yoogur"
+"yoogur",
+"yo gur",
+"yogurt leche",
+"yogur yogurt",
+"ygu",
+"yógurt",
+"danone yogur",
+"lala yogur",
+"yog ur",
+"yogurtleche",
+"yoguryogurt",
+"danoneyogur",
+"lalayogur"
 ]
 },
 {
@@ -38644,6 +39764,8 @@
 "okkosmilch",
 "k.m.",
 "kokos milch",
+"kokosnussmilch",
+"kokosnuss milch",
 "coconutmilk"
 ],
 "aliases_en": [
@@ -38698,7 +39820,10 @@
 "lait",
 "1ait de c0c0",
 "l.c.",
-"creme de coco"
+"creme de coco",
+"lait coco",
+"laitdecoc o",
+"laitcoco"
 ],
 "aliases_es": [
 "leche de coco",
@@ -38721,7 +39846,9 @@
 "elche de coco",
 "l.c.",
 "crema de coco",
-"coconutmilk"
+"leche coco",
+"coconutmilk",
+"lechecoco"
 ]
 },
 {
@@ -39809,6 +40936,10 @@
 "cream",
 "rhm",
 "r.",
+"sahhe",
+"sahne (creme fraîche)",
+"sahne (crema)",
+"sah",
 "sahneflüssig"
 ],
 "aliases_en": [
@@ -39832,8 +40963,12 @@
 "sahne",
 "creem",
 "250ml cream",
+"crean",
+"creamm",
+"creme cream",
 "whippingcream",
-"heavycream"
+"heavycream",
+"cremecream"
 ],
 "aliases_fr": [
 "crème",
@@ -39856,8 +40991,17 @@
 "crme",
 "250ml creme",
 "creme liquide",
+"crěme",
+"cream fraîche",
+"crème fraîche cream",
+"crème fraîche",
+"crème frche",
+"crèmeentière",
 "crèmeliquide",
-"cremeliquide"
+"cremeliquide",
+"creamfraîche",
+"crèmefraîche",
+"crèmefrche"
 ],
 "aliases_es": [
 "crema",
@@ -39879,7 +41023,14 @@
 "crerna",
 "krema",
 "250ml crema",
-"crema de leche"
+"crema de leche",
+"cremma",
+"crema cream",
+"nivea crema",
+"crema leche",
+"cremacream",
+"niveacrema",
+"cremaleche"
 ]
 },
 {
@@ -40151,6 +41302,7 @@
 "200g creme d'amande",
 "crmdmd",
 "c.d'a.",
+"creme d amande",
 "crèmeamande",
 "almondcream",
 "cremeamande"
@@ -42898,6 +44050,9 @@
 "iescreme",
 "eicreme",
 "eiiscreme",
+"eiscreme (ice cream)",
+"eis ice cream",
+"eis",
 "eiscrème",
 "eiscremevanille",
 "eiscremedessert"
@@ -42918,11 +44073,16 @@
 "creamy ice",
 "ice cream tub",
 "icecrème",
+"ice creamm",
+"ice crea m",
+"ice crm",
+"icecrm",
 "icecreme",
 "icecrem",
 "frozencream",
 "icedcream",
-"creamyice"
+"creamyice",
+"icecreamm"
 ],
 "aliases_fr": [
 "crème glacée",
@@ -42941,6 +44101,7 @@
 "glace creme",
 "creme glacee vanille",
 "creme glace",
+"glac",
 "crèmeglacée",
 "crmglc",
 "cremglacé",
@@ -42969,6 +44130,9 @@
 "heado",
 "heelado",
 "ice cream",
+"helado ice cream",
+"hlado",
+"he la do",
 "cremahelada",
 "heladocrema",
 "heladovainilla",
@@ -43932,7 +45096,10 @@
 "10Stück œuf",
 "uœf",
 "œuuf",
-"egg"
+"egg",
+"œuf egg",
+"œuf ei",
+"œufegg"
 ],
 "aliases_es": [
 "huevo",
@@ -43948,7 +45115,11 @@
 "10Stück huevo",
 "uhevo",
 "huvo",
-"huuevo"
+"huuevo",
+"huevvo",
+"huebo",
+"huev.",
+"huevó"
 ]
 },
 {
@@ -44789,6 +45960,7 @@
 "jane d'œuf",
 "jaaune d'œuf",
 "egg yolk",
+"jaunedoeuf",
 "eggyolk"
 ],
 "aliases_es": [
@@ -46370,6 +47542,7 @@
 "egg salad",
 "e1ersalat",
 "eiersalate",
+"ei salat",
 "eggsalad"
 ],
 "aliases_en": [
@@ -49883,7 +51056,9 @@
 "500g eierkuchenmischung",
 "ieerkuchenmischung",
 "eirkuchenmischung",
-"pancakemix"
+"pancakes mix",
+"pancakemix",
+"pancakesmix"
 ],
 "aliases_en": [
 "pancake mix",
@@ -51440,7 +52615,9 @@
 "hahnchenbrustfilets",
 "hahnch",
 "hahnc",
-"400g hahnchenbrustfilet"
+"400g hahnchenbrustfilet",
+"hähnchen brust filet",
+"hühnerbrustfilet"
 ],
 "aliases_en": [
 "chicken breast fillet",
@@ -51479,7 +52656,8 @@
 "fiet de poitrine de poulet",
 "fiilet de poitrine de poulet",
 "filetdepoitrinedepoulet",
-"f1let de poitrine de poulet"
+"f1let de poitrine de poulet",
+"chkn brst flt"
 ],
 "aliases_es": [
 "filete de pechuga de pollo",
@@ -51554,13 +52732,15 @@
 "gound beef",
 "carne molida",
 "ground beeff",
+"grnd bef",
 "groundbeefs",
 "rgoundbeef",
 "grundbeef",
 "grroundbeef",
 "goundbeef",
 "carnemolida",
-"groundbeeff"
+"groundbeeff",
+"grndbef"
 ],
 "aliases_fr": [
 "bœuf haché",
@@ -51978,7 +53158,9 @@
 "maret de canard",
 "maagret de canard",
 "rnagret de canard",
-"duckbreast"
+"magret canard",
+"duckbreast",
+"magretcanard"
 ],
 "aliases_es": [
 "pechuga de pato",
@@ -52027,6 +53209,7 @@
 "600g hahnchenflugel",
 "hahnchenf1uge1",
 "ahhnchenflugel",
+"hähnchen flügel",
 "chickenwings"
 ],
 "aliases_en": [
@@ -52075,7 +53258,9 @@
 "aies de poulet",
 "aiiles de poulet",
 "a1les de poulet",
-"chickenwings"
+"chkn wng",
+"chickenwings",
+"chknwng"
 ],
 "aliases_es": [
 "alitas de pollo",
@@ -52235,6 +53420,7 @@
 "1 rindersteak",
 "steak",
 "rindersteak de",
+"rinderstak",
 "beefsteak"
 ],
 "aliases_en": [
@@ -52306,6 +53492,7 @@
 "bistec de res",
 "bstc d rs",
 "b.d.r.",
+"filete de ternera",
 "beefsteak"
 ]
 },
@@ -52735,7 +53922,11 @@
 "sa1ami",
 "aslami",
 "saami",
-"salamiaufschnitt"
+"salami salami",
+"citterio salami",
+"salamiaufschnitt",
+"salamisalami",
+"citteriosalami"
 ],
 "aliases_en": [
 "salami",
@@ -54164,9 +55355,11 @@
 "haahnchenbrust",
 "hähnchenbrust400g",
 "hähnchen brust",
+"hähnchen breast",
 "hähnchenbrustfilet",
 "chickenbreast",
-"brusthähnchen"
+"brusthähnchen",
+"hähnchenbreast"
 ],
 "aliases_en": [
 "chicken breast",
@@ -54189,6 +55382,10 @@
 "chhicken breast",
 "chickenbreast400g",
 "chicken-breast",
+"chlcken beast",
+"chckn breast",
+"chknbrst",
+"chkn brst",
 "chcknbrst",
 "chickénbreast",
 "chikenbreast",
@@ -54199,7 +55396,9 @@
 "chickenbreasts",
 "hcickenbreast",
 "chckenbreast",
-"chhickenbreast"
+"chhickenbreast",
+"chlckenbeast",
+"chcknbreast"
 ],
 "aliases_fr": [
 "blanc de poulet",
@@ -54246,6 +55445,8 @@
 "peechuga de pollo",
 "pechuga de pollo400g",
 "pechuga-de-pollo",
+"chicken (pollo) breast",
+"pollo chicken breast",
 "pechugapollo",
 "chickenbreast"
 ]
@@ -54836,6 +56037,7 @@
 "pok chop",
 "250g pork chop",
 "côtelette de porc",
+"côte de porc",
 "prkchp",
 "porkchpo",
 "porkchops",
@@ -54864,6 +56066,7 @@
 "c0te1ette de p0rc",
 "ctlt d prc",
 "250g côtelette de porc",
+"cote de porc",
 "porccôtelette",
 "porkchop"
 ],
@@ -56565,12 +57768,14 @@
 "chcken liver",
 "chhicken liver",
 "hähnchenleber",
+"chkn lvr",
 "chcknlvr",
 "poultryliver",
 "chickenlivers",
 "hcickenliver",
 "chckenliver",
-"chhickenliver"
+"chhickenliver",
+"chknlvr"
 ],
 "aliases_fr": [
 "foie de poulet",
@@ -59164,6 +60369,7 @@
 "hcicken neck",
 "chcken neck",
 "chhicken neck",
+"chkn nck",
 "chickenneck",
 "chcknnck",
 "chickennekc",
@@ -59173,7 +60379,8 @@
 "chickennecks",
 "hcickenneck",
 "chckenneck",
-"chhickenneck"
+"chhickenneck",
+"chknnck"
 ],
 "aliases_fr": [
 "cou de poulet",
@@ -59886,7 +61093,8 @@
 "400g pointes d'ailes de poulet",
 "p0intes d'ai1es de p0u1et",
 "opintes d'ailes de poulet",
-"pontes d'ailes de poulet"
+"pontes d'ailes de poulet",
+"chkn wng tpc"
 ],
 "aliases_es": [
 "puntas de ala de pollo",
@@ -60441,6 +61649,7 @@
 "chcken fat",
 "chhicken fat",
 "hähnchenfett",
+"chkn ft",
 "chickenfat",
 "chikcenfat",
 "chickenffat",
@@ -63413,7 +64622,9 @@
 "stteak hache de bœuf",
 "steakhachedebœuf",
 "steak-hache-de-bœuf",
-"beefpatty"
+"steak haché",
+"beefpatty",
+"steakhaché"
 ],
 "aliases_es": [
 "hamburguesa de res",
@@ -67326,6 +68537,8 @@
 "mateca de cerdo",
 "cerdo manteca",
 "maanteca de cerdo",
+"mantequilla de cerdo",
+"manteca decerdo",
 "cerdomanteca"
 ]
 },
@@ -71651,6 +72864,7 @@
 "1ammf1eisch",
 "almmfleisch",
 "laammfleisch",
+"lammsfleisch",
 "lambmeat"
 ],
 "aliases_en": [
@@ -71718,6 +72932,7 @@
 "cane de cordero",
 "caarne de cordero",
 "lamb meat",
+"corder",
 "lambmeat"
 ]
 },
@@ -71748,6 +72963,7 @@
 "lammk",
 "2piece lammkotelett",
 "1ammk0te1ett",
+"lamm kotelett",
 "lambchop"
 ],
 "aliases_en": [
@@ -71769,12 +72985,14 @@
 "2piece lamb chop",
 "1amb ch0p",
 "almb chop",
+"lamh chop",
 "lmbchp",
 "lambchp",
 "lambchopp",
 "lambcutlet",
 "lambchops",
-"almbchop"
+"almbchop",
+"lamhchop"
 ],
 "aliases_fr": [
 "côtelette d'agneau",
@@ -80217,7 +81435,10 @@
 "l.",
 "lachss",
 "200g lachs",
-"1achs"
+"1achs",
+"lachs (saumon fumé)",
+"lachs (filet)",
+"lch"
 ],
 "aliases_en": [
 "salmon",
@@ -80238,8 +81459,13 @@
 "sa1m0n",
 "aslmon",
 "samon",
+"salmom",
+"sammon",
+"salmon salmón",
+"salmon (saumon)",
 "salmonsteak",
-"salmonpiece"
+"salmonpiece",
+"salmonsalmón"
 ],
 "aliases_fr": [
 "saumon",
@@ -80260,6 +81486,8 @@
 "saum0n",
 "asumon",
 "samon",
+"saumone",
+"poisson fish saumon",
 "saumonfumé",
 "saumonfrais",
 "saumoncru"
@@ -80283,6 +81511,10 @@
 "salmons",
 "200g salmon",
 "sa1m0n",
+"salmó",
+"sálmón",
+"salm.",
+"salm on",
 "salmónfresco",
 "salmónahumado",
 "salmóncrudo"
@@ -80312,6 +81544,7 @@
 "gambas (de)",
 "shrimps roh",
 "shrimps klein",
+"garnelen (shrimp)",
 "shrimpsroh",
 "shrimpsklein"
 ],
@@ -80331,8 +81564,11 @@
 "prawn (en)",
 "shrimp raw",
 "shrimp jumbo",
+"shrimp camarones",
+"shrimp (crevettes)",
 "shrimpraw",
-"shrimpjumbo"
+"shrimpjumbo",
+"shrimpcamarones"
 ],
 "aliases_fr": [
 "crevettes",
@@ -80350,8 +81586,13 @@
 "gambas (fr)",
 "crevettes décortiquées",
 "crevettes roses",
+"shrimp crevette",
+"crevete",
+"crevte",
+"crevettesgrises",
 "crevettesdécortiquées",
-"crevettesroses"
+"crevettesroses",
+"shrimpcrevette"
 ],
 "aliases_es": [
 "camarones",
@@ -80402,6 +81643,8 @@
 "200g thunfisch",
 "thunfisch dose",
 "tuna",
+"thunfisch (in öl)",
+"thnf",
 "thunfischdosenthunfisch",
 "thunfischnatur"
 ],
@@ -80426,8 +81669,11 @@
 "tuna can",
 "thon",
 "tunas",
+"thon tuna",
+"tuna (thon)",
 "tunacannedtuna",
-"tunasteak"
+"tunasteak",
+"thontuna"
 ],
 "aliases_fr": [
 "thon",
@@ -80450,6 +81696,7 @@
 "200g thon",
 "thon boîte",
 "tuna",
+"ton",
 "thonboîtethon"
 ],
 "aliases_es": [
@@ -80473,6 +81720,7 @@
 "atún lata",
 "tuna",
 "atuns",
+"atú.",
 "atúnenlatadoatún",
 "atúnfilete"
 ]
@@ -80549,6 +81797,7 @@
 "c.",
 "cabill",
 "cabi11aud",
+"codfrais",
 "cabillaudsurgelé",
 "cabillaudmorceau"
 ],
@@ -80571,6 +81820,8 @@
 "bacala",
 "baca1a0",
 "abcalao",
+"bacaláo",
+"bacal ao",
 "bacalaocongelado",
 "bacalaotrozo"
 ]
@@ -80599,6 +81850,8 @@
 "miesmuscheln tiefgekühlt",
 "miesmuscheln im netz",
 "miesmuscheln (vorgekocht)",
+"muscheln (mussels)",
+"mssl",
 "miesmuschelntiefgekühlt"
 ],
 "aliases_en": [
@@ -80637,8 +81890,10 @@
 "moules en coquille",
 "moules (cuites)",
 "moules au filet",
+"moules marinière",
 "moulesfraîchesmoules",
-"moulessurgelées"
+"moulessurgelées",
+"moulesmarinière"
 ],
 "aliases_es": [
 "mejillones",
@@ -80656,6 +81911,8 @@
 "mejillones en concha",
 "mejillones (cocidos)",
 "mejillones en red",
+"mejillónes",
+"mej",
 "mejillonescongelados"
 ]
 },
@@ -81028,7 +82285,13 @@
 "langostinos frescos",
 "langostinos con cáscara",
 "langostinos (pequeños)",
-"langostinosfrescos"
+"gamb",
+"lang",
+"gmbas",
+"gamb.",
+"pescanova gambas",
+"langostinosfrescos",
+"pescanovagambas"
 ]
 },
 {
@@ -81228,7 +82491,9 @@
 "fischstäb",
 "fish sticks (de)",
 "fischstäbchen (backofen)",
-"fischstäbchen (mini)"
+"fischstäbchen (mini)",
+"fisch stäbchen",
+"fischstaebchen"
 ],
 "aliases_en": [
 "fish sticks",
@@ -81316,6 +82581,7 @@
 "tintenfisch frisch",
 "tintenfisch (ganz)",
 "tintenfisch (getrocknet)",
+"tintenfisch (squid)",
 "tintenfischfrisch"
 ],
 "aliases_en": [
@@ -81352,6 +82618,7 @@
 "calmar frais",
 "calmar (entier)",
 "calmar (séché)",
+"calmr",
 "calmarfrais"
 ],
 "aliases_es": [
@@ -81370,6 +82637,8 @@
 "calamar fresco",
 "calamar (entero)",
 "calamar (seco)",
+"calámar",
+"calm",
 "calamarfresco"
 ]
 },
@@ -82261,7 +83530,8 @@
 "sadina",
 "saardina",
 "sardine",
-"sard1na"
+"sard1na",
+"sard ina"
 ]
 },
 {
@@ -82636,7 +83906,8 @@
 "rtucha",
 "trcha",
 "trrucha",
-"trout"
+"trout",
+"trúcha"
 ]
 },
 {
@@ -82864,6 +84135,7 @@
 "meerluza",
 "hake",
 "rnerluza",
+"merl.",
 "merluzagallega"
 ]
 },
@@ -89154,7 +90426,11 @@
 "volkornbrot",
 "voollkornbrot",
 "whole grain bread",
-"paincomplet"
+"vollkornnrud",
+"vollkorn bread",
+"vllkorn",
+"paincomplet",
+"vollkornbread"
 ],
 "aliases_en": [
 "whole grain bread",
@@ -89175,8 +90451,10 @@
 "wh01e grain bread",
 "hwole grain bread",
 "whle grain bread",
+"wholemeal bread",
 "wholegra",
-"panintegral"
+"panintegral",
+"wholemealbread"
 ],
 "aliases_fr": [
 "pain complet",
@@ -89197,11 +90475,15 @@
 "apin complet",
 "pan complet",
 "paain complet",
+"pain comple",
+"pain cplet",
 "painscomplets",
 "paincomplets",
 "apincomplet",
 "pancomplet",
-"paaincomplet"
+"paaincomplet",
+"paincomple",
+"paincplet"
 ],
 "aliases_es": [
 "pan integral",
@@ -89222,10 +90504,12 @@
 "apn integral",
 "pa integral",
 "paan integral",
+"pan integra",
 "panesintegrales",
 "panintegrals",
 "apnintegral",
-"paanintegral"
+"paanintegral",
+"panintegra"
 ]
 },
 {
@@ -89257,6 +90541,7 @@
 "abguette",
 "bagu",
 "1Stück baguette",
+"baguette brot",
 "frenchbread"
 ],
 "aliases_en": [
@@ -89280,11 +90565,13 @@
 "bague",
 "bagu",
 "french bread",
+"baguette pain",
 "baguettebread",
 "frenchstick",
 "baguetteloaf",
 "frenchbaguette",
-"frenchbread"
+"frenchbread",
+"baguettepain"
 ],
 "aliases_fr": [
 "baguette",
@@ -89307,8 +90594,13 @@
 "1piece baguette",
 "bagu",
 "1Stück baguette",
+"bguette",
+"baguette tradition",
+"baguette baguette",
 "painbaguette",
-"painfrançais"
+"painfrançais",
+"baguettetradition",
+"baguettebaguette"
 ],
 "aliases_es": [
 "baguete",
@@ -89364,7 +90656,8 @@
 "r.(.",
 "roggenbrot (roggenbrot)s",
 "r.b.",
-"r0ggenbrot"
+"r0ggenbrot",
+"roggenbrot (rye bread)"
 ],
 "aliases_en": [
 "rye bread",
@@ -89470,7 +90763,9 @@
 "weßbrot",
 "weeißbrot",
 "we1ßbrot",
-"whitebread"
+"weißbrot toast",
+"whitebread",
+"weißbrottoast"
 ],
 "aliases_en": [
 "white bread",
@@ -89575,7 +90870,8 @@
 "breze",
 "1Stück brezel",
 "1 brezel",
-"brezeln"
+"brezeln",
+"brezel (pretzel)"
 ],
 "aliases_en": [
 "pretzel",
@@ -89598,6 +90894,7 @@
 "1Stück pretzel",
 "1 pretzel",
 "bretzel",
+"pretl",
 "softpretzel"
 ],
 "aliases_fr": [
@@ -90159,6 +91456,7 @@
 "pan d",
 "pan-de-molde",
 "500g pandemolde",
+"pande molde",
 "toastbread"
 ]
 },
@@ -91031,6 +92329,8 @@
 "nkoblauchbrot",
 "knblauchbrot",
 "knnoblauchbrot",
+"knoblauch brot",
+"knoblauchbutterbrot",
 "garlicbread"
 ],
 "aliases_en": [
@@ -92284,7 +93584,10 @@
 "brotch",
 "brotc",
 "1piece brotchen",
-"br0tchen"
+"br0tchen",
+"brötchen (bread rolls)",
+"brötchen (panecillos)",
+"brstchn"
 ],
 "aliases_en": [
 "bread roll",
@@ -92333,6 +93636,9 @@
 "paain",
 "bread roll",
 "pa1n",
+"pa in",
+"p ain",
+"boulledepain",
 "petitpain",
 "painpain",
 "breadroll"
@@ -92356,6 +93662,7 @@
 "1piece panecillo",
 "paneci110",
 "apnecillo",
+"petit pain panecillo",
 "breadroll"
 ]
 },
@@ -93625,7 +94932,8 @@
 "1piece croissant",
 "cr0issant",
 "crs.",
-"kroasang"
+"kroasang",
+"croissant (croissant)"
 ],
 "aliases_en": [
 "croissant",
@@ -93672,7 +94980,11 @@
 "1piece croissant",
 "cr0issant",
 "crs.",
-"kroasang"
+"kroasang",
+"crosissant",
+"croissant nature",
+"croissantsaudouce",
+"croissantnature"
 ],
 "aliases_es": [
 "cruasán",
@@ -93694,7 +95006,10 @@
 "1piece cruasan",
 "rcuasan",
 "crsnt",
-"crs."
+"crs.",
+"croissnat",
+"cro assant",
+"croassant"
 ]
 },
 {
@@ -93771,7 +95086,9 @@
 "broche",
 "br",
 "b.r.i.o.c.h.e.",
-"briochepain"
+"brioche vendéenne",
+"briochepain",
+"briochevendéenne"
 ],
 "aliases_es": [
 "brioche",
@@ -93853,12 +95170,14 @@
 "pita brot",
 "pt",
 "pit.",
+"pitta bread",
 "pitabred",
 "pitabreads",
 "iptabread",
 "piabread",
 "piitabread",
-"pitabrot"
+"pitabrot",
+"pittabread"
 ],
 "aliases_fr": [
 "pain pita",
@@ -95291,8 +96610,10 @@
 "cr0issant au beurre",
 "crssnt o b",
 "c.b.",
+"croissant beurre",
 "crssntbrr",
-"buttercroissant"
+"buttercroissant",
+"croissantbeurre"
 ],
 "aliases_es": [
 "croissant de mantequilla",
@@ -95315,7 +96636,9 @@
 "rcoissant de mantequilla",
 "c.m.",
 "1 croissant de mantequilla",
-"buttercroissant"
+"croissant mantequilla",
+"buttercroissant",
+"croissantmantequilla"
 ]
 },
 {
@@ -97364,6 +98687,8 @@
 "kaseb",
 "400g kasebrot",
 "kasebr0t",
+"ksebr",
+"ksebrt",
 "cheesebread"
 ],
 "aliases_en": [
@@ -97559,6 +98884,7 @@
 "rosin",
 "r0sinenbr0t",
 "orsinenbrot",
+"rosinen brot",
 "raisinbread"
 ],
 "aliases_en": [
@@ -98868,7 +100194,9 @@
 "pan au chocolat",
 "paain au chocolat",
 "pa1n au chocolat",
-"chocolatebread"
+"pain choco",
+"chocolatebread",
+"painchoco"
 ],
 "aliases_es": [
 "pan de chocolate",
@@ -100100,6 +101428,7 @@
 "coookie",
 "plaetzchen",
 "cook1e",
+"cookei",
 "sweetbiscuit",
 "cookiedough"
 ],
@@ -100122,9 +101451,11 @@
 "ibscuit",
 "bicuit",
 "biiscuit",
+"biscuit cookie",
 "gâteausec",
 "petitgâteau",
-"biscuitsucré"
+"biscuitsucré",
+"biscuitcookie"
 ],
 "aliases_es": [
 "galleta",
@@ -100144,7 +101475,12 @@
 "200g galleta",
 "ga11eta",
 "aglleta",
-"galeta"
+"galeta",
+"gayeta",
+"biscuit galleta",
+"galleta cookie",
+"biscuitgalleta",
+"galletacookie"
 ]
 },
 {
@@ -100383,8 +101719,11 @@
 "bicuit",
 "biiscuit",
 "keks",
+"digestive biscuit",
+"rich tea biscuit",
 "savorybiscuit",
-"biscuitdoux"
+"biscuitdoux",
+"digestivebiscuit"
 ],
 "aliases_fr": [
 "biscuit sec",
@@ -100405,6 +101744,7 @@
 "200g biscuit sec",
 "ibscuit sec",
 "bicuit sec",
+"bscuit",
 "biscuitsec",
 "Biscutsec",
 "Biscuitssecs",
@@ -100700,6 +102040,8 @@
 "hwole wheat bread",
 "w.",
 "whole wheat bread1",
+"wholle wheat bread",
+"whole wheatbread",
 "wholewheatbread",
 "wholewheat",
 "wheatbread",
@@ -100726,9 +102068,12 @@
 "pain complet1",
 "pain-complet",
 "paincomplet",
+"pain complet bio",
+"pain comlète",
 "painscomplets",
 "paincom",
-"painintégral"
+"painintégral",
+"paincomlète"
 ],
 "aliases_es": [
 "pan integral",
@@ -100751,9 +102096,19 @@
 "pan integral1",
 "pan-integral",
 "panintegral",
+"pan intehral",
+"pan inteqral",
+"pan integral bread",
+"whole wheat pan",
+"pan complet",
+"pan int",
 "panesintegrales",
 "panintegr",
-"integralpan"
+"integralpan",
+"panintehral",
+"paninteqral",
+"pancomplet",
+"panint"
 ]
 },
 {
@@ -101302,6 +102657,7 @@
 "chocolate croissant",
 "cac",
 "c.r.o.i.s.s.a.n.t. .a.u. .c.h.o.c.o.l.a.t.",
+"pain au chocolat",
 "crssntchclt",
 "chocolatecroissant"
 ],
@@ -101664,7 +103020,8 @@
 "b.",
 "beignets",
 "beigne",
-"1Stück beignet"
+"1Stück beignet",
+"bign"
 ],
 "aliases_es": [
 "dona",
@@ -101851,9 +103208,11 @@
 "pate brisees",
 "pate b",
 "pate",
+"pâte brisé",
 "patebrisee",
 "shortcrustpastry",
-"patebrisees"
+"patebrisees",
+"pâtebrisé"
 ],
 "aliases_es": [
 "masa quebrada",
@@ -102034,10 +103393,12 @@
 "pate feuilletees",
 "pate f",
 "pate",
+"pâte feuilleté",
 "pâtefeuilletée",
 "patefeuilletee",
 "puffpastry",
-"patefeuilletees"
+"patefeuilletees",
+"pâtefeuilleté"
 ],
 "aliases_es": [
 "masa de hojaldre",
@@ -102058,6 +103419,7 @@
 "masa de hojaldres",
 "masa d",
 "masa",
+"pasta de hojaldre",
 "puffpastry"
 ]
 },
@@ -102124,7 +103486,8 @@
 "pn d'pcs",
 "p.d.",
 "pain d'epicess",
-"pain d"
+"pain d",
+"paindepice"
 ],
 "aliases_es": [
 "pan de jengibre",
@@ -102555,7 +103918,8 @@
 "nkackebrot",
 "knckebrot",
 "knusperbrot",
-"knspbrt"
+"knspbrt",
+"knäckbrd"
 ],
 "aliases_en": [
 "crispbread",
@@ -102758,7 +104122,9 @@
 "1piece kasekuchen",
 "aksekuchen",
 "kaekuchen",
-"kaasekuchen"
+"kaasekuchen",
+"käsekuchen-cheesecake",
+"käse kuchen"
 ],
 "aliases_en": [
 "cheesecake",
@@ -106512,6 +107878,7 @@
 "veduras congeladas",
 "veerduras congeladas",
 "frozen vegetables",
+"cong",
 "vrdrscnglds",
 "verduracongelada",
 "vegetalescongelados",
@@ -106961,6 +108328,8 @@
 "espinacas c0nge1adas",
 "sepinacas congeladas",
 "esinacas congeladas",
+"espinacas congeladaz",
+"espinacas cong.",
 "spncscnglds",
 "espinacacongelada",
 "espinacascongelada",
@@ -106968,7 +108337,8 @@
 "espncscnglds",
 "espinacascongeladass",
 "sepinacascongeladas",
-"esinacascongeladas"
+"esinacascongeladas",
+"espinacascongeladaz"
 ]
 },
 {
@@ -107071,6 +108441,7 @@
 "polo congelado",
 "poollo congelado",
 "frozen chicken",
+"pollo entero congelado",
 "pllcngld",
 "polloscongelados",
 "pollohelado",
@@ -107752,6 +109123,7 @@
 "frozenpeas",
 "froz n peas",
 "frozen pears",
+"frozen peeas",
 "froznpeas",
 "froßenpeas",
 "frozenpees",
@@ -107761,7 +109133,8 @@
 "froenpease",
 "petitpois",
 "froznpees",
-"frozenpears"
+"frozenpears",
+"frozenpeeas"
 ],
 "aliases_fr": [
 "petits pois surgelés",
@@ -107802,6 +109175,7 @@
 "guisantes c0nge1ad0s",
 "ugisantes congelados",
 "gusantes congelados",
+"guisantes cong.",
 "guisantescongelados",
 "gsntscnglds",
 "guisantescongeládos",
@@ -117163,7 +118537,10 @@
 "c01a",
 "ocla",
 "coa",
-"coola"
+"coola",
+"refresco de cola",
+"refresco cola",
+"refrescocola"
 ]
 },
 {
@@ -117195,6 +118572,7 @@
 "lirnonade zitrone",
 "limonade",
 "lmnad",
+"limo",
 "limonadenzitrone",
 "lmndztrn",
 "limonadezitrones",
@@ -117246,7 +118624,9 @@
 "lmnad",
 "lim.",
 "limonade-boisson",
-"limonadeboisson"
+"limonadeboisson",
+"limònade",
+"limonad"
 ],
 "aliases_es": [
 "limonada",
@@ -117298,6 +118678,7 @@
 "orrangensaft",
 "orange juice",
 "hohes c",
+"orngsft",
 "orangejuice"
 ],
 "aliases_en": [
@@ -117321,11 +118702,13 @@
 "tropicana",
 "oj",
 "tropicana orange juice",
+"orng juice",
 "rngejce",
 "orangejuices",
 "roangejuice",
 "orngejuice",
-"orrangejuice"
+"orrangejuice",
+"orngjuice"
 ],
 "aliases_fr": [
 "jus d'orange",
@@ -117346,7 +118729,16 @@
 "ju d'orange",
 "juus d'orange",
 "orange juice",
-"orangejuice"
+"juice d'orange",
+"jus dorange",
+"jus orange",
+"jus d'ornge",
+"jus d'orang",
+"jus orng",
+"jusd orange",
+"orangejuice",
+"jusorange",
+"jusorng"
 ],
 "aliases_es": [
 "zumo de naranja",
@@ -117366,7 +118758,17 @@
 "zuumo de naranja",
 "orange juice",
 "zurno de naranja",
-"orangejuice"
+"jugo de naranja",
+"orange jugo",
+"jugo orange",
+"zumo naranja",
+"jugo naranja",
+"jugodenaranja",
+"orangejuice",
+"orangejugo",
+"jugoorange",
+"zumonaranja",
+"jugonaranja"
 ]
 },
 {
@@ -117395,7 +118797,11 @@
 "apelsaft",
 "appfelsaft",
 "apple juice",
-"applejuice"
+"apfel juice",
+"apfelsaft juice",
+"applejuice",
+"apfeljuice",
+"apfelsaftjuice"
 ],
 "aliases_en": [
 "apple juice",
@@ -117414,11 +118820,15 @@
 "appple juice",
 "apfelsaft",
 "apple ju1ce",
+"apfelsaft organic",
+"appel juice",
 "ppljce",
 "applejuices",
 "paplejuice",
 "aplejuice",
-"appplejuice"
+"appplejuice",
+"apfelsaftorganic",
+"appeljuice"
 ],
 "aliases_fr": [
 "jus de pomme",
@@ -117437,7 +118847,11 @@
 "juus de pomme",
 "apple juice",
 "jus de pornme",
-"applejuice"
+"jus pomm",
+"jus pom",
+"applejuice",
+"juspomm",
+"juspom"
 ],
 "aliases_es": [
 "jugo de manzana",
@@ -117456,7 +118870,9 @@
 "juugo de manzana",
 "apple juice",
 "jugo de rnanzana",
-"applejuice"
+"zumo manzana",
+"applejuice",
+"zumomanzana"
 ]
 },
 {
@@ -117490,6 +118906,7 @@
 "volvic",
 "gerolsteiner",
 "apollinaris",
+"mineraiwasser",
 "mineralwater"
 ],
 "aliases_en": [
@@ -117541,10 +118958,19 @@
 "eaau minerale",
 "mineral water",
 "eauminerale",
+"eou minérale",
+"eau",
+"eau minerl",
+"eau minéral",
+"eaum iner ale",
+"eaudeminerale",
 "eauminerales",
 "aeuminerale",
 "eaauminerale",
-"mineralwater"
+"mineralwater",
+"eouminérale",
+"eauminerl",
+"eauminéral"
 ],
 "aliases_es": [
 "agua mineral",
@@ -117565,6 +118991,7 @@
 "mineral water",
 "agua rnineral",
 "agua m1neral",
+"agua mineral water",
 "aguaminerals",
 "gauamineral",
 "agamineral",
@@ -117691,7 +119118,9 @@
 "psrite",
 "spite",
 "spprite",
-"spr1te"
+"spr1te",
+"sprite zitrone",
+"spritezitrone"
 ],
 "aliases_en": [
 "sprite",
@@ -118789,6 +120218,7 @@
 "mu1tivitaminsaft",
 "umltivitaminsaft",
 "mutivitaminsaft",
+"multiainsaft",
 "vitaminjuice"
 ],
 "aliases_en": [
@@ -118892,6 +120322,7 @@
 "rtaubensaft",
 "trubensaft",
 "trraubensaft",
+"trauben saft",
 "grapejuice"
 ],
 "aliases_en": [
@@ -118938,7 +120369,9 @@
 "ju de raisin",
 "juus de raisin",
 "jus de ra1sin",
-"grapejuice"
+"jus rais",
+"grapejuice",
+"jusrais"
 ],
 "aliases_es": [
 "jugo de uva",
@@ -118988,7 +120421,9 @@
 "ikrschsaft",
 "kischsaft",
 "kiirschsaft",
-"cherryjuice"
+"kirschen saft",
+"cherryjuice",
+"kirschensaft"
 ],
 "aliases_en": [
 "cherry juice",
@@ -119178,6 +120613,7 @@
 "anana",
 "naanassaft",
 "annassaft",
+"ananas saft",
 "pineapplejuice"
 ],
 "aliases_en": [
@@ -119774,6 +121210,7 @@
 "rcanberry juice",
 "crnberry juice",
 "crranberry juice",
+"cran berry juice",
 "cranberyjuice",
 "cranberryjuce",
 "cranberryjuices",
@@ -119949,7 +121386,9 @@
 "kko",
 "kako",
 "250g kakao",
-"kakaopulver"
+"kakaopulver",
+"kakao cocoa",
+"kakaococoa"
 ],
 "aliases_en": [
 "cocoa",
@@ -119968,7 +121407,8 @@
 "coocoa",
 "kakao",
 "cco",
-"250g cocoa"
+"250g cocoa",
+"coco"
 ],
 "aliases_fr": [
 "cacao",
@@ -120005,7 +121445,11 @@
 "caacao",
 "cco",
 "250g cacao",
-"cacaoenpolvo"
+"cacaoenpolvo",
+"colacao cacao",
+"ovocol cacao",
+"colacaocacao",
+"ovocolcacao"
 ]
 },
 {
@@ -120310,6 +121754,7 @@
 "the-vert",
 "100g thé vert",
 "thévert",
+"thé tea vert",
 "greentea",
 "thésverts",
 "theverts",
@@ -120877,6 +122322,7 @@
 "500ml schwarzer tee",
 "schwarzettee",
 "schwarzer tees",
+"tee",
 "blacktea",
 "schwarzertee",
 "schwarzertees"
@@ -120994,7 +122440,9 @@
 "ysrup",
 "syup",
 "syyrup",
-"sirup"
+"sirup",
+"golden syrup",
+"goldensyrup"
 ],
 "aliases_fr": [
 "sirop",
@@ -121254,7 +122702,12 @@
 "kaffees",
 "akffee",
 "kaaffee",
-"kaffeepulver"
+"kaffeepulver",
+"kaffee (coffee)",
+"kaffee coffee",
+"kaffee (café)",
+"nescafé",
+"kaffeecoffee"
 ],
 "aliases_en": [
 "coffee",
@@ -121276,7 +122729,10 @@
 "kaffee",
 "cffe",
 "coffeepowder",
-"coff"
+"coff",
+"coffeee",
+"cafe coffee",
+"cafecoffee"
 ],
 "aliases_fr": [
 "café",
@@ -121295,7 +122751,10 @@
 "caafe",
 "cfe",
 "cafémoulu",
-"cafés"
+"cafés",
+"caffé",
+"café kaffee",
+"cafékaffee"
 ],
 "aliases_es": [
 "café",
@@ -121314,7 +122773,17 @@
 "caafe",
 "cfe",
 "cafémolido",
-"cafés"
+"cafés",
+"cafeé",
+"café coffee",
+"coffee café",
+"caf.",
+"precissimo café",
+"legal café",
+"cafécoffee",
+"coffeecafé",
+"precissimocafé",
+"legalcafé"
 ]
 },
 {
@@ -121338,7 +122807,11 @@
 "tees",
 "ete",
 "teee",
-"teebeutel"
+"teebeutel",
+"tee (tea)",
+"tee tea",
+"tee (thé)",
+"teetea"
 ],
 "aliases_en": [
 "tea",
@@ -121353,7 +122826,10 @@
 "teas",
 "eta",
 "teea",
-"teabags"
+"teabags",
+"teaa",
+"the tea",
+"thetea"
 ],
 "aliases_fr": [
 "thé",
@@ -121369,7 +122845,9 @@
 "hte",
 "thhe",
 "thésachets",
-"thés"
+"thés",
+"thé tea",
+"thétea"
 ],
 "aliases_es": [
 "té",
@@ -121385,7 +122863,9 @@
 "et",
 "tee",
 "tebolsas",
-"tés"
+"tés",
+"thé té",
+"té tea"
 ]
 },
 {
@@ -121678,7 +123158,14 @@
 "asft",
 "sat",
 "saaft",
-"juice"
+"juice",
+"safd",
+"safft",
+"saft (orange)",
+"saft juice",
+"saft (jus)",
+"saft (juice)",
+"saftjuice"
 ],
 "aliases_en": [
 "juice",
@@ -121694,7 +123181,12 @@
 "jc",
 "ujice",
 "juuice",
-"saft"
+"saft",
+"juicee",
+"jice",
+"juise",
+"jus juice",
+"jusjuice"
 ],
 "aliases_fr": [
 "jus",
@@ -121727,7 +123219,12 @@
 "ujgo",
 "juo",
 "juugo",
-"juice"
+"juice",
+"jus jugo",
+"boing jugo",
+"del valle jugo",
+"jusjugo",
+"boingjugo"
 ]
 },
 {
@@ -121755,7 +123252,11 @@
 "awsser",
 "waser",
 "waasser",
-"water"
+"water",
+"wasser (water)",
+"wasser (sparkling)",
+"wasser water",
+"wasserwater"
 ],
 "aliases_en": [
 "water",
@@ -121771,7 +123272,11 @@
 "1000ml water",
 "awter",
 "waater",
-"wasser"
+"wasser",
+"wter",
+"watter",
+"agua water",
+"aguawater"
 ],
 "aliases_fr": [
 "eau",
@@ -121790,7 +123295,13 @@
 "aeu",
 "eaau",
 "water",
-"eauplate"
+"eaul",
+"eaue",
+"eau agua",
+"eau water",
+"eauplate",
+"eauagua",
+"eauwater"
 ],
 "aliases_es": [
 "agua",
@@ -121809,6 +123320,10 @@
 "aga",
 "aggua",
 "water",
+"auga",
+"agüa",
+"agu.",
+"a gua",
 "aguamineral"
 ]
 },
@@ -121839,7 +123354,11 @@
 "biär",
 "biergetränk",
 "bi",
-"biera"
+"biera",
+"bier (beer)",
+"bier (wheat)",
+"bier beer",
+"bierbeer"
 ],
 "aliases_en": [
 "beer",
@@ -121855,7 +123374,10 @@
 "ber",
 "beeer",
 "bier",
-"be"
+"be",
+"bear",
+"biere beer",
+"bierebeer"
 ],
 "aliases_fr": [
 "bière",
@@ -121878,7 +123400,9 @@
 "beer",
 "biére",
 "b1ère",
-"bièreblonde"
+"bière beer",
+"bièreblonde",
+"bièrebeer"
 ],
 "aliases_es": [
 "cerveza",
@@ -121899,7 +123423,21 @@
 "beer",
 "cerv",
 "birra",
-"cervezarubia"
+"cervezaa",
+"cervezzza",
+"bière cerveza",
+"cerveza beer",
+"crvza",
+"cer",
+"cerveza corona",
+"tecate cerveza",
+"modelo cerveza",
+"cervezarubia",
+"bièrecerveza",
+"cervezabeer",
+"cervezacorona",
+"tecatecerveza",
+"modelocerveza"
 ]
 },
 {
@@ -121931,7 +123469,11 @@
 "wiin",
 "wäin",
 "w1n",
-"weinrot"
+"weim",
+"wein (wine)",
+"wein wine",
+"weinrot",
+"weinwine"
 ],
 "aliases_en": [
 "wine",
@@ -121952,7 +123494,12 @@
 "w1ne",
 "wi",
 "vino",
-"redwine"
+"winee",
+"vin wine",
+"vino wine",
+"redwine",
+"vinwine",
+"vinowine"
 ],
 "aliases_fr": [
 "vin",
@@ -121973,7 +123520,15 @@
 "vín",
 "v",
 "vino",
-"vinrouge"
+"vini",
+"vian",
+"wein vin",
+"vino vin",
+"vindru",
+"verredevin",
+"vinrouge",
+"weinvin",
+"vinovin"
 ],
 "aliases_es": [
 "vino",
@@ -121995,7 +123550,9 @@
 "v1no",
 "vi",
 "vina",
-"vinotinto"
+"vin vino",
+"vinotinto",
+"vinvino"
 ]
 },
 {
@@ -122260,6 +123817,7 @@
 "apelschorle",
 "appfelschorle",
 "apple spritzer",
+"apfelschner",
 "applespritzer"
 ],
 "aliases_en": [
@@ -123813,6 +125371,7 @@
 "lemon juice",
 "200ml zitronensaft",
 "z1tronensaft",
+"zitronen saft",
 "lemonjuice"
 ],
 "aliases_en": [
@@ -125155,6 +126714,8 @@
 "330ml refresco",
 "refresc0",
 "erfresco",
+"refr",
+"refres co",
 "bebidacarbonatada"
 ]
 },
@@ -126379,7 +127940,19 @@
 "m1lch",
 "500ml milch",
 "milhc",
-"milc"
+"milc",
+"mlich",
+"milcn",
+"mllch",
+"milsch",
+"milch (lait)",
+"milk (milch)",
+"milch (milk)",
+"milch milk",
+"milk milch",
+"le lait",
+"milchmilk",
+"milkmilch"
 ],
 "aliases_en": [
 "milk",
@@ -126399,7 +127972,20 @@
 "m1lk",
 "mil",
 "500ml milk",
-"dairydrink"
+"milke",
+"mllk",
+"mil k",
+"milkk",
+"mlik",
+"milt",
+"millk",
+"milk leche",
+"milk lait",
+"milk (lait)",
+"milkd",
+"dairydrink",
+"milkleche",
+"milklait"
 ],
 "aliases_fr": [
 "lait",
@@ -126418,7 +128004,25 @@
 "la1t",
 "lai",
 "500ml lait",
-"boissonlactée"
+"laot",
+"la it",
+"leit",
+"laït",
+"laît",
+"laitt",
+"laite",
+"laif",
+"lalt",
+"lait milch",
+"lait milk",
+"leche lait",
+"milch lait",
+"mlh",
+"boissonlactée",
+"laitmilch",
+"laitmilk",
+"lechelait",
+"milchlait"
 ],
 "aliases_es": [
 "leche",
@@ -126436,7 +128040,36 @@
 "milk",
 "lec",
 "500ml leche",
-"bebidaláctea"
+"lache",
+"lece",
+"lechee",
+"lleche",
+"lehce",
+"lche",
+"lech",
+"l eche",
+"léche",
+"eche",
+"le",
+"leche milk",
+"milk milk",
+"leche milch",
+"lechge",
+"lecbe",
+"müller leche",
+"alpura leche",
+"santa clara leche",
+"puleva leche",
+"pascual leche",
+"lech e",
+"bebidaláctea",
+"lechemilk",
+"milkmilk",
+"lechemilch",
+"müllerleche",
+"alpuraleche",
+"pulevaleche",
+"pascualleche"
 ]
 },
 {
@@ -127484,7 +129117,8 @@
 "kafee mit milch",
 "kaaffee mit milch",
 "kaffee-mit-milch",
-"kaffee rnit milch"
+"kaffee rnit milch",
+"kaffee mit milk"
 ],
 "aliases_en": [
 "coffee with milk",
@@ -127523,7 +129157,8 @@
 "acfe au lait",
 "cae au lait",
 "caafe au lait",
-"cafeaulait"
+"cafeaulait",
+"caféalait"
 ],
 "aliases_es": [
 "café con leche",
@@ -128277,8 +129912,10 @@
 "c.e.p.",
 "cacaoenpoudre",
 "cacao-en-poudre",
+"chocolat poudre",
 "cocoapowder",
-"ccnpdr"
+"ccnpdr",
+"chocolatpoudre"
 ],
 "aliases_es": [
 "polvo de cacao",
@@ -128435,7 +130072,10 @@
 "kaffee-bohnens",
 "250g kaffee-bohnen",
 "kaffee-b0hnen",
-"coffeebeans"
+"kaffee bohne",
+"kaffee bohnen",
+"coffeebeans",
+"kaffeebohne"
 ],
 "aliases_en": [
 "coffee beans",
@@ -128484,6 +130124,8 @@
 "gra1ns de cafe",
 "250g grains de cafe",
 "grns d cfé",
+"graindecafe",
+"graindecafé",
 "coffeebeans"
 ],
 "aliases_es": [
@@ -130973,6 +132615,7 @@
 "te e manzanilla",
 "tee de manzanilla",
 "tedemanzanilla",
+"infusion de manzanilla",
 "chamomiletea"
 ]
 },
@@ -132802,6 +134445,8 @@
 "cafemoulu",
 "café-moulu",
 "500g café moulu",
+"café coffee moulu",
+"café moul",
 "cafemou",
 "groundcoffee",
 "cafésmoulus",
@@ -132809,7 +134454,8 @@
 "cafemoulus",
 "acfemoulu",
 "caemoulu",
-"caafemoulu"
+"caafemoulu",
+"cafémoul"
 ],
 "aliases_es": [
 "café molido",
@@ -132960,6 +134606,7 @@
 "glhwein",
 "g.w.",
 "gluwhien",
+"glühwein (mulled wine)",
 "mulledwine"
 ],
 "aliases_en": [
@@ -134714,7 +136361,9 @@
 "ivn de pomme",
 "vi de pomme",
 "viin de pomme",
-"applewine"
+"cidrede pomme",
+"applewine",
+"cidredepomme"
 ],
 "aliases_es": [
 "vino de manzana",
@@ -134761,7 +136410,8 @@
 "schnap",
 "cshnaps",
 "scnaps",
-"scchnaps"
+"scchnaps",
+"schnaps (schnapps)"
 ],
 "aliases_en": [
 "schnapps",
@@ -135099,6 +136749,7 @@
 "weeißwein",
 "white wine",
 "we1ßwein",
+"weissewein",
 "whitewine"
 ],
 "aliases_en": [
@@ -135143,6 +136794,7 @@
 "viin blanc",
 "white wine",
 "vin-blanc",
+"vinbl anc",
 "vinbla",
 "vinblancs",
 "ivnblanc",
@@ -135302,7 +136954,9 @@
 "chmpagner",
 "chhampagner",
 "champagne",
-"charnpagner"
+"charnpagner",
+"champagne brut",
+"champagnebrut"
 ],
 "aliases_en": [
 "champagne",
@@ -135333,7 +136987,9 @@
 "hcampagne",
 "chmpagne",
 "chhampagne",
-"charnpagne"
+"charnpagne",
+"champane",
+"chmpgne"
 ],
 "aliases_es": [
 "champán",
@@ -135350,7 +137006,10 @@
 "chmpan",
 "chhampan",
 "champagne",
-"charnpan"
+"charnpan",
+"champang",
+"champpan",
+"champpán"
 ]
 },
 {
@@ -135609,7 +137268,8 @@
 "okrn",
 "kon",
 "koorn",
-"korn (german grain spirit)"
+"korn (german grain spirit)",
+"gr"
 ],
 "aliases_es": [
 "korn",
@@ -136286,12 +137946,14 @@
 "lager",
 "cerveza-rubia",
 "cerveza rub1a",
+"cerveza lager",
 "cervezasrubias",
 "cervezaclara",
 "cervezarubias",
 "ecrvezarubia",
 "cevezarubia",
-"ceervezarubia"
+"ceervezarubia",
+"cervezalager"
 ]
 },
 {
@@ -136396,6 +138058,7 @@
 "pisner",
 "piilsner",
 "p1lsner",
+"pils (pilsner)",
 "pilsbier"
 ],
 "aliases_en": [
@@ -136661,6 +138324,7 @@
 "oklsch",
 "kosch",
 "koolsch",
+"kölsch (cologne beer)",
 "kölschbier",
 "kölschesbier"
 ],
@@ -136748,7 +138412,8 @@
 "a1tbier",
 "latbier",
 "albier",
-"alltbier"
+"alltbier",
+"altbier (old beer)"
 ],
 "aliases_en": [
 "altbier",
@@ -141150,6 +142815,7 @@
 "obtler",
 "obbstler",
 "fruit schnapps",
+"obstler (fruit brandy)",
 "fruitschnapps"
 ],
 "aliases_en": [
@@ -144181,6 +145847,7 @@
 "kartoffelch1ps",
 "pringles",
 "pringles original",
+"kartoffel chips",
 "potatochips",
 "pringlesoriginal"
 ],
@@ -144206,6 +145873,7 @@
 "pringles original",
 "pringles sour cream",
 "pringles paprika",
+"potato crisps",
 "pttochps",
 "pttchps",
 "potatochipss",
@@ -144213,7 +145881,8 @@
 "poatochips",
 "pootatochips",
 "pringlesoriginal",
-"pringlespaprika"
+"pringlespaprika",
+"potatocrisps"
 ],
 "aliases_fr": [
 "chips de pommes de terre",
@@ -144447,7 +146116,9 @@
 "chocolate bar",
 "barradechocolate",
 "barra-de-chocolate",
-"chocolatebar"
+"chclat tbla",
+"chocolatebar",
+"chclattbla"
 ]
 },
 {
@@ -144479,8 +146150,11 @@
 "haribo",
 "haribo goldbären",
 "goldbären",
+"haribo gummibärchen",
+"gum",
 "gummybears",
-"haribogoldbären"
+"haribogoldbären",
+"haribogummibärchen"
 ],
 "aliases_en": [
 "gummy bears",
@@ -144588,7 +146262,8 @@
 "rcackers",
 "crckers",
 "crrackers",
-"cracker"
+"cracker",
+"crakers"
 ],
 "aliases_fr": [
 "craquelins",
@@ -144754,7 +146429,9 @@
 "p0pc0rn",
 "oppcorn",
 "pocorn",
-"poopcorn"
+"poopcorn",
+"popcrn",
+"pop corn"
 ],
 "aliases_fr": [
 "popcorn",
@@ -144893,6 +146570,7 @@
 "frutossecosvariados",
 "frutos-secos-variados",
 "frutos secos var1ados",
+"frutos secos mixtos",
 "mixednuts"
 ]
 },
@@ -144959,6 +146637,7 @@
 "bonbonsdefruits",
 "bonbons-de-fruits",
 "bonbons de fru1ts",
+"bonbonsfruit",
 "bonbonsfruits",
 "fruitgum"
 ],
@@ -145092,7 +146771,8 @@
 "laritz",
 "laakritz",
 "liquorice",
-"lakr1tz"
+"lakr1tz",
+"lakr"
 ],
 "aliases_en": [
 "liquorice",
@@ -145438,6 +147118,9 @@
 "cookies",
 "oreo",
 "oreo kekse",
+"kekse (biscuits)",
+"kekse (cookies)",
+"keks",
 "oreokekse"
 ],
 "aliases_en": [
@@ -145457,6 +147140,7 @@
 "oreo",
 "oreo cookies",
 "oreo biscuits",
+"biscuitts",
 "oreocookies",
 "oreobiscuits"
 ],
@@ -145474,7 +147158,11 @@
 "bicuits",
 "biiscuits",
 "cookies",
-"b1scuits"
+"b1scuits",
+"biscutis",
+"bisc",
+"biscuits secs",
+"biscuitssecs"
 ],
 "aliases_es": [
 "galletas",
@@ -145490,7 +147178,18 @@
 "aglletas",
 "galetas",
 "gaalletas",
-"cookies"
+"cookies",
+"galletas cookies",
+"galletás",
+"gall",
+"gallet.",
+"gamesa galletas",
+"tía rosa galletas",
+"oreo galletas",
+"ga lletas",
+"galletascookies",
+"gamesagalletas",
+"oreogalletas"
 ]
 },
 {
@@ -145997,6 +147696,7 @@
 "cahewkerne",
 "caashewkerne",
 "cashew nuts",
+"cashew kerne",
 "cashewnuts"
 ],
 "aliases_en": [
@@ -146038,6 +147738,7 @@
 "nooix de cajou",
 "cashew nuts",
 "no1x de cajou",
+"noix de cjou",
 "cashewnuts"
 ],
 "aliases_es": [
@@ -146750,6 +148451,7 @@
 "rednussbutter",
 "erdnssbtter",
 "e.b.",
+"erdnuss butter",
 "erdnussbuttah"
 ],
 "aliases_en": [
@@ -146773,6 +148475,9 @@
 "peeanut butter",
 "pnut bttr",
 "1jar peanutbutter",
+"peanut buttr",
+"pnut btr",
+"pean ut butter",
 "pntbttr",
 "peanutbuetter",
 "peanutbudder",
@@ -146782,7 +148487,9 @@
 "epanutbutter",
 "penutbutter",
 "peeanutbutter",
-"pnutbttr"
+"pnutbttr",
+"peanutbuttr",
+"pnutbtr"
 ],
 "aliases_fr": [
 "beurre de cacahuète",
@@ -146827,7 +148534,10 @@
 "matequilla de cacahuete",
 "maantequilla de cacahuete",
 "mantequilla de cacahuate",
-"500g mantequilla cacahuete"
+"500g mantequilla cacahuete",
+"crema de cacahuete",
+"mantequilla de mani",
+"mantequilla de maní"
 ]
 },
 {
@@ -146882,13 +148592,15 @@
 "alond butter",
 "almndbttr",
 "mandelmus",
+"almond buttr",
 "almondbuetter",
 "almondbudder",
 "almondbuter",
 "almondbutta",
 "almondbutters",
 "lamondbutter",
-"alondbutter"
+"alondbutter",
+"almondbuttr"
 ],
 "aliases_fr": [
 "beurre d'amande",
@@ -146910,7 +148622,8 @@
 "eburre d'amande",
 "berre d'amande",
 "purée d'amandes",
-"pr d'mnd"
+"pr d'mnd",
+"beured'amande"
 ],
 "aliases_es": [
 "mantequilla de almendra",
@@ -151251,6 +152964,8 @@
 "ifgues sechees",
 "figues sèches",
 "figues sêches",
+"figues séchés",
+"figueseches",
 "figuesséchées",
 "fgsschs",
 "séchéesfigues",
@@ -151263,7 +152978,8 @@
 "figuessecheess",
 "ifguessechees",
 "figuessèches",
-"figuessêches"
+"figuessêches",
+"figuesséchés"
 ],
 "aliases_es": [
 "higos secos",
@@ -151433,6 +153149,7 @@
 "katoffelpuffer",
 "kaartoffelpuffer",
 "potato pancakes",
+"kartoffel puffer",
 "potatopancakes"
 ],
 "aliases_en": [
@@ -152782,7 +154499,10 @@
 "hoig",
 "hoonig",
 "hon1g",
-"250g honig"
+"250g honig",
+"honik",
+"honig (miel)",
+"hon"
 ],
 "aliases_en": [
 "honey",
@@ -152798,7 +154518,12 @@
 "hoey",
 "hooney",
 "1jar honey",
-"250g honey"
+"250g honey",
+"honeyy",
+"hony",
+"honney",
+"miel honey",
+"mielhoney"
 ],
 "aliases_fr": [
 "miel",
@@ -152814,7 +154539,8 @@
 "miiel",
 "rniel",
 "m1el",
-"250g miel"
+"250g miel",
+"mïel"
 ],
 "aliases_es": [
 "miel",
@@ -152830,7 +154556,13 @@
 "miiel",
 "rniel",
 "m1el",
-"250g miel"
+"250g miel",
+"meil",
+"miel (honey)",
+"miel de abeja",
+"miel abeja",
+"mieldeabeja",
+"mielabeja"
 ]
 },
 {
@@ -153059,7 +154791,8 @@
 "erbeerkonfiture",
 "errdbeerkonfiture",
 "erdbeermarmelade",
-"rdbrmrmlde"
+"rdbrmrmlde",
+"erdbeer konfitüre"
 ],
 "aliases_en": [
 "strawberry jam",
@@ -153082,6 +154815,7 @@
 "erdbeerkonfiture",
 "strwbrryjm",
 "erdbeermarmelade",
+"straw berry jam",
 "strawberyjam",
 "strawberryjams",
 "tsrawberryjam",
@@ -153109,7 +154843,12 @@
 "conf1ture de fraise",
 "confiture-de-fraises",
 "350g confiture fraises",
-"strawberryjam"
+"confiture fraise",
+"confitur de fraises",
+"confiture frai",
+"confiturefraise",
+"strawberryjam",
+"confiturefrai"
 ],
 "aliases_es": [
 "mermelada de fresa",
@@ -153132,6 +154871,8 @@
 "rnermelada de fresa",
 "350g mermelada fresa",
 "mermelada de fr",
+"mermelada fresa",
+"mermeladafresa",
 "strawberryjam"
 ]
 },
@@ -153334,6 +155075,7 @@
 "crerna de avellanas tostadas",
 "crema de avellana",
 "crm d vlln",
+"crema de avellanas",
 "hazelnutspread"
 ]
 },
@@ -153458,6 +155200,7 @@
 "pfaumenmus",
 "pfflaumenmus",
 "pflaurnenmus",
+"pflaumen mus",
 "plumbutter"
 ],
 "aliases_en": [
@@ -153844,7 +155587,8 @@
 "maillenmarmelade",
 "maarillenmarmelade",
 "aprikosenkonfitüre",
-"prksnknftr"
+"prksnknftr",
+"marillen marmelade"
 ],
 "aliases_en": [
 "apricot jam",
@@ -153893,7 +155637,9 @@
 "cofiture d'abricot",
 "coonfiture d'abricot",
 "cnftr d'brict",
-"c.a."
+"c.a.",
+"confiture dabricot",
+"confitureabricot"
 ],
 "aliases_es": [
 "mermelada de albaricoque",
@@ -154588,7 +156334,9 @@
 "300g gelee de groseille",
 "ge1ee de gr0sei11e",
 "eglee de groseille",
-"currantjelly"
+"gelée grosel",
+"currantjelly",
+"geléegrosel"
 ],
 "aliases_es": [
 "jalea de grosella",
@@ -159455,7 +161203,9 @@
 "maple syrup",
 "ahornsyrup",
 "ahornsirrup",
-"maplesyrup"
+"maple sirup",
+"maplesyrup",
+"maplesirup"
 ],
 "aliases_en": [
 "maple syrup",
@@ -159478,13 +161228,15 @@
 "ahornsirup",
 "maple syrupp",
 "maple syrrup",
+"maper syrup",
 "maplesyrp",
 "maplesyrups",
 "amplesyrup",
 "malesyrup",
 "maaplesyrup",
 "maplesyrupp",
-"maplesyrrup"
+"maplesyrrup",
+"mapersyrup"
 ],
 "aliases_fr": [
 "sirop d'érable",
@@ -159507,6 +161259,9 @@
 "siop d'erable",
 "srp drbl",
 "siropd'érable",
+"sirop d'érble",
+"sirop derable",
+"siropderable",
 "srpdrbl"
 ],
 "aliases_es": [
@@ -159561,7 +161316,8 @@
 "kokosb",
 "250g kokosblutenzucker",
 "kokosb1ütenzucker",
-"kokosblüten-zucker"
+"kokosblüten-zucker",
+"kokos zucker"
 ],
 "aliases_en": [
 "coconut sugar",
@@ -160908,7 +162664,9 @@
 "ohlunderbeergelee",
 "hounderbeergelee",
 "hoolunderbeergelee",
-"elderberryjelly"
+"holunder gelee",
+"elderberryjelly",
+"holundergelee"
 ],
 "aliases_en": [
 "elderberry jelly",
@@ -161951,6 +163709,7 @@
 "amrmite",
 "mamite",
 "maarmite",
+"marmite spread sml",
 "yeastextract",
 "marmitespread"
 ],
@@ -162149,6 +163908,8 @@
 "huummus",
 "hms",
 "hu.",
+"houmus",
+"hummous",
 "chickpeapaste",
 "hummusspread"
 ],
@@ -162596,6 +164357,7 @@
 "tapen",
 "atpenade",
 "taenade",
+"tapenarde",
 "olivetapenade",
 "tapenadespread"
 ],
@@ -163745,7 +165507,11 @@
 "5enf",
 "senf senf",
 "senfsenf",
-"200g senf"
+"200g senf",
+"senv",
+"senf (mustard)",
+"senf (moutarde)",
+"senf (mostaza)"
 ],
 "aliases_en": [
 "mustard",
@@ -163767,7 +165533,10 @@
 "muustard",
 "rnustard",
 "mustaard",
-"mu5tard"
+"mu5tard",
+"mustardd",
+"mstd",
+"must"
 ],
 "aliases_fr": [
 "moutarde",
@@ -163789,7 +165558,12 @@
 "moûtarde",
 "mout0rde",
 "moutarde moutarde",
-"moutardemoutarde"
+"moutardemoutarde",
+"motard",
+"moutardde",
+"moutrde",
+"moutrd",
+"moutardedijon"
 ],
 "aliases_es": [
 "mostaza",
@@ -163811,7 +165585,11 @@
 "mostàza",
 "moztaza",
 "mostaza mostaza",
-"mostazamostaza"
+"mostazamostaza",
+"mostza",
+"most",
+"heinz mostaza",
+"heinzmostaza"
 ]
 },
 {
@@ -164992,6 +166770,7 @@
 "brtaufstrich",
 "brrotaufstrich",
 "brotaufstr1ch",
+"brotaufstrich (spread)",
 "sandwichspread"
 ],
 "aliases_en": [
@@ -165013,12 +166792,14 @@
 "sadwich spread",
 "saandwich spread",
 "sandw1ch spread",
+"brotaufstrich spread",
 "sndwchsprd",
 "sandwichspred",
 "sandwichspreads",
 "asndwichspread",
 "sadwichspread",
-"saandwichspread"
+"saandwichspread",
+"brotaufstrichspread"
 ],
 "aliases_fr": [
 "tartine salée",
@@ -169016,8 +170797,10 @@
 "ektchup",
 "kechup",
 "keetchup",
+"heinz ketchup",
 "ketchuptomate",
-"tomatoketchup"
+"tomatoketchup",
+"heinzketchup"
 ],
 "aliases_es": [
 "kétchup",
@@ -169069,7 +170852,9 @@
 "250g majonase",
 "maj0nase",
 "myns",
-"mayonaise"
+"mayonaise",
+"mayonnaise (mayonesa)",
+"mayonnaise (mayo)"
 ],
 "aliases_en": [
 "mayonnaise",
@@ -169091,7 +170876,8 @@
 "majonäse",
 "majonase",
 "250ml mayonnaise",
-"mayonnaise 250ml"
+"mayonnaise 250ml",
+"mayonnaiz"
 ],
 "aliases_fr": [
 "mayonnaise",
@@ -169113,7 +170899,10 @@
 "rnayonnaise",
 "mayonna1se",
 "250ml mayonnaise",
-"mayonnaise 250ml"
+"mayonnaise 250ml",
+"mayaonnaise",
+"mayonnaise mayo",
+"mayonnaisemayo"
 ],
 "aliases_es": [
 "mayonesa",
@@ -169134,7 +170923,17 @@
 "250ml mayonesa",
 "mayonesa 250ml",
 "mayo",
-"mayones"
+"mayones",
+"mayonesa (mayonnaise)",
+"mayons",
+"may",
+"heinz mayonesa",
+"hellmann's mayonesa",
+"hellmanns mayonesa",
+"calve mayonesa",
+"heinzmayonesa",
+"hellmannsmayonesa",
+"calvemayonesa"
 ]
 },
 {
@@ -169287,6 +171086,8 @@
 "osjasoße",
 "sojasoße 250ml",
 "sojasauce",
+"soja sauce",
+"soj a sauce",
 "SojaSoße",
 "soysauce"
 ],
@@ -169311,13 +171112,18 @@
 "soysauce",
 "sysc",
 "soy sauce 250ml",
+"soy sause",
+"soy sas",
+"soysce",
 "soyysauce",
 "soysaucee",
 "soysauc",
 "saucesoja",
 "soysauces",
 "osysauce",
-"sooysauce"
+"sooysauce",
+"soysause",
+"soysas"
 ],
 "aliases_fr": [
 "sauce soja",
@@ -169340,6 +171146,8 @@
 "saucesoja",
 "scsj",
 "sauce soja 250ml",
+"sauce soa",
+"sojasauces",
 "saucessoja",
 "saucesojaa",
 "saucesoj",
@@ -169347,7 +171155,8 @@
 "asucesoja",
 "sacesoja",
 "saaucesoja",
-"soysauce"
+"soysauce",
+"saucesoa"
 ],
 "aliases_es": [
 "salsa de soja",
@@ -169370,6 +171179,10 @@
 "saalsa de soja",
 "slsdsj",
 "s.s.",
+"soj",
+"salsa de soya",
+"salsa soya",
+"salsasoya",
 "salsasoja",
 "saucesoja"
 ]
@@ -169842,6 +171655,7 @@
 "aslatsoße",
 "saatsoße",
 "saalatsoße",
+"salat dressing",
 "saladdressing"
 ],
 "aliases_en": [
@@ -170463,6 +172277,7 @@
 "balsamico-essig",
 "balsamic essig",
 "balsamico e",
+"balsamico (vinaigre)",
 "blsmcssg",
 "balsamicovinaigre",
 "balsamicoessigs",
@@ -170525,6 +172340,9 @@
 "viinaigre balsamique",
 "vinaigre-balsamique",
 "balsamic vinegar",
+"vinaigre balasmic",
+"vinaigre balsamq",
+"vinaigre balsam",
 "vnigrblsmq",
 "vinaigrebalsamic",
 "vinaigresbalsamiques",
@@ -170535,7 +172353,10 @@
 "ivnaigrebalsamique",
 "viaigrebalsamique",
 "viinaigrebalsamique",
-"balsamicvinegar"
+"balsamicvinegar",
+"vinaigrebalasmic",
+"vinaigrebalsamq",
+"vinaigrebalsam"
 ],
 "aliases_es": [
 "vinagre balsámico",
@@ -170558,13 +172379,16 @@
 "viinagre balsamico",
 "vinagre-balsámico",
 "vinagrebalsámico",
+"vinagre bals.",
+"vinag bals",
 "vngrblsmc",
 "vinagresbalsamicos",
 "vinagrebals",
 "vinagrebalsamicos",
 "ivnagrebalsamico",
 "viagrebalsamico",
-"viinagrebalsamico"
+"viinagrebalsamico",
+"vinagbals"
 ]
 },
 {
@@ -170595,7 +172419,9 @@
 "weißw",
 "ewißweinessig",
 "wsswnssg",
-"w.w.e."
+"w.w.e.",
+"essig",
+"weißwein essig"
 ],
 "aliases_en": [
 "white wine vinegar",
@@ -170903,7 +172729,13 @@
 "loivenol",
 "olvenol",
 "lvnl",
-"o.ö."
+"o.ö.",
+"olivendel",
+"olvenöl",
+"öl (olive oil)",
+"olivenöl olive oil",
+"oliven öl",
+"olivnöl"
 ],
 "aliases_en": [
 "olive oil",
@@ -170926,11 +172758,16 @@
 "olve oil",
 "lv l",
 "huile d'olive",
+"olive oill",
+"olive oile",
+"olvoil",
 "olivoil",
 "oliveoyl",
 "oliveoils",
 "loiveoil",
-"olveoil"
+"olveoil",
+"oliveoill",
+"oliveoile"
 ],
 "aliases_fr": [
 "huile d'olive",
@@ -170953,7 +172790,16 @@
 "huuile d'olive",
 "h.d.o.",
 "huiledolive",
-"huileolive"
+"huile d'ol.",
+"olive huile",
+"huile d'olive vierge",
+"huile d'oliv",
+"huile olv",
+"huil olive",
+"huileolive",
+"olivehuile",
+"huileolv",
+"huilolive"
 ],
 "aliases_es": [
 "aceite de oliva",
@@ -170976,8 +172822,16 @@
 "olive oil",
 "ct d lv",
 "aceitedeoliva",
+"aceite de olva",
+"ac",
+"act d oliva",
+"aceite olive",
+"aceit oliv",
+"aceite deoliva",
 "aceiteoliva",
-"oliveoil"
+"oliveoil",
+"aceiteolive",
+"aceitoliv"
 ]
 },
 {
@@ -171009,6 +172863,7 @@
 "raps01",
 "500ml rapsöl",
 "rapsöle",
+"raps öl",
 "canolaoil"
 ],
 "aliases_en": [
@@ -171117,7 +172972,12 @@
 "sonne",
 "500ml sonnenblumenöl",
 "sonnenblumenöle",
-"sunfloweroil"
+"öl",
+"sonnen blumenöl",
+"sonnen blumeöl",
+"sonnen blumen öl",
+"sunfloweroil",
+"sonnenblumeöl"
 ],
 "aliases_en": [
 "sunflower oil",
@@ -171223,6 +173083,7 @@
 "sesame oil",
 "s.ö.",
 "200ml sesamöl",
+"sesam öl",
 "sesameoil"
 ],
 "aliases_en": [
@@ -171297,6 +173158,7 @@
 "acite de sesamo",
 "ct d ssm",
 "aceitedesesamo",
+"aceite desesamo",
 "sésamoaceite",
 "aceitesésamo"
 ]
@@ -171330,6 +173192,7 @@
 "k0k0s01",
 "kokosöle",
 "okkosol",
+"kokos öl",
 "coconutoil"
 ],
 "aliases_en": [
@@ -171533,7 +173396,8 @@
 "kurbis",
 "kurbi",
 "kürbis",
-"kürbiskernöle"
+"kürbiskernöle",
+"kürbiskern öl"
 ],
 "aliases_en": [
 "pumpkin seed oil",
@@ -171951,6 +173815,7 @@
 "250ml walnussol",
 "walnussöle",
 "wa1nuss01",
+"walnuss öl",
 "walnutoil"
 ],
 "aliases_en": [
@@ -172203,6 +174068,7 @@
 "tabasco sauces",
 "tabasc",
 "tabas",
+"tabasco pepper sauce",
 "tabascosause",
 "tabasosauce",
 "tabascosaucce",
@@ -172462,7 +174328,9 @@
 "compote de pommess",
 "compot",
 "compo",
-"c0mp0te de p0mmes"
+"c0mp0te de p0mmes",
+"compote",
+"compotepomme"
 ],
 "aliases_es": [
 "puré de manzana",
@@ -173067,7 +174935,9 @@
 "toatenmark",
 "t.m.",
 "tomatenmarke",
-"tomatopaste"
+"tomaten paste",
+"tomatopaste",
+"tomatenpaste"
 ],
 "aliases_en": [
 "tomato paste",
@@ -173090,6 +174960,7 @@
 "t0mat0 paste",
 "tomato passte",
 "tomato pa",
+"tomato purée",
 "tmtpst",
 "tomatopast",
 "tomatpaste",
@@ -173097,7 +174968,8 @@
 "tomatopas",
 "tomátopaste",
 "tomatopastes",
-"tomatopasste"
+"tomatopasste",
+"tomatopurée"
 ],
 "aliases_fr": [
 "concentré de tomates",
@@ -173119,7 +174991,10 @@
 "concen",
 "conce",
 "concentrédetomates",
-"concentrés de tomates"
+"concentrés de tomates",
+"tmt pste",
+"concentrédetomate",
+"tmtpste"
 ],
 "aliases_es": [
 "pasta de tomate",
@@ -173715,6 +175590,10 @@
 "ket-chup",
 "heinz",
 "heinz ketchup",
+"ketchup (ketchup)",
+"ketchup (tomato)",
+"ktschp",
+"mcdonald's ketchup",
 "heinzketchup"
 ],
 "aliases_en": [
@@ -173737,6 +175616,8 @@
 "heinz",
 "heinz ketchup",
 "heinz tomato ketchup",
+"ketchuup",
+"ketchp",
 "heinzketchup"
 ],
 "aliases_fr": [
@@ -173755,7 +175636,9 @@
 "keetchup",
 "kchp",
 "500ml ketchup",
-"ket-chup"
+"ket-chup",
+"ketchup ketchup",
+"ketchupketchup"
 ],
 "aliases_es": [
 "kétchup",
@@ -173777,7 +175660,8 @@
 "keetchup",
 "500ml kétchup",
 "kétch",
-"két-chup"
+"két-chup",
+"ketp"
 ]
 },
 {
@@ -175802,6 +177686,7 @@
 "sasa bolonesa",
 "saalsa bolonesa",
 "salsa-bolonesa",
+"salsa boloñ.",
 "salsaboloñesa",
 "slsblns",
 "salsabologneza",
@@ -177381,6 +179266,7 @@
 "viagre de arroz",
 "vda",
 "200ml vinagre de arroz",
+"vinagre dearroz",
 "ricevinegar"
 ]
 },
@@ -177556,6 +179442,7 @@
 "hui1e d'arachide",
 "uhile d'arachide",
 "hule d'arachide",
+"huiledearachide",
 "huiledarchide",
 "huiledarachide",
 "huilearachide",
@@ -177633,6 +179520,7 @@
 "himbeeressig",
 "raspberryvinegar",
 "raspberry-vinegar",
+"rasberry vinegar",
 "rsbrrvngr",
 "raspberrryvinegar",
 "raspberryvinegarr",
@@ -177641,7 +179529,8 @@
 "rspbrryvngr",
 "arspberryvinegar",
 "rapberryvinegar",
-"raaspberryvinegar"
+"raaspberryvinegar",
+"rasberryvinegar"
 ],
 "aliases_fr": [
 "vinaigre de framboise",
@@ -178163,7 +180052,9 @@
 "hazelnut oil",
 "huiledenoisette",
 "huile-de-noisette",
-"hazelnutoil"
+"huile noisette",
+"hazelnutoil",
+"huilenoisette"
 ],
 "aliases_es": [
 "aceite de avellana",
@@ -178550,6 +180441,7 @@
 "wine vinegar",
 "vinaigredevin",
 "vinaigre-de-vin",
+"vinaigr ede vin",
 "winevinegar"
 ],
 "aliases_es": [
@@ -178571,7 +180463,9 @@
 "viagre de vino",
 "viinagre de vino",
 "wine vinegar",
-"winevinegar"
+"vinag vin",
+"winevinegar",
+"vinagvin"
 ]
 },
 {
@@ -179383,7 +181277,8 @@
 "500ml olivenol nativ extra",
 "01iven01 nativ extra",
 "loivenol nativ extra",
-"olvenol nativ extra"
+"olvenol nativ extra",
+"olivenöl"
 ],
 "aliases_en": [
 "extra virgin olive oil",
@@ -179423,7 +181318,9 @@
 "uhile d'olive vierge extra",
 "hule d'olive vierge extra",
 "huuile d'olive vierge extra",
-"extra virgin olive oil"
+"extra virgin olive oil",
+"huile d'olive vierge",
+"huiledoliveextra"
 ],
 "aliases_es": [
 "aceite de oliva virgen extra",
@@ -179443,7 +181340,8 @@
 "caeite de oliva virgen extra",
 "acite de oliva virgen extra",
 "acceite de oliva virgen extra",
-"extra virgin olive oil"
+"extra virgin olive oil",
+"aceite oliva virg."
 ]
 },
 {
@@ -179562,6 +181460,7 @@
 "p.",
 "pflanzenols",
 "pflanz",
+"pflanzen öl",
 "vegetableoil"
 ],
 "aliases_en": [
@@ -180947,8 +182846,10 @@
 "omutarde de dijon",
 "motarde de dijon",
 "mooutarde de dijon",
+"moutarde dij",
 "moutardedijon",
-"dijonmustard"
+"dijonmustard",
+"moutardedij"
 ],
 "aliases_es": [
 "mostaza de dijon",
@@ -181734,6 +183635,8 @@
 "chckpeas",
 "400g chickpeas",
 "garbanzos",
+"chickpeaz",
+"chpeas",
 "garbanzobeans"
 ],
 "aliases_fr": [
@@ -181785,7 +183688,14 @@
 "chickpeas",
 "400g garbanzos",
 "garbanzoz",
-"garban zos"
+"garban zos",
+"garbansos",
+"garbanços",
+"garbazos",
+"garbanzós",
+"garb",
+"garbnzs",
+"garb anzos"
 ]
 },
 {
@@ -181837,7 +183747,8 @@
 "leentils",
 "linsen",
 "400g lentils",
-"lent"
+"lent",
+"lentlls"
 ],
 "aliases_fr": [
 "lentilles",
@@ -181859,7 +183770,9 @@
 "leentilles",
 "lentils",
 "400g lentilles",
-"lent"
+"lent",
+"lntilles",
+"lentillesvertes"
 ],
 "aliases_es": [
 "lentejas",
@@ -181880,7 +183793,12 @@
 "leentejas",
 "lentils",
 "400g lentejas",
-"lent"
+"lent",
+"lentejs",
+"lentéjas",
+"lntjas",
+"lentej.",
+"lentej as"
 ]
 },
 {
@@ -182111,6 +184029,7 @@
 "har1cots rouges",
 "400g haricots rouges",
 "aricots rouges",
+"haricot rouge",
 "hrctsrgs",
 "haricotsrougees",
 "redbeans",
@@ -182281,6 +184200,7 @@
 "frjoles negros",
 "frjs ngrs",
 "frijoles-negros",
+"fvjoles ngrs",
 "frjlsngrs",
 "friholesnegros",
 "frijolenegro",
@@ -182292,7 +184212,8 @@
 "frijolesnegross",
 "rfijolesnegros",
 "frjolesnegros",
-"frjsngrs"
+"frjsngrs",
+"fvjolesngrs"
 ]
 },
 {
@@ -184847,7 +186768,8 @@
 "osja",
 "soa",
 "sooja",
-"soybeans"
+"soybeans",
+"grainesdesoja"
 ],
 "aliases_es": [
 "soja",
@@ -188949,6 +190871,7 @@
 "letejas marrones",
 "leentejas marrones",
 "lentejas rnarrones",
+"lentejas pardinas",
 "lntjsmrns",
 "brownlentils",
 "lentejasmar",
@@ -188957,7 +190880,8 @@
 "elntejasmarrones",
 "letejasmarrones",
 "leentejasmarrones",
-"lentejasrnarrones"
+"lentejasrnarrones",
+"lentejaspardinas"
 ]
 },
 {
@@ -192067,6 +193991,7 @@
 "acnned tomatoes",
 "caned tomatoes",
 "caanned tomatoes",
+"tinned tomatoes",
 "cndtmts",
 "cannedtomatos",
 "cannedtoma",
@@ -192075,7 +194000,8 @@
 "cannedtomatoess",
 "acnnedtomatoes",
 "canedtomatoes",
-"caannedtomatoes"
+"caannedtomatoes",
+"tinnedtomatoes"
 ],
 "aliases_fr": [
 "tomates en conserve",
@@ -201697,6 +203623,8 @@
 "150g canned tuna",
 "acnned tuna",
 "caned tuna",
+"tuna fish",
+"tunafish",
 "konzervnitunak",
 "cannedtunna",
 "cannedtunafish",
@@ -201723,7 +203651,8 @@
 "th0n en b0ite",
 "hton en boite",
 "thn en boite",
-"thhon en boite"
+"thhon en boite",
+"poisspn en boîte"
 ],
 "aliases_es": [
 "atún en lata",
@@ -201744,7 +203673,12 @@
 "150g atun en lata",
 "atun en 1ata",
 "taun en lata",
-"tunaenlatada"
+"atun enlatado",
+"atún lata",
+"atúnenlatado",
+"tunaenlatada",
+"atunenlatado",
+"atúnlata"
 ]
 },
 {
@@ -201771,6 +203705,7 @@
 "sadinen",
 "saardinen",
 "canned sardines",
+"sardn",
 "cannedsardines"
 ],
 "aliases_en": [
@@ -201842,6 +203777,7 @@
 "sardinas en 1ata",
 "asrdinas en lata",
 "sadinas en lata",
+"sardinas enlat.",
 "sardinesenlatadas"
 ]
 },
@@ -202592,7 +204528,11 @@
 "sadines a l'huile",
 "saardines a l'huile",
 "srdns à l'l",
-"s.à.l.h."
+"s.à.l.h.",
+"sardines a lhuile",
+"sardineshuile",
+"sardinehuile",
+"sardinesà l huile"
 ],
 "aliases_es": [
 "sardinas en aceite",
@@ -202703,7 +204643,8 @@
 "atn en aceite",
 "attun en aceite",
 "tuna in oil",
-"atunenaceite"
+"atunenaceite",
+"atún en aceit."
 ]
 },
 {
@@ -209187,7 +211128,13 @@
 "spaghettti",
 "spaghettin",
 "barilla spaghetti",
-"barillaspaghetti"
+"spaghettii",
+"spaghetti pâtes",
+"spageti",
+"spaghiti",
+"spagetthi",
+"barillaspaghetti",
+"spaghettipâtes"
 ],
 "aliases_fr": [
 "spaghetti",
@@ -209209,7 +211156,9 @@
 "psaghetti",
 "spghetti",
 "spaghettti",
-"spaghettin"
+"spaghettin",
+"pâtes spaghetti",
+"pâtesspaghetti"
 ],
 "aliases_es": [
 "espaguetis",
@@ -209231,7 +211180,13 @@
 "sepaguetis",
 "esaguetis",
 "espghts",
-"esspaguetis"
+"esspaguetis",
+"fideos spaghetti",
+"pasta, spaghetti",
+"barilla espaguetis",
+"espagu eti",
+"fideosspaghetti",
+"barillaespaguetis"
 ]
 },
 {
@@ -209253,7 +211208,9 @@
 "pnn",
 "epnne",
 "pene",
-"peenne"
+"peenne",
+"pasta penne",
+"pastapenne"
 ],
 "aliases_en": [
 "penne",
@@ -209292,7 +211249,9 @@
 "pnn",
 "epnne",
 "pene",
-"peenne"
+"peenne",
+"pasta penne rigate",
+"de cecco penne"
 ]
 },
 {
@@ -209513,7 +211472,9 @@
 "liguine",
 "liinguine",
 "l1nguine",
-"lngne"
+"lngne",
+"pâtes linguine",
+"pâteslinguine"
 ],
 "aliases_es": [
 "linguine",
@@ -209631,6 +211592,7 @@
 "talarines",
 "tagliatelle",
 "tglttl",
+"tallarine s",
 "pastaslargas"
 ]
 },
@@ -209768,7 +211730,8 @@
 "maaroni",
 "maacaroni",
 "rnacaroni",
-"macaron1"
+"macaron1",
+"mcroni"
 ],
 "aliases_es": [
 "macarrones",
@@ -209787,7 +211750,8 @@
 "maarrones",
 "maacarrones",
 "macaroni",
-"rnacarrones"
+"rnacarrones",
+"macarr on"
 ]
 },
 {
@@ -210218,7 +212182,9 @@
 "cnchgl",
 "conchilie",
 "500g conchiglie",
-"pâtescoquilles"
+"pâtes coquillettes",
+"pâtescoquilles",
+"pâtescoquillettes"
 ],
 "aliases_es": [
 "conchiglie",
@@ -210272,7 +212238,8 @@
 "gnocch",
 "gnocc",
 "gnch",
-"nocki"
+"nocki",
+"gnocchi di patate"
 ],
 "aliases_en": [
 "gnocchi",
@@ -211372,6 +213339,8 @@
 "sppatzle",
 "sp.",
 "500g spätzle",
+"spätzle (spätzle)",
+"sptzln",
 "spaetzlenuudeln"
 ],
 "aliases_en": [
@@ -212537,13 +214506,15 @@
 "paes completes",
 "pt cmplt",
 "pâtescomplètes",
+"pâtes compltes",
 "patescompletes",
 "pâtecomplète",
 "pâtescomplettes",
 "ptscmplts",
 "patescompletess",
 "aptescompletes",
-"paescompletes"
+"paescompletes",
+"pâtescompltes"
 ],
 "aliases_es": [
 "pasta integral",
@@ -212566,6 +214537,7 @@
 "whole wheat pasta",
 "pastaintegral",
 "integral",
+"psta intgl",
 "pstntgrl",
 "pastaintegra",
 "integralpasta",
@@ -212573,7 +214545,8 @@
 "pastaintegrals",
 "apstaintegral",
 "pataintegral",
-"paastaintegral"
+"paastaintegral",
+"pstaintgl"
 ]
 },
 {
@@ -215132,6 +217105,7 @@
 "nuelsalat",
 "nuudelsalat",
 "pasta salad",
+"nudel salat",
 "pastasalad"
 ],
 "aliases_en": [
@@ -215892,6 +217866,7 @@
 "paes farcies",
 "paates farcies",
 "stuffed pasta",
+"pâtes farcis",
 "patesfarcies",
 "pâtesfarci",
 "pâtesremplies",
@@ -215900,7 +217875,8 @@
 "aptesfarcies",
 "paesfarcies",
 "paatesfarcies",
-"stuffedpasta"
+"stuffedpasta",
+"pâtesfarcis"
 ],
 "aliases_es": [
 "pasta rellena",
@@ -216010,6 +217986,8 @@
 "paes fraiches",
 "paates fraiches",
 "fresh pasta",
+"pâtes fraîch",
+"pâtesfraiches",
 "patesfraiches",
 "pâtesfraîche",
 "pâtesmaison",
@@ -216018,7 +217996,8 @@
 "aptesfraiches",
 "paesfraiches",
 "paatesfraiches",
-"freshpasta"
+"freshpasta",
+"pâtesfraîch"
 ],
 "aliases_es": [
 "pasta fresca",
@@ -216183,7 +218162,17 @@
 "res",
 "reeis",
 "rice",
-"re1s"
+"re1s",
+"rei",
+"reis (rice)",
+"reis (arroz)",
+"reis (riz)",
+"reis (basmati)",
+"reis rice",
+"ruf reis",
+"reis (langkorn)",
+"reisrice",
+"rufreis"
 ],
 "aliases_en": [
 "rice",
@@ -216197,7 +218186,16 @@
 "rie",
 "riice",
 "reis",
-"r1ce"
+"r1ce",
+"rise",
+"ricee",
+"ricce",
+"rlce",
+"ric e",
+"rica",
+"rice arroz",
+"riz (rice)",
+"ricearroz"
 ],
 "aliases_fr": [
 "riz",
@@ -216210,7 +218208,19 @@
 "ri",
 "riiz",
 "rice",
-"r1z"
+"r1z",
+"ritz",
+"ri z",
+"ris",
+"riz reis",
+"riz rice",
+"riz rice graines",
+"reis riz",
+"rice riz",
+"rizreis",
+"rizrice",
+"reisriz",
+"riceriz"
 ],
 "aliases_es": [
 "arroz",
@@ -216223,7 +218233,24 @@
 "arr0z",
 "raroz",
 "arrroz",
-"rice"
+"rice",
+"arros",
+"arro z",
+"arr",
+"arz",
+"arro",
+"ar",
+"riz arroz",
+"rice rice",
+"arroz rice",
+"aroz.",
+"eroski arroz",
+"brillante arroz",
+"rizarroz",
+"ricerice",
+"arrozrice",
+"eroskiarroz",
+"brillantearroz"
 ]
 },
 {
@@ -216249,7 +218276,14 @@
 "haaferflocken",
 "oatmeal",
 "frühstücksflocken",
-"getreideflocken"
+"getreideflocken",
+"haferflocken (avena)",
+"haferflocken oatmeal",
+"hafer fl ocken",
+"hafer flocke",
+"hafer flocken",
+"haferflockenoatmeal",
+"haferflocke"
 ],
 "aliases_en": [
 "oatmeal",
@@ -216268,7 +218302,8 @@
 "oatrneal",
 "kellog's",
 "kelloggs",
-"cheerios"
+"cheerios",
+"oatmeall"
 ],
 "aliases_fr": [
 "flocons d'avoine",
@@ -216287,7 +218322,9 @@
 "oatmeal",
 "floconsd'avoine",
 "flocons-d'avoine",
-"flocons d'avo1ne"
+"flocons d'avo1ne",
+"flocons d avoine",
+"floconsdavoine"
 ],
 "aliases_es": [
 "copos de avena",
@@ -216303,7 +218340,11 @@
 "coopos de avena",
 "oatmeal",
 "coposdeavena",
-"copos-de-avena"
+"copos-de-avena",
+"avena oatmeal",
+"oatmeal avena",
+"avenaoatmeal",
+"oatmealavena"
 ]
 },
 {
@@ -217075,13 +219116,16 @@
 "riiz complet",
 "brown rice",
 "rizcomplet",
+"riz complet brown",
+"brown riz",
 "rizcomple",
 "rizcomp",
 "rizbrun",
 "rizcomplets",
 "irzcomplet",
 "riizcomplet",
-"brownrice"
+"brownrice",
+"brownriz"
 ],
 "aliases_es": [
 "arroz integral",
@@ -217102,6 +219146,7 @@
 "arrroz integral",
 "brown rice",
 "arrozintegral",
+"arroz int",
 "rrzntgrl",
 "arozintegral",
 "arrozintegra",
@@ -217111,7 +219156,8 @@
 "arrozintegrals",
 "rarozintegral",
 "arrrozintegral",
-"brownrice"
+"brownrice",
+"arrozint"
 ]
 },
 {
@@ -217138,7 +219184,13 @@
 "paasta",
 "barilla",
 "barilla pasta",
-"barillapasta"
+"pasta (teigwaren)",
+"pasta (pâtes)",
+"pasta (pasta)",
+"nudeln pasta",
+"nudeln (pâtes)",
+"barillapasta",
+"nudelnpasta"
 ],
 "aliases_en": [
 "pasta",
@@ -217158,8 +219210,16 @@
 "barilla",
 "barilla pasta",
 "barilla spaghetti",
+"pastaa",
+"pastq",
+"pasta.",
+"past a",
+"pastta",
+"pates pasta",
+"pâtes (pasta)",
 "barillapasta",
-"barillaspaghetti"
+"barillaspaghetti",
+"patespasta"
 ],
 "aliases_fr": [
 "pâtes",
@@ -217176,7 +219236,16 @@
 "500g pates",
 "aptes",
 "paes",
-"paates"
+"paates",
+"petes",
+"pat",
+"nudeln pâtes",
+"pasta pâtes",
+"pátes",
+"pâtes alimentaires",
+"nudelnpâtes",
+"pastapâtes",
+"pâtesalimentaires"
 ],
 "aliases_es": [
 "pasta",
@@ -217191,7 +219260,18 @@
 "pastas",
 "apsta",
 "pata",
-"paasta"
+"paasta",
+"pâtes pasta",
+"pasta noodles",
+"noodles pasta",
+"psta",
+"past.",
+"gallo pasta",
+"pastaalimenticia",
+"pâtespasta",
+"pastanoodles",
+"noodlespasta",
+"gallopasta"
 ]
 },
 {
@@ -217675,6 +219755,7 @@
 "spaghettis c0mp1ets",
 "psaghettis complets",
 "spghettis complets",
+"spaghettiintegral",
 "spghcmplt",
 "spaghetticomplet",
 "pâtescomplètes",
@@ -218258,6 +220339,7 @@
 "farin",
 "250g farine d'amande",
 "afrine d'amande",
+"poudre d'amande",
 "amandefarine",
 "farineamande"
 ],
@@ -218308,7 +220390,11 @@
 "moohn",
 "poppy seeds",
 "rnohn",
-"poppyseeds"
+"mohn saamen",
+"mohn samen",
+"poppyseeds",
+"mohnsaamen",
+"mohnsamen"
 ],
 "aliases_en": [
 "poppy seeds",
@@ -218430,7 +220516,9 @@
 "uqinoa",
 "qunoa",
 "quuinoa",
-"qu1noa"
+"qu1noa",
+"quínoa",
+"quinua"
 ]
 },
 {
@@ -218725,6 +220813,7 @@
 "grraines de sesame",
 "grn d ssm",
 "graines-de-sesame",
+"graines de ssame",
 "sesameseeds"
 ],
 "aliases_es": [
@@ -218779,6 +220868,9 @@
 "soonnenblumenkerne",
 "sonnenblurnenkerne",
 "250g sonnenblumenkerne",
+"sonnenblume",
+"sonnen blumenkerne",
+"sonnen blumen kerne",
 "sunflowerseeds"
 ],
 "aliases_en": [
@@ -218800,6 +220892,7 @@
 "sunflowerseeds",
 "sunflower-seeds",
 "250g sunflower seeds",
+"sun flower seeds",
 "snflwrsds",
 "sunflowerseed",
 "sunflowerseedss",
@@ -218828,6 +220921,7 @@
 "gra1nes de tournesol",
 "grn d trnsl",
 "250g graines de tournesol",
+"graines de tournesl",
 "sunflowerseeds"
 ],
 "aliases_es": [
@@ -218851,6 +220945,7 @@
 "sernillas de girasol",
 "smls d grsl",
 "250g semillas de girasol",
+"pipasdegirasol",
 "sunflowerseeds"
 ]
 },
@@ -218986,6 +221081,8 @@
 "wheat flour",
 "weizenrnehl",
 "we1zenmehl",
+"mehl",
+"weizen mehl",
 "wheatflour"
 ],
 "aliases_en": [
@@ -219026,7 +221123,12 @@
 "farinedeble",
 "farine-de-ble",
 "far1ne de ble",
-"wheatflour"
+"farine flour blé",
+"farine blé",
+"farinede blé",
+"wheatflour",
+"farineblé",
+"farinedeblé"
 ],
 "aliases_es": [
 "harina de trigo",
@@ -219044,7 +221146,11 @@
 "harinadetrigo",
 "harina-de-trigo",
 "har1na de trigo",
-"wheatflour"
+"harina de trig",
+"harina trigo",
+"harinade trigo",
+"wheatflour",
+"harinatrigo"
 ]
 },
 {
@@ -219645,6 +221751,7 @@
 "nkoblauchpulver",
 "k.p.",
 "knoblauchpulver (garlic powder)",
+"knoblauch p ulver",
 "doseknoblauch",
 "garlicpowder",
 "knoblauchpulvver"
@@ -219754,7 +221861,14 @@
 "uzcker",
 "zuker",
 "zuucker",
-"zukcer"
+"zukcer",
+"zuckr",
+"zukker",
+"zucker sugar",
+"zucker sucre",
+"zucker (sucre)",
+"zuckersugar",
+"zuckersucre"
 ],
 "aliases_en": [
 "sugar",
@@ -219769,7 +221883,15 @@
 "usgar",
 "suar",
 "suugar",
-"zucker"
+"zucker",
+"sugarr",
+"sugr",
+"suggar",
+"sug ar",
+"sugar azúcar",
+"sucre (sugar)",
+"sgar",
+"sugarazúcar"
 ],
 "aliases_fr": [
 "sucre",
@@ -219782,7 +221904,24 @@
 "1000g sucre",
 "uscre",
 "sure",
-"suucre"
+"suucre",
+"s ucre",
+"suc ré",
+"sucree",
+"sukre",
+"sucrè",
+"suce",
+"sucré",
+"suc",
+"sucre azúcar",
+"sucre zucker",
+"sucre sugar",
+"sugar sucre",
+"sucre en poudre",
+"sucreazúcar",
+"sucrezucker",
+"sucresugar",
+"sugarsucre"
 ],
 "aliases_es": [
 "azúcar",
@@ -219800,7 +221939,16 @@
 "zaucar",
 "azcar",
 "azzucar",
-"azuc"
+"azuc",
+"azar",
+"azúcr",
+"azuccar",
+"azúcar sugar",
+"azucr",
+"dolca azúcar",
+"azuc ar",
+"azúcarsugar",
+"dolcaazúcar"
 ]
 },
 {
@@ -219825,7 +221973,14 @@
 "saz",
 "saalz",
 "salze",
-"salz (salt)"
+"salz (salt)",
+"saltz",
+"sal.",
+"salz salt",
+"salz sel",
+"salz (sel)",
+"salzsalt",
+"salzsel"
 ],
 "aliases_en": [
 "salt",
@@ -219843,7 +221998,13 @@
 "sat",
 "saalt",
 "salz",
-"sal"
+"sal",
+"solt",
+"sahlt",
+"sal t",
+"saltt",
+"salt sal",
+"saltsal"
 ],
 "aliases_fr": [
 "sel",
@@ -219857,7 +222018,17 @@
 "se1",
 "esl",
 "seel",
-"salt"
+"salt",
+"se l",
+"s el",
+"sell",
+"sele",
+"salt sel",
+"sel salz",
+"sel salt",
+"saltsel",
+"selsalz",
+"selsalt"
 ],
 "aliases_es": [
 "sal",
@@ -219872,7 +222043,12 @@
 "asl",
 "saal",
 "salt",
-"sales"
+"sales",
+"sall",
+"sal salt",
+"sal hacendado",
+"salsalt",
+"salhacendado"
 ]
 },
 {
@@ -219896,7 +222072,12 @@
 "pfeffe",
 "fpeffer",
 "pfffer",
-"pffeffer"
+"pffeffer",
+"pfefer",
+"pffer",
+"pfeffer pepper",
+"pfeffer (poivre)",
+"pfefferpepper"
 ],
 "aliases_en": [
 "pepper",
@@ -219910,7 +222091,14 @@
 "pppr",
 "eppper",
 "peepper",
-"pfeffer"
+"pfeffer",
+"pepeer",
+"pepperr",
+"peppar",
+"pepper pimienta",
+"peppr",
+"pep",
+"pepperpimienta"
 ],
 "aliases_fr": [
 "poivre",
@@ -219925,7 +222113,18 @@
 "opivre",
 "povre",
 "pooivre",
-"po1vre"
+"po1vre",
+"pivre",
+"poiv re",
+"poi vre",
+"poivree",
+"poiure",
+"poivré",
+"poivre pepper",
+"pepper poivre",
+"poivrn",
+"poivrepepper",
+"pepperpoivre"
 ],
 "aliases_es": [
 "pimienta",
@@ -219940,7 +222139,21 @@
 "piienta",
 "piimienta",
 "pirnienta",
-"p1mienta"
+"p1mienta",
+"pimiento",
+"pimientta",
+"piminto",
+"pimnt",
+"poivre pimienta",
+"pimienta pepper",
+"pimieta",
+"pim",
+"piment",
+"pimienta hacendado",
+"pimie nto",
+"poivrepimienta",
+"pimientapepper",
+"pimientahacendado"
 ]
 },
 {
@@ -219968,6 +222181,7 @@
 "ucrrypulver",
 "curypulver",
 "cuurrypulver",
+"curry p ulver",
 "currypowder"
 ],
 "aliases_en": [
@@ -220016,6 +222230,9 @@
 "podre de curry",
 "pooudre de curry",
 "poudre-de-curry",
+"curry poudre",
+"currypoudre",
+"curry en poudre",
 "currypowder"
 ],
 "aliases_es": [
@@ -220063,6 +222280,7 @@
 "parikapulver",
 "paaprikapulver",
 "papr1kapulver",
+"paprika p ulver",
 "paprikapowder"
 ],
 "aliases_en": [
@@ -220111,6 +222329,7 @@
 "paaprika en poudre",
 "paprika-en-poudre",
 "papr1ka en poudre",
+"paprik en poudre",
 "paprikapowder"
 ],
 "aliases_es": [
@@ -220132,6 +222351,7 @@
 "piimenton en polvo",
 "pimentonenpolvo",
 "pimenton-en-polvo",
+"pimentón",
 "paprikapowder"
 ]
 },
@@ -220254,8 +222474,12 @@
 "ridfleisch",
 "riindfleisch",
 "r1ndfleisch",
+"rindfleisch (ground)",
+"rindfleisch beef",
+"rndfleisch",
 "rindfleischhack",
-"fleischrind"
+"fleischrind",
+"rindfleischbeef"
 ],
 "aliases_en": [
 "beef",
@@ -220270,6 +222494,10 @@
 "beefs",
 "ebef",
 "rindfleisch",
+"beef.",
+"beff",
+"beef (bœuf)",
+"beefr",
 "beefmince"
 ],
 "aliases_fr": [
@@ -220283,7 +222511,12 @@
 "bœufs",
 "œbuf",
 "bœœuf",
-"bœufhaché"
+"beuf",
+"boeuf beef",
+"beef boeuf",
+"bœufhaché",
+"boeufbeef",
+"beefboeuf"
 ],
 "aliases_es": [
 "carne de res",
@@ -220303,7 +222536,10 @@
 "cane de res",
 "caarne de res",
 "carne-de-res",
-"carneres"
+"carne beef",
+"res",
+"carneres",
+"carnebeef"
 ]
 },
 {
@@ -220332,8 +222568,12 @@
 "scweinefleisch",
 "scchweinefleisch",
 "schwe1nefleisch",
+"schweinefleisch (chop)",
+"schweinefleisch pork",
+"schwnfleisch",
 "schweinefleischhack",
-"fleischschweine"
+"fleischschweine",
+"schweinefleischpork"
 ],
 "aliases_en": [
 "pork",
@@ -220349,7 +222589,12 @@
 "pok",
 "poork",
 "schweinefleisch",
-"porkmince"
+"porkk",
+"phork",
+"pork cerdo",
+"pork (porc)",
+"porkmince",
+"porkcerdo"
 ],
 "aliases_fr": [
 "porc",
@@ -220364,7 +222609,13 @@
 "oprc",
 "poc",
 "poorc",
-"porchaché"
+"schwein porc",
+"porc pork",
+"pork porc",
+"porchaché",
+"schweinporc",
+"porcpork",
+"porkporc"
 ],
 "aliases_es": [
 "cerdo",
@@ -220379,6 +222630,9 @@
 "ecrdo",
 "cedo",
 "ceerdo",
+"cerd",
+"crdo",
+"cerd.",
 "cerdomolido"
 ]
 },
@@ -221066,6 +223320,7 @@
 "koosmehl",
 "kookosmehl",
 "kokosrnehl",
+"kokos mehl",
 "coconutflour"
 ],
 "aliases_en": [
@@ -221541,6 +223796,7 @@
 "bamatireis",
 "baasmatireis",
 "basrnatireis",
+"reis",
 "basmatirice"
 ],
 "aliases_en": [
@@ -221562,6 +223818,7 @@
 "bamati rice",
 "baasmati rice",
 "basmatireis",
+"basmati reis",
 "basmatircie",
 "basmatirices",
 "rizbasmati",
@@ -221589,12 +223846,17 @@
 "ri basmati",
 "riiz basmati",
 "riz basrnati",
+"riz basmaty",
+"riz basmat",
+"rizbasmatiépicé",
 "rizbasmatis",
 "basmatirice",
 "arrozbasmati",
 "irzbasmati",
 "riizbasmati",
-"rizbasrnati"
+"rizbasrnati",
+"rizbasmaty",
+"rizbasmat"
 ],
 "aliases_es": [
 "arroz basmati",
@@ -221615,6 +223877,9 @@
 "aroz basmati",
 "arrroz basmati",
 "arroz basrnati",
+"arroz basmatí",
+"rice (arroz) basmati",
+"rroz bsm",
 "rrzbsmt",
 "arrozbasmatis",
 "rizbasmati",
@@ -221623,7 +223888,9 @@
 "rarozbasmati",
 "arozbasmati",
 "arrrozbasmati",
-"arrozbasrnati"
+"arrozbasrnati",
+"arrozbasmatí",
+"rrozbsm"
 ]
 },
 {
@@ -221988,7 +224255,8 @@
 "rbeadcrumbs",
 "bradcrumbs",
 "brreadcrumbs",
-"breadcrurnbs"
+"breadcrurnbs",
+"breadcrums"
 ],
 "aliases_fr": [
 "chapelure",
@@ -222025,11 +224293,13 @@
 "apn rallado",
 "pa rallado",
 "paan rallado",
+"pan rall",
 "panralladoo",
 "panesrallados",
 "panrallados",
 "apnrallado",
-"paanrallado"
+"paanrallado",
+"panrall"
 ]
 },
 {
@@ -222061,6 +224331,7 @@
 "kuurbiskerne",
 "K.S.",
 "150g kürbiskerne",
+"kürbis kerne",
 "pumpkinseeds"
 ],
 "aliases_en": [
@@ -222112,6 +224383,7 @@
 "gra1nes de courge",
 "150g graines de courge",
 "graine de courge",
+"graines de cvre",
 "pumpkinseeds"
 ],
 "aliases_es": [
@@ -222165,6 +224437,7 @@
 "backpu1ver",
 "abckpulver",
 "baackpulver",
+"dr. oetker backpulver",
 "bakingpowder"
 ],
 "aliases_en": [
@@ -222214,6 +224487,8 @@
 "leevure chimique",
 "baking powder",
 "levure chirnique",
+"levur chimique",
+"levure chimiq",
 "levurechimik",
 "leuvrechimique",
 "lvrchmq",
@@ -222222,7 +224497,9 @@
 "leurechimique",
 "leevurechimique",
 "bakingpowder",
-"levurechirnique"
+"levurechirnique",
+"levurchimique",
+"levurechimiq"
 ],
 "aliases_es": [
 "levadura quimica",
@@ -222383,7 +224660,15 @@
 "emhl",
 "mel",
 "meehl",
-"rnehl"
+"rnehl",
+"mhel",
+"meel",
+"mehl flour",
+"mehl harina",
+"mehl (farine)",
+"mehl (flour)",
+"mehlflour",
+"mehlharina"
 ],
 "aliases_en": [
 "flour",
@@ -222396,7 +224681,16 @@
 "lfour",
 "flur",
 "fllour",
-"mehl"
+"mehl",
+"floor",
+"flourr",
+"flou r",
+"flo ur",
+"flowr",
+"flour harina",
+"plain flour",
+"flourharina",
+"plainflour"
 ],
 "aliases_fr": [
 "farine",
@@ -222410,7 +224704,19 @@
 "faine",
 "faarine",
 "flour",
-"far1ne"
+"far1ne",
+"farinne",
+"fraine",
+"farinn",
+"far",
+"frin",
+"farine flour",
+"farine mehl",
+"flour farine",
+"farne",
+"farineflour",
+"farinemehl",
+"flourfarine"
 ],
 "aliases_es": [
 "harina",
@@ -222424,7 +224730,14 @@
 "haina",
 "haarina",
 "flour",
-"har1na"
+"har1na",
+"harria",
+"jarina",
+"harira",
+"har",
+"casera harina",
+"harin a",
+"caseraharina"
 ]
 },
 {
@@ -222448,7 +224761,18 @@
 "ieer",
 "eir",
 "eiier",
-"e1er"
+"e1er",
+"eierr",
+"eiern",
+"ei",
+"eier (huevos)",
+"eier (œufs)",
+"eier (eggs)",
+"eier eggs",
+"eier huevos",
+"eier (free-range)",
+"eiereggs",
+"eierhuevos"
 ],
 "aliases_en": [
 "eggs",
@@ -222460,7 +224784,19 @@
 "gegs",
 "egs",
 "egggs",
-"eier"
+"eier",
+"eggz",
+"eggs.",
+"egss",
+"eg gs",
+"eggs huevos",
+"oeufs eggs",
+"oeufs (eggs)",
+"eggs (eier)",
+"huevos eggs",
+"eggshuevos",
+"oeufseggs",
+"huevoseggs"
 ],
 "aliases_fr": [
 "oeufs",
@@ -222475,7 +224811,11 @@
 "uœfs",
 "œus",
 "œuufs",
-"eggs"
+"eggs",
+"eier oeufs",
+"eggs œufs",
+"eieroeufs",
+"eggsœufs"
 ],
 "aliases_es": [
 "huevos",
@@ -222489,7 +224829,24 @@
 "huev0s",
 "uhevos",
 "huvos",
-"huuevos"
+"huuevos",
+"huebos",
+"heuvos",
+"huebo",
+"uevos",
+"huevoz",
+"huveos",
+"huevoos",
+"huevso",
+"uebos",
+"hue",
+"hvos",
+"œufs huevos",
+"huevos (eggs)",
+"huevs",
+"hevos",
+"huev.",
+"œufshuevos"
 ]
 },
 {
@@ -222536,7 +224893,9 @@
 "elvure",
 "leure",
 "leevure",
-"yeast"
+"yeast",
+"lev",
+"levr"
 ],
 "aliases_es": [
 "levadura",
@@ -222551,7 +224910,8 @@
 "elvadura",
 "leadura",
 "leevadura",
-"yeast"
+"yeast",
+"levad ura"
 ]
 },
 {
@@ -222579,7 +224939,14 @@
 "milka schokolade",
 "milka",
 "toblerone",
-"milkaschokolade"
+"schocolade",
+"schokolaade",
+"schokolade (chocolate)",
+"schokolade chocolate",
+"schokolade (chocolat)",
+"schoko lade",
+"milkaschokolade",
+"schokoladechocolate"
 ],
 "aliases_en": [
 "chocolate",
@@ -222597,7 +224964,13 @@
 "milka",
 "milka chocolate",
 "toblerone",
-"milkachocolate"
+"choclate",
+"chocolatte",
+"choc",
+"chocolat chocolate",
+"cioccolato",
+"milkachocolate",
+"chocolatchocolate"
 ],
 "aliases_fr": [
 "chocolat",
@@ -222611,7 +224984,11 @@
 "hcocolat",
 "chcolat",
 "chhocolat",
-"chocolate"
+"chocolate",
+"chocollat",
+"chocolât",
+"choclat",
+"chocolt"
 ],
 "aliases_es": [
 "chocolate",
@@ -222624,7 +225001,13 @@
 "ch0c01ate",
 "hcocolate",
 "chcolate",
-"chhocolate"
+"chhocolate",
+"chocolte",
+"chcolt",
+"chocoláte",
+"chocol.",
+"m&m's chocolate",
+"choco late"
 ]
 },
 {
@@ -222751,7 +225134,8 @@
 "amrmelade",
 "mamelade",
 "maarmelade",
-"rnarmelade"
+"rnarmelade",
+"marmelade (mermelada)"
 ],
 "aliases_en": [
 "jam",
@@ -222763,7 +225147,9 @@
 "ajm",
 "jaam",
 "marmelade",
-"jarn"
+"jarn",
+"ja m",
+"jamm"
 ],
 "aliases_fr": [
 "confiture",
@@ -222778,7 +225164,13 @@
 "cofiture",
 "coonfiture",
 "jam",
-"conf1ture"
+"conf1ture",
+"confitur",
+"mermelada confiture",
+"confiture jam",
+"confitr",
+"mermeladaconfiture",
+"confiturejam"
 ],
 "aliases_es": [
 "mermelada",
@@ -222793,7 +225185,15 @@
 "emrmelada",
 "memelada",
 "meermelada",
-"rnermelada"
+"rnermelada",
+"jam mermelada",
+"mermelada jam",
+"merm",
+"mermelada hero",
+"mermel ada",
+"jammermelada",
+"mermeladajam",
+"mermeladahero"
 ]
 },
 {
@@ -222861,6 +225261,7 @@
 "uscre glace",
 "sure glace",
 "suucre glace",
+"sucre glace powdered",
 "scrglc",
 "powderedsugar",
 "sucreglaces",
@@ -222885,13 +225286,15 @@
 "zaucar glas",
 "azcar glas",
 "azzucar glas",
+"azucar glase",
 "azcrgls",
 "azúcarglas",
 "powderedsugar",
 "azucarglass",
 "zaucarglas",
 "azcarglas",
-"azzucarglas"
+"azzucarglas",
+"azucarglase"
 ]
 },
 {
@@ -222968,6 +225371,7 @@
 "ammandes effilees",
 "arnandes effilees",
 "amandes eff1lees",
+"amande effilé",
 "amndsffls",
 "amandeseffilées",
 "almondflakes",
@@ -222975,7 +225379,8 @@
 "maandeseffilees",
 "amndeseffilees",
 "ammandeseffilees",
-"arnandeseffilees"
+"arnandeseffilees",
+"amandeeffilé"
 ],
 "aliases_es": [
 "almendras laminadas",
@@ -223116,7 +225521,11 @@
 "izmt",
 "zit",
 "ziimt",
-"zirnt"
+"zirnt",
+"zimt (cannelle)",
+"zimt cinnamon",
+"zmmt",
+"zimtcinnamon"
 ],
 "aliases_en": [
 "cinnamon",
@@ -223136,7 +225545,10 @@
 "cinamon",
 "ciinnamon",
 "zimt",
-"cinnarnon"
+"cinnarnon",
+"cinn",
+"cinnmon",
+"cinnimon"
 ],
 "aliases_fr": [
 "cannelle",
@@ -223154,7 +225566,9 @@
 "canne11e",
 "acnnelle",
 "caannelle",
-"cinnamon"
+"cinnamon",
+"cannle",
+"cannellebio"
 ],
 "aliases_es": [
 "canela",
@@ -223170,7 +225584,10 @@
 "acnela",
 "caela",
 "caanela",
-"cinnamon"
+"cinnamon",
+"canella",
+"canela hacendado",
+"canelahacendado"
 ]
 },
 {
@@ -223630,12 +226047,14 @@
 "vanill",
 "vanil",
 "60ml vanilla extract",
+"vanilla extrac",
 "vnlxtrct",
 "vanilaextract",
 "vanillaextrct",
 "vanillaessense",
 "vnllxtrct",
-"vanillaextracts"
+"vanillaextracts",
+"vanillaextrac"
 ],
 "aliases_fr": [
 "extrait de vanille",
@@ -223656,6 +226075,7 @@
 "extrait de vanilles",
 "extrai",
 "extra",
+"extraitde vanille",
 "vanilleextrait",
 "extraitvanille",
 "extraitvan"
@@ -223738,6 +226158,7 @@
 "baking s0da",
 "bkn sd",
 "b.soda",
+"bicarbonate of soda",
 "bakinsoda",
 "bakingsode",
 "bakingsod",
@@ -223791,6 +226212,7 @@
 "bicarb0nat0 de s0di0",
 "b.sodio",
 "bicarbonato-de-sodio",
+"bicarbonatósódico",
 "bicarbonatosodio",
 "sodiumbicarbonate"
 ]
@@ -224289,6 +226711,7 @@
 "chhiasamen",
 "chiasarnen",
 "ch1asamen",
+"chia samen",
 "chiaseeds"
 ],
 "aliases_en": [
@@ -224483,6 +226906,7 @@
 "honigflussig",
 "honig-flussig",
 "hon1g flussig",
+"honig (flüssig)",
 "honigflüssig",
 "hngflssg",
 "liquidhoney",
@@ -224620,12 +227044,14 @@
 "brrown sugar",
 "brownsugar",
 "brown-sugar",
+"brown suga",
 "brwnsgr",
 "sucreroux",
 "brownsugars",
 "rbownsugar",
 "brwnsugar",
-"brrownsugar"
+"brrownsugar",
+"brownsuga"
 ],
 "aliases_fr": [
 "sucre roux",
@@ -224669,6 +227095,10 @@
 "azzucar moreno",
 "azucarmoreno",
 "azucar-moreno",
+"panela brown sugar",
+"azúc. moreno",
+"azucarmorena",
+"azúcarmorena",
 "azúcarmoreno",
 "zcrmrn",
 "brownsugar",
@@ -224724,7 +227154,9 @@
 "whhole wheat flour",
 "wholewheatflour",
 "whole-wheat-flour",
-"farinecomplète"
+"wholemeal flour",
+"farinecomplète",
+"wholemealflour"
 ],
 "aliases_fr": [
 "farine complète",
@@ -225477,6 +227909,7 @@
 "puree de p0mmes",
 "upree de pommes",
 "puee de pommes",
+"puree de pomme",
 "applepuree"
 ],
 "aliases_es": [
@@ -226281,7 +228714,8 @@
 "macena",
 "maaicena",
 "rnaicena",
-"ma1cena"
+"ma1cena",
+"maicenamaiz"
 ]
 },
 {
@@ -226662,6 +229096,7 @@
 "trubenzucker",
 "trraubenzucker",
 "glucose powder",
+"trauben zucker",
 "glucosepowder"
 ],
 "aliases_en": [
@@ -227164,6 +229599,7 @@
 "roangenschale",
 "orngenschale",
 "orrangenschale",
+"orangen schale",
 "orangezest"
 ],
 "aliases_en": [
@@ -227303,6 +229739,7 @@
 "berre de cacao",
 "beeurre de cacao",
 "beurredecacao",
+"beuredecacao",
 "cocoabutter"
 ],
 "aliases_es": [
@@ -227324,6 +229761,7 @@
 "mateca de cacao",
 "maanteca de cacao",
 "rnanteca de cacao",
+"mantequilla de cacao",
 "mntccacao",
 "cocoabutter"
 ]
@@ -228615,12 +231053,14 @@
 "adrk chocolate",
 "dak chocolate",
 "daark chocolate",
+"dark chokolate",
 "DarkChocolate",
 "drkchclt",
 "darkchocolates",
 "adrkchocolate",
 "dakchocolate",
-"daarkchocolate"
+"daarkchocolate",
+"darkchokolate"
 ],
 "aliases_fr": [
 "Chocolat noir",
@@ -228638,12 +231078,17 @@
 "chcolat noir",
 "chhocolat noir",
 "chocolat no1r",
+"chocolat nior",
+"chocolat noi",
+"chocol atno ir",
 "Chocolatnoir",
 "darkchocolate",
 "chocolatnoirs",
 "hcocolatnoir",
 "chcolatnoir",
-"chhocolatnoir"
+"chhocolatnoir",
+"chocolatnior",
+"chocolatnoi"
 ],
 "aliases_es": [
 "Chocolate negro",
@@ -228660,13 +231105,18 @@
 "hcocolate negro",
 "chcolate negro",
 "chhocolate negro",
+"chocolate neg.",
+"choc",
+"chcolat osc",
+"chocolateamargo",
 "Chocolatenegro",
 "chcltngr",
 "darkchocolate",
 "chocolatenegros",
 "hcocolatenegro",
 "chcolatenegro",
-"chhocolatenegro"
+"chhocolatenegro",
+"chcolatosc"
 ]
 },
 {
@@ -230528,7 +232978,18 @@
 "suuavizante",
 "fabric softener",
 "suav1zante",
-"fabricsoftener"
+"suavizante telas",
+"suávizante",
+"suavizante ropa",
+"suav",
+"suavizante de ropa",
+"downy suavizante",
+"suavitel suavizante",
+"fabricsoftener",
+"suavizantetelas",
+"suavizanteropa",
+"downysuavizante",
+"suavitelsuavizante"
 ]
 },
 {
@@ -230558,7 +233019,9 @@
 "laundry detergent",
 "waschrnittel",
 "waschm1ttel",
-"laundrydetergent"
+"persil waschmittel",
+"laundrydetergent",
+"persilwaschmittel"
 ],
 "aliases_en": [
 "laundry detergent",
@@ -230626,8 +233089,14 @@
 "deergente para ropa",
 "deetergente para ropa",
 "laundry detergent",
+"detergente ropa",
+"detergente",
+"ariel detergente",
+"detergentes de ropa",
 "detergentelíquido",
-"laundrydetergent"
+"laundrydetergent",
+"detergenteropa",
+"arieldetergente"
 ]
 },
 {
@@ -230835,8 +233304,11 @@
 "bolsa de basura",
 "bolsas basura",
 "bolsas de basura 20",
+"bolsás de basúra",
+"bolsa basura",
 "trashbags",
-"bolsasbasura"
+"bolsasbasura",
+"bolsabasura"
 ]
 },
 {
@@ -230911,7 +233383,8 @@
 "seponja",
 "esonja",
 "essponja",
-"sponge"
+"sponge",
+"scotch-brite esponja"
 ]
 },
 {
@@ -231894,7 +234367,9 @@
 "edsinfectante",
 "deinfectante",
 "deesinfectante",
-"des1nfectante"
+"des1nfectante",
+"lysol desinfectante",
+"lysoldesinfectante"
 ]
 },
 {
@@ -232070,6 +234545,7 @@
 "rol de cocina",
 "rooll de cocina",
 "roll de coc1na",
+"papel de cocina",
 "kitchenroll"
 ]
 },
@@ -235495,6 +237971,9 @@
 "wahing soda",
 "waashing soda",
 "soda",
+"sode",
+"sod",
+"sodaa",
 "washingsoda",
 "wsingsoda",
 "washingsodas",
@@ -235522,7 +238001,9 @@
 "crristaux de soude",
 "washing soda",
 "cristauxdesoude",
-"washingsoda"
+"soda soda",
+"washingsoda",
+"sodasoda"
 ],
 "aliases_es": [
 "soda para lavar",
@@ -235542,7 +238023,9 @@
 "s0da para 1avar",
 "osda para lavar",
 "soa para lavar",
-"sooda para lavar"
+"sooda para lavar",
+"refresco soda",
+"refrescosoda"
 ]
 },
 {
@@ -236563,7 +239046,9 @@
 "stain remover",
 "quitarnanchas",
 "qu1tamanchas",
-"stainremover"
+"vanish quitamanchas",
+"stainremover",
+"vanishquitamanchas"
 ]
 },
 {
@@ -238682,7 +241167,8 @@
 "sharnpooing",
 "shampoo1ng",
 "shamp",
-"shampooinge"
+"shampooinge",
+"shampoing"
 ],
 "aliases_es": [
 "champú",
@@ -238698,7 +241184,9 @@
 "charnpu",
 "chmpú",
 "champ",
-"champue"
+"champue",
+"pantene champú",
+"pantenechampú"
 ]
 },
 {
@@ -238775,7 +241263,11 @@
 "toothpaste",
 "pasta de d1entes",
 "pasta d",
-"pasta de dientese"
+"pasta de dientese",
+"pasta dent",
+"pasta dientes",
+"pastadent",
+"pastadientes"
 ]
 },
 {
@@ -238942,7 +241434,9 @@
 "deodorant",
 "desod",
 "desodor",
-"desodorantee"
+"desodorantee",
+"sanex desodorante",
+"sanexdesodorante"
 ]
 },
 {
@@ -248892,7 +251386,11 @@
 "40stk panales",
 "pana1es",
 "apnales",
-"paales"
+"paales",
+"huggies pañales",
+"pampers pañales",
+"huggiespañales",
+"pamperspañales"
 ]
 },
 {
@@ -249986,6 +252484,7 @@
 "hcampu para bebe",
 "chmpu para bebe",
 "chhampu para bebe",
+"champú de bebé",
 "babyshampoo"
 ]
 },
@@ -253125,6 +255624,7 @@
 "babywundschutzcreme",
 "diaper rash crearn",
 "d1aper rash cream",
+"nappy rash cream",
 "wundschutzcremebaby"
 ],
 "aliases_fr": [
@@ -265144,7 +267644,11 @@
 "cshinken",
 "scinken",
 "scchinken",
-"sch1nken"
+"sch1nken",
+"schinken (raw)",
+"schinken ham",
+"schinken (jamón)",
+"schinkenham"
 ],
 "aliases_en": [
 "ham",
@@ -265159,7 +267663,11 @@
 "hams",
 "ahm",
 "schinken",
-"harn"
+"harn",
+"ham jamón",
+"prosciutto ham",
+"hamjamón",
+"prosciuttoham"
 ],
 "aliases_fr": [
 "jambon",
@@ -265176,7 +267684,18 @@
 "ajmbon",
 "jabon",
 "jaambon",
-"jarnbon"
+"jarnbon",
+"jam bon",
+"jambom",
+"jamb.",
+"schinken jambon",
+"jambon ham",
+"ham jambon",
+"jambon blanc",
+"jambonblanc",
+"schinkenjambon",
+"jambonham",
+"hamjambon"
 ],
 "aliases_es": [
 "jamón",
@@ -265195,7 +267714,11 @@
 "ajmon",
 "jaon",
 "jaamon",
-"jarnon"
+"jarnon",
+"jamónn",
+"jomon",
+"jamón ham",
+"jamónham"
 ]
 },
 {
@@ -265278,7 +267801,8 @@
 "omrtadela",
 "motadela",
 "moortadela",
-"rnortadela"
+"rnortadela",
+"mortadla"
 ]
 },
 {
@@ -265306,7 +267830,8 @@
 "1eberkase",
 "elberkase",
 "leerkase",
-"leeberkase"
+"leeberkase",
+"leberkäse (meat loaf)"
 ],
 "aliases_en": [
 "meatloaf",
@@ -265422,7 +267947,8 @@
 "150g pate",
 "apte",
 "pae",
-"paate"
+"paate",
+"pâte"
 ],
 "aliases_es": [
 "paté",
@@ -265564,6 +268090,7 @@
 "raucher1achs",
 "arucherlachs",
 "racherlachs",
+"räucher lachs",
 "smokedsalmon"
 ],
 "aliases_en": [
@@ -265612,6 +268139,8 @@
 "samon fume",
 "saaumon fume",
 "saumon-fume",
+"saumon fumme",
+"saumon fummé",
 "saumonfumé",
 "saumonfumee",
 "saumonfum",
@@ -265619,7 +268148,9 @@
 "saumonfumes",
 "asumonfume",
 "samonfume",
-"saaumonfume"
+"saaumonfume",
+"saumonfumme",
+"saumonfummé"
 ],
 "aliases_es": [
 "salmón ahumado",
@@ -265639,6 +268170,7 @@
 "saalmon ahumado",
 "salmon-ahumado",
 "salrnon ahumado",
+"salmón ahum.",
 "salmónahumado",
 "slmnhmd",
 "smokedsalmon",
@@ -265863,6 +268395,7 @@
 "kohschinken",
 "koochschinken",
 "kochsch1nken",
+"schinken",
 "cookedham"
 ],
 "aliases_en": [
@@ -265910,6 +268443,8 @@
 "jambon-cuit",
 "jarnbon cuit",
 "jambon cu1t",
+"jambon cuit cooked",
+"jambon ham cuit",
 "jamboncui",
 "cookedham",
 "jamboncuits",
@@ -265937,6 +268472,7 @@
 "jamon-cocido",
 "jarnon cocido",
 "jamon coc1do",
+"jam coc",
 "jamóncocido",
 "jmnccd",
 "cookedham",
@@ -265944,7 +268480,8 @@
 "ajmoncocido",
 "jaoncocido",
 "jaamoncocido",
-"jarnoncocido"
+"jarnoncocido",
+"jamcoc"
 ]
 },
 {
@@ -267205,7 +269742,10 @@
 "aprmaschinken",
 "pamaschinken",
 "paarmaschinken",
-"parma ham"
+"parma ham",
+"parma schinke",
+"prschinken",
+"parmaschinke"
 ],
 "aliases_en": [
 "parma ham",
@@ -268524,8 +271064,10 @@
 "uqeso para untar",
 "quso para untar",
 "quueso para untar",
+"quesode untar",
 "quesountable",
-"spreadablecheese"
+"spreadablecheese",
+"quesodeuntar"
 ]
 },
 {
@@ -271388,6 +273930,7 @@
 "tartuf",
 "tartufo truffle",
 "tartufo trufa",
+"trffl",
 "tartufotruffle",
 "tartufotrufa"
 ],
@@ -271971,7 +274514,9 @@
 "t0fu",
 "otfu",
 "tou",
-"toofu"
+"toofu",
+"tofu tofu",
+"tofutofu"
 ],
 "aliases_es": [
 "tofu",
@@ -271983,7 +274528,8 @@
 "t0fu",
 "otfu",
 "tou",
-"toofu"
+"toofu",
+"tofú"
 ]
 },
 {
@@ -280208,7 +282754,8 @@
 "200g nachos",
 "anchos",
 "nahos",
-"naachos"
+"naachos",
+"nach os"
 ]
 },
 {
@@ -281389,6 +283936,7 @@
 "nkoblauchzehe",
 "knblauchzehe",
 "knnoblauchzehe",
+"knoblauch zehe",
 "garlicclove"
 ],
 "aliases_en": [
@@ -282224,11 +284772,13 @@
 "paaprika doux",
 "paprika-doux",
 "papr1ka doux",
+"piment doux",
 "sweetpaprika",
 "paprikadouxs",
 "apprikadoux",
 "parikadoux",
-"paaprikadoux"
+"paaprikadoux",
+"pimentdoux"
 ],
 "aliases_es": [
 "pimentón dulce",
@@ -282436,12 +284986,14 @@
 "canelle moulue",
 "caannelle moulue",
 "cannelle-moulue",
+"grnd cinn",
 "cnnlmlu",
 "groundcinnamon",
 "cannellemoulues",
 "acnnellemoulue",
 "canellemoulue",
-"caannellemoulue"
+"caannellemoulue",
+"grndcinn"
 ],
 "aliases_es": [
 "canela molida",
@@ -282610,6 +285162,7 @@
 "wziebelpulver",
 "zwebelpulver",
 "zwwiebelpulver",
+"zwiebel p ulver",
 "onionpowder"
 ],
 "aliases_en": [
@@ -289385,6 +291938,7 @@
 "aflafel",
 "faafel",
 "faalafel",
+"falafel im pita",
 "chickpeaballs"
 ],
 "aliases_fr": [
@@ -289481,7 +292035,9 @@
 "meguez",
 "meerguez",
 "rnerguez",
-"saucisseépicée"
+"merguez épicée",
+"saucisseépicée",
+"merguezépicée"
 ],
 "aliases_es": [
 "merguez",
@@ -289626,6 +292182,7 @@
 "arischockenherzen",
 "arrtischockenherzen",
 "art1schockenherzen",
+"artischocken herz",
 "artichokehearts"
 ],
 "aliases_en": [
@@ -289776,6 +292333,7 @@
 "oinons rouges",
 "oiignons rouges",
 "o1gnons rouges",
+"oignns rouges",
 "ngnsrgs",
 "oignonrouge",
 "redonions",
@@ -289783,7 +292341,8 @@
 "oignonsrougess",
 "iognonsrouges",
 "oinonsrouges",
-"oiignonsrouges"
+"oiignonsrouges",
+"oignnsrouges"
 ],
 "aliases_es": [
 "cebollas rojas",
@@ -289836,6 +292395,8 @@
 "nkoblauchzehen",
 "knblauchzehen",
 "knnoblauchzehen",
+"knoblauch (zehen)",
+"knoblauch",
 "garliccloves"
 ],
 "aliases_en": [
@@ -289882,7 +292443,9 @@
 "g0usses d'ai1",
 "ogusses d'ail",
 "gosses d'ail",
-"goousses d'ail"
+"goousses d'ail",
+"grlc clv",
+"grlcclv"
 ],
 "aliases_es": [
 "dientes de ajo",
@@ -291036,6 +293599,7 @@
 "datte",
 "250g dattes sechees",
 "adttes sechees",
+"dattessèches",
 "dattesséchées",
 "dttsschs",
 "séchéesdattes",
@@ -291164,6 +293728,7 @@
 "abric",
 "250g abricots secs",
 "abric0ts secs",
+"abric secs",
 "abricotssecs",
 "brctsscs",
 "secsabricots",
@@ -291173,7 +293738,8 @@
 "abricotsec",
 "abricotsséchés",
 "abricotsdéshydratés",
-"abrctsscs"
+"abrctsscs",
+"abricsecs"
 ],
 "aliases_es": [
 "orejones albaricoques secos",
@@ -293270,6 +295836,7 @@
 "backpulver (weinstein)",
 "cream-of-tartar",
 "crearn of tartar",
+"creamof tartar",
 "tartarcream"
 ],
 "aliases_fr": [
@@ -293978,6 +296545,7 @@
 "rnenthe fraiche",
 "mente fraîche",
 "m1nthe fraîche",
+"menthe fraîch",
 "mnthfrch",
 "freshmint",
 "menthefraiches",
@@ -293985,7 +296553,8 @@
 "methefraiche",
 "meenthefraiche",
 "rnenthefraiche",
-"mentefraîche"
+"mentefraîche",
+"menthefraîch"
 ],
 "aliases_es": [
 "menta fresca",
@@ -295265,7 +297834,8 @@
 "echa10tes",
 "cehalotes",
 "ecalotes",
-"ecchalotes"
+"ecchalotes",
+"échalotesbio"
 ],
 "aliases_es": [
 "chalotes",
@@ -295400,7 +297970,9 @@
 "500g gelbe ruben (karotten)",
 "ge1be ruben (kar0tten)",
 "eglbe ruben (karotten)",
-"gebe ruben (karotten)"
+"gebe ruben (karotten)",
+"möhren (carottes)",
+"karotte"
 ],
 "aliases_en": [
 "carrots",
@@ -295417,7 +297989,14 @@
 "caarrots",
 "gelbe rüben (karotten)",
 "gelbe ruben (karotten)",
-"gelberüben"
+"crts",
+"möhren carrots",
+"carrots zanahorias",
+"carottes carrots",
+"gelberüben",
+"möhrencarrots",
+"carrotszanahorias",
+"carottescarrots"
 ],
 "aliases_fr": [
 "carottes",
@@ -295431,7 +298010,14 @@
 "car0ttes",
 "acrottes",
 "caottes",
-"caarottes"
+"caarottes",
+"carote",
+"carrotes",
+"car",
+"möhren carottes",
+"carrpttes",
+"carottespourpresse",
+"möhrencarottes"
 ],
 "aliases_es": [
 "zanahorias",
@@ -295446,7 +298032,9 @@
 "aznahorias",
 "zaahorias",
 "zaanahorias",
-"zanahor1as"
+"zanahor1as",
+"zan",
+"zana"
 ]
 },
 {
@@ -306564,7 +309152,8 @@
 "1Stück rose",
 "orse",
 "roe",
-"roose"
+"roose",
+"rosé"
 ],
 "aliases_fr": [
 "rose",
@@ -306734,7 +309323,8 @@
 "usnflower",
 "suflower",
 "suunflower",
-"sonnenblume"
+"sonnenblume",
+"sun flower"
 ],
 "aliases_fr": [
 "tournesol",
@@ -306943,7 +309533,8 @@
 "lcavel",
 "clvel",
 "cllavel",
-"carnation"
+"carnation",
+"clavo"
 ]
 },
 {
