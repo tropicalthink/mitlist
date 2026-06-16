@@ -3979,7 +3979,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String activityAddedToNamedList(String name, String list, String when) {
-    return 'Added $name to $list · $when';
+    return '$name toegevoegd aan $list · $when';
   }
 
   @override

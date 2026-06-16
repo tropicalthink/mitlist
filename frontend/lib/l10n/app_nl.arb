@@ -3935,6 +3935,7 @@
   "captureHintMoveCloser": "Kom dichterbij",
   "captureHintReady": "Klaar om te scannen",
   "captureHintUsable": "Ziet er bruikbaar uit",
+  "activityAddedToNamedList": "{name} toegevoegd aan {list} · {when}",
   "activityAddedItemToList": "Heeft een item aan een lijst toegevoegd · {when}",
   "@activityAddedItemToList": {
     "description": "Activity: generic item added to list",

@@ -3935,6 +3935,7 @@
   "captureHintMoveCloser": "Rapprochez-vous",
   "captureHintReady": "Prêt à scanner",
   "captureHintUsable": "Semble utilisable",
+  "activityAddedToNamedList": "{name} ajouté à {list} · {when}",
   "activityAddedItemToList": "A ajouté un élément à une liste · {when}",
   "@activityAddedItemToList": {
     "description": "Activity: generic item added to list",

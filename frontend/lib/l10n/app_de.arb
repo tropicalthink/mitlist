@@ -1060,6 +1060,7 @@
   "tonightNothingPlanned": "Nichts für heute Abend geplant",
   "tonightPlanDinner": "Abendessen planen",
   "activityAddedToList": "{name} zu einer Liste hinzugefügt · {when}",
+  "activityAddedToNamedList": "{name} zu {list} hinzugefügt · {when}",
   "activityAddedItemToList": "Einen Eintrag zu einer Liste hinzugefügt · {when}",
   "activityLoggedExpense": "{name} eingetragen · {when}",
   "activityLoggedExpenseGeneric": "Eine Ausgabe eingetragen · {when}",
