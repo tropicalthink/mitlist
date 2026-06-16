@@ -2938,6 +2938,9 @@
   "@accountVersion": {
     "description": "Menu row: app version"
   },
+  "accountOpenDataRow": "Open data",
+  "accountOpenDataTitle": "Open data-bronvermelding",
+  "accountOpenDataBody": "Sommige merknamen van levensmiddelen komen van Open Food Facts (openfoodfacts.org), gebruikt onder de Open Database License (ODbL) v1.0. De afgeleide merkenlijst wordt los van mitlists eigen gegevens gehouden.",
   "accountTermsRow": "Servicevoorwaarden",
   "@accountTermsRow": {
     "description": "Menu row: terms of service"

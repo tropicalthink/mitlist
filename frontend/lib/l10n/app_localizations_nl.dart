@@ -2229,6 +2229,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get accountTermsRow => 'Servicevoorwaarden';
 
   @override
+  String get accountOpenDataRow => 'Open data';
+
+  @override
+  String get accountOpenDataTitle => 'Open data-bronvermelding';
+
+  @override
+  String get accountOpenDataBody =>
+      'Sommige merknamen van levensmiddelen komen van Open Food Facts (openfoodfacts.org), gebruikt onder de Open Database License (ODbL) v1.0. De afgeleide merkenlijst wordt los van mitlists eigen gegevens gehouden.';
+
+  @override
   String get accountGuestTitle => 'Je gebruikt een gastaccount';
 
   @override

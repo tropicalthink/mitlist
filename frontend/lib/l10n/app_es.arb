@@ -2938,6 +2938,9 @@
   "@accountVersion": {
     "description": "Menu row: app version"
   },
+  "accountOpenDataRow": "Datos abiertos",
+  "accountOpenDataTitle": "Atribución de datos abiertos",
+  "accountOpenDataBody": "Algunos nombres de marcas de alimentos provienen de Open Food Facts (openfoodfacts.org), usados bajo la Open Database License (ODbL) v1.0. La lista de marcas derivada se mantiene separada de los datos propios de mitlist.",
   "accountTermsRow": "Términos del servicio",
   "@accountTermsRow": {
     "description": "Menu row: terms of service"

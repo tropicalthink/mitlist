@@ -2230,6 +2230,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get accountTermsRow => 'Conditions d\'utilisation';
 
   @override
+  String get accountOpenDataRow => 'Données ouvertes';
+
+  @override
+  String get accountOpenDataTitle => 'Attribution des données ouvertes';
+
+  @override
+  String get accountOpenDataBody =>
+      'Certaines marques de produits alimentaires proviennent d\'Open Food Facts (openfoodfacts.org), utilisées sous la licence Open Database License (ODbL) v1.0. La liste de marques dérivée est conservée séparément des données propres à mitlist.';
+
+  @override
   String get accountGuestTitle => 'Tu utilises un compte invité';
 
   @override

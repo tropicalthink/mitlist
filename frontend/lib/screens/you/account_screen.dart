@@ -569,7 +569,33 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             label: l10n.accountTermsRow,
             onTap: _showTermsSheet,
           ),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          _MenuRow(
+            icon: const AppIcon(name: 'informationCircle'),
+            label: l10n.accountOpenDataRow,
+            onTap: _showOpenDataSheet,
+          ),
         ],
+      ),
+    );
+  }
+
+  void _showOpenDataSheet() {
+    final l10n = AppLocalizations.of(context)!;
+    showAppBottomSheet(
+      context: context,
+      title: l10n.accountOpenDataTitle,
+      body: Builder(
+        builder: (context) => Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.accountOpenDataBody,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ],
+        ),
       ),
     );
   }
