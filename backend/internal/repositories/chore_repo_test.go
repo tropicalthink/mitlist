@@ -427,6 +427,97 @@ func TestChoreRepository_BulkUpdateRotationStates(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestChoreRepository_CompleteAssignmentAndAdvance_FullAdvance(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewChoreRepository(mock)
+
+	assignID := uuid.New()
+	completion := &models.ChoreCompletion{
+		AssignmentID: assignID,
+		CompletedBy:  fixedUUID(),
+		CompletedAt:  fixedTime(),
+	}
+	nextState := &models.ChoreRotationState{
+		ID:           uuid.New(),
+		MemberOrder:  []uuid.UUID{fixedUUID()},
+		CurrentIndex: 1,
+	}
+	nextAssignment := &models.ChoreAssignment{
+		ChoreID:    fixedUUID(),
+		UserID:     fixedUUID(),
+		Status:     "pending",
+		AssignedAt: fixedTime(),
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE chore_assignments").
+		WithArgs("completed", fixedTime(), (*string)(nil), assignID).
+		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+	mock.ExpectExec("INSERT INTO chore_completions").
+		WithArgs(pgxmock.AnyArg(), assignID, completion.CompletedBy, completion.CompletedAt, completion.Notes).
+		WillReturnResult(pgxmock.NewResult("INSERT", 1))
+	mock.ExpectExec("UPDATE chore_rotation_states").
+		WithArgs(nextState.MemberOrder, nextState.CurrentIndex, nextState.ID).
+		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+	mock.ExpectExec("INSERT INTO chore_assignments").
+		WithArgs(pgxmock.AnyArg(), nextAssignment.ChoreID, nextAssignment.UserID,
+			nextAssignment.Status, nextAssignment.DueDate, nextAssignment.AssignedAt,
+			nextAssignment.CompletedAt, nextAssignment.SkipReason).
+		WillReturnResult(pgxmock.NewResult("INSERT", 1))
+	mock.ExpectCommit()
+
+	processed, err := repo.CompleteAssignmentAndAdvance(context.Background(), assignID, "completed", fixedTime(), nil, completion, nextState, nextAssignment)
+	require.NoError(t, err)
+	assert.True(t, processed)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestChoreRepository_CompleteAssignmentAndAdvance_AlreadyProcessed(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewChoreRepository(mock)
+
+	assignID := uuid.New()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE chore_assignments").
+		WithArgs("completed", fixedTime(), (*string)(nil), assignID).
+		WillReturnResult(pgxmock.NewResult("UPDATE", 0))
+	mock.ExpectRollback()
+
+	completion := &models.ChoreCompletion{AssignmentID: assignID}
+	nextState := &models.ChoreRotationState{ID: uuid.New()}
+	nextAssignment := &models.ChoreAssignment{ChoreID: fixedUUID()}
+
+	processed, err := repo.CompleteAssignmentAndAdvance(context.Background(), assignID, "completed", fixedTime(), nil, completion, nextState, nextAssignment)
+	require.NoError(t, err)
+	assert.False(t, processed)
+	// No completion insert and no rotation update/insert should have happened.
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestChoreRepository_CompleteAssignmentAndAdvance_NoAdvance(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewChoreRepository(mock)
+
+	assignID := uuid.New()
+	completion := &models.ChoreCompletion{AssignmentID: assignID, CompletedBy: fixedUUID(), CompletedAt: fixedTime()}
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE chore_assignments").
+		WithArgs("completed", fixedTime(), (*string)(nil), assignID).
+		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+	mock.ExpectExec("INSERT INTO chore_completions").
+		WithArgs(pgxmock.AnyArg(), assignID, completion.CompletedBy, completion.CompletedAt, completion.Notes).
+		WillReturnResult(pgxmock.NewResult("INSERT", 1))
+	mock.ExpectCommit()
+
+	// nil nextState/nextAssignment => no rotation advance (e.g. no-assignment chore).
+	processed, err := repo.CompleteAssignmentAndAdvance(context.Background(), assignID, "completed", fixedTime(), nil, completion, nil, nil)
+	require.NoError(t, err)
+	assert.True(t, processed)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
 func choreColumns() []string {
 	return []string{
 		"id", "group_id", "name", "description", "rotation_type", "frequency",

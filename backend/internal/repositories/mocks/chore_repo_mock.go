@@ -115,6 +115,11 @@ func (m *MockChoreRepo) CompleteAssignment(ctx context.Context, id uuid.UUID, st
 	return args.Bool(0), args.Error(1)
 }
 
+func (m *MockChoreRepo) CompleteAssignmentAndAdvance(ctx context.Context, assignmentID uuid.UUID, status string, completedAt time.Time, skipReason *string, completion *models.ChoreCompletion, nextState *models.ChoreRotationState, nextAssignment *models.ChoreAssignment) (bool, error) {
+	args := m.Called(ctx, assignmentID, status, completedAt, skipReason, completion, nextState, nextAssignment)
+	return args.Bool(0), args.Error(1)
+}
+
 func (m *MockChoreRepo) DeleteAssignment(ctx context.Context, id uuid.UUID) error {
 	args := m.Called(ctx, id)
 	return args.Error(0)
