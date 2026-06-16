@@ -44,7 +44,7 @@ func (s *Service) SendTemplate(to, subject, tmplStr string, data any) error {
 func (s *Service) sendAsync(to, subject, body string, isHTML bool) {
 	from := s.cfg.MailFromEmail
 	if from == "" {
-		from = "noreply@mitlist.app"
+		from = "noreply@mitlist.me"
 	}
 
 	contentType := "text/plain; charset=\"utf-8\""

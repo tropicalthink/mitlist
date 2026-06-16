@@ -9,7 +9,9 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../models/group_models.dart';
 import '../../models/recipe_models.dart';
+import '../../providers/group_provider.dart';
 import '../../providers/recipe_provider.dart';
 import '../../providers/scan_provider.dart';
 import '../../theme/spacing.dart';
@@ -61,6 +63,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
   bool _isScraping = false;
   bool _isScanning = false;
   _RecipeEntryMode _mode = _RecipeEntryMode.url;
+  List<Group> _groups = [];
 
   @override
   void initState() {
@@ -74,6 +77,14 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
     if (widget.initialSteps != null) {
       _stepsController.text = widget.initialSteps!;
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadGroups());
+  }
+
+  Future<void> _loadGroups() async {
+    try {
+      final groups = await ref.read(cachedGroupsProvider.future);
+      if (mounted) setState(() => _groups = groups);
+    } catch (_) {}
   }
 
   // Scraped metadata
@@ -950,7 +961,10 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
         AppSwitchListTile(
           title: l10n.recipeCreationSaveForHousehold,
           subtitle: _isPublic
-              ? l10n.recipeCreationSaveForHouseholdDesc
+              ? (_groups.isEmpty
+                  ? l10n.recipeCreationSaveForHouseholdDesc
+                  : l10n.recipeCreationSharedWithGroups(
+                      _groups.map((g) => g.name).join(', ')))
               : l10n.recipeCreationSaveForHouseholdPrivate,
           value: _isPublic,
           onChanged:

@@ -459,7 +459,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       children: [
         // ── Amount + currency (hero row) ──────────────────────────────
         Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
               child: AppInput(
@@ -477,8 +477,8 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
                 },
               ),
             ),
-            const SizedBox(width: MitlistSpacing.sm),
-            AppCurrencyDropdown(
+            const SizedBox(width: MitlistSpacing.xs),
+            _CompactCurrencyButton(
               value: _currency,
               onChanged: (value) {
                 if (value == null) return;
@@ -1085,6 +1085,38 @@ class _ConversionPreview extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Minimal inline currency selector — just the 3-letter code + chevron in muted
+/// text. Keeps the amount row clean; tap to open the system dropdown menu.
+class _CompactCurrencyButton extends StatelessWidget {
+  final String value;
+  final ValueChanged<String?>? onChanged;
+
+  const _CompactCurrencyButton({required this.value, this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    return DropdownButtonHideUnderline(
+      child: DropdownButton<String>(
+        value: value,
+        isDense: true,
+        style: textTheme.bodySmall?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+        ),
+        icon: Icon(
+          Icons.keyboard_arrow_down_rounded,
+          size: 16,
+          color: colorScheme.onSurfaceVariant,
+        ),
+        items: currencyDropdownItems(l10n),
+        onChanged: onChanged,
+      ),
     );
   }
 }

@@ -60,7 +60,7 @@ type Config struct {
 	// Web Push
 	VapidPrivateKey string `env:"VAPID_PRIVATE_KEY"`
 	VapidPublicKey  string `env:"VAPID_PUBLIC_KEY"`
-	VapidSubject    string `env:"VAPID_SUBJECT" default:"mailto:noreply@mitlist.app"`
+	VapidSubject    string `env:"VAPID_SUBJECT" default:"mailto:noreply@mitlist.me"`
 
 	// Firebase / FCM (mobile push)
 	// Set FIREBASE_PROJECT_ID and FIREBASE_SERVICE_ACCOUNT_JSON (raw JSON string)
@@ -81,7 +81,7 @@ type Config struct {
 	BrevoSMTPPort    int    `env:"BREVO_SMTP_PORT" default:"587"`
 	BrevoSMTPUser    string `env:"BREVO_SMTP_USER"`
 	BrevoSMTPPass    string `env:"BREVO_SMTP_PASS"`
-	MailFromEmail    string `env:"MAIL_FROM_EMAIL" default:"noreply@mitlist.app"`
+	MailFromEmail    string `env:"MAIL_FROM_EMAIL" default:"noreply@mitlist.me"`
 
 	// Sentry
 	SentryDSN string `env:"SENTRY_DSN"`
