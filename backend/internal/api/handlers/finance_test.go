@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -45,6 +46,167 @@ func TestFinance_CreateExpense(t *testing.T) {
 	var resp map[string]any
 	parseJSONResponse(t, rec, &resp)
 	assert.Equal(t, "Dinner", resp["description"])
+}
+
+// TestFinance_SplitInvariant pins the end-to-end contract that a POST
+// /expenses request flows through handler -> service -> repository and
+// persists splits whose amounts sum EXACTLY to the expense amount, for every
+// split mode. The split-sum invariant underlies all balance and settlement
+// math; we assert on the sum (and count), not on which participant absorbs a
+// rounding penny.
+func TestFinance_SplitInvariant(t *testing.T) {
+	cases := []struct {
+		name             string
+		mode             string
+		amount           int64
+		participants     int
+		buildBody        func(payer uuid.UUID, members []uuid.UUID) map[string]any
+		wantParticipants int
+		assertSplits     func(t *testing.T, splits []models.Split)
+	}{
+		{
+			name:             "equal",
+			mode:             "equal",
+			amount:           10000,
+			participants:     3,
+			wantParticipants: 3,
+			buildBody: func(payer uuid.UUID, members []uuid.UUID) map[string]any {
+				ids := make([]string, len(members))
+				for i, m := range members {
+					ids[i] = m.String()
+				}
+				return map[string]any{
+					"split_mode":     "equal",
+					"split_user_ids": ids,
+				}
+			},
+			assertSplits: func(t *testing.T, splits []models.Split) {
+				for _, s := range splits {
+					assert.Truef(t, s.Amount == 3333 || s.Amount == 3334,
+						"equal split must be 3333 or 3334, got %d", s.Amount)
+				}
+			},
+		},
+		{
+			name:             "amount",
+			mode:             "amount",
+			amount:           10000,
+			participants:     3,
+			wantParticipants: 3,
+			buildBody: func(payer uuid.UUID, members []uuid.UUID) map[string]any {
+				return map[string]any{
+					"split_mode": "amount",
+					"splits": []map[string]any{
+						{"user_id": members[0].String(), "amount": 5000},
+						{"user_id": members[1].String(), "amount": 3000},
+						{"user_id": members[2].String(), "amount": 2000},
+					},
+				}
+			},
+		},
+		{
+			name:             "shares",
+			mode:             "shares",
+			amount:           10000,
+			participants:     3,
+			wantParticipants: 3,
+			buildBody: func(payer uuid.UUID, members []uuid.UUID) map[string]any {
+				return map[string]any{
+					"split_mode": "shares",
+					"splits": []map[string]any{
+						{"user_id": members[0].String(), "shares": 1},
+						{"user_id": members[1].String(), "shares": 1},
+						{"user_id": members[2].String(), "shares": 2},
+					},
+				}
+			},
+		},
+		{
+			name:             "percentage",
+			mode:             "percentage",
+			amount:           10001, // not divisible; proves remainder handling preserves total
+			participants:     3,
+			wantParticipants: 3,
+			buildBody: func(payer uuid.UUID, members []uuid.UUID) map[string]any {
+				return map[string]any{
+					"split_mode": "percentage",
+					"splits": []map[string]any{
+						{"user_id": members[0].String(), "percentage": 5000},
+						{"user_id": members[1].String(), "percentage": 3000},
+						{"user_id": members[2].String(), "percentage": 2000},
+					},
+				}
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			clearTables(t)
+			router, _ := newFinanceRouter(t)
+			groupRepo := newTestGroupRepo()
+
+			// Payer/creator is the authenticated user.
+			payer := createTestUser(t, "split-"+tc.name+"-0@example.com", "password123")
+			token := generateTestToken(payer.ID)
+
+			group := &models.Group{
+				ID:        uuid.New(),
+				Name:      "Split " + tc.name,
+				CreatedBy: payer.ID,
+				Currency:  "USD",
+				CreatedAt: time.Now().UTC(),
+				UpdatedAt: time.Now().UTC(),
+			}
+			require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+
+			// Membership is required for every split participant (and the
+			// payer). The creator is an admin; the rest are members.
+			members := []uuid.UUID{payer.ID}
+			require.NoError(t, groupRepo.CreateMembership(context.Background(), &models.GroupMembership{
+				GroupID: group.ID, UserID: payer.ID, Role: "admin",
+			}))
+			for i := 1; i < tc.participants; i++ {
+				u := createTestUser(t, fmt.Sprintf("split-%s-%d@example.com", tc.name, i), "password123")
+				require.NoError(t, groupRepo.CreateMembership(context.Background(), &models.GroupMembership{
+					GroupID: group.ID, UserID: u.ID, Role: "member",
+				}))
+				members = append(members, u.ID)
+			}
+
+			body := tc.buildBody(payer.ID, members)
+			body["group_id"] = group.ID.String()
+			body["payer_id"] = payer.ID.String()
+			body["amount"] = tc.amount
+			body["description"] = "Split " + tc.name
+			body["category"] = "Food"
+			body["currency"] = "USD"
+			body["date"] = time.Now().Format(time.RFC3339)
+
+			rec := execRequest(t, router, "POST", "/api/v1/expenses", body, token)
+			requireStatus(t, rec, http.StatusCreated)
+
+			var resp map[string]any
+			parseJSONResponse(t, rec, &resp)
+			expenseID := uuid.MustParse(resp["id"].(string))
+
+			splits, err := newTestFinanceRepo().ListSplitsByExpense(context.Background(), expenseID)
+			require.NoError(t, err)
+			require.Len(t, splits, tc.wantParticipants)
+
+			var sum int64
+			for _, s := range splits {
+				assert.Greaterf(t, s.Amount, int64(0), "split amount must be positive, got %d", s.Amount)
+				sum += s.Amount
+			}
+			require.Equalf(t, tc.amount, sum, "splits must sum exactly to the expense amount")
+
+			if tc.assertSplits != nil {
+				tc.assertSplits(t, splits)
+			}
+		})
+	}
 }
 
 func TestFinance_ListExpenses(t *testing.T) {
