@@ -285,6 +285,15 @@ func TestChore_CompleteChore(t *testing.T) {
 		Status:     "pending",
 		AssignedAt: time.Now().UTC(),
 	}))
+	// Completion advances rotation, which requires a rotation state. The chore
+	// service seeds one on create; this test builds the chore via the repo, so
+	// seed it explicitly.
+	require.NoError(t, choreRepo.CreateRotationState(context.Background(), &models.ChoreRotationState{
+		ID:           uuid.New(),
+		ChoreID:      chore.ID,
+		MemberOrder:  []uuid.UUID{user.ID},
+		CurrentIndex: 0,
+	}))
 
 	body := map[string]any{"notes": "Done"}
 	rec := execRequest(t, router, "POST", "/api/v1/chores/"+chore.ID.String()+"/complete", body, token)

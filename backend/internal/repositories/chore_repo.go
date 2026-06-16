@@ -475,7 +475,7 @@ func (r *ChoreRepository) UpdateAssignment(ctx context.Context, assignment *mode
 func (r *ChoreRepository) CompleteAssignment(ctx context.Context, id uuid.UUID, status string, completedAt time.Time, skipReason *string) (bool, error) {
 	query := `
 		UPDATE chore_assignments
-		SET status = $1, completed_at = $2, skip_reason = $3, updated_at = NOW()
+		SET status = $1, completed_at = $2, skip_reason = $3
 		WHERE id = $4 AND status = 'pending'
 	`
 	tag, err := r.pool.Exec(ctx, query, status, completedAt, skipReason, id)
@@ -509,7 +509,7 @@ func (r *ChoreRepository) CompleteAssignmentAndAdvance(
 
 	tag, err := tx.Exec(ctx, `
 		UPDATE chore_assignments
-		SET status = $1, completed_at = $2, skip_reason = $3, updated_at = NOW()
+		SET status = $1, completed_at = $2, skip_reason = $3
 		WHERE id = $4 AND status = 'pending'
 	`, status, completedAt, skipReason, assignmentID)
 	if err != nil {
