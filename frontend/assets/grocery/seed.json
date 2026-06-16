@@ -180326,7 +180326,6 @@
 "granola bar",
 "rnusliriegel",
 "musl1riegel",
-"müsli",
 "40gmüsliriegel",
 "40gmusliriegel",
 "granolabar"
@@ -271629,11 +271628,8 @@
 "haerflocken",
 "haaferflocken",
 "oatmeal",
-"müsli",
-"cornflakes",
 "frühstücksflocken",
 "getreideflocken",
-"frosties",
 "500ghaferflocken"
 ],
 "aliases_en": [
@@ -271651,19 +271647,10 @@
 "oaatmeal",
 "haferflocken",
 "oatrneal",
-"cornflakes",
-"corn flakes",
-"cereal",
-"breakfast cereal",
-"muesli",
 "kellog's",
 "kelloggs",
 "cheerios",
-"frosted flakes",
-"frosties",
-"500goatmeal",
-"breakfastcereal",
-"frostedflakes"
+"500goatmeal"
 ],
 "aliases_fr": [
 "flocons d'avoine",
@@ -325669,7 +325656,6 @@
 "hamster muesli",
 "aliment hamster",
 "muesli pour hamsters",
-"muesli",
 "muesl",
 "mues1i p0ur hamster",
 "umesli pour hamster",
@@ -325704,7 +325690,6 @@
 "comida hámster muesli",
 "mix para hámster",
 "muesli para hamsters",
-"muesli",
 "muesl",
 "500g muesli para hamster",
 "mues1i para hamster",
@@ -396182,6 +396167,89 @@
 "madonnalily",
 "lirioblanco",
 "1Stückazucena"
+]
+},
+{
+"id": "corn_flakes",
+"name_de": "Cornflakes",
+"name_en": "Corn Flakes",
+"name_fr": "Corn Flakes",
+"name_es": "Copos de Maíz",
+"category": "pantry",
+"default_unit": "g",
+"aliases_de": [
+"cornflakes",
+"corn flakes",
+"frosties"
+],
+"aliases_en": [
+"corn flakes",
+"cornflakes",
+"frosted flakes",
+"frosties",
+"frostedflakes"
+],
+"aliases_fr": [
+"corn flakes",
+"cornflakes"
+],
+"aliases_es": [
+"copos de maiz",
+"coposdemaiz"
+]
+},
+{
+"id": "muesli",
+"name_de": "Müsli",
+"name_en": "Muesli",
+"name_fr": "Muesli",
+"name_es": "Muesli",
+"category": "pantry",
+"default_unit": "g",
+"aliases_de": [
+"müsli",
+"muesli",
+"birchermüsli",
+"bircher müsli",
+"knuspermüsli"
+],
+"aliases_en": [
+"muesli"
+],
+"aliases_fr": [
+"muesli"
+],
+"aliases_es": [
+"muesli"
+]
+},
+{
+"id": "breakfast_cereal",
+"name_de": "Frühstückscerealien",
+"name_en": "Breakfast Cereal",
+"name_fr": "Céréales de Petit-Déjeuner",
+"name_es": "Cereales de Desayuno",
+"category": "pantry",
+"default_unit": "g",
+"aliases_de": [
+"cerealien",
+"frühstücksflocken",
+"getreideflocken",
+"frühstückscerealien"
+],
+"aliases_en": [
+"breakfast cereal",
+"cereal",
+"cheerios",
+"special k",
+"breakfastcereal",
+"specialk"
+],
+"aliases_fr": [
+"céréales"
+],
+"aliases_es": [
+"cereales"
 ]
 }
 ]

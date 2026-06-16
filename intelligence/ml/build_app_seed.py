@@ -214,8 +214,9 @@ def main():
 
     # Coverage probe for the specific items from plan 012
     probe_terms = [
-        ("cornflakes", "oatmeal"),
-        ("müsli", "oatmeal"),
+        ("cornflakes", "corn_flakes"),
+        ("müsli", "muesli"),
+        ("cereal", "breakfast_cereal"),
         ("pads", "sanitary_pad"),
         ("pringles", "potato_chips"),
         ("oreo", "cookies"),
