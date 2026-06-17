@@ -255,12 +255,12 @@ func (r *pinwallReminderRepoImpl) GetUserPreference(ctx context.Context, userID,
 	var p models.NotificationPreference
 	err := r.db.QueryRow(ctx, `
 		SELECT id, user_id, group_id, chore_due, chore_due_day_of, list_item_added,
-			expense_created, meal_plan_changed, weekly_digest, pinwall_reminder, push_enabled, created_at, updated_at
+			expense_created, meal_plan_changed, weekly_digest, pinwall_reminder, push_enabled, email_enabled, created_at, updated_at
 		FROM notification_preferences
 		WHERE user_id = $1 AND group_id = $2
 	`, userID, groupID).Scan(
 		&p.ID, &p.UserID, &p.GroupID, &p.ChoreDue, &p.ChoreDueDayOf, &p.ListItemAdded,
-		&p.ExpenseCreated, &p.MealPlanChanged, &p.WeeklyDigest, &p.PinwallReminder, &p.PushEnabled,
+		&p.ExpenseCreated, &p.MealPlanChanged, &p.WeeklyDigest, &p.PinwallReminder, &p.PushEnabled, &p.EmailEnabled,
 		&p.CreatedAt, &p.UpdatedAt,
 	)
 	if err != nil {

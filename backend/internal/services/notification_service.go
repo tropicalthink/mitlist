@@ -21,6 +21,7 @@ type NotificationService struct {
 	activityRepo     repositories.ActivityRepo
 	groupRepo        repositories.GroupRepo
 	pushService      PushService
+	mailService      MailService // optional; nil means email channel is disabled
 }
 
 // NewNotificationService creates a new NotificationService.
@@ -36,6 +37,34 @@ func NewNotificationService(
 		groupRepo:        groupRepo,
 		pushService:      pushService,
 	}
+}
+
+// NewNotificationServiceWithMail creates a NotificationService with email delivery enabled.
+func NewNotificationServiceWithMail(
+	notificationRepo repositories.NotificationRepo,
+	activityRepo repositories.ActivityRepo,
+	groupRepo repositories.GroupRepo,
+	pushService PushService,
+	mailService MailService,
+) *NotificationService {
+	return &NotificationService{
+		notificationRepo: notificationRepo,
+		activityRepo:     activityRepo,
+		groupRepo:        groupRepo,
+		pushService:      pushService,
+		mailService:      mailService,
+	}
+}
+
+// emailEligibleTypes lists notification types that are worth an email. High-frequency
+// per-item events (list_item_added, meal_plan_changed) are excluded to avoid inbox
+// spam; digests and reminders are included.
+var emailEligibleTypes = map[string]bool{
+	"weekly_digest":    true,
+	"chore_due":        true,
+	"chore_due_day_of": true,
+	"expense_created":  true,
+	"pinwall_reminder": true,
 }
 
 // NotificationDispatcher is the interface implemented by NotificationService.
@@ -96,6 +125,31 @@ func (s *NotificationService) DispatchToGroup(ctx context.Context, groupID, acto
 				_ = s.pushService.SendToUser(id, p)
 			}
 		}(pushTargets, string(pushPayload))
+	}
+	// Email channel: fire-and-forget for opt-in users, only for email-eligible types.
+	// We gate on type first to avoid the member-email lookup on every dispatch.
+	if s.mailService != nil && emailEligibleTypes[nType] {
+		go func(ids []uuid.UUID, prefMap map[uuid.UUID]*models.NotificationPreference, gID uuid.UUID, subj, msg string) {
+			emailCtx := context.Background()
+			memberEmails, err := s.groupRepo.ListMemberEmailsByGroup(emailCtx, gID)
+			if err != nil {
+				return
+			}
+			for _, id := range ids {
+				pref := prefMap[id]
+				if pref == nil {
+					pref = models.DefaultNotificationPreference(id, gID)
+				}
+				if !pref.EmailEnabled {
+					continue
+				}
+				email, ok := memberEmails[id]
+				if !ok || email == "" {
+					continue
+				}
+				_ = s.mailService.Send(email, subj, msg, false)
+			}
+		}(pushTargets, prefs, groupID, title, body)
 	}
 	return nil
 }

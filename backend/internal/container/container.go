@@ -468,9 +468,13 @@ func (c *Container) CalendarService() *services.CalendarService {
 }
 
 // NotificationService returns the singleton notification service.
+// Mail is injected so the email channel is active; email delivery is still
+// opt-in per user (EmailEnabled defaults false).
 func (c *Container) NotificationService() *services.NotificationService {
 	c.notificationServiceOnce.Do(func() {
-		c.notificationService = services.NewNotificationService(c.NotificationRepo(), c.ActivityRepo(), c.GroupRepo(), c.Push())
+		c.notificationService = services.NewNotificationServiceWithMail(
+			c.NotificationRepo(), c.ActivityRepo(), c.GroupRepo(), c.Push(), c.Mail(),
+		)
 	})
 	return c.notificationService
 }
