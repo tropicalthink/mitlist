@@ -159,6 +159,31 @@ void main() {
       final result = await future;
       expect(img.decodeImage(result), isNotNull);
     });
+
+    // -------------------------------------------------------------------------
+    // Plan 016 — Mat lifecycle hardening tests
+    // -------------------------------------------------------------------------
+
+    test('preprocessor fail-softs on truly invalid bytes (plan 016)', () {
+      final garbage = Uint8List.fromList([1, 2, 3, 4]);
+      final result = const CapturePreprocessorService().preprocess(garbage);
+
+      // CV unavailable or imdecode empty → falls back; must not throw.
+      expect(result.enhanced, isFalse);
+      expect(result.processedBytes, garbage);
+      expect(result.originalBytes, garbage);
+    });
+
+    test('repeat-call stability: 25× preprocess returns non-empty decodable bytes (plan 016)', () {
+      final bytes = _testListImage();
+      for (var i = 0; i < 25; i++) {
+        final result = const CapturePreprocessorService().preprocess(bytes);
+        expect(result.processedBytes, isNotEmpty,
+            reason: 'iteration $i returned empty processedBytes');
+        expect(img.decodeImage(result.processedBytes), isNotNull,
+            reason: 'iteration $i returned non-decodable processedBytes');
+      }
+    });
   });
 }
 
