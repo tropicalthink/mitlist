@@ -33,18 +33,20 @@ type NotificationPreference struct {
 	WeeklyDigest    bool      `json:"weekly_digest"`
 	PinwallReminder bool      `json:"pinwall_reminder"`
 	PushEnabled     bool      `json:"push_enabled"`
+	EmailEnabled    bool      `json:"email_enabled"`
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
 }
 
 // DefaultNotificationPreference returns the default preference for a user/group
-// that has no saved row. All categories default ON; PushEnabled ON. (EmailEnabled,
-// if/when added by plan 024, defaults OFF — opt-in.)
+// that has no saved row. All categories default ON; PushEnabled ON. EmailEnabled
+// defaults OFF — email is opt-in (plan 024).
 func DefaultNotificationPreference(userID, groupID uuid.UUID) *NotificationPreference {
 	return &NotificationPreference{
 		UserID: userID, GroupID: groupID,
 		ChoreDue: true, ChoreDueDayOf: true, ListItemAdded: true,
 		ExpenseCreated: true, MealPlanChanged: true, WeeklyDigest: true,
 		PinwallReminder: true, PushEnabled: true,
+		EmailEnabled: false, // opt-in; never default on
 	}
 }

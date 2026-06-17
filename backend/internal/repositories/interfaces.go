@@ -57,6 +57,9 @@ type GroupRepo interface {
 	ListMembershipsByGroup(ctx context.Context, groupID uuid.UUID) ([]models.GroupMembership, error)
 	ListMemberProfilesByGroup(ctx context.Context, groupID uuid.UUID) ([]models.GroupMemberProfile, error)
 	ListPendingClaimsByGroup(ctx context.Context, groupID uuid.UUID) ([]models.PendingClaim, error)
+	// ListMemberEmailsByGroup returns a map of userID → email for all members of
+	// a group. Used by the email notification channel to look up recipient addresses.
+	ListMemberEmailsByGroup(ctx context.Context, groupID uuid.UUID) (map[uuid.UUID]string, error)
 }
 
 // ListRepo is the interface for list repository operations.
