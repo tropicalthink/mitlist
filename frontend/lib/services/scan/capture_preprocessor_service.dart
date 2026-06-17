@@ -112,48 +112,53 @@ class CapturePreprocessorService {
   }
 
   cv.Mat _runCvPipeline(cv.Mat src) {
-    // Step 1 – Downscale if too large (keeps memory/speed manageable).
-    final downscaled = _maybeDownscale(src, maxDim: 2200);
-
-    // Step 2 – Grayscale.
-    final cv.Mat gray;
+    final scratch = <cv.Mat>[];
+    void track(cv.Mat m) => scratch.add(m);
+    cv.Mat? result;
     try {
-      gray = cv.cvtColor(downscaled, cv.COLOR_BGR2GRAY);
+      // Step 1 – Downscale if too large (keeps memory/speed manageable).
+      final downscaled = _maybeDownscale(src, maxDim: 2200);
+      if (!identical(downscaled, src)) track(downscaled);
+
+      // Step 2 – Grayscale.
+      final gray = cv.cvtColor(downscaled, cv.COLOR_BGR2GRAY); track(gray);
+
+      // Step 3 – Illumination normalisation.
+      // Divide the gray image by a heavily blurred version (background estimate).
+      // This suppresses uneven lighting and shadow gradients without OCR impact.
+      final illuminNorm = _normaliseIllumination(gray); track(illuminNorm);
+
+      // Step 4 – Adaptive threshold → binary image suitable for OCR.
+      final cv.Mat binarised;
+      try {
+        binarised = cv.adaptiveThreshold(
+          illuminNorm,
+          255,
+          cv.ADAPTIVE_THRESH_GAUSSIAN_C,
+          cv.THRESH_BINARY,
+          11,
+          4,
+        );
+        track(binarised);
+      } catch (_) {
+        // Adaptive threshold failed (e.g. already binary); keep illumination
+        // normalised grayscale.
+        result = illuminNorm.clone();
+        return result;
+      }
+
+      // Step 5 – Deskew.
+      final deskewed = _deskew(binarised);
+      result = deskewed;
+      return deskewed;
     } finally {
-      if (!identical(downscaled, src)) downscaled.dispose();
+      for (final m in scratch) {
+        // Do not dispose the Mat we are returning.
+        if (!identical(m, result)) {
+          try { m.dispose(); } catch (_) {}
+        }
+      }
     }
-
-    // Step 3 – Illumination normalisation.
-    // Divide the gray image by a heavily blurred version (background estimate).
-    // This suppresses uneven lighting and shadow gradients without OCR impact.
-    final illuminNorm = _normaliseIllumination(gray);
-    gray.dispose();
-
-    // Step 4 – Adaptive threshold → binary image suitable for OCR.
-    final cv.Mat binarised;
-    try {
-      binarised = cv.adaptiveThreshold(
-        illuminNorm,
-        255,
-        cv.ADAPTIVE_THRESH_GAUSSIAN_C,
-        cv.THRESH_BINARY,
-        11,
-        4,
-      );
-    } catch (_) {
-      // Adaptive threshold failed (e.g. already binary); keep illumination
-      // normalised grayscale.
-      final fallback = illuminNorm.clone();
-      illuminNorm.dispose();
-      return fallback;
-    }
-    illuminNorm.dispose();
-
-    // Step 5 – Deskew.
-    final deskewed = _deskew(binarised);
-    binarised.dispose();
-
-    return deskewed;
   }
 
   cv.Mat _maybeDownscale(cv.Mat src, {required int maxDim}) {
@@ -169,44 +174,52 @@ class CapturePreprocessorService {
     // A kernel sized to ~1/8 of the shorter edge (min 31×31, always odd)
     // captures slow illumination gradients while leaving text edges intact.
     final kernelSize = _nearestOdd(math.min(gray.rows, gray.cols) ~/ 8, min: 31);
-    final cv.Mat bg;
+    final scratch = <cv.Mat>[];
+    void track(cv.Mat m) => scratch.add(m);
+    cv.Mat? result;
     try {
-      bg = cv.gaussianBlur(gray, (kernelSize, kernelSize), 0);
-    } catch (_) {
-      return gray.clone();
+      final cv.Mat bg;
+      try {
+        bg = cv.gaussianBlur(gray, (kernelSize, kernelSize), 0);
+      } catch (_) {
+        result = gray.clone();
+        return result;
+      }
+      track(bg);
+
+      // Convert both to float32 for accurate division.
+      // CV_32FC1 = single-channel 32-bit float.
+      final grayF = gray.convertTo(cv.MatType.CV_32FC1); track(grayF);
+      final bgF = bg.convertTo(cv.MatType.CV_32FC1); track(bgF);
+
+      // Add 1.0 to every background pixel to prevent divide-by-zero.
+      // convertScaleAbs(alpha=1, beta=1) → bgF_u8 + 1; then convert back to float.
+      final bgAbs = cv.convertScaleAbs(bgF, alpha: 1, beta: 1); track(bgAbs);
+      final bgFplus1 = bgAbs.convertTo(cv.MatType.CV_32FC1); track(bgFplus1);
+
+      // Divide gray by (background + 1) to flatten illumination.
+      final divided = cv.divide(grayF, bgFplus1); track(divided);
+
+      // Normalise the ratio to full 0–255 uint8 range using NORM_MINMAX.
+      // dtype = CV_8UC1.value = 0 (single-channel 8-bit unsigned).
+      final out = cv.Mat.empty();
+      cv.normalize(
+        divided,
+        out,
+        alpha: 0,
+        beta: 255,
+        normType: cv.NORM_MINMAX,
+        dtype: cv.MatType.CV_8UC1.value,
+      );
+      result = out;
+      return out;
+    } finally {
+      for (final m in scratch) {
+        if (!identical(m, result)) {
+          try { m.dispose(); } catch (_) {}
+        }
+      }
     }
-
-    // Convert both to float32 for accurate division.
-    // CV_32FC1 = single-channel 32-bit float.
-    final grayF = gray.convertTo(cv.MatType.CV_32FC1);
-    final bgF = bg.convertTo(cv.MatType.CV_32FC1);
-    bg.dispose();
-
-    // Add 1.0 to every background pixel to prevent divide-by-zero.
-    // convertScaleAbs(alpha=1, beta=1) → bgF_u8 + 1; then convert back to float.
-    final bgAbs = cv.convertScaleAbs(bgF, alpha: 1, beta: 1);
-    final bgFplus1 = bgAbs.convertTo(cv.MatType.CV_32FC1);
-    bgF.dispose();
-    bgAbs.dispose();
-
-    // Divide gray by (background + 1) to flatten illumination.
-    final divided = cv.divide(grayF, bgFplus1);
-    grayF.dispose();
-    bgFplus1.dispose();
-
-    // Normalise the ratio to full 0–255 uint8 range using NORM_MINMAX.
-    // dtype = CV_8UC1.value = 0 (single-channel 8-bit unsigned).
-    final out = cv.Mat.empty();
-    cv.normalize(
-      divided,
-      out,
-      alpha: 0,
-      beta: 255,
-      normType: cv.NORM_MINMAX,
-      dtype: cv.MatType.CV_8UC1.value,
-    );
-    divided.dispose();
-    return out;
   }
 
   /// Returns the nearest odd integer >= [value], but at least [min].
