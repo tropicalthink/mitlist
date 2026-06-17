@@ -9,7 +9,6 @@ import (
 	"github.com/mitlist-app/mitlist/internal/redis"
 	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/mitlist-app/mitlist/internal/services"
-	aiservice "github.com/mitlist-app/mitlist/internal/services/ai"
 	jwtservice "github.com/mitlist-app/mitlist/internal/services/jwt"
 	mailservice "github.com/mitlist-app/mitlist/internal/services/mail"
 	oauthclient "github.com/mitlist-app/mitlist/internal/services/oauth"
@@ -129,9 +128,6 @@ type Container struct {
 	calendarServiceOnce sync.Once
 	calendarService     *services.CalendarService
 
-	assistantServiceOnce sync.Once
-	assistantService     *services.ScanService
-
 	shareServiceOnce sync.Once
 	shareService     *services.ShareService
 
@@ -155,9 +151,6 @@ type Container struct {
 
 	listItemPhotoServiceOnce sync.Once
 	listItemPhotoService     *services.ListItemPhotoService
-
-	aiClientOnce sync.Once
-	aiClient     *aiservice.Client
 
 	groceryRepoOnce sync.Once
 	groceryRepo     *repositories.GroceryRepository
@@ -471,14 +464,6 @@ func (c *Container) CalendarService() *services.CalendarService {
 	return c.calendarService
 }
 
-// AssistantService returns the singleton scan service.
-func (c *Container) AssistantService() *services.ScanService {
-	c.assistantServiceOnce.Do(func() {
-		c.assistantService = services.NewScanService(c.AIClient())
-	})
-	return c.assistantService
-}
-
 // NotificationService returns the singleton notification service.
 func (c *Container) NotificationService() *services.NotificationService {
 	c.notificationServiceOnce.Do(func() {
@@ -564,14 +549,6 @@ func (c *Container) SSEHub() *sse.Hub {
 		c.sseHub = sse.New()
 	}
 	return c.sseHub
-}
-
-// AIClient returns the singleton AI client.
-func (c *Container) AIClient() *aiservice.Client {
-	c.aiClientOnce.Do(func() {
-		c.aiClient = aiservice.New(c.cfg)
-	})
-	return c.aiClient
 }
 
 // GroceryRepo returns the singleton grocery repository.
