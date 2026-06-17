@@ -9,6 +9,8 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mitlist/services/scan/canonical_resolver_service.dart';
 import 'package:mitlist/services/scan/grocery_classifier_service.dart';
+import 'package:mitlist/services/scan/resolution/ensemble_resolver.dart';
+import 'package:mitlist/services/scan/resolution/resolution_features.dart';
 import 'package:mitlist/storage/app_database.dart';
 
 // ---------------------------------------------------------------------------
@@ -75,6 +77,23 @@ Future<void> _seedAlias(
       updatedAt: _now,
     ),
   ]);
+}
+
+Future<void> _seedPurchaseHistory(
+  AppDatabase db, {
+  required String id,
+  required String groupId,
+  required String canonicalItemId,
+  required DateTime purchasedAt,
+}) async {
+  await db.insertPurchaseHistory(
+    PurchaseHistoryTableCompanion.insert(
+      id: id,
+      groupId: groupId,
+      canonicalItemId: drift.Value(canonicalItemId),
+      purchasedAt: purchasedAt,
+    ),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -186,6 +205,77 @@ void main() {
       // This guard test ensures the constructor is backward-compatible.
       final resolver = CanonicalResolverService(db);
       expect(resolver, isNotNull);
+    });
+  });
+
+  group('plan 013 — context built once', () {
+    test('(a) buildContext correctness — purchase history reflected in context',
+        () async {
+      const groupId = 'hh-013';
+      await _seedCanonicalItem(db, id: 'item-eggs', nameDe: 'eier');
+      await _seedCanonicalItem(db, id: 'item-milk2', nameDe: 'vollmilch2');
+
+      final purchasedAt = DateTime(2024, 1, 1);
+      await _seedPurchaseHistory(db,
+          id: 'ph-1',
+          groupId: groupId,
+          canonicalItemId: 'item-eggs',
+          purchasedAt: purchasedAt);
+      await _seedPurchaseHistory(db,
+          id: 'ph-2',
+          groupId: groupId,
+          canonicalItemId: 'item-eggs',
+          purchasedAt: purchasedAt.add(const Duration(days: 1)));
+      await _seedPurchaseHistory(db,
+          id: 'ph-3',
+          groupId: groupId,
+          canonicalItemId: 'item-milk2',
+          purchasedAt: purchasedAt);
+
+      final ensemble = EnsembleResolver(db);
+      final ctx = await ensemble.buildContext(groupId, const []);
+
+      expect(ctx, isA<ResolutionContext>());
+      expect(ctx.purchaseCounts['item-eggs'], equals(2));
+      expect(ctx.purchaseCounts['item-milk2'], equals(1));
+      expect(ctx.maxPurchaseCount, equals(2));
+      expect(ctx.daysSinceLastPurchase['item-eggs'], isNotNull);
+      expect(ctx.daysSinceLastPurchase['item-milk2'], isNotNull);
+    });
+
+    test('(b) prepareContext wiring — non-null for ensemble, null for legacy',
+        () async {
+      const groupId = 'hh-013b';
+
+      final ensembleSvc = CanonicalResolverService(db, useEnsemble: true);
+      final legacySvc = CanonicalResolverService(db);
+
+      final ensembleCtx = await ensembleSvc.prepareContext(groupId);
+      final legacyCtx = await legacySvc.prepareContext(groupId);
+
+      expect(ensembleCtx, isNotNull);
+      expect(legacyCtx, isNull);
+    });
+
+    test('(c) parity — resolve with pre-built context matches resolve without',
+        () async {
+      const groupId = 'hh-013c';
+      await _seedCanonicalItem(db, id: 'item-butter', nameDe: 'butter');
+      await _seedAlias(
+          db,
+          id: 'a-butter',
+          canonicalItemId: 'item-butter',
+          aliasText: 'butter');
+
+      final svc = CanonicalResolverService(db, useEnsemble: true);
+      final ctx = await svc.prepareContext(groupId);
+
+      final withContext =
+          await svc.resolve('butter', groupId, context: ctx);
+      final withoutContext = await svc.resolve('butter', groupId);
+
+      expect(withContext.canonicalItemId, equals('item-butter'));
+      expect(withContext.canonicalItemId, equals(withoutContext.canonicalItemId));
     });
   });
 }
