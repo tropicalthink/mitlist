@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"html/template"
 	"net/smtp"
+	"strings"
+	"time"
 
 	"github.com/mitlist-app/mitlist/internal/config"
 	"github.com/mitlist-app/mitlist/pkg/logger"
@@ -19,6 +21,51 @@ type Service struct {
 // New creates a new mail service.
 func New(cfg *config.Config, log *logger.Logger) *Service {
 	return &Service{cfg: cfg, log: log}
+}
+
+// sanitizeHeader removes CR and LF characters from a header value to prevent
+// header injection. Any \r or \n in a field like To/Subject/From would allow an
+// attacker to inject arbitrary headers or body content.
+func sanitizeHeader(s string) string {
+	s = strings.ReplaceAll(s, "\r", "")
+	s = strings.ReplaceAll(s, "\n", "")
+	return s
+}
+
+// buildMessage assembles a well-formed RFC 2822 email message as a byte slice.
+// All header values are sanitized to strip CR/LF before being written. This is
+// a pure function that can be tested without an SMTP connection.
+func buildMessage(from, to, subject, body string, isHTML bool) []byte {
+	from = sanitizeHeader(from)
+	to = sanitizeHeader(to)
+	subject = sanitizeHeader(subject)
+
+	contentType := "text/plain; charset=\"utf-8\""
+	if isHTML {
+		contentType = "text/html; charset=\"utf-8\""
+	}
+
+	date := time.Now().Format(time.RFC1123Z)
+
+	var buf bytes.Buffer
+	buf.WriteString("From: ")
+	buf.WriteString(from)
+	buf.WriteString("\r\n")
+	buf.WriteString("To: ")
+	buf.WriteString(to)
+	buf.WriteString("\r\n")
+	buf.WriteString("Subject: ")
+	buf.WriteString(subject)
+	buf.WriteString("\r\n")
+	buf.WriteString("Date: ")
+	buf.WriteString(date)
+	buf.WriteString("\r\n")
+	buf.WriteString("MIME-Version: 1.0\r\n")
+	buf.WriteString("Content-Type: ")
+	buf.WriteString(contentType)
+	buf.WriteString("\r\n\r\n")
+	buf.WriteString(body)
+	return buf.Bytes()
 }
 
 // Send dispatches an email asynchronously. Errors are logged but never returned
@@ -47,13 +94,7 @@ func (s *Service) sendAsync(to, subject, body string, isHTML bool) {
 		from = "noreply@mitlist.me"
 	}
 
-	contentType := "text/plain; charset=\"utf-8\""
-	if isHTML {
-		contentType = "text/html; charset=\"utf-8\""
-	}
-
-	msg := []byte(fmt.Sprintf("To: %s\r\nSubject: %s\r\nContent-Type: %s\r\n\r\n%s",
-		to, subject, contentType, body))
+	msg := buildMessage(from, to, subject, body, isHTML)
 
 	if err := s.sendViaSMTP(
 		s.cfg.SendGridSMTPHost,
