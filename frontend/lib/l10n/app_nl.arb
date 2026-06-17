@@ -3552,6 +3552,11 @@
   "@scanReviewDidYouMean": {
     "description": "Label for alternative suggestions"
   },
+  "scanReviewBestGuess": "Beste gok: {name}",
+  "@scanReviewBestGuess": {
+    "description": "Tentative resolver guess under the user's OCR text on a low-confidence scan-review row",
+    "placeholders": { "name": { "type": "String" } }
+  },
   "shareTargetAppBarTitle": "Opslaan in mitlist",
   "@shareTargetAppBarTitle": {
     "description": "AppBar title for share target screen"

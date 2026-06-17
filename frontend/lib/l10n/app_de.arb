@@ -781,6 +781,7 @@
   "scanReviewQty": "Menge",
   "scanReviewUnit": "Einheit",
   "scanReviewDidYouMean": "Meintest du?",
+  "scanReviewBestGuess": "Vermutung: {name}",
   "shareTargetAppBarTitle": "In mitlist speichern",
   "shareTargetSharedText": "Geteilter Text",
   "shareTargetPasteHint": "Füge den geteilten Text hier ein oder tippe ihn…",

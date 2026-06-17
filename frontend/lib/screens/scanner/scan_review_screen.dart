@@ -562,11 +562,21 @@ class _NewListSheet extends StatefulWidget {
 
 class _NewListSheetState extends State<_NewListSheet> {
   late final TextEditingController _controller;
+  bool _controllerInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController(text: AppLocalizations.of(context)!.scanReviewScannedList);
+    _controller = TextEditingController();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_controllerInitialized) {
+      _controller.text = AppLocalizations.of(context)!.scanReviewScannedList;
+      _controllerInitialized = true;
+    }
   }
 
   @override
@@ -734,9 +744,16 @@ class _PredictionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context)!;
     final stateColor = _stateColor(context);
     final needsAction =
         prediction.confidenceLevel != ConfidenceLevel.autoAccept;
+    final leadWithRaw = prediction.confidenceLevel == ConfidenceLevel.ask &&
+        prediction.rawText.trim().isNotEmpty;
+    final headline = leadWithRaw ? prediction.rawText : prediction.displayName;
+    final showGuess = leadWithRaw &&
+        prediction.canonicalItemId != null &&
+        prediction.displayName.toLowerCase() != prediction.rawText.toLowerCase();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
@@ -787,7 +804,7 @@ class _PredictionTile extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              prediction.displayName,
+                              headline,
                               style: textTheme.titleSmall,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
@@ -805,7 +822,18 @@ class _PredictionTile extends StatelessWidget {
                             ),
                         ],
                       ),
-                      if (needsAction &&
+                      if (showGuess)
+                        Text(
+                          l10n.scanReviewBestGuess(prediction.displayName),
+                          style: textTheme.bodySmall?.copyWith(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontStyle: FontStyle.italic,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                      else if (needsAction &&
                           prediction.rawText.toLowerCase() !=
                               prediction.displayName.toLowerCase())
                         Text(

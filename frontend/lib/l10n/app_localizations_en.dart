@@ -2674,6 +2674,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scanReviewDidYouMean => 'Did you mean?';
 
   @override
+  String scanReviewBestGuess(String name) {
+    return 'Best guess: $name';
+  }
+
+  @override
   String get shareTargetAppBarTitle => 'Save to mitlist';
 
   @override
