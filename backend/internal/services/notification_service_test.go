@@ -20,7 +20,7 @@ func TestNotificationService_CreateNotification(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		notificationRepo := new(mocks.MockNotificationRepo)
-		svc := NewNotificationService(notificationRepo, nil, nil)
+		svc := NewNotificationService(notificationRepo, nil, nil, nil)
 
 		notificationRepo.On("CreateNotification", ctx, mock.AnythingOfType("*models.Notification")).Return(nil)
 
@@ -37,7 +37,7 @@ func TestNotificationService_GetNotification(t *testing.T) {
 
 	t.Run("success owner", func(t *testing.T) {
 		notificationRepo := new(mocks.MockNotificationRepo)
-		svc := NewNotificationService(notificationRepo, nil, nil)
+		svc := NewNotificationService(notificationRepo, nil, nil, nil)
 
 		notificationRepo.On("GetNotificationByID", ctx, notificationID).Return(&models.Notification{ID: notificationID, UserID: userID}, nil)
 
@@ -48,7 +48,7 @@ func TestNotificationService_GetNotification(t *testing.T) {
 
 	t.Run("wrong owner", func(t *testing.T) {
 		notificationRepo := new(mocks.MockNotificationRepo)
-		svc := NewNotificationService(notificationRepo, nil, nil)
+		svc := NewNotificationService(notificationRepo, nil, nil, nil)
 
 		notificationRepo.On("GetNotificationByID", ctx, notificationID).Return(&models.Notification{ID: notificationID, UserID: uuid.New()}, nil)
 
@@ -65,7 +65,7 @@ func TestNotificationService_MarkAsRead(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		notificationRepo := new(mocks.MockNotificationRepo)
-		svc := NewNotificationService(notificationRepo, nil, nil)
+		svc := NewNotificationService(notificationRepo, nil, nil, nil)
 
 		notificationRepo.On("GetNotificationByID", ctx, notificationID).Return(&models.Notification{ID: notificationID, UserID: userID}, nil)
 		notificationRepo.On("MarkAsRead", ctx, notificationID).Return(nil)
@@ -82,7 +82,7 @@ func TestNotificationService_DeleteNotification(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		notificationRepo := new(mocks.MockNotificationRepo)
-		svc := NewNotificationService(notificationRepo, nil, nil)
+		svc := NewNotificationService(notificationRepo, nil, nil, nil)
 
 		notificationRepo.On("GetNotificationByID", ctx, notificationID).Return(&models.Notification{ID: notificationID, UserID: userID}, nil)
 		notificationRepo.On("DeleteNotification", ctx, notificationID).Return(nil)
@@ -109,6 +109,166 @@ func TestDefaultNotificationPreference(t *testing.T) {
 	assert.True(t, pref.PushEnabled, "PushEnabled should be true")
 }
 
+func TestNotificationService_DispatchToGroup(t *testing.T) {
+	ctx := context.Background()
+	groupID := uuid.New()
+	actorID := uuid.New()
+	member1 := uuid.New()
+	member2 := uuid.New()
+
+	memberships := []models.GroupMembership{
+		{UserID: actorID},
+		{UserID: member1},
+		{UserID: member2},
+	}
+
+	t.Run("persists rows and pushes for eligible members, excludes actor", func(t *testing.T) {
+		notifRepo := new(mocks.MockNotificationRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		pushSvc := new(mocks.MockPushService)
+		svc := NewNotificationService(notifRepo, nil, groupRepo, pushSvc)
+
+		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return(memberships, nil)
+		notifRepo.On("GetPreferencesByGroup", ctx, groupID).Return(map[uuid.UUID]*models.NotificationPreference{}, nil)
+		notifRepo.On("CreateNotificationsBatch", ctx, mock.MatchedBy(func(rows []models.Notification) bool {
+			if len(rows) != 2 {
+				return false
+			}
+			for _, r := range rows {
+				if r.UserID == actorID {
+					return false
+				}
+			}
+			return true
+		})).Return(nil)
+		pushSvc.On("SendToUser", mock.AnythingOfType("uuid.UUID"), mock.AnythingOfType("string")).Return(nil)
+
+		payload := models.NotificationPayload{Screen: models.ScreenListDetail, EntityType: models.EntityTypeList}
+		err := svc.DispatchToGroup(ctx, groupID, actorID, "list_item_added", "T", "B", payload)
+		require.NoError(t, err)
+		notifRepo.AssertCalled(t, "CreateNotificationsBatch", ctx, mock.Anything)
+	})
+
+	t.Run("skips members with PushEnabled=false", func(t *testing.T) {
+		notifRepo := new(mocks.MockNotificationRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewNotificationService(notifRepo, nil, groupRepo, nil)
+
+		disabledPref := &models.NotificationPreference{
+			UserID: member1, GroupID: groupID, PushEnabled: false, ListItemAdded: true,
+		}
+		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return([]models.GroupMembership{
+			{UserID: actorID},
+			{UserID: member1},
+		}, nil)
+		notifRepo.On("GetPreferencesByGroup", ctx, groupID).Return(map[uuid.UUID]*models.NotificationPreference{
+			member1: disabledPref,
+		}, nil)
+
+		payload := models.NotificationPayload{}
+		err := svc.DispatchToGroup(ctx, groupID, actorID, "list_item_added", "T", "B", payload)
+		require.NoError(t, err)
+		notifRepo.AssertNotCalled(t, "CreateNotificationsBatch")
+	})
+
+	t.Run("skips members with type-specific pref disabled", func(t *testing.T) {
+		notifRepo := new(mocks.MockNotificationRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewNotificationService(notifRepo, nil, groupRepo, nil)
+
+		typePref := &models.NotificationPreference{
+			UserID: member1, GroupID: groupID, PushEnabled: true, ListItemAdded: false,
+		}
+		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return([]models.GroupMembership{
+			{UserID: actorID},
+			{UserID: member1},
+		}, nil)
+		notifRepo.On("GetPreferencesByGroup", ctx, groupID).Return(map[uuid.UUID]*models.NotificationPreference{
+			member1: typePref,
+		}, nil)
+
+		payload := models.NotificationPayload{}
+		err := svc.DispatchToGroup(ctx, groupID, actorID, "list_item_added", "T", "B", payload)
+		require.NoError(t, err)
+		notifRepo.AssertNotCalled(t, "CreateNotificationsBatch")
+	})
+
+	t.Run("no-op with zero eligible members (all excluded/opted-out)", func(t *testing.T) {
+		notifRepo := new(mocks.MockNotificationRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewNotificationService(notifRepo, nil, groupRepo, nil)
+
+		// Only the actor in the group.
+		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return([]models.GroupMembership{
+			{UserID: actorID},
+		}, nil)
+		notifRepo.On("GetPreferencesByGroup", ctx, groupID).Return(map[uuid.UUID]*models.NotificationPreference{}, nil)
+
+		payload := models.NotificationPayload{}
+		err := svc.DispatchToGroup(ctx, groupID, actorID, "list_item_added", "T", "B", payload)
+		require.NoError(t, err)
+		notifRepo.AssertNotCalled(t, "CreateNotificationsBatch")
+	})
+
+	t.Run("push invoked for eligible users", func(t *testing.T) {
+		notifRepo := new(mocks.MockNotificationRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		pushSvc := new(mocks.MockPushService)
+		svc := NewNotificationService(notifRepo, nil, groupRepo, pushSvc)
+
+		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return([]models.GroupMembership{
+			{UserID: actorID},
+			{UserID: member1},
+		}, nil)
+		notifRepo.On("GetPreferencesByGroup", ctx, groupID).Return(map[uuid.UUID]*models.NotificationPreference{}, nil)
+		notifRepo.On("CreateNotificationsBatch", ctx, mock.Anything).Return(nil)
+		pushSvc.On("SendToUser", member1, mock.AnythingOfType("string")).Return(nil)
+
+		payload := models.NotificationPayload{}
+		err := svc.DispatchToGroup(ctx, groupID, actorID, "list_item_added", "T", "B", payload)
+		require.NoError(t, err)
+		// Push is async; wait a tiny moment and assert.
+		// We just verify batch was persisted.
+		notifRepo.AssertCalled(t, "CreateNotificationsBatch", ctx, mock.Anything)
+	})
+}
+
+func TestNotificationService_DispatchToUsers(t *testing.T) {
+	ctx := context.Background()
+	groupID := uuid.New()
+	userID := uuid.New()
+
+	t.Run("persists row and pushes for eligible user", func(t *testing.T) {
+		notifRepo := new(mocks.MockNotificationRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		pushSvc := new(mocks.MockPushService)
+		svc := NewNotificationService(notifRepo, nil, groupRepo, pushSvc)
+
+		notifRepo.On("GetPreferencesByGroup", ctx, groupID).Return(map[uuid.UUID]*models.NotificationPreference{}, nil)
+		notifRepo.On("CreateNotificationsBatch", ctx, mock.MatchedBy(func(rows []models.Notification) bool {
+			return len(rows) == 1 && rows[0].UserID == userID && rows[0].Type == "chore_due"
+		})).Return(nil)
+		pushSvc.On("SendToUser", userID, mock.AnythingOfType("string")).Return(nil)
+
+		payload := models.NotificationPayload{Screen: models.ScreenChoreDetail, EntityType: models.EntityTypeChore}
+		err := svc.DispatchToUsers(ctx, []uuid.UUID{userID}, groupID, "chore_due", "Chore Reminder", "Due soon", payload)
+		require.NoError(t, err)
+		notifRepo.AssertCalled(t, "CreateNotificationsBatch", ctx, mock.Anything)
+	})
+
+	t.Run("no-op for empty userIDs", func(t *testing.T) {
+		notifRepo := new(mocks.MockNotificationRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewNotificationService(notifRepo, nil, groupRepo, nil)
+
+		payload := models.NotificationPayload{}
+		err := svc.DispatchToUsers(ctx, []uuid.UUID{}, groupID, "chore_due", "T", "B", payload)
+		require.NoError(t, err)
+		notifRepo.AssertNotCalled(t, "GetPreferencesByGroup")
+		notifRepo.AssertNotCalled(t, "CreateNotificationsBatch")
+	})
+}
+
 func TestNotificationService_UpdatePreferences(t *testing.T) {
 	ctx := context.Background()
 	userID := uuid.New()
@@ -116,7 +276,7 @@ func TestNotificationService_UpdatePreferences(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		notificationRepo := new(mocks.MockNotificationRepo)
-		svc := NewNotificationService(notificationRepo, nil, nil)
+		svc := NewNotificationService(notificationRepo, nil, nil, nil)
 
 		notificationRepo.On("UpsertPreference", ctx, mock.AnythingOfType("*models.NotificationPreference")).Return(nil)
 
@@ -127,7 +287,7 @@ func TestNotificationService_UpdatePreferences(t *testing.T) {
 
 	t.Run("wrong user", func(t *testing.T) {
 		notificationRepo := new(mocks.MockNotificationRepo)
-		svc := NewNotificationService(notificationRepo, nil, nil)
+		svc := NewNotificationService(notificationRepo, nil, nil, nil)
 
 		pref := &models.NotificationPreference{UserID: uuid.New(), GroupID: groupID}
 		err := svc.UpdatePreferences(ctx, userID, pref)

@@ -18,14 +18,20 @@ import (
 // WeeklySummary aggregates activity for the past week and sends a summary push
 // to group admins. Disabled by default.
 type WeeklySummary struct {
-	repo weeklySummaryRepo
-	push Pusher
-	log  *logger.Logger
+	repo       weeklySummaryRepo
+	push       Pusher
+	dispatcher NotificationDispatcher // preferred; push used as fallback
+	log        *logger.Logger
 }
 
 // NewWeeklySummary creates a new WeeklySummary job.
 func NewWeeklySummary(db repositories.DBTX, push Pusher, log *logger.Logger) *WeeklySummary {
 	return &WeeklySummary{repo: &weeklySummaryRepoImpl{db: db}, push: push, log: log}
+}
+
+// NewWeeklySummaryWithDispatcher creates a WeeklySummary that persists feed rows via the dispatcher.
+func NewWeeklySummaryWithDispatcher(db repositories.DBTX, dispatcher NotificationDispatcher, log *logger.Logger) *WeeklySummary {
+	return &WeeklySummary{repo: &weeklySummaryRepoImpl{db: db}, dispatcher: dispatcher, log: log}
 }
 
 func newWeeklySummary(repo weeklySummaryRepo, push Pusher, log *logger.Logger) *WeeklySummary {
@@ -63,13 +69,25 @@ func (s *WeeklySummary) notifyMembers(ctx context.Context, groupID uuid.UUID, co
 		return fmt.Errorf("query members: %w", err)
 	}
 
+	title := "Weekly Summary"
+	body := fmt.Sprintf("Your household had %d activities this week", count)
+	notifPayload := models.NotificationPayload{
+		Screen:  models.ScreenHouseholdHub,
+		GroupID: groupID.String(),
+	}
+
+	if s.dispatcher != nil {
+		if err := s.dispatcher.DispatchToGroup(ctx, groupID, uuid.Nil, "weekly_digest",
+			title, body, notifPayload); err != nil {
+			s.log.Warn().Err(err).Str("group_id", groupID.String()).Msg("failed to dispatch weekly summary")
+		}
+		return nil
+	}
+
 	pushPayload := map[string]interface{}{
-		"title": "Weekly Summary",
-		"body":  fmt.Sprintf("Your household had %d activities this week", count),
-		"data": models.NotificationPayload{
-			Screen:  models.ScreenHouseholdHub,
-			GroupID: groupID.String(),
-		},
+		"title": title,
+		"body":  body,
+		"data":  notifPayload,
 	}
 	payloadBytes, _ := json.Marshal(pushPayload)
 	payload := string(payloadBytes)

@@ -557,7 +557,7 @@ func newRecipeRouter(t *testing.T) (chi.Router, *RecipeHandler) {
 func newNotificationRouter(t *testing.T) (chi.Router, *NotificationHandler) {
 	notificationRepo := newTestNotificationRepo()
 	pushSvc := newTestPushService()
-	svc := services.NewNotificationService(notificationRepo, nil, pushSvc)
+	svc := services.NewNotificationService(notificationRepo, nil, nil, pushSvc)
 	h := NewNotificationHandler(svc)
 
 	r := chi.NewRouter()

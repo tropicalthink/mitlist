@@ -410,6 +410,7 @@ func (c *Container) ListService() *services.ListService {
 		c.listService = services.NewListService(c.ListRepo(), c.GroupRepo())
 		c.listService.SetHub(c.SSEHub())
 		c.listService.SetPush(c.Push())
+		c.listService.SetDispatcher(c.NotificationService())
 	})
 	return c.listService
 }
@@ -428,6 +429,7 @@ func (c *Container) ChoreService() *services.ChoreService {
 		c.choreService = services.NewChoreService(c.ChoreRepo(), c.GroupRepo(), c.ListRepo())
 		c.choreService.SetHub(c.SSEHub())
 		c.choreService.SetPush(c.Push())
+		c.choreService.SetDispatcher(c.NotificationService())
 	})
 	return c.choreService
 }
@@ -436,6 +438,7 @@ func (c *Container) ChoreService() *services.ChoreService {
 func (c *Container) FinanceService() *services.FinanceService {
 	c.financeServiceOnce.Do(func() {
 		c.financeService = services.NewFinanceService(c.FinanceRepo(), c.GroupRepo())
+		c.financeService.SetDispatcher(c.NotificationService())
 	})
 	return c.financeService
 }
@@ -467,7 +470,7 @@ func (c *Container) CalendarService() *services.CalendarService {
 // NotificationService returns the singleton notification service.
 func (c *Container) NotificationService() *services.NotificationService {
 	c.notificationServiceOnce.Do(func() {
-		c.notificationService = services.NewNotificationService(c.NotificationRepo(), c.ActivityRepo(), c.Push())
+		c.notificationService = services.NewNotificationService(c.NotificationRepo(), c.ActivityRepo(), c.GroupRepo(), c.Push())
 	})
 	return c.notificationService
 }

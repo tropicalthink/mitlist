@@ -20,6 +20,7 @@ import (
 type FinanceService struct {
 	financeRepo repositories.FinanceRepoIface
 	groupRepo   repositories.GroupRepo
+	dispatcher  NotificationDispatcher // optional; nil disables persist+push dispatch
 }
 
 // ExpenseSplitInput describes one requested participant share for an expense.
@@ -37,6 +38,9 @@ func NewFinanceService(financeRepo repositories.FinanceRepoIface, groupRepo repo
 		groupRepo:   groupRepo,
 	}
 }
+
+// SetDispatcher injects the notification dispatcher for persist+push broadcasts.
+func (s *FinanceService) SetDispatcher(d NotificationDispatcher) { s.dispatcher = d }
 
 func (s *FinanceService) requireMember(ctx context.Context, groupID, userID uuid.UUID) error {
 	return requireGroupMember(ctx, s.groupRepo, groupID, userID)
@@ -96,7 +100,20 @@ func (s *FinanceService) CreateExpenseWithSplitMode(ctx context.Context, userID 
 			return &api.ValidationError{Message: "split user must be a member of this group"}
 		}
 	}
-	return s.financeRepo.CreateExpenseWithSplits(ctx, expense, splits)
+	if err := s.financeRepo.CreateExpenseWithSplits(ctx, expense, splits); err != nil {
+		return err
+	}
+	if s.dispatcher != nil && expense.ID != uuid.Nil {
+		notifPayload := models.NotificationPayload{
+			Screen:     models.ScreenExpenseDetail,
+			EntityType: models.EntityTypeExpense,
+			ID:         expense.ID.String(),
+			GroupID:    expense.GroupID.String(),
+		}
+		_ = s.dispatcher.DispatchToGroup(ctx, expense.GroupID, userID, "expense_created",
+			"New expense", expense.Description+" was added", notifPayload)
+	}
+	return nil
 }
 
 // normalizeBaseAmount converts the expense's entered amount into the group's
