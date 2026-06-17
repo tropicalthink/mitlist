@@ -7,15 +7,12 @@ import '../../l10n/app_localizations.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
-
 import '../models/finance_models.dart';
 import '../models/group_models.dart';
 import '../providers/attachment_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/finance_provider.dart';
 import '../providers/group_provider.dart';
-import '../providers/scan_provider.dart';
 import '../router.dart' show currentGroupIdProvider;
 import '../theme/spacing.dart';
 import '../utils/active_group_context.dart';
@@ -98,18 +95,13 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
   // validation rather than recording at 1:1.
   double _fxRate = 0.0;
   DateTime _date = DateTime.now();
-  File? _scannedReceipt;
   bool _membersLoading = true;
   bool _membersFailed = false;
   bool _isSaving = false;
-  bool _isScanning = false;
 
   String? _descriptionError;
   String? _amountError;
   String? _fxRateError;
-
-  bool get _hasReceipt =>
-      widget.receiptImage != null || _scannedReceipt != null;
 
   /// True when the chosen expense currency differs from the household base
   /// currency, which is when an FX rate is needed.
@@ -189,56 +181,6 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       _membersFailed = false;
     });
     _loadGroupContext();
-  }
-
-  Future<void> _onScan() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: ImageSource.camera,
-      maxWidth: 2048,
-      maxHeight: 2048,
-    );
-    if (picked == null || !mounted) return;
-
-    setState(() => _isScanning = true);
-    _markDirty();
-
-    try {
-      final service = await ref.read(scanServiceProviderAsync.future);
-      final bytes = await File(picked.path).readAsBytes();
-      final result = await service.scanImage(bytes, 'image/jpeg');
-
-      if (!mounted) return;
-
-      if (result.title != null && result.title!.isNotEmpty) {
-        _descriptionController.text = result.title!;
-      }
-      if (result.amount != null && result.amount! > 0) {
-        _amountController.text = (result.amount! / 100).toStringAsFixed(2);
-        _amountError = null;
-      }
-      if (result.items.isNotEmpty && _descriptionController.text.isEmpty) {
-        _descriptionController.text =
-            result.items.map((i) => i.name).join(', ');
-      }
-
-      setState(() {
-        // Keep the scanned image so it is attached to the expense, not just
-        // read for OCR.
-        _scannedReceipt = File(picked.path);
-        _isScanning = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      // The photo is still usable as a receipt even if OCR failed.
-      setState(() {
-        _scannedReceipt = File(picked.path);
-        _isScanning = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-      );
-    }
   }
 
   Future<void> _pickDate() async {
@@ -345,7 +287,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
         ),
       );
 
-      final receipt = widget.receiptImage ?? _scannedReceipt;
+      final receipt = widget.receiptImage;
       if (receipt != null) {
         try {
           final bytes = await receipt.readAsBytes();
@@ -566,32 +508,6 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
                 onPressed: _pickDate,
                 semanticLabel: l10n.expenseCreationDateLabel,
               ),
-            ),
-            const SizedBox(width: MitlistSpacing.sm),
-            AppButton(
-              text: _isScanning
-                  ? l10n.expenseCreationScanning
-                  : _hasReceipt
-                      ? l10n.expenseCreationReceiptButton
-                      : l10n.expenseCreationScanButton,
-              icon: AppIcon(
-                name: _hasReceipt
-                    ? 'checkCircle'
-                    : _isScanning
-                        ? 'hourglassEmpty'
-                        : 'documentScanner',
-                size: 18,
-              ),
-              // A scanned receipt reads as a completed step: filled-soft success
-              // instead of the neutral outline of the "not yet" state.
-              variant:
-                  _hasReceipt ? AppButtonVariant.soft : AppButtonVariant.outline,
-              color:
-                  _hasReceipt ? AppButtonColor.success : AppButtonColor.neutral,
-              onPressed: _isScanning ? null : _onScan,
-              semanticLabel: _hasReceipt
-                  ? l10n.expenseCreationReceiptAttached
-                  : l10n.expenseCreationScanReceiptSemantics,
             ),
           ],
         ),
