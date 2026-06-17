@@ -169,10 +169,6 @@ func main() {
 			calendarHandler := handlers.NewCalendarHandler(cnt.CalendarService())
 			calendarHandler.RegisterRoutes(r)
 
-			// Assistant
-			assistantHandler := handlers.NewAssistantHandler(cnt.AssistantService())
-		assistantHandler.RegisterRoutes(r)
-
 			// Grocery graph sync
 			groceryHandler := handlers.NewGroceryHandler(cnt.GroceryService())
 			groceryHandler.RegisterRoutes(r)
