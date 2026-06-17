@@ -20,14 +20,20 @@ import (
 // copies with auto-settled payer splits and advancing the next due date.
 // Run hourly.
 type RecurringExpenseJob struct {
-	repo recurringExpenseRepo
-	push Pusher
-	log  *logger.Logger
+	repo       recurringExpenseRepo
+	push       Pusher
+	dispatcher NotificationDispatcher // preferred; push used as fallback
+	log        *logger.Logger
 }
 
 // NewRecurringExpenseJob creates a new RecurringExpenseJob.
 func NewRecurringExpenseJob(db repositories.DBTX, push Pusher, log *logger.Logger) *RecurringExpenseJob {
 	return &RecurringExpenseJob{repo: &recurringExpenseRepoImpl{db: db}, push: push, log: log}
+}
+
+// NewRecurringExpenseJobWithDispatcher creates a RecurringExpenseJob that persists feed rows via the dispatcher.
+func NewRecurringExpenseJobWithDispatcher(db repositories.DBTX, dispatcher NotificationDispatcher, log *logger.Logger) *RecurringExpenseJob {
+	return &RecurringExpenseJob{repo: &recurringExpenseRepoImpl{db: db}, dispatcher: dispatcher, log: log}
 }
 
 func newRecurringExpenseJob(repo recurringExpenseRepo, push Pusher, log *logger.Logger) *RecurringExpenseJob {
@@ -93,19 +99,28 @@ func (j *RecurringExpenseJob) processRecurringExpense(ctx context.Context, re mo
 		return fmt.Errorf("process recurring expense: %w", err)
 	}
 
-	recurringPushPayload := recurringPushPayload{
-		Title: "New Recurring Expense",
-		Body:  re.Description + " has been added",
-		Data: models.NotificationPayload{
-			Screen:     models.ScreenRecurringExpenses,
-			EntityType: models.EntityTypeRecurringExpense,
-			ID:         re.ID.String(),
-			GroupID:    re.GroupID.String(),
-		},
+	notifPayload := models.NotificationPayload{
+		Screen:     models.ScreenRecurringExpenses,
+		EntityType: models.EntityTypeRecurringExpense,
+		ID:         re.ID.String(),
+		GroupID:    re.GroupID.String(),
 	}
-	data, _ := json.Marshal(recurringPushPayload)
-	if err := j.push.BroadcastToGroup(re.GroupID, string(data)); err != nil {
-		j.log.Warn().Err(err).Str("group_id", re.GroupID.String()).Msg("failed to send recurring expense push")
+
+	if j.dispatcher != nil {
+		if err := j.dispatcher.DispatchToGroup(ctx, re.GroupID, uuid.Nil, "expense_created",
+			"New Recurring Expense", re.Description+" has been added", notifPayload); err != nil {
+			j.log.Warn().Err(err).Str("group_id", re.GroupID.String()).Msg("failed to dispatch recurring expense notification")
+		}
+	} else if j.push != nil {
+		recurringPushPayload := recurringPushPayload{
+			Title: "New Recurring Expense",
+			Body:  re.Description + " has been added",
+			Data:  notifPayload,
+		}
+		data, _ := json.Marshal(recurringPushPayload)
+		if err := j.push.BroadcastToGroup(re.GroupID, string(data)); err != nil {
+			j.log.Warn().Err(err).Str("group_id", re.GroupID.String()).Msg("failed to send recurring expense push")
+		}
 	}
 
 	j.log.Info().

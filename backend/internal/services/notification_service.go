@@ -19,6 +19,7 @@ import (
 type NotificationService struct {
 	notificationRepo repositories.NotificationRepo
 	activityRepo     repositories.ActivityRepo
+	groupRepo        repositories.GroupRepo
 	pushService      PushService
 }
 
@@ -26,13 +27,127 @@ type NotificationService struct {
 func NewNotificationService(
 	notificationRepo repositories.NotificationRepo,
 	activityRepo repositories.ActivityRepo,
+	groupRepo repositories.GroupRepo,
 	pushService PushService,
 ) *NotificationService {
 	return &NotificationService{
 		notificationRepo: notificationRepo,
 		activityRepo:     activityRepo,
+		groupRepo:        groupRepo,
 		pushService:      pushService,
 	}
+}
+
+// NotificationDispatcher is the interface implemented by NotificationService.
+// Consuming services accept this interface to avoid import cycles.
+type NotificationDispatcher interface {
+	DispatchToGroup(ctx context.Context, groupID, actorID uuid.UUID, nType, title, body string, payload models.NotificationPayload) error
+	DispatchToUsers(ctx context.Context, userIDs []uuid.UUID, groupID uuid.UUID, nType, title, body string, payload models.NotificationPayload) error
+}
+
+// DispatchToGroup persists in-app notifications and sends push to every group
+// member (except actorID) whose preferences allow this type. Persist is
+// synchronous (the feed must be reliable); push is fired in the background so it
+// never blocks the caller. Best-effort: push errors are logged, not returned.
+func (s *NotificationService) DispatchToGroup(ctx context.Context, groupID, actorID uuid.UUID, nType, title, body string, payload models.NotificationPayload) error {
+	members, err := s.groupRepo.ListMembershipsByGroup(ctx, groupID)
+	if err != nil {
+		return fmt.Errorf("dispatch: list members: %w", err)
+	}
+	prefs, _ := s.notificationRepo.GetPreferencesByGroup(ctx, groupID)
+
+	data, _ := json.Marshal(payload)
+	now := time.Now().UTC()
+	var rows []models.Notification
+	var pushTargets []uuid.UUID
+	for _, m := range members {
+		if m.UserID == actorID {
+			continue
+		}
+		pref := prefs[m.UserID]
+		if pref == nil {
+			pref = models.DefaultNotificationPreference(m.UserID, groupID)
+		}
+		if !pref.PushEnabled || !preferenceForType(pref, nType) {
+			continue
+		}
+		rows = append(rows, models.Notification{
+			ID:        uuid.New(),
+			UserID:    m.UserID,
+			GroupID:   groupID,
+			Type:      nType,
+			Title:     title,
+			Body:      body,
+			Data:      data,
+			CreatedAt: now,
+		})
+		pushTargets = append(pushTargets, m.UserID)
+	}
+	if len(rows) == 0 {
+		return nil
+	}
+	if err := s.notificationRepo.CreateNotificationsBatch(ctx, rows); err != nil {
+		return fmt.Errorf("dispatch: persist: %w", err)
+	}
+	if s.pushService != nil {
+		pushPayload, _ := json.Marshal(map[string]any{"title": title, "body": body, "data": payload})
+		go func(ids []uuid.UUID, p string) {
+			for _, id := range ids {
+				_ = s.pushService.SendToUser(id, p)
+			}
+		}(pushTargets, string(pushPayload))
+	}
+	return nil
+}
+
+// DispatchToUsers persists in-app notifications and sends push to the specified
+// users (e.g. a single assignee for a chore reminder). Preference-checked per user.
+// Persist is synchronous; push is background best-effort.
+func (s *NotificationService) DispatchToUsers(ctx context.Context, userIDs []uuid.UUID, groupID uuid.UUID, nType, title, body string, payload models.NotificationPayload) error {
+	if len(userIDs) == 0 {
+		return nil
+	}
+	prefs, _ := s.notificationRepo.GetPreferencesByGroup(ctx, groupID)
+
+	data, _ := json.Marshal(payload)
+	now := time.Now().UTC()
+	var rows []models.Notification
+	var pushTargets []uuid.UUID
+	for _, userID := range userIDs {
+		pref := prefs[userID]
+		if pref == nil {
+			pref = models.DefaultNotificationPreference(userID, groupID)
+		}
+		if !pref.PushEnabled || !preferenceForType(pref, nType) {
+			continue
+		}
+		rows = append(rows, models.Notification{
+			ID:        uuid.New(),
+			UserID:    userID,
+			GroupID:   groupID,
+			Type:      nType,
+			Title:     title,
+			Body:      body,
+			Data:      data,
+			CreatedAt: now,
+		})
+		pushTargets = append(pushTargets, userID)
+	}
+	if len(rows) == 0 {
+		return nil
+	}
+	if err := s.notificationRepo.CreateNotificationsBatch(ctx, rows); err != nil {
+		return fmt.Errorf("dispatch: persist: %w", err)
+	}
+	if s.pushService != nil {
+		pushPayload, _ := json.Marshal(map[string]any{"title": title, "body": body, "data": payload})
+		go func(ids []uuid.UUID, p string) {
+			for _, id := range ids {
+				_ = s.pushService.SendToUser(id, p)
+			}
+		}(pushTargets, string(pushPayload))
+	}
+	return nil
 }
 
 // preferenceForType maps a notification type to the corresponding preference flag.

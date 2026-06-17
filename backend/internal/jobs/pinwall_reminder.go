@@ -18,14 +18,21 @@ import (
 // PinwallReminder sends one-time reminders for pinwall posts with remind_at set.
 // Runs every minute.
 type PinwallReminder struct {
-	repo  pinwallReminderRepo
-	log   *logger.Logger
-	push  Pusher
+	repo       pinwallReminderRepo
+	log        *logger.Logger
+	push       Pusher
+	dispatcher NotificationDispatcher // preferred; manual batch+push used as fallback
 }
 
 func NewPinwallReminder(db repositories.DBTX, push Pusher, log *logger.Logger) *PinwallReminder {
 	repo := &pinwallReminderRepoImpl{db: db}
 	return &PinwallReminder{repo: repo, log: log, push: push}
+}
+
+// NewPinwallReminderWithDispatcher creates a PinwallReminder that routes through the dispatcher.
+func NewPinwallReminderWithDispatcher(db repositories.DBTX, dispatcher NotificationDispatcher, log *logger.Logger) *PinwallReminder {
+	repo := &pinwallReminderRepoImpl{db: db}
+	return &PinwallReminder{repo: repo, log: log, dispatcher: dispatcher}
 }
 
 type pinwallReminderRepo interface {
@@ -87,13 +94,34 @@ func (r *PinwallReminder) sendForPost(ctx context.Context, post models.PinwallPo
 
 	sentAt := time.Now().UTC()
 
-	payload := models.NotificationPayload{
+	notifPayload := models.NotificationPayload{
 		Screen:     models.ScreenHouseholdHub,
 		EntityType: models.EntityTypePinwallPost,
 		ID:         post.ID.String(),
 		GroupID:    post.GroupID.String(),
 	}
-	data, _ := json.Marshal(payload)
+
+	if r.dispatcher != nil {
+		// Dispatcher handles persist+push preference-filtered for group minus author.
+		if err := r.dispatcher.DispatchToGroup(ctx, post.GroupID, post.UserID, "pinwall_reminder",
+			"Reminder", post.Content, notifPayload); err != nil {
+			return fmt.Errorf("dispatch pinwall reminder: %w", err)
+		}
+		ok, err := r.repo.MarkReminderSent(ctx, post.ID, sentAt)
+		if err != nil {
+			return fmt.Errorf("mark reminder sent: %w", err)
+		}
+		if ok {
+			r.log.Info().
+				Str("post_id", post.ID.String()).
+				Time("remind_at", post.RemindAt.UTC()).
+				Msg("pinwall reminder dispatched")
+		}
+		return nil
+	}
+
+	// Fallback: manual batch+push (used when no dispatcher is injected).
+	data, _ := json.Marshal(notifPayload)
 
 	defaultPref := func(userID uuid.UUID) *models.NotificationPreference {
 		return models.DefaultNotificationPreference(userID, post.GroupID)
@@ -134,7 +162,7 @@ func (r *PinwallReminder) sendForPost(ctx context.Context, post models.PinwallPo
 	pushPayload := map[string]interface{}{
 		"title": "Reminder",
 		"body":  post.Content,
-		"data":  payload,
+		"data":  notifPayload,
 	}
 	pushBytes, _ := json.Marshal(pushPayload)
 	pushStr := string(pushBytes)

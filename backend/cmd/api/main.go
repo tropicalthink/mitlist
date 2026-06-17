@@ -50,7 +50,7 @@ func main() {
 
 	cnt := container.New(cfg, pool, redisClient, log)
 
-	runner := jobs.NewRunner(pool, cnt.Push(), log)
+	runner := jobs.NewRunnerWithDispatcher(pool, cnt.NotificationService(), log)
 	runner.RegisterAll()
 	runner.Start()
 
