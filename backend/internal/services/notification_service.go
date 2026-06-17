@@ -164,17 +164,7 @@ func (s *NotificationService) GetGroupPreference(ctx context.Context, userID, gr
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			// Return defaults
-			return &models.NotificationPreference{
-				UserID:          userID,
-				GroupID:         groupID,
-				ChoreDue:        true,
-				ChoreDueDayOf:   true,
-				ListItemAdded:   true,
-				ExpenseCreated:  true,
-				MealPlanChanged: true,
-				WeeklyDigest:    true,
-				PushEnabled:     true,
-			}, nil
+			return models.DefaultNotificationPreference(userID, groupID), nil
 		}
 		return nil, fmt.Errorf("get preference: %w", err)
 	}

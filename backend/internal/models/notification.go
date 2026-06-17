@@ -37,4 +37,14 @@ type NotificationPreference struct {
 	UpdatedAt       time.Time `json:"updated_at"`
 }
 
-
+// DefaultNotificationPreference returns the default preference for a user/group
+// that has no saved row. All categories default ON; PushEnabled ON. (EmailEnabled,
+// if/when added by plan 024, defaults OFF — opt-in.)
+func DefaultNotificationPreference(userID, groupID uuid.UUID) *NotificationPreference {
+	return &NotificationPreference{
+		UserID: userID, GroupID: groupID,
+		ChoreDue: true, ChoreDueDayOf: true, ListItemAdded: true,
+		ExpenseCreated: true, MealPlanChanged: true, WeeklyDigest: true,
+		PinwallReminder: true, PushEnabled: true,
+	}
+}
