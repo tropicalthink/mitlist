@@ -1,19 +1,16 @@
 import 'dart:async';
 
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../models/group_models.dart';
 import '../../models/recipe_models.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/recipe_provider.dart';
-import '../../providers/scan_provider.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/haptics.dart';
@@ -61,7 +58,6 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
   bool _isPublic = false;
   bool _isSaving = false;
   bool _isScraping = false;
-  bool _isScanning = false;
   _RecipeEntryMode _mode = _RecipeEntryMode.url;
   List<Group> _groups = [];
 
@@ -135,49 +131,6 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
       ],
     );
     return result == true;
-  }
-
-  Future<void> _onScan() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: ImageSource.camera,
-      maxWidth: 2048,
-      maxHeight: 2048,
-    );
-    if (picked == null || !mounted) return;
-
-    setState(() {
-      _isScanning = true;
-      _mode = _RecipeEntryMode.manual;
-    });
-
-    try {
-      final service = await ref.read(scanServiceProviderAsync.future);
-      final bytes = await File(picked.path).readAsBytes();
-      final result = await service.scanImage(bytes, 'image/jpeg');
-
-      if (!mounted) return;
-
-      if (result.title != null && result.title!.isNotEmpty) {
-        _titleController.text = result.title!;
-      }
-      if (result.items.isNotEmpty) {
-        _ingredientsController.text =
-            result.items.map((i) => i.name).join('\n');
-      }
-      if (result.steps.isNotEmpty) {
-        _stepsController.text = result.steps.join('\n');
-      }
-
-      setState(() => _isScanning = false);
-    } catch (_) {
-      if (!mounted) return;
-      final l10n = AppLocalizations.of(context)!;
-      setState(() => _isScanning = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.recipeCreationCouldNotScan)),
-      );
-    }
   }
 
   bool get _hasTitle => _titleController.text.trim().isNotEmpty;
@@ -707,15 +660,6 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
           onTap: _isSaving
               ? null
               : () => setState(() => _mode = _RecipeEntryMode.manual),
-        ),
-        const SizedBox(height: MitlistSpacing.sm),
-        _buildEntryOption(
-          colorScheme: colorScheme,
-          icon: _isScanning ? 'hourglassEmpty' : 'documentScanner',
-          title: _isScanning ? l10n.recipeCreationScanning : l10n.recipeCreationScanPhoto,
-          subtitle: l10n.recipeCreationScanPhotoDesc,
-          selected: false,
-          onTap: _isScanning || _isSaving ? null : _onScan,
         ),
         const SizedBox(height: MitlistSpacing.lg),
         if (_mode == _RecipeEntryMode.url) ...[

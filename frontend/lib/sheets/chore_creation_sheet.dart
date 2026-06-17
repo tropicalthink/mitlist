@@ -1,15 +1,11 @@
 import 'dart:async';
 
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../models/chore_models.dart';
 import '../providers/chore_provider.dart';
 import '../providers/group_provider.dart';
-import '../providers/scan_provider.dart';
 import '../router.dart' show currentGroupIdProvider;
 import '../theme/spacing.dart';
 import '../utils/active_group_context.dart';
@@ -17,7 +13,6 @@ import '../utils/haptics.dart';
 import '../widgets/animated_check_toggle.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
-import '../widgets/app_icon.dart';
 import '../widgets/app_input.dart';
 import '../utils/friendly_error.dart';
 import '../widgets/chip.dart';
@@ -81,7 +76,6 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
   bool _trackDateOnly = false;
   bool _rollover = false;
   bool _isSaving = false;
-  bool _isScanning = false;
   bool _showAdvanced = false;
   String? _category;
 
@@ -111,42 +105,6 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       if (group.id == groupId) return group.choreZones;
     }
     return const [];
-  }
-
-  Future<void> _onScan() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: ImageSource.camera,
-      maxWidth: 2048,
-      maxHeight: 2048,
-    );
-    if (picked == null || !mounted) return;
-
-    setState(() => _isScanning = true);
-    _markDirty();
-
-    try {
-      final service = await ref.read(scanServiceProviderAsync.future);
-      final bytes = await File(picked.path).readAsBytes();
-      final result = await service.scanImage(bytes, 'image/jpeg');
-
-      if (!mounted) return;
-
-      if (result.title != null && result.title!.isNotEmpty) {
-        _nameController.text = result.title!;
-      }
-      if (result.steps.isNotEmpty) {
-        _descriptionController.text = result.steps.join('\n');
-      }
-
-      setState(() => _isScanning = false);
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isScanning = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-      );
-    }
   }
 
   bool get _canCreate => _nameController.text.trim().isNotEmpty && !_isSaving;
@@ -335,28 +293,16 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Name + scan ───────────────────────────────────────────────
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Expanded(
-              child: AppInput(
-                hint: l10n.choreCreationNameHint,
-                controller: _nameController,
-                textInputAction: TextInputAction.next,
-                maxLength: 100,
-                onChanged: (_) {
-                  _markDirty();
-                  setState(() {});
-                },
-              ),
-            ),
-            const SizedBox(width: MitlistSpacing.sm),
-            _ScanIconButton(
-              isScanning: _isScanning,
-              onPressed: _isScanning ? null : _onScan,
-            ),
-          ],
+        // ── Name ─────────────────────────────────────────────────────
+        AppInput(
+          hint: l10n.choreCreationNameHint,
+          controller: _nameController,
+          textInputAction: TextInputAction.next,
+          maxLength: 100,
+          onChanged: (_) {
+            _markDirty();
+            setState(() {});
+          },
         ),
         const SizedBox(height: MitlistSpacing.md),
 
@@ -705,44 +651,3 @@ class _OptionToggle extends StatelessWidget {
   }
 }
 
-class _ScanIconButton extends StatelessWidget {
-  final bool isScanning;
-  final VoidCallback? onPressed;
-
-  const _ScanIconButton({required this.isScanning, this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
-    return Semantics(
-      label: l10n.choreCreationScanChoreSemantic,
-      button: true,
-      child: GestureDetector(
-        onTap: onPressed,
-        child: Container(
-          width: MitlistSpacing.space11,
-          height: MitlistSpacing.space11,
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            border: Border.all(color: colorScheme.outline, width: 2),
-          ),
-          child: Center(
-            child: isScanning
-                ? SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  )
-                : AppIcon(name: 'documentScanner', size: 20),
-          ),
-        ),
-      ),
-    );
-  }
-}
