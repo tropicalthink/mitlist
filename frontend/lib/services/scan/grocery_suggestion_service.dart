@@ -45,6 +45,32 @@ class GrocerySuggestionService {
   GrocerySuggestionService(this._db, {StaticEmbeddingService? embedder})
       : _embedder = embedder;
 
+  // Purchase-history frequency cache — avoids a DB round-trip on every
+  // keystroke. Invalidated per group and after 5 minutes.
+  Map<String, int>? _freqCache;
+  String? _freqCacheGroupId;
+  DateTime? _freqCacheTime;
+
+  Future<Map<String, int>> _purchaseFreq(String groupId) async {
+    final now = DateTime.now();
+    if (_freqCache != null &&
+        _freqCacheGroupId == groupId &&
+        _freqCacheTime != null &&
+        now.difference(_freqCacheTime!).inSeconds < 300) {
+      return _freqCache!;
+    }
+    final history = await _db.getGroupPurchaseHistory(groupId: groupId);
+    final freq = <String, int>{};
+    for (final r in history) {
+      final id = r.canonicalItemId;
+      if (id != null) freq[id] = (freq[id] ?? 0) + 1;
+    }
+    _freqCache = freq;
+    _freqCacheGroupId = groupId;
+    _freqCacheTime = now;
+    return freq;
+  }
+
   Future<List<GrocerySuggestion>> suggest(
     String query,
     String groupId, {
@@ -53,23 +79,13 @@ class GrocerySuggestionService {
     final q = query.toLowerCase().trim();
     if (q.length < 2) return const [];
 
-    // Over-fetch alias matches, then collapse to distinct canonical items.
-    final aliases = await _db.searchAliasPrefix(
-      groupId: groupId,
-      query: q,
-      limit: limit * 6,
-    );
-
-    // Word-level FTS5 prefix search — catches items where the query matches a
-    // *word* inside a multi-word alias ("pad" → "breast pads") or a brand alias
-    // that is not a whole-string prefix of its alias ("pringles" → "potato_chips"
-    // once the brand alias is seeded). Run in parallel with the prefix search
-    // and merge before ranking.
-    final wordAliases = await _db.searchAliasWordPrefix(
-      groupId: groupId,
-      query: q,
-      limit: limit * 8,
-    );
+    // Run both prefix searches in parallel — they're independent DB reads.
+    final prefixResults = await Future.wait([
+      _db.searchAliasPrefix(groupId: groupId, query: q, limit: limit * 6),
+      _db.searchAliasWordPrefix(groupId: groupId, query: q, limit: limit * 8),
+    ]);
+    final aliases = prefixResults[0];
+    final wordAliases = prefixResults[1];
 
     // Keep the first matching alias per canonical item; its language decides
     // which name we label the suggestion with (so "milch" → Milch, "milk" →
@@ -158,15 +174,8 @@ class GrocerySuggestionService {
     // Prior-aware ranking: WITHIN each relevance tier, bubble up what THIS
     // household actually buys (purchase-history frequency), then exact
     // name-prefix, then original recall order. Tiers never cross — a fuzzy or
-    // semantic match never outranks a clean prefix hit, however frequent. This
-    // is the on-device household prior (same signal the scanner ensemble uses),
-    // so your staples float to the top as you type.
-    final freq = <String, int>{};
-    final history = await _db.getGroupPurchaseHistory(groupId: groupId);
-    for (final r in history) {
-      final id = r.canonicalItemId;
-      if (id != null) freq[id] = (freq[id] ?? 0) + 1;
-    }
+    // semantic match never outranks a clean prefix hit, however frequent.
+    final freq = await _purchaseFreq(groupId);
     ranked.sort((a, b) {
       if (a.tier != b.tier) return a.tier.compareTo(b.tier);
       final fa = freq[a.suggestion.canonicalItemId] ?? 0;
