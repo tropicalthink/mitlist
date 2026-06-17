@@ -165,18 +165,7 @@ func (r *choreReminderRepoImpl) GetUserPreference(ctx context.Context, userID, g
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			// Return defaults when no preference row exists.
-			return &models.NotificationPreference{
-				UserID:          userID,
-				GroupID:         groupID,
-				ChoreDue:        true,
-				ChoreDueDayOf:   true,
-				ListItemAdded:   true,
-				ExpenseCreated:  true,
-				MealPlanChanged: true,
-				WeeklyDigest:    true,
-				PinwallReminder: true,
-				PushEnabled:     true,
-			}, nil
+			return models.DefaultNotificationPreference(userID, groupID), nil
 		}
 		return nil, err
 	}

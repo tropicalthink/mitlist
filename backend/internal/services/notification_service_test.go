@@ -92,6 +92,23 @@ func TestNotificationService_DeleteNotification(t *testing.T) {
 	})
 }
 
+func TestDefaultNotificationPreference(t *testing.T) {
+	userID := uuid.New()
+	groupID := uuid.New()
+	pref := models.DefaultNotificationPreference(userID, groupID)
+
+	assert.Equal(t, userID, pref.UserID)
+	assert.Equal(t, groupID, pref.GroupID)
+	assert.True(t, pref.ChoreDue, "ChoreDue should be true")
+	assert.True(t, pref.ChoreDueDayOf, "ChoreDueDayOf should be true")
+	assert.True(t, pref.ListItemAdded, "ListItemAdded should be true")
+	assert.True(t, pref.ExpenseCreated, "ExpenseCreated should be true")
+	assert.True(t, pref.MealPlanChanged, "MealPlanChanged should be true")
+	assert.True(t, pref.WeeklyDigest, "WeeklyDigest should be true")
+	assert.True(t, pref.PinwallReminder, "PinwallReminder should be true (regression: was missing from notification_service default)")
+	assert.True(t, pref.PushEnabled, "PushEnabled should be true")
+}
+
 func TestNotificationService_UpdatePreferences(t *testing.T) {
 	ctx := context.Background()
 	userID := uuid.New()

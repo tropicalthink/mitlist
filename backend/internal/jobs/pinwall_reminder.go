@@ -96,18 +96,7 @@ func (r *PinwallReminder) sendForPost(ctx context.Context, post models.PinwallPo
 	data, _ := json.Marshal(payload)
 
 	defaultPref := func(userID uuid.UUID) *models.NotificationPreference {
-		return &models.NotificationPreference{
-			UserID:          userID,
-			GroupID:         post.GroupID,
-			ChoreDue:        true,
-			ChoreDueDayOf:   true,
-			ListItemAdded:   true,
-			ExpenseCreated:  true,
-			MealPlanChanged: true,
-			WeeklyDigest:    true,
-			PinwallReminder: true,
-			PushEnabled:     true,
-		}
+		return models.DefaultNotificationPreference(userID, post.GroupID)
 	}
 
 	toDeliver := make([]models.Notification, 0, len(cache.members))
@@ -248,18 +237,7 @@ func (r *pinwallReminderRepoImpl) GetUserPreference(ctx context.Context, userID,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return &models.NotificationPreference{
-				UserID:          userID,
-				GroupID:         groupID,
-				ChoreDue:        true,
-				ChoreDueDayOf:   true,
-				ListItemAdded:   true,
-				ExpenseCreated:  true,
-				MealPlanChanged: true,
-				WeeklyDigest:    true,
-				PinwallReminder: true,
-				PushEnabled:     true,
-			}, nil
+			return models.DefaultNotificationPreference(userID, groupID), nil
 		}
 		return nil, err
 	}
