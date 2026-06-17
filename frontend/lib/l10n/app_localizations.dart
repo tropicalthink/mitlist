@@ -4791,6 +4791,12 @@ abstract class AppLocalizations {
   /// **'Did you mean?'**
   String get scanReviewDidYouMean;
 
+  /// Tentative resolver guess under the user's OCR text on a low-confidence scan-review row
+  ///
+  /// In en, this message translates to:
+  /// **'Best guess: {name}'**
+  String scanReviewBestGuess(String name);
+
   /// AppBar title for share target screen
   ///
   /// In en, this message translates to:

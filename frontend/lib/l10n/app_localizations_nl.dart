@@ -2698,6 +2698,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get scanReviewDidYouMean => 'Bedoelde je?';
 
   @override
+  String scanReviewBestGuess(String name) {
+    return 'Beste gok: $name';
+  }
+
+  @override
   String get shareTargetAppBarTitle => 'Opslaan in mitlist';
 
   @override
