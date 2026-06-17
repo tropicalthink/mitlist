@@ -57,7 +57,7 @@ class EnsembleResolver {
       return ResolveResult(displayName: _titleCase(rawText), score: 0);
     }
 
-    final ctx = context ?? await _buildContext(groupId, listContext);
+    final ctx = context ?? await buildContext(groupId, listContext);
     final scorer = await _ensureScorer();
 
     final scored = <_Scored>[];
@@ -83,7 +83,7 @@ class EnsembleResolver {
 
   /// Builds the household prior from purchase history (frequency + recency) and,
   /// when a [listContext] is given, the co-occurrence affinity to the list.
-  Future<ResolutionContext> _buildContext(
+  Future<ResolutionContext> buildContext(
     String groupId,
     List<String> listContext,
   ) async {

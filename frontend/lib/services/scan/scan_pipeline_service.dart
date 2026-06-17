@@ -76,11 +76,19 @@ class ScanPipelineService {
     final aisleByCanonicalId = <String, StoreAislesTableData?>{};
     final canonicalById = <String, CanonicalItemsTableData?>{};
 
+    // Build the household resolution context once per scan (purchase history +
+    // co-occurrence) so it is not redundantly rebuilt for every scanned line.
+    final resolutionContext = await _resolver.prepareContext(
+      groupId,
+      listContext: listContextCanonicalIds,
+    );
+
     for (final item in parsed) {
       final resolved = await _resolver.resolve(
         item.itemName,
         groupId,
         listContext: listContextCanonicalIds,
+        context: resolutionContext,
       );
 
       // 5. Aisle assignment. With a store selected, use its shipped layout
