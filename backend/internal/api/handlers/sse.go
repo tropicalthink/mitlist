@@ -2,12 +2,14 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/middleware"
@@ -116,6 +118,11 @@ func (h *SSEHandler) Events(w http.ResponseWriter, r *http.Request) {
 	ticker := time.NewTicker(25 * time.Second)
 	defer ticker.Stop()
 
+	// recheckEveryNTicks controls how often we re-validate group membership on a
+	// live stream. ticker is 25s → every 4th tick ≈ every 100s.
+	const recheckEveryNTicks = 4
+	tickCount := 0
+
 	for {
 		select {
 		case <-r.Context().Done():
@@ -130,6 +137,15 @@ func (h *SSEHandler) Events(w http.ResponseWriter, r *http.Request) {
 					if !write(fmt.Sprintf("data: %s\n\n", data)) {
 						return
 					}
+				}
+			}
+			tickCount++
+			if tickCount%recheckEveryNTicks == 0 {
+				if _, err := h.groupRepo.GetMembership(r.Context(), parsedGroupID, user.ID); err != nil {
+					if errors.Is(err, pgx.ErrNoRows) {
+						return // membership revoked — close the stream
+					}
+					// transient error: keep the connection, try again next cycle
 				}
 			}
 		case event, open := <-ch:
