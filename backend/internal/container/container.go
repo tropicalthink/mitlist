@@ -499,6 +499,7 @@ func (c *Container) ActivityService() *services.ActivityService {
 func (c *Container) PinwallService() *services.PinwallService {
 	c.pinwallServiceOnce.Do(func() {
 		c.pinwallService = services.NewPinwallService(c.PinwallRepo(), c.GroupRepo())
+		c.pinwallService.SetHub(c.SSEHub())
 	})
 	return c.pinwallService
 }

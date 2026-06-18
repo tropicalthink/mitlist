@@ -2858,6 +2858,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pinwallDragHint => 'Drag notes to move  ·  Pinch to zoom';
 
   @override
+  String pinwallPresenceHere(String names) {
+    return '$names here now';
+  }
+
+  @override
   String get pinwallCloseBoard => 'Close board';
 
   @override

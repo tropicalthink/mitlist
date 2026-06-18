@@ -2894,6 +2894,11 @@ class AppLocalizationsFr extends AppLocalizations {
       'Glisser les notes pour déplacer  ·  Pincer pour zoomer';
 
   @override
+  String pinwallPresenceHere(String names) {
+    return '$names here now';
+  }
+
+  @override
   String get pinwallCloseBoard => 'Fermer le tableau';
 
   @override
