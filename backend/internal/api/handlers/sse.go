@@ -67,8 +67,7 @@ func (h *SSEHandler) Events(w http.ResponseWriter, r *http.Request) {
 
 	groupID := parsedGroupID.String()
 
-	flusher, ok := w.(http.Flusher)
-	if !ok {
+	if _, ok := w.(http.Flusher); !ok {
 		http.Error(w, "streaming unsupported", http.StatusInternalServerError)
 		return
 	}
@@ -78,10 +77,25 @@ func (h *SSEHandler) Events(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("X-Accel-Buffering", "no") // disable nginx buffering
 
-	// Clear the server's write deadline for this connection — SSE is long-lived
-	// and the global WriteTimeout in server.go would otherwise kill it after 30s.
 	rc := http.NewResponseController(w)
-	_ = rc.SetWriteDeadline(time.Time{})
+
+	// write emits one SSE frame with a bounded per-write deadline. A half-open
+	// connection's stuck write fails after the budget instead of parking this
+	// goroutine forever (the global server WriteTimeout doesn't apply here —
+	// SSE is long-lived — so we bound each write individually).
+	const writeBudget = 15 * time.Second
+	write := func(frame string) bool {
+		if err := rc.SetWriteDeadline(time.Now().Add(writeBudget)); err != nil {
+			return false
+		}
+		if _, err := fmt.Fprint(w, frame); err != nil {
+			return false
+		}
+		if err := rc.Flush(); err != nil {
+			return false
+		}
+		return true
+	}
 
 	ch := h.hub.Subscribe(groupID, user.ID.String())
 	defer func() {
@@ -91,8 +105,9 @@ func (h *SSEHandler) Events(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// Send an initial ping so the client knows the stream is live.
-	_, _ = fmt.Fprintf(w, ": ping\n\n")
-	flusher.Flush()
+	if !write(": ping\n\n") {
+		return
+	}
 
 	// Announce presence now that this client is subscribed; the broadcast also
 	// delivers the current roster to the just-connected viewer.
@@ -107,8 +122,9 @@ func (h *SSEHandler) Events(w http.ResponseWriter, r *http.Request) {
 			return
 		case <-ticker.C:
 			// Keep-alive comment to prevent proxy timeouts.
-			_, _ = fmt.Fprintf(w, ": keep-alive\n\n")
-			flusher.Flush()
+			if !write(": keep-alive\n\n") {
+				return
+			}
 		case event, open := <-ch:
 			if !open {
 				return
@@ -117,8 +133,9 @@ func (h *SSEHandler) Events(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				continue
 			}
-			_, _ = fmt.Fprintf(w, "data: %s\n\n", data)
-			flusher.Flush()
+			if !write(fmt.Sprintf("data: %s\n\n", data)) {
+				return
+			}
 		}
 	}
 }
