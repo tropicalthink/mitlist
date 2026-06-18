@@ -7,12 +7,14 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/auth_models.dart';
+import '../../models/group_models.dart';
 import '../../models/pinwall_models.dart';
 import '../../providers/chore_provider.dart';
 import '../../providers/finance_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../providers/meal_plan_provider.dart';
 import '../../providers/pinwall_provider.dart';
+import '../../providers/presence_provider.dart';
 import '../../theme/animations.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
@@ -82,13 +84,20 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
     with TickerProviderStateMixin {
   final TransformationController _transformCtrl = TransformationController();
 
+  // Live list of notes, seeded from the snapshot handed in at open time and
+  // then kept in sync with the realtime stream (see _syncPosts).
+  late List<PinwallPost> _posts;
   late final Map<String, Offset> _positions;
   // Pinned hub-summary cards are draggable too, so they get their own state.
   Offset _statsPos = const Offset(_kMargin, _kMargin);
   Offset _tonightPos =
       const Offset(_kMargin + _kSummaryStatsW + _kSummaryGap, _kMargin);
   late final AnimationController _staggerCtrl;
-  late final List<Animation<double>> _noteAnims;
+  // Staggered entrance keyed by post id (stable across live reordering).
+  late final Map<String, Animation<double>> _initialEntranceById;
+  final List<CurvedAnimation> _ownedCurves = [];
+  // Notes that arrived live (after the first paint) — they pin on individually.
+  final Set<String> _enteringIds = {};
   // Entrance for the pinned summary memos — first beat of the stagger.
   late final CurvedAnimation _summaryAnim;
   // Id of the item currently being dragged, lifted and raised to the front so
@@ -105,9 +114,10 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
   @override
   void initState() {
     super.initState();
+    _posts = List.of(widget.posts);
     _positions = {
       for (var i = 0; i < widget.posts.length; i++)
-        widget.posts[i].id: _gridPosition(i),
+        widget.posts[i].id: _gridPosition(i, widget.posts[i].id.hashCode),
     };
 
     _staggerCtrl = AnimationController(
@@ -117,21 +127,20 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
       ),
     );
 
-    _noteAnims = List.generate(widget.posts.length, (i) {
-      final start = (i * 0.07).clamp(0.0, 0.6);
-      final end = (start + 0.4).clamp(0.0, 1.0);
-      return CurvedAnimation(
-        parent: _staggerCtrl,
-        curve: Interval(start, end, curve: Curves.easeOutCubic),
-      );
-    });
+    _initialEntranceById = {
+      for (var i = 0; i < widget.posts.length; i++)
+        widget.posts[i].id: _ownedCurve(
+          (i * 0.07).clamp(0.0, 0.6),
+          ((i * 0.07) + 0.4).clamp(0.0, 1.0),
+        ),
+    };
 
     _summaryAnim = CurvedAnimation(
       parent: _staggerCtrl,
       curve: const Interval(0.0, 0.4, curve: Curves.easeOutCubic),
     );
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final disableAnim = MediaQuery.of(context).disableAnimations;
       if (disableAnim) {
         _staggerCtrl.value = 1.0;
@@ -146,7 +155,23 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
       Future.delayed(const Duration(seconds: 3), () {
         if (mounted) setState(() => _showHint = false);
       });
+
+      // Open the realtime stream so a flatmate's note appears as it's pinned.
+      // Idempotent and owned by the hub section's lifecycle, so the board does
+      // not detach on close (that would also silence the home hub).
+      final repo = await ref.read(pinwallRepositoryProvider.future);
+      if (!mounted) return;
+      repo.attachSse(ref.read(sseServiceProvider), widget.groupId);
     });
+  }
+
+  CurvedAnimation _ownedCurve(double start, double end) {
+    final curve = CurvedAnimation(
+      parent: _staggerCtrl,
+      curve: Interval(start, end, curve: Curves.easeOutCubic),
+    );
+    _ownedCurves.add(curve);
+    return curve;
   }
 
   @override
@@ -160,13 +185,38 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
 
   @override
   void dispose() {
+    for (final c in _ownedCurves) {
+      c.dispose();
+    }
     _summaryAnim.dispose();
     _transformCtrl.dispose();
     _staggerCtrl.dispose();
     super.dispose();
   }
 
-  Offset _gridPosition(int index) {
+  /// Reconcile the board with the live post list: keep existing card positions,
+  /// drop notes that were removed, and lay out newly-arrived ones on the next
+  /// free grid slot so they pin on in place.
+  void _syncPosts(List<PinwallPost> incoming) {
+    if (!mounted) return;
+    final incomingIds = {for (final p in incoming) p.id};
+    final added = <String>[];
+    for (final p in incoming) {
+      if (!_positions.containsKey(p.id)) {
+        _positions[p.id] = _gridPosition(_positions.length, p.id.hashCode);
+        added.add(p.id);
+      }
+    }
+    _positions.removeWhere((id, _) => !incomingIds.contains(id));
+
+    // The stream only emits on real cache writes, so always adopt the new list.
+    setState(() {
+      _posts = incoming;
+      _enteringIds.addAll(added);
+    });
+  }
+
+  Offset _gridPosition(int index, int idHash) {
     const cols = 4;
     final col = index % cols;
     final row = index ~/ cols;
@@ -174,11 +224,23 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
     final baseX = _kMargin + col * (_kCardW + 60.0);
     final baseY = _kMargin + _kSummaryBandH + row * (_kCardH + 50.0);
 
-    final h = widget.posts[index].id.hashCode.abs();
+    final h = idHash.abs();
     final jx = ((h % 80) - 40).toDouble();
     final jy = (((h >> 8) % 60) - 30).toDouble();
 
-    return Offset(baseX + jx, baseY + jy);
+    return _clamp(Offset(baseX + jx, baseY + jy), _kCardW, _kCardH);
+  }
+
+  /// Keep a card's top-left inside the cork so a note can never be dragged off
+  /// the board and lost. The camera still roams free; the cards do not.
+  Offset _clamp(Offset o, double w, double h) {
+    const inset = 16.0;
+    final maxX = _kBoardW - w - inset;
+    final maxY = _kBoardH - h - inset;
+    return Offset(
+      o.dx.clamp(inset, maxX < inset ? inset : maxX),
+      o.dy.clamp(inset, maxY < inset ? inset : maxY),
+    );
   }
 
   void _centerOnNotes() {
@@ -212,16 +274,18 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
   void _onNoteDrag(String postId, DragUpdateDetails details) {
     setState(() {
       final cur = _positions[postId] ?? Offset.zero;
-      _positions[postId] = cur + details.delta;
+      _positions[postId] = _clamp(cur + details.delta, _kCardW, _kCardH);
     });
   }
 
   void _onStatsDrag(DragUpdateDetails details) {
-    setState(() => _statsPos += details.delta);
+    setState(() => _statsPos =
+        _clamp(_statsPos + details.delta, _kSummaryStatsW, _kSummaryBandH));
   }
 
   void _onTonightDrag(DragUpdateDetails details) {
-    setState(() => _tonightPos += details.delta);
+    setState(() => _tonightPos =
+        _clamp(_tonightPos + details.delta, _kSummaryTonightW, _kSummaryBandH));
   }
 
   void _lift(String id) {
@@ -265,26 +329,36 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
           child: _BoardTonightTicket(groupId: widget.groupId, dark: dark),
         ),
       ),
-      for (var i = 0; i < widget.posts.length; i++)
-        (
-          id: widget.posts[i].id,
-          order: 2 + i,
-          child: _BoardDraggableItem(
-            key: ValueKey(widget.posts[i].id),
-            position: _positions[widget.posts[i].id]!,
-            isActive: _activeId == widget.posts[i].id,
-            entrance: _noteAnims[i],
-            onLift: () => _lift(widget.posts[i].id),
-            onDrop: _drop,
-            onDrag: (d) => _onNoteDrag(widget.posts[i].id, d),
-            child: _BoardNoteCard(
-              index: i,
-              groupId: widget.groupId,
-              me: widget.me,
-              post: widget.posts[i],
+      for (var i = 0; i < _posts.length; i++)
+        () {
+          final post = _posts[i];
+          final id = post.id;
+          // Initial batch keeps its staggered entrance (keyed by id so it
+          // survives reordering); notes that arrive live pin on individually.
+          final initial = _initialEntranceById[id];
+          final isLive = initial == null && _enteringIds.contains(id);
+          Widget card = _BoardNoteCard(
+            index: i,
+            groupId: widget.groupId,
+            me: widget.me,
+            post: post,
+          );
+          if (isLive) card = _PinOnEntrance(child: card);
+          return (
+            id: id,
+            order: 2 + i,
+            child: _BoardDraggableItem(
+              key: ValueKey(id),
+              position: _positions[id]!,
+              isActive: _activeId == id,
+              entrance: initial,
+              onLift: () => _lift(id),
+              onDrop: _drop,
+              onDrag: (d) => _onNoteDrag(id, d),
+              child: card,
             ),
-          ),
-        ),
+          );
+        }(),
     ];
 
     layers.sort((a, b) {
@@ -307,6 +381,13 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
         ? MitlistColors.pinwallBoardBorderDark
         : MitlistColors.pinwallBoardBorder;
 
+    // Keep the board in sync with the realtime stream while it's open, so a
+    // flatmate pinning or removing a note repaints here without a reopen.
+    ref.listen<AsyncValue<List<PinwallPost>>>(
+      pinwallPostsByGroupProvider(widget.groupId),
+      (_, next) => next.whenData(_syncPosts),
+    );
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Hero(
@@ -326,10 +407,18 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
           );
         },
         child: Stack(
+          // Fill the screen even though every layer below is Positioned.fill,
+          // so the board never collapses if the parent hands loose constraints.
+          fit: StackFit.expand,
           children: [
-            // Board surface + notes
-            Container(
-              color: boardBg,
+            // The wall the board hangs on — static behind the pannable cork, so
+            // panning/zooming reveals a framed board floating in space rather
+            // than an infinite sea of cork.
+            Positioned.fill(
+              child: CustomPaint(painter: _WallPainter(dark: dark)),
+            ),
+            // Board surface + notes (free pan/zoom over the static wall).
+            Positioned.fill(
               child: InteractiveViewer(
                 transformationController: _transformCtrl,
                 minScale: 0.2,
@@ -347,7 +436,7 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
                       clipBehavior: Clip.none,
                       children: [
                         ..._buildBoardItems(context, dark: dark),
-                        if (widget.posts.isEmpty)
+                        if (_posts.isEmpty)
                           Positioned(
                             left: _kMargin,
                             top: _kMargin + _kSummaryBandH,
@@ -367,12 +456,29 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
                 padding: const EdgeInsets.all(MitlistSpacing.md),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _BoardChip(
-                      label: l10n.pinwallBoardLabel,
-                      icon: Icons.push_pin_outlined,
-                      dark: dark,
+                    Flexible(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _BoardChip(
+                            label: l10n.pinwallBoardLabel,
+                            icon: Icons.push_pin_outlined,
+                            dark: dark,
+                          ),
+                          const SizedBox(width: MitlistSpacing.sm),
+                          Flexible(
+                            child: _PresenceBar(
+                              groupId: widget.groupId,
+                              meId: widget.me?.id,
+                              dark: dark,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: MitlistSpacing.sm),
                     _BoardCloseButton(
                       dark: dark,
                       onClose: () => Navigator.of(context).pop(),
@@ -383,7 +489,7 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
             ),
 
             // Pan/zoom hint
-            if (widget.posts.isNotEmpty)
+            if (_posts.isNotEmpty)
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.easeOut,
@@ -409,6 +515,9 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
 
 // ─── Cork canvas with grain ───────────────────────────────────────────────────
 
+/// The cork board itself: a filled, wood-framed surface that casts a soft
+/// shadow onto the wall behind it, so the whole board reads as one physical
+/// object you can pan around rather than a bottomless field of cork.
 class _CorkCanvas extends StatelessWidget {
   const _CorkCanvas({required this.dark, required this.child});
 
@@ -417,9 +526,30 @@ class _CorkCanvas extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _CorkGrainPainter(dark: dark),
-      child: child,
+    final cork =
+        dark ? MitlistColors.pinwallBoardDark : MitlistColors.pinwallBoard;
+    final frame = dark
+        ? MitlistColors.pinwallBoardBorderDark
+        : MitlistColors.pinwallBoardBorder;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cork,
+        border: Border.all(color: frame, width: 26),
+        boxShadow: [
+          // Ambient lift off the wall.
+          BoxShadow(
+            color: Colors.black.withValues(alpha: dark ? 0.55 : 0.32),
+            blurRadius: 90,
+            spreadRadius: 6,
+            offset: const Offset(0, 34),
+          ),
+        ],
+      ),
+      child: CustomPaint(
+        painter: _CorkGrainPainter(dark: dark),
+        child: child,
+      ),
     );
   }
 }
@@ -475,6 +605,322 @@ class _LCG {
   double nextDouble() {
     _s = (_s * 1664525 + 1013904223) & 0xFFFFFFFF;
     return (_s & 0x7FFFFFFF) / 0x7FFFFFFF;
+  }
+}
+
+// ─── The wall behind the board ────────────────────────────────────────────────
+
+/// A static plaster wall painted behind the pannable cork. It does not move
+/// with the board, so panning the cork over it reads as parallax depth and the
+/// board feels like a framed object hung in a room.
+class _WallPainter extends CustomPainter {
+  const _WallPainter({required this.dark});
+  final bool dark;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final base = dark ? const Color(0xFF14110E) : const Color(0xFF7C7064);
+    canvas.drawRect(rect, Paint()..color = base);
+
+    // Faint vertical plaster streaks for a hand-troweled texture.
+    final rng = _LCG(seed: 7);
+    final streak = Paint()
+      ..color = (dark ? Colors.white : Colors.black)
+          .withValues(alpha: dark ? 0.018 : 0.03)
+      ..strokeWidth = 1.0;
+    final count = (size.width / 26).clamp(8, 80).toInt();
+    for (var i = 0; i < count; i++) {
+      final x = rng.nextDouble() * size.width;
+      canvas.drawLine(
+        Offset(x, 0),
+        Offset(x + (rng.nextDouble() - 0.5) * 8, size.height),
+        streak,
+      );
+    }
+
+    // Vignette to sink the edges and lift the centered board.
+    final vignette = Paint()
+      ..shader = RadialGradient(
+        radius: 0.9,
+        colors: [
+          Colors.transparent,
+          Colors.black.withValues(alpha: dark ? 0.5 : 0.28),
+        ],
+        stops: const [0.5, 1.0],
+      ).createShader(rect);
+    canvas.drawRect(rect, vignette);
+  }
+
+  @override
+  bool shouldRepaint(_WallPainter old) => old.dark != dark;
+}
+
+// ─── Presence: who's on the board right now ──────────────────────────────────
+
+/// A live cluster of avatars for the household members currently viewing the
+/// board, led by a pulsing dot to signal it updates in real time.
+class _PresenceBar extends ConsumerWidget {
+  const _PresenceBar({
+    required this.groupId,
+    required this.meId,
+    required this.dark,
+  });
+
+  final String groupId;
+  final String? meId;
+  final bool dark;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final present =
+        ref.watch(presentMembersProvider((groupId: groupId, meId: meId)));
+    if (present.isEmpty) return const SizedBox.shrink();
+
+    const maxShown = 4;
+    const size = 26.0;
+    const overlap = 17.0;
+    final shown = present.take(maxShown).toList();
+    final extra = present.length - shown.length;
+    final stackW =
+        size + (shown.length - 1) * overlap + (extra > 0 ? overlap : 0);
+
+    final bg = dark
+        ? MitlistColors.neutral950.withValues(alpha: 0.72)
+        : MitlistColors.pinwallBoardBorder.withValues(alpha: 0.78);
+
+    final names = present
+        .map((m) => m.displayName.isEmpty ? '?' : m.displayName)
+        .join(', ');
+
+    return Semantics(
+      label: AppLocalizations.of(context)!.pinwallPresenceHere(names),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(8, 4, 10, 4),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(MitlistTheme.radiusFull),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const _LiveDot(),
+            const SizedBox(width: 7),
+            SizedBox(
+              width: stackW,
+              height: size,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  for (var i = 0; i < shown.length; i++)
+                    Positioned(
+                      left: i * overlap,
+                      child: _InitialAvatar(
+                        member: shown[i],
+                        isMe: shown[i].userId == meId,
+                        size: size,
+                      ),
+                    ),
+                  if (extra > 0)
+                    Positioned(
+                      left: shown.length * overlap,
+                      child: _MoreAvatar(extra: extra, size: size),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A round initials avatar, tinted by a stable per-user color.
+class _InitialAvatar extends StatelessWidget {
+  const _InitialAvatar({
+    required this.member,
+    required this.isMe,
+    required this.size,
+  });
+
+  final GroupMemberProfile member;
+  final bool isMe;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final palette = [
+      scheme.primary,
+      scheme.secondary,
+      scheme.tertiary,
+      scheme.error,
+    ];
+    final color = palette[member.userId.hashCode.abs() % palette.length];
+    final initials =
+        member.displayName.isEmpty ? '?' : avatarInitials(member.displayName);
+
+    final avatar = Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(
+          // Ring the viewer's own avatar so "you" reads at a glance.
+          color: isMe
+              ? MitlistColors.surfaceSoft
+              : Colors.black.withValues(alpha: 0.25),
+          width: isMe ? 2 : 1.5,
+        ),
+      ),
+      child: Text(
+        initials,
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: size * 0.38,
+          fontWeight: FontWeight.w700,
+          height: 1.0,
+          shadows: const [
+            Shadow(color: Colors.black26, blurRadius: 1, offset: Offset(0, 0.5)),
+          ],
+        ),
+      ),
+    );
+
+    if (member.displayName.isEmpty) return avatar;
+    return Tooltip(message: member.displayName, child: avatar);
+  }
+}
+
+/// The "+N" overflow chip when more members are present than fit the stack.
+class _MoreAvatar extends StatelessWidget {
+  const _MoreAvatar({required this.extra, required this.size});
+
+  final int extra;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: MitlistColors.neutral800,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.black.withValues(alpha: 0.25), width: 1.5),
+      ),
+      child: Text(
+        '+$extra',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: size * 0.34,
+          fontWeight: FontWeight.w700,
+          height: 1.0,
+        ),
+      ),
+    );
+  }
+}
+
+/// Small green dot with a soft pulsing halo — the board's "live" signal.
+class _LiveDot extends StatefulWidget {
+  const _LiveDot();
+
+  @override
+  State<_LiveDot> createState() => _LiveDotState();
+}
+
+class _LiveDotState extends State<_LiveDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1700),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const green = Color(0xFF4ADE80);
+    const core = 8.0;
+    final dot = Container(
+      width: core,
+      height: core,
+      decoration: const BoxDecoration(color: green, shape: BoxShape.circle),
+    );
+
+    if (MediaQuery.of(context).disableAnimations) return dot;
+
+    return SizedBox(
+      width: core + 10,
+      height: core + 10,
+      child: Center(
+        child: AnimatedBuilder(
+          animation: _c,
+          builder: (context, child) {
+            final t = Curves.easeOut.transform(_c.value);
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                Opacity(
+                  opacity: (1 - t) * 0.55,
+                  child: Container(
+                    width: core + 10 * t,
+                    height: core + 10 * t,
+                    decoration:
+                        const BoxDecoration(color: green, shape: BoxShape.circle),
+                  ),
+                ),
+                child!,
+              ],
+            );
+          },
+          child: dot,
+        ),
+      ),
+    );
+  }
+}
+
+/// One-shot entrance for a note that arrives live: it drops and scales in as if
+/// pinned onto the board by a flatmate.
+class _PinOnEntrance extends StatelessWidget {
+  const _PinOnEntrance({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (MediaQuery.of(context).disableAnimations) return child;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: MitlistAnimations.medium,
+      curve: MitlistAnimations.easeEnter,
+      builder: (context, t, child) {
+        return Opacity(
+          opacity: t.clamp(0.0, 1.0),
+          child: Transform.translate(
+            offset: Offset(0, (1 - t) * -12),
+            child: Transform.scale(scale: 0.85 + 0.15 * t, child: child),
+          ),
+        );
+      },
+      child: child,
+    );
   }
 }
 

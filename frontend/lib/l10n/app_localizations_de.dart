@@ -2913,6 +2913,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Notizen zum Verschieben ziehen  ·  Zum Zoomen kneifen';
 
   @override
+  String pinwallPresenceHere(String names) {
+    return '$names here now';
+  }
+
+  @override
   String get pinwallCloseBoard => 'Board schließen';
 
   @override

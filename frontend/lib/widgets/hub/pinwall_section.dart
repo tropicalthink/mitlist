@@ -17,6 +17,7 @@ import '../../providers/chore_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../providers/finance_provider.dart';
 import '../../providers/meal_plan_provider.dart';
+import '../../repositories/pinwall_repository.dart';
 import '../../screens/pinwall/pinwall_board_screen.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
@@ -52,8 +53,24 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
   String? _linkedEntityId;
   String? _linkedEntityLabel;
 
+  PinwallRepository? _repo;
+
+  @override
+  void initState() {
+    super.initState();
+    // Open the realtime stream for the household so pins from flatmates land
+    // live on the hub wall (and, by extension, the full-screen board).
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final repo = await ref.read(pinwallRepositoryProvider.future);
+      if (!mounted) return;
+      _repo = repo;
+      repo.attachSse(ref.read(sseServiceProvider), widget.groupId);
+    });
+  }
+
   @override
   void dispose() {
+    _repo?.detachSse();
     _controller.dispose();
     super.dispose();
   }

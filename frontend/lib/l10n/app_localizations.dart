@@ -5115,6 +5115,12 @@ abstract class AppLocalizations {
   /// **'Drag notes to move  ·  Pinch to zoom'**
   String get pinwallDragHint;
 
+  /// Accessibility label listing the household members currently viewing the board
+  ///
+  /// In en, this message translates to:
+  /// **'{names} here now'**
+  String pinwallPresenceHere(String names);
+
   /// Button/semantics to close pinwall
   ///
   /// In en, this message translates to:
