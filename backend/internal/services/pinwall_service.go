@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"time"
 
@@ -11,15 +12,36 @@ import (
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/repositories"
+	"github.com/mitlist-app/mitlist/internal/sse"
 )
 
 type PinwallService struct {
 	repo      repositories.PinwallRepo
 	groupRepo repositories.GroupRepo
+	hub       *sse.Hub // optional; nil disables SSE broadcasts
 }
 
 func NewPinwallService(repo repositories.PinwallRepo, groupRepo repositories.GroupRepo) *PinwallService {
 	return &PinwallService{repo: repo, groupRepo: groupRepo}
+}
+
+// SetHub injects the SSE hub so pinwall changes broadcast to the household in
+// real time. Without a hub, the board only updates on manual refresh.
+func (s *PinwallService) SetHub(h *sse.Hub) { s.hub = h }
+
+// publishPost emits an SSE event for a pinwall post change. The payload carries
+// just the post id; clients reconcile against their cache (refetch on create,
+// remove on delete) so they never trust unauthenticated event bodies.
+func (s *PinwallService) publishPost(eventType string, groupID, postID uuid.UUID) {
+	if s.hub == nil {
+		return
+	}
+	data, _ := json.Marshal(map[string]string{"post_id": postID.String()})
+	s.hub.Publish(groupID.String(), sse.Event{
+		Type:    eventType,
+		GroupID: groupID.String(),
+		Payload: data,
+	})
 }
 
 func (s *PinwallService) requireMembership(ctx context.Context, userID, groupID uuid.UUID) error {
@@ -66,6 +88,7 @@ func (s *PinwallService) CreatePost(
 	if err := s.repo.CreatePost(ctx, p); err != nil {
 		return nil, err
 	}
+	s.publishPost("pinwall:post_created", groupID, p.ID)
 	return p, nil
 }
 
@@ -105,6 +128,7 @@ func (s *PinwallService) DeletePost(ctx context.Context, user *models.User, grou
 		}
 		return err
 	}
+	s.publishPost("pinwall:post_deleted", groupID, postID)
 	return nil
 }
 
