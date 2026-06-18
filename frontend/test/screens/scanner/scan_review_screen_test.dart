@@ -3,6 +3,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mitlist/l10n/app_localizations.dart';
 import 'package:mitlist/models/list_models.dart';
 import 'package:mitlist/providers/grocery_provider.dart';
 import 'package:mitlist/providers/list_provider.dart';
@@ -60,7 +61,7 @@ void main() {
       targetListName: 'Groceries',
     );
 
-    await tester.tap(find.text('ADD 1 ITEM'));
+    await tester.tap(find.text('1 ITEM'));
     await tester.pump();
 
     expect(listRepository.createItemCalls, hasLength(1));
@@ -92,7 +93,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('ADD 1 ITEM TO LIST'));
+    await tester.tap(find.text('1 ITEM ADD TO LIST'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('New list…'));
     await tester.pumpAndSettle();
@@ -108,6 +109,63 @@ void main() {
     expect(call.listId, 'list-created-1');
     expect(call.request.name, 'Eggs');
     expect(call.request.canonicalItemId, 'eggs');
+  });
+
+  testWidgets(
+      'ask row leads with OCR text and shows best-guess subtitle',
+      (tester) async {
+    await _setLargeSurface(tester);
+    await _pumpReview(
+      tester,
+      db: db,
+      listService: listService,
+      listRepository: listRepository,
+      scanResult: const GroceryScanResult(
+        items: [
+          GroceryPrediction(
+            id: 'p1',
+            rawText: 'olive oil',
+            displayName: 'Onion',
+            canonicalItemId: 'onion',
+            confidenceLevel: ConfidenceLevel.ask,
+            confidenceScore: 0.2,
+          ),
+        ],
+      ),
+      targetListId: 'list-existing',
+      targetListName: 'Groceries',
+    );
+
+    expect(find.text('olive oil'), findsOneWidget);
+    expect(find.text('Best guess: Onion'), findsOneWidget);
+  });
+
+  testWidgets(
+      'autoAccept row headline is displayName unchanged',
+      (tester) async {
+    await _setLargeSurface(tester);
+    await _pumpReview(
+      tester,
+      db: db,
+      listService: listService,
+      listRepository: listRepository,
+      scanResult: const GroceryScanResult(
+        items: [
+          GroceryPrediction(
+            id: 'p1',
+            rawText: 'mlk',
+            displayName: 'Milk',
+            canonicalItemId: 'milk',
+            confidenceLevel: ConfidenceLevel.autoAccept,
+            confidenceScore: 1,
+          ),
+        ],
+      ),
+      targetListId: 'list-existing',
+      targetListName: 'Groceries',
+    );
+
+    expect(find.text('Milk'), findsOneWidget);
   });
 }
 
@@ -131,6 +189,8 @@ Future<void> _pumpReview(
         ),
       ],
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: ScanReviewScreen(
           scanResult: scanResult,
           groupId: '11111111-1111-1111-1111-111111111111',

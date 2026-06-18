@@ -50,7 +50,7 @@ func main() {
 
 	cnt := container.New(cfg, pool, redisClient, log)
 
-	runner := jobs.NewRunner(pool, cnt.Push(), log)
+	runner := jobs.NewRunnerWithDispatcher(pool, cnt.NotificationService(), log)
 	runner.RegisterAll()
 	runner.Start()
 
@@ -75,6 +75,17 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 	})
 	srv.Router().Mount("/internal/health", healthHandler)
+
+	// Web → app redirect: browsers open this URL, server redirects to the deep link.
+	// Shared links use https://mitlist.me/join/<code>; this makes them tappable.
+	srv.Router().Get("/join/{code}", func(w http.ResponseWriter, r *http.Request) {
+		code := chi.URLParam(r, "code")
+		if len(code) < 4 {
+			http.Error(w, "invalid invite code", http.StatusBadRequest)
+			return
+		}
+		http.Redirect(w, r, "mitlist:///join/"+code, http.StatusFound)
+	})
 
 	authHandler := handlers.NewAuthHandler(cfg, cnt.UserService(), cnt.GuestService(), cnt.OAuthService(), cnt.JWT(), cnt.Redis().Client())
 	srv.Router().Route(cfg.APIPrefix+"/v1", func(r chi.Router) {
@@ -157,10 +168,6 @@ func main() {
 		// Calendar
 			calendarHandler := handlers.NewCalendarHandler(cnt.CalendarService())
 			calendarHandler.RegisterRoutes(r)
-
-			// Assistant
-			assistantHandler := handlers.NewAssistantHandler(cnt.AssistantService())
-		assistantHandler.RegisterRoutes(r)
 
 			// Grocery graph sync
 			groceryHandler := handlers.NewGroceryHandler(cnt.GroceryService())

@@ -8,6 +8,13 @@ import (
 	"github.com/mitlist-app/mitlist/internal/models"
 )
 
+// NotificationDispatcher persists in-app feed rows and sends push for a group audience.
+// Implemented by services.NotificationService; defined here to avoid import cycles.
+type NotificationDispatcher interface {
+	DispatchToGroup(ctx context.Context, groupID, actorID uuid.UUID, nType, title, body string, payload models.NotificationPayload) error
+	DispatchToUsers(ctx context.Context, userIDs []uuid.UUID, groupID uuid.UUID, nType, title, body string, payload models.NotificationPayload) error
+}
+
 // Pusher abstracts push notification delivery.
 type Pusher interface {
 	SendToUser(userID uuid.UUID, payload string) error

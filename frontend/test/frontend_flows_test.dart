@@ -1828,12 +1828,21 @@ class FakePinwallRepository implements PinwallRepository {
   }
 
   @override
-  Future<void> createPostOfflineFirst(String groupId,
-      {required String content}) async {}
+  Future<String> createPostOfflineFirst(String groupId,
+          {required String content,
+          required String userId,
+          DateTime? remindAt}) async =>
+      '';
 
   @override
   Future<void> deletePostOfflineFirst(String groupId, String postId) async {}
 
   @override
   Future<void> drainOutboxOnce() async {}
+
+  @override
+  void attachSse(dynamic sseService, String groupId) {}
+
+  @override
+  void detachSse() {}
 }

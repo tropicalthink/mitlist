@@ -95,6 +95,12 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   bool _isSaving = false;
   String _groupCurrency = 'USD';
   String? _userId;
+  int _suggestGeneration = 0;
+
+  // Cached sorted sections — recomputed only when items or settle-state changes.
+  List<ListItem> _openItems = const [];
+  List<ListItem> _doneItems = const [];
+  bool _sectionsDirty = true;
 
   /// Checked items briefly held in the open section so the strike animation
   /// plays in place before the row collapses away into "Checked off".
@@ -171,21 +177,21 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
   /// Refreshes both suggestion sources for the current composer text: the
   /// offline canonical grocery seed (alias-powered) and the backend product
-  /// history. The grocery seed needs no network and matches shorthand/typos.
-  /// When the query is empty, predictive restock suggestions are prepended
-  /// (items the household usually buys and whose cadence indicates they are due).
+  /// history. A generation counter ensures stale results from a prior keystroke
+  /// are silently discarded if a newer query has already started.
   Future<void> _refreshSuggestions() async {
     final groupId = _groupId;
     if (groupId == null) return;
     final query = _newItemController.text.trim();
+    final gen = ++_suggestGeneration;
 
-    // Local grocery seed first — instant, offline.
+    // Local grocery seed first — alias-powered, on-device.
     final grocery = await ref
         .read(grocerySuggestionServiceProvider)
         .suggest(query, groupId);
+    if (!mounted || _suggestGeneration != gen) return;
 
-    // When the composer is empty, prepend restock predictions ("usually every N
-    // days") — on-device only, no network or model in the request path.
+    // When the composer is empty, prepend restock predictions.
     List<GrocerySuggestion> blended = grocery;
     if (query.isEmpty) {
       try {
@@ -198,32 +204,33 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
               currentItemNames: currentNames,
               limit: 5,
             );
+        if (!mounted || _suggestGeneration != gen) return;
         if (restock.isNotEmpty) {
           final restockChips = restock.map((r) => GrocerySuggestion(
                 canonicalItemId: r.canonicalItemId,
                 name: r.name,
-                // category/unit unused by the chip renderer — reuse empty strings.
                 category: '',
                 unit: '',
               ));
-          // Restock items lead when the query is blank; grocery seed follows.
           blended = [...restockChips, ...grocery];
         }
-      } catch (_) {
-        // Restock is best-effort; don't disrupt the rest of the suggestion flow.
-      }
+      } catch (_) {}
     }
 
-    if (mounted) setState(() => _grocerySuggestions = blended);
+    if (!mounted || _suggestGeneration != gen) return;
+    setState(() => _grocerySuggestions = blended);
 
     try {
       final service = await ref.read(listServiceProviderAsync.future);
+      if (!mounted || _suggestGeneration != gen) return;
       final products = await service.listProducts(groupId,
           search: query.isEmpty ? null : query);
-      if (!mounted) return;
+      if (!mounted || _suggestGeneration != gen) return;
       setState(() => _productSuggestions = products.take(8).toList());
     } catch (_) {
-      if (mounted) setState(() => _productSuggestions = []);
+      if (mounted && _suggestGeneration == gen) {
+        setState(() => _productSuggestions = []);
+      }
     }
   }
 
@@ -285,6 +292,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       _itemsSub = repo.watchItemsByList(widget.listId).listen((items) {
         if (!mounted) return;
         setState(() {
+          _sectionsDirty = true;
           _items
             ..clear()
             ..addAll(items);
@@ -295,6 +303,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       final cached = await repo.getItemsByListOnce(widget.listId);
       if (!mounted) return;
       setState(() {
+        _sectionsDirty = true;
         _items
           ..clear()
           ..addAll(cached);
@@ -354,6 +363,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       _photoLoadAttempted.add(item.id);
     }
 
+    final batch = <String, List<ListItemPhoto>>{};
     await Future.wait(
       toLoad.map((item) async {
         try {
@@ -361,11 +371,12 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
             groupId: groupId,
             itemId: item.id,
           );
-          if (!mounted || photos.isEmpty) return;
-          setState(() => _photosByItemId[item.id] = photos);
+          if (photos.isNotEmpty) batch[item.id] = photos;
         } catch (_) {}
       }),
     );
+    if (!mounted || batch.isEmpty) return;
+    setState(() => _photosByItemId.addAll(batch));
   }
 
   Future<void> _addItemPhoto(ListItem item) async {
@@ -519,10 +530,16 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       // Hold the row in place while the strike draws, then collapse it away
       // into the done section instead of jump-cutting on the next rebuild.
       _settleTimers.remove(item.id)?.cancel();
-      setState(() => _settling.add(item.id));
+      setState(() {
+        _sectionsDirty = true;
+        _settling.add(item.id);
+      });
       _settleTimers[item.id] = Timer(_settleHold, () {
         if (!mounted) return;
-        setState(() => _collapsing.add(item.id));
+        setState(() {
+          _sectionsDirty = true;
+          _collapsing.add(item.id);
+        });
       });
     } else {
       _cancelSettle(item.id);
@@ -536,7 +553,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         UpdateListItemRequest(checked: value),
       );
       if (!mounted) return;
-      setState(() => _dirty = true);
+      _dirty = true;
     } catch (e) {
       if (!mounted) return;
       _cancelSettle(item.id);
@@ -552,6 +569,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     _settleTimers.remove(id)?.cancel();
     if (_settling.contains(id) || _collapsing.contains(id)) {
       setState(() {
+        _sectionsDirty = true;
         _settling.remove(id);
         _collapsing.remove(id);
       });
@@ -564,6 +582,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     _settleTimers.remove(id)?.cancel();
     if (!mounted) return;
     setState(() {
+      _sectionsDirty = true;
       _settling.remove(id);
       _collapsing.remove(id);
     });
@@ -585,9 +604,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
             UpdateListItemRequest(checked: true),
           );
           if (!mounted) return;
-          setState(() {
-            _dirty = true;
-          });
+          _dirty = true;
         } catch (_) {
           break;
         }
@@ -613,9 +630,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
             UpdateListItemRequest(checked: false),
           );
           if (!mounted) return;
-          setState(() {
-            _dirty = true;
-          });
+          _dirty = true;
         } catch (_) {
           break;
         }
@@ -661,10 +676,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       }
       if (!mounted) return;
       unawaited(Haptics.light());
-      setState(() {
-        _newItemController.clear();
-        _dirty = true;
-      });
+      _newItemController.clear();
+      _dirty = true;
       _composerFocusNode.requestFocus();
     } catch (e) {
       if (!mounted) return;
@@ -735,7 +748,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       final repo = await ref.read(listRepositoryProvider.future);
       await repo.refreshItems(widget.listId);
       if (!mounted) return;
-      setState(() => _dirty = true);
+      _dirty = true;
     } catch (e) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
@@ -762,9 +775,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       await repo.deleteItemOfflineFirst(widget.listId, item.id);
       if (!mounted) return;
       setState(() {
+        _sectionsDirty = true;
         _items.remove(item);
-        _dirty = true;
       });
+      _dirty = true;
     } catch (e) {
       if (!mounted) return;
       unawaited(Haptics.failure());
@@ -821,9 +835,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         );
       }
       if (!mounted) return;
-      setState(() {
-        _dirty = true;
-      });
+      _dirty = true;
     } catch (_) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
@@ -888,7 +900,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         UpdateListItemRequest(priceCents: cents),
       );
       if (!mounted) return;
-      setState(() => _dirty = true);
+      _dirty = true;
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1085,16 +1097,23 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   bool _displaysAsOpen(ListItem item) =>
       !item.checked || _settling.contains(item.id);
 
-  List<ListItem> _openItemsSorted() {
-    final list = _items.where(_displaysAsOpen).toList()
+  void _ensureSectionsUpToDate() {
+    if (!_sectionsDirty) return;
+    _openItems = _items.where(_displaysAsOpen).toList()
       ..sort((a, b) => a.position.compareTo(b.position));
-    return list;
+    _doneItems = _items.where((i) => !_displaysAsOpen(i)).toList()
+      ..sort((a, b) => a.position.compareTo(b.position));
+    _sectionsDirty = false;
+  }
+
+  List<ListItem> _openItemsSorted() {
+    _ensureSectionsUpToDate();
+    return _openItems;
   }
 
   List<ListItem> _doneItemsSorted() {
-    final list = _items.where((i) => !_displaysAsOpen(i)).toList()
-      ..sort((a, b) => a.position.compareTo(b.position));
-    return list;
+    _ensureSectionsUpToDate();
+    return _doneItems;
   }
 
   void _onReorderOpen(int oldIndex, int newIndex) {
@@ -1113,6 +1132,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     ];
 
     setState(() {
+      _sectionsDirty = true;
       var pos = 0;
       for (final id in itemIdsInOrder) {
         final idx = _items.indexWhere((i) => i.id == id);
@@ -1134,8 +1154,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           updatedAt: item.updatedAt,
         );
       }
-      _dirty = true;
     });
+    _dirty = true;
 
     unawaited(_persistReorder(itemIdsInOrder));
   }
@@ -1366,6 +1386,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       ),
       body: Column(
         children: [
+          if (_groupId != null) _GroupBannerWidget(groupId: _groupId!),
           Expanded(child: _buildBody()),
           if (!_isLoading && _errorMessage == null) _buildBottomBar(),
         ],
@@ -1554,9 +1575,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     final photos = _photosByItemId[item.id];
     final thumbUrl =
         (photos != null && photos.isNotEmpty) ? photos.first.url : null;
-    final failedToSync = ref.watch(failedEntityIdsProvider).contains(item.id);
 
-    return ListItemRow(
+    return _ItemRowWidget(
       item: item,
       photoUrl: thumbUrl,
       currencySymbol: _currencySymbol,
@@ -1565,7 +1585,6 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       onPhotoTap: thumbUrl != null ? () => _openPhotoViewer(thumbUrl) : null,
       onLongPress: () => _handleItemAction(item),
       reorderIndex: reorderIndex,
-      failedToSync: failedToSync,
     );
   }
 
@@ -1733,6 +1752,86 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       productSuggestions: _productSuggestions,
       grocerySuggestions: _grocerySuggestions,
       showProductSuggestions: _showProductSuggestions,
+    );
+  }
+}
+
+/// Renders the group banner. Isolated so `cachedGroupsProvider` changes only
+/// rebuild this widget, not the entire list screen.
+class _GroupBannerWidget extends ConsumerWidget {
+  const _GroupBannerWidget({required this.groupId});
+  final String groupId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final groups = ref.watch(cachedGroupsProvider).valueOrNull ?? const [];
+    final groupName = groups.where((g) => g.id == groupId).firstOrNull?.name;
+    if (groupName == null) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      color: colorScheme.surfaceContainerLow,
+      padding: const EdgeInsets.symmetric(
+        horizontal: MitlistSpacing.md,
+        vertical: MitlistSpacing.xs,
+      ),
+      child: Row(
+        children: [
+          AppIcon(name: 'userGroup', size: 13, color: colorScheme.onSurfaceVariant),
+          const SizedBox(width: MitlistSpacing.xs),
+          Expanded(
+            child: Text(
+              l10n.listSharedWith(groupName),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Renders a single list item row. Isolated so `failedEntityIdsProvider`
+/// changes only rebuild the affected row, not the entire list screen.
+class _ItemRowWidget extends ConsumerWidget {
+  const _ItemRowWidget({
+    required this.item,
+    required this.currencySymbol,
+    required this.onToggle,
+    required this.onLongPress,
+    this.photoUrl,
+    this.claimedLabel,
+    this.onPhotoTap,
+    this.reorderIndex,
+  });
+
+  final ListItem item;
+  final String? photoUrl;
+  final String currencySymbol;
+  final String? claimedLabel;
+  final ValueChanged<bool> onToggle;
+  final VoidCallback? onPhotoTap;
+  final VoidCallback onLongPress;
+  final int? reorderIndex;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final failedToSync = ref.watch(failedEntityIdsProvider).contains(item.id);
+    return ListItemRow(
+      item: item,
+      photoUrl: photoUrl,
+      currencySymbol: currencySymbol,
+      claimedLabel: claimedLabel,
+      onToggle: onToggle,
+      onPhotoTap: onPhotoTap,
+      onLongPress: onLongPress,
+      reorderIndex: reorderIndex,
+      failedToSync: failedToSync,
     );
   }
 }

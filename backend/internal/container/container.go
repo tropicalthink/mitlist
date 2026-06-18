@@ -9,7 +9,6 @@ import (
 	"github.com/mitlist-app/mitlist/internal/redis"
 	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/mitlist-app/mitlist/internal/services"
-	aiservice "github.com/mitlist-app/mitlist/internal/services/ai"
 	jwtservice "github.com/mitlist-app/mitlist/internal/services/jwt"
 	mailservice "github.com/mitlist-app/mitlist/internal/services/mail"
 	oauthclient "github.com/mitlist-app/mitlist/internal/services/oauth"
@@ -129,9 +128,6 @@ type Container struct {
 	calendarServiceOnce sync.Once
 	calendarService     *services.CalendarService
 
-	assistantServiceOnce sync.Once
-	assistantService     *services.ScanService
-
 	shareServiceOnce sync.Once
 	shareService     *services.ShareService
 
@@ -155,9 +151,6 @@ type Container struct {
 
 	listItemPhotoServiceOnce sync.Once
 	listItemPhotoService     *services.ListItemPhotoService
-
-	aiClientOnce sync.Once
-	aiClient     *aiservice.Client
 
 	groceryRepoOnce sync.Once
 	groceryRepo     *repositories.GroceryRepository
@@ -417,6 +410,7 @@ func (c *Container) ListService() *services.ListService {
 		c.listService = services.NewListService(c.ListRepo(), c.GroupRepo())
 		c.listService.SetHub(c.SSEHub())
 		c.listService.SetPush(c.Push())
+		c.listService.SetDispatcher(c.NotificationService())
 	})
 	return c.listService
 }
@@ -435,6 +429,7 @@ func (c *Container) ChoreService() *services.ChoreService {
 		c.choreService = services.NewChoreService(c.ChoreRepo(), c.GroupRepo(), c.ListRepo())
 		c.choreService.SetHub(c.SSEHub())
 		c.choreService.SetPush(c.Push())
+		c.choreService.SetDispatcher(c.NotificationService())
 	})
 	return c.choreService
 }
@@ -443,6 +438,7 @@ func (c *Container) ChoreService() *services.ChoreService {
 func (c *Container) FinanceService() *services.FinanceService {
 	c.financeServiceOnce.Do(func() {
 		c.financeService = services.NewFinanceService(c.FinanceRepo(), c.GroupRepo())
+		c.financeService.SetDispatcher(c.NotificationService())
 	})
 	return c.financeService
 }
@@ -471,18 +467,14 @@ func (c *Container) CalendarService() *services.CalendarService {
 	return c.calendarService
 }
 
-// AssistantService returns the singleton scan service.
-func (c *Container) AssistantService() *services.ScanService {
-	c.assistantServiceOnce.Do(func() {
-		c.assistantService = services.NewScanService(c.AIClient())
-	})
-	return c.assistantService
-}
-
 // NotificationService returns the singleton notification service.
+// Mail is injected so the email channel is active; email delivery is still
+// opt-in per user (EmailEnabled defaults false).
 func (c *Container) NotificationService() *services.NotificationService {
 	c.notificationServiceOnce.Do(func() {
-		c.notificationService = services.NewNotificationService(c.NotificationRepo(), c.ActivityRepo(), c.Push())
+		c.notificationService = services.NewNotificationServiceWithMail(
+			c.NotificationRepo(), c.ActivityRepo(), c.GroupRepo(), c.Push(), c.Mail(),
+		)
 	})
 	return c.notificationService
 }
@@ -499,6 +491,7 @@ func (c *Container) ActivityService() *services.ActivityService {
 func (c *Container) PinwallService() *services.PinwallService {
 	c.pinwallServiceOnce.Do(func() {
 		c.pinwallService = services.NewPinwallService(c.PinwallRepo(), c.GroupRepo())
+		c.pinwallService.SetHub(c.SSEHub())
 	})
 	return c.pinwallService
 }
@@ -564,14 +557,6 @@ func (c *Container) SSEHub() *sse.Hub {
 		c.sseHub = sse.New()
 	}
 	return c.sseHub
-}
-
-// AIClient returns the singleton AI client.
-func (c *Container) AIClient() *aiservice.Client {
-	c.aiClientOnce.Do(func() {
-		c.aiClient = aiservice.New(c.cfg)
-	})
-	return c.aiClient
 }
 
 // GroceryRepo returns the singleton grocery repository.

@@ -222,7 +222,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
                                     ? Colors.white
                                     : Colors.black;
                             return QrImageView(
-                              data: buildInviteLink(code),
+                              data: buildWebInviteLink(code),
                               version: QrVersions.auto,
                               size: InviteHouseholdSheet._qrSize,
                               backgroundColor: Colors.transparent,

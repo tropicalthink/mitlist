@@ -1,4 +1,5 @@
 import '../../storage/app_database.dart';
+import '../canonical_display.dart';
 import 'static_embedding_service.dart';
 
 /// A canonical grocery item surfaced as a typed-entry autocomplete suggestion.
@@ -44,6 +45,32 @@ class GrocerySuggestionService {
   GrocerySuggestionService(this._db, {StaticEmbeddingService? embedder})
       : _embedder = embedder;
 
+  // Purchase-history frequency cache — avoids a DB round-trip on every
+  // keystroke. Invalidated per group and after 5 minutes.
+  Map<String, int>? _freqCache;
+  String? _freqCacheGroupId;
+  DateTime? _freqCacheTime;
+
+  Future<Map<String, int>> _purchaseFreq(String groupId) async {
+    final now = DateTime.now();
+    if (_freqCache != null &&
+        _freqCacheGroupId == groupId &&
+        _freqCacheTime != null &&
+        now.difference(_freqCacheTime!).inSeconds < 300) {
+      return _freqCache!;
+    }
+    final history = await _db.getGroupPurchaseHistory(groupId: groupId);
+    final freq = <String, int>{};
+    for (final r in history) {
+      final id = r.canonicalItemId;
+      if (id != null) freq[id] = (freq[id] ?? 0) + 1;
+    }
+    _freqCache = freq;
+    _freqCacheGroupId = groupId;
+    _freqCacheTime = now;
+    return freq;
+  }
+
   Future<List<GrocerySuggestion>> suggest(
     String query,
     String groupId, {
@@ -52,21 +79,30 @@ class GrocerySuggestionService {
     final q = query.toLowerCase().trim();
     if (q.length < 2) return const [];
 
-    // Over-fetch alias matches, then collapse to distinct canonical items.
-    final aliases = await _db.searchAliasPrefix(
-      groupId: groupId,
-      query: q,
-      limit: limit * 6,
-    );
+    // Run both prefix searches in parallel — they're independent DB reads.
+    final prefixResults = await Future.wait([
+      _db.searchAliasPrefix(groupId: groupId, query: q, limit: limit * 6),
+      _db.searchAliasWordPrefix(groupId: groupId, query: q, limit: limit * 8),
+    ]);
+    final aliases = prefixResults[0];
+    final wordAliases = prefixResults[1];
 
     // Keep the first matching alias per canonical item; its language decides
     // which name we label the suggestion with (so "milch" → Milch, "milk" →
     // Milk for the same canonical item).
     // Collapse alias hits to distinct canonical items, preserving order.
+    // Whole-string prefix results lead (Tier 0), word-prefix supplements (Tier 0b).
     final orderedIds = <String>[];
     final seen = <String>{};
     for (final a in aliases) {
       if (seen.add(a.canonicalItemId)) orderedIds.add(a.canonicalItemId);
+    }
+    // Word-prefix hits that aren't already in prefix results.
+    final wordOnlyIds = <String>[];
+    for (final a in wordAliases) {
+      if (!seen.contains(a.canonicalItemId)) {
+        if (seen.add(a.canonicalItemId)) wordOnlyIds.add(a.canonicalItemId);
+      }
     }
 
     final ranked = <_RankedSuggestion>[];
@@ -96,8 +132,11 @@ class GrocerySuggestionService {
       }
     }
 
-    // Tier 0 — literal alias/name prefix (partial typing).
+    // Tier 0 — literal whole-string alias/name prefix (partial typing).
     await addByIds(orderedIds, 0);
+    // Tier 0 (word) — word-level FTS5 prefix that the whole-string pass missed.
+    // Same tier as literal prefix so clean word hits still lead fuzzy hits.
+    await addByIds(wordOnlyIds, 0);
 
     // Tier 1 — fuzzy alias: catch typos the prefix misses ("banann" → Banane,
     // "tomaden" → Tomaten). SAME indexed first-char + length-window prefilter as
@@ -135,15 +174,8 @@ class GrocerySuggestionService {
     // Prior-aware ranking: WITHIN each relevance tier, bubble up what THIS
     // household actually buys (purchase-history frequency), then exact
     // name-prefix, then original recall order. Tiers never cross — a fuzzy or
-    // semantic match never outranks a clean prefix hit, however frequent. This
-    // is the on-device household prior (same signal the scanner ensemble uses),
-    // so your staples float to the top as you type.
-    final freq = <String, int>{};
-    final history = await _db.getGroupPurchaseHistory(groupId: groupId);
-    for (final r in history) {
-      final id = r.canonicalItemId;
-      if (id != null) freq[id] = (freq[id] ?? 0) + 1;
-    }
+    // semantic match never outranks a clean prefix hit, however frequent.
+    final freq = await _purchaseFreq(groupId);
     ranked.sort((a, b) {
       if (a.tier != b.tier) return a.tier.compareTo(b.tier);
       final fa = freq[a.suggestion.canonicalItemId] ?? 0;
@@ -158,27 +190,41 @@ class GrocerySuggestionService {
   }
 
   /// Labels a suggestion in the language the user typed. We can't trust the
-  /// matched alias's stored `lang` — the seed cross-links each item's English
-  /// and German spellings under both languages — so we infer intent directly
-  /// from the query: whichever of the two canonical names the typed text is
-  /// closer to wins. English is the default on a tie or when a name is missing.
+  /// matched alias's stored `lang` — the seed cross-links each item's name in
+  /// every shipped market (de/en/fr/es) under multiple languages — so we infer
+  /// intent directly from the query: whichever canonical name the typed text is
+  /// closest to wins. Ties break toward the user's locale, then English.
   static String _displayName(CanonicalItemsTableData it, String query) {
-    final en = it.nameEn;
-    final de = it.nameDe;
-    if (en.isEmpty) return _cap(de.isEmpty ? it.id : de);
-    if (de.isEmpty) return _cap(en);
+    final candidates = <String, String>{
+      'en': it.nameEn,
+      'de': it.nameDe,
+      'fr': it.nameFr,
+      'es': it.nameEs,
+    }..removeWhere((_, name) => name.isEmpty);
+    if (candidates.isEmpty) return _cap(it.id);
 
-    final base = _closerToQuery(query, en, de) ? en : de;
-    return _cap(base);
+    final q = query.toLowerCase();
+    String? bestLang;
+    var bestScore = 1 << 30;
+    for (final entry in candidates.entries) {
+      final score = _matchScore(q, entry.value.toLowerCase());
+      final better = score < bestScore ||
+          (score == bestScore &&
+              _localeRank(entry.key) < _localeRank(bestLang!));
+      if (better) {
+        bestScore = score;
+        bestLang = entry.key;
+      }
+    }
+    return _cap(candidates[bestLang]!);
   }
 
-  /// True when [query] is closer to [en] than to [de]. A prefix relation
-  /// counts as the best possible match; otherwise we fall back to edit
-  /// distance. Ties resolve to English (the `<=`).
-  static bool _closerToQuery(String query, String en, String de) {
-    final scoreEn = _matchScore(query, en.toLowerCase());
-    final scoreDe = _matchScore(query, de.toLowerCase());
-    return scoreEn <= scoreDe;
+  /// Tie-break preference among equally-close names: the user's locale first,
+  /// then English, then any remaining market. Lower is preferred.
+  static int _localeRank(String lang) {
+    if (lang == groceryDisplayLang) return 0;
+    if (lang == 'en') return 1;
+    return 2;
   }
 
   static int _matchScore(String query, String name) {
@@ -219,6 +265,28 @@ class GrocerySuggestionService {
 
   static String _cap(String s) =>
       s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+
+  /// Chooses the list-item label when a suggestion is tapped.
+  ///
+  /// The brand the user typed is preserved when it's a distinct, well-formed
+  /// token — e.g. "Pringles" stays "Pringles" while the canonical "Chips" is
+  /// linked underneath for aisle/dedupe/restock intelligence. It is replaced by
+  /// the canonical [canonicalName] only when the typed text reads as a fragment
+  /// or typo of it (e.g. "mlch" → "Milch", "banann" → "Banane"), so
+  /// autocomplete still cleans up sloppy input. Casing of the typed brand is
+  /// preserved (only the first letter is upper-cased).
+  static String labelForSelection(String typed, String canonicalName) {
+    final t = typed.trim();
+    if (t.isEmpty) return canonicalName;
+    final lt = t.toLowerCase();
+    final lc = canonicalName.toLowerCase();
+    if (lt == lc) return canonicalName; // identical → canonical casing
+    if (lc.startsWith(lt)) return canonicalName; // a prefix → a correction
+    final dist = _levenshtein(lt, lc);
+    final maxLen = lt.length > lc.length ? lt.length : lc.length;
+    if (dist <= (maxLen <= 5 ? 1 : 2)) return canonicalName; // close typo
+    return _cap(t); // distinct word/brand → keep what the user typed
+  }
 }
 
 /// A suggestion plus its relevance [tier] (0 prefix, 1 fuzzy, 2 semantic) and

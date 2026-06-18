@@ -1,0 +1,136 @@
+{"canonical_id": "cola", "alias": "coca cola", "lang": "en", "source": "curated"}
+{"canonical_id": "cola", "alias": "coca-cola", "lang": "en", "source": "curated"}
+{"canonical_id": "cola", "alias": "coca cola zero", "lang": "en", "source": "curated"}
+{"canonical_id": "cola", "alias": "coke", "lang": "en", "source": "curated"}
+{"canonical_id": "cola", "alias": "coca cola zero sugar", "lang": "en", "source": "curated"}
+{"canonical_id": "cola", "alias": "coca cola light", "lang": "en", "source": "curated"}
+{"canonical_id": "cola", "alias": "pepsi", "lang": "en", "source": "curated"}
+{"canonical_id": "cola", "alias": "pepsi max", "lang": "en", "source": "curated"}
+{"canonical_id": "cola", "alias": "pepsi cola", "lang": "en", "source": "curated"}
+{"canonical_id": "cola", "alias": "coca cola", "lang": "de", "source": "curated"}
+{"canonical_id": "cola", "alias": "coca-cola", "lang": "de", "source": "curated"}
+{"canonical_id": "cola", "alias": "pepsi", "lang": "de", "source": "curated"}
+{"canonical_id": "cola", "alias": "pepsi max", "lang": "de", "source": "curated"}
+{"canonical_id": "cola", "alias": "pepsi cola", "lang": "de", "source": "curated"}
+{"canonical_id": "cola", "alias": "coke zero", "lang": "en", "source": "curated"}
+{"canonical_id": "potato_chips", "alias": "pringles", "lang": "en", "source": "curated"}
+{"canonical_id": "potato_chips", "alias": "pringles original", "lang": "en", "source": "curated"}
+{"canonical_id": "potato_chips", "alias": "pringles sour cream", "lang": "en", "source": "curated"}
+{"canonical_id": "potato_chips", "alias": "pringles paprika", "lang": "en", "source": "curated"}
+{"canonical_id": "potato_chips", "alias": "pringles", "lang": "de", "source": "curated"}
+{"canonical_id": "potato_chips", "alias": "pringles original", "lang": "de", "source": "curated"}
+{"canonical_id": "gummy_bears", "alias": "haribo", "lang": "en", "source": "curated"}
+{"canonical_id": "gummy_bears", "alias": "haribo goldbears", "lang": "en", "source": "curated"}
+{"canonical_id": "gummy_bears", "alias": "haribo gold bears", "lang": "en", "source": "curated"}
+{"canonical_id": "gummy_bears", "alias": "haribo gummies", "lang": "en", "source": "curated"}
+{"canonical_id": "gummy_bears", "alias": "haribo", "lang": "de", "source": "curated"}
+{"canonical_id": "gummy_bears", "alias": "haribo goldbären", "lang": "de", "source": "curated"}
+{"canonical_id": "gummy_bears", "alias": "goldbären", "lang": "de", "source": "curated"}
+{"canonical_id": "gummy_bears", "alias": "goldbears", "lang": "en", "source": "curated"}
+{"canonical_id": "chocolate", "alias": "milka", "lang": "en", "source": "curated"}
+{"canonical_id": "chocolate", "alias": "milka chocolate", "lang": "en", "source": "curated"}
+{"canonical_id": "chocolate", "alias": "milka schokolade", "lang": "de", "source": "curated"}
+{"canonical_id": "chocolate", "alias": "milka", "lang": "de", "source": "curated"}
+{"canonical_id": "chocolate", "alias": "toblerone", "lang": "en", "source": "curated"}
+{"canonical_id": "chocolate", "alias": "toblerone", "lang": "de", "source": "curated"}
+{"canonical_id": "cookies", "alias": "oreo", "lang": "en", "source": "curated"}
+{"canonical_id": "cookies", "alias": "oreo cookies", "lang": "en", "source": "curated"}
+{"canonical_id": "cookies", "alias": "oreo biscuits", "lang": "en", "source": "curated"}
+{"canonical_id": "cookies", "alias": "oreo", "lang": "de", "source": "curated"}
+{"canonical_id": "cookies", "alias": "oreo kekse", "lang": "de", "source": "curated"}
+{"canonical_id": "ketchup", "alias": "heinz", "lang": "en", "source": "curated"}
+{"canonical_id": "ketchup", "alias": "heinz ketchup", "lang": "en", "source": "curated"}
+{"canonical_id": "ketchup", "alias": "heinz tomato ketchup", "lang": "en", "source": "curated"}
+{"canonical_id": "ketchup", "alias": "heinz", "lang": "de", "source": "curated"}
+{"canonical_id": "ketchup", "alias": "heinz ketchup", "lang": "de", "source": "curated"}
+{"canonical_id": "pasta", "alias": "barilla", "lang": "en", "source": "curated"}
+{"canonical_id": "pasta", "alias": "barilla pasta", "lang": "en", "source": "curated"}
+{"canonical_id": "pasta", "alias": "barilla spaghetti", "lang": "en", "source": "curated"}
+{"canonical_id": "pasta", "alias": "barilla", "lang": "de", "source": "curated"}
+{"canonical_id": "pasta", "alias": "barilla pasta", "lang": "de", "source": "curated"}
+{"canonical_id": "spaghetti", "alias": "barilla spaghetti", "lang": "en", "source": "curated"}
+{"canonical_id": "spaghetti", "alias": "barilla spaghetti", "lang": "de", "source": "curated"}
+{"canonical_id": "energy_drink", "alias": "red bull", "lang": "en", "source": "curated"}
+{"canonical_id": "energy_drink", "alias": "redbull", "lang": "en", "source": "curated"}
+{"canonical_id": "energy_drink", "alias": "red bull energy", "lang": "en", "source": "curated"}
+{"canonical_id": "energy_drink", "alias": "red bull sugar free", "lang": "en", "source": "curated"}
+{"canonical_id": "energy_drink", "alias": "red bull", "lang": "de", "source": "curated"}
+{"canonical_id": "energy_drink", "alias": "redbull", "lang": "de", "source": "curated"}
+{"canonical_id": "energy_drink", "alias": "monster energy", "lang": "en", "source": "curated"}
+{"canonical_id": "energy_drink", "alias": "monster", "lang": "en", "source": "curated"}
+{"canonical_id": "energy_drink", "alias": "monster energy", "lang": "de", "source": "curated"}
+{"canonical_id": "energy_drink", "alias": "monster", "lang": "de", "source": "curated"}
+{"canonical_id": "energy_drink", "alias": "burn energy", "lang": "en", "source": "curated"}
+{"canonical_id": "energy_drink", "alias": "rockstar", "lang": "en", "source": "curated"}
+{"canonical_id": "chocolate_hazelnut_spread", "alias": "nutella", "lang": "en", "source": "curated"}
+{"canonical_id": "chocolate_hazelnut_spread", "alias": "nutella spread", "lang": "en", "source": "curated"}
+{"canonical_id": "chocolate_hazelnut_spread", "alias": "nutella", "lang": "de", "source": "curated"}
+{"canonical_id": "chocolate_hazelnut_spread", "alias": "nutella aufstrich", "lang": "de", "source": "curated"}
+{"canonical_id": "chocolate_bar", "alias": "kit kat", "lang": "en", "source": "curated"}
+{"canonical_id": "chocolate_bar", "alias": "kitkat", "lang": "en", "source": "curated"}
+{"canonical_id": "chocolate_bar", "alias": "kit kat", "lang": "de", "source": "curated"}
+{"canonical_id": "chocolate_bar", "alias": "kitkat", "lang": "de", "source": "curated"}
+{"canonical_id": "chocolate_bar", "alias": "twix", "lang": "en", "source": "curated"}
+{"canonical_id": "chocolate_bar", "alias": "twix", "lang": "de", "source": "curated"}
+{"canonical_id": "chocolate_bar", "alias": "mars", "lang": "en", "source": "curated"}
+{"canonical_id": "chocolate_bar", "alias": "mars bar", "lang": "en", "source": "curated"}
+{"canonical_id": "chocolate_bar", "alias": "mars", "lang": "de", "source": "curated"}
+{"canonical_id": "nut_chocolate_bar", "alias": "snickers", "lang": "en", "source": "curated"}
+{"canonical_id": "nut_chocolate_bar", "alias": "snickers bar", "lang": "en", "source": "curated"}
+{"canonical_id": "nut_chocolate_bar", "alias": "snickers", "lang": "de", "source": "curated"}
+{"canonical_id": "oatmeal", "alias": "frühstücksflocken", "lang": "de", "source": "curated"}
+{"canonical_id": "oatmeal", "alias": "getreideflocken", "lang": "de", "source": "curated"}
+{"canonical_id": "oatmeal", "alias": "kellog's", "lang": "en", "source": "curated"}
+{"canonical_id": "oatmeal", "alias": "kelloggs", "lang": "en", "source": "curated"}
+{"canonical_id": "oatmeal", "alias": "cheerios", "lang": "en", "source": "curated"}
+{"canonical_id": "granola_bar", "alias": "müsliriegel", "lang": "de", "source": "curated"}
+{"canonical_id": "granola_bar", "alias": "muesli bar", "lang": "en", "source": "curated"}
+{"canonical_id": "granola_bar", "alias": "granola", "lang": "en", "source": "curated"}
+{"canonical_id": "sanitary_pad", "alias": "pads", "lang": "en", "source": "curated"}
+{"canonical_id": "sanitary_pad", "alias": "period pads", "lang": "en", "source": "curated"}
+{"canonical_id": "sanitary_pad", "alias": "menstrual pads", "lang": "en", "source": "curated"}
+{"canonical_id": "sanitary_pad", "alias": "always pads", "lang": "en", "source": "curated"}
+{"canonical_id": "sanitary_pad", "alias": "always", "lang": "en", "source": "curated"}
+{"canonical_id": "sanitary_pad", "alias": "lillets", "lang": "en", "source": "curated"}
+{"canonical_id": "sanitary_pad", "alias": "binden", "lang": "de", "source": "curated"}
+{"canonical_id": "sanitary_pad", "alias": "slipeinlage", "lang": "de", "source": "curated"}
+{"canonical_id": "sanitary_pad", "alias": "damenbinden", "lang": "de", "source": "curated"}
+{"canonical_id": "sanitary_pad", "alias": "hygienebinden", "lang": "de", "source": "curated"}
+{"canonical_id": "tampon", "alias": "tampons", "lang": "en", "source": "curated"}
+{"canonical_id": "tampon", "alias": "o.b.", "lang": "en", "source": "curated"}
+{"canonical_id": "tampon", "alias": "ob tampons", "lang": "en", "source": "curated"}
+{"canonical_id": "tampon", "alias": "tampax", "lang": "en", "source": "curated"}
+{"canonical_id": "tampon", "alias": "tampax", "lang": "de", "source": "curated"}
+{"canonical_id": "tampon", "alias": "tampons", "lang": "de", "source": "curated"}
+{"canonical_id": "tampon", "alias": "o.b.", "lang": "de", "source": "curated"}
+{"canonical_id": "chocolate_milk", "alias": "nesquik", "lang": "en", "source": "curated"}
+{"canonical_id": "chocolate_milk", "alias": "nesquik", "lang": "de", "source": "curated"}
+{"canonical_id": "chocolate_milk", "alias": "kakao", "lang": "de", "source": "curated"}
+{"canonical_id": "mineral_water", "alias": "evian", "lang": "en", "source": "curated"}
+{"canonical_id": "mineral_water", "alias": "volvic", "lang": "en", "source": "curated"}
+{"canonical_id": "mineral_water", "alias": "perrier", "lang": "en", "source": "curated"}
+{"canonical_id": "mineral_water", "alias": "san pellegrino", "lang": "en", "source": "curated"}
+{"canonical_id": "mineral_water", "alias": "evian", "lang": "de", "source": "curated"}
+{"canonical_id": "mineral_water", "alias": "volvic", "lang": "de", "source": "curated"}
+{"canonical_id": "mineral_water", "alias": "gerolsteiner", "lang": "de", "source": "curated"}
+{"canonical_id": "mineral_water", "alias": "apollinaris", "lang": "de", "source": "curated"}
+{"canonical_id": "shampoo", "alias": "head & shoulders", "lang": "en", "source": "curated"}
+{"canonical_id": "shampoo", "alias": "head and shoulders", "lang": "en", "source": "curated"}
+{"canonical_id": "shampoo", "alias": "pantene", "lang": "en", "source": "curated"}
+{"canonical_id": "shampoo", "alias": "dove shampoo", "lang": "en", "source": "curated"}
+{"canonical_id": "shampoo", "alias": "elvive", "lang": "en", "source": "curated"}
+{"canonical_id": "shower_gel", "alias": "dove shower", "lang": "en", "source": "curated"}
+{"canonical_id": "shower_gel", "alias": "dove", "lang": "en", "source": "curated"}
+{"canonical_id": "shower_gel", "alias": "nivea shower", "lang": "en", "source": "curated"}
+{"canonical_id": "shower_gel", "alias": "nivea duschgel", "lang": "de", "source": "curated"}
+{"canonical_id": "toothpaste", "alias": "colgate", "lang": "en", "source": "curated"}
+{"canonical_id": "toothpaste", "alias": "oral-b", "lang": "en", "source": "curated"}
+{"canonical_id": "toothpaste", "alias": "blend-a-med", "lang": "de", "source": "curated"}
+{"canonical_id": "toothpaste", "alias": "signal", "lang": "en", "source": "curated"}
+{"canonical_id": "deodorant", "alias": "nivea deo", "lang": "de", "source": "curated"}
+{"canonical_id": "deodorant", "alias": "rexona", "lang": "en", "source": "curated"}
+{"canonical_id": "deodorant", "alias": "dove deo", "lang": "en", "source": "curated"}
+{"canonical_id": "orange_juice", "alias": "tropicana", "lang": "en", "source": "curated"}
+{"canonical_id": "orange_juice", "alias": "hohes c", "lang": "de", "source": "curated"}
+{"canonical_id": "orange_juice", "alias": "oj", "lang": "en", "source": "curated"}
+{"canonical_id": "orange_juice", "alias": "tropicana orange juice", "lang": "en", "source": "curated"}

@@ -2000,6 +2000,12 @@ abstract class AppLocalizations {
   /// **'Keep it private for now. You can share it later.'**
   String get recipeCreationSaveForHouseholdPrivate;
 
+  /// Switch subtitle listing group names when recipe is public
+  ///
+  /// In en, this message translates to:
+  /// **'Shared with {names}'**
+  String recipeCreationSharedWithGroups(String names);
+
   /// Section header for ingredients
   ///
   /// In en, this message translates to:
@@ -3033,6 +3039,12 @@ abstract class AppLocalizations {
   /// **'List options'**
   String get listOptionsTooltip;
 
+  /// Label showing which household a list is shared with
+  ///
+  /// In en, this message translates to:
+  /// **'Shared with {name}'**
+  String listSharedWith(String name);
+
   /// Semantics for editing list name
   ///
   /// In en, this message translates to:
@@ -3975,6 +3987,24 @@ abstract class AppLocalizations {
   /// **'Terms of Service'**
   String get accountTermsRow;
 
+  /// Menu row: open data attribution
+  ///
+  /// In en, this message translates to:
+  /// **'Open data'**
+  String get accountOpenDataRow;
+
+  /// Bottom sheet title for open data attribution
+  ///
+  /// In en, this message translates to:
+  /// **'Open data attribution'**
+  String get accountOpenDataTitle;
+
+  /// Open data attribution body text (Open Food Facts / ODbL)
+  ///
+  /// In en, this message translates to:
+  /// **'Some grocery brand names come from Open Food Facts (openfoodfacts.org), used under the Open Database License (ODbL) v1.0. The derived brand list is kept separable from mitlist\'s own data.'**
+  String get accountOpenDataBody;
+
   /// Card title for guest account status
   ///
   /// In en, this message translates to:
@@ -4761,6 +4791,12 @@ abstract class AppLocalizations {
   /// **'Did you mean?'**
   String get scanReviewDidYouMean;
 
+  /// Tentative resolver guess under the user's OCR text on a low-confidence scan-review row
+  ///
+  /// In en, this message translates to:
+  /// **'Best guess: {name}'**
+  String scanReviewBestGuess(String name);
+
   /// AppBar title for share target screen
   ///
   /// In en, this message translates to:
@@ -5078,6 +5114,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Drag notes to move  ·  Pinch to zoom'**
   String get pinwallDragHint;
+
+  /// Accessibility label listing the household members currently viewing the board
+  ///
+  /// In en, this message translates to:
+  /// **'{names} here now'**
+  String pinwallPresenceHere(String names);
 
   /// Button/semantics to close pinwall
   ///

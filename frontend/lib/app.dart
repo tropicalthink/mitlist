@@ -10,6 +10,7 @@ import 'router.dart';
 import 'providers/list_provider.dart' show sseServiceProvider;
 import 'providers/outbox_provider.dart';
 import 'services/api_client.dart' show dioProvider;
+import 'services/canonical_display.dart' show setGroceryDisplayLang;
 import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
 import 'providers/auth_provider.dart';
@@ -156,6 +157,9 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
     final locale = ref.watch(localeProvider);
+    // Keep the grocery label language in sync with the app locale so canonical
+    // items render in the user's language (de/en/fr/es shipped in the seed).
+    setGroceryDisplayLang(locale?.languageCode);
 
     return MaterialApp.router(
       title: 'mitlist',

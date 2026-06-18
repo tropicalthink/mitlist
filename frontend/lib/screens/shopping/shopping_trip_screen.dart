@@ -164,8 +164,12 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
 
     for (final items in _itemsByList.values) {
       for (final item in items) {
-        final resolved = await resolver.resolve(item.name, groupId);
-        final canonicalId = resolved.canonicalItemId;
+        // Prefer the canonical link stored on the item (set when added from a
+        // suggestion — e.g. "Pringles" → potato_chips) so a preserved brand
+        // name still sorts into the right aisle. Fall back to resolving the
+        // typed text for free-entered items with no link.
+        final canonicalId = item.canonicalItemId ??
+            (await resolver.resolve(item.name, groupId)).canonicalItemId;
         if (canonicalId == null) continue;
         final row = await db.getStoreAisle(
           groupId: groupId,

@@ -48,7 +48,3 @@ type PushService interface {
 	BroadcastToGroupExcluding(groupID, excludeUserID uuid.UUID, payload string) error
 }
 
-// AIClient defines the interface for AI generation.
-type AIClient interface {
-	GenerateImage(imageBytes []byte, mimeType string, prompt string, model string, schema map[string]any) (map[string]any, error)
-}

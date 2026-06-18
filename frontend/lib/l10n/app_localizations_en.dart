@@ -1086,6 +1086,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Keep it private for now. You can share it later.';
 
   @override
+  String recipeCreationSharedWithGroups(String names) {
+    return 'Shared with $names';
+  }
+
+  @override
   String get recipeCreationIngredients => 'Ingredients';
 
   @override
@@ -1668,6 +1673,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get listOptionsTooltip => 'List options';
 
   @override
+  String listSharedWith(String name) {
+    return 'Shared with $name';
+  }
+
+  @override
   String listDetailEditName(String name) {
     return 'Edit list name, $name';
   }
@@ -2200,6 +2210,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountTermsRow => 'Terms of Service';
 
   @override
+  String get accountOpenDataRow => 'Open data';
+
+  @override
+  String get accountOpenDataTitle => 'Open data attribution';
+
+  @override
+  String get accountOpenDataBody =>
+      'Some grocery brand names come from Open Food Facts (openfoodfacts.org), used under the Open Database License (ODbL) v1.0. The derived brand list is kept separable from mitlist\'s own data.';
+
+  @override
   String get accountGuestTitle => 'You\'re on a guest account';
 
   @override
@@ -2654,6 +2674,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scanReviewDidYouMean => 'Did you mean?';
 
   @override
+  String scanReviewBestGuess(String name) {
+    return 'Best guess: $name';
+  }
+
+  @override
   String get shareTargetAppBarTitle => 'Save to mitlist';
 
   @override
@@ -2836,6 +2861,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pinwallDragHint => 'Drag notes to move  ·  Pinch to zoom';
+
+  @override
+  String pinwallPresenceHere(String names) {
+    return '$names here now';
+  }
 
   @override
   String get pinwallCloseBoard => 'Close board';

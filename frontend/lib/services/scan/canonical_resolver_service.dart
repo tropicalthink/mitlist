@@ -1,6 +1,8 @@
 import '../../storage/app_database.dart';
+import '../canonical_display.dart';
 import 'grocery_classifier_service.dart';
 import 'resolution/ensemble_resolver.dart';
+import 'resolution/resolution_features.dart' show ResolutionContext;
 import 'static_embedding_service.dart';
 
 /// Result of a canonical resolution attempt.
@@ -55,10 +57,26 @@ class CanonicalResolverService {
         _embedder = embedder,
         _useEnsemble = useEnsemble;
 
+  /// Builds the household resolution context once (purchase history +
+  /// co-occurrence) so callers can share it across multiple `resolve` calls in
+  /// the same scan, avoiding K redundant DB reads for K scanned lines.
+  ///
+  /// Returns `null` when the ensemble path is not active (the non-ensemble
+  /// branch does not use a ResolutionContext).
+  Future<ResolutionContext?> prepareContext(
+    String groupId, {
+    List<String> listContext = const [],
+  }) async {
+    if (!_useEnsemble) return null;
+    _ensemble ??= EnsembleResolver(_db, classifier: _classifier, embedder: _embedder);
+    return _ensemble!.buildContext(groupId, listContext);
+  }
+
   Future<ResolveResult> resolve(
     String itemName,
     String groupId, {
     List<String> listContext = const [],
+    ResolutionContext? context,
   }) async {
     if (_useEnsemble) {
       _ensemble ??= EnsembleResolver(
@@ -70,6 +88,7 @@ class CanonicalResolverService {
         itemName,
         groupId,
         listContext: listContext,
+        context: context,
       );
     }
 
@@ -211,12 +230,8 @@ class CanonicalResolverService {
     return fuzzyResult;
   }
 
-  String _preferredName(CanonicalItemsTableData item) {
-    // Prefer German name (first market) falling back to English.
-    if (item.nameDe.isNotEmpty) return _titleCase(item.nameDe);
-    if (item.nameEn.isNotEmpty) return _titleCase(item.nameEn);
-    return item.id;
-  }
+  String _preferredName(CanonicalItemsTableData item) =>
+      _titleCase(canonicalDisplayName(item));
 
   static String _normalise(String s) =>
       s.toLowerCase().trim().replaceAll(RegExp(r'\s+'), ' ');

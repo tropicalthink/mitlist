@@ -1,0 +1,18 @@
+# OCR eval dataset — ground-truth transcripts for real sample photos.
+# Schema: intelligence/ml/eval/ocr_eval.schema.md
+# IMPORTANT: input_type is scored separately — never blend print and handwriting metrics.
+#
+# Add rows here when you have real photos in intelligence/ml/data/ocr_samples/
+# (that directory is gitignored — photos are never committed).
+#
+# --- PRINT examples (placeholders — replace image_path with your actual photos) ---
+# {"image_path": "intelligence/ml/data/ocr_samples/print_001.jpg", "input_type": "print", "ground_truth_lines": ["Bananen", "Milch 1L", "Eier"], "note": "clean handwritten shopping list, printed-style lettering, phone camera"}
+# {"image_path": "intelligence/ml/data/ocr_samples/print_002.jpg", "input_type": "print", "ground_truth_lines": ["Spaghetti 500g", "Tomatensauce", "Parmesan"], "note": "typed receipt, Rewe"}
+# {"image_path": "intelligence/ml/data/ocr_samples/print_003.jpg", "input_type": "print", "ground_truth_lines": ["Hähnchenbrust", "Brokkoli", "Kartoffeln 1kg"], "note": "printed list, slight angle"}
+#
+# --- HANDWRITING examples (placeholders) ---
+# {"image_path": "intelligence/ml/data/ocr_samples/hw_001.jpg", "input_type": "handwriting", "ground_truth_lines": ["mlch", "Eier", "Bananen"], "note": "hasty cursive, vowel shorthand, pencil, overhead light"}
+# {"image_path": "intelligence/ml/data/ocr_samples/hw_002.jpg", "input_type": "handwriting", "ground_truth_lines": ["kfee", "Zucker", "Sahne"], "note": "aggressive vowel-drop shorthand (Kaffee→kfee)"}
+# {"image_path": "intelligence/ml/data/ocr_samples/hw_003.jpg", "input_type": "handwriting", "ground_truth_lines": ["wzmehl", "Butter 250g", "Eier 6"], "note": "consonant skeleton shorthand (Weizenmehl→wzmehl)"}
+#
+# Uncomment and fill in real paths to activate. Until then the harness runs in stub mode.

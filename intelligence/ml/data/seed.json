@@ -281912,5 +281912,80 @@
       "1Stück azucena",
       "zaucena"
     ]
+  },
+  {
+    "name_en": "Corn Flakes",
+    "name_de": "Cornflakes",
+    "name_fr": "Corn Flakes",
+    "name_es": "Copos de Maíz",
+    "category": "pasta_grain",
+    "default_unit": "g",
+    "aliases_en": [
+      "corn flakes",
+      "cornflakes",
+      "frosted flakes",
+      "frosties"
+    ],
+    "aliases_de": [
+      "cornflakes",
+      "corn flakes",
+      "frosties"
+    ],
+    "aliases_fr": [
+      "corn flakes"
+    ],
+    "aliases_es": [
+      "copos de maiz"
+    ]
+  },
+  {
+    "name_en": "Muesli",
+    "name_de": "Müsli",
+    "name_fr": "Muesli",
+    "name_es": "Muesli",
+    "category": "pasta_grain",
+    "default_unit": "g",
+    "aliases_en": [
+      "muesli"
+    ],
+    "aliases_de": [
+      "müsli",
+      "muesli",
+      "birchermüsli",
+      "bircher müsli",
+      "knuspermüsli"
+    ],
+    "aliases_fr": [
+      "muesli"
+    ],
+    "aliases_es": [
+      "muesli"
+    ]
+  },
+  {
+    "name_en": "Breakfast Cereal",
+    "name_de": "Frühstückscerealien",
+    "name_fr": "Céréales de Petit-Déjeuner",
+    "name_es": "Cereales de Desayuno",
+    "category": "pasta_grain",
+    "default_unit": "g",
+    "aliases_en": [
+      "breakfast cereal",
+      "cereal",
+      "cheerios",
+      "special k"
+    ],
+    "aliases_de": [
+      "cerealien",
+      "frühstücksflocken",
+      "getreideflocken",
+      "frühstückscerealien"
+    ],
+    "aliases_fr": [
+      "céréales"
+    ],
+    "aliases_es": [
+      "cereales"
+    ]
   }
 ]

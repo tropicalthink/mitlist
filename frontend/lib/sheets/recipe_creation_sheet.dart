@@ -1,20 +1,15 @@
 import 'dart:async';
 
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../models/recipe_models.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/recipe_provider.dart';
-import '../providers/scan_provider.dart';
 import '../theme/spacing.dart';
 import '../utils/haptics.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
-import '../widgets/app_icon.dart';
 import '../utils/friendly_error.dart';
 import '../widgets/app_input.dart';
 
@@ -58,7 +53,6 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
   final TextEditingController _ingredientsController = TextEditingController();
   final TextEditingController _stepsController = TextEditingController();
   bool _isSaving = false;
-  bool _isScanning = false;
 
   @override
   void initState() {
@@ -76,45 +70,6 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
 
   bool get _hasTitle => _titleController.text.trim().isNotEmpty;
   bool get _canCreate => !_isSaving && _hasTitle;
-
-  Future<void> _onScan() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: ImageSource.camera,
-      maxWidth: 2048,
-      maxHeight: 2048,
-    );
-    if (picked == null || !mounted) return;
-
-    setState(() => _isScanning = true);
-
-    try {
-      final service = await ref.read(scanServiceProviderAsync.future);
-      final bytes = await File(picked.path).readAsBytes();
-      final result = await service.scanImage(bytes, 'image/jpeg');
-
-      if (!mounted) return;
-
-      if (result.title != null && result.title!.isNotEmpty) {
-        _titleController.text = result.title!;
-      }
-      if (result.items.isNotEmpty) {
-        _ingredientsController.text =
-            result.items.map((i) => i.name).join('\n');
-      }
-      if (result.steps.isNotEmpty) {
-        _stepsController.text = result.steps.join('\n');
-      }
-
-      setState(() => _isScanning = false);
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isScanning = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-      );
-    }
-  }
 
   Future<void> _onCreate() async {
     final l10n = AppLocalizations.of(context)!;
@@ -187,18 +142,6 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppButton(
-            text: _isScanning ? l10n.recipeCreationScanning : l10n.recipeCreationScanRecipe,
-            icon: AppIcon(
-              name: _isScanning ? 'hourglassEmpty' : 'documentScanner',
-              size: 20,
-            ),
-            variant: AppButtonVariant.outline,
-            color: AppButtonColor.neutral,
-            onPressed: _isScanning ? null : _onScan,
-            semanticLabel: l10n.recipeCreationScanRecipeViaCamera,
-          ),
-          const SizedBox(height: MitlistSpacing.md),
           AppInput(
             label: l10n.recipeCreationTitleInput,
             hint: l10n.recipeCreationTitleHint,

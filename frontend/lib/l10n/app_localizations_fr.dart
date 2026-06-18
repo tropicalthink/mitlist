@@ -1095,6 +1095,11 @@ class AppLocalizationsFr extends AppLocalizations {
       'Garde-la privée pour l\'instant. Tu pourras la partager plus tard.';
 
   @override
+  String recipeCreationSharedWithGroups(String names) {
+    return 'Partagé avec $names';
+  }
+
+  @override
   String get recipeCreationIngredients => 'Ingrédients';
 
   @override
@@ -1683,6 +1688,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get listOptionsTooltip => 'Options de la liste';
 
   @override
+  String listSharedWith(String name) {
+    return 'Partagé avec $name';
+  }
+
+  @override
   String listDetailEditName(String name) {
     return 'Modifier le nom de la liste, $name';
   }
@@ -2220,6 +2230,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get accountTermsRow => 'Conditions d\'utilisation';
 
   @override
+  String get accountOpenDataRow => 'Données ouvertes';
+
+  @override
+  String get accountOpenDataTitle => 'Attribution des données ouvertes';
+
+  @override
+  String get accountOpenDataBody =>
+      'Certaines marques de produits alimentaires proviennent d\'Open Food Facts (openfoodfacts.org), utilisées sous la licence Open Database License (ODbL) v1.0. La liste de marques dérivée est conservée séparément des données propres à mitlist.';
+
+  @override
   String get accountGuestTitle => 'Tu utilises un compte invité';
 
   @override
@@ -2684,6 +2704,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get scanReviewDidYouMean => 'Tu voulais dire ?';
 
   @override
+  String scanReviewBestGuess(String name) {
+    return 'Suggestion : $name';
+  }
+
+  @override
   String get shareTargetAppBarTitle => 'Enregistrer dans mitlist';
 
   @override
@@ -2872,6 +2897,11 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get pinwallDragHint =>
       'Glisser les notes pour déplacer  ·  Pincer pour zoomer';
+
+  @override
+  String pinwallPresenceHere(String names) {
+    return '$names here now';
+  }
 
   @override
   String get pinwallCloseBoard => 'Fermer le tableau';
@@ -3969,7 +3999,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String activityAddedToNamedList(String name, String list, String when) {
-    return 'Added $name to $list · $when';
+    return '$name ajouté à $list · $when';
   }
 
   @override

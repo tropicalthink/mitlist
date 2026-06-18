@@ -53,12 +53,22 @@ class SseService {
   String? _currentGroupId;
   int _generation = 0;
 
+  // Most recent event per `type|groupId`, so a listener that subscribes after
+  // an event was emitted (e.g. a presence snapshot delivered at connect time)
+  // can seed itself instead of waiting for the next change.
+  final Map<String, SseEvent> _lastEventByKey = {};
+
   SseService([TokenStore? tokenStore, TokenRefreshCoordinator? refreshCoordinator])
       : _tokenStore = tokenStore ?? SecureTokenStore.shared,
         _refreshCoordinator =
             refreshCoordinator ?? TokenRefreshCoordinator.shared;
 
   Stream<SseEvent> get events => _controller.stream;
+
+  /// The most recently received event of [type] for [groupId], or null if none
+  /// has arrived yet. Lets late subscribers seed from the last known state.
+  SseEvent? lastEvent(String type, String groupId) =>
+      _lastEventByKey['$type|$groupId'];
 
   /// Connect (or reconnect) to the SSE stream for [groupId].
   Future<void> connect(String groupId) async {
@@ -153,8 +163,10 @@ class SseService {
         final json = line.substring(5).trim();
         try {
           final map = jsonDecode(json) as Map<String, dynamic>;
+          final event = SseEvent.fromJson(map);
+          _lastEventByKey['${event.type}|${event.groupId}'] = event;
           if (!_controller.isClosed) {
-            _controller.add(SseEvent.fromJson(map));
+            _controller.add(event);
           }
         } catch (e) {
           _log.w('SSE: dropping malformed event: $e');
