@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../models/group_models.dart';
@@ -18,7 +20,7 @@ import '../../widgets/mitlist_app_bar.dart';
 
 enum _Phase { idle, joining, success }
 
-/// Full-screen landing for an invite deep link (`mitlist://join/<code>`).
+/// Full-screen landing for an invite deep link (`mitlist:///join/<code>`).
 ///
 /// Shows the code, lets the user confirm or dismiss, and on success sets the
 /// joined group as the current group before navigating to home.
@@ -183,6 +185,19 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
             text: l10n.authJoinNotNow,
             onPressed: () => context.goNamed('home'),
           ),
+          if (kIsWeb) ...[
+            const SizedBox(height: MitlistSpacing.sm),
+            AppButton(
+              variant: AppButtonVariant.outline,
+              color: AppButtonColor.neutral,
+              size: AppButtonSize.lg,
+              text: 'Open in app', // TODO(l10n): localize
+              onPressed: () => launchUrl(
+                Uri.parse('mitlist:///join/${widget.code.trim().toUpperCase()}'),
+                mode: LaunchMode.externalApplication,
+              ),
+            ),
+          ],
         ],
       ),
     );
