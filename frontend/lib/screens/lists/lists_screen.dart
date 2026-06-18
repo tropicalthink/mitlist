@@ -1001,6 +1001,11 @@ class _ListCard extends ConsumerWidget {
   Future<void> _quickAddItem(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController();
+    // Captured when a suggestion chip is tapped so the new item links the
+    // canonical grocery node (aisle/dedupe/restock) even though we keep the
+    // brand the user typed as the visible name. submitOnSelect means tapping a
+    // chip submits immediately, so this can't go stale via later edits.
+    String? selectedCanonicalId;
     final name = await showAppDialog<String>(
       context: context,
       title: l10n.listAddItemTo(list.name),
@@ -1010,6 +1015,7 @@ class _ListCard extends ConsumerWidget {
         label: l10n.listItemName,
         maxLength: 200,
         submitOnSelect: true,
+        onSelected: (s) => selectedCanonicalId = s.canonicalItemId,
         onSubmitted: (value) => Navigator.of(context)
             .pop(value.trim().isEmpty ? null : value.trim()),
       ),
@@ -1021,7 +1027,12 @@ class _ListCard extends ConsumerWidget {
         ),
         AppButton(
           text: l10n.commonAdd,
-          onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+          // Typed-and-tapped-Add path: no suggestion chosen, so no canonical
+          // link (a free-typed name shouldn't guess at one).
+          onPressed: () {
+            selectedCanonicalId = null;
+            Navigator.of(context).pop(controller.text.trim());
+          },
         ),
       ],
     );
@@ -1029,7 +1040,10 @@ class _ListCard extends ConsumerWidget {
     if (name == null || name.isEmpty) return;
     try {
       final svc = await ref.read(listServiceProviderAsync.future);
-      await svc.createItem(list.id, CreateListItemRequest(name: name));
+      await svc.createItem(
+        list.id,
+        CreateListItemRequest(name: name, canonicalItemId: selectedCanonicalId),
+      );
       onChanged();
     } catch (_) {
       if (context.mounted) {
@@ -1056,6 +1070,9 @@ class _ListCard extends ConsumerWidget {
     final isTodo = list.type.toLowerCase() == 'todo';
 
     final itemCount = list.itemCount;
+    final groups = ref.watch(cachedGroupsProvider).valueOrNull ?? const [];
+    final groupName =
+        groups.where((g) => g.id == list.groupId).firstOrNull?.name;
 
     return Material(
       color: accent.tileBackground,
@@ -1140,6 +1157,33 @@ class _ListCard extends ConsumerWidget {
                         ),
                     ],
                     const SizedBox(height: MitlistSpacing.sm),
+                    if (groupName != null) ...[
+                      Row(
+                        children: [
+                          AppIcon(
+                            name: 'userGroup',
+                            size: 11,
+                            color: snippetColor.withValues(alpha: 0.55),
+                          ),
+                          const SizedBox(width: MitlistSpacing.xs),
+                          Expanded(
+                            child: Text(
+                              l10n.listSharedWith(groupName),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                    color: snippetColor.withValues(alpha: 0.55),
+                                    fontSize: 10,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: MitlistSpacing.xs),
+                    ],
                     Row(
                       children: [
                         if (itemCount != null && itemCount > 0)

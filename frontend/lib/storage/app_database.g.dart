@@ -4517,6 +4517,20 @@ class $CanonicalItemsTableTable extends CanonicalItemsTable
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant(''));
+  static const VerificationMeta _nameFrMeta = const VerificationMeta('nameFr');
+  @override
+  late final GeneratedColumn<String> nameFr = GeneratedColumn<String>(
+      'name_fr', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
+  static const VerificationMeta _nameEsMeta = const VerificationMeta('nameEs');
+  @override
+  late final GeneratedColumn<String> nameEs = GeneratedColumn<String>(
+      'name_es', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
   static const VerificationMeta _categoryMeta =
       const VerificationMeta('category');
   @override
@@ -4581,6 +4595,8 @@ class $CanonicalItemsTableTable extends CanonicalItemsTable
         groupId,
         nameDe,
         nameEn,
+        nameFr,
+        nameEs,
         category,
         defaultUnit,
         productId,
@@ -4619,6 +4635,14 @@ class $CanonicalItemsTableTable extends CanonicalItemsTable
     if (data.containsKey('name_en')) {
       context.handle(_nameEnMeta,
           nameEn.isAcceptableOrUnknown(data['name_en']!, _nameEnMeta));
+    }
+    if (data.containsKey('name_fr')) {
+      context.handle(_nameFrMeta,
+          nameFr.isAcceptableOrUnknown(data['name_fr']!, _nameFrMeta));
+    }
+    if (data.containsKey('name_es')) {
+      context.handle(_nameEsMeta,
+          nameEs.isAcceptableOrUnknown(data['name_es']!, _nameEsMeta));
     }
     if (data.containsKey('category')) {
       context.handle(_categoryMeta,
@@ -4676,6 +4700,10 @@ class $CanonicalItemsTableTable extends CanonicalItemsTable
           .read(DriftSqlType.string, data['${effectivePrefix}name_de'])!,
       nameEn: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}name_en'])!,
+      nameFr: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name_fr'])!,
+      nameEs: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name_es'])!,
       category: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}category'])!,
       defaultUnit: attachedDatabase.typeMapping
@@ -4707,6 +4735,8 @@ class CanonicalItemsTableData extends DataClass
   final String groupId;
   final String nameDe;
   final String nameEn;
+  final String nameFr;
+  final String nameEs;
   final String category;
   final String defaultUnit;
   final String? productId;
@@ -4720,6 +4750,8 @@ class CanonicalItemsTableData extends DataClass
       required this.groupId,
       required this.nameDe,
       required this.nameEn,
+      required this.nameFr,
+      required this.nameEs,
       required this.category,
       required this.defaultUnit,
       this.productId,
@@ -4735,6 +4767,8 @@ class CanonicalItemsTableData extends DataClass
     map['group_id'] = Variable<String>(groupId);
     map['name_de'] = Variable<String>(nameDe);
     map['name_en'] = Variable<String>(nameEn);
+    map['name_fr'] = Variable<String>(nameFr);
+    map['name_es'] = Variable<String>(nameEs);
     map['category'] = Variable<String>(category);
     map['default_unit'] = Variable<String>(defaultUnit);
     if (!nullToAbsent || productId != null) {
@@ -4756,6 +4790,8 @@ class CanonicalItemsTableData extends DataClass
       groupId: Value(groupId),
       nameDe: Value(nameDe),
       nameEn: Value(nameEn),
+      nameFr: Value(nameFr),
+      nameEs: Value(nameEs),
       category: Value(category),
       defaultUnit: Value(defaultUnit),
       productId: productId == null && nullToAbsent
@@ -4779,6 +4815,8 @@ class CanonicalItemsTableData extends DataClass
       groupId: serializer.fromJson<String>(json['groupId']),
       nameDe: serializer.fromJson<String>(json['nameDe']),
       nameEn: serializer.fromJson<String>(json['nameEn']),
+      nameFr: serializer.fromJson<String>(json['nameFr']),
+      nameEs: serializer.fromJson<String>(json['nameEs']),
       category: serializer.fromJson<String>(json['category']),
       defaultUnit: serializer.fromJson<String>(json['defaultUnit']),
       productId: serializer.fromJson<String?>(json['productId']),
@@ -4797,6 +4835,8 @@ class CanonicalItemsTableData extends DataClass
       'groupId': serializer.toJson<String>(groupId),
       'nameDe': serializer.toJson<String>(nameDe),
       'nameEn': serializer.toJson<String>(nameEn),
+      'nameFr': serializer.toJson<String>(nameFr),
+      'nameEs': serializer.toJson<String>(nameEs),
       'category': serializer.toJson<String>(category),
       'defaultUnit': serializer.toJson<String>(defaultUnit),
       'productId': serializer.toJson<String?>(productId),
@@ -4813,6 +4853,8 @@ class CanonicalItemsTableData extends DataClass
           String? groupId,
           String? nameDe,
           String? nameEn,
+          String? nameFr,
+          String? nameEs,
           String? category,
           String? defaultUnit,
           Value<String?> productId = const Value.absent(),
@@ -4826,6 +4868,8 @@ class CanonicalItemsTableData extends DataClass
         groupId: groupId ?? this.groupId,
         nameDe: nameDe ?? this.nameDe,
         nameEn: nameEn ?? this.nameEn,
+        nameFr: nameFr ?? this.nameFr,
+        nameEs: nameEs ?? this.nameEs,
         category: category ?? this.category,
         defaultUnit: defaultUnit ?? this.defaultUnit,
         productId: productId.present ? productId.value : this.productId,
@@ -4841,6 +4885,8 @@ class CanonicalItemsTableData extends DataClass
       groupId: data.groupId.present ? data.groupId.value : this.groupId,
       nameDe: data.nameDe.present ? data.nameDe.value : this.nameDe,
       nameEn: data.nameEn.present ? data.nameEn.value : this.nameEn,
+      nameFr: data.nameFr.present ? data.nameFr.value : this.nameFr,
+      nameEs: data.nameEs.present ? data.nameEs.value : this.nameEs,
       category: data.category.present ? data.category.value : this.category,
       defaultUnit:
           data.defaultUnit.present ? data.defaultUnit.value : this.defaultUnit,
@@ -4860,6 +4906,8 @@ class CanonicalItemsTableData extends DataClass
           ..write('groupId: $groupId, ')
           ..write('nameDe: $nameDe, ')
           ..write('nameEn: $nameEn, ')
+          ..write('nameFr: $nameFr, ')
+          ..write('nameEs: $nameEs, ')
           ..write('category: $category, ')
           ..write('defaultUnit: $defaultUnit, ')
           ..write('productId: $productId, ')
@@ -4878,6 +4926,8 @@ class CanonicalItemsTableData extends DataClass
       groupId,
       nameDe,
       nameEn,
+      nameFr,
+      nameEs,
       category,
       defaultUnit,
       productId,
@@ -4894,6 +4944,8 @@ class CanonicalItemsTableData extends DataClass
           other.groupId == this.groupId &&
           other.nameDe == this.nameDe &&
           other.nameEn == this.nameEn &&
+          other.nameFr == this.nameFr &&
+          other.nameEs == this.nameEs &&
           other.category == this.category &&
           other.defaultUnit == this.defaultUnit &&
           other.productId == this.productId &&
@@ -4910,6 +4962,8 @@ class CanonicalItemsTableCompanion
   final Value<String> groupId;
   final Value<String> nameDe;
   final Value<String> nameEn;
+  final Value<String> nameFr;
+  final Value<String> nameEs;
   final Value<String> category;
   final Value<String> defaultUnit;
   final Value<String?> productId;
@@ -4924,6 +4978,8 @@ class CanonicalItemsTableCompanion
     this.groupId = const Value.absent(),
     this.nameDe = const Value.absent(),
     this.nameEn = const Value.absent(),
+    this.nameFr = const Value.absent(),
+    this.nameEs = const Value.absent(),
     this.category = const Value.absent(),
     this.defaultUnit = const Value.absent(),
     this.productId = const Value.absent(),
@@ -4939,6 +4995,8 @@ class CanonicalItemsTableCompanion
     required String groupId,
     this.nameDe = const Value.absent(),
     this.nameEn = const Value.absent(),
+    this.nameFr = const Value.absent(),
+    this.nameEs = const Value.absent(),
     this.category = const Value.absent(),
     this.defaultUnit = const Value.absent(),
     this.productId = const Value.absent(),
@@ -4957,6 +5015,8 @@ class CanonicalItemsTableCompanion
     Expression<String>? groupId,
     Expression<String>? nameDe,
     Expression<String>? nameEn,
+    Expression<String>? nameFr,
+    Expression<String>? nameEs,
     Expression<String>? category,
     Expression<String>? defaultUnit,
     Expression<String>? productId,
@@ -4972,6 +5032,8 @@ class CanonicalItemsTableCompanion
       if (groupId != null) 'group_id': groupId,
       if (nameDe != null) 'name_de': nameDe,
       if (nameEn != null) 'name_en': nameEn,
+      if (nameFr != null) 'name_fr': nameFr,
+      if (nameEs != null) 'name_es': nameEs,
       if (category != null) 'category': category,
       if (defaultUnit != null) 'default_unit': defaultUnit,
       if (productId != null) 'product_id': productId,
@@ -4989,6 +5051,8 @@ class CanonicalItemsTableCompanion
       Value<String>? groupId,
       Value<String>? nameDe,
       Value<String>? nameEn,
+      Value<String>? nameFr,
+      Value<String>? nameEs,
       Value<String>? category,
       Value<String>? defaultUnit,
       Value<String?>? productId,
@@ -5003,6 +5067,8 @@ class CanonicalItemsTableCompanion
       groupId: groupId ?? this.groupId,
       nameDe: nameDe ?? this.nameDe,
       nameEn: nameEn ?? this.nameEn,
+      nameFr: nameFr ?? this.nameFr,
+      nameEs: nameEs ?? this.nameEs,
       category: category ?? this.category,
       defaultUnit: defaultUnit ?? this.defaultUnit,
       productId: productId ?? this.productId,
@@ -5029,6 +5095,12 @@ class CanonicalItemsTableCompanion
     }
     if (nameEn.present) {
       map['name_en'] = Variable<String>(nameEn.value);
+    }
+    if (nameFr.present) {
+      map['name_fr'] = Variable<String>(nameFr.value);
+    }
+    if (nameEs.present) {
+      map['name_es'] = Variable<String>(nameEs.value);
     }
     if (category.present) {
       map['category'] = Variable<String>(category.value);
@@ -5067,6 +5139,8 @@ class CanonicalItemsTableCompanion
           ..write('groupId: $groupId, ')
           ..write('nameDe: $nameDe, ')
           ..write('nameEn: $nameEn, ')
+          ..write('nameFr: $nameFr, ')
+          ..write('nameEs: $nameEs, ')
           ..write('category: $category, ')
           ..write('defaultUnit: $defaultUnit, ')
           ..write('productId: $productId, ')
@@ -10743,6 +10817,8 @@ typedef $$CanonicalItemsTableTableCreateCompanionBuilder
   required String groupId,
   Value<String> nameDe,
   Value<String> nameEn,
+  Value<String> nameFr,
+  Value<String> nameEs,
   Value<String> category,
   Value<String> defaultUnit,
   Value<String?> productId,
@@ -10759,6 +10835,8 @@ typedef $$CanonicalItemsTableTableUpdateCompanionBuilder
   Value<String> groupId,
   Value<String> nameDe,
   Value<String> nameEn,
+  Value<String> nameFr,
+  Value<String> nameEs,
   Value<String> category,
   Value<String> defaultUnit,
   Value<String?> productId,
@@ -10790,6 +10868,12 @@ class $$CanonicalItemsTableTableFilterComposer
 
   ColumnFilters<String> get nameEn => $composableBuilder(
       column: $table.nameEn, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get nameFr => $composableBuilder(
+      column: $table.nameFr, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get nameEs => $composableBuilder(
+      column: $table.nameEs, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get category => $composableBuilder(
       column: $table.category, builder: (column) => ColumnFilters(column));
@@ -10837,6 +10921,12 @@ class $$CanonicalItemsTableTableOrderingComposer
   ColumnOrderings<String> get nameEn => $composableBuilder(
       column: $table.nameEn, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get nameFr => $composableBuilder(
+      column: $table.nameFr, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get nameEs => $composableBuilder(
+      column: $table.nameEs, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get category => $composableBuilder(
       column: $table.category, builder: (column) => ColumnOrderings(column));
 
@@ -10882,6 +10972,12 @@ class $$CanonicalItemsTableTableAnnotationComposer
 
   GeneratedColumn<String> get nameEn =>
       $composableBuilder(column: $table.nameEn, builder: (column) => column);
+
+  GeneratedColumn<String> get nameFr =>
+      $composableBuilder(column: $table.nameFr, builder: (column) => column);
+
+  GeneratedColumn<String> get nameEs =>
+      $composableBuilder(column: $table.nameEs, builder: (column) => column);
 
   GeneratedColumn<String> get category =>
       $composableBuilder(column: $table.category, builder: (column) => column);
@@ -10942,6 +11038,8 @@ class $$CanonicalItemsTableTableTableManager extends RootTableManager<
             Value<String> groupId = const Value.absent(),
             Value<String> nameDe = const Value.absent(),
             Value<String> nameEn = const Value.absent(),
+            Value<String> nameFr = const Value.absent(),
+            Value<String> nameEs = const Value.absent(),
             Value<String> category = const Value.absent(),
             Value<String> defaultUnit = const Value.absent(),
             Value<String?> productId = const Value.absent(),
@@ -10957,6 +11055,8 @@ class $$CanonicalItemsTableTableTableManager extends RootTableManager<
             groupId: groupId,
             nameDe: nameDe,
             nameEn: nameEn,
+            nameFr: nameFr,
+            nameEs: nameEs,
             category: category,
             defaultUnit: defaultUnit,
             productId: productId,
@@ -10972,6 +11072,8 @@ class $$CanonicalItemsTableTableTableManager extends RootTableManager<
             required String groupId,
             Value<String> nameDe = const Value.absent(),
             Value<String> nameEn = const Value.absent(),
+            Value<String> nameFr = const Value.absent(),
+            Value<String> nameEs = const Value.absent(),
             Value<String> category = const Value.absent(),
             Value<String> defaultUnit = const Value.absent(),
             Value<String?> productId = const Value.absent(),
@@ -10987,6 +11089,8 @@ class $$CanonicalItemsTableTableTableManager extends RootTableManager<
             groupId: groupId,
             nameDe: nameDe,
             nameEn: nameEn,
+            nameFr: nameFr,
+            nameEs: nameEs,
             category: category,
             defaultUnit: defaultUnit,
             productId: productId,

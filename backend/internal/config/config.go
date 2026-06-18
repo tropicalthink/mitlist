@@ -19,12 +19,6 @@ type Config struct {
 	SecretKey        string `env:"SECRET_KEY" required:"true"`
 	SessionSecretKey string `env:"SESSION_SECRET_KEY" required:"true"`
 	RedisURL         string `env:"REDIS_URL" required:"true" default:"redis://localhost:6379"`
-	GeminiAPIKey string `env:"GEMINI_API_KEY"`
-
-	// CrofAI (OpenAI-compatible)
-	CrofAIAPIKey  string `env:"CROFAI_API_KEY"`
-	CrofAIBaseURL string `env:"CROFAI_BASE_URL" default:"https://crof.ai/v1"`
-
 	// Database & Cache
 	RedisPassword string `env:"REDIS_PASSWORD" default:""`
 
@@ -60,7 +54,7 @@ type Config struct {
 	// Web Push
 	VapidPrivateKey string `env:"VAPID_PRIVATE_KEY"`
 	VapidPublicKey  string `env:"VAPID_PUBLIC_KEY"`
-	VapidSubject    string `env:"VAPID_SUBJECT" default:"mailto:noreply@mitlist.app"`
+	VapidSubject    string `env:"VAPID_SUBJECT" default:"mailto:noreply@mitlist.me"`
 
 	// Firebase / FCM (mobile push)
 	// Set FIREBASE_PROJECT_ID and FIREBASE_SERVICE_ACCOUNT_JSON (raw JSON string)
@@ -81,7 +75,7 @@ type Config struct {
 	BrevoSMTPPort    int    `env:"BREVO_SMTP_PORT" default:"587"`
 	BrevoSMTPUser    string `env:"BREVO_SMTP_USER"`
 	BrevoSMTPPass    string `env:"BREVO_SMTP_PASS"`
-	MailFromEmail    string `env:"MAIL_FROM_EMAIL" default:"noreply@mitlist.app"`
+	MailFromEmail    string `env:"MAIL_FROM_EMAIL" default:"noreply@mitlist.me"`
 
 	// Sentry
 	SentryDSN string `env:"SENTRY_DSN"`
@@ -169,8 +163,6 @@ func (c Config) MaskSecrets() Config {
 	masked.DatabaseURL = mask(masked.DatabaseURL)
 	masked.SecretKey = mask(masked.SecretKey)
 	masked.SessionSecretKey = mask(masked.SessionSecretKey)
-	masked.GeminiAPIKey = mask(masked.GeminiAPIKey)
-	masked.CrofAIAPIKey = mask(masked.CrofAIAPIKey)
 	masked.RedisPassword = mask(masked.RedisPassword)
 	masked.GoogleClientSecret = mask(masked.GoogleClientSecret)
 	masked.ApplePrivateKey = mask(masked.ApplePrivateKey)

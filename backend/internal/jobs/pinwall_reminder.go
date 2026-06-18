@@ -18,14 +18,21 @@ import (
 // PinwallReminder sends one-time reminders for pinwall posts with remind_at set.
 // Runs every minute.
 type PinwallReminder struct {
-	repo  pinwallReminderRepo
-	log   *logger.Logger
-	push  Pusher
+	repo       pinwallReminderRepo
+	log        *logger.Logger
+	push       Pusher
+	dispatcher NotificationDispatcher // preferred; manual batch+push used as fallback
 }
 
 func NewPinwallReminder(db repositories.DBTX, push Pusher, log *logger.Logger) *PinwallReminder {
 	repo := &pinwallReminderRepoImpl{db: db}
 	return &PinwallReminder{repo: repo, log: log, push: push}
+}
+
+// NewPinwallReminderWithDispatcher creates a PinwallReminder that routes through the dispatcher.
+func NewPinwallReminderWithDispatcher(db repositories.DBTX, dispatcher NotificationDispatcher, log *logger.Logger) *PinwallReminder {
+	repo := &pinwallReminderRepoImpl{db: db}
+	return &PinwallReminder{repo: repo, log: log, dispatcher: dispatcher}
 }
 
 type pinwallReminderRepo interface {
@@ -87,27 +94,37 @@ func (r *PinwallReminder) sendForPost(ctx context.Context, post models.PinwallPo
 
 	sentAt := time.Now().UTC()
 
-	payload := models.NotificationPayload{
+	notifPayload := models.NotificationPayload{
 		Screen:     models.ScreenHouseholdHub,
 		EntityType: models.EntityTypePinwallPost,
 		ID:         post.ID.String(),
 		GroupID:    post.GroupID.String(),
 	}
-	data, _ := json.Marshal(payload)
+
+	if r.dispatcher != nil {
+		// Dispatcher handles persist+push preference-filtered for group minus author.
+		if err := r.dispatcher.DispatchToGroup(ctx, post.GroupID, post.UserID, "pinwall_reminder",
+			"Reminder", post.Content, notifPayload); err != nil {
+			return fmt.Errorf("dispatch pinwall reminder: %w", err)
+		}
+		ok, err := r.repo.MarkReminderSent(ctx, post.ID, sentAt)
+		if err != nil {
+			return fmt.Errorf("mark reminder sent: %w", err)
+		}
+		if ok {
+			r.log.Info().
+				Str("post_id", post.ID.String()).
+				Time("remind_at", post.RemindAt.UTC()).
+				Msg("pinwall reminder dispatched")
+		}
+		return nil
+	}
+
+	// Fallback: manual batch+push (used when no dispatcher is injected).
+	data, _ := json.Marshal(notifPayload)
 
 	defaultPref := func(userID uuid.UUID) *models.NotificationPreference {
-		return &models.NotificationPreference{
-			UserID:          userID,
-			GroupID:         post.GroupID,
-			ChoreDue:        true,
-			ChoreDueDayOf:   true,
-			ListItemAdded:   true,
-			ExpenseCreated:  true,
-			MealPlanChanged: true,
-			WeeklyDigest:    true,
-			PinwallReminder: true,
-			PushEnabled:     true,
-		}
+		return models.DefaultNotificationPreference(userID, post.GroupID)
 	}
 
 	toDeliver := make([]models.Notification, 0, len(cache.members))
@@ -145,7 +162,7 @@ func (r *PinwallReminder) sendForPost(ctx context.Context, post models.PinwallPo
 	pushPayload := map[string]interface{}{
 		"title": "Reminder",
 		"body":  post.Content,
-		"data":  payload,
+		"data":  notifPayload,
 	}
 	pushBytes, _ := json.Marshal(pushPayload)
 	pushStr := string(pushBytes)
@@ -238,28 +255,17 @@ func (r *pinwallReminderRepoImpl) GetUserPreference(ctx context.Context, userID,
 	var p models.NotificationPreference
 	err := r.db.QueryRow(ctx, `
 		SELECT id, user_id, group_id, chore_due, chore_due_day_of, list_item_added,
-			expense_created, meal_plan_changed, weekly_digest, pinwall_reminder, push_enabled, created_at, updated_at
+			expense_created, meal_plan_changed, weekly_digest, pinwall_reminder, push_enabled, email_enabled, created_at, updated_at
 		FROM notification_preferences
 		WHERE user_id = $1 AND group_id = $2
 	`, userID, groupID).Scan(
 		&p.ID, &p.UserID, &p.GroupID, &p.ChoreDue, &p.ChoreDueDayOf, &p.ListItemAdded,
-		&p.ExpenseCreated, &p.MealPlanChanged, &p.WeeklyDigest, &p.PinwallReminder, &p.PushEnabled,
+		&p.ExpenseCreated, &p.MealPlanChanged, &p.WeeklyDigest, &p.PinwallReminder, &p.PushEnabled, &p.EmailEnabled,
 		&p.CreatedAt, &p.UpdatedAt,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return &models.NotificationPreference{
-				UserID:          userID,
-				GroupID:         groupID,
-				ChoreDue:        true,
-				ChoreDueDayOf:   true,
-				ListItemAdded:   true,
-				ExpenseCreated:  true,
-				MealPlanChanged: true,
-				WeeklyDigest:    true,
-				PinwallReminder: true,
-				PushEnabled:     true,
-			}, nil
+			return models.DefaultNotificationPreference(userID, groupID), nil
 		}
 		return nil, err
 	}

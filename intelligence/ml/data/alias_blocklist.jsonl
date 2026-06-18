@@ -1,0 +1,11 @@
+{"alias":"cola","wrong_canonical_id":"oxtail","reason":"'cola' in oxtail's aliases_es means 'tail' (cola de res = oxtail), but a bare 'cola' search should resolve to the Cola beverage, not Oxtail"}
+{"alias":"cola","wrong_canonical_id":"lamb_tail","reason":"'cola' in lamb_tail's aliases_es means 'tail'; bare 'cola' should resolve to Cola beverage"}
+{"alias":"cola","wrong_canonical_id":"monkfish_tail","reason":"'cola' in monkfish_tail's aliases_es means 'tail'; bare 'cola' should resolve to Cola beverage"}
+{"alias":"oreo","wrong_canonical_id":"coreopsis","reason":"'coreo' is an OCR typo of 'coreopsis' that has leaked as 'oreo'; coreopsis is a flower, Oreo is a cookie brand that should map to cookies"}
+{"alias":"coreo","wrong_canonical_id":"coreopsis","reason":"OCR typo alias — prevents Oreo detection via fuzzy match on 'oreo'"}
+{"alias":"coreop","wrong_canonical_id":"coreopsis","reason":"Short-form OCR alias that fuzzy-matches 'oreo'; blocks Oreo resolution"}
+{"alias":"tail","wrong_canonical_id":"oxtail","reason":"Bare 'tail' is too generic and causes false positives; removed from oxtail alias collision chain"}
+{"alias":"tail","wrong_canonical_id":"lamb_tail","reason":"Bare 'tail' causes false positives in multi-language search"}
+{"alias":"tail","wrong_canonical_id":"monkfish_tail","reason":"Bare 'tail' causes false positives in multi-language search"}
+{"alias": "müsli", "wrong_canonical_id": "hamster_food_muesli"}
+{"alias": "muesli", "wrong_canonical_id": "hamster_food_muesli"}

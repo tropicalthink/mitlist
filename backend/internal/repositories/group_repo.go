@@ -368,6 +368,36 @@ func (r *GroupRepository) ListPendingClaimsByGroup(ctx context.Context, groupID 
 	return claims, nil
 }
 
+// ListMemberEmailsByGroup returns a map of userID → email for all active members
+// of a group. Used by the email notification channel to look up recipient addresses
+// without loading full user records. Soft-deleted users (deleted_at IS NOT NULL) are
+// excluded.
+func (r *GroupRepository) ListMemberEmailsByGroup(ctx context.Context, groupID uuid.UUID) (map[uuid.UUID]string, error) {
+	query := `
+		SELECT gm.user_id, u.email
+		FROM group_memberships gm
+		JOIN users u ON u.id = gm.user_id
+		WHERE gm.group_id = $1
+		  AND u.deleted_at IS NULL
+	`
+	rows, err := r.pool.Query(ctx, query, groupID)
+	if err != nil {
+		return nil, fmt.Errorf("list member emails: %w", err)
+	}
+	defer rows.Close()
+
+	out := make(map[uuid.UUID]string)
+	for rows.Next() {
+		var userID uuid.UUID
+		var email string
+		if err := rows.Scan(&userID, &email); err != nil {
+			return nil, fmt.Errorf("scan member email: %w", err)
+		}
+		out[userID] = email
+	}
+	return out, rows.Err()
+}
+
 // compile-time interface check helpers
 var (
 	_ = pgx.ErrNoRows

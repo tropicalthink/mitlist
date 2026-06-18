@@ -16,6 +16,7 @@ type Runner struct {
 	cron       *cron.Cron
 	db         repositories.DBTX
 	push       Pusher
+	dispatcher NotificationDispatcher
 	log        *logger.Logger
 	jobs       []jobMeta
 	entryNames map[cron.EntryID]string
@@ -39,6 +40,17 @@ func NewRunner(db repositories.DBTX, pushSvc Pusher, log *logger.Logger) *Runner
 	}
 }
 
+// NewRunnerWithDispatcher creates a Runner that routes notifications through the dispatcher.
+func NewRunnerWithDispatcher(db repositories.DBTX, dispatcher NotificationDispatcher, log *logger.Logger) *Runner {
+	return &Runner{
+		cron:       cron.New(cron.WithChain(cron.SkipIfStillRunning(nil), cron.Recover(cron.DefaultLogger))),
+		db:         db,
+		dispatcher: dispatcher,
+		log:        log,
+		entryNames: make(map[cron.EntryID]string),
+	}
+}
+
 // RegisterAll registers all background jobs with their schedules.
 func (r *Runner) RegisterAll() {
 	// T82: Chore scheduler — daily at 00:01
@@ -46,19 +58,39 @@ func (r *Runner) RegisterAll() {
 	r.register("chore-scheduler", "1 0 * * *", cs.Run, true)
 
 	// T84: Recurring expense — hourly
-	re := NewRecurringExpenseJob(r.db, r.push, r.log)
+	var re *RecurringExpenseJob
+	if r.dispatcher != nil {
+		re = NewRecurringExpenseJobWithDispatcher(r.db, r.dispatcher, r.log)
+	} else {
+		re = NewRecurringExpenseJob(r.db, r.push, r.log)
+	}
 	r.register("recurring-expense", "0 * * * *", re.Run, true)
 
 	// T86: Chore reminder — daily at 09:00
-	cr := NewChoreReminder(r.db, r.push, r.log)
+	var cr *ChoreReminder
+	if r.dispatcher != nil {
+		cr = NewChoreReminderWithDispatcher(r.db, r.dispatcher, r.log)
+	} else {
+		cr = NewChoreReminder(r.db, r.push, r.log)
+	}
 	r.register("chore-reminder", "0 9 * * *", cr.Run, true)
 
 	// T87: Weekly summary — disabled by default (Monday 09:00)
-	ws := NewWeeklySummary(r.db, r.push, r.log)
+	var ws *WeeklySummary
+	if r.dispatcher != nil {
+		ws = NewWeeklySummaryWithDispatcher(r.db, r.dispatcher, r.log)
+	} else {
+		ws = NewWeeklySummary(r.db, r.push, r.log)
+	}
 	r.register("weekly-summary", "0 9 * * 1", ws.Run, true)
 
 	// Pinwall reminders — every minute
-	pr := NewPinwallReminder(r.db, r.push, r.log)
+	var pr *PinwallReminder
+	if r.dispatcher != nil {
+		pr = NewPinwallReminderWithDispatcher(r.db, r.dispatcher, r.log)
+	} else {
+		pr = NewPinwallReminder(r.db, r.push, r.log)
+	}
 	r.register("pinwall-reminder", "* * * * *", pr.Run, true)
 }
 

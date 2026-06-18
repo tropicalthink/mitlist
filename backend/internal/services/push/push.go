@@ -29,18 +29,26 @@ type notifPrefRepo interface {
 type Service struct {
 	cfg       *config.Config
 	log       *logger.Logger
-	authRepo  *repositories.AuthRepository
+	authRepo  repositories.AuthRepo
 	groupRepo repositories.GroupRepo
 	notifRepo notifPrefRepo
 
-	fcmOnce  sync.Once
-	fcmCreds *google.Credentials
-	fcmErr   error
+	fcmOnce       sync.Once
+	fcmCreds      *google.Credentials
+	fcmErr        error
+	webpushClient webpush.HTTPClient
 }
 
 // New creates a new push notification service.
-func New(cfg *config.Config, log *logger.Logger, authRepo *repositories.AuthRepository, groupRepo repositories.GroupRepo, notifRepo notifPrefRepo) *Service {
-	return &Service{cfg: cfg, log: log, authRepo: authRepo, groupRepo: groupRepo, notifRepo: notifRepo}
+func New(cfg *config.Config, log *logger.Logger, authRepo repositories.AuthRepo, groupRepo repositories.GroupRepo, notifRepo notifPrefRepo) *Service {
+	return &Service{
+		cfg:           cfg,
+		log:           log,
+		authRepo:      authRepo,
+		groupRepo:     groupRepo,
+		notifRepo:     notifRepo,
+		webpushClient: &http.Client{Timeout: 10 * time.Second},
+	}
 }
 
 // SendToUser sends a push notification to all subscriptions/devices for a user.
@@ -54,30 +62,7 @@ func (s *Service) SendToUser(userID uuid.UUID, payload string) error {
 		return err
 	}
 	for _, sub := range subs {
-		resp, err := webpush.SendNotification(
-			[]byte(payload),
-			&webpush.Subscription{
-				Endpoint: sub.Endpoint,
-				Keys: webpush.Keys{
-					P256dh: sub.P256dh,
-					Auth:   sub.Auth,
-				},
-			},
-			&webpush.Options{
-				Subscriber:      s.cfg.VapidSubject,
-				VAPIDPublicKey:  s.cfg.VapidPublicKey,
-				VAPIDPrivateKey: s.cfg.VapidPrivateKey,
-				TTL:             86400,
-			},
-		)
-		if err != nil {
-			s.log.Warn().Err(err).Str("user_id", userID.String()).Str("endpoint", sub.Endpoint).Msg("web push failed")
-			if resp != nil {
-				_ = resp.Body.Close()
-			}
-			continue
-		}
-		_ = resp.Body.Close()
+		s.sendWebPush(ctx, sub, payload)
 	}
 
 	// FCM (mobile)
@@ -156,30 +141,7 @@ func (s *Service) broadcastExcluding(groupID, excludeUserID uuid.UUID, payload s
 
 	for _, userID := range targetUserIDs {
 		for _, sub := range subsByUser[userID] {
-			resp, sendErr := webpush.SendNotification(
-				[]byte(payload),
-				&webpush.Subscription{
-					Endpoint: sub.Endpoint,
-					Keys: webpush.Keys{
-						P256dh: sub.P256dh,
-						Auth:   sub.Auth,
-					},
-				},
-				&webpush.Options{
-					Subscriber:      s.cfg.VapidSubject,
-					VAPIDPublicKey:  s.cfg.VapidPublicKey,
-					VAPIDPrivateKey: s.cfg.VapidPrivateKey,
-					TTL:             86400,
-				},
-			)
-			if sendErr != nil {
-				s.log.Warn().Err(sendErr).Str("user_id", userID.String()).Str("endpoint", sub.Endpoint).Msg("web push failed")
-				if resp != nil {
-					_ = resp.Body.Close()
-				}
-				continue
-			}
-			_ = resp.Body.Close()
+			s.sendWebPush(ctx, sub, payload)
 		}
 		for _, dt := range tokensByUser[userID] {
 			if err := s.sendFCM(ctx, dt.Token, payload); err != nil {
@@ -188,6 +150,47 @@ func (s *Service) broadcastExcluding(groupID, excludeUserID uuid.UUID, payload s
 		}
 	}
 	return nil
+}
+
+// sendWebPush sends a single web-push notification and prunes the subscription on 404/410.
+func (s *Service) sendWebPush(ctx context.Context, sub models.PushSubscription, payload string) {
+	resp, err := webpush.SendNotificationWithContext(
+		ctx,
+		[]byte(payload),
+		&webpush.Subscription{
+			Endpoint: sub.Endpoint,
+			Keys: webpush.Keys{
+				P256dh: sub.P256dh,
+				Auth:   sub.Auth,
+			},
+		},
+		&webpush.Options{
+			Subscriber:      s.cfg.VapidSubject,
+			VAPIDPublicKey:  s.cfg.VapidPublicKey,
+			VAPIDPrivateKey: s.cfg.VapidPrivateKey,
+			TTL:             86400,
+			HTTPClient:      s.webpushClient,
+		},
+	)
+	if err != nil {
+		s.log.Warn().Err(err).Str("endpoint", sub.Endpoint).Msg("web push failed")
+		if resp != nil {
+			_ = resp.Body.Close()
+		}
+		return
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusGone {
+		if delErr := s.authRepo.DeletePushSubscription(ctx, sub.ID); delErr != nil {
+			s.log.Warn().Err(delErr).Str("sub_id", sub.ID.String()).Msg("failed to prune dead push subscription")
+		} else {
+			s.log.Info().Str("sub_id", sub.ID.String()).Msg("pruned expired push subscription")
+		}
+		return
+	}
+	if resp.StatusCode >= 400 {
+		s.log.Warn().Int("status", resp.StatusCode).Str("endpoint", sub.Endpoint).Msg("web push non-2xx")
+	}
 }
 
 // fcmTokenSource lazily initialises the Google credential from the service account JSON.

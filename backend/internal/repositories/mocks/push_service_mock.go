@@ -19,3 +19,8 @@ func (m *MockPushService) BroadcastToGroup(groupID uuid.UUID, payload string) er
 	args := m.Called(groupID, payload)
 	return args.Error(0)
 }
+
+func (m *MockPushService) BroadcastToGroupExcluding(groupID, excludeUserID uuid.UUID, payload string) error {
+	args := m.Called(groupID, excludeUserID, payload)
+	return args.Error(0)
+}

@@ -1,5 +1,6 @@
 .env
 .venv/
+.venv-off/
 __pycache__/
 *.pyc
 progress.db
@@ -10,3 +11,5 @@ ml/phase8_embeddings/finetuned/
 ml/phase8_embeddings/onnx/
 ml/phase8_embeddings/model.pb/
 ml/models/*.onnx
+# OCR eval sample photos — real photos only; never commit (privacy + size)
+ml/data/ocr_samples/

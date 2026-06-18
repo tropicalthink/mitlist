@@ -1,10 +1,12 @@
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show compute;
 import 'package:uuid/uuid.dart';
 
 import '../../storage/app_database.dart';
 import 'canonical_resolver_service.dart';
 import 'confidence_service.dart';
 import 'correction_memory_service.dart';
+import 'document_rectifier_service.dart';
 import 'enhancement_service.dart';
 import 'extraction_service.dart';
 import 'grocery_classifier_service.dart';
@@ -16,7 +18,7 @@ const _uuid = Uuid();
 
 /// Single entry point for the grocery scan pipeline.
 ///
-/// Flow: enhance → OCR → extract → resolve → aisle → confidence
+/// Flow: rectify → enhance → OCR → extract → resolve → aisle → confidence
 class ScanPipelineService {
   final AppDatabase _db;
   final EnhancementService _enhancement;
@@ -55,8 +57,12 @@ class ScanPipelineService {
     List<String> listContextCanonicalIds = const [],
     bool isOnline = true,
   }) async {
-    // 1. Enhance.
-    final enhanced = _enhancement.enhance(imageBytes);
+    // 1. Perspective rectify — find document quad and warp to flat rectangle.
+    //    Runs on a worker isolate to avoid janking the UI.
+    final rectified = await compute(_rectifyIsolate, imageBytes);
+
+    // 2. Enhance (runs on a worker isolate — does not block the UI thread).
+    final enhanced = await _enhancement.enhance(rectified);
 
     // 2. OCR.
     final lines = await _ocr.recognise(enhanced);
@@ -70,11 +76,19 @@ class ScanPipelineService {
     final aisleByCanonicalId = <String, StoreAislesTableData?>{};
     final canonicalById = <String, CanonicalItemsTableData?>{};
 
+    // Build the household resolution context once per scan (purchase history +
+    // co-occurrence) so it is not redundantly rebuilt for every scanned line.
+    final resolutionContext = await _resolver.prepareContext(
+      groupId,
+      listContext: listContextCanonicalIds,
+    );
+
     for (final item in parsed) {
       final resolved = await _resolver.resolve(
         item.itemName,
         groupId,
         listContext: listContextCanonicalIds,
+        context: resolutionContext,
       );
 
       // 5. Aisle assignment. With a store selected, use its shipped layout
@@ -150,5 +164,15 @@ class ScanPipelineService {
       engine: 'mlkit',
       needsReview: needsReview,
     );
+  }
+}
+
+/// Top-level function used by [compute()] to run perspective rectification on
+/// a worker isolate without blocking the UI thread.
+Uint8List _rectifyIsolate(Uint8List bytes) {
+  try {
+    return const DocumentRectifierService().rectify(bytes).bytes;
+  } catch (_) {
+    return bytes;
   }
 }

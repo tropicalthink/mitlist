@@ -28,11 +28,12 @@ type chorePushPayload struct {
 
 // ChoreService provides business logic for chores and deterministic rotation.
 type ChoreService struct {
-	choreRepo repositories.ChoreRepo
-	groupRepo repositories.GroupRepo
-	listRepo  repositories.ListRepo
-	hub       *sse.Hub    // optional; nil disables SSE broadcasts
-	pushSvc   PushService // optional; nil disables push broadcasts
+	choreRepo  repositories.ChoreRepo
+	groupRepo  repositories.GroupRepo
+	listRepo   repositories.ListRepo
+	hub        *sse.Hub               // optional; nil disables SSE broadcasts
+	pushSvc    PushService            // optional; nil disables push broadcasts
+	dispatcher NotificationDispatcher // optional; nil disables persist+push dispatch
 }
 
 // NewChoreService creates a new ChoreService.
@@ -50,8 +51,23 @@ func (s *ChoreService) SetHub(h *sse.Hub) { s.hub = h }
 // SetPush injects the push service for mobile/web push broadcasts.
 func (s *ChoreService) SetPush(p PushService) { s.pushSvc = p }
 
-// broadcastChorePush notifies all group members except the actor of a chore state change.
-func (s *ChoreService) broadcastChorePush(groupID, choreID, actorID uuid.UUID, title, body string) {
+// SetDispatcher injects the notification dispatcher for persist+push broadcasts.
+func (s *ChoreService) SetDispatcher(d NotificationDispatcher) { s.dispatcher = d }
+
+// broadcastChorePush persists in-app feed rows and sends push to all group members
+// except the actor. Uses the dispatcher when available (persist+push); falls back
+// to push-only when only pushSvc is set.
+func (s *ChoreService) broadcastChorePush(ctx context.Context, groupID, choreID, actorID uuid.UUID, nType, title, body string) {
+	if s.dispatcher != nil {
+		notifPayload := models.NotificationPayload{
+			Screen:     models.ScreenChoreDetail,
+			EntityType: models.EntityTypeChore,
+			ID:         choreID.String(),
+			GroupID:    groupID.String(),
+		}
+		_ = s.dispatcher.DispatchToGroup(ctx, groupID, actorID, nType, title, body, notifPayload)
+		return
+	}
 	if s.pushSvc == nil {
 		return
 	}
@@ -431,7 +447,7 @@ func (s *ChoreService) CompleteChore(ctx context.Context, user *models.User, cho
 	}
 
 	s.publishChore("chore:completed", chore.GroupID, choreID)
-	go s.broadcastChorePush(chore.GroupID, choreID, user.ID,
+	s.broadcastChorePush(ctx, chore.GroupID, choreID, user.ID, "chore_due",
 		"Chore completed",
 		displayName(user)+" completed "+chore.Name)
 	return nil
@@ -488,7 +504,7 @@ func (s *ChoreService) SkipChore(ctx context.Context, user *models.User, choreID
 	}
 
 	s.publishChore("chore:skipped", chore.GroupID, choreID)
-	go s.broadcastChorePush(chore.GroupID, choreID, user.ID,
+	s.broadcastChorePush(ctx, chore.GroupID, choreID, user.ID, "chore_due",
 		"Chore skipped",
 		displayName(user)+" skipped "+chore.Name)
 	return nil

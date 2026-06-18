@@ -10,12 +10,15 @@ import 'package:mitlist/storage/app_database.dart';
 // calibrated scorer. No DB, no I/O. Candidate generation (which needs Drift) is
 // covered in candidate_generator_test.dart.
 
-CanonicalItemsTableData _item(String id, {String de = '', String en = ''}) =>
+CanonicalItemsTableData _item(String id,
+        {String de = '', String en = '', String fr = '', String es = ''}) =>
     CanonicalItemsTableData(
       id: id,
       groupId: '__global__',
       nameDe: de,
       nameEn: en,
+      nameFr: fr,
+      nameEs: es,
       category: '',
       defaultUnit: '',
       isGlobal: true,

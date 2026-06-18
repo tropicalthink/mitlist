@@ -1097,6 +1097,11 @@ class AppLocalizationsNl extends AppLocalizations {
       'Houd het voor nu privé. Je kunt het later delen.';
 
   @override
+  String recipeCreationSharedWithGroups(String names) {
+    return 'Gedeeld met $names';
+  }
+
+  @override
   String get recipeCreationIngredients => 'Ingrediënten';
 
   @override
@@ -1683,6 +1688,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get listOptionsTooltip => 'Lijstopties';
 
   @override
+  String listSharedWith(String name) {
+    return 'Gedeeld met $name';
+  }
+
+  @override
   String listDetailEditName(String name) {
     return 'Lijstnaam bewerken, $name';
   }
@@ -2219,6 +2229,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get accountTermsRow => 'Servicevoorwaarden';
 
   @override
+  String get accountOpenDataRow => 'Open data';
+
+  @override
+  String get accountOpenDataTitle => 'Open data-bronvermelding';
+
+  @override
+  String get accountOpenDataBody =>
+      'Sommige merknamen van levensmiddelen komen van Open Food Facts (openfoodfacts.org), gebruikt onder de Open Database License (ODbL) v1.0. De afgeleide merkenlijst wordt los van mitlists eigen gegevens gehouden.';
+
+  @override
   String get accountGuestTitle => 'Je gebruikt een gastaccount';
 
   @override
@@ -2678,6 +2698,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get scanReviewDidYouMean => 'Bedoelde je?';
 
   @override
+  String scanReviewBestGuess(String name) {
+    return 'Beste gok: $name';
+  }
+
+  @override
   String get shareTargetAppBarTitle => 'Opslaan in mitlist';
 
   @override
@@ -2863,6 +2888,11 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get pinwallDragHint =>
       'Sleep notities om te verplaatsen  ·  Knijp om te zoomen';
+
+  @override
+  String pinwallPresenceHere(String names) {
+    return '$names here now';
+  }
 
   @override
   String get pinwallCloseBoard => 'Bord sluiten';
@@ -3959,7 +3989,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String activityAddedToNamedList(String name, String list, String when) {
-    return 'Added $name to $list · $when';
+    return '$name toegevoegd aan $list · $when';
   }
 
   @override

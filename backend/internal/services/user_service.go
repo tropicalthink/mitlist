@@ -16,6 +16,7 @@ import (
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/repositories"
+	pushvalidate "github.com/mitlist-app/mitlist/internal/services/push"
 	"github.com/mitlist-app/mitlist/pkg/validation"
 )
 
@@ -436,6 +437,9 @@ func (s *UserService) CreatePushSubscription(ctx context.Context, sub *models.Pu
 	}
 	if sub.Endpoint == "" || sub.P256dh == "" || sub.Auth == "" {
 		return &api.ValidationError{Message: "endpoint, p256dh, and auth are required"}
+	}
+	if err := pushvalidate.ValidatePushEndpoint(sub.Endpoint); err != nil {
+		return err
 	}
 	if err := s.authRepo.CreatePushSubscription(ctx, sub); err != nil {
 		return err

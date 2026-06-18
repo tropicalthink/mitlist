@@ -27,7 +27,6 @@ import (
 	"github.com/mitlist-app/mitlist/internal/redis"
 	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/mitlist-app/mitlist/internal/services"
-	aiservice "github.com/mitlist-app/mitlist/internal/services/ai"
 	jwtservice "github.com/mitlist-app/mitlist/internal/services/jwt"
 	mailservice "github.com/mitlist-app/mitlist/internal/services/mail"
 	passwordservice "github.com/mitlist-app/mitlist/internal/services/password"
@@ -93,8 +92,6 @@ func mustLoadTestConfig() *config.Config {
 		FrontendURL:              "http://localhost:5173",
 		APIPrefix:                "/api",
 		AccessTokenExpireMinutes: 60,
-		GeminiAPIKey:             "test-gemini-key",
-		CrofAIAPIKey:             "test-crofai-key",
 	}
 }
 
@@ -212,8 +209,6 @@ func newTestMailService() *mailservice.Service         { return mailservice.New(
 func newTestPushService() *pushservice.Service {
 	return pushservice.New(testCfg, logger.New("test"), newTestAuthRepo(), newTestGroupRepo(), newTestNotificationRepo())
 }
-func newTestAIClient() *aiservice.Client               { return aiservice.New(testCfg) }
-
 // ---------------------------------------------------------------------------
 // User / Auth helpers
 // ---------------------------------------------------------------------------
@@ -562,7 +557,7 @@ func newRecipeRouter(t *testing.T) (chi.Router, *RecipeHandler) {
 func newNotificationRouter(t *testing.T) (chi.Router, *NotificationHandler) {
 	notificationRepo := newTestNotificationRepo()
 	pushSvc := newTestPushService()
-	svc := services.NewNotificationService(notificationRepo, nil, pushSvc)
+	svc := services.NewNotificationService(notificationRepo, nil, nil, pushSvc)
 	h := NewNotificationHandler(svc)
 
 	r := chi.NewRouter()
@@ -571,17 +566,6 @@ func newNotificationRouter(t *testing.T) (chi.Router, *NotificationHandler) {
 	return r, h
 }
 
-
-func newAssistantRouter(t *testing.T) (chi.Router, *AssistantHandler) {
-	aiClient := newTestAIClient()
-	svc := services.NewScanService(aiClient)
-	h := NewAssistantHandler(svc)
-
-	r := chi.NewRouter()
-	r.Use(testAuthMiddleware)
-	h.RegisterRoutes(r)
-	return r, h
-}
 
 func newShareRouter(t *testing.T) (chi.Router, *ShareHandler) {
 	listRepo := newTestListRepo()

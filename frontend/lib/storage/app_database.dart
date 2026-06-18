@@ -182,6 +182,8 @@ class CanonicalItemsTable extends Table {
   TextColumn get groupId => text().named('group_id')();
   TextColumn get nameDe => text().named('name_de').withDefault(const Constant(''))();
   TextColumn get nameEn => text().named('name_en').withDefault(const Constant(''))();
+  TextColumn get nameFr => text().named('name_fr').withDefault(const Constant(''))();
+  TextColumn get nameEs => text().named('name_es').withDefault(const Constant(''))();
   TextColumn get category => text().withDefault(const Constant(''))();
   TextColumn get defaultUnit => text().named('default_unit').withDefault(const Constant(''))();
   TextColumn get productId => text().named('product_id').nullable()();
@@ -328,7 +330,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 9;
 
   /// Creates all hot-query indexes.  Called from both onCreate and the v4
   /// onUpgrade block so that fresh installs and upgrades both get the indexes.
@@ -370,11 +372,60 @@ class AppDatabase extends _$AppDatabase {
         'CREATE INDEX IF NOT EXISTS idx_item_cooccurrence_table_group_id ON item_cooccurrence_table(group_id);');
   }
 
+  /// Creates the FTS5 virtual table that powers word-level prefix search over
+  /// alias text (e.g. "pad" matches "Breast Pads", "pringles" matches nothing
+  /// under whole-string prefix but a word-prefix query on "pringles" now works
+  /// once brand aliases are added to the seed).
+  ///
+  /// The FTS table is a *content table* pointing at item_aliases_table so the
+  /// full-text index stays in sync via triggers on insert/update/delete.
+  /// Queried with `alias_text_fts MATCH '"token*"'` (FTS5 prefix syntax on a
+  /// single term, or `"word*" "word2*"` for multi-word). Results are JOIN'd back
+  /// to item_aliases_table to filter by group_id and deleted_at.
+  Future<void> _createAliasFts() async {
+    // Content FTS5 table — content= makes the tokenized data live in SQLite's
+    // FTS index while the source columns remain in item_aliases_table.
+    await customStatement('''
+CREATE VIRTUAL TABLE IF NOT EXISTS item_aliases_fts
+  USING fts5(
+    alias_text,
+    content=item_aliases_table,
+    content_rowid=rowid,
+    tokenize="unicode61 remove_diacritics 2"
+  );
+''');
+    // Triggers to keep the FTS index in sync with the base table.
+    await customStatement('''
+CREATE TRIGGER IF NOT EXISTS item_aliases_fts_ai
+  AFTER INSERT ON item_aliases_table BEGIN
+    INSERT INTO item_aliases_fts(rowid, alias_text)
+      VALUES (new.rowid, new.alias_text);
+  END;
+''');
+    await customStatement('''
+CREATE TRIGGER IF NOT EXISTS item_aliases_fts_ad
+  AFTER DELETE ON item_aliases_table BEGIN
+    INSERT INTO item_aliases_fts(item_aliases_fts, rowid, alias_text)
+      VALUES ('delete', old.rowid, old.alias_text);
+  END;
+''');
+    await customStatement('''
+CREATE TRIGGER IF NOT EXISTS item_aliases_fts_au
+  AFTER UPDATE ON item_aliases_table BEGIN
+    INSERT INTO item_aliases_fts(item_aliases_fts, rowid, alias_text)
+      VALUES ('delete', old.rowid, old.alias_text);
+    INSERT INTO item_aliases_fts(rowid, alias_text)
+      VALUES (new.rowid, new.alias_text);
+  END;
+''');
+  }
+
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) async {
           await m.createAll();
           await _createIndexes();
+          await _createAliasFts();
         },
         onUpgrade: (m, from, to) async {
           if (from < 2) {
@@ -441,6 +492,23 @@ FROM list_items_table;
           if (from < 7) {
             // Persist the household list so group resolution works offline.
             await m.createTable(groupsCaches);
+          }
+          if (from < 8) {
+            // Add FTS5 virtual table over alias_text for word-level prefix
+            // search (e.g. "pad" → "Breast Pads", "corn" → "Corn Flakes").
+            // Backfill the index from existing rows so upgrades work correctly.
+            await _createAliasFts();
+            await customStatement(
+                'INSERT INTO item_aliases_fts(rowid, alias_text) '
+                'SELECT rowid, alias_text FROM item_aliases_table;');
+          }
+          if (from < 9) {
+            // Store the French and Spanish canonical names so the suggestion
+            // UI can show the item in the user's locale (es/fr markets are
+            // shipped in the seed). Default ''; the next seed reingest (version
+            // bump) backfills the values for global rows.
+            await m.addColumn(canonicalItemsTable, canonicalItemsTable.nameFr);
+            await m.addColumn(canonicalItemsTable, canonicalItemsTable.nameEs);
           }
         },
         beforeOpen: (details) async {
@@ -988,6 +1056,96 @@ FROM list_items_table;
         .get();
   }
 
+  /// Word-level prefix search via FTS5 over alias text.
+  ///
+  /// Unlike [searchAliasPrefix] (which requires the query to match the *start*
+  /// of the whole alias string), this method matches any *word* within the alias
+  /// that starts with the query token. For example:
+  ///   - "pad"  → matches "breast pads", "sanitary pad", "changing pad"
+  ///   - "corn" → matches "corn flakes", "corn starch", "cornflakes" (no-space variant)
+  ///   - "pring"→ matches "pringles" (curated brand alias on potato_chips)
+  ///
+  /// Multi-word queries (e.g. "breast pad") split into tokens and each word
+  /// must prefix-match independently within the alias text.
+  ///
+  /// Returns alias rows ordered by weight DESC (same as [searchAliasPrefix]).
+  /// Used by [GrocerySuggestionService] as a supplemental Tier 0 result when
+  /// the whole-string prefix finds nothing or too few results.
+  Future<List<ItemAliasesTableData>> searchAliasWordPrefix({
+    required String groupId,
+    required String query,
+    int limit = 80,
+  }) async {
+    if (query.isEmpty) return const [];
+    // Build FTS5 match expression: each whitespace-delimited token becomes
+    // "token*" in the FTS query. SQLite FTS5 uses bare `token*` syntax for
+    // prefix matching on individual tokens.
+    final tokens = query.trim().split(RegExp(r'\s+')).where((t) => t.isNotEmpty).toList();
+    if (tokens.isEmpty) return const [];
+    // Build FTS5 prefix expression: `token*` (no quotes) for each whitespace
+    // token. The unicode61 tokenizer on the FTS table handles hyphens and
+    // diacritics, so "red bull" → ["red", "bull"] in the index, and the query
+    // "red* bull*" matches both tokens as prefixes.
+    // FTS5 special characters that need escaping: double-quote literal phrases.
+    // Since we are using bare `token*` syntax (not phrase mode), the only
+    // character that needs escaping is `"` itself (which we strip from tokens).
+    final ftsMatch = tokens.map((t) {
+      // Strip FTS5-special characters that cannot appear in bare token queries.
+      // The unicode61 tokenizer already handles hyphens as word separators;
+      // removing them here prevents FTS5 parse errors on queries like "coca-cola"
+      // while the index correctly stores "coca" and "cola" as separate tokens.
+      final safe = t.replaceAll('"', '').replaceAll('(', '').replaceAll(')', '').trim();
+      if (safe.isEmpty) return null;
+      return '$safe*';
+    }).whereType<String>().join(' ');
+    if (ftsMatch.isEmpty) return const [];
+
+    // FTS5 content table query: join back to the base table to get all columns
+    // and to filter by group_id / deleted_at (the FTS index itself has no
+    // group_id column).
+    final rows = await customSelect(
+      '''
+      SELECT a.id, a.group_id, a.canonical_item_id, a.alias_text, a.lang,
+             a.source, a.weight, a.version,
+             a.created_at, a.updated_at, a.deleted_at
+      FROM item_aliases_fts fts
+      JOIN item_aliases_table a ON a.rowid = fts.rowid
+      WHERE item_aliases_fts MATCH ?
+        AND (a.group_id = ? OR a.group_id = '__global__')
+        AND a.deleted_at IS NULL
+      ORDER BY a.weight DESC
+      LIMIT ?
+      ''',
+      variables: [
+        Variable<String>(ftsMatch),
+        Variable<String>(groupId),
+        Variable<int>(limit),
+      ],
+    ).get();
+
+    return rows.map((row) {
+      final data = row.data;
+      return ItemAliasesTableData(
+        id: data['id'] as String,
+        groupId: data['group_id'] as String,
+        canonicalItemId: data['canonical_item_id'] as String,
+        aliasText: data['alias_text'] as String,
+        lang: (data['lang'] as String?) ?? 'und',
+        source: (data['source'] as String?) ?? 'correction',
+        weight: (data['weight'] as int?) ?? 1,
+        version: (data['version'] as int?) ?? 0,
+        createdAt: DateTime.fromMillisecondsSinceEpoch(
+            ((data['created_at'] as int?) ?? 0) * 1000),
+        updatedAt: DateTime.fromMillisecondsSinceEpoch(
+            ((data['updated_at'] as int?) ?? 0) * 1000),
+        deletedAt: data['deleted_at'] == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(
+                (data['deleted_at'] as int) * 1000),
+      );
+    }).toList();
+  }
+
   Future<List<CanonicalItemsTableData>> getCanonicalItemsByIds(
       Iterable<String> ids) {
     final list = ids.toList(growable: false);
@@ -1031,6 +1189,17 @@ FROM list_items_table;
           canonicalItemsTable,
           (t) => t.groupId.equals(globalGroupId) | t.isGlobal.equals(true));
     });
+  }
+
+  /// Deletes the global aliases that came from a given [source] (e.g. 'off').
+  /// Used to re-ingest a versioned external alias set without disturbing the
+  /// seed aliases or household corrections.
+  Future<void> clearGlobalAliasesBySource(
+      String globalGroupId, String source) async {
+    await (delete(itemAliasesTable)
+          ..where((t) =>
+              t.groupId.equals(globalGroupId) & t.source.equals(source)))
+        .go();
   }
 
   // ---------------------------------------------------------------------------

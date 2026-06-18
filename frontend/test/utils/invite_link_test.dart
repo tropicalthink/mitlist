@@ -81,9 +81,10 @@ void main() {
       );
     });
 
-    test('contains the mitlist:// link', () {
+    test('contains an https link', () {
       final text = inviteShareText('ABCD-1234', l10n);
-      expect(text, contains('mitlist://join/ABCD-1234'));
+      expect(text, contains('https://'));
+      expect(text, contains('/join/ABCD-1234'));
     });
 
     test('lowercased input is uppercased in output', () {

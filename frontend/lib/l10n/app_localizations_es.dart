@@ -1089,6 +1089,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'Mantenla privada por ahora. Puedes compartirla más tarde.';
 
   @override
+  String recipeCreationSharedWithGroups(String names) {
+    return 'Compartido con $names';
+  }
+
+  @override
   String get recipeCreationIngredients => 'Ingredientes';
 
   @override
@@ -1675,6 +1680,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get listOptionsTooltip => 'Opciones de lista';
 
   @override
+  String listSharedWith(String name) {
+    return 'Compartido con $name';
+  }
+
+  @override
   String listDetailEditName(String name) {
     return 'Editar nombre de lista, $name';
   }
@@ -2209,6 +2219,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get accountTermsRow => 'Términos del servicio';
 
   @override
+  String get accountOpenDataRow => 'Datos abiertos';
+
+  @override
+  String get accountOpenDataTitle => 'Atribución de datos abiertos';
+
+  @override
+  String get accountOpenDataBody =>
+      'Algunos nombres de marcas de alimentos provienen de Open Food Facts (openfoodfacts.org), usados bajo la Open Database License (ODbL) v1.0. La lista de marcas derivada se mantiene separada de los datos propios de mitlist.';
+
+  @override
   String get accountGuestTitle => 'Estás usando una cuenta de invitado';
 
   @override
@@ -2669,6 +2689,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get scanReviewDidYouMean => '¿Quisiste decir?';
 
   @override
+  String scanReviewBestGuess(String name) {
+    return 'Suposición: $name';
+  }
+
+  @override
   String get shareTargetAppBarTitle => 'Guardar en mitlist';
 
   @override
@@ -2854,6 +2879,11 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get pinwallDragHint =>
       'Arrastra las notas para moverlas  ·  Pellizca para hacer zoom';
+
+  @override
+  String pinwallPresenceHere(String names) {
+    return '$names here now';
+  }
 
   @override
   String get pinwallCloseBoard => 'Cerrar tablero';
@@ -3949,7 +3979,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String activityAddedToNamedList(String name, String list, String when) {
-    return 'Added $name to $list · $when';
+    return '$name añadido a $list · $when';
   }
 
   @override

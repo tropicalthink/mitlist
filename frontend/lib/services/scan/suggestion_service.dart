@@ -1,4 +1,5 @@
 import '../../storage/app_database.dart';
+import '../canonical_display.dart';
 
 /// A single missing-item suggestion derived from co-occurrence data.
 class GrocerySuggestion {
@@ -60,7 +61,7 @@ class SuggestionService {
     for (final entry in sorted.take(maxSuggestions)) {
       final canonical = await _db.getCanonicalItemById(entry.key);
       if (canonical == null) continue;
-      final name = canonical.nameDe.isNotEmpty ? canonical.nameDe : canonical.nameEn;
+      final name = canonicalDisplayName(canonical);
       if (name.isEmpty) continue;
 
       // Build a human reason from the trigger item.
@@ -69,9 +70,7 @@ class SuggestionService {
       if (triggerId != null) {
         final triggerCanonical = await _db.getCanonicalItemById(triggerId);
         if (triggerCanonical != null) {
-          final triggerName = triggerCanonical.nameDe.isNotEmpty
-              ? triggerCanonical.nameDe
-              : triggerCanonical.nameEn;
+          final triggerName = canonicalDisplayName(triggerCanonical);
           if (triggerName.isNotEmpty) {
             reason = 'often with $triggerName';
           }

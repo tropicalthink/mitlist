@@ -134,3 +134,11 @@ func (m *MockGroupRepo) ListPendingClaimsByGroup(ctx context.Context, groupID uu
 	}
 	return nil, args.Error(1)
 }
+
+func (m *MockGroupRepo) ListMemberEmailsByGroup(ctx context.Context, groupID uuid.UUID) (map[uuid.UUID]string, error) {
+	args := m.Called(ctx, groupID)
+	if em := args.Get(0); em != nil {
+		return em.(map[uuid.UUID]string), args.Error(1)
+	}
+	return nil, args.Error(1)
+}

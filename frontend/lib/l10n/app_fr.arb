@@ -1439,6 +1439,8 @@
   "@recipeCreationSaveForHouseholdPrivate": {
     "description": "Switch subtitle when private"
   },
+  "recipeCreationSharedWithGroups": "Partagé avec {names}",
+  "@recipeCreationSharedWithGroups": { "description": "Switch subtitle listing group names when recipe is public", "placeholders": { "names": { "type": "String" } } },
   "recipeCreationIngredients": "Ingrédients",
   "@recipeCreationIngredients": {
     "description": "Section header for ingredients"
@@ -2240,6 +2242,8 @@
   "@listOptionsTooltip": {
     "description": "Tooltip for list options menu"
   },
+  "listSharedWith": "Partagé avec {name}",
+  "@listSharedWith": { "description": "Label showing which household a list is shared with", "placeholders": { "name": { "type": "String" } } },
   "listDetailEditName": "Modifier le nom de la liste, {name}",
   "@listDetailEditName": {
     "description": "Semantics for editing list name",
@@ -2934,6 +2938,9 @@
   "@accountVersion": {
     "description": "Menu row: app version"
   },
+  "accountOpenDataRow": "Données ouvertes",
+  "accountOpenDataTitle": "Attribution des données ouvertes",
+  "accountOpenDataBody": "Certaines marques de produits alimentaires proviennent d'Open Food Facts (openfoodfacts.org), utilisées sous la licence Open Database License (ODbL) v1.0. La liste de marques dérivée est conservée séparément des données propres à mitlist.",
   "accountTermsRow": "Conditions d'utilisation",
   "@accountTermsRow": {
     "description": "Menu row: terms of service"
@@ -3545,6 +3552,11 @@
   "@scanReviewDidYouMean": {
     "description": "Label for alternative suggestions"
   },
+  "scanReviewBestGuess": "Suggestion : {name}",
+  "@scanReviewBestGuess": {
+    "description": "Tentative resolver guess under the user's OCR text on a low-confidence scan-review row",
+    "placeholders": { "name": { "type": "String" } }
+  },
   "shareTargetAppBarTitle": "Enregistrer dans mitlist",
   "@shareTargetAppBarTitle": {
     "description": "AppBar title for share target screen"
@@ -3928,6 +3940,7 @@
   "captureHintMoveCloser": "Rapprochez-vous",
   "captureHintReady": "Prêt à scanner",
   "captureHintUsable": "Semble utilisable",
+  "activityAddedToNamedList": "{name} ajouté à {list} · {when}",
   "activityAddedItemToList": "A ajouté un élément à une liste · {when}",
   "@activityAddedItemToList": {
     "description": "Activity: generic item added to list",

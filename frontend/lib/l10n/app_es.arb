@@ -1439,6 +1439,8 @@
   "@recipeCreationSaveForHouseholdPrivate": {
     "description": "Switch subtitle when private"
   },
+  "recipeCreationSharedWithGroups": "Compartido con {names}",
+  "@recipeCreationSharedWithGroups": { "description": "Switch subtitle listing group names when recipe is public", "placeholders": { "names": { "type": "String" } } },
   "recipeCreationIngredients": "Ingredientes",
   "@recipeCreationIngredients": {
     "description": "Section header for ingredients"
@@ -2240,6 +2242,8 @@
   "@listOptionsTooltip": {
     "description": "Tooltip for list options menu"
   },
+  "listSharedWith": "Compartido con {name}",
+  "@listSharedWith": { "description": "Label showing which household a list is shared with", "placeholders": { "name": { "type": "String" } } },
   "listDetailEditName": "Editar nombre de lista, {name}",
   "@listDetailEditName": {
     "description": "Semantics for editing list name",
@@ -2934,6 +2938,9 @@
   "@accountVersion": {
     "description": "Menu row: app version"
   },
+  "accountOpenDataRow": "Datos abiertos",
+  "accountOpenDataTitle": "Atribución de datos abiertos",
+  "accountOpenDataBody": "Algunos nombres de marcas de alimentos provienen de Open Food Facts (openfoodfacts.org), usados bajo la Open Database License (ODbL) v1.0. La lista de marcas derivada se mantiene separada de los datos propios de mitlist.",
   "accountTermsRow": "Términos del servicio",
   "@accountTermsRow": {
     "description": "Menu row: terms of service"
@@ -3545,6 +3552,11 @@
   "@scanReviewDidYouMean": {
     "description": "Label for alternative suggestions"
   },
+  "scanReviewBestGuess": "Suposición: {name}",
+  "@scanReviewBestGuess": {
+    "description": "Tentative resolver guess under the user's OCR text on a low-confidence scan-review row",
+    "placeholders": { "name": { "type": "String" } }
+  },
   "shareTargetAppBarTitle": "Guardar en mitlist",
   "@shareTargetAppBarTitle": {
     "description": "AppBar title for share target screen"
@@ -3928,6 +3940,7 @@
   "captureHintMoveCloser": "Acércate más",
   "captureHintReady": "Listo para escanear",
   "captureHintUsable": "Parece utilizable",
+  "activityAddedToNamedList": "{name} añadido a {list} · {when}",
   "activityAddedItemToList": "Añadió un artículo a una lista · {when}",
   "@activityAddedItemToList": {
     "description": "Activity: generic item added to list",

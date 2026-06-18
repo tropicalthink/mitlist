@@ -18,14 +18,20 @@ import (
 // ChoreReminder queries pending chore assignments due within 24 hours (or
 // overdue) and sends push notifications to assignees. Run daily at 09:00.
 type ChoreReminder struct {
-	repo choreReminderRepo
-	push Pusher
-	log  *logger.Logger
+	repo       choreReminderRepo
+	push       Pusher
+	dispatcher NotificationDispatcher // preferred; push used as fallback
+	log        *logger.Logger
 }
 
 // NewChoreReminder creates a new ChoreReminder.
 func NewChoreReminder(db repositories.DBTX, push Pusher, log *logger.Logger) *ChoreReminder {
 	return &ChoreReminder{repo: &choreReminderRepoImpl{db: db}, push: push, log: log}
+}
+
+// NewChoreReminderWithDispatcher creates a ChoreReminder that persists feed rows via the dispatcher.
+func NewChoreReminderWithDispatcher(db repositories.DBTX, dispatcher NotificationDispatcher, log *logger.Logger) *ChoreReminder {
+	return &ChoreReminder{repo: &choreReminderRepoImpl{db: db}, dispatcher: dispatcher, log: log}
 }
 
 func newChoreReminder(repo choreReminderRepo, push Pusher, log *logger.Logger) *ChoreReminder {
@@ -82,15 +88,27 @@ func (r *ChoreReminder) remindAssignment(ctx context.Context, a models.ChoreAssi
 		return fmt.Errorf("get chore name: %w", err)
 	}
 
+	notifPayload := models.NotificationPayload{
+		Screen:     models.ScreenChoreDetail,
+		EntityType: models.EntityTypeChore,
+		ID:         a.ChoreID.String(),
+		GroupID:    groupID.String(),
+	}
+
+	if r.dispatcher != nil {
+		if err := r.dispatcher.DispatchToUsers(ctx, []uuid.UUID{a.UserID}, groupID, "chore_due",
+			"Chore Reminder", choreName+" is due soon", notifPayload); err != nil {
+			r.log.Warn().Err(err).Str("assignment_id", a.ID.String()).Msg("failed to dispatch chore reminder")
+		} else {
+			r.log.Info().Str("assignment_id", a.ID.String()).Str("user_id", a.UserID.String()).Msg("chore reminder dispatched")
+		}
+		return nil
+	}
+
 	pushPayload := pushPayload{
 		Title: "Chore Reminder",
 		Body:  choreName + " is due soon",
-		Data: models.NotificationPayload{
-			Screen:     models.ScreenChoreDetail,
-			EntityType: models.EntityTypeChore,
-			ID:         a.ChoreID.String(),
-			GroupID:    groupID.String(),
-		},
+		Data:  notifPayload,
 	}
 	data, _ := json.Marshal(pushPayload)
 	pushErr := r.push.SendToUser(a.UserID, string(data))
@@ -165,18 +183,7 @@ func (r *choreReminderRepoImpl) GetUserPreference(ctx context.Context, userID, g
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			// Return defaults when no preference row exists.
-			return &models.NotificationPreference{
-				UserID:          userID,
-				GroupID:         groupID,
-				ChoreDue:        true,
-				ChoreDueDayOf:   true,
-				ListItemAdded:   true,
-				ExpenseCreated:  true,
-				MealPlanChanged: true,
-				WeeklyDigest:    true,
-				PinwallReminder: true,
-				PushEnabled:     true,
-			}, nil
+			return models.DefaultNotificationPreference(userID, groupID), nil
 		}
 		return nil, err
 	}

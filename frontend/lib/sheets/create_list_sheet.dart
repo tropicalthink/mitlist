@@ -1,20 +1,15 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../models/group_models.dart';
 import '../models/list_models.dart';
 import '../providers/group_provider.dart';
 import '../providers/list_provider.dart';
-import '../providers/scan_provider.dart';
 import '../router.dart' show currentGroupIdProvider;
 import '../theme/spacing.dart';
 import '../utils/active_group_context.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
-import '../widgets/app_icon.dart';
 import '../widgets/app_input.dart';
 import '../utils/friendly_error.dart';
 import '../l10n/app_localizations.dart';
@@ -66,7 +61,6 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
   List<Group> _groups = const [];
   bool _isLoadingGroups = true;
   bool _isSubmitting = false;
-  bool _isScanning = false;
   String? _errorText;
   String? _nameError;
 
@@ -89,49 +83,6 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
         _nameFocusNode.requestFocus();
       }
     });
-  }
-
-  Future<void> _onScan() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: ImageSource.camera,
-      maxWidth: 2048,
-      maxHeight: 2048,
-    );
-    if (picked == null || !mounted) return;
-
-    setState(() => _isScanning = true);
-
-    try {
-      final service = await ref.read(scanServiceProviderAsync.future);
-      final bytes = await File(picked.path).readAsBytes();
-      final result = await service.scanImage(bytes, 'image/jpeg');
-
-      if (!mounted) return;
-
-      if (result.title != null && result.title!.isNotEmpty) {
-        _nameController.text = result.title!;
-        _selectedType = _ListType.shopping;
-      }
-
-      setState(() => _isScanning = false);
-      final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _nameController.text.trim().isEmpty
-                ? l10n.createListScanFinished
-                : l10n.createListScanned(_nameController.text.trim()),
-          ),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isScanning = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-      );
-    }
   }
 
   bool get _canCreate => _nameController.text.trim().isNotEmpty;
@@ -230,18 +181,6 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppButton(
-          text: _isScanning ? l10n.expenseCreationScanning : l10n.listDetailScanList,
-          icon: AppIcon(
-            name: _isScanning ? 'hourglassEmpty' : 'documentScanner',
-            size: 20,
-          ),
-          variant: AppButtonVariant.outline,
-          color: AppButtonColor.neutral,
-          onPressed: _isScanning ? null : _onScan,
-          semanticLabel: l10n.createListScanSemantics,
-        ),
-        const SizedBox(height: MitlistSpacing.md),
         if (_errorText != null) ...[
           Text(
             _errorText!,
