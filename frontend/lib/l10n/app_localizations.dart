@@ -410,6 +410,18 @@ abstract class AppLocalizations {
   /// **'Continue as guest'**
   String get welcomeContinueAsGuest;
 
+  /// Headline on the invite-accept welcome card
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re invited'**
+  String get welcomeInviteHeadline;
+
+  /// Subtitle on the invite-accept welcome card
+  ///
+  /// In en, this message translates to:
+  /// **'Join the household to share lists, chores, and money.'**
+  String get welcomeInviteSubtitle;
+
   /// Footnote below the guest button explaining the trial
   ///
   /// In en, this message translates to:

@@ -181,6 +181,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get welcomeContinueAsGuest => 'Doorgaan als gast';
 
   @override
+  String get welcomeInviteHeadline => 'Je bent uitgenodigd';
+
+  @override
+  String get welcomeInviteSubtitle =>
+      'Word lid van het huishouden om lijsten, taken en kosten te delen.';
+
+  @override
   String get welcomeGuestFootnote =>
       'Geen account nodig. Probeer alles 30 dagen gratis.';
 

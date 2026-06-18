@@ -86,7 +86,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           _isSuccess = true;
         });
         await Future.delayed(const Duration(milliseconds: 650));
-        if (mounted) ref.read(authStateProvider.notifier).state = true;
+        if (mounted) {
+          final invite = _inviteCode;
+          if (invite != null && invite.isNotEmpty) {
+            ref.read(pendingAuthNavigationProvider.notifier).state =
+                '/join/${Uri.encodeComponent(invite)}';
+          }
+          ref.read(authStateProvider.notifier).state = true;
+        }
       }
       return;
     } catch (e) {
@@ -253,6 +260,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
   }
 
+  String? get _inviteCode =>
+      GoRouterState.of(context).uri.queryParameters['invite'];
+
   Future<void> _startOAuth(String provider) async {
     if (!supportsBrowserRedirect && !supportsNativeOAuthLaunch) {
       setState(() {
@@ -273,6 +283,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     final authService = await ref.read(authServiceProviderAsync.future);
     try {
+      final invite = _inviteCode;
+      if (invite != null && invite.isNotEmpty) {
+        ref.read(pendingAuthNavigationProvider.notifier).state =
+            '/join/${Uri.encodeComponent(invite)}';
+      }
       await authService.setPendingOAuthRememberMe(_rememberMe);
 
       final authUrl = Uri(
