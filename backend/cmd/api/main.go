@@ -84,7 +84,7 @@ func main() {
 			http.Error(w, "invalid invite code", http.StatusBadRequest)
 			return
 		}
-		http.Redirect(w, r, "mitlist://join/"+code, http.StatusFound)
+		http.Redirect(w, r, "mitlist:///join/"+code, http.StatusFound)
 	})
 
 	authHandler := handlers.NewAuthHandler(cfg, cnt.UserService(), cnt.GuestService(), cnt.OAuthService(), cnt.JWT(), cnt.Redis().Client())
