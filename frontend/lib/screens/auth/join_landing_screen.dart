@@ -18,7 +18,7 @@ import '../../widgets/mitlist_app_bar.dart';
 
 enum _Phase { idle, joining, success }
 
-/// Full-screen landing for an invite deep link (`mitlist://join/<code>`).
+/// Full-screen landing for an invite deep link (`mitlist:///join/<code>`).
 ///
 /// Shows the code, lets the user confirm or dismiss, and on success sets the
 /// joined group as the current group before navigating to home.

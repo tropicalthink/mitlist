@@ -180,6 +180,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get welcomeContinueAsGuest => 'Continue as guest';
 
   @override
+  String get welcomeInviteHeadline => 'You\'re invited';
+
+  @override
+  String get welcomeInviteSubtitle =>
+      'Join the household to share lists, chores, and money.';
+
+  @override
   String get welcomeGuestFootnote =>
       'No account needed. Try everything free for 30 days.';
 
