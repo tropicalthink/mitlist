@@ -37,6 +37,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   AppLocalizations get l10n => AppLocalizations.of(context)!;
 
+  String? get _inviteCode =>
+      GoRouterState.of(context).uri.queryParameters['invite'];
+
   @override
   void initState() {
     super.initState();
@@ -108,8 +111,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         });
         await Future.delayed(const Duration(milliseconds: 650));
         if (mounted) {
+          final invite = _inviteCode;
           ref.read(pendingAuthNavigationProvider.notifier).state =
-              '/onboarding';
+              (invite != null && invite.isNotEmpty)
+                  ? '/join/${Uri.encodeComponent(invite)}'
+                  : '/onboarding';
           ref.read(authStateProvider.notifier).state = true;
         }
       }

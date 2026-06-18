@@ -104,6 +104,10 @@
   "@welcomeGuestLoading": { "description": "Loading label shown while guest account is being created" },
   "welcomeContinueAsGuest": "Continue as guest",
   "@welcomeContinueAsGuest": { "description": "Ghost button to continue without an account" },
+  "welcomeInviteHeadline": "You're invited",
+  "@welcomeInviteHeadline": { "description": "Headline on the invite-accept welcome card" },
+  "welcomeInviteSubtitle": "Join the household to share lists, chores, and money.",
+  "@welcomeInviteSubtitle": { "description": "Subtitle on the invite-accept welcome card" },
   "welcomeGuestFootnote": "No account needed. Try everything free for 30 days.",
   "@welcomeGuestFootnote": { "description": "Footnote below the guest button explaining the trial" },
 

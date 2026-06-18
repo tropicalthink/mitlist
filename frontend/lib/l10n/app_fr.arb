@@ -214,6 +214,8 @@
   "@welcomeContinueAsGuest": {
     "description": "Ghost button to continue without an account"
   },
+  "welcomeInviteHeadline": "Vous êtes invité",
+  "welcomeInviteSubtitle": "Rejoignez le foyer pour partager listes, tâches et dépenses.",
   "welcomeGuestFootnote": "Pas de compte nécessaire. Essaie tout gratuitement pendant 30 jours.",
   "@welcomeGuestFootnote": {
     "description": "Footnote below the guest button explaining the trial"

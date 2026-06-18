@@ -214,6 +214,8 @@
   "@welcomeContinueAsGuest": {
     "description": "Ghost button to continue without an account"
   },
+  "welcomeInviteHeadline": "Je bent uitgenodigd",
+  "welcomeInviteSubtitle": "Word lid van het huishouden om lijsten, taken en kosten te delen.",
   "welcomeGuestFootnote": "Geen account nodig. Probeer alles 30 dagen gratis.",
   "@welcomeGuestFootnote": {
     "description": "Footnote below the guest button explaining the trial"
