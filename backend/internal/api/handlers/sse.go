@@ -83,12 +83,20 @@ func (h *SSEHandler) Events(w http.ResponseWriter, r *http.Request) {
 	rc := http.NewResponseController(w)
 	_ = rc.SetWriteDeadline(time.Time{})
 
-	ch := h.hub.Subscribe(groupID)
-	defer h.hub.Unsubscribe(groupID, ch)
+	ch := h.hub.Subscribe(groupID, user.ID.String())
+	defer func() {
+		h.hub.Unsubscribe(groupID, ch)
+		// Tell everyone still on the board that this viewer left.
+		h.hub.BroadcastPresence(groupID)
+	}()
 
 	// Send an initial ping so the client knows the stream is live.
 	_, _ = fmt.Fprintf(w, ": ping\n\n")
 	flusher.Flush()
+
+	// Announce presence now that this client is subscribed; the broadcast also
+	// delivers the current roster to the just-connected viewer.
+	h.hub.BroadcastPresence(groupID)
 
 	ticker := time.NewTicker(25 * time.Second)
 	defer ticker.Stop()

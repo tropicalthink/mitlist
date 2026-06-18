@@ -1700,6 +1700,8 @@
   "@pinwallSnapshot": { "description": "Header for the collapsible household stats summary under the composer" },
   "pinwallDragHint": "Drag notes to move  ·  Pinch to zoom",
   "@pinwallDragHint": { "description": "Hint text for pinwall interactions" },
+  "pinwallPresenceHere": "{names} here now",
+  "@pinwallPresenceHere": { "description": "Accessibility label listing the household members currently viewing the board", "placeholders": { "names": { "type": "String" } } },
   "pinwallCloseBoard": "Close board",
   "@pinwallCloseBoard": { "description": "Button/semantics to close pinwall" },
   "pinwallEmptyBoard": "The wall is clear.\nPin a note from the hub to get started.",

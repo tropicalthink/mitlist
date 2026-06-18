@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:uuid/uuid.dart';
 
 import '../models/pinwall_models.dart';
 import '../services/pinwall_service.dart';
+import '../services/sse_service.dart';
 import '../storage/app_database.dart';
 import 'outbox_drainer.dart';
 
@@ -12,6 +14,9 @@ class PinwallRepository {
   final PinwallService _remote;
   final Uuid _uuid;
 
+  SseService? _sseService;
+  StreamSubscription<SseEvent>? _sseSub;
+
   PinwallRepository({
     required AppDatabase db,
     required PinwallService remote,
@@ -19,6 +24,38 @@ class PinwallRepository {
   })  : _db = db,
         _remote = remote,
         _uuid = uuid ?? const Uuid();
+
+  /// Subscribe to the group's SSE stream so a flatmate pinning or removing a
+  /// note repaints every open board. Events carry only an id; we reconcile
+  /// against the server (refetch on create) or the cache (remove on delete),
+  /// which fires the existing [watchPosts] Drift stream.
+  void attachSse(SseService sseService, String groupId) {
+    if (_sseService == sseService) return;
+    _sseSub?.cancel();
+    _sseService = sseService;
+    sseService.connect(groupId);
+    _sseSub = sseService.events.listen(_handleSseEvent);
+  }
+
+  /// Stop the active SSE subscription without closing the shared service.
+  void detachSse() {
+    _sseSub?.cancel();
+    _sseSub = null;
+    _sseService = null;
+  }
+
+  Future<void> _handleSseEvent(SseEvent event) async {
+    switch (event.type) {
+      case 'pinwall:post_created':
+        // The event body is untrusted, so refetch the canonical list.
+        await refreshPosts(event.groupId).catchError((_) {});
+      case 'pinwall:post_deleted':
+        final id = event.payload['post_id'] as String?;
+        if (id != null) {
+          await _removeCachedPost(event.groupId, id);
+        }
+    }
+  }
 
   Stream<List<PinwallPost>> watchPosts(String groupId) {
     return _db.watchPinwallPosts(groupId).map((row) => _decode(row?.postsJson));
