@@ -198,6 +198,35 @@ func TestUnsubscribeUpdatesPresence(t *testing.T) {
 	assert.Equal(t, toSet([]string{"u2"}), toSet(ids), "u1 should be gone after unsubscribe")
 }
 
+// ── Step 3b: PresenceEvent builder ───────────────────────────────────────────
+
+// TestPresenceEvent verifies that PresenceEvent returns an event with
+// Type=="presence:state" and a Payload whose user_ids match OnlineUserIDs for
+// the same group (order-agnostic). BroadcastPresence delegates to it, so the
+// wire shape is defined in exactly one place.
+func TestPresenceEvent(t *testing.T) {
+	h := New()
+	h.Subscribe("g", "u1")
+	h.Subscribe("g", "u2")
+	h.Subscribe("g", "u2") // duplicate — should be deduplicated
+	h.Subscribe("g", "")   // anonymous — should be excluded
+
+	ev, err := h.PresenceEvent("g")
+	require.NoError(t, err)
+
+	assert.Equal(t, "presence:state", ev.Type)
+	assert.Equal(t, "g", ev.GroupID)
+
+	var pld struct {
+		UserIDs []string `json:"user_ids"`
+	}
+	require.NoError(t, json.Unmarshal(ev.Payload, &pld))
+
+	wantIDs := h.OnlineUserIDs("g")
+	assert.Equal(t, toSet(wantIDs), toSet(pld.UserIDs),
+		"PresenceEvent user_ids must match OnlineUserIDs for the same group")
+}
+
 // ── Step 4: Concurrency / race test ──────────────────────────────────────────
 
 // TestConcurrencyRace stresses subscribe/publish/unsubscribe concurrently to

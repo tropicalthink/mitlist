@@ -87,17 +87,24 @@ func (h *Hub) OnlineUserIDs(groupID string) []string {
 	return ids
 }
 
+// PresenceEvent builds the current "presence:state" event for groupID. It is
+// the single source of truth for the presence wire shape ({"user_ids":[...]}),
+// used both for broadcasting and for the per-connection re-sync in the handler.
+func (h *Hub) PresenceEvent(groupID string) (Event, error) {
+	payload, err := json.Marshal(map[string][]string{"user_ids": h.OnlineUserIDs(groupID)})
+	if err != nil {
+		return Event{}, err
+	}
+	return Event{Type: "presence:state", GroupID: groupID, Payload: payload}, nil
+}
+
 // BroadcastPresence publishes the current set of online user IDs to every
 // subscriber of groupID as a `presence:state` event. Call it after a client
 // subscribes or unsubscribes so every viewer sees who is currently on the board.
 func (h *Hub) BroadcastPresence(groupID string) {
-	payload, err := json.Marshal(map[string][]string{"user_ids": h.OnlineUserIDs(groupID)})
+	ev, err := h.PresenceEvent(groupID)
 	if err != nil {
 		return
 	}
-	h.Publish(groupID, Event{
-		Type:    "presence:state",
-		GroupID: groupID,
-		Payload: payload,
-	})
+	h.Publish(groupID, ev)
 }

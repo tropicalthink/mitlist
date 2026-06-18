@@ -125,6 +125,13 @@ func (h *SSEHandler) Events(w http.ResponseWriter, r *http.Request) {
 			if !write(": keep-alive\n\n") {
 				return
 			}
+			if ev, err := h.hub.PresenceEvent(groupID); err == nil {
+				if data, err := json.Marshal(ev); err == nil {
+					if !write(fmt.Sprintf("data: %s\n\n", data)) {
+						return
+					}
+				}
+			}
 		case event, open := <-ch:
 			if !open {
 				return
