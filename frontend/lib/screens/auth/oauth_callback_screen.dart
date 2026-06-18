@@ -80,7 +80,11 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
           rememberMe: rememberMe,
         );
       }
-      ref.read(pendingAuthNavigationProvider.notifier).state = '/onboarding';
+      // Preserve a destination set before the OAuth round-trip (e.g. an invite
+      // accept set '/join/<code>'); only default to onboarding when none.
+      if (ref.read(pendingAuthNavigationProvider) == null) {
+        ref.read(pendingAuthNavigationProvider.notifier).state = '/onboarding';
+      }
       ref.read(authStateProvider.notifier).state = true;
     } catch (e) {
       if (!mounted) return;

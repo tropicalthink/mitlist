@@ -51,6 +51,8 @@
   "welcomeSignIn": "Anmelden",
   "welcomeGuestLoading": "Wird eingerichtet …",
   "welcomeContinueAsGuest": "Als Gast fortfahren",
+  "welcomeInviteHeadline": "Du bist eingeladen",
+  "welcomeInviteSubtitle": "Tritt dem Haushalt bei, um Listen, Aufgaben und Kosten zu teilen.",
   "welcomeGuestFootnote": "Kein Konto nötig. 30 Tage lang alles kostenlos testen.",
   "hubAppBarTitle": "Start",
   "hubHouseholdsSheetTitle": "Haushalte",

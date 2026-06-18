@@ -182,6 +182,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get welcomeContinueAsGuest => 'Continuar como invitado';
 
   @override
+  String get welcomeInviteHeadline => 'Te han invitado';
+
+  @override
+  String get welcomeInviteSubtitle =>
+      'Únete al hogar para compartir listas, tareas y gastos.';
+
+  @override
   String get welcomeGuestFootnote =>
       'Sin necesidad de cuenta. Prueba todo gratis durante 30 días.';
 
