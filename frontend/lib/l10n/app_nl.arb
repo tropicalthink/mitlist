@@ -5551,5 +5551,9 @@
   "tonightRecipe": "Recept",
   "@tonightRecipe": {
     "description": "Fallback recipe title for tonight card"
-  }
+  },
+  "runningLowHeading": "Bijna op",
+  "@runningLowHeading": { "description": "Section header for the restock suggestion strip above the list" },
+  "runningLowDaysAgo": "{days}d geleden",
+  "@runningLowDaysAgo": { "description": "Per-chip cadence hint showing how many days since last purchase", "placeholders": { "days": { "type": "num" } } }
 }

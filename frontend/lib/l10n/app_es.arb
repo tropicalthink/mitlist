@@ -5551,5 +5551,9 @@
   "tonightRecipe": "Receta",
   "@tonightRecipe": {
     "description": "Fallback recipe title for tonight card"
-  }
+  },
+  "runningLowHeading": "Se acaba",
+  "@runningLowHeading": { "description": "Section header for the restock suggestion strip above the list" },
+  "runningLowDaysAgo": "hace {days}d",
+  "@runningLowDaysAgo": { "description": "Per-chip cadence hint showing how many days since last purchase", "placeholders": { "days": { "type": "num" } } }
 }
