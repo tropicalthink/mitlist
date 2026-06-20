@@ -2889,6 +2889,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Saisis un taux de conversion supérieur à zéro.';
 
   @override
+  String get expenseCreationRateAutoFilled =>
+      'Taux rempli automatiquement — tu peux le modifier.';
+
+  @override
   String get expenseCreationReceiptUploadFailed =>
       'Dépense enregistrée, mais l\'envoi du reçu a échoué.';
 

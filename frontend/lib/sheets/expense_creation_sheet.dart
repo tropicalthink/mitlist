@@ -107,6 +107,10 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
   /// currency, which is when an FX rate is needed.
   bool get _isForeignCurrency => _currency != _groupCurrency;
 
+  /// True when the current FX rate was prefilled by the live-rate service.
+  /// Reset to false the moment the user edits the field.
+  bool _rateAutoFilled = false;
+
   @override
   void initState() {
     super.initState();
@@ -181,6 +185,26 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       _membersFailed = false;
     });
     _loadGroupContext();
+  }
+
+  /// Attempts to prefill the FX rate field from the live-rate advisory endpoint.
+  /// On any failure (feature disabled, network error, provider down) this is a
+  /// no-op and the field stays empty for manual entry — never blocking the form.
+  Future<void> _fetchAndPrefillRate(String from, String to) async {
+    try {
+      final financeService = await ref.read(financeServiceProviderAsync.future);
+      if (!mounted) return;
+      final rate = await financeService.fetchAdvisoryFxRate(from, to);
+      if (!mounted || rate == null || rate <= 0) return;
+      setState(() {
+        _fxRate = rate;
+        _fxRateController.text = rate.toStringAsFixed(6).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+        _rateAutoFilled = true;
+        _fxRateError = null;
+      });
+    } catch (_) {
+      // Fail-soft: leave field empty for manual entry.
+    }
   }
 
   Future<void> _pickDate() async {
@@ -426,17 +450,24 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
                 if (value == null) return;
                 setState(() {
                   _currency = value;
-                  if (!_isForeignCurrency) {
+                  _rateAutoFilled = false;
+                  if (_currency == _groupCurrency) {
                     // Back to base currency: no conversion needed.
                     _fxRate = 1.0;
                     _fxRateController.clear();
                     _fxRateError = null;
                   } else {
-                    // Switched to a foreign currency: require a fresh rate.
+                    // Switched to a foreign currency: clear stale rate, then
+                    // attempt to prefill from the advisory endpoint.
                     _fxRate = 0.0;
                     _fxRateController.clear();
+                    _fxRateError = null;
                   }
                 });
+                // Attempt advisory prefill for foreign currencies (fail-soft).
+                if (_currency != _groupCurrency) {
+                  _fetchAndPrefillRate(_currency, _groupCurrency);
+                }
                 _markDirty();
               },
             ),
@@ -456,9 +487,14 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
                 _fxRate =
                     double.tryParse(value.replaceAll(',', '.').trim()) ?? 0;
                 _fxRateError = null;
+                _rateAutoFilled = false; // user overrode the prefilled value
               });
             },
           ),
+          if (_rateAutoFilled) ...[
+            const SizedBox(height: MitlistSpacing.xs),
+            _AutoFilledRateHint(text: l10n.expenseCreationRateAutoFilled),
+          ],
           if (totalCents != null && baseCents != null) ...[
             const SizedBox(height: MitlistSpacing.xs),
             _ConversionPreview(
@@ -972,6 +1008,38 @@ class _SplitOptions extends StatelessWidget {
         'percentage' => AppLocalizations.of(context)!.expenseCreationSplitValuesPercent,
         _ => AppLocalizations.of(context)!.expenseCreationSplitSharesLabel,
       };
+}
+
+/// Subtle inline notice that the FX rate was prefilled by the advisory service.
+/// Disappears as soon as the user edits the field.
+class _AutoFilledRateHint extends StatelessWidget {
+  final String text;
+
+  const _AutoFilledRateHint({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        AppIcon(
+          name: 'arrowPath',
+          size: 14,
+          color: colorScheme.primary.withOpacity(0.7),
+        ),
+        const SizedBox(width: MitlistSpacing.xs),
+        Expanded(
+          child: Text(
+            text,
+            style: textTheme.bodySmall?.copyWith(
+              color: colorScheme.primary.withOpacity(0.7),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _ConversionPreview extends StatelessWidget {

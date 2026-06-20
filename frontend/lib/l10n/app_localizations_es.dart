@@ -2871,6 +2871,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Introduce una tasa de conversión mayor que cero.';
 
   @override
+  String get expenseCreationRateAutoFilled =>
+      'Tasa rellenada automáticamente — puedes editarla.';
+
+  @override
   String get expenseCreationReceiptUploadFailed =>
       'Gasto guardado, pero la subida del recibo falló.';
 

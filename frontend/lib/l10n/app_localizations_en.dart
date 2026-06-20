@@ -2854,6 +2854,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enter a conversion rate greater than zero.';
 
   @override
+  String get expenseCreationRateAutoFilled =>
+      'Rate auto-filled — you can edit it.';
+
+  @override
   String get expenseCreationReceiptUploadFailed =>
       'Expense saved, but receipt upload failed.';
 
