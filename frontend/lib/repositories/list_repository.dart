@@ -72,8 +72,11 @@ class ListRepository {
         await _remote.listItems(listId, limit: limit, offset: offset);
     if (offset == 0) {
       await _db.deleteItemsForList(listId);
+      await _db.upsertListItemsRows(remote.map(_toListItemsRow));
+      await _restorePendingLocalItems(listId, remote);
+    } else {
+      await _db.upsertListItemsRows(remote.map(_toListItemsRow));
     }
-    await _db.upsertListItemsRows(remote.map(_toListItemsRow));
     await _patchListPreviewFromLocalItems(listId);
     return remote.length;
   }
@@ -88,8 +91,60 @@ class ListRepository {
     await _db.upsertListsRows([_toListsRow(list)]);
     await _db.deleteItemsForList(listId);
     await _db.upsertListItemsRows(items.map(_toListItemsRow));
+    await _restorePendingLocalItems(listId, items);
     await _patchListPreviewFromLocalItems(listId);
   }
+
+  /// After a server refresh wipes local items, re-insert any items that are
+  /// still pending in the outbox (optimistic rows the server hasn't seen yet).
+  Future<void> _restorePendingLocalItems(
+      String listId, List<ListItem> serverItems) async {
+    final pendingOps = await _db.getOutboxBatchByTypes(
+      ['createItem'],
+      limit: 500,
+      minBackoff: Duration.zero,
+    );
+    if (pendingOps.isEmpty) return;
+
+    final serverIds = serverItems.map((i) => i.id).toSet();
+    for (final op in pendingOps) {
+      final tempId = op.entityId;
+      if (tempId == null || serverIds.contains(tempId)) continue;
+
+      Map<String, dynamic> payload;
+      try {
+        payload =
+            (jsonDecode(op.payloadJson) as Map).cast<String, dynamic>();
+      } catch (_) {
+        continue;
+      }
+      if (payload['listId'] != listId) continue;
+
+      final name = payload['name'] as String?;
+      if (name == null || name.isEmpty) continue;
+
+      await _db.upsertListItemsRows([
+        ListItemsTableCompanion(
+          id: Value(tempId),
+          listId: Value(listId),
+          name: Value(name),
+          quantity: Value(
+              (payload['quantity'] as num?)?.toDouble() ?? 1.0),
+          unit: Value(payload['unit'] as String? ?? ''),
+          checked: const Value(false),
+          position: const Value(0),
+          priceCents: Value(payload['priceCents'] as int?),
+          canonicalItemId:
+              Value(payload['canonicalItemId'] as String?),
+          createdAt: Value(DateTime.now()),
+          updatedAt: Value(DateTime.now()),
+        ),
+      ]);
+    }
+  }
+
+  Future<String?> getGroupId(String listId) =>
+      _db.getListGroupId(listId);
 
   // ---------------------------------------------------------------------------
   // Offline-first writes (optimistic local + outbox)

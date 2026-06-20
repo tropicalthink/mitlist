@@ -302,12 +302,15 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
       final cached = await repo.getItemsByListOnce(widget.listId);
       if (!mounted) return;
+      final cachedGroupId = await repo.getGroupId(widget.listId);
+      if (!mounted) return;
       setState(() {
         _sectionsDirty = true;
         _items
           ..clear()
           ..addAll(cached);
         _isLoading = cached.isEmpty;
+        if (cachedGroupId != null) _groupId = cachedGroupId;
       });
 
       // Refresh list + items in background; stream will update.
@@ -1713,8 +1716,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.search_off_rounded,
+            AppIcon(
+              name: 'magnifyingGlass',
               size: 40,
               color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
             ),
