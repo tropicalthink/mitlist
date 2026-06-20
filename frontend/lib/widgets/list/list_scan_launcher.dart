@@ -99,6 +99,7 @@ Future<int?> launchListScan(
       storeId: ref.read(selectedStoreIdProvider),
       listContextCanonicalIds: listContextCanonicalIds,
       isOnline: isOnline,
+      cropHint: capture.cropHint,
     );
 
     if (!context.mounted) return null;

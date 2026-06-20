@@ -56,10 +56,14 @@ class ScanPipelineService {
     String? storeId,
     List<String> listContextCanonicalIds = const [],
     bool isOnline = true,
+    CaptureCropHint? cropHint,
   }) async {
     // 1. Perspective rectify — find document quad and warp to flat rectangle.
     //    Runs on a worker isolate to avoid janking the UI.
-    final rectified = await compute(_rectifyIsolate, imageBytes);
+    //    When kEnableBoundaryCrop is true and the quad detector finds nothing,
+    //    falls back to the live-detected boundary crop via rectifyWithHint.
+    final rectified =
+        await compute(_rectifyIsolate, _RectifyRequest(imageBytes, cropHint));
 
     // 2. OCR — uses the non-binarized image so the neural OCR engine (ML Kit)
     //     receives a natural photograph rather than an adaptive-thresholded
@@ -169,12 +173,25 @@ class ScanPipelineService {
   }
 }
 
+/// Isolate-sendable request for perspective rectification.
+class _RectifyRequest {
+  const _RectifyRequest(this.bytes, this.hint);
+
+  final Uint8List bytes;
+  final CaptureCropHint? hint;
+}
+
 /// Top-level function used by [compute()] to run perspective rectification on
 /// a worker isolate without blocking the UI thread.
-Uint8List _rectifyIsolate(Uint8List bytes) {
+///
+/// Uses [DocumentRectifierService.rectifyWithHint] so the boundary-crop
+/// fallback is available (it is inert while [kEnableBoundaryCrop] is false).
+Uint8List _rectifyIsolate(_RectifyRequest req) {
   try {
-    return const DocumentRectifierService().rectify(bytes).bytes;
+    return const DocumentRectifierService()
+        .rectifyWithHint(req.bytes, req.hint)
+        .bytes;
   } catch (_) {
-    return bytes;
+    return req.bytes;
   }
 }
