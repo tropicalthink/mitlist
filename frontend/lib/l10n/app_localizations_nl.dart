@@ -4449,4 +4449,12 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get currencyHuf => 'HUF - Hongaarse forint';
+
+  @override
+  String get runningLowHeading => 'Bijna op';
+
+  @override
+  String runningLowDaysAgo(num days) {
+    return '${days}d geleden';
+  }
 }

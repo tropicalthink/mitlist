@@ -7814,6 +7814,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'HUF - Hungarian Forint'**
   String get currencyHuf;
+
+  /// Section header for the restock suggestion strip above the list
+  ///
+  /// In en, this message translates to:
+  /// **'Running low'**
+  String get runningLowHeading;
+
+  /// Per-chip cadence hint showing how many days since last purchase
+  ///
+  /// In en, this message translates to:
+  /// **'{days}d ago'**
+  String runningLowDaysAgo(num days);
 }
 
 class _AppLocalizationsDelegate

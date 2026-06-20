@@ -4440,4 +4440,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get currencyHuf => 'HUF - Florín húngaro';
+
+  @override
+  String get runningLowHeading => 'Se acaba';
+
+  @override
+  String runningLowDaysAgo(num days) {
+    return 'hace ${days}d';
+  }
 }

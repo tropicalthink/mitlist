@@ -4475,4 +4475,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get currencyHuf => 'HUF - Ungarischer Forint';
+
+  @override
+  String get runningLowHeading => 'Wird knapp';
+
+  @override
+  String runningLowDaysAgo(num days) {
+    return 'vor ${days}T';
+  }
 }
