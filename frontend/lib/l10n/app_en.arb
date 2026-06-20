@@ -2762,5 +2762,9 @@
   "currencyCzk": "CZK - Czech Koruna",
   "@currencyCzk": { "description": "Czech Koruna currency label" },
   "currencyHuf": "HUF - Hungarian Forint",
-  "@currencyHuf": { "description": "Hungarian Forint currency label" }
+  "@currencyHuf": { "description": "Hungarian Forint currency label" },
+  "runningLowHeading": "Running low",
+  "@runningLowHeading": { "description": "Section header for the restock suggestion strip above the list" },
+  "runningLowDaysAgo": "{days}d ago",
+  "@runningLowDaysAgo": { "description": "Per-chip cadence hint showing how many days since last purchase", "placeholders": { "days": { "type": "num" } } }
 }

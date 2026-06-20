@@ -12,6 +12,7 @@ import '../../providers/grocery_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../providers/outbox_provider.dart';
 import '../../services/list_service.dart';
+import '../../services/restock_service.dart';
 import '../../services/scan/grocery_suggestion_service.dart';
 import '../../theme/animations.dart';
 import '../../theme/list_tile_accent.dart';
@@ -28,6 +29,7 @@ import '../../widgets/list/list_composer_bar.dart';
 import '../../widgets/list/list_item_actions_sheet.dart';
 import '../../widgets/list/list_item_row.dart';
 import '../../widgets/list/list_scan_launcher.dart';
+import '../../widgets/list/running_low_strip.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/odometer.dart';
 import '../../widgets/skeleton.dart';
@@ -683,6 +685,35 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       _dirty = true;
       _composerFocusNode.requestFocus();
     } catch (e) {
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.listDetailCouldNotAddItem)),
+      );
+    } finally {
+      _isSaving = false;
+    }
+  }
+
+  /// Adds a restock suggestion to the list via the existing offline-first write
+  /// path — the same [listRepositoryProvider.createItemOfflineFirst] call used
+  /// by [_addItem]. This is NOT a new write path; only the entry point differs.
+  Future<void> _addRestockSuggestion(RestockSuggestion suggestion) async {
+    if (_isSaving) return;
+    _isSaving = true;
+    try {
+      final repo = await ref.read(listRepositoryProvider.future);
+      await repo.createItemOfflineFirst(
+        widget.listId,
+        CreateListItemRequest(
+          name: suggestion.name,
+          canonicalItemId: suggestion.canonicalItemId,
+        ),
+      );
+      if (!mounted) return;
+      unawaited(Haptics.light());
+      _dirty = true;
+    } catch (_) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1438,6 +1469,17 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
+        if (_groupId != null)
+          SliverToBoxAdapter(
+            child: RunningLowStrip(
+              groupId: _groupId!,
+              currentItemNames: _items
+                  .where((it) => !it.checked)
+                  .map((it) => it.name.toLowerCase())
+                  .toSet(),
+              onAdd: _addRestockSuggestion,
+            ),
+          ),
         if (open.isNotEmpty)
           SliverReorderableList(
             itemCount: open.length,
