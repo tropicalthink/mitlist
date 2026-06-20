@@ -47,6 +47,7 @@ Future<SmartCaptureResult?> pickSmartCapture(
         originalBytes: processed.originalBytes,
         processedBytes: processed.processedBytes,
         quality: processed.quality,
+        cropHint: null, // Gallery picks have no live boundary detection.
       ),
     ),
   );
