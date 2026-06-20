@@ -10,6 +10,7 @@ import '../../l10n/app_localizations.dart';
 import '../../services/scan/capture_boundary_service.dart';
 import '../../services/scan/capture_preprocessor_service.dart';
 import '../../services/scan/capture_quality_service.dart';
+import '../../services/scan/document_rectifier_service.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/app_button.dart';
@@ -36,6 +37,11 @@ class _LiveSmartCaptureScreenState extends State<LiveSmartCaptureScreen>
   CameraController? _controller;
   CaptureQualityResult? _quality;
   CaptureBoundaryResult? _boundary;
+
+  /// Sensor orientation (degrees clockwise) of the chosen back camera.
+  /// Captured when the camera is selected in [_initCamera].
+  int _sensorOrientation = 90;
+
   String? _error;
   bool _initializing = true;
   bool _capturing = false;
@@ -101,6 +107,7 @@ class _LiveSmartCaptureScreenState extends State<LiveSmartCaptureScreen>
         (c) => c.lensDirection == CameraLensDirection.back,
         orElse: () => cameras.first,
       );
+      _sensorOrientation = camera.sensorOrientation;
       final controller = CameraController(
         camera,
         ResolutionPreset.high,
@@ -189,7 +196,19 @@ class _LiveSmartCaptureScreenState extends State<LiveSmartCaptureScreen>
         await controller.stopImageStream();
       }
       final file = await controller.takePicture();
-      final result = await _reviewFile(file.path);
+      // Build a crop hint from the last detected boundary, but only when the
+      // boundary was confidently found. Gallery picks use null (no live data).
+      final b = _boundary;
+      final hint = (b != null && b.level == CaptureBoundaryLevel.found)
+          ? CaptureCropHint(
+              left: b.left,
+              top: b.top,
+              right: b.right,
+              bottom: b.bottom,
+              sensorOrientation: _sensorOrientation,
+            )
+          : null;
+      final result = await _reviewFile(file.path, cropHint: hint);
       if (!mounted) return;
       if (result != null) {
         Navigator.of(context).pop(result);
@@ -214,12 +233,14 @@ class _LiveSmartCaptureScreenState extends State<LiveSmartCaptureScreen>
       imageQuality: 96,
     );
     if (picked == null || !mounted) return;
-    final result = await _reviewFile(picked.path);
+    // Gallery images have no live detection — boundary stays null.
+    final result = await _reviewFile(picked.path, cropHint: null);
     if (!mounted) return;
     if (result != null) Navigator.of(context).pop(result);
   }
 
-  Future<SmartCaptureResult?> _reviewFile(String path) async {
+  Future<SmartCaptureResult?> _reviewFile(String path,
+      {CaptureCropHint? cropHint}) async {
     final originalBytes = Uint8List.fromList(await File(path).readAsBytes());
     final processed =
         const CapturePreprocessorService().preprocess(originalBytes);
@@ -232,6 +253,7 @@ class _LiveSmartCaptureScreenState extends State<LiveSmartCaptureScreen>
           originalBytes: processed.originalBytes,
           processedBytes: processed.processedBytes,
           quality: processed.quality,
+          cropHint: cropHint,
         ),
       ),
     );

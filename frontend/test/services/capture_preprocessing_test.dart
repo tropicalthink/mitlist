@@ -184,7 +184,104 @@ void main() {
             reason: 'iteration $i returned non-decodable processedBytes');
       }
     });
+
+    // -------------------------------------------------------------------------
+    // Plan 017 — ocrBytes must be a natural (non-binarized) image
+    // -------------------------------------------------------------------------
+
+    test('ocrBytes decodes to a valid image (plan 017)', () {
+      final bytes = _testListImage();
+      final result = const CapturePreprocessorService().preprocess(bytes);
+
+      expect(result.ocrBytes, isNotEmpty);
+      final decoded = img.decodeImage(result.ocrBytes);
+      expect(decoded, isNotNull,
+          reason: 'ocrBytes must decode to a valid image');
+    });
+
+    test('ocrBytes is NOT bilevel — has ≥3 distinct luma values (plan 017)', () {
+      // Use a gradient image so a natural image must have many luma values,
+      // while a binarized image would have at most 2 (0 and 255).
+      final bytes = _gradientImage();
+      final result = const CapturePreprocessorService().preprocess(bytes);
+
+      final decoded = img.decodeImage(result.ocrBytes);
+      expect(decoded, isNotNull);
+
+      // Sample a grid of pixels and collect distinct luma values.
+      final distinctLuma = <int>{};
+      final stepX = math.max(1, decoded!.width ~/ 16);
+      final stepY = math.max(1, decoded.height ~/ 16);
+      for (var y = 0; y < decoded.height; y += stepY) {
+        for (var x = 0; x < decoded.width; x += stepX) {
+          final p = decoded.getPixel(x, y);
+          // Compute luma (integer bucket by /8 to group near-identical values).
+          final luma = ((p.r * 0.299 + p.g * 0.587 + p.b * 0.114) / 8).round();
+          distinctLuma.add(luma);
+        }
+      }
+
+      expect(
+        distinctLuma.length,
+        greaterThanOrEqualTo(3),
+        reason:
+            'ocrBytes must be a natural image with ≥3 distinct luma buckets; '
+            'found ${distinctLuma.length} distinct buckets — '
+            'this suggests the image was binarized (hard black/white threshold)',
+      );
+    });
+
+    test('processedBytes (preview) is still produced when ocrBytes differs (plan 017)', () {
+      // Both fields must be present and decodable on the same result.
+      final bytes = _testDocumentImage();
+      final result = const CapturePreprocessorService().preprocess(bytes);
+
+      expect(result.processedBytes, isNotEmpty,
+          reason: 'processedBytes (binarized preview) must still be produced');
+      expect(img.decodeImage(result.processedBytes), isNotNull,
+          reason: 'processedBytes must be decodable');
+      expect(result.ocrBytes, isNotEmpty,
+          reason: 'ocrBytes must also be present');
+    });
+
+    test('ocrBytes fail-softs to original bytes on invalid input (plan 017)', () {
+      final garbage = Uint8List.fromList([9, 8, 7, 6, 5]);
+      final result = const CapturePreprocessorService().preprocess(garbage);
+
+      // On fail-soft, ocrBytes must equal the original (never throw, never empty).
+      expect(result.ocrBytes, garbage,
+          reason: 'ocrBytes must fall back to original bytes on invalid input');
+    });
+
+    test('EnhancementService.enhanceForOcr returns decodable bytes (plan 017)',
+        () async {
+      final bytes = _testListImage();
+      final service = EnhancementService();
+      final ocrImage = await service.enhanceForOcr(bytes);
+
+      expect(ocrImage, isNotEmpty);
+      expect(img.decodeImage(ocrImage), isNotNull,
+          reason: 'enhanceForOcr must return a decodable image');
+    });
   });
+}
+
+// ---------------------------------------------------------------------------
+// Additional test image builder for plan 017 — a smooth gradient
+// ---------------------------------------------------------------------------
+
+/// Creates a horizontal gradient image (luma 30 → 220) to verify that the
+/// OCR image is not hard-thresholded (a binarized version would show at most
+/// 2 distinct values; a natural image shows many).
+Uint8List _gradientImage() {
+  final image = img.Image(width: 320, height: 240);
+  for (var y = 0; y < 240; y++) {
+    for (var x = 0; x < 320; x++) {
+      final v = (30 + (x / 320.0) * 190).round().clamp(0, 255);
+      image.setPixelRgb(x, y, v, v, v);
+    }
+  }
+  return Uint8List.fromList(img.encodeJpg(image, quality: 95));
 }
 
 // ---------------------------------------------------------------------------

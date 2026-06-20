@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../services/scan/capture_quality_service.dart';
+import '../../services/scan/document_rectifier_service.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
@@ -17,12 +18,20 @@ class SmartCaptureResult {
     required this.originalBytes,
     required this.processedBytes,
     required this.quality,
+    this.cropHint,
   });
 
   final String originalPath;
   final Uint8List originalBytes;
   final Uint8List processedBytes;
   final CaptureQualityResult quality;
+
+  /// The live-detected capture boundary, if available.
+  ///
+  /// Null for gallery picks and when the live camera did not find a confident
+  /// boundary. Passed to the scan pipeline as a fallback crop when
+  /// [kEnableBoundaryCrop] is enabled.
+  final CaptureCropHint? cropHint;
 }
 
 class SmartCaptureScreen extends StatefulWidget {
@@ -33,6 +42,7 @@ class SmartCaptureScreen extends StatefulWidget {
     required this.originalBytes,
     required this.processedBytes,
     required this.quality,
+    this.cropHint,
   });
 
   final String title;
@@ -40,6 +50,9 @@ class SmartCaptureScreen extends StatefulWidget {
   final Uint8List originalBytes;
   final Uint8List processedBytes;
   final CaptureQualityResult quality;
+
+  /// See [SmartCaptureResult.cropHint].
+  final CaptureCropHint? cropHint;
 
   @override
   State<SmartCaptureScreen> createState() => _SmartCaptureScreenState();
@@ -54,6 +67,7 @@ class _SmartCaptureScreenState extends State<SmartCaptureScreen> {
       originalBytes: widget.originalBytes,
       processedBytes: widget.processedBytes,
       quality: widget.quality,
+      cropHint: widget.cropHint,
     ));
   }
 
