@@ -354,6 +354,30 @@ class FinanceService {
     }
   }
 
+  /// Fetches a live advisory exchange rate from → to.
+  ///
+  /// Returns the rate when the server has one, or null when the feature is
+  /// disabled, the provider is unreachable, or any error occurs. The caller
+  /// must treat null as "no rate available — let the user enter it manually."
+  /// This method never throws; errors are swallowed and null is returned.
+  Future<double?> fetchAdvisoryFxRate(String from, String to) async {
+    try {
+      final r = await _dio.get(
+        '/fx/rate',
+        queryParameters: {'from': from, 'to': to},
+      );
+      final data = r.data;
+      if (data is! Map) return null;
+      if (data['available'] != true) return null;
+      final rate = data['rate'];
+      if (rate is num && rate > 0) return rate.toDouble();
+      return null;
+    } catch (_) {
+      // Any network / parse / auth error → degrade to manual entry.
+      return null;
+    }
+  }
+
   Exception _handleError(DioException e) {
     return ApiException(ApiErrorMapper.fromDio(e));
   }

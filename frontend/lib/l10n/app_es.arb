@@ -3761,6 +3761,7 @@
   "@expenseCreationValidationRate": {
     "description": "Validation: invalid FX rate"
   },
+  "expenseCreationRateAutoFilled": "Tasa rellenada automáticamente — puedes editarla.",
   "expenseCreationReceiptUploadFailed": "Gasto guardado, pero la subida del recibo falló.",
   "@expenseCreationReceiptUploadFailed": {
     "description": "Snackbar: expense saved without receipt"
