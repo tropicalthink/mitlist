@@ -61,11 +61,13 @@ class ScanPipelineService {
     //    Runs on a worker isolate to avoid janking the UI.
     final rectified = await compute(_rectifyIsolate, imageBytes);
 
-    // 2. Enhance (runs on a worker isolate — does not block the UI thread).
-    final enhanced = await _enhancement.enhance(rectified);
-
-    // 2. OCR.
-    final lines = await _ocr.recognise(enhanced);
+    // 2. OCR — uses the non-binarized image so the neural OCR engine (ML Kit)
+    //     receives a natural photograph rather than an adaptive-thresholded
+    //     binary image (which is out-of-distribution for modern neural models).
+    //     The binarized preview is produced in the capture UI (smart_capture_launcher),
+    //     not here.
+    final forOcr = await _enhancement.enhanceForOcr(rectified);
+    final lines = await _ocr.recognise(forOcr);
 
     // 3. Extract qty / unit / price / name.
     final parsed = _extraction.extractAll(lines);
