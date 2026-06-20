@@ -2880,6 +2880,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Voer een wisselkoers groter dan nul in.';
 
   @override
+  String get expenseCreationRateAutoFilled =>
+      'Koers automatisch ingevuld — je kunt het bewerken.';
+
+  @override
   String get expenseCreationReceiptUploadFailed =>
       'Uitgave opgeslagen, maar bon-upload mislukt.';
 

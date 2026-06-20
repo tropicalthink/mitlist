@@ -16,6 +16,7 @@ import (
 	pushservice "github.com/mitlist-app/mitlist/internal/services/push"
 	"github.com/mitlist-app/mitlist/internal/sse"
 	storagesvc "github.com/mitlist-app/mitlist/internal/services/storage"
+	fxsvc "github.com/mitlist-app/mitlist/internal/services/fx"
 	"github.com/mitlist-app/mitlist/pkg/logger"
 )
 
@@ -157,6 +158,9 @@ type Container struct {
 
 	groceryServiceOnce sync.Once
 	groceryService     *services.GroceryService
+
+	fxServiceOnce sync.Once
+	fxService     *fxsvc.RateService
 
 	sseHub *sse.Hub
 }
@@ -574,4 +578,19 @@ func (c *Container) GroceryService() *services.GroceryService {
 		c.groceryService.SetHub(c.SSEHub())
 	})
 	return c.groceryService
+}
+
+// FxService returns the singleton FX-rate advisory service.
+// The feature is opt-in: when FX_RATE_API_URL is empty the service is created
+// in "disabled" mode and no outbound calls are ever made.
+func (c *Container) FxService() *fxsvc.RateService {
+	c.fxServiceOnce.Do(func() {
+		enabled := c.cfg.FxRateAPIURL != ""
+		var provider fxsvc.Provider
+		if enabled {
+			provider = fxsvc.NewFrankfurterProvider(c.cfg.FxRateAPIURL, c.cfg.FxRateAPIKey)
+		}
+		c.fxService = fxsvc.NewRateService(provider, c.redis.Client(), enabled)
+	})
+	return c.fxService
 }

@@ -3761,6 +3761,7 @@
   "@expenseCreationValidationRate": {
     "description": "Validation: invalid FX rate"
   },
+  "expenseCreationRateAutoFilled": "Koers automatisch ingevuld — je kunt het bewerken.",
   "expenseCreationReceiptUploadFailed": "Uitgave opgeslagen, maar bon-upload mislukt.",
   "@expenseCreationReceiptUploadFailed": {
     "description": "Snackbar: expense saved without receipt"

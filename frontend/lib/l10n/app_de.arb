@@ -832,6 +832,7 @@
   "expenseCreationEnterAmount": "Gib oben einen Betrag ein, um die Anteile zu sehen.",
   "expenseCreationValidationAmount": "Gib einen gültigen Betrag größer als null ein.",
   "expenseCreationValidationRate": "Gib einen Umrechnungskurs größer als null ein.",
+  "expenseCreationRateAutoFilled": "Kurs automatisch ausgefüllt – du kannst ihn ändern.",
   "expenseCreationReceiptUploadFailed": "Ausgabe gespeichert, aber Beleg-Upload fehlgeschlagen.",
   "expenseCreationExpenseAdded": "Ausgabe hinzugefügt",
   "pinwallSnapshot": "Auf einen Blick",

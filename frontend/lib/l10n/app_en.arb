@@ -1695,6 +1695,8 @@
   "@expenseCreationValidationAmount": { "description": "Validation: invalid amount" },
   "expenseCreationValidationRate": "Enter a conversion rate greater than zero.",
   "@expenseCreationValidationRate": { "description": "Validation: invalid FX rate" },
+  "expenseCreationRateAutoFilled": "Rate auto-filled — you can edit it.",
+  "@expenseCreationRateAutoFilled": { "description": "Subtle hint shown when FX rate was prefilled from the live-rate endpoint" },
   "expenseCreationReceiptUploadFailed": "Expense saved, but receipt upload failed.",
   "@expenseCreationReceiptUploadFailed": { "description": "Snackbar: expense saved without receipt" },
   "expenseCreationExpenseAdded": "Expense added",
