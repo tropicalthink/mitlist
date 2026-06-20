@@ -38,6 +38,20 @@ class EnhancementService {
       return bytes;
     }
   }
+
+  /// Returns a natural (non-binarized) image suitable for neural OCR engines.
+  ///
+  /// ML Kit and similar modern OCR models are trained on natural photographs;
+  /// feeding them an adaptive-thresholded binary image degrades recognition
+  /// quality. Use this method to obtain the image that should be passed to
+  /// OCR, and use [enhance] only for the human-facing enhanced preview.
+  Future<Uint8List> enhanceForOcr(Uint8List bytes) async {
+    try {
+      return await compute(_enhanceForOcrIsolate, bytes);
+    } catch (_) {
+      return bytes;
+    }
+  }
 }
 
 /// Top-level function required by [compute()] — must be a free function or
@@ -46,6 +60,18 @@ Uint8List _enhanceIsolate(Uint8List bytes) {
   // [CapturePreprocessorService] is stateless so safe to instantiate here.
   try {
     return const CapturePreprocessorService().preprocess(bytes).processedBytes;
+  } catch (_) {
+    return bytes;
+  }
+}
+
+/// Top-level isolate function for [EnhancementService.enhanceForOcr].
+///
+/// Returns [CapturePreprocessResult.ocrBytes] — the natural (non-binarized)
+/// image that neural OCR engines should receive.
+Uint8List _enhanceForOcrIsolate(Uint8List bytes) {
+  try {
+    return const CapturePreprocessorService().preprocess(bytes).ocrBytes;
   } catch (_) {
     return bytes;
   }
