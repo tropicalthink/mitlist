@@ -4,6 +4,7 @@ import '../theme/colors.dart';
 import '../theme/shadows.dart';
 import '../theme/spacing.dart';
 import '../theme/theme.dart';
+import 'app_icon.dart';
 
 enum AppButtonVariant { solid, outline, ghost, soft }
 
@@ -200,9 +201,9 @@ class _AppButtonState extends State<AppButton> {
         ),
       );
     } else if (widget.isSuccess) {
-      current = Icon(
-        Icons.check,
+      current = AppIcon(
         key: const ValueKey('success'),
+        name: 'check',
         size: MitlistSpacing.space5,
         color: foreground,
       );
