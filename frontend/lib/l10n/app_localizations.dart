@@ -5097,6 +5097,12 @@ abstract class AppLocalizations {
   /// **'Enter a conversion rate greater than zero.'**
   String get expenseCreationValidationRate;
 
+  /// Subtle hint shown when FX rate was prefilled from the live-rate endpoint
+  ///
+  /// In en, this message translates to:
+  /// **'Rate auto-filled — you can edit it.'**
+  String get expenseCreationRateAutoFilled;
+
   /// Snackbar: expense saved without receipt
   ///
   /// In en, this message translates to:

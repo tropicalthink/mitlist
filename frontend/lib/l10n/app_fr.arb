@@ -3761,6 +3761,7 @@
   "@expenseCreationValidationRate": {
     "description": "Validation: invalid FX rate"
   },
+  "expenseCreationRateAutoFilled": "Taux rempli automatiquement — tu peux le modifier.",
   "expenseCreationReceiptUploadFailed": "Dépense enregistrée, mais l'envoi du reçu a échoué.",
   "@expenseCreationReceiptUploadFailed": {
     "description": "Snackbar: expense saved without receipt"

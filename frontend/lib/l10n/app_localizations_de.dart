@@ -2903,6 +2903,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Gib einen Umrechnungskurs größer als null ein.';
 
   @override
+  String get expenseCreationRateAutoFilled =>
+      'Kurs automatisch ausgefüllt – du kannst ihn ändern.';
+
+  @override
   String get expenseCreationReceiptUploadFailed =>
       'Ausgabe gespeichert, aber Beleg-Upload fehlgeschlagen.';
 

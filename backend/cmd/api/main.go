@@ -155,6 +155,10 @@ func main() {
 			financeHandler.RegisterRoutes(r)
 			receiptHandler.RegisterRoutes(r)
 
+			// FX rate advisory (opt-in; disabled when FX_RATE_API_URL is unset)
+			fxHandler := handlers.NewFxHandler(cnt.FxService())
+			fxHandler.RegisterRoutes(r)
+
 			// Recipes
 			recipeScrapeSvc := services.NewRecipeScrapingService()
 			recipeHandler := handlers.NewRecipeHandler(cnt.RecipeService(), recipeScrapeSvc, cnt.ListService())
