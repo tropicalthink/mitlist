@@ -4462,4 +4462,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get currencyHuf => 'HUF - Forint hongrois';
+
+  @override
+  String get runningLowHeading => 'Presque épuisé';
+
+  @override
+  String runningLowDaysAgo(num days) {
+    return 'il y a ${days}j';
+  }
 }
