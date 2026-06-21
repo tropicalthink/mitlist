@@ -79,7 +79,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('SIGN IN'));
+      await tester.tap(find.text('SIGN IN TO JOIN'));
       await tester.pumpAndSettle();
 
       expect(find.text('login:SUNNY-TACO'), findsOneWidget);
@@ -115,7 +115,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('CREATE FREE HOUSEHOLD'));
+      await tester.tap(find.text('CREATE ACCOUNT TO JOIN'));
       await tester.pumpAndSettle();
 
       expect(find.text('signup:SUNNY-TACO'), findsOneWidget);
