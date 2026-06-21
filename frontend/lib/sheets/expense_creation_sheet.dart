@@ -1026,14 +1026,14 @@ class _AutoFilledRateHint extends StatelessWidget {
         AppIcon(
           name: 'arrowPath',
           size: 14,
-          color: colorScheme.primary.withOpacity(0.7),
+          color: colorScheme.primary.withValues(alpha: 0.7),
         ),
         const SizedBox(width: MitlistSpacing.xs),
         Expanded(
           child: Text(
             text,
             style: textTheme.bodySmall?.copyWith(
-              color: colorScheme.primary.withOpacity(0.7),
+              color: colorScheme.primary.withValues(alpha: 0.7),
             ),
           ),
         ),
