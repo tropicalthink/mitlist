@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mitlist/l10n/app_localizations.dart';
 import 'package:mitlist/models/group_models.dart';
 import 'package:mitlist/providers/group_provider.dart';
 import 'package:mitlist/screens/auth/onboarding_screen.dart';
@@ -30,7 +31,11 @@ void main() {
           overrides: [
             cachedGroupsProvider.overrideWith((ref) => groupsCompleter.future),
           ],
-          child: const MaterialApp(home: OnboardingScreen()),
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const OnboardingScreen(),
+          ),
         ),
       );
       await tester.pump();
@@ -74,7 +79,11 @@ void main() {
           overrides: [
             cachedGroupsProvider.overrideWith((ref) async => [household]),
           ],
-          child: MaterialApp.router(routerConfig: router),
+          child: MaterialApp.router(
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
         ),
       );
       await tester.pump();

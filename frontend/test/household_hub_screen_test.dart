@@ -5,6 +5,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mitlist/l10n/app_localizations.dart';
 import 'package:mitlist/providers/group_provider.dart';
 import 'package:mitlist/providers/list_provider.dart';
 import 'package:mitlist/screens/home/household_hub_screen.dart';
@@ -39,7 +40,11 @@ void main() {
             (ref) async => throw Exception('network down'),
           ),
         ],
-        child: const MaterialApp(home: HouseholdHubScreen()),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const HouseholdHubScreen(),
+        ),
       ),
     );
     await tester.pump();
