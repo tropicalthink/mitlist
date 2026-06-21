@@ -1750,6 +1750,29 @@ class FakeListRepository implements ListRepository {
 
   @override
   Future<void> resolveConflictKeepLocal(Conflict conflict) async {}
+
+  @override
+  Future<String?> getGroupId(String listId) async => null;
+
+  @override
+  Future<ListItem> addItemAmountOfflineFirst(
+    String listId, {
+    required String name,
+    required double amount,
+    String unit = '',
+    String note = '',
+  }) async =>
+      ListItem(
+        id: '',
+        listId: listId,
+        name: name,
+        quantity: amount,
+        unit: unit,
+        checked: false,
+        position: 0,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
 }
 
 class FakeFinanceRepository implements FinanceRepository {
