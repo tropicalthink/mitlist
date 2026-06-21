@@ -140,6 +140,11 @@ class FakeListService implements ListService {
   final List<UpdateItemCall> updateItemCalls = [];
   final List<String> deleteItemCalls = [];
   final List<ReorderItemsCall> reorderItemsCalls = [];
+  final List<AddItemAmountCall> addItemAmountCalls = [];
+
+  /// Cumulative server-side quantity per (list|name|unit), so [addItemAmount]
+  /// echoes additive merge semantics like the real endpoint.
+  final Map<String, double> _amountByKey = {};
 
   Exception? throwOnCreateItem;
 
@@ -194,6 +199,29 @@ class FakeListService implements ListService {
   }
 
   @override
+  Future<ListItem> addItemAmount(
+      String listId, AddListItemAmountRequest req) async {
+    addItemAmountCalls.add(AddItemAmountCall(listId, req));
+    final key = '$listId|${req.name}|${req.unit}';
+    final total = (_amountByKey[key] ?? 0) + req.amount;
+    _amountByKey[key] = total;
+    _counter++;
+    final now = DateTime.utc(2026, 1, 1);
+    return ListItem(
+      id: '$serverItemIdPrefix$_counter',
+      listId: listId,
+      name: req.name,
+      quantity: total,
+      unit: req.unit,
+      note: req.note,
+      checked: false,
+      position: 0,
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+
+  @override
   Future<void> deleteItem(String listId, String itemId) async {
     deleteItemCalls.add(itemId);
   }
@@ -223,6 +251,12 @@ class CreateItemCall {
   final String listId;
   final CreateListItemRequest req;
   CreateItemCall(this.listId, this.req);
+}
+
+class AddItemAmountCall {
+  final String listId;
+  final AddListItemAmountRequest req;
+  AddItemAmountCall(this.listId, this.req);
 }
 
 class UpdateItemCall {

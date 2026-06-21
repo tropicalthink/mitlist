@@ -669,15 +669,16 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           CreateListItemRequest(name: parsed.name),
         );
       } else {
-        await service.addItemAmount(
+        // Offline-first too: optimistic local merge/create, additive server
+        // sync via the outbox. Previously this branch did a blocking network
+        // POST + full refresh, so quantity adds ("2 milk") lagged ~10s on a
+        // slow backend and silently failed when it was unreachable.
+        await repo.addItemAmountOfflineFirst(
           widget.listId,
-          AddListItemAmountRequest(
-            name: parsed.name,
-            amount: parsed.quantity,
-            unit: parsed.unit,
-          ),
+          name: parsed.name,
+          amount: parsed.quantity,
+          unit: parsed.unit,
         );
-        await repo.refreshItems(widget.listId);
       }
       if (!mounted) return;
       unawaited(Haptics.light());
