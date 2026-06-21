@@ -479,6 +479,7 @@ func (c *Container) NotificationService() *services.NotificationService {
 		c.notificationService = services.NewNotificationServiceWithMail(
 			c.NotificationRepo(), c.ActivityRepo(), c.GroupRepo(), c.Push(), c.Mail(),
 		)
+		c.notificationService.SetHub(c.SSEHub())
 	})
 	return c.notificationService
 }
