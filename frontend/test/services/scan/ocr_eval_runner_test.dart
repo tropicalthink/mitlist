@@ -270,12 +270,11 @@ void main() {
   // without requiring real images or ML Kit.
   group('OCR eval runner — structural (stub mode)', () {
     test('parses dataset JSONL correctly (schema contract)', () {
+      // JSONL = one JSON object per line; objects must not wrap across lines.
       const jsonl = '''
 # comment
-{"image_path": "ocr_samples/p1.jpg", "input_type": "print",
- "ground_truth_lines": ["Milch", "Eier"], "note": "test"}
-{"image_path": "ocr_samples/h1.jpg", "input_type": "handwriting",
- "ground_truth_lines": ["mlch", "Egg"]}
+{"image_path": "ocr_samples/p1.jpg", "input_type": "print", "ground_truth_lines": ["Milch", "Eier"], "note": "test"}
+{"image_path": "ocr_samples/h1.jpg", "input_type": "handwriting", "ground_truth_lines": ["mlch", "Egg"]}
 ''';
       final rows = _DatasetRow.parseJsonl(jsonl);
       expect(rows, hasLength(2));
