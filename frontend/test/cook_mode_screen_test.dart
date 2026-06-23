@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mitlist/l10n/app_localizations.dart';
 import 'package:mitlist/models/recipe_models.dart';
 import 'package:mitlist/screens/recipes/cook_mode_screen.dart';
 
@@ -67,6 +68,8 @@ Widget _buildScreen({
 }) {
   return ProviderScope(
     child: MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: CookModeScreen(
         recipeId: 'r1',
         recipe: recipe ?? _fakeRecipe(),
