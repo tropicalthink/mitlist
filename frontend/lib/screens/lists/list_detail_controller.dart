@@ -724,34 +724,4 @@ class ListDetailController extends ChangeNotifier {
     }
   }
 
-  // ---- Currency -------------------------------------------------------------
-
-  /// Note: this map intentionally diverges from `utils/format_currency.dart`'s
-  /// `currencySymbol` (wider coverage, different CAD/CHF glyphs). Reconciling
-  /// the two would change money-screen output and is tracked separately.
-  String get currencySymbol {
-    const symbols = {
-      'USD': '\$',
-      'EUR': '€',
-      'GBP': '£',
-      'JPY': '¥',
-      'CAD': 'CA\$',
-      'AUD': 'A\$',
-      'NZD': 'NZ\$',
-      'CHF': 'CHF',
-      'CNY': '¥',
-      'HKD': 'HK\$',
-      'SGD': 'S\$',
-      'SEK': 'kr',
-      'NOK': 'kr',
-      'DKK': 'kr',
-      'INR': '₹',
-      'BRL': 'R\$',
-      'MXN': 'MX\$',
-      'ZAR': 'R',
-      'KRW': '₩',
-      'TRY': '₺',
-    };
-    return symbols[_groupCurrency] ?? _groupCurrency;
-  }
 }

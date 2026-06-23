@@ -6,6 +6,7 @@ import '../../models/list_models.dart';
 import '../../services/restock_service.dart';
 import '../../theme/list_tile_accent.dart';
 import '../../theme/spacing.dart';
+import '../../utils/format_currency.dart';
 import '../../utils/haptics.dart';
 import '../../utils/friendly_error.dart';
 import '../../widgets/app_button.dart';
@@ -402,7 +403,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         autofocus: true,
         decoration: InputDecoration(
           labelText: l10n.listDetailPriceInput,
-          prefixText: _controller.currencySymbol,
+          prefixText: currencySymbol(_controller.groupCurrency),
           hintText: l10n.listDetailPriceHint,
         ),
       ),
@@ -981,7 +982,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     return ListItemRowReactive(
       item: item,
       photoUrl: thumbUrl,
-      currencySymbol: _controller.currencySymbol,
+      currencySymbol: currencySymbol(_controller.groupCurrency),
       claimedLabel: item.claimedBy != null ? '· claimed' : null,
       onToggle: (val) => _toggleItem(item, val),
       onPhotoTap: thumbUrl != null
