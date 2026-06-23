@@ -10,6 +10,9 @@ String formatCurrency(int cents, String currencyCode) {
   return '$prefix$symbol$value';
 }
 
+/// Single source of truth for currency glyphs across the app (money screens via
+/// [formatCurrency], list screens directly). Unknown codes fall back to the
+/// code itself with a trailing space so it reads cleanly as a prefix.
 String currencySymbol(String code) {
   switch (code.toUpperCase()) {
     case 'USD':
@@ -21,11 +24,19 @@ String currencySymbol(String code) {
     case 'JPY':
       return '\u{00A5}';
     case 'CAD':
-      return 'C\$';
+      return 'CA\$';
     case 'AUD':
       return 'A\$';
+    case 'NZD':
+      return 'NZ\$';
     case 'CHF':
-      return 'Fr';
+      return 'CHF';
+    case 'CNY':
+      return '\u{00A5}';
+    case 'HKD':
+      return 'HK\$';
+    case 'SGD':
+      return 'S\$';
     case 'SEK':
       return 'kr';
     case 'NOK':
@@ -38,6 +49,18 @@ String currencySymbol(String code) {
       return 'K\u{010D}';
     case 'HUF':
       return 'Ft';
+    case 'INR':
+      return '\u{20B9}';
+    case 'BRL':
+      return 'R\$';
+    case 'MXN':
+      return 'MX\$';
+    case 'ZAR':
+      return 'R';
+    case 'KRW':
+      return '\u{20A9}';
+    case 'TRY':
+      return '\u{20BA}';
     default:
       return '$code ';
   }
