@@ -10,29 +10,31 @@ import '../../providers/attachment_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/grocery_provider.dart';
 import '../../providers/list_provider.dart';
-import '../../providers/outbox_provider.dart';
 import '../../services/list_service.dart';
 import '../../services/restock_service.dart';
 import '../../services/scan/grocery_suggestion_service.dart';
-import '../../theme/animations.dart';
 import '../../theme/list_tile_accent.dart';
 import '../../theme/spacing.dart';
 import '../../utils/haptics.dart';
 import '../../utils/friendly_error.dart';
-import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
 import '../../sheets/cost_summary_sheet.dart';
-import '../../widgets/empty_state.dart';
+import '../../utils/list_composer_parser.dart';
+import '../../widgets/list/list_all_done_panel.dart';
 import '../../widgets/list/list_composer_bar.dart';
+import '../../widgets/list/list_detail_skeleton.dart';
+import '../../widgets/list/list_detail_states.dart';
+import '../../widgets/list/list_done_section_header.dart';
+import '../../widgets/list/list_group_banner.dart';
 import '../../widgets/list/list_item_actions_sheet.dart';
-import '../../widgets/list/list_item_row.dart';
+import '../../widgets/list/list_item_photo_viewer.dart';
+import '../../widgets/list/list_item_row_reactive.dart';
 import '../../widgets/list/list_scan_launcher.dart';
+import '../../widgets/list/list_settle_collapse.dart';
 import '../../widgets/list/running_low_strip.dart';
 import '../../l10n/app_localizations.dart';
-import '../../widgets/odometer.dart';
-import '../../widgets/skeleton.dart';
 import '../../widgets/mitlist_app_bar.dart';
 
 /// Optional [GoRouter] `extra` when opening a list from the hub (title shows immediately).
@@ -40,18 +42,6 @@ class ListDetailRouteArgs {
   const ListDetailRouteArgs({this.listName, this.autoFocusTitle = false});
   final String? listName;
   final bool autoFocusTitle;
-}
-
-class _ParsedComposerItem {
-  const _ParsedComposerItem({
-    required this.name,
-    this.quantity = 1,
-    this.unit = '',
-  });
-
-  final String name;
-  final double quantity;
-  final String unit;
 }
 
 class ListDetailScreen extends ConsumerStatefulWidget {
@@ -432,52 +422,6 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     }
   }
 
-  Future<void> _openPhotoViewer(String url) async {
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => Dialog.fullscreen(
-        backgroundColor: Theme.of(ctx).colorScheme.surfaceContainerHighest,
-        child: Stack(
-          children: [
-            Center(
-              child: InteractiveViewer(
-                minScale: 0.5,
-                maxScale: 4,
-                child: Semantics(
-                  label: AppLocalizations.of(ctx)!.listDetailListImage,
-                  child: Image.network(url,
-                      fit: BoxFit.contain,
-                      cacheWidth: (MediaQuery.sizeOf(ctx).width *
-                              MediaQuery.devicePixelRatioOf(ctx) *
-                              1.5)
-                          .round(),
-                      errorBuilder: (_, __, ___) => Center(
-                            child: AppIcon(
-                                name: 'brokenImage',
-                                color: Theme.of(ctx).colorScheme.onSurface,
-                                size: 48),
-                          )),
-                ),
-              ),
-            ),
-            SafeArea(
-              child: Align(
-                alignment: Alignment.topLeft,
-                child: IconButton(
-                  icon: AppIcon(
-                      name: 'xMark',
-                      color: Theme.of(ctx).colorScheme.onSurface),
-                  tooltip: AppLocalizations.of(ctx)!.commonClose,
-                  onPressed: () => Navigator.of(ctx).pop(),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Future<void> _removeItemPhoto(ListItem item) async {
     if (_isSaving) return;
     _isSaving = true;
@@ -662,7 +606,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
     try {
       final repo = await ref.read(listRepositoryProvider.future);
-      final parsed = _parseComposerItem(text);
+      final parsed = parseComposerItem(text);
       if (parsed.quantity == 1 && parsed.unit.isEmpty) {
         await repo.createItemOfflineFirst(
           widget.listId,
@@ -723,26 +667,6 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     } finally {
       _isSaving = false;
     }
-  }
-
-  _ParsedComposerItem _parseComposerItem(String text) {
-    final parts = text.trim().split(RegExp(r'\s+'));
-    if (parts.length < 2) return _ParsedComposerItem(name: text.trim());
-    final quantity = double.tryParse(parts.first.replaceAll(',', '.'));
-    if (quantity == null || quantity <= 0) {
-      return _ParsedComposerItem(name: text.trim());
-    }
-    var unit = '';
-    var nameStart = 1;
-    if (parts.length >= 3 &&
-        parts[1].length <= 12 &&
-        !RegExp(r'\d').hasMatch(parts[1])) {
-      unit = parts[1];
-      nameStart = 2;
-    }
-    final name = parts.skip(nameStart).join(' ').trim();
-    if (name.isEmpty) return _ParsedComposerItem(name: text.trim());
-    return _ParsedComposerItem(name: name, quantity: quantity, unit: unit);
   }
 
   Future<void> _clearItems({required bool onlyChecked}) async {
@@ -1262,7 +1186,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       case ListItemAction.viewPhoto:
         final photos = _photosByItemId[item.id];
         if (photos != null && photos.isNotEmpty) {
-          await _openPhotoViewer(photos.first.url);
+          await ListItemPhotoViewer.show(context, photos.first.url);
         }
       case ListItemAction.photo:
         await _addItemPhoto(item);
@@ -1421,7 +1345,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       ),
       body: Column(
         children: [
-          if (_groupId != null) _GroupBannerWidget(groupId: _groupId!),
+          if (_groupId != null) ListGroupBanner(groupId: _groupId!),
           Expanded(child: _buildBody()),
           if (!_isLoading && _errorMessage == null) _buildBottomBar(),
         ],
@@ -1452,20 +1376,32 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Widget _buildBodyContent() {
-    final textTheme = Theme.of(context).textTheme;
-
-    if (_isLoading) return _wrapForRefresh(_buildSkeleton());
-    if (_errorMessage != null) return _wrapForRefresh(_buildError());
+    if (_isLoading) return _wrapForRefresh(const ListDetailSkeleton());
+    if (_errorMessage != null) {
+      return _wrapForRefresh(ListDetailErrorView(
+        message: _errorMessage!,
+        onRetry: _load,
+        onDismiss: () => setState(() => _errorMessage = null),
+      ));
+    }
 
     if (_searchQuery.isNotEmpty) {
       final ordered = _searchOrderedItems;
-      if (ordered.isEmpty) return _wrapForRefresh(_buildSearchEmpty());
+      if (ordered.isEmpty) {
+        return _wrapForRefresh(
+            ListDetailSearchEmptyView(onClearSearch: _clearSearch));
+      }
       return _buildSearchResultItemList(ordered);
     }
 
     final open = _openItemsSorted();
     final done = _doneItemsSorted();
-    if (open.isEmpty && done.isEmpty) return _wrapForRefresh(_buildEmpty());
+    if (open.isEmpty && done.isEmpty) {
+      return _wrapForRefresh(ListDetailEmptyView(
+        onScan: () => _launchScan(source: ImageSource.camera),
+        onType: () => _composerFocusNode.requestFocus(),
+      ));
+    }
 
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -1491,9 +1427,20 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
             },
           ),
         if (open.isEmpty && done.isNotEmpty)
-          SliverToBoxAdapter(child: _buildAllDonePanel()),
+          SliverToBoxAdapter(
+            child: ListAllDonePanel(
+              onClearChecked: () => _clearItems(onlyChecked: true),
+            ),
+          ),
         if (done.isNotEmpty)
-          SliverToBoxAdapter(child: _buildDoneHeader(done.length, textTheme)),
+          SliverToBoxAdapter(
+            child: ListDoneSectionHeader(
+              doneCount: done.length,
+              expanded: _doneSectionExpanded,
+              onToggle: () =>
+                  setState(() => _doneSectionExpanded = !_doneSectionExpanded),
+            ),
+          ),
         if (done.isNotEmpty && _doneSectionExpanded)
           SliverList(
             delegate: SliverChildBuilderDelegate(
@@ -1505,72 +1452,6 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           child: SizedBox(height: MitlistSpacing.md),
         ),
       ],
-    );
-  }
-
-  /// Quiet landing for a fully checked-off list: acknowledgment plus the two
-  /// actions that actually come next mid-errand.
-  Widget _buildAllDonePanel() {
-    final l10n = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsets.all(MitlistSpacing.md),
-      child: Row(
-        children: [
-          AppIcon(name: 'checkCircle', size: 20, color: colorScheme.primary),
-          const SizedBox(width: MitlistSpacing.sm),
-          Expanded(
-            child: Text(
-              l10n.listDetailAllCheckedOff,
-              style: textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          AppButton(
-            text: l10n.listDetailClearChecked,
-            variant: AppButtonVariant.outline,
-            color: AppButtonColor.neutral,
-            onPressed: () => _clearItems(onlyChecked: true),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDoneHeader(int doneCount, TextTheme textTheme) {
-    final l10n = AppLocalizations.of(context)!;
-    final headerStyle = textTheme.titleSmall?.copyWith(
-          fontWeight: FontWeight.w700,
-        ) ??
-        const TextStyle(fontWeight: FontWeight.w700);
-    return Material(
-      color: Theme.of(context).brightness == Brightness.dark
-          ? Theme.of(context).colorScheme.surfaceContainerHighest
-          : Theme.of(context).colorScheme.surfaceContainerLow,
-      child: InkWell(
-        onTap: () =>
-            setState(() => _doneSectionExpanded = !_doneSectionExpanded),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: MitlistSpacing.md,
-            vertical: MitlistSpacing.sm,
-          ),
-          child: Row(
-            children: [
-              Text(l10n.listDetailCheckedOff, style: headerStyle),
-              const SizedBox(width: MitlistSpacing.sm),
-              MitlistOdometer(value: doneCount, textStyle: headerStyle),
-              const Spacer(),
-              AppIcon(
-                name: _doneSectionExpanded ? 'chevronUp' : 'chevronDown',
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
@@ -1586,7 +1467,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Widget _buildDismissibleItemRow(ListItem item, {int? reorderIndex}) {
-    return _SettleCollapse(
+    return SettleCollapse(
       key: ValueKey(item.id),
       collapsed: _collapsing.contains(item.id),
       onCollapsed: () => _finishSettle(item.id),
@@ -1622,13 +1503,15 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     final thumbUrl =
         (photos != null && photos.isNotEmpty) ? photos.first.url : null;
 
-    return _ItemRowWidget(
+    return ListItemRowReactive(
       item: item,
       photoUrl: thumbUrl,
       currencySymbol: _currencySymbol,
       claimedLabel: item.claimedBy != null ? '\u00b7 claimed' : null,
       onToggle: (val) => _toggleItem(item, val),
-      onPhotoTap: thumbUrl != null ? () => _openPhotoViewer(thumbUrl) : null,
+      onPhotoTap: thumbUrl != null
+          ? () => ListItemPhotoViewer.show(context, thumbUrl)
+          : null,
       onLongPress: () => _handleItemAction(item),
       reorderIndex: reorderIndex,
     );
@@ -1660,133 +1543,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     return symbols[_groupCurrency] ?? _groupCurrency;
   }
 
-  Widget _buildSkeleton() {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
-      itemCount: 8,
-      itemBuilder: (context, index) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: MitlistSpacing.md,
-            vertical: MitlistSpacing.sm,
-          ),
-          child: Row(
-            children: [
-              const AppSkeleton(width: 24, height: 24),
-              const SizedBox(width: MitlistSpacing.md),
-              Expanded(
-                child: AppSkeleton(
-                  width: double.infinity,
-                  height: MitlistSpacing.space4,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildError() {
-    final l10n = AppLocalizations.of(context)!;
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(MitlistSpacing.md),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AppAlert(type: AppAlertType.error, message: _errorMessage!),
-            const SizedBox(height: MitlistSpacing.md),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AppButton(
-                  text: l10n.commonRetry,
-                  variant: AppButtonVariant.outline,
-                  onPressed: _load,
-                ),
-                const SizedBox(width: MitlistSpacing.md),
-                AppButton(
-                  text: l10n.commonDismiss,
-                  variant: AppButtonVariant.ghost,
-                  onPressed: () => setState(() => _errorMessage = null),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmpty() {
-    final l10n = AppLocalizations.of(context)!;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(MitlistSpacing.md),
-        child: AppEmptyState(
-          lottieAsset: 'assets/animations/lottie/checklist.lottie',
-          icon: AppIcon(name: 'queueList'),
-          title: l10n.listDetailNothingHere,
-          description:
-              l10n.listDetailNothingHereDesc,
-          actions: [
-            AppButton(
-              text: l10n.listDetailScanThisList,
-              size: AppButtonSize.xl,
-              icon: const AppIcon(name: 'camera'),
-              onPressed: () => _launchScan(source: ImageSource.camera),
-            ),
-            AppButton(
-              text: l10n.listDetailTypeItem,
-              variant: AppButtonVariant.outline,
-              onPressed: () => _composerFocusNode.requestFocus(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSearchEmpty() {
-    final l10n = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(MitlistSpacing.md),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AppIcon(
-              name: 'magnifyingGlass',
-              size: 40,
-              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-            ),
-            const SizedBox(height: MitlistSpacing.sm),
-            Text(
-              l10n.listDetailNoMatch,
-              textAlign: TextAlign.center,
-              style: textTheme.bodyLarge?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: MitlistSpacing.md),
-            AppButton(
-              text: l10n.commonClearSearch,
-              variant: AppButtonVariant.outline,
-              onPressed: () {
-                setState(() {
-                  _searchQuery = '';
-                  _searchController.clear();
-                });
-              },
-            ),
-          ],
-        ),
-      ),
-    );
+  void _clearSearch() {
+    setState(() {
+      _searchQuery = '';
+      _searchController.clear();
+    });
   }
 
   Widget _buildBottomBar() {
@@ -1798,126 +1559,6 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       productSuggestions: _productSuggestions,
       grocerySuggestions: _grocerySuggestions,
       showProductSuggestions: _showProductSuggestions,
-    );
-  }
-}
-
-/// Renders the group banner. Isolated so `cachedGroupsProvider` changes only
-/// rebuild this widget, not the entire list screen.
-class _GroupBannerWidget extends ConsumerWidget {
-  const _GroupBannerWidget({required this.groupId});
-  final String groupId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final groups = ref.watch(cachedGroupsProvider).valueOrNull ?? const [];
-    final groupName = groups.where((g) => g.id == groupId).firstOrNull?.name;
-    if (groupName == null) return const SizedBox.shrink();
-    final l10n = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      width: double.infinity,
-      color: colorScheme.surfaceContainerLow,
-      padding: const EdgeInsets.symmetric(
-        horizontal: MitlistSpacing.md,
-        vertical: MitlistSpacing.xs,
-      ),
-      child: Row(
-        children: [
-          AppIcon(name: 'userGroup', size: 13, color: colorScheme.onSurfaceVariant),
-          const SizedBox(width: MitlistSpacing.xs),
-          Expanded(
-            child: Text(
-              l10n.listSharedWith(groupName),
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Renders a single list item row. Isolated so `failedEntityIdsProvider`
-/// changes only rebuild the affected row, not the entire list screen.
-class _ItemRowWidget extends ConsumerWidget {
-  const _ItemRowWidget({
-    required this.item,
-    required this.currencySymbol,
-    required this.onToggle,
-    required this.onLongPress,
-    this.photoUrl,
-    this.claimedLabel,
-    this.onPhotoTap,
-    this.reorderIndex,
-  });
-
-  final ListItem item;
-  final String? photoUrl;
-  final String currencySymbol;
-  final String? claimedLabel;
-  final ValueChanged<bool> onToggle;
-  final VoidCallback? onPhotoTap;
-  final VoidCallback onLongPress;
-  final int? reorderIndex;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final failedToSync = ref.watch(failedEntityIdsProvider).contains(item.id);
-    return ListItemRow(
-      item: item,
-      photoUrl: photoUrl,
-      currencySymbol: currencySymbol,
-      claimedLabel: claimedLabel,
-      onToggle: onToggle,
-      onPhotoTap: onPhotoTap,
-      onLongPress: onLongPress,
-      reorderIndex: reorderIndex,
-      failedToSync: failedToSync,
-    );
-  }
-}
-
-/// Collapses its child's height to zero (with a fade) when [collapsed] flips
-/// on, then reports completion via [onCollapsed] so the parent can re-section
-/// the item without a visible jump. At rest it is a transparent passthrough.
-class _SettleCollapse extends StatelessWidget {
-  const _SettleCollapse({
-    super.key,
-    required this.collapsed,
-    required this.onCollapsed,
-    required this.child,
-  });
-
-  final bool collapsed;
-  final VoidCallback onCollapsed;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final disableAnimations = MediaQuery.of(context).disableAnimations;
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(end: collapsed ? 0.0 : 1.0),
-      duration: disableAnimations ? Duration.zero : MitlistAnimations.micro,
-      curve: MitlistAnimations.easeExit,
-      onEnd: () {
-        if (collapsed) onCollapsed();
-      },
-      child: child,
-      builder: (context, t, child) {
-        if (t >= 1.0) return child!;
-        return ClipRect(
-          child: Align(
-            alignment: Alignment.topCenter,
-            heightFactor: t,
-            child: Opacity(opacity: t, child: child),
-          ),
-        );
-      },
     );
   }
 }
