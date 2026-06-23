@@ -1,18 +1,9 @@
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../models/list_models.dart';
-import '../../models/list_item_photo_models.dart';
-import '../../providers/auth_provider.dart';
-import '../../providers/attachment_provider.dart';
-import '../../providers/group_provider.dart';
-import '../../providers/grocery_provider.dart';
-import '../../providers/list_provider.dart';
-import '../../services/list_service.dart';
 import '../../services/restock_service.dart';
-import '../../services/scan/grocery_suggestion_service.dart';
 import '../../theme/list_tile_accent.dart';
 import '../../theme/spacing.dart';
 import '../../utils/haptics.dart';
@@ -21,7 +12,6 @@ import '../../widgets/app_button.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
 import '../../sheets/cost_summary_sheet.dart';
-import '../../utils/list_composer_parser.dart';
 import '../../widgets/list/list_all_done_panel.dart';
 import '../../widgets/list/list_composer_bar.dart';
 import '../../widgets/list/list_detail_skeleton.dart';
@@ -36,6 +26,7 @@ import '../../widgets/list/list_settle_collapse.dart';
 import '../../widgets/list/running_low_strip.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/mitlist_app_bar.dart';
+import 'list_detail_controller.dart';
 
 /// Optional [GoRouter] `extra` when opening a list from the hub (title shows immediately).
 class ListDetailRouteArgs {
@@ -61,66 +52,55 @@ class ListDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
-  bool _isLoading = true;
-  String? _errorMessage;
-  String _listName = '';
-  final List<ListItem> _items = [];
-  StreamSubscription<List<ListItem>>? _itemsSub;
+  late ListDetailController _controller;
   bool _showSearch = false;
-  String _searchQuery = '';
   final TextEditingController _newItemController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _titleController = TextEditingController();
   final FocusNode _titleFocusNode = FocusNode();
-  bool _editingTitle = false;
-  ListService? _service;
-  bool _dirty = false;
   final FocusNode _composerFocusNode = FocusNode();
-  bool _doneSectionExpanded = true;
-  String? _groupId;
-  List<Product> _productSuggestions = [];
-  List<GrocerySuggestion> _grocerySuggestions = [];
+  bool _editingTitle = false;
   bool _showProductSuggestions = false;
-  Timer? _suggestDebounce;
-  final Map<String, List<ListItemPhoto>> _photosByItemId = {};
-  final Set<String> _photoLoadAttempted = {};
+
+  /// Re-entrancy guard spanning a full user gesture (dialog input included), so
+  /// the controller stays UI-agnostic. Mirrors the original screen's behavior.
   bool _isSaving = false;
-  String _groupCurrency = 'USD';
-  String? _userId;
-  int _suggestGeneration = 0;
-
-  // Cached sorted sections — recomputed only when items or settle-state changes.
-  List<ListItem> _openItems = const [];
-  List<ListItem> _doneItems = const [];
-  bool _sectionsDirty = true;
-
-  /// Checked items briefly held in the open section so the strike animation
-  /// plays in place before the row collapses away into "Checked off".
-  final Set<String> _settling = {};
-  final Set<String> _collapsing = {};
-  final Map<String, Timer> _settleTimers = {};
-
-  /// How long a freshly checked row rests in place before collapsing.
-  static const Duration _settleHold = Duration(milliseconds: 650);
 
   @override
   void initState() {
     super.initState();
-    if (widget.initialListName != null && widget.initialListName!.isNotEmpty) {
-      _listName = widget.initialListName!;
-    }
+    _controller = ListDetailController(
+      ref: ref,
+      listId: widget.listId,
+      initialListName: widget.initialListName,
+    )..addListener(_onControllerChanged);
     _composerFocusNode.addListener(_onComposerFocusChanged);
     _newItemController.addListener(_onComposerTextChanged);
     _titleFocusNode.addListener(_onTitleFocusChanged);
     if (widget.autoFocusTitle) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _startEditingTitle());
     }
-    _load();
+    _runLoad();
+  }
+
+  void _onControllerChanged() {
+    if (mounted) setState(() {});
+  }
+
+  /// Runs the controller load, then pops the keyboard only for an empty list
+  /// (the next step is clearly typing). On a populated list it would cover the
+  /// items people came to read.
+  Future<void> _runLoad() async {
+    await _controller.load();
+    if (!mounted) return;
+    if (!_controller.hasError && _controller.items.isEmpty) {
+      FocusScope.of(context).requestFocus(_composerFocusNode);
+    }
   }
 
   void _onComposerFocusChanged() {
     if (_composerFocusNode.hasFocus) {
-      _refreshSuggestions();
+      _controller.refreshSuggestions(_newItemController.text);
       setState(() => _showProductSuggestions = true);
     } else {
       setState(() => _showProductSuggestions = false);
@@ -129,15 +109,14 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
   void _onComposerTextChanged() {
     if (!_composerFocusNode.hasFocus) return;
-    _suggestDebounce?.cancel();
-    _suggestDebounce =
-        Timer(const Duration(milliseconds: 180), _refreshSuggestions);
+    _controller.refreshSuggestionsDebounced(_newItemController.text);
   }
 
   void _startEditingTitle() {
-    _titleController.text = _listName;
+    final name = _controller.listName;
+    _titleController.text = name;
     _titleController.selection =
-        TextSelection(baseOffset: 0, extentOffset: _listName.length);
+        TextSelection(baseOffset: 0, extentOffset: name.length);
     setState(() => _editingTitle = true);
     _titleFocusNode.requestFocus();
   }
@@ -151,78 +130,15 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   Future<void> _submitTitleEdit() async {
     final newName = _titleController.text.trim();
     setState(() => _editingTitle = false);
-    if (newName.isEmpty || newName == _listName) return;
-    final svc = _service;
-    if (svc == null) return;
+    if (newName.isEmpty || newName == _controller.listName) return;
     try {
-      await svc.updateList(widget.listId, UpdateListRequest(name: newName));
-      if (mounted) setState(() => _listName = newName);
+      await _controller.renameList(newName);
     } catch (_) {
-      if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.listCouldNotRename)),
-        );
-      }
-    }
-  }
-
-  /// Refreshes both suggestion sources for the current composer text: the
-  /// offline canonical grocery seed (alias-powered) and the backend product
-  /// history. A generation counter ensures stale results from a prior keystroke
-  /// are silently discarded if a newer query has already started.
-  Future<void> _refreshSuggestions() async {
-    final groupId = _groupId;
-    if (groupId == null) return;
-    final query = _newItemController.text.trim();
-    final gen = ++_suggestGeneration;
-
-    // Local grocery seed first — alias-powered, on-device.
-    final grocery = await ref
-        .read(grocerySuggestionServiceProvider)
-        .suggest(query, groupId);
-    if (!mounted || _suggestGeneration != gen) return;
-
-    // When the composer is empty, prepend restock predictions.
-    List<GrocerySuggestion> blended = grocery;
-    if (query.isEmpty) {
-      try {
-        final currentNames = _items
-            .where((it) => !it.checked)
-            .map((it) => it.name.toLowerCase())
-            .toSet();
-        final restock = await ref.read(restockServiceProvider).due(
-              groupId: groupId,
-              currentItemNames: currentNames,
-              limit: 5,
-            );
-        if (!mounted || _suggestGeneration != gen) return;
-        if (restock.isNotEmpty) {
-          final restockChips = restock.map((r) => GrocerySuggestion(
-                canonicalItemId: r.canonicalItemId,
-                name: r.name,
-                category: '',
-                unit: '',
-              ));
-          blended = [...restockChips, ...grocery];
-        }
-      } catch (_) {}
-    }
-
-    if (!mounted || _suggestGeneration != gen) return;
-    setState(() => _grocerySuggestions = blended);
-
-    try {
-      final service = await ref.read(listServiceProviderAsync.future);
-      if (!mounted || _suggestGeneration != gen) return;
-      final products = await service.listProducts(groupId,
-          search: query.isEmpty ? null : query);
-      if (!mounted || _suggestGeneration != gen) return;
-      setState(() => _productSuggestions = products.take(8).toList());
-    } catch (_) {
-      if (mounted && _suggestGeneration == gen) {
-        setState(() => _productSuggestions = []);
-      }
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.listCouldNotRename)),
+      );
     }
   }
 
@@ -230,37 +146,34 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   void didUpdateWidget(covariant ListDetailScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.listId != widget.listId) {
-      _service = null;
-      _items.clear();
-      _photosByItemId.clear();
-      _photoLoadAttempted.clear();
-      _searchQuery = '';
+      _controller
+        ..removeListener(_onControllerChanged)
+        ..dispose();
       _showSearch = false;
       _searchController.clear();
-      _listName =
-          (widget.initialListName != null && widget.initialListName!.isNotEmpty)
-              ? widget.initialListName!
-              : '';
-      _load();
+      _controller = ListDetailController(
+        ref: ref,
+        listId: widget.listId,
+        initialListName: widget.initialListName,
+      )..addListener(_onControllerChanged);
+      _runLoad();
       return;
     }
     if (widget.initialListName != null &&
         widget.initialListName!.isNotEmpty &&
         widget.initialListName != oldWidget.initialListName) {
-      setState(() => _listName = widget.initialListName!);
+      _controller.setListName(widget.initialListName!);
     }
   }
 
   @override
   void dispose() {
-    for (final timer in _settleTimers.values) {
-      timer.cancel();
-    }
     _composerFocusNode.removeListener(_onComposerFocusChanged);
     _newItemController.removeListener(_onComposerTextChanged);
     _titleFocusNode.removeListener(_onTitleFocusChanged);
-    _suggestDebounce?.cancel();
-    _itemsSub?.cancel();
+    _controller
+      ..removeListener(_onControllerChanged)
+      ..dispose();
     _newItemController.dispose();
     _searchController.dispose();
     _titleController.dispose();
@@ -269,154 +182,18 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     super.dispose();
   }
 
-  Future<void> _load() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final service = await ref.read(listServiceProviderAsync.future);
-      _service = service;
-      final repo = await ref.read(listRepositoryProvider.future);
-
-      await _itemsSub?.cancel();
-      _itemsSub = repo.watchItemsByList(widget.listId).listen((items) {
-        if (!mounted) return;
-        setState(() {
-          _sectionsDirty = true;
-          _items
-            ..clear()
-            ..addAll(items);
-        });
-        unawaited(_loadPhotosForItems(items));
-      });
-
-      final cached = await repo.getItemsByListOnce(widget.listId);
-      if (!mounted) return;
-      final cachedGroupId = await repo.getGroupId(widget.listId);
-      if (!mounted) return;
-      setState(() {
-        _sectionsDirty = true;
-        _items
-          ..clear()
-          ..addAll(cached);
-        _isLoading = cached.isEmpty;
-        if (cachedGroupId != null) _groupId = cachedGroupId;
-      });
-
-      // Refresh list + items in background; stream will update.
-      await repo.refreshListDetail(widget.listId);
-      final list = await service.getList(widget.listId);
-
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _listName = list.name;
-        _groupId = list.groupId;
-      });
-
-      // Attach SSE so edits from other household members appear in real time.
-      final sseService = ref.read(sseServiceProvider);
-      repo.attachSse(sseService, list.groupId);
-      try {
-        final authService = await ref.read(authServiceProviderAsync.future);
-        final me = await authService.getMe();
-        if (mounted) setState(() => _userId = me.id);
-      } catch (_) {}
-      try {
-        final groupService = await ref.read(groupServiceProviderAsync.future);
-        final group = await groupService.getGroup(list.groupId);
-        if (mounted) setState(() => _groupCurrency = group.currency);
-      } catch (_) {}
-      unawaited(_loadPhotosForItems(_items));
-      // Pop the keyboard only for an empty list (the next step is clearly
-      // typing). On a populated list it would cover the items people came
-      // to read.
-      if (mounted && _items.isEmpty) {
-        FocusScope.of(context).requestFocus(_composerFocusNode);
-      }
-    } catch (e) {
-      if (!mounted) return;
-      final l10n = AppLocalizations.of(context)!;
-      setState(() {
-        _isLoading = false;
-        _errorMessage = l10n.listDetailCouldNotLoad;
-      });
-    }
-  }
-
-  Future<void> _loadPhotosForItems(List<ListItem> items) async {
-    final groupId = _groupId;
-    final service = _service;
-    if (groupId == null || service == null) return;
-
-    final toLoad =
-        items.where((item) => !_photoLoadAttempted.contains(item.id)).toList();
-    if (toLoad.isEmpty) return;
-    for (final item in toLoad) {
-      _photoLoadAttempted.add(item.id);
-    }
-
-    final batch = <String, List<ListItemPhoto>>{};
-    await Future.wait(
-      toLoad.map((item) async {
-        try {
-          final photos = await service.listItemPhotos(
-            groupId: groupId,
-            itemId: item.id,
-          );
-          if (photos.isNotEmpty) batch[item.id] = photos;
-        } catch (_) {}
-      }),
-    );
-    if (!mounted || batch.isEmpty) return;
-    setState(() => _photosByItemId.addAll(batch));
-  }
-
   Future<void> _addItemPhoto(ListItem item) async {
     if (_isSaving) return;
     _isSaving = true;
-    final groupId = _groupId;
-    if (groupId == null) {
-      _isSaving = false;
-      return;
-    }
-    final picker = ImagePicker();
-    final file = await picker.pickImage(source: ImageSource.gallery);
-    if (file == null) {
-      _isSaving = false;
-      return;
-    }
-
     try {
-      final bytes = await file.readAsBytes();
-      final attachmentRepo =
-          await ref.read(attachmentRepositoryProvider.future);
-      final attachment = await attachmentRepo.uploadAttachment(
-        groupId: groupId,
-        purpose: 'list_item_photo',
-        filename: file.name,
-        contentType: 'image/*',
-        bytes: Uint8List.fromList(bytes),
-      );
-      final svc = await ref.read(listServiceProviderAsync.future);
-      await svc.attachItemPhoto(
-        groupId: groupId,
-        itemId: item.id,
-        attachmentId: attachment.id,
-      );
-
-      final photos =
-          await svc.listItemPhotos(groupId: groupId, itemId: item.id);
-      if (!mounted) return;
-      setState(() => _photosByItemId[item.id] = photos);
+      await _controller.addItemPhoto(item);
     } catch (e) {
-      if (!mounted) return;
-      final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.listDetailCouldNotAddPhoto)),
-      );
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.listDetailCouldNotAddPhoto)),
+        );
+      }
     } finally {
       _isSaving = false;
     }
@@ -425,139 +202,39 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   Future<void> _removeItemPhoto(ListItem item) async {
     if (_isSaving) return;
     _isSaving = true;
-    final groupId = _groupId;
-    if (groupId == null) {
-      _isSaving = false;
-      return;
-    }
-    final photos = _photosByItemId[item.id];
-    if (photos == null || photos.isEmpty) {
-      _isSaving = false;
-      return;
-    }
-    final attachmentId = photos.first.attachmentId;
-
     try {
-      final svc = await ref.read(listServiceProviderAsync.future);
-      await svc.detachItemPhoto(
-        groupId: groupId,
-        itemId: item.id,
-        attachmentId: attachmentId,
-      );
-
-      // Best-effort cleanup: avoid orphaned attachments.
-      try {
-        final attachSvc = await ref.read(attachmentServiceProviderAsync.future);
-        await attachSvc.deleteAttachment(
-          groupId: groupId,
-          attachmentId: attachmentId,
-        );
-      } catch (_) {}
-
-      final updated =
-          await svc.listItemPhotos(groupId: groupId, itemId: item.id);
-      if (!mounted) return;
-      setState(() => _photosByItemId[item.id] = updated);
+      await _controller.removeItemPhoto(item);
     } catch (e) {
-      if (!mounted) return;
-      final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.listDetailCouldNotRemovePhoto)),
-      );
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.listDetailCouldNotRemovePhoto)),
+        );
+      }
     } finally {
       _isSaving = false;
     }
   }
 
   Future<void> _toggleItem(ListItem item, bool value) async {
-    unawaited(Haptics.light());
-    final service = _service;
-    if (service == null) return;
-
     final disableAnimations = MediaQuery.of(context).disableAnimations;
-    if (value && !disableAnimations && _searchQuery.isEmpty) {
-      // Hold the row in place while the strike draws, then collapse it away
-      // into the done section instead of jump-cutting on the next rebuild.
-      _settleTimers.remove(item.id)?.cancel();
-      setState(() {
-        _sectionsDirty = true;
-        _settling.add(item.id);
-      });
-      _settleTimers[item.id] = Timer(_settleHold, () {
-        if (!mounted) return;
-        setState(() {
-          _sectionsDirty = true;
-          _collapsing.add(item.id);
-        });
-      });
-    } else {
-      _cancelSettle(item.id);
-    }
-
     try {
-      final repo = await ref.read(listRepositoryProvider.future);
-      await repo.updateItemOfflineFirst(
-        widget.listId,
-        item.id,
-        UpdateListItemRequest(checked: value),
-      );
-      if (!mounted) return;
-      _dirty = true;
+      await _controller.toggleItem(item, value,
+          disableAnimations: disableAnimations);
     } catch (e) {
       if (!mounted) return;
-      _cancelSettle(item.id);
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(l10n.listDetailCouldNotUpdate)),
+        SnackBar(content: Text(l10n.listDetailCouldNotUpdate)),
       );
     }
-  }
-
-  void _cancelSettle(String id) {
-    _settleTimers.remove(id)?.cancel();
-    if (_settling.contains(id) || _collapsing.contains(id)) {
-      setState(() {
-        _sectionsDirty = true;
-        _settling.remove(id);
-        _collapsing.remove(id);
-      });
-    }
-  }
-
-  /// Called when a settled row finishes its collapse animation; the item then
-  /// re-sections into "Checked off" with no visible jump.
-  void _finishSettle(String id) {
-    _settleTimers.remove(id)?.cancel();
-    if (!mounted) return;
-    setState(() {
-      _sectionsDirty = true;
-      _settling.remove(id);
-      _collapsing.remove(id);
-    });
   }
 
   Future<void> _completeAll() async {
     if (_isSaving) return;
     _isSaving = true;
     try {
-      final service = _service;
-      if (service == null) return;
-
-      for (final item in _items.where((i) => !i.checked)) {
-        try {
-          final repo = await ref.read(listRepositoryProvider.future);
-          await repo.updateItemOfflineFirst(
-            widget.listId,
-            item.id,
-            UpdateListItemRequest(checked: true),
-          );
-          if (!mounted) return;
-          _dirty = true;
-        } catch (_) {
-          break;
-        }
-      }
+      await _controller.completeAll();
     } finally {
       _isSaving = false;
     }
@@ -567,23 +244,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     if (_isSaving) return;
     _isSaving = true;
     try {
-      final service = _service;
-      if (service == null) return;
-
-      for (final item in _items.where((i) => i.checked)) {
-        try {
-          final repo = await ref.read(listRepositoryProvider.future);
-          await repo.updateItemOfflineFirst(
-            widget.listId,
-            item.id,
-            UpdateListItemRequest(checked: false),
-          );
-          if (!mounted) return;
-          _dirty = true;
-        } catch (_) {
-          break;
-        }
-      }
+      await _controller.uncheckAll();
     } finally {
       _isSaving = false;
     }
@@ -597,37 +258,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       _isSaving = false;
       return;
     }
-
-    final service = _service;
-    if (service == null) {
-      _isSaving = false;
-      return;
-    }
-
     try {
-      final repo = await ref.read(listRepositoryProvider.future);
-      final parsed = parseComposerItem(text);
-      if (parsed.quantity == 1 && parsed.unit.isEmpty) {
-        await repo.createItemOfflineFirst(
-          widget.listId,
-          CreateListItemRequest(name: parsed.name),
-        );
-      } else {
-        // Offline-first too: optimistic local merge/create, additive server
-        // sync via the outbox. Previously this branch did a blocking network
-        // POST + full refresh, so quantity adds ("2 milk") lagged ~10s on a
-        // slow backend and silently failed when it was unreachable.
-        await repo.addItemAmountOfflineFirst(
-          widget.listId,
-          name: parsed.name,
-          amount: parsed.quantity,
-          unit: parsed.unit,
-        );
-      }
+      await _controller.addItem(text);
       if (!mounted) return;
       unawaited(Haptics.light());
       _newItemController.clear();
-      _dirty = true;
       _composerFocusNode.requestFocus();
     } catch (e) {
       if (!mounted) return;
@@ -640,24 +275,13 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     }
   }
 
-  /// Adds a restock suggestion to the list via the existing offline-first write
-  /// path — the same [listRepositoryProvider.createItemOfflineFirst] call used
-  /// by [_addItem]. This is NOT a new write path; only the entry point differs.
   Future<void> _addRestockSuggestion(RestockSuggestion suggestion) async {
     if (_isSaving) return;
     _isSaving = true;
     try {
-      final repo = await ref.read(listRepositoryProvider.future);
-      await repo.createItemOfflineFirst(
-        widget.listId,
-        CreateListItemRequest(
-          name: suggestion.name,
-          canonicalItemId: suggestion.canonicalItemId,
-        ),
-      );
+      await _controller.addRestockSuggestion(suggestion);
       if (!mounted) return;
       unawaited(Haptics.light());
-      _dirty = true;
     } catch (_) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
@@ -672,7 +296,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   Future<void> _clearItems({required bool onlyChecked}) async {
     if (_isSaving) return;
     if (!onlyChecked) {
-      final count = _items.length;
+      final count = _controller.items.length;
       final l10n = AppLocalizations.of(context)!;
       final confirmed = await showAppDialog<bool>(
         context: context,
@@ -697,23 +321,15 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       if (confirmed != true || !mounted) return;
     }
     _isSaving = true;
-    final service = _service;
-    if (service == null) {
-      _isSaving = false;
-      return;
-    }
     try {
-      await service.clearItems(widget.listId, onlyChecked: onlyChecked);
-      final repo = await ref.read(listRepositoryProvider.future);
-      await repo.refreshItems(widget.listId);
-      if (!mounted) return;
-      _dirty = true;
+      await _controller.clearItems(onlyChecked: onlyChecked);
     } catch (e) {
-      if (!mounted) return;
-      final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.listDetailCouldNotClear)),
-      );
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.listDetailCouldNotClear)),
+        );
+      }
     } finally {
       _isSaving = false;
     }
@@ -722,36 +338,23 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   Future<void> _deleteItem(ListItem item) async {
     if (_isSaving) return;
     _isSaving = true;
-    _cancelSettle(item.id);
-    final service = _service;
-    if (service == null) {
-      _isSaving = false;
-      return;
-    }
-
+    var deleted = false;
     try {
-      final repo = await ref.read(listRepositoryProvider.future);
-      await repo.deleteItemOfflineFirst(widget.listId, item.id);
-      if (!mounted) return;
-      setState(() {
-        _sectionsDirty = true;
-        _items.remove(item);
-      });
-      _dirty = true;
+      await _controller.deleteItem(item);
+      deleted = true;
     } catch (e) {
-      if (!mounted) return;
-      unawaited(Haptics.failure());
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-      );
+      if (mounted) {
+        unawaited(Haptics.failure());
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  friendlyErrorMessage(e, AppLocalizations.of(context)!))),
+        );
+      }
+    } finally {
       _isSaving = false;
-      return;
     }
-
-    if (!mounted) {
-      _isSaving = false;
-      return;
-    }
+    if (!deleted || !mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -767,34 +370,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         ),
       ),
     );
-    _isSaving = false;
   }
 
   Future<void> _restoreDeletedItem(ListItem item) async {
-    final service = _service;
-    if (service == null) return;
     try {
-      final repo = await ref.read(listRepositoryProvider.future);
-      final restored = await repo.createItemOfflineFirst(
-        widget.listId,
-        CreateListItemRequest(
-          name: item.name,
-          quantity: item.quantity,
-          unit: item.unit,
-          note: item.note,
-          priceCents: item.priceCents,
-          canonicalItemId: item.canonicalItemId,
-        ),
-      );
-      if (item.checked) {
-        await repo.updateItemOfflineFirst(
-          widget.listId,
-          restored.id,
-          const UpdateListItemRequest(checked: true),
-        );
-      }
-      if (!mounted) return;
-      _dirty = true;
+      await _controller.restoreDeletedItem(item);
     } catch (_) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
@@ -808,7 +388,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     if (_isSaving) return;
     _isSaving = true;
     final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController(
+    final priceController = TextEditingController(
       text: item.priceCents != null
           ? (item.priceCents! / 100).toStringAsFixed(2)
           : '',
@@ -817,12 +397,12 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       context: context,
       title: l10n.listDetailSetPrice,
       body: TextField(
-        controller: controller,
+        controller: priceController,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
         autofocus: true,
         decoration: InputDecoration(
           labelText: l10n.listDetailPriceInput,
-          prefixText: _currencySymbol,
+          prefixText: _controller.currencySymbol,
           hintText: l10n.listDetailPriceHint,
         ),
       ),
@@ -835,11 +415,12 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         const SizedBox(width: MitlistSpacing.sm),
         AppButton(
           text: l10n.commonSave,
-          onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+          onPressed: () =>
+              Navigator.of(context).pop(priceController.text.trim()),
         ),
       ],
     );
-    controller.dispose();
+    priceController.dispose();
     if (priceStr == null || priceStr.isEmpty) {
       _isSaving = false;
       return;
@@ -852,19 +433,13 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     final cents = (price * 100).round();
 
     try {
-      final repo = await ref.read(listRepositoryProvider.future);
-      await repo.updateItemOfflineFirst(
-        widget.listId,
-        item.id,
-        UpdateListItemRequest(priceCents: cents),
-      );
-      if (!mounted) return;
-      _dirty = true;
+      await _controller.setItemPrice(item, cents);
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.listDetailCouldNotSetPrice)),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.listDetailCouldNotSetPrice)),
+        );
+      }
     } finally {
       _isSaving = false;
     }
@@ -918,19 +493,16 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     );
     if (confirmed != true || !mounted) return;
     _isSaving = true;
-    if (_service == null) {
-      _isSaving = false;
-      return;
-    }
     try {
-      await _service!.archiveList(widget.listId);
+      final ok = await _controller.archiveList();
       if (!mounted) return;
-      Navigator.of(context).pop(true);
+      if (ok) Navigator.of(context).pop(true);
     } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.listDetailFailedArchive)),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.listDetailFailedArchive)),
+        );
+      }
     } finally {
       _isSaving = false;
     }
@@ -963,49 +535,45 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       _isSaving = false;
       return;
     }
-    if (_service == null) {
-      _isSaving = false;
-      return;
-    }
     try {
-      await _service!.deleteList(widget.listId);
-      final repo = await ref.read(listRepositoryProvider.future);
-      await repo.deleteListLocal(widget.listId);
+      final ok = await _controller.deleteList();
       if (!mounted) return;
-      Navigator.of(context).pop(true);
+      if (ok) Navigator.of(context).pop(true);
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.listDetailCouldNotDelete)),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.listDetailCouldNotDelete)),
+        );
+      }
     } finally {
       _isSaving = false;
     }
   }
 
   Future<void> _showCostSummary() async {
-    if (_service == null) return;
+    if (!_controller.isReady) return;
     final l10n = AppLocalizations.of(context)!;
     try {
-      final summary = await _service!.getCostSummary(widget.listId);
+      final summary = await _controller.getCostSummary();
       final totalCents = summary['total_cents'] as int? ?? 0;
       final equalShareCents = summary['equal_share_cents'] as int? ?? 0;
-      final pricedItems = _items.where((i) => i.priceCents != null).length;
+      final pricedItems =
+          _controller.items.where((i) => i.priceCents != null).length;
 
       if (!mounted) return;
       await CostSummarySheet.show(
         context,
-        listName: _listName,
+        listName: _controller.listName,
         totalCents: totalCents,
         equalShareCents: equalShareCents,
         itemCount: pricedItems,
-        currencyCode: _groupCurrency,
+        currencyCode: _controller.groupCurrency,
         onGenerateExpense: totalCents > 0
             ? () async {
                 if (_isSaving) return;
                 _isSaving = true;
                 try {
-                  await _service!.generateExpense(widget.listId);
+                  await _controller.generateExpense();
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text(l10n.listDetailExpenseGenerated)),
@@ -1032,97 +600,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     }
   }
 
-  List<ListItem> get _filteredItems {
-    if (_searchQuery.isEmpty) return List.unmodifiable(_items);
-    final lower = _searchQuery.toLowerCase();
-    return _items.where((i) => i.name.toLowerCase().contains(lower)).toList();
-  }
-
-  /// Unchecked first, then checked while searching.
-  List<ListItem> get _searchOrderedItems {
-    final list = List<ListItem>.from(_filteredItems);
-    list.sort((a, b) {
-      final aOpen = _displaysAsOpen(a);
-      final bOpen = _displaysAsOpen(b);
-      if (aOpen != bOpen) {
-        return aOpen ? -1 : 1;
-      }
-      return a.position.compareTo(b.position);
-    });
-    return list;
-  }
-
-  /// Settling rows count as open so they stay in place during the hold.
-  bool _displaysAsOpen(ListItem item) =>
-      !item.checked || _settling.contains(item.id);
-
-  void _ensureSectionsUpToDate() {
-    if (!_sectionsDirty) return;
-    _openItems = _items.where(_displaysAsOpen).toList()
-      ..sort((a, b) => a.position.compareTo(b.position));
-    _doneItems = _items.where((i) => !_displaysAsOpen(i)).toList()
-      ..sort((a, b) => a.position.compareTo(b.position));
-    _sectionsDirty = false;
-  }
-
-  List<ListItem> _openItemsSorted() {
-    _ensureSectionsUpToDate();
-    return _openItems;
-  }
-
-  List<ListItem> _doneItemsSorted() {
-    _ensureSectionsUpToDate();
-    return _doneItems;
-  }
-
-  void _onReorderOpen(int oldIndex, int newIndex) {
-    if (newIndex > oldIndex) newIndex--;
-    Haptics.light();
-
-    final open = _openItemsSorted();
-    final done = _doneItemsSorted();
-    final reorderedOpen = List<ListItem>.from(open);
-    final moved = reorderedOpen.removeAt(oldIndex);
-    reorderedOpen.insert(newIndex, moved);
-
-    final itemIdsInOrder = [
-      ...reorderedOpen.map((i) => i.id),
-      ...done.map((i) => i.id),
-    ];
-
-    setState(() {
-      _sectionsDirty = true;
-      var pos = 0;
-      for (final id in itemIdsInOrder) {
-        final idx = _items.indexWhere((i) => i.id == id);
-        if (idx < 0) continue;
-        final item = _items[idx];
-        _items[idx] = ListItem(
-          id: item.id,
-          listId: item.listId,
-          name: item.name,
-          quantity: item.quantity,
-          unit: item.unit,
-          note: item.note,
-          checked: item.checked,
-          position: pos++,
-          priceCents: item.priceCents,
-          canonicalItemId: item.canonicalItemId,
-          claimedBy: item.claimedBy,
-          createdAt: item.createdAt,
-          updatedAt: item.updatedAt,
-        );
-      }
-    });
-    _dirty = true;
-
-    unawaited(_persistReorder(itemIdsInOrder));
-  }
-
-  Future<void> _persistReorder(List<String> itemIdsInOrder) async {
+  Future<void> _onReorder(int oldIndex, int newIndex) async {
     try {
-      final repo = await ref.read(listRepositoryProvider.future);
-      await repo.reorderItemsOfflineFirst(widget.listId, itemIdsInOrder);
+      await _controller.reorderOpen(oldIndex, newIndex);
     } catch (e) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
@@ -1135,16 +615,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Future<void> _launchScan({ImageSource? source}) async {
-    final groupId = _groupId;
-    var userId = _userId;
-    if (userId == null) {
-      try {
-        final authService = await ref.read(authServiceProviderAsync.future);
-        final me = await authService.getMe();
-        userId = me.id;
-        if (mounted) setState(() => _userId = userId);
-      } catch (_) {}
-    }
+    final groupId = _controller.groupId;
+    final userId = await _controller.ensureUserId();
     if (groupId == null || userId == null) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
@@ -1160,7 +632,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       groupId: groupId,
       userId: userId,
       listId: widget.listId,
-      listName: _listName.isNotEmpty ? _listName : null,
+      listName: _controller.listName.isNotEmpty ? _controller.listName : null,
       source: source,
     );
     if (!mounted || addedCount == null || addedCount <= 0) return;
@@ -1172,7 +644,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Future<void> _handleItemAction(ListItem item) async {
-    final photos = _photosByItemId[item.id];
+    final photos = _controller.photosFor(item.id);
     final hasPhoto = photos != null && photos.isNotEmpty;
 
     final action = await ListItemActionsSheet.show(
@@ -1184,9 +656,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
     switch (action) {
       case ListItemAction.viewPhoto:
-        final photos = _photosByItemId[item.id];
-        if (photos != null && photos.isNotEmpty) {
-          await ListItemPhotoViewer.show(context, photos.first.url);
+        final viewPhotos = _controller.photosFor(item.id);
+        if (viewPhotos != null && viewPhotos.isNotEmpty) {
+          await ListItemPhotoViewer.show(context, viewPhotos.first.url);
         }
       case ListItemAction.photo:
         await _addItemPhoto(item);
@@ -1220,7 +692,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
               leading: IconButton(
                 icon: const AppIcon(name: 'arrowLeft'),
                 tooltip: l10n.commonBack,
-                onPressed: () => Navigator.of(context).pop(_dirty),
+                onPressed: () => Navigator.of(context).pop(_controller.dirty),
               ),
               title: _editingTitle
                   ? TextField(
@@ -1238,11 +710,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     )
                   : Semantics(
                       button: true,
-                      label: l10n.listDetailEditName(_listName),
+                      label: l10n.listDetailEditName(_controller.listName),
                       child: GestureDetector(
                         onTap: _startEditingTitle,
                         child: Text(
-                          _listName,
+                          _controller.listName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -1259,13 +731,12 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                    tooltip: _showSearch ? l10n.listDetailCloseSearch : l10n.listDetailSearchTooltip,
                   onPressed: () {
                     unawaited(Haptics.light());
-                    setState(() {
-                      _showSearch = !_showSearch;
-                      if (!_showSearch) {
-                        _searchQuery = '';
-                        _searchController.clear();
-                      }
-                    });
+                    final opening = !_showSearch;
+                    setState(() => _showSearch = opening);
+                    if (!opening) {
+                      _searchController.clear();
+                      _controller.setSearchQuery('');
+                    }
                   },
                 ),
                 IconButton(
@@ -1337,7 +808,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     hintText: l10n.listDetailFilterHint,
                     isDense: true,
                   ),
-                  onChanged: (value) => setState(() => _searchQuery = value),
+                  onChanged: (value) => _controller.setSearchQuery(value),
                 ),
               ),
           ],
@@ -1345,9 +816,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       ),
       body: Column(
         children: [
-          if (_groupId != null) ListGroupBanner(groupId: _groupId!),
+          if (_controller.groupId != null)
+            ListGroupBanner(groupId: _controller.groupId!),
           Expanded(child: _buildBody()),
-          if (!_isLoading && _errorMessage == null) _buildBottomBar(),
+          if (!_controller.isLoading && !_controller.hasError)
+            _buildBottomBar(),
         ],
       ),
     );
@@ -1356,7 +829,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   Widget _buildBody() {
     return RefreshIndicator(
       color: Theme.of(context).colorScheme.primary,
-      onRefresh: _load,
+      onRefresh: _runLoad,
       child: _buildBodyContent(),
     );
   }
@@ -1376,17 +849,19 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Widget _buildBodyContent() {
-    if (_isLoading) return _wrapForRefresh(const ListDetailSkeleton());
-    if (_errorMessage != null) {
+    if (_controller.isLoading) {
+      return _wrapForRefresh(const ListDetailSkeleton());
+    }
+    if (_controller.hasError) {
       return _wrapForRefresh(ListDetailErrorView(
-        message: _errorMessage!,
-        onRetry: _load,
-        onDismiss: () => setState(() => _errorMessage = null),
+        message: AppLocalizations.of(context)!.listDetailCouldNotLoad,
+        onRetry: _runLoad,
+        onDismiss: _controller.dismissError,
       ));
     }
 
-    if (_searchQuery.isNotEmpty) {
-      final ordered = _searchOrderedItems;
+    if (_controller.searchQuery.isNotEmpty) {
+      final ordered = _controller.searchOrderedItems;
       if (ordered.isEmpty) {
         return _wrapForRefresh(
             ListDetailSearchEmptyView(onClearSearch: _clearSearch));
@@ -1394,8 +869,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       return _buildSearchResultItemList(ordered);
     }
 
-    final open = _openItemsSorted();
-    final done = _doneItemsSorted();
+    final open = _controller.openItemsSorted;
+    final done = _controller.doneItemsSorted;
     if (open.isEmpty && done.isEmpty) {
       return _wrapForRefresh(ListDetailEmptyView(
         onScan: () => _launchScan(source: ImageSource.camera),
@@ -1406,11 +881,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
-        if (_groupId != null)
+        if (_controller.groupId != null)
           SliverToBoxAdapter(
             child: RunningLowStrip(
-              groupId: _groupId!,
-              currentItemNames: _items
+              groupId: _controller.groupId!,
+              currentItemNames: _controller.items
                   .where((it) => !it.checked)
                   .map((it) => it.name.toLowerCase())
                   .toSet(),
@@ -1420,7 +895,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         if (open.isNotEmpty)
           SliverReorderableList(
             itemCount: open.length,
-            onReorder: _onReorderOpen,
+            onReorder: (oldIndex, newIndex) =>
+                unawaited(_onReorder(oldIndex, newIndex)),
             itemBuilder: (context, index) {
               final item = open[index];
               return _buildDismissibleItemRow(item, reorderIndex: index);
@@ -1436,12 +912,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           SliverToBoxAdapter(
             child: ListDoneSectionHeader(
               doneCount: done.length,
-              expanded: _doneSectionExpanded,
-              onToggle: () =>
-                  setState(() => _doneSectionExpanded = !_doneSectionExpanded),
+              expanded: _controller.doneSectionExpanded,
+              onToggle: _controller.toggleDoneSection,
             ),
           ),
-        if (done.isNotEmpty && _doneSectionExpanded)
+        if (done.isNotEmpty && _controller.doneSectionExpanded)
           SliverList(
             delegate: SliverChildBuilderDelegate(
               (context, index) => _buildDismissibleItemRow(done[index]),
@@ -1469,8 +944,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   Widget _buildDismissibleItemRow(ListItem item, {int? reorderIndex}) {
     return SettleCollapse(
       key: ValueKey(item.id),
-      collapsed: _collapsing.contains(item.id),
-      onCollapsed: () => _finishSettle(item.id),
+      collapsed: _controller.isCollapsing(item.id),
+      onCollapsed: () => _controller.finishSettle(item.id),
       child: _buildDismissibleCore(item, reorderIndex: reorderIndex),
     );
   }
@@ -1499,15 +974,15 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Widget _buildItemRow(ListItem item, {int? reorderIndex}) {
-    final photos = _photosByItemId[item.id];
+    final photos = _controller.photosFor(item.id);
     final thumbUrl =
         (photos != null && photos.isNotEmpty) ? photos.first.url : null;
 
     return ListItemRowReactive(
       item: item,
       photoUrl: thumbUrl,
-      currencySymbol: _currencySymbol,
-      claimedLabel: item.claimedBy != null ? '\u00b7 claimed' : null,
+      currencySymbol: _controller.currencySymbol,
+      claimedLabel: item.claimedBy != null ? '· claimed' : null,
       onToggle: (val) => _toggleItem(item, val),
       onPhotoTap: thumbUrl != null
           ? () => ListItemPhotoViewer.show(context, thumbUrl)
@@ -1517,37 +992,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     );
   }
 
-  String get _currencySymbol {
-    const symbols = {
-      'USD': '\$',
-      'EUR': '€',
-      'GBP': '£',
-      'JPY': '¥',
-      'CAD': 'CA\$',
-      'AUD': 'A\$',
-      'NZD': 'NZ\$',
-      'CHF': 'CHF',
-      'CNY': '¥',
-      'HKD': 'HK\$',
-      'SGD': 'S\$',
-      'SEK': 'kr',
-      'NOK': 'kr',
-      'DKK': 'kr',
-      'INR': '₹',
-      'BRL': 'R\$',
-      'MXN': 'MX\$',
-      'ZAR': 'R',
-      'KRW': '₩',
-      'TRY': '₺',
-    };
-    return symbols[_groupCurrency] ?? _groupCurrency;
-  }
-
   void _clearSearch() {
-    setState(() {
-      _searchQuery = '';
-      _searchController.clear();
-    });
+    _searchController.clear();
+    _controller.setSearchQuery('');
   }
 
   Widget _buildBottomBar() {
@@ -1556,8 +1003,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       focusNode: _composerFocusNode,
       onAdd: _addItem,
       onScan: () => _launchScan(),
-      productSuggestions: _productSuggestions,
-      grocerySuggestions: _grocerySuggestions,
+      productSuggestions: _controller.productSuggestions,
+      grocerySuggestions: _controller.grocerySuggestions,
       showProductSuggestions: _showProductSuggestions,
     );
   }
