@@ -141,6 +141,7 @@ class FakeListService implements ListService {
   final List<String> deleteItemCalls = [];
   final List<ReorderItemsCall> reorderItemsCalls = [];
   final List<AddItemAmountCall> addItemAmountCalls = [];
+  final List<ClearItemsCall> clearItemsCalls = [];
 
   /// Cumulative server-side quantity per (list|name|unit), so [addItemAmount]
   /// echoes additive merge semantics like the real endpoint.
@@ -237,8 +238,23 @@ class FakeListService implements ListService {
   }
 
   @override
+  Future<Map<String, dynamic>> clearItems(
+    String listId, {
+    bool onlyChecked = false,
+  }) async {
+    clearItemsCalls.add(ClearItemsCall(listId, onlyChecked));
+    return {'cleared': true};
+  }
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError(
       '${invocation.memberName} not implemented on FakeListService');
+}
+
+class ClearItemsCall {
+  final String listId;
+  final bool onlyChecked;
+  ClearItemsCall(this.listId, this.onlyChecked);
 }
 
 class ReorderItemsCall {

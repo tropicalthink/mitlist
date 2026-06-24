@@ -253,20 +253,23 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
   Future<void> _addItem() async {
     if (_isSaving) return;
-    _isSaving = true;
     final text = _newItemController.text.trim();
-    if (text.isEmpty) {
-      _isSaving = false;
-      return;
-    }
+    if (text.isEmpty) return;
+    _isSaving = true;
+    // Clear the field up front so the composer is ready for the next item
+    // immediately; the row itself lands via the items stream. The text is
+    // restored if the add fails, so nothing is lost.
+    _newItemController.clear();
+    unawaited(Haptics.light());
     try {
       await _controller.addItem(text);
       if (!mounted) return;
-      unawaited(Haptics.light());
-      _newItemController.clear();
       _composerFocusNode.requestFocus();
     } catch (e) {
       if (!mounted) return;
+      _newItemController.text = text;
+      _newItemController.selection =
+          TextSelection.collapsed(offset: text.length);
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.listDetailCouldNotAddItem)),
@@ -740,11 +743,6 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     }
                   },
                 ),
-                IconButton(
-                  icon: const AppIcon(name: 'camera'),
-                   tooltip: l10n.listDetailScanList,
-                  onPressed: () => _launchScan(),
-                ),
                 PopupMenuButton<String>(
                   icon: const AppIcon(name: 'ellipsisVertical'),
                    tooltip: l10n.listOptionsTooltip,
@@ -754,14 +752,14 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                       value: 'rename',
                       child: Text(l10n.commonRename),
                     ),
+                    PopupMenuItem(
+                      value: 'cost_summary',
+                      child: Text(l10n.listDetailCostSummary),
+                    ),
                     const PopupMenuDivider(),
                     PopupMenuItem(
                       value: 'complete_all',
                       child: Text(l10n.listDetailCheckAll),
-                    ),
-                    PopupMenuItem(
-                      value: 'cost_summary',
-                      child: Text(l10n.listDetailCostSummary),
                     ),
                     PopupMenuItem(
                       value: 'uncheck_all',
@@ -771,6 +769,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                       value: 'clear_all',
                       child: Text(l10n.listDetailClearTitle),
                     ),
+                    const PopupMenuDivider(),
                     PopupMenuItem(
                       value: 'archive',
                       child: Text(l10n.commonArchive),
@@ -821,7 +820,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
             ListGroupBanner(groupId: _controller.groupId!),
           Expanded(child: _buildBody()),
           if (!_controller.isLoading && !_controller.hasError)
-            _buildBottomBar(),
+            ValueListenableBuilder<int>(
+              valueListenable: _controller.suggestionsRevision,
+              builder: (context, _, __) => _buildBottomBar(),
+            ),
         ],
       ),
     );
