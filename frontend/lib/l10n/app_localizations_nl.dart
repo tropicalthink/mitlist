@@ -3118,6 +3118,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get offlineBannerFailedOne => 'Kon een wijziging niet synchroniseren';
 
   @override
+  String offlineBannerConflictCount(int count) {
+    return '$count wijzigingen vereisen uw beoordeling';
+  }
+
+  @override
+  String get offlineBannerConflictOne => 'Een wijziging vereist uw beoordeling';
+
+  @override
   String get offlineBannerRetry => 'Opnieuw';
 
   @override

@@ -3143,6 +3143,15 @@ class AppLocalizationsDe extends AppLocalizations {
       'Konnte eine Änderung nicht synchronisieren';
 
   @override
+  String offlineBannerConflictCount(int count) {
+    return '$count Änderungen erfordern Ihre Überprüfung';
+  }
+
+  @override
+  String get offlineBannerConflictOne =>
+      'Eine Änderung erfordert Ihre Überprüfung';
+
+  @override
   String get offlineBannerRetry => 'Wiederholen';
 
   @override
