@@ -168,7 +168,10 @@ func (c *Config) LogMasked() {
 // operator can see at a glance what works on a fresh deployment. It never fails;
 // unconfigured integrations are expected and merely reported.
 func (c *Config) LogIntegrationStatus() {
-	emailOn := c.SendGridSMTPHost != "" || c.BrevoSMTPHost != "" || c.ResendAPIKey != ""
+	// Gate on credential fields (which have no struct default) rather than the
+	// SMTP host fields, which default to non-empty values and would otherwise
+	// mask a fresh self-host that has not configured any email credentials.
+	emailOn := c.ResendAPIKey != "" || c.SendGridSMTPUser != "" || c.BrevoSMTPUser != ""
 	webPushOn := c.VapidPublicKey != "" && c.VapidPrivateKey != ""
 	mobilePushOn := c.FirebaseProjectID != "" && c.FirebaseServiceAccount != ""
 	scannerOn := c.OpenRouterAPIKey != ""
@@ -190,7 +193,7 @@ func (c *Config) LogIntegrationStatus() {
 
 	var disabled []string
 	if !emailOn {
-		disabled = append(disabled, "email (set SENDGRID_SMTP_HOST or BREVO_SMTP_HOST or RESEND_API_KEY)")
+		disabled = append(disabled, "email (set RESEND_API_KEY, or SENDGRID_SMTP_USER/PASS, or BREVO_SMTP_USER/PASS)")
 	}
 	if !webPushOn {
 		disabled = append(disabled, "web_push (set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY)")
