@@ -169,13 +169,18 @@ class GrocerySuggestionService {
     final embedder = _embedder;
     if (embedder != null && ranked.length < limit) {
       if (embedder.isReady) {
-        final embedMatches = await embedder.nearest(q, topK: limit * 2);
-        final missingIds = embedMatches
-            .where((m) => m.score >= _semanticFloor)
-            .map((m) => m.itemId)
-            .where((id) => !seenIds.contains(id))
-            .toList();
-        await addByIds(missingIds, 2);
+        // Best-effort: the semantic tier must never block or break the alias /
+        // product results that are already ranked. [nearest] is itself bounded
+        // by a timeout, and any failure is swallowed here.
+        try {
+          final embedMatches = await embedder.nearest(q, topK: limit * 2);
+          final missingIds = embedMatches
+              .where((m) => m.score >= _semanticFloor)
+              .map((m) => m.itemId)
+              .where((id) => !seenIds.contains(id))
+              .toList();
+          await addByIds(missingIds, 2);
+        } catch (_) {}
       } else {
         unawaited(embedder.warmUp());
       }
