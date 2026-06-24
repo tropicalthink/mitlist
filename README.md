@@ -77,18 +77,28 @@ You're already paying rent. Why pay another subscription just to split expenses 
 ```bash
 git clone https://git.vinylnostalgia.com/mo/mitlist.git
 cd mitlist
-cp backend/.env.example backend/.env
+cp .env.example .env                  # docker compose DB/Redis credentials
+cp backend/.env.example backend/.env  # the app's own runtime config
 ```
 
-Open `backend/.env` and set **strong, unique** credentials before starting:
+There are **two** env files, and they do different jobs:
+
+- **Root `.env`** feeds docker compose `${...}` interpolation — the Postgres and
+  Redis credentials and the generated `DATABASE_URL`. The prod profile reads
+  these and **refuses to start** if `POSTGRES_PASSWORD` is unset.
+- **`backend/.env`** is the application's own runtime config (`SECRET_KEY`,
+  `SESSION_SECRET_KEY`, OAuth, API keys, …). It does **not** feed compose
+  interpolation, so DB/Redis passwords must go in the root `.env`.
+
+Open the **root `.env`** and set **strong, unique** credentials before starting:
 
 ```bash
-# Generate strong passwords (run these and paste the output into .env)
+# Generate strong passwords (run these and paste the output into the root .env)
 openssl rand -base64 24   # use for POSTGRES_PASSWORD
 openssl rand -base64 24   # use for REDIS_PASSWORD
 ```
 
-Set in `backend/.env`:
+Set in the root `.env`:
 
 ```
 POSTGRES_PASSWORD=<strong random value>   # REQUIRED — no default
@@ -97,9 +107,8 @@ POSTGRES_USER=mitlist
 POSTGRES_DB=mitlist
 ```
 
-Also fill in `SECRET_KEY`, `SESSION_SECRET_KEY`, and any OAuth/API keys you need.
-
-Then start:
+Then fill in `SECRET_KEY`, `SESSION_SECRET_KEY`, and any OAuth/API keys in
+`backend/.env`, and start:
 
 ```bash
 docker compose --profile prod up -d
@@ -111,7 +120,7 @@ leave on). Point the Flutter app at your server and you're done.
 
 > **Security note**: DB and Redis ports are bound to `127.0.0.1` only and are
 > not reachable from the public network. If you point `DATABASE_URL` at a remote
-> Postgres over a public network, set `DB_SSLMODE=require` in your `.env`.
+> Postgres over a public network, set `DB_SSLMODE=require` in the root `.env`.
 
 See [backend/README.md](backend/README.md) for full configuration reference.
 
@@ -198,12 +207,17 @@ flutter pub get
 flutter run
 
 # Backend
+cp .env.example .env    # root: docker compose DB/Redis creds (dev defaults are fine)
 docker compose up -d    # postgres + redis only (no profile)
 cd backend
-cp .env.example .env    # see comments inside for secret generation
+cp .env.example .env    # the app's own runtime config — see comments inside
 go run ./cmd/migrate up
 go run ./cmd/api
 ```
+
+The root `.env.example` ships dev-usable defaults, so `docker compose up` works
+out of the box for local development. For production, set strong values (see
+[Self-host in 5 minutes](#self-host-in-5-minutes)).
 
 ---
 

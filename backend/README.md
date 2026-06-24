@@ -47,8 +47,18 @@ All config via environment variables (see `.env.example`):
 
 ### Production credentials (docker compose --profile prod)
 
-The prod compose profile reads these variables from `backend/.env`. They have
-**no insecure fallback** — the stack will refuse to start if they are unset.
+The prod compose profile reads these variables via docker compose `${...}`
+interpolation, which is sourced from the **root `.env`** (next to
+`docker-compose.yml`) or your shell — **not** from `backend/.env`. A
+service-level `env_file:` only populates the container's environment; it does
+not feed compose interpolation. Copy the root example and set them there:
+
+```bash
+cp .env.example .env   # at the PROJECT ROOT, not backend/
+```
+
+These have **no insecure fallback** — the stack refuses to start if
+`POSTGRES_USER` / `POSTGRES_PASSWORD` are unset.
 
 | Variable | Required | Notes |
 |----------|----------|-------|
@@ -58,9 +68,14 @@ The prod compose profile reads these variables from `backend/.env`. They have
 | `REDIS_PASSWORD` | No | Strongly recommended; set it and Redis enforces auth |
 | `DB_SSLMODE` | No | Defaults to `disable` (correct for same-host Postgres); set `require` if pointing at a remote Postgres over the public network |
 
-The `dev` profile (`docker compose up`, no profile flag) uses the built-in
-convenience defaults (`mitlist:mitlist`) — those are intentional for local
-development and are not affected by these prod variables.
+`backend/.env` remains the app's own runtime config (`SECRET_KEY`,
+`SESSION_SECRET_KEY`, OAuth, API keys). In the bundled prod profile,
+`DATABASE_URL` / `REDIS_URL` / `REDIS_PASSWORD` are assembled by compose from the
+root `.env`, so you do not set `DATABASE_URL` in `backend/.env` for that path.
+
+The `dev` profile (`docker compose up`, no profile flag) uses the convenience
+defaults shipped in the root `.env.example` (`mitlist:mitlist`) — intentional
+for local development.
 
 ## API
 
