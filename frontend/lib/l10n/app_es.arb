@@ -3901,6 +3901,8 @@
   "offlineBannerSyncing": "Sincronizando cambios…",
   "offlineBannerFailedCount": "No se pudieron sincronizar {count} cambios",
   "offlineBannerFailedOne": "No se pudo sincronizar un cambio",
+  "offlineBannerConflictCount": "{count} cambios necesitan tu revisión",
+  "offlineBannerConflictOne": "Un cambio necesita tu revisión",
   "offlineBannerRetry": "Reintentar",
   "composerNewItem": "Nuevo artículo",
   "composerScanList": "Escanear lista",

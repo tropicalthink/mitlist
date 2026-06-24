@@ -3091,6 +3091,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get offlineBannerFailedOne => 'Couldn\'t sync a change';
 
   @override
+  String offlineBannerConflictCount(int count) {
+    return '$count changes need your review';
+  }
+
+  @override
+  String get offlineBannerConflictOne => 'A change needs your review';
+
+  @override
   String get offlineBannerRetry => 'Retry';
 
   @override

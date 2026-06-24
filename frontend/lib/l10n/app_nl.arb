@@ -3901,6 +3901,8 @@
   "offlineBannerSyncing": "Wijzigingen synchroniseren…",
   "offlineBannerFailedCount": "Kon {count} wijzigingen niet synchroniseren",
   "offlineBannerFailedOne": "Kon een wijziging niet synchroniseren",
+  "offlineBannerConflictCount": "{count} wijzigingen vereisen uw beoordeling",
+  "offlineBannerConflictOne": "Een wijziging vereist uw beoordeling",
   "offlineBannerRetry": "Opnieuw",
   "composerNewItem": "Nieuw item",
   "composerScanList": "Lijst scannen",

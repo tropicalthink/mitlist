@@ -131,8 +131,8 @@ class _Banner extends ConsumerWidget {
           colorScheme.tertiary,
           Icons.merge_type,
           state.conflictCount > 1
-              ? '${state.conflictCount} changes need your review'
-              : 'A change needs your review',
+              ? l10n.offlineBannerConflictCount(state.conflictCount)
+              : l10n.offlineBannerConflictOne,
         ),
       OutboxStatus.online => (colorScheme.onSurfaceVariant, Icons.check, ''),
     };
