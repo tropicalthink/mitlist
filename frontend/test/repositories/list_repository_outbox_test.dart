@@ -30,6 +30,25 @@ Future<void> _insertList(AppDatabase db, String listId,
   ]);
 }
 
+ListItemsTableCompanion _itemRow(
+  String listId,
+  String id, {
+  bool checked = false,
+  int position = 0,
+}) {
+  return ListItemsTableCompanion(
+    id: drift.Value(id),
+    listId: drift.Value(listId),
+    name: drift.Value('Item $id'),
+    quantity: const drift.Value(1.0),
+    unit: const drift.Value(''),
+    checked: drift.Value(checked),
+    position: drift.Value(position),
+    createdAt: drift.Value(DateTime.utc(2026, 1, 5)),
+    updatedAt: drift.Value(DateTime.utc(2026, 1, 5)),
+  );
+}
+
 void main() {
   group('ListRepository outbox —', () {
     late AppDatabase db;
@@ -425,6 +444,101 @@ void main() {
       expect(synced.length, equals(1));
       expect(synced.first.id, equals(existingId));
       expect(synced.first.quantity, equals(3.0));
+      expect(await db.outboxCount(), equals(0));
+    });
+
+    // -------------------------------------------------------------------------
+    // Case 10: clearItemsOfflineFirst(onlyChecked) — optimistic local delete of
+    // checked rows + a single clearItems op synced on drain.
+    // -------------------------------------------------------------------------
+    test(
+        'clearItemsOfflineFirst(onlyChecked): removes checked rows locally and syncs one clear op',
+        () async {
+      const listId = 'list-010';
+      await _insertList(db, listId);
+      await db.upsertListItemsRows([
+        _itemRow(listId, 'k1', checked: true, position: 0),
+        _itemRow(listId, 'k2', checked: true, position: 1),
+        _itemRow(listId, 'open1', checked: false, position: 2),
+      ]);
+
+      await repo.clearItemsOfflineFirst(listId, onlyChecked: true);
+
+      // Optimistic: checked rows gone instantly, the open row stays.
+      final after = await db.getItemsByListOnce(listId);
+      expect(after.map((i) => i.id), equals(['open1']));
+
+      // One clearItems op queued; nothing synced yet (autoSync: false).
+      expect(await db.outboxCount(), equals(1));
+      expect(remote.clearItemsCalls, isEmpty);
+
+      await repo.drainOutboxOnce();
+
+      // Synced as a single clear(onlyChecked) call; op cleaned up.
+      expect(remote.clearItemsCalls.length, equals(1));
+      expect(remote.clearItemsCalls.first.onlyChecked, isTrue);
+      expect(await db.outboxCount(), equals(0));
+    });
+
+    // -------------------------------------------------------------------------
+    // Case 11: setAllCheckedOfflineFirst(true) — flips every unchecked row in
+    // one local write and queues one updateItem per flipped row.
+    // -------------------------------------------------------------------------
+    test(
+        'setAllCheckedOfflineFirst(true): flips unchecked rows and queues per-item updates',
+        () async {
+      const listId = 'list-011';
+      await _insertList(db, listId);
+      await db.upsertListItemsRows([
+        _itemRow(listId, 'a', checked: false, position: 0),
+        _itemRow(listId, 'b', checked: false, position: 1),
+        _itemRow(listId, 'c', checked: true, position: 2), // already checked
+      ]);
+
+      await repo.setAllCheckedOfflineFirst(listId, checked: true);
+
+      // Optimistic: all rows now checked.
+      final after = await db.getItemsByListOnce(listId);
+      expect(after.every((i) => i.checked), isTrue);
+
+      // One updateItem op per flipped row (a, b) — c was already checked.
+      expect(await db.outboxCount(), equals(2));
+      expect(remote.updateItemCalls, isEmpty);
+
+      await repo.drainOutboxOnce();
+
+      expect(remote.updateItemCalls.length, equals(2));
+      expect(remote.updateItemCalls.every((c) => c.req.checked == true), isTrue);
+      expect(remote.updateItemCalls.map((c) => c.itemId).toSet(),
+          equals({'a', 'b'}));
+      expect(await db.outboxCount(), equals(0));
+    });
+
+    // -------------------------------------------------------------------------
+    // Case 12: setAllCheckedOfflineFirst(false) — only the checked rows are
+    // targeted; already-unchecked rows are left alone (no op).
+    // -------------------------------------------------------------------------
+    test(
+        'setAllCheckedOfflineFirst(false): unchecks only the checked rows',
+        () async {
+      const listId = 'list-012';
+      await _insertList(db, listId);
+      await db.upsertListItemsRows([
+        _itemRow(listId, 'x', checked: true, position: 0),
+        _itemRow(listId, 'y', checked: false, position: 1), // already unchecked
+      ]);
+
+      await repo.setAllCheckedOfflineFirst(listId, checked: false);
+
+      final after = await db.getItemsByListOnce(listId);
+      expect(after.every((i) => !i.checked), isTrue);
+      expect(await db.outboxCount(), equals(1)); // only 'x' was a target
+
+      await repo.drainOutboxOnce();
+
+      expect(remote.updateItemCalls.length, equals(1));
+      expect(remote.updateItemCalls.first.itemId, equals('x'));
+      expect(remote.updateItemCalls.first.req.checked, isFalse);
       expect(await db.outboxCount(), equals(0));
     });
   });
