@@ -162,7 +162,7 @@ See [backend/README.md](backend/README.md) for full configuration reference, inc
 - **Your server, your data** — Connect the app directly to your instance. Guest mode means you can start without handing over an email.
 - **Export everything** — Download expenses as CSV or JSON anytime from the app.
 - **No lock-in** — Delete your account and your data is gone from the server. Export first if you want it.
-- **No telemetry** — We don't collect usage data, analytics, or crash reports from self-hosted instances.
+- **No telemetry by default** — mitlist collects no usage data or analytics and never phones home. Crash reporting is **opt-in**: an operator can enable it by configuring a Sentry/GlitchTip DSN (off unless set; point it at a self-hosted GlitchTip to keep crash data on your own infrastructure). See [PRIVACY.md](PRIVACY.md).
 
 ---
 
