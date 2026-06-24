@@ -3129,6 +3129,15 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible de synchroniser une modification';
 
   @override
+  String offlineBannerConflictCount(int count) {
+    return '$count modifications nécessitent votre révision';
+  }
+
+  @override
+  String get offlineBannerConflictOne =>
+      'Une modification nécessite votre révision';
+
+  @override
   String get offlineBannerRetry => 'Réessayer';
 
   @override

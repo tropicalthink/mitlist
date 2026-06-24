@@ -5517,6 +5517,18 @@ abstract class AppLocalizations {
   /// **'Couldn\'t sync a change'**
   String get offlineBannerFailedOne;
 
+  /// Sync banner: multiple conflicts to resolve
+  ///
+  /// In en, this message translates to:
+  /// **'{count} changes need your review'**
+  String offlineBannerConflictCount(int count);
+
+  /// Sync banner: one conflict to resolve
+  ///
+  /// In en, this message translates to:
+  /// **'A change needs your review'**
+  String get offlineBannerConflictOne;
+
   /// Retry button in offline banner
   ///
   /// In en, this message translates to:

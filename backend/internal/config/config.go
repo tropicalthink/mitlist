@@ -164,6 +164,52 @@ func (c *Config) LogMasked() {
 	log.Info().Interface("config", masked).Msg("configuration loaded")
 }
 
+// LogIntegrationStatus logs which optional integrations are configured, so an
+// operator can see at a glance what works on a fresh deployment. It never fails;
+// unconfigured integrations are expected and merely reported.
+func (c *Config) LogIntegrationStatus() {
+	// Gate on credential fields (which have no struct default) rather than the
+	// SMTP host fields, which default to non-empty values and would otherwise
+	// mask a fresh self-host that has not configured any email credentials.
+	emailOn := c.ResendAPIKey != "" || c.SendGridSMTPUser != "" || c.BrevoSMTPUser != ""
+	webPushOn := c.VapidPublicKey != "" && c.VapidPrivateKey != ""
+	mobilePushOn := c.FirebaseProjectID != "" && c.FirebaseServiceAccount != ""
+	scannerOn := c.OpenRouterAPIKey != ""
+	storageOn := c.S3BucketName != ""
+	oauthOn := c.GoogleClientID != "" || c.AppleClientID != ""
+	errorReportingOn := c.SentryDSN != ""
+	fxOn := c.FxRateAPIURL != ""
+
+	log.Info().
+		Bool("email", emailOn).
+		Bool("web_push", webPushOn).
+		Bool("mobile_push", mobilePushOn).
+		Bool("ocr_scanner", scannerOn).
+		Bool("file_storage", storageOn).
+		Bool("oauth", oauthOn).
+		Bool("error_reporting", errorReportingOn).
+		Bool("fx_rates", fxOn).
+		Msg("integration status")
+
+	var disabled []string
+	if !emailOn {
+		disabled = append(disabled, "email (set RESEND_API_KEY, or SENDGRID_SMTP_USER/PASS, or BREVO_SMTP_USER/PASS)")
+	}
+	if !webPushOn {
+		disabled = append(disabled, "web_push (set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY)")
+	}
+	if !storageOn {
+		disabled = append(disabled, "file_storage (set S3_BUCKET_NAME and AWS_* credentials)")
+	}
+	if !scannerOn {
+		disabled = append(disabled, "ocr_scanner (set OPENROUTER_API_KEY)")
+	}
+	if len(disabled) > 0 {
+		log.Warn().Strs("disabled_integrations", disabled).
+			Msg("some optional integrations are disabled; features depending on them will not work")
+	}
+}
+
 // MaskSecrets returns a shallow copy of the config with sensitive values replaced.
 func (c Config) MaskSecrets() Config {
 	masked := c

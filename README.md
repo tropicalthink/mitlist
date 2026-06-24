@@ -77,13 +77,52 @@ You're already paying rent. Why pay another subscription just to split expenses 
 ```bash
 git clone https://git.vinylnostalgia.com/mo/mitlist.git
 cd mitlist
-cp backend/.env.example backend/.env  # edit with your settings
+cp .env.example .env                  # docker compose DB/Redis credentials
+cp backend/.env.example backend/.env  # the app's own runtime config
+```
+
+There are **two** env files, and they do different jobs:
+
+- **Root `.env`** feeds docker compose `${...}` interpolation — the Postgres and
+  Redis credentials and the generated `DATABASE_URL`. The prod profile reads
+  these and **refuses to start** if `POSTGRES_PASSWORD` is unset.
+- **`backend/.env`** is the application's own runtime config (`SECRET_KEY`,
+  `SESSION_SECRET_KEY`, OAuth, API keys, …). It does **not** feed compose
+  interpolation, so DB/Redis passwords must go in the root `.env`.
+
+Open the **root `.env`** and set **strong, unique** credentials before starting:
+
+```bash
+# Generate strong passwords (run these and paste the output into the root .env)
+openssl rand -base64 24   # use for POSTGRES_PASSWORD
+openssl rand -base64 24   # use for REDIS_PASSWORD
+```
+
+Set in the root `.env`:
+
+```
+POSTGRES_PASSWORD=<strong random value>   # REQUIRED — no default
+REDIS_PASSWORD=<strong random value>      # strongly recommended
+POSTGRES_USER=mitlist
+POSTGRES_DB=mitlist
+```
+
+Then fill in `SECRET_KEY`, `SESSION_SECRET_KEY`, and any OAuth/API keys in
+`backend/.env`, and start:
+
+```bash
 docker compose --profile prod up -d
 ```
 
-That's it. PostgreSQL, Redis, and the Go API start automatically. Point the Flutter app at your server and you're done.
+PostgreSQL, Redis, and the Go API start automatically. The database schema is
+created on first boot (`RUN_MIGRATIONS_ON_STARTUP=true` — idempotent, safe to
+leave on). Point the Flutter app at your server and you're done.
 
-See [backend/README.md](backend/README.md) for detailed configuration.
+> **Security note**: DB and Redis ports are bound to `127.0.0.1` only and are
+> not reachable from the public network. If you point `DATABASE_URL` at a remote
+> Postgres over a public network, set `DB_SSLMODE=require` in the root `.env`.
+
+See [backend/README.md](backend/README.md) for full configuration reference, including how to [enable optional crash reporting](backend/README.md#enable-error-reporting-optional) (off by default — set `SENTRY_DSN` for the backend and the `GLITCHTIP_DSN_WEB` CI secret for the web PWA).
 
 ---
 
@@ -123,7 +162,7 @@ See [backend/README.md](backend/README.md) for detailed configuration.
 - **Your server, your data** — Connect the app directly to your instance. Guest mode means you can start without handing over an email.
 - **Export everything** — Download expenses as CSV or JSON anytime from the app.
 - **No lock-in** — Delete your account and your data is gone from the server. Export first if you want it.
-- **No telemetry** — We don't collect usage data, analytics, or crash reports from self-hosted instances.
+- **No telemetry by default** — mitlist collects no usage data or analytics and never phones home. Crash reporting is **opt-in**: an operator can enable it by configuring a Sentry/GlitchTip DSN (off unless set; point it at a self-hosted GlitchTip to keep crash data on your own infrastructure). See [PRIVACY.md](PRIVACY.md).
 
 ---
 
@@ -168,15 +207,23 @@ flutter pub get
 flutter run
 
 # Backend
+cp .env.example .env    # root: docker compose DB/Redis creds (dev defaults are fine)
 docker compose up -d    # postgres + redis only (no profile)
 cd backend
-cp .env.example .env    # see comments inside for secret generation
+cp .env.example .env    # the app's own runtime config — see comments inside
 go run ./cmd/migrate up
 go run ./cmd/api
 ```
+
+The root `.env.example` ships dev-usable defaults, so `docker compose up` works
+out of the box for local development. For production, set strong values (see
+[Self-host in 5 minutes](#self-host-in-5-minutes)).
 
 ---
 
 ## License
 
-AGPL-3.0 — Free forever. Share your improvements.
+[AGPL-3.0](LICENSE) — Free forever. Share your improvements.
+
+This repository contains the complete corresponding source. You may obtain it
+from this repository as permitted under the GNU Affero General Public License.

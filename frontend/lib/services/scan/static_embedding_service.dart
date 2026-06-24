@@ -252,27 +252,27 @@ class StaticEmbeddingService {
   Future<bool> _ensureWorker() => _workerReady ??= _spawnAndLoad();
 
   Future<bool> _spawnAndLoad() async {
-    // rootBundle is only available on the main isolate; load the JSON here, then
-    // hand it to the worker, which parses + dequantises off the UI thread.
-    final String vocabJson;
-    final String catalogJson;
     try {
-      vocabJson = await rootBundle.loadString(_vocabAsset);
-      catalogJson = await rootBundle.loadString(_catalogAsset);
-    } catch (_) {
-      // Bundle absent — degrade gracefully, never spawn an isolate.
-      _unavailable = true;
-      return false;
-    }
+      // The worker loads + decodes + dequantises the ~9 MB bundle itself (via a
+      // background binary messenger), so the multi-megabyte string decode never
+      // runs on — or freezes — the UI isolate. Needs the root isolate token,
+      // which is absent in plain unit tests (handled as "unavailable").
+      final token = RootIsolateToken.instance;
+      if (token == null) {
+        _unavailable = true;
+        return false;
+      }
 
-    try {
       final handshake = ReceivePort();
-      _isolate = await Isolate.spawn(_embeddingIsolateMain, handshake.sendPort);
+      _isolate = await Isolate.spawn(
+        _embeddingIsolateMain,
+        [handshake.sendPort, token],
+      );
       _workerSend = await handshake.first as SendPort;
       handshake.close();
 
       final reply = ReceivePort();
-      _workerSend!.send(['load', reply.sendPort, vocabJson, catalogJson]);
+      _workerSend!.send(['load', reply.sendPort]);
       final ok = await reply.first == true;
       reply.close();
       if (!ok) {
@@ -326,7 +326,12 @@ class StaticEmbeddingService {
 
     final response = ReceivePort();
     _workerSend!.send(['query', response.sendPort, query, topK]);
-    final result = await response.first as List;
+    // Never let a stuck worker stall the caller (autocomplete is latency
+    // sensitive): fall back to no semantic matches on timeout.
+    final result = await response.first.timeout(
+      const Duration(seconds: 2),
+      onTimeout: () => const [<String>[], <double>[]],
+    ) as List;
     response.close();
 
     final ids = result[0] as List;
@@ -372,46 +377,65 @@ class _Scored {
   const _Scored(this.itemId, this.score);
 }
 
-/// Entry point for the persistent embedding worker isolate. Owns the parsed
-/// catalog and answers `query → top-k` requests so the cosine scan never runs
-/// on the UI isolate. Messages (each carries a one-shot reply port):
-///   ['load',  replyPort, vocabJson, catalogJson] → replyPort.send(bool ok)
-///   ['query', replyPort, query, topK]            → replyPort.send([ids, scores])
-void _embeddingIsolateMain(SendPort handshake) {
+/// Entry point for the persistent embedding worker isolate. Loads + parses the
+/// bundle itself (off the UI isolate) and owns the resident catalog, answering
+/// `query → top-k` requests so the cosine scan never runs on the UI isolate.
+///
+/// Spawn arg: `[handshakePort, rootIsolateToken]`. Messages (each carries a
+/// one-shot reply port):
+///   ['load',  replyPort]            → replyPort.send(bool ok)
+///   ['query', replyPort, query, topK] → replyPort.send([ids, scores])
+void _embeddingIsolateMain(List<dynamic> args) {
+  final handshake = args[0] as SendPort;
+  final token = args[1] as RootIsolateToken;
+  // Lets rootBundle (a platform channel) work from this background isolate.
+  BackgroundIsolateBinaryMessenger.ensureInitialized(token);
+
   final rx = ReceivePort();
   handshake.send(rx.sendPort);
 
   _ParsedBundles? state;
-  rx.listen((message) {
+  rx.listen((message) async {
     final msg = message as List;
     final kind = msg[0] as String;
     final reply = msg[1] as SendPort;
 
     if (kind == 'load') {
-      state = _parseEmbedderBundles([msg[2] as String, msg[3] as String]);
+      try {
+        final vocabJson =
+            await rootBundle.loadString(StaticEmbeddingService._vocabAsset);
+        final catalogJson =
+            await rootBundle.loadString(StaticEmbeddingService._catalogAsset);
+        state = _parseEmbedderBundles([vocabJson, catalogJson]);
+      } catch (_) {
+        state = null;
+      }
       reply.send(state != null);
       return;
     }
 
     if (kind == 'query') {
-      final s = state;
-      if (s == null) {
+      try {
+        final s = state;
+        final matches = s == null
+            ? const <EmbedMatch>[]
+            : StaticEmbeddingService._scan(
+                msg[2] as String,
+                msg[3] as int,
+                vocab: s.vocabSet,
+                index: s.vocabIndex,
+                vectors: s.vocabVectors,
+                itemIds: s.itemIds,
+                catalog: s.catalogVectors,
+              );
+        reply.send([
+          [for (final m in matches) m.itemId],
+          [for (final m in matches) m.score],
+        ]);
+      } catch (_) {
+        // Always reply so the caller's `await` resolves instead of hanging.
         reply.send(const [<String>[], <double>[]]);
-        return;
       }
-      final matches = StaticEmbeddingService._scan(
-        msg[2] as String,
-        msg[3] as int,
-        vocab: s.vocabSet,
-        index: s.vocabIndex,
-        vectors: s.vocabVectors,
-        itemIds: s.itemIds,
-        catalog: s.catalogVectors,
-      );
-      reply.send([
-        [for (final m in matches) m.itemId],
-        [for (final m in matches) m.score],
-      ]);
     }
   });
 }

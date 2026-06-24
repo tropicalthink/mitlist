@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	sentryhttp "github.com/getsentry/sentry-go/http"
 	"github.com/go-chi/chi/v5"
 
 	"github.com/mitlist-app/mitlist/internal/config"
@@ -46,6 +47,7 @@ func New(cfg *config.Config, cnt *container.Container, runner *jobs.Runner) *Ser
 	r.Use(middleware.CorsMiddleware(cfg.FrontendURL, cfg.Environment))
 	r.Use(middleware.RateLimit(cnt.Redis().Client(), cfg.APIPrefix))
 	r.Use(middleware.LoggingMiddleware())
+	r.Use(sentryhttp.New(sentryhttp.Options{Repanic: true}).Handle)
 
 	port := cfg.Port
 	srv := &http.Server{

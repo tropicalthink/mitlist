@@ -156,6 +156,10 @@ class FakeListService implements ListService {
   String serverItemIdPrefix = 'server-item-';
   int _counter = 0;
 
+  /// Items returned by [listItems]. Set this in tests that need a seeded server
+  /// response (e.g. to exercise the restore-pending path after a refresh).
+  List<ListItem> itemsToReturn = const [];
+
   @override
   Future<ListItem> createItem(String listId, CreateListItemRequest req) async {
     createItemCalls.add(CreateItemCall(listId, req));
@@ -244,6 +248,12 @@ class FakeListService implements ListService {
   }) async {
     clearItemsCalls.add(ClearItemsCall(listId, onlyChecked));
     return {'cleared': true};
+  }
+
+  @override
+  Future<List<ListItem>> listItems(String listId,
+      {int limit = 50, int offset = 0}) async {
+    return itemsToReturn;
   }
 
   @override
