@@ -148,9 +148,9 @@ func TestListRepository_CreateItem(t *testing.T) {
 		Position: 1,
 	}
 
-	mock.ExpectExec("INSERT INTO list_items").
+	mock.ExpectQuery("INSERT INTO list_items").
 		WithArgs(pgxmock.AnyArg(), item.ListID, item.Name, item.Quantity, item.Unit, item.Note, item.PriceCents, item.ProductID, item.StoreID, item.CanonicalItemID, item.AddedBy, item.Checked, item.Position, pgxmock.AnyArg(), pgxmock.AnyArg()).
-		WillReturnResult(pgxmock.NewResult("INSERT", 1))
+		WillReturnRows(pgxmock.NewRows([]string{"position"}).AddRow(item.Position))
 
 	err := repo.CreateItem(context.Background(), item)
 	require.NoError(t, err)

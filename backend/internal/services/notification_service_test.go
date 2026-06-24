@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -12,6 +13,7 @@ import (
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/repositories/mocks"
+	"github.com/mitlist-app/mitlist/internal/sse"
 )
 
 func TestNotificationService_CreateNotification(t *testing.T) {
@@ -293,5 +295,59 @@ func TestNotificationService_UpdatePreferences(t *testing.T) {
 		err := svc.UpdatePreferences(ctx, userID, pref)
 		require.Error(t, err)
 		assert.IsType(t, &api.PermissionDeniedError{}, err)
+	})
+}
+
+func TestDispatchToGroup_PublishesSSE(t *testing.T) {
+	ctx := context.Background()
+	groupID := uuid.New()
+	actorID := uuid.New()
+	member1 := uuid.New()
+
+	memberships := []models.GroupMembership{
+		{UserID: actorID},
+		{UserID: member1},
+	}
+
+	t.Run("publishes notification:created event when hub is set", func(t *testing.T) {
+		notifRepo := new(mocks.MockNotificationRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+
+		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return(memberships, nil)
+		notifRepo.On("GetPreferencesByGroup", ctx, groupID).Return(map[uuid.UUID]*models.NotificationPreference{}, nil)
+		notifRepo.On("CreateNotificationsBatch", ctx, mock.Anything).Return(nil)
+
+		hub := sse.New()
+		svc := NewNotificationService(notifRepo, nil, groupRepo, nil)
+		svc.SetHub(hub)
+
+		ch := hub.Subscribe(groupID.String(), "")
+		defer hub.Unsubscribe(groupID.String(), ch)
+
+		err := svc.DispatchToGroup(ctx, groupID, actorID, "expense_created", "T", "B", models.NotificationPayload{})
+		require.NoError(t, err)
+
+		select {
+		case ev := <-ch:
+			assert.Equal(t, "notification:created", ev.Type)
+			assert.Equal(t, groupID.String(), ev.GroupID)
+		case <-time.After(time.Second):
+			t.Fatal("expected a notification:created SSE event within 1s")
+		}
+	})
+
+	t.Run("no hub set: DispatchToGroup returns nil without panic", func(t *testing.T) {
+		notifRepo := new(mocks.MockNotificationRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+
+		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return(memberships, nil)
+		notifRepo.On("GetPreferencesByGroup", ctx, groupID).Return(map[uuid.UUID]*models.NotificationPreference{}, nil)
+		notifRepo.On("CreateNotificationsBatch", ctx, mock.Anything).Return(nil)
+
+		svc := NewNotificationService(notifRepo, nil, groupRepo, nil)
+		// hub is nil by default — nil-guard must protect
+
+		err := svc.DispatchToGroup(ctx, groupID, actorID, "expense_created", "T", "B", models.NotificationPayload{})
+		require.NoError(t, err)
 	})
 }

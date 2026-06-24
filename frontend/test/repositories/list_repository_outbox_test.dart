@@ -330,5 +330,102 @@ void main() {
       expect(reorderOps.length, equals(1));
       expect(reorderOps.first.attemptCount, equals(1));
     });
+
+    // -------------------------------------------------------------------------
+    // Case 8: addItemAmountOfflineFirst — new item (no local match)
+    //
+    // The optimistic row appears immediately (no network on the critical path);
+    // on drain the additive endpoint is called and the temp ID is swapped for
+    // the server ID, mirroring createItem reconciliation.
+    // -------------------------------------------------------------------------
+    test('addItemAmountOfflineFirst: new item — optimistic row, temp ID swapped',
+        () async {
+      const listId = 'list-008';
+      await _insertList(db, listId);
+
+      final local = await repo.addItemAmountOfflineFirst(
+        listId,
+        name: 'Milk',
+        amount: 2,
+        unit: 'L',
+      );
+
+      // Optimistic row exists instantly, before any drain.
+      final before = await db.getItemsByListOnce(listId);
+      expect(before.length, equals(1));
+      expect(before.first.id, equals(local.id));
+      expect(before.first.quantity, equals(2));
+      expect(remote.addItemAmountCalls, isEmpty);
+
+      await repo.drainOutboxOnce();
+
+      // Additive endpoint called with the requested delta.
+      expect(remote.addItemAmountCalls.length, equals(1));
+      expect(remote.addItemAmountCalls.first.req.name, equals('Milk'));
+      expect(remote.addItemAmountCalls.first.req.amount, equals(2));
+      expect(remote.addItemAmountCalls.first.req.unit, equals('L'));
+
+      // Temp row replaced by the server-ID row; op cleaned up.
+      final after = await db.getItemsByListOnce(listId);
+      expect(after.length, equals(1));
+      expect(after.first.id, equals('${remote.serverItemIdPrefix}1'));
+      expect(after.first.id, isNot(equals(local.id)));
+      expect(await db.outboxCount(), equals(0));
+    });
+
+    // -------------------------------------------------------------------------
+    // Case 9: addItemAmountOfflineFirst — merge into existing local item
+    //
+    // A matching (name + unit) row has its quantity bumped optimistically; the
+    // additive op syncs without clobbering the local quantity or duplicating
+    // the row.
+    // -------------------------------------------------------------------------
+    test(
+        'addItemAmountOfflineFirst: merges into matching local row by name+unit',
+        () async {
+      const listId = 'list-009';
+      const existingId = 'item-existing-1';
+      await _insertList(db, listId);
+      await db.upsertListItemsRows([
+        ListItemsTableCompanion(
+          id: const drift.Value(existingId),
+          listId: const drift.Value(listId),
+          name: const drift.Value('Milk'),
+          quantity: const drift.Value(1.0),
+          unit: const drift.Value('L'),
+          checked: const drift.Value(true),
+          position: const drift.Value(3),
+          createdAt: drift.Value(DateTime.utc(2026, 1, 2)),
+          updatedAt: drift.Value(DateTime.utc(2026, 1, 2)),
+        ),
+      ]);
+
+      final local = await repo.addItemAmountOfflineFirst(
+        listId,
+        name: 'Milk',
+        amount: 2,
+        unit: 'L',
+      );
+
+      // No new row; the existing row is incremented and un-checked.
+      expect(local.id, equals(existingId));
+      final after = await db.getItemsByListOnce(listId);
+      expect(after.length, equals(1));
+      expect(after.first.id, equals(existingId));
+      expect(after.first.quantity, equals(3.0));
+      expect(after.first.checked, isFalse);
+
+      await repo.drainOutboxOnce();
+
+      // Additive endpoint called with only the delta; local quantity preserved
+      // (the merge case deliberately does not overwrite from the server).
+      expect(remote.addItemAmountCalls.length, equals(1));
+      expect(remote.addItemAmountCalls.first.req.amount, equals(2));
+      final synced = await db.getItemsByListOnce(listId);
+      expect(synced.length, equals(1));
+      expect(synced.first.id, equals(existingId));
+      expect(synced.first.quantity, equals(3.0));
+      expect(await db.outboxCount(), equals(0));
+    });
   });
 }

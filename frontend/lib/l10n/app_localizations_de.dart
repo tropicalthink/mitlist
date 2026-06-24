@@ -2903,6 +2903,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Gib einen Umrechnungskurs größer als null ein.';
 
   @override
+  String get expenseCreationRateAutoFilled =>
+      'Kurs automatisch ausgefüllt – du kannst ihn ändern.';
+
+  @override
   String get expenseCreationReceiptUploadFailed =>
       'Ausgabe gespeichert, aber Beleg-Upload fehlgeschlagen.';
 
@@ -4475,4 +4479,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get currencyHuf => 'HUF - Ungarischer Forint';
+
+  @override
+  String get runningLowHeading => 'Wird knapp';
+
+  @override
+  String runningLowDaysAgo(num days) {
+    return 'vor ${days}T';
+  }
 }

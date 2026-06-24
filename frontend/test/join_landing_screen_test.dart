@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mitlist/l10n/app_localizations.dart';
 import 'package:mitlist/models/group_models.dart';
 import 'package:mitlist/providers/group_provider.dart';
 import 'package:mitlist/screens/auth/join_landing_screen.dart';
@@ -42,6 +43,8 @@ Widget _buildApp(String code, FakeGroupService fakeGroupService) {
     ],
     child: MaterialApp.router(
       routerConfig: router,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
     ),
   );
 }
@@ -57,7 +60,7 @@ void main() {
       await tester.pumpWidget(_buildApp('ABCD-1234', fake));
       await tester.pump();
 
-      expect(find.text('Join this household?'), findsOneWidget);
+      expect(find.text('Join household'), findsOneWidget);
       // Code segments are rendered in separate Text widgets per part
       expect(find.text('ABCD'), findsOneWidget);
       expect(find.text('1234'), findsOneWidget);
@@ -72,7 +75,7 @@ void main() {
       await tester.pump();
 
       // AppButton solid variant uppercases the label text
-      await tester.tap(find.text('JOIN HOUSEHOLD'));
+      await tester.tap(find.text('JOIN NOW'));
       await tester.pumpAndSettle();
 
       expect(fake.joinCalls, hasLength(1));
@@ -86,7 +89,7 @@ void main() {
       await tester.pumpWidget(_buildApp('ABCD-1234', fake));
       await tester.pump();
 
-      await tester.tap(find.text('JOIN HOUSEHOLD'));
+      await tester.tap(find.text('JOIN NOW'));
       await tester.pumpAndSettle();
 
       expect(find.text('My House'), findsOneWidget);
@@ -102,7 +105,7 @@ void main() {
       await tester.pumpWidget(_buildApp('ABCD-1234', fake));
       await tester.pump();
 
-      await tester.tap(find.text('JOIN HOUSEHOLD'));
+      await tester.tap(find.text('JOIN NOW'));
       await tester.pumpAndSettle();
 
       // Error alert should be visible
@@ -131,7 +134,7 @@ void main() {
       await tester.pumpWidget(_buildApp('ABCD-1234', fake));
       await tester.pump();
 
-      await tester.tap(find.text('JOIN HOUSEHOLD'));
+      await tester.tap(find.text('JOIN NOW'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('GO TO HOUSEHOLD'));

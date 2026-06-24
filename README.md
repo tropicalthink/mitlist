@@ -65,7 +65,7 @@ You're already paying rent. Why pay another subscription just to split expenses 
 
 | App | Does better |
 |-----|-------------|
-| **Splitwise** | Bank/credit card import, **live** exchange rates (mitlist supports multiple currencies but you enter the FX rate by hand), receipt photos per expense, comments/activity feed per expense, email notifications. 10+ years of polish. |
+| **Splitwise** | Bank/credit card import, per-expense comment threads, and a longer track record of edge cases. (mitlist now matches it on opt-in live FX rates, per-expense receipt photos, and email notifications.) |
 | **Paprika** | Best-in-class recipe clipping (dedicated site parsers, not just AI), cook mode (full-screen step-by-step with timers), pantry management, nutritional auto-calculation, grocery aisle ordering. The gold standard for recipes. |
 | **Tody** | Gamification (streaks, effort levels), room-by-room chore views, visual progress. Makes chores feel like a game. |
 | **Bring! / AnyList** | Barcode scanning with a product database, store aisle organization, Apple Watch + Siri integration, and a polished published app you can install today. |
@@ -111,7 +111,7 @@ See [backend/README.md](backend/README.md) for detailed configuration.
 - **Offline-first** — Works without internet. Edits queue in an outbox and sync when you're back online; live updates stream over SSE when connected.
 - **Scanner** — OCR recipes, receipts, and lists from photos, with an on-device grocery classifier.
 - **Notifications** — Push to mobile (FCM) and web (VAPID), plus in-app notifications for chores, expenses, and reminders.
-- **Multi-currency** — Record expenses in any currency. You enter the FX rate per expense; balances settle in the group's base currency.
+- **Multi-currency** — Record expenses in any currency; balances settle in the group's base currency. Enter the FX rate by hand, or enable an opt-in live rate feed that prefills it.
 - **Multi-household** — Switch between households. One account, many groups.
 - **Accounts** — Guest mode to start instantly, or sign in with email/password, Google, or Apple.
 - **5 languages** — English, German, Spanish, French, Dutch.
@@ -145,11 +145,11 @@ Store builds aren't published yet — the way to run mitlist today is to self-ho
 Being honest about what the comparison tables don't show:
 
 - **No published apps.** There are no store listings or hosted instance yet. You self-host and build the client. Fine for tinkerers, not yet for your non-technical flatmate.
-- **FX rates are manual.** Multi-currency works, but you type in the rate. No live rate feed like Splitwise.
-- **No bank or receipt-photo import.** Expenses are entered by hand (or scanned via OCR). No Plaid/GoCardless, no per-expense receipt attachments yet.
+- **Live FX is opt-in.** A self-hosted instance can enable a live rate feed (`FX_RATE_API_URL`) that prefills each expense's exchange rate; without it, you enter the rate by hand. The prefilled rate is advisory, not a bank-grade per-expense rate lock.
+- **No bank import.** Expenses are entered by hand (or scanned via OCR), with optional receipt photos attached per expense. No Plaid/GoCardless bank or card sync.
 - **No pantry/inventory tracking.** Unlike Grocy, mitlist doesn't track what's in your fridge or expiry dates.
 - **No barcode product lookup.** The scanner reads text; it won't resolve a barcode to a product database.
-- **No expense comments or activity feed.** You can't discuss an individual expense in-app.
+- **No per-expense comments.** There's a household activity feed, but you can't comment on or discuss an individual expense in-app yet.
 - **Recipe clipping is AI-only.** No dedicated per-site parsers like Paprika, so import quality varies by source.
 - **Younger and less battle-tested.** Splitwise, IHateMoney, and Actual Budget have years of edge cases worked out. mitlist doesn't yet.
 

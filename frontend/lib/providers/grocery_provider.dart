@@ -49,6 +49,14 @@ final groceryRepositoryProvider =
   return GroceryRepository.create(db, ref);
 });
 
+/// Restock predictions for [groupId] — most-overdue grocery items the household
+/// is due to rebuy, computed on-device from purchase cadence. Returns [] when
+/// there is not enough history.
+final runningLowProvider =
+    FutureProvider.family<List<RestockSuggestion>, String>((ref, groupId) async {
+  return ref.read(restockServiceProvider).due(groupId: groupId, limit: 8);
+});
+
 /// Best-effort shell preload for the grocery graph.
 ///
 /// This must stay bounded: the app shell watches it during normal navigation,

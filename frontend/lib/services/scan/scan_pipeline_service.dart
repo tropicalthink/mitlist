@@ -56,16 +56,22 @@ class ScanPipelineService {
     String? storeId,
     List<String> listContextCanonicalIds = const [],
     bool isOnline = true,
+    CaptureCropHint? cropHint,
   }) async {
     // 1. Perspective rectify — find document quad and warp to flat rectangle.
     //    Runs on a worker isolate to avoid janking the UI.
-    final rectified = await compute(_rectifyIsolate, imageBytes);
+    //    When kEnableBoundaryCrop is true and the quad detector finds nothing,
+    //    falls back to the live-detected boundary crop via rectifyWithHint.
+    final rectified =
+        await compute(_rectifyIsolate, _RectifyRequest(imageBytes, cropHint));
 
-    // 2. Enhance (runs on a worker isolate — does not block the UI thread).
-    final enhanced = await _enhancement.enhance(rectified);
-
-    // 2. OCR.
-    final lines = await _ocr.recognise(enhanced);
+    // 2. OCR — uses the non-binarized image so the neural OCR engine (ML Kit)
+    //     receives a natural photograph rather than an adaptive-thresholded
+    //     binary image (which is out-of-distribution for modern neural models).
+    //     The binarized preview is produced in the capture UI (smart_capture_launcher),
+    //     not here.
+    final forOcr = await _enhancement.enhanceForOcr(rectified);
+    final lines = await _ocr.recognise(forOcr);
 
     // 3. Extract qty / unit / price / name.
     final parsed = _extraction.extractAll(lines);
@@ -167,12 +173,25 @@ class ScanPipelineService {
   }
 }
 
+/// Isolate-sendable request for perspective rectification.
+class _RectifyRequest {
+  const _RectifyRequest(this.bytes, this.hint);
+
+  final Uint8List bytes;
+  final CaptureCropHint? hint;
+}
+
 /// Top-level function used by [compute()] to run perspective rectification on
 /// a worker isolate without blocking the UI thread.
-Uint8List _rectifyIsolate(Uint8List bytes) {
+///
+/// Uses [DocumentRectifierService.rectifyWithHint] so the boundary-crop
+/// fallback is available (it is inert while [kEnableBoundaryCrop] is false).
+Uint8List _rectifyIsolate(_RectifyRequest req) {
   try {
-    return const DocumentRectifierService().rectify(bytes).bytes;
+    return const DocumentRectifierService()
+        .rectifyWithHint(req.bytes, req.hint)
+        .bytes;
   } catch (_) {
-    return bytes;
+    return req.bytes;
   }
 }

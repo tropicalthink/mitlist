@@ -2889,6 +2889,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Saisis un taux de conversion supérieur à zéro.';
 
   @override
+  String get expenseCreationRateAutoFilled =>
+      'Taux rempli automatiquement — tu peux le modifier.';
+
+  @override
   String get expenseCreationReceiptUploadFailed =>
       'Dépense enregistrée, mais l\'envoi du reçu a échoué.';
 
@@ -4462,4 +4466,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get currencyHuf => 'HUF - Forint hongrois';
+
+  @override
+  String get runningLowHeading => 'Presque épuisé';
+
+  @override
+  String runningLowDaysAgo(num days) {
+    return 'il y a ${days}j';
+  }
 }

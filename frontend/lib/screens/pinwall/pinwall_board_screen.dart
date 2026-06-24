@@ -25,6 +25,7 @@ import '../../utils/haptics.dart';
 import '../../utils/hub_helpers.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/hub/pinned_memo_card.dart';
+import '../../widgets/pinwall_link_chip.dart';
 
 // ─── Board layout constants ──────────────────────────────────────────────────
 
@@ -1177,6 +1178,14 @@ class _BoardNoteCard extends ConsumerWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (post.linkedEntityType != null) ...[
+                    const SizedBox(height: MitlistSpacing.xs),
+                    PinwallLinkChip(
+                      entityType: post.linkedEntityType!,
+                      color: mutedColor,
+                      onTap: () => _openLinkedEntity(context, post),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -1195,6 +1204,22 @@ class _BoardNoteCard extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+void _openLinkedEntity(BuildContext context, PinwallPost post) {
+  final id = post.linkedEntityId;
+  switch (post.linkedEntityType) {
+    case 'list':
+      if (id != null && id.isNotEmpty) {
+        context.goNamed('listDetail', pathParameters: {'listId': id});
+      } else {
+        context.goNamed('lists');
+      }
+    case 'chore':
+      context.pushNamed('chores');
+    case 'expense':
+      context.pushNamed('money');
   }
 }
 

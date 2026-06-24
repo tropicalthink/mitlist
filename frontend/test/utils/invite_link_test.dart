@@ -5,22 +5,22 @@ import 'package:mitlist/utils/invite_link.dart';
 void main() {
   group('buildInviteLink', () {
     test('builds link with uppercased trimmed code', () {
-      expect(buildInviteLink('ab-12'), 'mitlist://join/AB-12');
+      expect(buildInviteLink('ab-12'), 'mitlist:///join/AB-12');
     });
 
     test('trims surrounding whitespace', () {
-      expect(buildInviteLink('  ABCD  '), 'mitlist://join/ABCD');
+      expect(buildInviteLink('  ABCD  '), 'mitlist:///join/ABCD');
     });
 
     test('uppercases mixed case', () {
-      expect(buildInviteLink('sunny-taco'), 'mitlist://join/SUNNY-TACO');
+      expect(buildInviteLink('sunny-taco'), 'mitlist:///join/SUNNY-TACO');
     });
   });
 
   group('parseInviteCode', () {
     test('returns code for a valid join link', () {
       expect(
-        parseInviteCode(Uri.parse('mitlist://join/ABCD-1234')),
+        parseInviteCode(Uri.parse('mitlist:///join/ABCD-1234')),
         'ABCD-1234',
       );
     });
@@ -32,37 +32,37 @@ void main() {
       );
     });
 
-    test('returns null for wrong host', () {
+    test('returns null for wrong path', () {
       expect(
-        parseInviteCode(Uri.parse('mitlist://auth/callback')),
+        parseInviteCode(Uri.parse('mitlist:///auth/callback')),
         isNull,
       );
     });
 
     test('returns null when code is too short (< 4 chars)', () {
       expect(
-        parseInviteCode(Uri.parse('mitlist://join/AB')),
+        parseInviteCode(Uri.parse('mitlist:///join/AB')),
         isNull,
       );
     });
 
     test('returns null for empty path', () {
       expect(
-        parseInviteCode(Uri.parse('mitlist://join/')),
+        parseInviteCode(Uri.parse('mitlist:///join/')),
         isNull,
       );
     });
 
     test('returns null when code contains invalid characters', () {
       expect(
-        parseInviteCode(Uri.parse('mitlist://join/ABCD!@#\$')),
+        parseInviteCode(Uri.parse('mitlist:///join/ABCD!@#\$')),
         isNull,
       );
     });
 
     test('accepts exactly 4 chars', () {
       expect(
-        parseInviteCode(Uri.parse('mitlist://join/ABCD')),
+        parseInviteCode(Uri.parse('mitlist:///join/ABCD')),
         'ABCD',
       );
     });

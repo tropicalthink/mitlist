@@ -101,6 +101,13 @@ type Config struct {
 	EnableVirusScanning   bool   `env:"ENABLE_VIRUS_SCANNING" default:"false"`
 	VirusScannerEndpoint  string `env:"VIRUS_SCANNER_ENDPOINT"`
 	EnableContentScanning bool   `env:"ENABLE_CONTENT_SCANNING" default:"true"`
+
+	// FX Rate (opt-in). Set FX_RATE_API_URL to enable live exchange-rate suggestions.
+	// Recommended value: https://api.frankfurter.dev (free, no key required).
+	// Leave empty to keep the feature disabled (default — users enter rates manually).
+	// If your provider requires authentication, set FX_RATE_API_KEY as well.
+	FxRateAPIURL string `env:"FX_RATE_API_URL"`
+	FxRateAPIKey string `env:"FX_RATE_API_KEY"`
 }
 
 // Load reads the .env file (if it exists) and populates a Config from the environment.

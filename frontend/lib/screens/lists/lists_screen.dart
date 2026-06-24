@@ -956,6 +956,7 @@ class _ListCard extends ConsumerWidget {
       onChanged();
     } catch (_) {
       if (context.mounted) {
+        unawaited(Haptics.failure());
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.listCouldNotRename)),
         );
@@ -991,6 +992,7 @@ class _ListCard extends ConsumerWidget {
       onChanged();
     } catch (_) {
       if (context.mounted) {
+        unawaited(Haptics.failure());
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.listCouldNotDelete)),
         );
@@ -1047,6 +1049,7 @@ class _ListCard extends ConsumerWidget {
       onChanged();
     } catch (_) {
       if (context.mounted) {
+        unawaited(Haptics.failure());
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.listCouldNotAddItem)),
         );
