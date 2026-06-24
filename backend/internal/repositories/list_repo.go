@@ -190,11 +190,22 @@ func (r *ListRepository) CreateItem(ctx context.Context, item *models.ListItem) 
 	item.CreatedAt = now
 	item.UpdatedAt = now
 
-	query := `INSERT INTO list_items (id, list_id, name, quantity, unit, note, price_cents, product_id, store_id, canonical_item_id, added_by, checked, position, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`
-	_, err := r.pool.Exec(ctx, query,
+	// A negative position is the "append" sentinel: the item lands one past the
+	// current max for the list (or 0 when empty), computed atomically in-statement
+	// so concurrent appends don't all collapse onto the same position. A
+	// non-negative position is honoured as-is (templates/shares place explicitly).
+	query := `INSERT INTO list_items (id, list_id, name, quantity, unit, note, price_cents, product_id, store_id, canonical_item_id, added_by, checked, position, created_at, updated_at)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,
+			CASE WHEN $13 < 0
+				THEN (SELECT COALESCE(MAX(position), -1) + 1 FROM list_items WHERE list_id = $2 AND deleted_at IS NULL)
+				ELSE $13 END,
+			$14,$15)
+		RETURNING position`
+	// Scan the resolved position back so an "append" sentinel ($13 < 0) is
+	// reflected in the response — the client writes this onto its optimistic row.
+	return r.pool.QueryRow(ctx, query,
 		item.ID, item.ListID, item.Name, item.Quantity, item.Unit, item.Note, item.PriceCents, item.ProductID, item.StoreID, item.CanonicalItemID, item.AddedBy, item.Checked, item.Position, item.CreatedAt, item.UpdatedAt,
-	)
-	return err
+	).Scan(&item.Position)
 }
 
 // CreateItems inserts multiple list items in one statement.

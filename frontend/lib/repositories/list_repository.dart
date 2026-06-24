@@ -150,10 +150,23 @@ class ListRepository {
   // Offline-first writes (optimistic local + outbox)
   // ---------------------------------------------------------------------------
 
+  /// Append position for a new optimistic row: one past the highest existing
+  /// local position (or 0 on an empty list). Mirrors the server's max+1 append
+  /// so the row lands at the bottom and does not jump when the create syncs.
+  Future<int> _nextLocalPosition(String listId) async {
+    final rows = await _db.getItemsByListOnce(listId);
+    var maxPos = -1;
+    for (final r in rows) {
+      if (r.position > maxPos) maxPos = r.position;
+    }
+    return maxPos + 1;
+  }
+
   Future<ListItem> createItemOfflineFirst(
       String listId, CreateListItemRequest req) async {
     final tempId = _uuid.v4();
     final now = DateTime.now();
+    final position = await _nextLocalPosition(listId);
 
     final local = ListItem(
       id: tempId,
@@ -163,7 +176,7 @@ class ListRepository {
       unit: req.unit,
       note: req.note,
       checked: false,
-      position: 0,
+      position: position,
       priceCents: req.priceCents,
       canonicalItemId: req.canonicalItemId,
       createdAt: now,
@@ -240,6 +253,10 @@ class ListRepository {
       entityId = existing.id;
     } else {
       tempId = _uuid.v4();
+      var maxPos = -1;
+      for (final r in existingRows) {
+        if (r.position > maxPos) maxPos = r.position;
+      }
       local = ListItem(
         id: tempId,
         listId: listId,
@@ -248,7 +265,7 @@ class ListRepository {
         unit: unit,
         note: note,
         checked: false,
-        position: 0,
+        position: maxPos + 1,
         createdAt: now,
         updatedAt: now,
       );

@@ -201,52 +201,31 @@ class StaticEmbeddingService {
     await _loadFuture;
   }
 
+  /// Eagerly loads the bundles in the background without blocking the caller.
+  /// Safe to call repeatedly — the underlying load runs at most once. Callers on
+  /// a latency-sensitive path (typing/autocomplete) should warm up via this and
+  /// gate semantic use on [isReady] rather than awaiting [nearest] cold.
+  Future<void> warmUp() => _load();
+
   Future<void> _doLoad() async {
     try {
       final vocabJson = await rootBundle.loadString(_vocabAsset);
       final catalogJson = await rootBundle.loadString(_catalogAsset);
 
-      final vocabData = jsonDecode(vocabJson) as Map<String, dynamic>;
-      final catalogData = jsonDecode(catalogJson) as Map<String, dynamic>;
-
-      final vocab = (vocabData['vocab'] as List).cast<String>();
-      final dim = vocabData['dim'] as int;
-      final vocabScale = (vocabData['scale'] as num).toDouble();
-      final vocabInt8 = (vocabData['vectors_int8'] as List)
-          .map((row) => (row as List).cast<int>())
-          .toList();
-
-      final itemIds = (catalogData['item_ids'] as List).cast<String>();
-      final catalogScale = (catalogData['scale'] as num).toDouble();
-      final catalogInt8 = (catalogData['vectors_int8'] as List)
-          .map((row) => (row as List).cast<int>())
-          .toList();
-
-      // Dequantise: float = int8 * scale
-      final vocabVectors = <Float32List>[];
-      for (final row in vocabInt8) {
-        final v = Float32List(dim);
-        for (var i = 0; i < dim; i++) {
-          v[i] = row[i] * vocabScale;
-        }
-        vocabVectors.add(v);
+      // Decoding ~9 MB of JSON and dequantising thousands of int8 vectors is
+      // CPU-bound and would jank the UI thread for seconds on first use. Run it
+      // on a background isolate so typing and suggestions stay responsive.
+      final parsed =
+          await compute(_parseEmbedderBundles, <String>[vocabJson, catalogJson]);
+      if (parsed == null) {
+        _unavailable = true;
+        return;
       }
-
-      final catalogVectors = <Float32List>[];
-      final catalogDim = catalogData['dim'] as int;
-      for (final row in catalogInt8) {
-        final v = Float32List(catalogDim);
-        for (var i = 0; i < catalogDim; i++) {
-          v[i] = row[i] * catalogScale;
-        }
-        catalogVectors.add(v);
-      }
-
-      _vocabSet = vocab.toSet();
-      _vocabIndex = {for (var i = 0; i < vocab.length; i++) vocab[i]: i};
-      _vocabVectors = vocabVectors;
-      _itemIds = itemIds;
-      _catalogVectors = catalogVectors;
+      _vocabSet = parsed.vocabSet;
+      _vocabIndex = parsed.vocabIndex;
+      _vocabVectors = parsed.vocabVectors;
+      _itemIds = parsed.itemIds;
+      _catalogVectors = parsed.catalogVectors;
     } catch (_) {
       // Bundle absent or malformed — degrade gracefully.
       _unavailable = true;
@@ -320,4 +299,72 @@ class _Scored {
   final String itemId;
   final double score;
   const _Scored(this.itemId, this.score);
+}
+
+/// Parsed embedder state, produced off the main isolate by
+/// [_parseEmbedderBundles] and copied back to be installed on the service.
+class _ParsedBundles {
+  final Set<String> vocabSet;
+  final Map<String, int> vocabIndex;
+  final List<Float32List> vocabVectors;
+  final List<String> itemIds;
+  final List<Float32List> catalogVectors;
+  const _ParsedBundles({
+    required this.vocabSet,
+    required this.vocabIndex,
+    required this.vocabVectors,
+    required this.itemIds,
+    required this.catalogVectors,
+  });
+}
+
+/// Decodes + dequantises the vocab/catalog JSON bundles. Pure and isolate-safe
+/// so it can run under [compute]; returns null if either bundle is malformed.
+/// [jsons] is `[vocabJson, catalogJson]`.
+_ParsedBundles? _parseEmbedderBundles(List<String> jsons) {
+  try {
+    final vocabData = jsonDecode(jsons[0]) as Map<String, dynamic>;
+    final catalogData = jsonDecode(jsons[1]) as Map<String, dynamic>;
+
+    final vocab = (vocabData['vocab'] as List).cast<String>();
+    final dim = vocabData['dim'] as int;
+    final vocabScale = (vocabData['scale'] as num).toDouble();
+    final vocabInt8 = vocabData['vectors_int8'] as List;
+
+    final itemIds = (catalogData['item_ids'] as List).cast<String>();
+    final catalogScale = (catalogData['scale'] as num).toDouble();
+    final catalogInt8 = catalogData['vectors_int8'] as List;
+    final catalogDim = catalogData['dim'] as int;
+
+    // Dequantise: float = int8 * scale
+    final vocabVectors = <Float32List>[];
+    for (final row in vocabInt8) {
+      final r = row as List;
+      final v = Float32List(dim);
+      for (var i = 0; i < dim; i++) {
+        v[i] = (r[i] as num) * vocabScale;
+      }
+      vocabVectors.add(v);
+    }
+
+    final catalogVectors = <Float32List>[];
+    for (final row in catalogInt8) {
+      final r = row as List;
+      final v = Float32List(catalogDim);
+      for (var i = 0; i < catalogDim; i++) {
+        v[i] = (r[i] as num) * catalogScale;
+      }
+      catalogVectors.add(v);
+    }
+
+    return _ParsedBundles(
+      vocabSet: vocab.toSet(),
+      vocabIndex: {for (var i = 0; i < vocab.length; i++) vocab[i]: i},
+      vocabVectors: vocabVectors,
+      itemIds: itemIds,
+      catalogVectors: catalogVectors,
+    );
+  } catch (_) {
+    return null;
+  }
 }
