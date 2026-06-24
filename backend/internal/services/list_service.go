@@ -264,6 +264,8 @@ func (s *ListService) CreateItem(ctx context.Context, user *models.User, item *m
 	if item.Quantity <= 0 {
 		item.Quantity = 1
 	}
+	// Append at the end of the list (the repo resolves the sentinel to max+1).
+	item.Position = -1
 	if err := s.listRepo.CreateItem(ctx, item); err != nil {
 		return err
 	}
@@ -453,6 +455,7 @@ func (s *ListService) AddItemAmount(ctx context.Context, user *models.User, list
 		Quantity: amount,
 		Unit:     unit,
 		Note:     note,
+		Position: -1, // append at the end (repo resolves to max+1)
 	}
 	if err := s.listRepo.CreateItem(ctx, item); err != nil {
 		return nil, fmt.Errorf("failed to create item: %w", err)
@@ -534,6 +537,7 @@ func (s *ListService) AddItemsBatch(ctx context.Context, user *models.User, list
 			Unit:            unit,
 			Note:            note,
 			CanonicalItemID: input.CanonicalItemID,
+			Position:        -1, // append at the end (repo resolves to max+1)
 		}
 		if err := s.listRepo.CreateItem(ctx, &item); err != nil {
 			return nil, fmt.Errorf("failed to create item: %w", err)

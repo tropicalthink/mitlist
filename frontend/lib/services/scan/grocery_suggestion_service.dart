@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../../storage/app_database.dart';
 import '../canonical_display.dart';
 import 'static_embedding_service.dart';
@@ -159,14 +161,24 @@ class GrocerySuggestionService {
     // Tier 2 — semantic: when alias prefix/fuzzy are sparse and an embedder is
     // wired, pad with nearest-neighbour matches (synonyms, differently-spelled
     // terms). Below [_semanticFloor] cosine is dropped so weak items never show.
-    if (_embedder != null && ranked.length < limit) {
-      final embedMatches = await _embedder.nearest(q, topK: limit * 2);
-      final missingIds = embedMatches
-          .where((m) => m.score >= _semanticFloor)
-          .map((m) => m.itemId)
-          .where((id) => !seenIds.contains(id))
-          .toList();
-      await addByIds(missingIds, 2);
+    //
+    // The embedder's first load decodes a multi-megabyte bundle, so we never
+    // block a keystroke on a cold one: blend semantics only when it is already
+    // warm, otherwise kick off a background warm-up and let a later keystroke
+    // pick up the semantic tier once it is ready.
+    final embedder = _embedder;
+    if (embedder != null && ranked.length < limit) {
+      if (embedder.isReady) {
+        final embedMatches = await embedder.nearest(q, topK: limit * 2);
+        final missingIds = embedMatches
+            .where((m) => m.score >= _semanticFloor)
+            .map((m) => m.itemId)
+            .where((id) => !seenIds.contains(id))
+            .toList();
+        await addByIds(missingIds, 2);
+      } else {
+        unawaited(embedder.warmUp());
+      }
     }
 
     if (ranked.isEmpty) return const [];
