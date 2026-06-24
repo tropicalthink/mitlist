@@ -832,6 +832,7 @@
   "expenseCreationEnterAmount": "Gib oben einen Betrag ein, um die Anteile zu sehen.",
   "expenseCreationValidationAmount": "Gib einen gültigen Betrag größer als null ein.",
   "expenseCreationValidationRate": "Gib einen Umrechnungskurs größer als null ein.",
+  "expenseCreationRateAutoFilled": "Kurs automatisch ausgefüllt – du kannst ihn ändern.",
   "expenseCreationReceiptUploadFailed": "Ausgabe gespeichert, aber Beleg-Upload fehlgeschlagen.",
   "expenseCreationExpenseAdded": "Ausgabe hinzugefügt",
   "pinwallSnapshot": "Auf einen Blick",
@@ -1690,5 +1691,9 @@
   "storePickerTitle": "Geschäft wählen",
   "@storePickerTitle": {
     "description": "Store picker sheet title"
-  }
+  },
+  "runningLowHeading": "Wird knapp",
+  "@runningLowHeading": { "description": "Section header for the restock suggestion strip above the list" },
+  "runningLowDaysAgo": "vor {days}T",
+  "@runningLowDaysAgo": { "description": "Per-chip cadence hint showing how many days since last purchase", "placeholders": { "days": { "type": "num" } } }
 }

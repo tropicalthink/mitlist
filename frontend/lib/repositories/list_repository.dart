@@ -72,8 +72,11 @@ class ListRepository {
         await _remote.listItems(listId, limit: limit, offset: offset);
     if (offset == 0) {
       await _db.deleteItemsForList(listId);
+      await _db.upsertListItemsRows(remote.map(_toListItemsRow));
+      await _restorePendingLocalItems(listId, remote);
+    } else {
+      await _db.upsertListItemsRows(remote.map(_toListItemsRow));
     }
-    await _db.upsertListItemsRows(remote.map(_toListItemsRow));
     await _patchListPreviewFromLocalItems(listId);
     return remote.length;
   }
@@ -88,17 +91,82 @@ class ListRepository {
     await _db.upsertListsRows([_toListsRow(list)]);
     await _db.deleteItemsForList(listId);
     await _db.upsertListItemsRows(items.map(_toListItemsRow));
+    await _restorePendingLocalItems(listId, items);
     await _patchListPreviewFromLocalItems(listId);
   }
+
+  /// After a server refresh wipes local items, re-insert any items that are
+  /// still pending in the outbox (optimistic rows the server hasn't seen yet).
+  Future<void> _restorePendingLocalItems(
+      String listId, List<ListItem> serverItems) async {
+    final pendingOps = await _db.getOutboxBatchByTypes(
+      ['createItem'],
+      limit: 500,
+      minBackoff: Duration.zero,
+    );
+    if (pendingOps.isEmpty) return;
+
+    final serverIds = serverItems.map((i) => i.id).toSet();
+    for (final op in pendingOps) {
+      final tempId = op.entityId;
+      if (tempId == null || serverIds.contains(tempId)) continue;
+
+      Map<String, dynamic> payload;
+      try {
+        payload =
+            (jsonDecode(op.payloadJson) as Map).cast<String, dynamic>();
+      } catch (_) {
+        continue;
+      }
+      if (payload['listId'] != listId) continue;
+
+      final name = payload['name'] as String?;
+      if (name == null || name.isEmpty) continue;
+
+      await _db.upsertListItemsRows([
+        ListItemsTableCompanion(
+          id: Value(tempId),
+          listId: Value(listId),
+          name: Value(name),
+          quantity: Value(
+              (payload['quantity'] as num?)?.toDouble() ?? 1.0),
+          unit: Value(payload['unit'] as String? ?? ''),
+          checked: const Value(false),
+          position: const Value(0),
+          priceCents: Value(payload['priceCents'] as int?),
+          canonicalItemId:
+              Value(payload['canonicalItemId'] as String?),
+          createdAt: Value(DateTime.now()),
+          updatedAt: Value(DateTime.now()),
+        ),
+      ]);
+    }
+  }
+
+  Future<String?> getGroupId(String listId) =>
+      _db.getListGroupId(listId);
 
   // ---------------------------------------------------------------------------
   // Offline-first writes (optimistic local + outbox)
   // ---------------------------------------------------------------------------
 
+  /// Append position for a new optimistic row: one past the highest existing
+  /// local position (or 0 on an empty list). Mirrors the server's max+1 append
+  /// so the row lands at the bottom and does not jump when the create syncs.
+  Future<int> _nextLocalPosition(String listId) async {
+    final rows = await _db.getItemsByListOnce(listId);
+    var maxPos = -1;
+    for (final r in rows) {
+      if (r.position > maxPos) maxPos = r.position;
+    }
+    return maxPos + 1;
+  }
+
   Future<ListItem> createItemOfflineFirst(
       String listId, CreateListItemRequest req) async {
     final tempId = _uuid.v4();
     final now = DateTime.now();
+    final position = await _nextLocalPosition(listId);
 
     final local = ListItem(
       id: tempId,
@@ -108,7 +176,7 @@ class ListRepository {
       unit: req.unit,
       note: req.note,
       checked: false,
-      position: 0,
+      position: position,
       priceCents: req.priceCents,
       canonicalItemId: req.canonicalItemId,
       createdAt: now,
@@ -136,6 +204,94 @@ class ListRepository {
     );
 
     // Best-effort immediate sync.
+    if (_autoSync) unawaited(drainOutboxOnce());
+    return local;
+  }
+
+  /// Offline-first equivalent of [ListService.addItemAmount]: the optimistic
+  /// local write happens immediately (so the row appears instantly) and the
+  /// additive server merge is replayed from the outbox.
+  ///
+  /// Merge semantics mirror the backend: a matching local item (same trimmed
+  /// name + unit) has its quantity incremented; otherwise a new optimistic row
+  /// is created. Replaying through the `/items/add` endpoint keeps multi-device
+  /// increments additive server-side rather than last-write-wins.
+  Future<ListItem> addItemAmountOfflineFirst(
+    String listId, {
+    required String name,
+    required double amount,
+    String unit = '',
+    String note = '',
+  }) async {
+    final now = DateTime.now();
+    final existingRows = await _db.getItemsByListOnce(listId);
+    final match = existingRows
+        .where((r) => r.name == name && r.unit == unit)
+        .sorted((a, b) => a.position.compareTo(b.position))
+        .firstOrNull;
+
+    final ListItem local;
+    final String entityId;
+    String? tempId;
+    if (match != null) {
+      final existing = _toListItem(match);
+      local = ListItem(
+        id: existing.id,
+        listId: existing.listId,
+        name: existing.name,
+        quantity: existing.quantity + amount,
+        unit: existing.unit,
+        note: note.isNotEmpty ? note : existing.note,
+        checked: false,
+        position: existing.position,
+        priceCents: existing.priceCents,
+        canonicalItemId: existing.canonicalItemId,
+        claimedBy: existing.claimedBy,
+        createdAt: existing.createdAt,
+        updatedAt: now,
+      );
+      entityId = existing.id;
+    } else {
+      tempId = _uuid.v4();
+      var maxPos = -1;
+      for (final r in existingRows) {
+        if (r.position > maxPos) maxPos = r.position;
+      }
+      local = ListItem(
+        id: tempId,
+        listId: listId,
+        name: name,
+        quantity: amount,
+        unit: unit,
+        note: note,
+        checked: false,
+        position: maxPos + 1,
+        createdAt: now,
+        updatedAt: now,
+      );
+      entityId = tempId;
+    }
+
+    await _db.upsertListItemsRows([_toListItemsRow(local)]);
+    await _patchListPreviewFromLocalItems(listId);
+    await _db.enqueueOutbox(
+      id: _uuid.v4(),
+      type: 'addItemAmount',
+      payload: {
+        'listId': listId,
+        if (tempId != null) 'tempId': tempId,
+        'name': name,
+        'amount': amount,
+        'unit': unit,
+        'note': note,
+      },
+      // Each add is a distinct additive op, so the key is unique per enqueue
+      // to avoid collapsing two separate "+amount" writes into one.
+      idempotencyKey: 'addItemAmount:${_uuid.v4()}',
+      entityType: 'listItem',
+      entityId: entityId,
+    );
+
     if (_autoSync) unawaited(drainOutboxOnce());
     return local;
   }
@@ -290,12 +446,15 @@ class ListRepository {
           'updateItem',
           'deleteItem',
           'reorderItems',
+          'addItemAmount',
         ],
         handlers: {
           'createItem': (op, payload) => _syncCreateItem(op.id, payload),
           'updateItem': (op, payload) => _syncUpdateItem(op.id, payload),
           'deleteItem': (op, payload) => _syncDeleteItem(op.id, payload),
           'reorderItems': (op, payload) => _syncReorderItems(op.id, payload),
+          'addItemAmount': (op, payload) =>
+              _syncAddItemAmount(op.id, payload),
         },
       );
     } finally {
@@ -332,6 +491,45 @@ class ListRepository {
       await _db.replaceTempItemId(tempId: tempId, server: created);
       await _db.rewriteOutboxPayloadIds(oldId: tempId, newId: created.id);
     });
+    await _db.deleteOutboxOp(opId);
+    await _patchListPreviewFromLocalItems(listId);
+  }
+
+  Future<void> _syncAddItemAmount(
+      String opId, Map<String, dynamic> payload) async {
+    final listId = payload['listId'] as String?;
+    final name = payload['name'] as String?;
+    final amount = (payload['amount'] as num?)?.toDouble();
+    if (listId == null || name == null || amount == null) {
+      await _db.deleteOutboxOp(opId);
+      return;
+    }
+
+    final result = await _remote.addItemAmount(
+      listId,
+      AddListItemAmountRequest(
+        name: name,
+        amount: amount,
+        unit: payload['unit'] as String? ?? '',
+        note: payload['note'] as String? ?? '',
+      ),
+    );
+
+    final tempId = payload['tempId'] as String?;
+    if (tempId != null) {
+      // New-row case: swap the optimistic temp id for the server's, the same
+      // way createItem reconciles, so later ops in this drain see the real id.
+      await _db.transaction(() async {
+        await _db.replaceTempItemId(tempId: tempId, server: result);
+        await _db.rewriteOutboxPayloadIds(oldId: tempId, newId: result.id);
+      });
+    }
+    // Merge case (tempId == null): the local quantity was already bumped
+    // optimistically against a real row, and the server applied the same
+    // additive delta, so there is nothing to reconcile here. We deliberately
+    // do NOT overwrite the local quantity with the server's value — a second
+    // pending "+amount" for the same row would otherwise be clobbered until it
+    // drains. SSE/refresh reconciles any cross-device divergence.
     await _db.deleteOutboxOp(opId);
     await _patchListPreviewFromLocalItems(listId);
   }

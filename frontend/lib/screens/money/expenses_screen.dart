@@ -1098,7 +1098,7 @@ class _TimelineBody extends StatelessWidget {
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        group.label.toUpperCase(),
+                        group.label,
                         style: Theme.of(context).textTheme.labelMedium,
                       ),
                     ),
@@ -1248,7 +1248,7 @@ class _ExpenseCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  expense.category.toUpperCase(),
+                  expense.category,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -1517,7 +1517,7 @@ class _SettlementParty extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            helper.toUpperCase(),
+            helper,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: tone,
                 ),

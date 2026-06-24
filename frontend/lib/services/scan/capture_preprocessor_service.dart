@@ -11,12 +11,25 @@ class CapturePreprocessResult {
   const CapturePreprocessResult({
     required this.originalBytes,
     required this.processedBytes,
+    required this.ocrBytes,
     required this.quality,
     required this.enhanced,
   });
 
   final Uint8List originalBytes;
+
+  /// Binarized + deskewed image — used for the human-facing enhanced preview.
   final Uint8List processedBytes;
+
+  /// Natural (non-binarized) image for OCR — the rectified/original image.
+  ///
+  /// Modern neural OCR engines (ML Kit, etc.) are trained on natural
+  /// photographs; feeding them a hard binary image is out-of-distribution and
+  /// degrades recognition quality. This field carries the non-binarized form
+  /// so [ScanPipelineService] can pass a natural image to OCR while the
+  /// preview still uses the binarized [processedBytes].
+  final Uint8List ocrBytes;
+
   final CaptureQualityResult quality;
   final bool enhanced;
 }
@@ -59,9 +72,13 @@ class CapturePreprocessorService {
       // Native library unavailable or CV failed — fall through to legacy path.
     }
     if (cvResult != null) {
+      // ocrBytes: feed OCR the original (non-binarized) bytes so the neural
+      // OCR engine sees a natural image rather than a hard binary threshold.
+      // processedBytes: keep the binarized result for the enhanced preview.
       return CapturePreprocessResult(
         originalBytes: bytes,
         processedBytes: cvResult,
+        ocrBytes: bytes,
         quality: quality,
         enhanced: true,
       );
@@ -74,14 +91,18 @@ class CapturePreprocessorService {
         return CapturePreprocessResult(
           originalBytes: bytes,
           processedBytes: bytes,
+          ocrBytes: bytes,
           quality: quality,
           enhanced: false,
         );
       }
       final out = Uint8List.fromList(img.encodeJpg(_enhanceLegacy(decoded), quality: 92));
+      // In the legacy path the enhanced image is a natural grayscale (no binary
+      // threshold), so it is safe to use directly for OCR.
       return CapturePreprocessResult(
         originalBytes: bytes,
         processedBytes: out,
+        ocrBytes: out,
         quality: quality,
         enhanced: true,
       );
@@ -89,6 +110,7 @@ class CapturePreprocessorService {
       return CapturePreprocessResult(
         originalBytes: bytes,
         processedBytes: bytes,
+        ocrBytes: bytes,
         quality: quality,
         enhanced: false,
       );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mitlist/l10n/app_localizations.dart';
 import 'package:mitlist/widgets/app_button.dart';
 import 'package:mitlist/widgets/app_card.dart';
 import 'package:mitlist/widgets/app_dialog.dart';
@@ -186,6 +187,8 @@ void main() {
   group('showAppDialog', () {
     testWidgets('shows dialog with title and body', (tester) async {
       await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: Builder(
             builder: (context) => ElevatedButton(
@@ -209,6 +212,8 @@ void main() {
 
     testWidgets('shows dialog with custom actions', (tester) async {
       await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: Builder(
             builder: (context) => ElevatedButton(
@@ -245,6 +250,8 @@ void main() {
     testWidgets('Cancel action pops with false', (tester) async {
       bool? result;
       await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: Builder(
             builder: (context) => ElevatedButton(
@@ -278,6 +285,8 @@ void main() {
 
     testWidgets('close button dismisses dialog', (tester) async {
       await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: Builder(
             builder: (context) => ElevatedButton(

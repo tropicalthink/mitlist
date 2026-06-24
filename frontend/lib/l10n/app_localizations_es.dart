@@ -2871,6 +2871,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Introduce una tasa de conversión mayor que cero.';
 
   @override
+  String get expenseCreationRateAutoFilled =>
+      'Tasa rellenada automáticamente — puedes editarla.';
+
+  @override
   String get expenseCreationReceiptUploadFailed =>
       'Gasto guardado, pero la subida del recibo falló.';
 
@@ -4440,4 +4444,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get currencyHuf => 'HUF - Florín húngaro';
+
+  @override
+  String get runningLowHeading => 'Se acaba';
+
+  @override
+  String runningLowDaysAgo(num days) {
+    return 'hace ${days}d';
+  }
 }

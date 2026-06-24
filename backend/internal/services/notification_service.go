@@ -13,6 +13,7 @@ import (
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/repositories"
+	"github.com/mitlist-app/mitlist/internal/sse"
 )
 
 // NotificationService provides business logic for notifications.
@@ -22,6 +23,27 @@ type NotificationService struct {
 	groupRepo        repositories.GroupRepo
 	pushService      PushService
 	mailService      MailService // optional; nil means email channel is disabled
+	hub              *sse.Hub   // optional; nil disables SSE broadcasts
+}
+
+// SetHub injects the SSE hub so newly persisted notifications broadcast to the
+// household in real time. Without a hub, the in-app feed only updates on manual
+// refresh.
+func (s *NotificationService) SetHub(h *sse.Hub) { s.hub = h }
+
+// publishNotificationCreated emits a `notification:created` event for the
+// group. The payload is intentionally empty: notification rows are per-user, so
+// each client refetches its own canonical feed rather than trusting the event
+// body (mirrors the pinwall reconcile pattern).
+func (s *NotificationService) publishNotificationCreated(groupID uuid.UUID) {
+	if s.hub == nil {
+		return
+	}
+	s.hub.Publish(groupID.String(), sse.Event{
+		Type:    "notification:created",
+		GroupID: groupID.String(),
+		Payload: json.RawMessage(`{}`),
+	})
 }
 
 // NewNotificationService creates a new NotificationService.
@@ -118,6 +140,7 @@ func (s *NotificationService) DispatchToGroup(ctx context.Context, groupID, acto
 	if err := s.notificationRepo.CreateNotificationsBatch(ctx, rows); err != nil {
 		return fmt.Errorf("dispatch: persist: %w", err)
 	}
+	s.publishNotificationCreated(groupID)
 	if s.pushService != nil {
 		pushPayload, _ := json.Marshal(map[string]any{"title": title, "body": body, "data": payload})
 		go func(ids []uuid.UUID, p string) {
@@ -193,6 +216,7 @@ func (s *NotificationService) DispatchToUsers(ctx context.Context, userIDs []uui
 	if err := s.notificationRepo.CreateNotificationsBatch(ctx, rows); err != nil {
 		return fmt.Errorf("dispatch: persist: %w", err)
 	}
+	s.publishNotificationCreated(groupID)
 	if s.pushService != nil {
 		pushPayload, _ := json.Marshal(map[string]any{"title": title, "body": body, "data": payload})
 		go func(ids []uuid.UUID, p string) {

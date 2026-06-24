@@ -74,8 +74,8 @@ class ListItemRow extends StatelessWidget {
                         width: 44,
                         height: 44,
                         child: Center(
-                          child: Icon(
-                            Icons.drag_handle,
+                          child: AppIcon(
+                            name: 'dragHandle',
                             size: 18,
                             color: colorScheme.onSurfaceVariant,
                           ),
@@ -163,8 +163,8 @@ class ListItemRow extends StatelessWidget {
               if (failedToSync)
                 Padding(
                   padding: const EdgeInsets.only(left: MitlistSpacing.sm),
-                  child: Icon(
-                    Icons.sync_problem,
+                  child: AppIcon(
+                    name: 'exclamationTriangle',
                     size: 18,
                     color: colorScheme.error,
                   ),

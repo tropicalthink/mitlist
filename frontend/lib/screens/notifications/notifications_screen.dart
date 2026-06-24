@@ -6,8 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../models/group_models.dart';
 import '../../models/notification_models.dart';
 import '../../providers/notification_provider.dart';
+import '../../providers/list_provider.dart' show sseServiceProvider;
+import '../../router.dart' show currentGroupIdProvider;
+import '../../services/group_id_validator.dart';
+import '../../services/sse_service.dart';
+import '../../utils/active_group_context.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
 import '../../providers/group_provider.dart';
@@ -40,19 +46,39 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   String? _error;
   final List<NotificationModel> _items = [];
   final ScrollController _scrollController = ScrollController();
+  StreamSubscription<SseEvent>? _sseSub;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    _load();
+    // Schedule _load after the first frame so inherited widgets (localizations)
+    // are available. Calling AppLocalizations.of(context) inside initState
+    // synchronously violates the inherited-widget dependency rule.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _load();
+    });
   }
 
   @override
   void dispose() {
+    _sseSub?.cancel();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _ensureLiveUpdates(List<Group> groups) {
+    if (_sseSub != null) return; // already wired
+    final gid = resolveActiveGroupId(groups, ref.read(currentGroupIdProvider));
+    if (!isValidGroupId(gid)) return;
+    final sse = ref.read(sseServiceProvider);
+    sse.connect(gid!); // idempotent; no-op if already connected to this group
+    _sseSub = sse.events.listen((event) {
+      if (event.type == 'notification:created') {
+        _load(); // untrusted body: refetch our canonical feed
+      }
+    });
   }
 
   void _onScroll() {
@@ -80,6 +106,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         });
         return;
       }
+      _ensureLiveUpdates(groups);
       final service = await ref.read(notificationServiceProviderAsync.future);
       final data = await service.listNotifications(limit: _pageLimit, offset: 0);
       if (!mounted) return;

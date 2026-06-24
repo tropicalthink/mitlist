@@ -69,6 +69,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
         groupId: groupId,
         storeId: ref.read(selectedStoreIdProvider),
         isOnline: isOnline,
+        cropHint: capture.cropHint,
       );
 
       if (!mounted) return;
