@@ -49,6 +49,7 @@ jobs:
       - name: Build PWA image (Flutter web)
         env:
           API_BASE_URL: ${{ secrets.PRODUCTION_API_BASE_URL }}
+          GLITCHTIP_DSN: ${{ secrets.GLITCHTIP_DSN_WEB }}
         run: |
           ACTOR="${{ steps.vars.outputs.actor }}"
           REPO_NAME="${{ steps.vars.outputs.repo_name }}"
@@ -61,6 +62,8 @@ jobs:
             --no-cache \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --build-arg API_BASE_URL="${API_BASE_URL}" \
+            --build-arg GLITCHTIP_DSN="${GLITCHTIP_DSN}" \
+            --build-arg ENVIRONMENT="production" \
             -t "git.vinylnostalgia.com/$ACTOR/$REPO_NAME-frontend:latest" \
             -t "git.vinylnostalgia.com/$ACTOR/$REPO_NAME-frontend:$VERSION" \
             ./frontend -f ./frontend/Dockerfile.prod

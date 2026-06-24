@@ -6,11 +6,15 @@ COPY pubspec.yaml pubspec.lock ./
 RUN flutter pub get
 COPY . .
 ARG API_BASE_URL=
+ARG GLITCHTIP_DSN=
+ARG ENVIRONMENT=production
 # Flutter does not compile web/drift_worker.dart — compile it for Drift WASM.
 RUN dart compile js -O4 web/drift_worker.dart -o web/drift_worker.dart.js
 RUN flutter build web --release \
     --pwa-strategy none \
-    --dart-define=API_BASE_URL=${API_BASE_URL}
+    --dart-define=API_BASE_URL=${API_BASE_URL} \
+    --dart-define=GLITCHTIP_DSN=${GLITCHTIP_DSN} \
+    --dart-define=ENVIRONMENT=${ENVIRONMENT}
 
 FROM nginx:1.29-alpine
 COPY --from=build /app/build/web /usr/share/nginx/html

@@ -122,7 +122,7 @@ leave on). Point the Flutter app at your server and you're done.
 > not reachable from the public network. If you point `DATABASE_URL` at a remote
 > Postgres over a public network, set `DB_SSLMODE=require` in the root `.env`.
 
-See [backend/README.md](backend/README.md) for full configuration reference.
+See [backend/README.md](backend/README.md) for full configuration reference, including how to [enable optional crash reporting](backend/README.md#enable-error-reporting-optional) (off by default — set `SENTRY_DSN` for the backend and the `GLITCHTIP_DSN_WEB` CI secret for the web PWA).
 
 ---
 

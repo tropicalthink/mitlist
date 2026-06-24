@@ -77,6 +77,56 @@ The `dev` profile (`docker compose up`, no profile flag) uses the convenience
 defaults shipped in the root `.env.example` (`mitlist:mitlist`) — intentional
 for local development.
 
+## Enable error reporting (optional)
+
+Error reporting is **off by default**. Enable it only if you want crash visibility.
+A self-hosted [GlitchTip](https://glitchtip.com) instance is the privacy-preserving
+option — it keeps crash data on your own infra, consistent with mitlist's self-host ethos.
+
+### Backend
+
+Set `SENTRY_DSN` in `backend/.env` (or the container's runtime env) to a
+Sentry-compatible project DSN. No rebuild is required — this is a runtime variable
+only.
+
+```
+SENTRY_DSN=https://<key>@<your-glitchtip-host>/<project-id>
+```
+
+### Web / PWA
+
+The web build bakes the DSN in at compile time via a dart-define. To enable it:
+
+- **CI (Gitea Actions):** create a CI secret named `GLITCHTIP_DSN_WEB` pointing at
+  your GlitchTip/Sentry web project DSN. The deploy workflow reads it automatically.
+- **Manual build:** pass it as a build-arg to the Docker build:
+  ```bash
+  docker build --build-arg GLITCHTIP_DSN=<your-dsn> --build-arg ENVIRONMENT=production \
+    -f frontend/Dockerfile.prod ./frontend
+  ```
+
+The client DSN is designed to be public (it only allows event ingestion), so baking
+it into the web bundle is expected and safe.
+
+### Mobile apps (Android / iOS)
+
+The mobile apps use the **same** dart-define. Build with the DSN passed directly:
+
+```bash
+flutter build appbundle --release \
+  --dart-define=API_BASE_URL=https://your-api-host \
+  --dart-define=GLITCHTIP_DSN=<your-dsn> \
+  --dart-define=ENVIRONMENT=production
+```
+
+(Likewise `flutter build apk` / `flutter build ipa`.) Mobile CI builds are manual
+today; when the mobile CI job lands (plan 014) it must pass the same
+`--dart-define=GLITCHTIP_DSN` and `--dart-define=ENVIRONMENT`. You may reuse the
+web DSN or use a separate GlitchTip/Sentry project per platform.
+
+An empty `GLITCHTIP_DSN` (the default when the secret/build-arg is unset) keeps
+reporting off — the app falls back to running without Sentry.
+
 ## API
 
 All routes under `/api/v1/`, registered in `cmd/api/main.go`.
