@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/go-chi/chi/v5"
 
 	"github.com/mitlist-app/mitlist/internal/api/handlers"
@@ -29,6 +30,18 @@ func main() {
 	cfg.LogMasked()
 
 	log := logger.New(cfg.Environment)
+
+	if cfg.SentryDSN != "" {
+		if err := sentry.Init(sentry.ClientOptions{
+			Dsn:         cfg.SentryDSN,
+			Environment: cfg.Environment,
+			// Release can be wired to a build-time version later.
+		}); err != nil {
+			log.Warn().Err(err).Msg("sentry initialization failed; continuing without error reporting")
+		} else {
+			defer sentry.Flush(2 * time.Second)
+		}
+	}
 
 	pool, err := db.New(cfg)
 	if err != nil {
