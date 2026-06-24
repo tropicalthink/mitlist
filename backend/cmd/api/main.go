@@ -28,6 +28,7 @@ func main() {
 		os.Exit(1)
 	}
 	cfg.LogMasked()
+	cfg.LogIntegrationStatus()
 
 	log := logger.New(cfg.Environment)
 
