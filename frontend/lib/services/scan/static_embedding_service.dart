@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -27,22 +28,35 @@ class EmbedMatch {
 ///   unmatched tokens fall back to [GroceryClassifierService.charTrigrams]
 ///   pieces that are in vocab → any remaining OOV pieces are dropped.
 /// Mean-pool token vectors → query vector → cosine vs catalog → top-k.
+///
+/// The catalog scan is O(catalog × dim) float math. To keep it off the UI
+/// thread, production runs it on a **persistent worker isolate** that owns the
+/// parsed catalog and answers `query → top-k` over a port (so the ~9 MB bundle
+/// is copied to the worker once, not per keystroke). Unit tests inject state
+/// via [seedForTest] and run the identical scan in-process — no isolate.
 class StaticEmbeddingService {
   static const _vocabAsset = 'assets/grocery/embedder_vocab.json';
   static const _catalogAsset = 'assets/grocery/catalog_vectors.json';
 
-  // Loaded state — null until [_load] completes.
+  // In-process state — populated only by [seedForTest] for unit tests.
   Set<String>? _vocabSet;
   Map<String, int>? _vocabIndex;
   List<Float32List>? _vocabVectors; // indexed by vocab position
   List<String>? _itemIds;
   List<Float32List>? _catalogVectors; // one per item, L2-normalised
 
-  // True when we have confirmed that at least one bundle is missing.
+  // True once we have confirmed that at least one bundle is missing/malformed.
   bool _unavailable = false;
+  // True once usable: seeded in-process, or the worker has loaded the bundles.
+  bool _ready = false;
+  // True when [seedForTest] injected state; routes [nearest] in-process so unit
+  // tests need no isolate.
+  bool _inProcess = false;
 
-  // Guard against concurrent loads.
-  Future<void>? _loadFuture;
+  // Persistent worker isolate (production path).
+  Isolate? _isolate;
+  SendPort? _workerSend;
+  Future<bool>? _workerReady;
 
   // ── Pure-math helpers (all @visibleForTesting) ──────────────────────────
 
@@ -194,60 +208,17 @@ class StaticEmbeddingService {
     return s;
   }
 
-  // ── Bundle loading ────────────────────────────────────────────────────────
-
-  Future<void> _load() async {
-    _loadFuture ??= _doLoad();
-    await _loadFuture;
-  }
-
-  /// Eagerly loads the bundles in the background without blocking the caller.
-  /// Safe to call repeatedly — the underlying load runs at most once. Callers on
-  /// a latency-sensitive path (typing/autocomplete) should warm up via this and
-  /// gate semantic use on [isReady] rather than awaiting [nearest] cold.
-  Future<void> warmUp() => _load();
-
-  Future<void> _doLoad() async {
-    try {
-      final vocabJson = await rootBundle.loadString(_vocabAsset);
-      final catalogJson = await rootBundle.loadString(_catalogAsset);
-
-      // Decoding ~9 MB of JSON and dequantising thousands of int8 vectors is
-      // CPU-bound and would jank the UI thread for seconds on first use. Run it
-      // on a background isolate so typing and suggestions stay responsive.
-      final parsed =
-          await compute(_parseEmbedderBundles, <String>[vocabJson, catalogJson]);
-      if (parsed == null) {
-        _unavailable = true;
-        return;
-      }
-      _vocabSet = parsed.vocabSet;
-      _vocabIndex = parsed.vocabIndex;
-      _vocabVectors = parsed.vocabVectors;
-      _itemIds = parsed.itemIds;
-      _catalogVectors = parsed.catalogVectors;
-    } catch (_) {
-      // Bundle absent or malformed — degrade gracefully.
-      _unavailable = true;
-    }
-  }
-
-  // ── Public API ────────────────────────────────────────────────────────────
-
-  /// Returns the top-[topK] nearest catalog items to [query].
-  ///
-  /// Returns `const []` if the bundle is unavailable (fail-soft).
-  Future<List<EmbedMatch>> nearest(String query, {int topK = 5}) async {
-    if (_unavailable) return const [];
-    await _load();
-    if (_unavailable) return const [];
-
-    final vocab = _vocabSet!;
-    final index = _vocabIndex!;
-    final vectors = _vocabVectors!;
-    final itemIds = _itemIds!;
-    final catalog = _catalogVectors!;
-
+  /// Pure top-[topK] cosine scan, shared by the in-process (test) path and the
+  /// worker isolate so both rank identically.
+  static List<EmbedMatch> _scan(
+    String query,
+    int topK, {
+    required Set<String> vocab,
+    required Map<String, int> index,
+    required List<Float32List> vectors,
+    required List<String> itemIds,
+    required List<Float32List> catalog,
+  }) {
     final tokens = tokenize(query, vocab: vocab);
     if (tokens.isEmpty) return const [];
 
@@ -256,27 +227,127 @@ class StaticEmbeddingService {
     // cosine vs each catalog row (catalog is L2-normalised, so dot = cosine)
     final scores = <_Scored>[];
     for (var i = 0; i < catalog.length; i++) {
-      final s = cosine(qVec, catalog[i]);
-      scores.add(_Scored(itemIds[i], s));
+      scores.add(_Scored(itemIds[i], cosine(qVec, catalog[i])));
     }
 
     scores.sort((a, b) => b.score.compareTo(a.score));
-    return scores
-        .take(topK)
-        .map((s) => EmbedMatch(itemId: s.itemId, score: s.score))
-        .toList();
+    return [
+      for (final s in scores.take(topK))
+        EmbedMatch(itemId: s.itemId, score: s.score),
+    ];
   }
 
-  /// Whether the bundle has been loaded and is ready.
-  bool get isReady =>
-      !_unavailable &&
-      _vocabIndex != null &&
-      _catalogVectors != null;
+  // ── Worker lifecycle ────────────────────────────────────────────────────────
+
+  /// Eagerly spawns the worker and loads the bundles in the background without
+  /// blocking the caller. Safe to call repeatedly — the spawn+load runs at most
+  /// once. Callers on a latency-sensitive path (typing/autocomplete) should warm
+  /// up via this and gate semantic use on [isReady] rather than awaiting
+  /// [nearest] cold.
+  Future<void> warmUp() async {
+    if (_unavailable || _inProcess) return;
+    await _ensureWorker();
+  }
+
+  Future<bool> _ensureWorker() => _workerReady ??= _spawnAndLoad();
+
+  Future<bool> _spawnAndLoad() async {
+    // rootBundle is only available on the main isolate; load the JSON here, then
+    // hand it to the worker, which parses + dequantises off the UI thread.
+    final String vocabJson;
+    final String catalogJson;
+    try {
+      vocabJson = await rootBundle.loadString(_vocabAsset);
+      catalogJson = await rootBundle.loadString(_catalogAsset);
+    } catch (_) {
+      // Bundle absent — degrade gracefully, never spawn an isolate.
+      _unavailable = true;
+      return false;
+    }
+
+    try {
+      final handshake = ReceivePort();
+      _isolate = await Isolate.spawn(_embeddingIsolateMain, handshake.sendPort);
+      _workerSend = await handshake.first as SendPort;
+      handshake.close();
+
+      final reply = ReceivePort();
+      _workerSend!.send(['load', reply.sendPort, vocabJson, catalogJson]);
+      final ok = await reply.first == true;
+      reply.close();
+      if (!ok) {
+        _unavailable = true;
+        _teardownWorker();
+        return false;
+      }
+      _ready = true;
+      return true;
+    } catch (_) {
+      _unavailable = true;
+      _teardownWorker();
+      return false;
+    }
+  }
+
+  void _teardownWorker() {
+    _isolate?.kill(priority: Isolate.immediate);
+    _isolate = null;
+    _workerSend = null;
+  }
+
+  /// Releases the worker isolate. Safe to call multiple times.
+  void dispose() => _teardownWorker();
+
+  // ── Public API ────────────────────────────────────────────────────────────
+
+  /// Returns the top-[topK] nearest catalog items to [query].
+  ///
+  /// Returns `const []` if the bundle is unavailable (fail-soft).
+  Future<List<EmbedMatch>> nearest(String query, {int topK = 5}) async {
+    if (_unavailable) return const [];
+
+    // Test path: seeded in-process, scan synchronously (no isolate).
+    if (_inProcess) {
+      return _scan(
+        query,
+        topK,
+        vocab: _vocabSet!,
+        index: _vocabIndex!,
+        vectors: _vocabVectors!,
+        itemIds: _itemIds!,
+        catalog: _catalogVectors!,
+      );
+    }
+
+    // Production path: run the catalog scan on the worker isolate so a keystroke
+    // never blocks the UI thread on cosine math.
+    final ready = await _ensureWorker();
+    if (!ready) return const [];
+
+    final response = ReceivePort();
+    _workerSend!.send(['query', response.sendPort, query, topK]);
+    final result = await response.first as List;
+    response.close();
+
+    final ids = result[0] as List;
+    final scores = result[1] as List;
+    return [
+      for (var i = 0; i < ids.length; i++)
+        EmbedMatch(
+          itemId: ids[i] as String,
+          score: (scores[i] as num).toDouble(),
+        ),
+    ];
+  }
+
+  /// Whether the embedder is loaded and ready to score queries.
+  bool get isReady => !_unavailable && _ready;
 
   /// Directly inject pre-built state — for tests only.
   ///
   /// Allows unit tests to bypass asset loading and supply hand-crafted
-  /// fixture data, verifying the pure-Dart logic without any I/O.
+  /// fixture data, verifying the pure-Dart logic without any I/O. Routes
+  /// [nearest] through the in-process scan so no isolate is spawned.
   @visibleForTesting
   void seedForTest({
     required List<String> vocab,
@@ -290,8 +361,8 @@ class StaticEmbeddingService {
     _itemIds = itemIds;
     _catalogVectors = catalogVectors;
     _unavailable = false;
-    // Pre-empt the lazy load so nearest() skips _load().
-    _loadFuture = Future.value();
+    _ready = true;
+    _inProcess = true;
   }
 }
 
@@ -301,8 +372,52 @@ class _Scored {
   const _Scored(this.itemId, this.score);
 }
 
+/// Entry point for the persistent embedding worker isolate. Owns the parsed
+/// catalog and answers `query → top-k` requests so the cosine scan never runs
+/// on the UI isolate. Messages (each carries a one-shot reply port):
+///   ['load',  replyPort, vocabJson, catalogJson] → replyPort.send(bool ok)
+///   ['query', replyPort, query, topK]            → replyPort.send([ids, scores])
+void _embeddingIsolateMain(SendPort handshake) {
+  final rx = ReceivePort();
+  handshake.send(rx.sendPort);
+
+  _ParsedBundles? state;
+  rx.listen((message) {
+    final msg = message as List;
+    final kind = msg[0] as String;
+    final reply = msg[1] as SendPort;
+
+    if (kind == 'load') {
+      state = _parseEmbedderBundles([msg[2] as String, msg[3] as String]);
+      reply.send(state != null);
+      return;
+    }
+
+    if (kind == 'query') {
+      final s = state;
+      if (s == null) {
+        reply.send(const [<String>[], <double>[]]);
+        return;
+      }
+      final matches = StaticEmbeddingService._scan(
+        msg[2] as String,
+        msg[3] as int,
+        vocab: s.vocabSet,
+        index: s.vocabIndex,
+        vectors: s.vocabVectors,
+        itemIds: s.itemIds,
+        catalog: s.catalogVectors,
+      );
+      reply.send([
+        [for (final m in matches) m.itemId],
+        [for (final m in matches) m.score],
+      ]);
+    }
+  });
+}
+
 /// Parsed embedder state, produced off the main isolate by
-/// [_parseEmbedderBundles] and copied back to be installed on the service.
+/// [_parseEmbedderBundles] and kept resident in the worker isolate.
 class _ParsedBundles {
   final Set<String> vocabSet;
   final Map<String, int> vocabIndex;
@@ -318,9 +433,9 @@ class _ParsedBundles {
   });
 }
 
-/// Decodes + dequantises the vocab/catalog JSON bundles. Pure and isolate-safe
-/// so it can run under [compute]; returns null if either bundle is malformed.
-/// [jsons] is `[vocabJson, catalogJson]`.
+/// Decodes + dequantises the vocab/catalog JSON bundles. Pure and isolate-safe;
+/// returns null if either bundle is malformed. [jsons] is `[vocabJson,
+/// catalogJson]`.
 _ParsedBundles? _parseEmbedderBundles(List<String> jsons) {
   try {
     final vocabData = jsonDecode(jsons[0]) as Map<String, dynamic>;

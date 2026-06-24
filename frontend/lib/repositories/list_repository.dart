@@ -150,23 +150,20 @@ class ListRepository {
   // Offline-first writes (optimistic local + outbox)
   // ---------------------------------------------------------------------------
 
-  /// Append position for a new optimistic row: one past the highest existing
-  /// local position (or 0 on an empty list). Mirrors the server's max+1 append
-  /// so the row lands at the bottom and does not jump when the create syncs.
-  Future<int> _nextLocalPosition(String listId) async {
-    final rows = await _db.getItemsByListOnce(listId);
-    var maxPos = -1;
-    for (final r in rows) {
-      if (r.position > maxPos) maxPos = r.position;
-    }
-    return maxPos + 1;
-  }
-
   Future<ListItem> createItemOfflineFirst(
       String listId, CreateListItemRequest req) async {
     final tempId = _uuid.v4();
     final now = DateTime.now();
-    final position = await _nextLocalPosition(listId);
+
+    // Read existing rows once and reuse them for both the append position and
+    // the list-card preview, instead of re-reading the table inside the preview
+    // patch. The new row appends one past the highest local position so it lands
+    // at the bottom and does not jump when the create syncs.
+    final existingRows = await _db.getItemsByListOnce(listId);
+    var maxPos = -1;
+    for (final r in existingRows) {
+      if (r.position > maxPos) maxPos = r.position;
+    }
 
     final local = ListItem(
       id: tempId,
@@ -176,15 +173,22 @@ class ListRepository {
       unit: req.unit,
       note: req.note,
       checked: false,
-      position: position,
+      position: maxPos + 1,
       priceCents: req.priceCents,
       canonicalItemId: req.canonicalItemId,
       createdAt: now,
       updatedAt: now,
     );
 
+    // The items stream fires on this write, so the row appears immediately. The
+    // preview patch only feeds the hub list-card, so it runs off the critical
+    // path.
     await _db.upsertListItemsRows([_toListItemsRow(local)]);
-    await _patchListPreviewFromLocalItems(listId);
+    await _patchListPreviewFromItems(
+      listId,
+      [...existingRows.map(_toListItem), local],
+      itemCount: existingRows.length + 1,
+    );
     await _db.enqueueOutbox(
       id: _uuid.v4(),
       type: 'createItem',
@@ -436,6 +440,88 @@ class ListRepository {
     if (_autoSync) unawaited(drainOutboxOnce());
   }
 
+  /// Offline-first bulk check / uncheck. Flips every row whose `checked`
+  /// differs from [checked] in a single local write — one stream emit, so the
+  /// whole list updates at once — records a purchase signal for each item that
+  /// becomes checked, then queues one `updateItem` per row for the server.
+  Future<void> setAllCheckedOfflineFirst(
+    String listId, {
+    required bool checked,
+  }) async {
+    final rows = await _db.getItemsByListOnce(listId);
+    final targets = rows.where((r) => r.checked != checked).toList();
+    if (targets.isEmpty) return;
+
+    final now = DateTime.now();
+    final patched = <ListItemsTableCompanion>[];
+    for (final r in targets) {
+      final existing = _toListItem(r);
+      patched.add(_toListItemsRow(ListItem(
+        id: existing.id,
+        listId: existing.listId,
+        name: existing.name,
+        quantity: existing.quantity,
+        unit: existing.unit,
+        note: existing.note,
+        checked: checked,
+        position: existing.position,
+        priceCents: existing.priceCents,
+        canonicalItemId: existing.canonicalItemId,
+        claimedBy: existing.claimedBy,
+        createdAt: existing.createdAt,
+        updatedAt: now,
+      )));
+    }
+    await _db.upsertListItemsRows(patched);
+    await _patchListPreviewFromLocalItems(listId);
+
+    for (final r in targets) {
+      if (checked) _recordPurchaseSignal(listId, r.id, r);
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'updateItem',
+        payload: {
+          'listId': listId,
+          'itemId': r.id,
+          'patch': UpdateListItemRequest(checked: checked).toJson(),
+        },
+        idempotencyKey: 'updateItem:${r.id}:${now.toIso8601String()}',
+        entityType: 'listItem',
+        entityId: r.id,
+      );
+    }
+
+    if (_autoSync) unawaited(drainOutboxOnce());
+  }
+
+  /// Offline-first clear. Deletes the matching rows locally in one write (one
+  /// stream emit, so the list empties instantly) and queues a single
+  /// `clearItems` op for the server, so it works offline and syncs when online.
+  Future<void> clearItemsOfflineFirst(
+    String listId, {
+    required bool onlyChecked,
+  }) async {
+    final rows = await _db.getItemsByListOnce(listId);
+    final targets =
+        (onlyChecked ? rows.where((r) => r.checked) : rows).toList();
+    if (targets.isEmpty) return;
+    final ids = targets.map((r) => r.id).toList();
+
+    await (_db.delete(_db.listItemsTable)..where((t) => t.id.isIn(ids))).go();
+    await _patchListPreviewFromLocalItems(listId);
+
+    await _db.enqueueOutbox(
+      id: _uuid.v4(),
+      type: 'clearItems',
+      payload: {'listId': listId, 'onlyChecked': onlyChecked},
+      idempotencyKey: 'clearItems:$listId:${DateTime.now().toIso8601String()}',
+      entityType: 'list',
+      entityId: listId,
+    );
+
+    if (_autoSync) unawaited(drainOutboxOnce());
+  }
+
   Future<void> drainOutboxOnce() async {
     if (_isDraining) return;
     _isDraining = true;
@@ -447,6 +533,7 @@ class ListRepository {
           'deleteItem',
           'reorderItems',
           'addItemAmount',
+          'clearItems',
         ],
         handlers: {
           'createItem': (op, payload) => _syncCreateItem(op.id, payload),
@@ -455,6 +542,7 @@ class ListRepository {
           'reorderItems': (op, payload) => _syncReorderItems(op.id, payload),
           'addItemAmount': (op, payload) =>
               _syncAddItemAmount(op.id, payload),
+          'clearItems': (op, payload) => _syncClearItems(op.id, payload),
         },
       );
     } finally {
@@ -588,6 +676,19 @@ class ListRepository {
     }
     final itemIds = rawIds.map((e) => e.toString()).toList();
     await _remote.reorderItems(listId, ReorderItemsRequest(itemIds: itemIds));
+    await _db.deleteOutboxOp(opId);
+    await _patchListPreviewFromLocalItems(listId);
+  }
+
+  Future<void> _syncClearItems(
+      String opId, Map<String, dynamic> payload) async {
+    final listId = payload['listId'] as String?;
+    if (listId == null) {
+      await _db.deleteOutboxOp(opId);
+      return;
+    }
+    final onlyChecked = payload['onlyChecked'] as bool? ?? false;
+    await _remote.clearItems(listId, onlyChecked: onlyChecked);
     await _db.deleteOutboxOp(opId);
     await _patchListPreviewFromLocalItems(listId);
   }

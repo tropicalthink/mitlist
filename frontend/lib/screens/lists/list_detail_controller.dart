@@ -62,6 +62,12 @@ class ListDetailController extends ChangeNotifier {
   String? _userId;
   int _suggestGeneration = 0;
 
+  /// Bumped instead of [notifyListeners] when only the composer suggestions
+  /// change, so a keystroke rebuilds the suggestion chips without rebuilding
+  /// the item list. The screen wraps the composer in a [ValueListenableBuilder]
+  /// on this; the body keeps listening to the controller itself.
+  final ValueNotifier<int> suggestionsRevision = ValueNotifier<int>(0);
+
   // Cached sorted sections — recomputed only when items or settle-state change.
   List<ListItem> _openItems = const [];
   List<ListItem> _doneItems = const [];
@@ -106,12 +112,18 @@ class ListDetailController extends ChangeNotifier {
     }
     _suggestDebounce?.cancel();
     _itemsSub?.cancel();
+    suggestionsRevision.dispose();
     super.dispose();
   }
 
   void _notify() {
     if (_disposed) return;
     notifyListeners();
+  }
+
+  void _bumpSuggestions() {
+    if (_disposed) return;
+    suggestionsRevision.value++;
   }
 
   // ---- Load & live data -----------------------------------------------------
@@ -349,41 +361,19 @@ class ListDetailController extends ChangeNotifier {
   }
 
   Future<void> completeAll() async {
-    final service = _service;
-    if (service == null) return;
-    for (final item in _items.where((i) => !i.checked)) {
-      try {
-        final repo = await ref.read(listRepositoryProvider.future);
-        await repo.updateItemOfflineFirst(
-          listId,
-          item.id,
-          UpdateListItemRequest(checked: true),
-        );
-        if (_disposed) return;
-        _dirty = true;
-      } catch (_) {
-        break;
-      }
-    }
+    if (_service == null) return;
+    final repo = await ref.read(listRepositoryProvider.future);
+    await repo.setAllCheckedOfflineFirst(listId, checked: true);
+    if (_disposed) return;
+    _dirty = true;
   }
 
   Future<void> uncheckAll() async {
-    final service = _service;
-    if (service == null) return;
-    for (final item in _items.where((i) => i.checked)) {
-      try {
-        final repo = await ref.read(listRepositoryProvider.future);
-        await repo.updateItemOfflineFirst(
-          listId,
-          item.id,
-          UpdateListItemRequest(checked: false),
-        );
-        if (_disposed) return;
-        _dirty = true;
-      } catch (_) {
-        break;
-      }
-    }
+    if (_service == null) return;
+    final repo = await ref.read(listRepositoryProvider.future);
+    await repo.setAllCheckedOfflineFirst(listId, checked: false);
+    if (_disposed) return;
+    _dirty = true;
   }
 
   /// Adds an item parsed from the composer text. A bare name takes the plain
@@ -427,26 +417,25 @@ class ListDetailController extends ChangeNotifier {
   }
 
   Future<void> clearItems({required bool onlyChecked}) async {
-    final service = _service;
-    if (service == null) return;
-    await service.clearItems(listId, onlyChecked: onlyChecked);
+    if (_service == null) return;
     final repo = await ref.read(listRepositoryProvider.future);
-    await repo.refreshItems(listId);
+    await repo.clearItemsOfflineFirst(listId, onlyChecked: onlyChecked);
     if (_disposed) return;
     _dirty = true;
   }
 
   Future<void> deleteItem(ListItem item) async {
     _cancelSettle(item.id);
-    final service = _service;
-    if (service == null) return;
-    final repo = await ref.read(listRepositoryProvider.future);
-    await repo.deleteItemOfflineFirst(listId, item.id);
-    if (_disposed) return;
+    if (_service == null) return;
+    // Optimistic removal so the row disappears instantly; the offline-first
+    // delete + background sync follow. On failure the screen surfaces the error
+    // and the next stream emit restores the row from the unchanged DB.
     _sectionsDirty = true;
     _items.remove(item);
     _dirty = true;
     _notify();
+    final repo = await ref.read(listRepositoryProvider.future);
+    await repo.deleteItemOfflineFirst(listId, item.id);
   }
 
   Future<void> restoreDeletedItem(ListItem item) async {
@@ -706,7 +695,7 @@ class ListDetailController extends ChangeNotifier {
 
     if (_disposed || _suggestGeneration != gen) return;
     _grocerySuggestions = blended;
-    _notify();
+    _bumpSuggestions();
 
     try {
       final service = await ref.read(listServiceProviderAsync.future);
@@ -715,11 +704,11 @@ class ListDetailController extends ChangeNotifier {
           await service.listProducts(groupId, search: q.isEmpty ? null : q);
       if (_disposed || _suggestGeneration != gen) return;
       _productSuggestions = products.take(8).toList();
-      _notify();
+      _bumpSuggestions();
     } catch (_) {
       if (!_disposed && _suggestGeneration == gen) {
         _productSuggestions = [];
-        _notify();
+        _bumpSuggestions();
       }
     }
   }

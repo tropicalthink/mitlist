@@ -1734,6 +1734,18 @@ class FakeListRepository implements ListRepository {
   ) async {}
 
   @override
+  Future<void> setAllCheckedOfflineFirst(
+    String listId, {
+    required bool checked,
+  }) async {}
+
+  @override
+  Future<void> clearItemsOfflineFirst(
+    String listId, {
+    required bool onlyChecked,
+  }) async {}
+
+  @override
   Future<void> deleteListLocal(String listId) async {}
 
   @override
