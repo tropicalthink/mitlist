@@ -3,6 +3,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'app.dart';
 
 /// Must be a top-level function so the OS can invoke it in a separate isolate.
@@ -23,5 +24,20 @@ Future<void> main() async {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   }
 
-  runApp(const ProviderScope(child: MitlistApp()));
+  const dsn = String.fromEnvironment('GLITCHTIP_DSN', defaultValue: '');
+  const env = String.fromEnvironment('ENVIRONMENT', defaultValue: 'development');
+
+  if (dsn.isEmpty) {
+    runApp(const ProviderScope(child: MitlistApp()));
+  } else {
+    await SentryFlutter.init(
+      (options) {
+        options.dsn = dsn;
+        options.environment = env;
+        // Keep defaults conservative for a household app; no PII, no perf tracing.
+        options.tracesSampleRate = 0.0;
+      },
+      appRunner: () => runApp(const ProviderScope(child: MitlistApp())),
+    );
+  }
 }
