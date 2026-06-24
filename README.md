@@ -223,4 +223,7 @@ out of the box for local development. For production, set strong values (see
 
 ## License
 
-AGPL-3.0 — Free forever. Share your improvements.
+[AGPL-3.0](LICENSE) — Free forever. Share your improvements.
+
+This repository contains the complete corresponding source. You may obtain it
+from this repository as permitted under the GNU Affero General Public License.
