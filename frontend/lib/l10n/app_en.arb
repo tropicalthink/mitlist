@@ -1914,6 +1914,10 @@
   "@offlineBannerFailedCount": { "description": "Banner text when sync failed with count", "placeholders": { "count": { "type": "num" } } },
   "offlineBannerFailedOne": "Couldn't sync a change",
   "@offlineBannerFailedOne": { "description": "Banner text when sync failed (single)" },
+  "offlineBannerConflictCount": "{count} changes need your review",
+  "@offlineBannerConflictCount": { "description": "Sync banner: multiple conflicts to resolve", "placeholders": { "count": { "type": "int" } } },
+  "offlineBannerConflictOne": "A change needs your review",
+  "@offlineBannerConflictOne": { "description": "Sync banner: one conflict to resolve" },
   "offlineBannerRetry": "Retry",
   "@offlineBannerRetry": { "description": "Retry button in offline banner" },
 

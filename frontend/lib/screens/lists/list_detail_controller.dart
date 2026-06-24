@@ -384,13 +384,14 @@ class ListDetailController extends ChangeNotifier {
     if (service == null) return;
     final repo = await ref.read(listRepositoryProvider.future);
     final parsed = parseComposerItem(text);
+    final ListItem created;
     if (parsed.quantity == 1 && parsed.unit.isEmpty) {
-      await repo.createItemOfflineFirst(
+      created = await repo.createItemOfflineFirst(
         listId,
         CreateListItemRequest(name: parsed.name),
       );
     } else {
-      await repo.addItemAmountOfflineFirst(
+      created = await repo.addItemAmountOfflineFirst(
         listId,
         name: parsed.name,
         amount: parsed.quantity,
@@ -398,7 +399,18 @@ class ListDetailController extends ChangeNotifier {
       );
     }
     if (_disposed) return;
+    // Reflect the new/merged row immediately so it appears the instant the local
+    // write returns, without waiting for the items stream to re-emit. The stream
+    // reconciles (and swaps the temp id for the server id) on its next emit.
+    final idx = _items.indexWhere((i) => i.id == created.id);
+    if (idx >= 0) {
+      _items[idx] = created;
+    } else {
+      _items.add(created);
+    }
+    _sectionsDirty = true;
     _dirty = true;
+    _notify();
   }
 
   /// Adds a restock suggestion via the same offline-first create path as

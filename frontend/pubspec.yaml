@@ -69,6 +69,7 @@ dependencies:
   web: ^1.1.1
   camera: ^0.12.0+1
   opencv_dart: 1.2.5
+  sentry_flutter: ^8.14.2
 
 dev_dependencies:
   flutter_test:

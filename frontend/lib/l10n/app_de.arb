@@ -901,6 +901,8 @@
   "offlineBannerSyncing": "Synchronisiere Änderungen…",
   "offlineBannerFailedCount": "Konnte {count} Änderungen nicht synchronisieren",
   "offlineBannerFailedOne": "Konnte eine Änderung nicht synchronisieren",
+  "offlineBannerConflictCount": "{count} Änderungen erfordern Ihre Überprüfung",
+  "offlineBannerConflictOne": "Eine Änderung erfordert Ihre Überprüfung",
   "offlineBannerRetry": "Wiederholen",
   "composerNewItem": "Neuer Eintrag",
   "composerScanList": "Liste scannen",

@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'dart:ui' show PlatformDispatcher;
 
-import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'l10n/app_localizations.dart';
@@ -45,20 +43,6 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
       environment: const String.fromEnvironment('ENVIRONMENT',
           defaultValue: 'development'),
     );
-
-    if (kReleaseMode) {
-      FlutterError.onError = (details) {
-        FlutterError.presentError(details);
-        ErrorReporter().captureException(
-          details.exception,
-          stackTrace: details.stack,
-        );
-      };
-      PlatformDispatcher.instance.onError = (error, stack) {
-        ErrorReporter().captureException(error, stackTrace: stack);
-        return true;
-      };
-    }
   }
 
   void _ensureDeferredInit() {

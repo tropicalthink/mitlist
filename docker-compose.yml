@@ -57,9 +57,9 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgres://mitlist:mitlist@db:5432/mitlist?sslmode=disable
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-mitlist}?sslmode=${DB_SSLMODE:-disable}
       REDIS_URL: redis://redis:6379
-      REDIS_PASSWORD: ""
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       ENVIRONMENT: production
       RUN_MIGRATIONS_ON_STARTUP: "true"
       WARM_CACHE_ON_STARTUP: "false"
@@ -91,15 +91,15 @@ services:
     image: postgres:16-alpine
     container_name: mitlist-db
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     environment:
-      POSTGRES_USER: mitlist
-      POSTGRES_PASSWORD: mitlist
-      POSTGRES_DB: mitlist
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-mitlist}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U mitlist -d mitlist"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB:-mitlist}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -118,12 +118,13 @@ services:
   redis:
     image: redis:7-alpine
     container_name: mitlist-redis
+    command: ["sh", "-c", "redis-server ${REDIS_PASSWORD:+--requirepass \"$REDIS_PASSWORD\"}"]
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli ${REDIS_PASSWORD:+-a \"$REDIS_PASSWORD\"} ping | grep -q PONG"]
       interval: 5s
       timeout: 5s
       retries: 5

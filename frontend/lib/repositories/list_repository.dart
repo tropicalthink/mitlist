@@ -107,6 +107,13 @@ class ListRepository {
     if (pendingOps.isEmpty) return;
 
     final serverIds = serverItems.map((i) => i.id).toSet();
+
+    var maxPos = -1;
+    for (final i in serverItems) {
+      if (i.position > maxPos) maxPos = i.position;
+    }
+    var restored = 0;
+
     for (final op in pendingOps) {
       final tempId = op.entityId;
       if (tempId == null || serverIds.contains(tempId)) continue;
@@ -132,7 +139,7 @@ class ListRepository {
               (payload['quantity'] as num?)?.toDouble() ?? 1.0),
           unit: Value(payload['unit'] as String? ?? ''),
           checked: const Value(false),
-          position: const Value(0),
+          position: Value(maxPos + 1 + restored),
           priceCents: Value(payload['priceCents'] as int?),
           canonicalItemId:
               Value(payload['canonicalItemId'] as String?),
@@ -140,6 +147,7 @@ class ListRepository {
           updatedAt: Value(DateTime.now()),
         ),
       ]);
+      restored++;
     }
   }
 
