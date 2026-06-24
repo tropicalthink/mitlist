@@ -45,6 +45,23 @@ All config via environment variables (see `.env.example`):
 | `S3_ENDPOINT_URL` | No | — | R2 S3 endpoint |
 | `GLITCHTIP_DSN` | No | — | Error reporting DSN |
 
+### Production credentials (docker compose --profile prod)
+
+The prod compose profile reads these variables from `backend/.env`. They have
+**no insecure fallback** — the stack will refuse to start if they are unset.
+
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `POSTGRES_USER` | Yes | DB user for the bundled Postgres |
+| `POSTGRES_PASSWORD` | Yes | Generate with `openssl rand -base64 24` |
+| `POSTGRES_DB` | No | Defaults to `mitlist` |
+| `REDIS_PASSWORD` | No | Strongly recommended; set it and Redis enforces auth |
+| `DB_SSLMODE` | No | Defaults to `disable` (correct for same-host Postgres); set `require` if pointing at a remote Postgres over the public network |
+
+The `dev` profile (`docker compose up`, no profile flag) uses the built-in
+convenience defaults (`mitlist:mitlist`) — those are intentional for local
+development and are not affected by these prod variables.
+
 ## API
 
 All routes under `/api/v1/`, registered in `cmd/api/main.go`.

@@ -77,13 +77,43 @@ You're already paying rent. Why pay another subscription just to split expenses 
 ```bash
 git clone https://git.vinylnostalgia.com/mo/mitlist.git
 cd mitlist
-cp backend/.env.example backend/.env  # edit with your settings
+cp backend/.env.example backend/.env
+```
+
+Open `backend/.env` and set **strong, unique** credentials before starting:
+
+```bash
+# Generate strong passwords (run these and paste the output into .env)
+openssl rand -base64 24   # use for POSTGRES_PASSWORD
+openssl rand -base64 24   # use for REDIS_PASSWORD
+```
+
+Set in `backend/.env`:
+
+```
+POSTGRES_PASSWORD=<strong random value>   # REQUIRED — no default
+REDIS_PASSWORD=<strong random value>      # strongly recommended
+POSTGRES_USER=mitlist
+POSTGRES_DB=mitlist
+```
+
+Also fill in `SECRET_KEY`, `SESSION_SECRET_KEY`, and any OAuth/API keys you need.
+
+Then start:
+
+```bash
 docker compose --profile prod up -d
 ```
 
-That's it. PostgreSQL, Redis, and the Go API start automatically. Point the Flutter app at your server and you're done.
+PostgreSQL, Redis, and the Go API start automatically. The database schema is
+created on first boot (`RUN_MIGRATIONS_ON_STARTUP=true` — idempotent, safe to
+leave on). Point the Flutter app at your server and you're done.
 
-See [backend/README.md](backend/README.md) for detailed configuration.
+> **Security note**: DB and Redis ports are bound to `127.0.0.1` only and are
+> not reachable from the public network. If you point `DATABASE_URL` at a remote
+> Postgres over a public network, set `DB_SSLMODE=require` in your `.env`.
+
+See [backend/README.md](backend/README.md) for full configuration reference.
 
 ---
 
