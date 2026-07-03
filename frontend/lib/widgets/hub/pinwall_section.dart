@@ -25,6 +25,7 @@ import '../../utils/haptics.dart';
 import '../app_bottom_sheet.dart';
 import '../app_button.dart';
 import '../pinwall/pinwall_note_card.dart';
+import '../pinwall/pinwall_stat_rows.dart';
 import 'pinned_memo_card.dart';
 
 class PinwallSection extends ConsumerStatefulWidget {
@@ -929,11 +930,26 @@ class _PinwallQuickStatsState extends State<_PinwallQuickStats> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _StatRowDivider(color: border),
-                      _ChoresStatRow(groupId: widget.groupId),
+                      PinwallChoresStatRow(
+                        groupId: widget.groupId,
+                        style: PinwallStatRowStyle.inline,
+                        ink: textColor,
+                        muted: mutedColor,
+                      ),
                       _StatRowDivider(color: border),
-                      _FinanceStatRow(groupId: widget.groupId),
+                      PinwallFinanceStatRow(
+                        groupId: widget.groupId,
+                        style: PinwallStatRowStyle.inline,
+                        ink: textColor,
+                        muted: mutedColor,
+                      ),
                       _StatRowDivider(color: border),
-                      _ListsStatRow(groupId: widget.groupId),
+                      PinwallListsStatRow(
+                        groupId: widget.groupId,
+                        style: PinwallStatRowStyle.inline,
+                        ink: textColor,
+                        muted: mutedColor,
+                      ),
                       _StatRowDivider(color: border),
                       _TonightStatRow(groupId: widget.groupId),
                     ],
@@ -959,185 +975,6 @@ class _StatRowDivider extends StatelessWidget {
       indent: MitlistSpacing.md,
       endIndent: MitlistSpacing.md,
       color: color.withValues(alpha: 0.5),
-    );
-  }
-}
-
-class _InlineStatRow extends StatelessWidget {
-  const _InlineStatRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.accent,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color accent;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = dark
-        ? MitlistColors.surfaceSoft.withValues(alpha: 0.9)
-        : MitlistColors.pinwallNoteTextLight;
-    final mutedColor = textColor.withValues(alpha: 0.6);
-
-    return Semantics(
-      button: true,
-      label: '$label: $value',
-      child: InkWell(
-        onTap: () {
-          unawaited(Haptics.light());
-          onTap();
-        },
-        borderRadius: BorderRadius.circular(MitlistTheme.radiusMd),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: MitlistSpacing.md,
-            vertical: MitlistSpacing.sm + 2,
-          ),
-          child: Row(
-            children: [
-              Icon(icon, size: 18, color: accent),
-              const SizedBox(width: MitlistSpacing.sm),
-              Text(
-                label,
-                style: textTheme.bodyMedium?.copyWith(
-                  color: textColor,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const Spacer(),
-              Flexible(
-                child: Text(
-                  value,
-                  style: textTheme.labelMedium?.copyWith(color: mutedColor),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.right,
-                ),
-              ),
-              const SizedBox(width: MitlistSpacing.xs),
-              Icon(Icons.chevron_right, size: 18, color: mutedColor),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ChoresStatRow extends ConsumerWidget {
-  const _ChoresStatRow({required this.groupId});
-
-  final String groupId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-    final chores = ref.watch(cachedCurrentChoresByGroupProvider(groupId));
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final tomorrow = today.add(const Duration(days: 1));
-
-    final choresDue = chores.valueOrNull?.where((c) {
-          final due = c.pendingAssignment?.dueDate;
-          return due != null &&
-              due.isBefore(tomorrow) &&
-              due.isAfter(today.subtract(const Duration(days: 1))) &&
-              c.pendingAssignment?.status != 'completed';
-        }).length ??
-        0;
-    final choresOverdue = chores.valueOrNull?.where((c) {
-          final due = c.pendingAssignment?.dueDate;
-          return due != null &&
-              due.isBefore(today) &&
-              c.pendingAssignment?.status != 'completed';
-        }).length ??
-        0;
-    final total = choresDue + choresOverdue;
-
-    final theme = Theme.of(context).colorScheme;
-    final accent = choresOverdue > 0
-        ? theme.error
-        : (choresDue > 0 ? theme.secondary : theme.tertiary);
-    final value = choresOverdue > 0
-        ? '$choresOverdue ${l10n.hubStatsOverdue}'
-        : (total > 0 ? '$total ${l10n.hubStatsDue}' : l10n.hubStatsAllDone);
-
-    return _InlineStatRow(
-      icon: Icons.cleaning_services_outlined,
-      label: l10n.hubStatsChores,
-      value: value,
-      accent: accent,
-      onTap: () => context.goNamed('chores'),
-    );
-  }
-}
-
-class _FinanceStatRow extends ConsumerWidget {
-  const _FinanceStatRow({required this.groupId});
-
-  final String groupId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-    final finance = ref.watch(cachedFinanceSummaryByGroupProvider(groupId));
-    final summary = finance.valueOrNull;
-    final balance = summary != null
-        ? summary.balances.fold<int>(0, (sum, b) => sum + b.total)
-        : 0;
-
-    final theme = Theme.of(context).colorScheme;
-    final accent = balance > 0
-        ? theme.tertiary
-        : (balance < 0 ? theme.error : theme.onSurfaceVariant);
-    final amount = balance > 0
-        ? '+\$${_fmt(balance)}'
-        : (balance < 0 ? '-\$${_fmt(-balance)}' : '\$${_fmt(balance)}');
-    final value =
-        '$amount · ${balance != 0 ? l10n.hubStatsOpen : l10n.expenseSettled}';
-
-    return _InlineStatRow(
-      icon: Icons.receipt_outlined,
-      label: l10n.hubStatsBalance,
-      value: value,
-      accent: accent,
-      onTap: () => context.goNamed('money'),
-    );
-  }
-
-  String _fmt(int cents) => (cents / 100).toStringAsFixed(0);
-}
-
-class _ListsStatRow extends ConsumerWidget {
-  const _ListsStatRow({required this.groupId});
-
-  final String groupId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-    final lists = ref.watch(cachedListsByGroupProvider(groupId));
-    final listCount = lists.valueOrNull
-            ?.where((l) => l.type == 'shopping' || l.type == 'general')
-            .length ??
-        0;
-
-    final theme = Theme.of(context).colorScheme;
-    return _InlineStatRow(
-      icon: Icons.shopping_cart_outlined,
-      label: l10n.hubStatsLists,
-      value:
-          '$listCount · ${listCount == 1 ? l10n.hubStatsActiveList : l10n.hubStatsActiveLists}',
-      accent: listCount > 0 ? theme.primary : theme.tertiary,
-      onTap: () => context.goNamed('lists'),
     );
   }
 }
@@ -1169,11 +1006,20 @@ class _TonightStatRow extends ConsumerWidget {
       value = selected.recipe?.title ?? l10n.tonightRecipe;
     }
 
-    return _InlineStatRow(
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final ink = dark
+        ? MitlistColors.surfaceSoft.withValues(alpha: 0.9)
+        : MitlistColors.pinwallNoteTextLight;
+    final muted = ink.withValues(alpha: 0.6);
+
+    return PinwallStatRow(
+      style: PinwallStatRowStyle.inline,
       icon: Icons.restaurant_outlined,
       label: l10n.tonightHeader,
       value: value,
       accent: theme.tertiary,
+      ink: ink,
+      muted: muted,
       onTap: () => context.pushNamed('mealPlan'),
     );
   }
