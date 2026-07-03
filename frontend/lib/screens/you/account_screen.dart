@@ -625,7 +625,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       final file = File('${dir.path}/mitlist_expenses.$extension');
       await file.writeAsString(data);
 
-      await Share.shareXFiles([XFile(file.path, mimeType: mime)]);
+      await SharePlus.instance.share(
+        ShareParams(files: [XFile(file.path, mimeType: mime)]),
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

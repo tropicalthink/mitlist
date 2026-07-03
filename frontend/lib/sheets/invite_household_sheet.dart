@@ -304,7 +304,9 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
             icon: const AppIcon(name: 'share', size: 18),
             onPressed: code.isEmpty
                 ? null
-                : () => Share.share(inviteShareText(code, l10n)),
+                : () => SharePlus.instance.share(
+                      ShareParams(text: inviteShareText(code, l10n)),
+                    ),
           ),
         ],
       ),
