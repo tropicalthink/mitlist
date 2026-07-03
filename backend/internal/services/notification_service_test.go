@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -328,7 +329,9 @@ func TestDispatchToGroup_PublishesSSE(t *testing.T) {
 		require.NoError(t, err)
 
 		select {
-		case ev := <-ch:
+		case data := <-ch:
+			var ev sse.Event
+			require.NoError(t, json.Unmarshal(data, &ev))
 			assert.Equal(t, "notification:created", ev.Type)
 			assert.Equal(t, groupID.String(), ev.GroupID)
 		case <-time.After(time.Second):

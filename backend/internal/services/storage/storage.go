@@ -124,6 +124,25 @@ func (s *Service) GetUploadURL(key string, contentType string, expires time.Dura
 	return req.URL
 }
 
+// HeadObjectSize returns the persisted object size in bytes.
+func (s *Service) HeadObjectSize(ctx context.Context, key string) (int64, error) {
+	if s.client == nil || s.bucket == "" {
+		return 0, fmt.Errorf("storage not configured")
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+
+	out, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		return 0, fmt.Errorf("head object in s3: %w", err)
+	}
+	return aws.ToInt64(out.ContentLength), nil
+}
+
 // GetURL returns a presigned URL for the given key.
 func (s *Service) GetURL(key string) string {
 	if s.client == nil || s.bucket == "" {
