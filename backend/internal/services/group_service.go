@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -206,6 +207,8 @@ func (s *GroupService) InviteMember(ctx context.Context, userID, groupID uuid.UU
 
 // JoinGroup allows a user to join a group using an invite code.
 func (s *GroupService) JoinGroup(ctx context.Context, userID uuid.UUID, code string) (*models.Group, error) {
+	code = strings.ToUpper(strings.TrimSpace(code))
+
 	invite, err := s.groupRepo.GetInviteByCode(ctx, code)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) || isNotFound(err) {

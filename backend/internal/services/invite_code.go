@@ -7,8 +7,19 @@ import (
 	"strings"
 )
 
+// inviteAlphabet is an unambiguous base32-style alphabet: no 0/O/1/I/L, so
+// codes are easy to read aloud and transcribe without confusion.
+const inviteAlphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789" // 31 chars
+
+// inviteTokenLen is the length of the crypto-random suffix. 31 chars ≈ 4.954
+// bits/char (log2(31)); 13 chars ≈ 64.4 bits, comfortably clearing the 2^60
+// target keyspace on its own (the ADJ-NOUN prefix adds further entropy on
+// top but is not required to hit the bar).
+const inviteTokenLen = 13
+
 // generatePlayfulInviteCode returns a short, readable, human-shareable invite code.
-// Format: ADJ-NOUN-## (uppercase, hyphen-separated).
+// Format: ADJ-NOUN-TOKEN (uppercase, hyphen-separated), where TOKEN is a
+// 13-character crypto-random suffix providing ~64.4 bits of entropy.
 func generatePlayfulInviteCode() (string, error) {
 	adj, err := pickOne(inviteAdjectives)
 	if err != nil {
@@ -19,14 +30,28 @@ func generatePlayfulInviteCode() (string, error) {
 		return "", err
 	}
 
-	// 2 digits keeps it short; word pairs carry most of the uniqueness.
-	num, err := cryptoRandInt(0, 99)
+	token, err := randToken(inviteTokenLen)
 	if err != nil {
 		return "", err
 	}
 
-	code := fmt.Sprintf("%s-%s-%02d", adj, noun, num)
+	code := fmt.Sprintf("%s-%s-%s", adj, noun, token)
 	return strings.ToUpper(code), nil
+}
+
+// randToken returns an n-character crypto-random string drawn from
+// inviteAlphabet, which is already uppercase and collision-free after
+// strings.ToUpper.
+func randToken(n int) (string, error) {
+	b := make([]byte, n)
+	for i := range b {
+		idx, err := cryptoRandInt(0, len(inviteAlphabet)-1)
+		if err != nil {
+			return "", err
+		}
+		b[i] = inviteAlphabet[idx]
+	}
+	return string(b), nil
 }
 
 func pickOne(items []string) (string, error) {
