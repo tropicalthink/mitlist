@@ -69,9 +69,12 @@ class CandidateGenerator {
     // 3. Classifier (label is a canonical name → map back to an id via alias).
     if (_classifier != null) {
       final preds = await _classifier.classify(rawText, topK: modelTopK);
+      final aliases = await _db.findAliasesByTexts(
+        groupId: groupId,
+        aliasTexts: preds.map((p) => normaliseText(p.label)).toSet(),
+      );
       for (final p in preds) {
-        final alias = await _db.findAlias(
-            groupId: groupId, aliasText: normaliseText(p.label));
+        final alias = aliases[normaliseText(p.label)];
         if (alias == null) continue;
         final c = at(alias.canonicalItemId);
         if (p.score > c.classifierProb) c.classifierProb = p.score;
@@ -90,9 +93,11 @@ class CandidateGenerator {
     }
 
     // Materialise: fetch canonical rows, drop any that no longer exist.
+    final items = await _db.getCanonicalItemsByIds(acc.keys);
+    final itemsById = {for (final item in items) item.id: item};
     final out = <ResolutionCandidate>[];
     for (final entry in acc.entries) {
-      final item = await _db.getCanonicalItemById(entry.key);
+      final item = itemsById[entry.key];
       if (item == null) continue;
       final a = entry.value;
       out.add(ResolutionCandidate(

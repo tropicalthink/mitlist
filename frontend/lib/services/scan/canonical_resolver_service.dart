@@ -10,7 +10,7 @@ class ResolveResult {
   final String? canonicalItemId;
   final String displayName;
   final double score; // 0–1
-  final List<String> alternatives;
+  final List<ResolveAlternative> alternatives;
   final double? autoThreshold;
   final double? reviewThreshold;
 
@@ -21,6 +21,17 @@ class ResolveResult {
     this.alternatives = const [],
     this.autoThreshold,
     this.reviewThreshold,
+  });
+}
+
+/// A ranked runner-up resolution the user can switch to in one tap.
+class ResolveAlternative {
+  final String canonicalItemId;
+  final String displayName;
+
+  const ResolveAlternative({
+    required this.canonicalItemId,
+    required this.displayName,
   });
 }
 
@@ -151,10 +162,15 @@ class CanonicalResolverService {
       return _resolveWithFallback(itemName, groupId, fuzzyResult);
     }
 
-    final alternatives = <String>[];
+    final alternatives = <ResolveAlternative>[];
     if (second != null && second.score >= 0.5) {
       final alt = await _db.getCanonicalItemById(second.alias.canonicalItemId);
-      if (alt != null) alternatives.add(_preferredName(alt));
+      if (alt != null) {
+        alternatives.add(ResolveAlternative(
+          canonicalItemId: alt.id,
+          displayName: _preferredName(alt),
+        ));
+      }
     }
 
     final fuzzyResult = ResolveResult(
@@ -198,7 +214,6 @@ class CanonicalResolverService {
                 canonicalItemId: canonical.id,
                 displayName: _preferredName(canonical),
                 score: top.score,
-                alternatives: preds.skip(1).map((p) => p.label).toList(),
               );
             }
           }

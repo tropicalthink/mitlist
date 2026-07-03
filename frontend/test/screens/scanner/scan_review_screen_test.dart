@@ -11,6 +11,7 @@ import 'package:mitlist/repositories/grocery_repository.dart';
 import 'package:mitlist/repositories/list_repository.dart';
 import 'package:mitlist/screens/scanner/scan_review_screen.dart';
 import 'package:mitlist/services/list_service.dart';
+import 'package:mitlist/services/scan/canonical_resolver_service.dart';
 import 'package:mitlist/services/scan/scan_models.dart';
 import 'package:mitlist/storage/app_database.dart';
 
@@ -111,8 +112,7 @@ void main() {
     expect(call.request.canonicalItemId, 'eggs');
   });
 
-  testWidgets(
-      'ask row leads with OCR text and shows best-guess subtitle',
+  testWidgets('ask row leads with OCR text and shows best-guess subtitle',
       (tester) async {
     await _setLargeSurface(tester);
     await _pumpReview(
@@ -140,8 +140,51 @@ void main() {
     expect(find.text('Best guess: Onion'), findsOneWidget);
   });
 
-  testWidgets(
-      'autoAccept row headline is displayName unchanged',
+  testWidgets('alternative chip applies canonical item before adding to list',
+      (tester) async {
+    await _setLargeSurface(tester);
+    await _pumpReview(
+      tester,
+      db: db,
+      listService: listService,
+      listRepository: listRepository,
+      scanResult: const GroceryScanResult(
+        items: [
+          GroceryPrediction(
+            id: 'p1',
+            rawText: 'ot milk',
+            displayName: 'Milk',
+            canonicalItemId: 'milk',
+            confidenceLevel: ConfidenceLevel.review,
+            confidenceScore: 0.7,
+            alternatives: [
+              ResolveAlternative(
+                canonicalItemId: 'oat-milk',
+                displayName: 'Oat Milk',
+              ),
+            ],
+          ),
+        ],
+      ),
+      targetListId: 'list-existing',
+      targetListName: 'Groceries',
+    );
+
+    expect(find.text('Oat Milk'), findsOneWidget);
+
+    await tester.tap(find.text('Oat Milk'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('1 ITEM'));
+    await tester.pump();
+
+    expect(listRepository.createItemCalls, hasLength(1));
+    final call = listRepository.createItemCalls.single;
+    expect(call.listId, 'list-existing');
+    expect(call.request.name, 'Oat Milk');
+    expect(call.request.canonicalItemId, 'oat-milk');
+  });
+
+  testWidgets('autoAccept row headline is displayName unchanged',
       (tester) async {
     await _setLargeSurface(tester);
     await _pumpReview(

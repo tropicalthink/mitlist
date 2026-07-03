@@ -62,6 +62,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   final FocusNode _composerFocusNode = FocusNode();
   bool _editingTitle = false;
   bool _showProductSuggestions = false;
+  String? _pendingCanonicalId;
 
   /// Re-entrancy guard spanning a full user gesture (dialog input included), so
   /// the controller stays UI-agnostic. Mirrors the original screen's behavior.
@@ -255,6 +256,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     if (_isSaving) return;
     final text = _newItemController.text.trim();
     if (text.isEmpty) return;
+    final canonicalId = _pendingCanonicalId;
+    _pendingCanonicalId = null;
     _isSaving = true;
     // Clear the field up front so the composer is ready for the next item
     // immediately; the row itself lands via the items stream. The text is
@@ -262,7 +265,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     _newItemController.clear();
     unawaited(Haptics.light());
     try {
-      await _controller.addItem(text);
+      await _controller.addItem(text, canonicalItemId: canonicalId);
       if (!mounted) return;
       _composerFocusNode.requestFocus();
     } catch (e) {
@@ -351,8 +354,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         unawaited(Haptics.failure());
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(
-                  friendlyErrorMessage(e, AppLocalizations.of(context)!))),
+              content:
+                  Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
         );
       }
     } finally {
@@ -519,8 +522,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     final confirmed = await showAppDialog<bool>(
       context: context,
       title: l10n.listDetailDeleteTitle,
-      body: Text(
-          l10n.listDetailDeleteBody),
+      body: Text(l10n.listDetailDeleteBody),
       actions: [
         AppButton(
           text: l10n.commonCancel,
@@ -586,7 +588,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                 } catch (e) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
+                      SnackBar(
+                          content: Text(friendlyErrorMessage(
+                              e, AppLocalizations.of(context)!))),
                     );
                   }
                 } finally {
@@ -732,7 +736,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                         ? Theme.of(context).colorScheme.primary
                         : null,
                   ),
-                   tooltip: _showSearch ? l10n.listDetailCloseSearch : l10n.listDetailSearchTooltip,
+                  tooltip: _showSearch
+                      ? l10n.listDetailCloseSearch
+                      : l10n.listDetailSearchTooltip,
                   onPressed: () {
                     unawaited(Haptics.light());
                     final opening = !_showSearch;
@@ -745,9 +751,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                 ),
                 PopupMenuButton<String>(
                   icon: const AppIcon(name: 'ellipsisVertical'),
-                   tooltip: l10n.listOptionsTooltip,
+                  tooltip: l10n.listOptionsTooltip,
                   onSelected: _onMenuSelected,
-                   itemBuilder: (context) => [
+                  itemBuilder: (context) => [
                     PopupMenuItem(
                       value: 'rename',
                       child: Text(l10n.commonRename),
@@ -1009,6 +1015,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       productSuggestions: _controller.productSuggestions,
       grocerySuggestions: _controller.grocerySuggestions,
       showProductSuggestions: _showProductSuggestions,
+      onGrocerySuggestionSelected: (s) =>
+          _pendingCanonicalId = s.canonicalItemId,
     );
   }
 }

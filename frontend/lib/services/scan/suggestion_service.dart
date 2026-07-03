@@ -57,9 +57,19 @@ class SuggestionService {
     final sorted = scores.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
+    final topEntries = sorted.take(maxSuggestions).toList();
+    final idsToLoad = <String>{};
+    for (final entry in topEntries) {
+      idsToLoad.add(entry.key);
+      final triggerId = triggers[entry.key];
+      if (triggerId != null) idsToLoad.add(triggerId);
+    }
+    final canonicalRows = await _db.getCanonicalItemsByIds(idsToLoad);
+    final canonicalById = {for (final row in canonicalRows) row.id: row};
+
     final suggestions = <GrocerySuggestion>[];
-    for (final entry in sorted.take(maxSuggestions)) {
-      final canonical = await _db.getCanonicalItemById(entry.key);
+    for (final entry in topEntries) {
+      final canonical = canonicalById[entry.key];
       if (canonical == null) continue;
       final name = canonicalDisplayName(canonical);
       if (name.isEmpty) continue;
@@ -68,7 +78,7 @@ class SuggestionService {
       String reason = 'often bought together';
       final triggerId = triggers[entry.key];
       if (triggerId != null) {
-        final triggerCanonical = await _db.getCanonicalItemById(triggerId);
+        final triggerCanonical = canonicalById[triggerId];
         if (triggerCanonical != null) {
           final triggerName = canonicalDisplayName(triggerCanonical);
           if (triggerName.isNotEmpty) {

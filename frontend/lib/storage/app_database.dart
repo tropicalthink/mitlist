@@ -32,7 +32,8 @@ class ListItemsTable extends Table {
   BoolColumn get checked => boolean()();
   IntColumn get position => integer()();
   IntColumn get priceCents => integer().named('price_cents').nullable()();
-  TextColumn get canonicalItemId => text().named('canonical_item_id').nullable()();
+  TextColumn get canonicalItemId =>
+      text().named('canonical_item_id').nullable()();
   DateTimeColumn get createdAt => dateTime().named('created_at')();
   DateTimeColumn get updatedAt => dateTime().named('updated_at')();
 
@@ -44,8 +45,7 @@ class OutboxOps extends Table {
   TextColumn get id => text()(); // uuid
   TextColumn get type => text()();
   TextColumn get payloadJson => text().named('payload_json')();
-  TextColumn get idempotencyKey =>
-      text().named('idempotency_key').nullable()();
+  TextColumn get idempotencyKey => text().named('idempotency_key').nullable()();
   DateTimeColumn get createdAt => dateTime().named('created_at')();
   DateTimeColumn get lastAttemptAt =>
       dateTime().named('last_attempt_at').nullable()();
@@ -180,14 +180,20 @@ class HubActivityCaches extends Table {
 class CanonicalItemsTable extends Table {
   TextColumn get id => text()();
   TextColumn get groupId => text().named('group_id')();
-  TextColumn get nameDe => text().named('name_de').withDefault(const Constant(''))();
-  TextColumn get nameEn => text().named('name_en').withDefault(const Constant(''))();
-  TextColumn get nameFr => text().named('name_fr').withDefault(const Constant(''))();
-  TextColumn get nameEs => text().named('name_es').withDefault(const Constant(''))();
+  TextColumn get nameDe =>
+      text().named('name_de').withDefault(const Constant(''))();
+  TextColumn get nameEn =>
+      text().named('name_en').withDefault(const Constant(''))();
+  TextColumn get nameFr =>
+      text().named('name_fr').withDefault(const Constant(''))();
+  TextColumn get nameEs =>
+      text().named('name_es').withDefault(const Constant(''))();
   TextColumn get category => text().withDefault(const Constant(''))();
-  TextColumn get defaultUnit => text().named('default_unit').withDefault(const Constant(''))();
+  TextColumn get defaultUnit =>
+      text().named('default_unit').withDefault(const Constant(''))();
   TextColumn get productId => text().named('product_id').nullable()();
-  BoolColumn get isGlobal => boolean().named('is_global').withDefault(const Constant(false))();
+  BoolColumn get isGlobal =>
+      boolean().named('is_global').withDefault(const Constant(false))();
   IntColumn get version => integer().withDefault(const Constant(0))();
   DateTimeColumn get createdAt => dateTime().named('created_at')();
   DateTimeColumn get updatedAt => dateTime().named('updated_at')();
@@ -220,12 +226,14 @@ class CorrectionsTable extends Table {
   TextColumn get userId => text().named('user_id').nullable()();
   TextColumn get scope => text().withDefault(const Constant('household'))();
   TextColumn get kind => text()();
-  TextColumn get rawText => text().named('raw_text').withDefault(const Constant(''))();
+  TextColumn get rawText =>
+      text().named('raw_text').withDefault(const Constant(''))();
   TextColumn get resolvedCanonicalItemId =>
       text().named('resolved_canonical_item_id').nullable()();
   TextColumn get correctedValueJson =>
       text().named('corrected_value_json').nullable()();
-  TextColumn get source => text().withDefault(const Constant('manual_review'))();
+  TextColumn get source =>
+      text().withDefault(const Constant('manual_review'))();
   IntColumn get version => integer().withDefault(const Constant(0))();
   DateTimeColumn get createdAt => dateTime().named('created_at')();
   DateTimeColumn get appliedAt => dateTime().named('applied_at').nullable()();
@@ -240,7 +248,8 @@ class StoreAislesTable extends Table {
   TextColumn get storeId => text().named('store_id').nullable()();
   TextColumn get canonicalItemId => text().named('canonical_item_id')();
   TextColumn get aisle => text().withDefault(const Constant(''))();
-  IntColumn get sortOrder => integer().named('sort_order').withDefault(const Constant(0))();
+  IntColumn get sortOrder =>
+      integer().named('sort_order').withDefault(const Constant(0))();
   RealColumn get confidence => real().withDefault(const Constant(0.5))();
   IntColumn get version => integer().withDefault(const Constant(0))();
   DateTimeColumn get createdAt => dateTime().named('created_at')();
@@ -254,7 +263,8 @@ class StoreAislesTable extends Table {
 class PurchaseHistoryTable extends Table {
   TextColumn get id => text()();
   TextColumn get groupId => text().named('group_id')();
-  TextColumn get canonicalItemId => text().named('canonical_item_id').nullable()();
+  TextColumn get canonicalItemId =>
+      text().named('canonical_item_id').nullable()();
   TextColumn get listItemId => text().named('list_item_id').nullable()();
   RealColumn get quantity => real().withDefault(const Constant(1.0))();
   TextColumn get unit => text().withDefault(const Constant(''))();
@@ -281,7 +291,8 @@ class ScanArtifactsTable extends Table {
   TextColumn get id => text()();
   TextColumn get groupId => text().named('group_id')();
   TextColumn get userId => text().named('user_id').nullable()();
-  TextColumn get imageRef => text().named('image_ref').withDefault(const Constant(''))();
+  TextColumn get imageRef =>
+      text().named('image_ref').withDefault(const Constant(''))();
   TextColumn get engine => text().withDefault(const Constant('mlkit'))();
   TextColumn get rawJson => text().named('raw_json').nullable()();
   TextColumn get resolvedJson => text().named('resolved_json').nullable()();
@@ -295,7 +306,8 @@ class ScanArtifactsTable extends Table {
 
 class GroceryVersionsTable extends Table {
   TextColumn get groupId => text().named('group_id')();
-  IntColumn get currentVersion => integer().named('current_version').withDefault(const Constant(0))();
+  IntColumn get currentVersion =>
+      integer().named('current_version').withDefault(const Constant(0))();
   DateTimeColumn get updatedAt => dateTime().named('updated_at')();
 
   @override
@@ -517,7 +529,8 @@ FROM list_items_table;
       );
 
   Stream<List<ListsTableData>> watchListsByGroup(String groupId) {
-    return (select(listsTable)..where((t) => t.groupId.equals(groupId))).watch();
+    return (select(listsTable)..where((t) => t.groupId.equals(groupId)))
+        .watch();
   }
 
   Future<List<ListsTableData>> getListsByGroupOnce(String groupId) {
@@ -525,18 +538,19 @@ FROM list_items_table;
   }
 
   Future<String?> getListGroupId(String listId) async {
-    final row = await (select(listsTable)
-          ..where((t) => t.id.equals(listId)))
+    final row = await (select(listsTable)..where((t) => t.id.equals(listId)))
         .getSingleOrNull();
     return row?.groupId;
   }
 
   Stream<List<ListItemsTableData>> watchItemsByList(String listId) {
-    return (select(listItemsTable)..where((t) => t.listId.equals(listId))).watch();
+    return (select(listItemsTable)..where((t) => t.listId.equals(listId)))
+        .watch();
   }
 
   Future<List<ListItemsTableData>> getItemsByListOnce(String listId) {
-    return (select(listItemsTable)..where((t) => t.listId.equals(listId))).get();
+    return (select(listItemsTable)..where((t) => t.listId.equals(listId)))
+        .get();
   }
 
   Future<void> clearListsForGroup(String groupId) async {
@@ -549,7 +563,8 @@ FROM list_items_table;
     });
   }
 
-  Future<void> upsertListItemsRows(Iterable<ListItemsTableCompanion> rows) async {
+  Future<void> upsertListItemsRows(
+      Iterable<ListItemsTableCompanion> rows) async {
     await batch((b) {
       b.insertAllOnConflictUpdate(listItemsTable, rows.toList(growable: false));
     });
@@ -599,7 +614,8 @@ FROM list_items_table;
           ..where((t) =>
               t.type.isIn(types) &
               t.attemptCount.isSmallerThanValue(maxAttempts) &
-              (t.lastAttemptAt.isNull() | t.lastAttemptAt.isSmallerThanValue(cutoff)))
+              (t.lastAttemptAt.isNull() |
+                  t.lastAttemptAt.isSmallerThanValue(cutoff)))
           ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
           ..limit(limit))
         .get();
@@ -802,12 +818,16 @@ FROM list_items_table;
   Stream<List<ExpensesTableData>> watchExpensesByGroup(String groupId) {
     return (select(expensesTable)
           ..where((t) => t.groupId.equals(groupId))
-          ..orderBy([(t) => OrderingTerm.desc(t.date), (t) => OrderingTerm.desc(t.createdAt)]))
+          ..orderBy([
+            (t) => OrderingTerm.desc(t.date),
+            (t) => OrderingTerm.desc(t.createdAt)
+          ]))
         .watch();
   }
 
   Future<List<ExpensesTableData>> getExpensesByGroupOnce(String groupId) {
-    return (select(expensesTable)..where((t) => t.groupId.equals(groupId))).get();
+    return (select(expensesTable)..where((t) => t.groupId.equals(groupId)))
+        .get();
   }
 
   Future<void> upsertExpensesRows(Iterable<ExpensesTableCompanion> rows) async {
@@ -821,7 +841,8 @@ FROM list_items_table;
   }
 
   Stream<FinanceSummary?> watchFinanceSummary(String groupId) {
-    return (select(financeSummaries)..where((t) => t.groupId.equals(groupId))).watchSingleOrNull();
+    return (select(financeSummaries)..where((t) => t.groupId.equals(groupId)))
+        .watchSingleOrNull();
   }
 
   Future<void> upsertFinanceSummary({
@@ -1044,8 +1065,7 @@ FROM list_items_table;
     int limit = 40,
   }) {
     if (query.isEmpty) return Future.value(const []);
-    final prefix =
-        query.replaceAll('%', r'\%').replaceAll('_', r'\_');
+    final prefix = query.replaceAll('%', r'\%').replaceAll('_', r'\_');
     return (select(itemAliasesTable)
           ..where((t) =>
               (t.groupId.equals(groupId) | t.groupId.equals('__global__')) &
@@ -1080,7 +1100,8 @@ FROM list_items_table;
     // Build FTS5 match expression: each whitespace-delimited token becomes
     // "token*" in the FTS query. SQLite FTS5 uses bare `token*` syntax for
     // prefix matching on individual tokens.
-    final tokens = query.trim().split(RegExp(r'\s+')).where((t) => t.isNotEmpty).toList();
+    final tokens =
+        query.trim().split(RegExp(r'\s+')).where((t) => t.isNotEmpty).toList();
     if (tokens.isEmpty) return const [];
     // Build FTS5 prefix expression: `token*` (no quotes) for each whitespace
     // token. The unicode61 tokenizer on the FTS table handles hyphens and
@@ -1089,15 +1110,22 @@ FROM list_items_table;
     // FTS5 special characters that need escaping: double-quote literal phrases.
     // Since we are using bare `token*` syntax (not phrase mode), the only
     // character that needs escaping is `"` itself (which we strip from tokens).
-    final ftsMatch = tokens.map((t) {
-      // Strip FTS5-special characters that cannot appear in bare token queries.
-      // The unicode61 tokenizer already handles hyphens as word separators;
-      // removing them here prevents FTS5 parse errors on queries like "coca-cola"
-      // while the index correctly stores "coca" and "cola" as separate tokens.
-      final safe = t.replaceAll('"', '').replaceAll('(', '').replaceAll(')', '').trim();
-      if (safe.isEmpty) return null;
-      return '$safe*';
-    }).whereType<String>().join(' ');
+    final ftsMatch = tokens
+        .map((t) {
+          // Strip FTS5-special characters that cannot appear in bare token queries.
+          // The unicode61 tokenizer already handles hyphens as word separators;
+          // removing them here prevents FTS5 parse errors on queries like "coca-cola"
+          // while the index correctly stores "coca" and "cola" as separate tokens.
+          final safe = t
+              .replaceAll('"', '')
+              .replaceAll('(', '')
+              .replaceAll(')', '')
+              .trim();
+          if (safe.isEmpty) return null;
+          return '$safe*';
+        })
+        .whereType<String>()
+        .join(' ');
     if (ftsMatch.isEmpty) return const [];
 
     // FTS5 content table query: join back to the base table to get all columns
@@ -1182,8 +1210,7 @@ FROM list_items_table;
   /// items, aliases, and corrections are untouched.
   Future<void> clearGlobalSeed(String globalGroupId) async {
     await batch((b) {
-      b.deleteWhere<ItemAliasesTable, ItemAliasesTableData>(
-          itemAliasesTable,
+      b.deleteWhere<ItemAliasesTable, ItemAliasesTableData>(itemAliasesTable,
           (t) => t.groupId.equals(globalGroupId) & t.source.equals('seed'));
       b.deleteWhere<CanonicalItemsTable, CanonicalItemsTableData>(
           canonicalItemsTable,
@@ -1197,8 +1224,8 @@ FROM list_items_table;
   Future<void> clearGlobalAliasesBySource(
       String globalGroupId, String source) async {
     await (delete(itemAliasesTable)
-          ..where((t) =>
-              t.groupId.equals(globalGroupId) & t.source.equals(source)))
+          ..where(
+              (t) => t.groupId.equals(globalGroupId) & t.source.equals(source)))
         .go();
   }
 
@@ -1220,6 +1247,28 @@ FROM list_items_table;
           ])
           ..limit(1))
         .getSingleOrNull();
+  }
+
+  /// Batch form of [findAlias]: for each text in [aliasTexts], the top-weighted
+  /// non-deleted household-or-global alias row. Returns a map keyed by
+  /// alias_text; texts with no alias are absent.
+  Future<Map<String, ItemAliasesTableData>> findAliasesByTexts({
+    required String groupId,
+    required Set<String> aliasTexts,
+  }) async {
+    if (aliasTexts.isEmpty) return const {};
+    final rows = await (select(itemAliasesTable)
+          ..where((t) =>
+              (t.groupId.equals(groupId) | t.groupId.equals('__global__')) &
+              t.aliasText.isIn(aliasTexts.toList()) &
+              t.deletedAt.isNull())
+          ..orderBy([(t) => OrderingTerm.desc(t.weight)]))
+        .get();
+    final out = <String, ItemAliasesTableData>{};
+    for (final r in rows) {
+      out.putIfAbsent(r.aliasText, () => r);
+    }
+    return out;
   }
 
   /// Returns ALL non-deleted aliases (household + global) whose text exactly
@@ -1266,7 +1315,8 @@ FROM list_items_table;
     if (query.isEmpty) return Future.value(const []);
     final lo = (query.length - 2).clamp(1, 1 << 30);
     final hi = query.length + 2;
-    final prefix = query.substring(0, 1).replaceAll('%', r'\%').replaceAll('_', r'\_');
+    final prefix =
+        query.substring(0, 1).replaceAll('%', r'\%').replaceAll('_', r'\_');
     return (select(itemAliasesTable)
           ..where((t) =>
               (t.groupId.equals(groupId) | t.groupId.equals('__global__')) &
@@ -1305,11 +1355,21 @@ FROM list_items_table;
     await into(correctionsTable).insert(row, mode: InsertMode.insertOrIgnore);
   }
 
-  Future<List<CorrectionsTableData>> getUnappliedCorrections(
-      String groupId) {
+  Future<List<CorrectionsTableData>> getRejectCorrections({
+    required String groupId,
+    required String rawText,
+  }) {
     return (select(correctionsTable)
           ..where((t) =>
-              t.groupId.equals(groupId) & t.appliedAt.isNull()))
+              t.groupId.equals(groupId) &
+              t.kind.equals('reject') &
+              t.rawText.equals(rawText)))
+        .get();
+  }
+
+  Future<List<CorrectionsTableData>> getUnappliedCorrections(String groupId) {
+    return (select(correctionsTable)
+          ..where((t) => t.groupId.equals(groupId) & t.appliedAt.isNull()))
         .get();
   }
 
@@ -1420,9 +1480,8 @@ FROM list_items_table;
     int limit = 500,
   }) {
     return (select(purchaseHistoryTable)
-          ..where((t) =>
-              t.groupId.equals(groupId) &
-              t.canonicalItemId.isNotNull())
+          ..where(
+              (t) => t.groupId.equals(groupId) & t.canonicalItemId.isNotNull())
           ..orderBy([(t) => OrderingTerm.desc(t.purchasedAt)])
           ..limit(limit))
         .get();
@@ -1537,8 +1596,7 @@ FROM list_items_table;
   }
 
   /// Returns all checked list items that have a canonicalItemId set.
-  Future<List<ListItemsTableData>> getCheckedItemsWithCanonical(
-      String listId) {
+  Future<List<ListItemsTableData>> getCheckedItemsWithCanonical(String listId) {
     return (select(listItemsTable)
           ..where((t) =>
               t.listId.equals(listId) &
@@ -1562,4 +1620,3 @@ QueryExecutor _openConnection() {
     ),
   );
 }
-

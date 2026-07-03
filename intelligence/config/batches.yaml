@@ -153,6 +153,9 @@ model_versions:
   grocery_embeddings:
     version: "0.0.0"
     status: not_trained
-    tflite_path: ml/models/grocery_embeddings.tflite
+    bundle_paths:
+      - ../frontend/assets/grocery/embedder_vocab.json
+      - ../frontend/assets/grocery/catalog_vectors.json
+      - ../frontend/assets/grocery/embedder_golden.json
     base_model: paraphrase-multilingual-MiniLM-L12-v2
     trained_on: null

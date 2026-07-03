@@ -312,7 +312,7 @@ Embeddings over this graph power similarity, substitutes, suggestions, canonical
 A new household has an empty graph. Day-one quality comes from:
 
 ```text
-shipped global taxonomy (top ~2,000 grocery items, DE + EN)
+shipped global taxonomy (~3,200 grocery items, DE/EN/FR/ES, seed v5)
 shipped global alias table (common shorthand and OCR confusions)
 shipped default aisle taxonomy
 optional onboarding: "scan your last receipt" to seed history
