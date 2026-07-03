@@ -545,6 +545,109 @@ func TestRecipeScraping_EmptyPage_ReturnsError(t *testing.T) {
 	assert.Error(t, err)
 }
 
+// ------------------------------------------------------------------
+// Characterization tests (plan 038): pin behavior of tiers not yet
+// covered above, before any code is moved.
+// ------------------------------------------------------------------
+
+// TestRecipeScraping_RDFa_ExtractsFields verifies RDFa (typeof/property) extraction.
+func TestRecipeScraping_RDFa_ExtractsFields(t *testing.T) {
+	svc := NewRecipeScrapingService()
+	html := `
+<!DOCTYPE html>
+<html>
+<body>
+<div typeof="schema:Recipe">
+  <h1 property="schema:name">RDFa Roast</h1>
+  <span property="schema:author">Chef RDFa</span>
+  <ul>
+    <li property="schema:recipeIngredient">2 lb chicken</li>
+    <li property="schema:recipeIngredient">1 tbsp salt</li>
+  </ul>
+  <div property="schema:recipeInstructions">Roast at 400F for one hour.</div>
+  <meta property="schema:prepTime" content="PT10M">
+  <meta property="schema:cookTime" content="PT60M">
+</div>
+</body>
+</html>`
+
+	r, err := svc.scrapeHTML(html, "https://example.com/recipe")
+	require.NoError(t, err)
+	assert.Equal(t, "RDFa Roast", r.Title)
+	assert.Equal(t, "Chef RDFa", r.Author)
+	require.Len(t, r.Ingredients, 2)
+	assert.Equal(t, "2 lb chicken", r.Ingredients[0].RawText)
+	assert.True(t, strings.Contains(r.InstructionsMD, "Roast at 400F"))
+	require.NotNil(t, r.PrepTimeMinutes)
+	assert.Equal(t, 10, *r.PrepTimeMinutes)
+	require.NotNil(t, r.CookTimeMinutes)
+	assert.Equal(t, 60, *r.CookTimeMinutes)
+}
+
+// TestRecipeScraping_EmbeddedJSON_NextData verifies extraction from a
+// __NEXT_DATA__ hydration blob that has no explicit @type but has the
+// recipeIngredient/recipeInstructions shape.
+func TestRecipeScraping_EmbeddedJSON_NextData(t *testing.T) {
+	svc := NewRecipeScrapingService()
+	html := `
+<!DOCTYPE html>
+<html>
+<body>
+<script id="__NEXT_DATA__" type="application/json">
+{"props":{"pageProps":{"recipe":{"name":"Next Data Bowl","recipeIngredient":["1 cup rice","2 cups water"],"recipeInstructions":["Rinse rice.","Cook rice."]}}}}
+</script>
+</body>
+</html>`
+
+	r, err := svc.scrapeHTML(html, "https://example.com/recipe")
+	require.NoError(t, err)
+	assert.Equal(t, "Next Data Bowl", r.Title)
+	require.Len(t, r.Ingredients, 2)
+	assert.Equal(t, "1 cup rice", r.Ingredients[0].RawText)
+	assert.True(t, strings.Contains(r.InstructionsMD, "Rinse rice"))
+}
+
+// TestRecipeScraping_IsWeakResult pins the completeness gate that decides
+// whether ScrapeRecipe attempts the AMP-variant fallback.
+func TestRecipeScraping_IsWeakResult(t *testing.T) {
+	assert.True(t, isWeakResult(nil))
+	assert.True(t, isWeakResult(&RecipeClipResponse{}))
+	assert.True(t, isWeakResult(&RecipeClipResponse{
+		Ingredients: []RecipeClipIngredient{{RawText: "1 egg"}},
+	}), "no instructions is still weak")
+	assert.True(t, isWeakResult(&RecipeClipResponse{
+		InstructionsMD: "Fry it.",
+	}), "no ingredients is still weak")
+	assert.False(t, isWeakResult(&RecipeClipResponse{
+		Ingredients:    []RecipeClipIngredient{{RawText: "1 egg"}},
+		InstructionsMD: "Fry it.",
+	}))
+}
+
+// TestRecipeScraping_CompletenessScore_PrefersMoreComplete pins the ordering
+// completenessScore imposes, which mergeTierResults and the AMP-fallback
+// comparison both depend on.
+func TestRecipeScraping_CompletenessScore_PrefersMoreComplete(t *testing.T) {
+	sparse := RecipeClipResponse{
+		Title:       "Untitled Recipe",
+		Ingredients: []RecipeClipIngredient{{RawText: "1 egg"}},
+	}
+	richTitle := "Full Recipe"
+	rich := RecipeClipResponse{
+		Title:           richTitle,
+		Ingredients:     []RecipeClipIngredient{{RawText: "1 egg"}, {RawText: "1 cup flour"}},
+		InstructionsMD:  "Mix.\n\nBake for a while until golden brown and delicious.",
+		PrepTimeMinutes: intPtr(10),
+		CookTimeMinutes: intPtr(20),
+		ImageURL:        strPtr("https://example.com/img.jpg"),
+		Tags:            []string{"dessert"},
+	}
+	assert.Greater(t, completenessScore(rich), completenessScore(sparse))
+}
+
+func intPtr(v int) *int       { return &v }
+func strPtr(v string) *string { return &v }
+
 // TestIngredientParser_Multilingual verifies ParseIngredient across EN/DE/FR/ES.
 func TestIngredientParser_Multilingual(t *testing.T) {
 	cases := []struct {
