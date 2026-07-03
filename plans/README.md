@@ -9,6 +9,11 @@ honor its STOP conditions, and update your row when done.
 > Note: `frontend/plans/` is an older, separate plan set (offline/outbox
 > hardening). This directory is independent of it.
 
+## Archived Batch 1 — Intelligence Layer
+
+> **ARCHIVED — all plans 001–019 DONE as of 2026-07-03. Kept for the record;
+> not active work.** Active work is tracked in "Batch 2" below.
+
 ## Execution order & status
 
 | Plan | Title | Priority | Effort | Depends on | Status |
@@ -46,9 +51,118 @@ All 19 plans verified DONE against the working tree:
 
 Environment caveat: this host lacks the `libsqlite3.so` dev symlink (only `libsqlite3.so.0` present), so drift-backed `flutter test` and `eval.sh` fail out of the box. Workaround used for verification: symlink `libsqlite3.so → libsqlite3.so.0` in a scratch dir and run with `LD_LIBRARY_PATH` pointing at it (or install `libsqlite3-dev`).
 
-Nothing BLOCKED, nothing stale, no drifted TODOs. The backlog is fully executed; next `/improve` run should start a fresh audit rather than reconcile.
+Nothing BLOCKED, nothing stale, no drifted TODOs. The 001–019 backlog is fully executed and committed (`8aec2a1e`, on `new-main-fr`).
 
-## Dependency notes
+---
+
+# Batch 2 — full-repo audit (2026-07-03, HEAD `8aec2a1e`)
+
+A second `/improve` audit covering **everything outside** the grocery/scan-resolution
+intelligence layer: the Go backend (auth, finance, recipe scraping, uploads, SSE,
+push), the Flutter frontend (token stack, capture stack, money, god screens),
+performance, tests, tech debt, dependencies, DX, and docs. Four parallel audit
+agents; findings vetted against the code by the advisor before planning. Plans
+020–045 below. All were written at once on operator request ("write plans for
+all"); they are independent unless a dependency is noted.
+
+## Execution order & status — Batch 2
+
+Recommended order = by leverage (cheap high-value first). Remaining active work:
+`022`, `037`, `038`, `039`, and `040` are TODO (022 was unblocked and refreshed
+in the 2026-07-04 reconcile). Completed rows remain in the table for
+traceability.
+
+| Plan | Title | Priority | Effort | Depends on | Status |
+|------|-------|----------|--------|------------|--------|
+| 020 | Token refresh: keep session on transient network error (no force-logout) | P1 | M | — | DONE ✓v |
+| 021 | AGENTS.md reconcile (migrations, dead paths, test-status) | P1 | S | — | DONE ✓v |
+| 022 | Invite-code entropy — resist group-join enumeration | P1 | M | — | TODO (refreshed 2026-07-04: former STOP conditions resolved — case-normalization folded in as Step 2; `code` column is TEXT, no width limit) |
+| 023 | `formatCurrency` zero-decimal currencies (JPY/KRW/HUF) | P2 | S | — | DONE ✓v |
+| 024 | Verify real upload size on finalize; bound presigned PUT | P2 | M | — | DONE ✓v |
+| 025 | SSE: marshal broadcast events once, not per client | P2 | S | — | DONE ✓v |
+| 026 | choreschedule date-math unit tests | P1 | S | — | DONE ✓v |
+| 027 | Cap the activity-feed `limit` | P2 | S | — | DONE ✓v |
+| 028 | Rectifier: reuse decode + dispose contour handles | P2 | S | — | DONE ✓v |
+| 029 | CI format/lint gate + analyze test code | P2 | S | — | DONE ✓v (gate added; existing format/analyze drift must be cleaned before merge) |
+| 030 | SSE reconnect: reset backoff, avoid busy-loop | P2 | S | 020 (compose) | DONE ✓v |
+| 031 | JoinGroup atomic + conditional single-use invite claim | P2 | S | — | DONE ✓v |
+| 032 | Batch rotation-state reads on member-order rebuild (N+1) | P2 | S–M | — | DONE ✓v |
+| 033 | Web push unsubscribe + flag clear on logout | P2 | S | — | DONE ✓v |
+| 034 | SSRF hardening: complete blocklist + rebinding re-validation | P2 | M | — | DONE ✓v |
+| 035 | Collapse duplicated Dart `_handleError` wrappers | P3 | S | — | DONE ✓v |
+| 036 | One membership-check implementation in group_service | P3 | S | — | DONE ✓v |
+| 037 | Decompose expenses god-screen (controller pattern) | P3 | L | 043 first | TODO |
+| 038 | Split recipe-scraping monolith behind a parser interface | P3 | L | — | TODO |
+| 039 | Share pinwall note-card / stat-row widgets | P3 | M | — | TODO |
+| 040 | Upgrade low-risk Flutter plugins; scope framework migrations | P3 | M | — | TODO |
+| 041 | Unpin build_runner; CI codegen-freshness gate | P3 | M | — | DONE ✓v |
+| 042 | CI: build landing, smoke-check intelligence pipeline | P3 | S–M | — | DONE ✓v |
+| 043 | Widget test for the pinwall board screen | P3 | M | — | DONE ✓v |
+| 044 | Archive completed plan sets (001–019, frontend/plans) | P3 | S | 001–019 DONE | DONE ✓v |
+| 045 | SPIKE: household dashboard as primary landing surface | P3 | L | — | DONE ✓v |
+
+## Reconcile log — 2026-07-04 (HEAD `eca86757`, Batch-2 work uncommitted in working tree)
+
+- **DONE plans (20 of them) spot-checked against the working tree**: backend
+  `go build ./... && go vet ./...` clean and `go test ./internal/...` all pass
+  (covers 020, 024–027, 030–036, 041 backend surfaces); `dart analyze lib/` →
+  no issues; plan 043's pinwall board widget test passes (needs the
+  libsqlite3 `LD_LIBRARY_PATH` workaround noted in the Batch-1 log); CI gates
+  present in `.gitea/workflows/ci.yml` (gofmt at :52, dart format :97, analyze
+  :99, build_runner freshness :103 — plans 029/041/042); `build_runner`
+  unpinned to `^2.4.8` and `frontend/build.yaml` deleted (041). All `✓v`
+  statuses stand.
+- **022 BLOCKED → TODO**: investigated the executor's STOP. Confirmed the
+  generator uppercases (`invite_code.go:29`) while the handler→service→repo
+  chain never normalizes input (`group.go:203-218`, `group_service.go:209`,
+  `group_repo.go:215` `WHERE code = $1`); Flutter clients normalize
+  client-side, so the bug is latent but real. Plan refreshed in place: the
+  one-line service normalization is now Step 2 (in scope), the DB-width STOP
+  is resolved (`code TEXT`, migration `:84`), excerpts updated to the
+  post-plan-031 `WithTx`/`ClaimInvite` join path. No partial executor work
+  survives; `invite_code.go` untouched, no test file.
+- **038 refreshed**: plan 034's SSRF work (uncommitted) shifted its fetch-path
+  line refs (`fetchOnce` :326→:330, `fetchViaFlareSolverr` :270→:274, file
+  2090→2104 lines). Excerpts and drift note updated; approach unchanged.
+- **037, 039, 040**: zero drift, committed or uncommitted, in their in-scope
+  files. Executable as written. 037's Step-0 gate (a passing widget test
+  pattern from 043) is now in place at
+  `frontend/test/screens/pinwall/pinwall_board_screen_test.dart`.
+- **Nothing IN PROGRESS or stale.** Nothing newly REJECTED.
+- Housekeeping note: Batch 2's executed work (plans 020–036, 041–045) is
+  uncommitted in the working tree; drift checks against SHAs alone won't see
+  it. Committing the batch is the user's call — do it before dispatching 038
+  (its drift note explains how to detect a pre-034 tree).
+
+## Dependency notes — Batch 2
+
+- **020 before 030 (compose, not block).** 020 gives the token refresh a
+  transport-vs-auth outcome; 030's SSE reconnect should honor it. 030 can land
+  first, but re-check the transport-error branch once 020 lands.
+- **043 before 037.** The pinwall/expenses refactors need a widget-test safety
+  net. 043 writes one for the board; 037 writes/extends one for expenses in its
+  Step 0. Do not refactor a god screen without a passing test against the
+  unrefactored screen.
+- **039 informs 037 and 045.** Extracting shared pinwall widgets (039) makes the
+  stat widgets reusable, which the dashboard spike (045) and any pinwall
+  decomposition build on. Not a hard dependency; note the interaction.
+- **038 unblocks the "per-site recipe parsers" direction** — the parser interface
+  it introduces makes site-specific parsers additive. Recorded in 038's notes.
+- **034 bundles four SSRF findings** (blocklist gap, push send-time validation,
+  FlareSolverr rebinding, redirect re-pin) because they share two files and one
+  fix pattern. It overlaps `recipe_scraping_service.go` with 038 — land one, then
+  rebase the other; 034 is fetch/security, 038 is parse-structure, so conflicts
+  are localized.
+- **Leverage ordering**: 020, 021, 022, 023, 025, 026, 027 are the cheap
+  high-value cluster — do them first. 024, 028, 029, 030, 031, 032, 033, 034 are
+  the next band. 035–045 are debt/deps/docs/spike — lower urgency, interleave
+  freely (except the noted dependencies).
+- **Shared-file coordination**: `sse.go`/`sse_service.dart` (025, 030),
+  `group_service.go` (022, 031, 036), `recipe_scraping_service.go` (034, 038),
+  `ci.yml` (029, 041, 042), `auth_service.dart` (020, 033),
+  `pinwall_*` (039, 043, 037), `AGENTS.md` (021, 041).
+
+## Dependency notes — Batch 1 (intelligence layer)
 
 - **001 first.** It unblocks 005, 008, 014, and makes every server-side claim testable (real-schema integration harness).
 - **003 before 004 and 010** — both build on the `userConfirmed` flag and the unified normalisation it introduces.
@@ -58,7 +172,21 @@ Nothing BLOCKED, nothing stale, no drifted TODOs. The backlog is fully executed;
 - 006, 007, 009, 011, 012, 013, 015, 016, 017 are mutually independent; interleave freely.
 - Files shared across plans (expect merge coordination): `scan_review_screen.dart` (003, 004, 010, 011), `grocery_repository.dart` (004, 005, 014), `grocery_service.go`/`grocery_repo.go` (001, 005, 014), `intelligence/README.md` (006, 012, 016).
 
-## Findings considered and rejected (do not re-audit)
+## Findings considered and rejected — Batch 2 (do not re-audit)
+
+- **JWT access-token revocation fails open on Redis error** (`jwt.go:92-96`) — not a bug: the code documents this as an intentional availability tradeoff (revoked tokens accepted until natural expiry, ≤1h, during a Redis outage). Whether to fail closed is a policy call for the maintainer, not a defect to fix. Access TTL shortening is the lever if they want to reduce the window.
+- **`AuthInterceptor` default constructor uses a non-shared token store** (`api_client.dart:27-28`) — latent, not firing: production wires the shared store via `createApiClient` (`api_client.dart:165,180`). Worth a one-line default change if 020 touches the file, but not its own plan.
+- **God-screen rebuild scoping** — checked, clean: `pinwall_board_screen`, `expenses_screen`, `chores_screen` already push `ref.watch` into scoped consumer leaves (the good `list_detail` pattern). No top-level god-tree rebuild finding. (The god screens are still worth decomposing for *reviewability* — Plan 037 — but not for rebuild perf.)
+- **Finance settlement math untested** — false: `finance_service_test.go:528-690` characterizes mixed-fixture balances + reimbursement suggestions; the settlement path is in-memory (no N+1) and well covered.
+- **Invite/deep-link parsing trusting external input** (`invite_link.dart`, `share_target_service.dart`) — clean: strict scheme/path/code-pattern validation client-side; server re-validates.
+- **Money split float arithmetic** — clean: amounts are integer cents end-to-end; splits computed server-side.
+- **SQL injection / mass assignment** (backend) — none: all queries parameterized (the `fmt.Sprintf` in `list_repo.go` builds only `$N` placeholders); DTOs are explicit whitelisted structs.
+- **IDOR / missing authz on state-changing endpoints** — none beyond the invite-entropy issue (022): finance, attachment, pinwall-media, share, recipe, notification all enforce membership/ownership before data access.
+- **CORS wildcard-with-credentials, error leakage, debug/pprof exposure** — clean: CORS reflects exact-match/dev-localhost only, 500 internals masked, debug/pprof/metrics AdminGuard-wrapped and unmounted in prod.
+- **OAuth state/redirect** — clean: crypto-random cookie-bound state, allowlisted redirect URIs.
+- **`landing/node_modules` or `dist` committed** — false: both git-ignored. `intelligence/.venv*` also untracked. Backend Go deps current (no meaningful lag).
+
+## Findings considered and rejected — Batch 1 (do not re-audit)
 
 - **Confidence thresholds unused** — false: `scan_pipeline_service.dart:146-149` feeds `autoThreshold`/`reviewThreshold` into `ConfidenceService`, driving the review tile states.
 - **`eval_harness.dart` / `confidence_service` / `suggestion_service` / `grocery_suggestion_service` dead code** — all wired; verified call sites.

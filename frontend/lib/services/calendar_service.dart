@@ -31,19 +31,16 @@ class CalendarService {
       final data = r.data as Map<String, dynamic>;
       final rawEvents = data['events'] as List<dynamic>? ?? [];
       return rawEvents
-          .map((e) => CalendarEvent.fromJson((e as Map).cast<String, dynamic>()))
+          .map(
+              (e) => CalendarEvent.fromJson((e as Map).cast<String, dynamic>()))
           .toList();
     } on DioException catch (e) {
       _logger.e('Get calendar failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
   String _formatDate(DateTime d) {
     return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-  }
-
-  Exception _handleError(DioException e) {
-    return ApiException(ApiErrorMapper.fromDio(e));
   }
 }

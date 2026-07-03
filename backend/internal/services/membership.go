@@ -8,7 +8,16 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/mitlist-app/mitlist/internal/api"
+	"github.com/mitlist-app/mitlist/internal/models"
 )
+
+func isGroupMember(m *models.GroupMembership) bool {
+	return m.Role == "admin" || m.Role == "member"
+}
+
+func isGroupAdmin(m *models.GroupMembership) bool {
+	return m.Role == "admin"
+}
 
 // requireGroupMember returns a *api.PermissionDeniedError (which unwraps to
 // api.ErrPermissionDenied) unless userID has role "admin" or "member" in
@@ -21,7 +30,7 @@ func requireGroupMember(ctx context.Context, groups GroupMembershipChecker, grou
 		}
 		return err
 	}
-	if m.Role != "admin" && m.Role != "member" {
+	if !isGroupMember(m) {
 		return &api.PermissionDeniedError{}
 	}
 	return nil
@@ -38,7 +47,7 @@ func requireGroupAdmin(ctx context.Context, groups GroupMembershipChecker, group
 		}
 		return err
 	}
-	if m.Role != "admin" {
+	if !isGroupAdmin(m) {
 		return &api.PermissionDeniedError{}
 	}
 	return nil

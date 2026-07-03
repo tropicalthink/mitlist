@@ -21,7 +21,7 @@ class MealPlanService {
       return MealPlan.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Create meal plan failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -42,7 +42,7 @@ class MealPlanService {
       return data.map((j) => MealPlan.fromJson(j)).toList();
     } on DioException catch (e) {
       _logger.e('List meal plans failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -52,7 +52,7 @@ class MealPlanService {
       return MealPlan.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Get meal plan failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -62,7 +62,7 @@ class MealPlanService {
       return MealPlan.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Update meal plan failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -71,7 +71,7 @@ class MealPlanService {
       await _dio.delete('/meal-plans/$id');
     } on DioException catch (e) {
       _logger.e('Delete meal plan failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -89,15 +89,12 @@ class MealPlanService {
         'to': to,
       };
       if (listId != null) data['list_id'] = listId;
-      final r = await _dio.post('/meal-plans/generate-shopping-list', data: data);
+      final r =
+          await _dio.post('/meal-plans/generate-shopping-list', data: data);
       return Map<String, dynamic>.from(r.data as Map);
     } on DioException catch (e) {
       _logger.e('Generate shopping list failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
-  }
-
-  Exception _handleError(DioException e) {
-    return ApiException(ApiErrorMapper.fromDio(e));
   }
 }

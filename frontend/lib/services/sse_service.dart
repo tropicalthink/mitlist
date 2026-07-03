@@ -82,11 +82,19 @@ class SseService {
   }
 
   Future<void> _startLoop(String groupId, int gen) async {
-    var backoff = const Duration(seconds: 2);
+    const initialBackoff = Duration(seconds: 2);
+    var backoff = initialBackoff;
 
     while (!_disposed && _generation == gen) {
       try {
-        await _connectOnce(groupId, gen);
+        final connected = await _connectOnce(groupId, gen);
+        if (_disposed || _generation != gen) break;
+        if (connected) {
+          backoff = initialBackoff;
+        }
+        _log.i('SSE stream closed, reconnecting in ${backoff.inSeconds}s');
+        await _delayUnlessCancelled(backoff, gen);
+        backoff = Duration(seconds: (backoff.inSeconds * 2).clamp(2, 60));
       } on _SseUnauthorizedException {
         if (_disposed || _generation != gen) break;
         _log.i('SSE got 401 — attempting token refresh');
@@ -99,17 +107,28 @@ class SseService {
           _log.w(
             'Token refresh transportError; retrying SSE in ${backoff.inSeconds}s',
           );
-          await Future.delayed(backoff);
+          await _delayUnlessCancelled(backoff, gen);
           backoff = Duration(seconds: (backoff.inSeconds * 2).clamp(2, 60));
           continue;
         }
-        // New token saved — retry immediately without backoff.
+        // New token saved — retry immediately and reset the failure backoff.
+        backoff = initialBackoff;
       } catch (e) {
         if (_disposed || _generation != gen) break;
         _log.w('SSE disconnected, retrying in ${backoff.inSeconds}s: $e');
-        await Future.delayed(backoff);
+        await _delayUnlessCancelled(backoff, gen);
         backoff = Duration(seconds: (backoff.inSeconds * 2).clamp(2, 60));
       }
+    }
+  }
+
+  Future<void> _delayUnlessCancelled(Duration delay, int gen) async {
+    var remaining = delay;
+    const tick = Duration(milliseconds: 250);
+    while (remaining > Duration.zero && !_disposed && _generation == gen) {
+      final slice = remaining < tick ? remaining : tick;
+      await Future.delayed(slice);
+      remaining -= slice;
     }
   }
 
@@ -120,9 +139,9 @@ class SseService {
     return _refreshCoordinator.refreshDetailed();
   }
 
-  Future<void> _connectOnce(String groupId, int gen) async {
+  Future<bool> _connectOnce(String groupId, int gen) async {
     final token = await _tokenStore.getAccessToken();
-    if (token == null) return;
+    if (token == null) return false;
 
     final baseUrl = kIsWeb ? ApiConfig.baseUrl : ApiConfig.baseUrl;
     final uri = Uri.parse(
@@ -145,12 +164,11 @@ class SseService {
       throw HttpException('SSE returned ${response.statusCode}');
     }
 
-    // Reset backoff on successful connect.
     _log.i('SSE connected for group $groupId');
 
     final buffer = StringBuffer();
     await for (final chunk in response.transform(utf8.decoder)) {
-      if (_disposed || _generation != gen) return;
+      if (_disposed || _generation != gen) return true;
       buffer.write(chunk);
 
       // SSE events are separated by double newlines.
@@ -162,6 +180,7 @@ class SseService {
       buffer.clear();
       buffer.write(parts.last);
     }
+    return true;
   }
 
   void _parseAndEmit(String raw) {

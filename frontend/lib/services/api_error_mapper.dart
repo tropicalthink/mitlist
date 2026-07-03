@@ -8,6 +8,9 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
+Exception apiException(DioException e) =>
+    ApiException(ApiErrorMapper.fromDio(e));
+
 /// Maps backend error responses and network failures into stable,
 /// user-facing error messages.
 class ApiErrorMapper {

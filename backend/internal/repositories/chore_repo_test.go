@@ -427,6 +427,27 @@ func TestChoreRepository_BulkUpdateRotationStates(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestChoreRepository_GetRotationStatesByChoreIDs(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewChoreRepository(mock)
+	choreID := fixedUUID()
+	missingID := uuid.New()
+	stateID := uuid.New()
+	memberID := uuid.New()
+
+	rows := pgxmock.NewRows([]string{"id", "chore_id", "member_order", "current_index"}).
+		AddRow(stateID, choreID, []uuid.UUID{memberID}, 0)
+	mock.ExpectQuery("SELECT id, chore_id, member_order, current_index").
+		WithArgs([]uuid.UUID{choreID, missingID}).
+		WillReturnRows(rows)
+
+	states, err := repo.GetRotationStatesByChoreIDs(context.Background(), []uuid.UUID{choreID, missingID})
+	require.NoError(t, err)
+	require.Len(t, states, 1)
+	assert.Equal(t, choreID, states[0].ChoreID)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestChoreRepository_CompleteAssignmentAndAdvance_FullAdvance(t *testing.T) {
 	mock := newMockDB(t)
 	repo := NewChoreRepository(mock)

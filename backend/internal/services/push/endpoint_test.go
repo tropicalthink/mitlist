@@ -49,9 +49,12 @@ func TestValidatePushEndpoint(t *testing.T) {
 		{name: "IPv4 private 10.x", url: "https://10.0.0.5/push"},
 		{name: "IPv4 private 192.168.x", url: "https://192.168.1.1/push"},
 		{name: "IPv4 private 172.16.x", url: "https://172.16.0.1/push"},
+		{name: "CGNAT 100.64.x", url: "https://100.64.0.1/push"},
+		{name: "benchmark 198.18.x", url: "https://198.18.0.1/push"},
 		{name: "link-local metadata 169.254.169.254", url: "https://169.254.169.254/latest/meta-data/"},
 		{name: "link-local other", url: "https://169.254.1.1/push"},
 		{name: "IPv6 loopback ::1", url: "https://[::1]/push"},
+		{name: "IPv4 mapped CGNAT", url: "https://[::ffff:100.64.0.1]/push"},
 		{name: "unspecified 0.0.0.0", url: "https://0.0.0.0/push"},
 		{name: "too long", url: "https://fcm.googleapis.com/" + strings.Repeat("a", 2048)},
 	}

@@ -20,7 +20,7 @@ class RecipeService {
       return Recipe.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Create recipe failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -33,7 +33,7 @@ class RecipeService {
       return data.map((j) => Recipe.fromJson(j)).toList();
     } on DioException catch (e) {
       _logger.e('List recipes failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -43,7 +43,7 @@ class RecipeService {
       return Recipe.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Get recipe failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -53,7 +53,7 @@ class RecipeService {
       return Recipe.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Update recipe failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -62,7 +62,7 @@ class RecipeService {
       await _dio.delete('/recipes/$id');
     } on DioException catch (e) {
       _logger.e('Delete recipe failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -71,7 +71,7 @@ class RecipeService {
       await _dio.post('/recipes/$id/share', data: req.toJson());
     } on DioException catch (e) {
       _logger.e('Share recipe failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -85,7 +85,7 @@ class RecipeService {
       return data.map((j) => RecipeCollection.fromJson(j)).toList();
     } on DioException catch (e) {
       _logger.e('List collections failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -95,7 +95,7 @@ class RecipeService {
       return RecipeCollection.fromJson((r.data as Map).cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Create collection failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -105,7 +105,7 @@ class RecipeService {
       return RecipeCollection.fromJson((r.data as Map).cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Get collection failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -116,7 +116,7 @@ class RecipeService {
       return RecipeCollection.fromJson((r.data as Map).cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Update collection failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -125,7 +125,7 @@ class RecipeService {
       await _dio.delete('/collections/$id');
     } on DioException catch (e) {
       _logger.e('Delete collection failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -135,7 +135,7 @@ class RecipeService {
       await _dio.post('/collections/$collectionId/recipes', data: req.toJson());
     } on DioException catch (e) {
       _logger.e('Add recipe to collection failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -145,7 +145,7 @@ class RecipeService {
       await _dio.delete('/collections/$collectionId/recipes/$recipeId');
     } on DioException catch (e) {
       _logger.e('Remove recipe from collection failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -156,7 +156,7 @@ class RecipeService {
           (r.data as Map).cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Clip recipe failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -176,7 +176,7 @@ class RecipeService {
       return Map<String, dynamic>.from(r.data as Map);
     } on DioException catch (e) {
       _logger.e('Add recipe to list failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -190,7 +190,7 @@ class RecipeService {
       return Map<String, dynamic>.from(r.data as Map);
     } on DioException catch (e) {
       _logger.e('Add recipe missing products failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -199,10 +199,13 @@ class RecipeService {
       final r = await _dio.get('/recipes/$recipeId/ingredients');
       final data = r.data;
       if (data is! List) return [];
-      return data.map((j) => RecipeIngredient.fromJson((j as Map).cast<String, dynamic>())).toList();
+      return data
+          .map((j) =>
+              RecipeIngredient.fromJson((j as Map).cast<String, dynamic>()))
+          .toList();
     } on DioException catch (e) {
       _logger.e('Get recipe ingredients failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -211,14 +214,12 @@ class RecipeService {
       final r = await _dio.get('/recipes/$recipeId/steps');
       final data = r.data;
       if (data is! List) return [];
-      return data.map((j) => RecipeStep.fromJson((j as Map).cast<String, dynamic>())).toList();
+      return data
+          .map((j) => RecipeStep.fromJson((j as Map).cast<String, dynamic>()))
+          .toList();
     } on DioException catch (e) {
       _logger.e('Get recipe steps failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
-  }
-
-  Exception _handleError(DioException e) {
-    return ApiException(ApiErrorMapper.fromDio(e));
   }
 }
