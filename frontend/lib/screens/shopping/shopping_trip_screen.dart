@@ -9,11 +9,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../models/list_models.dart';
+import '../../providers/grocery_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../services/scan/canonical_resolver_service.dart';
+import '../../services/scan/grocery_classifier_service.dart';
 import '../../theme/animations.dart';
 import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
@@ -159,7 +161,18 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
     }
 
     final db = ref.read(appDatabaseProvider);
-    final resolver = CanonicalResolverService(db);
+    final resolver = CanonicalResolverService(
+      db,
+      classifier: GroceryClassifierService(),
+      embedder: ref.read(staticEmbeddingServiceProvider),
+      useEnsemble: true,
+    );
+    final linkedIds = [
+      for (final items in _itemsByList.values)
+        for (final item in items)
+          if (item.canonicalItemId != null) item.canonicalItemId!,
+    ];
+    final ctx = await resolver.prepareContext(groupId, listContext: linkedIds);
     final result = <String, _ItemAisle>{};
 
     for (final items in _itemsByList.values) {
@@ -169,7 +182,8 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
         // name still sorts into the right aisle. Fall back to resolving the
         // typed text for free-entered items with no link.
         final canonicalId = item.canonicalItemId ??
-            (await resolver.resolve(item.name, groupId)).canonicalItemId;
+            (await resolver.resolve(item.name, groupId, context: ctx))
+                .canonicalItemId;
         if (canonicalId == null) continue;
         final row = await db.getStoreAisle(
           groupId: groupId,

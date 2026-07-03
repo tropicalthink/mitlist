@@ -11,6 +11,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/grocery_provider.dart';
 import '../../providers/list_provider.dart';
+import '../../repositories/grocery_repository.dart';
 import '../../services/list_service.dart';
 import '../../services/restock_service.dart';
 import '../../services/scan/grocery_suggestion_service.dart';
@@ -33,10 +34,9 @@ class ListDetailController extends ChangeNotifier {
     required this.ref,
     required this.listId,
     String? initialListName,
-  }) : _listName =
-            (initialListName != null && initialListName.isNotEmpty)
-                ? initialListName
-                : '';
+  }) : _listName = (initialListName != null && initialListName.isNotEmpty)
+            ? initialListName
+            : '';
 
   final WidgetRef ref;
   final String listId;
@@ -48,6 +48,7 @@ class ListDetailController extends ChangeNotifier {
   String _listName;
   final List<ListItem> _items = [];
   StreamSubscription<List<ListItem>>? _itemsSub;
+  GroceryRepository? _groceryRepo;
   String _searchQuery = '';
   ListService? _service;
   bool _dirty = false;
@@ -112,6 +113,7 @@ class ListDetailController extends ChangeNotifier {
     }
     _suggestDebounce?.cancel();
     _itemsSub?.cancel();
+    _groceryRepo?.detachSse();
     suggestionsRevision.dispose();
     super.dispose();
   }
@@ -174,6 +176,15 @@ class ListDetailController extends ChangeNotifier {
       // Attach SSE so edits from other household members appear in real time.
       final sseService = ref.read(sseServiceProvider);
       repo.attachSse(sseService, list.groupId);
+      // Grocery graph shares the same SSE stream: corrections/aisles from
+      // other members invalidate the local graph live.
+      try {
+        final groceryRepo = await ref.read(groceryRepositoryProvider.future);
+        if (!_disposed) {
+          _groceryRepo = groceryRepo;
+          groceryRepo.attachSse(sseService, list.groupId);
+        }
+      } catch (_) {}
       try {
         final authService = await ref.read(authServiceProviderAsync.future);
         final me = await authService.getMe();
@@ -379,7 +390,7 @@ class ListDetailController extends ChangeNotifier {
   /// Adds an item parsed from the composer text. A bare name takes the plain
   /// offline-first create path; a quantity/unit ("2 milk", "1.5 kg flour")
   /// takes the additive offline-first amount path.
-  Future<void> addItem(String text) async {
+  Future<void> addItem(String text, {String? canonicalItemId}) async {
     final service = _service;
     if (service == null) return;
     final repo = await ref.read(listRepositoryProvider.future);
@@ -388,7 +399,10 @@ class ListDetailController extends ChangeNotifier {
     if (parsed.quantity == 1 && parsed.unit.isEmpty) {
       created = await repo.createItemOfflineFirst(
         listId,
-        CreateListItemRequest(name: parsed.name),
+        CreateListItemRequest(
+          name: parsed.name,
+          canonicalItemId: canonicalItemId,
+        ),
       );
     } else {
       created = await repo.addItemAmountOfflineFirst(
@@ -396,6 +410,7 @@ class ListDetailController extends ChangeNotifier {
         name: parsed.name,
         amount: parsed.quantity,
         unit: parsed.unit,
+        canonicalItemId: canonicalItemId,
       );
     }
     if (_disposed) return;
@@ -584,8 +599,7 @@ class ListDetailController extends ChangeNotifier {
       );
     } catch (_) {}
 
-    final updated =
-        await svc.listItemPhotos(groupId: groupId, itemId: item.id);
+    final updated = await svc.listItemPhotos(groupId: groupId, itemId: item.id);
     if (_disposed) return;
     _photosByItemId[item.id] = updated;
     _notify();
@@ -660,8 +674,8 @@ class ListDetailController extends ChangeNotifier {
 
   void refreshSuggestionsDebounced(String query) {
     _suggestDebounce?.cancel();
-    _suggestDebounce =
-        Timer(const Duration(milliseconds: 180), () => refreshSuggestions(query));
+    _suggestDebounce = Timer(
+        const Duration(milliseconds: 180), () => refreshSuggestions(query));
   }
 
   /// Refreshes both suggestion sources for the given composer text: the offline
@@ -724,5 +738,4 @@ class ListDetailController extends ChangeNotifier {
       }
     }
   }
-
 }

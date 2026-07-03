@@ -19,6 +19,7 @@ class ListComposerBar extends StatelessWidget {
     this.productSuggestions = const [],
     this.grocerySuggestions = const [],
     this.showProductSuggestions = false,
+    this.onGrocerySuggestionSelected,
   });
 
   final TextEditingController controller;
@@ -32,6 +33,11 @@ class ListComposerBar extends StatelessWidget {
   final List<GrocerySuggestion> grocerySuggestions;
   final bool showProductSuggestions;
 
+  /// Called when a grocery (seed) suggestion chip is tapped, before [onAdd],
+  /// so the caller can capture the canonical link for the item about to be
+  /// created. Product-history chips carry no canonical id and don't call this.
+  final ValueChanged<GrocerySuggestion>? onGrocerySuggestionSelected;
+
   Widget _buildSuggestions(BuildContext context) {
     if (!showProductSuggestions) return const SizedBox.shrink();
 
@@ -39,7 +45,11 @@ class ListComposerBar extends StatelessWidget {
     // name so the same item never appears twice.
     final seen = <String>{};
     final chips = <Widget>[];
-    void addChip(String name, {required bool fromSeed}) {
+    void addChip(
+      String name, {
+      required bool fromSeed,
+      GrocerySuggestion? suggestion,
+    }) {
       final key = name.toLowerCase();
       if (name.isEmpty || !seen.add(key)) return;
       chips.add(AppChip(
@@ -47,13 +57,16 @@ class ListComposerBar extends StatelessWidget {
         leading: fromSeed ? const AppIcon(name: 'bolt', size: 14) : null,
         onSelected: (_) {
           controller.text = name;
+          if (suggestion != null) {
+            onGrocerySuggestionSelected?.call(suggestion);
+          }
           onAdd();
         },
       ));
     }
 
     for (final g in grocerySuggestions) {
-      addChip(g.name, fromSeed: true);
+      addChip(g.name, fromSeed: true, suggestion: g);
     }
     for (final p in productSuggestions) {
       addChip(p.name, fromSeed: false);

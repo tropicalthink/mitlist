@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:drift/drift.dart' show Value;
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
@@ -67,14 +68,19 @@ class GroceryRepository {
 
   /// Pull and apply all graph rows newer than the stored cursor.
   Future<void> pullDelta(String groupId) async {
-    final sinceVersion = await _db.getGroceryVersion(groupId);
     try {
-      final r = await _dio.get(
-        '/groups/$groupId/grocery/graph',
-        queryParameters: {'since_version': sinceVersion},
-      );
-      final data = r.data as Map<String, dynamic>;
-      await _applyDelta(groupId, data);
+      const maxPages = 20;
+      for (var page = 0; page < maxPages; page++) {
+        final sinceVersion = await _db.getGroceryVersion(groupId);
+        final r = await _dio.get(
+          '/groups/$groupId/grocery/graph',
+          queryParameters: {'since_version': sinceVersion},
+        );
+        final data = r.data as Map<String, dynamic>;
+        await _applyDelta(groupId, data);
+        if (data['has_more'] != true) return;
+      }
+      _log.w('Grocery graph pull stopped after max page limit');
     } on DioException catch (e) {
       _log.w('Grocery graph pull failed: ${e.response?.statusCode}');
     } catch (e) {
@@ -82,16 +88,31 @@ class GroceryRepository {
     }
   }
 
+  @visibleForTesting
+  Future<void> applyDeltaForTesting(
+    String groupId,
+    Map<String, dynamic> delta,
+  ) =>
+      _applyDelta(groupId, delta);
+
   Future<void> _applyDelta(String groupId, Map<String, dynamic> delta) async {
     final maxVersion = (delta['max_version'] as num?)?.toInt() ?? 0;
     if (maxVersion == 0) return;
 
     final now = DateTime.now();
+    final localItems = [
+      ...await _db.getCanonicalItemsByGroup('__global__'),
+      ...await _db.getCanonicalItemsByGroup(groupId),
+    ];
+    final reverse = {for (final it in localItems) apiCanonicalId(it.id): it.id};
+    String mapId(String id) => reverse[id] ?? id;
 
     // Canonical items.
     final rawItems = delta['canonical_items'] as List? ?? [];
     if (rawItems.isNotEmpty) {
-      final items = rawItems.cast<Map<String, dynamic>>().map((j) {
+      final items = rawItems.cast<Map<String, dynamic>>().where((j) {
+        return !reverse.containsKey(j['id'] as String);
+      }).map((j) {
         final createdAt = _parseDate(j['created_at']) ?? now;
         final updatedAt = _parseDate(j['updated_at']) ?? now;
         return CanonicalItemsTableCompanion.insert(
@@ -120,7 +141,7 @@ class GroceryRepository {
         return ItemAliasesTableCompanion.insert(
           id: j['id'] as String,
           groupId: j['group_id'] as String,
-          canonicalItemId: j['canonical_item_id'] as String,
+          canonicalItemId: mapId(j['canonical_item_id'] as String),
           aliasText: j['alias_text'] as String,
           lang: Value(j['lang'] as String? ?? 'de'),
           source: Value(j['source'] as String? ?? 'seed'),
@@ -146,8 +167,11 @@ class GroceryRepository {
           userId: Value(j['user_id'] as String?),
           scope: Value(j['scope'] as String? ?? 'household'),
           rawText: Value(j['raw_text'] as String? ?? ''),
-          resolvedCanonicalItemId:
-              Value(j['resolved_canonical_item_id'] as String?),
+          resolvedCanonicalItemId: Value(
+            j['resolved_canonical_item_id'] == null
+                ? null
+                : mapId(j['resolved_canonical_item_id'] as String),
+          ),
           correctedValueJson: Value(
             j['corrected_value'] != null
                 ? jsonEncode(j['corrected_value'])
@@ -171,7 +195,7 @@ class GroceryRepository {
         return StoreAislesTableCompanion.insert(
           id: j['id'] as String,
           groupId: j['group_id'] as String,
-          canonicalItemId: j['canonical_item_id'] as String,
+          canonicalItemId: mapId(j['canonical_item_id'] as String),
           storeId: Value(j['store_id'] as String?),
           aisle: Value(j['aisle'] as String? ?? ''),
           sortOrder: Value(j['sort_order'] as int? ?? 99),
@@ -224,8 +248,9 @@ class GroceryRepository {
         data: {
           'aisles': entries
               .map((e) => {
-                    'canonical_item_id': e.canonicalItemId,
-                    if (e.storeId != null) 'store_id': e.storeId,
+                    'canonical_item_id': apiCanonicalId(e.canonicalItemId),
+                    // Seed store slugs are local-only; the API accepts UUID stores.
+                    if (isApiUuid(e.storeId)) 'store_id': e.storeId,
                     'aisle': e.aisle,
                     'sort_order': e.sortOrder,
                   })
@@ -254,7 +279,10 @@ class GroceryRepository {
     String scope = 'household',
     String lang = 'de',
   }) async {
-    if (!isApiUuid(canonicalItemId)) return 0;
+    final apiId = apiCanonicalId(canonicalItemId);
+    final canonicalItem = await _db.getCanonicalItemById(canonicalItemId);
+    if (canonicalItem == null) return 0;
+
     try {
       final r = await _dio.post(
         '/groups/$groupId/grocery/corrections',
@@ -262,7 +290,14 @@ class GroceryRepository {
           'raw_text': rawText,
           'kind': kind,
           'scope': scope,
-          'canonical_item_id': canonicalItemId,
+          'canonical_item_id': apiId,
+          'canonical_item': {
+            'id': apiId,
+            'name_de': canonicalItem.nameDe,
+            'name_en': canonicalItem.nameEn,
+            'category': canonicalItem.category,
+            'default_unit': canonicalItem.defaultUnit,
+          },
           'lang': lang,
         },
       );
@@ -276,12 +311,30 @@ class GroceryRepository {
     }
   }
 
+  Future<int> uploadReject({
+    required String groupId,
+    required String rawText,
+  }) async {
+    try {
+      final r = await _dio.post(
+        '/groups/$groupId/grocery/corrections',
+        data: {'raw_text': rawText, 'kind': 'reject', 'scope': 'household'},
+      );
+      return (r.data['version'] as num?)?.toInt() ?? 0;
+    } on DioException catch (e) {
+      _log.w('Reject upload failed: ${e.response?.statusCode}');
+      return 0;
+    } catch (e) {
+      _log.w('Reject upload error: $e');
+      return 0;
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
 
   static DateTime? _parseDate(dynamic raw) {
-
     if (raw == null) return null;
     try {
       return DateTime.parse(raw as String);

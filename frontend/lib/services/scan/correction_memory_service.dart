@@ -1,6 +1,7 @@
 import 'package:uuid/uuid.dart';
 
 import '../../storage/app_database.dart';
+import 'resolution/string_sim.dart';
 import 'package:drift/drift.dart';
 
 const _uuid = Uuid();
@@ -26,7 +27,7 @@ class CorrectionMemoryService {
     required String canonicalItemId,
     String source = 'manual_review',
   }) async {
-    final normalised = rawText.toLowerCase().trim();
+    final normalised = normaliseText(rawText);
     if (normalised.isEmpty) return;
 
     final now = DateTime.now();
@@ -56,10 +57,16 @@ class CorrectionMemoryService {
       // Reinforce existing alias.
       await _db.incrementAliasWeight(existing.id);
     } else {
-      // Upsert with household scope (overrides any global seed).
+      // Never reuse a global seed row's id: overwriting it would destroy the
+      // shipped mapping (and the alias collision the ensemble scores against).
+      // A household correction gets its own row; findAlias prefers it via
+      // weight ordering.
+      final reuseId = (existing != null && existing.groupId == groupId)
+          ? existing.id
+          : null;
       await _db.upsertItemAliases([
         ItemAliasesTableCompanion.insert(
-          id: existing?.id ?? _uuid.v4(),
+          id: reuseId ?? _uuid.v4(),
           groupId: groupId,
           canonicalItemId: canonicalItemId,
           aliasText: normalised,
@@ -67,7 +74,7 @@ class CorrectionMemoryService {
           source: const Value('correction'),
           weight: Value((existing?.weight ?? 0) + 1),
           version: const Value(0),
-          createdAt: existing?.createdAt ?? now,
+          createdAt: reuseId != null ? existing!.createdAt : now,
           updatedAt: now,
         ),
       ]);
@@ -79,6 +86,7 @@ class CorrectionMemoryService {
     required String groupId,
     required String userId,
     required String rawText,
+    String? rejectedCanonicalItemId,
   }) async {
     await _db.insertCorrection(CorrectionsTableCompanion.insert(
       id: _uuid.v4(),
@@ -86,7 +94,8 @@ class CorrectionMemoryService {
       userId: Value(userId),
       scope: const Value('household'),
       kind: 'reject',
-      rawText: Value(rawText.toLowerCase().trim()),
+      rawText: Value(normaliseText(rawText)),
+      resolvedCanonicalItemId: Value(rejectedCanonicalItemId),
       version: const Value(0),
       createdAt: DateTime.now(),
     ));

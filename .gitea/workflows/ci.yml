@@ -60,5 +60,11 @@ jobs:
         run: cd frontend && flutter pub get
       - name: Analyze
         run: cd frontend && dart analyze lib/
+      - name: Classifier/seed parity
+        run: python3 intelligence/ml/check_classifier_parity.py
       - name: Test
         run: cd frontend && flutter test
+      - name: Resolution eval (report-only)
+        run: |
+          cd frontend && EXPORT_RESOLUTION_FEATURES=1 flutter test test/services/resolution_feature_export_test.dart
+          python3 ../intelligence/ml/eval/resolution_eval.py

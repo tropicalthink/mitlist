@@ -7,8 +7,10 @@ import 'package:uuid/uuid.dart';
 import '../../models/list_models.dart';
 import '../../providers/grocery_provider.dart';
 import '../../providers/list_provider.dart';
+import '../../providers/store_provider.dart';
 import '../../repositories/grocery_repository.dart';
 import '../../l10n/app_localizations.dart';
+import '../../services/scan/canonical_resolver_service.dart';
 import '../../services/scan/scan_models.dart';
 import '../../services/scan/suggestion_service.dart';
 import '../../theme/colors.dart';
@@ -17,6 +19,7 @@ import '../../theme/typography.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
+import '../../widgets/chip.dart';
 import '../../widgets/app_dropdown.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
@@ -72,8 +75,7 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
   bool _isAdding = false;
 
   // Phase 5: store picker
-  List<ShoppingLocation> _stores = [];
-  ShoppingLocation? _activeStore;
+  String? _activeStoreId;
 
   // Phase 6: suggestions
   List<GrocerySuggestion> _suggestions = [];
@@ -83,7 +85,8 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
     super.initState();
     _items = List.of(widget.scanResult.items);
     _ignored = List.of(widget.scanResult.ignored);
-    _loadStores();
+    _activeStoreId = ref.read(selectedStoreIdProvider);
+    if (_activeStoreId != null) unawaited(_refreshAisles(_activeStoreId!));
     _loadSuggestions();
   }
 
@@ -91,30 +94,21 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
   // Phase 5: store picker + aisle refresh
   // ---------------------------------------------------------------------------
 
-  Future<void> _loadStores() async {
-    if (!mounted) return;
-    try {
-      final svc = await ref.read(listServiceProviderAsync.future);
-      final stores = await svc.listShoppingLocations(widget.groupId);
-      if (!mounted) return;
-      setState(() {
-        _stores = stores;
-        _activeStore = stores.isNotEmpty ? stores.first : null;
-      });
-      if (_activeStore != null) await _refreshAisles(_activeStore!.id);
-    } catch (_) {
-      // Stores are optional; continue without store picker on error.
-    }
-  }
-
   Future<void> _refreshAisles(String storeId) async {
     final db = ref.read(appDatabaseProvider);
-    final aisles = await db.getStoreAisles(
+    final globalAisles = await db.getStoreAisles(
+      groupId: '__global__',
+      storeId: storeId,
+    );
+    final householdAisles = await db.getStoreAisles(
       groupId: widget.groupId,
       storeId: storeId,
     );
     if (!mounted) return;
-    final aisleMap = {for (final a in aisles) a.canonicalItemId: a};
+    final aisleMap = {
+      for (final a in globalAisles) a.canonicalItemId: a,
+      for (final a in householdAisles) a.canonicalItemId: a,
+    };
     setState(() {
       _items = _items.map((p) {
         if (p.canonicalItemId == null) return p;
@@ -126,10 +120,11 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
     });
   }
 
-  void _onStoreChanged(ShoppingLocation? store) {
-    if (store == null) return;
-    setState(() => _activeStore = store);
-    unawaited(_refreshAisles(store.id));
+  void _onStoreChanged(String? storeId) {
+    if (storeId == null) return;
+    setState(() => _activeStoreId = storeId);
+    unawaited(ref.read(selectedStoreIdProvider.notifier).select(storeId));
+    unawaited(_refreshAisles(storeId));
   }
 
   // ---------------------------------------------------------------------------
@@ -193,7 +188,9 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
     for (int i = nearFlat; i >= 0; i--) {
       if (entries[i].isHeader) return entries[i].aisleLabel!;
     }
-    return _items.isNotEmpty ? (_items.first.aisle ?? _otherAisle) : _otherAisle;
+    return _items.isNotEmpty
+        ? (_items.first.aisle ?? _otherAisle)
+        : _otherAisle;
   }
 
   void _renumberSortOrders() {
@@ -203,7 +200,7 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
   }
 
   Future<void> _uploadAisleFeedback() async {
-    final storeId = _activeStore?.id;
+    final storeId = _activeStoreId;
     final groceryRepo = await ref.read(groceryRepositoryProvider.future);
     final entries = _items
         .where((p) => p.canonicalItemId != null)
@@ -257,7 +254,11 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
   // ---------------------------------------------------------------------------
 
   void _updateItem(int index, GroceryPrediction updated) {
-    setState(() => _items[index] = updated);
+    final prev = _items[index];
+    final confirmed = updated.userConfirmed ||
+        updated.canonicalItemId != prev.canonicalItemId ||
+        updated.displayName != prev.displayName;
+    setState(() => _items[index] = updated.copyWith(userConfirmed: confirmed));
   }
 
   void _removeItem(int index) {
@@ -266,14 +267,33 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
       _items.removeAt(index);
       _ignored.add(item);
     });
+    if (item.canonicalItemId != null) {
+      final svc = ref.read(correctionMemoryProvider);
+      unawaited(svc.recordReject(
+        groupId: widget.groupId,
+        userId: widget.userId,
+        rawText: item.rawText,
+        rejectedCanonicalItemId: item.canonicalItemId,
+      ));
+      unawaited(_uploadReject(item));
+    }
   }
 
   void _restoreIgnored(int index) {
     final item = _ignored[index];
+    // Reject corrections are append-only; restoring only changes this review.
     setState(() {
       _ignored.removeAt(index);
       _items.add(item);
     });
+  }
+
+  Future<void> _uploadReject(GroceryPrediction item) async {
+    final groceryRepo = await ref.read(groceryRepositoryProvider.future);
+    await groceryRepo.uploadReject(
+      groupId: widget.groupId,
+      rawText: item.rawText,
+    );
   }
 
   void _acceptAll() {
@@ -301,7 +321,8 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
     final repo = await ref.read(listRepositoryProvider.future);
 
     for (final item in _items) {
-      if (item.canonicalItemId != null &&
+      if (item.userConfirmed &&
+          item.canonicalItemId != null &&
           item.rawText.toLowerCase() != item.displayName.toLowerCase()) {
         await correctionSvc.recordAlias(
           groupId: widget.groupId,
@@ -399,6 +420,12 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final storeCatalog = ref.watch(storeCatalogProvider);
+    ref.listen<String?>(selectedStoreIdProvider, (previous, next) {
+      if (!mounted || next == _activeStoreId) return;
+      setState(() => _activeStoreId = next);
+      if (next != null) unawaited(_refreshAisles(next));
+    });
     final pendingCount = _items
         .where((p) => p.confidenceLevel != ConfidenceLevel.autoAccept)
         .length;
@@ -433,39 +460,49 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
       body: Column(
         children: [
           // Store picker (Phase 5)
-          if (_stores.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                  MitlistSpacing.md, MitlistSpacing.sm, MitlistSpacing.md, 0),
-              child: Row(
-                children: [
-                  AppIcon(
-                      name: 'storeOutline',
-                      size: 16,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant),
-                  const SizedBox(width: MitlistSpacing.xs),
-                  Text(
-                    l10n.scanReviewStoreLabel,
-                    style: MitlistTypography.labelXSmall(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+          storeCatalog.maybeWhen(
+            data: (stores) {
+              if (stores.isEmpty) return const SizedBox.shrink();
+              final selectedId = stores.any((s) => s.id == _activeStoreId)
+                  ? _activeStoreId
+                  : null;
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    MitlistSpacing.md, MitlistSpacing.sm, MitlistSpacing.md, 0),
+                child: Row(
+                  children: [
+                    AppIcon(
+                        name: 'storeOutline',
+                        size: 16,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    const SizedBox(width: MitlistSpacing.xs),
+                    Text(
+                      l10n.scanReviewStoreLabel,
+                      style: MitlistTypography.labelXSmall(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: MitlistSpacing.xs),
-                  Expanded(
-                    child: AppDropdown<ShoppingLocation>(
-                      value: _activeStore,
-                      items: _stores
-                          .map((s) => DropdownMenuItem(
-                                value: s,
-                                child: Text(s.name),
-                              ))
-                          .toList(),
-                      onChanged: _onStoreChanged,
+                    const SizedBox(width: MitlistSpacing.xs),
+                    Expanded(
+                      child: AppDropdown<String>(
+                        key: ValueKey(selectedId),
+                        value: selectedId,
+                        hint: l10n.scannerChooseStore,
+                        items: stores
+                            .map((s) => DropdownMenuItem(
+                                  value: s.id,
+                                  child: Text(s.label),
+                                ))
+                            .toList(),
+                        onChanged: _onStoreChanged,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
+                  ],
+                ),
+              );
+            },
+            orElse: () => const SizedBox.shrink(),
+          ),
 
           Expanded(
             child: ReorderableListView.builder(
@@ -703,10 +740,10 @@ class _SuggestionRow extends StatelessWidget {
         children: suggestions
             .map((s) => Tooltip(
                   message: s.reason,
-                  child: ActionChip(
-                    avatar: const AppIcon(name: 'plus', size: 14),
-                    label: Text(s.displayName),
-                    onPressed: () => onAdd(s),
+                  child: AppChip(
+                    label: s.displayName,
+                    leading: const AppIcon(name: 'plus', size: 14),
+                    onSelected: (_) => onAdd(s),
                   ),
                 ))
             .toList(),
@@ -753,7 +790,8 @@ class _PredictionTile extends StatelessWidget {
     final headline = leadWithRaw ? prediction.rawText : prediction.displayName;
     final showGuess = leadWithRaw &&
         prediction.canonicalItemId != null &&
-        prediction.displayName.toLowerCase() != prediction.rawText.toLowerCase();
+        prediction.displayName.toLowerCase() !=
+            prediction.rawText.toLowerCase();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
@@ -845,6 +883,30 @@ class _PredictionTile extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
+                      if (needsAction && prediction.alternatives.isNotEmpty)
+                        Padding(
+                          padding:
+                              const EdgeInsets.only(top: MitlistSpacing.xs),
+                          child: Wrap(
+                            spacing: MitlistSpacing.xs,
+                            runSpacing: MitlistSpacing.xs,
+                            children: prediction.alternatives
+                                .take(3)
+                                .map((alt) => AppChip(
+                                      label: alt.displayName,
+                                      onSelected: (_) => onChanged(
+                                        prediction.copyWith(
+                                          displayName: alt.displayName,
+                                          canonicalItemId: alt.canonicalItemId,
+                                          confidenceLevel:
+                                              ConfidenceLevel.autoAccept,
+                                          confidenceScore: 1.0,
+                                        ),
+                                      ),
+                                    ))
+                                .toList(),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -857,7 +919,8 @@ class _PredictionTile extends StatelessWidget {
                 const SizedBox(width: MitlistSpacing.xs),
                 Semantics(
                   button: true,
-                  label: AppLocalizations.of(context)!.scanReviewRemoveItem(prediction.displayName),
+                  label: AppLocalizations.of(context)!
+                      .scanReviewRemoveItem(prediction.displayName),
                   child: GestureDetector(
                     onTap: onRemove,
                     child: AppIcon(
@@ -957,11 +1020,14 @@ class _ItemEditorSheetState extends State<_ItemEditorSheet> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _qtyCtrl;
   late final TextEditingController _unitCtrl;
+  String? _selectedAltId;
+  bool _selectingAlternative = false;
 
   @override
   void initState() {
     super.initState();
     _nameCtrl = TextEditingController(text: widget.prediction.displayName);
+    _nameCtrl.addListener(_clearSelectedAlternative);
     _qtyCtrl = TextEditingController(
         text: widget.prediction.quantity == 1
             ? ''
@@ -971,6 +1037,7 @@ class _ItemEditorSheetState extends State<_ItemEditorSheet> {
 
   @override
   void dispose() {
+    _nameCtrl.removeListener(_clearSelectedAlternative);
     _nameCtrl.dispose();
     _qtyCtrl.dispose();
     _unitCtrl.dispose();
@@ -983,6 +1050,7 @@ class _ItemEditorSheetState extends State<_ItemEditorSheet> {
     final qty = double.tryParse(_qtyCtrl.text.replaceAll(',', '.')) ?? 1;
     widget.onSave(widget.prediction.copyWith(
       displayName: name,
+      canonicalItemId: _selectedAltId ?? widget.prediction.canonicalItemId,
       quantity: qty,
       unit: _unitCtrl.text.trim(),
       confidenceLevel: ConfidenceLevel.autoAccept,
@@ -993,6 +1061,21 @@ class _ItemEditorSheetState extends State<_ItemEditorSheet> {
 
   String _fmtQty(double q) =>
       q == q.roundToDouble() ? q.round().toString() : q.toString();
+
+  void _clearSelectedAlternative() {
+    if (_selectingAlternative) return;
+    _selectedAltId = null;
+  }
+
+  void _selectAlternative(ResolveAlternative alternative) {
+    _selectingAlternative = true;
+    _selectedAltId = alternative.canonicalItemId;
+    _nameCtrl.text = alternative.displayName;
+    _nameCtrl.selection = TextSelection.collapsed(
+      offset: _nameCtrl.text.length,
+    );
+    _selectingAlternative = false;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1024,7 +1107,9 @@ class _ItemEditorSheetState extends State<_ItemEditorSheet> {
               ),
             ),
             const SizedBox(width: MitlistSpacing.sm),
-            Expanded(child: AppInput(controller: _unitCtrl, label: l10n.scanReviewUnit)),
+            Expanded(
+                child: AppInput(
+                    controller: _unitCtrl, label: l10n.scanReviewUnit)),
           ],
         ),
         const SizedBox(height: MitlistSpacing.md),
@@ -1039,9 +1124,9 @@ class _ItemEditorSheetState extends State<_ItemEditorSheet> {
           Wrap(
             spacing: MitlistSpacing.xs,
             children: widget.prediction.alternatives
-                .map((alt) => ActionChip(
-                      label: Text(alt),
-                      onPressed: () => _nameCtrl.text = alt,
+                .map((alt) => AppChip(
+                      label: alt.displayName,
+                      onSelected: (_) => _selectAlternative(alt),
                     ))
                 .toList(),
           ),

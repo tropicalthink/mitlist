@@ -120,8 +120,7 @@ class ListRepository {
 
       Map<String, dynamic> payload;
       try {
-        payload =
-            (jsonDecode(op.payloadJson) as Map).cast<String, dynamic>();
+        payload = (jsonDecode(op.payloadJson) as Map).cast<String, dynamic>();
       } catch (_) {
         continue;
       }
@@ -135,14 +134,12 @@ class ListRepository {
           id: Value(tempId),
           listId: Value(listId),
           name: Value(name),
-          quantity: Value(
-              (payload['quantity'] as num?)?.toDouble() ?? 1.0),
+          quantity: Value((payload['quantity'] as num?)?.toDouble() ?? 1.0),
           unit: Value(payload['unit'] as String? ?? ''),
           checked: const Value(false),
           position: Value(maxPos + 1 + restored),
           priceCents: Value(payload['priceCents'] as int?),
-          canonicalItemId:
-              Value(payload['canonicalItemId'] as String?),
+          canonicalItemId: Value(payload['canonicalItemId'] as String?),
           createdAt: Value(DateTime.now()),
           updatedAt: Value(DateTime.now()),
         ),
@@ -151,8 +148,7 @@ class ListRepository {
     }
   }
 
-  Future<String?> getGroupId(String listId) =>
-      _db.getListGroupId(listId);
+  Future<String?> getGroupId(String listId) => _db.getListGroupId(listId);
 
   // ---------------------------------------------------------------------------
   // Offline-first writes (optimistic local + outbox)
@@ -234,6 +230,7 @@ class ListRepository {
     required double amount,
     String unit = '',
     String note = '',
+    String? canonicalItemId,
   }) async {
     final now = DateTime.now();
     final existingRows = await _db.getItemsByListOnce(listId);
@@ -257,7 +254,7 @@ class ListRepository {
         checked: false,
         position: existing.position,
         priceCents: existing.priceCents,
-        canonicalItemId: existing.canonicalItemId,
+        canonicalItemId: existing.canonicalItemId ?? canonicalItemId,
         claimedBy: existing.claimedBy,
         createdAt: existing.createdAt,
         updatedAt: now,
@@ -278,6 +275,7 @@ class ListRepository {
         note: note,
         checked: false,
         position: maxPos + 1,
+        canonicalItemId: canonicalItemId,
         createdAt: now,
         updatedAt: now,
       );
@@ -296,6 +294,7 @@ class ListRepository {
         'amount': amount,
         'unit': unit,
         'note': note,
+        if (canonicalItemId != null) 'canonicalItemId': canonicalItemId,
       },
       // Each add is a distinct additive op, so the key is unique per enqueue
       // to avoid collapsing two separate "+amount" writes into one.
@@ -548,8 +547,7 @@ class ListRepository {
           'updateItem': (op, payload) => _syncUpdateItem(op.id, payload),
           'deleteItem': (op, payload) => _syncDeleteItem(op.id, payload),
           'reorderItems': (op, payload) => _syncReorderItems(op.id, payload),
-          'addItemAmount': (op, payload) =>
-              _syncAddItemAmount(op.id, payload),
+          'addItemAmount': (op, payload) => _syncAddItemAmount(op.id, payload),
           'clearItems': (op, payload) => _syncClearItems(op.id, payload),
         },
       );
