@@ -4,7 +4,6 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 import '../../models/auth_models.dart';
 import '../../models/group_models.dart';
@@ -25,7 +24,7 @@ import '../../utils/haptics.dart';
 import '../../utils/hub_helpers.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/hub/pinned_memo_card.dart';
-import '../../widgets/pinwall_link_chip.dart';
+import '../../widgets/pinwall/pinwall_note_card.dart';
 
 // ─── Board layout constants ──────────────────────────────────────────────────
 
@@ -338,11 +337,13 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
           // survives reordering); notes that arrive live pin on individually.
           final initial = _initialEntranceById[id];
           final isLive = initial == null && _enteringIds.contains(id);
-          Widget card = _BoardNoteCard(
+          Widget card = PinwallNoteCard(
+            variant: PinwallNoteCardVariant.board,
             index: i,
             groupId: widget.groupId,
             me: widget.me,
             post: post,
+            onOpenLinkedEntity: (ctx) => _openLinkedEntity(ctx, post),
           );
           if (isLive) card = _PinOnEntrance(child: card);
           return (
@@ -1006,203 +1007,6 @@ class _BoardDraggableItem extends StatelessWidget {
       left: position.dx,
       top: position.dy,
       child: body,
-    );
-  }
-}
-
-// ─── Board note card ──────────────────────────────────────────────────────────
-
-class _BoardNoteCard extends ConsumerWidget {
-  const _BoardNoteCard({
-    required this.index,
-    required this.groupId,
-    required this.me,
-    required this.post,
-  });
-
-  final int index;
-  final String groupId;
-  final User? me;
-  final PinwallPost post;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-    final textTheme = Theme.of(context).textTheme;
-    final dark = Theme.of(context).brightness == Brightness.dark;
-
-    final palette =
-        dark ? MitlistColors.notePaletteDark : MitlistColors.notePalette;
-    final idHash = post.id.hashCode;
-    final bg = palette[idHash.abs() % palette.length];
-    final border = bg.withValues(alpha: dark ? 0.3 : 0.6);
-    final rot = ((idHash % 13) - 6) * 0.012;
-
-    final pinColors = [
-      Theme.of(context).colorScheme.primary,
-      Theme.of(context).colorScheme.secondary,
-      Theme.of(context).colorScheme.error,
-    ];
-    final pinColor = pinColors[index % pinColors.length];
-
-    final textColor = dark
-        ? MitlistColors.surfaceSoft.withValues(alpha: 0.9)
-        : Theme.of(context).colorScheme.onSurface;
-    final mutedColor = dark
-        ? MitlistColors.surfaceSoft.withValues(alpha: 0.5)
-        : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7);
-
-    final content = post.content.trim();
-    final userLabel = formatUserLabel(post.userId, me?.id, l10n);
-    final when = relativeDay(post.createdAt);
-
-    final remindAt = post.remindAt;
-    final reminderText = remindAt == null
-        ? null
-        : DateFormat('MMM d · h:mm a').format(remindAt.toLocal());
-
-    final media = ref.watch(
-      pinwallMediaByPostProvider((groupId: groupId, postId: post.id)),
-    );
-
-    return Semantics(
-      label: l10n.pinwallNoteSemantics(userLabel, content),
-      child: Transform.rotate(
-        angle: rot.toDouble(),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              width: _kCardW,
-              padding: const EdgeInsets.fromLTRB(
-                MitlistSpacing.sm + 4,
-                MitlistSpacing.lg,
-                MitlistSpacing.sm,
-                MitlistSpacing.sm,
-              ),
-              decoration: BoxDecoration(
-                color: bg,
-                borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
-                border: Border.all(color: border, width: 1),
-                boxShadow: [
-                  BoxShadow(
-                    color: MitlistColors.neutral950
-                        .withValues(alpha: dark ? 0.5 : 0.2),
-                    blurRadius: 12,
-                    offset: const Offset(4, 6),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    content,
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: textColor,
-                      height: 1.4,
-                    ),
-                    maxLines: 10,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  media.when(
-                    loading: () => const SizedBox(height: 42),
-                    error: (_, __) => const SizedBox.shrink(),
-                    data: (items) {
-                      if (items.isEmpty) return const SizedBox.shrink();
-                      final show = items.take(4).toList();
-                      return Padding(
-                        padding: const EdgeInsets.only(top: MitlistSpacing.xs),
-                        child: SizedBox(
-                          height: 48,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: show.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(width: MitlistSpacing.xs),
-                            itemBuilder: (context, i) => ClipRRect(
-                              borderRadius:
-                                  BorderRadius.circular(MitlistTheme.radiusSm),
-                              child: AspectRatio(
-                                aspectRatio: 1,
-                                child: Image.network(
-                                  show[i].url,
-                                  fit: BoxFit.cover,
-                                  cacheWidth: (48 *
-                                          MediaQuery.devicePixelRatioOf(
-                                              context) *
-                                          1.5)
-                                      .round(),
-                                  errorBuilder: (_, __, ___) => Container(
-                                    color: border.withValues(alpha: 0.3),
-                                    child: const Icon(
-                                      Icons.image_not_supported_outlined,
-                                      size: 14,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  if (reminderText != null)
-                    Padding(
-                      padding: const EdgeInsets.only(
-                          top: MitlistSpacing.xs, bottom: MitlistSpacing.xs),
-                      child: Row(
-                        children: [
-                          Icon(Icons.alarm_on_outlined,
-                              size: 12, color: mutedColor),
-                          const SizedBox(width: MitlistSpacing.xs),
-                          Expanded(
-                            child: Text(
-                              reminderText,
-                              style: textTheme.labelSmall
-                                  ?.copyWith(color: mutedColor),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  const SizedBox(height: MitlistSpacing.xs),
-                  Text(
-                    '$userLabel · $when',
-                    style: textTheme.labelSmall?.copyWith(color: mutedColor),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (post.linkedEntityType != null) ...[
-                    const SizedBox(height: MitlistSpacing.xs),
-                    PinwallLinkChip(
-                      entityType: post.linkedEntityType!,
-                      color: mutedColor,
-                      onTap: () => _openLinkedEntity(context, post),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            Positioned(
-              top: -14,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: PinwallPushpin(
-                  headColor: pinColor,
-                  size: const Size(26, 32),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
