@@ -8,8 +8,6 @@ import 'package:go_router/go_router.dart';
 import '../../models/auth_models.dart';
 import '../../models/group_models.dart';
 import '../../models/pinwall_models.dart';
-import '../../providers/chore_provider.dart';
-import '../../providers/finance_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../providers/meal_plan_provider.dart';
 import '../../providers/pinwall_provider.dart';
@@ -25,6 +23,7 @@ import '../../utils/hub_helpers.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/hub/pinned_memo_card.dart';
 import '../../widgets/pinwall/pinwall_note_card.dart';
+import '../../widgets/pinwall/pinwall_stat_rows.dart';
 
 // ─── Board layout constants ──────────────────────────────────────────────────
 
@@ -1066,43 +1065,7 @@ class _BoardStatsCard extends ConsumerWidget {
     final rule = border.withValues(alpha: dark ? 0.5 : 0.75);
     final marginRule = scheme.error.withValues(alpha: dark ? 0.45 : 0.4);
 
-    // ── Chores: due today + overdue ───────────────────────────────────────
-    final chores = ref.watch(cachedCurrentChoresByGroupProvider(groupId));
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final tomorrow = today.add(const Duration(days: 1));
-    final choresDue = chores.valueOrNull?.where((c) {
-          final due = c.pendingAssignment?.dueDate;
-          return due != null &&
-              due.isBefore(tomorrow) &&
-              due.isAfter(today.subtract(const Duration(days: 1))) &&
-              c.pendingAssignment?.status != 'completed';
-        }).length ??
-        0;
-    final choresOverdue = chores.valueOrNull?.where((c) {
-          final due = c.pendingAssignment?.dueDate;
-          return due != null &&
-              due.isBefore(today) &&
-              c.pendingAssignment?.status != 'completed';
-        }).length ??
-        0;
-    final choreTotal = choresDue + choresOverdue;
-
-    // ── Balance ───────────────────────────────────────────────────────────
-    final finance = ref.watch(cachedFinanceSummaryByGroupProvider(groupId));
-    final balance = finance.valueOrNull?.balances
-            .fold<int>(0, (sum, b) => sum + b.total) ??
-        0;
-    String fmtMoney(int cents) => (cents / 100).toStringAsFixed(0);
-
-    // ── Lists ─────────────────────────────────────────────────────────────
-    final lists = ref.watch(cachedListsByGroupProvider(groupId));
-    final listCount = lists.valueOrNull
-            ?.where((l) => l.type == 'shopping' || l.type == 'general')
-            .length ??
-        0;
-
-    // ── Reminders (optional row) ──────────────────────────────────────────
+    // ── Reminders (optional row; no hub equivalent) ─────────────────────────
     final reminders = ref.watch(pinwallPostsByGroupProvider(groupId));
     final reminderCount =
         reminders.valueOrNull?.where((p) => p.remindAt != null).length ?? 0;
@@ -1162,57 +1125,30 @@ class _BoardStatsCard extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _IndexRow(
-                        icon: Icons.cleaning_services_outlined,
-                        label: l10n.hubStatsChores,
-                        value: '$choreTotal',
-                        subtitle: choresOverdue > 0
-                            ? '$choresOverdue ${l10n.hubStatsOverdue}'
-                            : (choresDue > 0
-                                ? l10n.hubStatsDue
-                                : l10n.hubStatsAllDone),
-                        accent: choresOverdue > 0
-                            ? scheme.error
-                            : (choresDue > 0 ? scheme.secondary : scheme.tertiary),
-                        rule: rule,
+                      PinwallChoresStatRow(
+                        groupId: groupId,
+                        style: PinwallStatRowStyle.indexCard,
                         ink: ink,
                         muted: muted,
-                        onTap: () => context.goNamed('chores'),
-                      ),
-                      _IndexRow(
-                        icon: Icons.receipt_outlined,
-                        label: l10n.hubStatsBalance,
-                        value: balance > 0
-                            ? '+\$${fmtMoney(balance)}'
-                            : (balance < 0
-                                ? '-\$${fmtMoney(-balance)}'
-                                : '\$${fmtMoney(balance)}'),
-                        subtitle: balance != 0
-                            ? l10n.hubStatsOpen
-                            : l10n.expenseSettled,
-                        accent: balance > 0
-                            ? scheme.tertiary
-                            : (balance < 0 ? scheme.error : muted),
                         rule: rule,
+                      ),
+                      PinwallFinanceStatRow(
+                        groupId: groupId,
+                        style: PinwallStatRowStyle.indexCard,
                         ink: ink,
                         muted: muted,
-                        onTap: () => context.goNamed('money'),
+                        rule: rule,
                       ),
-                      _IndexRow(
-                        icon: Icons.shopping_cart_outlined,
-                        label: l10n.hubStatsLists,
-                        value: '$listCount',
-                        subtitle: listCount == 1
-                            ? l10n.hubStatsActiveList
-                            : l10n.hubStatsActiveLists,
-                        accent: listCount > 0 ? scheme.primary : scheme.tertiary,
+                      PinwallListsStatRow(
+                        groupId: groupId,
+                        style: PinwallStatRowStyle.indexCard,
+                        ink: ink,
+                        muted: muted,
                         rule: reminderCount > 0 ? rule : Colors.transparent,
-                        ink: ink,
-                        muted: muted,
-                        onTap: () => context.goNamed('lists'),
                       ),
                       if (reminderCount > 0)
-                        _IndexRow(
+                        PinwallStatRow(
+                          style: PinwallStatRowStyle.indexCard,
                           icon: Icons.alarm_outlined,
                           label: l10n.hubStatsReminders,
                           value: '$reminderCount',
@@ -1261,98 +1197,6 @@ class _FolderTab extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.85),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
-      ),
-    );
-  }
-}
-
-/// One ruled line on the index card.
-class _IndexRow extends StatelessWidget {
-  const _IndexRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.subtitle,
-    required this.accent,
-    required this.rule,
-    required this.ink,
-    required this.muted,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final String subtitle;
-  final Color accent;
-  final Color rule;
-  final Color ink;
-  final Color muted;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: rule, width: 1)),
-      ),
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          onTap: onTap == null
-              ? null
-              : () {
-                  unawaited(Haptics.light());
-                  onTap!();
-                },
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              64,
-              MitlistSpacing.sm + 2,
-              MitlistSpacing.md,
-              MitlistSpacing.sm + 2,
-            ),
-            child: Row(
-              children: [
-                Icon(icon, size: 18, color: accent),
-                const SizedBox(width: MitlistSpacing.sm),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        label,
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: ink,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        subtitle,
-                        style: textTheme.labelSmall?.copyWith(color: accent),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: MitlistSpacing.sm),
-                Text(
-                  value,
-                  style: textTheme.titleLarge?.copyWith(
-                    color: ink,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  maxLines: 1,
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
