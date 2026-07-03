@@ -62,8 +62,8 @@ dependencies:
   # Firebase — required for FCM push on Android and iOS.
   # Add google-services.json (Android) and GoogleService-Info.plist (iOS)
   # from your Firebase project before building.
-  firebase_core: ^3.13.1
-  firebase_messaging: ^15.2.5
+  firebase_core: ^4.11.0
+  firebase_messaging: ^16.4.1
   flutter_secure_storage: ^10.3.1
   tflite_flutter: ^0.11.0
   web: ^1.1.1
