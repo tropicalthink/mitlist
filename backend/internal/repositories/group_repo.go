@@ -21,6 +21,20 @@ func NewGroupRepository(pool DBTX) *GroupRepository {
 	return &GroupRepository{pool: pool}
 }
 
+// WithTx runs fn with a transaction-scoped repository.
+func (r *GroupRepository) WithTx(ctx context.Context, fn func(txRepo GroupRepo) error) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck // rollback after commit is a no-op
+
+	if err := fn(NewGroupRepository(tx)); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
 // CreateGroup inserts a new group.
 func (r *GroupRepository) CreateGroup(ctx context.Context, group *models.Group) error {
 	if group.ID == uuid.Nil {
@@ -224,6 +238,22 @@ func (r *GroupRepository) ConsumeInvite(ctx context.Context, inviteID, userID uu
 	`
 	_, err := r.pool.Exec(ctx, query, userID, now, inviteID)
 	return err
+}
+
+// ClaimInvite marks an invite as used only if it is still unclaimed.
+func (r *GroupRepository) ClaimInvite(ctx context.Context, inviteID, userID uuid.UUID) error {
+	now := time.Now().UTC()
+	query := `
+		UPDATE group_invites
+		SET used_by = $1, used_at = $2
+		WHERE id = $3 AND used_by IS NULL
+		RETURNING id
+	`
+	var id uuid.UUID
+	if err := r.pool.QueryRow(ctx, query, userID, now, inviteID).Scan(&id); err != nil {
+		return err
+	}
+	return nil
 }
 
 // CreatePendingClaim inserts a new pending claim.

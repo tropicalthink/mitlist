@@ -244,6 +244,10 @@ func (s *RecipeScrapingService) fetchHTML(ctx context.Context, validated *securi
 	// Last resort: route through FlareSolverr (headless browser) to clear
 	// Cloudflare-style challenges that block our direct fetch by IP/fingerprint.
 	if s.flareSolverURL != "" {
+		if _, err := security.ValidateAndResolveURL(ctx, validated.URL.String()); err != nil {
+			lastErr = fmt.Errorf("%v (flaresolverr target revalidation: %v)", lastErr, err)
+			return "", "", lastErr
+		}
 		if body, finalURL, ferr := s.fetchViaFlareSolverr(ctx, validated.URL.String()); ferr == nil {
 			return body, finalURL, nil
 		} else {
@@ -324,40 +328,50 @@ func (s *RecipeScrapingService) fetchViaFlareSolverr(ctx context.Context, target
 }
 
 func (s *RecipeScrapingService) fetchOnce(ctx context.Context, validated *security.ValidatedURL, userAgent string) (body, finalURL string, retryable bool, err error) {
-	pinned := security.NewPinnedTransport(validated)
-	client := *s.client
-	if pinned != nil {
-		client.Transport = pinned
-	}
-
-	redirects := 0
-	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-		redirects++
-		if redirects > 5 {
+	current := validated
+	var resp *http.Response
+	for redirects := 0; ; redirects++ {
+		pinned := security.NewPinnedTransport(current)
+		client := *s.client
+		if pinned != nil {
+			client.Transport = pinned
+		}
+		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		}
-		if _, err := security.ValidateURLForFetch(req.Context(), req.URL.String()); err != nil {
-			return err
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, current.URL.String(), nil)
+		if err != nil {
+			return "", "", false, fmt.Errorf("invalid request")
 		}
-		return nil
-	}
+		req.Header.Set("User-Agent", userAgent)
+		req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
+		req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+		req.Header.Set("Cache-Control", "no-cache")
+		req.Header.Set("Sec-Fetch-Dest", "document")
+		req.Header.Set("Sec-Fetch-Mode", "navigate")
+		req.Header.Set("Sec-Fetch-Site", "none")
+		req.Header.Set("Upgrade-Insecure-Requests", "1")
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, validated.URL.String(), nil)
-	if err != nil {
-		return "", "", false, fmt.Errorf("invalid request")
-	}
-	req.Header.Set("User-Agent", userAgent)
-	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
-	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
-	req.Header.Set("Cache-Control", "no-cache")
-	req.Header.Set("Sec-Fetch-Dest", "document")
-	req.Header.Set("Sec-Fetch-Mode", "navigate")
-	req.Header.Set("Sec-Fetch-Site", "none")
-	req.Header.Set("Upgrade-Insecure-Requests", "1")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", "", true, fmt.Errorf("failed to fetch page: %w", err)
+		resp, err = client.Do(req)
+		if err != nil {
+			return "", "", true, fmt.Errorf("failed to fetch page: %w", err)
+		}
+		if resp.StatusCode < 300 || resp.StatusCode >= 400 {
+			break
+		}
+		if redirects >= 5 {
+			break
+		}
+		nextURL, err := resp.Location()
+		resp.Body.Close()
+		if err != nil {
+			return "", "", false, fmt.Errorf("invalid redirect")
+		}
+		current, err = security.ValidateAndResolveURL(ctx, nextURL.String())
+		if err != nil {
+			return "", "", false, err
+		}
 	}
 	defer resp.Body.Close()
 

@@ -48,7 +48,10 @@ class PushSubscriptionService {
         baseUrl: '${ApiConfig.baseUrl}${ApiConfig.apiPrefix}',
         connectTimeout: ApiConfig.requestTimeout,
         receiveTimeout: ApiConfig.requestTimeout,
-        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
       ));
       final token = await _tokenStore.getAccessToken();
       if (token != null) {
@@ -69,6 +72,60 @@ class PushSubscriptionService {
       await prefs.setBool(_subscribedKey, true);
     } catch (e) {
       debugPrint('push subscription failed: $e');
+    }
+  }
+
+  Future<void> unsubscribe() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final sw = window.navigator.serviceWorker;
+      final reg = await sw.ready.toDart;
+      final subscription = await reg.pushManager.getSubscription().toDart;
+      final endpoint = subscription?.endpoint;
+
+      if (endpoint != null && endpoint.isNotEmpty) {
+        await _deleteServerSubscription(endpoint);
+      }
+      await subscription?.unsubscribe().toDart;
+      await prefs.remove(_subscribedKey);
+    } catch (e) {
+      debugPrint('push unsubscribe failed: $e');
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_subscribedKey);
+    }
+  }
+
+  Future<void> _deleteServerSubscription(String endpoint) async {
+    final authDio = Dio(BaseOptions(
+      baseUrl: '${ApiConfig.baseUrl}${ApiConfig.apiPrefix}',
+      connectTimeout: ApiConfig.requestTimeout,
+      receiveTimeout: ApiConfig.requestTimeout,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    ));
+    final token = await _tokenStore.getAccessToken();
+    if (token != null) {
+      authDio.options.headers[ApiConfig.authorizationHeader] =
+          '${ApiConfig.authorizationPrefix}$token';
+    }
+
+    final response = await authDio.get('/auth/push-subscriptions');
+    final raw = response.data;
+    final subscriptions = raw is List
+        ? raw
+        : raw is Map<String, dynamic> && raw['subscriptions'] is List
+            ? raw['subscriptions'] as List
+            : const [];
+    for (final sub in subscriptions) {
+      if (sub is Map<String, dynamic> && sub['endpoint'] == endpoint) {
+        final id = sub['id'];
+        if (id is String && id.isNotEmpty) {
+          await authDio.delete('/auth/push-subscriptions/$id');
+        }
+        return;
+      }
     }
   }
 

@@ -231,11 +231,15 @@ func (s *GroupService) JoinGroup(ctx context.Context, userID uuid.UUID, code str
 		UserID:  userID,
 		Role:    "member",
 	}
-	if err := s.groupRepo.CreateMembership(ctx, membership); err != nil {
-		return nil, err
-	}
-
-	if err := s.groupRepo.ConsumeInvite(ctx, invite.ID, userID); err != nil {
+	if err := s.groupRepo.WithTx(ctx, func(txRepo repositories.GroupRepo) error {
+		if err := txRepo.ClaimInvite(ctx, invite.ID, userID); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return &api.ValidationError{Message: "invite already used"}
+			}
+			return err
+		}
+		return txRepo.CreateMembership(ctx, membership)
+	}); err != nil {
 		return nil, err
 	}
 
@@ -398,6 +402,9 @@ func (s *GroupService) requireMembership(ctx context.Context, userID, groupID uu
 		}
 		return nil, err
 	}
+	if !isGroupMember(m) {
+		return nil, &api.PermissionDeniedError{Message: "not a member of this group"}
+	}
 	return m, nil
 }
 
@@ -410,7 +417,7 @@ func (s *GroupService) requireAdmin(ctx context.Context, userID, groupID uuid.UU
 		}
 		return err
 	}
-	if m.Role != "admin" {
+	if !isGroupAdmin(m) {
 		return &api.PermissionDeniedError{Message: "admin access required"}
 	}
 	return nil

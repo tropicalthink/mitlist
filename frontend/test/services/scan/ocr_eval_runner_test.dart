@@ -42,8 +42,6 @@ library;
 
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_test/flutter_test.dart';
 
@@ -71,8 +69,7 @@ const String _outPath = String.fromEnvironment(
 // Repo root: pass via --dart-define=REPO_ROOT=/abs/path (mirrors
 // resolution_feature_export_test pattern).  Falls back to CWD which works
 // when running `flutter test` from the frontend/ directory.
-const String _repoRoot =
-    String.fromEnvironment('REPO_ROOT', defaultValue: '');
+const String _repoRoot = String.fromEnvironment('REPO_ROOT', defaultValue: '');
 
 // ---------------------------------------------------------------------------
 // Dataset row (matches ocr_eval.schema.md)
@@ -108,8 +105,8 @@ class _DatasetRow {
     for (final line in const LineSplitter().convert(content)) {
       final trimmed = line.trim();
       if (trimmed.isEmpty || trimmed.startsWith('#')) continue;
-      rows.add(_DatasetRow.fromJson(
-          jsonDecode(trimmed) as Map<String, dynamic>));
+      rows.add(
+          _DatasetRow.fromJson(jsonDecode(trimmed) as Map<String, dynamic>));
     }
     return rows;
   }
@@ -192,7 +189,8 @@ Future<void> _runEval({required bool stubMode}) async {
 
   final rows = _DatasetRow.parseJsonl(datasetFile.readAsStringSync());
   if (rows.isEmpty) {
-    debugPrint('[ocr_eval_runner] dataset has no active rows (all commented out)');
+    debugPrint(
+        '[ocr_eval_runner] dataset has no active rows (all commented out)');
     return;
   }
 
@@ -251,9 +249,11 @@ Future<void> _runEval({required bool stubMode}) async {
   await sink.flush();
   await sink.close();
 
-  debugPrint('[ocr_eval_runner] wrote ${results.length} results → ${outFile.path}');
+  debugPrint(
+      '[ocr_eval_runner] wrote ${results.length} results → ${outFile.path}');
   if (skipped > 0) {
-    debugPrint('[ocr_eval_runner] skipped $skipped rows (missing images or errors)');
+    debugPrint(
+        '[ocr_eval_runner] skipped $skipped rows (missing images or errors)');
   }
   debugPrint('[ocr_eval_runner] score with:');
   debugPrint('  python3 intelligence/ml/eval/ocr_eval.py --mode score \\');

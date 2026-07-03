@@ -28,7 +28,7 @@ class GroupService {
       return Group.fromJson(response.data);
     } on DioException catch (e) {
       _logger.e('Create group failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -47,7 +47,7 @@ class GroupService {
       return data.map((json) => Group.fromJson(json)).toList();
     } on DioException catch (e) {
       _logger.e('List groups failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -58,7 +58,7 @@ class GroupService {
       return Group.fromJson(response.data);
     } on DioException catch (e) {
       _logger.e('Get group failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -72,7 +72,7 @@ class GroupService {
       return Group.fromJson(response.data);
     } on DioException catch (e) {
       _logger.e('Update group failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -82,7 +82,7 @@ class GroupService {
       await _dio.delete('/groups/$groupId');
     } on DioException catch (e) {
       _logger.e('Delete group failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -96,7 +96,7 @@ class GroupService {
       return Group.fromJson(response.data);
     } on DioException catch (e) {
       _logger.e('Join group failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -109,7 +109,7 @@ class GroupService {
           (response.data as Map).cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Invite member failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -124,7 +124,7 @@ class GroupService {
           .toList();
     } on DioException catch (e) {
       _logger.e('List members failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -133,7 +133,7 @@ class GroupService {
       await _dio.delete('/groups/$groupId/members/$userId');
     } on DioException catch (e) {
       _logger.e('Remove member failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -144,7 +144,7 @@ class GroupService {
           data: request.toJson());
     } on DioException catch (e) {
       _logger.e('Update member role failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -159,7 +159,7 @@ class GroupService {
           .toList();
     } on DioException catch (e) {
       _logger.e('List pending claims failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -168,7 +168,7 @@ class GroupService {
       await _dio.post('/groups/$groupId/pending-claims/$claimId/approve');
     } on DioException catch (e) {
       _logger.e('Approve claim failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -177,11 +177,7 @@ class GroupService {
       await _dio.post('/groups/$groupId/pending-claims/$claimId/reject');
     } on DioException catch (e) {
       _logger.e('Reject claim failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
-  }
-
-  Exception _handleError(DioException e) {
-    return ApiException(ApiErrorMapper.fromDio(e));
   }
 }

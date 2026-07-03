@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/mitlist-app/mitlist/internal/api"
+	"github.com/mitlist-app/mitlist/internal/security"
 )
 
 const maxEndpointLen = 2048
@@ -73,19 +74,10 @@ func ValidatePushEndpoint(raw string) error {
 	return nil
 }
 
-// checkIP returns a ValidationError if ip is in any private/loopback/link-local/unspecified range.
+// checkIP returns a ValidationError if ip is in an unsafe outbound range.
 func checkIP(ip net.IP) error {
-	switch {
-	case ip.IsLoopback():
-		return &api.ValidationError{Field: "endpoint", Message: "endpoint must not target a loopback address"}
-	case ip.IsPrivate():
-		return &api.ValidationError{Field: "endpoint", Message: "endpoint must not target a private network address"}
-	case ip.IsLinkLocalUnicast():
-		return &api.ValidationError{Field: "endpoint", Message: "endpoint must not target a link-local address"}
-	case ip.IsLinkLocalMulticast():
-		return &api.ValidationError{Field: "endpoint", Message: "endpoint must not target a link-local multicast address"}
-	case ip.IsUnspecified():
-		return &api.ValidationError{Field: "endpoint", Message: "endpoint must not target an unspecified address"}
+	if security.IsBlockedIP(ip) {
+		return &api.ValidationError{Field: "endpoint", Message: "endpoint must not target a blocked network address"}
 	}
 	return nil
 }

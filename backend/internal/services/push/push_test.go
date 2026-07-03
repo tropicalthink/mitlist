@@ -74,9 +74,11 @@ func (r *stubAuthRepo) DeleteDeviceToken(_ context.Context, _, _ uuid.UUID) erro
 type stubHTTPClient struct {
 	status int
 	delay  time.Duration // if > 0, sleep before returning
+	calls  int
 }
 
 func (c *stubHTTPClient) Do(req *http.Request) (*http.Response, error) {
+	c.calls++
 	if c.delay > 0 {
 		select {
 		case <-req.Context().Done():
@@ -88,6 +90,20 @@ func (c *stubHTTPClient) Do(req *http.Request) (*http.Response, error) {
 		StatusCode: c.status,
 		Body:       io.NopCloser(strings.NewReader("")),
 	}, nil
+}
+
+func TestSendWebPush_BlockedEndpointSkipsSend(t *testing.T) {
+	stub := &stubAuthRepo{}
+	httpStub := &stubHTTPClient{status: http.StatusCreated}
+	svc := newTestService(t, stub, httpStub)
+
+	sub := validSub()
+	sub.Endpoint = "https://100.64.0.1/wpush/v2/blocked"
+	svc.sendWebPush(context.Background(), sub, `{"title":"hi"}`)
+
+	if httpStub.calls != 0 {
+		t.Fatalf("expected blocked endpoint to skip HTTP send, got %d calls", httpStub.calls)
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -116,8 +132,9 @@ func validSub() models.PushSubscription {
 	return models.PushSubscription{
 		ID:     uuid.New(),
 		UserID: uuid.New(),
-		// Endpoint is irrelevant — our stubHTTPClient intercepts before the real network.
-		Endpoint: "https://updates.push.services.mozilla.com/wpush/v2/gAAAAA",
+		// Endpoint is irrelevant after validation — our stubHTTPClient intercepts
+		// before the real network.
+		Endpoint: "https://93.184.216.34/wpush/v2/gAAAAA",
 		P256dh:   "BNNL5ZaTfK81qhXOx23-wewhigUeFb632jN6LvRWCFH1ubQr77FE_9qV1FuojuRmHP42zmf34rXgW80OvUVDgTk",
 		Auth:     "zqbxT6JKstKSY9JKibZLSQ",
 	}
@@ -198,9 +215,9 @@ func TestSendWebPush_500_NoPrune(t *testing.T) {
 // We can't use a *http.Client with a stub transport directly via webpush because
 // webpush accepts webpush.HTTPClient (the Do interface). Instead we confirm timeout
 // behaviour by using the stub's context-aware delay path:
-// - stub.delay is long (10 s)
-// - we set a ctx with a 200 ms deadline on the sendWebPush call, so the stub's
-//   req.Context().Done() fires first — proving the timeout propagates correctly.
+//   - stub.delay is long (10 s)
+//   - we set a ctx with a 200 ms deadline on the sendWebPush call, so the stub's
+//     req.Context().Done() fires first — proving the timeout propagates correctly.
 func TestSendWebPush_Timeout(t *testing.T) {
 	stub := &stubAuthRepo{}
 	shortTimeout := 200 * time.Millisecond

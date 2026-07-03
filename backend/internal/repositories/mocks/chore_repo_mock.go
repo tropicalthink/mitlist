@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/mock"
 	"github.com/mitlist-app/mitlist/internal/models"
+	"github.com/stretchr/testify/mock"
 )
 
 // MockChoreRepo is a mock implementation of repositories.ChoreRepo.
@@ -78,6 +78,14 @@ func (m *MockChoreRepo) GetRotationState(ctx context.Context, choreID uuid.UUID)
 	args := m.Called(ctx, choreID)
 	if s := args.Get(0); s != nil {
 		return s.(*models.ChoreRotationState), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockChoreRepo) GetRotationStatesByChoreIDs(ctx context.Context, choreIDs []uuid.UUID) ([]models.ChoreRotationState, error) {
+	args := m.Called(ctx, choreIDs)
+	if s := args.Get(0); s != nil {
+		return s.([]models.ChoreRotationState), args.Error(1)
 	}
 	return nil, args.Error(1)
 }

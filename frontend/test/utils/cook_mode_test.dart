@@ -116,8 +116,7 @@ void main() {
     });
 
     test('two durations in one step → two entries', () {
-      final result =
-          parseStepDurations('cook 10 minutes then rest 5 minutes');
+      final result = parseStepDurations('cook 10 minutes then rest 5 minutes');
       expect(result.length, 2);
       expect(result[0], const Duration(minutes: 10));
       expect(result[1], const Duration(minutes: 5));
@@ -138,7 +137,7 @@ void main() {
   // matchIngredients
   // ---------------------------------------------------------------------------
 
-  RecipeIngredient _ing(String id, String name,
+  RecipeIngredient ing(String id, String name,
           {double qty = 100, String unit = 'g'}) =>
       RecipeIngredient(
         id: id,
@@ -151,56 +150,53 @@ void main() {
 
   group('matchIngredients', () {
     test('basic hit', () {
-      final ings = [_ing('1', 'flour')];
+      final ings = [ing('1', 'flour')];
       final matches = matchIngredients('Add the flour and stir.', ings);
       expect(matches.length, 1);
       expect(matches.first.ingredient.name, 'flour');
     });
 
     test('case-insensitive match', () {
-      final ings = [_ing('1', 'Flour')];
+      final ings = [ing('1', 'Flour')];
       final matches = matchIngredients('Add the flour', ings);
       expect(matches.length, 1);
     });
 
     test('longest-first wins: "red onion" over "onion"', () {
-      final ings = [_ing('1', 'onion'), _ing('2', 'red onion')];
-      final matches =
-          matchIngredients('Dice the red onion finely.', ings);
+      final ings = [ing('1', 'onion'), ing('2', 'red onion')];
+      final matches = matchIngredients('Dice the red onion finely.', ings);
       expect(matches.length, 1);
       expect(matches.first.ingredient.name, 'red onion');
     });
 
     test('plural match: "eggs" matches ingredient "egg"', () {
-      final ings = [_ing('1', 'egg')];
+      final ings = [ing('1', 'egg')];
       final matches = matchIngredients('Beat the eggs well.', ings);
       expect(matches.length, 1);
     });
 
     test('no partial-word hit: "flour" must not match "flourish"', () {
-      final ings = [_ing('1', 'flour')];
+      final ings = [ing('1', 'flour')];
       final matches = matchIngredients('Let your creativity flourish.', ings);
       expect(matches, isEmpty);
     });
 
     test('each region matched once', () {
-      final ings = [_ing('1', 'flour'), _ing('2', 'flour')];
-      final matches =
-          matchIngredients('Add flour and more flour.', ings);
+      final ings = [ing('1', 'flour'), ing('2', 'flour')];
+      final matches = matchIngredients('Add flour and more flour.', ings);
       // Two occurrences, two matches (different positions).
       expect(matches.length, 2);
     });
 
     test('ingredients shorter than 3 chars skipped', () {
-      final ings = [_ing('1', 'og')]; // 2 chars
+      final ings = [ing('1', 'og')]; // 2 chars
       final matches = matchIngredients('Add og to the pot.', ings);
       expect(matches, isEmpty);
     });
 
     test('matches returned in order of start offset', () {
-      final ings = [_ing('1', 'butter'), _ing('2', 'sugar')];
-      final matches =
-          matchIngredients('Mix the sugar and butter.', ings);
+      final ings = [ing('1', 'butter'), ing('2', 'sugar')];
+      final matches = matchIngredients('Mix the sugar and butter.', ings);
       expect(matches.length, 2);
       expect(matches[0].ingredient.name, 'sugar');
       expect(matches[1].ingredient.name, 'butter');
