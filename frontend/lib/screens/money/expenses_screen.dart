@@ -2,21 +2,13 @@ import 'dart:async';
 
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
-import 'package:logger/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../l10n/app_localizations.dart';
-import '../../providers/auth_provider.dart';
-import '../../providers/finance_provider.dart';
-import '../../repositories/finance_repository.dart';
-import '../../providers/group_provider.dart';
-import '../../models/finance_models.dart';
 import '../../router.dart' show BottomNavScaffold, currentGroupIdProvider;
-import '../../services/group_id_validator.dart';
 import '../../utils/shell_tab_load.dart';
-import '../../utils/active_group_context.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
 import '../../sheets/expense_creation_sheet.dart';
@@ -35,79 +27,7 @@ import '../../widgets/skeleton.dart';
 import '../../widgets/spinner.dart';
 import '../../widgets/list_entrance.dart';
 import '../../widgets/mitlist_app_bar.dart';
-
-// ---------------------------------------------------------------------------
-// Data models
-// ---------------------------------------------------------------------------
-
-class _Expense {
-  final String id;
-  final String description;
-  final double amount;
-  final double baseAmount;
-  final double fxRate;
-  final String baseCurrency;
-  final String payer;
-  final String currency;
-  final String category;
-  final DateTime date;
-  final DateTime createdAt;
-
-  const _Expense({
-    required this.id,
-    required this.description,
-    required this.amount,
-    required this.baseAmount,
-    required this.fxRate,
-    required this.baseCurrency,
-    required this.payer,
-    required this.currency,
-    required this.category,
-    required this.date,
-    required this.createdAt,
-  });
-
-  /// True when this expense was recorded in a currency other than the
-  /// household base currency and therefore carries a conversion.
-  bool get isConverted => fxRate != 1.0 || currency != baseCurrency;
-}
-
-class _ExpenseGroup {
-  final String label;
-  final List<_Expense> expenses;
-  final DateTime date;
-
-  const _ExpenseGroup(
-      {required this.label, required this.expenses, required this.date});
-}
-
-class _SettlementSuggestion {
-  final String from;
-  final String to;
-  final String fromLabel;
-  final String toLabel;
-  final double amount;
-
-  const _SettlementSuggestion({
-    required this.from,
-    required this.to,
-    required this.fromLabel,
-    required this.toLabel,
-    required this.amount,
-  });
-}
-
-class _BalanceEntry {
-  final String userId;
-  final String name;
-  final double amount;
-
-  const _BalanceEntry({
-    required this.userId,
-    required this.name,
-    required this.amount,
-  });
-}
+import 'expenses_controller.dart';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -139,40 +59,21 @@ class ExpensesScreen extends ConsumerStatefulWidget {
 }
 
 class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
-  static const int _pageLimit = 50;
+  late ExpensesController _controller;
 
-  bool _isLoading = true;
-  bool _isRefreshing = false;
-  bool _isLoadingMore = false;
-  bool _hasMore = true;
-  String? _errorMessage;
-  bool _hasPageError = false;
-  bool _hasHousehold = false;
-  bool _isSettling = false;
   int _selectedTab = 0; // 0 = Timeline, 1 = Settlements
-  final Logger _logger = Logger();
 
   late final ConfettiController _confettiController;
   final ScrollController _timelineScrollController = ScrollController();
   bool _hasPlayedConfetti = false;
-  bool _listenersSetUp = false;
-
-  double _balance = 0;
-  int _openBalanceCount = 0;
-  String? _groupId;
-  String _groupCurrency = 'USD';
-  Map<String, String> _userLabels = {};
-  Map<String, String> _memberNames = {};
-  final List<_Expense> _timelineExpenses = [];
-  List<_ExpenseGroup> _timelineGroups = [];
-  List<_SettlementSuggestion> _suggestions = [];
-  List<_BalanceEntry> _balances = [];
 
   bool _tabLoadStarted = false;
 
   @override
   void initState() {
     super.initState();
+    _controller = ExpensesController(ref: ref)
+      ..addListener(_onControllerChanged);
     _confettiController = ConfettiController(
       duration: const Duration(seconds: 3),
     );
@@ -184,6 +85,10 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _activateTabIfNeeded());
   }
 
+  void _onControllerChanged() {
+    if (mounted) setState(() {});
+  }
+
   void _activateTabIfNeeded() {
     if (_tabLoadStarted || !mounted) return;
     final insideShell =
@@ -192,7 +97,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       return;
     }
     _tabLoadStarted = true;
-    _loadData();
+    _controller.load(AppLocalizations.of(context)!);
   }
 
   @override
@@ -200,267 +105,27 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     _timelineScrollController.removeListener(_onTimelineScroll);
     _timelineScrollController.dispose();
     _confettiController.dispose();
+    _controller
+      ..removeListener(_onControllerChanged)
+      ..dispose();
     super.dispose();
   }
 
   void _onTimelineScroll() {
     if (_selectedTab != 0 ||
         !_timelineScrollController.hasClients ||
-        _isLoadingMore ||
-        !_hasMore) {
+        _controller.isLoadingMore ||
+        !_controller.hasMore) {
       return;
     }
 
     if (_timelineScrollController.position.extentAfter < 400) {
-      _loadMoreExpenses();
+      _controller.loadMoreExpenses();
     }
   }
 
-  Future<void> _loadData() async {
-    setState(() {
-      _isLoading = true;
-      _isRefreshing = false;
-      _errorMessage = null;
-      _hasPageError = false;
-      _hasMore = true;
-      _isLoadingMore = false;
-    });
-
-    try {
-      await ref.read(currentGroupIdProvider.notifier).ensureLoaded();
-      final authService = await ref.read(authServiceProviderAsync.future);
-      final groupService = await ref.read(groupServiceProviderAsync.future);
-      final groups = await ref.read(cachedGroupsProvider.future);
-      final groupId =
-          resolveActiveGroupId(groups, ref.read(currentGroupIdProvider));
-      final validGroupId = isValidGroupId(groupId) ? groupId : null;
-      final me = validGroupId == null ? null : await authService.getMe();
-
-      if (validGroupId != null) {
-        final youLabel = mounted
-            ? AppLocalizations.of(context)!.activityYou
-            : 'You';
-        // Load member names and group currency in parallel.
-        await Future.wait([
-          groupService.listMembers(validGroupId).then((members) {
-            _memberNames = {
-              for (final m in members)
-                m.userId: m.userId == me?.id ? youLabel : m.displayName,
-            };
-          }).catchError((_) {}),
-          groupService.getGroup(validGroupId).then((group) {
-            _groupCurrency = group.currency;
-          }).catchError((_) {}),
-        ]);
-      }
-
-      final repo = await ref.read(financeRepositoryProvider.future);
-      final expenses = validGroupId == null
-          ? <Expense>[]
-          : await repo.getExpensesByGroupOnce(validGroupId);
-      final summary = validGroupId == null
-          ? null
-          : await repo.watchSummaryByGroup(validGroupId).first;
-
-      if (!mounted) return;
-
-      _groupId = validGroupId;
-      _applyFinanceSummary(summary, me?.id, AppLocalizations.of(context)!);
-      _timelineExpenses
-        ..clear()
-        ..addAll(expenses.map(_mapExpense));
-      _rebuildTimelineGroups();
-
-      setState(() {
-        _hasHousehold = validGroupId != null;
-        _hasMore = expenses.length == _pageLimit;
-        // Keep skeleton until remote refresh when cache is empty; cached rows
-        // render immediately when present.
-        _isLoading = validGroupId != null && expenses.isEmpty;
-        _isRefreshing = validGroupId != null;
-      });
-
-      // Background refresh; keep cached UI if this fails.
-      if (validGroupId != null) {
-        unawaited(_refreshExpensesPage(repo, validGroupId));
-        if (!_listenersSetUp) {
-          _listenersSetUp = true;
-          ref.listenManual(cachedExpensesByGroupProvider(validGroupId),
-              (prev, next) {
-            next.whenData((data) {
-              if (!mounted) return;
-              // refreshGroup clears local rows before upserting; ignore the
-              // transient empty emission so the empty state does not flash.
-              if (data.isEmpty && _isRefreshing) return;
-              _applyTimelineExpenses(data);
-            });
-          });
-          ref.listenManual(cachedFinanceSummaryByGroupProvider(validGroupId),
-              (prev, next) {
-            next.whenData((s) {
-              if (!mounted) return;
-              _applyFinanceSummary(s, me?.id, AppLocalizations.of(context)!);
-              setState(() {});
-            });
-          });
-        }
-      } else {
-        if (!mounted) return;
-        setState(() => _isLoading = false);
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        final l10n = AppLocalizations.of(context)!;
-        _errorMessage = l10n.expenseLoadError;
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _refreshExpensesPage(FinanceRepository repo, String groupId) async {
-    try {
-      final fetchedCount = await repo.refreshGroup(
-        groupId,
-        limit: _pageLimit,
-        offset: 0,
-      );
-      if (!mounted) return;
-      setState(() {
-        _isRefreshing = false;
-        _isLoading = false;
-        _hasMore = fetchedCount == _pageLimit;
-      });
-    } catch (e) {
-      _logger.w('Background expenses refresh failed', error: e);
-      if (!mounted) return;
-      setState(() {
-        _isRefreshing = false;
-        _isLoading = false;
-      });
-    }
-  }
-
-  void _applyTimelineExpenses(List<Expense> expenses) {
-    _timelineExpenses
-      ..clear()
-      ..addAll(expenses.map(_mapExpense));
-    _rebuildTimelineGroups();
-    setState(() {
-      _isLoading = false;
-      _isRefreshing = false;
-    });
-  }
-
-  void _applyFinanceSummary(
-    FinanceSummary? summary,
-    String? currentUserId,
-    AppLocalizations l10n,
-  ) {
-    if (summary == null) {
-      _balance = 0;
-      _openBalanceCount = 0;
-      _suggestions = [];
-      _balances = [];
-      _userLabels = {..._memberNames};
-      return;
-    }
-
-    final currentUserBalance = summary.balances
-        .where((balance) => balance.userId == currentUserId)
-        .toList();
-    _balance =
-        currentUserBalance.isEmpty ? 0 : currentUserBalance.first.total / 100.0;
-    _openBalanceCount =
-        summary.balances.where((balance) => balance.total != 0).length;
-    _suggestions = summary.reimbursements
-        .map((suggestion) => _SettlementSuggestion(
-              from: suggestion.fromUserId,
-              to: suggestion.toUserId,
-              fromLabel: suggestion.fromUserId == currentUserId
-                  ? l10n.activityYou
-                  : suggestion.fromDisplayName,
-              toLabel: suggestion.toUserId == currentUserId
-                  ? l10n.activityYou
-                  : suggestion.toDisplayName,
-              amount: suggestion.amount / 100.0,
-            ))
-        .toList();
-    _balances = summary.balances
-        .map((balance) => _BalanceEntry(
-              userId: balance.userId,
-              name:
-                  balance.userId == currentUserId ? l10n.activityYou : balance.displayName,
-              amount: balance.total / 100.0,
-            ))
-        .toList();
-
-    _userLabels = {
-      // Member names are the base layer; summary display names take precedence.
-      ..._memberNames,
-      for (final b in summary.balances)
-        b.userId: b.userId == currentUserId ? l10n.activityYou : b.displayName,
-    };
-  }
-
-  Future<void> _loadMoreExpenses() async {
-    final groupId = _groupId;
-    if (_isLoading || _isLoadingMore || !_hasMore || groupId == null) {
-      return;
-    }
-
-    setState(() {
-      _isLoadingMore = true;
-      _hasPageError = false;
-    });
-
-    try {
-      final repo = await ref.read(financeRepositoryProvider.future);
-      final fetchedCount = await repo.refreshGroup(
-        groupId,
-        limit: _pageLimit,
-        offset: _timelineExpenses.length,
-      );
-
-      if (!mounted) return;
-
-      final allCached = await repo.getExpensesByGroupOnce(groupId);
-      _timelineExpenses
-        ..clear()
-        ..addAll(allCached.map(_mapExpense));
-      _rebuildTimelineGroups();
-      setState(() {
-        _hasMore = fetchedCount == _pageLimit;
-        _isLoadingMore = false;
-        _hasPageError = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _hasPageError = true;
-        _isLoadingMore = false;
-      });
-    }
-  }
-
-  _Expense _mapExpense(Expense exp) {
-    return _Expense(
-      id: exp.id,
-      description: exp.description,
-      amount: exp.amount / 100.0,
-      baseAmount: exp.baseAmount / 100.0,
-      fxRate: exp.fxRate,
-      baseCurrency: _groupCurrency,
-      payer: _userLabels[exp.payerId] ?? exp.payerId,
-      currency: exp.currency,
-      category: exp.category,
-      date: exp.date,
-      createdAt: exp.createdAt,
-    );
-  }
-
-  Future<void> _openExpenseDetail(_Expense expense) async {
-    final groupId = _groupId;
+  Future<void> _openExpenseDetail(ExpenseDisplay expense) async {
+    final groupId = _controller.groupId;
     if (groupId == null) return;
     unawaited(Haptics.light());
     await ExpenseDetailSheet.show(
@@ -477,11 +142,11 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       onDelete: () => _confirmDeleteExpense(expense),
       currency: expense.currency,
       baseCurrency: expense.baseCurrency,
-      userLabels: _userLabels,
+      userLabels: _controller.userLabels,
     );
   }
 
-  Future<void> _confirmDeleteExpense(_Expense expense) async {
+  Future<void> _confirmDeleteExpense(ExpenseDisplay expense) async {
     final l10n = AppLocalizations.of(context)!;
     final confirmed = await showAppDialog<bool>(
       context: context,
@@ -504,9 +169,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     if (confirmed != true || !mounted) return;
     Navigator.of(context).pop();
     try {
-      final service = await ref.read(financeServiceProviderAsync.future);
-      await service.deleteExpense(expense.id);
-      await _loadData();
+      await _controller.deleteExpense(expense.id, AppLocalizations.of(context)!);
     } catch (e) {
       if (!mounted) return;
       unawaited(Haptics.failure());
@@ -516,47 +179,10 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     }
   }
 
-  void _rebuildTimelineGroups() {
-    final now = DateTime.now();
-
-    final timelineMap = <String, List<_Expense>>{};
-    for (final exp in _timelineExpenses) {
-      final label = _dateLabel(exp.date, now);
-      timelineMap.putIfAbsent(label, () => []);
-      timelineMap[label]!.add(exp);
-    }
-
-    _timelineGroups = timelineMap.entries
-        .map((e) => _ExpenseGroup(
-              label: e.key,
-              expenses: e.value,
-              date: e.value.first.date,
-            ))
-        .toList();
-    _timelineGroups.sort((a, b) {
-      final l10n = AppLocalizations.of(context)!;
-      final order = [l10n.expenseToday, l10n.expenseYesterday];
-      final ai = order.indexOf(a.label);
-      final bi = order.indexOf(b.label);
-      if (ai >= 0 && bi >= 0) return ai.compareTo(bi);
-      if (ai >= 0) return -1;
-      if (bi >= 0) return 1;
-      return b.date.compareTo(a.date);
-    });
-  }
-
-  String _dateLabel(DateTime date, DateTime now) {
-    final l10n = AppLocalizations.of(context)!;
-    final today = DateTime(now.year, now.month, now.day);
-    final d = DateTime(date.year, date.month, date.day);
-    if (d == today) return l10n.expenseToday;
-    if (d == today.subtract(Duration(days: 1))) return l10n.expenseYesterday;
-    return DateFormat('MMMM d').format(date);
-  }
-
   Color get _balanceColor {
-    if (_balance > 0) return Theme.of(context).colorScheme.tertiary;
-    if (_balance < 0) return Theme.of(context).colorScheme.error;
+    final balance = _controller.balance;
+    if (balance > 0) return Theme.of(context).colorScheme.tertiary;
+    if (balance < 0) return Theme.of(context).colorScheme.error;
     return Theme.of(context).colorScheme.onSurface;
   }
 
@@ -569,36 +195,26 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   Future<void> _openCreateExpense() async {
     unawaited(Haptics.light());
     final created = await ExpenseCreationSheet.show(context);
-    if (created == true) {
-      await _loadData();
+    if (created == true && mounted) {
+      await _controller.load(AppLocalizations.of(context)!);
     }
   }
 
-  Future<void> _recordSettlement(_SettlementSuggestion suggestion) async {
-    final groupId = _groupId;
-    if (groupId == null || _isSettling) return;
+  Future<void> _recordSettlement(SettlementSuggestionDisplay suggestion) async {
+    final groupId = _controller.groupId;
+    if (groupId == null || _controller.isSettling) return;
 
     final confirmed = await SettlementConfirmationDialog.show(
       context: context,
-      amount: _formatCurrency(suggestion.amount, currency: _groupCurrency),
+      amount: _formatCurrency(suggestion.amount, currency: _controller.groupCurrency),
       payer: suggestion.fromLabel,
       payee: suggestion.toLabel,
     );
     if (confirmed != true || !mounted) return;
 
-    setState(() => _isSettling = true);
     unawaited(Haptics.light());
     try {
-      final financeService = await ref.read(financeServiceProviderAsync.future);
-      await financeService.createGroupSettlement(
-        groupId,
-        CreateSettlementRequest(
-          fromUserId: suggestion.from,
-          toUserId: suggestion.to,
-          amount: (suggestion.amount * 100).round(),
-        ),
-      );
-      await _loadData();
+      await _controller.recordSettlement(suggestion, AppLocalizations.of(context)!);
       if (!mounted) return;
       unawaited(Haptics.success());
       final l10n = AppLocalizations.of(context)!;
@@ -611,19 +227,15 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.expenseSettlementFailed)),
       );
-    } finally {
-      if (mounted) {
-        setState(() => _isSettling = false);
-      }
     }
   }
 
   void _maybePlayConfetti() {
     if (_selectedTab == 1 &&
-        _hasHousehold &&
-        _suggestions.isEmpty &&
-        !_isLoading &&
-        _errorMessage == null &&
+        _controller.hasHousehold &&
+        _controller.suggestions.isEmpty &&
+        !_controller.isLoading &&
+        _controller.errorMessage == null &&
         !_hasPlayedConfetti) {
       _hasPlayedConfetti = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -639,7 +251,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     });
     ref.listen<String?>(currentGroupIdProvider, (previous, next) {
       if (previous != next) {
-        _loadData();
+        _controller.load(AppLocalizations.of(context)!);
       }
     });
 
@@ -647,8 +259,10 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
     final l10n = AppLocalizations.of(context)!;
 
-    final canSettle = _hasHousehold && !_isLoading && _errorMessage == null;
-    final showSettlementsNudge = canSettle && (_suggestions.isNotEmpty);
+    final canSettle = _controller.hasHousehold &&
+        !_controller.isLoading &&
+        _controller.errorMessage == null;
+    final showSettlementsNudge = canSettle && (_controller.suggestions.isNotEmpty);
 
     return Scaffold(
       appBar: MitlistAppBar.titleText(
@@ -674,12 +288,12 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
             child: Column(
               children: [
                 _BalanceCard(
-                  balance: _balance,
-                  currency: _groupCurrency,
+                  balance: _controller.balance,
+                  currency: _controller.groupCurrency,
                   balanceColor: _balanceColor,
-                  isLoading: _isLoading,
-                  openBalanceCount: _openBalanceCount,
-                  suggestionCount: _suggestions.length,
+                  isLoading: _controller.isLoading,
+                  openBalanceCount: _controller.openBalanceCount,
+                  suggestionCount: _controller.suggestions.length,
                   onTap: showSettlementsNudge ? () => _onTabChanged(1) : null,
                 ),
                 const SizedBox(height: MitlistSpacing.md),
@@ -692,38 +306,44 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
           ),
           // Body
           Expanded(
-            child: _isLoading
+            child: _controller.isLoading
                 ? const _LoadingBody()
-                : _errorMessage != null
-                    ? _ErrorBody(message: _errorMessage, onRetry: _loadData)
-                    : !_hasHousehold
+                : _controller.errorMessage != null
+                    ? _ErrorBody(
+                        message: _controller.errorMessage,
+                        onRetry: () =>
+                            _controller.load(AppLocalizations.of(context)!),
+                      )
+                    : !_controller.hasHousehold
                         ? _NoHouseholdBody(
                             onOpenHouseholds: () =>
                                 context.goNamed('groupsList'),
                           )
                         : _selectedTab == 0
                             ? _TimelineBody(
-                                groups: _timelineGroups,
+                                groups: _controller.timelineGroups,
                                 controller: _timelineScrollController,
-                                isLoadingMore: _isLoadingMore,
-                                hasPageError: _hasPageError,
-                                onRefresh: _loadData,
+                                isLoadingMore: _controller.isLoadingMore,
+                                hasPageError: _controller.hasPageError,
+                                onRefresh: () =>
+                                    _controller.load(AppLocalizations.of(context)!),
                                 onAddExpense: _openCreateExpense,
                                 onOpenExpense: _openExpenseDetail,
                               )
                             : _SettlementsBody(
-                                suggestions: _suggestions,
-                                balances: _balances,
-                                currency: _groupCurrency,
-                                isSettling: _isSettling,
+                                suggestions: _controller.suggestions,
+                                balances: _controller.balances,
+                                currency: _controller.groupCurrency,
+                                isSettling: _controller.isSettling,
                                 confettiController: _confettiController,
-                                onRefresh: _loadData,
+                                onRefresh: () =>
+                                    _controller.load(AppLocalizations.of(context)!),
                                 onRecordSettlement: _recordSettlement,
                               ),
           ),
         ],
       ),
-      floatingActionButton: !_hasHousehold
+      floatingActionButton: !_controller.hasHousehold
           ? null
           : AppButton(
               size: AppButtonSize.lg,
@@ -1014,13 +634,13 @@ class _NoHouseholdBody extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _TimelineBody extends StatelessWidget {
-  final List<_ExpenseGroup> groups;
+  final List<ExpenseGroupDisplay> groups;
   final ScrollController controller;
   final bool isLoadingMore;
   final bool hasPageError;
   final Future<void> Function() onRefresh;
   final VoidCallback onAddExpense;
-  final ValueChanged<_Expense> onOpenExpense;
+  final ValueChanged<ExpenseDisplay> onOpenExpense;
 
   const _TimelineBody({
     required this.groups,
@@ -1224,7 +844,7 @@ class _PayerBadge extends StatelessWidget {
 }
 
 class _ExpenseCard extends StatelessWidget {
-  final _Expense expense;
+  final ExpenseDisplay expense;
   final VoidCallback onTap;
 
   const _ExpenseCard({required this.expense, required this.onTap});
@@ -1302,13 +922,13 @@ class _ExpenseCard extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _SettlementsBody extends StatelessWidget {
-  final List<_SettlementSuggestion> suggestions;
-  final List<_BalanceEntry> balances;
+  final List<SettlementSuggestionDisplay> suggestions;
+  final List<BalanceDisplayEntry> balances;
   final String currency;
   final bool isSettling;
   final ConfettiController confettiController;
   final Future<void> Function() onRefresh;
-  final ValueChanged<_SettlementSuggestion> onRecordSettlement;
+  final ValueChanged<SettlementSuggestionDisplay> onRecordSettlement;
 
   const _SettlementsBody({
     required this.suggestions,
@@ -1389,7 +1009,7 @@ class _SettlementsBody extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _SuggestionCard extends StatelessWidget {
-  final _SettlementSuggestion suggestion;
+  final SettlementSuggestionDisplay suggestion;
   final String currency;
   final bool isSettling;
   final VoidCallback onRecord;
@@ -1540,7 +1160,7 @@ class _SettlementParty extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _BalancesSection extends StatelessWidget {
-  final List<_BalanceEntry> balances;
+  final List<BalanceDisplayEntry> balances;
   final String currency;
 
   const _BalancesSection({required this.balances, required this.currency});
@@ -1570,7 +1190,7 @@ class _BalancesSection extends StatelessWidget {
 }
 
 class _BalancesExpandableBody extends StatefulWidget {
-  final List<_BalanceEntry> sortedBalances;
+  final List<BalanceDisplayEntry> sortedBalances;
   final int openCount;
   final Color Function(BuildContext, double) balanceColor;
   final String currency;
