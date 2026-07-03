@@ -12,17 +12,26 @@ import (
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-// recv reads one event from ch within timeout, failing the test on timeout.
-func recv(t *testing.T, ch chan Event, timeout time.Duration) Event {
+// recvBytes reads one encoded event from ch within timeout, failing the test on timeout.
+func recvBytes(t *testing.T, ch chan []byte, timeout time.Duration) []byte {
 	t.Helper()
 	select {
-	case evt, ok := <-ch:
+	case data, ok := <-ch:
 		require.True(t, ok, "channel closed unexpectedly")
-		return evt
+		return data
 	case <-time.After(timeout):
 		t.Fatal("timed out waiting for event")
-		return Event{}
+		return nil
 	}
+}
+
+// recv reads and decodes one event from ch within timeout.
+func recv(t *testing.T, ch chan []byte, timeout time.Duration) Event {
+	t.Helper()
+	data := recvBytes(t, ch, timeout)
+	var evt Event
+	require.NoError(t, json.Unmarshal(data, &evt))
+	return evt
 }
 
 // sortedStringSlice converts a []string into a map-set for order-agnostic comparison.
@@ -47,6 +56,29 @@ func TestPublishDelivers(t *testing.T) {
 	got := recv(t, ch, time.Second)
 	assert.Equal(t, want.Type, got.Type)
 	assert.Equal(t, want.GroupID, got.GroupID)
+}
+
+func TestPublishDeliversSameEncodedBytesToSubscribers(t *testing.T) {
+	h := New()
+	ch1 := h.Subscribe("g", "u1")
+	ch2 := h.Subscribe("g", "u2")
+
+	want := Event{
+		Type:    "pinwall:post_created",
+		GroupID: "g",
+		Payload: json.RawMessage(`{"id":"p1","text":"hello"}`),
+	}
+	h.Publish("g", want)
+
+	data1 := recvBytes(t, ch1, time.Second)
+	data2 := recvBytes(t, ch2, time.Second)
+	require.Equal(t, data1, data2)
+
+	var got Event
+	require.NoError(t, json.Unmarshal(data1, &got))
+	assert.Equal(t, want.Type, got.Type)
+	assert.Equal(t, want.GroupID, got.GroupID)
+	assert.JSONEq(t, string(want.Payload), string(got.Payload))
 }
 
 // TestPublishEmptyGroupNoPanic verifies that publishing to a group with no
@@ -236,10 +268,10 @@ func TestConcurrencyRace(t *testing.T) {
 	h := New()
 
 	const (
-		subWorkers  = 20
-		iterations  = 200
-		pubWorkers  = 4
-		deadline    = 10 * time.Second
+		subWorkers = 20
+		iterations = 200
+		pubWorkers = 4
+		deadline   = 10 * time.Second
 	)
 
 	ctx := make(chan struct{})

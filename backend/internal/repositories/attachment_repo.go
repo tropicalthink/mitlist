@@ -73,6 +73,18 @@ func (r *AttachmentRepository) UpdateStatus(ctx context.Context, id uuid.UUID, s
 	return nil
 }
 
+func (r *AttachmentRepository) UpdateStatusAndByteSize(ctx context.Context, id uuid.UUID, status models.AttachmentStatus, byteSize int64) error {
+	const q = `UPDATE attachments SET status = $1, byte_size = $2 WHERE id = $3`
+	ct, err := r.db.Exec(ctx, q, status, byteSize, id)
+	if err != nil {
+		return fmt.Errorf("update attachment status and byte_size: %w", err)
+	}
+	if ct.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+	return nil
+}
+
 func (r *AttachmentRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	const q = `DELETE FROM attachments WHERE id = $1`
 	ct, err := r.db.Exec(ctx, q, id)
@@ -97,4 +109,3 @@ func (r *AttachmentRepository) SumReadyBytesByGroup(ctx context.Context, groupID
 	}
 	return sum, nil
 }
-

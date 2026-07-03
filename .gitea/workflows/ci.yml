@@ -46,6 +46,11 @@ jobs:
         run: cd backend && go build ./...
       - name: Vet
         run: cd backend && go vet ./...
+      - name: Format check
+        run: |
+          cd backend
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then echo "gofmt needs:"; echo "$unformatted"; exit 1; fi
       - name: Test
         run: cd backend && go test ./...
 
@@ -58,8 +63,10 @@ jobs:
           channel: stable
       - name: Pub get
         run: cd frontend && flutter pub get
+      - name: Format check
+        run: cd frontend && dart format --output=none --set-exit-if-changed .
       - name: Analyze
-        run: cd frontend && dart analyze lib/
+        run: cd frontend && dart analyze
       - name: Classifier/seed parity
         run: python3 intelligence/ml/check_classifier_parity.py
       - name: Test

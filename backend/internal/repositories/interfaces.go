@@ -252,6 +252,7 @@ type AttachmentRepo interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*models.Attachment, error)
 	UpdateObjectKey(ctx context.Context, id uuid.UUID, objectKey string) error
 	UpdateStatus(ctx context.Context, id uuid.UUID, status models.AttachmentStatus) error
+	UpdateStatusAndByteSize(ctx context.Context, id uuid.UUID, status models.AttachmentStatus, byteSize int64) error
 	Delete(ctx context.Context, id uuid.UUID) error
 	SumReadyBytesByGroup(ctx context.Context, groupID uuid.UUID) (int64, error)
 }

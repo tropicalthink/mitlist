@@ -58,7 +58,8 @@ class SseService {
   // can seed itself instead of waiting for the next change.
   final Map<String, SseEvent> _lastEventByKey = {};
 
-  SseService([TokenStore? tokenStore, TokenRefreshCoordinator? refreshCoordinator])
+  SseService(
+      [TokenStore? tokenStore, TokenRefreshCoordinator? refreshCoordinator])
       : _tokenStore = tokenStore ?? SecureTokenStore.shared,
         _refreshCoordinator =
             refreshCoordinator ?? TokenRefreshCoordinator.shared;
@@ -89,10 +90,18 @@ class SseService {
       } on _SseUnauthorizedException {
         if (_disposed || _generation != gen) break;
         _log.i('SSE got 401 — attempting token refresh');
-        final refreshed = await _tryRefreshToken();
-        if (!refreshed) {
+        final refreshOutcome = await _tryRefreshToken();
+        if (refreshOutcome.type == TokenRefreshOutcomeType.authRejected) {
           _log.w('Token refresh failed; stopping SSE loop');
           break;
+        }
+        if (refreshOutcome.type == TokenRefreshOutcomeType.transportError) {
+          _log.w(
+            'Token refresh transportError; retrying SSE in ${backoff.inSeconds}s',
+          );
+          await Future.delayed(backoff);
+          backoff = Duration(seconds: (backoff.inSeconds * 2).clamp(2, 60));
+          continue;
         }
         // New token saved — retry immediately without backoff.
       } catch (e) {
@@ -104,12 +113,11 @@ class SseService {
     }
   }
 
-  Future<bool> _tryRefreshToken() async {
+  Future<TokenRefreshOutcome> _tryRefreshToken() async {
     // Delegate to the shared single-flight coordinator so an SSE refresh and a
     // concurrent Dio refresh collapse onto one request against one rotated
     // token, rather than racing and invalidating each other.
-    final pair = await _refreshCoordinator.refresh();
-    return pair != null;
+    return _refreshCoordinator.refreshDetailed();
   }
 
   Future<void> _connectOnce(String groupId, int gen) async {
