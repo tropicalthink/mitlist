@@ -40,11 +40,13 @@ func (s *GroceryService) GetGraphDelta(ctx context.Context, userID, groupID uuid
 		return nil, err
 	}
 
-	maxVersion, err := s.repo.CurrentVersion(ctx, groupID)
-	if err != nil {
-		return nil, err
+	if !delta.HasMore {
+		maxVersion, err := s.repo.CurrentVersion(ctx, groupID)
+		if err != nil {
+			return nil, err
+		}
+		delta.MaxVersion = maxVersion
 	}
-	delta.MaxVersion = maxVersion
 
 	// Ensure nil slices are empty arrays in JSON output.
 	if delta.CanonicalItems == nil {
@@ -71,11 +73,20 @@ func (s *GroceryService) GetGraphDelta(ctx context.Context, userID, groupID uuid
 
 // RecordCorrectionRequest is the payload from the client for a confirmed correction.
 type RecordCorrectionRequest struct {
-	RawText             string     `json:"raw_text"`
-	Kind                string     `json:"kind"`             // alias | reject
-	Scope               string     `json:"scope"`            // household | user
-	ResolvedCanonicalID *uuid.UUID `json:"canonical_item_id,omitempty"`
-	Lang                string     `json:"lang"`
+	RawText             string             `json:"raw_text"`
+	Kind                string             `json:"kind"`  // alias | reject
+	Scope               string             `json:"scope"` // household | user
+	ResolvedCanonicalID *uuid.UUID         `json:"canonical_item_id,omitempty"`
+	CanonicalItem       *CanonicalItemStub `json:"canonical_item,omitempty"`
+	Lang                string             `json:"lang"`
+}
+
+type CanonicalItemStub struct {
+	ID          uuid.UUID `json:"id"`
+	NameDe      string    `json:"name_de"`
+	NameEn      string    `json:"name_en"`
+	Category    string    `json:"category"`
+	DefaultUnit string    `json:"default_unit"`
 }
 
 // RecordCorrection records a confirmed correction and materialises the alias.
@@ -85,37 +96,60 @@ func (s *GroceryService) RecordCorrection(ctx context.Context, userID, groupID u
 		return 0, err
 	}
 
-	version, err := s.repo.NextVersion(ctx, groupID)
+	var version int64
+	err := s.repo.WithTx(ctx, func(txRepo *repositories.GroceryRepository) error {
+		var err error
+		version, err = txRepo.NextVersion(ctx, groupID)
+		if err != nil {
+			return err
+		}
+
+		if req.Kind == "alias" && req.ResolvedCanonicalID != nil && req.CanonicalItem != nil {
+			if err := txRepo.UpsertCanonicalItem(
+				ctx,
+				req.CanonicalItem.ID,
+				groupID,
+				req.CanonicalItem.NameDe,
+				req.CanonicalItem.NameEn,
+				req.CanonicalItem.Category,
+				req.CanonicalItem.DefaultUnit,
+				version,
+			); err != nil {
+				return err
+			}
+		}
+
+		correctedValueJSON, _ := json.Marshal(map[string]string{"alias_text": strings.ToLower(strings.TrimSpace(req.RawText))})
+
+		c := &models.Correction{
+			GroupID:                 groupID,
+			UserID:                  &userID,
+			Scope:                   req.Scope,
+			Kind:                    req.Kind,
+			RawText:                 req.RawText,
+			ResolvedCanonicalItemID: req.ResolvedCanonicalID,
+			CorrectedValue:          json.RawMessage(correctedValueJSON),
+			Source:                  "client",
+		}
+		if err := txRepo.InsertCorrection(ctx, c, version); err != nil {
+			return err
+		}
+
+		// Materialise: write the alias row so lookup is instant on next scan.
+		if req.Kind == "alias" && req.ResolvedCanonicalID != nil {
+			lang := req.Lang
+			if lang == "" {
+				lang = "de"
+			}
+			aliasText := strings.ToLower(strings.TrimSpace(req.RawText))
+			if err := txRepo.UpsertAlias(ctx, groupID, *req.ResolvedCanonicalID, aliasText, lang, "correction", version); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 	if err != nil {
 		return 0, err
-	}
-
-	correctedValueJSON, _ := json.Marshal(map[string]string{"alias_text": strings.ToLower(strings.TrimSpace(req.RawText))})
-
-	c := &models.Correction{
-		GroupID:                 groupID,
-		UserID:                  &userID,
-		Scope:                   req.Scope,
-		Kind:                    req.Kind,
-		RawText:                 req.RawText,
-		ResolvedCanonicalItemID: req.ResolvedCanonicalID,
-		CorrectedValue:          json.RawMessage(correctedValueJSON),
-		Source:                  "client",
-	}
-	if err := s.repo.InsertCorrection(ctx, c, version); err != nil {
-		return 0, err
-	}
-
-	// Materialise: write the alias row so lookup is instant on next scan.
-	if req.Kind == "alias" && req.ResolvedCanonicalID != nil {
-		lang := req.Lang
-		if lang == "" {
-			lang = "de"
-		}
-		aliasText := strings.ToLower(strings.TrimSpace(req.RawText))
-		if err := s.repo.UpsertAlias(ctx, groupID, *req.ResolvedCanonicalID, aliasText, lang, "correction", version); err != nil {
-			return 0, err
-		}
 	}
 
 	// Notify other devices immediately.
@@ -139,11 +173,16 @@ func (s *GroceryService) UpdateAisles(ctx context.Context, userID, groupID uuid.
 		cur, err := s.repo.CurrentVersion(ctx, groupID)
 		return cur, err
 	}
-	version, err := s.repo.NextVersion(ctx, groupID)
+	var version int64
+	err := s.repo.WithTx(ctx, func(txRepo *repositories.GroceryRepository) error {
+		var err error
+		version, err = txRepo.NextVersion(ctx, groupID)
+		if err != nil {
+			return err
+		}
+		return txRepo.UpsertAislesBatch(ctx, groupID, req.Aisles, version)
+	})
 	if err != nil {
-		return 0, err
-	}
-	if err := s.repo.UpsertAislesBatch(ctx, groupID, req.Aisles, version); err != nil {
 		return 0, err
 	}
 	s.publishGraphUpdated(groupID, version)

@@ -9,9 +9,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/mitlist-app/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/repositories/mocks"
 	"github.com/mitlist-app/mitlist/internal/services"
 )
 
@@ -107,4 +109,29 @@ func TestActivityHandler_List_ReturnsEmpty(t *testing.T) {
 	parseJSONResponse(t, rec, &result)
 	_, ok := result["events"]
 	assert.True(t, ok, "response should contain an events key")
+}
+
+func TestActivityHandler_List_CapsLimit(t *testing.T) {
+	user := &models.User{ID: uuid.New(), Email: "activity-cap@test.com"}
+	groupID := uuid.New()
+	activityRepo := new(mocks.MockActivityRepo)
+	groupRepo := new(mocks.MockGroupRepo)
+	svc := services.NewActivityService(activityRepo, groupRepo)
+	h := NewActivityHandler(svc)
+
+	groupRepo.On("GetMembership", mock.Anything, groupID, user.ID).Return(&models.GroupMembership{
+		GroupID: groupID,
+		UserID:  user.ID,
+		Role:    "member",
+	}, nil)
+	activityRepo.On("ListRecentActivity", mock.Anything, groupID, 500).Return([]models.ActivityEvent{}, nil)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/activity?group_id="+groupID.String()+"&limit=10000000", nil)
+	req = req.WithContext(setTestUserContext(req.Context(), user))
+	h.ListActivity(rec, req)
+
+	requireStatus(t, rec, http.StatusOK)
+	activityRepo.AssertExpectations(t)
+	groupRepo.AssertExpectations(t)
 }

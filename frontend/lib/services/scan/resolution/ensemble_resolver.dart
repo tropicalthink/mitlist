@@ -1,6 +1,6 @@
 import '../../../storage/app_database.dart';
 import '../../canonical_display.dart';
-import '../canonical_resolver_service.dart' show ResolveResult;
+import '../canonical_resolver_service.dart' show ResolveAlternative, ResolveResult;
 import '../grocery_classifier_service.dart';
 import '../static_embedding_service.dart';
 import 'calibrated_scorer.dart';
@@ -68,13 +68,30 @@ class EnsembleResolver {
     scored.sort((a, b) => b.p.compareTo(a.p));
 
     final best = scored.first;
-    final alternatives =
-        scored.skip(1).take(3).map((s) => _preferredName(s.c.item)).toList();
+    final alternatives = scored
+        .skip(1)
+        .take(3)
+        .map((s) => ResolveAlternative(
+              canonicalItemId: s.c.canonicalItemId,
+              displayName: _preferredName(s.c.item),
+            ))
+        .toList();
+    final rejects = await _db.getRejectCorrections(
+      groupId: groupId,
+      rawText: query,
+    );
+    var p = best.p;
+    final rejectedThis = rejects.any((r) =>
+        r.resolvedCanonicalItemId == null ||
+        r.resolvedCanonicalItemId == best.c.canonicalItemId);
+    if (rejectedThis && p >= scorer.tauAuto) {
+      p = scorer.tauAuto - 0.01;
+    }
 
     return ResolveResult(
       canonicalItemId: best.c.canonicalItemId,
       displayName: _preferredName(best.c.item),
-      score: best.p,
+      score: p,
       alternatives: alternatives,
       autoThreshold: scorer.tauAuto,
       reviewThreshold: scorer.tauReview,

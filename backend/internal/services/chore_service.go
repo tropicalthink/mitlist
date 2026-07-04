@@ -850,21 +850,31 @@ func (s *ChoreService) RebuildMemberOrdersForGroup(ctx context.Context, groupID 
 		return fmt.Errorf("failed to list chores: %w", err)
 	}
 
+	choreIDs := make([]uuid.UUID, 0, len(chores))
+	for _, chore := range chores {
+		choreIDs = append(choreIDs, chore.ID)
+	}
+	states, err := s.choreRepo.GetRotationStatesByChoreIDs(ctx, choreIDs)
+	if err != nil {
+		return fmt.Errorf("failed to get rotation states: %w", err)
+	}
+	stateByChoreID := make(map[uuid.UUID]models.ChoreRotationState, len(states))
+	for _, state := range states {
+		stateByChoreID[state.ChoreID] = state
+	}
+
 	var updatedStates []models.ChoreRotationState
 	for _, chore := range chores {
-		state, err := s.choreRepo.GetRotationState(ctx, chore.ID)
-		if err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
-				continue
-			}
-			return fmt.Errorf("failed to get rotation state for chore %s: %w", chore.ID, err)
+		state, ok := stateByChoreID[chore.ID]
+		if !ok {
+			continue
 		}
 
 		state.MemberOrder = memberOrder
 		if state.CurrentIndex >= len(state.MemberOrder) {
 			state.CurrentIndex = 0
 		}
-		updatedStates = append(updatedStates, *state)
+		updatedStates = append(updatedStates, state)
 	}
 
 	if len(updatedStates) > 0 {

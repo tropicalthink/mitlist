@@ -32,13 +32,24 @@ var allowedContentTypes = map[string]bool{
 }
 
 type AttachmentService struct {
-	cfg      *config.Config
-	repo     repositories.AttachmentRepo
+	cfg       *config.Config
+	repo      repositories.AttachmentRepo
 	groupRepo repositories.GroupRepo
-	storage  *storagesvc.Service
+	storage   attachmentStorage
+}
+
+type attachmentStorage interface {
+	GetUploadURL(key string, contentType string, expires time.Duration) string
+	GetURL(key string) string
+	Delete(key string) error
+	HeadObjectSize(ctx context.Context, key string) (int64, error)
 }
 
 func NewAttachmentService(cfg *config.Config, repo repositories.AttachmentRepo, groupRepo repositories.GroupRepo, storage *storagesvc.Service) *AttachmentService {
+	return NewAttachmentServiceWithStorage(cfg, repo, groupRepo, storage)
+}
+
+func NewAttachmentServiceWithStorage(cfg *config.Config, repo repositories.AttachmentRepo, groupRepo repositories.GroupRepo, storage attachmentStorage) *AttachmentService {
 	return &AttachmentService{
 		cfg:       cfg,
 		repo:      repo,
@@ -57,9 +68,9 @@ type CreateUploadIntentInput struct {
 
 type UploadIntent struct {
 	Attachment *models.Attachment `json:"attachment"`
-	ObjectKey  string            `json:"object_key"`
-	UploadURL  string            `json:"upload_url"`
-	ExpiresIn  int               `json:"expires_in"`
+	ObjectKey  string             `json:"object_key"`
+	UploadURL  string             `json:"upload_url"`
+	ExpiresIn  int                `json:"expires_in"`
 }
 
 func (s *AttachmentService) requireMembership(ctx context.Context, userID, groupID uuid.UUID) error {
@@ -179,13 +190,32 @@ func (s *AttachmentService) FinalizeUpload(ctx context.Context, user *models.Use
 		return nil, &api.PermissionDeniedError{Message: "attachment does not belong to this group"}
 	}
 
-	if err := s.repo.UpdateStatus(ctx, attachmentID, models.AttachmentStatusReady); err != nil {
+	realSize, err := s.storage.HeadObjectSize(ctx, a.ObjectKey)
+	if err != nil {
+		return nil, err
+	}
+	if s.cfg != nil && s.cfg.MaxFileSizeBytes > 0 && realSize > int64(s.cfg.MaxFileSizeBytes) {
+		return nil, &api.ValidationError{Message: "uploaded file exceeds size limit"}
+	}
+	if s.cfg != nil && s.cfg.MaxStoragePerGroupGB > 0 {
+		used, err := s.repo.SumReadyBytesByGroup(ctx, groupID)
+		if err != nil {
+			return nil, err
+		}
+		limit := int64(s.cfg.MaxStoragePerGroupGB) * 1_000_000_000
+		if used+realSize > limit {
+			return nil, &api.ValidationError{Message: "group storage limit exceeded"}
+		}
+	}
+
+	if err := s.repo.UpdateStatusAndByteSize(ctx, attachmentID, models.AttachmentStatusReady, realSize); err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, &api.NotFoundError{Resource: "attachment", ID: attachmentID.String()}
 		}
 		return nil, err
 	}
 	a.Status = models.AttachmentStatusReady
+	a.ByteSize = realSize
 	return a, nil
 }
 
@@ -287,4 +317,3 @@ func buildObjectKey(groupID, attachmentID uuid.UUID, filename string) string {
 	}
 	return fmt.Sprintf("groups/%s/attachments/%s/%s", groupID.String(), attachmentID.String(), filename)
 }
-

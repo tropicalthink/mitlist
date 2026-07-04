@@ -102,7 +102,7 @@ void main() {
 
     /// Inserts [count] purchase rows for [itemId] evenly spaced by [gapDays],
     /// ending at [lastPurchase].
-    Future<void> _seedPurchases(
+    Future<void> seedPurchases(
       String itemId,
       DateTime lastPurchase, {
       required int count,
@@ -124,18 +124,17 @@ void main() {
     test('item bought every 7 days, last bought 9 days ago → due', () async {
       final now = DateTime(2024, 6, 10);
       final lastPurchase = now.subtract(const Duration(days: 9));
-      await _seedPurchases(canonicalItemId, lastPurchase,
-          count: 4, gapDays: 7);
+      await seedPurchases(canonicalItemId, lastPurchase, count: 4, gapDays: 7);
 
       final results = await service.due(groupId: groupId, now: now);
       expect(results.any((r) => r.canonicalItemId == canonicalItemId), isTrue);
     });
 
-    test('item bought every 7 days, last bought 3 days ago → not due', () async {
+    test('item bought every 7 days, last bought 3 days ago → not due',
+        () async {
       final now = DateTime(2024, 6, 10);
       final lastPurchase = now.subtract(const Duration(days: 3));
-      await _seedPurchases(canonicalItemId, lastPurchase,
-          count: 4, gapDays: 7);
+      await seedPurchases(canonicalItemId, lastPurchase, count: 4, gapDays: 7);
 
       final results = await service.due(groupId: groupId, now: now);
       expect(results.any((r) => r.canonicalItemId == canonicalItemId), isFalse);
@@ -145,8 +144,7 @@ void main() {
         () async {
       final now = DateTime(2024, 6, 10);
       final lastPurchase = now.subtract(const Duration(days: 20));
-      await _seedPurchases(canonicalItemId, lastPurchase,
-          count: 2, gapDays: 7);
+      await seedPurchases(canonicalItemId, lastPurchase, count: 2, gapDays: 7);
 
       final results = await service.due(groupId: groupId, now: now);
       expect(results.any((r) => r.canonicalItemId == canonicalItemId), isFalse);
@@ -155,8 +153,7 @@ void main() {
     test('item already on current list → excluded', () async {
       final now = DateTime(2024, 6, 10);
       final lastPurchase = now.subtract(const Duration(days: 10));
-      await _seedPurchases(canonicalItemId, lastPurchase,
-          count: 4, gapDays: 7);
+      await seedPurchases(canonicalItemId, lastPurchase, count: 4, gapDays: 7);
 
       // Seed a canonical item so the name resolves.
       final now2 = DateTime(2024, 6, 10);
@@ -186,11 +183,13 @@ void main() {
       final now = DateTime(2024, 6, 10);
 
       // item1 (milk): 7-day cadence, last bought 20 days ago → 13 days overdue
-      await _seedPurchases(canonicalItemId, now.subtract(const Duration(days: 20)),
+      await seedPurchases(
+          canonicalItemId, now.subtract(const Duration(days: 20)),
           count: 4, gapDays: 7);
 
       // item2 (eggs): 7-day cadence, last bought 9 days ago → 2 days overdue
-      await _seedPurchases(canonicalItemId2, now.subtract(const Duration(days: 9)),
+      await seedPurchases(
+          canonicalItemId2, now.subtract(const Duration(days: 9)),
           count: 4, gapDays: 7);
 
       final results = await service.due(groupId: groupId, now: now);

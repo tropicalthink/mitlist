@@ -427,14 +427,20 @@ func TestChoreService_RebuildMemberOrdersForGroup(t *testing.T) {
 		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return([]models.GroupMembership{
 			{UserID: member1}, {UserID: member2},
 		}, nil)
-		choreRepo.On("ListChoresByGroup", ctx, groupID, 0, 0).Return([]models.Chore{{ID: choreID}}, nil)
-		choreRepo.On("GetRotationState", ctx, choreID).Return(&models.ChoreRotationState{
+		choreRepo.On("ListChoresByGroup", ctx, groupID, 0, 0).Return([]models.Chore{{ID: choreID}, {ID: uuid.New()}}, nil)
+		choreRepo.On("GetRotationStatesByChoreIDs", ctx, mock.MatchedBy(func(ids []uuid.UUID) bool {
+			return len(ids) == 2 && ids[0] == choreID
+		})).Return([]models.ChoreRotationState{{
 			ID: uuid.New(), ChoreID: choreID, MemberOrder: []uuid.UUID{member1}, CurrentIndex: 0,
-		}, nil)
-		choreRepo.On("BulkUpdateRotationStates", ctx, mock.AnythingOfType("[]models.ChoreRotationState")).Return(nil)
+		}}, nil).Once()
+		choreRepo.On("BulkUpdateRotationStates", ctx, mock.MatchedBy(func(states []models.ChoreRotationState) bool {
+			return len(states) == 1 && states[0].ChoreID == choreID && len(states[0].MemberOrder) == 2
+		})).Return(nil)
 
 		err := svc.RebuildMemberOrdersForGroup(ctx, groupID)
 		require.NoError(t, err)
+		choreRepo.AssertNotCalled(t, "GetRotationState", mock.Anything, mock.Anything)
+		choreRepo.AssertExpectations(t)
 	})
 
 	t.Run("no rotation state skips", func(t *testing.T) {
@@ -444,7 +450,7 @@ func TestChoreService_RebuildMemberOrdersForGroup(t *testing.T) {
 
 		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return([]models.GroupMembership{{UserID: member1}}, nil)
 		choreRepo.On("ListChoresByGroup", ctx, groupID, 0, 0).Return([]models.Chore{{ID: choreID}}, nil)
-		choreRepo.On("GetRotationState", ctx, choreID).Return(nil, pgx.ErrNoRows)
+		choreRepo.On("GetRotationStatesByChoreIDs", ctx, []uuid.UUID{choreID}).Return([]models.ChoreRotationState{}, nil)
 
 		err := svc.RebuildMemberOrdersForGroup(ctx, groupID)
 		require.NoError(t, err)

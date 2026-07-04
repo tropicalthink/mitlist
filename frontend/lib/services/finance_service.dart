@@ -22,7 +22,7 @@ class FinanceService {
       return Expense.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Create expense failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -40,7 +40,7 @@ class FinanceService {
       return data.map((j) => Expense.fromJson(j)).toList();
     } on DioException catch (e) {
       _logger.e('List expenses failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -54,7 +54,7 @@ class FinanceService {
       return FinanceSummary.fromJson(data.cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Get finance summary failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -68,7 +68,7 @@ class FinanceService {
       return data.map((j) => Expense.fromJson(j)).toList();
     } on DioException catch (e) {
       _logger.e('Export expenses JSON failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -80,7 +80,7 @@ class FinanceService {
       return r.data?.toString() ?? '';
     } on DioException catch (e) {
       _logger.e('Export expenses CSV failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -90,7 +90,7 @@ class FinanceService {
       return Expense.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Get expense failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -100,7 +100,7 @@ class FinanceService {
       return Expense.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Update expense failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -109,7 +109,7 @@ class FinanceService {
       await _dio.delete('/expenses/$id');
     } on DioException catch (e) {
       _logger.e('Delete expense failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -131,7 +131,7 @@ class FinanceService {
           .toList();
     } on DioException catch (e) {
       _logger.e('List expense receipts failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -151,7 +151,7 @@ class FinanceService {
       );
     } on DioException catch (e) {
       _logger.e('Attach expense receipt failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -168,7 +168,7 @@ class FinanceService {
       );
     } on DioException catch (e) {
       _logger.e('Detach expense receipt failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -177,10 +177,13 @@ class FinanceService {
       final r = await _dio.get('/expenses/$expenseId/splits');
       final data = r.data;
       if (data is! List) throw ApiException('Unexpected response format');
-      return data.cast<dynamic>().map((e) => Split.fromJson((e as Map).cast<String, dynamic>())).toList();
+      return data
+          .cast<dynamic>()
+          .map((e) => Split.fromJson((e as Map).cast<String, dynamic>()))
+          .toList();
     } on DioException catch (e) {
       _logger.e('List splits failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -189,7 +192,7 @@ class FinanceService {
       await _dio.post('/expenses/$expenseId/splits', data: req.toJson());
     } on DioException catch (e) {
       _logger.e('Create split failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -200,10 +203,10 @@ class FinanceService {
           await _dio.post('/expenses/$expenseId/splits', data: req.toJson());
       final data = r.data;
       if (data is! Map) throw ApiException('Unexpected response format');
-            return Split.fromJson(data.cast<String, dynamic>());
+      return Split.fromJson(data.cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Create split failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -214,10 +217,10 @@ class FinanceService {
           data: req.toJson());
       final data = r.data;
       if (data is! Map) throw ApiException('Unexpected response format');
-            return Split.fromJson(data.cast<String, dynamic>());
+      return Split.fromJson(data.cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Update split failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -226,7 +229,7 @@ class FinanceService {
       await _dio.delete('/expenses/$expenseId/splits/$splitId');
     } on DioException catch (e) {
       _logger.e('Delete split failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -236,7 +239,7 @@ class FinanceService {
       await _dio.post('/expenses/$expenseId/settle', data: req.toJson());
     } on DioException catch (e) {
       _logger.e('Create settlement failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -258,7 +261,7 @@ class FinanceService {
       return Settlement.fromJson(data.cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Create group settlement failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -272,7 +275,7 @@ class FinanceService {
       return Settlement.fromJson(data.cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Create settlement failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -281,7 +284,7 @@ class FinanceService {
       await _dio.delete('/expenses/$expenseId/settle/$settlementId');
     } on DioException catch (e) {
       _logger.e('Delete settlement failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -295,7 +298,7 @@ class FinanceService {
       return RecurringExpense.fromJson(data.cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Create recurring expense failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -316,7 +319,7 @@ class FinanceService {
           .toList();
     } on DioException catch (e) {
       _logger.e('List recurring expenses failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -328,7 +331,7 @@ class FinanceService {
       return RecurringExpense.fromJson(data.cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Get recurring expense failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -341,7 +344,7 @@ class FinanceService {
       return RecurringExpense.fromJson(data.cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Update recurring expense failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -350,7 +353,7 @@ class FinanceService {
       await _dio.delete('/recurring-expenses/$id');
     } on DioException catch (e) {
       _logger.e('Delete recurring expense failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -376,9 +379,5 @@ class FinanceService {
       // Any network / parse / auth error → degrade to manual entry.
       return null;
     }
-  }
-
-  Exception _handleError(DioException e) {
-    return ApiException(ApiErrorMapper.fromDio(e));
   }
 }

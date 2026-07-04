@@ -16,6 +16,29 @@ cp .env.example .env                            # add your DEEPSEEK_API_KEY
 
 Get an API key at [platform.deepseek.com](https://platform.deepseek.com/api_keys).
 
+## Calibration eval
+
+Run the grocery resolution calibration loop with one command:
+
+```bash
+./eval.sh
+```
+
+The script re-exports Dart parity features through
+`frontend/test/services/resolution_feature_export_test.dart`, then fits and
+reports the calibrated scorer from `ml/eval/resolution_eval.py`.
+
+To attempt shipping a fitted bundle:
+
+```bash
+./eval.sh --ship
+```
+
+Shipping writes `frontend/assets/grocery/resolution_weights.json` only when the
+fitted holdout `precision@auto` and `coverage@auto` both meet or beat the
+hand-set defaults. If no bundle ships, the app still falls back to the
+hand-set `CalibratedScorer` defaults.
+
 ## 1. Generate training data
 
 ### Estimate cost first
@@ -58,7 +81,7 @@ python3 -m generator.runner run --prompt 4 --all          # store aisles (option
 
 | Prompt | File | ~Rows |
 |--------|------|-------|
-| 1 Canonical seed | `ml/data/seed.json` | ~1,800 items (40 cat × 3 chunks × 15 items) |
+| 1 Canonical seed | `ml/data/seed.json` | ~3,200 items (v5, DE/EN/FR/ES) |
 | 2 OCR noise | `ml/data/ocr_corpus.jsonl` | ~144,000 (5 items × 20 variants × langs) |
 | 3 Triplets | `ml/data/triplets.jsonl` | ~8,000 |
 | 4 Store aisles | `ml/data/aisles.jsonl` | ~9,600 |
@@ -118,27 +141,56 @@ python export.py         # → ../models/grocery_classifier.tflite
 
 Target: **top-5 accuracy ≥ 85%**.
 
-### Phase 8 — Embedding model (train second)
+CI runs `python3 intelligence/ml/check_classifier_parity.py` to verify that
+classifier labels still resolve against the shipped grocery seed. If that gate
+fails after a seed rebuild, retrain and export the classifier, copy the updated
+classifier assets from §4 into `frontend/assets/models/`, then re-run the
+checker. A future retrain should emit canonical ids as labels instead of display
+names so seed renames cannot orphan classifier predictions.
+
+### Phase 8 — embedding teacher (train second)
 
 Needs Prompt 3 triplets. Slower (~hours).
 
 ```bash
 cd ml/phase8_embeddings
-python train.py          # → finetuned/
-python export.py         # → ../models/grocery_embeddings.tflite
+python train.py          # → finetuned/ teacher model
 ```
 
-## 4. Flutter integration
+Phase 8 is a build-time teacher only. The Flutter app does not load a TFLite
+embedder. `ml/build_embedder_bundle.py` distills the local `finetuned/` teacher
+or the public e5 fallback through Model2Vec into static JSON assets consumed by
+`StaticEmbeddingService`.
 
-Copy exported models to the Flutter app:
+## 4. App assets
+
+| Script | Inputs | Outputs | Version to bump |
+|--------|--------|---------|-----------------|
+| `ml/build_app_seed.py` | `ml/data/seed.json`, `curated_aliases.jsonl`, `curated_aliases_mined.jsonl`, `alias_blocklist.jsonl` | `frontend/assets/grocery/seed.json`, `frontend/assets/grocery/seed.version.json` | `ASSET_VERSION` in `build_app_seed.py` |
+| `ml/build_embedder_bundle.py` | `ml/data/embedder_vocab.txt`, `frontend/assets/grocery/seed.json`, optional `ml/phase8_embeddings/finetuned/` | `frontend/assets/grocery/embedder_vocab.json`, `catalog_vectors.json`, `embedder_golden.json` | `ASSET_VERSION` in `build_embedder_bundle.py` |
+| `ml/build_store_aisles.py` | `ml/data/aisles.jsonl`, `frontend/assets/grocery/seed.json` | `frontend/assets/grocery/store_aisles.json` | `ASSET_VERSION` in `build_store_aisles.py` |
+| `ml/off_ground.py` | Open Food Facts source data | grounded OFF intermediate data under `ml/data/` | n/a |
+| `ml/off_enrich_seed.py` | grounded OFF data + app seed | `frontend/assets/grocery/off_aliases.json` | script-local asset version if changed |
+| `ml/mine_corrections_aliases.py` | `ml/data/corrections.jsonl`, seed aliases | `ml/data/corrections_alias_candidates.jsonl` for human review | n/a |
+
+Copy only the classifier export artifacts into the Flutter model bundle:
 
 ```bash
 cp ml/models/grocery_classifier.tflite ../frontend/assets/models/
 cp ml/models/grocery_classifier_labels.txt ../frontend/assets/models/
-cp ml/models/grocery_embeddings.tflite ../frontend/assets/models/
+cp ml/models/grocery_classifier_metadata.json ../frontend/assets/models/
 ```
 
-Wire into `CanonicalResolverService` — when alias lookup score < 0.85, fall back to the classifier. See AGENTS.md scanner section.
+`CanonicalResolverService` combines aliases, classifier predictions, the static
+embedding JSON bundle, correction memory, and calibrated weights. See AGENTS.md
+scanner section.
+
+### Curation files
+
+- `curated_aliases.jsonl` adds reviewed brand/staple aliases to canonical ids.
+- `curated_aliases_mined.jsonl` contains reviewed typo-like corrections promoted from mined data.
+- `alias_blocklist.jsonl` prevents known-bad alias→canonical mappings.
+- `corrections_alias_candidates.jsonl` and related `mine_corrections_aliases.py` outputs are review queues, not auto-merged assets.
 
 ## Architecture
 
@@ -158,8 +210,8 @@ intelligence/
 └── ml/
     ├── data/             # generated datasets
     ├── phase7_classifier/
-    ├── phase8_embeddings/
-    └── models/           # exported .tflite files
+    ├── phase8_embeddings/ # build-time embedding teacher
+    └── models/           # classifier export artifacts
 ```
 
 ## DeepSeek API notes

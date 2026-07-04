@@ -15,6 +15,30 @@ class TokenPairResult {
   });
 }
 
+enum TokenRefreshOutcomeType {
+  success,
+  authRejected,
+  transportError,
+}
+
+/// Detailed token-refresh result for callers that must distinguish an invalid
+/// refresh token from a transient network failure.
+class TokenRefreshOutcome {
+  final TokenRefreshOutcomeType type;
+  final TokenPairResult? tokenPair;
+
+  const TokenRefreshOutcome._(this.type, [this.tokenPair]);
+
+  const TokenRefreshOutcome.success(TokenPairResult tokenPair)
+      : this._(TokenRefreshOutcomeType.success, tokenPair);
+
+  const TokenRefreshOutcome.authRejected()
+      : this._(TokenRefreshOutcomeType.authRejected);
+
+  const TokenRefreshOutcome.transportError()
+      : this._(TokenRefreshOutcomeType.transportError);
+}
+
 /// Single source of truth for refreshing the access/refresh token pair.
 ///
 /// The backend rotates refresh tokens: each successful refresh revokes the
@@ -33,7 +57,7 @@ class TokenRefreshCoordinator {
   final Dio _dio;
   final Logger _logger = Logger();
 
-  Future<TokenPairResult?>? _inFlight;
+  Future<TokenRefreshOutcome>? _inFlight;
 
   TokenRefreshCoordinator(this._store, this._dio);
 
@@ -61,7 +85,13 @@ class TokenRefreshCoordinator {
   ///
   /// Returns the rotated pair (already persisted to the store) on success, or
   /// `null` if there is no refresh token or the refresh failed.
-  Future<TokenPairResult?> refresh() {
+  Future<TokenPairResult?> refresh() async {
+    final outcome = await refreshDetailed();
+    return outcome.tokenPair;
+  }
+
+  /// Refresh the token pair and preserve the reason for non-success outcomes.
+  Future<TokenRefreshOutcome> refreshDetailed() {
     final existing = _inFlight;
     if (existing != null) return existing;
 
@@ -75,9 +105,9 @@ class TokenRefreshCoordinator {
     return future;
   }
 
-  Future<TokenPairResult?> _run() async {
+  Future<TokenRefreshOutcome> _run() async {
     final refreshToken = await _store.getRefreshToken();
-    if (refreshToken == null) return null;
+    if (refreshToken == null) return const TokenRefreshOutcome.authRejected();
 
     try {
       final response = await _dio.post(
@@ -90,15 +120,32 @@ class TokenRefreshCoordinator {
         final refresh = data['refresh_token'];
         if (access is String && refresh is String) {
           await _store.save(accessToken: access, refreshToken: refresh);
-          return TokenPairResult(accessToken: access, refreshToken: refresh);
+          return TokenRefreshOutcome.success(
+            TokenPairResult(accessToken: access, refreshToken: refresh),
+          );
         }
       }
+    } on DioException catch (e) {
+      if (kDebugMode) {
+        _logger.e('Token refresh failed (status: ${e.response?.statusCode})');
+      }
+      if (_isTransportError(e)) {
+        return const TokenRefreshOutcome.transportError();
+      }
+      return const TokenRefreshOutcome.authRejected();
     } catch (e) {
       if (kDebugMode) {
-        final status = e is DioException ? e.response?.statusCode : null;
-        _logger.e('Token refresh failed (status: $status)');
+        _logger.e('Token refresh failed (${e.runtimeType})');
       }
     }
-    return null;
+    return const TokenRefreshOutcome.authRejected();
+  }
+
+  bool _isTransportError(DioException e) {
+    return e.response == null ||
+        e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.sendTimeout ||
+        e.type == DioExceptionType.connectionError;
   }
 }

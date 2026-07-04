@@ -22,7 +22,7 @@ class ListService {
       return ItemList.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Create list failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -40,7 +40,7 @@ class ListService {
       return data.map((j) => ItemList.fromJson(j)).toList();
     } on DioException catch (e) {
       _logger.e('List lists failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -52,7 +52,7 @@ class ListService {
       return ShoppingLocation.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Create shopping location failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -71,7 +71,7 @@ class ListService {
           .toList();
     } on DioException catch (e) {
       _logger.e('List shopping locations failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -81,7 +81,7 @@ class ListService {
       return Product.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Create product failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -100,7 +100,7 @@ class ListService {
           .toList();
     } on DioException catch (e) {
       _logger.e('List products failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -110,7 +110,7 @@ class ListService {
       return ItemList.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Get list failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -119,7 +119,7 @@ class ListService {
       await _dio.delete('/lists/$id');
     } on DioException catch (e) {
       _logger.e('Delete list failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -128,7 +128,7 @@ class ListService {
       await _dio.post('/lists/$id/archive');
     } on DioException catch (e) {
       _logger.e('Archive list failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -137,7 +137,7 @@ class ListService {
       await _dio.post('/lists/$id/unarchive');
     } on DioException catch (e) {
       _logger.e('Unarchive list failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -147,7 +147,7 @@ class ListService {
       return ItemList.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Update list failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -157,7 +157,7 @@ class ListService {
       return ListItem.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Create item failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -169,7 +169,7 @@ class ListService {
       return _parseItemsResponse(r.data);
     } on DioException catch (e) {
       _logger.e('List items failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -181,7 +181,7 @@ class ListService {
       return ListItem.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Update item failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -190,7 +190,7 @@ class ListService {
       await _dio.delete('/lists/$listId/items/$itemId');
     } on DioException catch (e) {
       _logger.e('Delete item failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -199,7 +199,7 @@ class ListService {
       await _dio.post('/lists/$listId/items/$itemId/claim');
     } on DioException catch (e) {
       _logger.e('Claim item failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -208,7 +208,7 @@ class ListService {
       await _dio.post('/lists/$listId/items/$itemId/unclaim');
     } on DioException catch (e) {
       _logger.e('Unclaim item failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -217,7 +217,7 @@ class ListService {
       await _dio.post('/lists/$listId/reorder', data: req.toJson());
     } on DioException catch (e) {
       _logger.e('Reorder items failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -227,7 +227,7 @@ class ListService {
       return Map<String, dynamic>.from(r.data as Map);
     } on DioException catch (e) {
       _logger.e('Get cost summary failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -243,7 +243,7 @@ class ListService {
       return Map<String, dynamic>.from(r.data as Map);
     } on DioException catch (e) {
       _logger.e('Generate expense failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -260,7 +260,7 @@ class ListService {
       return Map<String, dynamic>.from(r.data as Map);
     } on DioException catch (e) {
       _logger.e('Get shopping trip failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -269,7 +269,7 @@ class ListService {
       await _dio.post('/shopping/complete', data: {'item_ids': itemIds});
     } on DioException catch (e) {
       _logger.e('Complete shopping items failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -285,7 +285,7 @@ class ListService {
       return Map<String, dynamic>.from(r.data as Map);
     } on DioException catch (e) {
       _logger.e('Clear list items failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -298,7 +298,7 @@ class ListService {
       return ListItem.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Add item amount failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -312,7 +312,7 @@ class ListService {
       return Map<String, dynamic>.from(r.data as Map);
     } on DioException catch (e) {
       _logger.e('Remove item amount failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -334,7 +334,7 @@ class ListService {
           .toList();
     } on DioException catch (e) {
       _logger.e('List item photos failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -351,7 +351,7 @@ class ListService {
       );
     } on DioException catch (e) {
       _logger.e('Attach item photo failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -368,7 +368,7 @@ class ListService {
       );
     } on DioException catch (e) {
       _logger.e('Detach item photo failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -389,9 +389,5 @@ class ListService {
       }
     }
     return [];
-  }
-
-  Exception _handleError(DioException e) {
-    return ApiException(ApiErrorMapper.fromDio(e));
   }
 }

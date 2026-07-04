@@ -1,5 +1,5 @@
 # CI: run tests + static analysis on every pull request.
-# Does NOT run build_runner (codegen is pinned-broken; generated files are committed).
+# Generated files are committed; CI checks codegen freshness.
 name: CI
 
 on:
@@ -46,8 +46,43 @@ jobs:
         run: cd backend && go build ./...
       - name: Vet
         run: cd backend && go vet ./...
+      - name: Format check
+        run: |
+          cd backend
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then echo "gofmt needs:"; echo "$unformatted"; exit 1; fi
       - name: Test
         run: cd backend && go test ./...
+
+  landing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install
+        run: cd landing && npm ci
+      - name: Build
+        run: cd landing && npm run build
+
+  intelligence:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Import smoke
+        run: |
+          python3 - <<'PY'
+          import sys
+          sys.path.insert(0, 'intelligence')
+          import ml.build_app_seed
+          import ml.build_store_aisles
+          import ml.check_classifier_parity
+          import ml.eval.resolution_eval
+          PY
 
   frontend:
     runs-on: ubuntu-latest
@@ -58,7 +93,20 @@ jobs:
           channel: stable
       - name: Pub get
         run: cd frontend && flutter pub get
+      - name: Format check
+        run: cd frontend && dart format --output=none --set-exit-if-changed .
       - name: Analyze
-        run: cd frontend && dart analyze lib/
+        run: cd frontend && dart analyze
+      - name: Codegen up to date
+        run: |
+          cd frontend
+          dart run build_runner build
+          git diff --exit-code -- lib
+      - name: Classifier/seed parity
+        run: python3 intelligence/ml/check_classifier_parity.py
       - name: Test
         run: cd frontend && flutter test
+      - name: Resolution eval (report-only)
+        run: |
+          cd frontend && EXPORT_RESOLUTION_FEATURES=1 flutter test test/services/resolution_feature_export_test.dart
+          python3 ../intelligence/ml/eval/resolution_eval.py

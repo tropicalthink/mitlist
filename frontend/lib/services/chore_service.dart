@@ -21,7 +21,7 @@ class ChoreService {
       return Chore.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Create chore failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -39,7 +39,7 @@ class ChoreService {
       return data.map((j) => Chore.fromJson(j)).toList();
     } on DioException catch (e) {
       _logger.e('List chores failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -64,7 +64,7 @@ class ChoreService {
           .toList();
     } on DioException catch (e) {
       _logger.e('List current chores failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -83,11 +83,12 @@ class ChoreService {
       final data = r.data;
       if (data is! List) return [];
       return data
-          .map((j) => ChoreTemplate.fromJson((j as Map).cast<String, dynamic>()))
+          .map(
+              (j) => ChoreTemplate.fromJson((j as Map).cast<String, dynamic>()))
           .toList();
     } on DioException catch (e) {
       _logger.e('List chore templates failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -98,19 +99,18 @@ class ChoreService {
       return ChoreTemplate.fromJson((r.data as Map).cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Create chore template failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
   Future<ChoreTemplate> updateChoreTemplate(
       String id, UpdateChoreTemplateRequest req) async {
     try {
-      final r =
-          await _dio.patch('/chore-templates/$id', data: req.toJson());
+      final r = await _dio.patch('/chore-templates/$id', data: req.toJson());
       return ChoreTemplate.fromJson((r.data as Map).cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Update chore template failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -119,7 +119,7 @@ class ChoreService {
       await _dio.delete('/chore-templates/$id');
     } on DioException catch (e) {
       _logger.e('Delete chore template failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -136,11 +136,12 @@ class ChoreService {
       final data = r.data;
       if (data is! List) return [];
       return data
-          .map((j) => ChoreLoadEntry.fromJson((j as Map).cast<String, dynamic>()))
+          .map((j) =>
+              ChoreLoadEntry.fromJson((j as Map).cast<String, dynamic>()))
           .toList();
     } on DioException catch (e) {
       _logger.e('Get chore load failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -150,7 +151,7 @@ class ChoreService {
       return Chore.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Get chore failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -163,7 +164,7 @@ class ChoreService {
       return ChoreDetails.fromJson((r.data as Map).cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Get chore details failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -173,7 +174,7 @@ class ChoreService {
       return Chore.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Update chore failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -192,7 +193,7 @@ class ChoreService {
           .toList();
     } on DioException catch (e) {
       _logger.e('List assignments failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -201,7 +202,7 @@ class ChoreService {
       await _dio.delete('/chores/$id');
     } on DioException catch (e) {
       _logger.e('Delete chore failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -211,7 +212,7 @@ class ChoreService {
           data: CompleteChoreRequest(notes: notes).toJson());
     } on DioException catch (e) {
       _logger.e('Complete chore failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -220,7 +221,7 @@ class ChoreService {
       await _dio.post('/chores/$id/rotate');
     } on DioException catch (e) {
       _logger.e('Rotate chore failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -230,7 +231,7 @@ class ChoreService {
           data: SkipChoreRequest(skipReason: skipReason).toJson());
     } on DioException catch (e) {
       _logger.e('Skip chore failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -249,7 +250,7 @@ class ChoreService {
       );
     } on DioException catch (e) {
       _logger.e('Reschedule chore failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -258,7 +259,7 @@ class ChoreService {
       await _dio.post('/chores/$id/undo');
     } on DioException catch (e) {
       _logger.e('Undo chore execution failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -268,12 +269,11 @@ class ChoreService {
       final data = r.data;
       if (data is! List) return [];
       return data
-          .map((j) =>
-              ChoreSubtask.fromJson((j as Map).cast<String, dynamic>()))
+          .map((j) => ChoreSubtask.fromJson((j as Map).cast<String, dynamic>()))
           .toList();
     } on DioException catch (e) {
       _logger.e('List subtasks failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -284,7 +284,7 @@ class ChoreService {
       return ChoreSubtask.fromJson((r.data as Map).cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Create subtask failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -304,7 +304,7 @@ class ChoreService {
       return ChoreSubtask.fromJson((r.data as Map).cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Update subtask failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -313,7 +313,7 @@ class ChoreService {
       await _dio.delete('/chores/subtasks/$subtaskId');
     } on DioException catch (e) {
       _logger.e('Delete subtask failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -323,7 +323,7 @@ class ChoreService {
           data: ReorderSubtasksRequest(subtaskIds: subtaskIds).toJson());
     } on DioException catch (e) {
       _logger.e('Reorder subtasks failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -333,11 +333,7 @@ class ChoreService {
           data: AddSuppliesToListRequest(listId: listId).toJson());
     } on DioException catch (e) {
       _logger.e('Add supplies to list failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
-  }
-
-  Exception _handleError(DioException e) {
-    return ApiException(ApiErrorMapper.fromDio(e));
   }
 }

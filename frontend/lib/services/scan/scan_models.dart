@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'canonical_resolver_service.dart';
+
 /// Confidence level drives how the review screen treats a prediction.
 enum ConfidenceLevel {
   /// > 0.85 — auto-accepted, shown in green, no user action required.
@@ -63,9 +65,10 @@ class GroceryPrediction {
   final ConfidenceLevel confidenceLevel;
   final double confidenceScore;
   final MarkStatus markStatus;
-  final List<String> alternatives;
+  final List<ResolveAlternative> alternatives;
   final String? aisle;
   final int aisleSortOrder;
+  final bool userConfirmed;
 
   const GroceryPrediction({
     required this.id,
@@ -81,6 +84,7 @@ class GroceryPrediction {
     this.alternatives = const [],
     this.aisle,
     this.aisleSortOrder = 99,
+    this.userConfirmed = false,
   });
 
   GroceryPrediction copyWith({
@@ -92,7 +96,8 @@ class GroceryPrediction {
     double? confidenceScore,
     String? aisle,
     int? aisleSortOrder,
-    List<String>? alternatives,
+    List<ResolveAlternative>? alternatives,
+    bool? userConfirmed,
   }) {
     return GroceryPrediction(
       id: id,
@@ -108,6 +113,7 @@ class GroceryPrediction {
       alternatives: alternatives ?? this.alternatives,
       aisle: aisle ?? this.aisle,
       aisleSortOrder: aisleSortOrder ?? this.aisleSortOrder,
+      userConfirmed: userConfirmed ?? this.userConfirmed,
     );
   }
 }

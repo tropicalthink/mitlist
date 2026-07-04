@@ -355,6 +355,35 @@ func (r *ChoreRepository) GetRotationState(ctx context.Context, choreID uuid.UUI
 	return &s, nil
 }
 
+// GetRotationStatesByChoreIDs retrieves rotation states for the supplied chores.
+func (r *ChoreRepository) GetRotationStatesByChoreIDs(ctx context.Context, choreIDs []uuid.UUID) ([]models.ChoreRotationState, error) {
+	if len(choreIDs) == 0 {
+		return nil, nil
+	}
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, chore_id, member_order, current_index
+		FROM chore_rotation_states
+		WHERE chore_id = ANY($1)
+	`, choreIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get rotation states: %w", err)
+	}
+	defer rows.Close()
+
+	var states []models.ChoreRotationState
+	for rows.Next() {
+		var s models.ChoreRotationState
+		if err := rows.Scan(&s.ID, &s.ChoreID, &s.MemberOrder, &s.CurrentIndex); err != nil {
+			return nil, fmt.Errorf("failed to scan rotation state: %w", err)
+		}
+		states = append(states, s)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rotation state rows: %w", err)
+	}
+	return states, nil
+}
+
 // UpdateRotationState updates a rotation state.
 func (r *ChoreRepository) UpdateRotationState(ctx context.Context, state *models.ChoreRotationState) error {
 	query := `

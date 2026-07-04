@@ -121,8 +121,7 @@ void main() {
       expect(find.text('signup:SUNNY-TACO'), findsOneWidget);
     });
 
-    testWidgets('guest continue with invite queues join landing navigation',
-        (tester) async {
+    testWidgets('invite landing does not offer guest continue', (tester) async {
       final authService = _GuestAuthService(user: guestUser);
       final router = GoRouter(
         initialLocation: '/welcome?invite=SUNNY-TACO',
@@ -155,14 +154,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Continue as guest'));
-      await tester.pumpAndSettle();
-
-      expect(authService.guestCreated, isTrue);
-      expect(container.read(authStateProvider), isTrue);
+      expect(find.text('Continue as guest'), findsNothing);
+      expect(find.text('CREATE ACCOUNT TO JOIN'), findsOneWidget);
+      expect(find.text('SIGN IN TO JOIN'), findsOneWidget);
+      expect(authService.guestCreated, isFalse);
+      expect(container.read(authStateProvider), isFalse);
       expect(
         container.read(pendingAuthNavigationProvider),
-        '/join/SUNNY-TACO',
+        isNull,
       );
     });
 

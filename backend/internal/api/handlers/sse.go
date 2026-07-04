@@ -14,9 +14,9 @@ import (
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/middleware"
 	"github.com/mitlist-app/mitlist/internal/repositories"
-	"github.com/mitlist-app/mitlist/internal/sse"
 	userservice "github.com/mitlist-app/mitlist/internal/services"
 	jwtservice "github.com/mitlist-app/mitlist/internal/services/jwt"
+	"github.com/mitlist-app/mitlist/internal/sse"
 )
 
 // SSEHandler serves Server-Sent Events for real-time group updates.
@@ -152,11 +152,7 @@ func (h *SSEHandler) Events(w http.ResponseWriter, r *http.Request) {
 			if !open {
 				return
 			}
-			data, err := json.Marshal(event)
-			if err != nil {
-				continue
-			}
-			if !write(fmt.Sprintf("data: %s\n\n", data)) {
+			if !write(fmt.Sprintf("data: %s\n\n", event)) {
 				return
 			}
 		}

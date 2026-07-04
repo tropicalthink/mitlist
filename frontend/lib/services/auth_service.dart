@@ -9,6 +9,7 @@ import '../models/auth_models.dart';
 import 'api_client.dart';
 import 'api_error_mapper.dart';
 import 'fcm_service.dart';
+import 'push_subscription_service.dart';
 import 'token_store.dart';
 
 /// Authentication service for managing user authentication.
@@ -25,6 +26,7 @@ class AuthService {
   final Logger _logger = Logger();
   final SharedPreferences _prefs;
   final TokenStore _tokenStore;
+
   /// Optional callback invoked during logout to wipe the local Drift database.
   /// Wrapped in try/catch so a wipe failure never blocks token clearance.
   final Future<void> Function()? _wipeLocalData;
@@ -80,7 +82,7 @@ class AuthService {
       return tokenPair;
     } on DioException catch (e) {
       _logger.e('Registration failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -102,7 +104,7 @@ class AuthService {
       return tokenPair;
     } on DioException catch (e) {
       _logger.e('Login failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -124,7 +126,7 @@ class AuthService {
       return tokenPair;
     } on DioException catch (e) {
       _logger.e('Token refresh failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -171,7 +173,7 @@ class AuthService {
       );
     } on DioException catch (e) {
       _logger.e('Password reset request failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -187,7 +189,7 @@ class AuthService {
       );
     } on DioException catch (e) {
       _logger.e('Password reset confirmation failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -215,7 +217,7 @@ class AuthService {
       return tokenPair;
     } on DioException catch (e) {
       _logger.e('OAuth callback failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -252,7 +254,7 @@ class AuthService {
       return tokenPair;
     } on DioException catch (e) {
       _logger.e('Guest account creation failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -263,7 +265,7 @@ class AuthService {
       return User.fromJson(response.data);
     } on DioException catch (e) {
       _logger.e('Get user failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -277,7 +279,7 @@ class AuthService {
       return User.fromJson(response.data);
     } on DioException catch (e) {
       _logger.e('Update user failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -288,7 +290,7 @@ class AuthService {
       await _clearTokens();
     } on DioException catch (e) {
       _logger.e('Delete user failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -301,7 +303,7 @@ class AuthService {
       );
     } on DioException catch (e) {
       _logger.e('Change password failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -321,7 +323,7 @@ class AuthService {
       return tokenPair;
     } on DioException catch (e) {
       _logger.e('Convert guest failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -341,7 +343,7 @@ class AuthService {
       return tokenPair;
     } on DioException catch (e) {
       _logger.e('Claim account failed: ${e.response?.data}');
-      throw _handleError(e);
+      throw apiException(e);
     }
   }
 
@@ -391,6 +393,7 @@ class AuthService {
 
   /// Clears all stored tokens, user data, and user-specific UI preferences.
   Future<void> _clearTokens() async {
+    await PushSubscriptionService(_tokenStore).unsubscribe();
     await _tokenStore.clear();
     await _prefs.remove(ApiConfig.userDataKey);
     await _prefs.remove(ApiConfig.persistSessionKey);
@@ -398,9 +401,5 @@ class AuthService {
     await _prefs.remove('hub_quick_start_dismissed');
     await _prefs.remove('chores_filter_me');
     await _prefs.remove('calendar_view_mode');
-  }
-
-  Exception _handleError(DioException e) {
-    return ApiException(ApiErrorMapper.fromDio(e));
   }
 }

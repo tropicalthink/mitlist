@@ -10,6 +10,17 @@ import (
 	"time"
 )
 
+var blockedIPNetworks = mustParseCIDRs(
+	"100.64.0.0/10",
+	"192.0.0.0/24",
+	"192.0.2.0/24",
+	"198.18.0.0/15",
+	"198.51.100.0/24",
+	"203.0.113.0/24",
+	"240.0.0.0/4",
+	"2001:db8::/32",
+)
+
 func ValidateURLForFetch(ctx context.Context, raw string) (*url.URL, error) {
 	u, resolvedIPs, err := validateAndResolve(ctx, raw)
 	if err != nil {
@@ -101,7 +112,7 @@ func validateAndResolve(ctx context.Context, raw string) (*url.URL, []net.IP, er
 	}
 
 	if ip := net.ParseIP(host); ip != nil {
-		if isBlockedIP(ip) {
+		if IsBlockedIP(ip) {
 			return nil, nil, fmt.Errorf("ip not allowed")
 		}
 		return u, []net.IP{ip}, nil
@@ -116,7 +127,7 @@ func validateAndResolve(ctx context.Context, raw string) (*url.URL, []net.IP, er
 
 	resolvedIPs := make([]net.IP, 0, len(addrs))
 	for _, a := range addrs {
-		if isBlockedIP(a.IP) {
+		if IsBlockedIP(a.IP) {
 			return nil, nil, fmt.Errorf("host resolves to a blocked network")
 		}
 		resolvedIPs = append(resolvedIPs, a.IP)
@@ -125,15 +136,23 @@ func validateAndResolve(ctx context.Context, raw string) (*url.URL, []net.IP, er
 	return u, resolvedIPs, nil
 }
 
-func isBlockedIP(ip net.IP) bool {
+func IsBlockedIP(ip net.IP) bool {
 	if ip == nil {
 		return true
+	}
+	if v4 := ip.To4(); v4 != nil {
+		ip = v4
 	}
 	if ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsMulticast() || ip.IsUnspecified() {
 		return true
 	}
 	if ip.IsPrivate() {
 		return true
+	}
+	for _, network := range blockedIPNetworks {
+		if network.Contains(ip) {
+			return true
+		}
 	}
 
 	if ip.To4() == nil {
@@ -145,4 +164,16 @@ func isBlockedIP(ip net.IP) bool {
 	}
 
 	return false
+}
+
+func mustParseCIDRs(values ...string) []*net.IPNet {
+	out := make([]*net.IPNet, 0, len(values))
+	for _, value := range values {
+		_, network, err := net.ParseCIDR(value)
+		if err != nil {
+			panic(err)
+		}
+		out = append(out, network)
+	}
+	return out
 }

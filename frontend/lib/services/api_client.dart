@@ -102,12 +102,17 @@ class TokenRefreshInterceptor extends Interceptor {
     // Snapshot the token we're refreshing against so we can tell, on failure,
     // whether someone else rotated it underneath us.
     final attemptedRefreshToken = await _tokenStore.getRefreshToken();
-    final tokenPair = await _coordinator.refresh();
-    if (tokenPair == null) {
+    final refreshOutcome = await _coordinator.refreshDetailed();
+    if (refreshOutcome.type == TokenRefreshOutcomeType.transportError) {
+      handler.next(err);
+      return;
+    }
+    if (refreshOutcome.type == TokenRefreshOutcomeType.authRejected) {
       await _onRefreshFailure(attemptedRefreshToken);
       handler.next(err);
       return;
     }
+    final tokenPair = refreshOutcome.tokenPair!;
 
     // The coordinator already persisted the rotated pair to the shared store.
     final options = err.requestOptions;

@@ -15,24 +15,24 @@ type Event struct {
 // Hub manages per-group SSE client channels and derives presence from them.
 type Hub struct {
 	mu      sync.RWMutex
-	clients map[string]map[chan Event]string // groupID -> (client channel -> userID)
+	clients map[string]map[chan []byte]string // groupID -> (client channel -> userID)
 }
 
 // New creates a ready-to-use Hub.
 func New() *Hub {
 	return &Hub{
-		clients: make(map[string]map[chan Event]string),
+		clients: make(map[string]map[chan []byte]string),
 	}
 }
 
 // Subscribe registers a buffered channel for events on groupID, owned by userID.
 // userID may be empty for anonymous connections; it only affects presence.
 // The caller must call Unsubscribe when done to avoid leaks.
-func (h *Hub) Subscribe(groupID, userID string) chan Event {
-	ch := make(chan Event, 64)
+func (h *Hub) Subscribe(groupID, userID string) chan []byte {
+	ch := make(chan []byte, 64)
 	h.mu.Lock()
 	if h.clients[groupID] == nil {
-		h.clients[groupID] = make(map[chan Event]string)
+		h.clients[groupID] = make(map[chan []byte]string)
 	}
 	h.clients[groupID][ch] = userID
 	h.mu.Unlock()
@@ -40,7 +40,7 @@ func (h *Hub) Subscribe(groupID, userID string) chan Event {
 }
 
 // Unsubscribe removes and closes a client channel.
-func (h *Hub) Unsubscribe(groupID string, ch chan Event) {
+func (h *Hub) Unsubscribe(groupID string, ch chan []byte) {
 	h.mu.Lock()
 	if group, ok := h.clients[groupID]; ok {
 		delete(group, ch)
@@ -59,11 +59,16 @@ func (h *Hub) Unsubscribe(groupID string, ch chan Event) {
 // close a channel mid-send (which would panic). Sends are non-blocking, so the
 // lock is held only briefly.
 func (h *Hub) Publish(groupID string, event Event) {
+	data, err := json.Marshal(event)
+	if err != nil {
+		return
+	}
+
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	for ch := range h.clients[groupID] {
 		select {
-		case ch <- event:
+		case ch <- data:
 		default:
 		}
 	}

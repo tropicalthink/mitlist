@@ -12,7 +12,8 @@ import 'package:mitlist/providers/list_provider.dart' show sseServiceProvider;
 import 'package:mitlist/providers/notification_provider.dart';
 import 'package:mitlist/screens/notifications/notifications_screen.dart';
 import 'package:mitlist/l10n/app_localizations.dart';
-import 'package:mitlist/router.dart' show currentGroupIdProvider, CurrentGroupIdNotifier;
+import 'package:mitlist/router.dart'
+    show currentGroupIdProvider, CurrentGroupIdNotifier;
 import 'package:mitlist/services/notification_service.dart';
 import 'package:mitlist/services/sse_service.dart';
 
@@ -21,12 +22,8 @@ import 'package:mitlist/services/sse_service.dart';
 // ---------------------------------------------------------------------------
 class _FakeSse extends SseService {
   final _ctrl = StreamController<SseEvent>.broadcast();
-  String? _connected;
-
   @override
-  Future<void> connect(String groupId) async {
-    _connected = groupId;
-  }
+  Future<void> connect(String groupId) async {}
 
   @override
   Stream<SseEvent> get events => _ctrl.stream;
@@ -102,9 +99,9 @@ void main() {
             sseServiceProvider.overrideWithValue(fakeSse),
           ],
           child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: const NotificationsScreen(),
-        ),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            home: const NotificationsScreen(),
+          ),
         ),
       );
 
@@ -114,7 +111,8 @@ void main() {
       // One call happened during initial load.
       final countAfterInit = fakeNotifSvc.listCallCount;
       expect(countAfterInit, greaterThanOrEqualTo(1),
-          reason: 'initState should have called listNotifications at least once');
+          reason:
+              'initState should have called listNotifications at least once');
 
       // Emit a notification:created event.
       fakeSse.emit(SseEvent(
@@ -153,9 +151,9 @@ void main() {
             sseServiceProvider.overrideWithValue(fakeSse),
           ],
           child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: const NotificationsScreen(),
-        ),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            home: const NotificationsScreen(),
+          ),
         ),
       );
 
@@ -174,8 +172,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(fakeNotifSvc.listCallCount, equals(countAfterInit),
-          reason:
-              'unrelated SSE events must not trigger a refetch');
+          reason: 'unrelated SSE events must not trigger a refetch');
     },
   );
 }
