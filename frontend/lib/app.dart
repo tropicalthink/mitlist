@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'l10n/app_localizations.dart';
 import 'theme/theme.dart';
 import 'router.dart';
-import 'providers/list_provider.dart' show sseServiceProvider;
+import 'providers/list_provider.dart' show sseServiceProvider, grocerySeedProvider;
 import 'providers/outbox_provider.dart';
 import 'services/api_client.dart' show dioProvider;
 import 'services/canonical_display.dart' show setGroceryDisplayLang;
@@ -49,6 +49,13 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
     if (_deferredInitDone || !ref.read(authStateProvider)) return;
     _deferredInitDone = true;
     ref.read(outboxCoordinatorProvider);
+    // Kick off the grocery/alias seed as early as possible (app bootstrap,
+    // right after auth) rather than waiting for whichever screen the user
+    // opens first — it's a one-time but heavy load (~280k alias rows) that
+    // shares the same serial DB connection as interactive list writes, so
+    // starting it here gives it a head start before the user is likely to be
+    // actively typing into a list.
+    ref.read(grocerySeedProvider);
     _initPushSubscriptions();
   }
 
