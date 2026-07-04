@@ -674,8 +674,6 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         await _removeItemPhoto(item);
       case ListItemAction.price:
         await _setItemPrice(item);
-      case ListItemAction.delete:
-        await _deleteItem(item);
     }
   }
 

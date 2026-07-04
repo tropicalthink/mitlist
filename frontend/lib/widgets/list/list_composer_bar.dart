@@ -71,8 +71,13 @@ class ListComposerBar extends StatelessWidget {
     for (final p in productSuggestions) {
       addChip(p.name, fromSeed: false);
     }
-    if (chips.isEmpty) return const SizedBox.shrink();
 
+    // Reserve this slot at a fixed height for the whole time the composer is
+    // focused, whether or not chips have arrived yet — suggestions land in two
+    // independent async waves (fast local grocery/restock, then a slower
+    // network product-history fetch) that each rebuild this row, so sizing to
+    // `chips.isEmpty` made the bar visibly resize per wave/keystroke instead of
+    // settling once on focus.
     return Padding(
       padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
       child: SizedBox(
