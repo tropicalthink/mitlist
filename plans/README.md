@@ -76,7 +76,7 @@ traceability.
 |------|-------|----------|--------|------------|--------|
 | 020 | Token refresh: keep session on transient network error (no force-logout) | P1 | M | — | DONE ✓v |
 | 021 | AGENTS.md reconcile (migrations, dead paths, test-status) | P1 | S | — | DONE ✓v |
-| 022 | Invite-code entropy — resist group-join enumeration | P1 | M | — | TODO (refreshed 2026-07-04: former STOP conditions resolved — case-normalization folded in as Step 2; `code` column is TEXT, no width limit) |
+| 022 | Invite-code entropy — resist group-join enumeration | P1 | M | — | DONE ✓v (executed 2026-07-04 on `advisor/022-invite-code-entropy` @ `a0e89be1`; advisor re-verified criteria in worktree; awaiting merge) |
 | 023 | `formatCurrency` zero-decimal currencies (JPY/KRW/HUF) | P2 | S | — | DONE ✓v |
 | 024 | Verify real upload size on finalize; bound presigned PUT | P2 | M | — | DONE ✓v |
 | 025 | SSE: marshal broadcast events once, not per client | P2 | S | — | DONE ✓v |
@@ -91,10 +91,10 @@ traceability.
 | 034 | SSRF hardening: complete blocklist + rebinding re-validation | P2 | M | — | DONE ✓v |
 | 035 | Collapse duplicated Dart `_handleError` wrappers | P3 | S | — | DONE ✓v |
 | 036 | One membership-check implementation in group_service | P3 | S | — | DONE ✓v |
-| 037 | Decompose expenses god-screen (controller pattern) | P3 | L | 043 first | TODO |
-| 038 | Split recipe-scraping monolith behind a parser interface | P3 | L | — | TODO |
-| 039 | Share pinwall note-card / stat-row widgets | P3 | M | — | TODO |
-| 040 | Upgrade low-risk Flutter plugins; scope framework migrations | P3 | M | — | TODO |
+| 037 | Decompose expenses god-screen (controller pattern) | P3 | L | 043 first | IN PROGRESS (executor dispatched 2026-07-04) |
+| 038 | Split recipe-scraping monolith behind a parser interface | P3 | L | — | IN PROGRESS (executor dispatched 2026-07-04) |
+| 039 | Share pinwall note-card / stat-row widgets | P3 | M | — | IN PROGRESS (executor dispatched 2026-07-04) |
+| 040 | Upgrade low-risk Flutter plugins; scope framework migrations | P3 | M | — | DONE ✓v (executed 2026-07-04 on `advisor/040-dependency-upgrades` @ `f236d1b4`, 4 commits; advisor re-verified; runtime push/crash QA deferred; awaiting merge) |
 | 041 | Unpin build_runner; CI codegen-freshness gate | P3 | M | — | DONE ✓v |
 | 042 | CI: build landing, smoke-check intelligence pipeline | P3 | S–M | — | DONE ✓v |
 | 043 | Widget test for the pinwall board screen | P3 | M | — | DONE ✓v |

@@ -574,6 +574,11 @@ FROM list_items_table;
     await (delete(listItemsTable)..where((t) => t.listId.equals(listId))).go();
   }
 
+  Future<void> deleteListItemsByIds(List<String> ids) async {
+    if (ids.isEmpty) return;
+    await (delete(listItemsTable)..where((t) => t.id.isIn(ids))).go();
+  }
+
   Future<void> enqueueOutbox({
     required String id,
     required String type,
@@ -635,6 +640,16 @@ FROM list_items_table;
       variables: [Variable<String>(type), Variable<String>(entityId)],
     ).getSingle();
     return (result.data['c'] as int?) ?? 0;
+  }
+
+  /// IDs of list items with an unsynced outbox op (create/update/delete). Used
+  /// to keep a server refresh from deleting a row the user just added/edited
+  /// locally before the outbox has had a chance to sync it.
+  Future<Set<String>> getPendingListItemIds() async {
+    final rows = await (select(outboxOps)
+          ..where((t) => t.entityType.equals('listItem')))
+        .get();
+    return rows.map((r) => r.entityId).whereType<String>().toSet();
   }
 
   Future<void> markOutboxAttempt(String id, {String? error}) async {

@@ -15,6 +15,7 @@ import '../../repositories/grocery_repository.dart';
 import '../../services/list_service.dart';
 import '../../services/restock_service.dart';
 import '../../services/scan/grocery_suggestion_service.dart';
+import '../../theme/animations.dart';
 import '../../utils/haptics.dart';
 import '../../utils/list_composer_parser.dart';
 
@@ -80,8 +81,9 @@ class ListDetailController extends ChangeNotifier {
   final Set<String> _collapsing = {};
   final Map<String, Timer> _settleTimers = {};
 
-  /// How long a freshly checked row rests in place before collapsing.
-  static const Duration _settleHold = Duration(milliseconds: 650);
+  /// How long a freshly checked row rests in place before collapsing — just
+  /// long enough to see the strike finish drawing, not an arbitrary pause.
+  static const Duration _settleHold = MitlistAnimations.checkToggle;
 
   // ---- Reactive getters -----------------------------------------------------
 
@@ -134,6 +136,14 @@ class ListDetailController extends ChangeNotifier {
     _isLoading = true;
     _hasError = false;
     _notify();
+
+    // Composer suggestions match against the on-device canonical grocery/alias
+    // tables, which only get populated by this seed load. `lists_screen` and
+    // `scanner_screen` trigger it too, but a list opened without visiting
+    // those first (deep link, hub shortcut) would otherwise never seed it and
+    // suggestions would silently stay empty forever. Idempotent + no-op once
+    // seeded, so firing it unconditionally here is cheap.
+    unawaited(ref.read(grocerySeedProvider.future));
 
     try {
       final service = await ref.read(listServiceProviderAsync.future);
