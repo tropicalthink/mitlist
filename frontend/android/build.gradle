@@ -9,19 +9,16 @@ rootProject.buildDir = "../build"
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
 
-    project.plugins.withId("com.android.library") {
-        project.android {
-            compileOptions {
-                sourceCompatibility = JavaVersion.VERSION_17
-                targetCompatibility = JavaVersion.VERSION_17
-            }
-        }
-    }
-    project.plugins.withId("com.android.application") {
-        project.android {
-            compileOptions {
-                sourceCompatibility = JavaVersion.VERSION_17
-                targetCompatibility = JavaVersion.VERSION_17
+    // Plugins like sentry_flutter set Java 1.8 in their own build.gradle after
+    // plugins.withId runs; afterEvaluate ensures we win the final JVM target.
+    project.afterEvaluate {
+        if (project.plugins.hasPlugin("com.android.library") ||
+            project.plugins.hasPlugin("com.android.application")) {
+            project.android {
+                compileOptions {
+                    sourceCompatibility = JavaVersion.VERSION_17
+                    targetCompatibility = JavaVersion.VERSION_17
+                }
             }
         }
     }

@@ -8,7 +8,7 @@ Shared household coordination app (lists, money, chores, recipes). Flutter front
 ```
 frontend/     Flutter app (Dart, Riverpod, go_router, Drift)
 backend/      Go API server (chi, pgx, Redis, S3/R2)
-CLAUDE.md     Design context & brand guidelines
+PRODUCT.md    Product and design context
 ```
 
 ## Common Commands
@@ -20,31 +20,24 @@ dart analyze lib/           # Type check all Dart
 flutter test                # Run tests
 ```
 
-### Regenerating generated code (Drift / retrofit / json)
+### Regenerating generated code (Drift)
 
-Generated files (`*.g.dart`, e.g. `lib/storage/app_database.g.dart`) are committed,
-so normal builds, `dart analyze`, and `flutter test` work without running codegen.
+Generated files (`*.g.dart`, e.g. `lib/storage/app_database.g.dart`) are
+committed, so normal builds, `dart analyze`, and `flutter test` work without
+running codegen. To regenerate after changing Drift tables:
 
-`dart run build_runner build` currently fails on a retrofit/retrofit_generator
-version mismatch (`Parser.DartMappable` non-exhaustive switch). To regenerate:
+```bash
+cd frontend
+dart run build_runner build
+```
 
-1. In `frontend/pubspec.yaml`, temporarily add:
-   ```yaml
-   dependency_overrides:
-     retrofit: 4.8.0
-   ```
-2. `flutter pub get`
-3. `dart run build_runner build --delete-conflicting-outputs`
-4. Revert the `pubspec.yaml` / `pubspec.lock` changes (`git checkout -- pubspec.yaml pubspec.lock`),
-   keeping only the regenerated `*.g.dart` files.
-
-Do not commit the `dependency_overrides` block.
+CI runs the same command and fails if generated files are stale.
 
 ### Backend
 ```bash
 cd backend
 go build ./...              # Compile
-go test ./...               # Run all tests (some pre-existing failures)
+go test ./...               # Run all tests
 docker compose up -d        # Start postgres + redis
 ```
 
@@ -122,7 +115,7 @@ Brand: warm, punchy, organized. Orange primary (`mitlistColors.primary500` = `#F
 The scanner uses **CrofAI** (`https://crof.ai/v1`) via OpenAI-compatible API. Set `CROFAI_API_KEY` in backend `.env`. The vision model `kimi-k2.5` processes images and returns structured JSON with type classification and extracted items/steps/amounts.
 
 - Endpoint: `POST /assistant/scan` (multipart file upload)
-- Service: `frontend/lib/services/scan_service.dart`
+- Service: `frontend/lib/services/scan/scan_pipeline_service.dart`
 - Screen: `frontend/lib/screens/scanner/scanner_screen.dart`
 
 ## Cross-Feature Integration
@@ -243,6 +236,10 @@ showAppDialog<bool>(
 | 000001 | Core schema (users, groups, lists, chores, finance, recipes, etc.) |
 | 000002–000021 | Various schema additions (pinwall, attachments, meal plans, chore subtasks, etc.) |
 | **000022** | Added `linked_entity_type` + `linked_entity_id` to `pinwall_posts` |
+| 000023–000027 | Offline/outbox, canonical grocery graph, and intelligence sync support |
+| 000028–000032 | List item canonical ids, recurring expense splits, expense base amounts, chore zones, notification email preference |
+
+Latest migration: `000032_add_email_enabled_to_notification_preferences`.
 
 ## Key API Endpoints Added
 

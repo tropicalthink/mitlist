@@ -3,6 +3,9 @@ import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:logger/logger.dart';
+
+final Logger _log = Logger();
 
 /// A resolved nearest-neighbour match from [StaticEmbeddingService.nearest].
 class EmbedMatch {
@@ -276,13 +279,21 @@ class StaticEmbeddingService {
       final ok = await reply.first == true;
       reply.close();
       if (!ok) {
+        _log.w(
+          'static embedding assets unavailable, embedder disabled: '
+          '$_vocabAsset, $_catalogAsset',
+        );
         _unavailable = true;
         _teardownWorker();
         return false;
       }
       _ready = true;
       return true;
-    } catch (_) {
+    } catch (e) {
+      _log.w(
+        'static embedding worker failed, embedder disabled: '
+        '$_vocabAsset, $_catalogAsset: $e',
+      );
       _unavailable = true;
       _teardownWorker();
       return false;
@@ -407,7 +418,12 @@ void _embeddingIsolateMain(List<dynamic> args) {
         final catalogJson =
             await rootBundle.loadString(StaticEmbeddingService._catalogAsset);
         state = _parseEmbedderBundles([vocabJson, catalogJson]);
-      } catch (_) {
+      } catch (e) {
+        _log.w(
+          'static embedding assets failed to load: '
+          '${StaticEmbeddingService._vocabAsset}, '
+          '${StaticEmbeddingService._catalogAsset}: $e',
+        );
         state = null;
       }
       reply.send(state != null);
@@ -432,7 +448,8 @@ void _embeddingIsolateMain(List<dynamic> args) {
           [for (final m in matches) m.itemId],
           [for (final m in matches) m.score],
         ]);
-      } catch (_) {
+      } catch (e) {
+        _log.w('static embedding query failed, returning no matches: $e');
         // Always reply so the caller's `await` resolves instead of hanging.
         reply.send(const [<String>[], <double>[]]);
       }
@@ -503,7 +520,12 @@ _ParsedBundles? _parseEmbedderBundles(List<String> jsons) {
       itemIds: itemIds,
       catalogVectors: catalogVectors,
     );
-  } catch (_) {
+  } catch (e) {
+    _log.w(
+      'static embedding assets malformed: '
+      '${StaticEmbeddingService._vocabAsset}, '
+      '${StaticEmbeddingService._catalogAsset}: $e',
+    );
     return null;
   }
 }

@@ -4,13 +4,22 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/mock"
 	"github.com/mitlist-app/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/repositories"
+	"github.com/stretchr/testify/mock"
 )
 
 // MockGroupRepo is a mock implementation of repositories.GroupRepo.
 type MockGroupRepo struct {
 	mock.Mock
+}
+
+func (m *MockGroupRepo) WithTx(ctx context.Context, fn func(txRepo repositories.GroupRepo) error) error {
+	args := m.Called(ctx, mock.Anything)
+	if args.Error(0) != nil {
+		return args.Error(0)
+	}
+	return fn(m)
 }
 
 func (m *MockGroupRepo) CreateGroup(ctx context.Context, group *models.Group) error {
@@ -81,6 +90,11 @@ func (m *MockGroupRepo) GetInviteByCode(ctx context.Context, code string) (*mode
 }
 
 func (m *MockGroupRepo) ConsumeInvite(ctx context.Context, inviteID, userID uuid.UUID) error {
+	args := m.Called(ctx, inviteID, userID)
+	return args.Error(0)
+}
+
+func (m *MockGroupRepo) ClaimInvite(ctx context.Context, inviteID, userID uuid.UUID) error {
 	args := m.Called(ctx, inviteID, userID)
 	return args.Error(0)
 }

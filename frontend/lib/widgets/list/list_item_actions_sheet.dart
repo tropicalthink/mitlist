@@ -6,8 +6,10 @@ import '../../theme/spacing.dart';
 import '../app_bottom_sheet.dart';
 import '../app_icon.dart';
 
-/// Long-press item actions: view/replace photo, remove photo, price, delete.
-enum ListItemAction { viewPhoto, photo, removePhoto, price, delete }
+/// Long-press item actions: view/replace photo, remove photo, price. Delete
+/// lives on the swipe-to-dismiss gesture already on every row, so it isn't
+/// duplicated here.
+enum ListItemAction { viewPhoto, photo, removePhoto, price }
 
 class ListItemActionsSheet {
   ListItemActionsSheet._();
@@ -47,19 +49,6 @@ class ListItemActionsSheet {
             leading: const AppIcon(name: 'banknotes'),
             title: Text(l10n.listItemSetPrice),
             onTap: () => Navigator.of(context).pop(ListItemAction.price),
-          ),
-          ListTile(
-            leading: AppIcon(
-              name: 'trash',
-              color: Theme.of(context).colorScheme.error,
-            ),
-            title: Text(
-              l10n.listItemDeleteAction,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
-            ),
-            onTap: () => Navigator.of(context).pop(ListItemAction.delete),
           ),
           const SizedBox(height: MitlistSpacing.sm),
         ],

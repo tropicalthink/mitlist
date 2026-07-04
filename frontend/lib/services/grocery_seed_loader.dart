@@ -1,12 +1,15 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 
 import '../storage/app_database.dart';
+import 'scan/resolution/string_sim.dart';
 
 const _seedAsset = 'assets/grocery/seed.json';
+const _seedVersionAsset = 'assets/grocery/seed.version.json';
 const _storeAislesAsset = 'assets/grocery/store_aisles.json';
 const _offAliasesAsset = 'assets/grocery/off_aliases.json';
 const _globalGroupId = '__global__';
@@ -16,8 +19,12 @@ const _uuid = Uuid();
 
 class GrocerySeedLoader {
   final AppDatabase _db;
+  final AssetBundle _bundle;
 
-  GrocerySeedLoader(this._db);
+  GrocerySeedLoader(
+    this._db, {
+    @visibleForTesting AssetBundle? bundle,
+  }) : _bundle = bundle ?? rootBundle;
 
   /// Load the bundled grocery assets into Drift.
   ///
@@ -32,12 +39,18 @@ class GrocerySeedLoader {
   }
 
   Future<void> _loadSeedIfNeeded() async {
-    final raw = await rootBundle.loadString(_seedAsset);
-    final json = jsonDecode(raw) as Map<String, dynamic>;
-    final assetVersion = (json['version'] as num?)?.toInt() ?? 0;
-
     final installedVersion = await _db.getGroceryVersion(_globalGroupId);
+    final sidecarVersion = await _readSidecarVersion();
     final existing = await _db.getCanonicalItemsByGroup(_globalGroupId);
+    if (sidecarVersion != null &&
+        existing.isNotEmpty &&
+        installedVersion >= sidecarVersion) {
+      return;
+    }
+
+    final raw = await _bundle.loadString(_seedAsset);
+    final json = await compute(_decodeJsonMap, raw);
+    final assetVersion = (json['version'] as num?)?.toInt() ?? 0;
     if (existing.isNotEmpty && installedVersion >= assetVersion) return;
 
     if (existing.isNotEmpty) {
@@ -45,6 +58,16 @@ class GrocerySeedLoader {
     }
     await _ingestSeed(json);
     await _db.setGroceryVersion(_globalGroupId, assetVersion);
+  }
+
+  Future<int?> _readSidecarVersion() async {
+    try {
+      final raw = await _bundle.loadString(_seedVersionAsset);
+      final json = jsonDecode(raw) as Map<String, dynamic>;
+      return (json['version'] as num?)?.toInt();
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Ingests the OpenFoodFacts-derived brand aliases (ODbL, shipped as a
@@ -56,7 +79,7 @@ class GrocerySeedLoader {
   Future<void> _loadOffAliasesIfNeeded() async {
     final String raw;
     try {
-      raw = await rootBundle.loadString(_offAliasesAsset);
+      raw = await _bundle.loadString(_offAliasesAsset);
     } catch (_) {
       return; // asset not bundled in this build
     }
@@ -73,7 +96,7 @@ class GrocerySeedLoader {
     items.forEach((canonicalId, byLang) {
       (byLang as Map<String, dynamic>).forEach((lang, list) {
         for (final a in (list as List)) {
-          final normalized = (a as String).toLowerCase().trim();
+          final normalized = normaliseText(a as String);
           if (normalized.isEmpty) continue;
           rows.add(ItemAliasesTableCompanion.insert(
             id: _uuid.v4(),
@@ -100,7 +123,7 @@ class GrocerySeedLoader {
   /// sort order, per store). Version-aware and global; household overrides are
   /// kept in separate rows and never cleared here.
   Future<void> _loadStoreAislesIfNeeded() async {
-    final raw = await rootBundle.loadString(_storeAislesAsset);
+    final raw = await _bundle.loadString(_storeAislesAsset);
     final json = jsonDecode(raw) as Map<String, dynamic>;
     final assetVersion = (json['version'] as num?)?.toInt() ?? 0;
     final installed = await _db.getGroceryVersion(_storeAislesVersionKey);
@@ -156,7 +179,7 @@ class GrocerySeedLoader {
       ));
 
       void addAlias(String text, String lang) {
-        final normalized = text.toLowerCase().trim();
+        final normalized = normaliseText(text);
         if (normalized.isEmpty) return;
         aliasRows.add(ItemAliasesTableCompanion.insert(
           id: _uuid.v4(),
@@ -207,3 +230,6 @@ class GrocerySeedLoader {
     }
   }
 }
+
+Map<String, dynamic> _decodeJsonMap(String raw) =>
+    jsonDecode(raw) as Map<String, dynamic>;

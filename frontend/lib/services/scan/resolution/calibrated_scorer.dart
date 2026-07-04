@@ -3,8 +3,11 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:logger/logger.dart';
 
 import 'resolution_features.dart';
+
+final Logger _log = Logger();
 
 /// Plan 037 — the calibrated scorer. `P(correct) = sigmoid(w·features + b)`.
 ///
@@ -68,10 +71,16 @@ class CalibratedScorer {
           ?.map((e) => (e as num).toDouble())
           .toList();
       if (weights == null || weights.length != kResolutionFeatureCount) {
+        _log.w(
+          'resolution_weights.json rejected, using default weights: weights length',
+        );
         return CalibratedScorer();
       }
       final names = (json['feature_names'] as List?)?.cast<String>();
       if (names != null && !listEquals(names, kResolutionFeatureNames)) {
+        _log.w(
+          'resolution_weights.json rejected, using default weights: feature_names mismatch',
+        );
         return CalibratedScorer();
       }
       return CalibratedScorer(
@@ -80,7 +89,8 @@ class CalibratedScorer {
         tauAuto: (json['tau_auto'] as num?)?.toDouble(),
         tauReview: (json['tau_review'] as num?)?.toDouble(),
       );
-    } catch (_) {
+    } catch (e) {
+      _log.w('resolution_weights.json unavailable, using default weights: $e');
       return CalibratedScorer();
     }
   }

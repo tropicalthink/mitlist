@@ -13,7 +13,8 @@ Uint8List? rectifyDocumentCv(Uint8List jpegBytes) {
   void track(cv.Mat m) => scratch.add(m);
   cv.Contours? contours;
   try {
-    final src = cv.imdecode(jpegBytes, cv.IMREAD_COLOR); track(src);
+    final src = cv.imdecode(jpegBytes, cv.IMREAD_COLOR);
+    track(src);
     if (src.isEmpty) return null;
 
     final h = src.rows;
@@ -25,16 +26,22 @@ Uint8List? rectifyDocumentCv(Uint8List jpegBytes) {
     final scale = (maxDim / math.max(w, h)).clamp(0.0, 1.0);
     final wSmall = (w * scale).round();
     final hSmall = (h * scale).round();
-    final small = cv.resize(src, (wSmall, hSmall)); track(small);
+    final small = cv.resize(src, (wSmall, hSmall));
+    track(small);
 
     // Step 2 – Grayscale + blur + Canny.
-    final gray = cv.cvtColor(small, cv.COLOR_BGR2GRAY); track(gray);
-    final blurred = cv.gaussianBlur(gray, (5, 5), 0); track(blurred);
-    final edges = cv.canny(blurred, 50, 150); track(edges);
+    final gray = cv.cvtColor(small, cv.COLOR_BGR2GRAY);
+    track(gray);
+    final blurred = cv.gaussianBlur(gray, (5, 5), 0);
+    track(blurred);
+    final edges = cv.canny(blurred, 50, 150);
+    track(edges);
 
     // Dilate edges slightly to close gaps.
-    final kernel = cv.getStructuringElement(cv.MORPH_RECT, (3, 3)); track(kernel);
-    final dilated = cv.dilate(edges, kernel); track(dilated);
+    final kernel = cv.getStructuringElement(cv.MORPH_RECT, (3, 3));
+    track(kernel);
+    final dilated = cv.dilate(edges, kernel);
+    track(dilated);
 
     // Step 3 – Find contours and pick the largest one that approximates a quad.
     final (foundContours, _) = cv.findContours(
@@ -49,16 +56,13 @@ Uint8List? rectifyDocumentCv(Uint8List jpegBytes) {
     if (quad == null) return null;
 
     // Step 4 – Warp the ORIGINAL-resolution image using the scaled quad.
-    final srcFull = cv.imdecode(jpegBytes, cv.IMREAD_COLOR);
-    try {
-      return _warpToRect(srcFull, quad, scale, w, h);
-    } finally {
-      srcFull.dispose();
-    }
+    return _warpToRect(src, quad, scale, w, h);
   } finally {
     contours?.dispose();
     for (final m in scratch) {
-      try { m.dispose(); } catch (_) {}
+      try {
+        m.dispose();
+      } catch (_) {}
     }
   }
 }
@@ -76,22 +80,28 @@ List<cv.Point2f>? _findDocumentQuad(
 
   for (var i = 0; i < contours.length; i++) {
     final contour = contours[i];
-    final area = cv.contourArea(contour);
-    if (area < bestArea) continue;
+    cv.VecPoint? approx;
+    try {
+      final area = cv.contourArea(contour);
+      if (area < bestArea) continue;
 
-    final perimeter = cv.arcLength(contour, true);
-    final approx = cv.approxPolyDP(contour, 0.02 * perimeter, true);
+      final perimeter = cv.arcLength(contour, true);
+      approx = cv.approxPolyDP(contour, 0.02 * perimeter, true);
 
-    if (approx.length == 4) {
-      // Valid quad.
-      final pts = [for (var j = 0; j < 4; j++) approx[j]];
-      final ordered = _orderQuad(
-        pts.map((p) => cv.Point2f(p.x.toDouble(), p.y.toDouble())).toList(),
-      );
-      if (ordered != null) {
-        bestArea = area;
-        best = ordered;
+      if (approx.length == 4) {
+        // Valid quad.
+        final pts = [for (var j = 0; j < 4; j++) approx[j]];
+        final ordered = _orderQuad(
+          pts.map((p) => cv.Point2f(p.x.toDouble(), p.y.toDouble())).toList(),
+        );
+        if (ordered != null) {
+          bestArea = area;
+          best = ordered;
+        }
       }
+    } finally {
+      approx?.dispose();
+      contour.dispose();
     }
   }
 
@@ -136,10 +146,14 @@ Uint8List _warpToRect(
     final br = quad[2];
     final bl = quad[3];
 
-    final widthA = math.sqrt(math.pow(br.x - bl.x, 2) + math.pow(br.y - bl.y, 2));
-    final widthB = math.sqrt(math.pow(tr.x - tl.x, 2) + math.pow(tr.y - tl.y, 2));
-    final heightA = math.sqrt(math.pow(tr.x - br.x, 2) + math.pow(tr.y - br.y, 2));
-    final heightB = math.sqrt(math.pow(tl.x - bl.x, 2) + math.pow(tl.y - bl.y, 2));
+    final widthA =
+        math.sqrt(math.pow(br.x - bl.x, 2) + math.pow(br.y - bl.y, 2));
+    final widthB =
+        math.sqrt(math.pow(tr.x - tl.x, 2) + math.pow(tr.y - tl.y, 2));
+    final heightA =
+        math.sqrt(math.pow(tr.x - br.x, 2) + math.pow(tr.y - br.y, 2));
+    final heightB =
+        math.sqrt(math.pow(tl.x - bl.x, 2) + math.pow(tl.y - bl.y, 2));
 
     final maxWidth = math.max(widthA, widthB);
     final maxHeight = math.max(heightA, heightB);
@@ -158,7 +172,8 @@ Uint8List _warpToRect(
     M = cv.getPerspectiveTransform2f(srcPts, dstPts);
     warped = cv.warpPerspective(src, M, (outW, outH));
 
-    final (_, encoded) = cv.imencode('.jpg', warped, params: cv.VecI32.fromList([cv.IMWRITE_JPEG_QUALITY, 92]));
+    final (_, encoded) = cv.imencode('.jpg', warped,
+        params: cv.VecI32.fromList([cv.IMWRITE_JPEG_QUALITY, 92]));
     return encoded;
   } finally {
     warped?.dispose();

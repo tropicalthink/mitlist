@@ -20,6 +20,7 @@ import json, re, unicodedata, collections, pathlib
 HERE = pathlib.Path(__file__).resolve().parent
 SRC = HERE / "data" / "seed.json"
 DST = HERE.parent.parent / "frontend" / "assets" / "grocery" / "seed.json"
+VERSION_DST = DST.parent / "seed.version.json"
 CURATED_ALIASES = HERE / "data" / "curated_aliases.jsonl"
 # Mined OCR/typo + fr/es name-variant aliases auto-promoted from corrections
 # (plan 012 A4, typo-like subset only; cross-word mappings stay deferred).
@@ -216,6 +217,8 @@ def main():
 
     DST.write_text(json.dumps({"version": ASSET_VERSION, "items": out},
                               ensure_ascii=False, indent=0))
+    VERSION_DST.write_text(json.dumps({"version": ASSET_VERSION},
+                                      ensure_ascii=False, separators=(",", ":")))
 
     # Copy the ODbL-separable OFF brand aliases into the asset bundle as a
     # DISTINCT, attributed file (not merged into seed.json) so the share-alike

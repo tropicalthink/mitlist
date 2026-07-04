@@ -1,10 +1,13 @@
 String formatCurrency(int cents, String currencyCode) {
   final isNegative = cents < 0;
   final absCents = cents.abs().clamp(0, 999999999);
+  final code = currencyCode.toUpperCase();
   final symbol = currencySymbol(currencyCode);
-  final value = (absCents / 100).toStringAsFixed(2);
+  final value = _zeroDecimalCurrencies.contains(code)
+      ? (absCents / 100).toStringAsFixed(0)
+      : (absCents / 100).toStringAsFixed(2);
   final prefix = isNegative ? '-' : '';
-  if (_postfixCurrencies.contains(currencyCode.toUpperCase())) {
+  if (_postfixCurrencies.contains(code)) {
     return '$prefix$value $symbol';
   }
   return '$prefix$symbol$value';
@@ -72,4 +75,24 @@ const _postfixCurrencies = {
   'DKK',
   'PLN',
   'CZK',
+};
+
+const _zeroDecimalCurrencies = {
+  'BIF',
+  'CLP',
+  'DJF',
+  'GNF',
+  'HUF',
+  'ISK',
+  'JPY',
+  'KMF',
+  'KRW',
+  'PYG',
+  'RWF',
+  'UGX',
+  'VND',
+  'VUV',
+  'XAF',
+  'XOF',
+  'XPF',
 };

@@ -160,8 +160,9 @@ func TestGroupService_JoinGroup(t *testing.T) {
 		invite := &models.GroupInvite{ID: uuid.New(), GroupID: groupID, Code: "code123", ExpiresAt: time.Now().UTC().Add(time.Hour)}
 		groupRepo.On("GetInviteByCode", ctx, "code123").Return(invite, nil)
 		groupRepo.On("GetMembership", ctx, groupID, userID).Return(nil, pgx.ErrNoRows)
+		groupRepo.On("WithTx", ctx, mock.Anything).Return(nil)
+		groupRepo.On("ClaimInvite", ctx, invite.ID, userID).Return(nil)
 		groupRepo.On("CreateMembership", ctx, mock.AnythingOfType("*models.GroupMembership")).Return(nil)
-		groupRepo.On("ConsumeInvite", ctx, invite.ID, userID).Return(nil)
 		groupRepo.On("GetGroupByID", ctx, groupID).Return(&models.Group{ID: groupID}, nil)
 
 		g, err := svc.JoinGroup(ctx, userID, "code123")
@@ -205,6 +206,22 @@ func TestGroupService_JoinGroup(t *testing.T) {
 		_, err := svc.JoinGroup(ctx, userID, "code")
 		require.Error(t, err)
 		assert.IsType(t, &api.ConflictError{}, err)
+	})
+
+	t.Run("claim race creates no membership", func(t *testing.T) {
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewGroupService(groupRepo, nil)
+
+		invite := &models.GroupInvite{ID: uuid.New(), GroupID: groupID, Code: "race", ExpiresAt: time.Now().UTC().Add(time.Hour)}
+		groupRepo.On("GetInviteByCode", ctx, "race").Return(invite, nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(nil, pgx.ErrNoRows)
+		groupRepo.On("WithTx", ctx, mock.Anything).Return(nil)
+		groupRepo.On("ClaimInvite", ctx, invite.ID, userID).Return(pgx.ErrNoRows)
+
+		_, err := svc.JoinGroup(ctx, userID, "race")
+		require.Error(t, err)
+		assert.IsType(t, &api.ValidationError{}, err)
+		groupRepo.AssertNotCalled(t, "CreateMembership", mock.Anything, mock.Anything)
 	})
 }
 

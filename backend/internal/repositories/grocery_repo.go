@@ -3,9 +3,11 @@ package repositories
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/mitlist-app/mitlist/internal/models"
 )
@@ -15,9 +17,24 @@ type GroceryRepository struct {
 	pool DBTX
 }
 
+const deltaPageLimit = 500
+
 // NewGroceryRepository creates a new GroceryRepository.
 func NewGroceryRepository(pool DBTX) *GroceryRepository {
 	return &GroceryRepository{pool: pool}
+}
+
+// WithTx runs fn with a repository bound to a single transaction.
+func (r *GroceryRepository) WithTx(ctx context.Context, fn func(txRepo *GroceryRepository) error) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck // rollback after commit is a no-op
+	if err := fn(&GroceryRepository{pool: tx}); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }
 
 // ---------------------------------------------------------------------------
@@ -27,11 +44,12 @@ func NewGroceryRepository(pool DBTX) *GroceryRepository {
 // NextVersion increments and returns the per-household monotonic version counter.
 func (r *GroceryRepository) NextVersion(ctx context.Context, groupID uuid.UUID) (int64, error) {
 	query := `
-		INSERT INTO grocery_versions (group_id, version)
+		INSERT INTO grocery_versions (group_id, current_version)
 		VALUES ($1, 1)
 		ON CONFLICT (group_id) DO UPDATE
-			SET version = grocery_versions.version + 1
-		RETURNING version`
+			SET current_version = grocery_versions.current_version + 1,
+			    updated_at = now()
+		RETURNING current_version`
 	var v int64
 	err := r.pool.QueryRow(ctx, query, groupID).Scan(&v)
 	return v, err
@@ -39,11 +57,14 @@ func (r *GroceryRepository) NextVersion(ctx context.Context, groupID uuid.UUID) 
 
 // CurrentVersion returns the current version for a group (0 if none yet).
 func (r *GroceryRepository) CurrentVersion(ctx context.Context, groupID uuid.UUID) (int64, error) {
-	query := `SELECT COALESCE(version, 0) FROM grocery_versions WHERE group_id = $1`
+	query := `SELECT current_version FROM grocery_versions WHERE group_id = $1`
 	var v int64
 	err := r.pool.QueryRow(ctx, query, groupID).Scan(&v)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return 0, nil
+	}
 	if err != nil {
-		return 0, nil // no row → version 0
+		return 0, err
 	}
 	return v, nil
 }
@@ -55,6 +76,17 @@ func (r *GroceryRepository) CurrentVersion(ctx context.Context, groupID uuid.UUI
 // GetDelta returns the graph delta for a household since a client cursor.
 func (r *GroceryRepository) GetDelta(ctx context.Context, groupID uuid.UUID, sinceVersion int64) (*models.GroceryGraphDelta, error) {
 	delta := &models.GroceryGraphDelta{}
+	var maxSeen int64
+	noteVersion := func(version int64) {
+		if version > maxSeen {
+			maxSeen = version
+		}
+	}
+	markTruncated := func(count int) {
+		if count == deltaPageLimit {
+			delta.HasMore = true
+		}
+	}
 
 	// Canonical items (include global seed rows for all households).
 	{
@@ -63,12 +95,14 @@ func (r *GroceryRepository) GetDelta(ctx context.Context, groupID uuid.UUID, sin
 			       product_id, is_global, version, created_at, updated_at, deleted_at
 			FROM canonical_items
 			WHERE (group_id = $1 OR is_global = true) AND version > $2
-			ORDER BY version`
-		rows, err := r.pool.Query(ctx, q, groupID, sinceVersion)
+			ORDER BY version
+			LIMIT $3`
+		rows, err := r.pool.Query(ctx, q, groupID, sinceVersion, deltaPageLimit)
 		if err != nil {
 			return nil, err
 		}
 		defer rows.Close()
+		count := 0
 		for rows.Next() {
 			var it models.CanonicalItem
 			if err := rows.Scan(&it.ID, &it.GroupID, &it.NameDe, &it.NameEn,
@@ -76,11 +110,14 @@ func (r *GroceryRepository) GetDelta(ctx context.Context, groupID uuid.UUID, sin
 				&it.Version, &it.CreatedAt, &it.UpdatedAt, &it.DeletedAt); err != nil {
 				return nil, err
 			}
+			count++
+			noteVersion(it.Version)
 			delta.CanonicalItems = append(delta.CanonicalItems, it)
 		}
 		if err := rows.Err(); err != nil {
 			return nil, err
 		}
+		markTruncated(count)
 	}
 
 	// Item aliases.
@@ -90,12 +127,14 @@ func (r *GroceryRepository) GetDelta(ctx context.Context, groupID uuid.UUID, sin
 			       version, created_at, updated_at, deleted_at
 			FROM item_aliases
 			WHERE (group_id = $1 OR group_id = '00000000-0000-0000-0000-000000000000') AND version > $2
-			ORDER BY version`
-		rows, err := r.pool.Query(ctx, q, groupID, sinceVersion)
+			ORDER BY version
+			LIMIT $3`
+		rows, err := r.pool.Query(ctx, q, groupID, sinceVersion, deltaPageLimit)
 		if err != nil {
 			return nil, err
 		}
 		defer rows.Close()
+		count := 0
 		for rows.Next() {
 			var a models.ItemAlias
 			if err := rows.Scan(&a.ID, &a.GroupID, &a.CanonicalItemID, &a.AliasText,
@@ -103,11 +142,14 @@ func (r *GroceryRepository) GetDelta(ctx context.Context, groupID uuid.UUID, sin
 				&a.CreatedAt, &a.UpdatedAt, &a.DeletedAt); err != nil {
 				return nil, err
 			}
+			count++
+			noteVersion(a.Version)
 			delta.ItemAliases = append(delta.ItemAliases, a)
 		}
 		if err := rows.Err(); err != nil {
 			return nil, err
 		}
+		markTruncated(count)
 	}
 
 	// Corrections.
@@ -118,12 +160,14 @@ func (r *GroceryRepository) GetDelta(ctx context.Context, groupID uuid.UUID, sin
 			       version, created_at, applied_at
 			FROM corrections
 			WHERE group_id = $1 AND version > $2
-			ORDER BY version`
-		rows, err := r.pool.Query(ctx, q, groupID, sinceVersion)
+			ORDER BY version
+			LIMIT $3`
+		rows, err := r.pool.Query(ctx, q, groupID, sinceVersion, deltaPageLimit)
 		if err != nil {
 			return nil, err
 		}
 		defer rows.Close()
+		count := 0
 		for rows.Next() {
 			var c models.Correction
 			var correctedValueBytes []byte
@@ -135,11 +179,14 @@ func (r *GroceryRepository) GetDelta(ctx context.Context, groupID uuid.UUID, sin
 			if correctedValueBytes != nil {
 				c.CorrectedValue = json.RawMessage(correctedValueBytes)
 			}
+			count++
+			noteVersion(c.Version)
 			delta.Corrections = append(delta.Corrections, c)
 		}
 		if err := rows.Err(); err != nil {
 			return nil, err
 		}
+		markTruncated(count)
 	}
 
 	// Store aisles.
@@ -149,12 +196,14 @@ func (r *GroceryRepository) GetDelta(ctx context.Context, groupID uuid.UUID, sin
 			       confidence, version, created_at, updated_at, deleted_at
 			FROM store_aisles
 			WHERE group_id = $1 AND version > $2
-			ORDER BY version`
-		rows, err := r.pool.Query(ctx, q, groupID, sinceVersion)
+			ORDER BY version
+			LIMIT $3`
+		rows, err := r.pool.Query(ctx, q, groupID, sinceVersion, deltaPageLimit)
 		if err != nil {
 			return nil, err
 		}
 		defer rows.Close()
+		count := 0
 		for rows.Next() {
 			var a models.StoreAisle
 			if err := rows.Scan(&a.ID, &a.GroupID, &a.StoreID, &a.CanonicalItemID,
@@ -162,11 +211,14 @@ func (r *GroceryRepository) GetDelta(ctx context.Context, groupID uuid.UUID, sin
 				&a.CreatedAt, &a.UpdatedAt, &a.DeletedAt); err != nil {
 				return nil, err
 			}
+			count++
+			noteVersion(a.Version)
 			delta.StoreAisles = append(delta.StoreAisles, a)
 		}
 		if err := rows.Err(); err != nil {
 			return nil, err
 		}
+		markTruncated(count)
 	}
 
 	// Purchase history.
@@ -176,23 +228,28 @@ func (r *GroceryRepository) GetDelta(ctx context.Context, groupID uuid.UUID, sin
 			       version, purchased_at
 			FROM purchase_history
 			WHERE group_id = $1 AND version > $2
-			ORDER BY version`
-		rows, err := r.pool.Query(ctx, q, groupID, sinceVersion)
+			ORDER BY version
+			LIMIT $3`
+		rows, err := r.pool.Query(ctx, q, groupID, sinceVersion, deltaPageLimit)
 		if err != nil {
 			return nil, err
 		}
 		defer rows.Close()
+		count := 0
 		for rows.Next() {
 			var p models.PurchaseHistory
 			if err := rows.Scan(&p.ID, &p.GroupID, &p.CanonicalItemID, &p.ListItemID,
 				&p.Quantity, &p.Unit, &p.Version, &p.PurchasedAt); err != nil {
 				return nil, err
 			}
+			count++
+			noteVersion(p.Version)
 			delta.PurchaseHistory = append(delta.PurchaseHistory, p)
 		}
 		if err := rows.Err(); err != nil {
 			return nil, err
 		}
+		markTruncated(count)
 	}
 
 	// Item co-occurrence.
@@ -201,31 +258,61 @@ func (r *GroceryRepository) GetDelta(ctx context.Context, groupID uuid.UUID, sin
 			SELECT group_id, item_a_id, item_b_id, count, last_seen_at, version
 			FROM item_cooccurrence
 			WHERE group_id = $1 AND version > $2
-			ORDER BY version`
-		rows, err := r.pool.Query(ctx, q, groupID, sinceVersion)
+			ORDER BY version
+			LIMIT $3`
+		rows, err := r.pool.Query(ctx, q, groupID, sinceVersion, deltaPageLimit)
 		if err != nil {
 			return nil, err
 		}
 		defer rows.Close()
+		count := 0
 		for rows.Next() {
 			var co models.ItemCooccurrence
 			if err := rows.Scan(&co.GroupID, &co.ItemAID, &co.ItemBID,
 				&co.Count, &co.LastSeenAt, &co.Version); err != nil {
 				return nil, err
 			}
+			count++
+			noteVersion(co.Version)
 			delta.ItemCooccurrence = append(delta.ItemCooccurrence, co)
 		}
 		if err := rows.Err(); err != nil {
 			return nil, err
 		}
+		markTruncated(count)
 	}
 
+	if delta.HasMore {
+		delta.MaxVersion = maxSeen
+	}
 	return delta, nil
 }
 
 // ---------------------------------------------------------------------------
 // Corrections — append-only write + alias materialisation
 // ---------------------------------------------------------------------------
+
+// UpsertCanonicalItem inserts a household canonical item if the server does not
+// already know the deterministic client bridge id.
+func (r *GroceryRepository) UpsertCanonicalItem(
+	ctx context.Context,
+	id uuid.UUID,
+	groupID uuid.UUID,
+	nameDe string,
+	nameEn string,
+	category string,
+	defaultUnit string,
+	version int64,
+) error {
+	now := time.Now().UTC()
+	query := `
+		INSERT INTO canonical_items
+			(id, group_id, name_de, name_en, category, default_unit, is_global, version, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, false, $7, $8, $8)
+		ON CONFLICT (id) DO NOTHING`
+	_, err := r.pool.Exec(ctx, query, id, groupID, nameDe, nameEn, category, defaultUnit, version, now)
+	return err
+}
 
 // InsertCorrection appends a correction event and bumps the household version.
 // It also upserts the corresponding item_aliases row so the correction takes
@@ -236,6 +323,7 @@ func (r *GroceryRepository) InsertCorrection(ctx context.Context, c *models.Corr
 	}
 	c.CreatedAt = time.Now().UTC()
 	c.Version = version
+	c.Source = correctionSourceForDB(c.Source)
 
 	correctedValueBytes, err := json.Marshal(c.CorrectedValue)
 	if err != nil {
@@ -252,6 +340,15 @@ func (r *GroceryRepository) InsertCorrection(ctx context.Context, c *models.Corr
 		c.ResolvedCanonicalItemID, correctedValueBytes, c.Source, c.Version, c.CreatedAt,
 	)
 	return err
+}
+
+func correctionSourceForDB(source string) string {
+	switch source {
+	case "manual_review", "auto_accept", "import":
+		return source
+	default:
+		return "manual_review"
+	}
 }
 
 // AisleFeedbackItem is a single drag-to-reorder event from the client.
@@ -329,7 +426,10 @@ func (r *GroceryRepository) UpsertAlias(ctx context.Context, groupID, canonicalI
 			(id, group_id, canonical_item_id, alias_text, lang, source, weight, version, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, 1, $7, $8, $8)
 		ON CONFLICT (group_id, alias_text) DO UPDATE
-			SET weight    = item_aliases.weight + 1,
+			SET canonical_item_id = EXCLUDED.canonical_item_id,
+			    lang      = EXCLUDED.lang,
+			    source    = EXCLUDED.source,
+			    weight    = item_aliases.weight + 1,
 			    version   = EXCLUDED.version,
 			    updated_at = EXCLUDED.updated_at`
 	_, err := r.pool.Exec(ctx, query,

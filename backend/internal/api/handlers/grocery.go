@@ -1,14 +1,31 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/services"
+)
+
+const (
+	maxCorrectionRawTextLength = 200
+	maxCorrectionLangLength    = 8
+	maxAisleFeedbackBatchSize  = 200
+	maxAisleNameLength         = 64
+	maxAisleSortOrder          = 100000
+)
+
+// These values mirror CHECK constraints in migration
+// 000027_add_grocery_graph.up.sql.
+var (
+	validCorrectionKinds  = map[string]struct{}{"alias": {}, "canonical": {}, "aisle": {}, "unit": {}, "reject": {}}
+	validCorrectionScopes = map[string]struct{}{"household": {}, "user": {}}
 )
 
 // GroceryHandler exposes the grocery graph sync endpoints.
@@ -71,6 +88,10 @@ func (h *GroceryHandler) UpdateAisles(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, err)
 		return
 	}
+	if err := validateAisleFeedback(req); err != nil {
+		api.RespondError(w, err)
+		return
+	}
 
 	version, err := h.svc.UpdateAisles(r.Context(), userID, groupID, req)
 	if err != nil {
@@ -104,11 +125,20 @@ func (h *GroceryHandler) RecordCorrection(w http.ResponseWriter, r *http.Request
 		api.RespondError(w, &api.ValidationError{Field: "raw_text", Message: "raw_text is required"})
 		return
 	}
+	req.RawText = strings.TrimSpace(req.RawText)
 	if req.Kind == "" {
 		req.Kind = "alias"
 	}
 	if req.Scope == "" {
 		req.Scope = "household"
+	}
+	if err := validateCorrection(req); err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	if req.Kind == "alias" && req.ResolvedCanonicalID != nil && req.CanonicalItem == nil {
+		api.RespondError(w, &api.ValidationError{Field: "canonical_item", Message: "canonical_item is required"})
+		return
 	}
 
 	version, err := h.svc.RecordCorrection(r.Context(), userID, groupID, req)
@@ -118,4 +148,44 @@ func (h *GroceryHandler) RecordCorrection(w http.ResponseWriter, r *http.Request
 	}
 
 	api.RespondJSON(w, http.StatusOK, map[string]any{"version": version})
+}
+
+func validateCorrection(req services.RecordCorrectionRequest) error {
+	if req.RawText == "" {
+		return &api.ValidationError{Field: "raw_text", Message: "raw_text is required"}
+	}
+	if len(req.RawText) > maxCorrectionRawTextLength {
+		return &api.ValidationError{Field: "raw_text", Message: "raw_text exceeds maximum length"}
+	}
+	if _, ok := validCorrectionKinds[req.Kind]; !ok {
+		return &api.ValidationError{Field: "kind", Message: "kind must be alias, canonical, aisle, unit, or reject"}
+	}
+	if _, ok := validCorrectionScopes[req.Scope]; !ok {
+		return &api.ValidationError{Field: "scope", Message: "scope must be household or user"}
+	}
+	if len(req.Lang) > maxCorrectionLangLength {
+		return &api.ValidationError{Field: "lang", Message: "lang exceeds maximum length"}
+	}
+	return nil
+}
+
+func validateAisleFeedback(req services.AisleFeedbackRequest) error {
+	if len(req.Aisles) > maxAisleFeedbackBatchSize {
+		return &api.ValidationError{Field: "aisles", Message: "aisles exceeds maximum batch size"}
+	}
+	for i, item := range req.Aisles {
+		if len(item.Aisle) > maxAisleNameLength {
+			return &api.ValidationError{
+				Field:   "aisles",
+				Message: fmt.Sprintf("aisles[%d].aisle exceeds maximum length", i),
+			}
+		}
+		if item.SortOrder < 0 || item.SortOrder > maxAisleSortOrder {
+			return &api.ValidationError{
+				Field:   "aisles",
+				Message: fmt.Sprintf("aisles[%d].sort_order must be between 0 and %d", i, maxAisleSortOrder),
+			}
+		}
+	}
+	return nil
 }

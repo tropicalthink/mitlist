@@ -38,6 +38,7 @@ type AuthRepo interface {
 
 // GroupRepo is the interface for group repository operations.
 type GroupRepo interface {
+	WithTx(ctx context.Context, fn func(txRepo GroupRepo) error) error
 	CreateGroup(ctx context.Context, group *models.Group) error
 	GetGroupByID(ctx context.Context, id uuid.UUID) (*models.Group, error)
 	ListGroupsByUser(ctx context.Context, userID uuid.UUID, limit, offset int) ([]models.Group, error)
@@ -50,6 +51,7 @@ type GroupRepo interface {
 	CreateInvite(ctx context.Context, invite *models.GroupInvite) error
 	GetInviteByCode(ctx context.Context, code string) (*models.GroupInvite, error)
 	ConsumeInvite(ctx context.Context, inviteID, userID uuid.UUID) error
+	ClaimInvite(ctx context.Context, inviteID, userID uuid.UUID) error
 	CreatePendingClaim(ctx context.Context, claim *models.PendingClaim) error
 	GetPendingClaimByCode(ctx context.Context, code string) (*models.PendingClaim, error)
 	GetPendingClaimByID(ctx context.Context, id uuid.UUID) (*models.PendingClaim, error)
@@ -133,6 +135,7 @@ type ChoreRepo interface {
 	DeleteChore(ctx context.Context, id uuid.UUID) error
 	CreateRotationState(ctx context.Context, state *models.ChoreRotationState) error
 	GetRotationState(ctx context.Context, choreID uuid.UUID) (*models.ChoreRotationState, error)
+	GetRotationStatesByChoreIDs(ctx context.Context, choreIDs []uuid.UUID) ([]models.ChoreRotationState, error)
 	UpdateRotationState(ctx context.Context, state *models.ChoreRotationState) error
 	BulkUpdateRotationStates(ctx context.Context, states []models.ChoreRotationState) error
 	CreateAssignment(ctx context.Context, assignment *models.ChoreAssignment) error
@@ -252,6 +255,7 @@ type AttachmentRepo interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*models.Attachment, error)
 	UpdateObjectKey(ctx context.Context, id uuid.UUID, objectKey string) error
 	UpdateStatus(ctx context.Context, id uuid.UUID, status models.AttachmentStatus) error
+	UpdateStatusAndByteSize(ctx context.Context, id uuid.UUID, status models.AttachmentStatus, byteSize int64) error
 	Delete(ctx context.Context, id uuid.UUID) error
 	SumReadyBytesByGroup(ctx context.Context, groupID uuid.UUID) (int64, error)
 }

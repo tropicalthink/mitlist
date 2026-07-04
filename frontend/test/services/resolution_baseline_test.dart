@@ -23,8 +23,8 @@ import 'package:mitlist/storage/app_database.dart';
 //
 // This is the "where are we today" instrument. It is deliberately NOT a strict
 // pass/fail gate on accuracy — it asserts only that the harness ran over the
-// full dataset and prints the metrics. Skips cleanly when the dataset file is
-// absent (e.g. a fresh clone without intelligence/ml/data).
+// full dataset and prints the metrics. The dataset must be present in a full
+// checkout, so a missing file is a broken guard, not a skip.
 
 const _globalGroup = '__global__';
 const _evalPath = '../intelligence/ml/data/resolution_eval.jsonl';
@@ -108,8 +108,7 @@ void main() {
   test('BASELINE: current alias+fuzzy resolver over the real eval set', () async {
     final file = File(_evalPath);
     if (!file.existsSync()) {
-      markTestSkipped('eval dataset not present at $_evalPath');
-      return;
+      fail('eval dataset missing at $_evalPath - this guard must not pass vacuously');
     }
     final cases = ResolutionEvalCase.parseJsonl(await file.readAsString());
     expect(cases, isNotEmpty, reason: 'eval dataset should have rows');

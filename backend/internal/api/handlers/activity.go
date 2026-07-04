@@ -45,6 +45,9 @@ func (h *ActivityHandler) ListActivity(w http.ResponseWriter, r *http.Request) {
 			limit = parsed
 		}
 	}
+	if limit > 500 {
+		limit = 500
+	}
 
 	events, err := h.service.ListRecentActivity(r.Context(), user, groupID, limit)
 	if err != nil {

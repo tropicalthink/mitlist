@@ -945,8 +945,7 @@ void main() {
       ],
     );
 
-    expect(
-        find.text('Failed to load. Please try again.'), findsOneWidget);
+    expect(find.text('Failed to load. Please try again.'), findsOneWidget);
     expect(
         find.text('RETRY'), findsOneWidget); // solid variant renders uppercase
   });
@@ -1773,6 +1772,7 @@ class FakeListRepository implements ListRepository {
     required double amount,
     String unit = '',
     String note = '',
+    String? canonicalItemId,
   }) async =>
       ListItem(
         id: '',
@@ -1780,6 +1780,7 @@ class FakeListRepository implements ListRepository {
         name: name,
         quantity: amount,
         unit: unit,
+        canonicalItemId: canonicalItemId,
         checked: false,
         position: 0,
         createdAt: DateTime.now(),

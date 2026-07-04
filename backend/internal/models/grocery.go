@@ -111,9 +111,11 @@ type ScanArtifact struct {
 
 // GroceryGraphDelta is the payload returned by GET /grocery/graph?since_version=N.
 // It carries all rows (including tombstones) changed past the client's cursor,
-// plus the new max version the client should store.
+// plus the new max version the client should store. HasMore means MaxVersion is
+// a page cursor, not the current server version.
 type GroceryGraphDelta struct {
 	MaxVersion       int64              `json:"max_version"`
+	HasMore          bool               `json:"has_more"`
 	CanonicalItems   []CanonicalItem    `json:"canonical_items"`
 	ItemAliases      []ItemAlias        `json:"item_aliases"`
 	Corrections      []Correction       `json:"corrections"`

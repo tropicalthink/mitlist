@@ -154,6 +154,10 @@ func (s *Service) broadcastExcluding(groupID, excludeUserID uuid.UUID, payload s
 
 // sendWebPush sends a single web-push notification and prunes the subscription on 404/410.
 func (s *Service) sendWebPush(ctx context.Context, sub models.PushSubscription, payload string) {
+	if err := ValidatePushEndpoint(sub.Endpoint); err != nil {
+		s.log.Warn().Err(err).Str("endpoint", sub.Endpoint).Msg("web push endpoint failed send-time validation")
+		return
+	}
 	resp, err := webpush.SendNotificationWithContext(
 		ctx,
 		[]byte(payload),

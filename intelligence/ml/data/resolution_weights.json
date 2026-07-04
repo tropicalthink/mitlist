@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "feature_names": [
+    "aliasStringSim",
+    "canonicalNameSim",
+    "classifierProb",
+    "embedderCosine",
+    "sourceAgreement",
+    "isHouseholdAlias",
+    "householdFreq",
+    "recency",
+    "listCooccurrence",
+    "isExactAlias"
+  ],
+  "weights": [
+    3.965267,
+    6.619987,
+    0.0,
+    0.0,
+    0.360802,
+    0.0,
+    2.544656,
+    0.0,
+    0.0,
+    0.147892
+  ],
+  "bias": -6.198304,
+  "tau_auto": 0.9766,
+  "tau_review": 0.5
+}

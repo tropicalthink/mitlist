@@ -1,10 +1,13 @@
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
+import 'package:logger/logger.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 
 import 'grocery_classifier_math.dart';
 import 'grocery_classifier_types.dart';
+
+final Logger _log = Logger();
 
 /// TFLite-backed grocery classifier inference (mobile/desktop only).
 class GroceryClassifierInference {
@@ -55,7 +58,11 @@ class GroceryClassifierInference {
       _vocabIndex = {
         for (var i = 0; i < vocabList.length; i++) vocabList[i]: i,
       };
-    } catch (_) {
+    } catch (e) {
+      _log.w(
+        'grocery classifier assets unavailable, classifier disabled: '
+        '$_modelAsset, $_labelsAsset, $_vocabAsset: $e',
+      );
       _interpreter?.close();
       _interpreter = null;
       _unavailable = true;
