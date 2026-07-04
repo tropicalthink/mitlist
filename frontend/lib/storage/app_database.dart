@@ -394,7 +394,7 @@ class AppDatabase extends _$AppDatabase {
   /// Queried with `alias_text_fts MATCH '"token*"'` (FTS5 prefix syntax on a
   /// single term, or `"word*" "word2*"` for multi-word). Results are JOIN'd back
   /// to item_aliases_table to filter by group_id and deleted_at.
-  Future<void> _createAliasFts() async {
+  Future<void> createAliasFts() async {
     // Content FTS5 table — content= makes the tokenized data live in SQLite's
     // FTS index while the source columns remain in item_aliases_table.
     await customStatement('''
@@ -432,12 +432,36 @@ CREATE TRIGGER IF NOT EXISTS item_aliases_fts_au
 ''');
   }
 
+  /// Drops the FTS-sync triggers so a large bulk insert into
+  /// `item_aliases_table` (e.g. the initial grocery seed, ~280k rows) doesn't
+  /// pay a per-row tokenize-and-index cost on every insert. Callers MUST
+  /// re-run [createAliasFts] (idempotent, `IF NOT EXISTS`) and [rebuildAliasFts]
+  /// afterwards so the FTS index reflects the bulk-inserted rows again —
+  /// ideally within the same transaction as the bulk insert, so an interrupted
+  /// seed rolls back cleanly instead of leaving the index stale.
+  Future<void> dropAliasFtsTriggers() async {
+    await customStatement('DROP TRIGGER IF EXISTS item_aliases_fts_ai;');
+    await customStatement('DROP TRIGGER IF EXISTS item_aliases_fts_ad;');
+    await customStatement('DROP TRIGGER IF EXISTS item_aliases_fts_au;');
+  }
+
+  /// Rebuilds the `item_aliases_fts` index from `item_aliases_table` in one
+  /// bulk pass (FTS5's documented 'rebuild' command) — dramatically cheaper
+  /// than the per-row trigger-maintained index for a large bulk insert. Only
+  /// correct to call while the FTS triggers are down (see
+  /// [dropAliasFtsTriggers]); otherwise rows inserted after triggers are
+  /// restored would already be indexed once and this would re-index them.
+  Future<void> rebuildAliasFts() async {
+    await customStatement(
+        "INSERT INTO item_aliases_fts(item_aliases_fts) VALUES ('rebuild');");
+  }
+
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) async {
           await m.createAll();
           await _createIndexes();
-          await _createAliasFts();
+          await createAliasFts();
         },
         onUpgrade: (m, from, to) async {
           if (from < 2) {
@@ -509,7 +533,7 @@ FROM list_items_table;
             // Add FTS5 virtual table over alias_text for word-level prefix
             // search (e.g. "pad" → "Breast Pads", "corn" → "Corn Flakes").
             // Backfill the index from existing rows so upgrades work correctly.
-            await _createAliasFts();
+            await createAliasFts();
             await customStatement(
                 'INSERT INTO item_aliases_fts(rowid, alias_text) '
                 'SELECT rowid, alias_text FROM item_aliases_table;');
@@ -1348,6 +1372,72 @@ FROM list_items_table;
     await batch((b) {
       b.insertAllOnConflictUpdate(
           itemAliasesTable, rows.toList(growable: false));
+    });
+  }
+
+  /// Fast-path bulk insert for `item_aliases_table`, bypassing the
+  /// Companion/Table insert machinery that [upsertItemAliases] uses.
+  ///
+  /// For the one-time ~280k-row grocery seed, [upsertItemAliases] measured
+  /// ~6-7s (with FTS triggers already dropped, see [dropAliasFtsTriggers]) —
+  /// this measured ~1.8s for the same data. There is nothing wrong with
+  /// [upsertItemAliases] for normal-sized writes; the gap is Companion→SQL
+  /// conversion overhead that only matters at seed-sized row counts, so this
+  /// method exists solely for that bulk-load path, not as a general
+  /// replacement.
+  ///
+  /// Each row in [rows] must be exactly:
+  /// `[id, groupId, canonicalItemId, aliasText, lang, source, weight,
+  /// version, createdAt, updatedAt]` — the two [DateTime]s are converted to
+  /// epoch seconds here to match how drift itself encodes `DateTimeColumn`
+  /// (confirmed empirically: `typeof(created_at)` is `integer`, matching
+  /// seconds-since-epoch, not milliseconds or ISO text).
+  Future<void> bulkInsertItemAliasesRaw(
+    List<
+            (
+              String id,
+              String groupId,
+              String canonicalItemId,
+              String aliasText,
+              String lang,
+              String source,
+              int weight,
+              int version,
+              DateTime createdAt,
+              DateTime updatedAt,
+            )>
+        rows,
+  ) async {
+    const sql = '''
+INSERT INTO item_aliases_table
+  (id, group_id, canonical_item_id, alias_text, lang, source, weight, version, created_at, updated_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  ON CONFLICT(id) DO UPDATE SET
+    group_id = excluded.group_id,
+    canonical_item_id = excluded.canonical_item_id,
+    alias_text = excluded.alias_text,
+    lang = excluded.lang,
+    source = excluded.source,
+    weight = excluded.weight,
+    version = excluded.version,
+    created_at = excluded.created_at,
+    updated_at = excluded.updated_at;
+''';
+    await batch((b) {
+      for (final r in rows) {
+        b.customStatement(sql, [
+          r.$1,
+          r.$2,
+          r.$3,
+          r.$4,
+          r.$5,
+          r.$6,
+          r.$7,
+          r.$8,
+          r.$9.toUtc().millisecondsSinceEpoch ~/ 1000,
+          r.$10.toUtc().millisecondsSinceEpoch ~/ 1000,
+        ]);
+      }
     });
   }
 
