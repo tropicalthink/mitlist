@@ -5583,6 +5583,60 @@ abstract class AppLocalizations {
   /// **'Set price'**
   String get listItemSetPrice;
 
+  /// Action: change item quantity/unit
+  ///
+  /// In en, this message translates to:
+  /// **'Change quantity'**
+  String get listItemChangeQuantity;
+
+  /// Input label for item quantity
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get listItemQuantityAmount;
+
+  /// Input label for item unit
+  ///
+  /// In en, this message translates to:
+  /// **'Unit (optional)'**
+  String get listItemQuantityUnit;
+
+  /// Action: add a note to an item
+  ///
+  /// In en, this message translates to:
+  /// **'Add note'**
+  String get listItemAddNote;
+
+  /// Action: edit an item's note
+  ///
+  /// In en, this message translates to:
+  /// **'Edit note'**
+  String get listItemEditNote;
+
+  /// Input label for item note
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get listItemNoteLabel;
+
+  /// Semantics label for the list progress stripe
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} done'**
+  String listDetailProgress(int done, int total);
+
+  /// Open (unchecked) item count on a hub list card
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{All done} =1{1 left} other{{count} left}}'**
+  String listOpenCount(num count);
+
+  /// Toggle list view
+  ///
+  /// In en, this message translates to:
+  /// **'List view'**
+  String get listSortListView;
+
   /// Action: delete item from list
   ///
   /// In en, this message translates to:

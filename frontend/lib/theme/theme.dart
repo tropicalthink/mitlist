@@ -35,6 +35,10 @@ class MitlistTheme {
       onErrorContainer: MitlistColors.error900,
       surface: MitlistColors.surfaceSoft,
       onSurface: MitlistColors.textPrimary,
+      // Without this, Flutter falls back to `surface` for surfaceContainerLow,
+      // which made every "quiet panel" (done-section header, running-low
+      // strip, group banner…) visually identical to plain rows in light mode.
+      surfaceContainerLow: MitlistColors.surfaceSecondary,
       surfaceContainerHighest: MitlistColors.surfaceSecondary,
       onSurfaceVariant: MitlistColors.textSecondary,
       outline: MitlistColors.borderPrimary,
@@ -242,6 +246,9 @@ class MitlistTheme {
       onErrorContainer: MitlistColors.error50,
       surface: MitlistColors.neutral950,
       onSurface: MitlistColors.surfaceSoft,
+      // See the light scheme: keeps quiet panels distinct from the base
+      // surface instead of falling back to it.
+      surfaceContainerLow: MitlistColors.neutral900,
       surfaceContainerHighest: MitlistColors.neutral900,
       onSurfaceVariant: MitlistColors.neutral300,
       outline: MitlistColors.surfaceSoft,

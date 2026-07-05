@@ -3165,6 +3165,44 @@ class AppLocalizationsFr extends AppLocalizations {
   String get listItemSetPrice => 'Définir le prix';
 
   @override
+  String get listItemChangeQuantity => 'Modifier la quantité';
+
+  @override
+  String get listItemQuantityAmount => 'Quantité';
+
+  @override
+  String get listItemQuantityUnit => 'Unité (facultatif)';
+
+  @override
+  String get listItemAddNote => 'Ajouter une note';
+
+  @override
+  String get listItemEditNote => 'Modifier la note';
+
+  @override
+  String get listItemNoteLabel => 'Note';
+
+  @override
+  String listDetailProgress(int done, int total) {
+    return '$done sur $total faits';
+  }
+
+  @override
+  String listOpenCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count restants',
+      one: '1 restant',
+      zero: 'Tout est fait',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listSortListView => 'Vue liste';
+
+  @override
   String get listItemDeleteAction => 'Supprimer';
 
   @override
