@@ -53,31 +53,41 @@ class GrocerySeedLoader {
     final assetVersion = (json['version'] as num?)?.toInt() ?? 0;
     if (existing.isNotEmpty && installedVersion >= assetVersion) return;
 
-    // The full seed is ~3k canonical rows + ~280k alias rows. Two costs that
-    // otherwise share the single serial DB connection with interactive writes
-    // (e.g. a list-item add issued moments later queues behind whichever of
-    // these is in flight), measured at ~12-15s combined without the two
-    // mitigations below:
-    //  1. Each chunked upsert call is its own commit by default (~70+ separate
-    //     fsyncs) — wrapping the whole clear+reingest in one transaction
-    //     collapses that to a single commit.
+    // The full seed is ~3k canonical rows + ~280k alias rows, sharing the
+    // single serial DB connection with interactive writes. Two rules keep it
+    // from wrecking the app while it runs:
+    //  1. NO single wrapping transaction. SQLite/drift serialize the whole
+    //     connection while a transaction is open, so one big clear+reingest
+    //     transaction makes every interactive write (e.g. adding a list item
+    //     moments after first launch) queue for the seed's full duration —
+    //     measured 7+s on desktop, tens of seconds on a phone in debug. Each
+    //     chunked insert below commits on its own instead, so interactive
+    //     writes interleave between chunks and wait at most one chunk
+    //     (~50-100ms). Atomicity is not lost where it matters: the version key
+    //     is written only at the very end, so an interrupted seed simply
+    //     re-runs (clear + reingest) on the next launch, and suggestion
+    //     queries gate on the seed future rather than on table state.
     //  2. `item_aliases_table` maintains a full-text index via per-row
     //     triggers (see `createAliasFts`); at ~280k rows, per-row
     //     tokenize-and-index is the single biggest cost. Dropping the
-    //     triggers for the bulk insert and rebuilding the FTS index in one
-    //     bulk pass afterward (FTS5's `rebuild` command) cuts this from
-    //     several seconds of per-row trigger overhead to ~2-3s total —
-    //     measured ~6-7x faster end to end for the alias insert.
-    await _db.transaction(() async {
-      if (existing.isNotEmpty) {
-        await _db.clearGlobalSeed(_globalGroupId);
-      }
-      await _db.dropAliasFtsTriggers();
-      await _ingestSeed(json);
-      await _db.rebuildAliasFts();
-      await _db.createAliasFts(); // idempotent: recreates the dropped triggers
-      await _db.setGroceryVersion(_globalGroupId, assetVersion);
-    });
+    //     triggers for the bulk work and rebuilding the FTS index in one
+    //     bulk pass afterward (FTS5's `rebuild` command) measured ~6-7x
+    //     faster end to end for the alias insert. Dropping them *before* the
+    //     clear also keeps a reseed's ~280k-row delete from firing per-row
+    //     FTS delete triggers; the rebuild afterwards reflects the deletes.
+    // Same trick for the three secondary indexes on item_aliases_table:
+    // maintaining them incrementally across ~280k inserts costs more than one
+    // bulk sort per index at the end.
+    await _db.dropAliasFtsTriggers();
+    await _db.dropAliasIndexes();
+    if (existing.isNotEmpty) {
+      await _db.clearGlobalSeed(_globalGroupId);
+    }
+    await _ingestSeed(json);
+    await _db.createAliasIndexes();
+    await _db.rebuildAliasFts();
+    await _db.createAliasFts(); // idempotent: recreates the dropped triggers
+    await _db.setGroceryVersion(_globalGroupId, assetVersion);
   }
 
   Future<int?> _readSidecarVersion() async {

@@ -60,6 +60,10 @@ class ListDetailController extends ChangeNotifier {
   Timer? _suggestDebounce;
   final Map<String, List<ListItemPhoto>> _photosByItemId = {};
   final Set<String> _photoLoadAttempted = {};
+
+  /// Max in-flight photo-metadata requests while hydrating a list's
+  /// thumbnails (see [_loadPhotosForItems]).
+  static const int _photoLoadConcurrency = 4;
   String _groupCurrency = 'USD';
   String? _userId;
   int _suggestGeneration = 0;
@@ -232,21 +236,35 @@ class ListDetailController extends ChangeNotifier {
       _photoLoadAttempted.add(item.id);
     }
 
-    final batch = <String, List<ListItemPhoto>>{};
-    await Future.wait(
-      toLoad.map((item) async {
+    // Bounded worker pool rather than one request per item all at once — a
+    // 50-item list would otherwise fire 50 concurrent requests the moment the
+    // screen opens (and offline, 50 doomed ones). Workers pull from a shared
+    // cursor; the UI is notified as each photo lands so early rows get their
+    // thumbnails without waiting for the whole list. Most items have no
+    // photo, so per-hit notifies stay rare.
+    var next = 0;
+    Future<void> worker() async {
+      while (!_disposed) {
+        final i = next++;
+        if (i >= toLoad.length) return;
+        final item = toLoad[i];
         try {
           final photos = await service.listItemPhotos(
             groupId: groupId,
             itemId: item.id,
           );
-          if (photos.isNotEmpty) batch[item.id] = photos;
+          if (photos.isNotEmpty && !_disposed) {
+            _photosByItemId[item.id] = photos;
+            _notify();
+          }
         } catch (_) {}
-      }),
-    );
-    if (_disposed || batch.isEmpty) return;
-    _photosByItemId.addAll(batch);
-    _notify();
+      }
+    }
+
+    await Future.wait([
+      for (var w = 0; w < _photoLoadConcurrency && w < toLoad.length; w++)
+        worker(),
+    ]);
   }
 
   // ---- Sections / search ----------------------------------------------------
@@ -512,6 +530,30 @@ class ListDetailController extends ChangeNotifier {
     _dirty = true;
   }
 
+  /// Patches name/quantity/unit/note on an item through the same offline-first
+  /// path as [setItemPrice]. Only non-null fields are sent.
+  Future<void> updateItemFields(
+    ListItem item, {
+    String? name,
+    double? quantity,
+    String? unit,
+    String? note,
+  }) async {
+    final repo = await ref.read(listRepositoryProvider.future);
+    await repo.updateItemOfflineFirst(
+      listId,
+      item.id,
+      UpdateListItemRequest(
+        name: name,
+        quantity: quantity,
+        unit: unit,
+        note: note,
+      ),
+    );
+    if (_disposed) return;
+    _dirty = true;
+  }
+
   Future<void> renameList(String newName) async {
     final service = _service;
     if (service == null) return;
@@ -697,6 +739,19 @@ class ListDetailController extends ChangeNotifier {
     if (groupId == null) return;
     final q = (query ?? '').trim();
     final gen = ++_suggestGeneration;
+
+    // The local grocery/alias tables are populated by a heavy one-shot seed
+    // (~280k rows) kicked off at app bootstrap. Until it finishes the alias
+    // table is empty or partial — a query fired while the seed is still in
+    // flight would return nothing (or a fragment) with no later re-query,
+    // leaving suggestions blank/wrong for anyone who types before the seed
+    // lands. Await it (best-effort) so this query runs against the fully
+    // populated table; the generation guard below discards this call if a
+    // newer keystroke supersedes it while we wait.
+    try {
+      await ref.read(grocerySeedProvider.future);
+    } catch (_) {}
+    if (_disposed || _suggestGeneration != gen) return;
 
     // Local grocery seed first — alias-powered, on-device.
     final grocery =

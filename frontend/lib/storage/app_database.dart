@@ -342,7 +342,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   /// Creates all hot-query indexes.  Called from both onCreate and the v4
   /// onUpgrade block so that fresh installs and upgrades both get the indexes.
@@ -367,6 +367,14 @@ class AppDatabase extends _$AppDatabase {
         'CREATE INDEX IF NOT EXISTS idx_item_aliases_table_group_id ON item_aliases_table(group_id);');
     await customStatement(
         'CREATE INDEX IF NOT EXISTS idx_item_aliases_table_alias_text ON item_aliases_table(alias_text);');
+    // Composite (group_id, alias_text) — the typed-autocomplete prefix search
+    // filters group_id AND range-scans alias_text on every keystroke. Neither
+    // single-column index lets SQLite do both: with ~280k rows all under the
+    // '__global__' scope, seeking group_id still leaves a full alias_text scan.
+    // This composite lets one seek land on the group and range the prefix,
+    // turning a ~full-table scan per keystroke into a bounded index range.
+    await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_item_aliases_group_alias ON item_aliases_table(group_id, alias_text);');
     // corrections_table
     await customStatement(
         'CREATE INDEX IF NOT EXISTS idx_corrections_table_group_id ON corrections_table(group_id);');
@@ -435,14 +443,40 @@ CREATE TRIGGER IF NOT EXISTS item_aliases_fts_au
   /// Drops the FTS-sync triggers so a large bulk insert into
   /// `item_aliases_table` (e.g. the initial grocery seed, ~280k rows) doesn't
   /// pay a per-row tokenize-and-index cost on every insert. Callers MUST
-  /// re-run [createAliasFts] (idempotent, `IF NOT EXISTS`) and [rebuildAliasFts]
-  /// afterwards so the FTS index reflects the bulk-inserted rows again —
-  /// ideally within the same transaction as the bulk insert, so an interrupted
-  /// seed rolls back cleanly instead of leaving the index stale.
+  /// re-run [rebuildAliasFts] and [createAliasFts] (idempotent, `IF NOT
+  /// EXISTS`) afterwards so the FTS index reflects the bulk-inserted rows
+  /// again. Deliberately NOT wrapped in one transaction with the bulk insert:
+  /// a transaction spanning the whole seed serializes every interactive write
+  /// behind it for its full duration (see `GrocerySeedLoader`). An interrupted
+  /// seed instead leaves the index stale/partial until the next launch, where
+  /// the version-gated seed re-runs and repairs it.
   Future<void> dropAliasFtsTriggers() async {
     await customStatement('DROP TRIGGER IF EXISTS item_aliases_fts_ai;');
     await customStatement('DROP TRIGGER IF EXISTS item_aliases_fts_ad;');
     await customStatement('DROP TRIGGER IF EXISTS item_aliases_fts_au;');
+  }
+
+  /// Drops the `item_aliases_table` secondary indexes for the duration of the
+  /// bulk seed insert — incremental index maintenance across ~280k inserts
+  /// costs more than one bulk sort per index afterwards. Callers MUST re-run
+  /// [createAliasIndexes] when the bulk insert is done; like the FTS triggers,
+  /// an interrupted seed leaves them missing only until the version-gated
+  /// re-run repairs them on the next launch.
+  Future<void> dropAliasIndexes() async {
+    await customStatement('DROP INDEX IF EXISTS idx_item_aliases_table_group_id;');
+    await customStatement('DROP INDEX IF EXISTS idx_item_aliases_table_alias_text;');
+    await customStatement('DROP INDEX IF EXISTS idx_item_aliases_group_alias;');
+  }
+
+  /// Recreates the indexes dropped by [dropAliasIndexes] (idempotent,
+  /// `IF NOT EXISTS`). Each CREATE INDEX is a single bulk sort over the table.
+  Future<void> createAliasIndexes() async {
+    await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_item_aliases_table_group_id ON item_aliases_table(group_id);');
+    await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_item_aliases_table_alias_text ON item_aliases_table(alias_text);');
+    await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_item_aliases_group_alias ON item_aliases_table(group_id, alias_text);');
   }
 
   /// Rebuilds the `item_aliases_fts` index from `item_aliases_table` in one
@@ -545,6 +579,13 @@ FROM list_items_table;
             // bump) backfills the values for global rows.
             await m.addColumn(canonicalItemsTable, canonicalItemsTable.nameFr);
             await m.addColumn(canonicalItemsTable, canonicalItemsTable.nameEs);
+          }
+          if (from < 10) {
+            // Composite (group_id, alias_text) index so typed-autocomplete
+            // prefix search seeks the group then range-scans the prefix in one
+            // index pass instead of a full ~280k-row scan per keystroke.
+            await customStatement(
+                'CREATE INDEX IF NOT EXISTS idx_item_aliases_group_alias ON item_aliases_table(group_id, alias_text);');
           }
         },
         beforeOpen: (details) async {
@@ -1096,20 +1137,49 @@ FROM list_items_table;
   // Grocery graph — canonical items
   // ---------------------------------------------------------------------------
 
+  /// Exclusive upper bound for a `>= prefix AND < bound` range scan — the
+  /// prefix with its last code unit incremented (e.g. "mil" → "mim"). Returns
+  /// null only for the degenerate all-`0xFFFF` prefix, in which case callers
+  /// fall back to a lower-bound-only scan. This is what lets an equality index
+  /// on `alias_text` drive a prefix search: SQLite's `LIKE` is case-insensitive
+  /// by default and therefore *cannot* use a BINARY index, so a bare
+  /// `alias_text LIKE 'mil%'` degrades to a full scan of the ~280k-row seed on
+  /// every keystroke. A range predicate is index-sargable and stays O(log n).
+  static String? _prefixUpperBound(String prefix) {
+    final units = prefix.codeUnits.toList();
+    for (var i = units.length - 1; i >= 0; i--) {
+      if (units[i] < 0xFFFF) {
+        units[i] += 1;
+        return String.fromCharCodes(units.sublist(0, i + 1));
+      }
+    }
+    return null;
+  }
+
   /// Prefix search over aliases for typed autocomplete (e.g. "mlch" → Milch).
-  /// Uses the `alias_text` index; includes household + global seed aliases.
+  /// Driven by the `alias_text` index via a range scan (see [_prefixUpperBound]);
+  /// includes household + global seed aliases. Alias text is stored already
+  /// lowercased/normalised, and the composer lowercases the query, so a BINARY
+  /// range comparison matches the same rows the old `LIKE 'prefix%'` did.
   Future<List<ItemAliasesTableData>> searchAliasPrefix({
     required String groupId,
     required String query,
     int limit = 40,
   }) {
     if (query.isEmpty) return Future.value(const []);
-    final prefix = query.replaceAll('%', r'\%').replaceAll('_', r'\_');
+    final lower = query;
+    final upper = _prefixUpperBound(lower);
     return (select(itemAliasesTable)
-          ..where((t) =>
-              (t.groupId.equals(groupId) | t.groupId.equals('__global__')) &
-              t.deletedAt.isNull() &
-              t.aliasText.like('$prefix%'))
+          ..where((t) {
+            final range = upper == null
+                ? t.aliasText.isBiggerOrEqualValue(lower)
+                : t.aliasText.isBiggerOrEqualValue(lower) &
+                    t.aliasText.isSmallerThanValue(upper);
+            return (t.groupId.equals(groupId) |
+                    t.groupId.equals('__global__')) &
+                t.deletedAt.isNull() &
+                range;
+          })
           ..orderBy([(t) => OrderingTerm.desc(t.weight)])
           ..limit(limit))
         .get();
@@ -1354,14 +1424,22 @@ FROM list_items_table;
     if (query.isEmpty) return Future.value(const []);
     final lo = (query.length - 2).clamp(1, 1 << 30);
     final hi = query.length + 2;
-    final prefix =
-        query.substring(0, 1).replaceAll('%', r'\%').replaceAll('_', r'\_');
+    // First-character range scan (index-sargable) instead of `LIKE 'x%'`, which
+    // can't use the BINARY `alias_text` index — see [searchAliasPrefix].
+    final firstChar = query.substring(0, 1);
+    final upper = _prefixUpperBound(firstChar);
     return (select(itemAliasesTable)
-          ..where((t) =>
-              (t.groupId.equals(groupId) | t.groupId.equals('__global__')) &
-              t.deletedAt.isNull() &
-              t.aliasText.length.isBetweenValues(lo, hi) &
-              t.aliasText.like('$prefix%'))
+          ..where((t) {
+            final range = upper == null
+                ? t.aliasText.isBiggerOrEqualValue(firstChar)
+                : t.aliasText.isBiggerOrEqualValue(firstChar) &
+                    t.aliasText.isSmallerThanValue(upper);
+            return (t.groupId.equals(groupId) |
+                    t.groupId.equals('__global__')) &
+                t.deletedAt.isNull() &
+                t.aliasText.length.isBetweenValues(lo, hi) &
+                range;
+          })
           ..orderBy([(t) => OrderingTerm.desc(t.weight)])
           ..limit(maxCandidates))
         .get();
@@ -1708,6 +1786,31 @@ INSERT INTO item_aliases_table
               t.checked.equals(true) &
               t.canonicalItemId.isNotNull()))
         .get();
+  }
+
+  /// Live per-list (open, total) item counts for a group — one grouped query
+  /// driving the hub cards' "N left" label. Lists with no locally-synced items
+  /// simply have no entry; callers fall back to the server's item_count.
+  Stream<Map<String, ({int open, int total})>> watchItemCountsByGroup(
+      String groupId) {
+    final query = customSelect(
+      'SELECT li.list_id AS list_id, '
+      '  SUM(CASE WHEN li.checked = 0 THEN 1 ELSE 0 END) AS open_count, '
+      '  COUNT(*) AS total_count '
+      'FROM list_items_table li '
+      'JOIN lists_table l ON l.id = li.list_id '
+      'WHERE l.group_id = ? '
+      'GROUP BY li.list_id',
+      variables: [Variable.withString(groupId)],
+      readsFrom: {listItemsTable, listsTable},
+    );
+    return query.watch().map((rows) => {
+          for (final r in rows)
+            r.read<String>('list_id'): (
+              open: r.read<int>('open_count'),
+              total: r.read<int>('total_count'),
+            ),
+        });
   }
 }
 
