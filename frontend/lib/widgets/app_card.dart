@@ -19,6 +19,8 @@ class AppCard extends StatefulWidget {
     this.interactive = false,
     this.animated = false,
     this.onTap,
+    this.onLongPress,
+    this.backgroundColor,
     this.child,
     this.semanticLabel,
   });
@@ -29,6 +31,11 @@ class AppCard extends StatefulWidget {
   final bool interactive;
   final bool animated;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+
+  /// Overrides the variant/tint background (e.g. a seeded [ListTileAccent]
+  /// pastel) while keeping the border, shadow and press physics.
+  final Color? backgroundColor;
   final Widget? child;
   final String? semanticLabel;
 
@@ -166,7 +173,7 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
       curve: MitlistTheme.easeMicro,
       transform: Matrix4.translationValues(translation.dx, translation.dy, 0),
       decoration: BoxDecoration(
-        color: _backgroundColor(colorScheme),
+        color: widget.backgroundColor ?? _backgroundColor(colorScheme),
         border: Border.all(
           color: colorScheme.outline,
           width: pressOffset.dx,
@@ -194,6 +201,7 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
             onTapUp: (_) => setState(() => _pressed = false),
             onTapCancel: () => setState(() => _pressed = false),
             onTap: widget.onTap,
+            onLongPress: widget.onLongPress,
             child: card,
           ),
         ),

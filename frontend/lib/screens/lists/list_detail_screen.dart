@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../models/list_models.dart';
 import '../../services/restock_service.dart';
+import '../../theme/animations.dart';
 import '../../theme/list_tile_accent.dart';
 import '../../theme/spacing.dart';
+import '../../theme/theme.dart';
 import '../../utils/format_currency.dart';
 import '../../utils/haptics.dart';
 import '../../utils/friendly_error.dart';
@@ -663,6 +665,12 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     if (!mounted || action == null) return;
 
     switch (action) {
+      case ListItemAction.rename:
+        await _renameItem(item);
+      case ListItemAction.quantity:
+        await _setItemQuantity(item);
+      case ListItemAction.note:
+        await _editItemNote(item);
       case ListItemAction.viewPhoto:
         final viewPhotos = _controller.photosFor(item.id);
         if (viewPhotos != null && viewPhotos.isNotEmpty) {
@@ -674,6 +682,172 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         await _removeItemPhoto(item);
       case ListItemAction.price:
         await _setItemPrice(item);
+      case ListItemAction.delete:
+        await _deleteItem(item);
+    }
+  }
+
+  Future<void> _renameItem(ListItem item) async {
+    if (_isSaving) return;
+    _isSaving = true;
+    final l10n = AppLocalizations.of(context)!;
+    final nameController = TextEditingController(text: item.name);
+    final newName = await showAppDialog<String>(
+      context: context,
+      title: l10n.commonRename,
+      body: TextField(
+        controller: nameController,
+        autofocus: true,
+        maxLength: 200,
+        textInputAction: TextInputAction.done,
+        decoration: InputDecoration(labelText: l10n.listItemName),
+        onSubmitted: (value) => Navigator.of(context).pop(value.trim()),
+      ),
+      actions: [
+        AppButton(
+          text: l10n.commonCancel,
+          variant: AppButtonVariant.outline,
+          onPressed: () => Navigator.of(context).pop(null),
+        ),
+        const SizedBox(width: MitlistSpacing.sm),
+        AppButton(
+          text: l10n.commonSave,
+          onPressed: () =>
+              Navigator.of(context).pop(nameController.text.trim()),
+        ),
+      ],
+    );
+    nameController.dispose();
+    if (newName == null || newName.isEmpty || newName == item.name) {
+      _isSaving = false;
+      return;
+    }
+    try {
+      await _controller.updateItemFields(item, name: newName);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.listDetailCouldNotUpdate)),
+        );
+      }
+    } finally {
+      _isSaving = false;
+    }
+  }
+
+  Future<void> _setItemQuantity(ListItem item) async {
+    if (_isSaving) return;
+    _isSaving = true;
+    final l10n = AppLocalizations.of(context)!;
+    final amountController = TextEditingController(
+      text: item.quantity == item.quantity.roundToDouble()
+          ? item.quantity.toInt().toString()
+          : item.quantity.toString(),
+    );
+    final unitController = TextEditingController(text: item.unit);
+    final confirmed = await showAppDialog<bool>(
+      context: context,
+      title: l10n.listItemChangeQuantity,
+      body: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: amountController,
+            autofocus: true,
+            keyboardType:
+                const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(labelText: l10n.listItemQuantityAmount),
+          ),
+          const SizedBox(height: MitlistSpacing.sm),
+          TextField(
+            controller: unitController,
+            maxLength: 20,
+            textInputAction: TextInputAction.done,
+            decoration: InputDecoration(labelText: l10n.listItemQuantityUnit),
+            onSubmitted: (_) => Navigator.of(context).pop(true),
+          ),
+        ],
+      ),
+      actions: [
+        AppButton(
+          text: l10n.commonCancel,
+          variant: AppButtonVariant.outline,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        const SizedBox(width: MitlistSpacing.sm),
+        AppButton(
+          text: l10n.commonSave,
+          onPressed: () => Navigator.of(context).pop(true),
+        ),
+      ],
+    );
+    final amount =
+        double.tryParse(amountController.text.trim().replaceAll(',', '.'));
+    final unit = unitController.text.trim();
+    amountController.dispose();
+    unitController.dispose();
+    if (confirmed != true || amount == null || amount <= 0) {
+      _isSaving = false;
+      return;
+    }
+    try {
+      await _controller.updateItemFields(item, quantity: amount, unit: unit);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.listDetailCouldNotUpdate)),
+        );
+      }
+    } finally {
+      _isSaving = false;
+    }
+  }
+
+  Future<void> _editItemNote(ListItem item) async {
+    if (_isSaving) return;
+    _isSaving = true;
+    final l10n = AppLocalizations.of(context)!;
+    final noteController = TextEditingController(text: item.note);
+    final confirmed = await showAppDialog<bool>(
+      context: context,
+      title: item.note.isEmpty ? l10n.listItemAddNote : l10n.listItemEditNote,
+      body: TextField(
+        controller: noteController,
+        autofocus: true,
+        minLines: 1,
+        maxLines: 3,
+        maxLength: 500,
+        decoration: InputDecoration(labelText: l10n.listItemNoteLabel),
+      ),
+      actions: [
+        AppButton(
+          text: l10n.commonCancel,
+          variant: AppButtonVariant.outline,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        const SizedBox(width: MitlistSpacing.sm),
+        AppButton(
+          text: l10n.commonSave,
+          onPressed: () => Navigator.of(context).pop(true),
+        ),
+      ],
+    );
+    final note = noteController.text.trim();
+    noteController.dispose();
+    if (confirmed != true || note == item.note) {
+      _isSaving = false;
+      return;
+    }
+    try {
+      await _controller.updateItemFields(item, note: note);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.listDetailCouldNotUpdate)),
+        );
+      }
+    } finally {
+      _isSaving = false;
     }
   }
 
@@ -791,11 +965,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                 ),
               ],
             ),
-            Container(
-              height: 6,
-              width: double.infinity,
-              color: accent.stripe,
-            ),
+            _buildProgressStripe(accent),
             if (_showSearch)
               Padding(
                 padding: const EdgeInsets.fromLTRB(
@@ -829,6 +999,35 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
               builder: (context, _, __) => _buildBottomBar(),
             ),
         ],
+      ),
+    );
+  }
+
+  /// The list's 6px accent stripe doubling as a progress bar: the filled
+  /// portion tracks checked-off items so "how far along is this list" is
+  /// visible from the header ("what's due, clearly"). An empty list renders
+  /// the faint track only, keeping the stripe as the list's identity mark.
+  Widget _buildProgressStripe(ListTileAccent accent) {
+    final l10n = AppLocalizations.of(context)!;
+    final total = _controller.items.length;
+    final done = _controller.items.where((i) => i.checked).length;
+    final disableAnimations = MediaQuery.of(context).disableAnimations;
+    return Semantics(
+      label: total == 0 ? null : l10n.listDetailProgress(done, total),
+      child: Container(
+        height: 6,
+        width: double.infinity,
+        color: accent.stripe.withValues(alpha: 0.25),
+        alignment: Alignment.centerLeft,
+        child: AnimatedFractionallySizedBox(
+          duration:
+              disableAnimations ? Duration.zero : MitlistAnimations.medium,
+          curve: MitlistTheme.easeSettle,
+          alignment: Alignment.centerLeft,
+          widthFactor: total == 0 ? 0 : (done / total).clamp(0.0, 1.0),
+          heightFactor: 1,
+          child: ColoredBox(color: accent.stripe),
+        ),
       ),
     );
   }
