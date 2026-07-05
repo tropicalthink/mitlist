@@ -59,6 +59,16 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
     }
+
+    packagingOptions {
+        jniLibs {
+            // tflite_flutter bundles the GPU delegate .so (~3.5MB per ABI),
+            // but the grocery classifier runs CPU-only (plain
+            // Interpreter.fromAsset, no GpuDelegate anywhere) — the library
+            // is never dlopen'd, so it is safe to strip from the APK.
+            excludes += ["**/libtensorflowlite_gpu_jni.so"]
+        }
+    }
 }
 
 flutter {
