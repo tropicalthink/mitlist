@@ -22,6 +22,7 @@ class ChoreDetailSheet extends StatefulWidget {
     required this.title,
     required this.statusLabel,
     required this.assignee,
+    this.frequencyLabel,
     required this.dueDate,
     this.trackedCount,
     this.lastTrackedAt,
@@ -45,6 +46,10 @@ class ChoreDetailSheet extends StatefulWidget {
   final String title;
   final String statusLabel;
   final String assignee;
+
+  /// Human rhythm label ("Every 2 weeks", "As needed"); the one fact the sheet
+  /// was missing about a recurring chore.
+  final String? frequencyLabel;
   final DateTime dueDate;
   final int? trackedCount;
   final DateTime? lastTrackedAt;
@@ -69,6 +74,7 @@ class ChoreDetailSheet extends StatefulWidget {
     required String title,
     required String statusLabel,
     required String assignee,
+    String? frequencyLabel,
     required DateTime dueDate,
     int? trackedCount,
     DateTime? lastTrackedAt,
@@ -96,6 +102,7 @@ class ChoreDetailSheet extends StatefulWidget {
         title: title,
         statusLabel: statusLabel,
         assignee: assignee,
+        frequencyLabel: frequencyLabel,
         dueDate: dueDate,
         trackedCount: trackedCount,
         lastTrackedAt: lastTrackedAt,
@@ -257,8 +264,19 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
           padding: AppCardPadding.md,
           child: Column(
             children: [
-              _DetailRow(label: l10n.choreDetailAssignee, value: widget.assignee),
-              const AppDivider(),
+              if (widget.assignee.isNotEmpty) ...[
+                _DetailRow(
+                    label: l10n.choreDetailAssignee, value: widget.assignee),
+                const AppDivider(),
+              ],
+              if (widget.frequencyLabel != null &&
+                  widget.frequencyLabel!.isNotEmpty) ...[
+                _DetailRow(
+                  label: l10n.choreDetailRhythm,
+                  value: widget.frequencyLabel!,
+                ),
+                const AppDivider(),
+              ],
               _DetailRow(
                 label: l10n.choreDetailDue,
                 value: DateFormat.yMMMd().format(widget.dueDate),

@@ -13,13 +13,16 @@ import '../../router.dart' show BottomNavScaffold, currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../sheets/create_list_sheet.dart';
 import '../../theme/list_tile_accent.dart';
+import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
 import '../../utils/shell_tab_load.dart';
 import '../../utils/active_group_context.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
 import '../../widgets/alert.dart';
+import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/app_card.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
@@ -41,7 +44,6 @@ enum _ListMenuAction {
   sortOldest,
   sortAz,
   sortMostItems,
-  toggleView
 }
 
 class ListsScreen extends ConsumerStatefulWidget {
@@ -411,6 +413,17 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
               tooltip: l10n.commonSearch,
               onPressed: () => setState(() => _showSearch = true),
             ),
+            IconButton(
+              // Shows the view you'd switch to, not the current one.
+              icon: AppIcon(name: _isGrid ? 'listBullet' : 'squares2x2'),
+              tooltip: _isGrid ? l10n.listSortListView : l10n.listSortGridView,
+              onPressed: () {
+                unawaited(Haptics.light());
+                setState(() => _isGrid = !_isGrid);
+                SharedPreferences.getInstance()
+                    .then((p) => p.setBool('lists_is_grid', _isGrid));
+              },
+            ),
             PopupMenuButton<_ListMenuAction>(
               icon: const AppIcon(name: 'ellipsisVertical'),
               tooltip: l10n.commonOptions,
@@ -438,11 +451,6 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                       _sort = _SortOption.mostItems;
                       SharedPreferences.getInstance()
                           .then((p) => p.setInt('lists_sort', _sort.index));
-                      break;
-                    case _ListMenuAction.toggleView:
-                      _isGrid = !_isGrid;
-                      SharedPreferences.getInstance()
-                          .then((p) => p.setBool('lists_is_grid', _isGrid));
                       break;
                   }
                 });
@@ -491,12 +499,6 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                   value: _ListMenuAction.sortMostItems,
                   checked: _sort == _SortOption.mostItems,
                   child: Text(l10n.listSortMostItems),
-                ),
-                const PopupMenuDivider(),
-                CheckedPopupMenuItem(
-                  value: _ListMenuAction.toggleView,
-                  checked: _isGrid,
-                  child: Text(l10n.listSortGridView),
                 ),
               ],
             ),
@@ -648,8 +650,10 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   static int _gridColumns(double maxWidth) =>
       (maxWidth / _minTileWidth).floor().clamp(2, 5);
 
+  // Slightly taller tiles than before: the bottom action row grew to honor
+  // the 44px touch-target floor.
   double _gridAspectRatio(BuildContext context) =>
-      MediaQuery.textScalerOf(context).scale(1.0) > 1.2 ? 0.72 : 0.78;
+      MediaQuery.textScalerOf(context).scale(1.0) > 1.2 ? 0.68 : 0.74;
 
   Widget _buildGrid(List<ItemList> lists) {
     final itemCount =
@@ -888,34 +892,35 @@ class _ListCard extends ConsumerWidget {
     return parts.join('. ');
   }
 
+  /// Card actions in a bottom sheet — the same grammar as item long-press on
+  /// the detail screen, and reachable from both the visible menu button and
+  /// long-pressing the card.
   Future<void> _showActions(BuildContext context, WidgetRef ref) async {
     unawaited(Haptics.medium());
     final l10n = AppLocalizations.of(context)!;
-    final action = await showAppDialog<String>(
+    final colorScheme = Theme.of(context).colorScheme;
+    final action = await showAppBottomSheet<String>(
       context: context,
       title: list.name,
       body: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          AppButton(
-            text: l10n.commonRename,
-            icon: const AppIcon(name: 'pencilSquare', size: 18),
-            variant: AppButtonVariant.outline,
-            color: AppButtonColor.neutral,
-            onPressed: () => Navigator.of(context).pop('rename'),
+          ListTile(
+            leading: const AppIcon(name: 'pencil'),
+            title: Text(l10n.commonRename),
+            onTap: () => Navigator.of(context).pop('rename'),
+          ),
+          ListTile(
+            leading: AppIcon(name: 'trash', color: colorScheme.error),
+            title: Text(
+              l10n.listDeleteTitle,
+              style: TextStyle(color: colorScheme.error),
+            ),
+            onTap: () => Navigator.of(context).pop('delete'),
           ),
           const SizedBox(height: MitlistSpacing.sm),
-          AppButton(
-            text: l10n.listDeleteTitle,
-            icon: const AppIcon(name: 'trash', size: 18),
-            variant: AppButtonVariant.outline,
-            color: AppButtonColor.error,
-            onPressed: () => Navigator.of(context).pop('delete'),
-          ),
         ],
       ),
-      actions: [],
     );
     if (action == 'rename' && context.mounted) {
       await _renameList(context, ref);
@@ -1064,120 +1069,99 @@ class _ListCard extends ConsumerWidget {
       list.id,
       Theme.of(context).brightness,
     );
+    // Three single-line previews: with the 44px action row, four lines can
+    // overflow the grid tile when the title also wraps to three lines.
     final previewLines = list.itemPreview
         .map((s) => s.trim())
         .where((s) => s.isNotEmpty)
-        .take(4)
+        .take(3)
         .toList();
     final snippetColor = accent.snippetOnTile;
     final isTodo = list.type.toLowerCase() == 'todo';
 
-    final itemCount = list.itemCount;
     final groups = ref.watch(cachedGroupsProvider).valueOrNull ?? const [];
-    final groupName =
-        groups.where((g) => g.id == list.groupId).firstOrNull?.name;
+    // Only worth a line when the user actually belongs to several households;
+    // for the common single-household case it repeated the same name on every
+    // card.
+    final groupName = groups.length > 1
+        ? groups.where((g) => g.id == list.groupId).firstOrNull?.name
+        : null;
 
-    return Material(
-      color: accent.tileBackground,
-      child: Semantics(
-        button: true,
-        label: _semanticLabel(),
-        child: InkWell(
-          onTap: () async {
-            final changed = await context.pushNamed<bool>(
-              'listDetail',
-              pathParameters: {'listId': list.id},
-              extra: ListDetailRouteArgs(listName: list.name),
-            );
-            if (changed == true) onChanged();
-          },
-          onLongPress: () => _showActions(context, ref),
-          child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Theme.of(context).colorScheme.outline,
-                width: 2,
-              ),
-            ),
-            padding: const EdgeInsets.all(MitlistSpacing.md),
-            child: Stack(
+    // "N left" from live local counts; lists never opened on this device have
+    // no local items yet, so fall back to the server's total item count.
+    final counts =
+        ref.watch(listItemCountsProvider(list.groupId)).valueOrNull?[list.id];
+    final String? countLabel;
+    if (counts != null && counts.total > 0) {
+      countLabel = l10n.listOpenCount(counts.open);
+    } else if (list.itemCount != null && list.itemCount! > 0) {
+      countLabel = l10n.commonItemCount(list.itemCount!);
+    } else {
+      countLabel = null;
+    }
+
+    return AppCard(
+      backgroundColor: accent.tileBackground,
+      interactive: true,
+      semanticLabel: _semanticLabel(),
+      onTap: () async {
+        final changed = await context.pushNamed<bool>(
+          'listDetail',
+          pathParameters: {'listId': list.id},
+          extra: ListDetailRouteArgs(listName: list.name),
+        );
+        if (changed == true) onChanged();
+      },
+      onLongPress: () => _showActions(context, ref),
+      child: SizedBox(
+        width: double.infinity,
+        child: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Reserve top-right space for the type badge
-                    Padding(
-                      padding:
-                          const EdgeInsets.only(right: MitlistSpacing.space5),
-                      child: Text(
-                        list.name,
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: accent.titleColor,
-                                  fontWeight: FontWeight.w600,
-                                  height: 1.2,
-                                ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (previewLines.isNotEmpty) ...[
-                      const SizedBox(height: MitlistSpacing.sm),
-                      for (var i = 0; i < previewLines.length; i++)
-                        Padding(
-                          padding: EdgeInsets.only(
-                            top: i == 0 ? 0 : MitlistSpacing.xs,
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (isTodo) ...[
-                                AppIcon(
-                                  name: 'checkCircleOutline',
-                                  size: 14,
-                                  color: snippetColor.withValues(alpha: 0.5),
-                                ),
-                                const SizedBox(width: MitlistSpacing.xs),
-                              ],
-                              Expanded(
-                                child: Text(
-                                  previewLines[i],
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: snippetColor,
-                                        height: 1.35,
-                                      ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
+                // Reserve top-right space for the type badge
+                Padding(
+                  padding: const EdgeInsets.only(right: MitlistSpacing.space5),
+                  child: Text(
+                    list.name,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: accent.titleColor,
+                          fontWeight: FontWeight.w600,
+                          height: 1.2,
                         ),
-                    ],
-                    const SizedBox(height: MitlistSpacing.sm),
-                    if (groupName != null) ...[
-                      Row(
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (previewLines.isNotEmpty) ...[
+                  const SizedBox(height: MitlistSpacing.sm),
+                  for (var i = 0; i < previewLines.length; i++)
+                    Padding(
+                      padding: EdgeInsets.only(
+                        top: i == 0 ? 0 : MitlistSpacing.xs,
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          AppIcon(
-                            name: 'userGroup',
-                            size: 11,
-                            color: snippetColor.withValues(alpha: 0.55),
-                          ),
-                          const SizedBox(width: MitlistSpacing.xs),
+                          if (isTodo) ...[
+                            AppIcon(
+                              name: 'checkCircleOutline',
+                              size: 14,
+                              color: snippetColor.withValues(alpha: 0.5),
+                            ),
+                            const SizedBox(width: MitlistSpacing.xs),
+                          ],
                           Expanded(
                             child: Text(
-                              l10n.listSharedWith(groupName),
+                              previewLines[i],
                               style: Theme.of(context)
                                   .textTheme
-                                  .labelSmall
+                                  .bodySmall
                                   ?.copyWith(
-                                    color: snippetColor.withValues(alpha: 0.55),
-                                    fontSize: 10,
+                                    color: snippetColor,
+                                    height: 1.35,
                                   ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -1185,99 +1169,115 @@ class _ListCard extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: MitlistSpacing.xs),
-                    ],
-                    Row(
-                      children: [
-                        if (itemCount != null && itemCount > 0)
-                          Text(
-                            l10n.commonItemCount(itemCount),
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelSmall
-                                ?.copyWith(
-                                  color: snippetColor,
-                                ),
-                          ),
-                        const Spacer(),
-                        Tooltip(
-                          message: l10n.listQuickAddItemTooltip,
-                          child: Semantics(
-                            button: true,
-                            label: l10n.listQuickAddItemSemantics(list.name),
-                            child: InkWell(
-                              onTap: () => _quickAddItem(context, ref),
-                              borderRadius:
-                                  BorderRadius.circular(MitlistSpacing.xs),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: MitlistSpacing.sm,
-                                  vertical: MitlistSpacing.xs,
-                                ),
-                                child: AppIcon(
-                                  name: 'addCircleOutline',
-                                  size: 20,
-                                  color: snippetColor.withValues(alpha: 0.7),
-                                ),
-                              ),
-                            ),
-                          ),
+                    ),
+                ],
+                const SizedBox(height: MitlistSpacing.sm),
+                if (groupName != null) ...[
+                  Row(
+                    children: [
+                      AppIcon(
+                        name: 'userGroup',
+                        size: 11,
+                        color: snippetColor,
+                      ),
+                      const SizedBox(width: MitlistSpacing.xs),
+                      Expanded(
+                        child: Text(
+                          l10n.listSharedWith(groupName),
+                          style:
+                              Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: snippetColor,
+                                  ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: MitlistSpacing.xs),
+                ],
+                Row(
+                  children: [
+                    if (countLabel != null)
+                      Expanded(
+                        child: Text(
+                          countLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: snippetColor,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                        ),
+                      )
+                    else
+                      const Spacer(),
+                    _CardActionButton(
+                      iconName: 'addCircleOutline',
+                      color: accent.iconColor,
+                      tooltip: l10n.listQuickAddItemTooltip,
+                      semanticLabel: l10n.listQuickAddItemSemantics(list.name),
+                      onTap: () => _quickAddItem(context, ref),
+                    ),
+                    _CardActionButton(
+                      iconName: 'ellipsisVertical',
+                      color: snippetColor,
+                      tooltip: l10n.listOptionsTooltip,
+                      semanticLabel: l10n.listOptionsTooltip,
+                      onTap: () => _showActions(context, ref),
                     ),
                   ],
                 ),
-                Positioned(
-                  top: -4,
-                  right: -4,
-                  child: PopupMenuButton<String>(
-                    tooltip: l10n.listOptionsTooltip,
-                    padding: EdgeInsets.zero,
-                    onSelected: (action) async {
-                      if (!context.mounted) return;
-                      if (action == 'rename') {
-                        await _renameList(context, ref);
-                      } else if (action == 'delete') {
-                        await _deleteList(context, ref);
-                      }
-                    },
-                    itemBuilder: (ctx) => [
-                      PopupMenuItem(
-                        value: 'rename',
-                        child: Row(children: [
-                          AppIcon(
-                              name: 'pencilSquare',
-                              size: 18,
-                              color: Theme.of(ctx).colorScheme.onSurface),
-                          const SizedBox(width: MitlistSpacing.sm),
-                          Text(l10n.commonRename),
-                        ]),
-                      ),
-                      PopupMenuItem(
-                        value: 'delete',
-                        child: Row(children: [
-                          AppIcon(
-                              name: 'trash',
-                              size: 18,
-                              color: Theme.of(ctx).colorScheme.error),
-                          const SizedBox(width: MitlistSpacing.sm),
-                          Text(l10n.listDeleteTitle,
-                              style: Theme.of(ctx)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(
-                                      color: Theme.of(ctx).colorScheme.error)),
-                        ]),
-                      ),
-                    ],
-                    child: Padding(
-                      padding: const EdgeInsets.all(MitlistSpacing.sm),
-                      child:
-                          _TypeBadge(type: list.type, color: accent.titleColor),
-                    ),
-                  ),
-                ),
               ],
+            ),
+            Positioned(
+              top: 0,
+              right: 0,
+              child: _TypeBadge(type: list.type, color: accent.titleColor),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A 44×44 icon target for the card's bottom action row — full-strength icon
+/// color so the affordance is visible, unlike the old 20px 70%-alpha icon.
+class _CardActionButton extends StatelessWidget {
+  const _CardActionButton({
+    required this.iconName,
+    required this.color,
+    required this.tooltip,
+    required this.semanticLabel,
+    required this.onTap,
+  });
+
+  final String iconName;
+  final Color color;
+  final String tooltip;
+  final String semanticLabel;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Semantics(
+        button: true,
+        label: semanticLabel,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () {
+            unawaited(Haptics.light());
+            onTap();
+          },
+          child: SizedBox(
+            width: 44,
+            height: 44,
+            child: Center(
+              child: AppIcon(name: iconName, size: 22, color: color),
             ),
           ),
         ),
@@ -1297,7 +1297,9 @@ class _TypeBadge extends StatelessWidget {
     final iconName = switch (type.toLowerCase()) {
       'shopping' => 'shoppingCart',
       'todo' => 'checkCircle',
-      _ => 'squares2X2',
+      // Lowercase x — 'squares2X2' isn't a registered icon name and rendered
+      // as an empty box for custom lists.
+      _ => 'squares2x2',
     };
     return AppIcon(
       name: iconName,
@@ -1319,6 +1321,9 @@ class _SkeletonCard extends StatelessWidget {
           color: Theme.of(context).colorScheme.outline,
           width: 2,
         ),
+        // Matches AppCard's resting shadow so loaded cards don't pop in with
+        // a different silhouette.
+        boxShadow: MitlistShadows.shadowSoft,
       ),
       padding: const EdgeInsets.all(MitlistSpacing.md),
       child: const Column(

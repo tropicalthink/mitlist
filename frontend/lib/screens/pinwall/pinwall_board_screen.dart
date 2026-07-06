@@ -4,13 +4,10 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 import '../../models/auth_models.dart';
 import '../../models/group_models.dart';
 import '../../models/pinwall_models.dart';
-import '../../providers/chore_provider.dart';
-import '../../providers/finance_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../providers/meal_plan_provider.dart';
 import '../../providers/pinwall_provider.dart';
@@ -25,7 +22,8 @@ import '../../utils/haptics.dart';
 import '../../utils/hub_helpers.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/hub/pinned_memo_card.dart';
-import '../../widgets/pinwall_link_chip.dart';
+import '../../widgets/pinwall/pinwall_note_card.dart';
+import '../../widgets/pinwall/pinwall_stat_rows.dart';
 
 // ─── Board layout constants ──────────────────────────────────────────────────
 
@@ -338,11 +336,13 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
           // survives reordering); notes that arrive live pin on individually.
           final initial = _initialEntranceById[id];
           final isLive = initial == null && _enteringIds.contains(id);
-          Widget card = _BoardNoteCard(
+          Widget card = PinwallNoteCard(
+            variant: PinwallNoteCardVariant.board,
             index: i,
             groupId: widget.groupId,
             me: widget.me,
             post: post,
+            onOpenLinkedEntity: (ctx) => _openLinkedEntity(ctx, post),
           );
           if (isLive) card = _PinOnEntrance(child: card);
           return (
@@ -1010,203 +1010,6 @@ class _BoardDraggableItem extends StatelessWidget {
   }
 }
 
-// ─── Board note card ──────────────────────────────────────────────────────────
-
-class _BoardNoteCard extends ConsumerWidget {
-  const _BoardNoteCard({
-    required this.index,
-    required this.groupId,
-    required this.me,
-    required this.post,
-  });
-
-  final int index;
-  final String groupId;
-  final User? me;
-  final PinwallPost post;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-    final textTheme = Theme.of(context).textTheme;
-    final dark = Theme.of(context).brightness == Brightness.dark;
-
-    final palette =
-        dark ? MitlistColors.notePaletteDark : MitlistColors.notePalette;
-    final idHash = post.id.hashCode;
-    final bg = palette[idHash.abs() % palette.length];
-    final border = bg.withValues(alpha: dark ? 0.3 : 0.6);
-    final rot = ((idHash % 13) - 6) * 0.012;
-
-    final pinColors = [
-      Theme.of(context).colorScheme.primary,
-      Theme.of(context).colorScheme.secondary,
-      Theme.of(context).colorScheme.error,
-    ];
-    final pinColor = pinColors[index % pinColors.length];
-
-    final textColor = dark
-        ? MitlistColors.surfaceSoft.withValues(alpha: 0.9)
-        : Theme.of(context).colorScheme.onSurface;
-    final mutedColor = dark
-        ? MitlistColors.surfaceSoft.withValues(alpha: 0.5)
-        : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7);
-
-    final content = post.content.trim();
-    final userLabel = formatUserLabel(post.userId, me?.id, l10n);
-    final when = relativeDay(post.createdAt);
-
-    final remindAt = post.remindAt;
-    final reminderText = remindAt == null
-        ? null
-        : DateFormat('MMM d · h:mm a').format(remindAt.toLocal());
-
-    final media = ref.watch(
-      pinwallMediaByPostProvider((groupId: groupId, postId: post.id)),
-    );
-
-    return Semantics(
-      label: l10n.pinwallNoteSemantics(userLabel, content),
-      child: Transform.rotate(
-        angle: rot.toDouble(),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              width: _kCardW,
-              padding: const EdgeInsets.fromLTRB(
-                MitlistSpacing.sm + 4,
-                MitlistSpacing.lg,
-                MitlistSpacing.sm,
-                MitlistSpacing.sm,
-              ),
-              decoration: BoxDecoration(
-                color: bg,
-                borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
-                border: Border.all(color: border, width: 1),
-                boxShadow: [
-                  BoxShadow(
-                    color: MitlistColors.neutral950
-                        .withValues(alpha: dark ? 0.5 : 0.2),
-                    blurRadius: 12,
-                    offset: const Offset(4, 6),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    content,
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: textColor,
-                      height: 1.4,
-                    ),
-                    maxLines: 10,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  media.when(
-                    loading: () => const SizedBox(height: 42),
-                    error: (_, __) => const SizedBox.shrink(),
-                    data: (items) {
-                      if (items.isEmpty) return const SizedBox.shrink();
-                      final show = items.take(4).toList();
-                      return Padding(
-                        padding: const EdgeInsets.only(top: MitlistSpacing.xs),
-                        child: SizedBox(
-                          height: 48,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: show.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(width: MitlistSpacing.xs),
-                            itemBuilder: (context, i) => ClipRRect(
-                              borderRadius:
-                                  BorderRadius.circular(MitlistTheme.radiusSm),
-                              child: AspectRatio(
-                                aspectRatio: 1,
-                                child: Image.network(
-                                  show[i].url,
-                                  fit: BoxFit.cover,
-                                  cacheWidth: (48 *
-                                          MediaQuery.devicePixelRatioOf(
-                                              context) *
-                                          1.5)
-                                      .round(),
-                                  errorBuilder: (_, __, ___) => Container(
-                                    color: border.withValues(alpha: 0.3),
-                                    child: const Icon(
-                                      Icons.image_not_supported_outlined,
-                                      size: 14,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  if (reminderText != null)
-                    Padding(
-                      padding: const EdgeInsets.only(
-                          top: MitlistSpacing.xs, bottom: MitlistSpacing.xs),
-                      child: Row(
-                        children: [
-                          Icon(Icons.alarm_on_outlined,
-                              size: 12, color: mutedColor),
-                          const SizedBox(width: MitlistSpacing.xs),
-                          Expanded(
-                            child: Text(
-                              reminderText,
-                              style: textTheme.labelSmall
-                                  ?.copyWith(color: mutedColor),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  const SizedBox(height: MitlistSpacing.xs),
-                  Text(
-                    '$userLabel · $when',
-                    style: textTheme.labelSmall?.copyWith(color: mutedColor),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (post.linkedEntityType != null) ...[
-                    const SizedBox(height: MitlistSpacing.xs),
-                    PinwallLinkChip(
-                      entityType: post.linkedEntityType!,
-                      color: mutedColor,
-                      onTap: () => _openLinkedEntity(context, post),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            Positioned(
-              top: -14,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: PinwallPushpin(
-                  headColor: pinColor,
-                  size: const Size(26, 32),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 void _openLinkedEntity(BuildContext context, PinwallPost post) {
   final id = post.linkedEntityId;
   switch (post.linkedEntityType) {
@@ -1262,43 +1065,7 @@ class _BoardStatsCard extends ConsumerWidget {
     final rule = border.withValues(alpha: dark ? 0.5 : 0.75);
     final marginRule = scheme.error.withValues(alpha: dark ? 0.45 : 0.4);
 
-    // ── Chores: due today + overdue ───────────────────────────────────────
-    final chores = ref.watch(cachedCurrentChoresByGroupProvider(groupId));
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final tomorrow = today.add(const Duration(days: 1));
-    final choresDue = chores.valueOrNull?.where((c) {
-          final due = c.pendingAssignment?.dueDate;
-          return due != null &&
-              due.isBefore(tomorrow) &&
-              due.isAfter(today.subtract(const Duration(days: 1))) &&
-              c.pendingAssignment?.status != 'completed';
-        }).length ??
-        0;
-    final choresOverdue = chores.valueOrNull?.where((c) {
-          final due = c.pendingAssignment?.dueDate;
-          return due != null &&
-              due.isBefore(today) &&
-              c.pendingAssignment?.status != 'completed';
-        }).length ??
-        0;
-    final choreTotal = choresDue + choresOverdue;
-
-    // ── Balance ───────────────────────────────────────────────────────────
-    final finance = ref.watch(cachedFinanceSummaryByGroupProvider(groupId));
-    final balance = finance.valueOrNull?.balances
-            .fold<int>(0, (sum, b) => sum + b.total) ??
-        0;
-    String fmtMoney(int cents) => (cents / 100).toStringAsFixed(0);
-
-    // ── Lists ─────────────────────────────────────────────────────────────
-    final lists = ref.watch(cachedListsByGroupProvider(groupId));
-    final listCount = lists.valueOrNull
-            ?.where((l) => l.type == 'shopping' || l.type == 'general')
-            .length ??
-        0;
-
-    // ── Reminders (optional row) ──────────────────────────────────────────
+    // ── Reminders (optional row; no hub equivalent) ─────────────────────────
     final reminders = ref.watch(pinwallPostsByGroupProvider(groupId));
     final reminderCount =
         reminders.valueOrNull?.where((p) => p.remindAt != null).length ?? 0;
@@ -1358,57 +1125,30 @@ class _BoardStatsCard extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _IndexRow(
-                        icon: Icons.cleaning_services_outlined,
-                        label: l10n.hubStatsChores,
-                        value: '$choreTotal',
-                        subtitle: choresOverdue > 0
-                            ? '$choresOverdue ${l10n.hubStatsOverdue}'
-                            : (choresDue > 0
-                                ? l10n.hubStatsDue
-                                : l10n.hubStatsAllDone),
-                        accent: choresOverdue > 0
-                            ? scheme.error
-                            : (choresDue > 0 ? scheme.secondary : scheme.tertiary),
-                        rule: rule,
+                      PinwallChoresStatRow(
+                        groupId: groupId,
+                        style: PinwallStatRowStyle.indexCard,
                         ink: ink,
                         muted: muted,
-                        onTap: () => context.goNamed('chores'),
-                      ),
-                      _IndexRow(
-                        icon: Icons.receipt_outlined,
-                        label: l10n.hubStatsBalance,
-                        value: balance > 0
-                            ? '+\$${fmtMoney(balance)}'
-                            : (balance < 0
-                                ? '-\$${fmtMoney(-balance)}'
-                                : '\$${fmtMoney(balance)}'),
-                        subtitle: balance != 0
-                            ? l10n.hubStatsOpen
-                            : l10n.expenseSettled,
-                        accent: balance > 0
-                            ? scheme.tertiary
-                            : (balance < 0 ? scheme.error : muted),
                         rule: rule,
+                      ),
+                      PinwallFinanceStatRow(
+                        groupId: groupId,
+                        style: PinwallStatRowStyle.indexCard,
                         ink: ink,
                         muted: muted,
-                        onTap: () => context.goNamed('money'),
+                        rule: rule,
                       ),
-                      _IndexRow(
-                        icon: Icons.shopping_cart_outlined,
-                        label: l10n.hubStatsLists,
-                        value: '$listCount',
-                        subtitle: listCount == 1
-                            ? l10n.hubStatsActiveList
-                            : l10n.hubStatsActiveLists,
-                        accent: listCount > 0 ? scheme.primary : scheme.tertiary,
+                      PinwallListsStatRow(
+                        groupId: groupId,
+                        style: PinwallStatRowStyle.indexCard,
+                        ink: ink,
+                        muted: muted,
                         rule: reminderCount > 0 ? rule : Colors.transparent,
-                        ink: ink,
-                        muted: muted,
-                        onTap: () => context.goNamed('lists'),
                       ),
                       if (reminderCount > 0)
-                        _IndexRow(
+                        PinwallStatRow(
+                          style: PinwallStatRowStyle.indexCard,
                           icon: Icons.alarm_outlined,
                           label: l10n.hubStatsReminders,
                           value: '$reminderCount',
@@ -1457,98 +1197,6 @@ class _FolderTab extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.85),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
-      ),
-    );
-  }
-}
-
-/// One ruled line on the index card.
-class _IndexRow extends StatelessWidget {
-  const _IndexRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.subtitle,
-    required this.accent,
-    required this.rule,
-    required this.ink,
-    required this.muted,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final String subtitle;
-  final Color accent;
-  final Color rule;
-  final Color ink;
-  final Color muted;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: rule, width: 1)),
-      ),
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          onTap: onTap == null
-              ? null
-              : () {
-                  unawaited(Haptics.light());
-                  onTap!();
-                },
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              64,
-              MitlistSpacing.sm + 2,
-              MitlistSpacing.md,
-              MitlistSpacing.sm + 2,
-            ),
-            child: Row(
-              children: [
-                Icon(icon, size: 18, color: accent),
-                const SizedBox(width: MitlistSpacing.sm),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        label,
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: ink,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        subtitle,
-                        style: textTheme.labelSmall?.copyWith(color: accent),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: MitlistSpacing.sm),
-                Text(
-                  value,
-                  style: textTheme.titleLarge?.copyWith(
-                    color: ink,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  maxLines: 1,
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
