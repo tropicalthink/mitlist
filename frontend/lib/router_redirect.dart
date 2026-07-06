@@ -59,8 +59,7 @@ AppRedirectResult resolveAppRedirect(AppRedirectInput input) {
     }
     final target = input.requestedPathWithQuery ?? location;
     return AppRedirectResult(
-      redirect:
-          '$sessionBootstrapPath?continue=${Uri.encodeComponent(target)}',
+      redirect: '$sessionBootstrapPath?continue=${Uri.encodeComponent(target)}',
     );
   }
 

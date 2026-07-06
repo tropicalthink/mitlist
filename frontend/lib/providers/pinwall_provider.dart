@@ -12,14 +12,15 @@ final pinwallServiceProviderAsync = FutureProvider<PinwallService>((ref) async {
   return PinwallService.create(ref);
 });
 
-final pinwallRepositoryProvider = FutureProvider<PinwallRepository>((ref) async {
+final pinwallRepositoryProvider =
+    FutureProvider<PinwallRepository>((ref) async {
   final db = ref.watch(appDatabaseProvider);
   final service = await ref.read(pinwallServiceProviderAsync.future);
   return PinwallRepository(db: db, remote: service);
 });
 
-final pinwallMediaByPostProvider = FutureProvider.family<
-    List<PinwallMediaItem>, ({String groupId, String postId})>(
+final pinwallMediaByPostProvider = FutureProvider.family<List<PinwallMediaItem>,
+    ({String groupId, String postId})>(
   (ref, args) async {
     final svc = await ref.read(pinwallServiceProviderAsync.future);
     return svc.listPostAttachments(groupId: args.groupId, postId: args.postId);
@@ -51,4 +52,3 @@ final pinwallPostsByGroupProvider =
   }
   yield* repo.watchPosts(groupId);
 });
-

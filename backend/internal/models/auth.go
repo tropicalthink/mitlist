@@ -35,5 +35,3 @@ type PushSubscription struct {
 	Auth      string    `json:"auth"`
 	CreatedAt time.Time `json:"created_at"`
 }
-
-

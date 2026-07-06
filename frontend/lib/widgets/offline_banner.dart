@@ -49,9 +49,12 @@ class _Banner extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _detailRow(context, Icons.cloud_off, l10n.offlineBannerStatusOffline, state.isOffline, colorScheme),
-            _detailRow(context, Icons.sync, l10n.offlineBannerStatusPending, state.pendingCount, colorScheme),
-            _detailRow(context, Icons.sync_problem, l10n.offlineBannerStatusFailed, state.failedCount, colorScheme),
+            _detailRow(context, Icons.cloud_off,
+                l10n.offlineBannerStatusOffline, state.isOffline, colorScheme),
+            _detailRow(context, Icons.sync, l10n.offlineBannerStatusPending,
+                state.pendingCount, colorScheme),
+            _detailRow(context, Icons.sync_problem,
+                l10n.offlineBannerStatusFailed, state.failedCount, colorScheme),
             const SizedBox(height: MitlistSpacing.md),
             if (state.hasErrors)
               AppCard(
@@ -79,14 +82,19 @@ class _Banner extends ConsumerWidget {
     );
   }
 
-  Widget _detailRow(BuildContext context, IconData icon, String label, dynamic value, ColorScheme colorScheme) {
+  Widget _detailRow(BuildContext context, IconData icon, String label,
+      dynamic value, ColorScheme colorScheme) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
       child: Row(
         children: [
           Icon(icon, size: 18, color: colorScheme.onSurfaceVariant),
           const SizedBox(width: MitlistSpacing.sm),
-          Expanded(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodyMedium)),
+          Expanded(
+              child: Text(label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium)),
           if (value is bool)
             Icon(
               value ? Icons.check_circle : Icons.cancel,

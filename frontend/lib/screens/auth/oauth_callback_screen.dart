@@ -18,7 +18,8 @@ class OAuthCallbackScreen extends ConsumerStatefulWidget {
   final Map<String, String> queryParameters;
 
   @override
-  ConsumerState<OAuthCallbackScreen> createState() => _OAuthCallbackScreenState();
+  ConsumerState<OAuthCallbackScreen> createState() =>
+      _OAuthCallbackScreenState();
 }
 
 class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
@@ -88,7 +89,8 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
       ref.read(authStateProvider.notifier).state = true;
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = friendlyErrorMessage(e, AppLocalizations.of(context)!));
+      setState(() =>
+          _error = friendlyErrorMessage(e, AppLocalizations.of(context)!));
     }
   }
 

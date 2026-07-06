@@ -105,10 +105,12 @@ Iterable<List<T>> _chunked<T>(List<T> rows, int size) sync* {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('BASELINE: current alias+fuzzy resolver over the real eval set', () async {
+  test('BASELINE: current alias+fuzzy resolver over the real eval set',
+      () async {
     final file = File(_evalPath);
     if (!file.existsSync()) {
-      fail('eval dataset missing at $_evalPath - this guard must not pass vacuously');
+      fail(
+          'eval dataset missing at $_evalPath - this guard must not pass vacuously');
     }
     final cases = ResolutionEvalCase.parseJsonl(await file.readAsString());
     expect(cases, isNotEmpty, reason: 'eval dataset should have rows');

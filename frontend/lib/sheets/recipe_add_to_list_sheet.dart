@@ -52,7 +52,8 @@ class RecipeAddToListSheet extends ConsumerStatefulWidget {
   }
 
   @override
-  ConsumerState<RecipeAddToListSheet> createState() => _RecipeAddToListSheetState();
+  ConsumerState<RecipeAddToListSheet> createState() =>
+      _RecipeAddToListSheetState();
 }
 
 class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
@@ -82,8 +83,11 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
       List<ItemList> lists = [];
       if (groupId != null) {
         lists = await listSvc.listLists(groupId, limit: 100);
-        lists = lists.where((l) => l.type == 'shopping' || l.type == 'general').toList();
-        lists.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        lists = lists
+            .where((l) => l.type == 'shopping' || l.type == 'general')
+            .toList();
+        lists.sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
       }
 
       setState(() {
@@ -127,13 +131,17 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
         Navigator.of(context).pop();
         final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.sheetRecipeAddToListAdded(_selectedIngredientIds.length))),
+          SnackBar(
+              content: Text(l10n
+                  .sheetRecipeAddToListAdded(_selectedIngredientIds.length))),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
+          SnackBar(
+              content:
+                  Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
         );
       }
     } finally {
@@ -156,7 +164,7 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
     if (_error != null) {
       return AppEmptyState(
         icon: const AppIcon(name: 'alertCircleOutline'),
-          title: l10n.commonFailedToLoad,
+        title: l10n.commonFailedToLoad,
         description: _error,
         actions: [
           AppButton(
@@ -184,12 +192,14 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
           padding: AppCardPadding.md,
           child: Row(
             children: [
-              Text(l10n.recipeDetailServings, style: Theme.of(context).textTheme.bodyMedium),
+              Text(l10n.recipeDetailServings,
+                  style: Theme.of(context).textTheme.bodyMedium),
               const Spacer(),
               IconButton(
                 icon: AppIcon(name: 'minusCircleOutline'),
                 tooltip: l10n.cookModeDecreaseServings,
-                onPressed: _servings > 1 ? () => setState(() => _servings--) : null,
+                onPressed:
+                    _servings > 1 ? () => setState(() => _servings--) : null,
               ),
               SizedBox(
                 width: 48,
@@ -198,13 +208,15 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: MitlistTypography.monoBody(color: Theme.of(context).colorScheme.onSurface),
+                  style: MitlistTypography.monoBody(
+                      color: Theme.of(context).colorScheme.onSurface),
                 ),
               ),
               IconButton(
                 icon: const AppIcon(name: 'addCircleOutline'),
                 tooltip: l10n.cookModeIncreaseServings,
-                onPressed: _servings < 99 ? () => setState(() => _servings++) : null,
+                onPressed:
+                    _servings < 99 ? () => setState(() => _servings++) : null,
               ),
             ],
           ),
@@ -220,10 +232,13 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
           AppDropdown<String>(
             label: l10n.recipeAddToListTargetList,
             value: _selectedListId,
-            items: _lists.map((list) => DropdownMenuItem<String>(
-              value: list.id,
-              child: Text(list.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-            )).toList(),
+            items: _lists
+                .map((list) => DropdownMenuItem<String>(
+                      value: list.id,
+                      child: Text(list.name,
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                    ))
+                .toList(),
             onChanged: (value) => setState(() => _selectedListId = value),
           ),
         const SizedBox(height: MitlistSpacing.md),
@@ -242,7 +257,8 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
                 ? _servings / widget.defaultServings
                 : 1.0;
             final qtyText = ing.quantity > 0
-                ? '${formatScaledQuantity(ing.quantity, scaleFactor)} ${ing.unit}'.trim()
+                ? '${formatScaledQuantity(ing.quantity, scaleFactor)} ${ing.unit}'
+                    .trim()
                 : ing.unit.isNotEmpty
                     ? ing.unit
                     : '';
@@ -252,24 +268,29 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
                 children: [
                   AnimatedCheckToggle(
                     value: isSelected,
-                    onChanged: _isSubmitting ? null : (_) {
-                      setState(() {
-                        if (isSelected) {
-                          _selectedIngredientIds.remove(ing.id);
-                        } else {
-                          _selectedIngredientIds.add(ing.id);
-                        }
-                      });
-                    },
-                    semanticLabelOn: l10n.recipeAddToListRemoveFromSelection(ing.name),
-                    semanticLabelOff: l10n.recipeAddToListAddToSelection(ing.name),
+                    onChanged: _isSubmitting
+                        ? null
+                        : (_) {
+                            setState(() {
+                              if (isSelected) {
+                                _selectedIngredientIds.remove(ing.id);
+                              } else {
+                                _selectedIngredientIds.add(ing.id);
+                              }
+                            });
+                          },
+                    semanticLabelOn:
+                        l10n.recipeAddToListRemoveFromSelection(ing.name),
+                    semanticLabelOff:
+                        l10n.recipeAddToListAddToSelection(ing.name),
                   ),
                   const SizedBox(width: MitlistSpacing.sm),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(ing.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text(ing.name,
+                            maxLines: 1, overflow: TextOverflow.ellipsis),
                         Text(
                           qtyText.trim(),
                           style: MitlistTypography.labelXSmall(),
@@ -288,7 +309,9 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
             variant: AppButtonVariant.solid,
             text: l10n.recipeAddToList,
             isLoading: _isSubmitting,
-            onPressed: _selectedListId != null && _selectedIngredientIds.isNotEmpty && !_isSubmitting
+            onPressed: _selectedListId != null &&
+                    _selectedIngredientIds.isNotEmpty &&
+                    !_isSubmitting
                 ? _submit
                 : null,
           ),

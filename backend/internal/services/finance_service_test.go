@@ -690,21 +690,23 @@ func TestSuggestReimbursements(t *testing.T) {
 //   - Settlement S2: from=userC, to=userA, amount=1500
 //
 // calculateBalances manual derivation:
-//   userA: Paid=9000+0+0=9000,  Owed=3000+0+0=3000, Total=6000
-//     (S1: +to→Owed+=2000; S2: +to→Owed+=1500  → Owed=3000+2000+1500=6500)
-//     Paid=(9000 from expense)+(0 settlements from)=9000  Total=9000-6500=2500
-//   userB: Paid=5000+2000=7000, Owed=3000+2500=5500, Total=1500
-//     (settlement S1: from_user→Paid+=2000)
-//   userC: Paid=0+1500=1500,    Owed=3000+2500=5500, Total=-4000
-//     (settlement S2: from_user→Paid+=1500)
+//
+//	userA: Paid=9000+0+0=9000,  Owed=3000+0+0=3000, Total=6000
+//	  (S1: +to→Owed+=2000; S2: +to→Owed+=1500  → Owed=3000+2000+1500=6500)
+//	  Paid=(9000 from expense)+(0 settlements from)=9000  Total=9000-6500=2500
+//	userB: Paid=5000+2000=7000, Owed=3000+2500=5500, Total=1500
+//	  (settlement S1: from_user→Paid+=2000)
+//	userC: Paid=0+1500=1500,    Owed=3000+2500=5500, Total=-4000
+//	  (settlement S2: from_user→Paid+=1500)
 //
 // Aggregate derivation (what DB would return):
-//   userA: ExpensePaid=9000, SplitOwed=3000, SettledOut=0,    SettledIn=3500
-//          → Paid=9000,  Owed=6500, Total=2500
-//   userB: ExpensePaid=5000, SplitOwed=5500, SettledOut=2000, SettledIn=0
-//          → Paid=7000,  Owed=5500, Total=1500
-//   userC: ExpensePaid=0,    SplitOwed=5500, SettledOut=1500, SettledIn=0
-//          → Paid=1500,  Owed=5500, Total=-4000
+//
+//	userA: ExpensePaid=9000, SplitOwed=3000, SettledOut=0,    SettledIn=3500
+//	       → Paid=9000,  Owed=6500, Total=2500
+//	userB: ExpensePaid=5000, SplitOwed=5500, SettledOut=2000, SettledIn=0
+//	       → Paid=7000,  Owed=5500, Total=1500
+//	userC: ExpensePaid=0,    SplitOwed=5500, SettledOut=1500, SettledIn=0
+//	       → Paid=1500,  Owed=5500, Total=-4000
 func TestBalancesEquivalence(t *testing.T) {
 	userA := uuid.MustParse("00000000-0000-0000-0000-000000000001")
 	userB := uuid.MustParse("00000000-0000-0000-0000-000000000002")

@@ -463,8 +463,10 @@ CREATE TRIGGER IF NOT EXISTS item_aliases_fts_au
   /// an interrupted seed leaves them missing only until the version-gated
   /// re-run repairs them on the next launch.
   Future<void> dropAliasIndexes() async {
-    await customStatement('DROP INDEX IF EXISTS idx_item_aliases_table_group_id;');
-    await customStatement('DROP INDEX IF EXISTS idx_item_aliases_table_alias_text;');
+    await customStatement(
+        'DROP INDEX IF EXISTS idx_item_aliases_table_group_id;');
+    await customStatement(
+        'DROP INDEX IF EXISTS idx_item_aliases_table_alias_text;');
     await customStatement('DROP INDEX IF EXISTS idx_item_aliases_group_alias;');
   }
 

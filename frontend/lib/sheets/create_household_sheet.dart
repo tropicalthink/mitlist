@@ -24,7 +24,8 @@ class CreateHouseholdSheet extends ConsumerStatefulWidget {
   }
 
   @override
-  ConsumerState<CreateHouseholdSheet> createState() => _CreateHouseholdSheetState();
+  ConsumerState<CreateHouseholdSheet> createState() =>
+      _CreateHouseholdSheetState();
 }
 
 class _CreateHouseholdSheetState extends ConsumerState<CreateHouseholdSheet> {
@@ -59,7 +60,9 @@ class _CreateHouseholdSheetState extends ConsumerState<CreateHouseholdSheet> {
       if (!mounted) return;
       setState(() => _isCreating = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
+        SnackBar(
+            content:
+                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -108,7 +111,9 @@ class _CreateHouseholdSheetState extends ConsumerState<CreateHouseholdSheet> {
             variant: AppButtonVariant.solid,
             color: AppButtonColor.primary,
             size: AppButtonSize.lg,
-            text: _isCreating ? l10n.recipeCreationCreating : l10n.groupsCreateHousehold,
+            text: _isCreating
+                ? l10n.recipeCreationCreating
+                : l10n.groupsCreateHousehold,
             isLoading: _isCreating,
             onPressed: _canCreate ? _onCreate : null,
           ),

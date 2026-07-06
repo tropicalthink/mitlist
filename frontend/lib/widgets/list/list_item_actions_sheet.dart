@@ -63,12 +63,12 @@ class ListItemActionsSheet {
             ListTile(
               leading: const AppIcon(name: 'eye'),
               title: Text(l10n.listItemViewPhoto),
-              onTap: () =>
-                  Navigator.of(context).pop(ListItemAction.viewPhoto),
+              onTap: () => Navigator.of(context).pop(ListItemAction.viewPhoto),
             ),
           ListTile(
             leading: const AppIcon(name: 'camera'),
-            title: Text(hasPhoto ? l10n.listItemReplacePhoto : l10n.listItemAddPhoto),
+            title: Text(
+                hasPhoto ? l10n.listItemReplacePhoto : l10n.listItemAddPhoto),
             onTap: () => Navigator.of(context).pop(ListItemAction.photo),
           ),
           if (hasPhoto)

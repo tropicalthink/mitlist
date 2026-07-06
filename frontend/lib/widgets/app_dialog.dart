@@ -55,7 +55,10 @@ class AppDialog extends StatelessWidget {
                 child: body,
               ),
             ),
-            if (dialogActions != null) _ActionBar(actions: dialogActions) else const _Footer(),
+            if (dialogActions != null)
+              _ActionBar(actions: dialogActions)
+            else
+              const _Footer(),
           ],
         ),
       ),
@@ -75,7 +78,8 @@ class _Header extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: Theme.of(context).colorScheme.outline, width: 2),
+          bottom: BorderSide(
+              color: Theme.of(context).colorScheme.outline, width: 2),
         ),
       ),
       padding: const EdgeInsets.only(
@@ -164,7 +168,8 @@ Future<T?> showAppDialog<T>({
     context: context,
     barrierDismissible: true,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-    barrierColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+    barrierColor:
+        Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
     transitionDuration: MitlistAnimations.medium,
     transitionBuilder: (context, animation, secondaryAnimation, child) {
       final curved = CurvedAnimation(

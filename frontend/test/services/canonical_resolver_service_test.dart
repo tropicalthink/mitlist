@@ -129,8 +129,8 @@ void main() {
 
     test('exact alias match returns score 1.0 without classifier', () async {
       await _seedCanonicalItem(db, id: 'item-milk', nameDe: 'vollmilch');
-      await _seedAlias(
-          db, id: 'a-milk', canonicalItemId: 'item-milk', aliasText: 'vollmilch');
+      await _seedAlias(db,
+          id: 'a-milk', canonicalItemId: 'item-milk', aliasText: 'vollmilch');
 
       final resolver = CanonicalResolverService(db);
       final result = await resolver.resolve('Vollmilch', 'hh-1');
@@ -140,10 +140,11 @@ void main() {
   });
 
   group('Classifier fallback wiring', () {
-    test('confident classifier + label maps to seeded item → model wins', () async {
+    test('confident classifier + label maps to seeded item → model wins',
+        () async {
       await _seedCanonicalItem(db, id: 'item-banana', nameDe: 'bananen');
-      await _seedAlias(
-          db, id: 'a-banana', canonicalItemId: 'item-banana', aliasText: 'bananen');
+      await _seedAlias(db,
+          id: 'a-banana', canonicalItemId: 'item-banana', aliasText: 'bananen');
 
       fakeClassifier.setHandler((_) => [
             const ClassifierPrediction(label: 'bananen', score: 0.92),
@@ -160,8 +161,8 @@ void main() {
 
     test('classifier score < 0.85 → fuzzy result kept', () async {
       await _seedCanonicalItem(db, id: 'item-banana', nameDe: 'bananen');
-      await _seedAlias(
-          db, id: 'a-banana', canonicalItemId: 'item-banana', aliasText: 'bananen');
+      await _seedAlias(db,
+          id: 'a-banana', canonicalItemId: 'item-banana', aliasText: 'bananen');
 
       // Weak classifier prediction — below the 0.85 threshold.
       fakeClassifier.setHandler((_) => [
@@ -175,7 +176,8 @@ void main() {
       expect(result.canonicalItemId, isNull);
     });
 
-    test('classifier confident but label not in alias table → fuzzy kept, no crash',
+    test(
+        'classifier confident but label not in alias table → fuzzy kept, no crash',
         () async {
       // No canonical item or alias seeded for the predicted label.
       fakeClassifier.setHandler((_) => [
@@ -200,7 +202,8 @@ void main() {
   });
 
   group('Existing call sites keep compiling (optional arg)', () {
-    test('CanonicalResolverService(db) compiles and works without classifier arg',
+    test(
+        'CanonicalResolverService(db) compiles and works without classifier arg',
         () async {
       // This guard test ensures the constructor is backward-compatible.
       final resolver = CanonicalResolverService(db);
@@ -261,21 +264,18 @@ void main() {
         () async {
       const groupId = 'hh-013c';
       await _seedCanonicalItem(db, id: 'item-butter', nameDe: 'butter');
-      await _seedAlias(
-          db,
-          id: 'a-butter',
-          canonicalItemId: 'item-butter',
-          aliasText: 'butter');
+      await _seedAlias(db,
+          id: 'a-butter', canonicalItemId: 'item-butter', aliasText: 'butter');
 
       final svc = CanonicalResolverService(db, useEnsemble: true);
       final ctx = await svc.prepareContext(groupId);
 
-      final withContext =
-          await svc.resolve('butter', groupId, context: ctx);
+      final withContext = await svc.resolve('butter', groupId, context: ctx);
       final withoutContext = await svc.resolve('butter', groupId);
 
       expect(withContext.canonicalItemId, equals('item-butter'));
-      expect(withContext.canonicalItemId, equals(withoutContext.canonicalItemId));
+      expect(
+          withContext.canonicalItemId, equals(withoutContext.canonicalItemId));
     });
   });
 }

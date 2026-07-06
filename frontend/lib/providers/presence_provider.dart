@@ -50,8 +50,9 @@ final boardMembersProvider =
 /// Members currently on the board, resolved to profiles and ordered by the
 /// roster so avatars don't reshuffle as people come and go. The viewer ([meId])
 /// is anchored first when present.
-final presentMembersProvider = Provider.family<List<GroupMemberProfile>,
-    ({String groupId, String? meId})>((ref, args) {
+final presentMembersProvider =
+    Provider.family<List<GroupMemberProfile>, ({String groupId, String? meId})>(
+        (ref, args) {
   final online = ref.watch(onlineMemberIdsProvider(args.groupId)).valueOrNull ??
       const <String>{};
   if (online.isEmpty) return const <GroupMemberProfile>[];
@@ -76,8 +77,8 @@ final presentMembersProvider = Provider.family<List<GroupMemberProfile>,
   final known = ordered.map((m) => m.userId).toSet();
   for (final id in online) {
     if (!known.contains(id)) {
-      ordered.add(
-          GroupMemberProfile(userId: id, displayName: '', role: 'member'));
+      ordered
+          .add(GroupMemberProfile(userId: id, displayName: '', role: 'member'));
     }
   }
   return ordered;

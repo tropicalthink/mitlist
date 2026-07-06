@@ -60,8 +60,7 @@ class GroceryClassifierService {
 
   /// Classifies [rawText] and returns up to [topK] predictions sorted by
   /// descending confidence.  Returns `const []` if the model is unavailable.
-  Future<List<ClassifierPrediction>> classify(String rawText,
-      {int topK = 5}) =>
+  Future<List<ClassifierPrediction>> classify(String rawText, {int topK = 5}) =>
       _impl.classify(rawText, topK: topK);
 
   /// Release interpreter resources.

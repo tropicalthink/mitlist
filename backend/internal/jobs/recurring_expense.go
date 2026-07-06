@@ -41,8 +41,8 @@ func newRecurringExpenseJob(repo recurringExpenseRepo, push Pusher, log *logger.
 }
 
 type recurringPushPayload struct {
-	Title string                 `json:"title"`
-	Body  string                 `json:"body"`
+	Title string                     `json:"title"`
+	Body  string                     `json:"body"`
 	Data  models.NotificationPayload `json:"data"`
 }
 

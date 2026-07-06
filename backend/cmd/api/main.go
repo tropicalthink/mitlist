@@ -181,9 +181,9 @@ func main() {
 
 			// Meal Plans
 			mealPlanHandler := handlers.NewMealPlanHandler(cnt.MealPlanService())
-		mealPlanHandler.RegisterRoutes(r)
+			mealPlanHandler.RegisterRoutes(r)
 
-		// Calendar
+			// Calendar
 			calendarHandler := handlers.NewCalendarHandler(cnt.CalendarService())
 			calendarHandler.RegisterRoutes(r)
 
@@ -191,9 +191,9 @@ func main() {
 			groceryHandler := handlers.NewGroceryHandler(cnt.GroceryService())
 			groceryHandler.RegisterRoutes(r)
 
-		// Share Target
-		shareHandler := handlers.NewShareHandler(cnt.ShareService())
-		shareHandler.RegisterRoutes(r)
+			// Share Target
+			shareHandler := handlers.NewShareHandler(cnt.ShareService())
+			shareHandler.RegisterRoutes(r)
 		})
 	})
 

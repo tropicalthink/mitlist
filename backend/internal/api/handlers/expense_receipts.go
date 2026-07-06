@@ -111,4 +111,3 @@ func (h *ExpenseReceiptHandler) DetachReceipt(w http.ResponseWriter, r *http.Req
 	}
 	api.RespondJSON(w, http.StatusNoContent, nil)
 }
-

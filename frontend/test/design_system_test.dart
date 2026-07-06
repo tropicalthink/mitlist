@@ -546,10 +546,12 @@ void main() {
           ),
         ),
       ));
-      CustomPaint paintOf() => tester.widget<CustomPaint>(find.ancestor(
+      CustomPaint paintOf() => tester.widget<CustomPaint>(find
+          .ancestor(
             of: find.text('Buy milk'),
             matching: find.byType(CustomPaint),
-          ).first);
+          )
+          .first);
       expect(paintOf().foregroundPainter, isNull);
 
       setOuterState(() => struck = true);
@@ -571,10 +573,12 @@ void main() {
         ),
       ));
       await tester.pump();
-      final paint = tester.widget<CustomPaint>(find.ancestor(
-        of: find.text('Buy milk'),
-        matching: find.byType(CustomPaint),
-      ).first);
+      final paint = tester.widget<CustomPaint>(find
+          .ancestor(
+            of: find.text('Buy milk'),
+            matching: find.byType(CustomPaint),
+          )
+          .first);
       expect(paint.foregroundPainter, isNotNull);
     });
   });
@@ -599,8 +603,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('rolls to a new value without overflow errors',
-        (tester) async {
+    testWidgets('rolls to a new value without overflow errors', (tester) async {
       var value = 8;
       late StateSetter setOuterState;
       await tester.pumpWidget(MaterialApp(

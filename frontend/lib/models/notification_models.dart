@@ -30,7 +30,9 @@ class NotificationModel {
       body: json['body'] as String,
       data: json['data'],
       isRead: json['is_read'] as bool? ?? false,
-      readAt: json['read_at'] != null ? DateTime.parse(json['read_at'] as String) : null,
+      readAt: json['read_at'] != null
+          ? DateTime.parse(json['read_at'] as String)
+          : null,
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
@@ -93,4 +95,3 @@ class NotificationPreferenceModel {
         'push_enabled': pushEnabled,
       };
 }
-

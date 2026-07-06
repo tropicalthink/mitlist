@@ -368,19 +368,19 @@ func TestListRepository_CreateItems_CarriesCanonicalItemID(t *testing.T) {
 
 	mock.ExpectExec("INSERT INTO list_items .*canonical_item_id.*SELECT .*canonical_item_id").
 		WithArgs(
-			pgxmock.AnyArg(), // now
-			pgxmock.AnyArg(), // ids
-			pgxmock.AnyArg(), // listIDs
-			pgxmock.AnyArg(), // names
-			pgxmock.AnyArg(), // quantities
-			pgxmock.AnyArg(), // units
-			pgxmock.AnyArg(), // notes
-			pgxmock.AnyArg(), // priceCents
-			pgxmock.AnyArg(), // productIDs
-			pgxmock.AnyArg(), // storeIDs
-			pgxmock.AnyArg(), // addedBy
-			pgxmock.AnyArg(), // checked
-			pgxmock.AnyArg(), // positions
+			pgxmock.AnyArg(),                // now
+			pgxmock.AnyArg(),                // ids
+			pgxmock.AnyArg(),                // listIDs
+			pgxmock.AnyArg(),                // names
+			pgxmock.AnyArg(),                // quantities
+			pgxmock.AnyArg(),                // units
+			pgxmock.AnyArg(),                // notes
+			pgxmock.AnyArg(),                // priceCents
+			pgxmock.AnyArg(),                // productIDs
+			pgxmock.AnyArg(),                // storeIDs
+			pgxmock.AnyArg(),                // addedBy
+			pgxmock.AnyArg(),                // checked
+			pgxmock.AnyArg(),                // positions
 			[]*uuid.UUID{&canonicalID, nil}, // canonicalItemIDs
 		).
 		WillReturnResult(pgxmock.NewResult("INSERT", 2))

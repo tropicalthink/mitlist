@@ -283,7 +283,9 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
               ),
               if (widget.trackedCount != null) ...[
                 const AppDivider(),
-                _DetailRow(label: l10n.choreDetailTracked, value: widget.trackedCount.toString()),
+                _DetailRow(
+                    label: l10n.choreDetailTracked,
+                    value: widget.trackedCount.toString()),
               ],
               if (widget.lastTrackedAt != null) ...[
                 const AppDivider(),
@@ -292,9 +294,12 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
                   value: DateFormat.yMMMd().format(widget.lastTrackedAt!),
                 ),
               ],
-              if (widget.lastDoneByLabel != null && widget.lastDoneByLabel!.isNotEmpty) ...[
+              if (widget.lastDoneByLabel != null &&
+                  widget.lastDoneByLabel!.isNotEmpty) ...[
                 const AppDivider(),
-                _DetailRow(label: l10n.choreDetailLastBy, value: widget.lastDoneByLabel!),
+                _DetailRow(
+                    label: l10n.choreDetailLastBy,
+                    value: widget.lastDoneByLabel!),
               ],
               if (widget.averageFrequencyHours != null) ...[
                 const AppDivider(),
@@ -327,19 +332,20 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
           ],
           if (widget.onAddSubtask != null) ...[
             const SizedBox(height: MitlistSpacing.sm),
-              AppButton(
-                variant: AppButtonVariant.ghost,
-                color: AppButtonColor.primary,
-                text: _showAddSubtask
-                    ? (_isSavingSubtask ? l10n.commonSaving : l10n.commonSave)
-                    : l10n.commonAdd,
-                isLoading: _isSavingSubtask,
-                icon: const AppIcon(name: 'plus'),
-                onPressed: _isSavingSubtask ? null : _handleAddSubtask,
-              ),
+            AppButton(
+              variant: AppButtonVariant.ghost,
+              color: AppButtonColor.primary,
+              text: _showAddSubtask
+                  ? (_isSavingSubtask ? l10n.commonSaving : l10n.commonSave)
+                  : l10n.commonAdd,
+              isLoading: _isSavingSubtask,
+              icon: const AppIcon(name: 'plus'),
+              onPressed: _isSavingSubtask ? null : _handleAddSubtask,
+            ),
           ],
         ],
-        if (widget.supplies.isNotEmpty || widget.onAddSuppliesToList != null) ...[
+        if (widget.supplies.isNotEmpty ||
+            widget.onAddSuppliesToList != null) ...[
           const SizedBox(height: MitlistSpacing.lg),
           Text(l10n.choreDetailSupplies, style: textTheme.titleMedium),
           const SizedBox(height: MitlistSpacing.sm),
@@ -431,7 +437,9 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
                 variant: AppButtonVariant.ghost,
                 color: AppButtonColor.error,
                 size: AppButtonSize.lg,
-                text: _isDeleting ? l10n.commonDeleting : l10n.choreDetailDeleteTitleDialog,
+                text: _isDeleting
+                    ? l10n.commonDeleting
+                    : l10n.choreDetailDeleteTitleDialog,
                 isLoading: _isDeleting,
                 onPressed: _isDeleting
                     ? null
@@ -503,7 +511,8 @@ class _DetailRow extends StatelessWidget {
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: MitlistTypography.monoBody(color: Theme.of(context).colorScheme.onSurface),
+            style: MitlistTypography.monoBody(
+                color: Theme.of(context).colorScheme.onSurface),
           ),
         ],
       ),
@@ -541,11 +550,12 @@ class _SubtaskRow extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                decoration: subtask.completed ? TextDecoration.lineThrough : null,
-                color: subtask.completed
-                    ? Theme.of(context).colorScheme.onSurfaceVariant
-                    : Theme.of(context).colorScheme.onSurface,
-              ),
+                    decoration:
+                        subtask.completed ? TextDecoration.lineThrough : null,
+                    color: subtask.completed
+                        ? Theme.of(context).colorScheme.onSurfaceVariant
+                        : Theme.of(context).colorScheme.onSurface,
+                  ),
             ),
           ),
           if (onDelete != null)

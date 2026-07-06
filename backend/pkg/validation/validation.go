@@ -9,16 +9,16 @@ import (
 
 // Limits for common string fields.
 const (
-	MaxEmailLength     = 254
-	MaxPasswordLength  = 72
-	MaxNameLength      = 100
-	MaxTitleLength     = 200
+	MaxEmailLength       = 254
+	MaxPasswordLength    = 72
+	MaxNameLength        = 100
+	MaxTitleLength       = 200
 	MaxDescriptionLength = 2000
-	MaxContentLength   = 10000
-	MaxListNameLength  = 100
-	MaxItemNameLength  = 200
-	MaxGroupNameLength = 100
-	MinPasswordLength  = 6
+	MaxContentLength     = 10000
+	MaxListNameLength    = 100
+	MaxItemNameLength    = 200
+	MaxGroupNameLength   = 100
+	MinPasswordLength    = 6
 )
 
 // NewFieldError creates a validation error for a specific field.

@@ -8,7 +8,8 @@ final financeServiceProviderAsync = FutureProvider<FinanceService>((ref) async {
   return await FinanceService.create(ref);
 });
 
-final financeRepositoryProvider = FutureProvider<FinanceRepository>((ref) async {
+final financeRepositoryProvider =
+    FutureProvider<FinanceRepository>((ref) async {
   final db = ref.watch(appDatabaseProvider);
   final service = await ref.read(financeServiceProviderAsync.future);
   return FinanceRepository(db: db, remote: service);
@@ -28,7 +29,8 @@ final cachedFinanceSummaryByGroupProvider =
   yield* repo.watchSummaryByGroup(groupId);
 });
 
-final expensesByGroupProvider = FutureProvider.family<List<Expense>, String>((ref, groupId) async {
+final expensesByGroupProvider =
+    FutureProvider.family<List<Expense>, String>((ref, groupId) async {
   final service = await ref.read(financeServiceProviderAsync.future);
   return service.listExpenses(groupId);
 });

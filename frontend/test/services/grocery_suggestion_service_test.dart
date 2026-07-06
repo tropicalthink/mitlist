@@ -18,7 +18,8 @@ void main() {
   final now = DateTime(2020);
   var seq = 0;
 
-  Future<void> item(String id, String de, String en, List<String> aliases) async {
+  Future<void> item(
+      String id, String de, String en, List<String> aliases) async {
     await db.upsertCanonicalItems([
       CanonicalItemsTableCompanion.insert(
         id: id,
@@ -156,7 +157,8 @@ void main() {
     await item('potato_chips2', 'Chips', 'Potato Chips', ['chips', 'crisps']);
     final result = await ids('corn fl');
     expect(result, contains('corn_flakes'),
-        reason: 'FTS5 multi-word prefix should match "corn" AND "fl*" in alias');
+        reason:
+            'FTS5 multi-word prefix should match "corn" AND "fl*" in alias');
     expect(result, isNot(contains('potato_chips2')),
         reason: 'potato chips should not match "corn fl"');
   });

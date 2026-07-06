@@ -151,7 +151,8 @@ class _PartyBlock extends StatelessWidget {
       children: [
         Text(
           label,
-          style: MitlistTypography.labelXSmall(color: Theme.of(context).colorScheme.onSurfaceVariant),
+          style: MitlistTypography.labelXSmall(
+              color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: MitlistSpacing.xs),
         Text(

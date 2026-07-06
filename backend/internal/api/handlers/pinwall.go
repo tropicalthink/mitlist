@@ -27,9 +27,9 @@ func (h *PinwallHandler) RegisterRoutes(r chi.Router) {
 }
 
 type createPinwallPostRequest struct {
-	GroupID uuid.UUID `json:"group_id"`
-	Content string    `json:"content"`
-	RemindAt *string  `json:"remind_at,omitempty"`
+	GroupID  uuid.UUID `json:"group_id"`
+	Content  string    `json:"content"`
+	RemindAt *string   `json:"remind_at,omitempty"`
 }
 
 func (h *PinwallHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
@@ -122,4 +122,3 @@ func (h *PinwallHandler) DeletePost(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
-

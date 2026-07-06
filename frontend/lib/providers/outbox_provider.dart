@@ -17,7 +17,8 @@ final connectivityServiceProvider = Provider<ConnectivityService>((ref) {
   return svc;
 });
 
-final outboxCoordinatorProvider = FutureProvider<OutboxCoordinator>((ref) async {
+final outboxCoordinatorProvider =
+    FutureProvider<OutboxCoordinator>((ref) async {
   final db = ref.watch(appDatabaseProvider);
   final connectivity = ref.watch(connectivityServiceProvider);
   final listRepo = await ref.watch(listRepositoryProvider.future);
@@ -82,8 +83,7 @@ class OutboxState {
   bool get isOffline => status == OutboxStatus.offline;
   bool get isSyncing => status == OutboxStatus.syncing;
   bool get hasErrors => status == OutboxStatus.error || failedCount > 0;
-  bool get hasConflicts =>
-      status == OutboxStatus.conflict || conflictCount > 0;
+  bool get hasConflicts => status == OutboxStatus.conflict || conflictCount > 0;
 }
 
 /// Watches connectivity and outbox queue to produce a unified sync status.

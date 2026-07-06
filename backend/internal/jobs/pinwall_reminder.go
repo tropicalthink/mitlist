@@ -293,4 +293,3 @@ func (r *pinwallReminderRepoImpl) MarkReminderSent(ctx context.Context, postID u
 	}
 	return ct.RowsAffected() > 0, nil
 }
-

@@ -79,7 +79,8 @@ class CanonicalResolverService {
     List<String> listContext = const [],
   }) async {
     if (!_useEnsemble) return null;
-    _ensemble ??= EnsembleResolver(_db, classifier: _classifier, embedder: _embedder);
+    _ensemble ??=
+        EnsembleResolver(_db, classifier: _classifier, embedder: _embedder);
     return _ensemble!.buildContext(groupId, listContext);
   }
 

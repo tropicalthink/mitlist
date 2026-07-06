@@ -106,21 +106,18 @@ void main() {
     });
 
     test('whitespace-only → empty list', () {
-      expect(
-          StaticEmbeddingService.tokenize('   ', vocab: vocab), isEmpty);
+      expect(StaticEmbeddingService.tokenize('   ', vocab: vocab), isEmpty);
     });
 
     test('input is lowercased before matching', () {
       // "Milch" → lowercased to "milch" → matched
-      final tokens =
-          StaticEmbeddingService.tokenize('Milch', vocab: vocab);
+      final tokens = StaticEmbeddingService.tokenize('Milch', vocab: vocab);
       expect(tokens, contains('milch'));
     });
 
     test('fully OOV with no trigram overlap → empty list', () {
       // "xyzxyz" → trigrams "xyz","yzy","zxy","xyz" — none in vocab
-      final tokens =
-          StaticEmbeddingService.tokenize('xyzxyz', vocab: vocab);
+      final tokens = StaticEmbeddingService.tokenize('xyzxyz', vocab: vocab);
       expect(tokens, isEmpty);
     });
   });

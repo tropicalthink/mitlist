@@ -63,7 +63,9 @@ class ChoreLoadSheet extends StatelessWidget {
     final rows = counts.entries.toList()
       ..sort((a, b) {
         final byCount = b.value.compareTo(a.value);
-        return byCount != 0 ? byCount : _nameFor(a.key).compareTo(_nameFor(b.key));
+        return byCount != 0
+            ? byCount
+            : _nameFor(a.key).compareTo(_nameFor(b.key));
       });
 
     final total = rows.fold<int>(0, (sum, r) => sum + r.value);

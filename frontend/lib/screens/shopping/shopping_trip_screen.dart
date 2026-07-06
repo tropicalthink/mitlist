@@ -96,7 +96,9 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
 
       final listSvc = await ref.read(listServiceProviderAsync.future);
       final lists = await listSvc.listLists(groupId, limit: 100);
-      final shoppingLists = lists.where((l) => l.type == 'shopping' || l.type == 'general').toList();
+      final shoppingLists = lists
+          .where((l) => l.type == 'shopping' || l.type == 'general')
+          .toList();
 
       if (shoppingLists.isEmpty) {
         setState(() {
@@ -113,10 +115,13 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
       for (final rl in rawLists) {
         final listId = rl['list_id'] as String? ?? '';
         final rawItems = rl['items'] as List<dynamic>? ?? [];
-        final items = rawItems.map((ri) {
-          final m = Map<String, dynamic>.from(ri as Map);
-          return ListItem.fromJson(m);
-        }).where((i) => !i.checked).toList();
+        final items = rawItems
+            .map((ri) {
+              final m = Map<String, dynamic>.from(ri as Map);
+              return ListItem.fromJson(m);
+            })
+            .where((i) => !i.checked)
+            .toList();
         if (items.isNotEmpty) {
           itemsByList[listId] = items;
         }
@@ -261,8 +266,8 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
       }
     }
     final completedCount = checkedItems.length;
-    final totalCents = checkedItems.fold<int>(
-        0, (sum, item) => sum + (item.priceCents ?? 0));
+    final totalCents =
+        checkedItems.fold<int>(0, (sum, item) => sum + (item.priceCents ?? 0));
 
     try {
       final listSvc = await ref.read(listServiceProviderAsync.future);
@@ -293,7 +298,9 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
+          SnackBar(
+              content:
+                  Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
         );
       }
     } finally {
@@ -379,7 +386,8 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
               totalCount: _totalItems,
               totalCents: _checkedTotalCents,
               isSubmitting: _isSubmitting,
-              onDone: _checkedCount > 0 && !_isSubmitting ? _completeChecked : null,
+              onDone:
+                  _checkedCount > 0 && !_isSubmitting ? _completeChecked : null,
             )
           : null,
     );
@@ -452,7 +460,8 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.md, vertical: MitlistSpacing.sm),
+        padding: const EdgeInsets.symmetric(
+            horizontal: MitlistSpacing.md, vertical: MitlistSpacing.sm),
         itemCount: _itemsByList.length,
         itemBuilder: (context, index) {
           final listId = _itemsByList.keys.elementAt(index);
@@ -464,7 +473,8 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
             items: items,
             checkedIds: _checkedItemIds,
             onToggle: _toggleItem,
-            onTapList: () => context.pushNamed('listDetail', pathParameters: {'listId': listId}),
+            onTapList: () => context
+                .pushNamed('listDetail', pathParameters: {'listId': listId}),
           );
         },
       ),
@@ -500,7 +510,10 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
               padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
               child: Row(
                 children: [
-                  AppIcon(name: 'shoppingCart', size: 16, color: colorScheme.primary),
+                  AppIcon(
+                      name: 'shoppingCart',
+                      size: 16,
+                      color: colorScheme.primary),
                   const SizedBox(width: MitlistSpacing.xs),
                   Expanded(
                     child: Text(
@@ -614,12 +627,12 @@ class _BasketBar extends StatelessWidget {
       fontSize: 22,
       fontWeight: FontWeight.w700,
       height: 1.0,
-      color: checkedCount > 0 ? colorScheme.primary : colorScheme.onSurfaceVariant,
+      color:
+          checkedCount > 0 ? colorScheme.primary : colorScheme.onSurfaceVariant,
     );
 
-    final priceSuffix = totalCents > 0
-        ? '  ·  €${(totalCents / 100).toStringAsFixed(2)}'
-        : '';
+    final priceSuffix =
+        totalCents > 0 ? '  ·  €${(totalCents / 100).toStringAsFixed(2)}' : '';
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -924,8 +937,10 @@ class _ItemRowState extends State<_ItemRow>
                   AnimatedCheckToggle(
                     value: widget.isChecked,
                     onChanged: (_) => widget.onToggle(),
-                    semanticLabelOn: l10n.shoppingTripMarkNotPurchased(widget.item.name),
-                    semanticLabelOff: l10n.shoppingTripMarkPurchased(widget.item.name),
+                    semanticLabelOn:
+                        l10n.shoppingTripMarkNotPurchased(widget.item.name),
+                    semanticLabelOff:
+                        l10n.shoppingTripMarkPurchased(widget.item.name),
                   ),
                   Expanded(
                     child: CustomPaint(
@@ -954,7 +969,8 @@ class _ItemRowState extends State<_ItemRow>
                         if (widget.item.priceCents != null &&
                             widget.item.priceCents! > 0)
                           Padding(
-                            padding: const EdgeInsets.only(left: MitlistSpacing.sm),
+                            padding:
+                                const EdgeInsets.only(left: MitlistSpacing.sm),
                             child: Text(
                               '€${(widget.item.priceCents! / 100).toStringAsFixed(2)}',
                               style: MitlistTypography.labelXSmall(),
@@ -1096,7 +1112,8 @@ class _DoneStampState extends State<_DoneStamp>
           return Opacity(
             opacity: opacity.clamp(0.0, 1.0),
             child: Container(
-              color: colorScheme.scrim.withValues(alpha: 0.18 * opacity.clamp(0.0, 1.0)),
+              color: colorScheme.scrim
+                  .withValues(alpha: 0.18 * opacity.clamp(0.0, 1.0)),
               alignment: Alignment.center,
               child: Transform.rotate(
                 angle: rotation,

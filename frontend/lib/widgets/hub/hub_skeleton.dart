@@ -36,18 +36,15 @@ class HubSkeleton extends StatelessWidget {
                       Row(
                         children: [
                           Expanded(
-                            child: AppSkeleton(
-                                width: 60, height: 40),
+                            child: AppSkeleton(width: 60, height: 40),
                           ),
                           SizedBox(width: MitlistSpacing.sm),
                           Expanded(
-                            child: AppSkeleton(
-                                width: 60, height: 40),
+                            child: AppSkeleton(width: 60, height: 40),
                           ),
                           SizedBox(width: MitlistSpacing.sm),
                           Expanded(
-                            child: AppSkeleton(
-                                width: 60, height: 40),
+                            child: AppSkeleton(width: 60, height: 40),
                           ),
                         ],
                       ),

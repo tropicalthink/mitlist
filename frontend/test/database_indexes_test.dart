@@ -22,9 +22,11 @@ void main() {
       // Trigger onCreate by executing any query that forces the DB to open.
       await db.customSelect('SELECT 1').get();
 
-      final rows = await db.customSelect(
-        "SELECT name FROM sqlite_master WHERE type='index' AND name LIKE 'idx_%' ORDER BY name",
-      ).get();
+      final rows = await db
+          .customSelect(
+            "SELECT name FROM sqlite_master WHERE type='index' AND name LIKE 'idx_%' ORDER BY name",
+          )
+          .get();
 
       final names = rows.map((r) => r.data['name'] as String).toSet();
 

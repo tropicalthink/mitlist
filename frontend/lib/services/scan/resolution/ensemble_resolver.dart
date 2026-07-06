@@ -1,6 +1,7 @@
 import '../../../storage/app_database.dart';
 import '../../canonical_display.dart';
-import '../canonical_resolver_service.dart' show ResolveAlternative, ResolveResult;
+import '../canonical_resolver_service.dart'
+    show ResolveAlternative, ResolveResult;
 import '../grocery_classifier_service.dart';
 import '../static_embedding_service.dart';
 import 'calibrated_scorer.dart';

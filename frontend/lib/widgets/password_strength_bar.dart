@@ -39,7 +39,8 @@ class PasswordStrengthBar extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final strength = computeStrength(password);
     final disableAnimations = MediaQuery.of(context).disableAnimations;
-    final duration = disableAnimations ? Duration.zero : MitlistAnimations.medium;
+    final duration =
+        disableAnimations ? Duration.zero : MitlistAnimations.medium;
     final color = _colorForStrength(strength);
     final label = switch (strength) {
       1 => l10n.passwordStrengthWeak,

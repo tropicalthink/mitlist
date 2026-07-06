@@ -18,13 +18,13 @@ func TestNotificationRepository_CreateNotification(t *testing.T) {
 	repo := NewNotificationRepository(mock)
 
 	n := &models.Notification{
-		UserID:  fixedUUID(),
-		Type:    "info",
-		Title:   "Hello",
-		Body:    "World",
-		Data:    []byte(`{"key":"value"}`),
-		IsRead:  false,
-		ReadAt:  nil,
+		UserID:    fixedUUID(),
+		Type:      "info",
+		Title:     "Hello",
+		Body:      "World",
+		Data:      []byte(`{"key":"value"}`),
+		IsRead:    false,
+		ReadAt:    nil,
 		CreatedAt: fixedTime(),
 	}
 

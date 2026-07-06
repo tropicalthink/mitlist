@@ -53,7 +53,8 @@ final groceryRepositoryProvider =
 /// is due to rebuy, computed on-device from purchase cadence. Returns [] when
 /// there is not enough history.
 final runningLowProvider =
-    FutureProvider.family<List<RestockSuggestion>, String>((ref, groupId) async {
+    FutureProvider.family<List<RestockSuggestion>, String>(
+        (ref, groupId) async {
   return ref.read(restockServiceProvider).due(groupId: groupId, limit: 8);
 });
 

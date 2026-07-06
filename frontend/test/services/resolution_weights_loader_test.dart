@@ -34,8 +34,7 @@ String _bundle({
     jsonEncode({
       'version': 1,
       'feature_names': featureNames ?? kResolutionFeatureNames,
-      'weights':
-          weights ?? List.filled(kResolutionFeatureCount, 0.5),
+      'weights': weights ?? List.filled(kResolutionFeatureCount, 0.5),
       'bias': bias,
       'tau_auto': tauAuto,
       'tau_review': 0.5,

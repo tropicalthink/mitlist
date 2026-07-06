@@ -262,7 +262,8 @@ class _CookModeScreenState extends ConsumerState<CookModeScreen> {
     if (t.completed) return l10n.commonDone;
     if (!t.running) return _durationLabel(baseDuration);
     final remaining = t.endTime!.difference(DateTime.now());
-    return _durationLabel(remaining < Duration.zero ? Duration.zero : remaining);
+    return _durationLabel(
+        remaining < Duration.zero ? Duration.zero : remaining);
   }
 
   static String _durationLabel(Duration d) {
@@ -680,7 +681,8 @@ class _GatherRow extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final disableAnimations = MediaQuery.of(context).disableAnimations;
     return Semantics(
-      label: '$label, ${isGathered ? l10n.cookModeGathered : l10n.cookModeNotGathered}',
+      label:
+          '$label, ${isGathered ? l10n.cookModeGathered : l10n.cookModeNotGathered}',
       button: true,
       child: InkWell(
         onTap: onTap,
@@ -700,15 +702,12 @@ class _GatherRow extends StatelessWidget {
                 height: 24,
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: isGathered
-                        ? colorScheme.primary
-                        : colorScheme.outline,
+                    color:
+                        isGathered ? colorScheme.primary : colorScheme.outline,
                     width: 2,
                   ),
                   borderRadius: BorderRadius.zero,
-                  color: isGathered
-                      ? colorScheme.primary
-                      : Colors.transparent,
+                  color: isGathered ? colorScheme.primary : Colors.transparent,
                 ),
                 child: isGathered
                     ? AppIcon(
@@ -723,12 +722,9 @@ class _GatherRow extends StatelessWidget {
                 child: Text(
                   label,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        decoration: isGathered
-                            ? TextDecoration.lineThrough
-                            : null,
-                        color: isGathered
-                            ? colorScheme.onSurfaceVariant
-                            : null,
+                        decoration:
+                            isGathered ? TextDecoration.lineThrough : null,
+                        color: isGathered ? colorScheme.onSurfaceVariant : null,
                       ),
                 ),
               ),
@@ -1037,7 +1033,10 @@ class _StepRow extends StatelessWidget {
             ),
             child: Row(
               children: [
-                AppIcon(name: 'checkCircleOutline', size: 16, color: colorScheme.primary),
+                AppIcon(
+                    name: 'checkCircleOutline',
+                    size: 16,
+                    color: colorScheme.primary),
                 const SizedBox(width: MitlistSpacing.sm),
                 Expanded(
                   child: Text(
@@ -1306,7 +1305,9 @@ class _BottomZone extends StatelessWidget {
               // Done zone (full-width when no ingredients, otherwise expanded)
               Expanded(
                 child: Semantics(
-                  label: isLast ? l10n.cookModeFinishCooking : l10n.cookModeAdvanceStep,
+                  label: isLast
+                      ? l10n.cookModeFinishCooking
+                      : l10n.cookModeAdvanceStep,
                   button: true,
                   child: GestureDetector(
                     onTap: onAdvance,
@@ -1361,8 +1362,7 @@ class _IngredientsHandle extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: ingredients.map((ing) {
               return Padding(
-                padding:
-                    const EdgeInsets.only(bottom: MitlistSpacing.sm),
+                padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
                 child: Text(
                   scaledLabel(ing),
                   style: theme.textTheme.bodyMedium,
@@ -1506,8 +1506,8 @@ class _TimerFlashState extends State<_TimerFlash>
       builder: (context, _) {
         return IgnorePointer(
           child: Container(
-            color: colorScheme.primary
-                .withValues(alpha: _controller.value * 0.6),
+            color:
+                colorScheme.primary.withValues(alpha: _controller.value * 0.6),
           ),
         );
       },

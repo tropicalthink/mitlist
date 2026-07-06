@@ -785,7 +785,8 @@ class _InitialAvatar extends StatelessWidget {
           fontWeight: FontWeight.w700,
           height: 1.0,
           shadows: const [
-            Shadow(color: Colors.black26, blurRadius: 1, offset: Offset(0, 0.5)),
+            Shadow(
+                color: Colors.black26, blurRadius: 1, offset: Offset(0, 0.5)),
           ],
         ),
       ),
@@ -812,7 +813,8 @@ class _MoreAvatar extends StatelessWidget {
       decoration: BoxDecoration(
         color: MitlistColors.neutral800,
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.black.withValues(alpha: 0.25), width: 1.5),
+        border:
+            Border.all(color: Colors.black.withValues(alpha: 0.25), width: 1.5),
       ),
       child: Text(
         '+$extra',
@@ -882,8 +884,8 @@ class _LiveDotState extends State<_LiveDot>
                   child: Container(
                     width: core + 10 * t,
                     height: core + 10 * t,
-                    decoration:
-                        const BoxDecoration(color: green, shape: BoxShape.circle),
+                    decoration: const BoxDecoration(
+                        color: green, shape: BoxShape.circle),
                   ),
                 ),
                 child!,
@@ -1372,7 +1374,9 @@ class _BoardTonightTicket extends ConsumerWidget {
                           unawaited(Haptics.light());
                           context.pushNamed(
                             'recipeCook',
-                            pathParameters: {'recipeId': selected!.plan.recipeId},
+                            pathParameters: {
+                              'recipeId': selected!.plan.recipeId
+                            },
                           );
                         },
                       )

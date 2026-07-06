@@ -49,4 +49,3 @@ class PinwallPost {
         if (linkedEntityId != null) 'linked_entity_id': linkedEntityId,
       };
 }
-

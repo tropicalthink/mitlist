@@ -362,7 +362,8 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
           child: Row(
             children: [
               Expanded(
-                child: Text(l10n.pinwallBoardLabel, style: textTheme.titleMedium),
+                child:
+                    Text(l10n.pinwallBoardLabel, style: textTheme.titleMedium),
               ),
               _PinwallOpenBoardButton(
                 groupId: widget.groupId,
@@ -805,7 +806,9 @@ class _PinwallComposerNote extends StatelessWidget {
                     AppButton(
                       text: isUploadingMedia
                           ? l10n.pinwallUploading
-                          : (isPosting ? l10n.pinwallPosting : l10n.pinwallPinIt),
+                          : (isPosting
+                              ? l10n.pinwallPosting
+                              : l10n.pinwallPinIt),
                       icon: Icon(Icons.push_pin_outlined),
                       onPressed:
                           (isPosting || isUploadingMedia) ? null : onPost,
@@ -877,7 +880,8 @@ class _PinwallQuickStatsState extends State<_PinwallQuickStats> {
         border: Border.all(color: border, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: MitlistColors.neutral950.withValues(alpha: dark ? 0.42 : 0.16),
+            color:
+                MitlistColors.neutral950.withValues(alpha: dark ? 0.42 : 0.16),
             blurRadius: 0,
             offset: const Offset(4, 5),
           ),
@@ -913,8 +917,8 @@ class _PinwallQuickStatsState extends State<_PinwallQuickStats> {
                     AnimatedRotation(
                       turns: _expanded ? 0.5 : 0,
                       duration: const Duration(milliseconds: 200),
-                      child: Icon(Icons.expand_more,
-                          size: 20, color: mutedColor),
+                      child:
+                          Icon(Icons.expand_more, size: 20, color: mutedColor),
                     ),
                   ],
                 ),

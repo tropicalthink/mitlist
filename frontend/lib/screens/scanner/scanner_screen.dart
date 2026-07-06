@@ -212,7 +212,6 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
             ),
           ),
           const SizedBox(height: MitlistSpacing.md),
-
           if (_isAnalyzing)
             Center(
               child: Padding(
@@ -241,7 +240,6 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
               onPressed: _showSourcePicker,
             ),
           ],
-
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(top: MitlistSpacing.md),

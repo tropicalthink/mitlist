@@ -743,7 +743,9 @@ class _KitchenHeader extends ConsumerWidget {
     );
 
     final detailLabel = l10n.recipeSharedPrivate(sharedCount, privateCount) +
-        (collectionCount > 0 ? l10n.recipeCookbooksLabel(collectionCount) : '') +
+        (collectionCount > 0
+            ? l10n.recipeCookbooksLabel(collectionCount)
+            : '') +
         (mealPlanCount != null
             ? ' · ${l10n.recipeMealsPlanned(mealPlanCount)}'
             : '');

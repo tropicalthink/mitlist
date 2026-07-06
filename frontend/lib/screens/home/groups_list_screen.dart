@@ -338,7 +338,6 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
   }
 }
 
-
 class _GroupCard extends StatelessWidget {
   final Group group;
   final VoidCallback? onTap;
@@ -358,8 +357,9 @@ class _GroupCard extends StatelessWidget {
         AppIcon(
           name: isPersonal ? 'userCircle' : 'home',
           size: MitlistSpacing.space6,
-          color:
-              isPersonal ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
+          color: isPersonal
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.onSurface,
         ),
         const SizedBox(width: MitlistSpacing.md),
         Expanded(

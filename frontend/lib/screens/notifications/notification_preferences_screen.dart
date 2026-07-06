@@ -88,8 +88,7 @@ class _NotificationPreferencesScreenState
     setState(() => _savingKeys[key] = true);
 
     try {
-      final service =
-          await ref.read(notificationServiceProviderAsync.future);
+      final service = await ref.read(notificationServiceProviderAsync.future);
       final idx = _preferences.indexWhere((p) => p.id == preferenceId);
       if (idx < 0) return;
 
@@ -99,16 +98,13 @@ class _NotificationPreferencesScreenState
         userId: pref.userId,
         groupId: pref.groupId,
         choreDue: field == 'chore_due' ? value : pref.choreDue,
-        choreDueDayOf:
-            field == 'chore_due_day_of' ? value : pref.choreDueDayOf,
-        listItemAdded:
-            field == 'list_item_added' ? value : pref.listItemAdded,
+        choreDueDayOf: field == 'chore_due_day_of' ? value : pref.choreDueDayOf,
+        listItemAdded: field == 'list_item_added' ? value : pref.listItemAdded,
         expenseCreated:
             field == 'expense_created' ? value : pref.expenseCreated,
         mealPlanChanged:
             field == 'meal_plan_changed' ? value : pref.mealPlanChanged,
-        weeklyDigest:
-            field == 'weekly_digest' ? value : pref.weeklyDigest,
+        weeklyDigest: field == 'weekly_digest' ? value : pref.weeklyDigest,
         pinwallReminder:
             field == 'pinwall_reminder' ? value : pref.pinwallReminder,
         pushEnabled: field == 'push_enabled' ? value : pref.pushEnabled,
@@ -129,8 +125,7 @@ class _NotificationPreferencesScreenState
 
   Widget _buildPreferenceCard(NotificationPreferenceModel pref) {
     final l10n = AppLocalizations.of(context)!;
-    final groupName =
-        _groupNames[pref.groupId] ?? l10n.notifPrefGroupName;
+    final groupName = _groupNames[pref.groupId] ?? l10n.notifPrefGroupName;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
@@ -140,14 +135,10 @@ class _NotificationPreferencesScreenState
           children: [
             if (_groupNames.length > 1)
               Padding(
-                padding:
-                    const EdgeInsets.only(bottom: MitlistSpacing.sm),
+                padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
                 child: Text(
                   groupName,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: Theme.of(context).colorScheme.primary,
                       ),
                 ),
@@ -165,60 +156,48 @@ class _NotificationPreferencesScreenState
               label: l10n.notifPrefChoreDueDayOf,
               subtitle: l10n.notifPrefChoreDueDayOfDesc,
               value: pref.choreDueDayOf,
-              saving:
-                  _savingKeys['${pref.id}:chore_due_day_of'] == true,
-              onChanged: (v) =>
-                  _toggle(pref.id, 'chore_due_day_of', v),
+              saving: _savingKeys['${pref.id}:chore_due_day_of'] == true,
+              onChanged: (v) => _toggle(pref.id, 'chore_due_day_of', v),
             ),
             _ToggleRow(
               icon: 'clipboardDocumentList',
               label: l10n.notifPrefListItemAdded,
               subtitle: l10n.notifPrefListItemAddedDesc,
               value: pref.listItemAdded,
-              saving:
-                  _savingKeys['${pref.id}:list_item_added'] == true,
-              onChanged: (v) =>
-                  _toggle(pref.id, 'list_item_added', v),
+              saving: _savingKeys['${pref.id}:list_item_added'] == true,
+              onChanged: (v) => _toggle(pref.id, 'list_item_added', v),
             ),
             _ToggleRow(
               icon: 'banknotes',
               label: l10n.notifPrefExpenseCreated,
               subtitle: l10n.notifPrefExpenseCreatedDesc,
               value: pref.expenseCreated,
-              saving:
-                  _savingKeys['${pref.id}:expense_created'] == true,
-              onChanged: (v) =>
-                  _toggle(pref.id, 'expense_created', v),
+              saving: _savingKeys['${pref.id}:expense_created'] == true,
+              onChanged: (v) => _toggle(pref.id, 'expense_created', v),
             ),
             _ToggleRow(
               icon: 'calendarDays',
               label: l10n.notifPrefMealPlanChanged,
               subtitle: l10n.notifPrefMealPlanChangedDesc,
               value: pref.mealPlanChanged,
-              saving:
-                  _savingKeys['${pref.id}:meal_plan_changed'] == true,
-              onChanged: (v) =>
-                  _toggle(pref.id, 'meal_plan_changed', v),
+              saving: _savingKeys['${pref.id}:meal_plan_changed'] == true,
+              onChanged: (v) => _toggle(pref.id, 'meal_plan_changed', v),
             ),
             _ToggleRow(
               icon: 'chartBar',
               label: l10n.notifPrefWeeklyDigest,
               subtitle: l10n.notifPrefWeeklyDigestDesc,
               value: pref.weeklyDigest,
-              saving:
-                  _savingKeys['${pref.id}:weekly_digest'] == true,
-              onChanged: (v) =>
-                  _toggle(pref.id, 'weekly_digest', v),
+              saving: _savingKeys['${pref.id}:weekly_digest'] == true,
+              onChanged: (v) => _toggle(pref.id, 'weekly_digest', v),
             ),
             _ToggleRow(
               icon: 'bell',
               label: l10n.notifPrefPinwallReminders,
               subtitle: l10n.notifPrefPinwallRemindersDesc,
               value: pref.pinwallReminder,
-              saving:
-                  _savingKeys['${pref.id}:pinwall_reminder'] == true,
-              onChanged: (v) =>
-                  _toggle(pref.id, 'pinwall_reminder', v),
+              saving: _savingKeys['${pref.id}:pinwall_reminder'] == true,
+              onChanged: (v) => _toggle(pref.id, 'pinwall_reminder', v),
             ),
             Divider(color: Theme.of(context).colorScheme.outlineVariant),
             _ToggleRow(
@@ -226,10 +205,8 @@ class _NotificationPreferencesScreenState
               label: l10n.notifPrefPushNotifications,
               subtitle: l10n.notifPrefPushNotificationsDesc,
               value: pref.pushEnabled,
-              saving:
-                  _savingKeys['${pref.id}:push_enabled'] == true,
-              onChanged: (v) =>
-                  _toggle(pref.id, 'push_enabled', v),
+              saving: _savingKeys['${pref.id}:push_enabled'] == true,
+              onChanged: (v) => _toggle(pref.id, 'push_enabled', v),
             ),
           ],
         ),
@@ -253,24 +230,27 @@ class _NotificationPreferencesScreenState
       body: _isLoading
           ? ListView(
               padding: const EdgeInsets.all(MitlistSpacing.md),
-              children: List.generate(3, (_) => Padding(
-                padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
-                child: AppCard(
-                  padding: AppCardPadding.md,
-                  child: const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppSkeleton(width: 120, height: 16),
-                      SizedBox(height: MitlistSpacing.md),
-                      AppSkeleton(width: double.infinity, height: 24),
-                      SizedBox(height: MitlistSpacing.sm),
-                      AppSkeleton(width: double.infinity, height: 24),
-                      SizedBox(height: MitlistSpacing.sm),
-                      AppSkeleton(width: double.infinity, height: 24),
-                    ],
-                  ),
-                ),
-              )),
+              children: List.generate(
+                  3,
+                  (_) => Padding(
+                        padding:
+                            const EdgeInsets.only(bottom: MitlistSpacing.md),
+                        child: AppCard(
+                          padding: AppCardPadding.md,
+                          child: const Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              AppSkeleton(width: 120, height: 16),
+                              SizedBox(height: MitlistSpacing.md),
+                              AppSkeleton(width: double.infinity, height: 24),
+                              SizedBox(height: MitlistSpacing.sm),
+                              AppSkeleton(width: double.infinity, height: 24),
+                              SizedBox(height: MitlistSpacing.sm),
+                              AppSkeleton(width: double.infinity, height: 24),
+                            ],
+                          ),
+                        ),
+                      )),
             )
           : RefreshIndicator(
               onRefresh: _load,
@@ -278,8 +258,7 @@ class _NotificationPreferencesScreenState
                 padding: const EdgeInsets.all(MitlistSpacing.md),
                 children: [
                   if (_error != null) ...[
-                    AppAlert(
-                        type: AppAlertType.error, message: _error!),
+                    AppAlert(type: AppAlertType.error, message: _error!),
                     const SizedBox(height: MitlistSpacing.md),
                     AppButton(
                       text: l10n.commonRetry,
@@ -289,7 +268,8 @@ class _NotificationPreferencesScreenState
                   ],
                   if (!_hasHousehold)
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xl),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: MitlistSpacing.xl),
                       child: AppEmptyState(
                         lottieAsset: 'assets/animations/lottie/House.lottie',
                         icon: const AppIcon(name: 'homeOutline', size: 56),
@@ -307,16 +287,16 @@ class _NotificationPreferencesScreenState
                     ..._preferences.map(_buildPreferenceCard)
                   else
                     AppEmptyState(
-                      lottieAsset: 'assets/animations/lottie/Notifications.lottie',
+                      lottieAsset:
+                          'assets/animations/lottie/Notifications.lottie',
                       icon: AppIcon(name: 'tune', size: 56),
                       title: l10n.notifPrefNoPreferences,
-                      description:
-                          l10n.notifPrefNoPreferencesDesc,
+                      description: l10n.notifPrefNoPreferencesDesc,
                     ),
-                  ],
-                ),
+                ],
               ),
-            );
+            ),
+    );
   }
 }
 
@@ -340,8 +320,7 @@ class _ToggleRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding:
-          const EdgeInsets.symmetric(vertical: MitlistSpacing.xs),
+      padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xs),
       child: Row(
         children: [
           AppIcon(

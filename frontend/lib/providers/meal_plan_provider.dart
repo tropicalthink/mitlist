@@ -5,7 +5,8 @@ import '../models/recipe_models.dart';
 import '../providers/recipe_provider.dart';
 import '../services/meal_plan_service.dart';
 
-final mealPlanServiceProviderAsync = FutureProvider<MealPlanService>((ref) async {
+final mealPlanServiceProviderAsync =
+    FutureProvider<MealPlanService>((ref) async {
   return await MealPlanService.create(ref);
 });
 
@@ -20,7 +21,8 @@ final todayMealPlansProvider =
   ref.keepAlive();
   final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
   final mealPlanSvc = await ref.read(mealPlanServiceProviderAsync.future);
-  final plans = await mealPlanSvc.listMealPlans(groupId, from: today, to: today);
+  final plans =
+      await mealPlanSvc.listMealPlans(groupId, from: today, to: today);
 
   final recipeSvc = await ref.read(recipeServiceProviderAsync.future);
   final recipes = await Future.wait(
@@ -41,7 +43,8 @@ final todayMealPlansProvider =
 
 /// This-week meal plan rows for the Kitchen tab summary card.
 final weekMealPlansSummaryProvider =
-    FutureProvider.family<List<WeekMealPlanSummary>, String>((ref, groupId) async {
+    FutureProvider.family<List<WeekMealPlanSummary>, String>(
+        (ref, groupId) async {
   ref.keepAlive();
   final now = DateTime.now();
   final weekStart = now.subtract(Duration(days: now.weekday - 1));

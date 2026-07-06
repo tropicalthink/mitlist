@@ -18,8 +18,8 @@ import (
 
 // listPushPayload is the FCM/VAPID push message structure for list events.
 type listPushPayload struct {
-	Title string                  `json:"title"`
-	Body  string                  `json:"body"`
+	Title string                     `json:"title"`
+	Body  string                     `json:"body"`
 	Data  models.NotificationPayload `json:"data"`
 }
 
@@ -27,8 +27,8 @@ type listPushPayload struct {
 type ListService struct {
 	listRepo   repositories.ListRepo
 	groupRepo  repositories.GroupRepo
-	hub        *sse.Hub              // optional; nil disables SSE broadcasts
-	pushSvc    PushService           // optional; nil disables push broadcasts
+	hub        *sse.Hub               // optional; nil disables SSE broadcasts
+	pushSvc    PushService            // optional; nil disables push broadcasts
 	dispatcher NotificationDispatcher // optional; nil disables persist+push dispatch
 }
 

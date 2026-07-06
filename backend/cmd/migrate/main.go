@@ -145,4 +145,3 @@ func printUsage() {
 	fmt.Fprintln(os.Stderr, "  version               Print current migration version")
 	fmt.Fprintln(os.Stderr, "  force    -version=N   Force migration version (repair dirty state)")
 }
-

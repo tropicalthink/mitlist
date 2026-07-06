@@ -106,7 +106,8 @@ void main() {
       expect(result.enhanced, isFalse);
     });
 
-    test('DocumentRectifierService returns valid bytes for a document image', () {
+    test('DocumentRectifierService returns valid bytes for a document image',
+        () {
       final bytes = _testDocumentImage();
       final result = const DocumentRectifierService().rectify(bytes);
 
@@ -134,7 +135,8 @@ void main() {
       },
     );
 
-    test('EnhancementService async enhance runs off the main isolate', () async {
+    test('EnhancementService async enhance runs off the main isolate',
+        () async {
       // We can't directly assert "this ran in an isolate" from a test, but we
       // CAN assert that enhance() returns a Future and completes successfully
       // while the calling thread is free to do other work.
@@ -146,8 +148,7 @@ void main() {
         // By the time this callback fires, callerUnblocked must already be true
         // (i.e. the main isolate continued executing after awaiting the future).
         expect(callerUnblocked, isTrue,
-            reason:
-                'enhance() must not block the calling isolate: '
+            reason: 'enhance() must not block the calling isolate: '
                 'callerUnblocked should be true before the callback fires');
         return result;
       });
@@ -174,7 +175,9 @@ void main() {
       expect(result.originalBytes, garbage);
     });
 
-    test('repeat-call stability: 25× preprocess returns non-empty decodable bytes (plan 016)', () {
+    test(
+        'repeat-call stability: 25× preprocess returns non-empty decodable bytes (plan 016)',
+        () {
       final bytes = _testListImage();
       for (var i = 0; i < 25; i++) {
         final result = const CapturePreprocessorService().preprocess(bytes);
@@ -199,7 +202,8 @@ void main() {
           reason: 'ocrBytes must decode to a valid image');
     });
 
-    test('ocrBytes is NOT bilevel — has ≥3 distinct luma values (plan 017)', () {
+    test('ocrBytes is NOT bilevel — has ≥3 distinct luma values (plan 017)',
+        () {
       // Use a gradient image so a natural image must have many luma values,
       // while a binarized image would have at most 2 (0 and 255).
       final bytes = _gradientImage();
@@ -231,7 +235,9 @@ void main() {
       );
     });
 
-    test('processedBytes (preview) is still produced when ocrBytes differs (plan 017)', () {
+    test(
+        'processedBytes (preview) is still produced when ocrBytes differs (plan 017)',
+        () {
       // Both fields must be present and decodable on the same result.
       final bytes = _testDocumentImage();
       final result = const CapturePreprocessorService().preprocess(bytes);
@@ -244,7 +250,8 @@ void main() {
           reason: 'ocrBytes must also be present');
     });
 
-    test('ocrBytes fail-softs to original bytes on invalid input (plan 017)', () {
+    test('ocrBytes fail-softs to original bytes on invalid input (plan 017)',
+        () {
       final garbage = Uint8List.fromList([9, 8, 7, 6, 5]);
       final result = const CapturePreprocessorService().preprocess(garbage);
 

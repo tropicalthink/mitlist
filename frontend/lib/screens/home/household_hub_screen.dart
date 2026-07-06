@@ -53,8 +53,7 @@ class HouseholdHubScreen extends ConsumerStatefulWidget {
   const HouseholdHubScreen({super.key, this.groupId});
 
   @override
-  ConsumerState<HouseholdHubScreen> createState() =>
-      _HouseholdHubScreenState();
+  ConsumerState<HouseholdHubScreen> createState() => _HouseholdHubScreenState();
 }
 
 class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
@@ -129,7 +128,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
 
     try {
       final groups = await ref.read(cachedGroupsProvider.future);
-      final gid = resolveActiveGroupId(groups, ref.read(currentGroupIdProvider));
+      final gid =
+          resolveActiveGroupId(groups, ref.read(currentGroupIdProvider));
       if (!mounted) return;
       if (isValidGroupId(gid)) {
         _resolvedGroupId = gid;
@@ -175,8 +175,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
       var households = <Group>[];
       try {
         households = await ref.read(cachedGroupsProvider.future);
-      } catch (_) {
-      }
+      } catch (_) {}
 
       var activities = <ActivityLogModel>[];
       var activityError = false;
@@ -201,11 +200,9 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
       );
 
       final cachedGroup = await repo.getGroupOnce(_resolvedGroupId!);
-      final cachedActivities =
-          await repo.getActivitiesOnce(_resolvedGroupId!);
+      final cachedActivities = await repo.getActivitiesOnce(_resolvedGroupId!);
       if (!mounted) return;
-      final hadCache =
-          cachedGroup != null || cachedActivities.$1.isNotEmpty;
+      final hadCache = cachedGroup != null || cachedActivities.$1.isNotEmpty;
       setState(() {
         _data = cachedGroup;
         _households = households;
@@ -216,7 +213,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
         _me = me;
         _isLoading = !hadCache;
       });
-      unawaited(ref.read(currentGroupIdProvider.notifier).set(_resolvedGroupId!));
+      unawaited(
+          ref.read(currentGroupIdProvider.notifier).set(_resolvedGroupId!));
 
       await _groupSub?.cancel();
       _groupSub = repo.watchGroup(_resolvedGroupId!).listen((g) {
@@ -225,8 +223,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
       });
 
       await _activitySub?.cancel();
-      _activitySub =
-          repo.watchActivities(_resolvedGroupId!).listen((tuple) {
+      _activitySub = repo.watchActivities(_resolvedGroupId!).listen((tuple) {
         if (!mounted) return;
         setState(() {
           _snapshot = _HubSnapshot(
@@ -241,16 +238,13 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
         final tuple = await repo.getActivitiesOnce(_resolvedGroupId!);
         activities = tuple.$1;
         activityError = tuple.$2;
-      } catch (_) {
-      }
+      } catch (_) {}
 
       if (!mounted) return;
       setState(() {
         _data = _data;
         _snapshot = _snapshot ??
-            _HubSnapshot(
-                activities: activities,
-                activityError: activityError);
+            _HubSnapshot(activities: activities, activityError: activityError);
         _me = me;
         _isLoading = false;
       });
@@ -264,44 +258,30 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
   }
 
   Future<void> _onRefresh() async {
-    ref.invalidate(
-        cachedFinanceSummaryByGroupProvider(_resolvedGroupId!));
+    ref.invalidate(cachedFinanceSummaryByGroupProvider(_resolvedGroupId!));
     ref.invalidate(cachedListsByGroupProvider(_resolvedGroupId!));
-    ref.invalidate(
-        cachedCurrentChoresByGroupProvider(_resolvedGroupId!));
-    ref.invalidate(
-        pinwallPostsByGroupProvider(_resolvedGroupId!));
+    ref.invalidate(cachedCurrentChoresByGroupProvider(_resolvedGroupId!));
+    ref.invalidate(pinwallPostsByGroupProvider(_resolvedGroupId!));
     ref.invalidate(todayMealPlansProvider(_resolvedGroupId!));
     ref.invalidate(weekMealPlansSummaryProvider(_resolvedGroupId!));
     await _loadData();
 
     try {
-      final financeRepo =
-          await ref.read(financeRepositoryProvider.future);
-      await financeRepo.refreshGroup(_resolvedGroupId!,
-          limit: 50, offset: 0);
-    } catch (_) {
-    }
+      final financeRepo = await ref.read(financeRepositoryProvider.future);
+      await financeRepo.refreshGroup(_resolvedGroupId!, limit: 50, offset: 0);
+    } catch (_) {}
     try {
-      final listRepo =
-          await ref.read(listRepositoryProvider.future);
-      await listRepo.refreshLists(_resolvedGroupId!,
-          limit: 50, offset: 0);
-    } catch (_) {
-    }
+      final listRepo = await ref.read(listRepositoryProvider.future);
+      await listRepo.refreshLists(_resolvedGroupId!, limit: 50, offset: 0);
+    } catch (_) {}
     try {
-      final choreRepo =
-          await ref.read(choreRepositoryProvider.future);
+      final choreRepo = await ref.read(choreRepositoryProvider.future);
       await choreRepo.refreshCurrentChores(_resolvedGroupId!);
-    } catch (_) {
-    }
+    } catch (_) {}
     try {
-      final pinRepo =
-          await ref.read(pinwallRepositoryProvider.future);
-      await pinRepo.refreshPosts(_resolvedGroupId!,
-          limit: 20, offset: 0);
-    } catch (_) {
-    }
+      final pinRepo = await ref.read(pinwallRepositoryProvider.future);
+      await pinRepo.refreshPosts(_resolvedGroupId!, limit: 20, offset: 0);
+    } catch (_) {}
   }
 
   Future<void> _openHouseholdSwitcher(BuildContext context) async {
@@ -356,9 +336,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
           final l10n = AppLocalizations.of(ctx)!;
           final displayGroups = groups.isNotEmpty
               ? groups
-              : (_data != null
-                  ? <Group>[_data!]
-                  : const <Group>[]);
+              : (_data != null ? <Group>[_data!] : const <Group>[]);
 
           Widget actionTile({
             required String iconName,
@@ -384,8 +362,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                           label,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: rowStyle?.copyWith(
-                              fontWeight: FontWeight.w500),
+                          style:
+                              rowStyle?.copyWith(fontWeight: FontWeight.w500),
                         ),
                       ),
                     ],
@@ -402,7 +380,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                 for (final h in displayGroups)
                   Semantics(
                     button: true,
-                    label: AppLocalizations.of(ctx)!.hubSwitchToHousehold(h.name),
+                    label:
+                        AppLocalizations.of(ctx)!.hubSwitchToHousehold(h.name),
                     child: InkWell(
                       onTap: groups.length >= 2
                           ? () {
@@ -436,8 +415,13 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                                   if (h.memberCount != null)
                                     Text(
                                       l10n.commonMember(h.memberCount!),
-                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelSmall
+                                          ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant,
                                           ),
                                     ),
                                 ],
@@ -466,11 +450,9 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                 label: l10n.hubCreateHousehold,
                 onTap: () {
                   Navigator.of(sheetContext).pop();
-                  WidgetsBinding.instance
-                      .addPostFrameCallback((_) async {
+                  WidgetsBinding.instance.addPostFrameCallback((_) async {
                     if (!hubContext.mounted) return;
-                    final created =
-                        await CreateHouseholdSheet.show(hubContext);
+                    final created = await CreateHouseholdSheet.show(hubContext);
                     await onCreateResult(created);
                   });
                 },
@@ -480,11 +462,9 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                 label: l10n.hubJoinHousehold,
                 onTap: () {
                   Navigator.of(sheetContext).pop();
-                  WidgetsBinding.instance
-                      .addPostFrameCallback((_) async {
+                  WidgetsBinding.instance.addPostFrameCallback((_) async {
                     if (!hubContext.mounted) return;
-                    final joined =
-                        await JoinHouseholdSheet.show(hubContext);
+                    final joined = await JoinHouseholdSheet.show(hubContext);
                     await onJoinResult(joined);
                   });
                 },
@@ -494,8 +474,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                 label: l10n.hubInviteToHousehold,
                 onTap: () {
                   Navigator.of(sheetContext).pop();
-                  WidgetsBinding.instance
-                      .addPostFrameCallback((_) async {
+                  WidgetsBinding.instance.addPostFrameCallback((_) async {
                     if (!hubContext.mounted) return;
                     await InviteHouseholdSheet.show(
                       hubContext,
@@ -509,8 +488,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                 label: l10n.hubHouseholdSettings,
                 onTap: () {
                   Navigator.of(sheetContext).pop();
-                  WidgetsBinding.instance
-                      .addPostFrameCallback((_) async {
+                  WidgetsBinding.instance.addPostFrameCallback((_) async {
                     if (!hubContext.mounted) return;
                     await GroupSettingsSheet.show(
                       hubContext,
@@ -633,17 +611,14 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
   Widget _buildAppBarTitle(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final name = _data?.name ?? l10n.hubAppBarTitle;
-    final titleTextStyle =
-        Theme.of(context).appBarTheme.titleTextStyle ??
-            Theme.of(context).textTheme.titleLarge;
+    final titleTextStyle = Theme.of(context).appBarTheme.titleTextStyle ??
+        Theme.of(context).textTheme.titleLarge;
     final screenW = MediaQuery.sizeOf(context).width;
     final padding = MediaQuery.paddingOf(context).horizontal;
-    final actionsReserve = MitlistSpacing.space12 * 4 +
-        MitlistSpacing.md +
-        MitlistSpacing.sm;
-    final textMax =
-        (screenW - padding - actionsReserve - MitlistSpacing.space6)
-            .clamp(MitlistSpacing.space20, screenW);
+    final actionsReserve =
+        MitlistSpacing.space12 * 4 + MitlistSpacing.md + MitlistSpacing.sm;
+    final textMax = (screenW - padding - actionsReserve - MitlistSpacing.space6)
+        .clamp(MitlistSpacing.space20, screenW);
 
     return Semantics(
       button: true,
@@ -654,8 +629,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
           onTap: () => _openHouseholdSwitcher(context),
           borderRadius: BorderRadius.zero,
           child: Padding(
-            padding:
-                const EdgeInsets.symmetric(vertical: MitlistSpacing.xs),
+            padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xs),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -687,15 +661,16 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      floatingActionButton: _isLoading || _error != null || _resolvedGroupId == null
-          ? null
-          : AppButton(
-              size: AppButtonSize.lg,
-              onPressed: () => showQuickAddSheet(context),
-              icon: const AppIcon(name: 'plus'),
-              text: l10n.hubQuickAdd,
-              tooltip: l10n.hubQuickAdd,
-            ),
+      floatingActionButton:
+          _isLoading || _error != null || _resolvedGroupId == null
+              ? null
+              : AppButton(
+                  size: AppButtonSize.lg,
+                  onPressed: () => showQuickAddSheet(context),
+                  icon: const AppIcon(name: 'plus'),
+                  text: l10n.hubQuickAdd,
+                  tooltip: l10n.hubQuickAdd,
+                ),
       body: _isLoading
           ? const HubSkeleton()
           : _error != null && _resolvedGroupId == null
@@ -724,70 +699,71 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                     ),
                   ),
                 )
-          : _resolvedGroupId == null
-              ? _buildEmptyState(context)
-              : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(MitlistSpacing.md),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        AppAlert(
-                          type: AppAlertType.error,
-                          message: l10n.hubLoadError,
-                        ),
-                        const SizedBox(height: MitlistSpacing.md),
-                        AppButton(
-                          text: l10n.commonRetry,
-                          onPressed: _loadData,
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _onRefresh,
-                  child: CustomScrollView(
-                    physics: AlwaysScrollableScrollPhysics(),
-                    slivers: [
-                      SliverAppBar(
-                        pinned: true,
-                        elevation: 0,
-                        backgroundColor:
-                            Theme.of(context).colorScheme.surface,
-                        leading: null,
-                        title: _buildAppBarTitle(context),
-                        actions: [
-                          IconButton(
-                            tooltip: l10n.hubCalendarTooltip,
-                            icon: const AppIcon(name: 'calendarDays'),
-                            onPressed: () => context.pushNamed('calendar'),
-                          ),
-                          ...shellTrailingActions(context),
-                          const SizedBox(width: MitlistSpacing.xs),
-                        ],
-                      ),
-                      SliverPadding(
-                        padding: const EdgeInsets.all(MitlistSpacing.md),
-                        sliver: SliverList(
-                          delegate: SliverChildListDelegate([
-                            PinwallSection(
-                                groupId: _resolvedGroupId!, me: _me),
-                            const SizedBox(height: MitlistSpacing.lg),
-                            ActivityWall(
-                              activities: _snapshot!.activities,
-                              activityError:
-                                  _snapshot!.activityError,
-                              currentUserId: _me?.id,
+              : _resolvedGroupId == null
+                  ? _buildEmptyState(context)
+                  : _error != null
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(MitlistSpacing.md),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                AppAlert(
+                                  type: AppAlertType.error,
+                                  message: l10n.hubLoadError,
+                                ),
+                                const SizedBox(height: MitlistSpacing.md),
+                                AppButton(
+                                  text: l10n.commonRetry,
+                                  onPressed: _loadData,
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: MitlistSpacing.xl),
-                          ]),
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: _onRefresh,
+                          child: CustomScrollView(
+                            physics: AlwaysScrollableScrollPhysics(),
+                            slivers: [
+                              SliverAppBar(
+                                pinned: true,
+                                elevation: 0,
+                                backgroundColor:
+                                    Theme.of(context).colorScheme.surface,
+                                leading: null,
+                                title: _buildAppBarTitle(context),
+                                actions: [
+                                  IconButton(
+                                    tooltip: l10n.hubCalendarTooltip,
+                                    icon: const AppIcon(name: 'calendarDays'),
+                                    onPressed: () =>
+                                        context.pushNamed('calendar'),
+                                  ),
+                                  ...shellTrailingActions(context),
+                                  const SizedBox(width: MitlistSpacing.xs),
+                                ],
+                              ),
+                              SliverPadding(
+                                padding:
+                                    const EdgeInsets.all(MitlistSpacing.md),
+                                sliver: SliverList(
+                                  delegate: SliverChildListDelegate([
+                                    PinwallSection(
+                                        groupId: _resolvedGroupId!, me: _me),
+                                    const SizedBox(height: MitlistSpacing.lg),
+                                    ActivityWall(
+                                      activities: _snapshot!.activities,
+                                      activityError: _snapshot!.activityError,
+                                      currentUserId: _me?.id,
+                                    ),
+                                    const SizedBox(height: MitlistSpacing.xl),
+                                  ]),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
     );
   }
 }

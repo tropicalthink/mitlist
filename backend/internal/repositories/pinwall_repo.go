@@ -144,4 +144,3 @@ func (r *PinwallRepository) ListPostsByGroupAndRemindAtRange(
 	}
 	return out, rows.Err()
 }
-

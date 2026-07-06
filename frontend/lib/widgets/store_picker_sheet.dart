@@ -87,9 +87,8 @@ class _StoreTile extends StatelessWidget {
     return ListTile(
       title: Text(label),
       subtitle: Text(subtitle),
-      trailing: selected
-          ? AppIcon(name: 'check', color: colorScheme.primary)
-          : null,
+      trailing:
+          selected ? AppIcon(name: 'check', color: colorScheme.primary) : null,
       onTap: onTap,
     );
   }

@@ -35,7 +35,8 @@ void main() {
           reason: 'no point probing when the interface is down');
     });
 
-    test('interface up but server unreachable reads as offline '
+    test(
+        'interface up but server unreachable reads as offline '
         '(captive portal)', () async {
       final svc = ConnectivityService(
         connectivity: _FakeConnectivity([ConnectivityResult.wifi]),

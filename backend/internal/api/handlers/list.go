@@ -19,8 +19,8 @@ func userFromContext(r *http.Request) (*models.User, bool) {
 
 // ListHandler handles list-related HTTP endpoints.
 type ListHandler struct {
-	service         *services.ListService
-	financeService  *services.FinanceService
+	service        *services.ListService
+	financeService *services.FinanceService
 }
 
 // NewListHandler creates a new ListHandler.
