@@ -110,6 +110,7 @@ func main() {
 
 		// OAuth (public initiation + callback)
 		oauthHandler := handlers.NewOAuthHandler(cfg, cnt.OAuthService())
+		r.Get("/oauth/providers", oauthHandler.GetProviders)
 		r.Get("/oauth/google", oauthHandler.GetGoogle)
 		r.Get("/oauth/google/callback", oauthHandler.GetGoogleCallback)
 		r.Post("/oauth/google/callback", oauthHandler.PostGoogleCallback)

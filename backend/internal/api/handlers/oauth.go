@@ -37,6 +37,15 @@ func NewOAuthHandler(cfg *config.Config, service *services.OAuthService) *OAuthH
 	}
 }
 
+// GetProviders reports which OAuth providers the server is configured for,
+// so clients can hide sign-in buttons that would dead-end.
+func (h *OAuthHandler) GetProviders(w http.ResponseWriter, r *http.Request) {
+	api.RespondJSON(w, http.StatusOK, map[string]bool{
+		"google": h.googleClient.Configured(),
+		"apple":  h.appleClient.Configured(),
+	})
+}
+
 // GetGoogle initiates Google OAuth by redirecting to the provider.
 func (h *OAuthHandler) GetGoogle(w http.ResponseWriter, r *http.Request) {
 	redirectURI := r.URL.Query().Get("redirect_uri")
