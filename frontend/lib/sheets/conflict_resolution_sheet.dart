@@ -96,8 +96,7 @@ class _ConflictCard extends ConsumerWidget {
                   size: AppButtonSize.sm,
                   variant: AppButtonVariant.outline,
                   onPressed: () async {
-                    final repo =
-                        await ref.read(listRepositoryProvider.future);
+                    final repo = await ref.read(listRepositoryProvider.future);
                     await repo.resolveConflictKeepLocal(conflict);
                   },
                 ),
@@ -109,8 +108,7 @@ class _ConflictCard extends ConsumerWidget {
                   size: AppButtonSize.sm,
                   variant: AppButtonVariant.soft,
                   onPressed: () async {
-                    final repo =
-                        await ref.read(listRepositoryProvider.future);
+                    final repo = await ref.read(listRepositoryProvider.future);
                     await repo.resolveConflictAcceptServer(conflict);
                   },
                 ),

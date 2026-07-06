@@ -15,11 +15,11 @@ import (
 )
 
 type ListItemPhotoService struct {
-	listRepo     repositories.ListRepo
-	groupRepo    repositories.GroupRepo
-	attachRepo   repositories.AttachmentRepo
+	listRepo       repositories.ListRepo
+	groupRepo      repositories.GroupRepo
+	attachRepo     repositories.AttachmentRepo
 	itemAttachRepo *repositories.ListItemAttachmentRepository
-	storage      *storagesvc.Service
+	storage        *storagesvc.Service
 }
 
 func NewListItemPhotoService(
@@ -30,11 +30,11 @@ func NewListItemPhotoService(
 	storage *storagesvc.Service,
 ) *ListItemPhotoService {
 	return &ListItemPhotoService{
-		listRepo:        listRepo,
-		groupRepo:       groupRepo,
-		attachRepo:      attachRepo,
-		itemAttachRepo:  itemAttachRepo,
-		storage:         storage,
+		listRepo:       listRepo,
+		groupRepo:      groupRepo,
+		attachRepo:     attachRepo,
+		itemAttachRepo: itemAttachRepo,
+		storage:        storage,
 	}
 }
 
@@ -175,4 +175,3 @@ func (s *ListItemPhotoService) Detach(ctx context.Context, userID, groupID, list
 	}
 	return nil
 }
-

@@ -13,12 +13,13 @@ class PinwallMediaItem {
     required this.url,
   });
 
-  factory PinwallMediaItem.fromJson(Map<String, dynamic> json) => PinwallMediaItem(
+  factory PinwallMediaItem.fromJson(Map<String, dynamic> json) =>
+      PinwallMediaItem(
         attachmentId: json['attachment_id'] as String,
-        contentType: (json['content_type'] as String?) ?? 'application/octet-stream',
+        contentType:
+            (json['content_type'] as String?) ?? 'application/octet-stream',
         byteSize: (json['byte_size'] as num?)?.toInt() ?? 0,
         createdAt: DateTime.parse(json['created_at'] as String),
         url: json['url'] as String,
       );
 }
-

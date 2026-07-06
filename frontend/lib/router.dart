@@ -193,7 +193,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           code: state.pathParameters['code']!,
         ),
       ),
-
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
             BottomNavScaffold(navigationShell: navigationShell),
@@ -265,15 +264,13 @@ final routerProvider = Provider<GoRouter>((ref) {
                         name: 'recipeCook',
                         parentNavigatorKey: _rootNavigatorKey,
                         builder: (context, state) {
-                          final extra =
-                              state.extra as Map<String, Object?>?;
+                          final extra = state.extra as Map<String, Object?>?;
                           return CookModeScreen(
                             recipeId: state.pathParameters['recipeId']!,
                             recipe: extra?['recipe'] as Recipe?,
                             ingredients: extra?['ingredients']
                                 as List<RecipeIngredient>?,
-                            steps:
-                                extra?['steps'] as List<RecipeStep>?,
+                            steps: extra?['steps'] as List<RecipeStep>?,
                           );
                         },
                       ),
@@ -337,7 +334,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
-
       GoRoute(
         path: '/calendar',
         name: 'calendar',
@@ -356,8 +352,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'notification-preferences',
             name: 'notificationPreferences',
-            builder: (context, state) =>
-                const NotificationPreferencesScreen(),
+            builder: (context, state) => const NotificationPreferencesScreen(),
           ),
         ],
       ),

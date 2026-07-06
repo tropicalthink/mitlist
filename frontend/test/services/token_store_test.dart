@@ -14,7 +14,9 @@ void main() {
   });
 
   group('SecureTokenStore.migrateFromPrefs', () {
-    test('copies tokens from SharedPreferences to secure storage and removes them', () async {
+    test(
+        'copies tokens from SharedPreferences to secure storage and removes them',
+        () async {
       SharedPreferences.setMockInitialValues({
         ApiConfig.accessTokenKey: 'old-access',
         ApiConfig.refreshTokenKey: 'old-refresh',
@@ -34,7 +36,8 @@ void main() {
       expect(prefs.getString(ApiConfig.refreshTokenKey), isNull);
     });
 
-    test('migration is idempotent — running twice does not duplicate or clear', () async {
+    test('migration is idempotent — running twice does not duplicate or clear',
+        () async {
       SharedPreferences.setMockInitialValues({
         ApiConfig.accessTokenKey: 'old-access',
         ApiConfig.refreshTokenKey: 'old-refresh',
@@ -68,7 +71,8 @@ void main() {
       expect(await store.getRefreshToken(), isNull);
     });
 
-    test('does nothing when secure storage already has a refresh token', () async {
+    test('does nothing when secure storage already has a refresh token',
+        () async {
       // Pre-populate secure storage (already migrated or fresh install with new app).
       FlutterSecureStorage.setMockInitialValues({
         ApiConfig.refreshTokenKey: 'current-refresh',

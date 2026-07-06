@@ -45,7 +45,8 @@ void main() {
     });
 
     test('create prepends most-recent-first', () async {
-      await repo.createPostOfflineFirst(groupId, content: 'first', userId: 'u1');
+      await repo.createPostOfflineFirst(groupId,
+          content: 'first', userId: 'u1');
       final secondId = await repo.createPostOfflineFirst(groupId,
           content: 'second', userId: 'u1');
 

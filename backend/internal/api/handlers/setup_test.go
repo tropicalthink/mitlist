@@ -209,6 +209,7 @@ func newTestMailService() *mailservice.Service         { return mailservice.New(
 func newTestPushService() *pushservice.Service {
 	return pushservice.New(testCfg, logger.New("test"), newTestAuthRepo(), newTestGroupRepo(), newTestNotificationRepo())
 }
+
 // ---------------------------------------------------------------------------
 // User / Auth helpers
 // ---------------------------------------------------------------------------
@@ -565,7 +566,6 @@ func newNotificationRouter(t *testing.T) (chi.Router, *NotificationHandler) {
 	h.RegisterRoutes(r)
 	return r, h
 }
-
 
 func newShareRouter(t *testing.T) (chi.Router, *ShareHandler) {
 	listRepo := newTestListRepo()

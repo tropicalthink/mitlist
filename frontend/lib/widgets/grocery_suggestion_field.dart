@@ -73,8 +73,8 @@ class _GrocerySuggestionFieldState
     // Preserve the brand/word the user typed ("Pringles") and link the
     // canonical item ("Chips") underneath; only fall back to the canonical
     // name when the typed text is a fragment or typo (see labelForSelection).
-    final label =
-        GrocerySuggestionService.labelForSelection(widget.controller.text, s.name);
+    final label = GrocerySuggestionService.labelForSelection(
+        widget.controller.text, s.name);
     widget.controller.text = label;
     widget.controller.selection = TextSelection.collapsed(offset: label.length);
     setState(() => _suggestions = const []);

@@ -220,7 +220,9 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            assignee == null ? _l10n.choreCreationChoreAdded : _l10n.choreCreationChoreAddedNextUp(assignee),
+            assignee == null
+                ? _l10n.choreCreationChoreAdded
+                : _l10n.choreCreationChoreAddedNextUp(assignee),
           ),
         ),
       );
@@ -229,7 +231,9 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       if (!mounted) return;
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
+        SnackBar(
+            content:
+                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -329,13 +333,25 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
   String get _intervalSummary {
     final n = _periodInterval;
     final unit = switch (_recurrence) {
-      _Recurrence.hourly => n == 1 ? _l10n.choreCreationUnitHourSingular : _l10n.choreCreationUnitHourPlural,
-      _Recurrence.weekly => n == 1 ? _l10n.choreCreationUnitWeekSingular : _l10n.choreCreationUnitWeekPlural,
-      _Recurrence.monthly => n == 1 ? _l10n.choreCreationUnitMonthSingular : _l10n.choreCreationUnitMonthPlural,
-      _Recurrence.yearly => n == 1 ? _l10n.choreCreationUnitYearSingular : _l10n.choreCreationUnitYearPlural,
-      _ => n == 1 ? _l10n.choreCreationUnitDaySingular : _l10n.choreCreationUnitDayPlural,
+      _Recurrence.hourly => n == 1
+          ? _l10n.choreCreationUnitHourSingular
+          : _l10n.choreCreationUnitHourPlural,
+      _Recurrence.weekly => n == 1
+          ? _l10n.choreCreationUnitWeekSingular
+          : _l10n.choreCreationUnitWeekPlural,
+      _Recurrence.monthly => n == 1
+          ? _l10n.choreCreationUnitMonthSingular
+          : _l10n.choreCreationUnitMonthPlural,
+      _Recurrence.yearly => n == 1
+          ? _l10n.choreCreationUnitYearSingular
+          : _l10n.choreCreationUnitYearPlural,
+      _ => n == 1
+          ? _l10n.choreCreationUnitDaySingular
+          : _l10n.choreCreationUnitDayPlural,
     };
-    return n == 1 ? _l10n.choreCreationEverySingular(unit) : _l10n.choreCreationEveryPlural(n, unit);
+    return n == 1
+        ? _l10n.choreCreationEverySingular(unit)
+        : _l10n.choreCreationEveryPlural(n, unit);
   }
 
   @override
@@ -428,10 +444,19 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
             label: l10n.choreWhoOrderLabel,
             children: [
               for (final option in [
-                (_AssignmentPolicy.roundRobin, l10n.choreCreationAssignTakeTurns),
-                (_AssignmentPolicy.leastDone, l10n.choreCreationAssignLeastDone),
+                (
+                  _AssignmentPolicy.roundRobin,
+                  l10n.choreCreationAssignTakeTurns
+                ),
+                (
+                  _AssignmentPolicy.leastDone,
+                  l10n.choreCreationAssignLeastDone
+                ),
                 (_AssignmentPolicy.random, l10n.choreCreationAssignRandom),
-                (_AssignmentPolicy.alphabetical, l10n.choreCreationAssignAlphabetical),
+                (
+                  _AssignmentPolicy.alphabetical,
+                  l10n.choreCreationAssignAlphabetical
+                ),
               ])
                 AppChip(
                   label: option.$2,
@@ -604,8 +629,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
                           _markDirty();
                         },
                         title: l10n.choreCreationLogWhenDone,
-                        helper:
-                            l10n.choreCreationLogWhenDoneHelper,
+                        helper: l10n.choreCreationLogWhenDoneHelper,
                       ),
                       const SizedBox(height: MitlistSpacing.md),
                       _OptionToggle(
@@ -615,8 +639,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
                           _markDirty();
                         },
                         title: l10n.choreCreationRollOver,
-                        helper:
-                            l10n.choreCreationRollOverHelper,
+                        helper: l10n.choreCreationRollOverHelper,
                       ),
                     ],
                   ),
@@ -669,7 +692,8 @@ class _ChipRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         SizedBox(
-          width: MitlistSpacing.space14, // 56px — keeps chips aligned across rows
+          width:
+              MitlistSpacing.space14, // 56px — keeps chips aligned across rows
           child: Text(
             label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -749,4 +773,3 @@ class _OptionToggle extends StatelessWidget {
     );
   }
 }
-

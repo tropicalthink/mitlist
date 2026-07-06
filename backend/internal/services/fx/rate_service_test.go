@@ -224,11 +224,11 @@ func TestGetRate_InvalidCurrencyCode(t *testing.T) {
 	svc := NewRateService(NewFrankfurterProvider(stub.URL, ""), rc, true)
 
 	cases := []struct{ from, to string }{
-		{"usd", "EUR"}, // lowercase
-		{"US", "EUR"},  // too short
+		{"usd", "EUR"},  // lowercase
+		{"US", "EUR"},   // too short
 		{"USDD", "EUR"}, // too long
-		{"USD", "eu"},  // too short
-		{"USD", ""},    // empty
+		{"USD", "eu"},   // too short
+		{"USD", ""},     // empty
 	}
 	for _, c := range cases {
 		rate, available, err := svc.GetRate(context.Background(), c.from, c.to)

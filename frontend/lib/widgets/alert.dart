@@ -53,7 +53,8 @@ class _AppAlertState extends State<AppAlert>
     super.dispose();
   }
 
-  ({Color bg, Color text, Color iconColor}) _resolveColors(BuildContext context) {
+  ({Color bg, Color text, Color iconColor}) _resolveColors(
+      BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     switch (widget.type) {
       case AppAlertType.info:

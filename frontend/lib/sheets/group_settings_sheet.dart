@@ -142,7 +142,9 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       if (!mounted) return;
       setState(() => _isSavingZones = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
+        SnackBar(
+            content:
+                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -207,7 +209,9 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       if (!mounted) return;
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
+        SnackBar(
+            content:
+                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -217,7 +221,8 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
     final confirmed = await showAppDialog<bool>(
       context: context,
       title: l10n.sheetGroupSettingsRemoveMember,
-      body: Text(l10n.sheetGroupSettingsRemoveMemberConfirm(member.displayName)),
+      body:
+          Text(l10n.sheetGroupSettingsRemoveMemberConfirm(member.displayName)),
       actions: [
         AppButton(
           text: l10n.commonCancel,
@@ -240,12 +245,16 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         _members = _members.where((m) => m.userId != member.userId).toList();
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.sheetGroupSettingsMemberRemoved(member.displayName))),
+        SnackBar(
+            content:
+                Text(l10n.sheetGroupSettingsMemberRemoved(member.displayName))),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
+        SnackBar(
+            content:
+                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -286,7 +295,9 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       if (!mounted) return;
       setState(() => _isDeleting = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
+        SnackBar(
+            content:
+                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -350,10 +361,13 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         choreDue: field == 'chore_due' ? value : pref.choreDue,
         choreDueDayOf: field == 'chore_due_day_of' ? value : pref.choreDueDayOf,
         listItemAdded: field == 'list_item_added' ? value : pref.listItemAdded,
-        expenseCreated: field == 'expense_created' ? value : pref.expenseCreated,
-        mealPlanChanged: field == 'meal_plan_changed' ? value : pref.mealPlanChanged,
+        expenseCreated:
+            field == 'expense_created' ? value : pref.expenseCreated,
+        mealPlanChanged:
+            field == 'meal_plan_changed' ? value : pref.mealPlanChanged,
         weeklyDigest: field == 'weekly_digest' ? value : pref.weeklyDigest,
-        pinwallReminder: field == 'pinwall_reminder' ? value : pref.pinwallReminder,
+        pinwallReminder:
+            field == 'pinwall_reminder' ? value : pref.pinwallReminder,
         pushEnabled: field == 'push_enabled' ? value : pref.pushEnabled,
       );
       await svc.updatePreference(updated);
@@ -366,7 +380,9 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       if (mounted) {
         setState(() => _savingKeys.remove(key));
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
+          SnackBar(
+              content:
+                  Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
         );
       }
     }
@@ -386,14 +402,21 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
               style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: MitlistSpacing.sm),
           const AppDivider(),
-          _notifToggle(l10n.notifPrefChoreDueReminders, pref.choreDue, 'chore_due'),
-          _notifToggle(l10n.notifPrefListItemAdded, pref.listItemAdded, 'list_item_added'),
-          _notifToggle(l10n.notifPrefExpenseCreated, pref.expenseCreated, 'expense_created'),
-          _notifToggle(l10n.notifPrefMealPlanChanged, pref.mealPlanChanged, 'meal_plan_changed'),
-          _notifToggle(l10n.notifPrefWeeklyDigest, pref.weeklyDigest, 'weekly_digest'),
-          _notifToggle(l10n.notifPrefPinwallReminders, pref.pinwallReminder, 'pinwall_reminder'),
+          _notifToggle(
+              l10n.notifPrefChoreDueReminders, pref.choreDue, 'chore_due'),
+          _notifToggle(l10n.notifPrefListItemAdded, pref.listItemAdded,
+              'list_item_added'),
+          _notifToggle(l10n.notifPrefExpenseCreated, pref.expenseCreated,
+              'expense_created'),
+          _notifToggle(l10n.notifPrefMealPlanChanged, pref.mealPlanChanged,
+              'meal_plan_changed'),
+          _notifToggle(
+              l10n.notifPrefWeeklyDigest, pref.weeklyDigest, 'weekly_digest'),
+          _notifToggle(l10n.notifPrefPinwallReminders, pref.pinwallReminder,
+              'pinwall_reminder'),
           const AppDivider(),
-          _notifToggle(l10n.notifPrefPushNotifications, pref.pushEnabled, 'push_enabled'),
+          _notifToggle(l10n.notifPrefPushNotifications, pref.pushEnabled,
+              'push_enabled'),
         ],
       ),
     );
@@ -408,7 +431,10 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       child: Row(
         children: [
           Expanded(
-            child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodyMedium),
+            child: Text(label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium),
           ),
           if (saving)
             const Padding(
@@ -490,7 +516,8 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(l10n.sheetGroupSettingsChoreZonesLabel, style: textTheme.titleSmall),
+          Text(l10n.sheetGroupSettingsChoreZonesLabel,
+              style: textTheme.titleSmall),
           const SizedBox(height: MitlistSpacing.xs),
           Text(
             l10n.sheetGroupSettingsChoreZonesDesc,
@@ -526,7 +553,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
                 ),
               ),
               const SizedBox(width: MitlistSpacing.sm),
-               AppButton(
+              AppButton(
                 text: l10n.commonAdd,
                 size: AppButtonSize.sm,
                 onPressed: _addZone,
@@ -538,7 +565,9 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
             SizedBox(
               width: double.infinity,
               child: AppButton(
-                text: _isSavingZones ? l10n.commonSaving : l10n.sheetGroupSettingsSaveZones,
+                text: _isSavingZones
+                    ? l10n.commonSaving
+                    : l10n.sheetGroupSettingsSaveZones,
                 isLoading: _isSavingZones,
                 onPressed: _isSavingZones ? null : _saveZones,
               ),
@@ -560,7 +589,8 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         children: [
           Row(
             children: [
-              Text(l10n.sheetGroupSettingsMembersLabel, style: textTheme.titleSmall),
+              Text(l10n.sheetGroupSettingsMembersLabel,
+                  style: textTheme.titleSmall),
               const Spacer(),
               Text(
                 '${_members.length}',
@@ -612,11 +642,12 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
               ? String.fromCharCode(member.displayName.runes.first)
               : '?',
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onPrimaryContainer,
-          ),
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
         ),
       ),
-      title: Text(member.displayName, maxLines: 1, overflow: TextOverflow.ellipsis),
+      title: Text(member.displayName,
+          maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text(member.role, maxLines: 1, overflow: TextOverflow.ellipsis),
       trailing: IconButton(
         tooltip: l10n.sheetGroupSettingsRemoveMemberTooltip(member.displayName),

@@ -97,7 +97,9 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
       if (!mounted) return;
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
+        SnackBar(
+            content:
+                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -173,7 +175,9 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
               variant: AppButtonVariant.solid,
               color: AppButtonColor.primary,
               size: AppButtonSize.lg,
-              text: _isSaving ? l10n.recipeCreationCreating : l10n.recipeCreationCreateRecipe,
+              text: _isSaving
+                  ? l10n.recipeCreationCreating
+                  : l10n.recipeCreationCreateRecipe,
               isLoading: _isSaving,
               onPressed: _canCreate ? _onCreate : null,
             ),

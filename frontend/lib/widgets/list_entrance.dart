@@ -29,11 +29,13 @@ class _ListEntranceState extends State<ListEntrance>
       vsync: this,
       duration: MitlistAnimations.entrance,
     );
-    final start = (widget.index * MitlistAnimations.staggerOffset.inMilliseconds) /
-        MitlistAnimations.entrance.inMilliseconds;
+    final start =
+        (widget.index * MitlistAnimations.staggerOffset.inMilliseconds) /
+            MitlistAnimations.entrance.inMilliseconds;
     final curved = CurvedAnimation(
       parent: _controller!,
-      curve: Interval(start.clamp(0.0, 1.0), 1.0, curve: MitlistAnimations.easeEnter),
+      curve: Interval(start.clamp(0.0, 1.0), 1.0,
+          curve: MitlistAnimations.easeEnter),
     );
     _fade = Tween<double>(begin: 0, end: 1).animate(curved);
     _slide = Tween<Offset>(

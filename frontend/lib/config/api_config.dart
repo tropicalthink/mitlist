@@ -44,7 +44,8 @@ class ApiConfig {
   static const int requestTimeoutSeconds = 30;
 
   /// The timeout for API requests as a Duration.
-  static const Duration requestTimeout = Duration(seconds: requestTimeoutSeconds);
+  static const Duration requestTimeout =
+      Duration(seconds: requestTimeoutSeconds);
 
   /// The header name for the authorization token.
   static const String authorizationHeader = 'Authorization';

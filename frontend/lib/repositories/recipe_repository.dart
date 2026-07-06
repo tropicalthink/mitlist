@@ -42,7 +42,8 @@ class RecipeRepository {
     return remote.length;
   }
 
-  Future<api.Recipe> createRecipeOfflineFirst(api.CreateRecipeRequest req) async {
+  Future<api.Recipe> createRecipeOfflineFirst(
+      api.CreateRecipeRequest req) async {
     final tempId = _uuid.v4();
     final now = DateTime.now();
     final local = api.Recipe(
@@ -101,7 +102,8 @@ class RecipeRepository {
       id: _uuid.v4(),
       type: 'updateRecipe',
       payload: {'recipeId': recipeId, 'patch': req.toJson()},
-      idempotencyKey: 'updateRecipe:$recipeId:${DateTime.now().toIso8601String()}',
+      idempotencyKey:
+          'updateRecipe:$recipeId:${DateTime.now().toIso8601String()}',
       entityType: 'recipe',
       entityId: recipeId,
     );
@@ -111,7 +113,9 @@ class RecipeRepository {
     final row = await (_db.select(_db.recipesTable)
           ..where((t) => t.id.equals(recipeId)))
         .getSingleOrNull();
-    return row == null ? throw const NotFoundException('Recipe not found') : _toRecipe(row);
+    return row == null
+        ? throw const NotFoundException('Recipe not found')
+        : _toRecipe(row);
   }
 
   Future<void> deleteRecipeOfflineFirst(String recipeId) async {
@@ -166,7 +170,8 @@ class RecipeRepository {
     );
 
     final created = await _remote.createRecipe(req);
-    await (_db.delete(_db.recipesTable)..where((t) => t.id.equals(tempId))).go();
+    await (_db.delete(_db.recipesTable)..where((t) => t.id.equals(tempId)))
+        .go();
     await _db.upsertRecipesRows([_toRow(created)]);
     await _db.rewriteOutboxPayloadIds(oldId: tempId, newId: created.id);
     await _db.deleteOutboxOp(opId);
@@ -235,4 +240,3 @@ class RecipeRepository {
     );
   }
 }
-

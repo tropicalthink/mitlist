@@ -24,6 +24,7 @@ class MitlistAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   final Widget title;
   final Widget? leading;
+
   /// Screen-specific actions that appear before the shell standard ones.
   final List<Widget>? actions;
   final bool? centerTitle;

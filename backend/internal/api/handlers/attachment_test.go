@@ -32,12 +32,12 @@ func TestAttachments_UploadIntent_HappyPath_ReturnsPresignedPutURL(t *testing.T)
 
 	// Storage: presigning is offline (no network), but needs bucket+endpoint+creds.
 	cfg := &config.Config{
-		AWSAccessKeyID:     "test-access",
-		AWSSecretAccessKey: "test-secret",
-		AWSRegion:          "us-east-1",
-		S3BucketName:       "test-bucket",
-		S3EndpointURL:      "https://example.com",
-		MaxFileSizeBytes:   50 * 1024 * 1024,
+		AWSAccessKeyID:       "test-access",
+		AWSSecretAccessKey:   "test-secret",
+		AWSRegion:            "us-east-1",
+		S3BucketName:         "test-bucket",
+		S3EndpointURL:        "https://example.com",
+		MaxFileSizeBytes:     50 * 1024 * 1024,
 		MaxStoragePerGroupGB: 10,
 	}
 	storage := storagesvc.New(cfg)
@@ -71,4 +71,3 @@ func TestAttachments_UploadIntent_HappyPath_ReturnsPresignedPutURL(t *testing.T)
 	require.NotEqual(t, uuid.Nil.String(), att["id"])
 	require.Equal(t, group.ID.String(), att["group_id"])
 }
-

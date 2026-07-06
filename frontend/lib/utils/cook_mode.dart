@@ -78,16 +78,14 @@ String formatScaledQuantity(double quantity, double scale) {
 List<Duration> parseStepDurations(String text) {
   // Normalise en-dash/em-dash ranges: "1–2 hours" → we want lower bound
   // Replace "N–M" or "N-M" range prefix with just N
-  final normalised = text
-      .replaceAll('–', '-')
-      .replaceAll('—', '-')
-      .replaceAll('−', '-');
+  final normalised =
+      text.replaceAll('–', '-').replaceAll('—', '-').replaceAll('−', '-');
 
   // Tokenise: find number (possibly ranged) followed by unit word.
   // Regex captures: optional leading range lower bound (we keep the first number).
   final tokenRe = RegExp(
-    r'(\d+(?:\.\d+)?)'         // number (group 1)
-    r'(?:\s*-\s*\d+(?:\.\d+)?)?'  // optional upper bound of range (ignored)
+    r'(\d+(?:\.\d+)?)' // number (group 1)
+    r'(?:\s*-\s*\d+(?:\.\d+)?)?' // optional upper bound of range (ignored)
     r'\s+'
     r'(hours?|hrs?|minutes?|mins?|seconds?|secs?)',
     caseSensitive: false,
@@ -112,7 +110,8 @@ List<Duration> parseStepDurations(String text) {
         final next = tokens[i + 1];
         final gap = normalised.substring(match.end, next.start).trim();
         final nextUnit = next.group(2)!.toLowerCase();
-        final isMinute = nextUnit.startsWith('min') || nextUnit.startsWith('sec');
+        final isMinute =
+            nextUnit.startsWith('min') || nextUnit.startsWith('sec');
         // Only combine if there is only whitespace between the two tokens.
         if (gap.isEmpty && isMinute) {
           final nextValue = double.parse(next.group(1)!);
@@ -120,8 +119,7 @@ List<Duration> parseStepDurations(String text) {
             dur = Duration(minutes: (value * 60).round() + nextValue.round());
           } else {
             dur = Duration(
-                minutes: (value * 60).round(),
-                seconds: nextValue.round());
+                minutes: (value * 60).round(), seconds: nextValue.round());
           }
           i += 2;
           result.add(dur);

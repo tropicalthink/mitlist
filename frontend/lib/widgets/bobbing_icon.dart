@@ -29,7 +29,8 @@ class _BobbingIconState extends State<BobbingIcon>
       duration: MitlistAnimations.breatheLoop,
     );
     _animation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _controller!, curve: MitlistAnimations.easeBreathe),
+      CurvedAnimation(
+          parent: _controller!, curve: MitlistAnimations.easeBreathe),
     );
   }
 

@@ -9,14 +9,14 @@ import (
 	"github.com/mitlist-app/mitlist/internal/redis"
 	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/mitlist-app/mitlist/internal/services"
+	fxsvc "github.com/mitlist-app/mitlist/internal/services/fx"
 	jwtservice "github.com/mitlist-app/mitlist/internal/services/jwt"
 	mailservice "github.com/mitlist-app/mitlist/internal/services/mail"
 	oauthclient "github.com/mitlist-app/mitlist/internal/services/oauth"
 	passwordservice "github.com/mitlist-app/mitlist/internal/services/password"
 	pushservice "github.com/mitlist-app/mitlist/internal/services/push"
-	"github.com/mitlist-app/mitlist/internal/sse"
 	storagesvc "github.com/mitlist-app/mitlist/internal/services/storage"
-	fxsvc "github.com/mitlist-app/mitlist/internal/services/fx"
+	"github.com/mitlist-app/mitlist/internal/sse"
 	"github.com/mitlist-app/mitlist/pkg/logger"
 )
 

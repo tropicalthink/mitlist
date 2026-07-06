@@ -217,7 +217,8 @@ class _LiveSmartCaptureScreenState extends State<LiveSmartCaptureScreen>
       await _startQualityStream(controller);
     } catch (_) {
       if (mounted) {
-        setState(() => _error = AppLocalizations.of(context)!.liveSmartCaptureCouldNotCapture);
+        setState(() => _error =
+            AppLocalizations.of(context)!.liveSmartCaptureCouldNotCapture);
       }
     } finally {
       if (mounted) setState(() => _capturing = false);

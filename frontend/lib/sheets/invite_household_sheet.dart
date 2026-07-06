@@ -174,14 +174,12 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
                         ),
                         child: Text(
                           '—',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
                         ),
                       ),
                     _AnimatedSegment(
@@ -191,8 +189,8 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
                       startFraction: (_codeParts.length > 1)
                           ? (i / _codeParts.length) * 0.4
                           : 0.0,
-                      endFraction: ((i / _codeParts.length) * 0.4 + 0.6)
-                          .clamp(0.0, 1.0),
+                      endFraction:
+                          ((i / _codeParts.length) * 0.4 + 0.6).clamp(0.0, 1.0),
                     ),
                   ],
                 ],
@@ -227,8 +225,7 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
                               size: InviteHouseholdSheet._qrSize,
                               backgroundColor: Colors.transparent,
                               eyeStyle: QrEyeStyle(color: qrFg),
-                              dataModuleStyle:
-                                  QrDataModuleStyle(color: qrFg),
+                              dataModuleStyle: QrDataModuleStyle(color: qrFg),
                               errorCorrectionLevel: QrErrorCorrectLevel.M,
                               semanticsLabel: l10n.inviteQrSemantic,
                               errorStateBuilder: (context, _) => SizedBox(
@@ -237,9 +234,8 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
                                 child: Center(
                                   child: Text(
                                     l10n.inviteQrUnavailable,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall,
+                                    style:
+                                        Theme.of(context).textTheme.bodySmall,
                                   ),
                                 ),
                               ),
@@ -271,7 +267,8 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
                   duration: const Duration(milliseconds: 200),
                   child: AppButton(
                     key: ValueKey(_copied),
-                    text: _copied ? l10n.sheetInviteCopied : l10n.sheetInviteCopy,
+                    text:
+                        _copied ? l10n.sheetInviteCopied : l10n.sheetInviteCopy,
                     icon: _copied
                         ? const AppIcon(name: 'checkCircle', size: 18)
                         : const AppIcon(name: 'copy', size: 18),
@@ -342,8 +339,7 @@ class _AnimatedSegment extends StatelessWidget {
       end: Offset.zero,
     ).animate(CurvedAnimation(
       parent: controller,
-      curve:
-          Interval(startFraction, endFraction, curve: Curves.easeOutCubic),
+      curve: Interval(startFraction, endFraction, curve: Curves.easeOutCubic),
     ));
 
     return FadeTransition(

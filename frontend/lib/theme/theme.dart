@@ -130,7 +130,8 @@ class MitlistTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: MitlistColors.surfacePrimary,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         border: const OutlineInputBorder(
           borderRadius: BorderRadius.zero,
           borderSide: BorderSide(color: MitlistColors.borderPrimary, width: 2),
@@ -152,7 +153,8 @@ class MitlistTheme {
           borderSide: BorderSide(color: MitlistColors.error500, width: 2),
         ),
         labelStyle: textTheme.labelMedium,
-        hintStyle: textTheme.bodyMedium?.copyWith(color: MitlistColors.textTertiary),
+        hintStyle:
+            textTheme.bodyMedium?.copyWith(color: MitlistColors.textTertiary),
         errorStyle: textTheme.bodySmall?.copyWith(
           color: MitlistColors.error600,
           fontWeight: FontWeight.w700,
@@ -182,7 +184,8 @@ class MitlistTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: MitlistColors.neutral950,
-        contentTextStyle: textTheme.bodyMedium?.copyWith(color: MitlistColors.textOnPrimary),
+        contentTextStyle:
+            textTheme.bodyMedium?.copyWith(color: MitlistColors.textOnPrimary),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.zero,
           side: BorderSide(color: MitlistColors.borderPrimary, width: 2),
@@ -195,7 +198,8 @@ class MitlistTheme {
         secondarySelectedColor: MitlistColors.neutral950,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
         labelStyle: textTheme.labelSmall,
-        secondaryLabelStyle: textTheme.labelSmall?.copyWith(color: MitlistColors.textOnPrimary),
+        secondaryLabelStyle:
+            textTheme.labelSmall?.copyWith(color: MitlistColors.textOnPrimary),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.zero,
           side: BorderSide(color: MitlistColors.borderPrimary, width: 2),
@@ -220,7 +224,8 @@ class MitlistTheme {
           borderRadius: BorderRadius.zero,
           side: BorderSide(color: MitlistColors.borderPrimary, width: 2),
         ),
-        extendedPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        extendedPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
     );
   }
@@ -333,7 +338,8 @@ class MitlistTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: MitlistColors.neutral900,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         border: const OutlineInputBorder(
           borderRadius: BorderRadius.zero,
           borderSide: BorderSide(color: MitlistColors.surfaceSoft, width: 2),
@@ -355,7 +361,8 @@ class MitlistTheme {
           borderSide: BorderSide(color: MitlistColors.error400, width: 2),
         ),
         labelStyle: textTheme.labelMedium,
-        hintStyle: textTheme.bodyMedium?.copyWith(color: MitlistColors.neutral500),
+        hintStyle:
+            textTheme.bodyMedium?.copyWith(color: MitlistColors.neutral500),
         errorStyle: textTheme.bodySmall?.copyWith(
           color: MitlistColors.error400,
           fontWeight: FontWeight.w700,
@@ -385,7 +392,8 @@ class MitlistTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: MitlistColors.surfaceSoft,
-        contentTextStyle: textTheme.bodyMedium?.copyWith(color: MitlistColors.neutral950),
+        contentTextStyle:
+            textTheme.bodyMedium?.copyWith(color: MitlistColors.neutral950),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.zero,
           side: BorderSide(color: MitlistColors.surfaceSoft, width: 2),
@@ -398,7 +406,8 @@ class MitlistTheme {
         secondarySelectedColor: MitlistColors.surfaceSoft,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
         labelStyle: textTheme.labelSmall,
-        secondaryLabelStyle: textTheme.labelSmall?.copyWith(color: MitlistColors.neutral950),
+        secondaryLabelStyle:
+            textTheme.labelSmall?.copyWith(color: MitlistColors.neutral950),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.zero,
           side: BorderSide(color: MitlistColors.surfaceSoft, width: 2),
@@ -423,7 +432,8 @@ class MitlistTheme {
           borderRadius: BorderRadius.zero,
           side: BorderSide(color: MitlistColors.surfaceSoft, width: 2),
         ),
-        extendedPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        extendedPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
     );
   }

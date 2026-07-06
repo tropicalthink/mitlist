@@ -253,6 +253,7 @@ class _RecurringExpensesScreenState
       },
     );
   }
+
   Future<void> _openCreateSheet() async {
     final groups = await ref.read(cachedGroupsProvider.future);
     final groupId = resolveActiveGroupId(
@@ -375,7 +376,9 @@ class _RecurringCard extends StatelessWidget {
                 icon: AppIcon(
                   name: isActive ? 'pauseCircleOutline' : 'playCircleOutline',
                 ),
-                tooltip: isActive ? l10n.recurringPauseTooltip : l10n.recurringResumeTooltip,
+                tooltip: isActive
+                    ? l10n.recurringPauseTooltip
+                    : l10n.recurringResumeTooltip,
                 onPressed: onToggle,
               ),
               IconButton(
@@ -390,15 +393,13 @@ class _RecurringCard extends StatelessWidget {
                       AppButton(
                         text: l10n.commonCancel,
                         variant: AppButtonVariant.outline,
-                        onPressed: () =>
-                            Navigator.of(context).pop(false),
+                        onPressed: () => Navigator.of(context).pop(false),
                       ),
                       const SizedBox(width: MitlistSpacing.sm),
                       AppButton(
                         text: l10n.commonDelete,
                         color: AppButtonColor.error,
-                        onPressed: () =>
-                            Navigator.of(context).pop(true),
+                        onPressed: () => Navigator.of(context).pop(true),
                       ),
                     ],
                   );
@@ -428,7 +429,8 @@ class _RecurringCreationSheet extends StatelessWidget {
   final Map<String, String> userLabels;
   final String groupId;
 
-  const _RecurringCreationSheet({required this.userLabels, required this.groupId});
+  const _RecurringCreationSheet(
+      {required this.userLabels, required this.groupId});
 
   @override
   Widget build(BuildContext context) {
@@ -553,12 +555,20 @@ class _CreateRecurringFormState extends State<_CreateRecurringForm> {
           initialValue: _frequency,
           decoration: InputDecoration(labelText: l10n.recurringSheetFrequency),
           items: [
-            DropdownMenuItem(value: 'daily', child: Text(l10n.recurringFrequencyDaily)),
-            DropdownMenuItem(value: 'weekly', child: Text(l10n.recurringFrequencyWeekly)),
-            DropdownMenuItem(value: 'biweekly', child: Text(l10n.recurringFrequencyBiweekly)),
-            DropdownMenuItem(value: 'monthly', child: Text(l10n.recurringFrequencyMonthly)),
-            DropdownMenuItem(value: 'quarterly', child: Text(l10n.recurringFrequencyQuarterly)),
-            DropdownMenuItem(value: 'yearly', child: Text(l10n.recurringFrequencyYearly)),
+            DropdownMenuItem(
+                value: 'daily', child: Text(l10n.recurringFrequencyDaily)),
+            DropdownMenuItem(
+                value: 'weekly', child: Text(l10n.recurringFrequencyWeekly)),
+            DropdownMenuItem(
+                value: 'biweekly',
+                child: Text(l10n.recurringFrequencyBiweekly)),
+            DropdownMenuItem(
+                value: 'monthly', child: Text(l10n.recurringFrequencyMonthly)),
+            DropdownMenuItem(
+                value: 'quarterly',
+                child: Text(l10n.recurringFrequencyQuarterly)),
+            DropdownMenuItem(
+                value: 'yearly', child: Text(l10n.recurringFrequencyYearly)),
           ],
           onChanged: (v) => setState(() => _frequency = v!),
         ),
@@ -567,14 +577,18 @@ class _CreateRecurringFormState extends State<_CreateRecurringForm> {
           initialValue: _payerId,
           decoration: InputDecoration(labelText: l10n.recurringSheetPayer),
           items: userLabels.isEmpty
-              ? [DropdownMenuItem(value: null, child: Text(l10n.commonLoadingMembers))]
+              ? [
+                  DropdownMenuItem(
+                      value: null, child: Text(l10n.commonLoadingMembers))
+                ]
               : userLabels.entries
                   .map((e) => DropdownMenuItem(
                         value: e.key,
                         child: Text(e.value),
                       ))
                   .toList(),
-          onChanged: userLabels.isEmpty ? null : (v) => setState(() => _payerId = v),
+          onChanged:
+              userLabels.isEmpty ? null : (v) => setState(() => _payerId = v),
         ),
         const SizedBox(height: MitlistSpacing.md),
         Row(

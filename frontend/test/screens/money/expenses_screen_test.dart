@@ -96,7 +96,8 @@ void main() {
           authStateProvider.overrideWith((ref) => true),
           groupServiceProviderAsync.overrideWith((ref) async => groupService),
           authServiceProviderAsync.overrideWith((ref) async => authService),
-          financeServiceProviderAsync.overrideWith((ref) async => financeService),
+          financeServiceProviderAsync
+              .overrideWith((ref) async => financeService),
           financeRepositoryProvider.overrideWith((ref) async => financeRepo),
           appDatabaseProvider.overrideWithValue(db),
         ],

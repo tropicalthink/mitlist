@@ -74,8 +74,7 @@ class _ErrorFallback extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline,
-                  size: 48, color: colorScheme.error),
+              Icon(Icons.error_outline, size: 48, color: colorScheme.error),
               const SizedBox(height: MitlistSpacing.md),
               Text(
                 l10n.errorSomethingWentWrong,

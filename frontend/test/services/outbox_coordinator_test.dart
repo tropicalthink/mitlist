@@ -196,8 +196,7 @@ void main() {
       // Fixed: _isDraining is set before isOnline(), so the second call is
       // blocked and each repo is drained exactly once.
       expect(spies.list.drainCalls, equals(1),
-          reason:
-              '_isDraining is set before isOnline() so the second call '
+          reason: '_isDraining is set before isOnline() so the second call '
               'is blocked; each repo should drain exactly once');
       expect(spies.finance.drainCalls, equals(1));
     });

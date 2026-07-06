@@ -13,10 +13,10 @@ func TestAuth_Register(t *testing.T) {
 	router, _ := newAuthRouter(t)
 
 	body := map[string]any{
-		"email":       "auth@example.com",
-		"password":    "password123",
-		"first_name":  "Auth",
-		"last_name":   "Test",
+		"email":      "auth@example.com",
+		"password":   "password123",
+		"first_name": "Auth",
+		"last_name":  "Test",
 	}
 	rec := execRequest(t, router, "POST", "/api/v1/auth/register", body, "")
 	requireStatus(t, rec, http.StatusCreated)
@@ -32,10 +32,10 @@ func TestAuth_Register_DuplicateEmail(t *testing.T) {
 	router, _ := newAuthRouter(t)
 
 	body := map[string]any{
-		"email":       "dup@example.com",
-		"password":    "password123",
-		"first_name":  "Dup",
-		"last_name":   "Test",
+		"email":      "dup@example.com",
+		"password":   "password123",
+		"first_name": "Dup",
+		"last_name":  "Test",
 	}
 	rec := execRequest(t, router, "POST", "/api/v1/auth/register", body, "")
 	requireStatus(t, rec, http.StatusCreated)

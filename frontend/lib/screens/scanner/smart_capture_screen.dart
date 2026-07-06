@@ -132,7 +132,9 @@ class _SmartCaptureScreenState extends State<SmartCaptureScreen> {
                     children: [
                       Expanded(
                         child: AppButton(
-                          text: _showOriginal ? l10n.smartCaptureShowEnhanced : l10n.smartCaptureOriginal,
+                          text: _showOriginal
+                              ? l10n.smartCaptureShowEnhanced
+                              : l10n.smartCaptureOriginal,
                           variant: AppButtonVariant.outline,
                           color: AppButtonColor.neutral,
                           onPressed: () {
@@ -143,7 +145,9 @@ class _SmartCaptureScreenState extends State<SmartCaptureScreen> {
                       const SizedBox(width: MitlistSpacing.sm),
                       Expanded(
                         child: AppButton(
-                          text: poor ? l10n.smartCaptureUseAnyway : l10n.smartCaptureUseScan,
+                          text: poor
+                              ? l10n.smartCaptureUseAnyway
+                              : l10n.smartCaptureUseScan,
                           variant: poor
                               ? AppButtonVariant.outline
                               : AppButtonVariant.solid,

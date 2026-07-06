@@ -73,23 +73,23 @@ type createStepRequest struct {
 }
 
 type createRecipeRequest struct {
-	Title            string                   `json:"title"`
-	Description      string                   `json:"description"`
-	DescriptionShort string                   `json:"description_short"`
-	Author           string                   `json:"author"`
-	RatingValue      float64                  `json:"rating_value"`
-	RatingCount      int                      `json:"rating_count"`
-	NutritionJSON    string                   `json:"nutrition_json"`
-	VideoURL         string                   `json:"video_url"`
-	EquipmentJSON    string                   `json:"equipment_json"`
-	SourceURL        string                   `json:"source_url"`
-	ImageURL         string                   `json:"image_url"`
-	ImageOptions     []string                 `json:"image_options"`
-	Tags             []string                 `json:"tags"`
-	PrepTime         int                      `json:"prep_time"`
-	CookTime         int                      `json:"cook_time"`
-	Servings         int                      `json:"servings"`
-	IsPublic         bool                     `json:"is_public"`
+	Title            string                    `json:"title"`
+	Description      string                    `json:"description"`
+	DescriptionShort string                    `json:"description_short"`
+	Author           string                    `json:"author"`
+	RatingValue      float64                   `json:"rating_value"`
+	RatingCount      int                       `json:"rating_count"`
+	NutritionJSON    string                    `json:"nutrition_json"`
+	VideoURL         string                    `json:"video_url"`
+	EquipmentJSON    string                    `json:"equipment_json"`
+	SourceURL        string                    `json:"source_url"`
+	ImageURL         string                    `json:"image_url"`
+	ImageOptions     []string                  `json:"image_options"`
+	Tags             []string                  `json:"tags"`
+	PrepTime         int                       `json:"prep_time"`
+	CookTime         int                       `json:"cook_time"`
+	Servings         int                       `json:"servings"`
+	IsPublic         bool                      `json:"is_public"`
 	Ingredients      []createIngredientRequest `json:"ingredients,omitempty"`
 	Steps            []createStepRequest       `json:"steps,omitempty"`
 }
@@ -203,23 +203,23 @@ func (h *RecipeHandler) GetRecipe(w http.ResponseWriter, r *http.Request) {
 }
 
 type updateRecipeRequest struct {
-	Title            *string   `json:"title,omitempty"`
-	Description      *string   `json:"description,omitempty"`
-	DescriptionShort *string   `json:"description_short,omitempty"`
-	Author           *string   `json:"author,omitempty"`
-	RatingValue      *float64  `json:"rating_value,omitempty"`
-	RatingCount      *int      `json:"rating_count,omitempty"`
-	NutritionJSON    *string   `json:"nutrition_json,omitempty"`
-	VideoURL         *string   `json:"video_url,omitempty"`
-	EquipmentJSON    *string   `json:"equipment_json,omitempty"`
-	SourceURL        *string   `json:"source_url,omitempty"`
-	ImageURL         *string   `json:"image_url,omitempty"`
-	ImageOptions     []string  `json:"image_options,omitempty"`
-	Tags             []string  `json:"tags,omitempty"`
-	PrepTime         *int      `json:"prep_time,omitempty"`
-	CookTime         *int      `json:"cook_time,omitempty"`
-	Servings         *int      `json:"servings,omitempty"`
-	IsPublic         *bool     `json:"is_public,omitempty"`
+	Title            *string  `json:"title,omitempty"`
+	Description      *string  `json:"description,omitempty"`
+	DescriptionShort *string  `json:"description_short,omitempty"`
+	Author           *string  `json:"author,omitempty"`
+	RatingValue      *float64 `json:"rating_value,omitempty"`
+	RatingCount      *int     `json:"rating_count,omitempty"`
+	NutritionJSON    *string  `json:"nutrition_json,omitempty"`
+	VideoURL         *string  `json:"video_url,omitempty"`
+	EquipmentJSON    *string  `json:"equipment_json,omitempty"`
+	SourceURL        *string  `json:"source_url,omitempty"`
+	ImageURL         *string  `json:"image_url,omitempty"`
+	ImageOptions     []string `json:"image_options,omitempty"`
+	Tags             []string `json:"tags,omitempty"`
+	PrepTime         *int     `json:"prep_time,omitempty"`
+	CookTime         *int     `json:"cook_time,omitempty"`
+	Servings         *int     `json:"servings,omitempty"`
+	IsPublic         *bool    `json:"is_public,omitempty"`
 }
 
 func (h *RecipeHandler) UpdateRecipe(w http.ResponseWriter, r *http.Request) {

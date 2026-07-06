@@ -138,8 +138,9 @@ class _SuggestionCard extends StatelessWidget {
               final compact = constraints.maxWidth < 360;
               final from = _SettlementParty(
                 label: suggestion.fromLabel,
-                helper:
-                    suggestion.from == suggestion.to ? l10n.expenseSameAccount : l10n.expenseFrom,
+                helper: suggestion.from == suggestion.to
+                    ? l10n.expenseSameAccount
+                    : l10n.expenseFrom,
                 tone: Theme.of(context).colorScheme.error,
               );
               final to = _SettlementParty(
@@ -189,7 +190,9 @@ class _SuggestionCard extends StatelessWidget {
             child: AppButton(
               variant: AppButtonVariant.solid,
               color: AppButtonColor.success,
-              text: isSettling ? l10n.expenseRecording : l10n.expenseRecordSettlement,
+              text: isSettling
+                  ? l10n.expenseRecording
+                  : l10n.expenseRecordSettlement,
               isLoading: isSettling,
               onPressed: isSettling ? null : onRecord,
             ),
@@ -304,7 +307,9 @@ class _BalancesExpandableBodyState extends State<_BalancesExpandableBody> {
       children: [
         Semantics(
           button: true,
-          label: _expanded ? l10n.expenseCollapseBalances : l10n.expenseExpandBalances,
+          label: _expanded
+              ? l10n.expenseCollapseBalances
+              : l10n.expenseExpandBalances,
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () => setState(() => _expanded = !_expanded),

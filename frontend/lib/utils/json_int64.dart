@@ -37,4 +37,3 @@ int parseJsonInt64(dynamic value, {required String fieldName}) {
 
   throw FormatException('Unexpected type for $fieldName');
 }
-

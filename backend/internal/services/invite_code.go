@@ -122,4 +122,3 @@ var inviteNouns = []string{
 	"plant",
 	"rocket",
 }
-

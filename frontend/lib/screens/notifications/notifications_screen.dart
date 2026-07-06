@@ -32,7 +32,8 @@ class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
   @override
-  ConsumerState<NotificationsScreen> createState() => _NotificationsScreenState();
+  ConsumerState<NotificationsScreen> createState() =>
+      _NotificationsScreenState();
 }
 
 class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
@@ -82,7 +83,12 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   }
 
   void _onScroll() {
-    if (!_scrollController.hasClients || _isLoadingMore || !_hasMore || _isLoading) return;
+    if (!_scrollController.hasClients ||
+        _isLoadingMore ||
+        !_hasMore ||
+        _isLoading) {
+      return;
+    }
     if (_scrollController.position.extentAfter < 400) {
       _loadMore();
     }
@@ -108,7 +114,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       }
       _ensureLiveUpdates(groups);
       final service = await ref.read(notificationServiceProviderAsync.future);
-      final data = await service.listNotifications(limit: _pageLimit, offset: 0);
+      final data =
+          await service.listNotifications(limit: _pageLimit, offset: 0);
       if (!mounted) return;
       setState(() {
         _items
@@ -136,7 +143,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
     try {
       final service = await ref.read(notificationServiceProviderAsync.future);
-      final data = await service.listNotifications(limit: _pageLimit, offset: _items.length);
+      final data = await service.listNotifications(
+          limit: _pageLimit, offset: _items.length);
       if (!mounted) return;
       setState(() {
         _items.addAll(data);
@@ -209,7 +217,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     } catch (e) {
       if (!mounted) return;
       unawaited(Haptics.failure());
-      setState(() => _error = friendlyErrorMessage(e, AppLocalizations.of(context)!));
+      setState(() =>
+          _error = friendlyErrorMessage(e, AppLocalizations.of(context)!));
     } finally {
       _isMutating = false;
     }
@@ -329,8 +338,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                         lottieAsset: 'assets/animations/lottie/House.lottie',
                         icon: const AppIcon(name: 'homeOutline', size: 56),
                         title: l10n.commonNoHousehold,
-                        description:
-                            l10n.notificationsNoHouseholdDesc,
+                        description: l10n.notificationsNoHouseholdDesc,
                         actions: [
                           AppButton(
                             text: l10n.commonGoToHouseholds,
@@ -345,8 +353,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                           'assets/animations/lottie/Notifications.lottie',
                       icon: AppIcon(name: 'bellOutline', size: 56),
                       title: l10n.notificationsNoNotifications,
-                      description:
-                          l10n.notificationsNoNotificationsDesc,
+                      description: l10n.notificationsNoNotificationsDesc,
                     ),
                 ]),
               ),
@@ -363,8 +370,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                       final subtitle = n.body.isNotEmpty ? n.body : n.type;
                       final titleStyle =
                           Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight:
-                                    n.isRead ? FontWeight.w500 : FontWeight.w800,
+                                fontWeight: n.isRead
+                                    ? FontWeight.w500
+                                    : FontWeight.w800,
                               );
 
                       return Padding(
@@ -384,8 +392,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                     .colorScheme
                                     .error
                                     .withValues(alpha: 0.12),
-                                borderRadius:
-                                    BorderRadius.circular(MitlistTheme.radiusLg),
+                                borderRadius: BorderRadius.circular(
+                                    MitlistTheme.radiusLg),
                               ),
                               child: AppIcon(
                                 name: 'trashOutline',
@@ -404,8 +412,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                 ? n.title
                                 : l10n.notificationsUnreadLabel(n.title),
                             child: Padding(
-                              padding:
-                                  const EdgeInsets.all(MitlistSpacing.md),
+                              padding: const EdgeInsets.all(MitlistSpacing.md),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -447,4 +454,3 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     );
   }
 }
-

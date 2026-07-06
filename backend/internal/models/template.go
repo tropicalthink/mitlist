@@ -17,11 +17,11 @@ type Template struct {
 
 // TemplateItem represents an item within a list template.
 type TemplateItem struct {
-	ID       uuid.UUID `json:"id"`
+	ID         uuid.UUID `json:"id"`
 	TemplateID uuid.UUID `json:"template_id"`
-	Name     string    `json:"name"`
-	Quantity int       `json:"quantity"`
-	Unit     string    `json:"unit"`
+	Name       string    `json:"name"`
+	Quantity   int       `json:"quantity"`
+	Unit       string    `json:"unit"`
 }
 
 // ChoreTemplate represents a reusable chore template (a saved household routine).

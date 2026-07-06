@@ -27,7 +27,8 @@ class Attachment {
         userId: json['user_id'] as String,
         purpose: json['purpose'] as String,
         objectKey: json['object_key'] as String,
-        contentType: (json['content_type'] as String?) ?? 'application/octet-stream',
+        contentType:
+            (json['content_type'] as String?) ?? 'application/octet-stream',
         byteSize: (json['byte_size'] as num?)?.toInt() ?? 0,
         status: (json['status'] as String?) ?? 'pending',
         createdAt: DateTime.parse(json['created_at'] as String),
@@ -48,10 +49,10 @@ class UploadIntent {
   });
 
   factory UploadIntent.fromJson(Map<String, dynamic> json) => UploadIntent(
-        attachment: Attachment.fromJson((json['attachment'] as Map).cast<String, dynamic>()),
+        attachment: Attachment.fromJson(
+            (json['attachment'] as Map).cast<String, dynamic>()),
         objectKey: json['object_key'] as String,
         uploadUrl: json['upload_url'] as String,
         expiresIn: (json['expires_in'] as num?)?.toInt() ?? 0,
       );
 }
-

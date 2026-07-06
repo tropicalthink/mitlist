@@ -27,12 +27,19 @@ class TemplateService {
     }
   }
 
-  Future<List<TemplateModel>> listTemplates(String groupId, {int limit = 50, int offset = 0}) async {
+  Future<List<TemplateModel>> listTemplates(String groupId,
+      {int limit = 50, int offset = 0}) async {
     ensureValidGroupId(groupId);
-    final r = await _dio.get('/templates', queryParameters: {'group_id': groupId, 'limit': limit, 'offset': offset});
+    final r = await _dio.get('/templates', queryParameters: {
+      'group_id': groupId,
+      'limit': limit,
+      'offset': offset
+    });
     final data = r.data;
     if (data is! List) return [];
-    return data.map((e) => TemplateModel.fromJson((e as Map).cast<String, dynamic>())).toList();
+    return data
+        .map((e) => TemplateModel.fromJson((e as Map).cast<String, dynamic>()))
+        .toList();
   }
 
   Future<TemplateModel> getTemplate(String id) async {
@@ -40,7 +47,8 @@ class TemplateService {
     return TemplateModel.fromJson((r.data as Map).cast<String, dynamic>());
   }
 
-  Future<TemplateModel> updateTemplate(String id, UpdateTemplateRequest req) async {
+  Future<TemplateModel> updateTemplate(
+      String id, UpdateTemplateRequest req) async {
     final r = await _dio.patch('/templates/$id', data: req.toJson());
     return TemplateModel.fromJson((r.data as Map).cast<String, dynamic>());
   }
@@ -49,23 +57,33 @@ class TemplateService {
     await _dio.delete('/templates/$id');
   }
 
-  Future<Map<String, dynamic>> applyTemplate(String id, ApplyTemplateRequest req) async {
+  Future<Map<String, dynamic>> applyTemplate(
+      String id, ApplyTemplateRequest req) async {
     final r = await _dio.post('/templates/$id/apply', data: req.toJson());
     return (r.data as Map).cast<String, dynamic>();
   }
 
   // Chore templates
-  Future<ChoreTemplateModel> createChoreTemplate(CreateChoreTemplateRequest req) async {
+  Future<ChoreTemplateModel> createChoreTemplate(
+      CreateChoreTemplateRequest req) async {
     final r = await _dio.post('/chore-templates', data: req.toJson());
     return ChoreTemplateModel.fromJson((r.data as Map).cast<String, dynamic>());
   }
 
-  Future<List<ChoreTemplateModel>> listChoreTemplates(String groupId, {int limit = 50, int offset = 0}) async {
+  Future<List<ChoreTemplateModel>> listChoreTemplates(String groupId,
+      {int limit = 50, int offset = 0}) async {
     ensureValidGroupId(groupId);
-    final r = await _dio.get('/chore-templates', queryParameters: {'group_id': groupId, 'limit': limit, 'offset': offset});
+    final r = await _dio.get('/chore-templates', queryParameters: {
+      'group_id': groupId,
+      'limit': limit,
+      'offset': offset
+    });
     final data = r.data;
     if (data is! List) return [];
-    return data.map((e) => ChoreTemplateModel.fromJson((e as Map).cast<String, dynamic>())).toList();
+    return data
+        .map((e) =>
+            ChoreTemplateModel.fromJson((e as Map).cast<String, dynamic>()))
+        .toList();
   }
 
   Future<ChoreTemplateModel> getChoreTemplate(String id) async {
@@ -73,7 +91,8 @@ class TemplateService {
     return ChoreTemplateModel.fromJson((r.data as Map).cast<String, dynamic>());
   }
 
-  Future<ChoreTemplateModel> updateChoreTemplate(String id, UpdateChoreTemplateRequest req) async {
+  Future<ChoreTemplateModel> updateChoreTemplate(
+      String id, UpdateChoreTemplateRequest req) async {
     final r = await _dio.patch('/chore-templates/$id', data: req.toJson());
     return ChoreTemplateModel.fromJson((r.data as Map).cast<String, dynamic>());
   }
@@ -82,4 +101,3 @@ class TemplateService {
     await _dio.delete('/chore-templates/$id');
   }
 }
-

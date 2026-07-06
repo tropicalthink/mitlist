@@ -17,11 +17,16 @@ class NotificationService {
     return NotificationService._(dio);
   }
 
-  Future<List<NotificationModel>> listNotifications({int limit = 50, int offset = 0}) async {
+  Future<List<NotificationModel>> listNotifications(
+      {int limit = 50, int offset = 0}) async {
     try {
-      final r = await _dio.get('/notifications', queryParameters: {'limit': limit, 'offset': offset});
+      final r = await _dio.get('/notifications',
+          queryParameters: {'limit': limit, 'offset': offset});
       final data = (r.data as List).cast<dynamic>();
-      return data.map((e) => NotificationModel.fromJson((e as Map).cast<String, dynamic>())).toList();
+      return data
+          .map((e) =>
+              NotificationModel.fromJson((e as Map).cast<String, dynamic>()))
+          .toList();
     } on DioException catch (e) {
       _logger.e('List notifications failed: ${e.response?.data}');
       rethrow;
@@ -48,12 +53,17 @@ class NotificationService {
   Future<List<NotificationPreferenceModel>> getPreferences() async {
     final r = await _dio.get('/notifications/preferences');
     final data = (r.data as List).cast<dynamic>();
-    return data.map((e) => NotificationPreferenceModel.fromJson((e as Map).cast<String, dynamic>())).toList();
+    return data
+        .map((e) => NotificationPreferenceModel.fromJson(
+            (e as Map).cast<String, dynamic>()))
+        .toList();
   }
 
   Future<NotificationPreferenceModel> getGroupPreference(String groupId) async {
-    final r = await _dio.get('/notifications/preferences', queryParameters: {'group_id': groupId});
-    return NotificationPreferenceModel.fromJson((r.data as Map).cast<String, dynamic>());
+    final r = await _dio.get('/notifications/preferences',
+        queryParameters: {'group_id': groupId});
+    return NotificationPreferenceModel.fromJson(
+        (r.data as Map).cast<String, dynamic>());
   }
 
   Future<void> updatePreference(NotificationPreferenceModel pref) async {
@@ -73,17 +83,20 @@ class NotificationService {
       '/auth/push-subscriptions',
       data: {'endpoint': endpoint, 'p256dh': p256dh, 'auth': auth},
     );
-    return PushSubscriptionModel.fromJson((r.data as Map).cast<String, dynamic>());
+    return PushSubscriptionModel.fromJson(
+        (r.data as Map).cast<String, dynamic>());
   }
 
   Future<List<PushSubscriptionModel>> listPushSubscriptions() async {
     final r = await _dio.get('/auth/push-subscriptions');
     final data = (r.data as List).cast<dynamic>();
-    return data.map((e) => PushSubscriptionModel.fromJson((e as Map).cast<String, dynamic>())).toList();
+    return data
+        .map((e) =>
+            PushSubscriptionModel.fromJson((e as Map).cast<String, dynamic>()))
+        .toList();
   }
 
   Future<void> deletePushSubscription(String id) async {
     await _dio.delete('/auth/push-subscriptions/$id');
   }
 }
-

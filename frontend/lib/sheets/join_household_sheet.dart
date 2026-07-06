@@ -60,7 +60,9 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
   void initState() {
     super.initState();
     _confetti = ConfettiController(duration: const Duration(seconds: 3));
-    _lottie = AnimationController(vsync: this, duration: Duration.zero); // duration overridden by Lottie.onLoaded
+    _lottie = AnimationController(
+        vsync: this,
+        duration: Duration.zero); // duration overridden by Lottie.onLoaded
     _reveal = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 700),

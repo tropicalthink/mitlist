@@ -70,7 +70,8 @@ void main() {
     });
 
     // 2. Excludes current items
-    testWidgets('excludes items whose name is in currentItemNames', (tester) async {
+    testWidgets('excludes items whose name is in currentItemNames',
+        (tester) async {
       await _pumpStrip(
         tester,
         suggestions: [_milk, _eggs],
@@ -82,7 +83,8 @@ void main() {
     });
 
     // 3. Empty → invisible (no heading, no chip text)
-    testWidgets('renders nothing when suggestions list is empty', (tester) async {
+    testWidgets('renders nothing when suggestions list is empty',
+        (tester) async {
       await _pumpStrip(tester, suggestions: []);
 
       // No heading and no chip names should appear.
@@ -92,7 +94,8 @@ void main() {
     });
 
     // 4. Tap calls onAdd with the correct suggestion
-    testWidgets('tapping a chip calls onAdd with matching suggestion', (tester) async {
+    testWidgets('tapping a chip calls onAdd with matching suggestion',
+        (tester) async {
       RestockSuggestion? added;
 
       await _pumpStrip(

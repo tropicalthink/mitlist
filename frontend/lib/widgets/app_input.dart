@@ -232,7 +232,7 @@ class _AppInputState extends State<AppInput>
       AppInputSize.md => MitlistSpacing.space3,
       AppInputSize.lg => MitlistSpacing.space4,
     };
-return EdgeInsets.symmetric(horizontal: horizontal, vertical: vertical);
+    return EdgeInsets.symmetric(horizontal: horizontal, vertical: vertical);
   }
 
   void _toggleObscure() {
@@ -367,9 +367,8 @@ return EdgeInsets.symmetric(horizontal: horizontal, vertical: vertical);
       };
     }
 
-    Color textColor = widget.enabled
-        ? colorScheme.onSurface
-        : colorScheme.onSurfaceVariant;
+    Color textColor =
+        widget.enabled ? colorScheme.onSurface : colorScheme.onSurfaceVariant;
 
     Color hintColor = colorScheme.onSurfaceVariant;
 
@@ -415,118 +414,118 @@ return EdgeInsets.symmetric(horizontal: horizontal, vertical: vertical);
               child: Semantics(
                 label: widget.label,
                 child: TextField(
-                controller: _controller,
-                focusNode: _focusNode,
-                obscureText: _obscure,
-                enabled: widget.enabled,
-                keyboardType: widget.keyboardType,
-                textInputAction: widget.textInputAction,
-                maxLength: widget.maxLength,
-                minLines: widget.minLines,
-                maxLines: (widget.minLines != null || widget.maxLines != null)
-                    ? widget.maxLines
-                    : 1,
-                onChanged: widget.onChanged,
-                onSubmitted: widget.onSubmitted,
-                onEditingComplete: widget.onEditingComplete,
-                autofillHints: widget.autofillHints,
-                style: textTheme.bodyMedium?.copyWith(
-                  color: textColor,
-                ),
-                decoration: InputDecoration(
-                  isDense: true,
-                  filled: true,
-                  fillColor: backgroundColor,
-                  border: OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(MitlistTheme.radiusNone),
-                    borderSide: BorderSide(
-                      color: borderColor,
-                      width: _borderWidth,
-                    ),
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  obscureText: _obscure,
+                  enabled: widget.enabled,
+                  keyboardType: widget.keyboardType,
+                  textInputAction: widget.textInputAction,
+                  maxLength: widget.maxLength,
+                  minLines: widget.minLines,
+                  maxLines: (widget.minLines != null || widget.maxLines != null)
+                      ? widget.maxLines
+                      : 1,
+                  onChanged: widget.onChanged,
+                  onSubmitted: widget.onSubmitted,
+                  onEditingComplete: widget.onEditingComplete,
+                  autofillHints: widget.autofillHints,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: textColor,
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(MitlistTheme.radiusNone),
-                    borderSide: BorderSide(
-                      color: borderColor,
-                      width: _borderWidth,
+                  decoration: InputDecoration(
+                    isDense: true,
+                    filled: true,
+                    fillColor: backgroundColor,
+                    border: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.circular(MitlistTheme.radiusNone),
+                      borderSide: BorderSide(
+                        color: borderColor,
+                        width: _borderWidth,
+                      ),
                     ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(MitlistTheme.radiusNone),
-                    borderSide: BorderSide(
-                      color: _hasError
-                          ? colorScheme.error
-                          : widget.success
-                              ? colorScheme.tertiary
-                              : colorScheme.primary,
-                      width: _borderWidth,
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.circular(MitlistTheme.radiusNone),
+                      borderSide: BorderSide(
+                        color: borderColor,
+                        width: _borderWidth,
+                      ),
                     ),
-                  ),
-                  disabledBorder: OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(MitlistTheme.radiusNone),
-                    borderSide: BorderSide(
-                      color: colorScheme.outline,
-                      width: _borderWidth,
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.circular(MitlistTheme.radiusNone),
+                      borderSide: BorderSide(
+                        color: _hasError
+                            ? colorScheme.error
+                            : widget.success
+                                ? colorScheme.tertiary
+                                : colorScheme.primary,
+                        width: _borderWidth,
+                      ),
                     ),
-                  ),
-                  errorBorder: OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(MitlistTheme.radiusNone),
-                    borderSide: BorderSide(
-                      color: colorScheme.error,
-                      width: _borderWidth,
+                    disabledBorder: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.circular(MitlistTheme.radiusNone),
+                      borderSide: BorderSide(
+                        color: colorScheme.outline,
+                        width: _borderWidth,
+                      ),
                     ),
-                  ),
-                  focusedErrorBorder: OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(MitlistTheme.radiusNone),
-                    borderSide: BorderSide(
-                      color: colorScheme.error,
-                      width: _borderWidth,
+                    errorBorder: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.circular(MitlistTheme.radiusNone),
+                      borderSide: BorderSide(
+                        color: colorScheme.error,
+                        width: _borderWidth,
+                      ),
                     ),
-                  ),
-                  contentPadding: _contentPadding,
-                  prefixIcon: widget.prefixIcon != null
-                      ? Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: MitlistSpacing.sm,
-                          ),
-                          child: SizedBox(
-                            width: _iconSize,
-                            height: _iconSize,
-                            child: Center(
-                              child: IconTheme(
-                                data: IconThemeData(
-                                  size: _iconSize,
-                                  color: colorScheme.onSurface,
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.circular(MitlistTheme.radiusNone),
+                      borderSide: BorderSide(
+                        color: colorScheme.error,
+                        width: _borderWidth,
+                      ),
+                    ),
+                    contentPadding: _contentPadding,
+                    prefixIcon: widget.prefixIcon != null
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: MitlistSpacing.sm,
+                            ),
+                            child: SizedBox(
+                              width: _iconSize,
+                              height: _iconSize,
+                              child: Center(
+                                child: IconTheme(
+                                  data: IconThemeData(
+                                    size: _iconSize,
+                                    color: colorScheme.onSurface,
+                                  ),
+                                  child: widget.prefixIcon!,
                                 ),
-                                child: widget.prefixIcon!,
                               ),
                             ),
-                          ),
-                        )
-                      : null,
-                  prefixIconConstraints: const BoxConstraints(
-                    minWidth: 36,
-                    minHeight: 36,
+                          )
+                        : null,
+                    prefixIconConstraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
+                    ),
+                    suffixIcon: _buildSuffixIcon(),
+                    suffixIconConstraints: const BoxConstraints(
+                      minWidth: 44,
+                      minHeight: 44,
+                    ),
+                    hintText: widget.hint,
+                    hintStyle: textTheme.bodyMedium?.copyWith(
+                      color: hintColor,
+                    ),
+                    counterText: '',
                   ),
-                  suffixIcon: _buildSuffixIcon(),
-                  suffixIconConstraints: const BoxConstraints(
-                    minWidth: 44,
-                    minHeight: 44,
-                  ),
-                  hintText: widget.hint,
-                  hintStyle: textTheme.bodyMedium?.copyWith(
-                    color: hintColor,
-                  ),
-                  counterText: '',
                 ),
               ),
-            ),
             ),
           ),
           if (widget.helperText != null ||
@@ -536,16 +535,14 @@ return EdgeInsets.symmetric(horizontal: horizontal, vertical: vertical);
             Row(
               children: [
                 Expanded(
-                  child: widget.errorText != null ||
-                          widget.helperText != null
+                  child: widget.errorText != null || widget.helperText != null
                       ? Text(
                           widget.errorText ?? widget.helperText ?? '',
                           style: textTheme.bodySmall?.copyWith(
                             color: _hasError
                                 ? colorScheme.error
                                 : colorScheme.onSurfaceVariant,
-                            fontWeight:
-                                _hasError ? FontWeight.w700 : null,
+                            fontWeight: _hasError ? FontWeight.w700 : null,
                           ),
                         )
                       : const SizedBox.shrink(),
