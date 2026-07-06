@@ -58,5 +58,13 @@
 	<true/>
 	<key>FlutterDeepLinkingEnabled</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>mitlist uses the camera to scan receipts and shopping lists so items can be added automatically.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>The camera component declares microphone access as part of video capture support; mitlist does not record audio.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>mitlist lets you attach photos from your library to expenses, notes, and recipes.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
