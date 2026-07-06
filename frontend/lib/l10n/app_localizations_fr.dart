@@ -320,6 +320,77 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get choreDoneRecently => 'Done recently';
+
+  @override
+  String get choreLedgerYou => 'You';
+
+  @override
+  String get choreLedgerSomeone => 'Someone';
+
+  @override
+  String choreLedgerDoneBy(String who, String when) {
+    return '$who · $when';
+  }
+
+  @override
+  String get choreLedgerJustNow => 'just now';
+
+  @override
+  String choreLedgerHoursAgo(int count) {
+    return '${count}h ago';
+  }
+
+  @override
+  String get choreLedgerYesterday => 'yesterday';
+
+  @override
+  String choreBackOnDate(String date) {
+    return 'back $date';
+  }
+
+  @override
+  String get choreUpForGrabs => 'Up for grabs';
+
+  @override
+  String choreDoneBackSnackbar(String choreTitle, String date) {
+    return '$choreTitle done — back $date';
+  }
+
+  @override
+  String get choreWhoEveryone => 'Everyone';
+
+  @override
+  String get choreWhoNoOne => 'No one';
+
+  @override
+  String choreWhoAlways(String name) {
+    return 'Always $name';
+  }
+
+  @override
+  String choreWhoAmongSelected(int count) {
+    return 'Rotates between the $count people you picked.';
+  }
+
+  @override
+  String get choreWhoOrderLabel => 'Order';
+
+  @override
+  String get choreDetailRhythm => 'Repeats';
+
+  @override
+  String choreLoadSummary(num count, int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count chores',
+      one: '1 chore',
+    );
+    return '$_temp0 done in the last $days days';
+  }
+
+  @override
   String get choreFailedComplete =>
       'Impossible de terminer la tâche. Réessaie.';
 
@@ -586,7 +657,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get choreCreationMoreOptions => 'Plus d\'options';
 
   @override
-  String get choreCreationAssignLabel => 'Attribution';
+  String get choreCreationAssignLabel => 'Qui';
 
   @override
   String get choreCreationAssignTakeTurns => 'À tour de rôle';
@@ -731,7 +802,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get choreDetailTitle => 'Détails de la tâche';
 
   @override
-  String get choreDetailAssignee => 'Attribuée à';
+  String get choreDetailAssignee => 'À qui le tour';
 
   @override
   String get choreDetailDue => 'Échéance';

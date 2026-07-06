@@ -379,6 +379,23 @@
   },
   "choreDoneSnackbar": "{choreTitle} terminée",
   "@choreDoneSnackbar": {
+  "choreDoneRecently": "Fait récemment",
+  "choreLedgerYou": "Toi",
+  "choreLedgerSomeone": "Quelqu'un",
+  "choreLedgerDoneBy": "{who} · {when}",
+  "choreLedgerJustNow": "à l'instant",
+  "choreLedgerHoursAgo": "il y a {count} h",
+  "choreLedgerYesterday": "hier",
+  "choreBackOnDate": "revient le {date}",
+  "choreUpForGrabs": "À prendre",
+  "choreDoneBackSnackbar": "{choreTitle} fait — revient le {date}",
+  "choreWhoEveryone": "Tout le monde",
+  "choreWhoNoOne": "Personne",
+  "choreWhoAlways": "Toujours {name}",
+  "choreWhoAmongSelected": "Tourne entre les {count} personnes choisies.",
+  "choreWhoOrderLabel": "Ordre",
+  "choreDetailRhythm": "Se répète",
+  "choreLoadSummary": "{count, plural, =1{1 tâche faite} other{{count} tâches faites}} sur les {days} derniers jours",
     "description": "Snackbar when a chore is marked done",
     "placeholders": {
       "choreTitle": {
@@ -742,7 +759,7 @@
   "@choreCreationMoreOptions": {
     "description": "Toggle to show more chore options"
   },
-  "choreCreationAssignLabel": "Attribution",
+  "choreCreationAssignLabel": "Qui",
   "@choreCreationAssignLabel": {
     "description": "Label for assignee selector"
   },
@@ -932,7 +949,7 @@
   "@choreDetailTitle": {
     "description": "Bottom sheet title for chore detail"
   },
-  "choreDetailAssignee": "Attribuée à",
+  "choreDetailAssignee": "À qui le tour",
   "@choreDetailAssignee": {
     "description": "Detail row: assigned to"
   },

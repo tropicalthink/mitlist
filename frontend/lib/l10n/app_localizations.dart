@@ -662,6 +662,108 @@ abstract class AppLocalizations {
   /// **'{choreTitle} done'**
   String choreDoneSnackbar(String choreTitle);
 
+  /// Header of the recently-completed ledger section
+  ///
+  /// In en, this message translates to:
+  /// **'Done recently'**
+  String get choreDoneRecently;
+
+  /// Ledger: the current user did it
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get choreLedgerYou;
+
+  /// Ledger: unknown member did it
+  ///
+  /// In en, this message translates to:
+  /// **'Someone'**
+  String get choreLedgerSomeone;
+
+  /// Ledger line: who did it and when
+  ///
+  /// In en, this message translates to:
+  /// **'{who} · {when}'**
+  String choreLedgerDoneBy(String who, String when);
+
+  /// Relative time: under an hour ago
+  ///
+  /// In en, this message translates to:
+  /// **'just now'**
+  String get choreLedgerJustNow;
+
+  /// Relative time in hours
+  ///
+  /// In en, this message translates to:
+  /// **'{count}h ago'**
+  String choreLedgerHoursAgo(int count);
+
+  /// Relative time: yesterday
+  ///
+  /// In en, this message translates to:
+  /// **'yesterday'**
+  String get choreLedgerYesterday;
+
+  /// When a recurring chore comes back
+  ///
+  /// In en, this message translates to:
+  /// **'back {date}'**
+  String choreBackOnDate(String date);
+
+  /// Chore with no assignee — anyone can claim it
+  ///
+  /// In en, this message translates to:
+  /// **'Up for grabs'**
+  String get choreUpForGrabs;
+
+  /// Snackbar: chore done, comes back on date
+  ///
+  /// In en, this message translates to:
+  /// **'{choreTitle} done — back {date}'**
+  String choreDoneBackSnackbar(String choreTitle, String date);
+
+  /// Who-picker: whole household rotates
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone'**
+  String get choreWhoEveryone;
+
+  /// Who-picker: chore stays unassigned
+  ///
+  /// In en, this message translates to:
+  /// **'No one'**
+  String get choreWhoNoOne;
+
+  /// Who-picker hint: single fixed owner
+  ///
+  /// In en, this message translates to:
+  /// **'Always {name}'**
+  String choreWhoAlways(String name);
+
+  /// Who-picker hint: rotation over a subset
+  ///
+  /// In en, this message translates to:
+  /// **'Rotates between the {count} people you picked.'**
+  String choreWhoAmongSelected(int count);
+
+  /// Label for the rotation-policy chips
+  ///
+  /// In en, this message translates to:
+  /// **'Order'**
+  String get choreWhoOrderLabel;
+
+  /// Detail row: how often the chore repeats
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats'**
+  String get choreDetailRhythm;
+
+  /// Load sheet summary line
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 chore} other{{count} chores}} done in the last {days} days'**
+  String choreLoadSummary(num count, int days);
+
   /// Error snackbar when chore completion fails
   ///
   /// In en, this message translates to:
@@ -1121,7 +1223,7 @@ abstract class AppLocalizations {
   /// Label for assignee selector
   ///
   /// In en, this message translates to:
-  /// **'Assign'**
+  /// **'Who'**
   String get choreCreationAssignLabel;
 
   /// Rotation assignment mode
@@ -1379,7 +1481,7 @@ abstract class AppLocalizations {
   /// Detail row: assigned to
   ///
   /// In en, this message translates to:
-  /// **'Assignee'**
+  /// **'Whose turn'**
   String get choreDetailAssignee;
 
   /// Detail row: due date

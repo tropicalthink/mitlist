@@ -50,6 +50,44 @@ func TestFinance_CreateExpense(t *testing.T) {
 	assert.Equal(t, "Dinner", resp["description"])
 }
 
+func TestFinance_CreateExpense_ForeignCurrency(t *testing.T) {
+	clearTables(t)
+	router, _ := newFinanceRouter(t)
+	user := createTestUser(t, "fx@example.com", "password123")
+	token := generateTestToken(user.ID)
+
+	groupRepo := newTestGroupRepo()
+	group := &models.Group{
+		ID:        uuid.New(),
+		Name:      "FX Group",
+		Currency:  "USD",
+		CreatedBy: user.ID,
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+	}
+	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
+
+	body := map[string]any{
+		"group_id":       group.ID.String(),
+		"payer_id":       user.ID.String(),
+		"amount":         5000,
+		"fx_rate":        1.10,
+		"description":    "Paris dinner",
+		"category":       "Food",
+		"currency":       "EUR",
+		"date":           time.Now().Format(time.RFC3339),
+		"split_user_ids": []string{user.ID.String()},
+	}
+	rec := execRequest(t, router, "POST", "/api/v1/expenses", body, token)
+	requireStatus(t, rec, http.StatusCreated)
+
+	var resp map[string]any
+	parseJSONResponse(t, rec, &resp)
+	assert.Equal(t, float64(5500), resp["base_amount"])
+	assert.InDelta(t, 1.10, resp["fx_rate"].(float64), 1e-9)
+}
+
 // TestFinance_SplitInvariant pins the end-to-end contract that a POST
 // /expenses request flows through handler -> service -> repository and
 // persists splits whose amounts sum EXACTLY to the expense amount, for every
