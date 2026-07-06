@@ -73,6 +73,8 @@ func (h *FinanceHandler) CreateExpense(w http.ResponseWriter, r *http.Request) {
 		GroupID      uuid.UUID   `json:"group_id"`
 		PayerID      uuid.UUID   `json:"payer_id"`
 		Amount       int64       `json:"amount"`
+		BaseAmount   int64       `json:"base_amount"`
+		FxRate       float64     `json:"fx_rate"`
 		Description  string      `json:"description"`
 		Category     string      `json:"category"`
 		Currency     string      `json:"currency"`
@@ -96,6 +98,8 @@ func (h *FinanceHandler) CreateExpense(w http.ResponseWriter, r *http.Request) {
 		GroupID:     req.GroupID,
 		PayerID:     req.PayerID,
 		Amount:      req.Amount,
+		BaseAmount:  req.BaseAmount,
+		FxRate:      req.FxRate,
 		Description: req.Description,
 		Category:    req.Category,
 		Currency:    req.Currency,

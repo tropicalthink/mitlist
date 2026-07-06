@@ -2,130 +2,29 @@ import 'dart:async';
 
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
-import 'package:logger/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../l10n/app_localizations.dart';
-import '../../providers/auth_provider.dart';
-import '../../providers/finance_provider.dart';
-import '../../repositories/finance_repository.dart';
-import '../../providers/group_provider.dart';
-import '../../models/finance_models.dart';
 import '../../router.dart' show BottomNavScaffold, currentGroupIdProvider;
-import '../../services/group_id_validator.dart';
 import '../../utils/shell_tab_load.dart';
-import '../../utils/active_group_context.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
 import '../../sheets/expense_creation_sheet.dart';
 import '../../sheets/expense_detail_sheet.dart';
 import '../../sheets/settlement_confirmation_dialog.dart';
 import '../../theme/spacing.dart';
-import '../../theme/typography.dart';
-import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
-import '../../widgets/app_card.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
-import '../../widgets/chip.dart';
-import '../../widgets/empty_state.dart';
-import '../../widgets/skeleton.dart';
-import '../../widgets/spinner.dart';
-import '../../widgets/list_entrance.dart';
 import '../../widgets/mitlist_app_bar.dart';
-
-// ---------------------------------------------------------------------------
-// Data models
-// ---------------------------------------------------------------------------
-
-class _Expense {
-  final String id;
-  final String description;
-  final double amount;
-  final double baseAmount;
-  final double fxRate;
-  final String baseCurrency;
-  final String payer;
-  final String currency;
-  final String category;
-  final DateTime date;
-  final DateTime createdAt;
-
-  const _Expense({
-    required this.id,
-    required this.description,
-    required this.amount,
-    required this.baseAmount,
-    required this.fxRate,
-    required this.baseCurrency,
-    required this.payer,
-    required this.currency,
-    required this.category,
-    required this.date,
-    required this.createdAt,
-  });
-
-  /// True when this expense was recorded in a currency other than the
-  /// household base currency and therefore carries a conversion.
-  bool get isConverted => fxRate != 1.0 || currency != baseCurrency;
-}
-
-class _ExpenseGroup {
-  final String label;
-  final List<_Expense> expenses;
-  final DateTime date;
-
-  const _ExpenseGroup(
-      {required this.label, required this.expenses, required this.date});
-}
-
-class _SettlementSuggestion {
-  final String from;
-  final String to;
-  final String fromLabel;
-  final String toLabel;
-  final double amount;
-
-  const _SettlementSuggestion({
-    required this.from,
-    required this.to,
-    required this.fromLabel,
-    required this.toLabel,
-    required this.amount,
-  });
-}
-
-class _BalanceEntry {
-  final String userId;
-  final String name;
-  final double amount;
-
-  const _BalanceEntry({
-    required this.userId,
-    required this.name,
-    required this.amount,
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-final Map<String, NumberFormat> _currencyFormats = {};
-
-String _formatCurrency(double value, {String currency = 'USD'}) {
-  final key = currency.trim().isEmpty ? 'USD' : currency.trim().toUpperCase();
-  final formatter = _currencyFormats.putIfAbsent(key, () {
-    try {
-      return NumberFormat.simpleCurrency(name: key);
-    } catch (_) {
-      return NumberFormat.simpleCurrency(name: 'USD');
-    }
-  });
-  return formatter.format(value);
-}
+import 'expense_format.dart';
+import 'expenses_controller.dart';
+import 'widgets/expense_balance_card.dart';
+import 'widgets/expense_chip_bar.dart';
+import 'widgets/expense_settlements_body.dart';
+import 'widgets/expense_states.dart';
+import 'widgets/expense_timeline_body.dart';
 
 // ---------------------------------------------------------------------------
 // Screen
@@ -139,40 +38,21 @@ class ExpensesScreen extends ConsumerStatefulWidget {
 }
 
 class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
-  static const int _pageLimit = 50;
+  late ExpensesController _controller;
 
-  bool _isLoading = true;
-  bool _isRefreshing = false;
-  bool _isLoadingMore = false;
-  bool _hasMore = true;
-  String? _errorMessage;
-  bool _hasPageError = false;
-  bool _hasHousehold = false;
-  bool _isSettling = false;
   int _selectedTab = 0; // 0 = Timeline, 1 = Settlements
-  final Logger _logger = Logger();
 
   late final ConfettiController _confettiController;
   final ScrollController _timelineScrollController = ScrollController();
   bool _hasPlayedConfetti = false;
-  bool _listenersSetUp = false;
-
-  double _balance = 0;
-  int _openBalanceCount = 0;
-  String? _groupId;
-  String _groupCurrency = 'USD';
-  Map<String, String> _userLabels = {};
-  Map<String, String> _memberNames = {};
-  final List<_Expense> _timelineExpenses = [];
-  List<_ExpenseGroup> _timelineGroups = [];
-  List<_SettlementSuggestion> _suggestions = [];
-  List<_BalanceEntry> _balances = [];
 
   bool _tabLoadStarted = false;
 
   @override
   void initState() {
     super.initState();
+    _controller = ExpensesController(ref: ref)
+      ..addListener(_onControllerChanged);
     _confettiController = ConfettiController(
       duration: const Duration(seconds: 3),
     );
@@ -184,6 +64,10 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _activateTabIfNeeded());
   }
 
+  void _onControllerChanged() {
+    if (mounted) setState(() {});
+  }
+
   void _activateTabIfNeeded() {
     if (_tabLoadStarted || !mounted) return;
     final insideShell =
@@ -192,7 +76,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       return;
     }
     _tabLoadStarted = true;
-    _loadData();
+    _controller.load(AppLocalizations.of(context)!);
   }
 
   @override
@@ -200,267 +84,27 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     _timelineScrollController.removeListener(_onTimelineScroll);
     _timelineScrollController.dispose();
     _confettiController.dispose();
+    _controller
+      ..removeListener(_onControllerChanged)
+      ..dispose();
     super.dispose();
   }
 
   void _onTimelineScroll() {
     if (_selectedTab != 0 ||
         !_timelineScrollController.hasClients ||
-        _isLoadingMore ||
-        !_hasMore) {
+        _controller.isLoadingMore ||
+        !_controller.hasMore) {
       return;
     }
 
     if (_timelineScrollController.position.extentAfter < 400) {
-      _loadMoreExpenses();
+      _controller.loadMoreExpenses();
     }
   }
 
-  Future<void> _loadData() async {
-    setState(() {
-      _isLoading = true;
-      _isRefreshing = false;
-      _errorMessage = null;
-      _hasPageError = false;
-      _hasMore = true;
-      _isLoadingMore = false;
-    });
-
-    try {
-      await ref.read(currentGroupIdProvider.notifier).ensureLoaded();
-      final authService = await ref.read(authServiceProviderAsync.future);
-      final groupService = await ref.read(groupServiceProviderAsync.future);
-      final groups = await ref.read(cachedGroupsProvider.future);
-      final groupId =
-          resolveActiveGroupId(groups, ref.read(currentGroupIdProvider));
-      final validGroupId = isValidGroupId(groupId) ? groupId : null;
-      final me = validGroupId == null ? null : await authService.getMe();
-
-      if (validGroupId != null) {
-        final youLabel = mounted
-            ? AppLocalizations.of(context)!.activityYou
-            : 'You';
-        // Load member names and group currency in parallel.
-        await Future.wait([
-          groupService.listMembers(validGroupId).then((members) {
-            _memberNames = {
-              for (final m in members)
-                m.userId: m.userId == me?.id ? youLabel : m.displayName,
-            };
-          }).catchError((_) {}),
-          groupService.getGroup(validGroupId).then((group) {
-            _groupCurrency = group.currency;
-          }).catchError((_) {}),
-        ]);
-      }
-
-      final repo = await ref.read(financeRepositoryProvider.future);
-      final expenses = validGroupId == null
-          ? <Expense>[]
-          : await repo.getExpensesByGroupOnce(validGroupId);
-      final summary = validGroupId == null
-          ? null
-          : await repo.watchSummaryByGroup(validGroupId).first;
-
-      if (!mounted) return;
-
-      _groupId = validGroupId;
-      _applyFinanceSummary(summary, me?.id, AppLocalizations.of(context)!);
-      _timelineExpenses
-        ..clear()
-        ..addAll(expenses.map(_mapExpense));
-      _rebuildTimelineGroups();
-
-      setState(() {
-        _hasHousehold = validGroupId != null;
-        _hasMore = expenses.length == _pageLimit;
-        // Keep skeleton until remote refresh when cache is empty; cached rows
-        // render immediately when present.
-        _isLoading = validGroupId != null && expenses.isEmpty;
-        _isRefreshing = validGroupId != null;
-      });
-
-      // Background refresh; keep cached UI if this fails.
-      if (validGroupId != null) {
-        unawaited(_refreshExpensesPage(repo, validGroupId));
-        if (!_listenersSetUp) {
-          _listenersSetUp = true;
-          ref.listenManual(cachedExpensesByGroupProvider(validGroupId),
-              (prev, next) {
-            next.whenData((data) {
-              if (!mounted) return;
-              // refreshGroup clears local rows before upserting; ignore the
-              // transient empty emission so the empty state does not flash.
-              if (data.isEmpty && _isRefreshing) return;
-              _applyTimelineExpenses(data);
-            });
-          });
-          ref.listenManual(cachedFinanceSummaryByGroupProvider(validGroupId),
-              (prev, next) {
-            next.whenData((s) {
-              if (!mounted) return;
-              _applyFinanceSummary(s, me?.id, AppLocalizations.of(context)!);
-              setState(() {});
-            });
-          });
-        }
-      } else {
-        if (!mounted) return;
-        setState(() => _isLoading = false);
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        final l10n = AppLocalizations.of(context)!;
-        _errorMessage = l10n.expenseLoadError;
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _refreshExpensesPage(FinanceRepository repo, String groupId) async {
-    try {
-      final fetchedCount = await repo.refreshGroup(
-        groupId,
-        limit: _pageLimit,
-        offset: 0,
-      );
-      if (!mounted) return;
-      setState(() {
-        _isRefreshing = false;
-        _isLoading = false;
-        _hasMore = fetchedCount == _pageLimit;
-      });
-    } catch (e) {
-      _logger.w('Background expenses refresh failed', error: e);
-      if (!mounted) return;
-      setState(() {
-        _isRefreshing = false;
-        _isLoading = false;
-      });
-    }
-  }
-
-  void _applyTimelineExpenses(List<Expense> expenses) {
-    _timelineExpenses
-      ..clear()
-      ..addAll(expenses.map(_mapExpense));
-    _rebuildTimelineGroups();
-    setState(() {
-      _isLoading = false;
-      _isRefreshing = false;
-    });
-  }
-
-  void _applyFinanceSummary(
-    FinanceSummary? summary,
-    String? currentUserId,
-    AppLocalizations l10n,
-  ) {
-    if (summary == null) {
-      _balance = 0;
-      _openBalanceCount = 0;
-      _suggestions = [];
-      _balances = [];
-      _userLabels = {..._memberNames};
-      return;
-    }
-
-    final currentUserBalance = summary.balances
-        .where((balance) => balance.userId == currentUserId)
-        .toList();
-    _balance =
-        currentUserBalance.isEmpty ? 0 : currentUserBalance.first.total / 100.0;
-    _openBalanceCount =
-        summary.balances.where((balance) => balance.total != 0).length;
-    _suggestions = summary.reimbursements
-        .map((suggestion) => _SettlementSuggestion(
-              from: suggestion.fromUserId,
-              to: suggestion.toUserId,
-              fromLabel: suggestion.fromUserId == currentUserId
-                  ? l10n.activityYou
-                  : suggestion.fromDisplayName,
-              toLabel: suggestion.toUserId == currentUserId
-                  ? l10n.activityYou
-                  : suggestion.toDisplayName,
-              amount: suggestion.amount / 100.0,
-            ))
-        .toList();
-    _balances = summary.balances
-        .map((balance) => _BalanceEntry(
-              userId: balance.userId,
-              name:
-                  balance.userId == currentUserId ? l10n.activityYou : balance.displayName,
-              amount: balance.total / 100.0,
-            ))
-        .toList();
-
-    _userLabels = {
-      // Member names are the base layer; summary display names take precedence.
-      ..._memberNames,
-      for (final b in summary.balances)
-        b.userId: b.userId == currentUserId ? l10n.activityYou : b.displayName,
-    };
-  }
-
-  Future<void> _loadMoreExpenses() async {
-    final groupId = _groupId;
-    if (_isLoading || _isLoadingMore || !_hasMore || groupId == null) {
-      return;
-    }
-
-    setState(() {
-      _isLoadingMore = true;
-      _hasPageError = false;
-    });
-
-    try {
-      final repo = await ref.read(financeRepositoryProvider.future);
-      final fetchedCount = await repo.refreshGroup(
-        groupId,
-        limit: _pageLimit,
-        offset: _timelineExpenses.length,
-      );
-
-      if (!mounted) return;
-
-      final allCached = await repo.getExpensesByGroupOnce(groupId);
-      _timelineExpenses
-        ..clear()
-        ..addAll(allCached.map(_mapExpense));
-      _rebuildTimelineGroups();
-      setState(() {
-        _hasMore = fetchedCount == _pageLimit;
-        _isLoadingMore = false;
-        _hasPageError = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _hasPageError = true;
-        _isLoadingMore = false;
-      });
-    }
-  }
-
-  _Expense _mapExpense(Expense exp) {
-    return _Expense(
-      id: exp.id,
-      description: exp.description,
-      amount: exp.amount / 100.0,
-      baseAmount: exp.baseAmount / 100.0,
-      fxRate: exp.fxRate,
-      baseCurrency: _groupCurrency,
-      payer: _userLabels[exp.payerId] ?? exp.payerId,
-      currency: exp.currency,
-      category: exp.category,
-      date: exp.date,
-      createdAt: exp.createdAt,
-    );
-  }
-
-  Future<void> _openExpenseDetail(_Expense expense) async {
-    final groupId = _groupId;
+  Future<void> _openExpenseDetail(ExpenseDisplay expense) async {
+    final groupId = _controller.groupId;
     if (groupId == null) return;
     unawaited(Haptics.light());
     await ExpenseDetailSheet.show(
@@ -468,20 +112,20 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       groupId: groupId,
       expenseId: expense.id,
       description: expense.description,
-      amountLabel: _formatCurrency(expense.amount, currency: expense.currency),
+      amountLabel: formatExpenseCurrency(expense.amount, currency: expense.currency),
       convertedLabel: expense.isConverted
-          ? _formatCurrency(expense.baseAmount, currency: expense.baseCurrency)
+          ? formatExpenseCurrency(expense.baseAmount, currency: expense.baseCurrency)
           : null,
       payer: expense.payer,
       createdAt: expense.createdAt,
       onDelete: () => _confirmDeleteExpense(expense),
       currency: expense.currency,
       baseCurrency: expense.baseCurrency,
-      userLabels: _userLabels,
+      userLabels: _controller.userLabels,
     );
   }
 
-  Future<void> _confirmDeleteExpense(_Expense expense) async {
+  Future<void> _confirmDeleteExpense(ExpenseDisplay expense) async {
     final l10n = AppLocalizations.of(context)!;
     final confirmed = await showAppDialog<bool>(
       context: context,
@@ -504,9 +148,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     if (confirmed != true || !mounted) return;
     Navigator.of(context).pop();
     try {
-      final service = await ref.read(financeServiceProviderAsync.future);
-      await service.deleteExpense(expense.id);
-      await _loadData();
+      await _controller.deleteExpense(expense.id, AppLocalizations.of(context)!);
     } catch (e) {
       if (!mounted) return;
       unawaited(Haptics.failure());
@@ -516,47 +158,10 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     }
   }
 
-  void _rebuildTimelineGroups() {
-    final now = DateTime.now();
-
-    final timelineMap = <String, List<_Expense>>{};
-    for (final exp in _timelineExpenses) {
-      final label = _dateLabel(exp.date, now);
-      timelineMap.putIfAbsent(label, () => []);
-      timelineMap[label]!.add(exp);
-    }
-
-    _timelineGroups = timelineMap.entries
-        .map((e) => _ExpenseGroup(
-              label: e.key,
-              expenses: e.value,
-              date: e.value.first.date,
-            ))
-        .toList();
-    _timelineGroups.sort((a, b) {
-      final l10n = AppLocalizations.of(context)!;
-      final order = [l10n.expenseToday, l10n.expenseYesterday];
-      final ai = order.indexOf(a.label);
-      final bi = order.indexOf(b.label);
-      if (ai >= 0 && bi >= 0) return ai.compareTo(bi);
-      if (ai >= 0) return -1;
-      if (bi >= 0) return 1;
-      return b.date.compareTo(a.date);
-    });
-  }
-
-  String _dateLabel(DateTime date, DateTime now) {
-    final l10n = AppLocalizations.of(context)!;
-    final today = DateTime(now.year, now.month, now.day);
-    final d = DateTime(date.year, date.month, date.day);
-    if (d == today) return l10n.expenseToday;
-    if (d == today.subtract(Duration(days: 1))) return l10n.expenseYesterday;
-    return DateFormat('MMMM d').format(date);
-  }
-
   Color get _balanceColor {
-    if (_balance > 0) return Theme.of(context).colorScheme.tertiary;
-    if (_balance < 0) return Theme.of(context).colorScheme.error;
+    final balance = _controller.balance;
+    if (balance > 0) return Theme.of(context).colorScheme.tertiary;
+    if (balance < 0) return Theme.of(context).colorScheme.error;
     return Theme.of(context).colorScheme.onSurface;
   }
 
@@ -569,36 +174,26 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   Future<void> _openCreateExpense() async {
     unawaited(Haptics.light());
     final created = await ExpenseCreationSheet.show(context);
-    if (created == true) {
-      await _loadData();
+    if (created == true && mounted) {
+      await _controller.load(AppLocalizations.of(context)!);
     }
   }
 
-  Future<void> _recordSettlement(_SettlementSuggestion suggestion) async {
-    final groupId = _groupId;
-    if (groupId == null || _isSettling) return;
+  Future<void> _recordSettlement(SettlementSuggestionDisplay suggestion) async {
+    final groupId = _controller.groupId;
+    if (groupId == null || _controller.isSettling) return;
 
     final confirmed = await SettlementConfirmationDialog.show(
       context: context,
-      amount: _formatCurrency(suggestion.amount, currency: _groupCurrency),
+      amount: formatExpenseCurrency(suggestion.amount, currency: _controller.groupCurrency),
       payer: suggestion.fromLabel,
       payee: suggestion.toLabel,
     );
     if (confirmed != true || !mounted) return;
 
-    setState(() => _isSettling = true);
     unawaited(Haptics.light());
     try {
-      final financeService = await ref.read(financeServiceProviderAsync.future);
-      await financeService.createGroupSettlement(
-        groupId,
-        CreateSettlementRequest(
-          fromUserId: suggestion.from,
-          toUserId: suggestion.to,
-          amount: (suggestion.amount * 100).round(),
-        ),
-      );
-      await _loadData();
+      await _controller.recordSettlement(suggestion, AppLocalizations.of(context)!);
       if (!mounted) return;
       unawaited(Haptics.success());
       final l10n = AppLocalizations.of(context)!;
@@ -611,19 +206,15 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.expenseSettlementFailed)),
       );
-    } finally {
-      if (mounted) {
-        setState(() => _isSettling = false);
-      }
     }
   }
 
   void _maybePlayConfetti() {
     if (_selectedTab == 1 &&
-        _hasHousehold &&
-        _suggestions.isEmpty &&
-        !_isLoading &&
-        _errorMessage == null &&
+        _controller.hasHousehold &&
+        _controller.suggestions.isEmpty &&
+        !_controller.isLoading &&
+        _controller.errorMessage == null &&
         !_hasPlayedConfetti) {
       _hasPlayedConfetti = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -639,7 +230,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     });
     ref.listen<String?>(currentGroupIdProvider, (previous, next) {
       if (previous != next) {
-        _loadData();
+        _controller.load(AppLocalizations.of(context)!);
       }
     });
 
@@ -647,8 +238,10 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
     final l10n = AppLocalizations.of(context)!;
 
-    final canSettle = _hasHousehold && !_isLoading && _errorMessage == null;
-    final showSettlementsNudge = canSettle && (_suggestions.isNotEmpty);
+    final canSettle = _controller.hasHousehold &&
+        !_controller.isLoading &&
+        _controller.errorMessage == null;
+    final showSettlementsNudge = canSettle && (_controller.suggestions.isNotEmpty);
 
     return Scaffold(
       appBar: MitlistAppBar.titleText(
@@ -673,17 +266,17 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
             padding: const EdgeInsets.all(MitlistSpacing.md),
             child: Column(
               children: [
-                _BalanceCard(
-                  balance: _balance,
-                  currency: _groupCurrency,
+                ExpenseBalanceCard(
+                  balance: _controller.balance,
+                  currency: _controller.groupCurrency,
                   balanceColor: _balanceColor,
-                  isLoading: _isLoading,
-                  openBalanceCount: _openBalanceCount,
-                  suggestionCount: _suggestions.length,
+                  isLoading: _controller.isLoading,
+                  openBalanceCount: _controller.openBalanceCount,
+                  suggestionCount: _controller.suggestions.length,
                   onTap: showSettlementsNudge ? () => _onTabChanged(1) : null,
                 ),
                 const SizedBox(height: MitlistSpacing.md),
-                _ChipBar(
+                ExpenseChipBar(
                   selectedTab: _selectedTab,
                   onTabChanged: _onTabChanged,
                 ),
@@ -692,38 +285,44 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
           ),
           // Body
           Expanded(
-            child: _isLoading
-                ? const _LoadingBody()
-                : _errorMessage != null
-                    ? _ErrorBody(message: _errorMessage, onRetry: _loadData)
-                    : !_hasHousehold
-                        ? _NoHouseholdBody(
+            child: _controller.isLoading
+                ? const ExpenseLoadingBody()
+                : _controller.errorMessage != null
+                    ? ExpenseErrorBody(
+                        message: _controller.errorMessage,
+                        onRetry: () =>
+                            _controller.load(AppLocalizations.of(context)!),
+                      )
+                    : !_controller.hasHousehold
+                        ? ExpenseNoHouseholdBody(
                             onOpenHouseholds: () =>
                                 context.goNamed('groupsList'),
                           )
                         : _selectedTab == 0
-                            ? _TimelineBody(
-                                groups: _timelineGroups,
+                            ? ExpenseTimelineBody(
+                                groups: _controller.timelineGroups,
                                 controller: _timelineScrollController,
-                                isLoadingMore: _isLoadingMore,
-                                hasPageError: _hasPageError,
-                                onRefresh: _loadData,
+                                isLoadingMore: _controller.isLoadingMore,
+                                hasPageError: _controller.hasPageError,
+                                onRefresh: () =>
+                                    _controller.load(AppLocalizations.of(context)!),
                                 onAddExpense: _openCreateExpense,
                                 onOpenExpense: _openExpenseDetail,
                               )
-                            : _SettlementsBody(
-                                suggestions: _suggestions,
-                                balances: _balances,
-                                currency: _groupCurrency,
-                                isSettling: _isSettling,
+                            : ExpenseSettlementsBody(
+                                suggestions: _controller.suggestions,
+                                balances: _controller.balances,
+                                currency: _controller.groupCurrency,
+                                isSettling: _controller.isSettling,
                                 confettiController: _confettiController,
-                                onRefresh: _loadData,
+                                onRefresh: () =>
+                                    _controller.load(AppLocalizations.of(context)!),
                                 onRecordSettlement: _recordSettlement,
                               ),
           ),
         ],
       ),
-      floatingActionButton: !_hasHousehold
+      floatingActionButton: !_controller.hasHousehold
           ? null
           : AppButton(
               size: AppButtonSize.lg,
@@ -732,986 +331,6 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
               icon: const AppIcon(name: 'plus'),
               tooltip: l10n.expenseAddExpense,
             ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Balance card
-// ---------------------------------------------------------------------------
-
-class _BalanceCard extends StatelessWidget {
-  final double balance;
-  final String currency;
-  final Color balanceColor;
-  final bool isLoading;
-  final int openBalanceCount;
-  final int suggestionCount;
-  final VoidCallback? onTap;
-
-  const _BalanceCard({
-    required this.balance,
-    required this.currency,
-    required this.balanceColor,
-    required this.isLoading,
-    required this.openBalanceCount,
-    required this.suggestionCount,
-    this.onTap,
-  });
-
-  String _headline(AppLocalizations l10n) {
-    if (balance > 0) return l10n.expenseYouAreOwed;
-    if (balance < 0) return l10n.expenseYouOwe;
-    return l10n.expenseAllSquare;
-  }
-
-  String _description(AppLocalizations l10n) {
-    if (suggestionCount > 0) {
-      return l10n.expenseSuggestedPayments(suggestionCount);
-    }
-    if (openBalanceCount > 0) {
-      return l10n.expenseOpenBalances(openBalanceCount);
-    }
-    return l10n.expenseNoOneOwes;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    if (isLoading) {
-      return AppCard(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const AppSkeleton(
-                  width: MitlistSpacing.space14 * 2,
-                  height: MitlistSpacing.space3,
-                ),
-                const SizedBox(height: MitlistSpacing.sm),
-                const AppSkeleton(
-                  width: MitlistSpacing.space16 * 2,
-                  height: MitlistSpacing.space8,
-                ),
-              ],
-            ),
-            const AppSkeleton(
-              width: MitlistSpacing.space14 * 2,
-              height: MitlistSpacing.space6,
-            ),
-          ],
-        ),
-      );
-    }
-
-    final balanceStyle = Theme.of(context).textTheme.headlineLarge?.copyWith(
-          fontFamily: MitlistTypography.monoBody().fontFamily,
-          color: balanceColor,
-        );
-
-    return AppCard(
-      variant: AppCardVariant.soft,
-      interactive: onTap != null,
-      onTap: onTap,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final compact = constraints.maxWidth < 340;
-              final details = Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(_headline(l10n),
-                      style: Theme.of(context).textTheme.titleSmall),
-                  const SizedBox(height: MitlistSpacing.xs),
-                  Text(
-                    _description(l10n),
-                    maxLines: compact ? 3 : 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              );
-              final amount = Text(
-                _formatCurrency(balance.abs(), currency: currency),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: compact ? TextAlign.start : TextAlign.end,
-                style: balanceStyle,
-              );
-
-              if (compact) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    details,
-                    const SizedBox(height: MitlistSpacing.sm),
-                    amount,
-                  ],
-                );
-              }
-
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(child: details),
-                  const SizedBox(width: MitlistSpacing.md),
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: amount,
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-          // Settle-up action lives in the Settlements tab for now.
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Chip bar
-// ---------------------------------------------------------------------------
-
-class _ChipBar extends StatelessWidget {
-  final int selectedTab;
-  final ValueChanged<int> onTabChanged;
-
-  const _ChipBar({
-    required this.selectedTab,
-    required this.onTabChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Wrap(
-      spacing: MitlistSpacing.sm,
-      runSpacing: MitlistSpacing.sm,
-      children: [
-        AppChip(
-          label: l10n.expenseTabTimeline,
-          selected: selectedTab == 0,
-          onSelected: (_) => onTabChanged(0),
-        ),
-        AppChip(
-          label: l10n.expenseTabSettlements,
-          selected: selectedTab == 1,
-          onSelected: (_) => onTabChanged(1),
-        ),
-      ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Loading body
-// ---------------------------------------------------------------------------
-
-class _LoadingBody extends StatelessWidget {
-  const _LoadingBody();
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
-      child: Column(
-        children: [
-          const AppSkeleton(
-            width: double.infinity,
-            height: MitlistSpacing.space12,
-          ),
-          const SizedBox(height: MitlistSpacing.sm),
-          const AppSkeleton(
-            width: double.infinity,
-            height: MitlistSpacing.space12,
-          ),
-          const SizedBox(height: MitlistSpacing.sm),
-          const AppSkeleton(
-            width: double.infinity,
-            height: MitlistSpacing.space12,
-          ),
-          const SizedBox(height: MitlistSpacing.sm),
-          AppSkeleton(
-            width: double.infinity,
-            height: MitlistSpacing.space12,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Error body
-// ---------------------------------------------------------------------------
-
-class _ErrorBody extends StatelessWidget {
-  final String? message;
-  final VoidCallback onRetry;
-
-  const _ErrorBody({this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(MitlistSpacing.md),
-      child: Column(
-        children: [
-          AppAlert(
-            type: AppAlertType.error,
-            message: message ?? l10n.commonFailedToLoad,
-          ),
-          const SizedBox(height: MitlistSpacing.md),
-          AppButton(
-            text: l10n.commonRetry,
-            onPressed: onRetry,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NoHouseholdBody extends StatelessWidget {
-  final VoidCallback onOpenHouseholds;
-
-  const _NoHouseholdBody({required this.onOpenHouseholds});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(MitlistSpacing.md),
-        child: AppEmptyState(
-          lottieAsset: 'assets/animations/lottie/House.lottie',
-          icon: AppIcon(name: 'home', size: 56),
-          title: l10n.commonNoHousehold,
-          description: l10n.commonCreateJoinHousehold,
-          actions: [
-            AppButton(
-              text: l10n.commonGoToHouseholds,
-              onPressed: onOpenHouseholds,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Timeline body
-// ---------------------------------------------------------------------------
-
-class _TimelineBody extends StatelessWidget {
-  final List<_ExpenseGroup> groups;
-  final ScrollController controller;
-  final bool isLoadingMore;
-  final bool hasPageError;
-  final Future<void> Function() onRefresh;
-  final VoidCallback onAddExpense;
-  final ValueChanged<_Expense> onOpenExpense;
-
-  const _TimelineBody({
-    required this.groups,
-    required this.controller,
-    required this.isLoadingMore,
-    required this.hasPageError,
-    required this.onRefresh,
-    required this.onAddExpense,
-    required this.onOpenExpense,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    if (groups.isEmpty) {
-      return RefreshIndicator(
-        color: Theme.of(context).colorScheme.primary,
-        onRefresh: onRefresh,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(MitlistSpacing.md),
-                  child: AppEmptyState(
-                    lottieAsset: 'assets/animations/lottie/wallet.lottie',
-                    icon: AppIcon(name: 'receiptPercent', size: 56),
-                    title: l10n.expenseNoExpensesTitle,
-                    description: l10n.expenseNoExpensesDesc,
-                    actions: [
-                      AppButton(
-                        text: l10n.expenseAddFirstExpense,
-                        onPressed: onAddExpense,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      color: Theme.of(context).colorScheme.primary,
-      onRefresh: onRefresh,
-      child: CustomScrollView(
-        controller: controller,
-        slivers: [
-          for (final group in groups) ...[
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _StickyDateHeaderDelegate(
-                height: MitlistSpacing.space10,
-                child: Container(
-                  color: Theme.of(context).colorScheme.surface,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: MitlistSpacing.md,
-                  ),
-                  alignment: Alignment.centerLeft,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          color: Theme.of(context).colorScheme.outlineVariant,
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        group.label,
-                        style: Theme.of(context).textTheme.labelMedium,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: MitlistSpacing.md,
-              ),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final expense = group.expenses[index];
-                    return ListEntrance(
-                      index: index,
-                      child: Padding(
-                        padding: const EdgeInsets.only(
-                          bottom: MitlistSpacing.sm,
-                        ),
-                        child: _ExpenseCard(
-                          expense: expense,
-                          onTap: () => onOpenExpense(expense),
-                        ),
-                      ),
-                    );
-                  },
-                  childCount: group.expenses.length,
-                ),
-              ),
-            ),
-          ],
-          if (isLoadingMore || hasPageError)
-            SliverPadding(
-              padding: const EdgeInsets.all(MitlistSpacing.md),
-              sliver: SliverToBoxAdapter(
-                child: hasPageError
-                    ? AppAlert(
-                        type: AppAlertType.error,
-                        message: l10n.expenseLoadMoreError,
-                      )
-                    : Center(
-                        child: AppSpinner(
-                          size: AppSpinnerSize.sm,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-              ),
-            ),
-          SliverPadding(
-            padding: const EdgeInsets.only(bottom: MitlistSpacing.space12),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Sticky header delegate
-// ---------------------------------------------------------------------------
-
-class _StickyDateHeaderDelegate extends SliverPersistentHeaderDelegate {
-  final Widget child;
-  final double height;
-
-  _StickyDateHeaderDelegate({required this.child, required this.height});
-
-  @override
-  double get minExtent => height;
-
-  @override
-  double get maxExtent => height;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return child;
-  }
-
-  @override
-  bool shouldRebuild(covariant _StickyDateHeaderDelegate oldDelegate) => true;
-}
-
-// ---------------------------------------------------------------------------
-// Expense card
-// ---------------------------------------------------------------------------
-
-class _PayerBadge extends StatelessWidget {
-  final String label;
-  const _PayerBadge({required this.label});
-
-  String get _initials {
-    final parts = label.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
-    final letters =
-        parts.take(2).map((p) => p.characters.first.toUpperCase()).join();
-    return letters.isEmpty ? '?' : letters;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: MitlistSpacing.space10,
-      height: MitlistSpacing.space10,
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        border: Border.all(
-            color: Theme.of(context).colorScheme.outlineVariant, width: 2),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        _initials,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-      ),
-    );
-  }
-}
-
-class _ExpenseCard extends StatelessWidget {
-  final _Expense expense;
-  final VoidCallback onTap;
-
-  const _ExpenseCard({required this.expense, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return AppCard(
-      variant: AppCardVariant.outlined,
-      interactive: true,
-      onTap: onTap,
-      semanticLabel:
-          '${expense.description}, ${_formatCurrency(expense.amount, currency: expense.currency)}',
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          _PayerBadge(label: expense.payer),
-          const SizedBox(width: MitlistSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  expense.category,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                ),
-                const SizedBox(height: MitlistSpacing.space1),
-                Text(
-                  expense.description,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-                const SizedBox(height: MitlistSpacing.space1),
-                Text(
-                  l10n.expensePaidBy(expense.payer),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: MitlistSpacing.sm),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                _formatCurrency(expense.amount, currency: expense.currency),
-                style: MitlistTypography.monoBody(),
-              ),
-              if (expense.isConverted) ...[
-                const SizedBox(height: MitlistSpacing.space1),
-                Text(
-                  l10n.expenseConvertedAmount(_formatCurrency(expense.baseAmount, currency: expense.baseCurrency)),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                ),
-              ],
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Settlements body
-// ---------------------------------------------------------------------------
-
-class _SettlementsBody extends StatelessWidget {
-  final List<_SettlementSuggestion> suggestions;
-  final List<_BalanceEntry> balances;
-  final String currency;
-  final bool isSettling;
-  final ConfettiController confettiController;
-  final Future<void> Function() onRefresh;
-  final ValueChanged<_SettlementSuggestion> onRecordSettlement;
-
-  const _SettlementsBody({
-    required this.suggestions,
-    required this.balances,
-    required this.currency,
-    required this.isSettling,
-    required this.confettiController,
-    required this.onRefresh,
-    required this.onRecordSettlement,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return RefreshIndicator(
-      color: Theme.of(context).colorScheme.primary,
-      onRefresh: onRefresh,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(MitlistSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              l10n.expenseSuggestedPaymentsTitle,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: MitlistSpacing.xs),
-            Text(
-              l10n.expenseSuggestedPaymentsDesc,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const SizedBox(height: MitlistSpacing.md),
-            if (suggestions.isNotEmpty)
-              ...suggestions.map(
-                (s) => Padding(
-                  padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
-                  child: _SuggestionCard(
-                    suggestion: s,
-                    currency: currency,
-                    isSettling: isSettling,
-                    onRecord: () => onRecordSettlement(s),
-                  ),
-                ),
-              )
-            else
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  AppEmptyState(
-                    lottieAsset: 'assets/animations/lottie/Checkmark.lottie',
-                    icon: const AppIcon(name: 'checkCircle', size: 56),
-                    title: l10n.expenseAllSettled,
-                    description: l10n.expenseNoOneOwesRight,
-                  ),
-                  ConfettiWidget(
-                    confettiController: confettiController,
-                    blastDirectionality: BlastDirectionality.explosive,
-                    numberOfParticles: 20,
-                    maxBlastForce: 20,
-                    minBlastForce: 10,
-                    gravity: 0.3,
-                  ),
-                ],
-              ),
-            const SizedBox(height: MitlistSpacing.md),
-            _BalancesSection(balances: balances, currency: currency),
-            const SizedBox(height: MitlistSpacing.space12),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Suggestion card
-// ---------------------------------------------------------------------------
-
-class _SuggestionCard extends StatelessWidget {
-  final _SettlementSuggestion suggestion;
-  final String currency;
-  final bool isSettling;
-  final VoidCallback onRecord;
-
-  const _SuggestionCard({
-    required this.suggestion,
-    required this.currency,
-    required this.isSettling,
-    required this.onRecord,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return AppCard(
-      variant: AppCardVariant.elevated,
-      animated: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Spacer(),
-              Text(
-                _formatCurrency(suggestion.amount, currency: currency),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: MitlistTypography.monoBody(
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: MitlistSpacing.md),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final compact = constraints.maxWidth < 360;
-              final from = _SettlementParty(
-                label: suggestion.fromLabel,
-                helper:
-                    suggestion.from == suggestion.to ? l10n.expenseSameAccount : l10n.expenseFrom,
-                tone: Theme.of(context).colorScheme.error,
-              );
-              final to = _SettlementParty(
-                label: suggestion.toLabel,
-                helper: l10n.expenseTo,
-                tone: Theme.of(context).colorScheme.tertiary,
-              );
-
-              if (compact) {
-                return Column(
-                  children: [
-                    from,
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: MitlistSpacing.sm),
-                      child: AppIcon(name: 'arrowDown', size: 20),
-                    ),
-                    to,
-                  ],
-                );
-              }
-
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(child: from),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: MitlistSpacing.sm),
-                    child: AppIcon(name: 'arrowRight', size: 20),
-                  ),
-                  Expanded(child: to),
-                ],
-              );
-            },
-          ),
-          const SizedBox(height: MitlistSpacing.md),
-          Text(
-            l10n.expenseRecordHelper,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
-          const SizedBox(height: MitlistSpacing.md),
-          SizedBox(
-            width: double.infinity,
-            child: AppButton(
-              variant: AppButtonVariant.solid,
-              color: AppButtonColor.success,
-              text: isSettling ? l10n.expenseRecording : l10n.expenseRecordSettlement,
-              isLoading: isSettling,
-              onPressed: isSettling ? null : onRecord,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SettlementParty extends StatelessWidget {
-  final String label;
-  final String helper;
-  final Color tone;
-
-  const _SettlementParty({
-    required this.label,
-    required this.helper,
-    required this.tone,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: BoxConstraints(minHeight: MitlistSpacing.space14),
-      padding: const EdgeInsets.all(MitlistSpacing.sm),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHigh,
-        border: Border.all(
-            color: Theme.of(context).colorScheme.outlineVariant, width: 2),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            helper,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: tone,
-                ),
-          ),
-          const SizedBox(height: MitlistSpacing.xs),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Balances section
-// ---------------------------------------------------------------------------
-
-class _BalancesSection extends StatelessWidget {
-  final List<_BalanceEntry> balances;
-  final String currency;
-
-  const _BalancesSection({required this.balances, required this.currency});
-
-  Color _balanceColor(BuildContext context, double amount) {
-    if (amount > 0) return Theme.of(context).colorScheme.tertiary;
-    if (amount < 0) return Theme.of(context).colorScheme.error;
-    return Theme.of(context).colorScheme.onSurface;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final sortedBalances = [...balances]
-      ..sort((a, b) => b.amount.abs().compareTo(a.amount.abs()));
-
-    return AppCard(
-      variant: AppCardVariant.outlined,
-      padding: AppCardPadding.none,
-      child: _BalancesExpandableBody(
-        sortedBalances: sortedBalances,
-        openCount: balances.where((b) => b.amount != 0).length,
-        balanceColor: _balanceColor,
-        currency: currency,
-      ),
-    );
-  }
-}
-
-class _BalancesExpandableBody extends StatefulWidget {
-  final List<_BalanceEntry> sortedBalances;
-  final int openCount;
-  final Color Function(BuildContext, double) balanceColor;
-  final String currency;
-
-  const _BalancesExpandableBody({
-    required this.sortedBalances,
-    required this.openCount,
-    required this.balanceColor,
-    required this.currency,
-  });
-
-  @override
-  State<_BalancesExpandableBody> createState() =>
-      _BalancesExpandableBodyState();
-}
-
-class _BalancesExpandableBodyState extends State<_BalancesExpandableBody> {
-  bool _expanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final disableAnimations = MediaQuery.of(context).disableAnimations;
-
-    return Column(
-      children: [
-        Semantics(
-          button: true,
-          label: _expanded ? l10n.expenseCollapseBalances : l10n.expenseExpandBalances,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => setState(() => _expanded = !_expanded),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: MitlistSpacing.md,
-                vertical: MitlistSpacing.sm,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      l10n.expenseBalances,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.labelMedium,
-                    ),
-                  ),
-                  Text(
-                    l10n.expenseBalancesOpen(widget.openCount),
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  const SizedBox(width: MitlistSpacing.sm),
-                  AnimatedRotation(
-                    turns: _expanded ? 0.5 : 0,
-                    duration: disableAnimations
-                        ? Duration.zero
-                        : const Duration(milliseconds: 180),
-                    curve: Curves.easeOutCubic,
-                    child: AppIcon(name: 'chevronDown', size: 18),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
-        AnimatedCrossFade(
-          firstChild: const SizedBox.shrink(),
-          secondChild: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              MitlistSpacing.md,
-              MitlistSpacing.sm,
-              MitlistSpacing.md,
-              MitlistSpacing.sm,
-            ),
-            child: widget.sortedBalances.isEmpty
-                ? Text(
-                    l10n.expenseNoBalances,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  )
-                : Column(
-                    children: [
-                      for (final b in widget.sortedBalances)
-                        Padding(
-                          padding:
-                              const EdgeInsets.only(bottom: MitlistSpacing.sm),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      b.name,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium,
-                                    ),
-                                    Text(
-                                      b.amount > 0
-                                          ? l10n.expenseIsOwed
-                                          : b.amount < 0
-                                              ? l10n.expenseOwes
-                                              : l10n.expenseSettled,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style:
-                                          Theme.of(context).textTheme.bodySmall,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: MitlistSpacing.md),
-                              Text(
-                                _formatCurrency(b.amount.abs(),
-                                    currency: widget.currency),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: MitlistTypography.monoBody(
-                                  color: widget.balanceColor(context, b.amount),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
-          ),
-          crossFadeState:
-              _expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-          duration: disableAnimations
-              ? Duration.zero
-              : const Duration(milliseconds: 180),
-          firstCurve: Curves.easeOutCubic,
-          secondCurve: Curves.easeOutCubic,
-          sizeCurve: Curves.easeOutCubic,
-        ),
-      ],
     );
   }
 }

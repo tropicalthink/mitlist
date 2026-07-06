@@ -317,6 +317,77 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get choreDoneRecently => 'Done recently';
+
+  @override
+  String get choreLedgerYou => 'You';
+
+  @override
+  String get choreLedgerSomeone => 'Someone';
+
+  @override
+  String choreLedgerDoneBy(String who, String when) {
+    return '$who · $when';
+  }
+
+  @override
+  String get choreLedgerJustNow => 'just now';
+
+  @override
+  String choreLedgerHoursAgo(int count) {
+    return '${count}h ago';
+  }
+
+  @override
+  String get choreLedgerYesterday => 'yesterday';
+
+  @override
+  String choreBackOnDate(String date) {
+    return 'back $date';
+  }
+
+  @override
+  String get choreUpForGrabs => 'Up for grabs';
+
+  @override
+  String choreDoneBackSnackbar(String choreTitle, String date) {
+    return '$choreTitle done — back $date';
+  }
+
+  @override
+  String get choreWhoEveryone => 'Everyone';
+
+  @override
+  String get choreWhoNoOne => 'No one';
+
+  @override
+  String choreWhoAlways(String name) {
+    return 'Always $name';
+  }
+
+  @override
+  String choreWhoAmongSelected(int count) {
+    return 'Rotates between the $count people you picked.';
+  }
+
+  @override
+  String get choreWhoOrderLabel => 'Order';
+
+  @override
+  String get choreDetailRhythm => 'Repeats';
+
+  @override
+  String choreLoadSummary(num count, int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count chores',
+      one: '1 chore',
+    );
+    return '$_temp0 done in the last $days days';
+  }
+
+  @override
   String get choreFailedComplete =>
       'Failed to complete chore. Please try again.';
 
@@ -581,7 +652,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get choreCreationMoreOptions => 'More options';
 
   @override
-  String get choreCreationAssignLabel => 'Assign';
+  String get choreCreationAssignLabel => 'Who';
 
   @override
   String get choreCreationAssignTakeTurns => 'Take turns';
@@ -725,7 +796,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get choreDetailTitle => 'Chore details';
 
   @override
-  String get choreDetailAssignee => 'Assignee';
+  String get choreDetailAssignee => 'Whose turn';
 
   @override
   String get choreDetailDue => 'Due';
@@ -3124,6 +3195,44 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get listItemSetPrice => 'Set price';
+
+  @override
+  String get listItemChangeQuantity => 'Change quantity';
+
+  @override
+  String get listItemQuantityAmount => 'Amount';
+
+  @override
+  String get listItemQuantityUnit => 'Unit (optional)';
+
+  @override
+  String get listItemAddNote => 'Add note';
+
+  @override
+  String get listItemEditNote => 'Edit note';
+
+  @override
+  String get listItemNoteLabel => 'Note';
+
+  @override
+  String listDetailProgress(int done, int total) {
+    return '$done of $total done';
+  }
+
+  @override
+  String listOpenCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count left',
+      one: '1 left',
+      zero: 'All done',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listSortListView => 'List view';
 
   @override
   String get listItemDeleteAction => 'Delete';

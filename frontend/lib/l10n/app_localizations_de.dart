@@ -321,6 +321,77 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get choreDoneRecently => 'Kürzlich erledigt';
+
+  @override
+  String get choreLedgerYou => 'Du';
+
+  @override
+  String get choreLedgerSomeone => 'Jemand';
+
+  @override
+  String choreLedgerDoneBy(String who, String when) {
+    return '$who · $when';
+  }
+
+  @override
+  String get choreLedgerJustNow => 'gerade eben';
+
+  @override
+  String choreLedgerHoursAgo(int count) {
+    return 'vor $count Std.';
+  }
+
+  @override
+  String get choreLedgerYesterday => 'gestern';
+
+  @override
+  String choreBackOnDate(String date) {
+    return 'wieder am $date';
+  }
+
+  @override
+  String get choreUpForGrabs => 'Zu vergeben';
+
+  @override
+  String choreDoneBackSnackbar(String choreTitle, String date) {
+    return '$choreTitle erledigt — wieder am $date';
+  }
+
+  @override
+  String get choreWhoEveryone => 'Alle';
+
+  @override
+  String get choreWhoNoOne => 'Niemand';
+
+  @override
+  String choreWhoAlways(String name) {
+    return 'Immer $name';
+  }
+
+  @override
+  String choreWhoAmongSelected(int count) {
+    return 'Wechselt zwischen den $count ausgewählten Personen.';
+  }
+
+  @override
+  String get choreWhoOrderLabel => 'Reihenfolge';
+
+  @override
+  String get choreDetailRhythm => 'Wiederholt sich';
+
+  @override
+  String choreLoadSummary(num count, int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Aufgaben',
+      one: '1 Aufgabe',
+    );
+    return '$_temp0 erledigt in den letzten $days Tagen';
+  }
+
+  @override
   String get choreFailedComplete =>
       'Aufgabe konnte nicht abgeschlossen werden. Bitte versuche es erneut.';
 
@@ -590,7 +661,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get choreCreationMoreOptions => 'Weitere Optionen';
 
   @override
-  String get choreCreationAssignLabel => 'Zuweisung';
+  String get choreCreationAssignLabel => 'Wer';
 
   @override
   String get choreCreationAssignTakeTurns => 'Abwechselnd';
@@ -735,7 +806,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get choreDetailTitle => 'Aufgabendetails';
 
   @override
-  String get choreDetailAssignee => 'Zugewiesen an';
+  String get choreDetailAssignee => 'Wer ist dran';
 
   @override
   String get choreDetailDue => 'Fällig';
@@ -3177,6 +3248,44 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get listItemSetPrice => 'Preis festlegen';
+
+  @override
+  String get listItemChangeQuantity => 'Menge ändern';
+
+  @override
+  String get listItemQuantityAmount => 'Menge';
+
+  @override
+  String get listItemQuantityUnit => 'Einheit (optional)';
+
+  @override
+  String get listItemAddNote => 'Notiz hinzufügen';
+
+  @override
+  String get listItemEditNote => 'Notiz bearbeiten';
+
+  @override
+  String get listItemNoteLabel => 'Notiz';
+
+  @override
+  String listDetailProgress(int done, int total) {
+    return '$done von $total erledigt';
+  }
+
+  @override
+  String listOpenCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count offen',
+      one: '1 offen',
+      zero: 'Alles erledigt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listSortListView => 'Listenansicht';
 
   @override
   String get listItemDeleteAction => 'Löschen';

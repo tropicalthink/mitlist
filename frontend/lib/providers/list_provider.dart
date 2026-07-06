@@ -30,6 +30,16 @@ final grocerySeedProvider = FutureProvider<void>((ref) async {
   await GrocerySeedLoader(db).loadIfNeeded();
 });
 
+/// Live per-list (open, total) item counts for the hub cards' "N left" label.
+/// Straight from the local DB; lists never synced locally have no entry and
+/// cards fall back to the server-provided item_count.
+final listItemCountsProvider =
+    StreamProvider.family<Map<String, ({int open, int total})>, String>(
+        (ref, groupId) {
+  final db = ref.watch(appDatabaseProvider);
+  return db.watchItemCountsByGroup(groupId);
+});
+
 final listRepositoryProvider = FutureProvider<ListRepository>((ref) async {
   final db = ref.watch(appDatabaseProvider);
   final service = await ref.read(listServiceProviderAsync.future);

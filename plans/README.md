@@ -91,9 +91,9 @@ traceability.
 | 034 | SSRF hardening: complete blocklist + rebinding re-validation | P2 | M | — | DONE ✓v |
 | 035 | Collapse duplicated Dart `_handleError` wrappers | P3 | S | — | DONE ✓v |
 | 036 | One membership-check implementation in group_service | P3 | S | — | DONE ✓v |
-| 037 | Decompose expenses god-screen (controller pattern) | P3 | L | 043 first | IN PROGRESS (executor dispatched 2026-07-04) |
-| 038 | Split recipe-scraping monolith behind a parser interface | P3 | L | — | IN PROGRESS (executor dispatched 2026-07-04) |
-| 039 | Share pinwall note-card / stat-row widgets | P3 | M | — | IN PROGRESS (executor dispatched 2026-07-04) |
+| 037 | Decompose expenses god-screen (controller pattern) | P3 | L | 043 first | DONE ✓v (2026-07-06, reviewed; branch advisor/037-expenses-controller) |
+| 038 | Split recipe-scraping monolith behind a parser interface | P3 | L | — | DONE ✓v (2026-07-06, reviewed; branch advisor/038-recipe-scraping-split) |
+| 039 | Share pinwall note-card / stat-row widgets | P3 | M | — | DONE ✓v (2026-07-06, reviewed; branch advisor/039-pinwall-shared-widgets) |
 | 040 | Upgrade low-risk Flutter plugins; scope framework migrations | P3 | M | — | DONE ✓v (executed 2026-07-04 on `advisor/040-dependency-upgrades` @ `f236d1b4`, 4 commits; advisor re-verified; runtime push/crash QA deferred; awaiting merge) |
 | 041 | Unpin build_runner; CI codegen-freshness gate | P3 | M | — | DONE ✓v |
 | 042 | CI: build landing, smoke-check intelligence pipeline | P3 | S–M | — | DONE ✓v |
