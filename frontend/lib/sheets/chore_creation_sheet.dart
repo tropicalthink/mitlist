@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -20,12 +21,14 @@ import '../l10n/app_localizations.dart';
 
 enum _Recurrence { none, hourly, daily, weekly, monthly, yearly, adaptive }
 
+/// How the turn rotates when more than one person shares the chore. "No one"
+/// and "always this person" are choices on the who-picker itself, not
+/// policies.
 enum _AssignmentPolicy {
   roundRobin,
-  alphabetical,
   leastDone,
   random,
-  noAssignment,
+  alphabetical,
 }
 
 class ChoreCreationSheet extends ConsumerStatefulWidget {
@@ -79,6 +82,16 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
   bool _showAdvanced = false;
   String? _category;
 
+  /// Household members for the who-picker. Loaded best-effort; the picker
+  /// simply stays at "Everyone" if the lookup fails.
+  List<({String id, String name})> _members = const [];
+
+  /// Selected member ids. Empty = the whole household rotates.
+  final Set<String> _who = {};
+
+  /// True when the chore is explicitly unassigned ("No one").
+  bool _noOne = false;
+
   AppLocalizations get _l10n => AppLocalizations.of(context)!;
 
   @override
@@ -91,6 +104,26 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       _descriptionController.text = widget.initialDescription!;
     }
     _intervalController.addListener(_markDirty);
+    unawaited(_loadMembers());
+  }
+
+  Future<void> _loadMembers() async {
+    try {
+      final groups = await ref.read(cachedGroupsProvider.future);
+      final groupId =
+          resolveActiveGroupId(groups, ref.read(currentGroupIdProvider));
+      if (groupId == null) return;
+      final groupService = await ref.read(groupServiceProviderAsync.future);
+      final members = await groupService.listMembers(groupId);
+      if (!mounted) return;
+      setState(() {
+        _members = [
+          for (final m in members) (id: m.userId, name: m.displayName),
+        ];
+      });
+    } catch (_) {
+      // Who-picker falls back to "Everyone"; assignment still works.
+    }
   }
 
   void _markDirty() => widget.dirtyNotifier?.value = true;
@@ -150,6 +183,9 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           trackDateOnly: _trackDateOnly,
           rollover: _rollover,
           assignmentType: _assignmentTypeValue(),
+          // Empty = whole household; one id = a fixed owner; several = the
+          // rotation pool. The backend's rotation state honors this subset.
+          assignmentConfig: _noOne ? const [] : _who.toList(),
           category: _category,
         ),
       );
@@ -225,6 +261,11 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
   }
 
   String _assignmentTypeValue() {
+    if (_noOne) return 'no-assignment';
+    // A single fixed owner is a rotation of one — the backend honors
+    // assignment_config as the member pool, so any policy degenerates
+    // correctly; round-robin keeps it obvious.
+    if (_who.length == 1) return 'round-robin';
     switch (_assignmentPolicy) {
       case _AssignmentPolicy.roundRobin:
         return 'round-robin';
@@ -234,8 +275,6 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
         return 'who-least-did-first';
       case _AssignmentPolicy.random:
         return 'random';
-      case _AssignmentPolicy.noAssignment:
-        return 'no-assignment';
     }
   }
 
@@ -260,14 +299,31 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
         _Recurrence.adaptive => _l10n.choreCreationHintAdaptive,
       };
 
-  String get _assignmentHint => switch (_assignmentPolicy) {
-        _AssignmentPolicy.roundRobin => _l10n.choreCreationAssignHintTurns,
-        _AssignmentPolicy.alphabetical =>
-          _l10n.choreCreationAssignHintAlpha,
-        _AssignmentPolicy.leastDone => _l10n.choreCreationAssignHintLeast,
-        _AssignmentPolicy.random => _l10n.choreCreationAssignHintRandom,
-        _AssignmentPolicy.noAssignment => _l10n.choreCreationAssignHintNone,
-      };
+  /// Plain-language readback of the who-picker: "Always Sam", "Rotates
+  /// between the 2 people you picked", policy hints for the full household,
+  /// or the unassigned hint.
+  String get _whoHint {
+    if (_noOne) return _l10n.choreCreationAssignHintNone;
+    if (_who.length == 1) {
+      final name = _members
+          .where((m) => m.id == _who.first)
+          .map((m) => m.name)
+          .firstOrNull;
+      if (name != null && name.isNotEmpty) {
+        return _l10n.choreWhoAlways(name);
+      }
+    }
+    final policyHint = switch (_assignmentPolicy) {
+      _AssignmentPolicy.roundRobin => _l10n.choreCreationAssignHintTurns,
+      _AssignmentPolicy.alphabetical => _l10n.choreCreationAssignHintAlpha,
+      _AssignmentPolicy.leastDone => _l10n.choreCreationAssignHintLeast,
+      _AssignmentPolicy.random => _l10n.choreCreationAssignHintRandom,
+    };
+    if (_who.length > 1) {
+      return '${_l10n.choreWhoAmongSelected(_who.length)} $policyHint';
+    }
+    return policyHint;
+  }
 
   /// Live, singular-aware summary of the repeat interval, e.g. "Every 2 weeks".
   String get _intervalSummary {
@@ -323,6 +379,82 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           ),
           const SizedBox(height: MitlistSpacing.sm),
         ],
+
+        // ── Who does it? (first-class: chores are about people) ──────
+        _ChipRow(
+          label: l10n.choreCreationAssignLabel,
+          children: [
+            AppChip(
+              label: l10n.choreWhoEveryone,
+              selected: !_noOne && _who.isEmpty,
+              onSelected: (_) {
+                setState(() {
+                  _noOne = false;
+                  _who.clear();
+                });
+                _markDirty();
+              },
+            ),
+            for (final member in _members)
+              AppChip(
+                label: member.name,
+                selected: !_noOne && _who.contains(member.id),
+                onSelected: (_) {
+                  setState(() {
+                    _noOne = false;
+                    if (!_who.add(member.id)) _who.remove(member.id);
+                  });
+                  _markDirty();
+                },
+              ),
+            AppChip(
+              label: l10n.choreWhoNoOne,
+              selected: _noOne,
+              onSelected: (_) {
+                setState(() {
+                  _noOne = !_noOne;
+                  if (_noOne) _who.clear();
+                });
+                _markDirty();
+              },
+            ),
+          ],
+        ),
+        // The rotation policy only means something when several people share
+        // the chore; a single owner or "no one" hides it.
+        if (!_noOne && _who.length != 1) ...[
+          const SizedBox(height: MitlistSpacing.sm),
+          _ChipRow(
+            label: l10n.choreWhoOrderLabel,
+            children: [
+              for (final option in [
+                (_AssignmentPolicy.roundRobin, l10n.choreCreationAssignTakeTurns),
+                (_AssignmentPolicy.leastDone, l10n.choreCreationAssignLeastDone),
+                (_AssignmentPolicy.random, l10n.choreCreationAssignRandom),
+                (_AssignmentPolicy.alphabetical, l10n.choreCreationAssignAlphabetical),
+              ])
+                AppChip(
+                  label: option.$2,
+                  selected: _assignmentPolicy == option.$1,
+                  onSelected: (_) {
+                    setState(() => _assignmentPolicy = option.$1);
+                    _markDirty();
+                  },
+                ),
+            ],
+          ),
+        ],
+        const SizedBox(height: MitlistSpacing.xs),
+        Padding(
+          padding: const EdgeInsets.only(left: MitlistSpacing.space14),
+          child: Text(
+            _whoHint,
+            style: textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        const SizedBox(height: MitlistSpacing.md),
 
         // ── Repeats (inline row) ──────────────────────────────────────
         _ChipRow(
@@ -465,39 +597,6 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _ChipRow(
-                        label: l10n.choreCreationAssignLabel,
-                        children: [
-                          for (final option in [
-                            (_AssignmentPolicy.roundRobin, l10n.choreCreationAssignTakeTurns),
-                            (_AssignmentPolicy.leastDone, l10n.choreCreationAssignLeastDone),
-                            (_AssignmentPolicy.alphabetical, l10n.choreCreationAssignAlphabetical),
-                            (_AssignmentPolicy.random, l10n.choreCreationAssignRandom),
-                            (_AssignmentPolicy.noAssignment, l10n.choreCreationAssignNoAssignee),
-                          ])
-                            AppChip(
-                              label: option.$2,
-                              selected: _assignmentPolicy == option.$1,
-                              onSelected: (_) {
-                                setState(() => _assignmentPolicy = option.$1);
-                                _markDirty();
-                              },
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: MitlistSpacing.xs),
-                      Padding(
-                        padding: const EdgeInsets.only(
-                          left: MitlistSpacing.space14,
-                        ),
-                        child: Text(
-                          _assignmentHint,
-                          style: textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: MitlistSpacing.md),
                       _OptionToggle(
                         value: _trackDateOnly,
                         onChanged: (value) {

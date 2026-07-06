@@ -223,6 +223,8 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
   bool get _canCreate =>
       _descriptionController.text.trim().isNotEmpty &&
       _amountController.text.trim().isNotEmpty &&
+      !_membersLoading &&
+      _selectedMemberIds.isNotEmpty &&
       !_isSaving;
 
   Future<void> _onCreate() async {

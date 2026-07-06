@@ -319,6 +319,77 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get choreDoneRecently => 'Done recently';
+
+  @override
+  String get choreLedgerYou => 'You';
+
+  @override
+  String get choreLedgerSomeone => 'Someone';
+
+  @override
+  String choreLedgerDoneBy(String who, String when) {
+    return '$who · $when';
+  }
+
+  @override
+  String get choreLedgerJustNow => 'just now';
+
+  @override
+  String choreLedgerHoursAgo(int count) {
+    return '${count}h ago';
+  }
+
+  @override
+  String get choreLedgerYesterday => 'yesterday';
+
+  @override
+  String choreBackOnDate(String date) {
+    return 'back $date';
+  }
+
+  @override
+  String get choreUpForGrabs => 'Up for grabs';
+
+  @override
+  String choreDoneBackSnackbar(String choreTitle, String date) {
+    return '$choreTitle done — back $date';
+  }
+
+  @override
+  String get choreWhoEveryone => 'Everyone';
+
+  @override
+  String get choreWhoNoOne => 'No one';
+
+  @override
+  String choreWhoAlways(String name) {
+    return 'Always $name';
+  }
+
+  @override
+  String choreWhoAmongSelected(int count) {
+    return 'Rotates between the $count people you picked.';
+  }
+
+  @override
+  String get choreWhoOrderLabel => 'Order';
+
+  @override
+  String get choreDetailRhythm => 'Repeats';
+
+  @override
+  String choreLoadSummary(num count, int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count chores',
+      one: '1 chore',
+    );
+    return '$_temp0 done in the last $days days';
+  }
+
+  @override
   String get choreFailedComplete =>
       'Error al completar la tarea. Inténtalo de nuevo.';
 
@@ -584,7 +655,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get choreCreationMoreOptions => 'Más opciones';
 
   @override
-  String get choreCreationAssignLabel => 'Asignar';
+  String get choreCreationAssignLabel => 'Quién';
 
   @override
   String get choreCreationAssignTakeTurns => 'Por turnos';
@@ -727,7 +798,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get choreDetailTitle => 'Detalles de la tarea';
 
   @override
-  String get choreDetailAssignee => 'Asignada a';
+  String get choreDetailAssignee => 'A quién le toca';
 
   @override
   String get choreDetailDue => 'Vence';

@@ -379,6 +379,23 @@
   },
   "choreDoneSnackbar": "{choreTitle} gedaan",
   "@choreDoneSnackbar": {
+  "choreDoneRecently": "Onlangs gedaan",
+  "choreLedgerYou": "Jij",
+  "choreLedgerSomeone": "Iemand",
+  "choreLedgerDoneBy": "{who} · {when}",
+  "choreLedgerJustNow": "zojuist",
+  "choreLedgerHoursAgo": "{count} u geleden",
+  "choreLedgerYesterday": "gisteren",
+  "choreBackOnDate": "terug op {date}",
+  "choreUpForGrabs": "Voor het oprapen",
+  "choreDoneBackSnackbar": "{choreTitle} gedaan — terug op {date}",
+  "choreWhoEveryone": "Iedereen",
+  "choreWhoNoOne": "Niemand",
+  "choreWhoAlways": "Altijd {name}",
+  "choreWhoAmongSelected": "Wisselt tussen de {count} gekozen personen.",
+  "choreWhoOrderLabel": "Volgorde",
+  "choreDetailRhythm": "Herhaalt zich",
+  "choreLoadSummary": "{count, plural, =1{1 klusje} other{{count} klusjes}} gedaan in de laatste {days} dagen",
     "description": "Snackbar when a chore is marked done",
     "placeholders": {
       "choreTitle": {
@@ -742,7 +759,7 @@
   "@choreCreationMoreOptions": {
     "description": "Toggle to show more chore options"
   },
-  "choreCreationAssignLabel": "Toewijzen",
+  "choreCreationAssignLabel": "Wie",
   "@choreCreationAssignLabel": {
     "description": "Label for assignee selector"
   },
@@ -932,7 +949,7 @@
   "@choreDetailTitle": {
     "description": "Bottom sheet title for chore detail"
   },
-  "choreDetailAssignee": "Toegewezen aan",
+  "choreDetailAssignee": "Wie is aan de beurt",
   "@choreDetailAssignee": {
     "description": "Detail row: assigned to"
   },

@@ -33,8 +33,10 @@ import '../../widgets/chip.dart';
 import '../../widgets/animated_strikethrough.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton.dart';
+import '../../widgets/list/list_settle_collapse.dart';
 import '../../widgets/list_entrance.dart';
 import '../../widgets/mitlist_app_bar.dart';
+import '../../widgets/odometer.dart';
 import '../../l10n/app_localizations.dart';
 
 class ChoresScreen extends ConsumerStatefulWidget {
@@ -49,6 +51,15 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   bool _hasError = false;
   bool _refreshFailed = false;
   final List<_Chore> _chores = [];
+
+  /// Occurrences completed in the last 48h — the accountability ledger shown
+  /// at the bottom ("who did what, when"), separate from the open-turn queue.
+  final List<_DoneEntry> _recentlyDone = [];
+
+  /// Chore ids mid-settle: just marked done, card collapsing out of the queue
+  /// before landing in the ledger.
+  final Set<String> _settlingIds = {};
+  bool _doneSectionExpanded = true;
 
   AppLocalizations get _l10n => AppLocalizations.of(context)!;
   StreamSubscription<List<CurrentChore>>? _sub;
@@ -191,36 +202,77 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   void _applyCurrentChores(List<CurrentChore> currentChores,
       {bool allowSkeleton = false}) {
     final now = DateTime.now();
-    final chores = currentChores
-        .map((entry) => _Chore(
-              assignmentId: entry.pendingAssignment?.id,
-              id: entry.chore.id,
-              title: entry.chore.name,
-              assigneeInitials:
-                  _initialsFor(entry.pendingAssignment?.userId, _memberNames),
-              assigneeName: _memberNames[entry.pendingAssignment?.userId ?? ''],
-              dueDate: entry.pendingAssignment?.dueDate ??
-                  _fallbackDueDate(now, entry.chore.frequency),
-              frequency: entry.chore.frequency,
-              periodInterval: entry.chore.periodInterval,
-              category: entry.chore.category,
-              isMine: entry.assignedToMe,
-              completed: !entry.chore.isActive ||
-                  const {'completed', 'skipped'}.contains(
-                      entry.pendingAssignment?.status.toLowerCase()),
-              lastActionLabel: entry.lastAssignment != null
-                  ? _formatLastAction(_l10n, entry.lastAssignment!)
-                  : null,
-              supplies: entry.chore.supplies,
-            ))
-        .toList();
+    final chores = <_Chore>[];
+    final done = <_DoneEntry>[];
+    final ledgerCutoff = now.subtract(const Duration(hours: 48));
+
+    for (final entry in currentChores) {
+      if (!entry.chore.isActive) continue;
+
+      // The pending occurrence is still marked completed/skipped until the
+      // server rotates the turn (optimistic cache state). Treat it as a
+      // ledger entry rather than a struck row in the queue.
+      final pendingDone = const {'completed', 'skipped'}
+          .contains(entry.pendingAssignment?.status.toLowerCase());
+
+      if (!pendingDone) {
+        chores.add(_Chore(
+          assignmentId: entry.pendingAssignment?.id,
+          id: entry.chore.id,
+          title: entry.chore.name,
+          assigneeInitials:
+              _initialsFor(entry.pendingAssignment?.userId, _memberNames),
+          assigneeName: _memberNames[entry.pendingAssignment?.userId ?? ''],
+          hasAssignee: entry.pendingAssignment?.userId != null,
+          dueDate: entry.pendingAssignment?.dueDate ??
+              _fallbackDueDate(now, entry.chore.frequency),
+          frequency: entry.chore.frequency,
+          periodInterval: entry.chore.periodInterval,
+          category: entry.chore.category,
+          isMine: entry.assignedToMe,
+          lastActionLabel: entry.lastAssignment != null
+              ? _formatLastAction(_l10n, entry.lastAssignment!)
+              : null,
+          supplies: entry.chore.supplies,
+        ));
+      }
+
+      // Ledger: the last completed occurrence, so the household can see who
+      // did what without asking. A chore legitimately appears in BOTH lists
+      // (Sam did it 2h ago, Alex's turn is already pending).
+      final last = pendingDone ? entry.pendingAssignment : entry.lastAssignment;
+      final lastDoneAt = last?.completedAt;
+      if (last != null &&
+          last.status.toLowerCase() == 'completed' &&
+          lastDoneAt != null &&
+          lastDoneAt.isAfter(ledgerCutoff)) {
+        done.add(_DoneEntry(
+          choreId: entry.chore.id,
+          title: entry.chore.name,
+          completedAt: lastDoneAt,
+          byUserId: last.userId,
+          byLabel: _memberNames[last.userId],
+          byIsMe: last.userId == _myUserId,
+          nextDueDate: pendingDone ? null : entry.pendingAssignment?.dueDate,
+          nextTurnName: pendingDone
+              ? null
+              : _memberNames[entry.pendingAssignment?.userId ?? ''],
+          nextTurnIsMine: !pendingDone && entry.assignedToMe,
+        ));
+      }
+    }
+    done.sort((a, b) => b.completedAt.compareTo(a.completedAt));
 
     setState(() {
       _chores
         ..clear()
         ..addAll(chores);
+      _recentlyDone
+        ..clear()
+        ..addAll(done);
+      _settlingIds.clear();
       _hasHousehold = true;
-      _isLoading = allowSkeleton && chores.isEmpty;
+      _isLoading = allowSkeleton && chores.isEmpty && done.isEmpty;
       _hasError = false;
       // Fresh data landed (cache write follows a successful refresh), so any
       // earlier stale-data notice no longer applies.
@@ -245,14 +297,29 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       entries: _load,
       memberNames: _memberNames,
       days: 30,
+      myUserId: _myUserId,
     );
   }
 
   Future<void> _openChoreDetail(String id) async {
-    final chore = _chores.firstWhereOrNull((item) => item.id == id);
+    var chore = _chores.firstWhereOrNull((item) => item.id == id);
     if (chore == null) {
-      _logger.w('openChoreDetail: chore $id not in local list');
-      return;
+      // Opened from the "Done recently" ledger: the queue row is gone, so
+      // synthesize the fallbacks the sheet needs; the service fetch below
+      // supplies the real details.
+      final entry = _recentlyDone.firstWhereOrNull((e) => e.choreId == id);
+      if (entry == null) {
+        _logger.w('openChoreDetail: chore $id not in local list');
+        return;
+      }
+      chore = _Chore(
+        id: entry.choreId,
+        title: entry.title,
+        assigneeInitials: '',
+        hasAssignee: entry.nextTurnName != null,
+        dueDate: entry.nextDueDate ?? DateTime.now(),
+        completed: true,
+      );
     }
     ChoreDetails? details;
     List<ChoreSubtask> subtasks = [];
@@ -273,6 +340,10 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       assignee: details?.pendingAssignment?.userId != null
           ? _shortUserLabel(details!.pendingAssignment!.userId)
           : chore.assigneeInitials,
+      frequencyLabel: details != null
+          ? _frequencyLabel(_l10n, details.chore.frequency,
+              details.chore.periodInterval)
+          : _frequencyLabel(_l10n, chore.frequency, chore.periodInterval),
       dueDate: details?.pendingAssignment?.dueDate ?? chore.dueDate,
       trackedCount: details?.stats.trackedCount,
       lastTrackedAt: details?.stats.lastTrackedAt,
@@ -386,27 +457,42 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     }
   }
 
+  /// Marking done is a *turn passing*, not a strike-through: the card settles
+  /// out of the queue and lands in the "Done recently" ledger with who/when,
+  /// while the snackbar says when the chore comes back. The server rotates the
+  /// real next turn; a later refresh replaces the optimistic estimate.
   Future<void> _toggleComplete(String id) async {
     if (_isMutating) return;
     _isMutating = true;
     final l10n = AppLocalizations.of(context)!;
     try {
       final chore = _chores.firstWhereOrNull((c) => c.id == id);
-      if (chore == null || chore.completed) {
+      if (chore == null || chore.completed || _settlingIds.contains(id)) {
         return;
       }
-      // Optimistic: strike through instantly; the repo patches its cache and
-      // reconciles with the server in the background.
-      setState(() => chore.completed = true);
       unawaited(Haptics.success());
+      chore.completed = true; // guards re-taps while the card settles
+      if (MediaQuery.of(context).disableAnimations) {
+        _finishSettle(id);
+      } else {
+        setState(() => _settlingIds.add(id));
+        // _finishSettle is invoked by the row's SettleCollapse onCollapsed.
+      }
+
       final repo = await ref.read(choreRepositoryProvider.future);
       await repo.completeOfflineFirst(id, groupId: _groupId);
       if (!mounted) return;
+      final isRecurring =
+          chore.frequency != 'none' && chore.frequency != 'adaptive';
+      final backLabel = isRecurring
+          ? l10n.choreDoneBackSnackbar(chore.title,
+              _formatDate(_fallbackDueDate(DateTime.now(), chore.frequency)))
+          : l10n.choreDoneSnackbar(chore.title);
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            l10n.choreDoneSnackbar(chore.title),
+            backLabel,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -418,10 +504,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        final chore = _chores.where((c) => c.id == id).firstOrNull;
-        chore?.completed = false;
-      });
+      _restoreToQueue(id);
       unawaited(Haptics.failure());
       _showChoreActionError(_l10n.choreFailedComplete);
     } finally {
@@ -429,13 +512,55 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     }
   }
 
+  /// Moves a just-completed chore from the queue into the ledger (optimistic
+  /// "You · just now" entry). Called when its settle animation finishes.
+  void _finishSettle(String id) {
+    if (!mounted) return;
+    setState(() {
+      _settlingIds.remove(id);
+      final idx = _chores.indexWhere((c) => c.id == id);
+      if (idx == -1) return;
+      final chore = _chores.removeAt(idx);
+      _recentlyDone.insert(
+        0,
+        _DoneEntry(
+          choreId: chore.id,
+          title: chore.title,
+          completedAt: DateTime.now(),
+          byUserId: _myUserId ?? '',
+          byLabel: null, // null + byIsMe renders as "You"
+          byIsMe: true,
+          nextDueDate: null,
+          nextTurnName: null,
+          nextTurnIsMine: false,
+          restoreChore: chore,
+        ),
+      );
+    });
+  }
+
+  /// Puts a chore back in the queue (failed complete, or user tapped Undo).
+  void _restoreToQueue(String id) {
+    if (!mounted) return;
+    setState(() {
+      _settlingIds.remove(id);
+      final entryIdx = _recentlyDone.indexWhere(
+          (e) => e.choreId == id && e.restoreChore != null);
+      if (entryIdx != -1) {
+        final entry = _recentlyDone.removeAt(entryIdx);
+        entry.restoreChore!.completed = false;
+        _chores.add(entry.restoreChore!);
+      } else {
+        final chore = _chores.firstWhereOrNull((c) => c.id == id);
+        chore?.completed = false;
+      }
+    });
+  }
+
   Future<void> _undoComplete(String id) async {
     try {
       unawaited(Haptics.light());
-      setState(() {
-        final chore = _chores.where((c) => c.id == id).firstOrNull;
-        chore?.completed = false;
-      });
+      _restoreToQueue(id);
       final repo = await ref.read(choreRepositoryProvider.future);
       await repo.undoOfflineFirst(id, groupId: _groupId);
     } catch (e) {
@@ -700,9 +825,9 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     final myActive = _chores.where((c) => c.isMine && !c.completed).length;
     final totalActive = _chores.where((c) => !c.completed).length;
     final myTurn = _myTurnNow();
+    final hasAny = _chores.isNotEmpty || _recentlyDone.isNotEmpty;
 
-    final showHeader =
-        _hasHousehold && !_isLoading && !_hasError && _chores.isNotEmpty;
+    final showHeader = _hasHousehold && !_isLoading && !_hasError && hasAny;
 
     // Size the pinned section header against the user's actual text scale so
     // larger accessibility font settings don't clip the label.
@@ -790,7 +915,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                   ),
                 ),
               ),
-            ] else if (_chores.isEmpty) ...[
+            ] else if (!hasAny) ...[
               SliverFillRemaining(
                 hasScrollBody: false,
                 child: Center(
@@ -854,9 +979,6 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                           myTurn: myTurn,
                           myActiveCount: myActive,
                           totalActiveCount: totalActive,
-                          filterMe: _filterMe,
-                          onShowMine: () => _setFilterMe(true),
-                          onShowEveryone: () => _setFilterMe(false),
                         ),
                         const SizedBox(height: MitlistSpacing.sm),
                         _FairnessStrip(
@@ -864,6 +986,25 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                           memberNames: _memberNames,
                           myUserId: _myUserId,
                           onTap: _openLoadSheet,
+                        ),
+                        const SizedBox(height: MitlistSpacing.sm),
+                        // Whose queue you're looking at — a view control, so
+                        // it lives with the list rather than inside the
+                        // status hero.
+                        Row(
+                          children: [
+                            AppChip(
+                              label: l10n.choreMeLabel(myActive),
+                              selected: _filterMe,
+                              onSelected: (_) => _setFilterMe(true),
+                            ),
+                            const SizedBox(width: MitlistSpacing.sm),
+                            AppChip(
+                              label: l10n.choreEveryoneLabel(totalActive),
+                              selected: !_filterMe,
+                              onSelected: (_) => _setFilterMe(false),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -947,14 +1088,19 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                             final chore = sections[section]![index];
                             return ListEntrance(
                               index: index,
-                              child: Padding(
-                                padding: const EdgeInsets.only(
-                                  bottom: MitlistSpacing.sm,
-                                ),
-                                child: _ChoreItem(
-                                  chore: chore,
-                                  onToggle: () => _toggleComplete(chore.id),
-                                  onTap: () => _openChoreDetail(chore.id),
+                              child: SettleCollapse(
+                                key: ValueKey('chore-${chore.id}'),
+                                collapsed: _settlingIds.contains(chore.id),
+                                onCollapsed: () => _finishSettle(chore.id),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(
+                                    bottom: MitlistSpacing.sm,
+                                  ),
+                                  child: _ChoreItem(
+                                    chore: chore,
+                                    onToggle: () => _toggleComplete(chore.id),
+                                    onTap: () => _openChoreDetail(chore.id),
+                                  ),
                                 ),
                               ),
                             );
@@ -964,6 +1110,41 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                       ),
                     ),
                   ],
+              // The accountability ledger: who did what in the last 48h, and
+              // when each chore comes back around. Deliberately unfiltered by
+              // Me/Everyone — checking on the household is its whole point.
+              if (_recentlyDone.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: MitlistSpacing.sm),
+                    child: _DoneRecentlyHeader(
+                      count: _recentlyDone.length,
+                      expanded: _doneSectionExpanded,
+                      onToggle: () => setState(
+                          () => _doneSectionExpanded = !_doneSectionExpanded),
+                    ),
+                  ),
+                ),
+                if (_doneSectionExpanded)
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      MitlistSpacing.md,
+                      MitlistSpacing.sm,
+                      MitlistSpacing.md,
+                      0,
+                    ),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => _DoneEntryRow(
+                          entry: _recentlyDone[index],
+                          onTap: () =>
+                              _openChoreDetail(_recentlyDone[index].choreId),
+                        ),
+                        childCount: _recentlyDone.length,
+                      ),
+                    ),
+                  ),
+              ],
               const SliverToBoxAdapter(
                 child: SizedBox(height: MitlistSpacing.space20),
               ),
@@ -1010,6 +1191,10 @@ class _Chore {
   final String title;
   final String assigneeInitials;
   final String? assigneeName;
+
+  /// False for `no-assignment` chores — rendered as "Up for grabs" rather
+  /// than a "?" avatar.
+  final bool hasAssignee;
   final DateTime dueDate;
   final String frequency;
   final int periodInterval;
@@ -1025,6 +1210,7 @@ class _Chore {
     required this.title,
     required this.assigneeInitials,
     this.assigneeName,
+    this.hasAssignee = true,
     required this.dueDate,
     this.frequency = 'none',
     this.periodInterval = 1,
@@ -1038,6 +1224,7 @@ class _Chore {
   /// Short label for whose turn it is: "Your turn", "Sam's turn", or null when
   /// unassigned.
   String? turnLabel(AppLocalizations l10n) {
+    if (!hasAssignee) return null;
     if (isMine) return l10n.choreYourTurn;
     final name = assigneeName;
     if (name != null && name.isNotEmpty) return l10n.choreSomeonesTurn(name);
@@ -1045,23 +1232,50 @@ class _Chore {
   }
 }
 
+/// One row of the "Done recently" ledger: which occurrence got done, by whom,
+/// when, and (once the server has rotated) whose turn comes next.
+class _DoneEntry {
+  final String choreId;
+  final String title;
+  final DateTime completedAt;
+  final String byUserId;
+
+  /// Display name of who did it; null with [byIsMe] true renders as "You".
+  final String? byLabel;
+  final bool byIsMe;
+  final DateTime? nextDueDate;
+  final String? nextTurnName;
+  final bool nextTurnIsMine;
+
+  /// Kept only on optimistic entries so Undo can put the exact queue row back.
+  final _Chore? restoreChore;
+
+  const _DoneEntry({
+    required this.choreId,
+    required this.title,
+    required this.completedAt,
+    required this.byUserId,
+    required this.byLabel,
+    required this.byIsMe,
+    required this.nextDueDate,
+    required this.nextTurnName,
+    required this.nextTurnIsMine,
+    this.restoreChore,
+  });
+}
+
 /// The people-first hero: leads with what's on *you* right now, and how much
-/// of the household's open load you're carrying.
+/// of the household's open load you're carrying. Pure status — the
+/// Me/Everyone view toggle lives with the list it filters.
 class _TurnHero extends StatelessWidget {
   final List<_Chore> myTurn;
   final int myActiveCount;
   final int totalActiveCount;
-  final bool filterMe;
-  final VoidCallback onShowMine;
-  final VoidCallback onShowEveryone;
 
   const _TurnHero({
     required this.myTurn,
     required this.myActiveCount,
     required this.totalActiveCount,
-    required this.filterMe,
-    required this.onShowMine,
-    required this.onShowEveryone,
   });
 
   @override
@@ -1133,22 +1347,6 @@ class _TurnHero extends StatelessWidget {
                       ),
                     ],
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: MitlistSpacing.md),
-            Row(
-              children: [
-                AppChip(
-                  label: l10n.choreMeLabel(myActiveCount),
-                  selected: filterMe,
-                  onSelected: (_) => onShowMine(),
-                ),
-                const SizedBox(width: MitlistSpacing.sm),
-                AppChip(
-                  label: l10n.choreEveryoneLabel(totalActiveCount),
-                  selected: !filterMe,
-                  onSelected: (_) => onShowEveryone(),
                 ),
               ],
             ),
@@ -1331,6 +1529,166 @@ class _HeaderSkeleton extends StatelessWidget {
   }
 }
 
+/// Collapsible header for the "Done recently" ledger — same grammar as the
+/// lists' "Checked off" section, with a live count odometer.
+class _DoneRecentlyHeader extends StatelessWidget {
+  final int count;
+  final bool expanded;
+  final VoidCallback onToggle;
+
+  const _DoneRecentlyHeader({
+    required this.count,
+    required this.expanded,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final textTheme = Theme.of(context).textTheme;
+    final headerStyle = textTheme.titleSmall?.copyWith(
+          fontWeight: FontWeight.w700,
+        ) ??
+        const TextStyle(fontWeight: FontWeight.w700);
+    return Material(
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      child: InkWell(
+        onTap: onToggle,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: MitlistSpacing.md,
+            vertical: MitlistSpacing.sm,
+          ),
+          child: Row(
+            children: [
+              Text(l10n.choreDoneRecently, style: headerStyle),
+              const SizedBox(width: MitlistSpacing.sm),
+              MitlistOdometer(value: count, textStyle: headerStyle),
+              const Spacer(),
+              AppIcon(
+                name: expanded ? 'chevronUp' : 'chevronDown',
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One ledger row: `chore — who · when`, with the next turn on the right
+/// once the server has rotated it. This is how a household checks that the
+/// other person actually did their thing.
+class _DoneEntryRow extends StatelessWidget {
+  final _DoneEntry entry;
+  final VoidCallback onTap;
+
+  const _DoneEntryRow({required this.entry, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    final who = entry.byIsMe
+        ? l10n.choreLedgerYou
+        : (entry.byLabel ?? l10n.choreLedgerSomeone);
+    final when = _formatRelativeTime(l10n, entry.completedAt);
+
+    final String? nextTurn;
+    if (entry.nextTurnIsMine) {
+      nextTurn = l10n.choreYourTurn;
+    } else if (entry.nextTurnName != null && entry.nextTurnName!.isNotEmpty) {
+      nextTurn = l10n.choreSomeonesTurn(entry.nextTurnName!);
+    } else {
+      nextTurn = null;
+    }
+
+    return Semantics(
+      button: true,
+      label: [
+        entry.title,
+        l10n.choreLedgerDoneBy(who, when),
+        if (entry.nextDueDate != null)
+          l10n.choreBackOnDate(_formatDate(entry.nextDueDate!)),
+        if (nextTurn != null) nextTurn,
+      ].join(', '),
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
+          child: Row(
+            children: [
+              AppIcon(
+                name: 'checkCircle',
+                size: 18,
+                color: colorScheme.tertiary,
+              ),
+              const SizedBox(width: MitlistSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      entry.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: MitlistSpacing.space0_5),
+                    Text(
+                      l10n.choreLedgerDoneBy(who, when),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: MitlistTypography.labelXSmall(
+                        color: colorScheme.onSurfaceVariant,
+                      ).copyWith(
+                        fontWeight:
+                            entry.byIsMe ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (entry.nextDueDate != null) ...[
+                const SizedBox(width: MitlistSpacing.sm),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      l10n.choreBackOnDate(_formatDate(entry.nextDueDate!)),
+                      style: MitlistTypography.labelXSmall(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    if (nextTurn != null) ...[
+                      const SizedBox(height: MitlistSpacing.space0_5),
+                      Text(
+                        nextTurn,
+                        style: MitlistTypography.labelXSmall(
+                          color: entry.nextTurnIsMine
+                              ? colorScheme.primary
+                              : colorScheme.onSurfaceVariant,
+                        ).copyWith(
+                          fontWeight: entry.nextTurnIsMine
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ChoreItem extends StatelessWidget {
   final _Chore chore;
   final VoidCallback onToggle;
@@ -1361,6 +1719,7 @@ class _ChoreItem extends StatelessWidget {
       chore.title,
       if (isComplete) l10n.choreStatusDone,
       if (turnLabel != null && !isComplete) turnLabel,
+      if (!chore.hasAssignee && !isComplete) l10n.choreUpForGrabs,
       _frequencyLabel(l10n, chore.frequency, chore.periodInterval),
       if (suppliesLabel != null) suppliesLabel,
       _formatDate(chore.dueDate),
@@ -1447,29 +1806,52 @@ class _ChoreItem extends StatelessWidget {
               const SizedBox(width: MitlistSpacing.sm),
               Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Container(
-                    width: MitlistSpacing.space6,
-                    height: MitlistSpacing.space6,
-                    decoration: BoxDecoration(
-                      color: chore.isMine
-                          ? colorScheme.primary
-                          : colorScheme.primaryContainer,
-                      border: Border.all(
-                        color: colorScheme.outlineVariant,
-                        width: 2,
-                      ),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      chore.assigneeInitials,
-                      style: MitlistTypography.labelXSmall(
+                  if (chore.hasAssignee)
+                    Container(
+                      width: MitlistSpacing.space6,
+                      height: MitlistSpacing.space6,
+                      decoration: BoxDecoration(
                         color: chore.isMine
-                            ? colorScheme.onPrimary
-                            : colorScheme.onPrimaryContainer,
+                            ? colorScheme.primary
+                            : colorScheme.primaryContainer,
+                        border: Border.all(
+                          color: colorScheme.outlineVariant,
+                          width: 2,
+                        ),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        chore.assigneeInitials,
+                        style: MitlistTypography.labelXSmall(
+                          color: chore.isMine
+                              ? colorScheme.onPrimary
+                              : colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    )
+                  else
+                    // No rotation on this chore: frame it as an open turn
+                    // anyone can claim, not a "?" shrug.
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: MitlistSpacing.sm,
+                        vertical: MitlistSpacing.space0_5,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: colorScheme.outlineVariant,
+                          width: 2,
+                        ),
+                      ),
+                      child: Text(
+                        l10n.choreUpForGrabs,
+                        style: MitlistTypography.labelXSmall(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
-                  ),
                   const SizedBox(height: MitlistSpacing.space1),
                   Text(
                     _formatDate(chore.dueDate),
@@ -1577,6 +1959,16 @@ class _ChoreSkeletonItem extends StatelessWidget {
 
 String _formatDate(DateTime date) {
   return DateFormat.MMMd().format(date);
+}
+
+/// Compact "when did this happen" for ledger rows: just now → 5h ago →
+/// yesterday → Jul 4.
+String _formatRelativeTime(AppLocalizations l10n, DateTime at) {
+  final diff = DateTime.now().difference(at);
+  if (diff.inMinutes < 60) return l10n.choreLedgerJustNow;
+  if (diff.inHours < 24) return l10n.choreLedgerHoursAgo(diff.inHours);
+  if (diff.inHours < 48) return l10n.choreLedgerYesterday;
+  return _formatDate(at);
 }
 
 String _frequencyLabel(AppLocalizations l10n, String frequency, int interval) {

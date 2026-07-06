@@ -12,12 +12,14 @@ class ChoreLoadSheet extends StatelessWidget {
   final List<ChoreLoadEntry> entries;
   final Map<String, String> memberNames;
   final int days;
+  final String? myUserId;
 
   const ChoreLoadSheet({
     super.key,
     required this.entries,
     required this.memberNames,
     this.days = 30,
+    this.myUserId,
   });
 
   static Future<void> show(
@@ -25,6 +27,7 @@ class ChoreLoadSheet extends StatelessWidget {
     required List<ChoreLoadEntry> entries,
     required Map<String, String> memberNames,
     int days = 30,
+    String? myUserId,
   }) {
     return showAppBottomSheet<void>(
       context: context,
@@ -33,6 +36,7 @@ class ChoreLoadSheet extends StatelessWidget {
         entries: entries,
         memberNames: memberNames,
         days: days,
+        myUserId: myUserId,
       ),
     );
   }
@@ -82,7 +86,7 @@ class ChoreLoadSheet extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '${total == 1 ? l10n.choreLoadCountSingular(total) : l10n.choreLoadCountPlural(total)} done in the last $days days',
+          l10n.choreLoadSummary(total, days),
           style: textTheme.bodySmall?.copyWith(
             color: colorScheme.onSurfaceVariant,
           ),
@@ -94,6 +98,7 @@ class ChoreLoadSheet extends StatelessWidget {
             count: row.value,
             maxCount: maxCount,
             share: total == 0 ? 0 : row.value / total,
+            isMe: row.key == myUserId,
           ),
           const SizedBox(height: MitlistSpacing.md),
         ],
@@ -108,11 +113,16 @@ class _LoadBar extends StatelessWidget {
   final int maxCount;
   final double share;
 
+  /// Your own bar carries the brand color; everyone else's stays neutral so
+  /// your share is readable at a glance.
+  final bool isMe;
+
   const _LoadBar({
     required this.name,
     required this.count,
     required this.maxCount,
     required this.share,
+    this.isMe = false,
   });
 
   @override
@@ -130,7 +140,9 @@ class _LoadBar extends StatelessWidget {
             Expanded(
               child: Text(
                 name,
-                style: textTheme.bodyMedium,
+                style: textTheme.bodyMedium?.copyWith(
+                  fontWeight: isMe ? FontWeight.w700 : null,
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -154,7 +166,9 @@ class _LoadBar extends StatelessWidget {
           alignment: Alignment.centerLeft,
           child: FractionallySizedBox(
             widthFactor: isIdle ? 0 : fraction.clamp(0.02, 1.0),
-            child: Container(color: colorScheme.primary),
+            child: Container(
+              color: isMe ? colorScheme.primary : colorScheme.secondary,
+            ),
           ),
         ),
       ],
