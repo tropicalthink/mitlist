@@ -5,6 +5,7 @@ import '../../config/api_config.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/auth_models.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/oauth_provider.dart';
 import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
@@ -299,7 +300,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         scheme: baseUri.scheme,
         host: baseUri.host,
         port: baseUri.hasPort ? baseUri.port : null,
-        path: '${ApiConfig.apiPrefix}/v1/oauth/$provider',
+        path: '${ApiConfig.apiPrefix}/oauth/$provider',
         queryParameters: {'redirect_uri': redirectUri},
       ).toString();
 
@@ -321,6 +322,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final oauthProviders = ref.watch(oauthProvidersProvider).valueOrNull ??
+        (google: false, apple: false);
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -427,26 +430,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: MitlistSpacing.space4),
-                        AppButton(
-                          text: l10n.authLoginGoogle,
-                          icon: const AppIcon(name: 'login', size: 20),
-                          variant: AppButtonVariant.outline,
-                          color: AppButtonColor.neutral,
-                          onPressed: (_isLoading || _isSuccess)
-                              ? null
-                              : () => _startOAuth('google'),
-                        ),
-                        const SizedBox(height: MitlistSpacing.space3),
-                        AppButton(
-                          text: l10n.authLoginApple,
-                          icon: const AppIcon(name: 'apple', size: 20),
-                          variant: AppButtonVariant.outline,
-                          color: AppButtonColor.neutral,
-                          onPressed: (_isLoading || _isSuccess)
-                              ? null
-                              : () => _startOAuth('apple'),
-                        ),
-                        const SizedBox(height: MitlistSpacing.space4),
+                        if (oauthProviders.google) ...[
+                          AppButton(
+                            text: l10n.authLoginGoogle,
+                            icon: const AppIcon(name: 'login', size: 20),
+                            variant: AppButtonVariant.outline,
+                            color: AppButtonColor.neutral,
+                            onPressed: (_isLoading || _isSuccess)
+                                ? null
+                                : () => _startOAuth('google'),
+                          ),
+                          const SizedBox(height: MitlistSpacing.space3),
+                        ],
+                        if (oauthProviders.apple) ...[
+                          AppButton(
+                            text: l10n.authLoginApple,
+                            icon: const AppIcon(name: 'apple', size: 20),
+                            variant: AppButtonVariant.outline,
+                            color: AppButtonColor.neutral,
+                            onPressed: (_isLoading || _isSuccess)
+                                ? null
+                                : () => _startOAuth('apple'),
+                          ),
+                          const SizedBox(height: MitlistSpacing.space3),
+                        ],
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
