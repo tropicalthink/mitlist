@@ -76,7 +76,7 @@ traceability.
 |------|-------|----------|--------|------------|--------|
 | 020 | Token refresh: keep session on transient network error (no force-logout) | P1 | M | — | DONE ✓v |
 | 021 | AGENTS.md reconcile (migrations, dead paths, test-status) | P1 | S | — | DONE ✓v |
-| 022 | Invite-code entropy — resist group-join enumeration | P1 | M | — | DONE ✓v (executed 2026-07-04 on `advisor/022-invite-code-entropy` @ `a0e89be1`; advisor re-verified criteria in worktree; awaiting merge) |
+| 022 | Invite-code entropy — resist group-join enumeration | P1 | M | — | DONE ✓v (cherry-picked to `new-main-fr` 2026-07-07; backend suite green) |
 | 023 | `formatCurrency` zero-decimal currencies (JPY/KRW/HUF) | P2 | S | — | DONE ✓v |
 | 024 | Verify real upload size on finalize; bound presigned PUT | P2 | M | — | DONE ✓v |
 | 025 | SSE: marshal broadcast events once, not per client | P2 | S | — | DONE ✓v |
@@ -94,7 +94,7 @@ traceability.
 | 037 | Decompose expenses god-screen (controller pattern) | P3 | L | 043 first | DONE ✓v (2026-07-06, reviewed; branch advisor/037-expenses-controller) |
 | 038 | Split recipe-scraping monolith behind a parser interface | P3 | L | — | DONE ✓v (2026-07-06, reviewed; branch advisor/038-recipe-scraping-split) |
 | 039 | Share pinwall note-card / stat-row widgets | P3 | M | — | DONE ✓v (2026-07-06, reviewed; branch advisor/039-pinwall-shared-widgets) |
-| 040 | Upgrade low-risk Flutter plugins; scope framework migrations | P3 | M | — | DONE ✓v (executed 2026-07-04 on `advisor/040-dependency-upgrades` @ `f236d1b4`, 4 commits; advisor re-verified; runtime push/crash QA deferred; awaiting merge) |
+| 040 | Upgrade low-risk Flutter plugins; scope framework migrations | P3 | M | — | DONE ✓v (cherry-picked to `new-main-fr` 2026-07-07; analyze+tests green; runtime push/crash QA still deferred) |
 | 041 | Unpin build_runner; CI codegen-freshness gate | P3 | M | — | DONE ✓v |
 | 042 | CI: build landing, smoke-check intelligence pipeline | P3 | S–M | — | DONE ✓v |
 | 043 | Widget test for the pinwall board screen | P3 | M | — | DONE ✓v |
