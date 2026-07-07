@@ -33,65 +33,66 @@ class AppBottomSheet extends StatelessWidget {
         maxHeight: MediaQuery.of(context).size.height - topPadding - 16,
       ),
       child: Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(MitlistTheme.radiusLg),
-        ),
-        border: Border(
-          top: BorderSide(color: colorScheme.outline, width: 2),
-          left: BorderSide(color: colorScheme.outline, width: 2),
-          right: BorderSide(color: colorScheme.outline, width: 2),
-        ),
-        boxShadow: MitlistShadows.shadowFloating,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: MitlistSpacing.sm),
-          Center(
-            child: Container(
-              width: MitlistSpacing.space10,
-              height: MitlistSpacing.space1,
-              decoration: BoxDecoration(
-                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-                borderRadius: const BorderRadius.all(
-                  Radius.circular(MitlistTheme.radiusFull),
-                ),
-              ),
-            ),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(MitlistTheme.radiusLg),
           ),
-          const SizedBox(height: MitlistSpacing.sm),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.lg),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: textTheme.titleMedium,
+          border: Border(
+            top: BorderSide(color: colorScheme.outline, width: 2),
+            left: BorderSide(color: colorScheme.outline, width: 2),
+            right: BorderSide(color: colorScheme.outline, width: 2),
+          ),
+          boxShadow: MitlistShadows.shadowFloating,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: MitlistSpacing.sm),
+            Center(
+              child: Container(
+                width: MitlistSpacing.space10,
+                height: MitlistSpacing.space1,
+                decoration: BoxDecoration(
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                  borderRadius: const BorderRadius.all(
+                    Radius.circular(MitlistTheme.radiusFull),
                   ),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: MitlistSpacing.md),
-          Flexible(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                MitlistSpacing.lg,
-                MitlistSpacing.space0,
-                MitlistSpacing.lg,
-                MitlistSpacing.lg,
-              ),
-              child: SingleChildScrollView(
-                child: body,
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: MitlistSpacing.sm),
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: MitlistSpacing.lg),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: textTheme.titleMedium,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: MitlistSpacing.md),
+            Flexible(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  MitlistSpacing.lg,
+                  MitlistSpacing.space0,
+                  MitlistSpacing.lg,
+                  MitlistSpacing.lg,
+                ),
+                child: SingleChildScrollView(
+                  child: body,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
 }
@@ -125,8 +126,7 @@ Future<T?> showAppBottomSheet<T>({
           text: l10n.recipeCreationDiscard,
           color: AppButtonColor.error,
           variant: AppButtonVariant.outline,
-          onPressed: () =>
-              Navigator.of(context, rootNavigator: true).pop(true),
+          onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
         ),
       ],
     );
@@ -138,7 +138,8 @@ Future<T?> showAppBottomSheet<T>({
   return showModalBottomSheet<T>(
     context: context,
     backgroundColor: Colors.transparent,
-    barrierColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+    barrierColor:
+        Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
     isScrollControlled: true,
     // When dirtiness is dynamic, route every dismissal through the barrier so
     // the PopScope guard below can intercept it; drag-to-dismiss bypasses it.

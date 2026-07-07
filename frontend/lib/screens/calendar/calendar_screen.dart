@@ -40,12 +40,22 @@ enum _CalendarView { week, month, agenda }
     ColorScheme cs, CalendarEventType type) {
   return switch (type) {
     CalendarEventType.mealPlan => (icon: Icons.restaurant, color: cs.primary),
-    CalendarEventType.chore =>
-      (icon: Icons.cleaning_services, color: cs.secondary),
-    CalendarEventType.recurringExpense => (icon: Icons.repeat, color: cs.tertiary),
-    CalendarEventType.expense => (icon: Icons.receipt_outlined, color: cs.secondary),
-    CalendarEventType.pinwallReminder =>
-      (icon: Icons.push_pin_outlined, color: cs.error),
+    CalendarEventType.chore => (
+        icon: Icons.cleaning_services,
+        color: cs.secondary
+      ),
+    CalendarEventType.recurringExpense => (
+        icon: Icons.repeat,
+        color: cs.tertiary
+      ),
+    CalendarEventType.expense => (
+        icon: Icons.receipt_outlined,
+        color: cs.secondary
+      ),
+    CalendarEventType.pinwallReminder => (
+        icon: Icons.push_pin_outlined,
+        color: cs.error
+      ),
   };
 }
 
@@ -117,8 +127,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
       final calendarService =
           await ref.read(calendarServiceProviderAsync.future);
-      final events =
-          await calendarService.getCalendar(groupId!, from, to);
+      final events = await calendarService.getCalendar(groupId!, from, to);
       if (!mounted) return;
       setState(() {
         _events
@@ -157,16 +166,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   void _prevMonth() {
     setState(() {
-      _monthStart =
-          DateTime(_monthStart.year, _monthStart.month - 1, 1);
+      _monthStart = DateTime(_monthStart.year, _monthStart.month - 1, 1);
     });
     _load();
   }
 
   void _nextMonth() {
     setState(() {
-      _monthStart =
-          DateTime(_monthStart.year, _monthStart.month + 1, 1);
+      _monthStart = DateTime(_monthStart.year, _monthStart.month + 1, 1);
     });
     _load();
   }
@@ -190,20 +197,34 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   String _monthLabel(AppLocalizations l10n) {
     final months = _months(l10n);
-    return l10n.calendarMonthHeader(months[_monthStart.month - 1], _monthStart.year);
+    return l10n.calendarMonthHeader(
+        months[_monthStart.month - 1], _monthStart.year);
   }
 
   List<String> _months(AppLocalizations l10n) => [
-    l10n.calendarMonthJanuary, l10n.calendarMonthFebruary, l10n.calendarMonthMarch,
-    l10n.calendarMonthApril, l10n.calendarMonthMay, l10n.calendarMonthJune,
-    l10n.calendarMonthJuly, l10n.calendarMonthAugust, l10n.calendarMonthSeptember,
-    l10n.calendarMonthOctober, l10n.calendarMonthNovember, l10n.calendarMonthDecember,
-  ];
+        l10n.calendarMonthJanuary,
+        l10n.calendarMonthFebruary,
+        l10n.calendarMonthMarch,
+        l10n.calendarMonthApril,
+        l10n.calendarMonthMay,
+        l10n.calendarMonthJune,
+        l10n.calendarMonthJuly,
+        l10n.calendarMonthAugust,
+        l10n.calendarMonthSeptember,
+        l10n.calendarMonthOctober,
+        l10n.calendarMonthNovember,
+        l10n.calendarMonthDecember,
+      ];
 
   List<String> _weekdayHeaders(AppLocalizations l10n) => [
-    l10n.calendarShortMon, l10n.calendarShortTue, l10n.calendarShortWed,
-    l10n.calendarShortThu, l10n.calendarShortFri, l10n.calendarShortSat, l10n.calendarShortSun,
-  ];
+        l10n.calendarShortMon,
+        l10n.calendarShortTue,
+        l10n.calendarShortWed,
+        l10n.calendarShortThu,
+        l10n.calendarShortFri,
+        l10n.calendarShortSat,
+        l10n.calendarShortSun,
+      ];
 
   String get _localeName => Localizations.localeOf(context).toString();
 
@@ -364,8 +385,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         ),
         Expanded(
           child: ListView.builder(
-            padding:
-                const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
+            padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
             itemCount: 7,
             itemBuilder: (context, index) {
               final day = _weekStart.add(Duration(days: index));
@@ -422,8 +442,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         ),
         // Weekday headers
         Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
+          padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
           child: Row(
             children: _weekdayHeaders(l10n)
                 .map((h) => Expanded(
@@ -431,7 +450,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         child: Text(
                           h,
                           style: MitlistTypography.labelXSmall(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),
@@ -445,8 +465,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 560),
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: MitlistSpacing.sm),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: MitlistSpacing.sm),
                 child: GridView.builder(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 7,
@@ -459,8 +479,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       return const SizedBox.shrink();
                     }
 
-                    final day = DateTime(
-                        _monthStart.year, _monthStart.month, dayNum);
+                    final day =
+                        DateTime(_monthStart.year, _monthStart.month, dayNum);
                     final dayEvents = _eventsByDay[day] ?? const [];
                     final isToday = _isToday(day);
                     final cs = Theme.of(context).colorScheme;
@@ -486,9 +506,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             borderRadius:
                                 BorderRadius.circular(MitlistTheme.radiusSm),
                             border: Border.all(
-                              color: isToday
-                                  ? cs.primary
-                                  : cs.outlineVariant,
+                              color: isToday ? cs.primary : cs.outlineVariant,
                               width: isToday ? 2 : 1,
                             ),
                           ),
@@ -499,9 +517,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               Text(
                                 '$dayNum',
                                 style: MitlistTypography.labelXSmall(
-                                  color: isToday
-                                      ? cs.primary
-                                      : cs.onSurface,
+                                  color: isToday ? cs.primary : cs.onSurface,
                                 ),
                               ),
                               if (dayEvents.isNotEmpty)
@@ -511,9 +527,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                   child: Text(
                                     '${dayEvents.length}',
                                     style: MitlistTypography.labelXSmall(
-                                      color: _eventVisual(
-                                              cs, dayEvents.first.type)
-                                          .color,
+                                      color:
+                                          _eventVisual(cs, dayEvents.first.type)
+                                              .color,
                                     ),
                                   ),
                                 ),
@@ -632,8 +648,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             lottieAsset: 'assets/animations/lottie/Calendar.lottie',
             icon: AppIcon(name: 'eventNote', size: 56),
             title: l10n.calendarNothingAhead,
-            description:
-                l10n.calendarNothingAheadDesc,
+            description: l10n.calendarNothingAheadDesc,
             actions: [
               AppButton(
                 text: l10n.choreAppBarTitle,
@@ -671,17 +686,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           color: Theme.of(context).colorScheme.primary,
                           shape: BoxShape.circle,
                         ),
-                        margin:
-                            const EdgeInsets.only(right: MitlistSpacing.sm),
+                        margin: const EdgeInsets.only(right: MitlistSpacing.sm),
                       ),
                     Text(
                       _formatAgendaDate(day, l10n),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleSmall
-                          ?.copyWith(
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
                             color: isToday
                                 ? Theme.of(context).colorScheme.primary
                                 : Theme.of(context).colorScheme.onSurface,
@@ -710,7 +721,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     return DateFormat.MMMMEEEEd(_localeName).format(day);
   }
 
-  List<Widget> _agendaDayEvents(List<CalendarEvent> events, AppLocalizations l10n) {
+  List<Widget> _agendaDayEvents(
+      List<CalendarEvent> events, AppLocalizations l10n) {
     return events.map((e) {
       final (icon, color, label) = _eventMeta(context, e, l10n);
       return Padding(
@@ -735,8 +747,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (e.type == CalendarEventType.mealPlan &&
-                    e.mealPlan != null)
+                if (e.type == CalendarEventType.mealPlan && e.mealPlan != null)
                   Text(
                     l10n.calendarServingsPpl(e.mealPlan!.servings),
                     maxLines: 1,
@@ -761,10 +772,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     }).toList();
   }
 
-  (IconData, Color, String) _eventMeta(BuildContext context, CalendarEvent event, AppLocalizations l10n) {
+  (IconData, Color, String) _eventMeta(
+      BuildContext context, CalendarEvent event, AppLocalizations l10n) {
     final visual = _eventVisual(Theme.of(context).colorScheme, event.type);
     final label = switch (event.type) {
-      CalendarEventType.mealPlan => event.mealPlan?.slot ?? l10n.calendarEventMeal,
+      CalendarEventType.mealPlan =>
+        event.mealPlan?.slot ?? l10n.calendarEventMeal,
       CalendarEventType.chore => l10n.calendarEventChore,
       CalendarEventType.recurringExpense => l10n.calendarEventRecurring,
       CalendarEventType.expense => l10n.calendarEventExpense,
@@ -775,9 +788,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   bool _isToday(DateTime d) {
     final now = DateTime.now();
-    return d.year == now.year &&
-        d.month == now.month &&
-        d.day == now.day;
+    return d.year == now.year && d.month == now.month && d.day == now.day;
   }
 
   void _showEventDetail(BuildContext context, CalendarEvent event) {
@@ -788,7 +799,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           ChoreDetailSheet.show(
             context,
             choreId: event.chore!.choreId,
-            title: event.title.isNotEmpty ? event.title : l10n.calendarEventChore,
+            title:
+                event.title.isNotEmpty ? event.title : l10n.calendarEventChore,
             statusLabel: event.chore!.status,
             assignee: '',
             dueDate: event.date,
@@ -829,7 +841,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         ),
       ],
     );
-    if (confirmed != true || !mounted) { _isSaving = false; return; }
+    if (confirmed != true || !mounted) {
+      _isSaving = false;
+      return;
+    }
     Navigator.of(context).pop();
     try {
       final service = await ref.read(choreServiceProviderAsync.future);
@@ -839,7 +854,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       if (!mounted) return;
       unawaited(Haptics.failure());
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
+        SnackBar(
+            content:
+                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     } finally {
       _isSaving = false;
@@ -897,7 +914,8 @@ class _DayCard extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.primary,
-                      borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
+                      borderRadius:
+                          BorderRadius.circular(MitlistTheme.radiusSm),
                     ),
                     child: Text(
                       l10n.calendarToday,
@@ -972,9 +990,9 @@ class _EventRow extends StatelessWidget {
                 child: Text(
                   event.title.isNotEmpty ? event.title : label,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontWeight: FontWeight.w500,
-                  ),
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontWeight: FontWeight.w500,
+                      ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),

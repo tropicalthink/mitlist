@@ -59,4 +59,3 @@ func (r *ExpenseAttachmentRepository) ListReadyAttachmentsByExpense(ctx context.
 
 	return pgx.CollectRows(rows, pgx.RowToStructByName[models.Attachment])
 }
-

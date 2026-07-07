@@ -272,7 +272,8 @@ class _ExpenseCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                formatExpenseCurrency(expense.amount, currency: expense.currency),
+                formatExpenseCurrency(expense.amount,
+                    currency: expense.currency),
                 style: MitlistTypography.monoBody(),
               ),
               if (expense.isConverted) ...[

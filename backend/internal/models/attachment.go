@@ -27,4 +27,3 @@ type Attachment struct {
 	Status      AttachmentStatus `json:"status"`
 	CreatedAt   time.Time        `json:"created_at"`
 }
-

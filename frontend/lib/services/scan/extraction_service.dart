@@ -80,7 +80,8 @@ class ExtractionService {
       RegExp(r'(\d+[,.]?\d*)\s*(g|kg|ml|l|oz|lb)\b', caseSensitive: false),
       (m) {
         if (unit.isEmpty) {
-          quantity = double.tryParse(m.group(1)!.replaceAll(',', '.')) ?? quantity;
+          quantity =
+              double.tryParse(m.group(1)!.replaceAll(',', '.')) ?? quantity;
           unit = m.group(2)!;
         }
         return '';

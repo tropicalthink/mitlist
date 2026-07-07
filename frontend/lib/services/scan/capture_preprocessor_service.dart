@@ -96,7 +96,8 @@ class CapturePreprocessorService {
           enhanced: false,
         );
       }
-      final out = Uint8List.fromList(img.encodeJpg(_enhanceLegacy(decoded), quality: 92));
+      final out = Uint8List.fromList(
+          img.encodeJpg(_enhanceLegacy(decoded), quality: 92));
       // In the legacy path the enhanced image is a natural grayscale (no binary
       // threshold), so it is safe to use directly for OCR.
       return CapturePreprocessResult(

@@ -90,7 +90,8 @@ void main() {
 
       final row = await db.getCurrentChoresOnce(groupId);
       final assignment = _firstAssignment(row!.choresJson);
-      expect(DateTime.parse(assignment['due_date'] as String).day, tomorrow.day);
+      expect(
+          DateTime.parse(assignment['due_date'] as String).day, tomorrow.day);
       // Tomorrow is no longer overdue.
       expect(_firstDueStatus(row.choresJson), isNot('overdue'));
     });

@@ -18,4 +18,3 @@ type PinwallPost struct {
 	LinkedEntityType *string    `json:"linked_entity_type,omitempty"`
 	LinkedEntityID   *uuid.UUID `json:"linked_entity_id,omitempty"`
 }
-

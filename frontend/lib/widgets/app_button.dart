@@ -98,7 +98,8 @@ class _AppButtonState extends State<AppButton> {
   Color _foregroundColor(ColorScheme colorScheme) {
     switch (widget.variant) {
       case AppButtonVariant.solid:
-        return colorScheme.onPrimary; // white works for both primary and success500
+        return colorScheme
+            .onPrimary; // white works for both primary and success500
       case AppButtonVariant.outline:
       case AppButtonVariant.ghost:
         switch (widget.color) {
@@ -339,15 +340,12 @@ class _AppButtonState extends State<AppButton> {
     }
 
     Widget result = Listener(
-      onPointerDown: _isInteractive
-          ? (_) => setState(() => _pressed = true)
-          : null,
-      onPointerUp: _isInteractive
-          ? (_) => setState(() => _pressed = false)
-          : null,
-      onPointerCancel: _isInteractive
-          ? (_) => setState(() => _pressed = false)
-          : null,
+      onPointerDown:
+          _isInteractive ? (_) => setState(() => _pressed = true) : null,
+      onPointerUp:
+          _isInteractive ? (_) => setState(() => _pressed = false) : null,
+      onPointerCancel:
+          _isInteractive ? (_) => setState(() => _pressed = false) : null,
       child: GestureDetector(
         onTap: _isInteractive ? widget.onPressed : null,
         behavior: HitTestBehavior.translucent,

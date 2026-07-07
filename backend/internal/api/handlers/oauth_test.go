@@ -9,6 +9,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/mitlist-app/mitlist/internal/config"
 )
 
 func TestOAuth_GoogleCallback_MissingStateCookie(t *testing.T) {
@@ -91,4 +93,68 @@ func TestOAuth_AppleCallback_MismatchedState(t *testing.T) {
 
 	require.Equal(t, http.StatusBadRequest, rec.Code)
 	assert.Contains(t, rec.Body.String(), "invalid oauth state")
+}
+
+func TestOAuth_GetProviders_ReflectsConfiguration(t *testing.T) {
+	cases := []struct {
+		name string
+		cfg  func() *config.Config
+		want string
+	}{
+		{
+			name: "none configured",
+			cfg:  func() *config.Config { return &config.Config{} },
+			want: `{"apple":false,"google":false}`,
+		},
+		{
+			name: "google only",
+			cfg: func() *config.Config {
+				return &config.Config{GoogleClientID: "id", GoogleClientSecret: "secret"}
+			},
+			want: `{"apple":false,"google":true}`,
+		},
+		{
+			name: "google secret missing",
+			cfg: func() *config.Config {
+				return &config.Config{GoogleClientID: "id"}
+			},
+			want: `{"apple":false,"google":false}`,
+		},
+		{
+			name: "both configured",
+			cfg: func() *config.Config {
+				return &config.Config{
+					GoogleClientID:     "id",
+					GoogleClientSecret: "secret",
+					AppleClientID:      "me.mitlist",
+					AppleTeamID:        "TEAM",
+					AppleKeyID:         "KEY",
+					ApplePrivateKey:    "pem",
+				}
+			},
+			want: `{"apple":true,"google":true}`,
+		},
+		{
+			name: "apple partially configured",
+			cfg: func() *config.Config {
+				return &config.Config{AppleClientID: "me.mitlist", AppleTeamID: "TEAM"}
+			},
+			want: `{"apple":false,"google":false}`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			h := NewOAuthHandler(tc.cfg(), nil)
+			r := chi.NewRouter()
+			r.Get("/api/v1/auth/oauth/providers", h.GetProviders)
+
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest("GET", "/api/v1/auth/oauth/providers", nil)
+			r.ServeHTTP(rec, req)
+
+			require.Equal(t, http.StatusOK, rec.Code)
+			assert.JSONEq(t, tc.want, rec.Body.String())
+		})
+	}
 }

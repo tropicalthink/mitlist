@@ -156,10 +156,10 @@ class ResolutionMetrics {
     );
   }
 
-  String pct(double v) => v.isNaN ? '   —  ' : '${(v * 100).toStringAsFixed(1)}%';
+  String pct(double v) =>
+      v.isNaN ? '   —  ' : '${(v * 100).toStringAsFixed(1)}%';
 
-  String get summaryLine =>
-      'n=$total  top1=${pct(top1Accuracy)}  '
+  String get summaryLine => 'n=$total  top1=${pct(top1Accuracy)}  '
       'precision@auto=${pct(precisionAtAutoAccept)} ($autoAcceptedCorrect/$autoAccepted)  '
       'coverage=${pct(coverage)}';
 }
@@ -202,7 +202,8 @@ class ResolutionReport {
     b.writeln('OVERALL   ${overall.summaryLine}');
     final types = byInputType.keys.toList()..sort();
     for (final t in types) {
-      b.writeln('${t.padRight(9).substring(0, 9)} ${byInputType[t]!.summaryLine}');
+      b.writeln(
+          '${t.padRight(9).substring(0, 9)} ${byInputType[t]!.summaryLine}');
     }
     final misses = outcomes.where((o) => !o.isCorrect).toList();
     if (misses.isNotEmpty) {

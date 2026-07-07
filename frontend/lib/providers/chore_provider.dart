@@ -21,7 +21,8 @@ final cachedCurrentChoresByGroupProvider =
   yield* repo.watchCurrentChores(groupId);
 });
 
-final choresByGroupProvider = FutureProvider.family<List<Chore>, String>((ref, groupId) async {
+final choresByGroupProvider =
+    FutureProvider.family<List<Chore>, String>((ref, groupId) async {
   final service = await ref.read(choreServiceProviderAsync.future);
   return service.listChores(groupId);
 });
@@ -52,7 +53,8 @@ final weeklyChoresProgressByGroupProvider =
 
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
-  final weekStart = today.subtract(Duration(days: today.weekday - DateTime.monday));
+  final weekStart =
+      today.subtract(Duration(days: today.weekday - DateTime.monday));
   final weekEnd = weekStart.add(const Duration(days: 7));
 
   final active = chores.where((c) => c.isActive).toList();
@@ -68,7 +70,8 @@ final weeklyChoresProgressByGroupProvider =
   final assignmentsByChore = await Future.wait(
     active.map((c) async {
       try {
-        final assignments = await choreService.listAssignments(c.id, limit: 200, offset: 0);
+        final assignments =
+            await choreService.listAssignments(c.id, limit: 200, offset: 0);
         return assignments;
       } catch (_) {
         return <ChoreAssignment>[];

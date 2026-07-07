@@ -41,12 +41,14 @@ cv.Mat _runCvPipeline(cv.Mat src) {
     if (!identical(downscaled, src)) track(downscaled);
 
     // Step 2 – Grayscale.
-    final gray = cv.cvtColor(downscaled, cv.COLOR_BGR2GRAY); track(gray);
+    final gray = cv.cvtColor(downscaled, cv.COLOR_BGR2GRAY);
+    track(gray);
 
     // Step 3 – Illumination normalisation.
     // Divide the gray image by a heavily blurred version (background estimate).
     // This suppresses uneven lighting and shadow gradients without OCR impact.
-    final illuminNorm = _normaliseIllumination(gray); track(illuminNorm);
+    final illuminNorm = _normaliseIllumination(gray);
+    track(illuminNorm);
 
     // Step 4 – Adaptive threshold → binary image suitable for OCR.
     final cv.Mat binarised;
@@ -75,7 +77,9 @@ cv.Mat _runCvPipeline(cv.Mat src) {
     for (final m in scratch) {
       // Do not dispose the Mat we are returning.
       if (!identical(m, result)) {
-        try { m.dispose(); } catch (_) {}
+        try {
+          m.dispose();
+        } catch (_) {}
       }
     }
   }
@@ -109,16 +113,21 @@ cv.Mat _normaliseIllumination(cv.Mat gray) {
 
     // Convert both to float32 for accurate division.
     // CV_32FC1 = single-channel 32-bit float.
-    final grayF = gray.convertTo(cv.MatType.CV_32FC1); track(grayF);
-    final bgF = bg.convertTo(cv.MatType.CV_32FC1); track(bgF);
+    final grayF = gray.convertTo(cv.MatType.CV_32FC1);
+    track(grayF);
+    final bgF = bg.convertTo(cv.MatType.CV_32FC1);
+    track(bgF);
 
     // Add 1.0 to every background pixel to prevent divide-by-zero.
     // convertScaleAbs(alpha=1, beta=1) → bgF_u8 + 1; then convert back to float.
-    final bgAbs = cv.convertScaleAbs(bgF, alpha: 1, beta: 1); track(bgAbs);
-    final bgFplus1 = bgAbs.convertTo(cv.MatType.CV_32FC1); track(bgFplus1);
+    final bgAbs = cv.convertScaleAbs(bgF, alpha: 1, beta: 1);
+    track(bgAbs);
+    final bgFplus1 = bgAbs.convertTo(cv.MatType.CV_32FC1);
+    track(bgFplus1);
 
     // Divide gray by (background + 1) to flatten illumination.
-    final divided = cv.divide(grayF, bgFplus1); track(divided);
+    final divided = cv.divide(grayF, bgFplus1);
+    track(divided);
 
     // Normalise the ratio to full 0–255 uint8 range using NORM_MINMAX.
     // dtype = CV_8UC1.value = 0 (single-channel 8-bit unsigned).
@@ -136,7 +145,9 @@ cv.Mat _normaliseIllumination(cv.Mat gray) {
   } finally {
     for (final m in scratch) {
       if (!identical(m, result)) {
-        try { m.dispose(); } catch (_) {}
+        try {
+          m.dispose();
+        } catch (_) {}
       }
     }
   }

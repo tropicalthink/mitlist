@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/mitlist-app/mitlist/internal/repositories"
-	"github.com/robfig/cron/v3"
 	"github.com/mitlist-app/mitlist/pkg/logger"
+	"github.com/robfig/cron/v3"
 )
 
 // Runner manages all background jobs using robfig/cron/v3.

@@ -55,7 +55,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
       if (!mounted) return;
       setState(() => _isGuestLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
+        SnackBar(
+            content:
+                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -144,7 +146,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: AppButton(
-                    text: _isGuestLoading ? l10n.welcomeGuestLoading : l10n.welcomeContinueAsGuest,
+                    text: _isGuestLoading
+                        ? l10n.welcomeGuestLoading
+                        : l10n.welcomeContinueAsGuest,
                     variant: AppButtonVariant.ghost,
                     size: AppButtonSize.lg,
                     onPressed: _isGuestLoading ? null : _onGuestContinue,

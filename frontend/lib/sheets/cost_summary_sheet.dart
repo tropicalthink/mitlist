@@ -71,8 +71,7 @@ class CostSummarySheet extends StatelessWidget {
         if (!hasPrices) ...[
           _InfoRow(
             iconName: 'infoOutline',
-            message:
-                l10n.costSummaryNoPrices,
+            message: l10n.costSummaryNoPrices,
           ),
         ] else ...[
           _CostRow(
@@ -83,7 +82,9 @@ class CostSummarySheet extends StatelessWidget {
           const SizedBox(height: MitlistSpacing.sm),
           _CostRow(
             label: l10n.costSummaryEqualShare,
-            value: equalShareCents > 0 ? _formatCents(equalShareCents) : l10n.costSummaryNotAvailable,
+            value: equalShareCents > 0
+                ? _formatCents(equalShareCents)
+                : l10n.costSummaryNotAvailable,
             isTotal: false,
           ),
           const SizedBox(height: MitlistSpacing.sm),
@@ -159,7 +160,10 @@ class _InfoRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppIcon(name: iconName, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+        AppIcon(
+            name: iconName,
+            size: 20,
+            color: Theme.of(context).colorScheme.onSurfaceVariant),
         const SizedBox(width: MitlistSpacing.sm),
         Expanded(
           child: Text(

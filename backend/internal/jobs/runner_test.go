@@ -3,8 +3,8 @@ package jobs
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/mitlist-app/mitlist/pkg/logger"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRunner_RegisterAll(t *testing.T) {

@@ -110,6 +110,7 @@ func main() {
 
 		// OAuth (public initiation + callback)
 		oauthHandler := handlers.NewOAuthHandler(cfg, cnt.OAuthService())
+		r.Get("/oauth/providers", oauthHandler.GetProviders)
 		r.Get("/oauth/google", oauthHandler.GetGoogle)
 		r.Get("/oauth/google/callback", oauthHandler.GetGoogleCallback)
 		r.Post("/oauth/google/callback", oauthHandler.PostGoogleCallback)
@@ -181,9 +182,9 @@ func main() {
 
 			// Meal Plans
 			mealPlanHandler := handlers.NewMealPlanHandler(cnt.MealPlanService())
-		mealPlanHandler.RegisterRoutes(r)
+			mealPlanHandler.RegisterRoutes(r)
 
-		// Calendar
+			// Calendar
 			calendarHandler := handlers.NewCalendarHandler(cnt.CalendarService())
 			calendarHandler.RegisterRoutes(r)
 
@@ -191,9 +192,9 @@ func main() {
 			groceryHandler := handlers.NewGroceryHandler(cnt.GroceryService())
 			groceryHandler.RegisterRoutes(r)
 
-		// Share Target
-		shareHandler := handlers.NewShareHandler(cnt.ShareService())
-		shareHandler.RegisterRoutes(r)
+			// Share Target
+			shareHandler := handlers.NewShareHandler(cnt.ShareService())
+			shareHandler.RegisterRoutes(r)
 		})
 	})
 

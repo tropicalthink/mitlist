@@ -27,7 +27,11 @@ class PinwallService {
     try {
       final r = await _dio.get(
         '/pinwall/posts',
-        queryParameters: {'group_id': groupId, 'limit': limit, 'offset': offset},
+        queryParameters: {
+          'group_id': groupId,
+          'limit': limit,
+          'offset': offset
+        },
       );
       final data = r.data;
       if (data is! List) return [];
@@ -112,7 +116,8 @@ class PinwallService {
       final data = r.data;
       if (data is! List) return const [];
       return data
-          .map((e) => PinwallMediaItem.fromJson((e as Map).cast<String, dynamic>()))
+          .map((e) =>
+              PinwallMediaItem.fromJson((e as Map).cast<String, dynamic>()))
           .toList();
     } on DioException catch (e) {
       _logger.e('List pinwall media failed: ${e.response?.data}');
@@ -137,4 +142,3 @@ class PinwallService {
     }
   }
 }
-

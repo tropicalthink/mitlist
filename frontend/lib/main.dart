@@ -25,7 +25,8 @@ Future<void> main() async {
   }
 
   const dsn = String.fromEnvironment('GLITCHTIP_DSN', defaultValue: '');
-  const env = String.fromEnvironment('ENVIRONMENT', defaultValue: 'development');
+  const env =
+      String.fromEnvironment('ENVIRONMENT', defaultValue: 'development');
 
   if (dsn.isEmpty) {
     runApp(const ProviderScope(child: MitlistApp()));

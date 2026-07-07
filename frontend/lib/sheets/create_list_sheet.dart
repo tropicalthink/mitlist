@@ -283,7 +283,8 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
             variant: AppButtonVariant.solid,
             color: AppButtonColor.primary,
             size: AppButtonSize.lg,
-            text: _isSubmitting ? l10n.recipeCreationCreating : l10n.commonCreate,
+            text:
+                _isSubmitting ? l10n.recipeCreationCreating : l10n.commonCreate,
             isLoading: _isSubmitting,
             onPressed: !_isLoadingGroups &&
                     !_isSubmitting &&

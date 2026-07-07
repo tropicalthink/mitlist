@@ -73,6 +73,11 @@ func (c *GoogleClient) RedirectURI() string {
 	return c.config.RedirectURL
 }
 
+// Configured reports whether the operator supplied Google OAuth credentials.
+func (c *GoogleClient) Configured() bool {
+	return c.config.ClientID != "" && c.config.ClientSecret != ""
+}
+
 // ExchangeCode exchanges an authorization code for an OAuth2 token.
 func (c *GoogleClient) ExchangeCode(code string) (*oauth2.Token, error) {
 	if c.config.ClientID == "" || c.config.ClientSecret == "" {

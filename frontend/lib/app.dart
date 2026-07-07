@@ -5,7 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'l10n/app_localizations.dart';
 import 'theme/theme.dart';
 import 'router.dart';
-import 'providers/list_provider.dart' show sseServiceProvider, grocerySeedProvider;
+import 'providers/list_provider.dart'
+    show sseServiceProvider, grocerySeedProvider;
 import 'providers/outbox_provider.dart';
 import 'services/api_client.dart' show dioProvider;
 import 'services/canonical_display.dart' show setGroceryDisplayLang;
@@ -38,8 +39,7 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
     WidgetsBinding.instance.addObserver(this);
 
     ErrorReporter().init(
-      dsn: const String.fromEnvironment('GLITCHTIP_DSN',
-          defaultValue: ''),
+      dsn: const String.fromEnvironment('GLITCHTIP_DSN', defaultValue: ''),
       environment: const String.fromEnvironment('ENVIRONMENT',
           defaultValue: 'development'),
     );
@@ -86,8 +86,7 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
           );
       });
 
-      _fcmTapSub =
-          FcmService.onNotificationTap.listen(_handleNotificationTap);
+      _fcmTapSub = FcmService.onNotificationTap.listen(_handleNotificationTap);
 
       FcmService.checkInitialMessage().then((msg) {
         if (msg != null) {

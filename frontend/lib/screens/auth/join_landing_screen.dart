@@ -119,7 +119,8 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
 
           // Code displayed in segmented mono style
           Semantics(
-            label: l10n.authJoinInviteCodeSemantic(widget.code.trim().toUpperCase()),
+            label: l10n
+                .authJoinInviteCodeSemantic(widget.code.trim().toUpperCase()),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

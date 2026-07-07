@@ -198,19 +198,18 @@ class GrocerySeedLoader {
     // Companion/Table insert machinery is the dominant cost — see
     // `AppDatabase.bulkInsertItemAliasesRaw` for the measured ~4x this saves
     // on top of the FTS-trigger drop.
-    final aliasRows = <
-        (
-          String,
-          String,
-          String,
-          String,
-          String,
-          String,
-          int,
-          int,
-          DateTime,
-          DateTime,
-        )>[];
+    final aliasRows = <(
+      String,
+      String,
+      String,
+      String,
+      String,
+      String,
+      int,
+      int,
+      DateTime,
+      DateTime,
+    )>[];
 
     for (final item in items) {
       final id = item['id'] as String;

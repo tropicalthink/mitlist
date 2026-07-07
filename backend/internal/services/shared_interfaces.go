@@ -47,4 +47,3 @@ type PushService interface {
 	BroadcastToGroup(groupID uuid.UUID, payload string) error
 	BroadcastToGroupExcluding(groupID, excludeUserID uuid.UUID, payload string) error
 }
-

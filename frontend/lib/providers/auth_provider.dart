@@ -5,12 +5,14 @@ import 'list_provider.dart' show appDatabaseProvider;
 
 /// Provider for the AuthService instance.
 final authServiceProvider = Provider<AuthService>((ref) {
-  throw const UnauthorizedException('AuthService not initialized. Call await ref.read(authServiceProvider.future) first.');
+  throw const UnauthorizedException(
+      'AuthService not initialized. Call await ref.read(authServiceProvider.future) first.');
 });
 
 final authServiceProviderAsync = FutureProvider<AuthService>((ref) async {
   final db = ref.read(appDatabaseProvider);
-  return await AuthService.createWithWipe(ref: ref, wipeLocalData: db.clearAllUserData);
+  return await AuthService.createWithWipe(
+      ref: ref, wipeLocalData: db.clearAllUserData);
 });
 
 /// Provider for authentication state.

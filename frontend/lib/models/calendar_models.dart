@@ -1,4 +1,10 @@
-enum CalendarEventType { mealPlan, chore, recurringExpense, pinwallReminder, expense }
+enum CalendarEventType {
+  mealPlan,
+  chore,
+  recurringExpense,
+  pinwallReminder,
+  expense
+}
 
 class CalendarEvent {
   final String id;
@@ -30,7 +36,9 @@ class CalendarEvent {
     final type = CalendarEventType.values.firstWhere(
       (e) => e.name == typeStr.replaceAll('_', ''),
       orElse: () {
-        if (typeStr == 'pinwall_reminder') return CalendarEventType.pinwallReminder;
+        if (typeStr == 'pinwall_reminder') {
+          return CalendarEventType.pinwallReminder;
+        }
         return CalendarEventType.mealPlan;
       },
     );

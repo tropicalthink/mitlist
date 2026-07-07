@@ -144,7 +144,8 @@ class GrocerySuggestionService {
     // "tomaden" → Tomaten). SAME indexed first-char + length-window prefilter as
     // the scanner's resolver, ranked by edit-distance similarity.
     if (ranked.length < limit) {
-      final fuzzy = await _db.getAliasFuzzyCandidates(groupId: groupId, query: q);
+      final fuzzy =
+          await _db.getAliasFuzzyCandidates(groupId: groupId, query: q);
       final bestSim = <String, double>{};
       for (final a in fuzzy) {
         if (seenIds.contains(a.canonicalItemId)) continue;

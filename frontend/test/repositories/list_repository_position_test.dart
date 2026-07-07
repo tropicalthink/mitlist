@@ -116,7 +116,8 @@ void main() {
         (r) => r.id != 'server-item-1' && r.id != 'server-item-2',
       );
       expect(pendingRow.position, equals(2),
-          reason: 'restored pending item must have position maxPos+1 = 2, not 0');
+          reason:
+              'restored pending item must have position maxPos+1 = 2, not 0');
       expect(pendingRow.name, equals('Pending Milk'));
 
       // No two items share the same position.

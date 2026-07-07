@@ -146,8 +146,8 @@ class DocumentRectifierService {
   /// returns exactly what [rectify()] returns — zero change to production
   /// scan behaviour. Enable only after Step-7 device verification confirms
   /// the sensorOrientation mapping.
-  DocumentRectifyResult rectifyWithHint(Uint8List jpegBytes,
-      CaptureCropHint? hint) {
+  DocumentRectifyResult rectifyWithHint(
+      Uint8List jpegBytes, CaptureCropHint? hint) {
     final result = rectify(jpegBytes); // existing quad path, unchanged
     if (!kEnableBoundaryCrop || result.rectified || hint == null) return result;
     final m = mapStreamRectToImage(hint);

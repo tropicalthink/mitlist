@@ -97,7 +97,8 @@ class PinwallStatRow extends StatelessWidget {
                         if (subtitle != null)
                           Text(
                             subtitle!,
-                            style: textTheme.labelSmall?.copyWith(color: accent),
+                            style:
+                                textTheme.labelSmall?.copyWith(color: accent),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -275,11 +276,14 @@ class PinwallFinanceStatRow extends ConsumerWidget {
     // as-is from the two original implementations.
     final settledAccent =
         style == PinwallStatRowStyle.indexCard ? muted : theme.onSurfaceVariant;
-    final accent =
-        balance > 0 ? theme.tertiary : (balance < 0 ? theme.error : settledAccent);
+    final accent = balance > 0
+        ? theme.tertiary
+        : (balance < 0 ? theme.error : settledAccent);
     final amount = balance > 0
         ? '+\$${_formatCents(balance)}'
-        : (balance < 0 ? '-\$${_formatCents(-balance)}' : '\$${_formatCents(balance)}');
+        : (balance < 0
+            ? '-\$${_formatCents(-balance)}'
+            : '\$${_formatCents(balance)}');
 
     final String value;
     final String? subtitle;
@@ -287,7 +291,8 @@ class PinwallFinanceStatRow extends ConsumerWidget {
       value = amount;
       subtitle = balance != 0 ? l10n.hubStatsOpen : l10n.expenseSettled;
     } else {
-      value = '$amount · ${balance != 0 ? l10n.hubStatsOpen : l10n.expenseSettled}';
+      value =
+          '$amount · ${balance != 0 ? l10n.hubStatsOpen : l10n.expenseSettled}';
       subtitle = null;
     }
 

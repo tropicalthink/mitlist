@@ -198,7 +198,10 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       if (!mounted || rate == null || rate <= 0) return;
       setState(() {
         _fxRate = rate;
-        _fxRateController.text = rate.toStringAsFixed(6).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+        _fxRateController.text = rate
+            .toStringAsFixed(6)
+            .replaceAll(RegExp(r'0+$'), '')
+            .replaceAll(RegExp(r'\.$'), '');
         _rateAutoFilled = true;
         _fxRateError = null;
       });
@@ -244,8 +247,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
 
     // Splits and balances live in the household base currency, so the split
     // summary is reconciled against the converted (base) amount.
-    final baseAmount =
-        _isForeignCurrency ? (amount * _fxRate).round() : amount;
+    final baseAmount = _isForeignCurrency ? (amount * _fxRate).round() : amount;
 
     final summary = computeSplitSummary(
       l10n: l10n,
@@ -353,7 +355,9 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       if (!mounted) return;
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
+        SnackBar(
+            content:
+                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -480,8 +484,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
           AppInput(
             hint: l10n.expenseCreationRateHint(_currency, _groupCurrency),
             controller: _fxRateController,
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
             errorText: _fxRateError,
             onChanged: (value) {
               _markDirty();
@@ -694,9 +697,8 @@ SplitSummary computeSplitSummary({
         if (v < 0 || v > 100) outOfRange = true;
         sum += v;
       }
-      final sumLabel = sum % 1 == 0
-          ? sum.toStringAsFixed(0)
-          : sum.toStringAsFixed(1);
+      final sumLabel =
+          sum % 1 == 0 ? sum.toStringAsFixed(0) : sum.toStringAsFixed(1);
       if (outOfRange) {
         return SplitSummary(
           l10n.expenseCreationSplitPercentRange(sumLabel),
@@ -704,7 +706,8 @@ SplitSummary computeSplitSummary({
         );
       }
       final balanced = (sum - 100).abs() < 0.05;
-      return SplitSummary(l10n.expenseCreationSplitPercentOf100(sumLabel), balanced);
+      return SplitSummary(
+          l10n.expenseCreationSplitPercentOf100(sumLabel), balanced);
 
     case 'shares':
       var totalShares = 0;
@@ -930,8 +933,10 @@ class _SplitOptions extends StatelessWidget {
                 AnimatedCheckToggle(
                   value: selected,
                   onChanged: (value) => onMemberChanged(member.userId, value),
-                  semanticLabelOn: l10n.expenseCreationRemoveFromSplit(member.displayName),
-                  semanticLabelOff: l10n.expenseCreationAddToSplit(member.displayName),
+                  semanticLabelOn:
+                      l10n.expenseCreationRemoveFromSplit(member.displayName),
+                  semanticLabelOff:
+                      l10n.expenseCreationAddToSplit(member.displayName),
                 ),
                 Expanded(
                   child: Text(
@@ -946,7 +951,8 @@ class _SplitOptions extends StatelessWidget {
                   SizedBox(
                     width: splitMode == 'amount' ? 116 : 96,
                     child: Semantics(
-                      label: '${member.displayName} ${_valueLabel(splitMode, context)}',
+                      label:
+                          '${member.displayName} ${_valueLabel(splitMode, context)}',
                       child: AppInput(
                         // Money fields read as money: a currency prefix and a
                         // "0.00" hint, matching the main amount input. Shares
@@ -1000,14 +1006,18 @@ class _SplitOptions extends StatelessWidget {
 
   String _modeHint(String mode, BuildContext context) => switch (mode) {
         'amount' => AppLocalizations.of(context)!.expenseCreationSplitHintExact,
-        'percentage' => AppLocalizations.of(context)!.expenseCreationSplitHintPercent,
-        'shares' => AppLocalizations.of(context)!.expenseCreationSplitHintShares,
+        'percentage' =>
+          AppLocalizations.of(context)!.expenseCreationSplitHintPercent,
+        'shares' =>
+          AppLocalizations.of(context)!.expenseCreationSplitHintShares,
         _ => AppLocalizations.of(context)!.expenseCreationSplitHintEqual,
       };
 
   String _valueLabel(String mode, BuildContext context) => switch (mode) {
-        'amount' => AppLocalizations.of(context)!.expenseCreationSplitValuesAmount,
-        'percentage' => AppLocalizations.of(context)!.expenseCreationSplitValuesPercent,
+        'amount' =>
+          AppLocalizations.of(context)!.expenseCreationSplitValuesAmount,
+        'percentage' =>
+          AppLocalizations.of(context)!.expenseCreationSplitValuesPercent,
         _ => AppLocalizations.of(context)!.expenseCreationSplitSharesLabel,
       };
 }

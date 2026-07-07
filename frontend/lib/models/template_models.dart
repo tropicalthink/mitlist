@@ -41,7 +41,8 @@ class ChoreTemplateModel {
     required this.updatedAt,
   });
 
-  factory ChoreTemplateModel.fromJson(Map<String, dynamic> json) => ChoreTemplateModel(
+  factory ChoreTemplateModel.fromJson(Map<String, dynamic> json) =>
+      ChoreTemplateModel(
         id: json['id'] as String,
         groupId: json['group_id'] as String,
         name: json['name'] as String,
@@ -94,11 +95,11 @@ class UpdateChoreTemplateRequest {
   final String? name;
   final String? rotationType;
   final String? frequency;
-  const UpdateChoreTemplateRequest({this.name, this.rotationType, this.frequency});
+  const UpdateChoreTemplateRequest(
+      {this.name, this.rotationType, this.frequency});
   Map<String, dynamic> toJson() => {
         if (name != null) 'name': name,
         if (rotationType != null) 'rotation_type': rotationType,
         if (frequency != null) 'frequency': frequency,
       };
 }
-

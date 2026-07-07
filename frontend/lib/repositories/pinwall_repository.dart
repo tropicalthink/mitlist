@@ -66,8 +66,10 @@ class PinwallRepository {
     return _decode(row?.postsJson);
   }
 
-  Future<void> refreshPosts(String groupId, {int limit = 20, int offset = 0}) async {
-    final posts = await _remote.listPosts(groupId, limit: limit, offset: offset);
+  Future<void> refreshPosts(String groupId,
+      {int limit = 20, int offset = 0}) async {
+    final posts =
+        await _remote.listPosts(groupId, limit: limit, offset: offset);
     await _db.upsertPinwallPosts(
       groupId: groupId,
       postsJson: jsonEncode(posts.map((p) => p.toJson()).toList()),
@@ -198,4 +200,3 @@ class PinwallRepository {
     }
   }
 }
-

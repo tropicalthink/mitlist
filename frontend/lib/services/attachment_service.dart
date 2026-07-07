@@ -69,7 +69,8 @@ class AttachmentService {
         ),
       );
     } on DioException catch (e) {
-      _logger.e('Presigned upload failed: ${e.response?.statusCode} ${e.response?.data}');
+      _logger.e(
+          'Presigned upload failed: ${e.response?.statusCode} ${e.response?.data}');
       rethrow;
     }
   }
@@ -110,4 +111,3 @@ class AttachmentService {
     );
   }
 }
-

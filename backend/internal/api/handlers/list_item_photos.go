@@ -111,4 +111,3 @@ func (h *ListItemPhotoHandler) Detach(w http.ResponseWriter, r *http.Request) {
 	}
 	api.RespondJSON(w, http.StatusNoContent, nil)
 }
-

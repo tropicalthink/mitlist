@@ -341,8 +341,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
           ? _shortUserLabel(details!.pendingAssignment!.userId)
           : chore.assigneeInitials,
       frequencyLabel: details != null
-          ? _frequencyLabel(_l10n, details.chore.frequency,
-              details.chore.periodInterval)
+          ? _frequencyLabel(
+              _l10n, details.chore.frequency, details.chore.periodInterval)
           : _frequencyLabel(_l10n, chore.frequency, chore.periodInterval),
       dueDate: details?.pendingAssignment?.dueDate ?? chore.dueDate,
       trackedCount: details?.stats.trackedCount,
@@ -412,7 +412,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         } catch (e) {
           if (!mounted) return;
           unawaited(Haptics.failure());
-          _showChoreActionError(friendlyErrorMessage(e, AppLocalizations.of(context)!));
+          _showChoreActionError(
+              friendlyErrorMessage(e, AppLocalizations.of(context)!));
         } finally {
           _isMutating = false;
         }
@@ -544,8 +545,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     if (!mounted) return;
     setState(() {
       _settlingIds.remove(id);
-      final entryIdx = _recentlyDone.indexWhere(
-          (e) => e.choreId == id && e.restoreChore != null);
+      final entryIdx = _recentlyDone
+          .indexWhere((e) => e.choreId == id && e.restoreChore != null);
       if (entryIdx != -1) {
         final entry = _recentlyDone.removeAt(entryIdx);
         entry.restoreChore!.completed = false;
@@ -565,8 +566,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       await repo.undoOfflineFirst(id, groupId: _groupId);
     } catch (e) {
       if (!mounted) return;
-      _showChoreActionError(
-          _l10n.choreFailedUndo);
+      _showChoreActionError(_l10n.choreFailedUndo);
     }
   }
 
@@ -673,8 +673,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       await repo.undoOfflineFirst(id, groupId: _groupId);
     } catch (e) {
       if (!mounted) return;
-      _showChoreActionError(
-          _l10n.choreFailedUndo);
+      _showChoreActionError(_l10n.choreFailedUndo);
     } finally {
       _isMutating = false;
     }
@@ -713,7 +712,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     } catch (e) {
       if (!mounted) return;
       unawaited(Haptics.failure());
-      _showChoreActionError(friendlyErrorMessage(e, AppLocalizations.of(context)!));
+      _showChoreActionError(
+          friendlyErrorMessage(e, AppLocalizations.of(context)!));
     } finally {
       _isMutating = false;
     }
@@ -903,8 +903,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       title: l10n.choreNoHouseholdTitle,
-                      description:
-                          l10n.choreNoHouseholdDesc,
+                      description: l10n.choreNoHouseholdDesc,
                       actions: [
                         AppButton(
                           text: l10n.choreGoToHouseholds,
@@ -929,8 +928,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       title: l10n.choreNoChoresTitle,
-                      description:
-                          l10n.choreNoChoresDesc,
+                      description: l10n.choreNoChoresDesc,
                       actions: [
                         AppButton(
                           text: l10n.choreAddAChore,
@@ -1026,8 +1024,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                         color: Theme.of(context).colorScheme.tertiary,
                       ),
                       title: l10n.choreNothingOnYou,
-                      description:
-                          l10n.choreNothingOnYouDesc,
+                      description: l10n.choreNothingOnYouDesc,
                       actions: [
                         AppButton(
                           text: l10n.choreSeeEveryonesChores,
@@ -1052,8 +1049,9 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                                 .surfaceContainerLow,
                             border: Border(
                               bottom: BorderSide(
-                                color:
-                                    Theme.of(context).colorScheme.outlineVariant,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .outlineVariant,
                               ),
                             ),
                           ),
@@ -1779,8 +1777,11 @@ class _ChoreItem extends StatelessWidget {
                           if (chore.supplies.isNotEmpty)
                             _MetaChip(
                               icon: 'inventoryOutline',
-                              label:
-                                  chore.supplies.length == 1 ? l10n.choreSupplySingular(chore.supplies.length) : l10n.choreSupplyPlural(chore.supplies.length),
+                              label: chore.supplies.length == 1
+                                  ? l10n.choreSupplySingular(
+                                      chore.supplies.length)
+                                  : l10n
+                                      .choreSupplyPlural(chore.supplies.length),
                               color: colorScheme.onSurfaceVariant,
                             ),
                         ],

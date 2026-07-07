@@ -135,7 +135,8 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
     });
 
     try {
-      final shareService = await ref.read(shareTargetServiceProviderAsync.future);
+      final shareService =
+          await ref.read(shareTargetServiceProviderAsync.future);
 
       if (_selectedDestination == 'lists') {
         final groupId = await _pickGroupId();
@@ -164,7 +165,8 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
         );
 
         if (_pendingMedia.isNotEmpty) {
-          final attachmentRepo = await ref.read(attachmentRepositoryProvider.future);
+          final attachmentRepo =
+              await ref.read(attachmentRepositoryProvider.future);
           for (final f in List<XFile>.from(_pendingMedia)) {
             final bytes = await f.readAsBytes();
             final a = await attachmentRepo.uploadAttachment(
@@ -318,9 +320,8 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
                     variant: isSelected
                         ? AppCardVariant.elevated
                         : AppCardVariant.outlined,
-                    tint: isSelected
-                        ? AppCardTint.primary
-                        : AppCardTint.neutral,
+                    tint:
+                        isSelected ? AppCardTint.primary : AppCardTint.neutral,
                     interactive: true,
                     onTap: () => _onDestinationTapped(option.id),
                     semanticLabel: isSelected
@@ -365,7 +366,8 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
           padding: const EdgeInsets.all(MitlistSpacing.md),
           child: AppButton(
             text: l10n.commonSave,
-            onPressed: (_selectedDestination != null && !_isSaving) ? _onSave : null,
+            onPressed:
+                (_selectedDestination != null && !_isSaving) ? _onSave : null,
           ),
         ),
       ),

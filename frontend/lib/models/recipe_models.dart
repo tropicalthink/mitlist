@@ -428,8 +428,8 @@ class RecipeClipResponse {
       ingredients: (ing is List)
           ? ing
               .whereType<Map>()
-              .map((e) => RecipeClipIngredient.fromJson(
-                  e.cast<String, dynamic>()))
+              .map((e) =>
+                  RecipeClipIngredient.fromJson(e.cast<String, dynamic>()))
               .toList()
           : const [],
       imageUrl: json['image_url'] as String?,
@@ -462,7 +462,8 @@ class RecipeIngredient {
     this.position = 0,
   });
 
-  factory RecipeIngredient.fromJson(Map<String, dynamic> json) => RecipeIngredient(
+  factory RecipeIngredient.fromJson(Map<String, dynamic> json) =>
+      RecipeIngredient(
         id: json['id'] as String,
         recipeId: json['recipe_id'] as String,
         name: json['name'] as String? ?? '',

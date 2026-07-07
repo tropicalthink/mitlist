@@ -676,7 +676,9 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
             size: AppButtonSize.sm,
             variant: AppButtonVariant.outline,
             color: AppButtonColor.neutral,
-            text: _isScraping ? l10n.recipeCreationFetching : l10n.recipeCreationFetchDetails,
+            text: _isScraping
+                ? l10n.recipeCreationFetching
+                : l10n.recipeCreationFetchDetails,
             isLoading: _isScraping,
             onPressed: _canScrape ? _onScrape : null,
           ),
@@ -838,8 +840,9 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppInput(
-          label:
-              _mode == _RecipeEntryMode.url ? l10n.recipeCreationTitleOverride : l10n.recipeCreationTitleInput,
+          label: _mode == _RecipeEntryMode.url
+              ? l10n.recipeCreationTitleOverride
+              : l10n.recipeCreationTitleInput,
           hint: l10n.recipeCreationTitleHint,
           controller: _titleController,
           textInputAction: TextInputAction.next,
@@ -987,7 +990,9 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
                       onPressed: _canGoNext ? _goNext : null,
                     )
                   : AppButton(
-                      text: _isSaving ? l10n.recipeCreationCreating : l10n.recipeCreationCreateRecipe,
+                      text: _isSaving
+                          ? l10n.recipeCreationCreating
+                          : l10n.recipeCreationCreateRecipe,
                       variant: AppButtonVariant.solid,
                       color: AppButtonColor.primary,
                       size: AppButtonSize.lg,

@@ -75,8 +75,8 @@ func TestExpenses_Receipts_AttachAndList(t *testing.T) {
 
 	// Attach
 	rec := execRequest(t, r, "POST", "/expenses/"+exp.ID.String()+"/receipts", map[string]any{
-		"group_id":       group.ID,
-		"attachment_id":  att.ID,
+		"group_id":      group.ID,
+		"attachment_id": att.ID,
 	}, generateTestToken(user.ID))
 	requireStatus(t, rec, 204)
 

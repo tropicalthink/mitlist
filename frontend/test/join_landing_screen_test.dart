@@ -38,8 +38,7 @@ Widget _buildApp(String code, FakeGroupService fakeGroupService) {
   final router = _buildRouter(code, fakeGroupService);
   return ProviderScope(
     overrides: [
-      groupServiceProviderAsync
-          .overrideWith((ref) async => fakeGroupService),
+      groupServiceProviderAsync.overrideWith((ref) async => fakeGroupService),
     ],
     child: MaterialApp.router(
       routerConfig: router,
@@ -69,7 +68,11 @@ void main() {
     testWidgets('tapping Join household calls joinGroup with uppercased code',
         (tester) async {
       final fake = FakeGroupService();
-      fake.joinResult = Group(id: 'g1', name: 'My House', createdAt: DateTime.utc(2026, 1, 1), updatedAt: DateTime.utc(2026, 1, 1));
+      fake.joinResult = Group(
+          id: 'g1',
+          name: 'My House',
+          createdAt: DateTime.utc(2026, 1, 1),
+          updatedAt: DateTime.utc(2026, 1, 1));
 
       await tester.pumpWidget(_buildApp('sunny-taco', fake));
       await tester.pump();
@@ -84,7 +87,11 @@ void main() {
 
     testWidgets('shows success state after successful join', (tester) async {
       final fake = FakeGroupService();
-      fake.joinResult = Group(id: 'g1', name: 'My House', createdAt: DateTime.utc(2026, 1, 1), updatedAt: DateTime.utc(2026, 1, 1));
+      fake.joinResult = Group(
+          id: 'g1',
+          name: 'My House',
+          createdAt: DateTime.utc(2026, 1, 1),
+          updatedAt: DateTime.utc(2026, 1, 1));
 
       await tester.pumpWidget(_buildApp('ABCD-1234', fake));
       await tester.pump();
@@ -129,7 +136,11 @@ void main() {
     testWidgets('Go to household navigates to home after success',
         (tester) async {
       final fake = FakeGroupService();
-      fake.joinResult = Group(id: 'g1', name: 'My House', createdAt: DateTime.utc(2026, 1, 1), updatedAt: DateTime.utc(2026, 1, 1));
+      fake.joinResult = Group(
+          id: 'g1',
+          name: 'My House',
+          createdAt: DateTime.utc(2026, 1, 1),
+          updatedAt: DateTime.utc(2026, 1, 1));
 
       await tester.pumpWidget(_buildApp('ABCD-1234', fake));
       await tester.pump();

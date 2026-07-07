@@ -13,7 +13,9 @@ final shellVisitedTabsProvider = StateProvider<Set<int>>(
 );
 
 void markShellTabVisited(WidgetRef ref, int index) {
-  ref.read(shellVisitedTabsProvider.notifier).update((tabs) => {...tabs, index});
+  ref
+      .read(shellVisitedTabsProvider.notifier)
+      .update((tabs) => {...tabs, index});
 }
 
 /// Returns true when [tabIndex] has been visited and [onActivate] should run.

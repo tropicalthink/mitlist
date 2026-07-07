@@ -27,7 +27,9 @@ class ChoreRepository {
         _uuid = uuid ?? const Uuid();
 
   Stream<List<CurrentChore>> watchCurrentChores(String groupId) {
-    return _db.watchCurrentChores(groupId).map((row) => _decode(row?.choresJson));
+    return _db
+        .watchCurrentChores(groupId)
+        .map((row) => _decode(row?.choresJson));
   }
 
   Future<List<CurrentChore>> getCurrentChoresOnce(String groupId) async {
@@ -39,7 +41,8 @@ class ChoreRepository {
     final remote = await _remote.listCurrentChores(groupId);
     await _db.upsertCurrentChores(
       groupId: groupId,
-      choresJson: jsonEncode(remote.map((c) => _encodeCurrentChore(c)).toList()),
+      choresJson:
+          jsonEncode(remote.map((c) => _encodeCurrentChore(c)).toList()),
     );
   }
 
@@ -60,7 +63,8 @@ class ChoreRepository {
     }
   }
 
-  Future<void> skipOfflineFirst(String choreId, {String? reason, String? groupId}) async {
+  Future<void> skipOfflineFirst(String choreId,
+      {String? reason, String? groupId}) async {
     await _db.enqueueOutbox(
       id: _uuid.v4(),
       type: 'skipChore',
@@ -214,7 +218,12 @@ class ChoreRepository {
 
   Future<void> drainOutboxOnce() async {
     await OutboxDrainer(_db).drain(
-      types: const ['completeChore', 'skipChore', 'rescheduleChore', 'undoChore'],
+      types: const [
+        'completeChore',
+        'skipChore',
+        'rescheduleChore',
+        'undoChore'
+      ],
       handlers: {
         'completeChore': (op, payload) async {
           await _remote.completeChore(payload['choreId'] as String);
@@ -301,7 +310,8 @@ class ChoreRepository {
                 'user_id': c.pendingAssignment!.userId,
                 'status': c.pendingAssignment!.status,
                 'due_date': c.pendingAssignment!.dueDate?.toIso8601String(),
-                'assigned_at': c.pendingAssignment!.assignedAt.toIso8601String(),
+                'assigned_at':
+                    c.pendingAssignment!.assignedAt.toIso8601String(),
                 'completed_at':
                     c.pendingAssignment!.completedAt?.toIso8601String(),
               },
@@ -314,10 +324,10 @@ class ChoreRepository {
                 'status': c.lastAssignment!.status,
                 'due_date': c.lastAssignment!.dueDate?.toIso8601String(),
                 'assigned_at': c.lastAssignment!.assignedAt.toIso8601String(),
-                'completed_at': c.lastAssignment!.completedAt?.toIso8601String(),
+                'completed_at':
+                    c.lastAssignment!.completedAt?.toIso8601String(),
               },
         'due_status': c.dueStatus,
         'assigned_to_me': c.assignedToMe,
       };
 }
-

@@ -160,9 +160,8 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
     final pressOffset = MitlistShadows.shadowSoft[0].offset;
     final hoverOffset = Offset(-pressOffset.dx, -pressOffset.dy);
 
-    final translation = _pressed
-        ? pressOffset
-        : (_hovered ? hoverOffset : Offset.zero);
+    final translation =
+        _pressed ? pressOffset : (_hovered ? hoverOffset : Offset.zero);
 
     final currentShadow = _pressed
         ? MitlistShadows.shadowNone

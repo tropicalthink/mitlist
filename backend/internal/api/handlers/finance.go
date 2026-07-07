@@ -731,16 +731,16 @@ func (h *FinanceHandler) UpdateRecurringExpense(w http.ResponseWriter, r *http.R
 	}
 
 	var req struct {
-		PayerID     *uuid.UUID                    `json:"payer_id,omitempty"`
-		Amount      *int64                        `json:"amount,omitempty"`
-		Description *string                       `json:"description,omitempty"`
-		Category    *string                       `json:"category,omitempty"`
-		Currency    *string                       `json:"currency,omitempty"`
-		Frequency   *string                       `json:"frequency,omitempty"`
-		NextDue     *time.Time                    `json:"next_due,omitempty"`
-		IsActive    *bool                         `json:"is_active,omitempty"`
-		SplitMode   *string                       `json:"split_mode,omitempty"`
-		SplitInputs []models.RecurringSplitInput  `json:"split_inputs,omitempty"`
+		PayerID     *uuid.UUID                   `json:"payer_id,omitempty"`
+		Amount      *int64                       `json:"amount,omitempty"`
+		Description *string                      `json:"description,omitempty"`
+		Category    *string                      `json:"category,omitempty"`
+		Currency    *string                      `json:"currency,omitempty"`
+		Frequency   *string                      `json:"frequency,omitempty"`
+		NextDue     *time.Time                   `json:"next_due,omitempty"`
+		IsActive    *bool                        `json:"is_active,omitempty"`
+		SplitMode   *string                      `json:"split_mode,omitempty"`
+		SplitInputs []models.RecurringSplitInput `json:"split_inputs,omitempty"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})

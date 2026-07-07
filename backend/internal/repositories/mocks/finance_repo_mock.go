@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/mock"
 	"github.com/mitlist-app/mitlist/internal/models"
+	"github.com/stretchr/testify/mock"
 )
 
 // MockFinanceRepo is a mock implementation of repositories.FinanceRepoIface.

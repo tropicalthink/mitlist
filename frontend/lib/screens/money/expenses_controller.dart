@@ -353,8 +353,9 @@ class ExpensesController extends ChangeNotifier {
     _balances = summary.balances
         .map((balance) => BalanceDisplayEntry(
               userId: balance.userId,
-              name:
-                  balance.userId == currentUserId ? l10n.activityYou : balance.displayName,
+              name: balance.userId == currentUserId
+                  ? l10n.activityYou
+                  : balance.displayName,
               amount: balance.total / 100.0,
             ))
         .toList();
@@ -453,7 +454,9 @@ class ExpensesController extends ChangeNotifier {
     final today = DateTime(now.year, now.month, now.day);
     final d = DateTime(date.year, date.month, date.day);
     if (d == today) return l10n.expenseToday;
-    if (d == today.subtract(const Duration(days: 1))) return l10n.expenseYesterday;
+    if (d == today.subtract(const Duration(days: 1))) {
+      return l10n.expenseYesterday;
+    }
     return DateFormat('MMMM d').format(date);
   }
 

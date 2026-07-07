@@ -127,7 +127,8 @@ void main() {
       expect(find.text('5'), findsOneWidget);
     });
 
-    testWidgets('scaled quantity updates after tapping stepper', (tester) async {
+    testWidgets('scaled quantity updates after tapping stepper',
+        (tester) async {
       await tester.pumpWidget(_buildScreen(recipe: _fakeRecipe(servings: 4)));
       await tester.pump();
       // At 4 servings, flour is 300g.
@@ -192,7 +193,8 @@ void main() {
       expect(find.text('Finished — nice work'), findsOneWidget);
     });
 
-    testWidgets('Ingredients handle is visible during cook flow', (tester) async {
+    testWidgets('Ingredients handle is visible during cook flow',
+        (tester) async {
       await startCooking(tester);
       // The ingredients handle shows "Ingredients" label text.
       expect(find.text('Ingredients'), findsOneWidget);
@@ -203,7 +205,8 @@ void main() {
       expect(find.text('Step 1'), findsOneWidget);
     });
 
-    testWidgets('advancing through all steps reaches finished state', (tester) async {
+    testWidgets('advancing through all steps reaches finished state',
+        (tester) async {
       await startCooking(tester);
       for (int i = 0; i < _steps.length - 1; i++) {
         expect(find.text('Done →'), findsOneWidget);

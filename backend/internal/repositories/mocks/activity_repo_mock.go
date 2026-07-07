@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/mock"
 	"github.com/mitlist-app/mitlist/internal/models"
+	"github.com/stretchr/testify/mock"
 )
 
 // MockActivityRepo is a mock implementation of repositories.ActivityRepo.

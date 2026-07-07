@@ -25,7 +25,8 @@ class OutboxDrainer {
       if (fresh == null) continue;
       Map<String, dynamic> payload;
       try {
-        payload = (jsonDecode(fresh.payloadJson) as Map).cast<String, dynamic>();
+        payload =
+            (jsonDecode(fresh.payloadJson) as Map).cast<String, dynamic>();
       } catch (_) {
         await _db.deleteOutboxOp(op.id);
         continue;
@@ -38,7 +39,8 @@ class OutboxDrainer {
       try {
         await handler(fresh, payload);
       } catch (e) {
-        final message = e is DioException ? ApiErrorMapper.fromDio(e) : 'Sync failed.';
+        final message =
+            e is DioException ? ApiErrorMapper.fromDio(e) : 'Sync failed.';
         switch (classifyOutboxError(e)) {
           case OutboxErrorDisposition.transient:
             await _db.markOutboxAttempt(op.id, error: message);

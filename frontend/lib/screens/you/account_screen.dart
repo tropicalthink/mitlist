@@ -128,14 +128,24 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   Future<void> _saveName() async {
     if (_isSaving) return;
     _isSaving = true;
-    if (!_isEditingName) { _isSaving = false; return; }
+    if (!_isEditingName) {
+      _isSaving = false;
+      return;
+    }
     final newName = _nameController.text.trim();
     setState(() => _isEditingName = false);
-    if (newName.isEmpty) { _isSaving = false; return; }
+    if (newName.isEmpty) {
+      _isSaving = false;
+      return;
+    }
     final l10n2 = AppLocalizations.of(context)!;
     try {
       final authService = await ref.read(authServiceProviderAsync.future);
-      await authService.updateMe(UpdateUserRequest(firstName: newName.split(' ')[0], lastName: newName.contains(' ') ? newName.split(' ').sublist(1).join(' ') : ''));
+      await authService.updateMe(UpdateUserRequest(
+          firstName: newName.split(' ')[0],
+          lastName: newName.contains(' ')
+              ? newName.split(' ').sublist(1).join(' ')
+              : ''));
       setState(() => _name = newName);
     } catch (e) {
       if (mounted) setState(() => _error = l10n2.accountFailedSaveName);
@@ -169,8 +179,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               return;
             }
             if (newPassword.length < 6) {
-              setSheetState(
-                  () => error = l10n.accountPasswordMinLength);
+              setSheetState(() => error = l10n.accountPasswordMinLength);
               return;
             }
             if (newPassword != confirmPassword) {
@@ -184,7 +193,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             });
 
             try {
-              final authService = await ref.read(authServiceProviderAsync.future);
+              final authService =
+                  await ref.read(authServiceProviderAsync.future);
               await authService.changePassword(
                 ChangePasswordRequest(
                   oldPassword: currentPassword,
@@ -235,7 +245,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               ),
               const SizedBox(height: MitlistSpacing.lg),
               AppButton(
-                text: isSaving ? l10n.commonSaving : l10n.accountChangePasswordButton,
+                text: isSaving
+                    ? l10n.commonSaving
+                    : l10n.accountChangePasswordButton,
                 onPressed: isSaving ? null : submit,
               ),
             ],
@@ -276,8 +288,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       unawaited(ref.read(currentGroupIdProvider.notifier).set(null));
       ref.invalidate(cachedGroupsProvider);
       ref.invalidate(hubQuickStartDismissedProvider);
-    } catch (_) {
-    }
+    } catch (_) {}
     if (mounted) context.goNamed('welcome');
     _isSaving = false;
   }
@@ -304,7 +315,10 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         ),
       ],
     );
-    if (confirmed != true || !mounted) { _isSaving = false; return; }
+    if (confirmed != true || !mounted) {
+      _isSaving = false;
+      return;
+    }
     try {
       final authService = await ref.read(authServiceProviderAsync.future);
       await authService.deleteMe();
@@ -318,7 +332,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
+        SnackBar(
+            content:
+                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     } finally {
       _isSaving = false;
@@ -444,35 +460,39 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               button: true,
               label: l10n.accountSwitchToHousehold(h.name),
               child: InkWell(
-              onTap: () {
-                setState(() => _activeHouseholdId = h.id);
-                ref.read(currentGroupIdProvider.notifier).set(h.id);
-                context.goNamed('home');
-              },
-              borderRadius: BorderRadius.zero,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        h.name,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                            ),
+                onTap: () {
+                  setState(() => _activeHouseholdId = h.id);
+                  ref.read(currentGroupIdProvider.notifier).set(h.id);
+                  context.goNamed('home');
+                },
+                borderRadius: BorderRadius.zero,
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          h.name,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontWeight: isActive
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                  ),
+                        ),
                       ),
-                    ),
-                    if (isActive)
-                      AppIcon(
-                        name: 'check',
-                        size: 18,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                  ],
+                      if (isActive)
+                        AppIcon(
+                          name: 'check',
+                          size: 18,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
+            );
           }),
         ],
       ),
@@ -507,9 +527,15 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               underline: const SizedBox.shrink(),
               isDense: true,
               items: [
-                DropdownMenuItem(value: ThemeMode.system, child: Text(l10n.accountAppearanceSystem)),
-                DropdownMenuItem(value: ThemeMode.light, child: Text(l10n.accountAppearanceLight)),
-                DropdownMenuItem(value: ThemeMode.dark, child: Text(l10n.accountAppearanceDark)),
+                DropdownMenuItem(
+                    value: ThemeMode.system,
+                    child: Text(l10n.accountAppearanceSystem)),
+                DropdownMenuItem(
+                    value: ThemeMode.light,
+                    child: Text(l10n.accountAppearanceLight)),
+                DropdownMenuItem(
+                    value: ThemeMode.dark,
+                    child: Text(l10n.accountAppearanceDark)),
               ],
               onChanged: (mode) {
                 if (mode != null) {
@@ -527,9 +553,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               underline: const SizedBox.shrink(),
               isDense: true,
               items: [
-                DropdownMenuItem(value: null, child: Text(l10n.accountLanguageSystem)),
+                DropdownMenuItem(
+                    value: null, child: Text(l10n.accountLanguageSystem)),
                 ...LocaleNotifier.availableLanguages.entries.map(
-                  (e) => DropdownMenuItem(value: Locale(e.key), child: Text(e.value)),
+                  (e) => DropdownMenuItem(
+                      value: Locale(e.key), child: Text(e.value)),
                 ),
               ],
               onChanged: (loc) {
@@ -625,11 +653,15 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       final file = File('${dir.path}/mitlist_expenses.$extension');
       await file.writeAsString(data);
 
-      await Share.shareXFiles([XFile(file.path, mimeType: mime)]);
+      await SharePlus.instance.share(
+        ShareParams(files: [XFile(file.path, mimeType: mime)]),
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
+        SnackBar(
+            content:
+                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     } finally {
       if (mounted) setState(() => _isExporting = false);
@@ -654,7 +686,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
+        SnackBar(
+            content:
+                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -679,7 +713,10 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             setLocal(() => sheetError = l10n.accountFillAllFields);
             return;
           }
-          setLocal(() { isConverting = true; sheetError = null; });
+          setLocal(() {
+            isConverting = true;
+            sheetError = null;
+          });
           try {
             final authSvc = await ref.read(authServiceProviderAsync.future);
             final parts = name.split(' ');
@@ -699,7 +736,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           } catch (e) {
             setLocal(() {
               isConverting = false;
-              sheetError = friendlyErrorMessage(e, AppLocalizations.of(context)!);
+              sheetError =
+                  friendlyErrorMessage(e, AppLocalizations.of(context)!);
             });
           }
         }
@@ -739,7 +777,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             ],
             const SizedBox(height: MitlistSpacing.lg),
             AppButton(
-              text: isConverting ? l10n.accountCreatingAccount : l10n.accountCreateAccount,
+              text: isConverting
+                  ? l10n.accountCreatingAccount
+                  : l10n.accountCreateAccount,
               variant: AppButtonVariant.solid,
               color: AppButtonColor.primary,
               size: AppButtonSize.lg,
@@ -830,9 +870,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           _MenuRow(
             icon: const AppIcon(name: 'copy'),
             label: l10n.accountCopyJSON,
-            onTap: _activeHouseholdId == null
-                ? null
-                : _copyExpensesJson,
+            onTap: _activeHouseholdId == null ? null : _copyExpensesJson,
           ),
         ],
       ),
@@ -883,37 +921,38 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(MitlistSpacing.md),
           children: [
-          if (_error != null) ...[
-            AppAlert(type: AppAlertType.error, message: _error!),
+            if (_error != null) ...[
+              AppAlert(type: AppAlertType.error, message: _error!),
+              const SizedBox(height: MitlistSpacing.md),
+              AppButton(
+                text: l10n.commonRetry,
+                onPressed: _loadData,
+              ),
+              const SizedBox(height: MitlistSpacing.md),
+            ],
+            if (_isLoading) ...[
+              _buildSkeletonProfileCard(),
+              const SizedBox(height: MitlistSpacing.md),
+            ] else ...[
+              _buildProfileCard(),
+              const SizedBox(height: MitlistSpacing.md),
+            ],
+            _buildHouseholdCard(),
+            if (_households.length >= 2)
+              const SizedBox(height: MitlistSpacing.md),
+            _buildGuestUpgradeCard(),
+            _buildPreferencesCard(),
             const SizedBox(height: MitlistSpacing.md),
-            AppButton(
-              text: l10n.commonRetry,
-              onPressed: _loadData,
-            ),
+            if (!_isGuest) ...[
+              _buildSecurityCard(),
+              const SizedBox(height: MitlistSpacing.md),
+            ],
+            _buildAboutCard(),
             const SizedBox(height: MitlistSpacing.md),
+            _buildDataCard(),
+            const SizedBox(height: MitlistSpacing.md),
+            _buildDangerZone(),
           ],
-          if (_isLoading) ...[
-            _buildSkeletonProfileCard(),
-            const SizedBox(height: MitlistSpacing.md),
-          ] else ...[
-            _buildProfileCard(),
-            const SizedBox(height: MitlistSpacing.md),
-          ],
-          _buildHouseholdCard(),
-          if (_households.length >= 2) const SizedBox(height: MitlistSpacing.md),
-          _buildGuestUpgradeCard(),
-          _buildPreferencesCard(),
-          const SizedBox(height: MitlistSpacing.md),
-          if (!_isGuest) ...[
-            _buildSecurityCard(),
-            const SizedBox(height: MitlistSpacing.md),
-          ],
-          _buildAboutCard(),
-          const SizedBox(height: MitlistSpacing.md),
-          _buildDataCard(),
-          const SizedBox(height: MitlistSpacing.md),
-          _buildDangerZone(),
-        ],
         ),
       ),
     );
@@ -962,7 +1001,8 @@ class _MenuRow extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                     ),
                 ],
@@ -971,7 +1011,9 @@ class _MenuRow extends StatelessWidget {
             if (trailing != null)
               trailing!
             else if (onTap != null)
-              AppIcon(name: 'chevronRight', color: Theme.of(context).colorScheme.onSurfaceVariant),
+              AppIcon(
+                  name: 'chevronRight',
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
           ],
         ),
       ),
