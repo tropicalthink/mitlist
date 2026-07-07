@@ -20,7 +20,9 @@ class HubRepository {
         _activity = activity;
 
   Stream<Group?> watchGroup(String groupId) {
-    return _db.watchHubGroup(groupId).map((row) => _decodeGroup(row?.groupJson));
+    return _db
+        .watchHubGroup(groupId)
+        .map((row) => _decodeGroup(row?.groupJson));
   }
 
   Future<Group?> getGroupOnce(String groupId) async {
@@ -56,22 +58,25 @@ class HubRepository {
     ]);
     final group = results[0] as Group;
     final activities = results[1] as List<ActivityLogModel>;
-    await _db.upsertHubGroup(groupId: groupId, groupJson: jsonEncode(group.toJson()));
+    await _db.upsertHubGroup(
+        groupId: groupId, groupJson: jsonEncode(group.toJson()));
     await _db.upsertHubActivities(
       groupId: groupId,
-      activitiesJson: jsonEncode(activities.map((a) => {
-            'id': a.id,
-            'group_id': a.groupId,
-            'user_id': a.userId,
-            'user_name': a.userName,
-            'action': a.action,
-            'entity_type': a.entityType,
-            'entity_id': a.entityId,
-            'title': a.title,
-            'context': a.context,
-            'metadata': a.metadata,
-            'created_at': a.createdAt.toIso8601String(),
-          }).toList()),
+      activitiesJson: jsonEncode(activities
+          .map((a) => {
+                'id': a.id,
+                'group_id': a.groupId,
+                'user_id': a.userId,
+                'user_name': a.userName,
+                'action': a.action,
+                'entity_type': a.entityType,
+                'entity_id': a.entityId,
+                'title': a.title,
+                'context': a.context,
+                'metadata': a.metadata,
+                'created_at': a.createdAt.toIso8601String(),
+              })
+          .toList()),
       hadError: activityError,
     );
   }
@@ -99,4 +104,3 @@ class HubRepository {
     }
   }
 }
-

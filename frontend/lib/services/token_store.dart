@@ -41,15 +41,13 @@ class SecureTokenStore implements TokenStore {
 
   @override
   Future<String?> getAccessToken() async {
-    _cachedAccessToken ??=
-        await _storage.read(key: ApiConfig.accessTokenKey);
+    _cachedAccessToken ??= await _storage.read(key: ApiConfig.accessTokenKey);
     return _cachedAccessToken;
   }
 
   @override
   Future<String?> getRefreshToken() async {
-    _cachedRefreshToken ??=
-        await _storage.read(key: ApiConfig.refreshTokenKey);
+    _cachedRefreshToken ??= await _storage.read(key: ApiConfig.refreshTokenKey);
     return _cachedRefreshToken;
   }
 

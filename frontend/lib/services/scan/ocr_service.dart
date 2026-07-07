@@ -14,7 +14,8 @@ class OcrService {
   /// Writes a temp file so ML Kit can use its file-path API.
   Future<List<OcrLine>> recognise(Uint8List imageBytes) async {
     final tmpDir = await getTemporaryDirectory();
-    final tmpFile = File('${tmpDir.path}/scan_input_${DateTime.now().millisecondsSinceEpoch}.jpg');
+    final tmpFile = File(
+        '${tmpDir.path}/scan_input_${DateTime.now().millisecondsSinceEpoch}.jpg');
     await tmpFile.writeAsBytes(imageBytes);
     try {
       return await recogniseFromPath(tmpFile.path);

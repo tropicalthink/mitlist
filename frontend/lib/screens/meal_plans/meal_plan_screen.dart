@@ -85,7 +85,8 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
 
   DateTime _startOfWeek(DateTime date) {
     final wd = date.weekday % 7;
-    return DateTime(date.year, date.month, date.day).subtract(Duration(days: wd));
+    return DateTime(date.year, date.month, date.day)
+        .subtract(Duration(days: wd));
   }
 
   Future<void> _load() async {
@@ -97,14 +98,16 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
       final svc = await ref.read(mealPlanServiceProviderAsync.future);
       final from = _formatDate(_weekStart);
       final to = _formatDate(_weekStart.add(const Duration(days: 6)));
-      final plans = await svc.listMealPlans(_resolvedGroupId!, from: from, to: to);
+      final plans =
+          await svc.listMealPlans(_resolvedGroupId!, from: from, to: to);
       setState(() {
         _plans.clear();
         _plans.addAll(plans);
       });
       await _preloadRecipes(plans);
     } catch (e) {
-      setState(() => _error = friendlyErrorMessage(e, AppLocalizations.of(context)!));
+      setState(() =>
+          _error = friendlyErrorMessage(e, AppLocalizations.of(context)!));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -141,10 +144,17 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
     if (_isMutating) return;
     _isMutating = true;
     final recipe = await _RecipePickerSheet.show(context);
-    if (recipe == null || !mounted) { _isMutating = false; return; }
+    if (recipe == null || !mounted) {
+      _isMutating = false;
+      return;
+    }
 
-    final servings = await _ServingsPickerSheet.show(context, defaultServings: recipe.servings);
-    if (servings == null || !mounted) { _isMutating = false; return; }
+    final servings = await _ServingsPickerSheet.show(context,
+        defaultServings: recipe.servings);
+    if (servings == null || !mounted) {
+      _isMutating = false;
+      return;
+    }
 
     try {
       final svc = await ref.read(mealPlanServiceProviderAsync.future);
@@ -159,7 +169,8 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.mealPlanCouldNotAdd)),
+          SnackBar(
+              content: Text(AppLocalizations.of(context)!.mealPlanCouldNotAdd)),
         );
       }
     } finally {
@@ -177,7 +188,9 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.mealPlanCouldNotRemove)),
+          SnackBar(
+              content:
+                  Text(AppLocalizations.of(context)!.mealPlanCouldNotRemove)),
         );
       }
     } finally {
@@ -193,23 +206,35 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
       orElse: () => throw const NotFoundException('Meal plan not found'),
     );
 
-    final recipe = await _RecipePickerSheet.show(context, selectedRecipeId: plan.recipeId);
-    if (recipe == null || !mounted) { _isMutating = false; return; }
+    final recipe =
+        await _RecipePickerSheet.show(context, selectedRecipeId: plan.recipeId);
+    if (recipe == null || !mounted) {
+      _isMutating = false;
+      return;
+    }
 
-    final servings = await _ServingsPickerSheet.show(context, defaultServings: recipe.servings);
-    if (servings == null || !mounted) { _isMutating = false; return; }
+    final servings = await _ServingsPickerSheet.show(context,
+        defaultServings: recipe.servings);
+    if (servings == null || !mounted) {
+      _isMutating = false;
+      return;
+    }
 
     try {
       final svc = await ref.read(mealPlanServiceProviderAsync.future);
-      await svc.updateMealPlan(planId, UpdateMealPlanRequest(
-        recipeId: recipe.id,
-        servings: servings,
-      ));
+      await svc.updateMealPlan(
+          planId,
+          UpdateMealPlanRequest(
+            recipeId: recipe.id,
+            servings: servings,
+          ));
       await _load();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.mealPlanCouldNotUpdate)),
+          SnackBar(
+              content:
+                  Text(AppLocalizations.of(context)!.mealPlanCouldNotUpdate)),
         );
       }
     } finally {
@@ -244,13 +269,16 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
           ),
         );
         if (listId != null) {
-          unawaited(context.pushNamed('listDetail', pathParameters: {'listId': listId}));
+          unawaited(context
+              .pushNamed('listDetail', pathParameters: {'listId': listId}));
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
+          SnackBar(
+              content:
+                  Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
         );
       }
     } finally {
@@ -288,7 +316,8 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.md, vertical: MitlistSpacing.sm),
+            padding: const EdgeInsets.symmetric(
+                horizontal: MitlistSpacing.md, vertical: MitlistSpacing.sm),
             child: Row(
               children: [
                 IconButton(
@@ -340,20 +369,21 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
               child: RefreshIndicator(
                 onRefresh: _load,
                 child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
-                itemCount: 7,
-                itemBuilder: (context, index) {
-                  final date = _weekStart.add(Duration(days: index));
-                  return _DayCard(
-                    date: date,
-                    plans: _plansFor(date),
-                    recipeCache: _recipeCache,
-                    onAdd: (slot) => _showRecipePicker(date, slot),
-                    onRemove: _removePlan,
-                    onEdit: _editPlan,
-                  );
-                },
-              ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
+                  itemCount: 7,
+                  itemBuilder: (context, index) {
+                    final date = _weekStart.add(Duration(days: index));
+                    return _DayCard(
+                      date: date,
+                      plans: _plansFor(date),
+                      recipeCache: _recipeCache,
+                      onAdd: (slot) => _showRecipePicker(date, slot),
+                      onRemove: _removePlan,
+                      onEdit: _editPlan,
+                    );
+                  },
+                ),
               ),
             ),
         ],
@@ -380,23 +410,17 @@ class _MealPlanLoadingBody extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const AppSkeleton(
-                      width: 100, height: 16),
+                  const AppSkeleton(width: 100, height: 16),
                   const Spacer(),
-                  AppSkeleton(
-                      width: MitlistSpacing.space12,
-                      height: 16),
+                  AppSkeleton(width: MitlistSpacing.space12, height: 16),
                 ],
               ),
               const SizedBox(height: MitlistSpacing.sm),
-              AppSkeleton(
-                  width: double.infinity, height: 40),
+              AppSkeleton(width: double.infinity, height: 40),
               const SizedBox(height: MitlistSpacing.sm),
-              AppSkeleton(
-                  width: double.infinity, height: 40),
+              AppSkeleton(width: double.infinity, height: 40),
               const SizedBox(height: MitlistSpacing.sm),
-              AppSkeleton(
-                  width: double.infinity, height: 40),
+              AppSkeleton(width: double.infinity, height: 40),
             ],
           ),
         ),
@@ -445,7 +469,9 @@ class _DayCard extends StatelessWidget {
                   width: 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: isToday ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                    color: isToday
+                        ? Theme.of(context).colorScheme.primary
+                        : Colors.transparent,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -461,7 +487,8 @@ class _DayCard extends StatelessWidget {
                   DateFormat.MMMd().format(date),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: MitlistTypography.monoBody(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  style: MitlistTypography.monoBody(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             ),
@@ -533,98 +560,121 @@ class _SlotRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
       child: Semantics(
         button: true,
-        label: plan != null ? l10n.mealPlanOpenRecipe(slotLabel) : l10n.mealPlanAddMealFor(slotLabel),
+        label: plan != null
+            ? l10n.mealPlanOpenRecipe(slotLabel)
+            : l10n.mealPlanAddMealFor(slotLabel),
         child: InkWell(
           onTap: plan == null ? onAdd : onOpen,
           borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
           child: Container(
-          padding: const EdgeInsets.all(MitlistSpacing.sm),
-          decoration: BoxDecoration(
-            border: Border.all(
+            padding: const EdgeInsets.all(MitlistSpacing.sm),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: plan != null
+                    ? Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.3)
+                    : Theme.of(context).colorScheme.outlineVariant,
+                width: 1.5,
+              ),
+              borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
               color: plan != null
-                  ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
-                  : Theme.of(context).colorScheme.outlineVariant,
-              width: 1.5,
+                  ? Theme.of(context)
+                      .colorScheme
+                      .primaryContainer
+                      .withValues(alpha: 0.3)
+                  : null,
             ),
-            borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
-            color: plan != null
-                ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
-                : null,
-          ),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 64,
-                child: Text(
-                  slotLabel,
-                  style: textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-                ),
-              ),
-              Expanded(
-                child: plan == null
-                    ? Text(
-                        l10n.mealPlanAddMeal,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            recipe?.title ?? l10n.mealPlanRecipeFallback,
-                            style: textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w500,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          if (recipe != null)
-                            Builder(builder: (_) {
-                              final r = recipe!;
-                              return Wrap(
-                                spacing: MitlistSpacing.xs,
-                                children: r.tags.take(2).map((t) => Text(
-                                      '#$t',
-                                      style: textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary),
-                                    )).toList(),
-                              );
-                            }),
-                        ],
-                      ),
-              ),
-              if (plan != null) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.xs, vertical: 2),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-                    borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
-                  ),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 64,
                   child: Text(
-                    l10n.mealPlanServings(plan!.servings),
-                    style: MitlistTypography.labelXSmall(),
+                    slotLabel,
+                    style: textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                 ),
-                const SizedBox(width: MitlistSpacing.xs),
-                IconButton(
-                  icon: const AppIcon(name: 'pencil', size: 18),
-                  tooltip: l10n.commonEdit,
-                  onPressed: onEdit,
+                Expanded(
+                  child: plan == null
+                      ? Text(
+                          l10n.mealPlanAddMeal,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: textTheme.bodyMedium?.copyWith(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              recipe?.title ?? l10n.mealPlanRecipeFallback,
+                              style: textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (recipe != null)
+                              Builder(builder: (_) {
+                                final r = recipe!;
+                                return Wrap(
+                                  spacing: MitlistSpacing.xs,
+                                  children: r.tags
+                                      .take(2)
+                                      .map((t) => Text(
+                                            '#$t',
+                                            style: textTheme.labelSmall
+                                                ?.copyWith(
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .primary),
+                                          ))
+                                      .toList(),
+                                );
+                              }),
+                          ],
+                        ),
                 ),
-                IconButton(
-                  icon: AppIcon(name: 'xMark', size: 18),
-                  tooltip: l10n.commonRemove,
-                  onPressed: onRemove,
-                ),
-              ] else
-                AppIcon(name: 'plus', size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
-            ],
+                if (plan != null) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: MitlistSpacing.xs, vertical: 2),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                          color: Theme.of(context).colorScheme.outlineVariant),
+                      borderRadius:
+                          BorderRadius.circular(MitlistTheme.radiusSm),
+                    ),
+                    child: Text(
+                      l10n.mealPlanServings(plan!.servings),
+                      style: MitlistTypography.labelXSmall(),
+                    ),
+                  ),
+                  const SizedBox(width: MitlistSpacing.xs),
+                  IconButton(
+                    icon: const AppIcon(name: 'pencil', size: 18),
+                    tooltip: l10n.commonEdit,
+                    onPressed: onEdit,
+                  ),
+                  IconButton(
+                    icon: AppIcon(name: 'xMark', size: 18),
+                    tooltip: l10n.commonRemove,
+                    onPressed: onRemove,
+                  ),
+                ] else
+                  AppIcon(
+                      name: 'plus',
+                      size: 18,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -634,7 +684,8 @@ class _RecipePickerSheet extends ConsumerStatefulWidget {
   final String? selectedRecipeId;
   const _RecipePickerSheet({this.selectedRecipeId});
 
-  static Future<Recipe?> show(BuildContext context, {String? selectedRecipeId}) async {
+  static Future<Recipe?> show(BuildContext context,
+      {String? selectedRecipeId}) async {
     final l10n = AppLocalizations.of(context)!;
     return showAppBottomSheet<Recipe?>(
       context: context,
@@ -710,7 +761,7 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
       return AppEmptyState(
         lottieAsset: 'assets/animations/lottie/404.lottie',
         icon: const AppIcon(name: 'alertCircleOutline'),
-                        title: l10n.mealPlanCouldNotLoadRecipes,
+        title: l10n.mealPlanCouldNotLoadRecipes,
         description: _error,
         actions: [
           AppButton(
@@ -749,7 +800,8 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
               isDense: true,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
-                borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.outlineVariant),
               ),
             ),
           ),
@@ -774,7 +826,8 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
                       contentPadding: EdgeInsets.zero,
                       leading: r.imageUrl != null
                           ? ClipRRect(
-                              borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
+                              borderRadius:
+                                  BorderRadius.circular(MitlistTheme.radiusSm),
                               child: Semantics(
                                 label: l10n.recipeImageSemantics(r.title),
                                 child: Image.network(
@@ -782,18 +835,27 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
                                   width: 48,
                                   height: 48,
                                   fit: BoxFit.cover,
-                                  cacheWidth: (48 * MediaQuery.devicePixelRatioOf(context) * 1.5).round(),
-                                  errorBuilder: (_, __, ___) => const AppIcon(name: 'image', size: 48),
+                                  cacheWidth: (48 *
+                                          MediaQuery.devicePixelRatioOf(
+                                              context) *
+                                          1.5)
+                                      .round(),
+                                  errorBuilder: (_, __, ___) =>
+                                      const AppIcon(name: 'image', size: 48),
                                 ),
                               ),
                             )
                           : const AppIcon(name: 'restaurant', size: 48),
-                      title: Text(r.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      title: Text(r.title,
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
                       subtitle: r.descriptionShort.isNotEmpty
-                          ? Text(r.descriptionShort, maxLines: 1, overflow: TextOverflow.ellipsis)
+                          ? Text(r.descriptionShort,
+                              maxLines: 1, overflow: TextOverflow.ellipsis)
                           : null,
                       trailing: isSelected
-                          ? AppIcon(name: 'check', color: Theme.of(context).colorScheme.primary)
+                          ? AppIcon(
+                              name: 'check',
+                              color: Theme.of(context).colorScheme.primary)
                           : null,
                       onTap: () => Navigator.of(context).pop(r),
                     );
@@ -809,7 +871,8 @@ class _ServingsPickerSheet extends StatefulWidget {
   final int defaultServings;
   const _ServingsPickerSheet({required this.defaultServings});
 
-  static Future<int?> show(BuildContext context, {required int defaultServings}) async {
+  static Future<int?> show(BuildContext context,
+      {required int defaultServings}) async {
     final l10n = AppLocalizations.of(context)!;
     return showAppBottomSheet<int?>(
       context: context,
@@ -843,9 +906,8 @@ class _ServingsPickerSheetState extends State<_ServingsPickerSheet> {
             IconButton(
               icon: const AppIcon(name: 'minusCircleOutline'),
               tooltip: l10n.mealPlanFewerServings,
-              onPressed: _servings > 1
-                  ? () => setState(() => _servings--)
-                  : null,
+              onPressed:
+                  _servings > 1 ? () => setState(() => _servings--) : null,
             ),
             Text(
               '$_servings',

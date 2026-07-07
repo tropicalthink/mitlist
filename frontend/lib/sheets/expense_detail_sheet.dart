@@ -158,43 +158,50 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
       builder: (context) {
         final l10nInner = AppLocalizations.of(context)!;
         return Dialog.fullscreen(
-        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-        child: Stack(
-          children: [
-            Center(
-              child: InteractiveViewer(
-                minScale: 0.5,
-                maxScale: 4,
-                child: Image.network(
-                  receipt.url,
-                  fit: BoxFit.contain,
-                  cacheWidth: (MediaQuery.sizeOf(context).width * MediaQuery.devicePixelRatioOf(context) * 1.5).round(),
-                  errorBuilder: (_, __, ___) => Padding(
-                    padding: const EdgeInsets.all(MitlistSpacing.lg),
-                    child: Text(
-                      l10nInner.expenseDetailFailedLoadReceipt,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface),
+          backgroundColor:
+              Theme.of(context).colorScheme.surfaceContainerHighest,
+          child: Stack(
+            children: [
+              Center(
+                child: InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 4,
+                  child: Image.network(
+                    receipt.url,
+                    fit: BoxFit.contain,
+                    cacheWidth: (MediaQuery.sizeOf(context).width *
+                            MediaQuery.devicePixelRatioOf(context) *
+                            1.5)
+                        .round(),
+                    errorBuilder: (_, __, ___) => Padding(
+                      padding: const EdgeInsets.all(MitlistSpacing.lg),
+                      child: Text(
+                        l10nInner.expenseDetailFailedLoadReceipt,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            SafeArea(
-              child: Align(
-                alignment: Alignment.topLeft,
-                child: IconButton(
-                  tooltip: l10nInner.commonClose,
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: AppIcon(name: 'xMark', color: Theme.of(context).colorScheme.onSurface),
+              SafeArea(
+                child: Align(
+                  alignment: Alignment.topLeft,
+                  child: IconButton(
+                    tooltip: l10nInner.commonClose,
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: AppIcon(
+                        name: 'xMark',
+                        color: Theme.of(context).colorScheme.onSurface),
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   Future<void> _removeReceipt(ExpenseReceipt receipt) async {
     if (_removing) return;
@@ -252,7 +259,8 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
           ),
           ListTile(
             leading: const AppIcon(name: 'minusCircleOutline'),
-            title: Text(_removing ? l10n.expenseDetailRemoving : l10n.commonRemove),
+            title: Text(
+                _removing ? l10n.expenseDetailRemoving : l10n.commonRemove),
             onTap: _removing ? null : () => Navigator.of(context).pop('remove'),
           ),
           const SizedBox(height: MitlistSpacing.sm),
@@ -287,7 +295,8 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
           widget.amountLabel,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: MitlistTypography.monoBody(color: Theme.of(context).colorScheme.onSurface),
+          style: MitlistTypography.monoBody(
+              color: Theme.of(context).colorScheme.onSurface),
         ),
         if (widget.convertedLabel != null) ...[
           const SizedBox(height: MitlistSpacing.xs),
@@ -302,7 +311,8 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
         ],
         const SizedBox(height: MitlistSpacing.md),
         if (!_loadingSplits && _splits.isNotEmpty) ...[
-          Text(l10n.sheetExpenseDetailSplits, style: Theme.of(context).textTheme.titleMedium),
+          Text(l10n.sheetExpenseDetailSplits,
+              style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: MitlistSpacing.sm),
           AppCard(
             variant: AppCardVariant.outlined,
@@ -311,7 +321,10 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
               children: [
                 for (var i = 0; i < _splits.length; i++) ...[
                   if (i > 0) const AppDivider(),
-                  _SplitRow(split: _splits[i], currency: widget.baseCurrency ?? widget.currency, userLabels: widget.userLabels),
+                  _SplitRow(
+                      split: _splits[i],
+                      currency: widget.baseCurrency ?? widget.currency,
+                      userLabels: widget.userLabels),
                 ],
               ],
             ),
@@ -356,11 +369,17 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
                             Image.network(
                               r.url,
                               fit: BoxFit.cover,
-                              cacheWidth: (84 * MediaQuery.devicePixelRatioOf(context) * 1.5).round(),
+                              cacheWidth: (84 *
+                                      MediaQuery.devicePixelRatioOf(context) *
+                                      1.5)
+                                  .round(),
                               errorBuilder: (_, __, ___) => Container(
-                                color: Theme.of(context).colorScheme.surfaceContainerLow,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerLow,
                                 alignment: Alignment.center,
-                                child: const AppIcon(name: 'receiptLongOutline'),
+                                child:
+                                    const AppIcon(name: 'receiptLongOutline'),
                               ),
                             ),
                             if (_removing)
@@ -375,7 +394,8 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
                   ),
                 );
               },
-              separatorBuilder: (_, __) => const SizedBox(width: MitlistSpacing.sm),
+              separatorBuilder: (_, __) =>
+                  const SizedBox(width: MitlistSpacing.sm),
               itemCount: _receipts.length,
             ),
           ),
@@ -425,7 +445,10 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
 }
 
 class _SplitRow extends StatelessWidget {
-  const _SplitRow({required this.split, required this.currency, this.userLabels = const {}});
+  const _SplitRow(
+      {required this.split,
+      required this.currency,
+      this.userLabels = const {}});
 
   final Split split;
   final String currency;
@@ -439,16 +462,19 @@ class _SplitRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodyMedium),
+            child: Text(label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium),
           ),
           if (split.isSettled)
             Padding(
               padding: const EdgeInsets.only(right: MitlistSpacing.sm),
               child: AppIcon(
-                  name: 'checkCircle',
-                  size: 16,
-                  color: Theme.of(context).colorScheme.tertiary,
-                ),
+                name: 'checkCircle',
+                size: 16,
+                color: Theme.of(context).colorScheme.tertiary,
+              ),
             ),
           Text(
             formatCurrency(split.amount < 0 ? 0 : split.amount, currency),

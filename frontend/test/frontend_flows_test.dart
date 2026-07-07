@@ -20,6 +20,7 @@ import 'package:mitlist/models/meal_plan_models.dart';
 import 'package:mitlist/services/meal_plan_service.dart';
 import 'package:mitlist/services/pinwall_service.dart';
 import 'package:mitlist/providers/auth_provider.dart';
+import 'package:mitlist/providers/oauth_provider.dart';
 import 'package:mitlist/providers/activity_provider.dart';
 import 'package:mitlist/providers/chore_provider.dart';
 import 'package:mitlist/providers/finance_provider.dart';
@@ -709,6 +710,9 @@ void main() {
       child: const LoginScreen(),
       overrides: [
         authServiceProviderAsync.overrideWith((ref) async => authService),
+        oauthProvidersProvider.overrideWith(
+          (ref) async => (google: true, apple: true),
+        ),
       ],
     );
 
@@ -757,8 +761,15 @@ void main() {
       child: const LoginScreen(),
       overrides: [
         authServiceProviderAsync.overrideWith((ref) async => authService),
+        oauthProvidersProvider.overrideWith(
+          (ref) async => (google: false, apple: false),
+        ),
       ],
     );
+
+    // Unconfigured providers must not render sign-in buttons.
+    expect(find.text('CONTINUE WITH GOOGLE'), findsNothing);
+    expect(find.text('CONTINUE WITH APPLE'), findsNothing);
 
     await tester.tap(find.text('Remember me'));
     await _pumpAfter(tester);

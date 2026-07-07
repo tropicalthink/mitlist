@@ -16,11 +16,11 @@ import (
 )
 
 type ExpenseReceiptService struct {
-	financeRepo  repositories.FinanceRepoIface
-	groupRepo    repositories.GroupRepo
-	attachRepo   repositories.AttachmentRepo
+	financeRepo   repositories.FinanceRepoIface
+	groupRepo     repositories.GroupRepo
+	attachRepo    repositories.AttachmentRepo
 	expAttachRepo *repositories.ExpenseAttachmentRepository
-	storage      *storagesvc.Service
+	storage       *storagesvc.Service
 }
 
 func NewExpenseReceiptService(
@@ -31,20 +31,20 @@ func NewExpenseReceiptService(
 	storage *storagesvc.Service,
 ) *ExpenseReceiptService {
 	return &ExpenseReceiptService{
-		financeRepo:  financeRepo,
-		groupRepo:    groupRepo,
-		attachRepo:   attachRepo,
+		financeRepo:   financeRepo,
+		groupRepo:     groupRepo,
+		attachRepo:    attachRepo,
 		expAttachRepo: expAttachRepo,
-		storage:      storage,
+		storage:       storage,
 	}
 }
 
 type ExpenseReceipt struct {
-	AttachmentID string    `json:"attachment_id"`
-	ContentType  string    `json:"content_type"`
-	ByteSize     int64     `json:"byte_size"`
-	CreatedAt    string    `json:"created_at"`
-	URL          string    `json:"url"`
+	AttachmentID string `json:"attachment_id"`
+	ContentType  string `json:"content_type"`
+	ByteSize     int64  `json:"byte_size"`
+	CreatedAt    string `json:"created_at"`
+	URL          string `json:"url"`
 }
 
 func (s *ExpenseReceiptService) requireMember(ctx context.Context, groupID, userID uuid.UUID) error {
@@ -155,4 +155,3 @@ func (s *ExpenseReceiptService) Detach(ctx context.Context, userID, groupID, exp
 	}
 	return nil
 }
-

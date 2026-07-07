@@ -24,7 +24,8 @@ class ResolutionContext {
     this.purchaseCounts = const {},
     this.daysSinceLastPurchase = const {},
     this.cooccurrence = const {},
-  }) : maxPurchaseCount = purchaseCounts.values.fold(0, (a, b) => a > b ? a : b);
+  }) : maxPurchaseCount =
+            purchaseCounts.values.fold(0, (a, b) => a > b ? a : b);
 
   static final empty = ResolutionContext();
 }

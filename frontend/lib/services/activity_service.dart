@@ -26,8 +26,8 @@ class ActivityService {
       final data = r.data as Map<String, dynamic>;
       final rawEvents = data['events'] as List<dynamic>? ?? [];
       return rawEvents
-          .map((e) => ActivityLogModel.fromJson(
-              (e as Map).cast<String, dynamic>()))
+          .map((e) =>
+              ActivityLogModel.fromJson((e as Map).cast<String, dynamic>()))
           .toList();
     } on DioException catch (e) {
       _logger.e('List activity failed: ${e.response?.data}');

@@ -67,9 +67,8 @@ class _AppDropdownState<T> extends State<AppDropdown<T>> {
       color: _hasError ? colorScheme.error : null,
     );
 
-    Color backgroundColor = _hasError
-        ? colorScheme.errorContainer
-        : colorScheme.surface;
+    Color backgroundColor =
+        _hasError ? colorScheme.errorContainer : colorScheme.surface;
 
     Color borderColor;
     if (_hasError) {
@@ -125,40 +124,35 @@ class _AppDropdownState<T> extends State<AppDropdown<T>> {
                   vertical: MitlistSpacing.space3,
                 ),
                 border: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(MitlistTheme.radiusNone),
+                  borderRadius: BorderRadius.circular(MitlistTheme.radiusNone),
                   borderSide: BorderSide(
                     color: borderColor,
                     width: _borderWidth,
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(MitlistTheme.radiusNone),
+                  borderRadius: BorderRadius.circular(MitlistTheme.radiusNone),
                   borderSide: BorderSide(
                     color: borderColor,
                     width: _borderWidth,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(MitlistTheme.radiusNone),
+                  borderRadius: BorderRadius.circular(MitlistTheme.radiusNone),
                   borderSide: BorderSide(
                     color: _hasError ? colorScheme.error : colorScheme.primary,
                     width: _borderWidth,
                   ),
                 ),
                 errorBorder: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(MitlistTheme.radiusNone),
+                  borderRadius: BorderRadius.circular(MitlistTheme.radiusNone),
                   borderSide: BorderSide(
                     color: colorScheme.error,
                     width: _borderWidth,
                   ),
                 ),
                 focusedErrorBorder: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(MitlistTheme.radiusNone),
+                  borderRadius: BorderRadius.circular(MitlistTheme.radiusNone),
                   borderSide: BorderSide(
                     color: colorScheme.error,
                     width: _borderWidth,
@@ -173,9 +167,8 @@ class _AppDropdownState<T> extends State<AppDropdown<T>> {
           Text(
             widget.errorText ?? widget.helperText ?? '',
             style: textTheme.bodySmall?.copyWith(
-              color: _hasError
-                  ? colorScheme.error
-                  : colorScheme.onSurfaceVariant,
+              color:
+                  _hasError ? colorScheme.error : colorScheme.onSurfaceVariant,
               fontWeight: _hasError ? FontWeight.w700 : null,
             ),
           ),

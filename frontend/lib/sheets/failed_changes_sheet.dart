@@ -65,10 +65,7 @@ class _FailedChangesBody extends ConsumerWidget {
             icon: const Icon(Icons.refresh, size: 16),
             variant: AppButtonVariant.soft,
             onPressed: () {
-              ref
-                  .read(outboxCoordinatorProvider)
-                  .valueOrNull
-                  ?.retryFailed();
+              ref.read(outboxCoordinatorProvider).valueOrNull?.retryFailed();
             },
           ),
         ],

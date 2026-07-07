@@ -80,9 +80,9 @@ func (s *PinwallService) CreatePost(
 	}
 
 	p := &models.PinwallPost{
-		GroupID: groupID,
-		UserID:  user.ID,
-		Content: content,
+		GroupID:  groupID,
+		UserID:   user.ID,
+		Content:  content,
 		RemindAt: remindAt,
 	}
 	if err := s.repo.CreatePost(ctx, p); err != nil {
@@ -131,4 +131,3 @@ func (s *PinwallService) DeletePost(ctx context.Context, user *models.User, grou
 	s.publishPost("pinwall:post_deleted", groupID, postID)
 	return nil
 }
-

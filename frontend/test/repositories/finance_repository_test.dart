@@ -65,11 +65,9 @@ void main() {
       expect(result.description, equals('Groceries'));
 
       // After successful drain the temp row is replaced by the server row.
-      final expenses =
-          await db.getExpensesByGroupOnce('group-1');
+      final expenses = await db.getExpensesByGroupOnce('group-1');
       expect(expenses.length, equals(1));
-      expect(expenses.first.id,
-          equals(remote.serverExpenseId),
+      expect(expenses.first.id, equals(remote.serverExpenseId),
           reason: 'server ID should replace temp ID after drain');
 
       // Outbox should be empty after successful sync.
@@ -96,14 +94,12 @@ void main() {
           reason: 'should return the locally created expense');
 
       // Local row is present (the temp id row).
-      final expenses =
-          await db.getExpensesByGroupOnce('group-1');
+      final expenses = await db.getExpensesByGroupOnce('group-1');
       expect(expenses.length, equals(1));
 
       // Op remains in outbox.
       final ops = await db.getOutboxBatch(limit: 10);
-      final createOps =
-          ops.where((o) => o.type == 'createExpense').toList();
+      final createOps = ops.where((o) => o.type == 'createExpense').toList();
       expect(createOps.length, equals(1),
           reason: 'op should remain after failed API call');
 
@@ -114,8 +110,7 @@ void main() {
       expect(createOps.first.lastError, isNotNull);
 
       // idempotency_key should be set.
-      expect(createOps.first.idempotencyKey,
-          startsWith('createExpense:'),
+      expect(createOps.first.idempotencyKey, startsWith('createExpense:'),
           reason: 'idempotency_key should be stored with the op');
     });
 
@@ -306,8 +301,7 @@ void main() {
       await throwingRepo.drainOutboxOnce();
 
       final ops = await db.getOutboxBatch(limit: 10);
-      final deleteOps =
-          ops.where((o) => o.type == 'deleteExpense').toList();
+      final deleteOps = ops.where((o) => o.type == 'deleteExpense').toList();
       expect(deleteOps.length, equals(1));
       expect(deleteOps.first.attemptCount, equals(1));
       expect(deleteOps.first.lastError, isNotNull);

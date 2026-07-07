@@ -112,9 +112,11 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       groupId: groupId,
       expenseId: expense.id,
       description: expense.description,
-      amountLabel: formatExpenseCurrency(expense.amount, currency: expense.currency),
+      amountLabel:
+          formatExpenseCurrency(expense.amount, currency: expense.currency),
       convertedLabel: expense.isConverted
-          ? formatExpenseCurrency(expense.baseAmount, currency: expense.baseCurrency)
+          ? formatExpenseCurrency(expense.baseAmount,
+              currency: expense.baseCurrency)
           : null,
       payer: expense.payer,
       createdAt: expense.createdAt,
@@ -148,12 +150,15 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     if (confirmed != true || !mounted) return;
     Navigator.of(context).pop();
     try {
-      await _controller.deleteExpense(expense.id, AppLocalizations.of(context)!);
+      await _controller.deleteExpense(
+          expense.id, AppLocalizations.of(context)!);
     } catch (e) {
       if (!mounted) return;
       unawaited(Haptics.failure());
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
+        SnackBar(
+            content:
+                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -185,7 +190,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
     final confirmed = await SettlementConfirmationDialog.show(
       context: context,
-      amount: formatExpenseCurrency(suggestion.amount, currency: _controller.groupCurrency),
+      amount: formatExpenseCurrency(suggestion.amount,
+          currency: _controller.groupCurrency),
       payer: suggestion.fromLabel,
       payee: suggestion.toLabel,
     );
@@ -193,7 +199,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
     unawaited(Haptics.light());
     try {
-      await _controller.recordSettlement(suggestion, AppLocalizations.of(context)!);
+      await _controller.recordSettlement(
+          suggestion, AppLocalizations.of(context)!);
       if (!mounted) return;
       unawaited(Haptics.success());
       final l10n = AppLocalizations.of(context)!;
@@ -241,7 +248,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     final canSettle = _controller.hasHousehold &&
         !_controller.isLoading &&
         _controller.errorMessage == null;
-    final showSettlementsNudge = canSettle && (_controller.suggestions.isNotEmpty);
+    final showSettlementsNudge =
+        canSettle && (_controller.suggestions.isNotEmpty);
 
     return Scaffold(
       appBar: MitlistAppBar.titleText(
@@ -304,8 +312,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                                 controller: _timelineScrollController,
                                 isLoadingMore: _controller.isLoadingMore,
                                 hasPageError: _controller.hasPageError,
-                                onRefresh: () =>
-                                    _controller.load(AppLocalizations.of(context)!),
+                                onRefresh: () => _controller
+                                    .load(AppLocalizations.of(context)!),
                                 onAddExpense: _openCreateExpense,
                                 onOpenExpense: _openExpenseDetail,
                               )
@@ -315,8 +323,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                                 currency: _controller.groupCurrency,
                                 isSettling: _controller.isSettling,
                                 confettiController: _confettiController,
-                                onRefresh: () =>
-                                    _controller.load(AppLocalizations.of(context)!),
+                                onRefresh: () => _controller
+                                    .load(AppLocalizations.of(context)!),
                                 onRecordSettlement: _recordSettlement,
                               ),
           ),

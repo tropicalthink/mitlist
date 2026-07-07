@@ -651,10 +651,10 @@ func strPtr(v string) *string { return &v }
 // TestIngredientParser_Multilingual verifies ParseIngredient across EN/DE/FR/ES.
 func TestIngredientParser_Multilingual(t *testing.T) {
 	cases := []struct {
-		raw      string
-		qty      float64
-		unit     string
-		name     string
+		raw  string
+		qty  float64
+		unit string
+		name string
 	}{
 		// English
 		{"2 cups flour", 2, "cups", "flour"},

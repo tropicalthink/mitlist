@@ -83,8 +83,7 @@ class _WallItem extends StatelessWidget {
 
     switch (entityType) {
       case 'list':
-        context.pushNamed('listDetail',
-            pathParameters: {'listId': entityId});
+        context.pushNamed('listDetail', pathParameters: {'listId': entityId});
       case 'expense':
         context.pushNamed('money');
       case 'chore':

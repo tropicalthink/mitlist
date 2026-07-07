@@ -23,7 +23,7 @@ type NotificationService struct {
 	groupRepo        repositories.GroupRepo
 	pushService      PushService
 	mailService      MailService // optional; nil means email channel is disabled
-	hub              *sse.Hub   // optional; nil disables SSE broadcasts
+	hub              *sse.Hub    // optional; nil disables SSE broadcasts
 }
 
 // SetHub injects the SSE hub so newly persisted notifications broadcast to the

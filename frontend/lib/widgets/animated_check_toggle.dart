@@ -58,18 +58,20 @@ class _AnimatedCheckToggleState extends State<AnimatedCheckToggle>
     super.dispose();
   }
 
-  Color _lerpColor(Color a, Color b, double t) =>
-      Color.lerp(a, b, t) ?? a;
+  Color _lerpColor(Color a, Color b, double t) => Color.lerp(a, b, t) ?? a;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final disableAnimations = MediaQuery.of(context).disableAnimations;
     final colorScheme = Theme.of(context).colorScheme;
-    final progress = disableAnimations ? (widget.value ? 1.0 : 0.0) : _controller.value;
+    final progress =
+        disableAnimations ? (widget.value ? 1.0 : 0.0) : _controller.value;
     final isInteractive = widget.onChanged != null;
-    final bgColor = _lerpColor(colorScheme.surface, colorScheme.primary, progress);
-    final borderColor = _lerpColor(colorScheme.outline, colorScheme.primary, progress);
+    final bgColor =
+        _lerpColor(colorScheme.surface, colorScheme.primary, progress);
+    final borderColor =
+        _lerpColor(colorScheme.outline, colorScheme.primary, progress);
 
     final label = widget.value
         ? (widget.semanticLabelOn ?? l10n.checkToggleChecked)

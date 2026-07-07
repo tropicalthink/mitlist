@@ -39,8 +39,8 @@ func newChoreReminder(repo choreReminderRepo, push Pusher, log *logger.Logger) *
 }
 
 type pushPayload struct {
-	Title string                 `json:"title"`
-	Body  string                 `json:"body"`
+	Title string                     `json:"title"`
+	Body  string                     `json:"body"`
 	Data  models.NotificationPayload `json:"data"`
 }
 

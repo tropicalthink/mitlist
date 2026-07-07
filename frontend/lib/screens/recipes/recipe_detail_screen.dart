@@ -31,8 +31,7 @@ class RecipeDetailScreen extends ConsumerStatefulWidget {
   const RecipeDetailScreen({super.key, required this.recipeId});
 
   @override
-  ConsumerState<RecipeDetailScreen> createState() =>
-      _RecipeDetailScreenState();
+  ConsumerState<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
 }
 
 class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
@@ -114,7 +113,9 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
       setState(() => _isDeleting = false);
       unawaited(Haptics.failure());
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
+        SnackBar(
+            content:
+                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
       );
     }
   }
@@ -268,7 +269,9 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppChip(
-          label: recipe.isPublic ? l10n.recipeDetailSharedLabel : l10n.recipeDetailPrivateLabel,
+          label: recipe.isPublic
+              ? l10n.recipeDetailSharedLabel
+              : l10n.recipeDetailPrivateLabel,
           selected: true,
         ),
         const SizedBox(height: MitlistSpacing.md),
@@ -317,7 +320,8 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
               errorBuilder: (_, __, ___) => Container(
                 color: colorScheme.surfaceContainerLow,
                 height: 220,
-                child: const Center(child: AppIcon(name: 'restaurant', size: 48)),
+                child:
+                    const Center(child: AppIcon(name: 'restaurant', size: 48)),
               ),
             ),
           ),
@@ -345,11 +349,17 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
           padding: AppCardPadding.md,
           child: Column(
             children: [
-              _DetailRow(label: l10n.recipeDetailPrep, value: _formatMinutes(recipe.prepTime, l10n)),
+              _DetailRow(
+                  label: l10n.recipeDetailPrep,
+                  value: _formatMinutes(recipe.prepTime, l10n)),
               const AppDivider(),
-              _DetailRow(label: l10n.recipeDetailCook, value: _formatMinutes(recipe.cookTime, l10n)),
+              _DetailRow(
+                  label: l10n.recipeDetailCook,
+                  value: _formatMinutes(recipe.cookTime, l10n)),
               const AppDivider(),
-              _DetailRow(label: l10n.recipeDetailServings, value: recipe.servings.toString()),
+              _DetailRow(
+                  label: l10n.recipeDetailServings,
+                  value: recipe.servings.toString()),
               const AppDivider(),
               _DetailRow(
                 label: l10n.recipeDetailUpdated,
@@ -366,7 +376,8 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
             spacing: MitlistSpacing.sm,
             runSpacing: MitlistSpacing.sm,
             children: nutritionMap.entries
-                .map((e) => AppChip(label: '${e.key}: ${e.value}', selected: false))
+                .map((e) =>
+                    AppChip(label: '${e.key}: ${e.value}', selected: false))
                 .toList(),
           ),
         ],

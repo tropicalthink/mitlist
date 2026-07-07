@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/pkg/logger"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 type mockChoreReminderRepo struct {
@@ -121,9 +121,9 @@ func TestChoreReminder_Run_RespectsChoreDueOptOut(t *testing.T) {
 	repo.On("ListPendingAssignmentsDueSoon", mock.Anything, mock.AnythingOfType("time.Time")).Return(assignments, nil)
 	repo.On("GetChoreGroupID", mock.Anything, choreID).Return(groupID, nil)
 	repo.On("GetUserPreference", mock.Anything, userID, groupID).Return(&models.NotificationPreference{
-		UserID:    userID,
-		GroupID:   groupID,
-		ChoreDue:  false,
+		UserID:      userID,
+		GroupID:     groupID,
+		ChoreDue:    false,
 		PushEnabled: true,
 	}, nil)
 

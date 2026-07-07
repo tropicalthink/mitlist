@@ -33,13 +33,13 @@ func TestFinance_CreateExpense(t *testing.T) {
 	addTestMembership(t, group.ID, user.ID, "admin")
 
 	body := map[string]any{
-		"group_id":     group.ID.String(),
-		"payer_id":     user.ID.String(),
-		"amount":       10000,
-		"description":  "Dinner",
-		"category":     "Food",
-		"currency":     "USD",
-		"date":         time.Now().Format(time.RFC3339),
+		"group_id":       group.ID.String(),
+		"payer_id":       user.ID.String(),
+		"amount":         10000,
+		"description":    "Dinner",
+		"category":       "Food",
+		"currency":       "USD",
+		"date":           time.Now().Format(time.RFC3339),
 		"split_user_ids": []string{user.ID.String()},
 	}
 	rec := execRequest(t, router, "POST", "/api/v1/expenses", body, token)
@@ -428,14 +428,14 @@ func TestFinance_CreateRecurringExpense(t *testing.T) {
 	addTestMembership(t, group.ID, user.ID, "admin")
 
 	body := map[string]any{
-		"group_id":     group.ID.String(),
-		"payer_id":     user.ID.String(),
-		"amount":       10000,
-		"description":  "Rent",
-		"category":     "Housing",
-		"frequency":    "monthly",
-		"next_due":     time.Now().Add(24 * time.Hour).Format(time.RFC3339),
-		"is_active":    true,
+		"group_id":    group.ID.String(),
+		"payer_id":    user.ID.String(),
+		"amount":      10000,
+		"description": "Rent",
+		"category":    "Housing",
+		"frequency":   "monthly",
+		"next_due":    time.Now().Add(24 * time.Hour).Format(time.RFC3339),
+		"is_active":   true,
 	}
 	rec := execRequest(t, router, "POST", "/api/v1/recurring-expenses", body, token)
 	requireStatus(t, rec, http.StatusCreated)

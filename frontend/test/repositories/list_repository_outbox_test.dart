@@ -258,13 +258,11 @@ void main() {
 
       // Op remains with incremented attempt_count.
       final ops = await db.getOutboxBatch(limit: 10);
-      final createOps =
-          ops.where((o) => o.type == 'createItem').toList();
+      final createOps = ops.where((o) => o.type == 'createItem').toList();
       expect(createOps.length, equals(1));
       expect(createOps.first.attemptCount, equals(1));
       expect(createOps.first.lastError, isNotNull);
-      expect(createOps.first.idempotencyKey,
-          startsWith('createItem:'),
+      expect(createOps.first.idempotencyKey, startsWith('createItem:'),
           reason: 'idempotency key should be set');
     });
 
@@ -357,7 +355,8 @@ void main() {
     // on drain the additive endpoint is called and the temp ID is swapped for
     // the server ID, mirroring createItem reconciliation.
     // -------------------------------------------------------------------------
-    test('addItemAmountOfflineFirst: new item — optimistic row, temp ID swapped',
+    test(
+        'addItemAmountOfflineFirst: new item — optimistic row, temp ID swapped',
         () async {
       const listId = 'list-008';
       await _insertList(db, listId);
@@ -508,7 +507,8 @@ void main() {
       await repo.drainOutboxOnce();
 
       expect(remote.updateItemCalls.length, equals(2));
-      expect(remote.updateItemCalls.every((c) => c.req.checked == true), isTrue);
+      expect(
+          remote.updateItemCalls.every((c) => c.req.checked == true), isTrue);
       expect(remote.updateItemCalls.map((c) => c.itemId).toSet(),
           equals({'a', 'b'}));
       expect(await db.outboxCount(), equals(0));
@@ -518,8 +518,7 @@ void main() {
     // Case 12: setAllCheckedOfflineFirst(false) — only the checked rows are
     // targeted; already-unchecked rows are left alone (no op).
     // -------------------------------------------------------------------------
-    test(
-        'setAllCheckedOfflineFirst(false): unchecks only the checked rows',
+    test('setAllCheckedOfflineFirst(false): unchecks only the checked rows',
         () async {
       const listId = 'list-012';
       await _insertList(db, listId);

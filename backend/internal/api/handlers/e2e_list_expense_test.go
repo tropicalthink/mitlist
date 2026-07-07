@@ -77,7 +77,7 @@ func TestE2E_ListToExpenseFlow(t *testing.T) {
 
 	// 2. Add items with prices
 	items := []struct {
-		name      string
+		name       string
 		priceCents int
 	}{
 		{"Milk", 299},

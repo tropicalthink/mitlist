@@ -15,11 +15,11 @@ import (
 )
 
 type PinwallMediaService struct {
-	pinwallRepo   repositories.PinwallRepo
-	groupRepo     repositories.GroupRepo
-	attachRepo    repositories.AttachmentRepo
+	pinwallRepo    repositories.PinwallRepo
+	groupRepo      repositories.GroupRepo
+	attachRepo     repositories.AttachmentRepo
 	postAttachRepo *repositories.PinwallAttachmentRepository
-	storage       *storagesvc.Service
+	storage        *storagesvc.Service
 }
 
 func NewPinwallMediaService(
@@ -154,4 +154,3 @@ func (s *PinwallMediaService) Detach(ctx context.Context, userID, groupID, postI
 	}
 	return nil
 }
-

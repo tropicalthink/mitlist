@@ -90,6 +90,11 @@ func (c *AppleClient) RedirectURI() string {
 	return c.redirectURI
 }
 
+// Configured reports whether the operator supplied Apple OAuth credentials.
+func (c *AppleClient) Configured() bool {
+	return c.clientID != "" && c.teamID != "" && c.keyID != "" && c.privateKey != ""
+}
+
 // ExchangeCode exchanges an authorization code for an OAuth2 token.
 func (c *AppleClient) ExchangeCode(code string) (*oauth2.Token, error) {
 	if c.clientID == "" || c.teamID == "" || c.keyID == "" || c.privateKey == "" {

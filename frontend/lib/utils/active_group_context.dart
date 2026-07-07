@@ -9,8 +9,7 @@ import '../models/group_models.dart';
 /// available so tab/sheet flows match the hub.
 String? resolveActiveGroupId(List<Group> groups, String? preferredGroupId) {
   if (groups.isEmpty) return null;
-  if (preferredGroupId != null &&
-      groups.any((g) => g.id == preferredGroupId)) {
+  if (preferredGroupId != null && groups.any((g) => g.id == preferredGroupId)) {
     return preferredGroupId;
   }
   return groups.first.id;

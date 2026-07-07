@@ -12,7 +12,8 @@ bool isSafeExternalUrl(String url) {
 Future<bool> safeLaunchUrl(String url) async {
   if (!isSafeExternalUrl(url)) return false;
   try {
-    return await launchUrl(Uri.parse(url.trim()), mode: LaunchMode.externalApplication);
+    return await launchUrl(Uri.parse(url.trim()),
+        mode: LaunchMode.externalApplication);
   } catch (_) {
     return false;
   }

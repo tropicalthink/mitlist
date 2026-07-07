@@ -59,7 +59,8 @@ void main() {
     for (final c in cases) {
       final parsed = extraction.extract(OcrLine(text: c.rawText));
       final query = normaliseTextForExport(parsed.itemName);
-      final candidates = await generator.generate(parsed.itemName, kGlobalGroup);
+      final candidates =
+          await generator.generate(parsed.itemName, kGlobalGroup);
 
       // Household prior from the row's labelled context.
       final counts = <String, int>{};

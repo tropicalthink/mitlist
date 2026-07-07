@@ -59,4 +59,3 @@ func (r *ListItemAttachmentRepository) ListReadyAttachmentsByListItem(ctx contex
 
 	return pgx.CollectRows(rows, pgx.RowToStructByName[models.Attachment])
 }
-

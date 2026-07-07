@@ -754,8 +754,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           TextField(
             controller: amountController,
             autofocus: true,
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: InputDecoration(labelText: l10n.listItemQuantityAmount),
           ),
           const SizedBox(height: MitlistSpacing.sm),

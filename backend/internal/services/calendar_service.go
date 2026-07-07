@@ -38,7 +38,6 @@ func NewCalendarService(
 	}
 }
 
-
 func (s *CalendarService) requireMembership(ctx context.Context, userID, groupID uuid.UUID) error {
 	// Previously checked member == nil (unreachable when err == nil); now uses
 	// canonical fail-closed helper (authorized behavior change per reviewer ruling).

@@ -84,4 +84,3 @@ func TestPinwallMedia_AttachAndList(t *testing.T) {
 	_, err := time.Parse(time.RFC3339Nano, out[0]["created_at"].(string))
 	require.NoError(t, err)
 }
-

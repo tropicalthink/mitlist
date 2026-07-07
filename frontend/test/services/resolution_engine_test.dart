@@ -103,7 +103,8 @@ void main() {
       expect(spaghetti[1], greaterThan(egg[1]));
     });
 
-    test('household prior: frequency normalised by the max, recency decays', () {
+    test('household prior: frequency normalised by the max, recency decays',
+        () {
       final ctx = ResolutionContext(
         purchaseCounts: {'a': 4, 'b': 1},
         daysSinceLastPurchase: {'a': 0, 'b': 9},
@@ -144,8 +145,8 @@ void main() {
       ));
       // Candidate B: weak alias but its own name is close.
       final b = s.score(buildResolutionFeatures(
-        _cand(_item('apple', de: 'Apfel', en: 'Apple'), aliasSim: 0.4,
-            sources: {'fuzzy'}),
+        _cand(_item('apple', de: 'Apfel', en: 'Apple'),
+            aliasSim: 0.4, sources: {'fuzzy'}),
         'app',
         ResolutionContext.empty,
       ));

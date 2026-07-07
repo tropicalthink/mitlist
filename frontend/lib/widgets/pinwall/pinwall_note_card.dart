@@ -514,8 +514,9 @@ class PinwallNoteCard extends ConsumerWidget {
               border: Border.all(color: border, width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: MitlistColors.neutral950
-                      .withValues(alpha: dark ? (_isHub ? 0.42 : 0.5) : (_isHub ? 0.16 : 0.2)),
+                  color: MitlistColors.neutral950.withValues(
+                      alpha:
+                          dark ? (_isHub ? 0.42 : 0.5) : (_isHub ? 0.16 : 0.2)),
                   blurRadius: _isHub ? 0 : 12,
                   offset: _isHub ? const Offset(4, 5) : const Offset(4, 6),
                 ),
@@ -540,8 +541,7 @@ class PinwallNoteCard extends ConsumerWidget {
                   const SizedBox(height: MitlistSpacing.xs),
                   if (reminderText != null)
                     Padding(
-                      padding:
-                          const EdgeInsets.only(bottom: MitlistSpacing.xs),
+                      padding: const EdgeInsets.only(bottom: MitlistSpacing.xs),
                       child: Row(
                         children: [
                           Icon(

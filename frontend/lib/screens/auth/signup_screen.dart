@@ -87,12 +87,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     try {
       // Get the auth service
       final authService = await ref.read(authServiceProviderAsync.future);
-      
+
       // Split name into first and last name
       final nameParts = name.split(' ');
       final firstName = nameParts.isNotEmpty ? nameParts[0] : name;
-      final lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
-      
+      final lastName =
+          nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+
       // Make actual API call
       final request = RegisterRequest(
         email: email,
@@ -101,7 +102,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         lastName: lastName,
       );
       await authService.register(request);
-      
+
       // Defer auth flip until after success animation; router redirect sends
       // new users to onboarding.
       if (mounted) {
@@ -241,7 +242,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                             size: AppButtonSize.lg,
                             isLoading: _isLoading,
                             isSuccess: _isSuccess,
-                            onPressed: (_isLoading || _isSuccess) ? null : _submit,
+                            onPressed:
+                                (_isLoading || _isSuccess) ? null : _submit,
                           ),
                         ),
                         const SizedBox(height: MitlistSpacing.space4),
@@ -249,7 +251,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                           alignment: WrapAlignment.center,
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                             Text(
+                            Text(
                               l10n.authSignupHaveAccount,
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
@@ -272,7 +274,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                   .textTheme
                                   .bodySmall
                                   ?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
                                   ),
                             ),
                             AppButton(
@@ -294,7 +298,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                   .textTheme
                                   .bodySmall
                                   ?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
                                   ),
                             ),
                             AppButton(
@@ -316,7 +322,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                   .textTheme
                                   .bodySmall
                                   ?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
                                   ),
                             ),
                           ],

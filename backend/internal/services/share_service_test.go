@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mitlist-app/mitlist/internal/api"
-	"github.com/mitlist-app/mitlist/internal/repositories/mocks"
 	"github.com/mitlist-app/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/repositories/mocks"
 )
 
 func TestShareService_ParseSharedText(t *testing.T) {

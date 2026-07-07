@@ -29,7 +29,8 @@ CanonicalItemsTableData _item({
 }
 
 void main() {
-  final full = _item(de: 'Erdbeere', en: 'Strawberry', fr: 'Fraise', es: 'Fresa');
+  final full =
+      _item(de: 'Erdbeere', en: 'Strawberry', fr: 'Fraise', es: 'Fresa');
 
   test('each locale picks its own market name', () {
     expect(canonicalDisplayName(full, lang: 'de'), 'Erdbeere');

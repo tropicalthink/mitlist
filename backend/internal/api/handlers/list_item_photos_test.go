@@ -78,4 +78,3 @@ func TestListItemPhotos_AttachAndList(t *testing.T) {
 	require.Equal(t, att.ID.String(), out[0]["attachment_id"])
 	require.NotEmpty(t, out[0]["url"])
 }
-

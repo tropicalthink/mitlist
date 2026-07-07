@@ -70,5 +70,3 @@ func TestOAuthService_processOAuthUser(t *testing.T) {
 		assert.Equal(t, "access", access)
 	})
 }
-
-

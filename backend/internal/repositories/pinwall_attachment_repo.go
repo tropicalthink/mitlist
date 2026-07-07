@@ -59,4 +59,3 @@ func (r *PinwallAttachmentRepository) ListReadyAttachmentsByPost(ctx context.Con
 
 	return pgx.CollectRows(rows, pgx.RowToStructByName[models.Attachment])
 }
-
