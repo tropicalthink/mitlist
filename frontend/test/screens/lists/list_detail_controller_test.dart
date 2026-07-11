@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,6 +23,17 @@ class _FakeBundledSuggestions extends BundledGrocerySuggestionService {
       ),
     ];
   }
+}
+
+class _ControlledBundledSuggestions extends BundledGrocerySuggestionService {
+  final Completer<List<GrocerySuggestion>> completer = Completer();
+
+  @override
+  Future<List<GrocerySuggestion>> suggest(
+    String query, {
+    int limit = 8,
+  }) =>
+      completer.future;
 }
 
 void main() {
@@ -57,5 +70,47 @@ void main() {
 
     expect(controller!.suggestions, hasLength(1));
     expect(controller!.suggestions.single.canonicalItemId, 'milk');
+  });
+
+  testWidgets('text changes invalidate an older query before debounce fires',
+      (tester) async {
+    final service = _ControlledBundledSuggestions();
+    ListDetailController? controller;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bundledGrocerySuggestionServiceProvider.overrideWithValue(service),
+        ],
+        child: MaterialApp(
+          home: Consumer(
+            builder: (context, ref, _) {
+              controller ??= ListDetailController(
+                ref: ref,
+                listId: 'list-1',
+                initialListName: 'Groceries',
+              );
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      ),
+    );
+    final oldQuery = controller!.refreshSuggestions('mi');
+    controller!.refreshSuggestionsDebounced('mil');
+    service.completer.complete(const [
+      GrocerySuggestion(
+        canonicalItemId: 'stale',
+        name: 'Stale result',
+        category: '',
+        unit: '',
+      ),
+    ]);
+    await oldQuery;
+
+    final suggestions = controller!.suggestions;
+    controller!.dispose();
+    controller = null;
+    expect(suggestions, isEmpty);
   });
 }

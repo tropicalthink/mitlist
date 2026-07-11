@@ -140,5 +140,40 @@ void main() {
       expect(bundle.count(_seedAsset), 1);
       expect(await db.getGroceryVersion(_globalGroupId), 5);
     });
+
+    test('restores FTS triggers when seed ingestion fails', () async {
+      final db = _memoryDb();
+      addTearDown(db.close);
+      final bundle = _CountingBundle({
+        _seedVersionAsset: _sidecarJson(5),
+        _seedAsset: jsonEncode({
+          'version': 5,
+          'items': [
+            {'id': 'broken-item'},
+          ],
+        }),
+        _storeAislesAsset: _storeAislesJson(),
+      });
+
+      await expectLater(
+        GrocerySeedLoader(db, bundle: bundle).loadIfNeeded(),
+        throwsA(anything),
+      );
+
+      final triggers = await db.customSelect('''
+        SELECT name FROM sqlite_master
+        WHERE type = 'trigger' AND name LIKE 'item_aliases_fts_a%'
+        ORDER BY name
+      ''').get();
+      expect(
+        triggers.map((row) => row.read<String>('name')).toList(),
+        [
+          'item_aliases_fts_ad',
+          'item_aliases_fts_ai',
+          'item_aliases_fts_au',
+        ],
+      );
+      expect(await db.getGroceryVersion(_globalGroupId), 0);
+    });
   });
 }
