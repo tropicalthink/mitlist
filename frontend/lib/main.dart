@@ -7,6 +7,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
 import 'config/api_config.dart';
+import 'services/fcm_service.dart';
 
 /// Must be a top-level function so the OS can invoke it in a separate isolate.
 @pragma('vm:entry-point')
@@ -24,9 +25,9 @@ Future<void> main() async {
   final prefs = await SharedPreferences.getInstance();
   ApiConfig.setRuntimeBaseUrl(prefs.getString(ApiConfig.serverUrlKey));
 
-  // Register the background handler before runApp so it is available as soon
-  // as the app process wakes for a background message.
+  // Initialise Firebase before any Messaging API use (foreground or background).
   if (!kIsWeb) {
+    await FcmService.ensureFirebaseCore();
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   }
 

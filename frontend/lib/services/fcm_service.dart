@@ -49,19 +49,32 @@ class FcmService {
   /// For cold-start taps (app killed), use [checkInitialMessage] instead.
   static Stream<RemoteMessage> get onNotificationTap => _tapController.stream;
 
+  /// Ensures the default Firebase app exists. Safe to call multiple times.
+  ///
+  /// Returns false when Firebase config is missing (e.g. no google-services.json
+  /// in a local dev build). Call from [main] before registering background handlers.
+  static Future<bool> ensureFirebaseCore() async {
+    if (kIsWeb) return false;
+    if (!Platform.isAndroid && !Platform.isIOS) return false;
+    if (Firebase.apps.isNotEmpty) return true;
+    try {
+      await Firebase.initializeApp();
+      return true;
+    } catch (e) {
+      _log.w('Firebase init failed (no google-services.json?): $e');
+      return false;
+    }
+  }
+
   /// Initialise Firebase and register the FCM device token with the backend.
   ///
   /// Safe to call multiple times; re-registers only when the token changes.
-  static Future<void> init(Dio dio) async {
-    if (kIsWeb) return; // web uses VAPID, not FCM
-    if (!Platform.isAndroid && !Platform.isIOS) return;
+  /// Returns true when FCM listeners were registered successfully.
+  static Future<bool> init(Dio dio) async {
+    if (kIsWeb) return false; // web uses VAPID, not FCM
+    if (!Platform.isAndroid && !Platform.isIOS) return false;
 
-    try {
-      await Firebase.initializeApp();
-    } catch (e) {
-      _log.w('Firebase init failed (no google-services.json?): $e');
-      return;
-    }
+    if (!await ensureFirebaseCore()) return false;
 
     final messaging = FirebaseMessaging.instance;
 
@@ -72,13 +85,13 @@ class FcmService {
     );
     if (settings.authorizationStatus == AuthorizationStatus.denied) {
       _log.i('Push permission denied');
-      return;
+      return false;
     }
 
     final token = await messaging.getToken();
     if (token == null) {
       _log.w('FCM token is null');
-      return;
+      return false;
     }
 
     await _registerToken(dio, token);
@@ -104,6 +117,7 @@ class FcmService {
     _tapSub = FirebaseMessaging.onMessageOpenedApp.listen((message) {
       _tapController.add(message);
     });
+    return true;
   }
 
   /// Cancels all active FCM stream subscriptions.
@@ -124,7 +138,13 @@ class FcmService {
   static Future<RemoteMessage?> checkInitialMessage() async {
     if (kIsWeb) return null;
     if (!Platform.isAndroid && !Platform.isIOS) return null;
-    return FirebaseMessaging.instance.getInitialMessage();
+    if (Firebase.apps.isEmpty) return null;
+    try {
+      return await FirebaseMessaging.instance.getInitialMessage();
+    } catch (e) {
+      _log.w('FCM getInitialMessage failed: $e');
+      return null;
+    }
   }
 
   /// Removes the device token from the backend and clears it from local storage.

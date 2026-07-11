@@ -6,7 +6,10 @@ WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/mitlist-api ./cmd/api
+# VERSION is reported to Sentry/GlitchTip as the release. Pass at build time:
+#   docker build --build-arg VERSION="$(git describe --tags --always)" ...
+ARG VERSION=dev
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.version=${VERSION}" -o /out/mitlist-api ./cmd/api
 
 FROM alpine:3.20
 RUN apk add --no-cache ca-certificates tzdata
