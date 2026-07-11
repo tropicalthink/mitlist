@@ -4107,6 +4107,18 @@ abstract class AppLocalizations {
   /// **'Open data'**
   String get accountOpenDataRow;
 
+  /// Menu row: opens the support/donate page
+  ///
+  /// In en, this message translates to:
+  /// **'Support mitlist'**
+  String get accountSupportRow;
+
+  /// Menu row: shows which server the app talks to
+  ///
+  /// In en, this message translates to:
+  /// **'Server'**
+  String get accountServerRow;
+
   /// Bottom sheet title for open data attribution
   ///
   /// In en, this message translates to:
@@ -6086,6 +6098,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reset password'**
   String get authLoginResetPasswordButton;
+
+  /// Login screen link opening the server picker sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your server'**
+  String get authServerLink;
+
+  /// Bottom sheet title for the server picker
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your server'**
+  String get authServerSheetTitle;
+
+  /// Explainer text in the server picker sheet
+  ///
+  /// In en, this message translates to:
+  /// **'mitlist is open source and self-hostable. Point the app at your own server, or leave this empty to use the default server.'**
+  String get authServerSheetBody;
+
+  /// Input label for the server URL
+  ///
+  /// In en, this message translates to:
+  /// **'Server URL'**
+  String get authServerUrlLabel;
+
+  /// Placeholder for the server URL input
+  ///
+  /// In en, this message translates to:
+  /// **'https://mitlist.example.com'**
+  String get authServerUrlHint;
+
+  /// Validation: server URL malformed
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a full URL starting with http:// or https://.'**
+  String get authServerUrlInvalid;
+
+  /// Error when the health check against the entered server fails
+  ///
+  /// In en, this message translates to:
+  /// **'No mitlist server answered at this address.'**
+  String get authServerUnreachable;
+
+  /// Button saving the custom server URL
+  ///
+  /// In en, this message translates to:
+  /// **'Use this server'**
+  String get authServerSave;
+
+  /// Button clearing the custom server URL
+  ///
+  /// In en, this message translates to:
+  /// **'Back to default server'**
+  String get authServerReset;
+
+  /// Shown when a build ships without a baked-in server URL
+  ///
+  /// In en, this message translates to:
+  /// **'This build has no default server. Enter your server\'s address to continue.'**
+  String get authServerNoDefault;
 
   /// Success message after requesting reset code
   ///

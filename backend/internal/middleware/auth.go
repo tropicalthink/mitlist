@@ -6,11 +6,13 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/google/uuid"
 
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/services"
 	jwtservice "github.com/mitlist-app/mitlist/internal/services/jwt"
+	"github.com/mitlist-app/mitlist/pkg/logger"
 )
 
 // Auth validates the access token from either an "access_token" cookie or the
@@ -50,6 +52,17 @@ func Auth(jwt *jwtservice.Service, userSvc *services.UserService) func(next http
 
 			ctx := WithUserID(r.Context(), claims.Subject)
 			ctx = api.WithUser(ctx, user)
+
+			// Attribute Sentry events (panics, captured errors) for this request
+			// to the authenticated user. This middleware runs inside sentryhttp,
+			// so the request hub is present on the context.
+			if hub := sentry.GetHubFromContext(ctx); hub != nil {
+				hub.Scope().SetUser(sentry.User{ID: claims.Subject})
+			}
+			// Carry user_id on the request logger so downstream error logs — and
+			// thus the Sentry bridge — can attribute issues to the user.
+			ctx = logger.ToContext(ctx, logger.FromContext(ctx).WithField("user_id", claims.Subject))
+
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

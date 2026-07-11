@@ -61,7 +61,9 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
 
   void _initPushSubscriptions() {
     PushSubscriptionService().init();
-    FcmService.init(ref.read(dioProvider)).then((_) {
+    FcmService.init(ref.read(dioProvider)).then((ready) {
+      if (!ready || !mounted) return;
+
       _fcmSub = FcmService.onForegroundMessage.listen((message) {
         final title = message.notification?.title;
         final body = message.notification?.body;

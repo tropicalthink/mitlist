@@ -2,6 +2,7 @@ package logger
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -14,32 +15,63 @@ type Logger struct {
 	zerolog.Logger
 }
 
+// Option configures New.
+type Option func(*options)
+
+type options struct {
+	sentryBridge bool
+}
+
+// WithSentryBridge forwards Error-and-above log events to Sentry/GlitchTip as
+// issues. It only has an effect once sentry.Init has been called; otherwise the
+// forwarded events are silently dropped by the SDK.
+func WithSentryBridge() Option {
+	return func(o *options) { o.sentryBridge = true }
+}
+
 // New creates a new Logger configured for the given environment.
 //   - "dev" or "development": pretty console output, Debug level.
 //   - anything else (e.g. "prod", "production"): JSON output, Info level.
-func New(env string) *Logger {
-	var zlog zerolog.Logger
+//
+// Pass WithSentryBridge() to additionally forward errors to Sentry/GlitchTip.
+func New(env string, opts ...Option) *Logger {
+	var cfg options
+	for _, o := range opts {
+		o(&cfg)
+	}
 
+	var out io.Writer
 	switch env {
 	case "dev", "development":
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-		output := zerolog.ConsoleWriter{
+		out = zerolog.ConsoleWriter{
 			Out:        os.Stdout,
 			TimeFormat: time.RFC3339,
 			NoColor:    false,
 		}
-		zlog = zerolog.New(output).With().Timestamp().Logger()
 	default:
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
-		zlog = zerolog.New(os.Stdout).With().Timestamp().Logger()
+		out = os.Stdout
 	}
 
+	if cfg.sentryBridge {
+		// The bridge writer receives the same serialized JSON as the primary
+		// writer, so it captures full structured fields regardless of env.
+		out = zerolog.MultiLevelWriter(out, newSentryWriter())
+	}
+
+	zlog := zerolog.New(out).With().Timestamp().Logger()
 	return &Logger{Logger: zlog}
 }
 
 // WithError returns a new Logger with the error field attached.
 func (l *Logger) WithError(err error) *Logger {
 	return &Logger{Logger: l.With().AnErr(zerolog.ErrorFieldName, err).Logger()}
+}
+
+// WithField returns a new Logger with an additional string field attached.
+func (l *Logger) WithField(key, value string) *Logger {
+	return &Logger{Logger: l.With().Str(key, value).Logger()}
 }
 
 // contextKey is a private type to avoid context key collisions.

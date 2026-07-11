@@ -1,11 +1,14 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../config/api_config.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/auth_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/oauth_provider.dart';
+import '../../services/api_client.dart';
 import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
@@ -40,6 +43,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   String? _passwordError;
 
   AppLocalizations get l10n => AppLocalizations.of(context)!;
+
+  @override
+  void initState() {
+    super.initState();
+    // A build without a baked-in server (self-compiled, no dart-define) can't
+    // do anything until the user picks one — open the picker for them.
+    if (!ApiConfig.isConfigured) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showServerSheet();
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -266,6 +281,126 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
   }
 
+  void _showServerSheet() {
+    final urlController =
+        TextEditingController(text: ApiConfig.runtimeBaseUrl ?? '');
+    var isChecking = false;
+    String? error;
+
+    showAppBottomSheet(
+      context: context,
+      title: l10n.authServerSheetTitle,
+      body: StatefulBuilder(
+        builder: (context, setSheetState) {
+          Future<void> apply(String? url) async {
+            final navigator = Navigator.of(context);
+            final prefs = await SharedPreferences.getInstance();
+            if (url == null) {
+              await prefs.remove(ApiConfig.serverUrlKey);
+            } else {
+              await prefs.setString(ApiConfig.serverUrlKey, url);
+            }
+            ApiConfig.setRuntimeBaseUrl(url);
+            // New base URL → new Dio; auth service caches a Dio, oauth
+            // availability follows dioProvider by itself.
+            ref.invalidate(dioProvider);
+            ref.invalidate(authServiceProviderAsync);
+            if (mounted) navigator.pop();
+          }
+
+          Future<void> save() async {
+            final raw = urlController.text.trim().replaceAll(
+                  RegExp(r'/+$'),
+                  '',
+                );
+            if (raw.isEmpty) {
+              if (ApiConfig.defaultBaseUrl.isEmpty) {
+                setSheetState(() => error = l10n.authServerUrlInvalid);
+                return;
+              }
+              await apply(null);
+              return;
+            }
+
+            final uri = Uri.tryParse(raw);
+            if (uri == null ||
+                !(uri.scheme == 'http' || uri.scheme == 'https') ||
+                uri.host.isEmpty) {
+              setSheetState(() => error = l10n.authServerUrlInvalid);
+              return;
+            }
+
+            setSheetState(() {
+              isChecking = true;
+              error = null;
+            });
+            try {
+              final dio = Dio(BaseOptions(
+                connectTimeout: const Duration(seconds: 8),
+                receiveTimeout: const Duration(seconds: 8),
+              ));
+              await dio.getUri(Uri.parse('$raw/healthz'));
+              dio.close();
+              await apply(raw);
+            } catch (_) {
+              setSheetState(() {
+                isChecking = false;
+                error = l10n.authServerUnreachable;
+              });
+            }
+          }
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (!ApiConfig.isConfigured) ...[
+                AppAlert(
+                  type: AppAlertType.info,
+                  message: l10n.authServerNoDefault,
+                ),
+                const SizedBox(height: MitlistSpacing.md),
+              ],
+              Text(
+                l10n.authServerSheetBody,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: MitlistSpacing.lg),
+              if (error != null) ...[
+                AppAlert(type: AppAlertType.error, message: error!),
+                const SizedBox(height: MitlistSpacing.md),
+              ],
+              AppInput(
+                label: l10n.authServerUrlLabel,
+                hint: l10n.authServerUrlHint,
+                controller: urlController,
+                keyboardType: TextInputType.url,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => save(),
+              ),
+              const SizedBox(height: MitlistSpacing.lg),
+              AppButton(
+                text: l10n.authServerSave,
+                onPressed: isChecking ? null : save,
+                isLoading: isChecking,
+              ),
+              if (ApiConfig.runtimeBaseUrl != null &&
+                  ApiConfig.defaultBaseUrl.isNotEmpty) ...[
+                const SizedBox(height: MitlistSpacing.sm),
+                AppButton(
+                  text: l10n.authServerReset,
+                  variant: AppButtonVariant.ghost,
+                  color: AppButtonColor.neutral,
+                  onPressed: isChecking ? null : () => apply(null),
+                ),
+              ],
+            ],
+          );
+        },
+      ),
+    ).whenComplete(urlController.dispose);
+  }
+
   String? get _inviteCode =>
       GoRouterState.of(context).uri.queryParameters['invite'];
 
@@ -479,6 +614,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ],
                     ),
+                  ),
+                  const SizedBox(height: MitlistSpacing.space4),
+                  AppButton(
+                    variant: AppButtonVariant.ghost,
+                    color: AppButtonColor.neutral,
+                    size: AppButtonSize.sm,
+                    text: l10n.authServerLink,
+                    onPressed:
+                        (_isLoading || _isSuccess) ? null : _showServerSheet,
                   ),
                 ],
               ),

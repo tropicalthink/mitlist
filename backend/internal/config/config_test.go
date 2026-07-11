@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -53,6 +54,14 @@ func TestLogIntegrationStatus(t *testing.T) {
 		}
 	})
 
+	t.Run("error_tracing reported when DSN and sample rate set", func(t *testing.T) {
+		cfg := &Config{SentryDSN: "https://abc@example.com/1", SentryTracesSampleRate: 0.1}
+		out := captureLog(cfg.LogIntegrationStatus)
+		if !strings.Contains(out, `"error_tracing":true`) {
+			t.Errorf("expected error_tracing enabled; got: %s", out)
+		}
+	})
+
 	t.Run("partial: only VAPID set", func(t *testing.T) {
 		cfg := &Config{
 			VapidPublicKey:  "BExamplePublicKey",
@@ -78,4 +87,39 @@ func TestLogIntegrationStatus(t *testing.T) {
 			t.Errorf("expected disabled_integrations warning; got: %s", out)
 		}
 	})
+}
+
+// TestSetFieldFloat64 guards the float64 support added for SENTRY_TRACES_SAMPLE_RATE.
+func TestSetFieldFloat64(t *testing.T) {
+	tests := []struct {
+		name    string
+		raw     string
+		def     string
+		want    float64
+		wantErr bool
+	}{
+		{name: "parses value", raw: "0.25", want: 0.25},
+		{name: "empty falls back to default", raw: "", def: "0.1", want: 0.1},
+		{name: "empty and no default is zero", raw: "", want: 0},
+		{name: "invalid errors", raw: "notafloat", wantErr: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var f float64
+			tag := reflect.StructTag(`default:"` + tc.def + `"`)
+			err := setField(reflect.ValueOf(&f).Elem(), tag, tc.raw)
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("expected error, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if f != tc.want {
+				t.Errorf("got %v, want %v", f, tc.want)
+			}
+		})
+	}
 }

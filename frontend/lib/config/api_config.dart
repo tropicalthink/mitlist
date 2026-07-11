@@ -12,21 +12,33 @@ class ApiConfig {
   /// The base URL for the API.
   ///
   /// Set at build time via `--dart-define=API_BASE_URL=https://api.example.com`.
-  /// Release builds MUST provide it — there is no production default baked in,
-  /// so we never ship a binary silently pointing at a developer's machine.
+  /// A self-hoster can override it at runtime from the login screen; the
+  /// override is persisted under [serverUrlKey] and applied in `main()` before
+  /// the first network call, so store builds work against any server.
   /// Debug builds fall back to the local Go backend for convenience.
   static const String _baseUrlOverride =
       String.fromEnvironment('API_BASE_URL', defaultValue: '');
 
-  static String get baseUrl {
-    if (_baseUrlOverride.isNotEmpty) return _baseUrlOverride;
+  /// Preference key holding the user-chosen server URL ('' / absent = default).
+  static const String serverUrlKey = 'custom_server_url';
 
-    if (kReleaseMode) {
-      throw StateError(
-        'API_BASE_URL is not set. Release builds must be built with '
-        '--dart-define=API_BASE_URL=https://your-api-host (no trailing slash).',
-      );
-    }
+  static String? _runtimeBaseUrl;
+
+  /// The user-chosen server URL, if any. Set from `main()` at startup and by
+  /// the login screen's server sheet. Pass null/empty to return to [defaultBaseUrl].
+  static String? get runtimeBaseUrl => _runtimeBaseUrl;
+
+  static void setRuntimeBaseUrl(String? url) {
+    final trimmed = url?.trim().replaceAll(RegExp(r'/+$'), '');
+    _runtimeBaseUrl = (trimmed == null || trimmed.isEmpty) ? null : trimmed;
+  }
+
+  /// The server the build ships with (dart-define, or the local Go backend in
+  /// debug). Empty when a release build was made without API_BASE_URL — such
+  /// builds are only usable once the user picks a server.
+  static String get defaultBaseUrl {
+    if (_baseUrlOverride.isNotEmpty) return _baseUrlOverride;
+    if (kReleaseMode) return '';
 
     // Debug-only fallback to the local Go backend.
     // On Android emulators, "localhost" points to the emulator itself.
@@ -36,6 +48,12 @@ class ApiConfig {
 
     return 'http://localhost:8000';
   }
+
+  /// Whether a usable server URL exists (runtime override or build default).
+  static bool get isConfigured =>
+      _runtimeBaseUrl != null || defaultBaseUrl.isNotEmpty;
+
+  static String get baseUrl => _runtimeBaseUrl ?? defaultBaseUrl;
 
   /// The API path prefix.
   static const String apiPrefix = '/api/v1';

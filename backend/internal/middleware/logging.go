@@ -36,6 +36,10 @@ func LoggingMiddleware() func(next http.Handler) http.Handler {
 
 			if rec.statusCode >= 500 {
 				event = log.Error().
+					// The underlying error is captured richer via api.WriteError;
+					// skip the bridge so this summary line doesn't collapse every
+					// 5xx into one badly-grouped GlitchTip issue.
+					Bool(logger.SentrySkipField, true).
 					Str("method", r.Method).
 					Str("path", r.URL.Path).
 					Int("status", rec.statusCode).

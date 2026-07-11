@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../models/list_item_photo_models.dart';
 import '../../models/list_models.dart';
@@ -15,6 +16,7 @@ import '../../repositories/grocery_repository.dart';
 import '../../services/list_service.dart';
 import '../../services/restock_service.dart';
 import '../../services/scan/grocery_suggestion_service.dart';
+import '../../services/scan/household_suggestion_engine.dart';
 import '../../theme/animations.dart';
 import '../../utils/haptics.dart';
 import '../../utils/list_composer_parser.dart';
@@ -48,6 +50,7 @@ class ListDetailController extends ChangeNotifier {
   bool _hasError = false;
   String _listName;
   final List<ListItem> _items = [];
+  final Map<String, ListItem> _pendingCreates = {};
   StreamSubscription<List<ListItem>>? _itemsSub;
   GroceryRepository? _groceryRepo;
   String _searchQuery = '';
@@ -55,8 +58,8 @@ class ListDetailController extends ChangeNotifier {
   bool _dirty = false;
   bool _doneSectionExpanded = true;
   String? _groupId;
-  List<Product> _productSuggestions = [];
-  List<GrocerySuggestion> _grocerySuggestions = [];
+  final HouseholdSuggestionEngine _suggestionEngine =
+      HouseholdSuggestionEngine();
   Timer? _suggestDebounce;
   final Map<String, List<ListItemPhoto>> _photosByItemId = {};
   final Set<String> _photoLoadAttempted = {};
@@ -101,8 +104,7 @@ class ListDetailController extends ChangeNotifier {
   String? get groupId => _groupId;
   String? get userId => _userId;
   String get groupCurrency => _groupCurrency;
-  List<Product> get productSuggestions => _productSuggestions;
-  List<GrocerySuggestion> get grocerySuggestions => _grocerySuggestions;
+  List<HouseholdSuggestion> get suggestions => _suggestionEngine.suggestions;
 
   List<ListItemPhoto>? photosFor(String itemId) => _photosByItemId[itemId];
   bool isCollapsing(String itemId) => _collapsing.contains(itemId);
@@ -161,6 +163,17 @@ class ListDetailController extends ChangeNotifier {
         _items
           ..clear()
           ..addAll(items);
+        // A pending UI row stays visible until Drift publishes its local row.
+        // Match on content + creation time because the repository owns the
+        // durable temp id.
+        for (final pending in _pendingCreates.values) {
+          final landed = items.any((item) =>
+              !item.createdAt.isBefore(pending.createdAt) &&
+              item.name == pending.name &&
+              item.quantity == pending.quantity &&
+              item.unit == pending.unit);
+          if (!landed) _items.add(pending);
+        }
         _notify();
         unawaited(_loadPhotosForItems(items));
       });
@@ -420,40 +433,69 @@ class ListDetailController extends ChangeNotifier {
   /// takes the additive offline-first amount path.
   Future<void> addItem(String text, {String? canonicalItemId}) async {
     final service = _service;
-    if (service == null) return;
-    final repo = await ref.read(listRepositoryProvider.future);
+    if (service == null) {
+      throw StateError('list detail is not ready');
+    }
     final parsed = parseComposerItem(text);
-    final ListItem created;
-    if (parsed.quantity == 1 && parsed.unit.isEmpty) {
-      created = await repo.createItemOfflineFirst(
-        listId,
-        CreateListItemRequest(
-          name: parsed.name,
-          canonicalItemId: canonicalItemId,
-        ),
-      );
-    } else {
-      created = await repo.addItemAmountOfflineFirst(
-        listId,
-        name: parsed.name,
-        amount: parsed.quantity,
-        unit: parsed.unit,
-        canonicalItemId: canonicalItemId,
-      );
-    }
-    if (_disposed) return;
-    // Reflect the new/merged row immediately so it appears the instant the local
-    // write returns, without waiting for the items stream to re-emit. The stream
-    // reconciles (and swaps the temp id for the server id) on its next emit.
-    final idx = _items.indexWhere((i) => i.id == created.id);
-    if (idx >= 0) {
-      _items[idx] = created;
-    } else {
-      _items.add(created);
-    }
+    final now = DateTime.now();
+    final pending = ListItem(
+      id: const Uuid().v4(),
+      listId: listId,
+      name: parsed.name,
+      quantity: parsed.quantity,
+      unit: parsed.unit,
+      checked: false,
+      position: _items.fold(
+              -1, (max, item) => item.position > max ? item.position : max) +
+          1,
+      canonicalItemId: canonicalItemId,
+      createdAt: now,
+      updatedAt: now,
+    );
+    _pendingCreates[pending.id] = pending;
+    _items.add(pending);
     _sectionsDirty = true;
     _dirty = true;
     _notify();
+
+    try {
+      final repo = await ref.read(listRepositoryProvider.future);
+      final ListItem created;
+      if (parsed.quantity == 1 && parsed.unit.isEmpty) {
+        created = await repo.createItemOfflineFirst(
+          listId,
+          CreateListItemRequest(
+            name: parsed.name,
+            canonicalItemId: canonicalItemId,
+          ),
+        );
+      } else {
+        created = await repo.addItemAmountOfflineFirst(
+          listId,
+          name: parsed.name,
+          amount: parsed.quantity,
+          unit: parsed.unit,
+          canonicalItemId: canonicalItemId,
+        );
+      }
+      if (_disposed) return;
+      _pendingCreates.remove(pending.id);
+      _items.removeWhere((item) => item.id == pending.id);
+      final idx = _items.indexWhere((item) => item.id == created.id);
+      if (idx >= 0) {
+        _items[idx] = created;
+      } else {
+        _items.add(created);
+      }
+      _sectionsDirty = true;
+      _notify();
+    } catch (_) {
+      _pendingCreates.remove(pending.id);
+      _items.removeWhere((item) => item.id == pending.id);
+      _sectionsDirty = true;
+      _notify();
+      rethrow;
+    }
   }
 
   /// Adds a restock suggestion via the same offline-first create path as
@@ -735,70 +777,122 @@ class ListDetailController extends ChangeNotifier {
   /// generation counter ensures stale results from a prior keystroke are
   /// silently discarded if a newer query has already started.
   Future<void> refreshSuggestions([String? query]) async {
-    final groupId = _groupId;
-    if (groupId == null) return;
     final q = (query ?? '').trim();
     final gen = ++_suggestGeneration;
 
-    // The local grocery/alias tables are populated by a heavy one-shot seed
-    // (~280k rows) kicked off at app bootstrap. Until it finishes the alias
-    // table is empty or partial — a query fired while the seed is still in
-    // flight would return nothing (or a fragment) with no later re-query,
-    // leaving suggestions blank/wrong for anyone who types before the seed
-    // lands. Await it (best-effort) so this query runs against the fully
-    // populated table; the generation guard below discards this call if a
-    // newer keystroke supersedes it while we wait.
+    _suggestionEngine.beginQuery(q);
+    _bumpSuggestions();
+
+    // These sources are independent. In particular, product history and
+    // restock predictions must not wait for the large one-time grocery seed to
+    // finish before they can appear in the composer.
+    final bundled = _refreshBundledGrocerySuggestions(q, gen);
+    final groupId = _groupId;
+    if (groupId == null) {
+      await bundled;
+      return;
+    }
+    await Future.wait([
+      bundled,
+      _refreshGrocerySuggestions(q, groupId, gen),
+      _refreshProductSuggestions(q, groupId, gen),
+      if (q.isEmpty) _refreshRestockSuggestions(groupId, gen),
+    ]);
+  }
+
+  Future<void> _refreshBundledGrocerySuggestions(
+    String query,
+    int generation,
+  ) async {
+    try {
+      final suggestions = await ref
+          .read(bundledGrocerySuggestionServiceProvider)
+          .suggest(query);
+      if (_disposed || _suggestGeneration != generation) return;
+      _suggestionEngine.setGrocerySuggestions(
+        HouseholdSuggestionSource.bundled,
+        suggestions,
+      );
+      _bumpSuggestions();
+    } catch (_) {}
+  }
+
+  Future<void> _refreshGrocerySuggestions(
+    String query,
+    String groupId,
+    int generation,
+  ) async {
+    // Query the currently available aliases first so autocomplete can appear
+    // while the one-time seed is still loading, then query once more after the
+    // seed completes for the full result set.
+    await _queryGrocerySuggestions(query, groupId, generation);
+    if (_disposed || _suggestGeneration != generation) return;
     try {
       await ref.read(grocerySeedProvider.future);
     } catch (_) {}
-    if (_disposed || _suggestGeneration != gen) return;
+    if (_disposed || _suggestGeneration != generation) return;
+    await _queryGrocerySuggestions(query, groupId, generation);
+  }
 
-    // Local grocery seed first — alias-powered, on-device.
-    final grocery =
-        await ref.read(grocerySuggestionServiceProvider).suggest(q, groupId);
-    if (_disposed || _suggestGeneration != gen) return;
+  Future<void> _queryGrocerySuggestions(
+    String query,
+    String groupId,
+    int generation,
+  ) async {
+    try {
+      final grocery = await ref
+          .read(grocerySuggestionServiceProvider)
+          .suggest(query, groupId);
+      if (_disposed || _suggestGeneration != generation) return;
+      _suggestionEngine.setGrocerySuggestions(
+        HouseholdSuggestionSource.catalog,
+        grocery,
+      );
+      _bumpSuggestions();
+    } catch (_) {}
+  }
 
-    // When the composer is empty, prepend restock predictions.
-    List<GrocerySuggestion> blended = grocery;
-    if (q.isEmpty) {
-      try {
-        final currentNames = _items
-            .where((it) => !it.checked)
-            .map((it) => it.name.toLowerCase())
-            .toSet();
-        final restock = await ref.read(restockServiceProvider).due(
-              groupId: groupId,
-              currentItemNames: currentNames,
-              limit: 5,
-            );
-        if (_disposed || _suggestGeneration != gen) return;
-        if (restock.isNotEmpty) {
-          final restockChips = restock.map((r) => GrocerySuggestion(
-                canonicalItemId: r.canonicalItemId,
-                name: r.name,
-                category: '',
-                unit: '',
-              ));
-          blended = [...restockChips, ...grocery];
-        }
-      } catch (_) {}
-    }
-
-    if (_disposed || _suggestGeneration != gen) return;
-    _grocerySuggestions = blended;
-    _bumpSuggestions();
-
+  Future<void> _refreshProductSuggestions(
+    String query,
+    String groupId,
+    int generation,
+  ) async {
     try {
       final service = await ref.read(listServiceProviderAsync.future);
-      if (_disposed || _suggestGeneration != gen) return;
-      final products =
-          await service.listProducts(groupId, search: q.isEmpty ? null : q);
-      if (_disposed || _suggestGeneration != gen) return;
-      _productSuggestions = products.take(8).toList();
+      if (_disposed || _suggestGeneration != generation) return;
+      final products = await service.listProducts(groupId,
+          search: query.isEmpty ? null : query);
+      if (_disposed || _suggestGeneration != generation) return;
+      _suggestionEngine.setProducts(products.take(8).toList());
       _bumpSuggestions();
     } catch (_) {
-      if (!_disposed && _suggestGeneration == gen) {
-        _productSuggestions = [];
+      if (!_disposed && _suggestGeneration == generation) {
+        _suggestionEngine.setProducts(const []);
+        _bumpSuggestions();
+      }
+    }
+  }
+
+  Future<void> _refreshRestockSuggestions(
+    String groupId,
+    int generation,
+  ) async {
+    try {
+      final currentNames = _items
+          .where((it) => !it.checked)
+          .map((it) => it.name.toLowerCase())
+          .toSet();
+      final restock = await ref.read(restockServiceProvider).due(
+            groupId: groupId,
+            currentItemNames: currentNames,
+            limit: 5,
+          );
+      if (_disposed || _suggestGeneration != generation) return;
+      _suggestionEngine.setRestockSuggestions(restock);
+      _bumpSuggestions();
+    } catch (_) {
+      if (!_disposed && _suggestGeneration == generation) {
+        _suggestionEngine.setRestockSuggestions(const []);
         _bumpSuggestions();
       }
     }
