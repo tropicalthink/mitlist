@@ -314,6 +314,40 @@ func (r *GroceryRepository) UpsertCanonicalItem(
 	return err
 }
 
+// InsertPurchase appends one purchase event. The boolean is false on replay.
+func (r *GroceryRepository) InsertPurchase(ctx context.Context, purchase *models.PurchaseHistory, version int64) (bool, error) {
+	when := purchase.PurchasedAt
+	if when.IsZero() {
+		when = time.Now().UTC()
+	}
+	result, err := r.pool.Exec(ctx, `
+		INSERT INTO purchase_history
+			(id, group_id, canonical_item_id, list_item_id, quantity, unit, version, purchased_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		ON CONFLICT (id) DO NOTHING`,
+		purchase.ID, purchase.GroupID, purchase.CanonicalItemID, purchase.ListItemID,
+		purchase.Quantity, purchase.Unit, version, when)
+	if err != nil {
+		return false, err
+	}
+	return result.RowsAffected() == 1, nil
+}
+
+func (r *GroceryRepository) IncrementCooccurrence(ctx context.Context, groupID, itemAID, itemBID uuid.UUID, version int64) error {
+	if itemBID.String() < itemAID.String() {
+		itemAID, itemBID = itemBID, itemAID
+	}
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO item_cooccurrence
+			(group_id, item_a_id, item_b_id, count, last_seen_at, version)
+		VALUES ($1, $2, $3, 1, now(), $4)
+		ON CONFLICT (group_id, item_a_id, item_b_id) DO UPDATE
+		SET count = item_cooccurrence.count + 1,
+		    last_seen_at = now(), version = EXCLUDED.version`,
+		groupID, itemAID, itemBID, version)
+	return err
+}
+
 // InsertCorrection appends a correction event and bumps the household version.
 // It also upserts the corresponding item_aliases row so the correction takes
 // effect immediately on the next alias lookup.

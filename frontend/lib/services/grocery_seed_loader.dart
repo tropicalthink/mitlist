@@ -41,9 +41,9 @@ class GrocerySeedLoader {
   Future<void> _loadSeedIfNeeded() async {
     final installedVersion = await _db.getGroceryVersion(_globalGroupId);
     final sidecarVersion = await _readSidecarVersion();
-    final existing = await _db.getCanonicalItemsByGroup(_globalGroupId);
+    final hasExisting = await _db.hasCanonicalItemsByGroup(_globalGroupId);
     if (sidecarVersion != null &&
-        existing.isNotEmpty &&
+        hasExisting &&
         installedVersion >= sidecarVersion) {
       return;
     }
@@ -51,7 +51,7 @@ class GrocerySeedLoader {
     final raw = await _bundle.loadString(_seedAsset);
     final json = await compute(_decodeJsonMap, raw);
     final assetVersion = (json['version'] as num?)?.toInt() ?? 0;
-    if (existing.isNotEmpty && installedVersion >= assetVersion) return;
+    if (hasExisting && installedVersion >= assetVersion) return;
 
     // The full seed is ~3k canonical rows + ~280k alias rows, sharing the
     // single serial DB connection with interactive writes. Two rules keep it
@@ -79,14 +79,20 @@ class GrocerySeedLoader {
     // keeping them live costs some total import time, but lets autocomplete
     // queries and unrelated interactive DB work yield between import chunks.
     await _db.dropAliasFtsTriggers();
-    await _db.createAliasIndexes();
-    if (existing.isNotEmpty) {
-      await _db.clearGlobalSeed(_globalGroupId);
+    try {
+      await _db.createAliasIndexes();
+      if (hasExisting) {
+        await _db.clearGlobalSeed(_globalGroupId);
+      }
+      await _ingestSeed(json);
+      await _db.rebuildAliasFts();
+      await _db.setGroceryVersion(_globalGroupId, assetVersion);
+    } finally {
+      // Never leave normal alias writes detached from FTS after a failed or
+      // interrupted install. A failed install keeps the old version cursor, so
+      // the next launch will rerun and rebuild the index.
+      await _db.createAliasFts();
     }
-    await _ingestSeed(json);
-    await _db.rebuildAliasFts();
-    await _db.createAliasFts(); // idempotent: recreates the dropped triggers
-    await _db.setGroceryVersion(_globalGroupId, assetVersion);
   }
 
   Future<int?> _readSidecarVersion() async {

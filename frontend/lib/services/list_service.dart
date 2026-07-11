@@ -104,6 +104,22 @@ class ListService {
     }
   }
 
+  Future<void> recordGroceryPurchases(
+    String groupId,
+    List<Map<String, dynamic>> events,
+  ) async {
+    ensureValidGroupId(groupId);
+    try {
+      await _dio.post(
+        '/groups/$groupId/grocery/purchases',
+        data: {'events': events},
+      );
+    } on DioException catch (e) {
+      _logger.e('Record grocery purchases failed: ${e.response?.data}');
+      throw apiException(e);
+    }
+  }
+
   Future<ItemList> getList(String id) async {
     try {
       final r = await _dio.get('/lists/$id');

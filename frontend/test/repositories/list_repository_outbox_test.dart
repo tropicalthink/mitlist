@@ -122,6 +122,116 @@ void main() {
       expect(await db.outboxCount(), 0);
     });
 
+    test('checking a canonical item queues and uploads a purchase event',
+        () async {
+      const listId = 'list-purchase-learning';
+      const itemId = 'item-milk';
+      await _insertList(db, listId);
+      final now = DateTime.utc(2026, 1, 1);
+      await db.upsertCanonicalItems([
+        CanonicalItemsTableCompanion.insert(
+          id: 'milk',
+          groupId: '__global__',
+          nameDe: const drift.Value('Milch'),
+          nameEn: const drift.Value('Milk'),
+          category: const drift.Value('dairy'),
+          defaultUnit: const drift.Value('l'),
+          isGlobal: const drift.Value(true),
+          version: const drift.Value(0),
+          createdAt: now,
+          updatedAt: now,
+        ),
+      ]);
+      await db.upsertListItemsRows([
+        ListItemsTableCompanion(
+          id: const drift.Value(itemId),
+          listId: const drift.Value(listId),
+          name: const drift.Value('Milk'),
+          quantity: const drift.Value(1),
+          unit: const drift.Value('l'),
+          checked: const drift.Value(false),
+          position: const drift.Value(0),
+          canonicalItemId: const drift.Value('milk'),
+          createdAt: drift.Value(now),
+          updatedAt: drift.Value(now),
+        ),
+      ]);
+
+      await repo.updateItemOfflineFirst(
+        listId,
+        itemId,
+        const UpdateListItemRequest(checked: true),
+      );
+      for (var i = 0; i < 20; i++) {
+        final ops = await db.getOutboxBatch(limit: 10);
+        if (ops.any((op) => op.type == 'recordPurchase')) break;
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+      }
+
+      final localItems = await repo.getItemsByListOnce(listId);
+      expect(localItems.single.canonicalItemId, 'milk');
+      expect(
+          await db.getGroupPurchaseHistory(groupId: 'group-1'), hasLength(1));
+
+      await repo.drainOutboxOnce();
+
+      expect(remote.groceryPurchaseCalls, hasLength(1));
+      final event = remote.groceryPurchaseCalls.single.events.single;
+      expect(event['canonical_item'], isA<Map>());
+      expect((event['canonical_item'] as Map)['name_en'], 'Milk');
+      expect(await db.outboxCount(), 0);
+    });
+
+    test('bulk check records each canonical pair once', () async {
+      const listId = 'list-bulk-learning';
+      await _insertList(db, listId);
+      final now = DateTime.utc(2026, 1, 1);
+      await db.upsertCanonicalItems([
+        for (final item in const [
+          ('milk', 'Milk'),
+          ('cereal', 'Cereal'),
+        ])
+          CanonicalItemsTableCompanion.insert(
+            id: item.$1,
+            groupId: '__global__',
+            nameDe: drift.Value(item.$2),
+            nameEn: drift.Value(item.$2),
+            category: const drift.Value('pantry'),
+            defaultUnit: const drift.Value('pc'),
+            isGlobal: const drift.Value(true),
+            version: const drift.Value(0),
+            createdAt: now,
+            updatedAt: now,
+          ),
+      ]);
+      await db.upsertListItemsRows([
+        for (var i = 0; i < 2; i++)
+          ListItemsTableCompanion(
+            id: drift.Value('item-$i'),
+            listId: const drift.Value(listId),
+            name: drift.Value(i == 0 ? 'Milk' : 'Cereal'),
+            quantity: const drift.Value(1),
+            unit: const drift.Value('pc'),
+            checked: const drift.Value(false),
+            position: drift.Value(i),
+            canonicalItemId: drift.Value(i == 0 ? 'milk' : 'cereal'),
+            createdAt: drift.Value(now),
+            updatedAt: drift.Value(now),
+          ),
+      ]);
+
+      await repo.setAllCheckedOfflineFirst(listId, checked: true);
+
+      expect(
+          await db.getGroupPurchaseHistory(groupId: 'group-1'), hasLength(2));
+      final pairs = await db.getTopCooccurrences(
+        groupId: 'group-1',
+        itemId: 'milk',
+      );
+      expect(pairs, hasLength(1));
+      expect(pairs.single.count, 1);
+    });
+
     // -------------------------------------------------------------------------
     // Case 2: temp-ID reconciliation — dependent update op
     //

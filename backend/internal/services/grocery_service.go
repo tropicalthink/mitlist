@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -87,6 +88,77 @@ type CanonicalItemStub struct {
 	NameEn      string    `json:"name_en"`
 	Category    string    `json:"category"`
 	DefaultUnit string    `json:"default_unit"`
+}
+
+type PurchaseBatchRequest struct {
+	Events []PurchaseEventRequest `json:"events"`
+}
+
+type PurchaseEventRequest struct {
+	ID            uuid.UUID           `json:"id"`
+	CanonicalItem CanonicalItemStub   `json:"canonical_item"`
+	Quantity      float64             `json:"quantity"`
+	Unit          string              `json:"unit"`
+	PurchasedAt   time.Time           `json:"purchased_at"`
+	Peers         []CanonicalItemStub `json:"peers"`
+}
+
+// RecordPurchases persists replay-safe purchase events and derives bought-
+// together counts only for newly inserted events.
+func (s *GroceryService) RecordPurchases(ctx context.Context, userID, groupID uuid.UUID, req PurchaseBatchRequest) (int64, error) {
+	if err := s.requireMembership(ctx, userID, groupID); err != nil {
+		return 0, err
+	}
+	if len(req.Events) == 0 {
+		return s.repo.CurrentVersion(ctx, groupID)
+	}
+	var version int64
+	err := s.repo.WithTx(ctx, func(txRepo *repositories.GroceryRepository) error {
+		var err error
+		version, err = txRepo.NextVersion(ctx, groupID)
+		if err != nil {
+			return err
+		}
+		for _, event := range req.Events {
+			stub := event.CanonicalItem
+			if err := txRepo.UpsertCanonicalItem(ctx, stub.ID, groupID, stub.NameDe, stub.NameEn, stub.Category, stub.DefaultUnit, version); err != nil {
+				return err
+			}
+			purchase := &models.PurchaseHistory{
+				ID: event.ID, GroupID: groupID, CanonicalItemID: &stub.ID,
+				Quantity: event.Quantity, Unit: event.Unit, PurchasedAt: event.PurchasedAt,
+			}
+			inserted, err := txRepo.InsertPurchase(ctx, purchase, version)
+			if err != nil {
+				return err
+			}
+			if !inserted {
+				continue
+			}
+			seenPeers := map[uuid.UUID]struct{}{}
+			for _, peer := range event.Peers {
+				if peer.ID == uuid.Nil || peer.ID == stub.ID {
+					continue
+				}
+				if _, exists := seenPeers[peer.ID]; exists {
+					continue
+				}
+				seenPeers[peer.ID] = struct{}{}
+				if err := txRepo.UpsertCanonicalItem(ctx, peer.ID, groupID, peer.NameDe, peer.NameEn, peer.Category, peer.DefaultUnit, version); err != nil {
+					return err
+				}
+				if err := txRepo.IncrementCooccurrence(ctx, groupID, stub.ID, peer.ID, version); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return 0, err
+	}
+	s.publishGraphUpdated(groupID, version)
+	return version, nil
 }
 
 // RecordCorrection records a confirmed correction and materialises the alias.

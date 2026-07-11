@@ -6,7 +6,9 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/list_models.dart';
+import '../utils/uuid_validation.dart';
 import '../services/list_service.dart';
+import '../services/error_reporter.dart';
 import '../services/sse_service.dart';
 import '../storage/app_database.dart';
 import 'outbox_drainer.dart';
@@ -343,6 +345,7 @@ class ListRepository {
       checked: req.checked ?? existing.checked,
       position: req.position ?? existing.position,
       priceCents: req.priceCents ?? existing.priceCents,
+      canonicalItemId: existing.canonicalItemId,
       createdAt: existing.createdAt,
       updatedAt: DateTime.now(),
     );
@@ -351,7 +354,7 @@ class ListRepository {
 
     // Record purchase signal when item transitions to checked.
     if ((req.checked ?? false) && !existing.checked) {
-      _recordPurchaseSignal(listId, itemId, existingRow);
+      await _recordPurchaseSignal(listId, itemId, existingRow);
     }
 
     // Optimistic-concurrency base: the server updated_at this edit was based
@@ -496,8 +499,19 @@ class ListRepository {
     await _db.upsertListItemsRows(patched);
     await _patchListPreviewFromLocalItems(listId);
 
+    if (checked) {
+      final notYetRecorded = targets.map((row) => row.id).toSet();
+      for (final row in targets) {
+        notYetRecorded.remove(row.id);
+        await _recordPurchaseSignal(
+          listId,
+          row.id,
+          row,
+          excludedPeerItemIds: notYetRecorded,
+        );
+      }
+    }
     for (final r in targets) {
-      if (checked) _recordPurchaseSignal(listId, r.id, r);
       await _db.enqueueOutbox(
         id: _uuid.v4(),
         type: 'updateItem',
@@ -555,6 +569,7 @@ class ListRepository {
           'reorderItems',
           'addItemAmount',
           'clearItems',
+          'recordPurchase',
         ],
         handlers: {
           'createItem': (op, payload) => _syncCreateItem(op.id, payload),
@@ -563,6 +578,8 @@ class ListRepository {
           'reorderItems': (op, payload) => _syncReorderItems(op.id, payload),
           'addItemAmount': (op, payload) => _syncAddItemAmount(op.id, payload),
           'clearItems': (op, payload) => _syncClearItems(op.id, payload),
+          'recordPurchase': (op, payload) =>
+              _syncRecordPurchase(op.id, payload),
         },
       );
     } finally {
@@ -711,6 +728,22 @@ class ListRepository {
     await _remote.clearItems(listId, onlyChecked: onlyChecked);
     await _db.deleteOutboxOp(opId);
     await _patchListPreviewFromLocalItems(listId);
+  }
+
+  Future<void> _syncRecordPurchase(
+      String opId, Map<String, dynamic> payload) async {
+    final groupId = payload['groupId'] as String?;
+    final rawEvents = payload['events'];
+    if (groupId == null || rawEvents is! List) {
+      await _db.deleteOutboxOp(opId);
+      return;
+    }
+    final events = rawEvents
+        .whereType<Map>()
+        .map((event) => event.cast<String, dynamic>())
+        .toList(growable: false);
+    await _remote.recordGroceryPurchases(groupId, events);
+    await _db.deleteOutboxOp(opId);
   }
 
   // ---------------------------------------------------------------------------
@@ -885,54 +918,103 @@ class ListRepository {
   // Phase 6: purchase signal on item check-off
   // ---------------------------------------------------------------------------
 
-  /// Records a purchase event and increments co-occurrence counts when an item
-  /// transitions to checked. Fire-and-forget; errors are silently swallowed
-  /// because this is a background signal, not a critical write.
-  void _recordPurchaseSignal(
+  /// Records a purchase event and its durable sync intent when an item becomes
+  /// checked. Errors remain non-critical to the list toggle, but callers await
+  /// completion so a process exit cannot race the local transaction.
+  Future<void> _recordPurchaseSignal(
     String listId,
     String itemId,
-    ListItemsTableData row,
-  ) {
-    unawaited(_doPurchaseSignal(listId, itemId, row));
-  }
+    ListItemsTableData row, {
+    Set<String> excludedPeerItemIds = const {},
+  }) =>
+      _doPurchaseSignal(
+        listId,
+        itemId,
+        row,
+        excludedPeerItemIds: excludedPeerItemIds,
+      );
 
   Future<void> _doPurchaseSignal(
     String listId,
     String itemId,
-    ListItemsTableData row,
-  ) async {
+    ListItemsTableData row, {
+    Set<String> excludedPeerItemIds = const {},
+  }) async {
     try {
       final canonicalId = row.canonicalItemId;
       if (canonicalId == null) return;
 
       final groupId = await _db.getListGroupId(listId);
       if (groupId == null) return;
-      // Insert a purchase_history row.
-      await _db.insertPurchaseHistory(PurchaseHistoryTableCompanion.insert(
-        id: _uuid.v4(),
-        groupId: groupId,
-        canonicalItemId: Value(canonicalId),
-        listItemId: Value(itemId),
-        quantity: Value(row.quantity),
-        unit: Value(row.unit),
-        version: const Value(0),
-        purchasedAt: DateTime.now(),
-      ));
-
-      // Increment co-occurrence with every other checked item in the same list
-      // in a single batched transaction.
       final peers = await _db.getCheckedItemsWithCanonical(listId);
       final peerCanonicalIds = peers
-          .where((p) => p.id != itemId && p.canonicalItemId != null)
+          .where((p) =>
+              p.id != itemId &&
+              !excludedPeerItemIds.contains(p.id) &&
+              p.canonicalItemId != null)
           .map((p) => p.canonicalItemId!)
+          .toSet()
           .toList();
-      await _db.incrementCooccurrences(
-        groupId: groupId,
-        canonicalItemId: canonicalId,
-        peerCanonicalIds: peerCanonicalIds,
+      final canonicalItems = await _db.getCanonicalItemsByIds(
+        {canonicalId, ...peerCanonicalIds}.toList(),
       );
-    } catch (_) {
-      // Best-effort; never throw from a background signal.
+      final byId = {for (final item in canonicalItems) item.id: item};
+      final canonical = byId[canonicalId];
+      if (canonical == null) return;
+      Map<String, dynamic> stub(CanonicalItemsTableData item) => {
+            'id': apiCanonicalId(item.id),
+            'name_de': item.nameDe,
+            'name_en': item.nameEn,
+            'category': item.category,
+            'default_unit': item.defaultUnit,
+          };
+      final eventId = _uuid.v4();
+      final purchasedAt = DateTime.now();
+      final event = <String, dynamic>{
+        'id': eventId,
+        'canonical_item': stub(canonical),
+        'quantity': row.quantity,
+        'unit': row.unit,
+        'purchased_at': purchasedAt.toUtc().toIso8601String(),
+        'peers': [
+          for (final peerId in peerCanonicalIds)
+            if (byId[peerId] case final peer?) stub(peer),
+        ],
+      };
+
+      await _db.transaction(() async {
+        await _db.insertPurchaseHistory(PurchaseHistoryTableCompanion.insert(
+          id: eventId,
+          groupId: groupId,
+          canonicalItemId: Value(canonicalId),
+          listItemId: Value(itemId),
+          quantity: Value(row.quantity),
+          unit: Value(row.unit),
+          version: const Value(0),
+          purchasedAt: purchasedAt,
+        ));
+        for (final peerId in peerCanonicalIds) {
+          await _db.incrementCooccurrence(
+            groupId: groupId,
+            itemAId: canonicalId,
+            itemBId: peerId,
+          );
+        }
+        await _db.enqueueOutbox(
+          id: _uuid.v4(),
+          type: 'recordPurchase',
+          payload: {
+            'groupId': groupId,
+            'events': [event]
+          },
+          idempotencyKey: 'recordPurchase:$eventId',
+          entityType: 'groceryPurchase',
+          entityId: eventId,
+        );
+      });
+      if (_autoSync) unawaited(drainOutboxOnce());
+    } catch (error, stackTrace) {
+      ErrorReporter().captureException(error, stackTrace: stackTrace);
     }
   }
 
