@@ -7,7 +7,7 @@ interface Props {
   variant?: "light" | "dark";
 }
 const {
-  webApp = "https://mitlist.me",
+  webApp = "https://app.mitlist.me",
   appStore = "#",
   playStore = "#",
   variant = "light",
@@ -15,7 +15,7 @@ const {
 ---
 
 <div class:list={["get-app", variant === "dark" && "get-app--dark"]}>
-  <a class="btn btn--primary get-app__cta" href={webApp}>Open mitlist.me</a>
+  <a class="btn btn--primary get-app__cta" href={webApp}>Open mitlist</a>
 
   <div class="get-app__stores">
     <span class="get-app__label">Also on iOS and Android</span>
