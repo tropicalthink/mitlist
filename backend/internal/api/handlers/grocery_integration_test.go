@@ -194,6 +194,50 @@ func TestGroceryCorrectionCreatesUnseededCanonicalItem(t *testing.T) {
 	assert.Equal(t, 1, canonicalCount)
 }
 
+func TestGroceryPurchaseBatchIsIdempotent(t *testing.T) {
+	clearTables(t)
+	router, _ := newGroceryRouter(t)
+	user := createTestUser(t, "grocery-purchases@example.com", "password123")
+	token := generateTestToken(user.ID)
+	group := createGroceryTestGroup(t, user.ID, "Purchase Learning Group")
+
+	eventID := uuid.New()
+	milkID := uuid.MustParse("11111111-1111-5111-8111-111111111111")
+	cerealID := uuid.MustParse("22222222-2222-5222-8222-222222222222")
+	body := map[string]any{"events": []map[string]any{{
+		"id": eventID.String(),
+		"canonical_item": map[string]any{
+			"id": milkID.String(), "name_de": "Milch", "name_en": "Milk",
+			"category": "dairy", "default_unit": "l",
+		},
+		"quantity": 1, "unit": "l", "purchased_at": time.Now().UTC(),
+		"peers": []map[string]any{{
+			"id": cerealID.String(), "name_de": "Muesli", "name_en": "Cereal",
+			"category": "pantry", "default_unit": "g",
+		}},
+	}}}
+
+	for range 2 {
+		rec := execRequest(t, router, "POST", "/groups/"+group.ID.String()+"/grocery/purchases", body, token)
+		requireStatus(t, rec, http.StatusOK)
+	}
+
+	var purchaseCount, pairCount int
+	require.NoError(t, testDB.QueryRow(context.Background(),
+		`SELECT count(*) FROM purchase_history WHERE id = $1`, eventID).Scan(&purchaseCount))
+	require.NoError(t, testDB.QueryRow(context.Background(),
+		`SELECT count FROM item_cooccurrence WHERE group_id = $1`, group.ID).Scan(&pairCount))
+	assert.Equal(t, 1, purchaseCount)
+	assert.Equal(t, 1, pairCount)
+
+	rec := execRequest(t, router, "GET", "/groups/"+group.ID.String()+"/grocery/graph?since_version=0", nil, token)
+	requireStatus(t, rec, http.StatusOK)
+	var graph models.GroceryGraphDelta
+	parseJSONResponse(t, rec, &graph)
+	require.Len(t, graph.PurchaseHistory, 1)
+	require.Len(t, graph.ItemCooccurrence, 1)
+}
+
 func TestGroceryCorrectionRecorrectionUpdatesAliasCanonicalID(t *testing.T) {
 	clearTables(t)
 	router, _ := newGroceryRouter(t)

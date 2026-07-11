@@ -3,7 +3,7 @@
     "apps": [],
     "details": [
       {
-        "appID": "__APPLE_TEAM_ID__.mitlist.me",
+        "appID": "__APPLE_TEAM_ID__.me.mitlist",
         "paths": ["/join/*"]
       }
     ]

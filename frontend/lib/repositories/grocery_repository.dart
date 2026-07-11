@@ -209,6 +209,42 @@ class GroceryRepository {
       await _db.upsertStoreAisles(aisles);
     }
 
+    final rawPurchases = delta['purchase_history'] as List? ?? [];
+    if (rawPurchases.isNotEmpty) {
+      final purchases = rawPurchases.cast<Map<String, dynamic>>().map((j) {
+        final rawCanonicalId = j['canonical_item_id'] as String?;
+        return PurchaseHistoryTableCompanion.insert(
+          id: j['id'] as String,
+          groupId: groupId,
+          canonicalItemId: Value(
+            rawCanonicalId == null ? null : mapId(rawCanonicalId),
+          ),
+          listItemId: Value(j['list_item_id'] as String?),
+          quantity: Value((j['quantity'] as num?)?.toDouble() ?? 1),
+          unit: Value(j['unit'] as String? ?? ''),
+          version: Value((j['version'] as num?)?.toInt() ?? 0),
+          purchasedAt: _parseDate(j['purchased_at']) ?? now,
+        );
+      });
+      await _db.upsertPurchaseHistory(purchases);
+    }
+
+    final rawCooccurrences = delta['item_cooccurrence'] as List? ?? [];
+    if (rawCooccurrences.isNotEmpty) {
+      final cooccurrences =
+          rawCooccurrences.cast<Map<String, dynamic>>().map((j) {
+        return ItemCooccurrenceTableCompanion.insert(
+          groupId: groupId,
+          itemAId: mapId(j['item_a_id'] as String),
+          itemBId: mapId(j['item_b_id'] as String),
+          count: Value((j['count'] as num?)?.toInt() ?? 0),
+          lastSeenAt: _parseDate(j['last_seen_at']) ?? now,
+          version: Value((j['version'] as num?)?.toInt() ?? 0),
+        );
+      });
+      await _db.upsertCooccurrence(cooccurrences);
+    }
+
     await _db.setGroceryVersion(groupId, maxVersion);
     _log.d('Grocery graph applied delta maxVersion=$maxVersion');
   }

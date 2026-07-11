@@ -19,6 +19,9 @@ const (
 	maxAisleFeedbackBatchSize  = 200
 	maxAisleNameLength         = 64
 	maxAisleSortOrder          = 100000
+	maxPurchaseBatchSize       = 200
+	maxPurchasePeers           = 100
+	maxPurchasePeerLinks       = 250
 )
 
 // These values mirror CHECK constraints in migration
@@ -43,6 +46,51 @@ func (h *GroceryHandler) RegisterRoutes(r chi.Router) {
 	r.Get("/groups/{groupID}/grocery/graph", h.GetGraph)
 	r.Post("/groups/{groupID}/grocery/corrections", h.RecordCorrection)
 	r.Patch("/groups/{groupID}/grocery/aisles", h.UpdateAisles)
+	r.Post("/groups/{groupID}/grocery/purchases", h.RecordPurchases)
+}
+
+// RecordPurchases ingests idempotent household purchase signals.
+func (h *GroceryHandler) RecordPurchases(w http.ResponseWriter, r *http.Request) {
+	userID := RequireUser(w, r)
+	if userID == uuid.Nil {
+		return
+	}
+	groupID, err := parseUUIDParam(r, "groupID")
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	var req services.PurchaseBatchRequest
+	if err := decodeJSON(r, &req); err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	if len(req.Events) > maxPurchaseBatchSize {
+		api.RespondError(w, &api.ValidationError{Field: "events", Message: "events exceeds maximum batch size"})
+		return
+	}
+	peerLinks := 0
+	for i, event := range req.Events {
+		if event.ID == uuid.Nil || event.CanonicalItem.ID == uuid.Nil {
+			api.RespondError(w, &api.ValidationError{Field: "events", Message: fmt.Sprintf("events[%d] has invalid identity", i)})
+			return
+		}
+		if len(event.Peers) > maxPurchasePeers {
+			api.RespondError(w, &api.ValidationError{Field: "events", Message: fmt.Sprintf("events[%d].peers exceeds maximum batch size", i)})
+			return
+		}
+		peerLinks += len(event.Peers)
+		if peerLinks > maxPurchasePeerLinks {
+			api.RespondError(w, &api.ValidationError{Field: "events", Message: "events contains too many peer links"})
+			return
+		}
+	}
+	version, err := h.svc.RecordPurchases(r.Context(), userID, groupID, req)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	api.RespondJSON(w, http.StatusOK, map[string]any{"version": version})
 }
 
 // GetGraph returns the delta since a client cursor.

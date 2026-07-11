@@ -142,6 +142,8 @@ class FakeListService implements ListService {
   final List<ReorderItemsCall> reorderItemsCalls = [];
   final List<AddItemAmountCall> addItemAmountCalls = [];
   final List<ClearItemsCall> clearItemsCalls = [];
+  final List<({String groupId, List<Map<String, dynamic>> events})>
+      groceryPurchaseCalls = [];
 
   /// Cumulative server-side quantity per (list|name|unit), so [addItemAmount]
   /// echoes additive merge semantics like the real endpoint.
@@ -254,6 +256,14 @@ class FakeListService implements ListService {
   Future<List<ListItem>> listItems(String listId,
       {int limit = 50, int offset = 0}) async {
     return itemsToReturn;
+  }
+
+  @override
+  Future<void> recordGroceryPurchases(
+    String groupId,
+    List<Map<String, dynamic>> events,
+  ) async {
+    groceryPurchaseCalls.add((groupId: groupId, events: events));
   }
 
   @override

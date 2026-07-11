@@ -15,11 +15,11 @@ import '../../providers/list_provider.dart';
 import '../../repositories/grocery_repository.dart';
 import '../../services/list_service.dart';
 import '../../services/restock_service.dart';
-import '../../services/scan/grocery_suggestion_service.dart';
 import '../../services/scan/household_suggestion_engine.dart';
 import '../../theme/animations.dart';
 import '../../utils/haptics.dart';
 import '../../utils/list_composer_parser.dart';
+import '../../services/scan/resolution/string_sim.dart';
 
 /// Owns all data + side-effect state for [ListDetailScreen]: the items stream,
 /// photos, suggestions, the settle/collapse animation bookkeeping, and every
@@ -60,6 +60,7 @@ class ListDetailController extends ChangeNotifier {
   String? _groupId;
   final HouseholdSuggestionEngine _suggestionEngine =
       HouseholdSuggestionEngine();
+  Future<List<Product>>? _productCatalogFuture;
   Timer? _suggestDebounce;
   final Map<String, List<ListItemPhoto>> _photosByItemId = {};
   final Set<String> _photoLoadAttempted = {};
@@ -768,8 +769,11 @@ class ListDetailController extends ChangeNotifier {
 
   void refreshSuggestionsDebounced(String query) {
     _suggestDebounce?.cancel();
-    _suggestDebounce = Timer(
-        const Duration(milliseconds: 180), () => refreshSuggestions(query));
+    // Invalidate already-running work immediately. Waiting until the debounce
+    // fires leaves a window where results for the previous text can repaint.
+    final generation = ++_suggestGeneration;
+    _suggestDebounce = Timer(const Duration(milliseconds: 180),
+        () => _refreshSuggestions(query, generation));
   }
 
   /// Refreshes both suggestion sources for the given composer text: the offline
@@ -777,8 +781,14 @@ class ListDetailController extends ChangeNotifier {
   /// generation counter ensures stale results from a prior keystroke are
   /// silently discarded if a newer query has already started.
   Future<void> refreshSuggestions([String? query]) async {
+    _suggestDebounce?.cancel();
+    return _refreshSuggestions(query, ++_suggestGeneration);
+  }
+
+  Future<void> _refreshSuggestions(String? query, int generation) async {
+    if (_disposed || _suggestGeneration != generation) return;
     final q = (query ?? '').trim();
-    final gen = ++_suggestGeneration;
+    final gen = generation;
 
     _suggestionEngine.beginQuery(q);
     _bumpSuggestions();
@@ -858,12 +868,16 @@ class ListDetailController extends ChangeNotifier {
     int generation,
   ) async {
     try {
-      final service = await ref.read(listServiceProviderAsync.future);
+      final products = await _loadProductCatalog(groupId);
       if (_disposed || _suggestGeneration != generation) return;
-      final products = await service.listProducts(groupId,
-          search: query.isEmpty ? null : query);
-      if (_disposed || _suggestGeneration != generation) return;
-      _suggestionEngine.setProducts(products.take(8).toList());
+      final normalizedQuery = normaliseText(query);
+      final matches = normalizedQuery.isEmpty
+          ? products
+          : products
+              .where((product) =>
+                  normaliseText(product.name).contains(normalizedQuery))
+              .toList();
+      _suggestionEngine.setProducts(matches.take(8).toList());
       _bumpSuggestions();
     } catch (_) {
       if (!_disposed && _suggestGeneration == generation) {
@@ -871,6 +885,18 @@ class ListDetailController extends ChangeNotifier {
         _bumpSuggestions();
       }
     }
+  }
+
+  Future<List<Product>> _loadProductCatalog(String groupId) {
+    return _productCatalogFuture ??= () async {
+      try {
+        final service = await ref.read(listServiceProviderAsync.future);
+        return await service.listProducts(groupId);
+      } catch (_) {
+        _productCatalogFuture = null;
+        rethrow;
+      }
+    }();
   }
 
   Future<void> _refreshRestockSuggestions(
