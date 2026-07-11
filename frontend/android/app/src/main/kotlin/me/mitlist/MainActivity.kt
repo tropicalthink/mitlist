@@ -1,4 +1,4 @@
-package mitlist.me
+package me.mitlist
 
 import android.content.ActivityNotFoundException
 import android.content.Intent

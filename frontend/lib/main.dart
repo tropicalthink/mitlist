@@ -25,9 +25,9 @@ Future<void> main() async {
   final prefs = await SharedPreferences.getInstance();
   ApiConfig.setRuntimeBaseUrl(prefs.getString(ApiConfig.serverUrlKey));
 
-  // Initialise Firebase before any Messaging API use (foreground or background).
-  if (!kIsWeb) {
-    await FcmService.ensureFirebaseCore();
+  // FCM is optional — only wire it up when google-services.json / GoogleService-Info.plist
+  // are present (Firebase project created). Without them, push is disabled but the app runs.
+  if (!kIsWeb && await FcmService.ensureFirebaseCore()) {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   }
 
