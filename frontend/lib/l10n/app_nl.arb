@@ -4261,6 +4261,18 @@
   "@authLoginResetPasswordButton": {
     "description": "Button to confirm password reset"
   },
+  "authServerLink": "Kies je server",
+  "authServerSheetTitle": "Kies je server",
+  "authServerSheetBody": "mitlist is open source en zelf te hosten. Verbind de app met je eigen server, of laat dit leeg om de standaardserver te gebruiken.",
+  "authServerUrlLabel": "Server-URL",
+  "authServerUrlHint": "https://mitlist.example.com",
+  "authServerUrlInvalid": "Voer een volledige URL in die begint met http:// of https://.",
+  "authServerUnreachable": "Er antwoordde geen mitlist-server op dit adres.",
+  "authServerSave": "Deze server gebruiken",
+  "authServerReset": "Terug naar de standaardserver",
+  "authServerNoDefault": "Deze build heeft geen standaardserver. Voer het adres van je server in om door te gaan.",
+  "accountSupportRow": "Steun mitlist",
+  "accountServerRow": "Server",
   "authLoginResetPasswordTitle": "Wachtwoord herstellen",
   "@authLoginResetPasswordTitle": {
     "description": "Bottom sheet title for password reset"

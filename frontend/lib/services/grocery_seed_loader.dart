@@ -76,15 +76,14 @@ class GrocerySeedLoader {
     //     clear also keeps a reseed's ~280k-row delete from firing per-row
     //     FTS delete triggers; the rebuild afterwards reflects the deletes.
     // Same trick for the three secondary indexes on item_aliases_table:
-    // maintaining them incrementally across ~280k inserts costs more than one
-    // bulk sort per index at the end.
+    // keeping them live costs some total import time, but lets autocomplete
+    // queries and unrelated interactive DB work yield between import chunks.
     await _db.dropAliasFtsTriggers();
-    await _db.dropAliasIndexes();
+    await _db.createAliasIndexes();
     if (existing.isNotEmpty) {
       await _db.clearGlobalSeed(_globalGroupId);
     }
     await _ingestSeed(json);
-    await _db.createAliasIndexes();
     await _db.rebuildAliasFts();
     await _db.createAliasFts(); // idempotent: recreates the dropped triggers
     await _db.setGroceryVersion(_globalGroupId, assetVersion);
@@ -141,16 +140,15 @@ class GrocerySeedLoader {
         }
       });
     });
-    // One commit for the whole clear+reingest instead of one per chunk — see
-    // the comment in `_loadSeedIfNeeded` on why this matters for interactive
-    // writes sharing the same connection.
-    await _db.transaction(() async {
-      await _db.clearGlobalAliasesBySource(_globalGroupId, 'off');
-      for (final chunk in _chunked(rows, 2000)) {
-        await _db.upsertItemAliases(chunk);
-      }
-      await _db.setGroceryVersion(_offAliasesVersionKey, assetVersion);
-    });
+    // Do not wrap the full import in one transaction. This database connection
+    // also serves interactive list writes, so a large external-alias asset
+    // must yield between chunks just like the canonical seed above. The
+    // version is committed last; an interrupted import safely reruns.
+    await _db.clearGlobalAliasesBySource(_globalGroupId, 'off');
+    for (final chunk in _chunked(rows, 2000)) {
+      await _db.upsertItemAliases(chunk);
+    }
+    await _db.setGroceryVersion(_offAliasesVersionKey, assetVersion);
   }
 
   /// Ingests the shipped global store layouts (item → aisle + shopping-path

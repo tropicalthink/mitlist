@@ -117,6 +117,8 @@ class AppIcons {
   static const IconData editOutline = Icons.edit_outlined;
   static const IconData removeDoneOutline = Icons.remove_done_outlined;
   static const IconData dragHandle = Icons.drag_handle;
+  static const IconData heart = Icons.favorite_border;
+  static const IconData server = Icons.dns_outlined;
 
   /// Resolves a semantic [name] to its placeholder [IconData].
   ///
@@ -217,6 +219,8 @@ class AppIcons {
       'editNote' => editNote,
       'hourglassEmpty' => hourglassEmpty,
       'link' => link,
+      'heart' => heart,
+      'server' => server,
       'openInNew' => openInNew,
       'star' => star,
       'copy' => copy,

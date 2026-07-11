@@ -2310,6 +2310,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get accountOpenDataRow => 'Open data';
 
   @override
+  String get accountSupportRow => 'Steun mitlist';
+
+  @override
+  String get accountServerRow => 'Server';
+
+  @override
   String get accountOpenDataTitle => 'Open data-bronvermelding';
 
   @override
@@ -3449,6 +3455,40 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get authLoginResetPasswordButton => 'Wachtwoord herstellen';
+
+  @override
+  String get authServerLink => 'Kies je server';
+
+  @override
+  String get authServerSheetTitle => 'Kies je server';
+
+  @override
+  String get authServerSheetBody =>
+      'mitlist is open source en zelf te hosten. Verbind de app met je eigen server, of laat dit leeg om de standaardserver te gebruiken.';
+
+  @override
+  String get authServerUrlLabel => 'Server-URL';
+
+  @override
+  String get authServerUrlHint => 'https://mitlist.example.com';
+
+  @override
+  String get authServerUrlInvalid =>
+      'Voer een volledige URL in die begint met http:// of https://.';
+
+  @override
+  String get authServerUnreachable =>
+      'Er antwoordde geen mitlist-server op dit adres.';
+
+  @override
+  String get authServerSave => 'Deze server gebruiken';
+
+  @override
+  String get authServerReset => 'Terug naar de standaardserver';
+
+  @override
+  String get authServerNoDefault =>
+      'Deze build heeft geen standaardserver. Voer het adres van je server in om door te gaan.';
 
   @override
   String get authLoginResetCodeSent =>

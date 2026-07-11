@@ -196,6 +196,23 @@ If any of these are dealbreakers, one of the apps above will serve you better �
 
 ---
 
+## Support mitlist
+
+mitlist exists because there was no free, pretty, self-hostable option — so it
+stays one. Everything works on the free app and on your own server, forever:
+no paid tier, no locked features, no ads. If mitlist ever takes money, it's to
+keep its own servers on.
+
+Ways to help, in order of usefulness:
+
+1. **Run a household on it** and report the bugs you hit.
+2. **Star the repo** and tell the next flat that's drowning in group-chat math.
+3. **Self-host it** — costs the project nothing, gives you everything.
+4. **Chip in for server costs** — donations are opening soon and will be
+   accounted for in the open.
+
+---
+
 ## Contributing
 
 See [AGENTS.md](AGENTS.md) for architecture and development guidelines.

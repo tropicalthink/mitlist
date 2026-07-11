@@ -97,6 +97,13 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   Future<void> _runLoad() async {
     await _controller.load();
     if (!mounted) return;
+    // A populated cached list can expose the composer before the remote list
+    // metadata (and therefore group id) has arrived. If the user focused the
+    // field in that window, the first suggestion request was intentionally a
+    // no-op; retry it now that load has resolved the metadata.
+    if (_composerFocusNode.hasFocus) {
+      unawaited(_controller.refreshSuggestions(_newItemController.text));
+    }
     if (!_controller.hasError && _controller.items.isEmpty) {
       FocusScope.of(context).requestFocus(_composerFocusNode);
     }
@@ -261,20 +268,26 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     final canonicalId = _pendingCanonicalId;
     _pendingCanonicalId = null;
     _isSaving = true;
-    // Clear the field up front so the composer is ready for the next item
-    // immediately; the row itself lands via the items stream. The text is
-    // restored if the add fails, so nothing is lost.
-    _newItemController.clear();
     unawaited(Haptics.light());
     try {
-      await _controller.addItem(text, canonicalItemId: canonicalId);
+      // addItem publishes a pending row synchronously before its first
+      // database await. Clear only after that publish, so there is never a
+      // frame where the value is visible in neither place.
+      final addFuture = _controller.addItem(text, canonicalItemId: canonicalId);
+      if (_newItemController.text.trim() == text) {
+        _newItemController.clear();
+      }
+      await addFuture;
       if (!mounted) return;
       _composerFocusNode.requestFocus();
     } catch (e) {
       if (!mounted) return;
-      _newItemController.text = text;
-      _newItemController.selection =
-          TextSelection.collapsed(offset: text.length);
+      if (_newItemController.text.trim().isEmpty) {
+        _newItemController.text = text;
+        _newItemController.selection =
+            TextSelection.collapsed(offset: text.length);
+        _pendingCanonicalId = canonicalId;
+      }
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.listDetailCouldNotAddItem)),
@@ -1208,11 +1221,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       focusNode: _composerFocusNode,
       onAdd: _addItem,
       onScan: () => _launchScan(),
-      productSuggestions: _controller.productSuggestions,
-      grocerySuggestions: _controller.grocerySuggestions,
+      suggestions: _controller.suggestions,
       showProductSuggestions: _showProductSuggestions,
-      onGrocerySuggestionSelected: (s) =>
-          _pendingCanonicalId = s.canonicalItemId,
+      onSuggestionSelected: (s) => _pendingCanonicalId = s.canonicalItemId,
     );
   }
 }

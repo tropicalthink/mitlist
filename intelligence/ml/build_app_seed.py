@@ -21,12 +21,18 @@ HERE = pathlib.Path(__file__).resolve().parent
 SRC = HERE / "data" / "seed.json"
 DST = HERE.parent.parent / "frontend" / "assets" / "grocery" / "seed.json"
 VERSION_DST = DST.parent / "seed.version.json"
+AUTOCOMPLETE_DST = DST.parent / "autocomplete.json"
 CURATED_ALIASES = HERE / "data" / "curated_aliases.jsonl"
 # Mined OCR/typo + fr/es name-variant aliases auto-promoted from corrections
 # (plan 012 A4, typo-like subset only; cross-word mappings stay deferred).
 CURATED_MINED = HERE / "data" / "curated_aliases_mined.jsonl"
 ALIAS_BLOCKLIST = HERE / "data" / "alias_blocklist.jsonl"
 ASSET_VERSION = 5
+
+
+def normalise_text(value: str) -> str:
+    """Match Flutter's normaliseText: lowercase, trim, collapse whitespace."""
+    return re.sub(r"\s+", " ", value.lower().strip())
 
 # Fine category -> coarse aisle label (matches existing app vocabulary).
 CATEGORY_TO_AISLE = {
@@ -218,7 +224,32 @@ def main():
     DST.write_text(json.dumps({"version": ASSET_VERSION, "items": out},
                               ensure_ascii=False, indent=0))
     VERSION_DST.write_text(json.dumps({"version": ASSET_VERSION},
-                                      ensure_ascii=False, separators=(",", ":")))
+                                      ensure_ascii=False, separators=(",", ":")) + "\n")
+
+    # Small, sorted cold-start index. The app can binary-search this before the
+    # full alias/FTS catalog has been installed into Drift.
+    autocomplete = []
+    for item in out:
+        seen_names = set()
+        for key in ("name_de", "name_en", "name_fr", "name_es"):
+            name = item[key]
+            normalized = normalise_text(name)
+            if not normalized or normalized in seen_names:
+                continue
+            seen_names.add(normalized)
+            autocomplete.append([
+                normalized,
+                item["id"],
+                name,
+                item["category"],
+                item["default_unit"],
+            ])
+    autocomplete.sort(key=lambda entry: entry[0])
+    AUTOCOMPLETE_DST.write_text(json.dumps(
+        {"version": ASSET_VERSION, "entries": autocomplete},
+        ensure_ascii=False,
+        separators=(",", ":"),
+    ))
 
     # Copy the ODbL-separable OFF brand aliases into the asset bundle as a
     # DISTINCT, attributed file (not merged into seed.json) so the share-alike
@@ -239,6 +270,7 @@ def main():
     print(f"asset size: {DST.stat().st_size/1_000_000:.2f} MB")
     print(f"total aliases: {total_aliases}")
     print(f"asset version: {ASSET_VERSION}")
+    print(f"autocomplete entries: {len(autocomplete)} -> {AUTOCOMPLETE_DST}")
     print("aisle distribution:", dict(sizes))
 
     # Coverage probe for the specific items from plan 012

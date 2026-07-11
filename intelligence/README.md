@@ -166,7 +166,7 @@ or the public e5 fallback through Model2Vec into static JSON assets consumed by
 
 | Script | Inputs | Outputs | Version to bump |
 |--------|--------|---------|-----------------|
-| `ml/build_app_seed.py` | `ml/data/seed.json`, `curated_aliases.jsonl`, `curated_aliases_mined.jsonl`, `alias_blocklist.jsonl` | `frontend/assets/grocery/seed.json`, `frontend/assets/grocery/seed.version.json` | `ASSET_VERSION` in `build_app_seed.py` |
+| `ml/build_app_seed.py` | `ml/data/seed.json`, `curated_aliases.jsonl`, `curated_aliases_mined.jsonl`, `alias_blocklist.jsonl` | `frontend/assets/grocery/seed.json`, `seed.version.json`, `autocomplete.json` | `ASSET_VERSION` in `build_app_seed.py` |
 | `ml/build_embedder_bundle.py` | `ml/data/embedder_vocab.txt`, `frontend/assets/grocery/seed.json`, optional `ml/phase8_embeddings/finetuned/` | `frontend/assets/grocery/embedder_vocab.json`, `catalog_vectors.json`, `embedder_golden.json` | `ASSET_VERSION` in `build_embedder_bundle.py` |
 | `ml/build_store_aisles.py` | `ml/data/aisles.jsonl`, `frontend/assets/grocery/seed.json` | `frontend/assets/grocery/store_aisles.json` | `ASSET_VERSION` in `build_store_aisles.py` |
 | `ml/off_ground.py` | Open Food Facts source data | grounded OFF intermediate data under `ml/data/` | n/a |
