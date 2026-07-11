@@ -24,8 +24,8 @@ plan was written.
 
 | Item | Status | Source |
 |------|--------|--------|
-| `applicationId` | `mitlist.me` | `frontend/android/app/build.gradle` line 34 |
-| `namespace` | `mitlist.me` | `frontend/android/app/build.gradle` line 18 |
+| `applicationId` | `me.mitlist` | `frontend/android/app/build.gradle` line 34 |
+| `namespace` | `me.mitlist` | `frontend/android/app/build.gradle` line 18 |
 | Release signing wired | Yes — loads `android/key.properties`; falls back to debug if absent | `build.gradle` lines 11–56 |
 | `minifyEnabled` | `true` | `build.gradle` line 57 |
 | `shrinkResources` | `true` | `build.gradle` line 58 |
@@ -45,8 +45,8 @@ plan was written.
 
 | Item | Status | Source |
 |------|--------|--------|
-| Bundle identifier (Runner) | `mitlist.me` | `frontend/ios/Runner.xcodeproj/project.pbxproj` line 371 |
-| Bundle identifier (RunnerTests) | `mitlist.me.RunnerTests` | `project.pbxproj` lines 388, 405, 420 |
+| Bundle identifier (Runner) | `me.mitlist` | `frontend/ios/Runner.xcodeproj/project.pbxproj` line 371 |
+| Bundle identifier (RunnerTests) | `me.mitlist.RunnerTests` | `project.pbxproj` lines 388, 405, 420 |
 | iOS deployment target | 12.0 | `project.pbxproj` lines 349, 476, 527 |
 | Swift version | 5.0 | `project.pbxproj` |
 | MARKETING_VERSION | `1.0` | `project.pbxproj` (Debug/Profile/Release build configs) |
@@ -78,7 +78,7 @@ plan was written.
 ### Store listing assets
 
 - `store/` directory is tracked in git and contains:
-  - `store/fastlane/Appfile` — `app_identifier("mitlist.me")`; `apple_id("")` empty
+  - `store/fastlane/Appfile` — `app_identifier("me.mitlist")`; `apple_id("")` empty
   - `store/fastlane/Fastfile` — single iOS lane (`screenshots`) using `capture_screenshots`; no `deliver`, no Android lane, no signing lane
   - `store/fastlane/metadata/android/en-US/full_description.txt` and `short_description.txt` — Play Store copy, ready
   - `store/fastlane/metadata/en-US/description.txt` — App Store description + metadata (title, subtitle, keywords, categories, copyright) — ready
@@ -132,12 +132,12 @@ plan was written.
 ### iOS / App Store
 
 - [ ] **Apple Developer Program account** — $99/year; requires Apple ID, identity verification, D-U-N-S number for organizations. Enrollment can take 1–3 business days.
-- [ ] **Bundle ID registration** — register `mitlist.me` in App Store Connect / Certificates, Identifiers & Profiles.
-- [ ] **Signing certificate + provisioning profile** — generate a Distribution certificate and App Store provisioning profile for `mitlist.me`; configure in Xcode or via Fastlane `match`.
+- [ ] **Bundle ID registration** — register `me.mitlist` in App Store Connect / Certificates, Identifiers & Profiles.
+- [ ] **Signing certificate + provisioning profile** — generate a Distribution certificate and App Store provisioning profile for `me.mitlist`; configure in Xcode or via Fastlane `match`.
   - Currently `CODE_SIGN_IDENTITY` is `iPhone Developer` (development only) and `DEVELOPMENT_TEAM` is not set. Must be updated before an App Store build compiles.
 - [ ] **`GoogleService-Info.plist`** — create in Firebase Console, drop into `ios/Runner/` at build time; never commit.
 - [ ] **APNs key** — generate an APNs Authentication Key (.p8) in the Apple Developer portal; upload to Firebase Console so FCM can deliver to iOS devices.
-- [ ] **Push Notifications + Background Modes capabilities** — must be enabled in Xcode for the `mitlist.me` App ID (`fcm_service.dart` line 28 notes this requirement).
+- [ ] **Push Notifications + Background Modes capabilities** — must be enabled in Xcode for the `me.mitlist` App ID (`fcm_service.dart` line 28 notes this requirement).
 - [ ] **App Store Connect app record** — create the app in App Store Connect (bundle ID, name, primary language, SKU).
 - [ ] **App Privacy "nutrition label"** — declare data collected:
   - Firebase Messaging (Device ID — used for push delivery — "not linked to identity" unless you link it).
@@ -206,7 +206,7 @@ The `store/fastlane/Fastfile` needs delivery lanes before CI submission is autom
 
 These decisions are blocked on the maintainer; nothing in the repo answers them.
 
-1. **Is `mitlist.me` the final bundle ID for both stores?** It is set consistently in `android/app/build.gradle` (applicationId) and `ios/Runner.xcodeproj/project.pbxproj` (PRODUCT_BUNDLE_IDENTIFIER), and in `store/fastlane/Appfile`. Confirm before registering in Play Console / App Store Connect — changing it later requires a new app record.
+1. **Is `me.mitlist` the final bundle ID for both stores?** It is set consistently in `android/app/build.gradle` (applicationId) and `ios/Runner.xcodeproj/project.pbxproj` (PRODUCT_BUNDLE_IDENTIFIER), and in `store/fastlane/Appfile`. Confirm before registering in Play Console / App Store Connect — changing it later requires a new app record.
 
 2. **Who holds the release keystore and how is it backed up?** The Android upload keystore is permanent — losing it and not being enrolled in Play App Signing means you can never update the app. Recommend: Play App Signing enrollment at first upload + keystore backed up in a password manager or cold storage.
 
@@ -239,7 +239,7 @@ Gate: complete the OSS/self-host v1 (plans 011–013) first. Mobile store submis
 - [ ] Generate Android release keystore; enroll in Play App Signing
 - [ ] Create Firebase project; download `google-services.json` and `GoogleService-Info.plist`
 - [ ] Generate APNs Authentication Key in Apple Developer portal; upload to Firebase
-- [ ] Register `mitlist.me` bundle ID in App Store Connect
+- [ ] Register `me.mitlist` bundle ID in App Store Connect
 - [ ] Create app records in Play Console and App Store Connect
 
 ### Phase 2 — Build plumbing (engineering, ~2 days)
@@ -288,11 +288,11 @@ Mobile release is done when ALL of the following hold:
 
 | File | Key finding |
 |------|-------------|
-| `frontend/android/app/build.gradle` | Signing wired, minify on, `applicationId = "mitlist.me"` |
+| `frontend/android/app/build.gradle` | Signing wired, minify on, `applicationId = "me.mitlist"` |
 | `frontend/android/key.properties.example` | Keystore template present; actual file gitignored |
 | `frontend/android/.gitignore` | `key.properties`, `**/*.keystore`, `**/*.jks` all ignored |
 | `frontend/android/app/proguard-rules.pro` | Flutter + TFLite + Play Core rules present |
-| `frontend/ios/Runner.xcodeproj/project.pbxproj` | Bundle ID `mitlist.me`, `CODE_SIGN_STYLE=Automatic`, no `DEVELOPMENT_TEAM` |
+| `frontend/ios/Runner.xcodeproj/project.pbxproj` | Bundle ID `me.mitlist`, `CODE_SIGN_STYLE=Automatic`, no `DEVELOPMENT_TEAM` |
 | `frontend/ios/Runner/Runner.entitlements` | `applinks:mitlist.me` associated domain only |
 | `frontend/pubspec.yaml` | `version: 1.0.0+1`, `firebase_messaging: ^15.2.5`, `sentry_flutter: ^8.14.2` |
 | `frontend/lib/main.dart` | Sentry opt-in via `GLITCHTIP_DSN` dart-define; Firebase init without `firebase_options.dart` |
@@ -302,7 +302,7 @@ Mobile release is done when ALL of the following hold:
 | `backend/internal/api/handlers/auth.go` | `DELETE /me` endpoint confirmed (line 63) |
 | `.gitea/workflows/deploy-prod.yml` | Web + backend Docker only; no mobile |
 | `.gitea/workflows/ci.yml` | `dart analyze` + `flutter test` on ubuntu only; no mobile build |
-| `store/fastlane/Appfile` | `app_identifier("mitlist.me")`; `apple_id("")` empty |
+| `store/fastlane/Appfile` | `app_identifier("me.mitlist")`; `apple_id("")` empty |
 | `store/fastlane/Fastfile` | Screenshots lane only; no delivery lanes; no Gemfile |
 | `store/fastlane/metadata/` | Listing copy (Android + iOS) ready; no screenshot images |
 | `store/screenshot_spec.txt` | Device sizes and content spec defined |
