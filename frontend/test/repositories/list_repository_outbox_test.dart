@@ -97,6 +97,31 @@ void main() {
       expect(remote.createItemCalls.first.req.name, equals('Apples'));
     });
 
+    test('createItemOfflineFirst rolls back row when outbox enqueue fails',
+        () async {
+      const listId = 'list-atomic-create';
+      await _insertList(db, listId);
+      await db.customStatement('''
+        CREATE TRIGGER reject_list_create_outbox
+        BEFORE INSERT ON outbox_ops
+        WHEN NEW.type = 'createItem'
+        BEGIN
+          SELECT RAISE(ABORT, 'forced outbox failure');
+        END;
+      ''');
+
+      await expectLater(
+        repo.createItemOfflineFirst(
+          listId,
+          const CreateListItemRequest(name: 'Milk'),
+        ),
+        throwsA(anything),
+      );
+
+      expect(await repo.getItemsByListOnce(listId), isEmpty);
+      expect(await db.outboxCount(), 0);
+    });
+
     // -------------------------------------------------------------------------
     // Case 2: temp-ID reconciliation — dependent update op
     //
@@ -230,6 +255,33 @@ void main() {
 
       // Op cleaned up.
       expect(await db.outboxCount(), equals(0));
+    });
+
+    test('addItemAmountOfflineFirst rolls back row when enqueue fails',
+        () async {
+      const listId = 'list-atomic-amount';
+      await _insertList(db, listId);
+      await db.customStatement('''
+        CREATE TRIGGER reject_list_amount_outbox
+        BEFORE INSERT ON outbox_ops
+        WHEN NEW.type = 'addItemAmount'
+        BEGIN
+          SELECT RAISE(ABORT, 'forced outbox failure');
+        END;
+      ''');
+
+      await expectLater(
+        repo.addItemAmountOfflineFirst(
+          listId,
+          name: 'Milk',
+          amount: 2,
+          unit: 'L',
+        ),
+        throwsA(anything),
+      );
+
+      expect(await repo.getItemsByListOnce(listId), isEmpty);
+      expect(await db.outboxCount(), 0);
     });
 
     // -------------------------------------------------------------------------

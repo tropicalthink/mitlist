@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
-import '../../models/list_models.dart';
-import '../../services/scan/grocery_suggestion_service.dart';
+import '../../services/scan/household_suggestion_engine.dart';
 import '../../theme/animations.dart';
 import '../../theme/spacing.dart';
 import '../app_button.dart';
@@ -16,61 +15,35 @@ class ListComposerBar extends StatelessWidget {
     required this.focusNode,
     required this.onAdd,
     required this.onScan,
-    this.productSuggestions = const [],
-    this.grocerySuggestions = const [],
+    this.suggestions = const [],
     this.showProductSuggestions = false,
-    this.onGrocerySuggestionSelected,
+    this.onSuggestionSelected,
   });
 
   final TextEditingController controller;
   final FocusNode focusNode;
   final VoidCallback onAdd;
   final VoidCallback onScan;
-  final List<Product> productSuggestions;
-
-  /// Offline, alias-powered suggestions from the canonical grocery seed,
-  /// shown ahead of backend product history.
-  final List<GrocerySuggestion> grocerySuggestions;
+  final List<HouseholdSuggestion> suggestions;
   final bool showProductSuggestions;
-
-  /// Called when a grocery (seed) suggestion chip is tapped, before [onAdd],
-  /// so the caller can capture the canonical link for the item about to be
-  /// created. Product-history chips carry no canonical id and don't call this.
-  final ValueChanged<GrocerySuggestion>? onGrocerySuggestionSelected;
+  final ValueChanged<HouseholdSuggestion>? onSuggestionSelected;
 
   Widget _buildSuggestions(BuildContext context) {
     if (!showProductSuggestions) return const SizedBox.shrink();
 
-    // Grocery (seed) suggestions lead; backend products fill in, deduped by
-    // name so the same item never appears twice.
-    final seen = <String>{};
-    final chips = <Widget>[];
-    void addChip(
-      String name, {
-      required bool fromSeed,
-      GrocerySuggestion? suggestion,
-    }) {
-      final key = name.toLowerCase();
-      if (name.isEmpty || !seen.add(key)) return;
-      chips.add(AppChip(
-        label: name,
-        leading: fromSeed ? const AppIcon(name: 'bolt', size: 14) : null,
-        onSelected: (_) {
-          controller.text = name;
-          if (suggestion != null) {
-            onGrocerySuggestionSelected?.call(suggestion);
-          }
-          onAdd();
-        },
-      ));
-    }
-
-    for (final g in grocerySuggestions) {
-      addChip(g.name, fromSeed: true, suggestion: g);
-    }
-    for (final p in productSuggestions) {
-      addChip(p.name, fromSeed: false);
-    }
+    final chips = suggestions
+        .map((suggestion) => AppChip(
+              label: suggestion.name,
+              leading: suggestion.hasIntelligence
+                  ? const AppIcon(name: 'bolt', size: 14)
+                  : null,
+              onSelected: (_) {
+                controller.text = suggestion.name;
+                onSuggestionSelected?.call(suggestion);
+                onAdd();
+              },
+            ))
+        .toList(growable: false);
 
     // Reserve this slot at a fixed height for the whole time the composer is
     // focused, whether or not chips have arrived yet — suggestions land in two

@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+
+	"github.com/getsentry/sentry-go"
 )
 
 // Common domain errors used across the application.
@@ -161,6 +163,12 @@ func HTTPStatusForError(err error) int {
 // WriteError writes a JSON error response with the appropriate HTTP status.
 func WriteError(w http.ResponseWriter, err error) {
 	status := HTTPStatusForError(err)
+	// Internal errors are otherwise swallowed here (message replaced with a
+	// generic string, never logged), so report them to Sentry/GlitchTip. This
+	// is the single funnel for the ~600 handler error-response call sites.
+	if status >= http.StatusInternalServerError && err != nil {
+		captureServerError(err)
+	}
 	resp := ErrorResponse{Error: CodeForError(err)}
 	var ve *ValidationError
 	if errors.As(err, &ve) {
@@ -176,4 +184,16 @@ func WriteError(w http.ResponseWriter, err error) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(resp)
+}
+
+// captureServerError reports an unexpected server-side error to Sentry/GlitchTip,
+// grouped by the error value so distinct failures surface as distinct issues.
+// It is a no-op when Sentry is not configured. The attached stacktrace points at
+// the handler that returned the error.
+func captureServerError(err error) {
+	hub := sentry.CurrentHub()
+	if hub.Client() == nil {
+		return
+	}
+	hub.CaptureException(err)
 }
