@@ -6,8 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 
+import '../../config/api_config.dart';
 import '../../models/auth_models.dart';
 import '../../models/group_models.dart';
 import '../../providers/auth_provider.dart'
@@ -603,8 +605,27 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             label: l10n.accountOpenDataRow,
             onTap: _showOpenDataSheet,
           ),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          _MenuRow(
+            icon: const AppIcon(name: 'server'),
+            label: l10n.accountServerRow,
+            value: Uri.tryParse(ApiConfig.baseUrl)?.host ?? ApiConfig.baseUrl,
+          ),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          _MenuRow(
+            icon: const AppIcon(name: 'heart'),
+            label: l10n.accountSupportRow,
+            onTap: _openSupportPage,
+          ),
         ],
       ),
+    );
+  }
+
+  Future<void> _openSupportPage() async {
+    await launchUrl(
+      Uri.parse('https://mitlist.me/#support'),
+      mode: LaunchMode.externalApplication,
     );
   }
 

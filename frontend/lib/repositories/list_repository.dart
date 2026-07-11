@@ -193,32 +193,35 @@ class ListRepository {
       updatedAt: now,
     );
 
-    // The items stream fires on this write, so the row appears immediately. The
-    // preview patch only feeds the hub list-card, so it runs off the critical
-    // path.
-    await _db.upsertListItemsRows([_toListItemsRow(local)]);
-    await _patchListPreviewFromItems(
-      listId,
-      [...existingRows.map(_toListItem), local],
-      itemCount: existingRows.length + 1,
-    );
-    await _db.enqueueOutbox(
-      id: _uuid.v4(),
-      type: 'createItem',
-      payload: {
-        'listId': listId,
-        'tempId': tempId,
-        'name': req.name,
-        'quantity': req.quantity,
-        'unit': req.unit,
-        'note': req.note,
-        if (req.priceCents != null) 'priceCents': req.priceCents,
-        if (req.canonicalItemId != null) 'canonicalItemId': req.canonicalItemId,
-      },
-      idempotencyKey: 'createItem:$tempId',
-      entityType: 'listItem',
-      entityId: tempId,
-    );
+    // The local row and its durable sync intent are one atomic state change.
+    // Otherwise a process death or enqueue failure between the writes leaves
+    // an item that can never reach the server.
+    await _db.transaction(() async {
+      await _db.upsertListItemsRows([_toListItemsRow(local)]);
+      await _patchListPreviewFromItems(
+        listId,
+        [...existingRows.map(_toListItem), local],
+        itemCount: existingRows.length + 1,
+      );
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'createItem',
+        payload: {
+          'listId': listId,
+          'tempId': tempId,
+          'name': req.name,
+          'quantity': req.quantity,
+          'unit': req.unit,
+          'note': req.note,
+          if (req.priceCents != null) 'priceCents': req.priceCents,
+          if (req.canonicalItemId != null)
+            'canonicalItemId': req.canonicalItemId,
+        },
+        idempotencyKey: 'createItem:$tempId',
+        entityType: 'listItem',
+        entityId: tempId,
+      );
+    });
 
     // Best-effort immediate sync.
     if (_autoSync) unawaited(drainOutboxOnce());
@@ -291,26 +294,28 @@ class ListRepository {
       entityId = tempId;
     }
 
-    await _db.upsertListItemsRows([_toListItemsRow(local)]);
-    await _patchListPreviewFromLocalItems(listId);
-    await _db.enqueueOutbox(
-      id: _uuid.v4(),
-      type: 'addItemAmount',
-      payload: {
-        'listId': listId,
-        if (tempId != null) 'tempId': tempId,
-        'name': name,
-        'amount': amount,
-        'unit': unit,
-        'note': note,
-        if (canonicalItemId != null) 'canonicalItemId': canonicalItemId,
-      },
-      // Each add is a distinct additive op, so the key is unique per enqueue
-      // to avoid collapsing two separate "+amount" writes into one.
-      idempotencyKey: 'addItemAmount:${_uuid.v4()}',
-      entityType: 'listItem',
-      entityId: entityId,
-    );
+    await _db.transaction(() async {
+      await _db.upsertListItemsRows([_toListItemsRow(local)]);
+      await _patchListPreviewFromLocalItems(listId);
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'addItemAmount',
+        payload: {
+          'listId': listId,
+          if (tempId != null) 'tempId': tempId,
+          'name': name,
+          'amount': amount,
+          'unit': unit,
+          'note': note,
+          if (canonicalItemId != null) 'canonicalItemId': canonicalItemId,
+        },
+        // Each add is a distinct additive op, so the key is unique per enqueue
+        // to avoid collapsing two separate "+amount" writes into one.
+        idempotencyKey: 'addItemAmount:${_uuid.v4()}',
+        entityType: 'listItem',
+        entityId: entityId,
+      );
+    });
 
     if (_autoSync) unawaited(drainOutboxOnce());
     return local;

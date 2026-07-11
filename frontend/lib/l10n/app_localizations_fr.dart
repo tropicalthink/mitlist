@@ -2311,6 +2311,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get accountOpenDataRow => 'Données ouvertes';
 
   @override
+  String get accountSupportRow => 'Soutenir mitlist';
+
+  @override
+  String get accountServerRow => 'Serveur';
+
+  @override
   String get accountOpenDataTitle => 'Attribution des données ouvertes';
 
   @override
@@ -3461,6 +3467,40 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get authLoginResetPasswordButton => 'Réinitialiser le mot de passe';
+
+  @override
+  String get authServerLink => 'Choisir le serveur';
+
+  @override
+  String get authServerSheetTitle => 'Choisissez votre serveur';
+
+  @override
+  String get authServerSheetBody =>
+      'mitlist est open source et auto-hébergeable. Connectez l\'application à votre propre serveur, ou laissez vide pour utiliser le serveur par défaut.';
+
+  @override
+  String get authServerUrlLabel => 'URL du serveur';
+
+  @override
+  String get authServerUrlHint => 'https://mitlist.example.com';
+
+  @override
+  String get authServerUrlInvalid =>
+      'Saisissez une URL complète commençant par http:// ou https://.';
+
+  @override
+  String get authServerUnreachable =>
+      'Aucun serveur mitlist n\'a répondu à cette adresse.';
+
+  @override
+  String get authServerSave => 'Utiliser ce serveur';
+
+  @override
+  String get authServerReset => 'Revenir au serveur par défaut';
+
+  @override
+  String get authServerNoDefault =>
+      'Cette version n\'a pas de serveur par défaut. Saisissez l\'adresse de votre serveur pour continuer.';
 
   @override
   String get authLoginResetCodeSent =>

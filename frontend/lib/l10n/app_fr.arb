@@ -4261,6 +4261,18 @@
   "@authLoginResetPasswordButton": {
     "description": "Button to confirm password reset"
   },
+  "authServerLink": "Choisir le serveur",
+  "authServerSheetTitle": "Choisissez votre serveur",
+  "authServerSheetBody": "mitlist est open source et auto-hébergeable. Connectez l'application à votre propre serveur, ou laissez vide pour utiliser le serveur par défaut.",
+  "authServerUrlLabel": "URL du serveur",
+  "authServerUrlHint": "https://mitlist.example.com",
+  "authServerUrlInvalid": "Saisissez une URL complète commençant par http:// ou https://.",
+  "authServerUnreachable": "Aucun serveur mitlist n'a répondu à cette adresse.",
+  "authServerSave": "Utiliser ce serveur",
+  "authServerReset": "Revenir au serveur par défaut",
+  "authServerNoDefault": "Cette version n'a pas de serveur par défaut. Saisissez l'adresse de votre serveur pour continuer.",
+  "accountSupportRow": "Soutenir mitlist",
+  "accountServerRow": "Serveur",
   "authLoginResetPasswordTitle": "Réinitialiser le mot de passe",
   "@authLoginResetPasswordTitle": {
     "description": "Bottom sheet title for password reset"

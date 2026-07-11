@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mitlist/l10n/app_localizations.dart';
 import 'package:mitlist/repositories/list_repository.dart';
+import 'package:mitlist/services/scan/household_suggestion_engine.dart';
 import 'package:mitlist/services/scan/grocery_suggestion_service.dart';
 import 'package:mitlist/storage/app_database.dart';
 import 'package:mitlist/widgets/list/list_composer_bar.dart';
@@ -84,15 +85,16 @@ void main() {
           onAdd: () => events.add('add:${controller.text}'),
           onScan: () {},
           showProductSuggestions: true,
-          grocerySuggestions: const [
-            GrocerySuggestion(
+          suggestions: const [
+            HouseholdSuggestion(
               canonicalItemId: 'milk',
               name: 'Milch',
               category: 'dairy',
               unit: 'l',
+              sources: {HouseholdSuggestionSource.catalog},
             ),
           ],
-          onGrocerySuggestionSelected: (s) =>
+          onSuggestionSelected: (s) =>
               events.add('selected:${s.canonicalItemId}'),
         ),
       ),
