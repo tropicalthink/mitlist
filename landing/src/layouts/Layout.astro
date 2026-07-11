@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import ConsoleEgg from "../components/ConsoleEgg.astro";
 
 interface Props {
   title?: string;
@@ -36,5 +37,6 @@ const {
   </head>
   <body>
     <slot />
+    <ConsoleEgg />
   </body>
 </html>
