@@ -1308,6 +1308,17 @@ FROM list_items_table;
         .get();
   }
 
+  Future<bool> hasCanonicalItemsByGroup(String groupId) async {
+    final row = await (selectOnly(canonicalItemsTable)
+          ..addColumns([canonicalItemsTable.id])
+          ..where((canonicalItemsTable.groupId.equals(groupId) |
+                  canonicalItemsTable.isGlobal.equals(true)) &
+              canonicalItemsTable.deletedAt.isNull())
+          ..limit(1))
+        .getSingleOrNull();
+    return row != null;
+  }
+
   Future<void> upsertCanonicalItems(
       Iterable<CanonicalItemsTableCompanion> rows) async {
     await batch((b) {
@@ -1757,7 +1768,7 @@ INSERT INTO item_aliases_table
            SET count = count + 1,
                last_seen_at = excluded.last_seen_at,
                version = version + 1''',
-      [groupId, a, b, now],
+      [groupId, a, b, now.millisecondsSinceEpoch ~/ 1000],
     );
   }
 

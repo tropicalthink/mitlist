@@ -46,6 +46,18 @@ void main() {
         createdAt: now,
         updatedAt: now,
       ),
+      CanonicalItemsTableCompanion.insert(
+        id: 'oat_milk',
+        groupId: '__global__',
+        nameDe: const Value('Hafermilch'),
+        nameEn: const Value('oat milk'),
+        category: const Value('dairy'),
+        defaultUnit: const Value('l'),
+        isGlobal: const Value(true),
+        version: const Value(0),
+        createdAt: now,
+        updatedAt: now,
+      ),
     ]);
 
     final repo = GroceryRepository(db: db, dio: Dio());
@@ -79,6 +91,25 @@ void main() {
           'updated_at': now.toIso8601String(),
         },
       ],
+      'purchase_history': [
+        {
+          'id': 'purchase-1',
+          'canonical_item_id': apiCanonicalId('milk'),
+          'quantity': 2,
+          'unit': 'l',
+          'version': 1,
+          'purchased_at': now.toIso8601String(),
+        },
+      ],
+      'item_cooccurrence': [
+        {
+          'item_a_id': apiCanonicalId('milk'),
+          'item_b_id': apiCanonicalId('oat_milk'),
+          'count': 3,
+          'version': 1,
+          'last_seen_at': now.toIso8601String(),
+        },
+      ],
     });
 
     final alias = await db.findAlias(
@@ -88,5 +119,14 @@ void main() {
 
     expect(alias, isNotNull);
     expect(alias!.canonicalItemId, equals('milk'));
+    final purchases = await db.getGroupPurchaseHistory(groupId: 'group-1');
+    expect(purchases.single.canonicalItemId, 'milk');
+    final cooccurrences = await db.getTopCooccurrences(
+      groupId: 'group-1',
+      itemId: 'milk',
+    );
+    expect(cooccurrences.single.itemAId, 'milk');
+    expect(cooccurrences.single.itemBId, 'oat_milk');
+    expect(cooccurrences.single.count, 3);
   });
 }
