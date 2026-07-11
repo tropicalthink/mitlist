@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"runtime/debug"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/mitlist-app/mitlist/pkg/logger"
 	"github.com/robfig/cron/v3"
@@ -20,7 +22,12 @@ type Runner struct {
 	log        *logger.Logger
 	jobs       []jobMeta
 	entryNames map[cron.EntryID]string
+	sentryOn   bool
 }
+
+// EnableSentryMonitoring turns on GlitchTip cron check-ins and panic capture for
+// scheduled jobs. Call before Start. It is a no-op unless Sentry is initialized.
+func (r *Runner) EnableSentryMonitoring(on bool) { r.sentryOn = on }
 
 type jobMeta struct {
 	Name     string    `json:"name"`
@@ -107,14 +114,7 @@ func (r *Runner) register(name, spec string, fn func(), enabled bool) {
 		return
 	}
 
-	wrapped := func() {
-		start := time.Now()
-		r.log.Info().Str("job", name).Time("start", start).Msg("job started")
-		fn()
-		r.log.Info().Str("job", name).Dur("duration", time.Since(start)).Msg("job finished")
-	}
-
-	id, err := r.cron.AddFunc(spec, wrapped)
+	id, err := r.cron.AddFunc(spec, r.wrapJob(name, spec, fn))
 	if err != nil {
 		r.log.Error().Err(err).Str("job", name).Str("schedule", spec).Msg("failed to register job")
 		r.jobs = append(r.jobs, meta)
@@ -126,6 +126,60 @@ func (r *Runner) register(name, spec string, fn func(), enabled bool) {
 	meta.NextRun = entry.Next
 	r.jobs = append(r.jobs, meta)
 	r.log.Info().Str("job", name).Str("schedule", spec).Time("next_run", entry.Next).Msg("job registered")
+}
+
+// wrapJob adds structured start/finish logging, panic capture, and (when Sentry
+// monitoring is enabled) GlitchTip cron check-ins around a job's run function.
+// A panic is captured and logged but not re-thrown, so one job failing never
+// takes down the scheduler.
+func (r *Runner) wrapJob(name, spec string, fn func()) func() {
+	monitorConfig := &sentry.MonitorConfig{Schedule: sentry.CrontabSchedule(spec)}
+
+	return func() {
+		hub := sentry.CurrentHub().Clone()
+		hub.Scope().SetTag("job", name)
+		ctx := sentry.SetHubOnContext(context.Background(), hub)
+
+		var checkInID *sentry.EventID
+		if r.sentryOn {
+			checkInID = hub.CaptureCheckIn(&sentry.CheckIn{
+				MonitorSlug: name,
+				Status:      sentry.CheckInStatusInProgress,
+			}, monitorConfig)
+		}
+
+		start := time.Now()
+		r.log.Info().Str("job", name).Time("start", start).Msg("job started")
+
+		status := sentry.CheckInStatusOK
+		func() {
+			defer func() {
+				if rec := recover(); rec != nil {
+					status = sentry.CheckInStatusError
+					hub.RecoverWithContext(ctx, rec)
+					r.log.Error().
+						// Already captured via hub.RecoverWithContext above.
+						Bool(logger.SentrySkipField, true).
+						Str("job", name).
+						Interface("panic", rec).
+						Str("stack", string(debug.Stack())).
+						Msg("job panic recovered")
+				}
+			}()
+			fn()
+		}()
+
+		duration := time.Since(start)
+		if r.sentryOn && checkInID != nil {
+			hub.CaptureCheckIn(&sentry.CheckIn{
+				ID:          *checkInID,
+				MonitorSlug: name,
+				Status:      status,
+				Duration:    duration,
+			}, monitorConfig)
+		}
+		r.log.Info().Str("job", name).Dur("duration", duration).Msg("job finished")
+	}
 }
 
 // Start begins the cron scheduler.

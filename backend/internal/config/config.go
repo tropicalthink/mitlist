@@ -77,8 +77,12 @@ type Config struct {
 	BrevoSMTPPass    string `env:"BREVO_SMTP_PASS"`
 	MailFromEmail    string `env:"MAIL_FROM_EMAIL" default:"noreply@mitlist.me"`
 
-	// Sentry
-	SentryDSN string `env:"SENTRY_DSN"`
+	// Sentry / GlitchTip error tracking
+	SentryDSN              string  `env:"SENTRY_DSN"`
+	SentryRelease          string  `env:"SENTRY_RELEASE"`
+	SentryServerName       string  `env:"SENTRY_SERVER_NAME"`
+	SentryTracesSampleRate float64 `env:"SENTRY_TRACES_SAMPLE_RATE" default:"0"`
+	SentryDebug            bool    `env:"SENTRY_DEBUG" default:"false"`
 
 	// File Storage
 	AWSAccessKeyID     string `env:"AWS_ACCESS_KEY_ID"`
@@ -178,6 +182,7 @@ func (c *Config) LogIntegrationStatus() {
 	storageOn := c.S3BucketName != ""
 	oauthOn := c.GoogleClientID != "" || c.AppleClientID != ""
 	errorReportingOn := c.SentryDSN != ""
+	errorTracingOn := errorReportingOn && c.SentryTracesSampleRate > 0
 	fxOn := c.FxRateAPIURL != ""
 
 	log.Info().
@@ -188,6 +193,7 @@ func (c *Config) LogIntegrationStatus() {
 		Bool("file_storage", storageOn).
 		Bool("oauth", oauthOn).
 		Bool("error_reporting", errorReportingOn).
+		Bool("error_tracing", errorTracingOn).
 		Bool("fx_rates", fxOn).
 		Msg("integration status")
 
@@ -277,6 +283,16 @@ func setField(field reflect.Value, tag reflect.StructTag, raw string) error {
 			return fmt.Errorf("invalid boolean value %q: %w", val, err)
 		}
 		field.SetBool(b)
+	case reflect.Float64:
+		if val == "" {
+			field.SetFloat(0)
+			return nil
+		}
+		f, err := strconv.ParseFloat(val, 64)
+		if err != nil {
+			return fmt.Errorf("invalid float value %q: %w", val, err)
+		}
+		field.SetFloat(f)
 	default:
 		return fmt.Errorf("unsupported kind %s", field.Kind())
 	}

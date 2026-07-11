@@ -6,7 +6,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/getsentry/sentry-go"
 	"github.com/go-chi/chi/v5"
 
 	"github.com/mitlist-app/mitlist/internal/api/handlers"
@@ -15,11 +14,17 @@ import (
 	"github.com/mitlist-app/mitlist/internal/db"
 	"github.com/mitlist-app/mitlist/internal/jobs"
 	"github.com/mitlist-app/mitlist/internal/middleware"
+	"github.com/mitlist-app/mitlist/internal/observability"
 	"github.com/mitlist-app/mitlist/internal/redis"
 	"github.com/mitlist-app/mitlist/internal/server"
 	"github.com/mitlist-app/mitlist/internal/services"
 	"github.com/mitlist-app/mitlist/pkg/logger"
 )
+
+// version is the build version reported to Sentry/GlitchTip as the release.
+// Override at build time with: -ldflags="-X main.version=$VERSION".
+// A SENTRY_RELEASE env var takes precedence over this at runtime.
+var version = "dev"
 
 func main() {
 	cfg, err := config.Load()
@@ -30,18 +35,18 @@ func main() {
 	cfg.LogMasked()
 	cfg.LogIntegrationStatus()
 
-	log := logger.New(cfg.Environment)
+	// Initialize error reporting before the logger so the logger's Sentry bridge
+	// can attach to a live client.
+	flushSentry, sentryOn, sentryErr := observability.Init(cfg, version)
+	defer flushSentry()
 
-	if cfg.SentryDSN != "" {
-		if err := sentry.Init(sentry.ClientOptions{
-			Dsn:         cfg.SentryDSN,
-			Environment: cfg.Environment,
-			// Release can be wired to a build-time version later.
-		}); err != nil {
-			log.Warn().Err(err).Msg("sentry initialization failed; continuing without error reporting")
-		} else {
-			defer sentry.Flush(2 * time.Second)
-		}
+	var logOpts []logger.Option
+	if sentryOn {
+		logOpts = append(logOpts, logger.WithSentryBridge())
+	}
+	log := logger.New(cfg.Environment, logOpts...)
+	if sentryErr != nil {
+		log.Warn().Err(sentryErr).Msg("sentry initialization failed; continuing without error reporting")
 	}
 
 	pool, err := db.New(cfg)
@@ -65,6 +70,7 @@ func main() {
 	cnt := container.New(cfg, pool, redisClient, log)
 
 	runner := jobs.NewRunnerWithDispatcher(pool, cnt.NotificationService(), log)
+	runner.EnableSentryMonitoring(sentryOn)
 	runner.RegisterAll()
 	runner.Start()
 
