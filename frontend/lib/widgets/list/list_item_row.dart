@@ -13,6 +13,7 @@ class ListItemRow extends StatelessWidget {
     super.key,
     required this.item,
     required this.onToggle,
+    this.onTap,
     this.photoUrl,
     this.currencySymbol = '\$',
     this.claimedLabel,
@@ -24,6 +25,10 @@ class ListItemRow extends StatelessWidget {
 
   final ListItem item;
   final ValueChanged<bool> onToggle;
+
+  /// Tap anywhere on the row. Wired to the check toggle so the whole 56px row
+  /// is a target, not just the checkbox.
+  final VoidCallback? onTap;
   final String? photoUrl;
   final String currencySymbol;
   final String? claimedLabel;
@@ -45,6 +50,7 @@ class ListItemRow extends StatelessWidget {
     final row = Material(
       color: colorScheme.surface,
       child: InkWell(
+        onTap: onTap,
         onLongPress: onLongPress,
         child: Container(
           decoration: BoxDecoration(

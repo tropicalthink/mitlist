@@ -141,6 +141,55 @@ func (s *ListItemPhotoService) List(ctx context.Context, userID, groupID, listIt
 	return out, nil
 }
 
+// ListByList returns ready photos for every item in the list at once, keyed
+// by list item id. This backs the batch hydration endpoint: without it the
+// client fired one request per item on every list open, which saturated
+// browser connection pools and starved unrelated requests.
+func (s *ListItemPhotoService) ListByList(ctx context.Context, userID, groupID, listID uuid.UUID) (map[string][]ListItemPhoto, error) {
+	if groupID == uuid.Nil {
+		return nil, &api.ValidationError{Field: "group_id", Message: "group_id is required"}
+	}
+	if err := s.requireMembership(ctx, userID, groupID); err != nil {
+		return nil, err
+	}
+
+	list, err := s.listRepo.GetListByID(ctx, listID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, &api.NotFoundError{Resource: "list", ID: listID.String()}
+		}
+		return nil, err
+	}
+	if list.GroupID != groupID {
+		return nil, &api.PermissionDeniedError{Message: "list does not belong to this group"}
+	}
+
+	byItem, err := s.itemAttachRepo.ListReadyAttachmentsByList(ctx, listID)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make(map[string][]ListItemPhoto, len(byItem))
+	for itemID, atts := range byItem {
+		photos := make([]ListItemPhoto, 0, len(atts))
+		for _, a := range atts {
+			url := s.storage.GetURL(a.ObjectKey)
+			if url == "" {
+				return nil, fmt.Errorf("failed to presign photo url")
+			}
+			photos = append(photos, ListItemPhoto{
+				AttachmentID: a.ID.String(),
+				ContentType:  a.ContentType,
+				ByteSize:     a.ByteSize,
+				CreatedAt:    a.CreatedAt,
+				URL:          url,
+			})
+		}
+		out[itemID.String()] = photos
+	}
+	return out, nil
+}
+
 func (s *ListItemPhotoService) Detach(ctx context.Context, userID, groupID, listItemID, attachmentID uuid.UUID) error {
 	if groupID == uuid.Nil {
 		return &api.ValidationError{Field: "group_id", Message: "group_id is required"}

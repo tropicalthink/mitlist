@@ -33,21 +33,31 @@ import 'list_detail_controller.dart';
 
 /// Optional [GoRouter] `extra` when opening a list from the hub (title shows immediately).
 class ListDetailRouteArgs {
-  const ListDetailRouteArgs({this.listName, this.autoFocusTitle = false});
+  const ListDetailRouteArgs({
+    this.listName,
+    this.autoFocusTitle = false,
+    this.autoFocusComposer = false,
+  });
   final String? listName;
   final bool autoFocusTitle;
+
+  /// Land with the item composer focused — the "add an item to this list"
+  /// entry point from a list card.
+  final bool autoFocusComposer;
 }
 
 class ListDetailScreen extends ConsumerStatefulWidget {
   final String listId;
   final String? initialListName;
   final bool autoFocusTitle;
+  final bool autoFocusComposer;
 
   const ListDetailScreen({
     super.key,
     required this.listId,
     this.initialListName,
     this.autoFocusTitle = false,
+    this.autoFocusComposer = false,
   });
 
   @override
@@ -104,7 +114,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     if (_composerFocusNode.hasFocus) {
       unawaited(_controller.refreshSuggestions(_newItemController.text));
     }
-    if (!_controller.hasError && _controller.items.isEmpty) {
+    if (!_controller.hasError &&
+        (_controller.items.isEmpty || widget.autoFocusComposer)) {
       FocusScope.of(context).requestFocus(_composerFocusNode);
     }
   }
@@ -119,6 +130,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   void _onComposerTextChanged() {
+    // Any edit invalidates a previously tapped suggestion's canonical link.
+    // A chip tap sets the text first (running this) and the id after, so the
+    // suggestion flow itself is unaffected.
+    _pendingCanonicalId = null;
     if (!_composerFocusNode.hasFocus) return;
     _controller.refreshSuggestionsDebounced(_newItemController.text);
   }
@@ -246,6 +261,13 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     _isSaving = true;
     try {
       await _controller.completeAll();
+    } catch (_) {
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.listDetailCouldNotUpdate)),
+        );
+      }
     } finally {
       _isSaving = false;
     }
@@ -256,6 +278,13 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     _isSaving = true;
     try {
       await _controller.uncheckAll();
+    } catch (_) {
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.listDetailCouldNotUpdate)),
+        );
+      }
     } finally {
       _isSaving = false;
     }
@@ -450,6 +479,12 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     final price = double.tryParse(priceStr.replaceAll(',', '.'));
     if (price == null || price < 0) {
       _isSaving = false;
+      // Silent discard read as "the price didn't save" with no clue why.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.listDetailCouldNotSetPrice)),
+        );
+      }
       return;
     }
     final cents = (price * 100).round();
@@ -865,14 +900,37 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    // The search row hosts a text field, so its slot must grow with the
+    // user's font scale or the field clips.
+    final searchRowHeight = MediaQuery.textScalerOf(context).scale(52.0);
+    final headerHeight =
+        kToolbarHeight + 6 + (_showSearch ? searchRowHeight : 0);
+
+    return PopScope(
+      // System back closes transient editing states (search, title edit)
+      // before it may leave the screen, matching the in-app back arrow.
+      canPop: !_showSearch && !_editingTitle,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        if (_editingTitle) {
+          // Drop editing state before unfocusing so the blur listener doesn't
+          // treat this cancel as a submit.
+          setState(() => _editingTitle = false);
+          _titleFocusNode.unfocus();
+        } else if (_showSearch) {
+          _closeSearch();
+        }
+      },
+      child: _buildScaffold(l10n, headerHeight),
+    );
+  }
+
+  Widget _buildScaffold(AppLocalizations l10n, double headerHeight) {
     final accent = ListTileAccent.fromSeed(
       widget.listId,
       Theme.of(context).brightness,
     );
-
-    final l10n = AppLocalizations.of(context)!;
-    final headerHeight = kToolbarHeight + 6 + (_showSearch ? 52.0 : 0);
-
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: Size.fromHeight(headerHeight),
@@ -925,11 +983,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                       : l10n.listDetailSearchTooltip,
                   onPressed: () {
                     unawaited(Haptics.light());
-                    final opening = !_showSearch;
-                    setState(() => _showSearch = opening);
-                    if (!opening) {
-                      _searchController.clear();
-                      _controller.setSearchQuery('');
+                    if (_showSearch) {
+                      _closeSearch();
+                    } else {
+                      setState(() => _showSearch = true);
                     }
                   },
                 ),
@@ -1172,6 +1229,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     return Dismissible(
       key: ValueKey('dismiss-${item.id}'),
       direction: DismissDirection.endToStart,
+      // If another gesture holds the save lock, refuse the dismissal instead
+      // of letting the row disappear while _deleteItem no-ops — that mismatch
+      // crashes with "a dismissed Dismissible is still part of the tree".
+      confirmDismiss: (_) async => !_isSaving,
       background: Container(
         color: Theme.of(context).colorScheme.error,
         alignment: Alignment.centerRight,
@@ -1202,6 +1263,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       currencySymbol: currencySymbol(_controller.groupCurrency),
       claimedLabel: item.claimedBy != null ? '· claimed' : null,
       onToggle: (val) => _toggleItem(item, val),
+      onTap: () => _toggleItem(item, !item.checked),
       onPhotoTap: thumbUrl != null
           ? () => ListItemPhotoViewer.show(context, thumbUrl)
           : null,
@@ -1213,6 +1275,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   void _clearSearch() {
     _searchController.clear();
     _controller.setSearchQuery('');
+  }
+
+  void _closeSearch() {
+    setState(() => _showSearch = false);
+    _clearSearch();
   }
 
   Widget _buildBottomBar() {

@@ -192,3 +192,25 @@ func TestOAuth_GetProviders_ReflectsConfiguration(t *testing.T) {
 		})
 	}
 }
+
+func TestOAuth_redirectWithTokens_MitlistUsesQuery(t *testing.T) {
+	h := NewOAuthHandler(testCfg, nil)
+	got := h.redirectWithTokens("mitlist:///auth/callback", "google", "acc", "ref")
+
+	u, err := url.Parse(got)
+	require.NoError(t, err)
+	assert.Equal(t, "google", u.Query().Get("provider"))
+	assert.Equal(t, "acc", u.Query().Get("access_token"))
+	assert.Equal(t, "ref", u.Query().Get("refresh_token"))
+	assert.Empty(t, u.Fragment)
+}
+
+func TestOAuth_redirectWithTokens_HttpsUsesFragment(t *testing.T) {
+	h := NewOAuthHandler(testCfg, nil)
+	got := h.redirectWithTokens("https://app.mitlist.me/auth/callback", "google", "acc", "ref")
+
+	u, err := url.Parse(got)
+	require.NoError(t, err)
+	assert.Empty(t, u.Query().Get("access_token"))
+	assert.Contains(t, u.Fragment, "access_token=acc")
+}
