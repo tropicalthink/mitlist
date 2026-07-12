@@ -57,15 +57,18 @@ func defaultClientRedirectAllowlist(frontendURL string) []string {
 	return allowlist
 }
 
-// GetAuthURL returns a Google authorization URL. The redirectURI is validated
-// against the configured allowlist; if invalid, an empty string is returned.
-func (c *GoogleClient) GetAuthURL(state, redirectURI string) string {
-	if !isAllowed(redirectURI, c.allowlist) {
-		return ""
-	}
-	conf := *c.config
-	conf.RedirectURL = redirectURI
-	return conf.AuthCodeURL(state, oauth2.AccessTypeOnline)
+// AllowRedirect reports whether a client-supplied redirect URI is permitted by
+// the configured allowlist.
+func (c *GoogleClient) AllowRedirect(redirectURI string) bool {
+	return isAllowed(redirectURI, c.allowlist)
+}
+
+// AuthURL returns the Google authorization URL for the configured provider
+// callback (RedirectURI). It does not consult the allowlist: the callback is
+// operator-configured, not client-supplied, so it must not be filtered by the
+// client redirect allowlist.
+func (c *GoogleClient) AuthURL(state string) string {
+	return c.config.AuthCodeURL(state, oauth2.AccessTypeOnline)
 }
 
 // RedirectURI returns the configured provider callback URI used for server-side exchanges.

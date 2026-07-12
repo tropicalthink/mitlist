@@ -1,0 +1,321 @@
+---
+const GITHUB = "https://github.com/whtvrboo/mitlist";
+const WEBAPP = "https://app.mitlist.me";
+---
+
+<script define:vars={{ GITHUB, WEBAPP }}>
+  const ink = "#1A1714";
+  const orange = "#F97316";
+  const paper = "#FFFCF7";
+  const mint = "#10B981";
+  const mono = "font-family:ui-monospace,monospace";
+  const pill = `background:${orange};color:${ink};font-weight:700;padding:2px 6px;border:1px solid ${ink};${mono}`;
+  const tag = (bg, fg = ink) =>
+    `background:${bg};color:${fg};font-weight:700;padding:1px 5px;border:1px solid ${ink}`;
+
+  const roster = [
+    { who: "You", role: "oat milk claimant", owes: "€14.20", chore: "kitchen fri" },
+    { who: "Maya", role: "Saturday shopper", owes: "€0.00", chore: "bins tue" },
+    { who: "Sam", role: "receipt keeper", owes: "€20.00", chore: "overdue (!)" },
+    { who: "Alex", role: "movie instigator", owes: "€6.40", chore: "bathroom" },
+  ];
+
+  const timeline = [
+    { t: "07:42", who: "You", text: "add oat milk on the walk to the train" },
+    { t: "13:10", who: "Maya", text: "clears the whole list on the big shop" },
+    { t: "18:30", who: "Sam", text: "marks the kitchen done, rotates to you" },
+    { t: "21:00", who: "Everyone", text: "settle the week, square to the cent" },
+  ];
+
+  const chores = [
+    "Bins are out. Probably.",
+    "Someone should wipe the counter. It might be you.",
+    "The dishwasher is 'clean' in the spiritual sense.",
+    "Rent is due. The spreadsheet is not.",
+    "Plumber comes at 9. Coffee first.",
+    "The passive-aggressive note energy is rising.",
+    "Fridge has one yoghurt and collective denial.",
+  ];
+
+  const secrets = ["bins", "oatMilk", "party", "boot", "credits"];
+  const discovered = new Set();
+  let helpCalls = 0;
+  let oatMilkPending = true;
+
+  const banner = [
+    "  +------------------------------+",
+    "  | [x] Bread        Maya shopped|",
+    "  | [x] Milk                     |",
+    "  | [ ] Oat milk     your turn   |",
+    "  +------------------------------+",
+    "       mitlist - one board",
+  ].join("\n");
+
+  const pinwall = [
+    "  .--- cork board --------------------------------.",
+    "  |  +-------------+    .--------.   [OVERDUE]     |",
+    "  |  | Saturday    |    | Bins   |   kitchen      |",
+    "  |  | shop        |    | out    |   Sam -> You   |",
+    "  |  | [x] milk    |    '--------'                 |",
+    "  |  | [ ] coffee  |         .--------.            |",
+    "  |  +-------------+         | plumber|            |",
+    "  |       .--------.          | 9am    |  movie?? |",
+    "  |       | €42.60 |          '--------'  fri 🍿   |",
+    "  |       | split 3|                              |",
+    "  |       '--------'                              |",
+    "  '-----------------------------------------------'",
+    "            drag the real one on the page ↑",
+  ].join("\n");
+
+  function track(name) {
+    discovered.add(name);
+    if (discovered.size === 8 && !discovered.has("_archivist")) {
+      discovered.add("_archivist");
+      console.log(
+        "%c🏷️ household archivist%c — you've poked half the house. try %cmitlist.party()%c",
+        tag(orange),
+        "",
+        pill,
+        "",
+      );
+    }
+  }
+
+  function line(label, cmd, note) {
+    console.log(`%c${cmd}%c ${note}`, "font-weight:700", "");
+  }
+
+  const mitlist = {
+    help() {
+      helpCalls += 1;
+      track("help");
+      console.log(`%c${banner}`, `${mono};font-size:12px;line-height:1.5`);
+      console.group("%cmitlist%c household console", pill, "");
+
+      console.groupCollapsed("daily life");
+      line("daily", "mitlist.chore()", "→ vibe check");
+      line("daily", "mitlist.today()", "→ one tuesday, no group chat");
+      line("daily", "mitlist.list()", "→ Saturday shop");
+      console.groupEnd();
+
+      console.groupCollapsed("the board");
+      line("board", "mitlist.pinwall()", "→ ascii cork board");
+      line("board", "mitlist.roster()", "→ who's in the house");
+      line("board", "mitlist.join()", "→ fake invite code");
+      line("board", "mitlist.sync()", "→ pretend sync bar");
+      console.groupEnd();
+
+      console.groupCollapsed("money & doors");
+      line("money", "mitlist.settle()", "→ imaginary ledger");
+      line("doors", "mitlist.open()", "→ web app");
+      line("doors", "mitlist.repo()", "→ GitHub");
+      console.groupEnd();
+
+      console.groupEnd();
+
+      if (helpCalls === 1) {
+        console.log("psst — not everything is listed. %cmitlist.secrets()%c exists.", pill, "");
+      } else if (helpCalls >= 3) {
+        console.log("you again? fine. %cmitlist.boot()%c replays the intro.", pill, "");
+      }
+      return "Nobody owes you a tutorial. But here one is.";
+    },
+
+    secrets() {
+      track("secrets");
+      console.group("%c???%c unlisted drawer", pill, "");
+      line("?", "mitlist.bins()", "→ household classic");
+      line("?", "mitlist.oatMilk()", "→ add the item");
+      line("?", "mitlist.party()", "→ celebrate");
+      line("?", "mitlist.boot()", "→ replay intro");
+      line("?", "mitlist.credits()", "→ who built this");
+      console.groupEnd();
+      return `${secrets.length} secrets. the house remembers.`;
+    },
+
+    pinwall() {
+      track("pinwall");
+      console.log(`%c${pinwall}`, `${mono};font-size:11px;line-height:1.45`);
+      return "Same chaos, fewer pixels.";
+    },
+
+    roster() {
+      track("roster");
+      console.table(roster);
+      return "Sample household — your flat is messier and that's fine.";
+    },
+
+    today() {
+      track("today");
+      console.group("one tuesday");
+      for (const row of timeline) {
+        console.log(
+          `%c${row.t}%c %c${row.who}%c ${row.text}`,
+          tag(paper),
+          "",
+          tag(orange),
+          "",
+        );
+      }
+      console.groupEnd();
+      return "No @everyone. No drama. Just the board.";
+    },
+
+    list() {
+      track("list");
+      const items = [
+        { item: "Tomatoes", done: true, by: "Maya" },
+        { item: "Bread", done: true, by: "Maya" },
+        { item: "Oat milk", done: oatMilkPending ? false : true, by: oatMilkPending ? "you?" : "you" },
+        { item: "Coffee beans", done: false, by: "-" },
+      ];
+      console.table(items);
+      if (oatMilkPending) {
+        console.log("still missing %coat milk%c. %cmitlist.oatMilk()%c ?", tag(orange), "", pill, "");
+      }
+      return "Saturday shop · 2 of 4 (sample)";
+    },
+
+    join() {
+      track("join");
+      const code = `MIT-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+      console.log(
+        "invite %c%s%c → share with flatmates (sample — open the app for a real code)",
+        pill,
+        code,
+        "",
+      );
+      return code;
+    },
+
+    sync() {
+      track("sync");
+      const rooms = ["lists", "ledger", "chores", "pinwall", "notifications"];
+      console.log("pulling rooms off the wire...");
+      let i = 0;
+      const tick = () => {
+        if (i >= rooms.length) {
+          console.log(`%c✓ household synced`, `color:${mint};font-weight:700`);
+          return;
+        }
+        const pct = Math.round(((i + 1) / rooms.length) * 100);
+        const filled = Math.round(pct / 5);
+        const bar = "█".repeat(filled) + "░".repeat(20 - filled);
+        console.log(`  ${rooms[i].padEnd(14)} ${bar} ${pct}%`);
+        i += 1;
+        setTimeout(tick, 220);
+      };
+      tick();
+      return "sync started (check back in 1.1s)";
+    },
+
+    open() {
+      track("open");
+      window.open(WEBAPP, "_blank", "noopener");
+      return "Board's open. Add oat milk.";
+    },
+
+    repo() {
+      track("repo");
+      window.open(GITHUB, "_blank", "noopener");
+      return "Stars keep the chores rotating.";
+    },
+
+    chore() {
+      track("chore");
+      const line = chores[Math.floor(Math.random() * chores.length)];
+      console.log(`%c${line}`, "font-weight:600;font-size:14px");
+      return line;
+    },
+
+    settle() {
+      track("settle");
+      const names = ["you", "Sam", "Maya", "Alex"];
+      const debtor = names[Math.floor(Math.random() * names.length)];
+      const creditor = names.filter((n) => n !== debtor)[Math.floor(Math.random() * 3)];
+      const cents = (Math.floor(Math.random() * 40) + 3) * 100 + 20;
+      const amount = `€${(cents / 100).toFixed(2)}`;
+      const chip = `font-weight:700;padding:1px 5px;border:1px solid ${ink}`;
+      console.log(
+        `%c${debtor}%c owes %c${creditor}%c %c${amount}%c (sample — open the app for real splits)`,
+        `background:${orange};color:${ink};${chip}`,
+        "",
+        `background:${paper};color:${ink};${chip}`,
+        "",
+        "font-weight:700",
+        "",
+      );
+      return { debtor, creditor, amount };
+    },
+
+    bins() {
+      track("bins");
+      console.log(
+        `%c🗑️%c Bins are out. The oldest household ritual.`,
+        tag(paper),
+        "",
+      );
+      return "You're welcome.";
+    },
+
+    oatMilk() {
+      track("oatMilk");
+      oatMilkPending = false;
+      console.log(
+        `%c+ oat milk%c added to Saturday shop. Maya says thanks.`,
+        tag(mint, paper),
+        "",
+      );
+      return "Finally.";
+    },
+
+    party() {
+      track("party");
+      const colors = ["#F97316", "#10B981", "#0D9488", "#F59E0B", "#EF4444", "#B3E5FC"];
+      const msg = "HOUSEHOLD SYNC COMPLETE ";
+      let out = "";
+      const styles = [];
+      for (const ch of msg) {
+        out += `%c${ch}`;
+        styles.push(`background:${colors[styles.length % colors.length]};color:${ink};font-weight:700;padding:2px 1px;`);
+      }
+      console.log(out, ...styles);
+      console.log("everyone owes everyone zero. perfect week. (impossible)");
+      return "🍿";
+    },
+
+    boot() {
+      track("boot");
+      console.clear();
+      setTimeout(() => {
+        console.log(`%c${banner}`, `${mono};font-size:12px;line-height:1.5`);
+        console.log(
+          "You found the pin drawer. Type %cmitlist.help()%c for the household cheat sheet.",
+          pill,
+          "",
+        );
+      }, 120);
+      return "rebooting cork board...";
+    },
+
+    credits() {
+      track("credits");
+      console.group("%cmitlist%c landing easter egg", pill, "");
+      console.log("built by %ctropicalthink%c — %chttps://tropicalthink.com%c", tag(orange), "", pill, "");
+      console.log("open source household app — lists, money, chores, pinwall");
+      console.log("the hero pinwall drags for real. this one is ascii.");
+      console.groupEnd();
+      return "you read the credits. the house respects that.";
+    },
+  };
+
+  // Boot message (keep lightweight — elaborate stuff lives in help()).
+  console.log(`%c${banner}`, `${mono};font-size:12px;line-height:1.5`);
+  console.log(
+    "You found the pin drawer. Type %cmitlist.help()%c for the household cheat sheet.",
+    pill,
+    "",
+  );
+
+  globalThis.mitlist = mitlist;
+</script>
