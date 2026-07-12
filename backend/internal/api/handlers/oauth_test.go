@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -93,6 +95,38 @@ func TestOAuth_AppleCallback_MismatchedState(t *testing.T) {
 
 	require.Equal(t, http.StatusBadRequest, rec.Code)
 	assert.Contains(t, rec.Body.String(), "invalid oauth state")
+}
+
+// TestOAuth_AppleCallback_FormPost_UsesServerRedirectFlow verifies that Apple's
+// response_mode=form_post callback (a form-encoded, cross-site POST) is routed
+// through the server-side redirect flow rather than the JSON/SPA path: on a state
+// mismatch it 302-redirects back to the client callback with an error, instead of
+// returning a JSON 400.
+func TestOAuth_AppleCallback_FormPost_UsesServerRedirectFlow(t *testing.T) {
+	h := NewOAuthHandler(testCfg, nil)
+	r := chi.NewRouter()
+	r.Post("/api/v1/oauth/apple/callback", h.PostAppleCallback)
+
+	form := url.Values{}
+	form.Set("code", "c")
+	form.Set("state", "request_state")
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/v1/oauth/apple/callback", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	// The server-side flow needs the redirect cookie; a mismatched state cookie
+	// forces the pre-login redirect-with-error branch (no service call).
+	req.AddCookie(&http.Cookie{
+		Name:  "oauth_redirect_uri",
+		Value: base64.URLEncoding.EncodeToString([]byte("https://app.mitlist.me/auth/callback")),
+	})
+	req.AddCookie(&http.Cookie{Name: "oauth_state", Value: "cookie_state"})
+	r.ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusFound, rec.Code)
+	loc := rec.Header().Get("Location")
+	assert.Contains(t, loc, "https://app.mitlist.me/auth/callback")
+	assert.Contains(t, loc, "error=invalid+oauth+state")
 }
 
 func TestOAuth_GetProviders_ReflectsConfiguration(t *testing.T) {

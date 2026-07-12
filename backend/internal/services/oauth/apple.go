@@ -70,19 +70,31 @@ func NewAppleClient(cfg *config.Config) *AppleClient {
 	}
 }
 
-// GetAuthURL returns an Apple authorization URL. The redirectURI is validated
-// against the configured allowlist; if invalid, an empty string is returned.
-func (c *AppleClient) GetAuthURL(state, redirectURI string) string {
-	if !isAllowed(redirectURI, c.allowlist) {
-		return ""
-	}
+// AllowRedirect reports whether a client-supplied redirect URI is permitted by
+// the configured allowlist.
+func (c *AppleClient) AllowRedirect(redirectURI string) bool {
+	return isAllowed(redirectURI, c.allowlist)
+}
+
+// AuthURL returns the Apple authorization URL for the configured provider
+// callback (RedirectURI). It does not consult the allowlist: the callback is
+// operator-configured, not client-supplied.
+//
+// response_mode=form_post is required by Apple whenever the "name" or "email"
+// scope is requested. Apple then delivers the callback as a cross-site form
+// POST to RedirectURI rather than a GET redirect (see PostAppleCallback).
+func (c *AppleClient) AuthURL(state string) string {
 	conf := &oauth2.Config{
 		ClientID:    c.clientID,
 		Endpoint:    appleEndpoint,
-		RedirectURL: redirectURI,
+		RedirectURL: c.redirectURI,
 		Scopes:      []string{"name", "email"},
 	}
-	return conf.AuthCodeURL(state, oauth2.AccessTypeOnline)
+	return conf.AuthCodeURL(
+		state,
+		oauth2.AccessTypeOnline,
+		oauth2.SetAuthURLParam("response_mode", "form_post"),
+	)
 }
 
 // RedirectURI returns the configured provider callback URI used for server-side exchanges.

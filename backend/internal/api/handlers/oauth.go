@@ -53,7 +53,7 @@ func (h *OAuthHandler) GetGoogle(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, &api.ValidationError{Field: "redirect_uri", Message: "redirect_uri is required"})
 		return
 	}
-	if h.googleClient.GetAuthURL("state", redirectURI) == "" {
+	if !h.googleClient.AllowRedirect(redirectURI) {
 		api.RespondError(w, &api.ValidationError{Field: "redirect_uri", Message: "redirect URI not allowed"})
 		return
 	}
@@ -63,7 +63,7 @@ func (h *OAuthHandler) GetGoogle(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, err)
 		return
 	}
-	authURL := h.googleClient.GetAuthURL(state, h.googleClient.RedirectURI())
+	authURL := h.googleClient.AuthURL(state)
 
 	h.setOAuthCookie(w, oauthStateCookieName, state, 600, r)
 	h.setOAuthCookie(w, oauthRedirectCookieName, base64.URLEncoding.EncodeToString([]byte(redirectURI)), 600, r)
@@ -95,13 +95,24 @@ func (h *OAuthHandler) clearOAuthCookie(w http.ResponseWriter, name string, r *h
 }
 
 func (h *OAuthHandler) setOAuthCookie(w http.ResponseWriter, name, value string, maxAge int, r *http.Request) {
+	secure := h.cookieSecure(r)
+	// The Apple provider callback arrives as a cross-site POST navigation
+	// (response_mode=form_post); SameSite=Lax cookies are NOT sent on cross-site
+	// POSTs, so the state/redirect cookies would be missing and login would fail.
+	// SameSite=None fixes that, but browsers only accept None with Secure — fall
+	// back to Lax when the connection isn't secure (local http dev, where the
+	// external OAuth providers aren't used anyway).
+	sameSite := http.SameSiteLaxMode
+	if secure {
+		sameSite = http.SameSiteNoneMode
+	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     name,
 		Value:    value,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   h.cookieSecure(r),
-		SameSite: http.SameSiteLaxMode,
+		Secure:   secure,
+		SameSite: sameSite,
 		MaxAge:   maxAge,
 	})
 }
@@ -111,6 +122,17 @@ func (h *OAuthHandler) cookieSecure(r *http.Request) bool {
 		return true
 	}
 	return strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
+}
+
+// isFormPost reports whether the request is a form-encoded POST, i.e. Apple's
+// response_mode=form_post callback rather than a native/SPA JSON POST.
+func isFormPost(r *http.Request) bool {
+	if r.Method != http.MethodPost {
+		return false
+	}
+	ct := r.Header.Get("Content-Type")
+	return strings.HasPrefix(ct, "application/x-www-form-urlencoded") ||
+		strings.HasPrefix(ct, "multipart/form-data")
 }
 
 // PostGoogleCallback handles the Google OAuth callback.
@@ -165,7 +187,7 @@ func (h *OAuthHandler) GetApple(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, &api.ValidationError{Field: "redirect_uri", Message: "redirect_uri is required"})
 		return
 	}
-	if h.appleClient.GetAuthURL("state", redirectURI) == "" {
+	if !h.appleClient.AllowRedirect(redirectURI) {
 		api.RespondError(w, &api.ValidationError{Field: "redirect_uri", Message: "redirect URI not allowed"})
 		return
 	}
@@ -175,7 +197,7 @@ func (h *OAuthHandler) GetApple(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, err)
 		return
 	}
-	authURL := h.appleClient.GetAuthURL(state, h.appleClient.RedirectURI())
+	authURL := h.appleClient.AuthURL(state)
 
 	h.setOAuthCookie(w, oauthStateCookieName, state, 600, r)
 	h.setOAuthCookie(w, oauthRedirectCookieName, base64.URLEncoding.EncodeToString([]byte(redirectURI)), 600, r)
@@ -183,7 +205,29 @@ func (h *OAuthHandler) GetApple(w http.ResponseWriter, r *http.Request) {
 }
 
 // PostAppleCallback handles the Apple OAuth callback.
+//
+// Apple's web sign-in uses response_mode=form_post (required when name/email
+// scopes are requested), so it delivers the callback as a form-encoded, cross-
+// site POST navigation. Those go through the server-side redirect flow, exactly
+// like the GET callback. Native/SPA clients instead POST JSON and receive the
+// token pair in the response body.
 func (h *OAuthHandler) PostAppleCallback(w http.ResponseWriter, r *http.Request) {
+	if isFormPost(r) {
+		h.completeRedirectFlow(w, r, "apple", func() (*servicesOAuthResult, error) {
+			user, access, refresh, err := h.service.AppleLogin(
+				r.Context(),
+				r.FormValue("code"),
+				"",
+				r.FormValue("id_token"),
+			)
+			if err != nil {
+				return nil, err
+			}
+			return &servicesOAuthResult{user: user, access: access, refresh: refresh}, nil
+		})
+		return
+	}
+
 	var req struct {
 		Code        string `json:"code"`
 		RedirectURI string `json:"redirect_uri"`
@@ -253,7 +297,7 @@ func (h *OAuthHandler) completeRedirectFlow(
 		return
 	}
 
-	requestState := r.URL.Query().Get("state")
+	requestState := r.FormValue("state")
 	cookie, err := r.Cookie(oauthStateCookieName)
 	if err != nil || cookie.Value == "" || cookie.Value != requestState {
 		h.clearOAuthCookie(w, oauthStateCookieName, r)
@@ -265,7 +309,7 @@ func (h *OAuthHandler) completeRedirectFlow(
 	h.clearOAuthCookie(w, oauthStateCookieName, r)
 	h.clearOAuthCookie(w, oauthRedirectCookieName, r)
 
-	if providerError := r.URL.Query().Get("error"); providerError != "" {
+	if providerError := r.FormValue("error"); providerError != "" {
 		http.Redirect(w, r, h.redirectWithError(finalRedirectURI, provider, providerError), http.StatusFound)
 		return
 	}
