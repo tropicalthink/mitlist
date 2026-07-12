@@ -9,6 +9,7 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/group_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../sheets/create_household_sheet.dart';
+import '../../sheets/invite_household_sheet.dart';
 import '../../sheets/join_household_sheet.dart';
 import '../../theme/animations.dart';
 import '../../theme/colors.dart';
@@ -128,10 +129,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     await Haptics.light();
     if (!mounted) return;
     final group = await CreateHouseholdSheet.show(context);
-    if (group != null && mounted) {
-      unawaited(ref.read(currentGroupIdProvider.notifier).set(group.id));
-      context.goNamed('home');
-    }
+    if (group == null || !mounted) return;
+    unawaited(ref.read(currentGroupIdProvider.notifier).set(group.id));
+    // A one-person household is an empty product. The moment right after
+    // creation is the highest-value time to invite the rest of the house, so
+    // offer the invite code here (still on the board) — dismissing it lands
+    // on the hub either way.
+    await InviteHouseholdSheet.show(context, groupId: group.id);
+    if (!mounted) return;
+    context.goNamed('home');
   }
 
   Future<void> _onJoinHousehold() async {
