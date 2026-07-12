@@ -3077,6 +3077,14 @@
       }
     }
   },
+  "notificationsSectionToday": "Hoy",
+  "notificationsSectionYesterday": "Ayer",
+  "notificationsSectionEarlier": "Anteriores",
+  "notificationsTimeNow": "ahora",
+  "notificationsTimeMinutes": "{minutes} min",
+  "notificationsTimeHours": "{hours} h",
+  "notificationsTimeDays": "{days} d",
+  "notificationsUnreadCount": "{count} nuevas",
   "notifPrefAppBarTitle": "Preferencias de notificaciones",
   "@notifPrefAppBarTitle": {
     "description": "AppBar title for notification preferences"

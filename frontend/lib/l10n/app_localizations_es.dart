@@ -2401,6 +2401,38 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get notificationsSectionToday => 'Hoy';
+
+  @override
+  String get notificationsSectionYesterday => 'Ayer';
+
+  @override
+  String get notificationsSectionEarlier => 'Anteriores';
+
+  @override
+  String get notificationsTimeNow => 'ahora';
+
+  @override
+  String notificationsTimeMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String notificationsTimeHours(int hours) {
+    return '$hours h';
+  }
+
+  @override
+  String notificationsTimeDays(int days) {
+    return '$days d';
+  }
+
+  @override
+  String notificationsUnreadCount(int count) {
+    return '$count nuevas';
+  }
+
+  @override
   String get notifPrefAppBarTitle => 'Preferencias de notificaciones';
 
   @override
