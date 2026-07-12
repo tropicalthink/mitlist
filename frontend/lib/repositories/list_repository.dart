@@ -60,13 +60,27 @@ class ListRepository {
       {int limit = 200, int offset = 0}) async {
     final remote =
         await _remote.listLists(groupId, limit: limit, offset: offset);
-    if (offset == 0) {
-      await _db.clearListsForGroup(groupId);
-    }
+    // Upsert first, never wipe-then-repopulate: a clear before the upsert made
+    // the Drift watch stream emit an empty frame, flashing the whole lists
+    // grid away on every refresh. Stale local rows (deleted on another device)
+    // are pruned only when this page is the complete server set — with a full
+    // page we can't tell "missing" from "on a later page".
     await _db.upsertListsRows(remote.map(_toListsRow));
+    if (offset == 0 && remote.length < limit) {
+      await _db.deleteListsForGroupExcluding(
+        groupId,
+        remote.map((l) => l.id).toSet(),
+      );
+    }
     unawaited(_hydrateMissingListPreviews(remote));
     return remote.length;
   }
+
+  /// Persists a rename into the local cache so screens watching the lists
+  /// stream (the lists grid) reflect it immediately, whatever route the user
+  /// takes back.
+  Future<void> renameListLocal(String listId, String name) =>
+      _db.updateListName(listId, name);
 
   Future<int> refreshItems(String listId,
       {int limit = 500, int offset = 0}) async {
@@ -561,6 +575,11 @@ class ListRepository {
     if (_isDraining) return;
     _isDraining = true;
     try {
+      // List CRUD drains in its own pass, BEFORE the advisory purchase
+      // telemetry. The drainer stops a pass on the first transient failure
+      // (to preserve per-entity ordering), so a recordPurchase op stuck on a
+      // failing grocery endpoint used to sit at the head of the shared queue
+      // and block every item add/update behind it for its whole retry cycle.
       await OutboxDrainer(_db).drain(
         types: const [
           'createItem',
@@ -569,7 +588,6 @@ class ListRepository {
           'reorderItems',
           'addItemAmount',
           'clearItems',
-          'recordPurchase',
         ],
         handlers: {
           'createItem': (op, payload) => _syncCreateItem(op.id, payload),
@@ -578,6 +596,11 @@ class ListRepository {
           'reorderItems': (op, payload) => _syncReorderItems(op.id, payload),
           'addItemAmount': (op, payload) => _syncAddItemAmount(op.id, payload),
           'clearItems': (op, payload) => _syncClearItems(op.id, payload),
+        },
+      );
+      await OutboxDrainer(_db).drain(
+        types: const ['recordPurchase'],
+        handlers: {
           'recordPurchase': (op, payload) =>
               _syncRecordPurchase(op.id, payload),
         },

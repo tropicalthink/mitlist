@@ -332,6 +332,35 @@ class ListService {
     }
   }
 
+  /// Batch photo hydration: photos for every item in [listId] in one request,
+  /// keyed by item id. Items without photos are absent from the map.
+  Future<Map<String, List<ListItemPhoto>>> listAllItemPhotos({
+    required String groupId,
+    required String listId,
+  }) async {
+    ensureValidGroupId(groupId);
+    try {
+      final r = await _dio.get(
+        '/lists/$listId/item-photos',
+        queryParameters: {'group_id': groupId},
+      );
+      final data = r.data;
+      if (data is! Map) return {};
+      return data.map((itemId, photos) => MapEntry(
+            itemId as String,
+            photos is List
+                ? photos
+                    .map((e) => ListItemPhoto.fromJson(
+                        (e as Map).cast<String, dynamic>()))
+                    .toList()
+                : <ListItemPhoto>[],
+          ));
+    } on DioException catch (e) {
+      _logger.e('List all item photos failed: ${e.response?.data}');
+      throw apiException(e);
+    }
+  }
+
   Future<List<ListItemPhoto>> listItemPhotos({
     required String groupId,
     required String itemId,
