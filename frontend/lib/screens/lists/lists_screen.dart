@@ -27,7 +27,6 @@ import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
 import '../../widgets/chip.dart';
-import '../../widgets/grocery_suggestion_field.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/list_entrance.dart';
@@ -60,6 +59,12 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   bool _isLoading = true;
   bool _isLoadingMore = false;
   bool _hasMore = true;
+
+  /// Server-side pagination cursor. Tracked separately from [_lists], which is
+  /// fed by the local DB stream and can contain rows the server pages don't
+  /// (archived lists, locally cached later pages) — using its length as the
+  /// offset skipped or duplicated server pages.
+  int _serverOffset = 0;
   String? _error;
   String? _loadMoreError;
   final List<ItemList> _lists = [];
@@ -125,7 +130,9 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   @override
   void didUpdateWidget(covariant ListsScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.groupId != widget.groupId) {
+    // Before the tab has activated nothing is loaded yet; _activateTabIfNeeded
+    // will do the (correctly scoped) first load.
+    if (oldWidget.groupId != widget.groupId && _tabLoadStarted) {
       _loadLists();
     }
   }
@@ -222,6 +229,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
 
       if (mounted) {
         setState(() {
+          _serverOffset = fetchedCount;
           _hasMore = fetchedCount == _pageLimit;
           _isLoading = false;
           _error = _lists.isEmpty ? _error : null;
@@ -253,11 +261,12 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
       final fetchedCount = await repo.refreshLists(
         effectiveGroupId,
         limit: _pageLimit,
-        offset: _lists.length,
+        offset: _serverOffset,
       );
 
       if (mounted) {
         setState(() {
+          _serverOffset += fetchedCount;
           _hasHousehold = true;
           _hasMore = fetchedCount == _pageLimit;
           _isLoadingMore = false;
@@ -370,11 +379,23 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
       _activateTabIfNeeded();
     });
     ref.listen<String?>(currentGroupIdProvider, (previous, next) {
-      if (previous != next) {
+      if (previous != next && _tabLoadStarted) {
         _loadLists();
       }
     });
 
+    return PopScope(
+      // System back while searching closes the search instead of leaving the
+      // screen, matching the in-app back arrow.
+      canPop: !_showSearch,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _clearSearch();
+      },
+      child: _buildScaffold(l10n),
+    );
+  }
+
+  Widget _buildScaffold(AppLocalizations l10n) {
     return Scaffold(
       appBar: MitlistAppBar(
         centerTitle: false,
@@ -647,6 +668,17 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   // loading state.
   static const double _minTileWidth = 190.0;
 
+  /// Extra bottom inset so the floating "New list" button never covers the
+  /// last row's actions.
+  static const double _fabClearance = 72.0;
+
+  static const EdgeInsets _contentPadding = EdgeInsets.fromLTRB(
+    MitlistSpacing.md,
+    MitlistSpacing.md,
+    MitlistSpacing.md,
+    MitlistSpacing.md + _fabClearance,
+  );
+
   static int _gridColumns(double maxWidth) =>
       (maxWidth / _minTileWidth).floor().clamp(2, 5);
 
@@ -667,7 +699,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         return GridView.builder(
           controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(MitlistSpacing.md),
+          padding: _contentPadding,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: columns,
             mainAxisSpacing: MitlistSpacing.md,
@@ -694,7 +726,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     return ListView.separated(
       controller: _scrollController,
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(MitlistSpacing.md),
+      padding: _contentPadding,
       itemCount:
           lists.length + (_isLoadingMore || _loadMoreError != null ? 1 : 0),
       separatorBuilder: (_, __) => const SizedBox(height: MitlistSpacing.md),
@@ -1005,61 +1037,20 @@ class _ListCard extends ConsumerWidget {
     }
   }
 
-  Future<void> _quickAddItem(BuildContext context, WidgetRef ref) async {
-    final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController();
-    // Captured when a suggestion chip is tapped so the new item links the
-    // canonical grocery node (aisle/dedupe/restock) even though we keep the
-    // brand the user typed as the visible name. submitOnSelect means tapping a
-    // chip submits immediately, so this can't go stale via later edits.
-    String? selectedCanonicalId;
-    final name = await showAppDialog<String>(
-      context: context,
-      title: l10n.listAddItemTo(list.name),
-      body: GrocerySuggestionField(
-        controller: controller,
-        groupId: list.groupId,
-        label: l10n.listItemName,
-        maxLength: 200,
-        submitOnSelect: true,
-        onSelected: (s) => selectedCanonicalId = s.canonicalItemId,
-        onSubmitted: (value) => Navigator.of(context)
-            .pop(value.trim().isEmpty ? null : value.trim()),
+  /// Opens the list detail; with [composer] set it lands with the item
+  /// composer focused. This replaced a cramped one-shot quick-add dialog that
+  /// duplicated (a worse, online-only version of) the detail composer.
+  Future<void> _openList(BuildContext context,
+      {bool composer = false}) async {
+    final changed = await context.pushNamed<bool>(
+      'listDetail',
+      pathParameters: {'listId': list.id},
+      extra: ListDetailRouteArgs(
+        listName: list.name,
+        autoFocusComposer: composer,
       ),
-      actions: [
-        AppButton(
-          text: l10n.commonCancel,
-          variant: AppButtonVariant.outline,
-          onPressed: () => Navigator.of(context).pop(null),
-        ),
-        AppButton(
-          text: l10n.commonAdd,
-          // Typed-and-tapped-Add path: no suggestion chosen, so no canonical
-          // link (a free-typed name shouldn't guess at one).
-          onPressed: () {
-            selectedCanonicalId = null;
-            Navigator.of(context).pop(controller.text.trim());
-          },
-        ),
-      ],
     );
-    controller.dispose();
-    if (name == null || name.isEmpty) return;
-    try {
-      final svc = await ref.read(listServiceProviderAsync.future);
-      await svc.createItem(
-        list.id,
-        CreateListItemRequest(name: name, canonicalItemId: selectedCanonicalId),
-      );
-      onChanged();
-    } catch (_) {
-      if (context.mounted) {
-        unawaited(Haptics.failure());
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.listCouldNotAddItem)),
-        );
-      }
-    }
+    if (changed == true) onChanged();
   }
 
   @override
@@ -1104,14 +1095,7 @@ class _ListCard extends ConsumerWidget {
       backgroundColor: accent.tileBackground,
       interactive: true,
       semanticLabel: _semanticLabel(),
-      onTap: () async {
-        final changed = await context.pushNamed<bool>(
-          'listDetail',
-          pathParameters: {'listId': list.id},
-          extra: ListDetailRouteArgs(listName: list.name),
-        );
-        if (changed == true) onChanged();
-      },
+      onTap: () => _openList(context),
       onLongPress: () => _showActions(context, ref),
       child: SizedBox(
         width: double.infinity,
@@ -1218,7 +1202,7 @@ class _ListCard extends ConsumerWidget {
                       color: accent.iconColor,
                       tooltip: l10n.listQuickAddItemTooltip,
                       semanticLabel: l10n.listQuickAddItemSemantics(list.name),
-                      onTap: () => _quickAddItem(context, ref),
+                      onTap: () => _openList(context, composer: true),
                     ),
                     _CardActionButton(
                       iconName: 'ellipsisVertical',

@@ -15,6 +15,7 @@ class ListItemRowReactive extends ConsumerWidget {
     required this.currencySymbol,
     required this.onToggle,
     required this.onLongPress,
+    this.onTap,
     this.photoUrl,
     this.claimedLabel,
     this.onPhotoTap,
@@ -26,6 +27,7 @@ class ListItemRowReactive extends ConsumerWidget {
   final String currencySymbol;
   final String? claimedLabel;
   final ValueChanged<bool> onToggle;
+  final VoidCallback? onTap;
   final VoidCallback? onPhotoTap;
   final VoidCallback onLongPress;
   final int? reorderIndex;
@@ -39,6 +41,7 @@ class ListItemRowReactive extends ConsumerWidget {
       currencySymbol: currencySymbol,
       claimedLabel: claimedLabel,
       onToggle: onToggle,
+      onTap: onTap,
       onPhotoTap: onPhotoTap,
       onLongPress: onLongPress,
       reorderIndex: reorderIndex,

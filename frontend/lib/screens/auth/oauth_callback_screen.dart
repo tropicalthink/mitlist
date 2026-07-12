@@ -12,10 +12,10 @@ import '../../l10n/app_localizations.dart';
 class OAuthCallbackScreen extends ConsumerStatefulWidget {
   const OAuthCallbackScreen({
     super.key,
-    required this.queryParameters,
+    required this.uri,
   });
 
-  final Map<String, String> queryParameters;
+  final Uri uri;
 
   @override
   ConsumerState<OAuthCallbackScreen> createState() =>
@@ -33,13 +33,14 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
 
   Future<void> _complete() async {
     final l10n = AppLocalizations.of(context)!;
-    final provider = widget.queryParameters['provider'];
-    final code = widget.queryParameters['code'];
-    final state = widget.queryParameters['state'];
-    final idToken = widget.queryParameters['id_token'];
-    final accessToken = widget.queryParameters['access_token'];
-    final refreshToken = widget.queryParameters['refresh_token'];
-    final oauthError = widget.queryParameters['error'];
+    final params = _callbackParams(widget.uri);
+    final provider = params['provider'];
+    final code = params['code'];
+    final state = params['state'];
+    final idToken = params['id_token'];
+    final accessToken = params['access_token'];
+    final refreshToken = params['refresh_token'];
+    final oauthError = params['error'];
 
     if (oauthError != null && oauthError.isNotEmpty) {
       setState(() => _error = oauthError);
@@ -92,6 +93,21 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
       setState(() =>
           _error = friendlyErrorMessage(e, AppLocalizations.of(context)!));
     }
+  }
+
+  /// Merges query params with URL fragment params. The backend used to put
+  /// mobile tokens in the fragment; Android deep links only surface queries.
+  Map<String, String> _callbackParams(Uri uri) {
+    final params = Map<String, String>.from(uri.queryParameters);
+    if (params.containsKey('access_token') ||
+        params.containsKey('code') ||
+        params.containsKey('error')) {
+      return params;
+    }
+    if (uri.fragment.isNotEmpty) {
+      params.addAll(Uri.splitQueryString(uri.fragment));
+    }
+    return params;
   }
 
   @override

@@ -64,6 +64,7 @@ class ListDetailController extends ChangeNotifier {
   Timer? _suggestDebounce;
   final Map<String, List<ListItemPhoto>> _photosByItemId = {};
   final Set<String> _photoLoadAttempted = {};
+  bool _batchPhotosSupported = true;
 
   /// Max in-flight photo-metadata requests while hydrating a list's
   /// thumbnails (see [_loadPhotosForItems]).
@@ -250,12 +251,35 @@ class ListDetailController extends ChangeNotifier {
       _photoLoadAttempted.add(item.id);
     }
 
-    // Bounded worker pool rather than one request per item all at once — a
-    // 50-item list would otherwise fire 50 concurrent requests the moment the
-    // screen opens (and offline, 50 doomed ones). Workers pull from a shared
-    // cursor; the UI is notified as each photo lands so early rows get their
-    // thumbnails without waiting for the whole list. Most items have no
-    // photo, so per-hit notifies stay rare.
+    // One batch request for the whole list. The old per-item fan-out fired N
+    // requests on every list open; on browsers that saturated the per-host
+    // connection pool (which SSE already holds a slot of) and visibly starved
+    // unrelated calls — adds appeared to hang for seconds.
+    if (_batchPhotosSupported) {
+      try {
+        final byItem = await service.listAllItemPhotos(
+          groupId: groupId,
+          listId: listId,
+        );
+        if (_disposed) return;
+        if (byItem.isNotEmpty) {
+          _photosByItemId.addAll(byItem);
+          _notify();
+        }
+        return;
+      } catch (_) {
+        if (_disposed) return;
+        // Older self-hosted backends predate the batch route; fall back to
+        // per-item requests for the rest of this controller's lifetime.
+        _batchPhotosSupported = false;
+      }
+    }
+
+    // Fallback: bounded worker pool rather than one request per item all at
+    // once — a 50-item list would otherwise fire 50 concurrent requests the
+    // moment the screen opens (and offline, 50 doomed ones). Workers pull
+    // from a shared cursor; the UI is notified as each photo lands so early
+    // rows get their thumbnails without waiting for the whole list.
     var next = 0;
     Future<void> worker() async {
       while (!_disposed) {
@@ -601,6 +625,13 @@ class ListDetailController extends ChangeNotifier {
     final service = _service;
     if (service == null) return;
     await service.updateList(listId, UpdateListRequest(name: newName));
+    // Persist into the local cache too — otherwise the lists grid keeps the
+    // old name when the user leaves via a system back gesture (which returns
+    // no "changed" result to trigger a reload there).
+    try {
+      final repo = await ref.read(listRepositoryProvider.future);
+      await repo.renameListLocal(listId, newName);
+    } catch (_) {}
     if (_disposed) return;
     _listName = newName;
     _notify();

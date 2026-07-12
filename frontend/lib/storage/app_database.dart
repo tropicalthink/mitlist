@@ -620,8 +620,18 @@ FROM list_items_table;
         .get();
   }
 
-  Future<void> clearListsForGroup(String groupId) async {
-    await (delete(listsTable)..where((t) => t.groupId.equals(groupId))).go();
+  Future<void> deleteListsForGroupExcluding(
+    String groupId,
+    Set<String> keepIds,
+  ) async {
+    await (delete(listsTable)
+          ..where((t) => t.groupId.equals(groupId) & t.id.isNotIn(keepIds)))
+        .go();
+  }
+
+  Future<void> updateListName(String listId, String name) async {
+    await (update(listsTable)..where((t) => t.id.equals(listId)))
+        .write(ListsTableCompanion(name: Value(name)));
   }
 
   Future<void> upsertListsRows(Iterable<ListsTableCompanion> rows) async {

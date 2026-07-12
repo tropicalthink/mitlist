@@ -8,7 +8,6 @@ import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../config/api_config.dart';
 import 'token_store.dart';
 
 const _prefKey = 'fcm_token_registered';
@@ -159,8 +158,10 @@ class FcmService {
     try {
       final accessToken = await _tokenStore.getAccessToken();
       if (accessToken == null) return;
+      // The shared Dio's baseUrl already ends in the API prefix; prefixing
+      // again produced /api/v1/api/v1/... and a silent 404.
       await dio.delete(
-        '${ApiConfig.apiPrefix}/auth/device-tokens/$id',
+        '/auth/device-tokens/$id',
         options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
       );
     } catch (e) {
@@ -183,7 +184,7 @@ class FcmService {
       if (accessToken == null) return;
 
       final response = await dio.post(
-        '${ApiConfig.apiPrefix}/auth/device-tokens',
+        '/auth/device-tokens',
         data: {'platform': platform, 'token': token},
         options: Options(
           headers: {'Authorization': 'Bearer $accessToken'},
