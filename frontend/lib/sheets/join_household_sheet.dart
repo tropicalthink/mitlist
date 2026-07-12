@@ -113,6 +113,11 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
       final group = await svc.joinGroup(
         JoinGroupRequest(code: _codeController.text.trim().toUpperCase()),
       );
+      // The cached household list must be refetched before any screen
+      // resolves its active group against it — without this the joined group
+      // is missing from the cache and the home screen lands on "no household"
+      // until an app restart.
+      ref.invalidate(cachedGroupsProvider);
       if (!mounted) return;
 
       setState(() {

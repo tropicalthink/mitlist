@@ -50,6 +50,11 @@ class _CreateHouseholdSheetState extends ConsumerState<CreateHouseholdSheet> {
             : _descriptionController.text.trim(),
         currency: _currency,
       ));
+      // The cached household list must be refetched before any screen
+      // resolves its active group against it — without this the new group is
+      // missing from the cache and the home screen lands on "no household"
+      // until an app restart.
+      ref.invalidate(cachedGroupsProvider);
       if (!mounted) return;
       Navigator.of(context).pop(group);
       final l10n = AppLocalizations.of(context)!;
