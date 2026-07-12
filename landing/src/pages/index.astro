@@ -4,7 +4,7 @@ import Pinwall from "../components/Pinwall.astro";
 import StoreBadges from "../components/StoreBadges.astro";
 
 const GITHUB = "https://github.com/whtvrboo/mitlist";
-const WEBAPP = "https://mitlist.me";
+const WEBAPP = "https://app.mitlist.me";
 
 const pillars = [
   {
@@ -164,7 +164,7 @@ const day = [
     <div class="wrap">
       <div class="section-head reveal">
         <h2 class="h2">It runs on your terms.</h2>
-        <p class="lead">mitlist is open source. Use <a href={WEBAPP}>mitlist.me</a> in
+        <p class="lead">mitlist is open source. Use <a href={WEBAPP}>app.mitlist.me</a> in
           your browser, grab the mobile apps, or run the whole thing on your own
           box and own every byte of it.</p>
       </div>
@@ -263,7 +263,7 @@ const day = [
       </nav>
       <p class="foot__copy">The shared notebook that actually works. 
         <br>
-        Built with ❤️ by <a href="https://tropicalthink.com" target="_blank">tropicalthink</a>
+        Built with <img src="/tt.svg" alt="" class="foot__tt" aria-hidden="true" /> by <a href="https://tropicalthink.com" target="_blank">tropicalthink</a>
         <br>© 2026 mitlist.</p>
     </div>
   </footer>
@@ -774,6 +774,12 @@ const day = [
     color: var(--line-2);
     font-size: 0.88rem;
     font-weight: 500;
+  }
+  .foot__tt {
+    display: inline-block;
+    width: 1.1em;
+    height: 1.1em;
+    vertical-align: -0.15em;
   }
 </style>
 
