@@ -43,7 +43,7 @@ func NewOAuthService(
 // creates or links the user, and issues a token pair.
 func (s *OAuthService) GoogleLogin(ctx context.Context, code, redirectURI string) (*models.User, string, string, error) {
 	if redirectURI != "" {
-		if s.googleClient.GetAuthURL("state", redirectURI) == "" {
+		if !s.googleClient.AllowRedirect(redirectURI) {
 			return nil, "", "", &api.ValidationError{Field: "redirect_uri", Message: "redirect URI not allowed"}
 		}
 	}
@@ -65,7 +65,7 @@ func (s *OAuthService) GoogleLogin(ctx context.Context, code, redirectURI string
 // creates or links the user, and issues a token pair.
 func (s *OAuthService) AppleLogin(ctx context.Context, code, redirectURI, idToken string) (*models.User, string, string, error) {
 	if redirectURI != "" {
-		if s.appleClient.GetAuthURL("state", redirectURI) == "" {
+		if !s.appleClient.AllowRedirect(redirectURI) {
 			return nil, "", "", &api.ValidationError{Field: "redirect_uri", Message: "redirect URI not allowed"}
 		}
 	}
