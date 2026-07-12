@@ -4293,6 +4293,54 @@ abstract class AppLocalizations {
   /// **'Unread, {title}'**
   String notificationsUnreadLabel(String title);
 
+  /// Feed section header: notifications from today
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get notificationsSectionToday;
+
+  /// Feed section header: notifications from yesterday
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get notificationsSectionYesterday;
+
+  /// Feed section header: older notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier'**
+  String get notificationsSectionEarlier;
+
+  /// Relative time: under a minute ago
+  ///
+  /// In en, this message translates to:
+  /// **'now'**
+  String get notificationsTimeNow;
+
+  /// Compact relative time in minutes
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes}m'**
+  String notificationsTimeMinutes(int minutes);
+
+  /// Compact relative time in hours
+  ///
+  /// In en, this message translates to:
+  /// **'{hours}h'**
+  String notificationsTimeHours(int hours);
+
+  /// Compact relative time in days
+  ///
+  /// In en, this message translates to:
+  /// **'{days}d'**
+  String notificationsTimeDays(int days);
+
+  /// Unread count chip in the app bar
+  ///
+  /// In en, this message translates to:
+  /// **'{count} new'**
+  String notificationsUnreadCount(int count);
+
   /// AppBar title for notification preferences
   ///
   /// In en, this message translates to:

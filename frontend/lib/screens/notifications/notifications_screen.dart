@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../models/group_models.dart';
 import '../../models/notification_models.dart';
@@ -17,8 +18,8 @@ import '../../utils/active_group_context.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
 import '../../providers/group_provider.dart';
+import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
-import '../../theme/theme.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
@@ -34,6 +35,14 @@ class NotificationsScreen extends ConsumerStatefulWidget {
   @override
   ConsumerState<NotificationsScreen> createState() =>
       _NotificationsScreenState();
+}
+
+/// A flattened feed row: either a day-section header or a notification.
+class _FeedEntry {
+  const _FeedEntry.header(this.header) : notification = null;
+  const _FeedEntry.item(this.notification) : header = null;
+  final String? header;
+  final NotificationModel? notification;
 }
 
 class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
@@ -160,18 +169,41 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     }
   }
 
+  NotificationModel _asRead(NotificationModel n) => NotificationModel(
+        id: n.id,
+        userId: n.userId,
+        type: n.type,
+        title: n.title,
+        body: n.body,
+        data: n.data,
+        isRead: true,
+        readAt: DateTime.now(),
+        createdAt: n.createdAt,
+      );
+
   Future<void> _markAllRead() async {
     if (_isMutating) return;
     _isMutating = true;
     final l10n = AppLocalizations.of(context)!;
     unawaited(Haptics.light());
+    // Optimistic: dots clear immediately; a failed call reloads the truth.
+    final before = List<NotificationModel>.from(_items);
+    setState(() {
+      for (var i = 0; i < _items.length; i++) {
+        if (!_items[i].isRead) _items[i] = _asRead(_items[i]);
+      }
+    });
     try {
       final service = await ref.read(notificationServiceProviderAsync.future);
       await service.markAllAsRead();
-      await _load();
     } catch (_) {
       if (!mounted) return;
-      setState(() => _error = l10n.notificationsFailedMarkAllRead);
+      setState(() {
+        _items
+          ..clear()
+          ..addAll(before);
+        _error = l10n.notificationsFailedMarkAllRead;
+      });
     } finally {
       _isMutating = false;
     }
@@ -185,19 +217,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       await service.markAsRead(n.id);
       setState(() {
         final idx = _items.indexWhere((x) => x.id == n.id);
-        if (idx >= 0) {
-          _items[idx] = NotificationModel(
-            id: n.id,
-            userId: n.userId,
-            type: n.type,
-            title: n.title,
-            body: n.body,
-            data: n.data,
-            isRead: true,
-            readAt: DateTime.now(),
-            createdAt: n.createdAt,
-          );
-        }
+        if (idx >= 0) _items[idx] = _asRead(n);
       });
     } catch (_) {
       if (!mounted) return;
@@ -205,22 +225,23 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     }
   }
 
+  /// Optimistic delete: the row is already gone from the list when the
+  /// Dismissible finishes animating; on failure it is restored in place.
   Future<void> _delete(NotificationModel n) async {
-    if (_isMutating) return;
-    _isMutating = true;
+    final idx = _items.indexWhere((x) => x.id == n.id);
+    if (idx < 0) return;
+    unawaited(Haptics.medium());
+    setState(() => _items.removeAt(idx));
     try {
       final service = await ref.read(notificationServiceProviderAsync.future);
       await service.deleteNotification(n.id);
-      if (!mounted) return;
-      unawaited(Haptics.medium());
-      setState(() => _items.removeWhere((x) => x.id == n.id));
     } catch (e) {
       if (!mounted) return;
       unawaited(Haptics.failure());
-      setState(() =>
-          _error = friendlyErrorMessage(e, AppLocalizations.of(context)!));
-    } finally {
-      _isMutating = false;
+      setState(() {
+        _items.insert(idx.clamp(0, _items.length), n);
+        _error = friendlyErrorMessage(e, AppLocalizations.of(context)!);
+      });
     }
   }
 
@@ -270,25 +291,91 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     return null;
   }
 
+  String _sectionFor(DateTime t, AppLocalizations l10n) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final day = DateTime(t.year, t.month, t.day);
+    final diff = today.difference(day).inDays;
+    if (diff <= 0) return l10n.notificationsSectionToday;
+    if (diff == 1) return l10n.notificationsSectionYesterday;
+    return l10n.notificationsSectionEarlier;
+  }
+
+  String _relativeTime(DateTime t, AppLocalizations l10n) {
+    final diff = DateTime.now().difference(t);
+    if (diff.inMinutes < 1) return l10n.notificationsTimeNow;
+    if (diff.inHours < 1) return l10n.notificationsTimeMinutes(diff.inMinutes);
+    if (diff.inDays < 1) return l10n.notificationsTimeHours(diff.inHours);
+    if (diff.inDays < 7) return l10n.notificationsTimeDays(diff.inDays);
+    return DateFormat.MMMd(l10n.localeName).format(t);
+  }
+
+  List<_FeedEntry> _buildEntries(AppLocalizations l10n) {
+    final entries = <_FeedEntry>[];
+    String? section;
+    for (final n in _items) {
+      final s = _sectionFor(n.createdAt, l10n);
+      if (s != section) {
+        section = s;
+        entries.add(_FeedEntry.header(s));
+      }
+      entries.add(_FeedEntry.item(n));
+    }
+    return entries;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final unreadCount = _items.where((n) => !n.isRead).length;
+
     return Scaffold(
-      appBar: MitlistAppBar.titleText(
-        l10n.notificationsAppBarTitle,
+      appBar: MitlistAppBar(
         showStandardActions: false,
+        centerTitle: false,
         leading: IconButton(
           icon: const AppIcon(name: 'arrowLeft'),
           tooltip: l10n.commonBack,
           onPressed: () => Navigator.of(context).pop(),
         ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                l10n.notificationsAppBarTitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (unreadCount > 0) ...[
+              const SizedBox(width: MitlistSpacing.sm),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: MitlistSpacing.xs + 2,
+                  vertical: 2,
+                ),
+                color: colorScheme.primary,
+                child: Text(
+                  l10n.notificationsUnreadCount(unreadCount),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+              ),
+            ],
+          ],
+        ),
         actions: [
-          AppButton(
-            variant: AppButtonVariant.ghost,
-            color: AppButtonColor.neutral,
-            text: l10n.notificationsMarkAllRead,
-            onPressed: _isLoading ? null : _markAllRead,
-          ),
+          if (unreadCount > 0)
+            AppButton(
+              variant: AppButtonVariant.ghost,
+              color: AppButtonColor.neutral,
+              text: l10n.notificationsMarkAllRead,
+              onPressed: _isLoading ? null : _markAllRead,
+            ),
         ],
       ),
       body: RefreshIndicator(
@@ -300,27 +387,14 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               padding: const EdgeInsets.all(MitlistSpacing.md),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  if (_isLoading) ...[
+                  if (_isLoading)
                     ...List.generate(
-                      4,
-                      (_) => Padding(
-                        padding:
-                            const EdgeInsets.only(bottom: MitlistSpacing.sm),
-                        child: AppCard(
-                          variant: AppCardVariant.outlined,
-                          padding: AppCardPadding.md,
-                          child: const Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              AppSkeleton(width: 160, height: 16),
-                              SizedBox(height: MitlistSpacing.sm),
-                              AppSkeleton(width: double.infinity, height: 40),
-                            ],
-                          ),
-                        ),
+                      5,
+                      (_) => const Padding(
+                        padding: EdgeInsets.only(bottom: MitlistSpacing.sm),
+                        child: _NotificationSkeleton(),
                       ),
                     ),
-                  ],
                   if (_error != null) ...[
                     AppAlert(type: AppAlertType.error, message: _error!),
                     const SizedBox(height: MitlistSpacing.md),
@@ -358,88 +432,12 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 ]),
               ),
             ),
-            if (_hasHousehold && _items.isNotEmpty)
+            if (_hasHousehold && _items.isNotEmpty && !_isLoading)
               SliverPadding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: MitlistSpacing.md,
                 ),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final n = _items[index];
-                      final subtitle = n.body.isNotEmpty ? n.body : n.type;
-                      final titleStyle =
-                          Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: n.isRead
-                                    ? FontWeight.w500
-                                    : FontWeight.w800,
-                              );
-
-                      return Padding(
-                        padding:
-                            const EdgeInsets.only(bottom: MitlistSpacing.sm),
-                        child: Dismissible(
-                          key: ValueKey(n.id),
-                          direction: DismissDirection.endToStart,
-                          background: Semantics(
-                            label: l10n.commonDelete,
-                            child: Container(
-                              alignment: Alignment.centerRight,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: MitlistSpacing.md),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .error
-                                    .withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(
-                                    MitlistTheme.radiusLg),
-                              ),
-                              child: AppIcon(
-                                name: 'trashOutline',
-                                color: Theme.of(context).colorScheme.error,
-                              ),
-                            ),
-                          ),
-                          confirmDismiss: (_) async {
-                            await _delete(n);
-                            return false;
-                          },
-                          child: AppCard(
-                            interactive: true,
-                            onTap: () => _handleNotificationTap(n),
-                            semanticLabel: n.isRead
-                                ? n.title
-                                : l10n.notificationsUnreadLabel(n.title),
-                            child: Padding(
-                              padding: const EdgeInsets.all(MitlistSpacing.md),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    n.title,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: titleStyle,
-                                  ),
-                                  const SizedBox(height: MitlistSpacing.xs),
-                                  Text(
-                                    subtitle,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style:
-                                        Theme.of(context).textTheme.bodySmall,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                    childCount: _items.length,
-                  ),
-                ),
+                sliver: _buildFeed(l10n),
               ),
             if (_isLoadingMore)
               const SliverPadding(
@@ -450,6 +448,256 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildFeed(AppLocalizations l10n) {
+    final entries = _buildEntries(l10n);
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          final entry = entries[index];
+          if (entry.header != null) {
+            return Padding(
+              padding: const EdgeInsets.only(
+                top: MitlistSpacing.sm,
+                bottom: MitlistSpacing.sm,
+              ),
+              child: Text(
+                entry.header!,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+            );
+          }
+          final n = entry.notification!;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+            child: Dismissible(
+              key: ValueKey(n.id),
+              direction: DismissDirection.endToStart,
+              background: Semantics(
+                label: l10n.commonDelete,
+                child: Container(
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: MitlistSpacing.md),
+                  color: Theme.of(context).colorScheme.error,
+                  child: AppIcon(
+                    name: 'trashOutline',
+                    color: Theme.of(context).colorScheme.onError,
+                  ),
+                ),
+              ),
+              onDismissed: (_) => _delete(n),
+              child: _NotificationTile(
+                notification: n,
+                timeLabel: _relativeTime(n.createdAt, l10n),
+                semanticLabel: n.isRead
+                    ? n.title
+                    : l10n.notificationsUnreadLabel(n.title),
+                onTap: () => _handleNotificationTap(n),
+              ),
+            ),
+          );
+        },
+        childCount: entries.length,
+      ),
+    );
+  }
+}
+
+/// Icon + tint pair for a notification type, resolved against brightness so
+/// plates stay legible in both themes.
+({String icon, Color background, Color foreground}) _typeVisual(
+  String type,
+  Brightness brightness,
+) {
+  final light = brightness == Brightness.light;
+  switch (type) {
+    case 'chore_due':
+    case 'chore_due_day_of':
+      return (
+        icon: 'cleaningServices',
+        background:
+            light ? MitlistColors.success100 : MitlistColors.success900,
+        foreground:
+            light ? MitlistColors.success700 : MitlistColors.success300,
+      );
+    case 'list_item_added':
+      return (
+        icon: 'shoppingCartOutline',
+        background:
+            light ? MitlistColors.primary100 : MitlistColors.primary900,
+        foreground:
+            light ? MitlistColors.primary700 : MitlistColors.primary300,
+      );
+    case 'expense_created':
+      return (
+        icon: 'banknotes',
+        background:
+            light ? MitlistColors.warning100 : MitlistColors.warning900,
+        foreground:
+            light ? MitlistColors.warning700 : MitlistColors.warning300,
+      );
+    case 'meal_plan_changed':
+      return (
+        icon: 'restaurantOutline',
+        background: light
+            ? MitlistColors.noteLavender
+            : MitlistColors.noteLavenderDark,
+        foreground: light
+            ? MitlistColors.noteLavenderDark
+            : MitlistColors.noteLavender,
+      );
+    case 'weekly_digest':
+      return (
+        icon: 'chartBar',
+        background: light ? MitlistColors.noteSky : MitlistColors.noteSkyDark,
+        foreground: light ? MitlistColors.noteSkyDark : MitlistColors.noteSky,
+      );
+    case 'pinwall_reminder':
+      return (
+        icon: 'pushPinOutline',
+        background:
+            light ? MitlistColors.noteBlush : MitlistColors.noteBlushDark,
+        foreground:
+            light ? MitlistColors.noteBlushDark : MitlistColors.noteBlush,
+      );
+    default:
+      return (
+        icon: 'bellOutline',
+        background:
+            light ? MitlistColors.neutral200 : MitlistColors.neutral800,
+        foreground:
+            light ? MitlistColors.neutral700 : MitlistColors.neutral300,
+      );
+  }
+}
+
+class _NotificationTile extends StatelessWidget {
+  const _NotificationTile({
+    required this.notification,
+    required this.timeLabel,
+    required this.semanticLabel,
+    required this.onTap,
+  });
+
+  final NotificationModel notification;
+  final String timeLabel;
+  final String semanticLabel;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final n = notification;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final visual = _typeVisual(n.type, theme.brightness);
+    final subtitle = n.body.isNotEmpty ? n.body : n.type;
+
+    return AppCard(
+      interactive: true,
+      onTap: onTap,
+      semanticLabel: semanticLabel,
+      child: Padding(
+        padding: const EdgeInsets.all(MitlistSpacing.md),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              color: visual.background,
+              alignment: Alignment.center,
+              child: AppIcon(
+                name: visual.icon,
+                size: 20,
+                color: visual.foreground,
+              ),
+            ),
+            const SizedBox(width: MitlistSpacing.sm + MitlistSpacing.xs),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          n.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight:
+                                n.isRead ? FontWeight.w500 : FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: MitlistSpacing.sm),
+                      Text(
+                        timeLabel,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      if (!n.isRead) ...[
+                        const SizedBox(width: MitlistSpacing.sm),
+                        // Square, not round: the app's hard-edged vocabulary.
+                        Container(
+                          width: 8,
+                          height: 8,
+                          color: colorScheme.primary,
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: MitlistSpacing.xs),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NotificationSkeleton extends StatelessWidget {
+  const _NotificationSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      variant: AppCardVariant.outlined,
+      padding: AppCardPadding.md,
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppSkeleton(width: 40, height: 40),
+          SizedBox(width: MitlistSpacing.sm + MitlistSpacing.xs),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppSkeleton(width: 160, height: 14),
+                SizedBox(height: MitlistSpacing.sm),
+                AppSkeleton(width: double.infinity, height: 28),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

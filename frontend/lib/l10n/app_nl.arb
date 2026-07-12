@@ -3077,6 +3077,14 @@
       }
     }
   },
+  "notificationsSectionToday": "Vandaag",
+  "notificationsSectionYesterday": "Gisteren",
+  "notificationsSectionEarlier": "Eerder",
+  "notificationsTimeNow": "nu",
+  "notificationsTimeMinutes": "{minutes} m",
+  "notificationsTimeHours": "{hours} u",
+  "notificationsTimeDays": "{days} d",
+  "notificationsUnreadCount": "{count} nieuw",
   "notifPrefAppBarTitle": "Notificatievoorkeuren",
   "@notifPrefAppBarTitle": {
     "description": "AppBar title for notification preferences"
