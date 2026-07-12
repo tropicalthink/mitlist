@@ -795,11 +795,14 @@ void main() {
         GoRoute(
           path: '/auth/callback',
           builder: (context, state) => OAuthCallbackScreen(
-            queryParameters: const {
-              'provider': 'google',
-              'code': 'oauth-code',
-              'state': 'oauth-state',
-            },
+            uri: Uri(
+              path: '/auth/callback',
+              queryParameters: const {
+                'provider': 'google',
+                'code': 'oauth-code',
+                'state': 'oauth-state',
+              },
+            ),
           ),
         ),
       ],
@@ -1693,6 +1696,9 @@ class FakeListRepository implements ListRepository {
     _controller.add(lists);
     return lists.length;
   }
+
+  @override
+  Future<void> renameListLocal(String listId, String name) async {}
 
   @override
   Stream<List<ListItem>> watchItemsByList(String listId) =>

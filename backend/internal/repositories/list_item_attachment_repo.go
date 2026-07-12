@@ -43,6 +43,36 @@ func (r *ListItemAttachmentRepository) Remove(ctx context.Context, listItemID, a
 	return nil
 }
 
+// ListReadyAttachmentsByList returns every ready attachment for the list's
+// non-deleted items, keyed by list item id, so a screen can hydrate all photo
+// thumbnails with one query instead of one per item.
+func (r *ListItemAttachmentRepository) ListReadyAttachmentsByList(ctx context.Context, listID uuid.UUID) (map[uuid.UUID][]models.Attachment, error) {
+	const q = `
+		SELECT lia.list_item_id, a.id, a.group_id, a.user_id, a.purpose, a.object_key, a.content_type, a.byte_size, a.status, a.created_at
+		FROM list_item_attachments lia
+		JOIN attachments a ON a.id = lia.attachment_id
+		JOIN list_items li ON li.id = lia.list_item_id
+		WHERE li.list_id = $1 AND li.deleted_at IS NULL AND a.status = 'ready'
+		ORDER BY lia.created_at DESC
+	`
+	rows, err := r.db.Query(ctx, q, listID)
+	if err != nil {
+		return nil, fmt.Errorf("list attachments by list: %w", err)
+	}
+	defer rows.Close()
+
+	out := make(map[uuid.UUID][]models.Attachment)
+	for rows.Next() {
+		var itemID uuid.UUID
+		var a models.Attachment
+		if err := rows.Scan(&itemID, &a.ID, &a.GroupID, &a.UserID, &a.Purpose, &a.ObjectKey, &a.ContentType, &a.ByteSize, &a.Status, &a.CreatedAt); err != nil {
+			return nil, fmt.Errorf("scan attachment by list: %w", err)
+		}
+		out[itemID] = append(out[itemID], a)
+	}
+	return out, rows.Err()
+}
+
 func (r *ListItemAttachmentRepository) ListReadyAttachmentsByListItem(ctx context.Context, listItemID uuid.UUID) ([]models.Attachment, error) {
 	const q = `
 		SELECT a.id, a.group_id, a.user_id, a.purpose, a.object_key, a.content_type, a.byte_size, a.status, a.created_at

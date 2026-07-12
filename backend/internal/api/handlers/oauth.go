@@ -346,16 +346,18 @@ func (h *OAuthHandler) redirectWithTokens(finalRedirectURI, provider, access, re
 	if err != nil {
 		return finalRedirectURI
 	}
-	fragment := url.Values{}
-	fragment.Set("provider", provider)
-	fragment.Set("access_token", access)
-	fragment.Set("refresh_token", refresh)
+	tokens := url.Values{}
+	tokens.Set("provider", provider)
+	tokens.Set("access_token", access)
+	tokens.Set("refresh_token", refresh)
 	redirectURL.RawQuery = ""
 	redirectURL.Fragment = ""
-	if strings.Contains(finalRedirectURI, "#") {
-		redirectURL.RawQuery = fragment.Encode()
+	// Custom-scheme deep links (mitlist://) must use the query string: mobile
+	// OS handlers and Flutter's router read queryParameters, not fragments.
+	if redirectURL.Scheme == "mitlist" || strings.Contains(finalRedirectURI, "#") {
+		redirectURL.RawQuery = tokens.Encode()
 	} else {
-		redirectURL.Fragment = fragment.Encode()
+		redirectURL.Fragment = tokens.Encode()
 	}
 	return redirectURL.String()
 }

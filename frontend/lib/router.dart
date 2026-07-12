@@ -177,7 +177,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/auth/callback',
         name: 'oauthCallback',
         builder: (context, state) => OAuthCallbackScreen(
-          queryParameters: state.uri.queryParameters,
+          uri: state.uri,
         ),
       ),
       GoRoute(
@@ -325,6 +325,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                         listId: listId,
                         initialListName: args?.listName,
                         autoFocusTitle: args?.autoFocusTitle ?? false,
+                        autoFocusComposer: args?.autoFocusComposer ?? false,
                       );
                     },
                   ),
