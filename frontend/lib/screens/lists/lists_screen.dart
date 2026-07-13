@@ -38,6 +38,8 @@ enum _SortOption { newest, oldest, az, mostItems }
 enum _FilterOption { all, shopping, todo, custom }
 
 enum _ListMenuAction {
+  shoppingTrip,
+  toggleView,
   scanReceipt,
   sortNewest,
   sortOldest,
@@ -425,25 +427,9 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         actions: [
           if (!_showSearch) ...[
             IconButton(
-              icon: const AppIcon(name: 'shoppingCart'),
-              tooltip: l10n.listShoppingTripTooltip,
-              onPressed: () => context.pushNamed('shoppingTrip'),
-            ),
-            IconButton(
               icon: const AppIcon(name: 'magnifyingGlass'),
               tooltip: l10n.commonSearch,
               onPressed: () => setState(() => _showSearch = true),
-            ),
-            IconButton(
-              // Shows the view you'd switch to, not the current one.
-              icon: AppIcon(name: _isGrid ? 'listBullet' : 'squares2x2'),
-              tooltip: _isGrid ? l10n.listSortListView : l10n.listSortGridView,
-              onPressed: () {
-                unawaited(Haptics.light());
-                setState(() => _isGrid = !_isGrid);
-                SharedPreferences.getInstance()
-                    .then((p) => p.setBool('lists_is_grid', _isGrid));
-              },
             ),
             PopupMenuButton<_ListMenuAction>(
               icon: const AppIcon(name: 'ellipsisVertical'),
@@ -451,7 +437,14 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
               onSelected: (action) {
                 setState(() {
                   switch (action) {
+                    case _ListMenuAction.shoppingTrip:
                     case _ListMenuAction.scanReceipt:
+                      break;
+                    case _ListMenuAction.toggleView:
+                      unawaited(Haptics.light());
+                      _isGrid = !_isGrid;
+                      SharedPreferences.getInstance()
+                          .then((p) => p.setBool('lists_is_grid', _isGrid));
                       break;
                     case _ListMenuAction.sortNewest:
                       _sort = _SortOption.newest;
@@ -477,9 +470,39 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                 });
                 if (action == _ListMenuAction.scanReceipt) {
                   context.pushNamed('scanner');
+                } else if (action == _ListMenuAction.shoppingTrip) {
+                  context.pushNamed('shoppingTrip');
                 }
               },
               itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: _ListMenuAction.shoppingTrip,
+                  child: Row(
+                    children: [
+                      AppIcon(
+                          name: 'shoppingCart',
+                          size: 18,
+                          color: Theme.of(context).colorScheme.onSurface),
+                      const SizedBox(width: MitlistSpacing.sm),
+                      Text(l10n.listShoppingTripTooltip),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: _ListMenuAction.toggleView,
+                  child: Row(
+                    children: [
+                      AppIcon(
+                          name: _isGrid ? 'listBullet' : 'squares2x2',
+                          size: 18,
+                          color: Theme.of(context).colorScheme.onSurface),
+                      const SizedBox(width: MitlistSpacing.sm),
+                      Text(_isGrid
+                          ? l10n.listSortListView
+                          : l10n.listSortGridView),
+                    ],
+                  ),
+                ),
                 PopupMenuItem(
                   value: _ListMenuAction.scanReceipt,
                   child: Row(
