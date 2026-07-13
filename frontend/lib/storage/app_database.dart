@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path_provider/path_provider.dart';
 
 import '../models/list_models.dart';
@@ -592,6 +593,18 @@ FROM list_items_table;
         },
         beforeOpen: (details) async {
           await customStatement('pragma foreign_keys = ON;');
+          // WAL lets interactive reads (watch streams, one-shot lookups) run
+          // concurrently with a large background write that holds the writer —
+          // e.g. the ~280k-row grocery seed and its FTS rebuild. On the default
+          // rollback-journal mode the single serial connection stalls every
+          // read behind that write, which is a big part of why adding to a list
+          // felt frozen right after first launch. busy_timeout makes a
+          // contended writer wait for the lock instead of failing outright.
+          // Native only: the web (sqlite3 wasm) VFS does not support WAL.
+          if (!kIsWeb) {
+            await customStatement('pragma journal_mode = WAL;');
+            await customStatement('pragma busy_timeout = 5000;');
+          }
         },
       );
 
