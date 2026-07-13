@@ -996,6 +996,189 @@ class AppLocalizationsNl extends AppLocalizations {
   String get recipeAddToList => 'Aan lijst toevoegen';
 
   @override
+  String get recipeAddOnlyMissing => 'Alleen wat ontbreekt toevoegen';
+
+  @override
+  String recipeAddMissingAdded(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ontbrekende items toegevoegd',
+      one: '1 ontbrekend item toegevoegd',
+      zero: 'Niets ontbreekt — helemaal compleet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get productsTitle => 'Producten';
+
+  @override
+  String get productsSearchHint => 'Producten zoeken';
+
+  @override
+  String get productsEmptyTitle => 'Nog geen producten';
+
+  @override
+  String get productsEmptyDesc =>
+      'Bewaar producten die je vaak koopt om ze in al je lijsten te hergebruiken.';
+
+  @override
+  String get productsNoResults =>
+      'Geen producten komen overeen met je zoekopdracht';
+
+  @override
+  String get productsAdd => 'Product toevoegen';
+
+  @override
+  String get productsSheetTitle => 'Nieuw product';
+
+  @override
+  String get productsFieldName => 'Naam';
+
+  @override
+  String get productsFieldUnit => 'Eenheid (optioneel)';
+
+  @override
+  String get productsFieldBarcode => 'Barcode (optioneel)';
+
+  @override
+  String get productsValidationName => 'Voer een productnaam in';
+
+  @override
+  String get productsCouldNotCreate => 'Kon product niet aanmaken';
+
+  @override
+  String get productsNoHouseholdDesc =>
+      'Word lid van een huishouden of maak er een om een productcatalogus bij te houden.';
+
+  @override
+  String get shoppingLocationsTitle => 'Winkellocaties';
+
+  @override
+  String get shoppingLocationsEmptyTitle => 'Nog geen locaties';
+
+  @override
+  String get shoppingLocationsEmptyDesc =>
+      'Benoem de winkels waar je boodschappen doet om je uitjes te organiseren.';
+
+  @override
+  String get shoppingLocationsAdd => 'Locatie toevoegen';
+
+  @override
+  String get shoppingLocationsSheetTitle => 'Nieuwe locatie';
+
+  @override
+  String get shoppingLocationsFieldName => 'Naam';
+
+  @override
+  String get shoppingLocationsValidationName => 'Voer een locatienaam in';
+
+  @override
+  String get shoppingLocationsCouldNotCreate => 'Kon locatie niet aanmaken';
+
+  @override
+  String get shoppingLocationsNoHouseholdDesc =>
+      'Word lid van een huishouden of maak er een om winkellocaties op te slaan.';
+
+  @override
+  String get cookbooksTitle => 'Kookboeken';
+
+  @override
+  String get cookbooksButton => 'Kookboeken';
+
+  @override
+  String get cookbooksEmptyTitle => 'Nog geen kookboeken';
+
+  @override
+  String get cookbooksEmptyDesc =>
+      'Groepeer je recepten in kookboeken om ze sneller terug te vinden.';
+
+  @override
+  String get cookbooksAdd => 'Nieuw kookboek';
+
+  @override
+  String get cookbooksSheetTitle => 'Nieuw kookboek';
+
+  @override
+  String get cookbooksRenameSheetTitle => 'Kookboek hernoemen';
+
+  @override
+  String get cookbooksFieldName => 'Naam';
+
+  @override
+  String get cookbooksValidationName => 'Voer een kookboeknaam in';
+
+  @override
+  String get cookbooksCouldNotCreate => 'Kon kookboek niet aanmaken';
+
+  @override
+  String get cookbooksCouldNotRename => 'Kon kookboek niet hernoemen';
+
+  @override
+  String get cookbooksCouldNotDelete => 'Kon kookboek niet verwijderen';
+
+  @override
+  String get cookbooksDeleteTitle => 'Kookboek verwijderen?';
+
+  @override
+  String get cookbooksDeleteBody =>
+      'Dit verwijdert het kookboek. Je recepten blijven in je keuken.';
+
+  @override
+  String cookbooksRecipeCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count recepten',
+      one: '1 recept',
+      zero: 'Geen recepten',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get cookbooksRename => 'Hernoemen';
+
+  @override
+  String get cookbooksNoHouseholdDesc =>
+      'Word lid van een huishouden of maak er een om kookboeken samen te stellen.';
+
+  @override
+  String get cookbookDetailEmptyTitle => 'Hier nog geen recepten';
+
+  @override
+  String get cookbookDetailEmptyDesc =>
+      'Voeg recepten toe aan dit kookboek om ze hier te zien.';
+
+  @override
+  String get cookbookDetailAddRecipes => 'Recepten toevoegen';
+
+  @override
+  String get cookbookAddRecipesSheetTitle => 'Recepten toevoegen';
+
+  @override
+  String get cookbookAddRecipesEmpty =>
+      'Al je recepten staan al in dit kookboek.';
+
+  @override
+  String get cookbookRemoveRecipe => 'Uit kookboek verwijderen';
+
+  @override
+  String get cookbookRecipeRemoved => 'Uit kookboek verwijderd';
+
+  @override
+  String cookbookRecipesAdded(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count recepten toegevoegd',
+      one: '1 recept toegevoegd',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String recipeSharedPrivate(num shared, num private) {
     return '$shared gedeeld · $private privé';
   }

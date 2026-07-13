@@ -193,6 +193,7 @@ type RecipeRepoIface interface {
 	GetRecipeByID(ctx context.Context, id uuid.UUID) (*models.Recipe, error)
 	GetRecipesByIDs(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]*models.Recipe, error)
 	ListRecipesByUser(ctx context.Context, userID uuid.UUID, limit, offset int) ([]models.Recipe, error)
+	ListRecipesByCollection(ctx context.Context, collectionID uuid.UUID, limit, offset int) ([]models.Recipe, error)
 	UpdateRecipe(ctx context.Context, rec *models.Recipe) error
 	DeleteRecipe(ctx context.Context, id uuid.UUID) error
 	CreateIngredient(ctx context.Context, ing *models.RecipeIngredient) error
