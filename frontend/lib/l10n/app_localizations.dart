@@ -5109,6 +5109,60 @@ abstract class AppLocalizations {
   /// **'What\'s this for?'**
   String get expenseCreationWhatsItFor;
 
+  /// Label for the expense category picker
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get expenseCreationCategoryLabel;
+
+  /// Expense category
+  ///
+  /// In en, this message translates to:
+  /// **'Groceries'**
+  String get expenseCategoryGroceries;
+
+  /// Expense category
+  ///
+  /// In en, this message translates to:
+  /// **'Dining'**
+  String get expenseCategoryDining;
+
+  /// Expense category
+  ///
+  /// In en, this message translates to:
+  /// **'Transport'**
+  String get expenseCategoryTransport;
+
+  /// Expense category
+  ///
+  /// In en, this message translates to:
+  /// **'Utilities'**
+  String get expenseCategoryUtilities;
+
+  /// Expense category
+  ///
+  /// In en, this message translates to:
+  /// **'Household'**
+  String get expenseCategoryHousehold;
+
+  /// Expense category
+  ///
+  /// In en, this message translates to:
+  /// **'Entertainment'**
+  String get expenseCategoryEntertainment;
+
+  /// Expense category
+  ///
+  /// In en, this message translates to:
+  /// **'Health'**
+  String get expenseCategoryHealth;
+
+  /// Expense category (default/fallback)
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get expenseCategoryOther;
+
   /// Placeholder for optional notes
   ///
   /// In en, this message translates to:

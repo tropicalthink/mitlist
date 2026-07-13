@@ -189,7 +189,9 @@ void main() {
         description: 'Groceries',
         amount: 1234,
         baseAmount: 1234,
-        category: 'groceries',
+        // Distinct from the description so 'Groceries' stays the unique row
+        // identifier now that the category renders its own localized label.
+        category: 'dining',
         currency: 'USD',
         date: DateTime.utc(2026, 1, 15),
       ),
