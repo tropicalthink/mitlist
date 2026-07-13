@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"math"
 	"testing"
 	"time"
 
@@ -191,5 +192,83 @@ func TestPinwallService_DeletePost(t *testing.T) {
 		require.Error(t, err)
 		var pe *api.PermissionDeniedError
 		assert.ErrorAs(t, err, &pe)
+	})
+}
+
+func TestPinwallService_UpdatePostPosition(t *testing.T) {
+	ctx := context.Background()
+	groupID := uuid.New()
+	userID := uuid.New()
+	postID := uuid.New()
+	user := newActiveUser(userID)
+
+	t.Run("success returns positioned post", func(t *testing.T) {
+		pinwallRepo := new(mocks.MockPinwallRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewPinwallService(pinwallRepo, groupRepo)
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		pinwallRepo.On("GetPostByID", ctx, postID).Return(&models.PinwallPost{ID: postID, GroupID: groupID}, nil)
+		pinwallRepo.On("UpdatePostPosition", ctx, postID, 120.5, 340.0).Return(nil)
+
+		post, err := svc.UpdatePostPosition(ctx, user, groupID, postID, 120.5, 340.0)
+		require.NoError(t, err)
+		require.NotNil(t, post)
+		require.NotNil(t, post.PosX)
+		require.NotNil(t, post.PosY)
+		assert.Equal(t, 120.5, *post.PosX)
+		assert.Equal(t, 340.0, *post.PosY)
+	})
+
+	t.Run("non-finite coordinate rejected", func(t *testing.T) {
+		pinwallRepo := new(mocks.MockPinwallRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewPinwallService(pinwallRepo, groupRepo)
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+
+		_, err := svc.UpdatePostPosition(ctx, user, groupID, postID, math.Inf(1), 0)
+		require.Error(t, err)
+		var ve *api.ValidationError
+		assert.ErrorAs(t, err, &ve)
+	})
+
+	t.Run("negative coordinate rejected", func(t *testing.T) {
+		pinwallRepo := new(mocks.MockPinwallRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewPinwallService(pinwallRepo, groupRepo)
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+
+		_, err := svc.UpdatePostPosition(ctx, user, groupID, postID, -5, 10)
+		require.Error(t, err)
+		var ve *api.ValidationError
+		assert.ErrorAs(t, err, &ve)
+	})
+
+	t.Run("post from different group rejected", func(t *testing.T) {
+		pinwallRepo := new(mocks.MockPinwallRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewPinwallService(pinwallRepo, groupRepo)
+
+		otherGroupID := uuid.New()
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		pinwallRepo.On("GetPostByID", ctx, postID).Return(&models.PinwallPost{ID: postID, GroupID: otherGroupID}, nil)
+
+		_, err := svc.UpdatePostPosition(ctx, user, groupID, postID, 10, 10)
+		require.Error(t, err)
+		var pe *api.PermissionDeniedError
+		assert.ErrorAs(t, err, &pe)
+	})
+
+	t.Run("non-member rejected", func(t *testing.T) {
+		pinwallRepo := new(mocks.MockPinwallRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewPinwallService(pinwallRepo, groupRepo)
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(nil, pgx.ErrNoRows)
+
+		_, err := svc.UpdatePostPosition(ctx, user, groupID, postID, 10, 10)
+		require.Error(t, err)
 	})
 }

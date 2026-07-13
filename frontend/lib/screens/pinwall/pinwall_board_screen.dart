@@ -116,7 +116,7 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
     _posts = List.of(widget.posts);
     _positions = {
       for (var i = 0; i < widget.posts.length; i++)
-        widget.posts[i].id: _gridPosition(i, widget.posts[i].id.hashCode),
+        widget.posts[i].id: _positionFor(widget.posts[i], i),
     };
 
     _staggerCtrl = AnimationController(
@@ -202,8 +202,12 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
     final added = <String>[];
     for (final p in incoming) {
       if (!_positions.containsKey(p.id)) {
-        _positions[p.id] = _gridPosition(_positions.length, p.id.hashCode);
+        _positions[p.id] = _positionFor(p, _positions.length);
         added.add(p.id);
+      } else if (p.id != _activeId && p.posX != null && p.posY != null) {
+        // Adopt a placement made on another device (or the server's confirmed
+        // value), but never yank a card the user is actively dragging.
+        _positions[p.id] = _clamp(Offset(p.posX!, p.posY!), _kCardW, _kCardH);
       }
     }
     _positions.removeWhere((id, _) => !incomingIds.contains(id));
@@ -213,6 +217,17 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
       _posts = incoming;
       _enteringIds.addAll(added);
     });
+  }
+
+  /// A note's board position: its saved placement when the server has one,
+  /// otherwise a stable grid slot so never-placed notes still fan out.
+  Offset _positionFor(PinwallPost post, int index) {
+    final px = post.posX;
+    final py = post.posY;
+    if (px != null && py != null) {
+      return _clamp(Offset(px, py), _kCardW, _kCardH);
+    }
+    return _gridPosition(index, post.id.hashCode);
   }
 
   Offset _gridPosition(int index, int idHash) {
@@ -293,8 +308,28 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
   }
 
   void _drop() {
-    if (_activeId == null) return;
+    final id = _activeId;
+    if (id == null) return;
     setState(() => _activeId = null);
+    // The pinned summary cards (__stats__/__tonight__) are per-viewer scratch
+    // positions and stay local; only real notes persist + sync to the household.
+    if (id == _statsId || id == _tonightId) return;
+    final pos = _positions[id];
+    if (pos != null) unawaited(_persistPosition(id, pos));
+  }
+
+  Future<void> _persistPosition(String postId, Offset pos) async {
+    try {
+      final repo = await ref.read(pinwallRepositoryProvider.future);
+      await repo.updatePostPositionOfflineFirst(
+        widget.groupId,
+        postId,
+        pos.dx,
+        pos.dy,
+      );
+    } catch (_) {
+      // Best-effort: the move stays on screen and the outbox retries the sync.
+    }
   }
 
   /// All draggable cork items, sorted so the lifted card paints last.
