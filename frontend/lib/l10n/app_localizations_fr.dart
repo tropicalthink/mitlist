@@ -2343,6 +2343,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get accountCopyJSON => 'Copier les dépenses (JSON)';
 
   @override
+  String get accountExportCalendar => 'Export calendar (.ics)';
+
+  @override
   String get accountJSONCopied =>
       'JSON des dépenses copié dans le presse-papier';
 
@@ -3007,6 +3010,30 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get expenseCreationExpenseAdded => 'Dépense ajoutée';
+
+  @override
+  String expenseCreationSummaryPaidBySplit(String payer, String how) {
+    return 'Payé par $payer · partagé $how';
+  }
+
+  @override
+  String get expenseCreationSummaryYou => 'vous';
+
+  @override
+  String get expenseCreationSplitHowEqual => 'à parts égales';
+
+  @override
+  String get expenseCreationSplitHowExact => 'par montants exacts';
+
+  @override
+  String get expenseCreationSplitHowShares => 'par parts';
+
+  @override
+  String get expenseCreationSplitHowPercent => 'par pourcentages';
+
+  @override
+  String get expenseCreationEditSplitSemantic =>
+      'Modifier qui a payé et comment c\'est partagé';
 
   @override
   String get pinwallBoardLabel => 'Pinwall';
@@ -3982,6 +4009,16 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get sheetJoinJoin => 'Rejoindre';
+
+  @override
+  String get joinPasteButton => 'Paste';
+
+  @override
+  String get joinPasteFilled => 'Invite code pasted';
+
+  @override
+  String get joinPasteNoCode =>
+      'No invite code or link found on your clipboard';
 
   @override
   String get sheetCreateHouseholdTitle => 'Créer un foyer';

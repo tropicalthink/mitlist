@@ -4,6 +4,7 @@ import 'dart:math' show min;
 
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
 
@@ -13,6 +14,7 @@ import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../utils/friendly_error.dart';
 import '../utils/haptics.dart';
+import '../utils/invite_link.dart';
 import '../widgets/alert.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
@@ -162,8 +164,37 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
     );
   }
 
+  /// Fills the code field from the clipboard, accepting a bare code, a deep
+  /// link, or the web invite link people receive over chat. Most joiners have
+  /// the code sitting on their clipboard, so this is the fast path — the QR on
+  /// the inviter's screen is scannable with the phone's own camera (it opens
+  /// the app via the invite deep link).
+  Future<void> _pasteCode() async {
+    final l10n = AppLocalizations.of(context)!;
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    if (!mounted) return;
+    final code = data?.text == null ? null : extractInviteCode(data!.text!);
+    if (code == null) {
+      unawaited(Haptics.failure());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.joinPasteNoCode)),
+      );
+      return;
+    }
+    _codeController.value = TextEditingValue(
+      text: code,
+      selection: TextSelection.collapsed(offset: code.length),
+    );
+    unawaited(Haptics.light());
+    setState(() => _error = null);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.joinPasteFilled)),
+    );
+  }
+
   Widget _buildEntry() {
     final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
     final isJoining = _phase == _Phase.joining;
     return KeyedSubtree(
       key: const ValueKey('entry'),
@@ -175,13 +206,35 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
             AppAlert(type: AppAlertType.error, message: _error!),
             const SizedBox(height: MitlistSpacing.md),
           ],
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Text(
+                  l10n.sheetJoinCodeLabel,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                ),
+              ),
+              AppButton(
+                variant: AppButtonVariant.ghost,
+                color: AppButtonColor.primary,
+                size: AppButtonSize.sm,
+                text: l10n.joinPasteButton,
+                icon: const Icon(Icons.content_paste_rounded, size: 16),
+                onPressed: isJoining ? null : _pasteCode,
+              ),
+            ],
+          ),
+          const SizedBox(height: MitlistSpacing.xs),
           AppInput(
-            label: l10n.sheetJoinCodeLabel,
             hint: l10n.sheetJoinCodeExample,
             controller: _codeController,
             enabled: !isJoining,
             textInputAction: TextInputAction.done,
             maxLength: 20,
+            prefixIcon: const Icon(Icons.confirmation_number_outlined),
             onChanged: (val) {
               final upper = val.toUpperCase();
               if (upper != val) {
@@ -199,7 +252,7 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
           Text(
             l10n.joinCodeFormatHint,
             style: MitlistTypography.labelXSmall(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: MitlistSpacing.lg),

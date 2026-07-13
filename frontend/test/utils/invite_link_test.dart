@@ -17,6 +17,47 @@ void main() {
     });
   });
 
+  group('extractInviteCode', () {
+    test('accepts a bare code, uppercased', () {
+      expect(extractInviteCode('sunny-taco-42'), 'SUNNY-TACO-42');
+    });
+
+    test('trims surrounding whitespace', () {
+      expect(extractInviteCode('  ABCD-1234  '), 'ABCD-1234');
+    });
+
+    test('pulls the code from a mitlist deep link', () {
+      expect(extractInviteCode('mitlist:///join/ABCD-1234'), 'ABCD-1234');
+    });
+
+    test('pulls the code from an https web invite link', () {
+      expect(
+        extractInviteCode('https://mitlist.me/join/sunny-taco'),
+        'SUNNY-TACO',
+      );
+    });
+
+    test('handles a link with a trailing slash or query', () {
+      expect(
+        extractInviteCode('https://mitlist.me/join/ABCD-1234?ref=sms'),
+        'ABCD-1234',
+      );
+    });
+
+    test('returns null for empty or whitespace-only input', () {
+      expect(extractInviteCode(''), isNull);
+      expect(extractInviteCode('   '), isNull);
+    });
+
+    test('returns null for a too-short code', () {
+      expect(extractInviteCode('ab'), isNull);
+    });
+
+    test('returns null for arbitrary non-code text', () {
+      expect(extractInviteCode('hey, join my household!'), isNull);
+    });
+  });
+
   group('parseInviteCode', () {
     test('returns code for a valid join link', () {
       expect(

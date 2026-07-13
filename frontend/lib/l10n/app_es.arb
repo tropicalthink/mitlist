@@ -3792,6 +3792,13 @@
     "description": "Snackbar: expense saved without receipt"
   },
   "expenseCreationExpenseAdded": "Gasto añadido",
+  "expenseCreationSummaryPaidBySplit": "Pagado por {payer} · dividido {how}",
+  "expenseCreationSummaryYou": "ti",
+  "expenseCreationSplitHowEqual": "a partes iguales",
+  "expenseCreationSplitHowExact": "por importes exactos",
+  "expenseCreationSplitHowShares": "por partes",
+  "expenseCreationSplitHowPercent": "por porcentajes",
+  "expenseCreationEditSplitSemantic": "Editar quién pagó y cómo se divide",
   "@expenseCreationExpenseAdded": {
     "description": "Snackbar when expense is created"
   },
