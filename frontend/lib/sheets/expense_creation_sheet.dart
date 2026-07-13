@@ -16,6 +16,7 @@ import '../providers/group_provider.dart';
 import '../router.dart' show currentGroupIdProvider;
 import '../theme/spacing.dart';
 import '../utils/active_group_context.dart';
+import '../utils/expense_categories.dart';
 import '../utils/format_currency.dart';
 import '../utils/haptics.dart';
 import '../widgets/app_bottom_sheet.dart';
@@ -86,6 +87,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
   final Set<String> _selectedMemberIds = {};
   String _splitMode = 'equal';
   String _currency = 'USD';
+  String _category = 'other';
   String? _payerId;
 
   /// The current user's id, used to render "you" in the collapsed summary line.
@@ -361,6 +363,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
           baseAmount: baseAmount,
           fxRate: _isForeignCurrency ? _fxRate : 1.0,
           description: _descriptionController.text.trim(),
+          category: _category,
           notes: _notesController.text.trim(),
           currency: _currency,
           date: _date.toUtc(),
@@ -578,6 +581,34 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
             _markDirty();
             setState(() => _descriptionError = null);
           },
+        ),
+        // ── Category (horizontal chips) ───────────────────────────────
+        const SizedBox(height: MitlistSpacing.md),
+        Text(
+          l10n.expenseCreationCategoryLabel,
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+        const SizedBox(height: MitlistSpacing.sm),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (final key in expenseCategoryKeys)
+                Padding(
+                  padding: const EdgeInsets.only(right: MitlistSpacing.xs),
+                  child: AppChip(
+                    label: expenseCategoryLabel(l10n, key),
+                    selected: _category == key,
+                    onSelected: (_) {
+                      setState(() => _category = key);
+                      _markDirty();
+                    },
+                  ),
+                ),
+            ],
+          ),
         ),
         // ── Paid by + split (folded to one calm line; tap to change) ──
         // Mirrors Splitwise/Tricount: the common case reads as a sentence

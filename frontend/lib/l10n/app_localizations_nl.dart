@@ -2903,6 +2903,33 @@ class AppLocalizationsNl extends AppLocalizations {
   String get expenseCreationWhatsItFor => 'Waar is dit voor?';
 
   @override
+  String get expenseCreationCategoryLabel => 'Category';
+
+  @override
+  String get expenseCategoryGroceries => 'Groceries';
+
+  @override
+  String get expenseCategoryDining => 'Dining';
+
+  @override
+  String get expenseCategoryTransport => 'Transport';
+
+  @override
+  String get expenseCategoryUtilities => 'Utilities';
+
+  @override
+  String get expenseCategoryHousehold => 'Household';
+
+  @override
+  String get expenseCategoryEntertainment => 'Entertainment';
+
+  @override
+  String get expenseCategoryHealth => 'Health';
+
+  @override
+  String get expenseCategoryOther => 'Other';
+
+  @override
   String get expenseCreationNotesHint => 'Notities (optioneel)';
 
   @override
