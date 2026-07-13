@@ -298,19 +298,31 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     _pendingCanonicalId = null;
     _isSaving = true;
     unawaited(Haptics.light());
+    // addItem publishes a pending row synchronously before its first database
+    // await, so by the time this returns the future the row is already visible.
+    // Clear only after that publish, so there is never a frame where the value
+    // is visible in neither place.
+    final addFuture = _controller.addItem(text, canonicalItemId: canonicalId);
+    if (_newItemController.text.trim() == text) {
+      _newItemController.clear();
+    }
+    if (mounted) _composerFocusNode.requestFocus();
+    // Release the submit guard now — the row is on screen and the field is
+    // clear, so the user can immediately queue the next item. We deliberately
+    // do NOT hold it across `addFuture`: the local persistence can take many
+    // seconds when a large background write (e.g. the first-run grocery seed's
+    // FTS rebuild) is holding the shared DB connection, and blocking the
+    // composer (and every other gesture that shares `_isSaving`) on it is what
+    // made adds feel serialized. The row is optimistic and the write is durable
+    // via the outbox, so nothing is lost by letting it settle in the
+    // background.
+    _isSaving = false;
     try {
-      // addItem publishes a pending row synchronously before its first
-      // database await. Clear only after that publish, so there is never a
-      // frame where the value is visible in neither place.
-      final addFuture = _controller.addItem(text, canonicalItemId: canonicalId);
-      if (_newItemController.text.trim() == text) {
-        _newItemController.clear();
-      }
       await addFuture;
-      if (!mounted) return;
-      _composerFocusNode.requestFocus();
     } catch (e) {
       if (!mounted) return;
+      // Only restore if the field is still empty — the user may have already
+      // typed the next item into the cleared composer.
       if (_newItemController.text.trim().isEmpty) {
         _newItemController.text = text;
         _newItemController.selection =
@@ -321,8 +333,6 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.listDetailCouldNotAddItem)),
       );
-    } finally {
-      _isSaving = false;
     }
   }
 
