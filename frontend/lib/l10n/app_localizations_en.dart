@@ -986,6 +986,188 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recipeAddToList => 'Add to list';
 
   @override
+  String get recipeAddOnlyMissing => 'Add only what\'s missing';
+
+  @override
+  String recipeAddMissingAdded(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count missing items added',
+      one: '1 missing item added',
+      zero: 'Nothing missing — you\'re all set',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get productsTitle => 'Products';
+
+  @override
+  String get productsSearchHint => 'Search products';
+
+  @override
+  String get productsEmptyTitle => 'No products yet';
+
+  @override
+  String get productsEmptyDesc =>
+      'Save products you buy often to reuse them across your lists.';
+
+  @override
+  String get productsNoResults => 'No products match your search';
+
+  @override
+  String get productsAdd => 'Add product';
+
+  @override
+  String get productsSheetTitle => 'New product';
+
+  @override
+  String get productsFieldName => 'Name';
+
+  @override
+  String get productsFieldUnit => 'Unit (optional)';
+
+  @override
+  String get productsFieldBarcode => 'Barcode (optional)';
+
+  @override
+  String get productsValidationName => 'Enter a product name';
+
+  @override
+  String get productsCouldNotCreate => 'Couldn\'t create product';
+
+  @override
+  String get productsNoHouseholdDesc =>
+      'Join or create a household to keep a product catalog.';
+
+  @override
+  String get shoppingLocationsTitle => 'Shopping locations';
+
+  @override
+  String get shoppingLocationsEmptyTitle => 'No locations yet';
+
+  @override
+  String get shoppingLocationsEmptyDesc =>
+      'Name the stores you shop at to organize your trips.';
+
+  @override
+  String get shoppingLocationsAdd => 'Add location';
+
+  @override
+  String get shoppingLocationsSheetTitle => 'New location';
+
+  @override
+  String get shoppingLocationsFieldName => 'Name';
+
+  @override
+  String get shoppingLocationsValidationName => 'Enter a location name';
+
+  @override
+  String get shoppingLocationsCouldNotCreate => 'Couldn\'t create location';
+
+  @override
+  String get shoppingLocationsNoHouseholdDesc =>
+      'Join or create a household to save shopping locations.';
+
+  @override
+  String get cookbooksTitle => 'Cookbooks';
+
+  @override
+  String get cookbooksButton => 'Cookbooks';
+
+  @override
+  String get cookbooksEmptyTitle => 'No cookbooks yet';
+
+  @override
+  String get cookbooksEmptyDesc =>
+      'Group your recipes into cookbooks to find them faster.';
+
+  @override
+  String get cookbooksAdd => 'New cookbook';
+
+  @override
+  String get cookbooksSheetTitle => 'New cookbook';
+
+  @override
+  String get cookbooksRenameSheetTitle => 'Rename cookbook';
+
+  @override
+  String get cookbooksFieldName => 'Name';
+
+  @override
+  String get cookbooksValidationName => 'Enter a cookbook name';
+
+  @override
+  String get cookbooksCouldNotCreate => 'Couldn\'t create cookbook';
+
+  @override
+  String get cookbooksCouldNotRename => 'Couldn\'t rename cookbook';
+
+  @override
+  String get cookbooksCouldNotDelete => 'Couldn\'t delete cookbook';
+
+  @override
+  String get cookbooksDeleteTitle => 'Delete cookbook?';
+
+  @override
+  String get cookbooksDeleteBody =>
+      'This removes the cookbook. Your recipes stay in your kitchen.';
+
+  @override
+  String cookbooksRecipeCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count recipes',
+      one: '1 recipe',
+      zero: 'No recipes',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get cookbooksRename => 'Rename';
+
+  @override
+  String get cookbooksNoHouseholdDesc =>
+      'Join or create a household to build cookbooks.';
+
+  @override
+  String get cookbookDetailEmptyTitle => 'No recipes here yet';
+
+  @override
+  String get cookbookDetailEmptyDesc =>
+      'Add recipes to this cookbook to see them here.';
+
+  @override
+  String get cookbookDetailAddRecipes => 'Add recipes';
+
+  @override
+  String get cookbookAddRecipesSheetTitle => 'Add recipes';
+
+  @override
+  String get cookbookAddRecipesEmpty =>
+      'All your recipes are already in this cookbook.';
+
+  @override
+  String get cookbookRemoveRecipe => 'Remove from cookbook';
+
+  @override
+  String get cookbookRecipeRemoved => 'Removed from cookbook';
+
+  @override
+  String cookbookRecipesAdded(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count recipes added',
+      one: '1 recipe added',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String recipeSharedPrivate(num shared, num private) {
     return '$shared shared · $private private';
   }

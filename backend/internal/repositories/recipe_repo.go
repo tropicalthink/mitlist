@@ -213,6 +213,72 @@ func (r *RecipeRepo) ListRecipesByUser(ctx context.Context, userID uuid.UUID, li
 	return out, nil
 }
 
+// ListRecipesByCollection returns the recipes belonging to a collection,
+// most-recently-added first.
+func (r *RecipeRepo) ListRecipesByCollection(ctx context.Context, collectionID uuid.UUID, limit, offset int) ([]models.Recipe, error) {
+	limit = clampLimit(limit)
+
+	rows, err := r.pool.Query(ctx, `
+		SELECT rec.id, rec.user_id, rec.title, rec.description, rec.description_short, rec.author, rec.rating_value, rec.rating_count,
+		       COALESCE(rec.nutrition_json, '{}'::jsonb)::text AS nutrition_json,
+		       rec.video_url,
+		       COALESCE(rec.equipment_json, '{}'::jsonb)::text AS equipment_json,
+		       rec.source_url,
+		       rec.image_url,
+		       COALESCE(rec.image_options, '[]'::jsonb)::text AS image_options,
+		       COALESCE(rec.tags, '[]'::jsonb)::text AS tags,
+		       rec.prep_time, rec.cook_time, rec.servings, rec.is_public, rec.created_at, rec.updated_at
+		FROM recipes rec
+		JOIN collection_recipes cr ON cr.recipe_id = rec.id
+		WHERE cr.collection_id = $1
+		ORDER BY cr.added_at DESC
+		LIMIT $2 OFFSET $3
+	`, collectionID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]models.Recipe, 0)
+	for rows.Next() {
+		var rec models.Recipe
+		var imageOptionsJSON, tagsJSON string
+		err := rows.Scan(
+			&rec.ID,
+			&rec.UserID,
+			&rec.Title,
+			&rec.Description,
+			&rec.DescriptionShort,
+			&rec.Author,
+			&rec.RatingValue,
+			&rec.RatingCount,
+			&rec.NutritionJSON,
+			&rec.VideoURL,
+			&rec.EquipmentJSON,
+			&rec.SourceURL,
+			&rec.ImageURL,
+			&imageOptionsJSON,
+			&tagsJSON,
+			&rec.PrepTime,
+			&rec.CookTime,
+			&rec.Servings,
+			&rec.IsPublic,
+			&rec.CreatedAt,
+			&rec.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		_ = json.Unmarshal([]byte(imageOptionsJSON), &rec.ImageOptions)
+		_ = json.Unmarshal([]byte(tagsJSON), &rec.Tags)
+		out = append(out, rec)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UpdateRecipe updates an existing recipe.
 func (r *RecipeRepo) UpdateRecipe(ctx context.Context, rec *models.Recipe) error {
 	rec.UpdatedAt = time.Now().UTC()

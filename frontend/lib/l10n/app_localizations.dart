@@ -1802,6 +1802,300 @@ abstract class AppLocalizations {
   /// **'Add to list'**
   String get recipeAddToList;
 
+  /// Secondary button: add only the recipe ingredients not already on the list
+  ///
+  /// In en, this message translates to:
+  /// **'Add only what\'s missing'**
+  String get recipeAddOnlyMissing;
+
+  /// Snackbar after adding only missing ingredients
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Nothing missing — you\'re all set} =1{1 missing item added} other{{count} missing items added}}'**
+  String recipeAddMissingAdded(num count);
+
+  /// Products catalog screen title
+  ///
+  /// In en, this message translates to:
+  /// **'Products'**
+  String get productsTitle;
+
+  /// Products search field hint
+  ///
+  /// In en, this message translates to:
+  /// **'Search products'**
+  String get productsSearchHint;
+
+  /// Products empty state title
+  ///
+  /// In en, this message translates to:
+  /// **'No products yet'**
+  String get productsEmptyTitle;
+
+  /// Products empty state description
+  ///
+  /// In en, this message translates to:
+  /// **'Save products you buy often to reuse them across your lists.'**
+  String get productsEmptyDesc;
+
+  /// Products search no-results title
+  ///
+  /// In en, this message translates to:
+  /// **'No products match your search'**
+  String get productsNoResults;
+
+  /// Add product button
+  ///
+  /// In en, this message translates to:
+  /// **'Add product'**
+  String get productsAdd;
+
+  /// New product sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'New product'**
+  String get productsSheetTitle;
+
+  /// Product name field label
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get productsFieldName;
+
+  /// Product unit field label
+  ///
+  /// In en, this message translates to:
+  /// **'Unit (optional)'**
+  String get productsFieldUnit;
+
+  /// Product barcode field label
+  ///
+  /// In en, this message translates to:
+  /// **'Barcode (optional)'**
+  String get productsFieldBarcode;
+
+  /// Product name validation message
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a product name'**
+  String get productsValidationName;
+
+  /// Product create error snackbar
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t create product'**
+  String get productsCouldNotCreate;
+
+  /// Products no-household description
+  ///
+  /// In en, this message translates to:
+  /// **'Join or create a household to keep a product catalog.'**
+  String get productsNoHouseholdDesc;
+
+  /// Shopping locations screen title
+  ///
+  /// In en, this message translates to:
+  /// **'Shopping locations'**
+  String get shoppingLocationsTitle;
+
+  /// Shopping locations empty state title
+  ///
+  /// In en, this message translates to:
+  /// **'No locations yet'**
+  String get shoppingLocationsEmptyTitle;
+
+  /// Shopping locations empty state description
+  ///
+  /// In en, this message translates to:
+  /// **'Name the stores you shop at to organize your trips.'**
+  String get shoppingLocationsEmptyDesc;
+
+  /// Add shopping location button
+  ///
+  /// In en, this message translates to:
+  /// **'Add location'**
+  String get shoppingLocationsAdd;
+
+  /// New shopping location sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'New location'**
+  String get shoppingLocationsSheetTitle;
+
+  /// Location name field label
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get shoppingLocationsFieldName;
+
+  /// Location name validation message
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a location name'**
+  String get shoppingLocationsValidationName;
+
+  /// Location create error snackbar
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t create location'**
+  String get shoppingLocationsCouldNotCreate;
+
+  /// Shopping locations no-household description
+  ///
+  /// In en, this message translates to:
+  /// **'Join or create a household to save shopping locations.'**
+  String get shoppingLocationsNoHouseholdDesc;
+
+  /// Cookbooks screen title
+  ///
+  /// In en, this message translates to:
+  /// **'Cookbooks'**
+  String get cookbooksTitle;
+
+  /// Kitchen header button that opens cookbooks
+  ///
+  /// In en, this message translates to:
+  /// **'Cookbooks'**
+  String get cookbooksButton;
+
+  /// Cookbooks empty state title
+  ///
+  /// In en, this message translates to:
+  /// **'No cookbooks yet'**
+  String get cookbooksEmptyTitle;
+
+  /// Cookbooks empty state description
+  ///
+  /// In en, this message translates to:
+  /// **'Group your recipes into cookbooks to find them faster.'**
+  String get cookbooksEmptyDesc;
+
+  /// Create cookbook button
+  ///
+  /// In en, this message translates to:
+  /// **'New cookbook'**
+  String get cookbooksAdd;
+
+  /// New cookbook sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'New cookbook'**
+  String get cookbooksSheetTitle;
+
+  /// Rename cookbook sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Rename cookbook'**
+  String get cookbooksRenameSheetTitle;
+
+  /// Cookbook name field label
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get cookbooksFieldName;
+
+  /// Cookbook name validation message
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a cookbook name'**
+  String get cookbooksValidationName;
+
+  /// Cookbook create error snackbar
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t create cookbook'**
+  String get cookbooksCouldNotCreate;
+
+  /// Cookbook rename error snackbar
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t rename cookbook'**
+  String get cookbooksCouldNotRename;
+
+  /// Cookbook delete error snackbar
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t delete cookbook'**
+  String get cookbooksCouldNotDelete;
+
+  /// Delete cookbook confirm title
+  ///
+  /// In en, this message translates to:
+  /// **'Delete cookbook?'**
+  String get cookbooksDeleteTitle;
+
+  /// Delete cookbook confirm body
+  ///
+  /// In en, this message translates to:
+  /// **'This removes the cookbook. Your recipes stay in your kitchen.'**
+  String get cookbooksDeleteBody;
+
+  /// Recipe count on a cookbook row
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No recipes} =1{1 recipe} other{{count} recipes}}'**
+  String cookbooksRecipeCount(num count);
+
+  /// Rename cookbook menu action
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get cookbooksRename;
+
+  /// Cookbooks no-household description
+  ///
+  /// In en, this message translates to:
+  /// **'Join or create a household to build cookbooks.'**
+  String get cookbooksNoHouseholdDesc;
+
+  /// Cookbook detail empty state title
+  ///
+  /// In en, this message translates to:
+  /// **'No recipes here yet'**
+  String get cookbookDetailEmptyTitle;
+
+  /// Cookbook detail empty state description
+  ///
+  /// In en, this message translates to:
+  /// **'Add recipes to this cookbook to see them here.'**
+  String get cookbookDetailEmptyDesc;
+
+  /// Add recipes to cookbook button
+  ///
+  /// In en, this message translates to:
+  /// **'Add recipes'**
+  String get cookbookDetailAddRecipes;
+
+  /// Add recipes to cookbook sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Add recipes'**
+  String get cookbookAddRecipesSheetTitle;
+
+  /// Add recipes sheet empty state
+  ///
+  /// In en, this message translates to:
+  /// **'All your recipes are already in this cookbook.'**
+  String get cookbookAddRecipesEmpty;
+
+  /// Remove recipe from cookbook action
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from cookbook'**
+  String get cookbookRemoveRecipe;
+
+  /// Snackbar after removing a recipe from a cookbook
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from cookbook'**
+  String get cookbookRecipeRemoved;
+
+  /// Snackbar after adding recipes to a cookbook
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 recipe added} other{{count} recipes added}}'**
+  String cookbookRecipesAdded(num count);
+
   /// Shared/private count detail
   ///
   /// In en, this message translates to:
