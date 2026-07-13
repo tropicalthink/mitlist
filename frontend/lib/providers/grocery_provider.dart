@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repositories/grocery_repository.dart';
 import '../services/restock_service.dart';
 import '../services/scan/bundled_grocery_suggestion_service.dart';
+import '../services/scan/canonical_link_service.dart';
+import '../services/scan/canonical_resolver_service.dart';
 import '../services/scan/correction_memory_service.dart';
+import '../services/scan/grocery_classifier_service.dart';
 import '../services/scan/grocery_suggestion_service.dart';
 import '../services/scan/scan_pipeline_service.dart';
 import '../services/scan/static_embedding_service.dart';
@@ -15,7 +18,33 @@ import 'list_provider.dart';
 /// Loads the Model2Vec-distilled vocab + catalog bundles lazily. Returns an
 /// instance that degrades gracefully (returns []) if the bundle is absent.
 final staticEmbeddingServiceProvider = Provider<StaticEmbeddingService>((ref) {
-  return StaticEmbeddingService();
+  final service = StaticEmbeddingService();
+  ref.onDispose(service.dispose);
+  return service;
+});
+
+/// Shared classifier and resolver for every grocery-intelligence entry point.
+/// Both model assets are lazy-loaded, so sharing prevents duplicate interpreters
+/// and embedding workers without adding work to app startup.
+final groceryClassifierServiceProvider =
+    Provider<GroceryClassifierService>((ref) {
+  final service = GroceryClassifierService();
+  ref.onDispose(service.dispose);
+  return service;
+});
+
+final canonicalResolverServiceProvider =
+    Provider<CanonicalResolverService>((ref) {
+  return CanonicalResolverService(
+    ref.watch(appDatabaseProvider),
+    classifier: ref.watch(groceryClassifierServiceProvider),
+    embedder: ref.watch(staticEmbeddingServiceProvider),
+    useEnsemble: true,
+  );
+});
+
+final canonicalLinkServiceProvider = Provider<CanonicalLinkService>((ref) {
+  return CanonicalLinkService(ref.watch(canonicalResolverServiceProvider));
 });
 
 /// Local, offline grocery autocomplete over the canonical seed (alias-powered).
@@ -41,7 +70,10 @@ final restockServiceProvider = Provider<RestockService>((ref) {
 
 final scanPipelineProvider = FutureProvider<ScanPipelineService>((ref) async {
   final db = ref.watch(appDatabaseProvider);
-  return ScanPipelineService(db: db);
+  return ScanPipelineService(
+    db: db,
+    resolver: ref.watch(canonicalResolverServiceProvider),
+  );
 });
 
 final correctionMemoryProvider = Provider<CorrectionMemoryService>((ref) {

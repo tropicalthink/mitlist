@@ -13,6 +13,7 @@ import '../../providers/group_provider.dart';
 import '../../providers/grocery_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../repositories/grocery_repository.dart';
+import '../../repositories/list_repository.dart';
 import '../../services/list_service.dart';
 import '../../services/restock_service.dart';
 import '../../services/scan/household_suggestion_engine.dart';
@@ -65,10 +66,12 @@ class ListDetailController extends ChangeNotifier {
   final Map<String, List<ListItemPhoto>> _photosByItemId = {};
   final Set<String> _photoLoadAttempted = {};
   bool _batchPhotosSupported = true;
+  bool _canonicalBackfillStarted = false;
 
   /// Max in-flight photo-metadata requests while hydrating a list's
   /// thumbnails (see [_loadPhotosForItems]).
   static const int _photoLoadConcurrency = 4;
+  static const int _canonicalBackfillLimit = 20;
   String _groupCurrency = 'USD';
   String? _userId;
   int _suggestGeneration = 0;
@@ -201,6 +204,7 @@ class ListDetailController extends ChangeNotifier {
       _listName = list.name;
       _groupId = list.groupId;
       _notify();
+      unawaited(_backfillCanonicalLinks(repo, list.groupId));
 
       // Attach SSE so edits from other household members appear in real time.
       final sseService = ref.read(sseServiceProvider);
@@ -485,7 +489,8 @@ class ListDetailController extends ChangeNotifier {
 
     try {
       final repo = await ref.read(listRepositoryProvider.future);
-      final ListItem created;
+      final shouldResolve = canonicalItemId == null && _groupId != null;
+      ListItem created;
       if (parsed.quantity == 1 && parsed.unit.isEmpty) {
         created = await repo.createItemOfflineFirst(
           listId,
@@ -493,6 +498,7 @@ class ListDetailController extends ChangeNotifier {
             name: parsed.name,
             canonicalItemId: canonicalItemId,
           ),
+          deferImmediateSync: shouldResolve,
         );
       } else {
         created = await repo.addItemAmountOfflineFirst(
@@ -501,7 +507,24 @@ class ListDetailController extends ChangeNotifier {
           amount: parsed.quantity,
           unit: parsed.unit,
           canonicalItemId: canonicalItemId,
+          deferImmediateSync: shouldResolve,
         );
+      }
+      if (shouldResolve) {
+        try {
+          final resolvedId = await _resolveHighConfidence(parsed.name);
+          if (resolvedId != null) {
+            created = await repo.setCanonicalItemIdLocal(
+              listId,
+              created.id,
+              resolvedId,
+            );
+          }
+        } catch (_) {
+          // Enrichment is fail-soft; the durable list write still succeeds.
+        } finally {
+          repo.triggerAutoSync();
+        }
       }
       if (_disposed) return;
       _pendingCreates.remove(pending.id);
@@ -617,8 +640,88 @@ class ListDetailController extends ChangeNotifier {
         note: note,
       ),
     );
+    if (name != null &&
+        name.trim().toLowerCase() != item.name.trim().toLowerCase()) {
+      try {
+        final canonicalId = await _resolveHighConfidence(name);
+        if (canonicalId != null) {
+          await repo.setCanonicalItemIdLocal(listId, item.id, canonicalId);
+        }
+      } catch (_) {
+        // The rename is already durable; uncertain/failed enrichment remains
+        // unlinked instead of restoring the stale canonical id.
+      }
+    }
     if (_disposed) return;
     _dirty = true;
+  }
+
+  Future<String?> _resolveHighConfidence(
+    String name, {
+    List<String>? listContext,
+  }) async {
+    final groupId = _groupId;
+    if (groupId == null || name.trim().isEmpty) return null;
+    // Canonical linking is a fail-soft enrichment — it must NOT block the add
+    // (and, via deferImmediateSync, the item's server sync) on the one-time
+    // grocery seed, which runs for tens of seconds after an install/update and
+    // monopolises the single DB connection. If the seed hasn't finished, skip
+    // inline resolution; the item syncs immediately and _backfillCanonicalLinks
+    // links it once the seed completes. In steady state the seed future is
+    // already resolved, so resolution still happens inline here.
+    if (!ref.read(grocerySeedProvider).hasValue) return null;
+    final context = listContext ??
+        _items
+            .map((item) => item.canonicalItemId)
+            .whereType<String>()
+            .toSet()
+            .toList(growable: false);
+    return ref.read(canonicalLinkServiceProvider).resolveHighConfidence(
+          name,
+          groupId,
+          listContext: context,
+        );
+  }
+
+  /// Opportunistically enriches only the currently-open list and caps work so
+  /// opening a large historical list never turns into an unbounded model pass.
+  Future<void> _backfillCanonicalLinks(
+    ListRepository repo,
+    String groupId,
+  ) async {
+    if (_canonicalBackfillStarted) return;
+    _canonicalBackfillStarted = true;
+    try {
+      await ref.read(grocerySeedProvider.future);
+      final snapshot = await repo.getItemsByListOnce(listId);
+      final context = snapshot
+          .map((item) => item.canonicalItemId)
+          .whereType<String>()
+          .toSet()
+          .toList();
+      final unlinked = snapshot
+          .where((item) => item.canonicalItemId == null)
+          .take(_canonicalBackfillLimit);
+      for (final item in unlinked) {
+        if (_disposed) return;
+        try {
+          final canonicalId = await ref
+              .read(canonicalLinkServiceProvider)
+              .resolveHighConfidence(
+                item.name,
+                groupId,
+                listContext: context,
+              );
+          if (canonicalId == null) continue;
+          await repo.setCanonicalItemIdLocal(listId, item.id, canonicalId);
+          context.add(canonicalId);
+        } catch (_) {
+          // One malformed/ambiguous row must not stop the bounded backfill.
+        }
+      }
+    } catch (_) {
+      // Backfill is opportunistic and never blocks opening the list.
+    }
   }
 
   Future<void> renameList(String newName) async {

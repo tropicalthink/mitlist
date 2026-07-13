@@ -118,7 +118,21 @@ class ListRepository {
     String listId,
     List<ListItem> serverItems,
   ) async {
-    await _db.upsertListItemsRows(serverItems.map(_toListItemsRow));
+    // Canonical slugs are an on-device enrichment and are intentionally not
+    // sent to the list API unless they happen to be API UUIDs. Preserve that
+    // enrichment when an ordinary server refresh returns the same row without
+    // a canonical id.
+    final beforeRefresh = await _db.getItemsByListOnce(listId);
+    final localCanonicalById = {
+      for (final row in beforeRefresh)
+        if (row.canonicalItemId != null) row.id: row.canonicalItemId!,
+    };
+    final enrichedServerItems = serverItems
+        .map((item) => item.canonicalItemId != null
+            ? item
+            : _withCanonicalItemId(item, localCanonicalById[item.id]))
+        .toList(growable: false);
+    await _db.upsertListItemsRows(enrichedServerItems.map(_toListItemsRow));
 
     final serverIds = serverItems.map((i) => i.id).toSet();
     final localRows = await _db.getItemsByListOnce(listId);
@@ -180,7 +194,10 @@ class ListRepository {
   // ---------------------------------------------------------------------------
 
   Future<ListItem> createItemOfflineFirst(
-      String listId, CreateListItemRequest req) async {
+    String listId,
+    CreateListItemRequest req, {
+    bool deferImmediateSync = false,
+  }) async {
     final tempId = _uuid.v4();
     final now = DateTime.now();
 
@@ -240,7 +257,7 @@ class ListRepository {
     });
 
     // Best-effort immediate sync.
-    if (_autoSync) unawaited(drainOutboxOnce());
+    if (_autoSync && !deferImmediateSync) unawaited(drainOutboxOnce());
     return local;
   }
 
@@ -259,6 +276,7 @@ class ListRepository {
     String unit = '',
     String note = '',
     String? canonicalItemId,
+    bool deferImmediateSync = false,
   }) async {
     final now = DateTime.now();
     final existingRows = await _db.getItemsByListOnce(listId);
@@ -333,8 +351,39 @@ class ListRepository {
       );
     });
 
-    if (_autoSync) unawaited(drainOutboxOnce());
+    if (_autoSync && !deferImmediateSync) unawaited(drainOutboxOnce());
     return local;
+  }
+
+  /// Persists an on-device canonical enrichment without creating a server
+  /// update. If the item is still a temp row, its queued create/add payload is
+  /// patched in the same transaction so reconciliation retains the link.
+  Future<ListItem> setCanonicalItemIdLocal(
+    String listId,
+    String itemId,
+    String? canonicalItemId,
+  ) async {
+    final row = (await _db.getItemsByListOnce(listId))
+        .firstWhereOrNull((candidate) => candidate.id == itemId);
+    if (row == null) {
+      throw StateError('list item $itemId not found in local cache');
+    }
+    final item = _toListItem(row);
+    final patched = _withCanonicalItemId(item, canonicalItemId);
+    await _db.transaction(() async {
+      await _db.upsertListItemsRows([_toListItemsRow(patched)]);
+      await _db.updatePendingListItemCanonicalId(
+        entityId: itemId,
+        canonicalItemId: canonicalItemId,
+      );
+    });
+    return patched;
+  }
+
+  /// Restarts best-effort sync after a caller briefly deferred it to enrich a
+  /// durable optimistic row.
+  void triggerAutoSync() {
+    if (_autoSync) unawaited(drainOutboxOnce());
   }
 
   Future<ListItem> updateItemOfflineFirst(
@@ -359,7 +408,11 @@ class ListRepository {
       checked: req.checked ?? existing.checked,
       position: req.position ?? existing.position,
       priceCents: req.priceCents ?? existing.priceCents,
-      canonicalItemId: existing.canonicalItemId,
+      canonicalItemId: req.name != null &&
+              req.name!.trim().toLowerCase() !=
+                  existing.name.trim().toLowerCase()
+          ? null
+          : existing.canonicalItemId,
       createdAt: existing.createdAt,
       updatedAt: DateTime.now(),
     );
@@ -934,6 +987,24 @@ class ListRepository {
       canonicalItemId: row.canonicalItemId,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
+    );
+  }
+
+  ListItem _withCanonicalItemId(ListItem item, String? canonicalItemId) {
+    return ListItem(
+      id: item.id,
+      listId: item.listId,
+      name: item.name,
+      quantity: item.quantity,
+      unit: item.unit,
+      note: item.note,
+      priceCents: item.priceCents,
+      canonicalItemId: canonicalItemId,
+      checked: item.checked,
+      position: item.position,
+      claimedBy: item.claimedBy,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
     );
   }
 

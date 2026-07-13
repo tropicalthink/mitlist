@@ -279,8 +279,9 @@ class _FakeListRepository implements ListRepository {
   @override
   Future<ListItem> createItemOfflineFirst(
     String listId,
-    CreateListItemRequest req,
-  ) async {
+    CreateListItemRequest req, {
+    bool deferImmediateSync = false,
+  }) async {
     createItemCalls.add(_CreateItemCall(listId, req));
     final now = DateTime.utc(2026, 1, 1);
     return ListItem(

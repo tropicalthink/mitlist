@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/native.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter_test/flutter_test.dart';
@@ -120,6 +122,103 @@ void main() {
 
       expect(await repo.getItemsByListOnce(listId), isEmpty);
       expect(await db.outboxCount(), 0);
+    });
+
+    test(
+        'local canonical enrichment patches a deferred create and survives sync',
+        () async {
+      const listId = 'list-canonical-create';
+      await _insertList(db, listId);
+
+      final local = await repo.createItemOfflineFirst(
+        listId,
+        const CreateListItemRequest(name: 'Milk'),
+        deferImmediateSync: true,
+      );
+      await repo.setCanonicalItemIdLocal(listId, local.id, 'milk');
+
+      final queued = await db.getOutboxBatch();
+      expect(queued, hasLength(1));
+      expect(
+        (jsonDecode(queued.single.payloadJson) as Map)['canonicalItemId'],
+        'milk',
+      );
+
+      await repo.drainOutboxOnce();
+
+      final synced = await repo.getItemsByListOnce(listId);
+      expect(synced, hasLength(1));
+      expect(synced.single.id, '${remote.serverItemIdPrefix}1');
+      expect(synced.single.canonicalItemId, 'milk');
+    });
+
+    test('renaming an item clears its stale local canonical link', () async {
+      const listId = 'list-canonical-rename';
+      const itemId = 'item-milk';
+      await _insertList(db, listId);
+      await db.upsertListItemsRows([
+        ListItemsTableCompanion(
+          id: const drift.Value(itemId),
+          listId: const drift.Value(listId),
+          name: const drift.Value('Milk'),
+          quantity: const drift.Value(1),
+          unit: const drift.Value(''),
+          checked: const drift.Value(false),
+          position: const drift.Value(0),
+          canonicalItemId: const drift.Value('milk'),
+          createdAt: drift.Value(DateTime.utc(2026, 1, 5)),
+          updatedAt: drift.Value(DateTime.utc(2026, 1, 5)),
+        ),
+      ]);
+
+      await repo.updateItemOfflineFirst(
+        listId,
+        itemId,
+        const UpdateListItemRequest(name: 'Oat drink'),
+      );
+
+      final renamed = await repo.getItemsByListOnce(listId);
+      expect(renamed.single.name, 'Oat drink');
+      expect(renamed.single.canonicalItemId, isNull);
+    });
+
+    test('server refresh preserves a local canonical enrichment', () async {
+      const listId = 'list-canonical-refresh';
+      const itemId = 'server-item-1';
+      await _insertList(db, listId);
+      final now = DateTime.utc(2026, 1, 5);
+      await db.upsertListItemsRows([
+        ListItemsTableCompanion(
+          id: const drift.Value(itemId),
+          listId: const drift.Value(listId),
+          name: const drift.Value('Milk'),
+          quantity: const drift.Value(1),
+          unit: const drift.Value(''),
+          checked: const drift.Value(false),
+          position: const drift.Value(0),
+          canonicalItemId: const drift.Value('milk'),
+          createdAt: drift.Value(now),
+          updatedAt: drift.Value(now),
+        ),
+      ]);
+      remote.itemsToReturn = [
+        ListItem(
+          id: itemId,
+          listId: listId,
+          name: 'Milk',
+          quantity: 1,
+          unit: '',
+          checked: false,
+          position: 0,
+          createdAt: now,
+          updatedAt: now,
+        ),
+      ];
+
+      await repo.refreshItems(listId);
+
+      final refreshed = await repo.getItemsByListOnce(listId);
+      expect(refreshed.single.canonicalItemId, 'milk');
     });
 
     test('checking a canonical item queues and uploads a purchase event',
