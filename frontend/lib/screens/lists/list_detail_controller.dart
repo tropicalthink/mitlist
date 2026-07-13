@@ -662,14 +662,10 @@ class ListDetailController extends ChangeNotifier {
   }) async {
     final groupId = _groupId;
     if (groupId == null || name.trim().isEmpty) return null;
-    // Canonical linking is a fail-soft enrichment — it must NOT block the add
-    // (and, via deferImmediateSync, the item's server sync) on the one-time
-    // grocery seed, which runs for tens of seconds after an install/update and
-    // monopolises the single DB connection. If the seed hasn't finished, skip
-    // inline resolution; the item syncs immediately and _backfillCanonicalLinks
-    // links it once the seed completes. In steady state the seed future is
-    // already resolved, so resolution still happens inline here.
-    if (!ref.read(grocerySeedProvider).hasValue) return null;
+    // Ensure the global grocery reference DB is installed+attached before
+    // resolving. This is now a fast, version-gated file copy (not the old
+    // ~280k-row runtime seed), so awaiting it no longer stalls the add.
+    await ref.read(grocerySeedProvider.future);
     final context = listContext ??
         _items
             .map((item) => item.canonicalItemId)
