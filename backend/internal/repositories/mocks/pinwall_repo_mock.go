@@ -39,3 +39,8 @@ func (m *MockPinwallRepo) DeletePost(ctx context.Context, id uuid.UUID) error {
 	args := m.Called(ctx, id)
 	return args.Error(0)
 }
+
+func (m *MockPinwallRepo) UpdatePostPosition(ctx context.Context, id uuid.UUID, x, y float64) error {
+	args := m.Called(ctx, id, x, y)
+	return args.Error(0)
+}

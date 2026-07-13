@@ -144,8 +144,13 @@ class PinwallStatRow extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const Spacer(),
-              Flexible(
+              const SizedBox(width: MitlistSpacing.md),
+              // A single Expanded value that fills all remaining space and
+              // right-aligns within it, so every row's value hugs the same
+              // right edge (just left of the chevron). The old Spacer + Flexible
+              // pair split the free space 50/50, leaving the value floating and
+              // ellipsizing at half width.
+              Expanded(
                 child: Text(
                   value,
                   style: textTheme.labelMedium?.copyWith(color: muted),

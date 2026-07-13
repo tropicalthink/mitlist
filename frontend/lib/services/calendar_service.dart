@@ -40,6 +40,30 @@ class CalendarService {
     }
   }
 
+  /// Fetches the household calendar as an iCalendar (.ics) document over
+  /// [from]..[to], suitable for saving or subscribing to in any calendar app.
+  Future<String> exportIcal(
+    String groupId,
+    DateTime from,
+    DateTime to,
+  ) async {
+    try {
+      final r = await _dio.get(
+        '/calendar/ical',
+        queryParameters: {
+          'group_id': groupId,
+          'from': _formatDate(from),
+          'to': _formatDate(to),
+        },
+        options: Options(responseType: ResponseType.plain),
+      );
+      return r.data as String;
+    } on DioException catch (e) {
+      _logger.e('Export calendar iCal failed: ${e.response?.data}');
+      throw apiException(e);
+    }
+  }
+
   String _formatDate(DateTime d) {
     return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
   }

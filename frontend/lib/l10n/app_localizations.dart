@@ -4167,6 +4167,12 @@ abstract class AppLocalizations {
   /// **'Copy expenses (JSON)'**
   String get accountCopyJSON;
 
+  /// Menu row: export the household calendar as an iCalendar file
+  ///
+  /// In en, this message translates to:
+  /// **'Export calendar (.ics)'**
+  String get accountExportCalendar;
+
   /// Snackbar when JSON is copied
   ///
   /// In en, this message translates to:
@@ -5103,6 +5109,60 @@ abstract class AppLocalizations {
   /// **'What\'s this for?'**
   String get expenseCreationWhatsItFor;
 
+  /// Label for the expense category picker
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get expenseCreationCategoryLabel;
+
+  /// Expense category
+  ///
+  /// In en, this message translates to:
+  /// **'Groceries'**
+  String get expenseCategoryGroceries;
+
+  /// Expense category
+  ///
+  /// In en, this message translates to:
+  /// **'Dining'**
+  String get expenseCategoryDining;
+
+  /// Expense category
+  ///
+  /// In en, this message translates to:
+  /// **'Transport'**
+  String get expenseCategoryTransport;
+
+  /// Expense category
+  ///
+  /// In en, this message translates to:
+  /// **'Utilities'**
+  String get expenseCategoryUtilities;
+
+  /// Expense category
+  ///
+  /// In en, this message translates to:
+  /// **'Household'**
+  String get expenseCategoryHousehold;
+
+  /// Expense category
+  ///
+  /// In en, this message translates to:
+  /// **'Entertainment'**
+  String get expenseCategoryEntertainment;
+
+  /// Expense category
+  ///
+  /// In en, this message translates to:
+  /// **'Health'**
+  String get expenseCategoryHealth;
+
+  /// Expense category (default/fallback)
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get expenseCategoryOther;
+
   /// Placeholder for optional notes
   ///
   /// In en, this message translates to:
@@ -5276,6 +5336,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Expense added'**
   String get expenseCreationExpenseAdded;
+
+  /// Collapsed one-line summary of payer + split mode
+  ///
+  /// In en, this message translates to:
+  /// **'Paid by {payer} · split {how}'**
+  String expenseCreationSummaryPaidBySplit(String payer, String how);
+
+  /// Payer name shown when the current user paid
+  ///
+  /// In en, this message translates to:
+  /// **'you'**
+  String get expenseCreationSummaryYou;
+
+  /// Split descriptor in the summary line, equal mode
+  ///
+  /// In en, this message translates to:
+  /// **'equally'**
+  String get expenseCreationSplitHowEqual;
+
+  /// Split descriptor in the summary line, exact-amount mode
+  ///
+  /// In en, this message translates to:
+  /// **'by exact amounts'**
+  String get expenseCreationSplitHowExact;
+
+  /// Split descriptor in the summary line, shares mode
+  ///
+  /// In en, this message translates to:
+  /// **'by shares'**
+  String get expenseCreationSplitHowShares;
+
+  /// Split descriptor in the summary line, percentage mode
+  ///
+  /// In en, this message translates to:
+  /// **'by percentages'**
+  String get expenseCreationSplitHowPercent;
+
+  /// Semantic label for the tappable summary line that expands the split editor
+  ///
+  /// In en, this message translates to:
+  /// **'Edit who paid and how it\'s split'**
+  String get expenseCreationEditSplitSemantic;
 
   /// Board chip label for pinwall
   ///
@@ -6998,6 +7100,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Join'**
   String get sheetJoinJoin;
+
+  /// Button that fills the invite code from the clipboard
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get joinPasteButton;
+
+  /// Confirmation shown after pasting a valid invite code
+  ///
+  /// In en, this message translates to:
+  /// **'Invite code pasted'**
+  String get joinPasteFilled;
+
+  /// Shown when the clipboard has no usable invite code
+  ///
+  /// In en, this message translates to:
+  /// **'No invite code or link found on your clipboard'**
+  String get joinPasteNoCode;
 
   /// Sheet title for creating a household
   ///

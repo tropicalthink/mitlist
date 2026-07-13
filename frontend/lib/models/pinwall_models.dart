@@ -9,6 +9,12 @@ class PinwallPost {
   final String? linkedEntityType;
   final String? linkedEntityId;
 
+  /// Placement on the shared cork board, in the board's fixed logical
+  /// coordinate space. Null means the note has never been positioned; the
+  /// board then lays it out on its grid.
+  final double? posX;
+  final double? posY;
+
   const PinwallPost({
     required this.id,
     required this.groupId,
@@ -19,6 +25,8 @@ class PinwallPost {
     this.reminderSentAt,
     this.linkedEntityType,
     this.linkedEntityId,
+    this.posX,
+    this.posY,
   });
 
   factory PinwallPost.fromJson(Map<String, dynamic> json) => PinwallPost(
@@ -35,6 +43,8 @@ class PinwallPost {
             : null,
         linkedEntityType: json['linked_entity_type'] as String?,
         linkedEntityId: json['linked_entity_id'] as String?,
+        posX: (json['pos_x'] as num?)?.toDouble(),
+        posY: (json['pos_y'] as num?)?.toDouble(),
       );
 
   Map<String, dynamic> toJson() => {
@@ -47,5 +57,21 @@ class PinwallPost {
         'reminder_sent_at': reminderSentAt?.toIso8601String(),
         if (linkedEntityType != null) 'linked_entity_type': linkedEntityType,
         if (linkedEntityId != null) 'linked_entity_id': linkedEntityId,
+        if (posX != null) 'pos_x': posX,
+        if (posY != null) 'pos_y': posY,
       };
+
+  PinwallPost copyWith({double? posX, double? posY}) => PinwallPost(
+        id: id,
+        groupId: groupId,
+        userId: userId,
+        content: content,
+        createdAt: createdAt,
+        remindAt: remindAt,
+        reminderSentAt: reminderSentAt,
+        linkedEntityType: linkedEntityType,
+        linkedEntityId: linkedEntityId,
+        posX: posX ?? this.posX,
+        posY: posY ?? this.posY,
+      );
 }

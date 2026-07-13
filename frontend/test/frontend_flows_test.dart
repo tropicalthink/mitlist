@@ -189,7 +189,9 @@ void main() {
         description: 'Groceries',
         amount: 1234,
         baseAmount: 1234,
-        category: 'groceries',
+        // Distinct from the description so 'Groceries' stays the unique row
+        // identifier now that the category renders its own localized label.
+        category: 'dining',
         currency: 'USD',
         date: DateTime.utc(2026, 1, 15),
       ),
@@ -1589,6 +1591,16 @@ class FakePinwallService implements PinwallService {
   Future<void> deletePost(String groupId, String postId) async {}
 
   @override
+  Future<PinwallPost> updatePostPosition(
+    String groupId,
+    String postId, {
+    required double x,
+    required double y,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<void> attachPostAttachment({
     required String groupId,
     required String postId,
@@ -1889,6 +1901,10 @@ class FakePinwallRepository implements PinwallRepository {
 
   @override
   Future<void> deletePostOfflineFirst(String groupId, String postId) async {}
+
+  @override
+  Future<void> updatePostPositionOfflineFirst(
+      String groupId, String postId, double x, double y) async {}
 
   @override
   Future<void> drainOutboxOnce() async {}

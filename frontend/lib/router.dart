@@ -428,40 +428,55 @@ class _BottomNavScaffoldState extends ConsumerState<BottomNavScaffold> {
 
     final l10n = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      body: widget.navigationShell,
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(
-              color: Theme.of(context).colorScheme.outline,
-              width: 2,
+    // Android back handling for the bottom-nav shell. Without this, pressing
+    // system-back at the root of a tab falls through to the root navigator and
+    // exits the app — on *any* tab, which reads as "back randomly quits the
+    // app." Routes pushed inside a branch (e.g. list detail) are popped by
+    // their own navigator first, so this only runs once a tab is at its root:
+    // from a non-Home tab it returns to Home; from Home it lets the app exit.
+    return PopScope(
+      canPop: widget.navigationShell.currentIndex == 0,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _onTap(0);
+      },
+      child: Scaffold(
+        body: widget.navigationShell,
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(
+                color: Theme.of(context).colorScheme.outline,
+                width: 2,
+              ),
             ),
           ),
-        ),
-        child: BottomNavigationBar(
-          currentIndex: widget.navigationShell.currentIndex,
-          onTap: _onTap,
-          items: [
-            BottomNavigationBarItem(
-                icon: const AppIcon(name: 'home'), label: l10n.navHome),
-            BottomNavigationBarItem(
-                icon: makeBadgeIcon(
-                  const AppIcon(name: 'clipboardDocumentList'),
-                  count: badgeData.choreCount,
-                ),
-                label: l10n.navChores),
-            BottomNavigationBarItem(
-                icon: const AppIcon(name: 'queueList'), label: l10n.navKitchen),
-            BottomNavigationBarItem(
-                icon: makeBadgeIcon(
-                  const AppIcon(name: 'banknotes'),
-                  count: badgeData.settlementCount,
-                ),
-                label: l10n.navMoney),
-            BottomNavigationBarItem(
-                icon: const AppIcon(name: 'listBullet'), label: l10n.navLists),
-          ],
+          child: BottomNavigationBar(
+            currentIndex: widget.navigationShell.currentIndex,
+            onTap: _onTap,
+            items: [
+              BottomNavigationBarItem(
+                  icon: const AppIcon(name: 'home'), label: l10n.navHome),
+              BottomNavigationBarItem(
+                  icon: makeBadgeIcon(
+                    const AppIcon(name: 'clipboardDocumentList'),
+                    count: badgeData.choreCount,
+                  ),
+                  label: l10n.navChores),
+              BottomNavigationBarItem(
+                  icon: const AppIcon(name: 'queueList'),
+                  label: l10n.navKitchen),
+              BottomNavigationBarItem(
+                  icon: makeBadgeIcon(
+                    const AppIcon(name: 'banknotes'),
+                    count: badgeData.settlementCount,
+                  ),
+                  label: l10n.navMoney),
+              BottomNavigationBarItem(
+                  icon: const AppIcon(name: 'listBullet'),
+                  label: l10n.navLists),
+            ],
+          ),
         ),
       ),
     );

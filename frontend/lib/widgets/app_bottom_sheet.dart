@@ -26,71 +26,83 @@ class AppBottomSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
-    final topPadding = MediaQuery.of(context).viewPadding.top;
+    final mediaQuery = MediaQuery.of(context);
+    final topPadding = mediaQuery.viewPadding.top;
+    // The on-screen keyboard inset. `showModalBottomSheet` (even with
+    // isScrollControlled) does not resize for the keyboard, so without this the
+    // keyboard covers the sheet's input + primary button. Tracks the keyboard
+    // animation frame-by-frame since MediaQuery rebuilds on each metrics change.
+    final bottomInset = mediaQuery.viewInsets.bottom;
 
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height - topPadding - 16,
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(MitlistTheme.radiusLg),
-          ),
-          border: Border(
-            top: BorderSide(color: colorScheme.outline, width: 2),
-            left: BorderSide(color: colorScheme.outline, width: 2),
-            right: BorderSide(color: colorScheme.outline, width: 2),
-          ),
-          boxShadow: MitlistShadows.shadowFloating,
+    return Padding(
+      // Lift the whole sheet above the keyboard.
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          // Subtract the keyboard inset too, so the lifted sheet still fits on
+          // screen and its scrollable body gets the correct max height.
+          maxHeight: mediaQuery.size.height - topPadding - bottomInset - 16,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: MitlistSpacing.sm),
-            Center(
-              child: Container(
-                width: MitlistSpacing.space10,
-                height: MitlistSpacing.space1,
-                decoration: BoxDecoration(
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-                  borderRadius: const BorderRadius.all(
-                    Radius.circular(MitlistTheme.radiusFull),
-                  ),
-                ),
-              ),
+        child: Container(
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(MitlistTheme.radiusLg),
             ),
-            const SizedBox(height: MitlistSpacing.sm),
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: MitlistSpacing.lg),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: textTheme.titleMedium,
+            border: Border(
+              top: BorderSide(color: colorScheme.outline, width: 2),
+              left: BorderSide(color: colorScheme.outline, width: 2),
+              right: BorderSide(color: colorScheme.outline, width: 2),
+            ),
+            boxShadow: MitlistShadows.shadowFloating,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: MitlistSpacing.sm),
+              Center(
+                child: Container(
+                  width: MitlistSpacing.space10,
+                  height: MitlistSpacing.space1,
+                  decoration: BoxDecoration(
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                    borderRadius: const BorderRadius.all(
+                      Radius.circular(MitlistTheme.radiusFull),
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: MitlistSpacing.md),
-            Flexible(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  MitlistSpacing.lg,
-                  MitlistSpacing.space0,
-                  MitlistSpacing.lg,
-                  MitlistSpacing.lg,
-                ),
-                child: SingleChildScrollView(
-                  child: body,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: MitlistSpacing.sm),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: MitlistSpacing.lg),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: textTheme.titleMedium,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: MitlistSpacing.md),
+              Flexible(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    MitlistSpacing.lg,
+                    MitlistSpacing.space0,
+                    MitlistSpacing.lg,
+                    MitlistSpacing.lg,
+                  ),
+                  child: SingleChildScrollView(
+                    child: body,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
