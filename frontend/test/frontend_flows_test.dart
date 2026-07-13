@@ -1589,6 +1589,16 @@ class FakePinwallService implements PinwallService {
   Future<void> deletePost(String groupId, String postId) async {}
 
   @override
+  Future<PinwallPost> updatePostPosition(
+    String groupId,
+    String postId, {
+    required double x,
+    required double y,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<void> attachPostAttachment({
     required String groupId,
     required String postId,
@@ -1889,6 +1899,10 @@ class FakePinwallRepository implements PinwallRepository {
 
   @override
   Future<void> deletePostOfflineFirst(String groupId, String postId) async {}
+
+  @override
+  Future<void> updatePostPositionOfflineFirst(
+      String groupId, String postId, double x, double y) async {}
 
   @override
   Future<void> drainOutboxOnce() async {}

@@ -47,7 +47,9 @@ class PinwallRepository {
   Future<void> _handleSseEvent(SseEvent event) async {
     switch (event.type) {
       case 'pinwall:post_created':
-        // The event body is untrusted, so refetch the canonical list.
+      case 'pinwall:post_moved':
+        // The event body is untrusted, so refetch the canonical list — this
+        // also carries the new positions so open boards reconcile a move.
         await refreshPosts(event.groupId).catchError((_) {});
       case 'pinwall:post_deleted':
         final id = event.payload['post_id'] as String?;
@@ -125,6 +127,56 @@ class PinwallRepository {
     await _removeCachedPost(groupId, postId);
   }
 
+  /// Persists a note's placement on the shared cork board. Patches the cached
+  /// blob so the move sticks immediately/offline, then queues the server sync
+  /// (which broadcasts to other members via SSE). Positions for not-yet-synced
+  /// local posts are cached only — they can't sync until the create resolves
+  /// and the note earns a server id; the user can nudge it again after.
+  Future<void> updatePostPositionOfflineFirst(
+    String groupId,
+    String postId,
+    double x,
+    double y,
+  ) async {
+    await _patchCachedPostPosition(groupId, postId, x, y);
+    if (postId.startsWith('local-')) return;
+    await _db.enqueueOutbox(
+      id: _uuid.v4(),
+      type: 'updatePinwallPostPosition',
+      payload: {'groupId': groupId, 'postId': postId, 'x': x, 'y': y},
+      idempotencyKey: 'updatePinwallPostPosition:$postId',
+      entityType: 'pinwallPost',
+      entityId: postId,
+    );
+  }
+
+  Future<void> _patchCachedPostPosition(
+      String groupId, String postId, double x, double y) async {
+    final row = await _db.getPinwallPostsOnce(groupId);
+    final raw = row?.postsJson;
+    if (raw == null || raw.isEmpty) return;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return;
+      var changed = false;
+      for (final e in decoded) {
+        if (e is Map && e['id'] == postId) {
+          e['pos_x'] = x;
+          e['pos_y'] = y;
+          changed = true;
+          break;
+        }
+      }
+      if (!changed) return;
+      await _db.upsertPinwallPosts(
+        groupId: groupId,
+        postsJson: jsonEncode(decoded),
+      );
+    } catch (_) {
+      // Best-effort; a later refresh reconciles from the server.
+    }
+  }
+
   /// Prepends [post] to the cached posts blob (most-recent-first).
   Future<void> _insertCachedPost(PinwallPost post) async {
     final row = await _db.getPinwallPostsOnce(post.groupId);
@@ -162,7 +214,11 @@ class PinwallRepository {
 
   Future<void> drainOutboxOnce() async {
     await OutboxDrainer(_db).drain(
-      types: const ['createPinwallPost', 'deletePinwallPost'],
+      types: const [
+        'createPinwallPost',
+        'deletePinwallPost',
+        'updatePinwallPostPosition',
+      ],
       handlers: {
         'createPinwallPost': (op, payload) async {
           final remindRaw = payload['remindAt'] as String?;
@@ -180,6 +236,18 @@ class PinwallRepository {
             payload['postId'] as String,
           );
           await refreshPosts(payload['groupId'] as String);
+          await _db.deleteOutboxOp(op.id);
+        },
+        'updatePinwallPostPosition': (op, payload) async {
+          // The cache already holds the new position; no refetch needed on the
+          // origin device. Other members reconcile via the pinwall:post_moved
+          // SSE broadcast the server emits.
+          await _remote.updatePostPosition(
+            payload['groupId'] as String,
+            payload['postId'] as String,
+            x: (payload['x'] as num).toDouble(),
+            y: (payload['y'] as num).toDouble(),
+          );
           await _db.deleteOutboxOp(op.id);
         },
       },

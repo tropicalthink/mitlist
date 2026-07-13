@@ -83,6 +83,27 @@ class PinwallService {
     }
   }
 
+  /// Persists a note's placement on the shared cork board. Coordinates are in
+  /// the board's fixed logical space. Returns the updated post.
+  Future<PinwallPost> updatePostPosition(
+    String groupId,
+    String postId, {
+    required double x,
+    required double y,
+  }) async {
+    ensureValidGroupId(groupId);
+    try {
+      final r = await _dio.put(
+        '/pinwall/posts/$postId/position',
+        data: {'group_id': groupId, 'x': x, 'y': y},
+      );
+      return PinwallPost.fromJson((r.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Update pinwall post position failed: ${e.response?.data}');
+      rethrow;
+    }
+  }
+
   Future<void> attachPostAttachment({
     required String groupId,
     required String postId,

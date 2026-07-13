@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"math"
 	"strings"
 	"time"
 
@@ -130,4 +131,50 @@ func (s *PinwallService) DeletePost(ctx context.Context, user *models.User, grou
 	}
 	s.publishPost("pinwall:post_deleted", groupID, postID)
 	return nil
+}
+
+// UpdatePostPosition moves a note on the shared cork board. Any group member may
+// rearrange the board. Broadcasts pinwall:post_moved so open boards reconcile.
+func (s *PinwallService) UpdatePostPosition(
+	ctx context.Context,
+	user *models.User,
+	groupID, postID uuid.UUID,
+	x, y float64,
+) (*models.PinwallPost, error) {
+	if !user.IsActive || !user.IsVerified {
+		return nil, &api.PermissionDeniedError{Message: "user is not active or verified"}
+	}
+	if err := s.requireMembership(ctx, user.ID, groupID); err != nil {
+		return nil, err
+	}
+	// Guard against NaN/Inf and absurd coordinates. The board is a bounded
+	// logical space on the client; a generous cap here keeps the data sane
+	// without hard-coupling to the exact client dimensions.
+	const maxCoord = 1_000_000
+	if math.IsNaN(x) || math.IsNaN(y) || math.IsInf(x, 0) || math.IsInf(y, 0) ||
+		x < 0 || y < 0 || x > maxCoord || y > maxCoord {
+		return nil, &api.ValidationError{Field: "position", Message: "x and y must be finite, non-negative coordinates"}
+	}
+
+	existing, err := s.repo.GetPostByID(ctx, postID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, &api.NotFoundError{Resource: "pinwall post", ID: postID.String()}
+		}
+		return nil, err
+	}
+	if existing.GroupID != groupID {
+		return nil, &api.PermissionDeniedError{Message: "post does not belong to this group"}
+	}
+
+	if err := s.repo.UpdatePostPosition(ctx, postID, x, y); err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, &api.NotFoundError{Resource: "pinwall post", ID: postID.String()}
+		}
+		return nil, err
+	}
+	existing.PosX = &x
+	existing.PosY = &y
+	s.publishPost("pinwall:post_moved", groupID, postID)
+	return existing, nil
 }
