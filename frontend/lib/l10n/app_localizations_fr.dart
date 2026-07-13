@@ -995,6 +995,191 @@ class AppLocalizationsFr extends AppLocalizations {
   String get recipeAddToList => 'Ajouter à la liste';
 
   @override
+  String get recipeAddOnlyMissing => 'Ajouter seulement ce qui manque';
+
+  @override
+  String recipeAddMissingAdded(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count articles manquants ajoutés',
+      one: '1 article manquant ajouté',
+      zero: 'Rien ne manque — tout est là',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get productsTitle => 'Produits';
+
+  @override
+  String get productsSearchHint => 'Rechercher des produits';
+
+  @override
+  String get productsEmptyTitle => 'Aucun produit pour l\'instant';
+
+  @override
+  String get productsEmptyDesc =>
+      'Enregistre les produits que tu achètes souvent pour les réutiliser dans tes listes.';
+
+  @override
+  String get productsNoResults => 'Aucun produit ne correspond à ta recherche';
+
+  @override
+  String get productsAdd => 'Ajouter un produit';
+
+  @override
+  String get productsSheetTitle => 'Nouveau produit';
+
+  @override
+  String get productsFieldName => 'Nom';
+
+  @override
+  String get productsFieldUnit => 'Unité (facultatif)';
+
+  @override
+  String get productsFieldBarcode => 'Code-barres (facultatif)';
+
+  @override
+  String get productsValidationName => 'Saisis un nom de produit';
+
+  @override
+  String get productsCouldNotCreate => 'Impossible de créer le produit';
+
+  @override
+  String get productsNoHouseholdDesc =>
+      'Rejoins ou crée un foyer pour tenir un catalogue de produits.';
+
+  @override
+  String get shoppingLocationsTitle => 'Lieux d\'achat';
+
+  @override
+  String get shoppingLocationsEmptyTitle => 'Aucun lieu pour l\'instant';
+
+  @override
+  String get shoppingLocationsEmptyDesc =>
+      'Nomme les magasins où tu fais tes courses pour organiser tes sorties.';
+
+  @override
+  String get shoppingLocationsAdd => 'Ajouter un lieu';
+
+  @override
+  String get shoppingLocationsSheetTitle => 'Nouveau lieu';
+
+  @override
+  String get shoppingLocationsFieldName => 'Nom';
+
+  @override
+  String get shoppingLocationsValidationName => 'Saisis un nom de lieu';
+
+  @override
+  String get shoppingLocationsCouldNotCreate => 'Impossible de créer le lieu';
+
+  @override
+  String get shoppingLocationsNoHouseholdDesc =>
+      'Rejoins ou crée un foyer pour enregistrer des lieux d\'achat.';
+
+  @override
+  String get cookbooksTitle => 'Livres de recettes';
+
+  @override
+  String get cookbooksButton => 'Livres de recettes';
+
+  @override
+  String get cookbooksEmptyTitle => 'Aucun livre de recettes pour l\'instant';
+
+  @override
+  String get cookbooksEmptyDesc =>
+      'Regroupe tes recettes dans des livres de recettes pour les retrouver plus vite.';
+
+  @override
+  String get cookbooksAdd => 'Nouveau livre de recettes';
+
+  @override
+  String get cookbooksSheetTitle => 'Nouveau livre de recettes';
+
+  @override
+  String get cookbooksRenameSheetTitle => 'Renommer le livre de recettes';
+
+  @override
+  String get cookbooksFieldName => 'Nom';
+
+  @override
+  String get cookbooksValidationName => 'Saisis un nom de livre de recettes';
+
+  @override
+  String get cookbooksCouldNotCreate =>
+      'Impossible de créer le livre de recettes';
+
+  @override
+  String get cookbooksCouldNotRename =>
+      'Impossible de renommer le livre de recettes';
+
+  @override
+  String get cookbooksCouldNotDelete =>
+      'Impossible de supprimer le livre de recettes';
+
+  @override
+  String get cookbooksDeleteTitle => 'Supprimer le livre de recettes ?';
+
+  @override
+  String get cookbooksDeleteBody =>
+      'Cela supprime le livre de recettes. Tes recettes restent dans ta cuisine.';
+
+  @override
+  String cookbooksRecipeCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count recettes',
+      one: '1 recette',
+      zero: 'Aucune recette',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get cookbooksRename => 'Renommer';
+
+  @override
+  String get cookbooksNoHouseholdDesc =>
+      'Rejoins ou crée un foyer pour créer des livres de recettes.';
+
+  @override
+  String get cookbookDetailEmptyTitle => 'Aucune recette ici pour l\'instant';
+
+  @override
+  String get cookbookDetailEmptyDesc =>
+      'Ajoute des recettes à ce livre de recettes pour les voir ici.';
+
+  @override
+  String get cookbookDetailAddRecipes => 'Ajouter des recettes';
+
+  @override
+  String get cookbookAddRecipesSheetTitle => 'Ajouter des recettes';
+
+  @override
+  String get cookbookAddRecipesEmpty =>
+      'Toutes tes recettes sont déjà dans ce livre de recettes.';
+
+  @override
+  String get cookbookRemoveRecipe => 'Retirer du livre de recettes';
+
+  @override
+  String get cookbookRecipeRemoved => 'Retirée du livre de recettes';
+
+  @override
+  String cookbookRecipesAdded(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count recettes ajoutées',
+      one: '1 recette ajoutée',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String recipeSharedPrivate(num shared, num private) {
     return '$shared partagées · $private privées';
   }
