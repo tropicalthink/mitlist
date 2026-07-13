@@ -1,0 +1,2 @@
+ALTER TABLE pinwall_posts DROP COLUMN IF EXISTS pos_y;
+ALTER TABLE pinwall_posts DROP COLUMN IF EXISTS pos_x;

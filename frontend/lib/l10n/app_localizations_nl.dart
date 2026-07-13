@@ -2342,6 +2342,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get accountCopyJSON => 'Uitgaven kopiëren (JSON)';
 
   @override
+  String get accountExportCalendar => 'Export calendar (.ics)';
+
+  @override
   String get accountJSONCopied => 'Uitgaven JSON gekopieerd naar klembord';
 
   @override
@@ -2900,6 +2903,33 @@ class AppLocalizationsNl extends AppLocalizations {
   String get expenseCreationWhatsItFor => 'Waar is dit voor?';
 
   @override
+  String get expenseCreationCategoryLabel => 'Category';
+
+  @override
+  String get expenseCategoryGroceries => 'Groceries';
+
+  @override
+  String get expenseCategoryDining => 'Dining';
+
+  @override
+  String get expenseCategoryTransport => 'Transport';
+
+  @override
+  String get expenseCategoryUtilities => 'Utilities';
+
+  @override
+  String get expenseCategoryHousehold => 'Household';
+
+  @override
+  String get expenseCategoryEntertainment => 'Entertainment';
+
+  @override
+  String get expenseCategoryHealth => 'Health';
+
+  @override
+  String get expenseCategoryOther => 'Other';
+
+  @override
   String get expenseCreationNotesHint => 'Notities (optioneel)';
 
   @override
@@ -2998,6 +3028,30 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get expenseCreationExpenseAdded => 'Uitgave toegevoegd';
+
+  @override
+  String expenseCreationSummaryPaidBySplit(String payer, String how) {
+    return 'Betaald door $payer · $how gedeeld';
+  }
+
+  @override
+  String get expenseCreationSummaryYou => 'jou';
+
+  @override
+  String get expenseCreationSplitHowEqual => 'gelijk';
+
+  @override
+  String get expenseCreationSplitHowExact => 'op exacte bedragen';
+
+  @override
+  String get expenseCreationSplitHowShares => 'op aandelen';
+
+  @override
+  String get expenseCreationSplitHowPercent => 'op percentages';
+
+  @override
+  String get expenseCreationEditSplitSemantic =>
+      'Bewerken wie betaald heeft en hoe het verdeeld is';
 
   @override
   String get pinwallBoardLabel => 'Prikbord';
@@ -3971,6 +4025,16 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get sheetJoinJoin => 'Deelnemen';
+
+  @override
+  String get joinPasteButton => 'Paste';
+
+  @override
+  String get joinPasteFilled => 'Invite code pasted';
+
+  @override
+  String get joinPasteNoCode =>
+      'No invite code or link found on your clipboard';
 
   @override
   String get sheetCreateHouseholdTitle => 'Huishouden aanmaken';

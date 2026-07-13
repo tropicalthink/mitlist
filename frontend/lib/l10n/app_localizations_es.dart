@@ -2332,6 +2332,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get accountCopyJSON => 'Copiar gastos (JSON)';
 
   @override
+  String get accountExportCalendar => 'Export calendar (.ics)';
+
+  @override
   String get accountJSONCopied => 'Gastos en JSON copiados al portapapeles';
 
   @override
@@ -2890,6 +2893,33 @@ class AppLocalizationsEs extends AppLocalizations {
   String get expenseCreationWhatsItFor => '¿Para qué es esto?';
 
   @override
+  String get expenseCreationCategoryLabel => 'Category';
+
+  @override
+  String get expenseCategoryGroceries => 'Groceries';
+
+  @override
+  String get expenseCategoryDining => 'Dining';
+
+  @override
+  String get expenseCategoryTransport => 'Transport';
+
+  @override
+  String get expenseCategoryUtilities => 'Utilities';
+
+  @override
+  String get expenseCategoryHousehold => 'Household';
+
+  @override
+  String get expenseCategoryEntertainment => 'Entertainment';
+
+  @override
+  String get expenseCategoryHealth => 'Health';
+
+  @override
+  String get expenseCategoryOther => 'Other';
+
+  @override
   String get expenseCreationNotesHint => 'Notas (opcional)';
 
   @override
@@ -2989,6 +3019,30 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get expenseCreationExpenseAdded => 'Gasto añadido';
+
+  @override
+  String expenseCreationSummaryPaidBySplit(String payer, String how) {
+    return 'Pagado por $payer · dividido $how';
+  }
+
+  @override
+  String get expenseCreationSummaryYou => 'ti';
+
+  @override
+  String get expenseCreationSplitHowEqual => 'a partes iguales';
+
+  @override
+  String get expenseCreationSplitHowExact => 'por importes exactos';
+
+  @override
+  String get expenseCreationSplitHowShares => 'por partes';
+
+  @override
+  String get expenseCreationSplitHowPercent => 'por porcentajes';
+
+  @override
+  String get expenseCreationEditSplitSemantic =>
+      'Editar quién pagó y cómo se divide';
 
   @override
   String get pinwallBoardLabel => 'Pinwall';
@@ -3960,6 +4014,16 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get sheetJoinJoin => 'Unirse';
+
+  @override
+  String get joinPasteButton => 'Paste';
+
+  @override
+  String get joinPasteFilled => 'Invite code pasted';
+
+  @override
+  String get joinPasteNoCode =>
+      'No invite code or link found on your clipboard';
 
   @override
   String get sheetCreateHouseholdTitle => 'Crear hogar';

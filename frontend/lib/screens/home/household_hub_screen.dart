@@ -21,6 +21,8 @@ import '../../services/group_id_validator.dart';
 import '../../utils/active_group_context.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
+import '../../theme/theme.dart';
+import '../../theme/list_tile_accent.dart';
 import '../../utils/haptics.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
@@ -378,66 +380,111 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
             children: [
               if (displayGroups.isNotEmpty) ...[
                 for (final h in displayGroups)
-                  Semantics(
-                    button: true,
-                    label:
-                        AppLocalizations.of(ctx)!.hubSwitchToHousehold(h.name),
-                    child: InkWell(
-                      onTap: groups.length >= 2
-                          ? () {
-                              Navigator.of(sheetContext).pop();
-                              if (h.id != _resolvedGroupId!) {
-                                _switchGroup(h.id);
-                              }
-                            }
-                          : null,
-                      borderRadius: BorderRadius.zero,
+                  Builder(builder: (context) {
+                    final cs = Theme.of(context).colorScheme;
+                    final accent = ListTileAccent.fromSeed(
+                        h.id, Theme.of(context).brightness);
+                    final isActive = h.id == _resolvedGroupId;
+                    final trimmed = h.name.trim();
+                    final initial = trimmed.isEmpty
+                        ? '?'
+                        : trimmed.substring(0, 1).toUpperCase();
+                    return Semantics(
+                      button: true,
+                      selected: isActive,
+                      label: AppLocalizations.of(context)!
+                          .hubSwitchToHousehold(h.name),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: MitlistSpacing.sm,
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                        padding: const EdgeInsets.only(bottom: MitlistSpacing.xs),
+                        child: Material(
+                          color: isActive
+                              ? cs.surfaceContainerHighest
+                              : Colors.transparent,
+                          borderRadius:
+                              BorderRadius.circular(MitlistTheme.radiusMd),
+                          child: InkWell(
+                            onTap: groups.length >= 2
+                                ? () {
+                                    Navigator.of(sheetContext).pop();
+                                    if (!isActive) _switchGroup(h.id);
+                                  }
+                                : null,
+                            borderRadius:
+                                BorderRadius.circular(MitlistTheme.radiusMd),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: MitlistSpacing.sm,
+                                horizontal: MitlistSpacing.sm,
+                              ),
+                              child: Row(
                                 children: [
-                                  Text(
-                                    h.name,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: rowStyle?.copyWith(
-                                      fontWeight: h.id == _resolvedGroupId!
-                                          ? FontWeight.w700
-                                          : FontWeight.w500,
+                                  // Household initial chip, colour-seeded from
+                                  // the id so each household reads distinctly.
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      color: accent.tileBackground,
+                                      borderRadius: BorderRadius.circular(
+                                          MitlistTheme.radiusSm),
+                                      border: Border.all(
+                                          color: accent.stripe, width: 2),
                                     ),
-                                  ),
-                                  if (h.memberCount != null)
-                                    Text(
-                                      l10n.commonMember(h.memberCount!),
+                                    child: Text(
+                                      initial,
                                       style: Theme.of(context)
                                           .textTheme
-                                          .labelSmall
+                                          .titleMedium
                                           ?.copyWith(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurfaceVariant,
+                                            color: accent.titleColor,
+                                            fontWeight: FontWeight.w700,
                                           ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: MitlistSpacing.md),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          h.name,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: rowStyle?.copyWith(
+                                            fontWeight: isActive
+                                                ? FontWeight.w700
+                                                : FontWeight.w500,
+                                          ),
+                                        ),
+                                        if (h.memberCount != null)
+                                          Text(
+                                            l10n.commonMember(h.memberCount!),
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .labelSmall
+                                                ?.copyWith(
+                                                  color: cs.onSurfaceVariant,
+                                                ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (isActive)
+                                    AppIcon(
+                                      name: 'check',
+                                      size: 18,
+                                      color: cs.primary,
                                     ),
                                 ],
                               ),
                             ),
-                            if (h.id == _resolvedGroupId!)
-                              AppIcon(
-                                name: 'check',
-                                size: 18,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
-                  ),
+                    );
+                  }),
                 const SizedBox(height: MitlistSpacing.sm),
                 Container(
                   height: 2,

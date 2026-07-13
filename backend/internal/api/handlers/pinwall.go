@@ -24,6 +24,7 @@ func (h *PinwallHandler) RegisterRoutes(r chi.Router) {
 	r.Post("/pinwall/posts", h.CreatePost)
 	r.Get("/pinwall/posts", h.ListPosts)
 	r.Delete("/pinwall/posts/{id}", h.DeletePost)
+	r.Put("/pinwall/posts/{id}/position", h.UpdatePostPosition)
 }
 
 type createPinwallPostRequest struct {
@@ -121,4 +122,41 @@ func (h *PinwallHandler) DeletePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+type updatePinwallPositionRequest struct {
+	GroupID uuid.UUID `json:"group_id"`
+	X       float64   `json:"x"`
+	Y       float64   `json:"y"`
+}
+
+func (h *PinwallHandler) UpdatePostPosition(w http.ResponseWriter, r *http.Request) {
+	user, ok := userFromContext(r)
+	if !ok {
+		api.RespondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	id, err := parseUUIDParam(r, "id")
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+
+	var req updatePinwallPositionRequest
+	if err := decodeJSON(r, &req); err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	if req.GroupID == uuid.Nil {
+		api.RespondError(w, &api.ValidationError{Field: "group_id", Message: "group_id is required"})
+		return
+	}
+
+	post, err := h.service.UpdatePostPosition(r.Context(), user, req.GroupID, id, req.X, req.Y)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	api.RespondJSON(w, http.StatusOK, post)
 }

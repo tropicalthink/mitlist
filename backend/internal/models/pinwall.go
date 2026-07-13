@@ -17,4 +17,9 @@ type PinwallPost struct {
 	ReminderSentAt   *time.Time `json:"reminder_sent_at,omitempty"`
 	LinkedEntityType *string    `json:"linked_entity_type,omitempty"`
 	LinkedEntityID   *uuid.UUID `json:"linked_entity_id,omitempty"`
+	// PosX/PosY place the note on the shared cork board, in the board's fixed
+	// logical coordinate space. Nil means the note has never been positioned;
+	// the client then lays it out on its grid.
+	PosX *float64 `json:"pos_x,omitempty"`
+	PosY *float64 `json:"pos_y,omitempty"`
 }

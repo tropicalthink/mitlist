@@ -83,7 +83,7 @@ enum _SortOption { newest, oldest, az }
 
 enum _FilterOption { all, public, private }
 
-enum _RecipeMenuAction { sortNewest, sortOldest, sortAz }
+enum _RecipeMenuAction { mealPlan, sortNewest, sortOldest, sortAz }
 
 class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   static const int _pageLimit = 50;
@@ -370,18 +370,6 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
         actions: [
           if (!_showSearch) ...[
             IconButton(
-              icon: const AppIcon(name: 'calendarDays'),
-              tooltip: l10n.recipeMealPlanTooltip,
-              onPressed: () async {
-                final router = GoRouter.of(context);
-                final groupId = await _resolveGroupId();
-                if (!mounted) return;
-                if (groupId != null) {
-                  unawaited(router.pushNamed('mealPlan'));
-                }
-              },
-            ),
-            IconButton(
               icon: const AppIcon(name: 'magnifyingGlass'),
               tooltip: l10n.recipeSearchTooltip,
               onPressed: () => setState(() => _showSearch = true),
@@ -389,9 +377,20 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
             PopupMenuButton<_RecipeMenuAction>(
               icon: const AppIcon(name: 'ellipsisVertical'),
               tooltip: l10n.commonOptions,
-              onSelected: (action) {
+              onSelected: (action) async {
+                if (action == _RecipeMenuAction.mealPlan) {
+                  final router = GoRouter.of(context);
+                  final groupId = await _resolveGroupId();
+                  if (!mounted) return;
+                  if (groupId != null) {
+                    unawaited(router.pushNamed('mealPlan'));
+                  }
+                  return;
+                }
                 setState(() {
                   switch (action) {
+                    case _RecipeMenuAction.mealPlan:
+                      break;
                     case _RecipeMenuAction.sortNewest:
                       _sort = _SortOption.newest;
                       break;
@@ -405,6 +404,20 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                 });
               },
               itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: _RecipeMenuAction.mealPlan,
+                  child: Row(
+                    children: [
+                      AppIcon(
+                          name: 'calendarDays',
+                          size: 18,
+                          color: Theme.of(context).colorScheme.onSurface),
+                      const SizedBox(width: MitlistSpacing.sm),
+                      Text(l10n.recipeMealPlanTooltip),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
                 PopupMenuItem(
                   enabled: false,
                   child: Text(

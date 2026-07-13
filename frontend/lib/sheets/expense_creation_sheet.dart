@@ -16,6 +16,7 @@ import '../providers/group_provider.dart';
 import '../router.dart' show currentGroupIdProvider;
 import '../theme/spacing.dart';
 import '../utils/active_group_context.dart';
+import '../utils/expense_categories.dart';
 import '../utils/format_currency.dart';
 import '../utils/haptics.dart';
 import '../widgets/app_bottom_sheet.dart';
@@ -86,7 +87,17 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
   final Set<String> _selectedMemberIds = {};
   String _splitMode = 'equal';
   String _currency = 'USD';
+  String _category = 'other';
   String? _payerId;
+
+  /// The current user's id, used to render "you" in the collapsed summary line.
+  String? _myId;
+
+  /// Whether the payer + split editor is expanded. Collapsed by default so the
+  /// common case (paid by you, split equally) reads as one calm sentence —
+  /// tap to change. Forced open whenever the split isn't a plain equal split
+  /// so a custom split is never hidden behind the summary.
+  bool _showSplitEditor = false;
 
   /// The household's base currency. Splits and balances are denominated in it;
   /// [_currency] may differ when recording a foreign-currency expense.
@@ -159,6 +170,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
         _members = members;
         _membersLoading = false;
         _membersFailed = false;
+        _myId = me.id;
         _payerId ??= me.id;
         _selectedMemberIds
           ..clear()
@@ -220,6 +232,51 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
     );
     if (picked == null || !mounted) return;
     setState(() => _date = picked);
+    _markDirty();
+  }
+
+  /// Payer name for the collapsed summary line: "you" for the current user,
+  /// otherwise the chosen member's display name.
+  String _payerLabel(AppLocalizations l10n) {
+    if (_payerId == null || _payerId == _myId) {
+      return l10n.expenseCreationSummaryYou;
+    }
+    for (final m in _members) {
+      if (m.userId == _payerId) {
+        return m.displayName.isNotEmpty
+            ? m.displayName
+            : l10n.expenseCreationSummaryYou;
+      }
+    }
+    return l10n.expenseCreationSummaryYou;
+  }
+
+  /// Plain-language split descriptor for the collapsed summary line.
+  String _splitHowLabel(AppLocalizations l10n) => switch (_splitMode) {
+        'amount' => l10n.expenseCreationSplitHowExact,
+        'shares' => l10n.expenseCreationSplitHowShares,
+        'percentage' => l10n.expenseCreationSplitHowPercent,
+        _ => l10n.expenseCreationSplitHowEqual,
+      };
+
+  void _onSplitModeChanged(String mode) {
+    setState(() => _splitMode = mode);
+    _markDirty();
+  }
+
+  void _onSplitMemberChanged(String memberId, bool selected) {
+    setState(() {
+      if (selected) {
+        _selectedMemberIds.add(memberId);
+      } else {
+        _selectedMemberIds.remove(memberId);
+      }
+    });
+    _markDirty();
+  }
+
+  void _onSplitValueChanged() {
+    setState(() {});
     _markDirty();
   }
 
@@ -306,6 +363,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
           baseAmount: baseAmount,
           fxRate: _isForeignCurrency ? _fxRate : 1.0,
           description: _descriptionController.text.trim(),
+          category: _category,
           notes: _notesController.text.trim(),
           currency: _currency,
           date: _date.toUtc(),
@@ -422,8 +480,11 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
         : _isForeignCurrency
             ? (_fxRate > 0 ? (totalCents * _fxRate).round() : null)
             : totalCents;
-    final colorScheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
+    // The payer + split editor stays folded for the common case, but is forced
+    // open whenever the split isn't a plain equal split so a custom split is
+    // never hidden behind the one-line summary.
+    final splitEditorOpen = _showSplitEditor || _splitMode != 'equal';
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -521,22 +582,114 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
             setState(() => _descriptionError = null);
           },
         ),
-        // ── Paid by ───────────────────────────────────────────────────
-        if (_membersLoading) ...[
-          const SizedBox(height: MitlistSpacing.md),
-          const _PaidBySkeleton(),
-        ] else if (_members.isNotEmpty) ...[
-          const SizedBox(height: MitlistSpacing.md),
-          _PaidByRow(
+        // ── Category (horizontal chips) ───────────────────────────────
+        const SizedBox(height: MitlistSpacing.md),
+        Text(
+          l10n.expenseCreationCategoryLabel,
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+        const SizedBox(height: MitlistSpacing.sm),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (final key in expenseCategoryKeys)
+                Padding(
+                  padding: const EdgeInsets.only(right: MitlistSpacing.xs),
+                  child: AppChip(
+                    label: expenseCategoryLabel(l10n, key),
+                    selected: _category == key,
+                    onSelected: (_) {
+                      setState(() => _category = key);
+                      _markDirty();
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
+        // ── Paid by + split (folded to one calm line; tap to change) ──
+        // Mirrors Splitwise/Tricount: the common case reads as a sentence
+        // ("Paid by you · split equally") and only unfolds the full payer +
+        // split editor when tapped — or automatically when the split isn't a
+        // plain equal split, so a custom split is never hidden.
+        if (_members.isEmpty && !_membersLoading) ...[
+          // No household to split with: show the join prompt directly, nothing
+          // to fold.
+          const SizedBox(height: MitlistSpacing.lg),
+          _SplitOptions(
+            summaryKey: _splitSummaryKey,
             members: _members,
-            payerId: _payerId,
-            onChanged: (id) {
-              setState(() => _payerId = id);
-              _markDirty();
-            },
+            loading: _membersLoading,
+            failed: _membersFailed,
+            selectedMemberIds: _selectedMemberIds,
+            splitMode: _splitMode,
+            controllers: _splitControllers,
+            totalCents: baseCents,
+            currency: _groupCurrency,
+            onRetry: _retryLoad,
+            onModeChanged: _onSplitModeChanged,
+            onMemberChanged: _onSplitMemberChanged,
+            onValueChanged: _onSplitValueChanged,
+          ),
+        ] else ...[
+          const SizedBox(height: MitlistSpacing.md),
+          _SummaryLine(
+            text: l10n.expenseCreationSummaryPaidBySplit(
+              _payerLabel(l10n),
+              _splitHowLabel(l10n),
+            ),
+            semanticLabel: l10n.expenseCreationEditSplitSemantic,
+            expanded: splitEditorOpen,
+            onTap: () =>
+                setState(() => _showSplitEditor = !_showSplitEditor),
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            alignment: Alignment.topCenter,
+            child: splitEditorOpen
+                ? Padding(
+                    padding: const EdgeInsets.only(top: MitlistSpacing.md),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (_membersLoading)
+                          const _PaidBySkeleton()
+                        else if (_members.isNotEmpty)
+                          _PaidByRow(
+                            members: _members,
+                            payerId: _payerId,
+                            onChanged: (id) {
+                              setState(() => _payerId = id);
+                              _markDirty();
+                            },
+                          ),
+                        const SizedBox(height: MitlistSpacing.lg),
+                        _SplitOptions(
+                          summaryKey: _splitSummaryKey,
+                          members: _members,
+                          loading: _membersLoading,
+                          failed: _membersFailed,
+                          selectedMemberIds: _selectedMemberIds,
+                          splitMode: _splitMode,
+                          controllers: _splitControllers,
+                          totalCents: baseCents,
+                          currency: _groupCurrency,
+                          onRetry: _retryLoad,
+                          onModeChanged: _onSplitModeChanged,
+                          onMemberChanged: _onSplitMemberChanged,
+                          onValueChanged: _onSplitValueChanged,
+                        ),
+                      ],
+                    ),
+                  )
+                : const SizedBox.shrink(),
           ),
         ],
-        // ── Date + Scan + notes (details) ─────────────────────────────
+        // ── Date ──────────────────────────────────────────────────────
         const SizedBox(height: MitlistSpacing.lg),
         Row(
           children: [
@@ -563,44 +716,6 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
           minLines: 1,
           maxLines: 4,
           onChanged: (_) => _markDirty(),
-        ),
-        // ── Split ─────────────────────────────────────────────────────
-        const SizedBox(height: MitlistSpacing.lg),
-        Divider(
-          height: 1,
-          thickness: 1,
-          color: colorScheme.outlineVariant,
-        ),
-        const SizedBox(height: MitlistSpacing.lg),
-        _SplitOptions(
-          summaryKey: _splitSummaryKey,
-          members: _members,
-          loading: _membersLoading,
-          failed: _membersFailed,
-          selectedMemberIds: _selectedMemberIds,
-          splitMode: _splitMode,
-          controllers: _splitControllers,
-          totalCents: baseCents,
-          currency: _groupCurrency,
-          onRetry: _retryLoad,
-          onModeChanged: (mode) {
-            setState(() => _splitMode = mode);
-            _markDirty();
-          },
-          onMemberChanged: (memberId, selected) {
-            setState(() {
-              if (selected) {
-                _selectedMemberIds.add(memberId);
-              } else {
-                _selectedMemberIds.remove(memberId);
-              }
-            });
-            _markDirty();
-          },
-          onValueChanged: () {
-            setState(() {});
-            _markDirty();
-          },
         ),
         const SizedBox(height: MitlistSpacing.lg),
         SizedBox(
@@ -1020,6 +1135,70 @@ class _SplitOptions extends StatelessWidget {
           AppLocalizations.of(context)!.expenseCreationSplitValuesPercent,
         _ => AppLocalizations.of(context)!.expenseCreationSplitSharesLabel,
       };
+}
+
+/// A tappable one-line summary that folds the payer + split editor away for the
+/// common case, in the spirit of Splitwise/Tricount. Reads as a sentence
+/// ("Paid by you · split equally") with an expand chevron; hard-edged bordered
+/// box so it reads as an editable control, not static text.
+class _SummaryLine extends StatelessWidget {
+  final String text;
+  final String semanticLabel;
+  final bool expanded;
+  final VoidCallback onTap;
+
+  const _SummaryLine({
+    required this.text,
+    required this.semanticLabel,
+    required this.expanded,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: MitlistSpacing.md,
+            vertical: MitlistSpacing.sm,
+          ),
+          decoration: BoxDecoration(
+            border: Border.all(color: colorScheme.outlineVariant, width: 1.5),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  text,
+                  style: textTheme.bodyMedium,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: MitlistSpacing.sm),
+              AnimatedRotation(
+                turns: expanded ? 0.5 : 0,
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOut,
+                child: Icon(
+                  Icons.expand_more,
+                  size: 18,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Subtle inline notice that the FX rate was prefilled by the advisory service.

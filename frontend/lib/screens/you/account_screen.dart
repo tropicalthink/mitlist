@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,6 +21,7 @@ import '../../providers/theme_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/list_provider.dart' show appDatabaseProvider;
 import '../../providers/finance_provider.dart';
+import '../../providers/calendar_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
@@ -512,13 +514,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           _MenuRow(
             icon: const AppIcon(name: 'inbox'),
             label: l10n.accountNotificationInbox,
-            onTap: () => context.goNamed('notifications'),
+            onTap: () => context.pushNamed('notifications'),
           ),
           Divider(color: Theme.of(context).colorScheme.outlineVariant),
           _MenuRow(
             icon: const AppIcon(name: 'cog6Tooth'),
             label: l10n.accountNotificationPreferences,
-            onTap: () => context.goNamed('notificationPreferences'),
+            onTap: () => context.pushNamed('notificationPreferences'),
           ),
           Divider(color: Theme.of(context).colorScheme.outlineVariant),
           _MenuRow(
@@ -665,7 +667,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         mime = 'text/csv';
       } else {
         final expenses = await financeService.exportExpensesJson(groupId);
-        data = expenses.map((e) => e.toJson()).toString();
+        // Emit real, pretty-printed JSON. The old `.toString()` on the list
+        // produced Dart's `[{key: value}]` notation (unquoted keys) — not valid
+        // JSON, which is why the export read as a placeholder.
+        data = const JsonEncoder.withIndent('  ')
+            .convert(expenses.map((e) => e.toJson()).toList());
         extension = 'json';
         mime = 'application/json';
       }
@@ -689,6 +695,39 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     }
   }
 
+  Future<void> _exportCalendar() async {
+    if (_isExporting || _activeHouseholdId == null) return;
+    setState(() => _isExporting = true);
+    try {
+      final calendarService =
+          await ref.read(calendarServiceProviderAsync.future);
+      final groupId = _activeHouseholdId!;
+      // A broad window so the export is useful as a subscribe-able calendar:
+      // three months back through a year ahead.
+      final now = DateTime.now();
+      final from = DateTime(now.year, now.month - 3, 1);
+      final to = DateTime(now.year + 1, now.month, 1);
+      final ics = await calendarService.exportIcal(groupId, from, to);
+
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/mitlist_calendar.ics');
+      await file.writeAsString(ics);
+
+      await SharePlus.instance.share(
+        ShareParams(files: [XFile(file.path, mimeType: 'text/calendar')]),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content:
+                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
+      );
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
   void _copyExpensesJson() async {
     final l10n = AppLocalizations.of(context)!;
     if (_activeHouseholdId == null) return;
@@ -697,7 +736,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       final expenses = await financeService.exportExpensesJson(
         _activeHouseholdId!,
       );
-      final json = expenses.map((e) => e.toJson()).toString();
+      final json = const JsonEncoder.withIndent('  ')
+          .convert(expenses.map((e) => e.toJson()).toList());
       await Clipboard.setData(ClipboardData(text: json));
       if (!mounted) return;
       unawaited(Haptics.light());
@@ -892,6 +932,14 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             icon: const AppIcon(name: 'copy'),
             label: l10n.accountCopyJSON,
             onTap: _activeHouseholdId == null ? null : _copyExpensesJson,
+          ),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          _MenuRow(
+            icon: const AppIcon(name: 'arrowDownTray'),
+            label: l10n.accountExportCalendar,
+            onTap: _isExporting || _activeHouseholdId == null
+                ? null
+                : _exportCalendar,
           ),
         ],
       ),

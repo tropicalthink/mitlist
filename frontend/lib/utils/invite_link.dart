@@ -44,6 +44,30 @@ String? parseInviteCode(Uri uri) {
   return code;
 }
 
+/// Extracts an invite code from arbitrary pasted [text]. Accepts a bare code,
+/// a `mitlist:///join/<code>` deep link, or an `https://.../join/<code>` web
+/// link (the form people actually receive over chat/SMS). Returns the
+/// uppercased code, or `null` when nothing plausible is found.
+String? extractInviteCode(String text) {
+  final trimmed = text.trim();
+  if (trimmed.isEmpty) return null;
+
+  // A link — pull the segment right after 'join' regardless of scheme/host.
+  final uri = Uri.tryParse(trimmed);
+  if (uri != null) {
+    final segments = uri.pathSegments;
+    final joinIdx = segments.indexOf('join');
+    if (joinIdx >= 0 && joinIdx + 1 < segments.length) {
+      final code = segments[joinIdx + 1];
+      if (_codePattern.hasMatch(code)) return code.toUpperCase();
+    }
+  }
+
+  // Otherwise treat the whole clipboard as a bare code if it looks like one.
+  if (_codePattern.hasMatch(trimmed)) return trimmed.toUpperCase();
+  return null;
+}
+
 /// Builds a shareable text message with a web link for WhatsApp/social sharing.
 String inviteShareText(String code, AppLocalizations l10n) {
   final c = code.trim().toUpperCase();

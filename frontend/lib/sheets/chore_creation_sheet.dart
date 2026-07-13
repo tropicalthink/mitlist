@@ -80,6 +80,9 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
   bool _rollover = false;
   bool _isSaving = false;
   bool _showAdvanced = false;
+  // Scheduling folds behind a one-line summary for the common one-off chore;
+  // forced open once a recurrence is chosen so it's never hidden.
+  bool _showRecurrence = false;
   String? _category;
 
   /// Household members for the who-picker. Loaded best-effort; the picker
@@ -293,6 +296,17 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
 
   // ---- Plain-language descriptions of the current selection ----
 
+  /// Short recurrence label for the collapsed schedule summary line.
+  String _recurrenceValueLabel(AppLocalizations l10n) => switch (_recurrence) {
+        _Recurrence.none => l10n.choreCreationRecurrenceNone,
+        _Recurrence.hourly => l10n.choreCreationRecurrenceHourly,
+        _Recurrence.daily => l10n.choreCreationRecurrenceDaily,
+        _Recurrence.weekly => l10n.choreCreationRecurrenceWeekly,
+        _Recurrence.monthly => l10n.choreCreationRecurrenceMonthly,
+        _Recurrence.yearly => l10n.choreCreationRecurrenceYearly,
+        _Recurrence.adaptive => l10n.choreCreationRecurrenceAdaptive,
+      };
+
   String get _recurrenceHint => switch (_recurrence) {
         _Recurrence.none => _l10n.choreCreationHintNone,
         _Recurrence.hourly => _l10n.choreCreationHintHourly,
@@ -360,6 +374,9 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
     final groupZones = _activeGroupZones();
+    // Scheduling stays folded for the common one-off chore, but forces open the
+    // moment a recurrence is chosen so an active schedule is never hidden.
+    final recurrenceOpen = _showRecurrence || _recurrence != _Recurrence.none;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -481,106 +498,152 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
         ),
         const SizedBox(height: MitlistSpacing.md),
 
-        // ── Repeats (inline row) ──────────────────────────────────────
-        _ChipRow(
-          label: l10n.choreCreationRepeatsLabel,
-          children: [
-            for (final option in [
-              (_Recurrence.none, l10n.choreCreationRecurrenceNone),
-              (_Recurrence.daily, l10n.choreCreationRecurrenceDaily),
-              (_Recurrence.weekly, l10n.choreCreationRecurrenceWeekly),
-              (_Recurrence.monthly, l10n.choreCreationRecurrenceMonthly),
-              (_Recurrence.yearly, l10n.choreCreationRecurrenceYearly),
-              (_Recurrence.hourly, l10n.choreCreationRecurrenceHourly),
-              (_Recurrence.adaptive, l10n.choreCreationRecurrenceAdaptive),
-            ])
-              AppChip(
-                label: option.$2,
-                selected: _recurrence == option.$1,
-                onSelected: (_) {
-                  setState(() => _recurrence = option.$1);
-                  _markDirty();
-                },
-              ),
-          ],
+        // ── Repeats (folded to a calm summary line; tap to change) ────
+        _SummaryLine(
+          text:
+              '${l10n.choreCreationRepeatsLabel} · ${_recurrenceValueLabel(l10n)}',
+          semanticLabel: l10n.choreCreationRepeatsLabel,
+          expanded: recurrenceOpen,
+          onTap: () => setState(() => _showRecurrence = !_showRecurrence),
         ),
-        if (_recurrence != _Recurrence.none) ...[
-          const SizedBox(height: MitlistSpacing.xs),
-          Padding(
-            padding: const EdgeInsets.only(left: MitlistSpacing.space14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _recurrenceHint,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: MitlistSpacing.sm),
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 72,
-                      child: AppInput(
-                        hint: l10n.choreCreationIntervalHint,
-                        controller: _intervalController,
-                        keyboardType: TextInputType.number,
-                        textInputAction: TextInputAction.done,
-                        onChanged: (_) => setState(() {}),
-                      ),
-                    ),
-                    const SizedBox(width: MitlistSpacing.sm),
-                    Text(
-                      _intervalSummary,
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-                if (_recurrence == _Recurrence.weekly) ...[
-                  const SizedBox(height: MitlistSpacing.sm),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        for (final day in [
-                          ('monday', l10n.choreDayMon),
-                          ('tuesday', l10n.choreDayTue),
-                          ('wednesday', l10n.choreDayWed),
-                          ('thursday', l10n.choreDayThu),
-                          ('friday', l10n.choreDayFri),
-                          ('saturday', l10n.choreDaySat),
-                          ('sunday', l10n.choreDaySun),
-                        ])
-                          Padding(
-                            padding:
-                                const EdgeInsets.only(right: MitlistSpacing.xs),
-                            child: AppChip(
-                              label: day.$2,
-                              selected: _weekdays.contains(day.$1),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topCenter,
+          child: recurrenceOpen
+              ? Padding(
+                  padding: const EdgeInsets.only(top: MitlistSpacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _ChipRow(
+                        label: l10n.choreCreationRepeatsLabel,
+                        children: [
+                          for (final option in [
+                            (
+                              _Recurrence.none,
+                              l10n.choreCreationRecurrenceNone
+                            ),
+                            (
+                              _Recurrence.daily,
+                              l10n.choreCreationRecurrenceDaily
+                            ),
+                            (
+                              _Recurrence.weekly,
+                              l10n.choreCreationRecurrenceWeekly
+                            ),
+                            (
+                              _Recurrence.monthly,
+                              l10n.choreCreationRecurrenceMonthly
+                            ),
+                            (
+                              _Recurrence.yearly,
+                              l10n.choreCreationRecurrenceYearly
+                            ),
+                            (
+                              _Recurrence.hourly,
+                              l10n.choreCreationRecurrenceHourly
+                            ),
+                            (
+                              _Recurrence.adaptive,
+                              l10n.choreCreationRecurrenceAdaptive
+                            ),
+                          ])
+                            AppChip(
+                              label: option.$2,
+                              selected: _recurrence == option.$1,
                               onSelected: (_) {
-                                setState(() {
-                                  if (_weekdays.contains(day.$1) &&
-                                      _weekdays.length > 1) {
-                                    _weekdays.remove(day.$1);
-                                  } else {
-                                    _weekdays.add(day.$1);
-                                  }
-                                });
+                                setState(() => _recurrence = option.$1);
                                 _markDirty();
                               },
                             ),
+                        ],
+                      ),
+                      if (_recurrence != _Recurrence.none) ...[
+                        const SizedBox(height: MitlistSpacing.xs),
+                        Padding(
+                          padding: const EdgeInsets.only(
+                              left: MitlistSpacing.space14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _recurrenceHint,
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(height: MitlistSpacing.sm),
+                              Row(
+                                children: [
+                                  SizedBox(
+                                    width: 72,
+                                    child: AppInput(
+                                      hint: l10n.choreCreationIntervalHint,
+                                      controller: _intervalController,
+                                      keyboardType: TextInputType.number,
+                                      textInputAction: TextInputAction.done,
+                                      onChanged: (_) => setState(() {}),
+                                    ),
+                                  ),
+                                  const SizedBox(width: MitlistSpacing.sm),
+                                  Text(
+                                    _intervalSummary,
+                                    style: textTheme.bodyMedium?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (_recurrence == _Recurrence.weekly) ...[
+                                const SizedBox(height: MitlistSpacing.sm),
+                                SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Row(
+                                    children: [
+                                      for (final day in [
+                                        ('monday', l10n.choreDayMon),
+                                        ('tuesday', l10n.choreDayTue),
+                                        ('wednesday', l10n.choreDayWed),
+                                        ('thursday', l10n.choreDayThu),
+                                        ('friday', l10n.choreDayFri),
+                                        ('saturday', l10n.choreDaySat),
+                                        ('sunday', l10n.choreDaySun),
+                                      ])
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                              right: MitlistSpacing.xs),
+                                          child: AppChip(
+                                            label: day.$2,
+                                            selected:
+                                                _weekdays.contains(day.$1),
+                                            onSelected: (_) {
+                                              setState(() {
+                                                if (_weekdays
+                                                        .contains(day.$1) &&
+                                                    _weekdays.length > 1) {
+                                                  _weekdays.remove(day.$1);
+                                                } else {
+                                                  _weekdays.add(day.$1);
+                                                }
+                                              });
+                                              _markDirty();
+                                            },
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
+                        ),
                       ],
-                    ),
+                    ],
                   ),
-                ],
-              ],
-            ),
-          ),
-        ],
+                )
+              : const SizedBox.shrink(),
+        ),
         const SizedBox(height: MitlistSpacing.md),
 
         // ── More options (collapsible) ────────────────────────────────
@@ -673,6 +736,69 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// A tappable one-line summary that folds an editor away for the common case,
+/// mirroring the expense sheet's payer/split summary. Reads as a phrase with an
+/// expand chevron; hard-edged bordered box so it reads as an editable control.
+class _SummaryLine extends StatelessWidget {
+  final String text;
+  final String semanticLabel;
+  final bool expanded;
+  final VoidCallback onTap;
+
+  const _SummaryLine({
+    required this.text,
+    required this.semanticLabel,
+    required this.expanded,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: MitlistSpacing.md,
+            vertical: MitlistSpacing.sm,
+          ),
+          decoration: BoxDecoration(
+            border: Border.all(color: colorScheme.outlineVariant, width: 1.5),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  text,
+                  style: textTheme.bodyMedium,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: MitlistSpacing.sm),
+              AnimatedRotation(
+                turns: expanded ? 0.5 : 0,
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOut,
+                child: Icon(
+                  Icons.expand_more,
+                  size: 18,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
