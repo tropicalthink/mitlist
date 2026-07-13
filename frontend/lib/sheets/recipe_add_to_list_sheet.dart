@@ -65,6 +65,9 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
   final List<ItemList> _lists = [];
   String? _selectedListId;
   bool _isSubmitting = false;
+  bool _isSubmittingMissing = false;
+
+  bool get _isBusy => _isSubmitting || _isSubmittingMissing;
 
   @override
   void initState() {
@@ -146,6 +149,38 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  /// Adds only the ingredients not already present on the target list — the
+  /// backend diffs the recipe against the list, so servings/selection don't
+  /// apply here. Handy when you already have some of the ingredients.
+  Future<void> _submitMissing() async {
+    if (_selectedListId == null) return;
+
+    setState(() => _isSubmittingMissing = true);
+    try {
+      final recipeSvc = await ref.read(recipeServiceProviderAsync.future);
+      final result =
+          await recipeSvc.addMissingToList(widget.recipeId, _selectedListId!);
+      final added = (result['added'] as List?)?.length ?? 0;
+      if (mounted) {
+        Navigator.of(context).pop();
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.recipeAddMissingAdded(added))),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content:
+                  Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmittingMissing = false);
     }
   }
 
@@ -268,7 +303,7 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
                 children: [
                   AnimatedCheckToggle(
                     value: isSelected,
-                    onChanged: _isSubmitting
+                    onChanged: _isBusy
                         ? null
                         : (_) {
                             setState(() {
@@ -311,11 +346,24 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
             isLoading: _isSubmitting,
             onPressed: _selectedListId != null &&
                     _selectedIngredientIds.isNotEmpty &&
-                    !_isSubmitting
+                    !_isBusy
                 ? _submit
                 : null,
           ),
         ),
+        if (_ingredients.isNotEmpty && _lists.isNotEmpty) ...[
+          const SizedBox(height: MitlistSpacing.sm),
+          SizedBox(
+            width: double.infinity,
+            child: AppButton(
+              variant: AppButtonVariant.outline,
+              text: l10n.recipeAddOnlyMissing,
+              isLoading: _isSubmittingMissing,
+              onPressed:
+                  _selectedListId != null && !_isBusy ? _submitMissing : null,
+            ),
+          ),
+        ],
       ],
     );
   }

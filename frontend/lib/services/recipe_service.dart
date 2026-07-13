@@ -99,6 +99,20 @@ class RecipeService {
     }
   }
 
+  Future<List<Recipe>> getCollectionRecipes(String collectionId,
+      {int limit = 100, int offset = 0}) async {
+    try {
+      final r = await _dio.get('/collections/$collectionId/recipes',
+          queryParameters: {'limit': limit, 'offset': offset});
+      final data = r.data;
+      if (data is! List) return [];
+      return data.map((j) => Recipe.fromJson(j)).toList();
+    } on DioException catch (e) {
+      _logger.e('List collection recipes failed: ${e.response?.data}');
+      throw apiException(e);
+    }
+  }
+
   Future<RecipeCollection> getCollection(String id) async {
     try {
       final r = await _dio.get('/collections/$id');

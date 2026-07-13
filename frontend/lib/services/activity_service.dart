@@ -34,13 +34,4 @@ class ActivityService {
       rethrow;
     }
   }
-
-  Future<ActivityLogModel> getActivityLog(String id) async {
-    final r = await _dio.get('/activity-logs/$id');
-    return ActivityLogModel.fromJson((r.data as Map).cast<String, dynamic>());
-  }
-
-  Future<void> deleteActivityLog(String id) async {
-    await _dio.delete('/activity-logs/$id');
-  }
 }

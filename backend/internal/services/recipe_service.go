@@ -190,6 +190,22 @@ func (s *RecipeService) ListCollections(ctx context.Context, userID uuid.UUID, l
 	return s.recipeRepo.ListCollections(ctx, userID, limit, offset)
 }
 
+// ListCollectionRecipes returns the recipes in a collection after verifying the
+// caller owns it.
+func (s *RecipeService) ListCollectionRecipes(ctx context.Context, userID, collectionID uuid.UUID, limit, offset int) ([]models.Recipe, error) {
+	collection, err := s.recipeRepo.GetCollectionByID(ctx, collectionID)
+	if err != nil {
+		if err.Error() == "collection not found" {
+			return nil, api.ErrNotFound
+		}
+		return nil, err
+	}
+	if err := s.requireCollectionOwner(collection, userID); err != nil {
+		return nil, err
+	}
+	return s.recipeRepo.ListRecipesByCollection(ctx, collectionID, limit, offset)
+}
+
 // UpdateCollection updates a collection (owner only).
 func (s *RecipeService) UpdateCollection(ctx context.Context, userID uuid.UUID, collection *models.Collection) error {
 	existing, err := s.recipeRepo.GetCollectionByID(ctx, collection.ID)
