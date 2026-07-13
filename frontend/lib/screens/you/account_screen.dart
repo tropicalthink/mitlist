@@ -514,13 +514,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           _MenuRow(
             icon: const AppIcon(name: 'inbox'),
             label: l10n.accountNotificationInbox,
-            onTap: () => context.goNamed('notifications'),
+            onTap: () => context.pushNamed('notifications'),
           ),
           Divider(color: Theme.of(context).colorScheme.outlineVariant),
           _MenuRow(
             icon: const AppIcon(name: 'cog6Tooth'),
             label: l10n.accountNotificationPreferences,
-            onTap: () => context.goNamed('notificationPreferences'),
+            onTap: () => context.pushNamed('notificationPreferences'),
           ),
           Divider(color: Theme.of(context).colorScheme.outlineVariant),
           _MenuRow(

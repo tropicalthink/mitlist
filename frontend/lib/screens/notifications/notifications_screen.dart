@@ -264,7 +264,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         context.pushNamed('money');
       case 'listDetail':
         if (id != null && id.isNotEmpty) {
-          context.goNamed('listDetail', pathParameters: {'listId': id});
+          // Push (like every sibling case) so back returns to the inbox,
+          // instead of go which replaced it.
+          context.pushNamed('listDetail', pathParameters: {'listId': id});
         }
       case 'recipeDetail':
         context.pushNamed('recipes');
