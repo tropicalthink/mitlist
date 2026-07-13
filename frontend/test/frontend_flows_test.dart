@@ -1729,7 +1729,10 @@ class FakeListRepository implements ListRepository {
 
   @override
   Future<ListItem> createItemOfflineFirst(
-          String listId, CreateListItemRequest req) async =>
+    String listId,
+    CreateListItemRequest req, {
+    bool deferImmediateSync = false,
+  }) async =>
       ListItem(
         id: '',
         listId: listId,
@@ -1802,6 +1805,7 @@ class FakeListRepository implements ListRepository {
     String unit = '',
     String note = '',
     String? canonicalItemId,
+    bool deferImmediateSync = false,
   }) async =>
       ListItem(
         id: '',
@@ -1815,6 +1819,28 @@ class FakeListRepository implements ListRepository {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
+
+  @override
+  Future<ListItem> setCanonicalItemIdLocal(
+    String listId,
+    String itemId,
+    String? canonicalItemId,
+  ) async =>
+      ListItem(
+        id: itemId,
+        listId: listId,
+        name: '',
+        quantity: 1,
+        unit: '',
+        canonicalItemId: canonicalItemId,
+        checked: false,
+        position: 0,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+  @override
+  void triggerAutoSync() {}
 }
 
 class FakeFinanceRepository implements FinanceRepository {

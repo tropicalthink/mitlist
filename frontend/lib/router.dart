@@ -391,7 +391,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/scanner',
         name: 'scanner',
-        builder: (context, state) => const ScannerScreen(),
+        builder: (context, state) => Consumer(
+          builder: (context, routeRef, _) {
+            final preferred = routeRef.watch(currentGroupIdProvider);
+            final groups = routeRef.watch(cachedGroupsProvider).asData?.value;
+            return ScannerScreen(
+              groupId: groups == null
+                  ? preferred
+                  : resolveActiveGroupId(groups, preferred),
+            );
+          },
+        ),
       ),
     ],
   );

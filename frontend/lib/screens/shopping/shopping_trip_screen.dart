@@ -14,8 +14,6 @@ import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
-import '../../services/scan/canonical_resolver_service.dart';
-import '../../services/scan/grocery_classifier_service.dart';
 import '../../theme/animations.dart';
 import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
@@ -165,13 +163,10 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
       return;
     }
 
+    await ref.read(grocerySeedProvider.future);
+    if (!mounted) return;
     final db = ref.read(appDatabaseProvider);
-    final resolver = CanonicalResolverService(
-      db,
-      classifier: GroceryClassifierService(),
-      embedder: ref.read(staticEmbeddingServiceProvider),
-      useEnsemble: true,
-    );
+    final resolver = ref.read(canonicalResolverServiceProvider);
     final linkedIds = [
       for (final items in _itemsByList.values)
         for (final item in items)

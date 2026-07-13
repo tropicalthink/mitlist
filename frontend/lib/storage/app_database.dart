@@ -896,10 +896,40 @@ FROM list_items_table;
     );
   }
 
+  /// Updates the canonical link carried by a queued list-item create/add.
+  /// Local grocery ids are deliberately kept out of the public list API when
+  /// they are not UUIDs, but retaining them in the durable outbox lets temp-id
+  /// reconciliation preserve the on-device intelligence link.
+  Future<void> updatePendingListItemCanonicalId({
+    required String entityId,
+    required String? canonicalItemId,
+  }) async {
+    final rows = await (select(outboxOps)
+          ..where((t) =>
+              t.entityId.equals(entityId) &
+              t.type.isIn(const ['createItem', 'addItemAmount'])))
+        .get();
+    for (final row in rows) {
+      final decoded = jsonDecode(row.payloadJson);
+      if (decoded is! Map<String, dynamic>) continue;
+      if (canonicalItemId == null) {
+        decoded.remove('canonicalItemId');
+      } else {
+        decoded['canonicalItemId'] = canonicalItemId;
+      }
+      await (update(outboxOps)..where((t) => t.id.equals(row.id))).write(
+        OutboxOpsCompanion(payloadJson: Value(jsonEncode(decoded))),
+      );
+    }
+  }
+
   Future<void> replaceTempItemId({
     required String tempId,
     required ListItem server,
   }) async {
+    final local = await (select(listItemsTable)
+          ..where((t) => t.id.equals(tempId)))
+        .getSingleOrNull();
     await (delete(listItemsTable)..where((t) => t.id.equals(tempId))).go();
     await upsertListItemsRows([
       ListItemsTableCompanion(
@@ -910,6 +940,9 @@ FROM list_items_table;
         unit: Value(server.unit),
         checked: Value(server.checked),
         position: Value(server.position),
+        priceCents: Value(server.priceCents ?? local?.priceCents),
+        canonicalItemId:
+            Value(server.canonicalItemId ?? local?.canonicalItemId),
         createdAt: Value(server.createdAt),
         updatedAt: Value(server.updatedAt),
       )

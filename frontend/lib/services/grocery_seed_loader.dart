@@ -184,13 +184,17 @@ class GrocerySeedLoader {
           updatedAt: now,
         ),
     ];
-    await _db.transaction(() async {
-      await _db.clearGlobalStoreAisles(_globalGroupId);
-      for (final chunk in _chunked(rows, 2000)) {
-        await _db.upsertStoreAisles(chunk);
-      }
-      await _db.setGroceryVersion(_storeAislesVersionKey, assetVersion);
-    });
+    // Not wrapped in a single transaction: this connection also serves
+    // interactive list writes, so — like the canonical seed and OFF aliases
+    // above — clear + chunked upsert commit per chunk and let interactive
+    // writes interleave instead of queueing behind the whole store-aisles
+    // import. The version key is written last, so an interrupted import safely
+    // reruns on the next launch.
+    await _db.clearGlobalStoreAisles(_globalGroupId);
+    for (final chunk in _chunked(rows, 2000)) {
+      await _db.upsertStoreAisles(chunk);
+    }
+    await _db.setGroceryVersion(_storeAislesVersionKey, assetVersion);
   }
 
   Future<void> _ingestSeed(Map<String, dynamic> json) async {

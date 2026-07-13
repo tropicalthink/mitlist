@@ -30,20 +30,22 @@ class ScanPipelineService {
 
   ScanPipelineService({
     required AppDatabase db,
+    CanonicalResolverService? resolver,
   })  : _db = db,
         _enhancement = EnhancementService(),
         _ocr = OcrService(),
         _extraction = ExtractionService(),
-        _resolver = CanonicalResolverService(
-          db,
-          classifier: GroceryClassifierService(),
-          embedder: StaticEmbeddingService(),
-          // Plan 037: the calibrated ensemble (candidate-union + household
-          // prior + canonicalNameSim) — on the eval it lifts precision@auto
-          // 73%→100% with no confident-wrong auto-accepts. Eager model voting
-          // costs a bit more per line; both models are fast.
-          useEnsemble: true,
-        ),
+        _resolver = resolver ??
+            CanonicalResolverService(
+              db,
+              classifier: GroceryClassifierService(),
+              embedder: StaticEmbeddingService(),
+              // Plan 037: the calibrated ensemble (candidate-union + household
+              // prior + canonicalNameSim) — on the eval it lifts precision@auto
+              // 73%→100% with no confident-wrong auto-accepts. Eager model voting
+              // costs a bit more per line; both models are fast.
+              useEnsemble: true,
+            ),
         _corrections = CorrectionMemoryService(db),
         _confidence = ConfidenceService();
 

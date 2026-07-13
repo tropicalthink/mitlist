@@ -25,7 +25,14 @@ final appDatabaseProvider = Provider<AppDatabase>((ref) {
 
 /// Runs the grocery seed on first launch (no-op if already seeded).
 /// Watch this in the app shell to ensure seed is loaded before first scan.
+///
+/// Kept alive so that once the one-time seed completes, its `AsyncData` state
+/// persists for the app's lifetime: callers on hot paths (e.g. list-item
+/// canonical linking) read this provider's state non-blockingly to decide
+/// whether to enrich inline, and must not see it flip back to `loading` because
+/// the provider was disposed and re-created between interactions.
 final grocerySeedProvider = FutureProvider<void>((ref) async {
+  ref.keepAlive();
   final db = ref.watch(appDatabaseProvider);
   await GrocerySeedLoader(db).loadIfNeeded();
 });
