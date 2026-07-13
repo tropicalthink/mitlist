@@ -3792,6 +3792,13 @@
     "description": "Snackbar: expense saved without receipt"
   },
   "expenseCreationExpenseAdded": "Uitgave toegevoegd",
+  "expenseCreationSummaryPaidBySplit": "Betaald door {payer} · {how} gedeeld",
+  "expenseCreationSummaryYou": "jou",
+  "expenseCreationSplitHowEqual": "gelijk",
+  "expenseCreationSplitHowExact": "op exacte bedragen",
+  "expenseCreationSplitHowShares": "op aandelen",
+  "expenseCreationSplitHowPercent": "op percentages",
+  "expenseCreationEditSplitSemantic": "Bewerken wie betaald heeft en hoe het verdeeld is",
   "@expenseCreationExpenseAdded": {
     "description": "Snackbar when expense is created"
   },
