@@ -80,6 +80,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   /// the controller stays UI-agnostic. Mirrors the original screen's behavior.
   bool _isSaving = false;
 
+  /// Guards the one-shot early composer focus for the quick-add entry so it
+  /// fires once, as soon as the composer exists.
+  bool _autoFocusDone = false;
+
   @override
   void initState() {
     super.initState();
@@ -98,7 +102,21 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   void _onControllerChanged() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    setState(() {});
+    // Quick-add (autoFocusComposer) should let you type the moment the composer
+    // appears — i.e. right after the cached items load — not after the whole
+    // detail finishes its network refresh + SSE + grocery seed. `_runLoad`'s
+    // post-load focus below stays as a fallback for the uncached case.
+    if (widget.autoFocusComposer &&
+        !_autoFocusDone &&
+        !_controller.isLoading &&
+        !_controller.hasError) {
+      _autoFocusDone = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) FocusScope.of(context).requestFocus(_composerFocusNode);
+      });
+    }
   }
 
   /// Runs the controller load, then pops the keyboard only for an empty list
@@ -115,7 +133,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       unawaited(_controller.refreshSuggestions(_newItemController.text));
     }
     if (!_controller.hasError &&
+        !_autoFocusDone &&
         (_controller.items.isEmpty || widget.autoFocusComposer)) {
+      _autoFocusDone = true;
       FocusScope.of(context).requestFocus(_composerFocusNode);
     }
   }
