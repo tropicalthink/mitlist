@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"mime"
 	"path"
@@ -39,7 +40,7 @@ type AttachmentService struct {
 }
 
 type attachmentStorage interface {
-	GetUploadURL(key string, contentType string, expires time.Duration) string
+	GetUploadURL(key string, contentType string, contentLength int64, expires time.Duration) string
 	GetURL(key string) string
 	Delete(key string) error
 	HeadObjectSize(ctx context.Context, key string) (int64, error)
@@ -116,31 +117,24 @@ func (s *AttachmentService) CreateUploadIntent(ctx context.Context, user *models
 		}
 	}
 
-	// Enforce per-group storage cap (best-effort).
-	if s.cfg != nil && s.cfg.MaxStoragePerGroupGB > 0 {
-		used, err := s.repo.SumReadyBytesByGroup(ctx, in.GroupID)
-		if err != nil {
-			return nil, err
-		}
-		limit := int64(s.cfg.MaxStoragePerGroupGB) * 1_000_000_000
-		if used+in.ByteSize > limit {
-			return nil, &api.ValidationError{Message: "group storage limit exceeded"}
-		}
-	}
-
+	reservationExpiresAt := time.Now().Add(20 * time.Minute)
 	a := &models.Attachment{
-		GroupID:     in.GroupID,
-		UserID:      user.ID,
-		Purpose:     in.Purpose,
-		ContentType: in.ContentType,
-		ByteSize:    in.ByteSize,
-		Status:      models.AttachmentStatusPending,
+		GroupID:              in.GroupID,
+		UserID:               user.ID,
+		Purpose:              in.Purpose,
+		ContentType:          in.ContentType,
+		ByteSize:             in.ByteSize,
+		Status:               models.AttachmentStatusPending,
+		ReservationExpiresAt: &reservationExpiresAt,
 	}
 
 	// Create a placeholder object key using a generated attachment id in DB.
 	// We will fill ObjectKey once we have the ID.
 	a.ObjectKey = "pending"
-	if err := s.repo.Create(ctx, a); err != nil {
+	if err := s.repo.Reserve(ctx, a, s.storageLimitBytes()); err != nil {
+		if errors.Is(err, repositories.ErrStorageQuotaExceeded) {
+			return nil, &api.ValidationError{Message: "household storage limit exceeded"}
+		}
 		return nil, err
 	}
 
@@ -148,12 +142,16 @@ func (s *AttachmentService) CreateUploadIntent(ctx context.Context, user *models
 	a.ObjectKey = objectKey
 
 	if err := s.repo.UpdateObjectKey(ctx, a.ID, objectKey); err != nil {
+		_ = s.repo.MarkFailed(ctx, a.ID)
+		_ = s.repo.Delete(ctx, a.ID)
 		return nil, err
 	}
 
-	expires := 15 * time.Minute
-	uploadURL := s.storage.GetUploadURL(objectKey, in.ContentType, expires)
+	expires := 5 * time.Minute
+	uploadURL := s.storage.GetUploadURL(objectKey, in.ContentType, in.ByteSize, expires)
 	if uploadURL == "" {
+		_ = s.repo.MarkFailed(ctx, a.ID)
+		_ = s.repo.Delete(ctx, a.ID)
 		return nil, fmt.Errorf("failed to generate upload URL")
 	}
 
@@ -189,34 +187,95 @@ func (s *AttachmentService) FinalizeUpload(ctx context.Context, user *models.Use
 	if a.GroupID != groupID {
 		return nil, &api.PermissionDeniedError{Message: "attachment does not belong to this group"}
 	}
+	if a.Status != models.AttachmentStatusPending {
+		return nil, &api.ValidationError{Message: "upload is no longer pending"}
+	}
 
 	realSize, err := s.storage.HeadObjectSize(ctx, a.ObjectKey)
 	if err != nil {
 		return nil, err
 	}
 	if s.cfg != nil && s.cfg.MaxFileSizeBytes > 0 && realSize > int64(s.cfg.MaxFileSizeBytes) {
+		if failErr := s.failPendingUpload(ctx, a); failErr != nil {
+			return nil, failErr
+		}
 		return nil, &api.ValidationError{Message: "uploaded file exceeds size limit"}
 	}
-	if s.cfg != nil && s.cfg.MaxStoragePerGroupGB > 0 {
-		used, err := s.repo.SumReadyBytesByGroup(ctx, groupID)
-		if err != nil {
-			return nil, err
-		}
-		limit := int64(s.cfg.MaxStoragePerGroupGB) * 1_000_000_000
-		if used+realSize > limit {
-			return nil, &api.ValidationError{Message: "group storage limit exceeded"}
-		}
-	}
 
-	if err := s.repo.UpdateStatusAndByteSize(ctx, attachmentID, models.AttachmentStatusReady, realSize); err != nil {
+	if err := s.repo.FinalizeReservation(ctx, attachmentID, realSize, s.storageLimitBytes()); err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, &api.NotFoundError{Resource: "attachment", ID: attachmentID.String()}
+		}
+		if errors.Is(err, repositories.ErrStorageQuotaExceeded) {
+			if failErr := s.failPendingUpload(ctx, a); failErr != nil {
+				return nil, failErr
+			}
+			return nil, &api.ValidationError{Message: "household storage limit exceeded"}
+		}
+		if errors.Is(err, repositories.ErrAttachmentNotPending) {
+			return nil, &api.ValidationError{Message: "upload is no longer pending"}
 		}
 		return nil, err
 	}
 	a.Status = models.AttachmentStatusReady
 	a.ByteSize = realSize
 	return a, nil
+}
+
+func (s *AttachmentService) storageLimitBytes() int64 {
+	if s.cfg == nil || s.cfg.MaxStoragePerGroupGB <= 0 {
+		return 0
+	}
+	return int64(s.cfg.MaxStoragePerGroupGB) * 1_000_000_000
+}
+
+func (s *AttachmentService) failPendingUpload(ctx context.Context, a *models.Attachment) error {
+	if err := s.repo.MarkFailed(ctx, a.ID); err != nil {
+		return err
+	}
+	if a.ObjectKey == "" || a.ObjectKey == "pending" {
+		return s.repo.Delete(ctx, a.ID)
+	}
+	if err := s.storage.Delete(a.ObjectKey); err != nil {
+		// Keep the failed row so the cleanup job can retry the object deletion.
+		return nil
+	}
+	return s.repo.Delete(ctx, a.ID)
+}
+
+// CleanupExpiredUploads releases abandoned reservations and deletes failed
+// objects. Failed rows are retained when object deletion fails so a later run
+// can retry safely.
+func (s *AttachmentService) CleanupExpiredUploads(ctx context.Context) (int, error) {
+	candidates, err := s.repo.ListCleanupCandidates(ctx, time.Now(), 200)
+	if err != nil {
+		return 0, err
+	}
+	cleaned := 0
+	for i := range candidates {
+		a := &candidates[i]
+		if a.Status == models.AttachmentStatusPending {
+			if err := s.repo.MarkFailed(ctx, a.ID); err != nil {
+				if errors.Is(err, repositories.ErrAttachmentNotPending) || err == pgx.ErrNoRows {
+					continue
+				}
+				return cleaned, err
+			}
+		}
+		if a.ObjectKey != "" && a.ObjectKey != "pending" {
+			if err := s.storage.Delete(a.ObjectKey); err != nil {
+				continue
+			}
+		}
+		if err := s.repo.Delete(ctx, a.ID); err != nil {
+			if err == pgx.ErrNoRows {
+				continue
+			}
+			return cleaned, err
+		}
+		cleaned++
+	}
+	return cleaned, nil
 }
 
 func (s *AttachmentService) GetDownloadURL(ctx context.Context, user *models.User, groupID, attachmentID uuid.UUID) (string, error) {

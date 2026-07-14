@@ -72,6 +72,18 @@ func main() {
 	runner := jobs.NewRunnerWithDispatcher(pool, cnt.NotificationService(), log)
 	runner.EnableSentryMonitoring(sentryOn)
 	runner.RegisterAll()
+	runner.RegisterAttachmentCleanup(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		defer cancel()
+		cleaned, err := cnt.AttachmentService().CleanupExpiredUploads(ctx)
+		if err != nil {
+			log.Error().Err(err).Msg("attachment cleanup failed")
+			return
+		}
+		if cleaned > 0 {
+			log.Info().Int("cleaned", cleaned).Msg("expired attachments cleaned")
+		}
+	})
 	runner.Start()
 
 	srv := server.New(cfg, cnt, runner)
