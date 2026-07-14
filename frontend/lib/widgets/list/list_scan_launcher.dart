@@ -6,7 +6,8 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../providers/grocery_provider.dart';
-import '../../providers/list_provider.dart' show listRepositoryProvider;
+import '../../providers/list_provider.dart'
+    show grocerySeedProvider, listRepositoryProvider;
 import '../../providers/store_provider.dart';
 import '../../screens/scanner/scan_review_screen.dart';
 import '../../screens/scanner/smart_capture_launcher.dart';
@@ -77,6 +78,7 @@ Future<int?> launchListScan(
   ));
 
   try {
+    await ref.read(grocerySeedProvider.future);
     final pipeline = await ref.read(scanPipelineProvider.future);
     final repo = await ref.read(listRepositoryProvider.future);
     final listContextCanonicalIds = (await repo.getItemsByListOnce(listId))

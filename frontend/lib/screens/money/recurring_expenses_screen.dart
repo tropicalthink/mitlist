@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -6,11 +8,14 @@ import '../../l10n/app_localizations.dart';
 import '../../models/finance_models.dart';
 import '../../providers/finance_provider.dart';
 import '../../providers/group_provider.dart';
+import '../../providers/grocery_provider.dart';
+import '../../providers/list_provider.dart' show grocerySeedProvider;
 import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/active_group_context.dart';
+import '../../utils/expense_categories.dart';
 import '../../utils/format_currency.dart';
 import '../../utils/friendly_error.dart';
 import '../../widgets/app_button.dart';
@@ -18,6 +23,7 @@ import '../../widgets/app_input.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
+import '../../widgets/chip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/skeleton.dart';
@@ -489,7 +495,7 @@ class _CreateRecurringResult {
   });
 }
 
-class _CreateRecurringForm extends StatefulWidget {
+class _CreateRecurringForm extends ConsumerStatefulWidget {
   final Map<String, String> userLabels;
   final String groupId;
   const _CreateRecurringForm({
@@ -498,13 +504,19 @@ class _CreateRecurringForm extends StatefulWidget {
   });
 
   @override
-  State<_CreateRecurringForm> createState() => _CreateRecurringFormState();
+  ConsumerState<_CreateRecurringForm> createState() =>
+      _CreateRecurringFormState();
 }
 
-class _CreateRecurringFormState extends State<_CreateRecurringForm> {
+class _CreateRecurringFormState extends ConsumerState<_CreateRecurringForm> {
   final _descriptionController = TextEditingController();
   final _amountController = TextEditingController();
   String _frequency = 'monthly';
+  String _category = 'other';
+  bool _categoryWasChosen = false;
+  bool _categoryWasSuggested = false;
+  Timer? _categoryDebounce;
+  int _categorySuggestionGeneration = 0;
   String? _payerId;
   String? _error;
 
@@ -518,6 +530,7 @@ class _CreateRecurringFormState extends State<_CreateRecurringForm> {
 
   @override
   void dispose() {
+    _categoryDebounce?.cancel();
     _descriptionController.dispose();
     _amountController.dispose();
     super.dispose();
@@ -543,12 +556,44 @@ class _CreateRecurringFormState extends State<_CreateRecurringForm> {
         AppInput(
           controller: _descriptionController,
           label: l10n.recurringSheetDescription,
+          onChanged: _scheduleCategorySuggestion,
         ),
         const SizedBox(height: MitlistSpacing.sm),
         AppInput(
           controller: _amountController,
           label: l10n.recurringSheetAmount,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        ),
+        const SizedBox(height: MitlistSpacing.sm),
+        Text(
+          l10n.expenseCreationCategoryLabel,
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+        const SizedBox(height: MitlistSpacing.xs),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (final key in expenseCategoryKeys)
+                Padding(
+                  padding: const EdgeInsets.only(right: MitlistSpacing.xs),
+                  child: AppChip(
+                    label: expenseCategoryLabel(l10n, key),
+                    selected: _category == key,
+                    onSelected: (_) {
+                      setState(() {
+                        _category = key;
+                        _categoryWasChosen = true;
+                        _categoryWasSuggested = false;
+                      });
+                      _categoryDebounce?.cancel();
+                    },
+                  ),
+                ),
+            ],
+          ),
         ),
         const SizedBox(height: MitlistSpacing.sm),
         DropdownButtonFormField<String>(
@@ -640,9 +685,48 @@ class _CreateRecurringFormState extends State<_CreateRecurringForm> {
       payerId: _payerId!,
       amount: (amount * 100).round(),
       description: description,
-      category: 'other',
+      category: _category,
       frequency: _frequency,
       nextDue: DateTime.now().add(const Duration(days: 1)),
     ));
+  }
+
+  void _scheduleCategorySuggestion(String description) {
+    final generation = ++_categorySuggestionGeneration;
+    _categoryDebounce?.cancel();
+    if (_categoryWasChosen) return;
+    if (description.trim().length < 2) {
+      if (_categoryWasSuggested) {
+        setState(() {
+          _category = 'other';
+          _categoryWasSuggested = false;
+        });
+      }
+      return;
+    }
+    _categoryDebounce = Timer(const Duration(milliseconds: 350), () async {
+      try {
+        await ref.read(grocerySeedProvider.future);
+        final suggestion = await ref
+            .read(groceryExpenseCategoryServiceProvider)
+            .suggest(description, widget.groupId);
+        if (!mounted ||
+            generation != _categorySuggestionGeneration ||
+            _categoryWasChosen) {
+          return;
+        }
+        setState(() {
+          if (suggestion != null) {
+            _category = suggestion;
+            _categoryWasSuggested = true;
+          } else if (_categoryWasSuggested) {
+            _category = 'other';
+            _categoryWasSuggested = false;
+          }
+        });
+      } catch (_) {
+        // Categorisation is an enhancement; the form remains fully usable.
+      }
+    });
   }
 }

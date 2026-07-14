@@ -195,4 +195,28 @@ func TestRecipeService_CollectionOperations(t *testing.T) {
 		err := svc.RemoveFromCollection(ctx, userID, collectionID, recipeID)
 		require.NoError(t, err)
 	})
+
+	t.Run("list collection recipes as owner", func(t *testing.T) {
+		recipeRepo := new(mocks.MockRecipeRepo)
+		svc := NewRecipeService(recipeRepo)
+
+		recipeRepo.On("GetCollectionByID", ctx, collectionID).Return(&models.Collection{ID: collectionID, UserID: userID}, nil)
+		recipeRepo.On("ListRecipesByCollection", ctx, collectionID, 50, 0).Return([]models.Recipe{{ID: recipeID}}, nil)
+
+		recipes, err := svc.ListCollectionRecipes(ctx, userID, collectionID, 50, 0)
+		require.NoError(t, err)
+		assert.Len(t, recipes, 1)
+		assert.Equal(t, recipeID, recipes[0].ID)
+	})
+
+	t.Run("list collection recipes denied for non-owner", func(t *testing.T) {
+		recipeRepo := new(mocks.MockRecipeRepo)
+		svc := NewRecipeService(recipeRepo)
+
+		recipeRepo.On("GetCollectionByID", ctx, collectionID).Return(&models.Collection{ID: collectionID, UserID: uuid.New()}, nil)
+
+		_, err := svc.ListCollectionRecipes(ctx, userID, collectionID, 50, 0)
+		require.Error(t, err)
+		recipeRepo.AssertNotCalled(t, "ListRecipesByCollection", ctx, collectionID, 50, 0)
+	})
 }

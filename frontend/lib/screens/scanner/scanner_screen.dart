@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../providers/grocery_provider.dart';
+import '../../providers/auth_provider.dart' show authServiceProviderAsync;
 import '../../providers/list_provider.dart' show grocerySeedProvider;
 import '../../providers/store_provider.dart';
 import '../../theme/spacing.dart';
@@ -44,8 +45,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   Future<void> _scanGroceryList(ImageSource source) async {
     final l10n = AppLocalizations.of(context)!;
     final groupId = widget.groupId;
-    final userId = widget.userId;
-    if (groupId == null || userId == null) return;
+    if (groupId == null) return;
 
     final capture = await pickSmartCapture(
       context,
@@ -57,6 +57,14 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     setState(() => _isAnalyzing = true);
 
     try {
+      // The global scanner route does not carry a user id. Resolve it from the
+      // authenticated session only when a scan is actually launched.
+      final userId = widget.userId ??
+          (await (await ref.read(authServiceProviderAsync.future)).getMe()).id;
+      // Resolution reads the Drift seed. Await it here rather than merely
+      // triggering it at screen construction, otherwise a fast first scan can
+      // race the one-time seed and silently produce no canonical matches.
+      await ref.read(grocerySeedProvider.future);
       final pipeline = await ref.read(scanPipelineProvider.future);
       final connectivity = ref.read(connectivityServiceProvider);
       final isOnline = await connectivity.isOnline();

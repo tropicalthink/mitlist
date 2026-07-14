@@ -913,6 +913,22 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       child: Column(
         children: [
           _MenuRow(
+            icon: const AppIcon(name: 'tagOutline'),
+            label: l10n.productsTitle,
+            onTap: _activeHouseholdId == null
+                ? null
+                : () => context.pushNamed('products'),
+          ),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          _MenuRow(
+            icon: const AppIcon(name: 'storeOutline'),
+            label: l10n.shoppingLocationsTitle,
+            onTap: _activeHouseholdId == null
+                ? null
+                : () => context.pushNamed('shoppingLocations'),
+          ),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          _MenuRow(
             icon: const AppIcon(name: 'arrowDownTray'),
             label: l10n.accountExportCSV,
             onTap: _isExporting || _activeHouseholdId == null

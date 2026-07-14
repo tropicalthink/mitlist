@@ -988,6 +988,188 @@ class AppLocalizationsEs extends AppLocalizations {
   String get recipeAddToList => 'Añadir a la lista';
 
   @override
+  String get recipeAddOnlyMissing => 'Añadir solo lo que falta';
+
+  @override
+  String recipeAddMissingAdded(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count artículos que faltaban añadidos',
+      one: '1 artículo que faltaba añadido',
+      zero: 'No falta nada — ya está todo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get productsTitle => 'Productos';
+
+  @override
+  String get productsSearchHint => 'Buscar productos';
+
+  @override
+  String get productsEmptyTitle => 'Aún no hay productos';
+
+  @override
+  String get productsEmptyDesc =>
+      'Guarda los productos que compras a menudo para reutilizarlos en tus listas.';
+
+  @override
+  String get productsNoResults => 'Ningún producto coincide con tu búsqueda';
+
+  @override
+  String get productsAdd => 'Añadir producto';
+
+  @override
+  String get productsSheetTitle => 'Nuevo producto';
+
+  @override
+  String get productsFieldName => 'Nombre';
+
+  @override
+  String get productsFieldUnit => 'Unidad (opcional)';
+
+  @override
+  String get productsFieldBarcode => 'Código de barras (opcional)';
+
+  @override
+  String get productsValidationName => 'Introduce un nombre de producto';
+
+  @override
+  String get productsCouldNotCreate => 'No se pudo crear el producto';
+
+  @override
+  String get productsNoHouseholdDesc =>
+      'Únete a un hogar o crea uno para mantener un catálogo de productos.';
+
+  @override
+  String get shoppingLocationsTitle => 'Lugares de compra';
+
+  @override
+  String get shoppingLocationsEmptyTitle => 'Aún no hay lugares';
+
+  @override
+  String get shoppingLocationsEmptyDesc =>
+      'Nombra las tiendas donde compras para organizar tus recados.';
+
+  @override
+  String get shoppingLocationsAdd => 'Añadir lugar';
+
+  @override
+  String get shoppingLocationsSheetTitle => 'Nuevo lugar';
+
+  @override
+  String get shoppingLocationsFieldName => 'Nombre';
+
+  @override
+  String get shoppingLocationsValidationName => 'Introduce un nombre de lugar';
+
+  @override
+  String get shoppingLocationsCouldNotCreate => 'No se pudo crear el lugar';
+
+  @override
+  String get shoppingLocationsNoHouseholdDesc =>
+      'Únete a un hogar o crea uno para guardar lugares de compra.';
+
+  @override
+  String get cookbooksTitle => 'Recetarios';
+
+  @override
+  String get cookbooksButton => 'Recetarios';
+
+  @override
+  String get cookbooksEmptyTitle => 'Aún no hay recetarios';
+
+  @override
+  String get cookbooksEmptyDesc =>
+      'Agrupa tus recetas en recetarios para encontrarlas más rápido.';
+
+  @override
+  String get cookbooksAdd => 'Nuevo recetario';
+
+  @override
+  String get cookbooksSheetTitle => 'Nuevo recetario';
+
+  @override
+  String get cookbooksRenameSheetTitle => 'Renombrar recetario';
+
+  @override
+  String get cookbooksFieldName => 'Nombre';
+
+  @override
+  String get cookbooksValidationName => 'Introduce un nombre de recetario';
+
+  @override
+  String get cookbooksCouldNotCreate => 'No se pudo crear el recetario';
+
+  @override
+  String get cookbooksCouldNotRename => 'No se pudo renombrar el recetario';
+
+  @override
+  String get cookbooksCouldNotDelete => 'No se pudo eliminar el recetario';
+
+  @override
+  String get cookbooksDeleteTitle => '¿Eliminar recetario?';
+
+  @override
+  String get cookbooksDeleteBody =>
+      'Esto elimina el recetario. Tus recetas siguen en tu cocina.';
+
+  @override
+  String cookbooksRecipeCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count recetas',
+      one: '1 receta',
+      zero: 'Sin recetas',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get cookbooksRename => 'Renombrar';
+
+  @override
+  String get cookbooksNoHouseholdDesc =>
+      'Únete a un hogar o crea uno para crear recetarios.';
+
+  @override
+  String get cookbookDetailEmptyTitle => 'Aún no hay recetas aquí';
+
+  @override
+  String get cookbookDetailEmptyDesc =>
+      'Añade recetas a este recetario para verlas aquí.';
+
+  @override
+  String get cookbookDetailAddRecipes => 'Añadir recetas';
+
+  @override
+  String get cookbookAddRecipesSheetTitle => 'Añadir recetas';
+
+  @override
+  String get cookbookAddRecipesEmpty =>
+      'Todas tus recetas ya están en este recetario.';
+
+  @override
+  String get cookbookRemoveRecipe => 'Quitar del recetario';
+
+  @override
+  String get cookbookRecipeRemoved => 'Quitada del recetario';
+
+  @override
+  String cookbookRecipesAdded(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count recetas añadidas',
+      one: '1 receta añadida',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String recipeSharedPrivate(num shared, num private) {
     return '$shared compartidas · $private privadas';
   }

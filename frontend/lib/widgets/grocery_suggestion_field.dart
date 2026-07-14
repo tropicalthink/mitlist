@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/grocery_provider.dart';
+import '../providers/list_provider.dart' show grocerySeedProvider;
 import '../services/scan/grocery_suggestion_service.dart';
 import '../theme/animations.dart';
 import '../theme/spacing.dart';
@@ -58,15 +59,28 @@ class _GrocerySuggestionFieldState
 
   void _onChanged(String value) {
     _debounce?.cancel();
+    if (value.trim().length < 2) {
+      _queryToken++;
+      if (_suggestions.isNotEmpty) {
+        setState(() => _suggestions = const []);
+      }
+      return;
+    }
     _debounce = Timer(const Duration(milliseconds: 180), () => _query(value));
   }
 
   Future<void> _query(String value) async {
     final token = ++_queryToken;
-    final svc = ref.read(grocerySuggestionServiceProvider);
-    final results = await svc.suggest(value, widget.groupId);
-    if (!mounted || token != _queryToken) return;
-    setState(() => _suggestions = results);
+    try {
+      await ref.read(grocerySeedProvider.future);
+      final svc = ref.read(grocerySuggestionServiceProvider);
+      final results = await svc.suggest(value, widget.groupId);
+      if (!mounted || token != _queryToken) return;
+      setState(() => _suggestions = results);
+    } catch (_) {
+      if (!mounted || token != _queryToken) return;
+      setState(() => _suggestions = const []);
+    }
   }
 
   void _select(GrocerySuggestion s) {

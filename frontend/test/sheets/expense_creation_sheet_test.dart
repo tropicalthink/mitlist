@@ -2,6 +2,8 @@
 // the payer + split editor is collapsed to a one-line summary by default and
 // only unfolds the full split grid when the summary is tapped.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,9 +14,13 @@ import 'package:mitlist/models/auth_models.dart';
 import 'package:mitlist/models/group_models.dart';
 import 'package:mitlist/providers/auth_provider.dart';
 import 'package:mitlist/providers/group_provider.dart';
+import 'package:mitlist/providers/grocery_provider.dart';
+import 'package:mitlist/providers/list_provider.dart' show grocerySeedProvider;
 import 'package:mitlist/sheets/expense_creation_sheet.dart';
 import 'package:mitlist/services/auth_service.dart';
+import 'package:mitlist/services/grocery_expense_category_service.dart';
 import 'package:mitlist/services/group_service.dart';
+import 'package:mitlist/widgets/chip.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -54,7 +60,11 @@ void main() {
     GroupMemberProfile(userId: otherId, displayName: 'Sam', role: 'member'),
   ];
 
-  Future<void> pumpSheet(WidgetTester tester) async {
+  Future<void> pumpSheet(
+    WidgetTester tester, {
+    String? initialDescription,
+    List<Override> extraOverrides = const [],
+  }) async {
     await tester.binding.setSurfaceSize(const Size(800, 1600));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -66,17 +76,21 @@ void main() {
           // doesn't hang on the Drift-backed groupRepositoryProvider.
           cachedGroupsProvider.overrideWith((ref) async => [group]),
           groupServiceProviderAsync.overrideWith(
-            (ref) async =>
-                FakeGroupService(groups: [group], members: members),
+            (ref) async => FakeGroupService(groups: [group], members: members),
           ),
           authServiceProviderAsync
               .overrideWith((ref) async => FakeAuthService(currentUser: user)),
+          ...extraOverrides,
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const Scaffold(
-            body: SingleChildScrollView(child: ExpenseCreationSheet()),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: ExpenseCreationSheet(
+                initialDescription: initialDescription,
+              ),
+            ),
           ),
         ),
       ),
@@ -118,6 +132,67 @@ void main() {
     expect(find.text('Shares'), findsOneWidget);
     // Both members appear (payer picker + split checklist).
     expect(find.text('Sam'), findsWidgets);
+  });
+
+  testWidgets('suggests groceries from a grocery expense description',
+      (tester) async {
+    await pumpSheet(
+      tester,
+      initialDescription: 'milk',
+      extraOverrides: [
+        grocerySeedProvider.overrideWith((ref) async {}),
+        groceryExpenseCategoryServiceProvider.overrideWithValue(
+          GroceryExpenseCategoryService.withResolver(
+            (text, groupId) async => 'canonical-milk',
+          ),
+        ),
+      ],
+    );
+
+    final groceriesChip = tester.widget<AppChip>(
+      find.ancestor(
+        of: find.text('Groceries'),
+        matching: find.byType(AppChip),
+      ),
+    );
+    expect(groceriesChip.selected, isTrue);
+  });
+
+  testWidgets('never replaces a category explicitly chosen by the user',
+      (tester) async {
+    final pendingSuggestion = Completer<String?>();
+    await pumpSheet(
+      tester,
+      initialDescription: 'milk',
+      extraOverrides: [
+        grocerySeedProvider.overrideWith((ref) async {}),
+        groceryExpenseCategoryServiceProvider.overrideWithValue(
+          GroceryExpenseCategoryService.withResolver(
+            (text, groupId) => pendingSuggestion.future,
+          ),
+        ),
+      ],
+    );
+
+    await tester.ensureVisible(find.text('Transport'));
+    await tester.tap(find.text('Transport'));
+    pendingSuggestion.complete('groceries');
+    await tester.pump();
+
+    final transportChip = tester.widget<AppChip>(
+      find.ancestor(
+        of: find.text('Transport'),
+        matching: find.byType(AppChip),
+      ),
+    );
+    final groceriesChip = tester.widget<AppChip>(
+      find.ancestor(
+        of: find.text('Groceries'),
+        matching: find.byType(AppChip),
+      ),
+    );
+    expect(transportChip.selected, isTrue);
+    expect(groceriesChip.selected, isFalse);
   });
 }
 

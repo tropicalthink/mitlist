@@ -1,10 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/list_models.dart';
 import '../repositories/list_repository.dart';
-import '../services/grocery_seed_loader.dart';
+import '../services/grocery_reference_installer.dart';
 import '../services/list_service.dart';
 import '../services/sse_service.dart';
 import '../storage/app_database.dart';
+import 'grocery_provider.dart';
 
 /// Singleton SSE service. Disposed when the Riverpod container tears down.
 final sseServiceProvider = Provider<SseService>((ref) {
@@ -23,11 +24,20 @@ final appDatabaseProvider = Provider<AppDatabase>((ref) {
   return db;
 });
 
-/// Runs the grocery seed on first launch (no-op if already seeded).
-/// Watch this in the app shell to ensure seed is loaded before first scan.
+/// Installs the prebuilt global grocery reference DB (a version-gated file copy
+/// of a bundled asset — no row inserts) and attaches it to [AppDatabase] so the
+/// grocery read methods can merge global reference rows with household rows.
+///
+/// Named `grocerySeedProvider` for continuity with its existing watch sites.
+/// Completes in milliseconds–~1s, so awaiting it on a hot path (canonical
+/// linking) no longer stalls an add. Kept alive so its `AsyncData` state
+/// persists for the app's lifetime.
 final grocerySeedProvider = FutureProvider<void>((ref) async {
+  ref.keepAlive();
   final db = ref.watch(appDatabaseProvider);
-  await GrocerySeedLoader(db).loadIfNeeded();
+  final reference = await GroceryReferenceInstaller(db).installAndOpen();
+  db.attachReference(reference);
+  ref.onDispose(reference.close);
 });
 
 /// Live per-list (open, total) item counts for the hub cards' "N left" label.
@@ -43,7 +53,8 @@ final listItemCountsProvider =
 final listRepositoryProvider = FutureProvider<ListRepository>((ref) async {
   final db = ref.watch(appDatabaseProvider);
   final service = await ref.read(listServiceProviderAsync.future);
-  return ListRepository(db: db, remote: service);
+  final groceryRepo = await ref.read(groceryRepositoryProvider.future);
+  return ListRepository(db: db, remote: service, groceryRepo: groceryRepo);
 });
 
 // ---------------------------------------------------------------------------

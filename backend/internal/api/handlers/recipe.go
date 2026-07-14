@@ -52,6 +52,7 @@ func (h *RecipeHandler) RegisterRoutes(r chi.Router) {
 	r.Get("/collections/{id}", h.GetCollection)
 	r.Patch("/collections/{id}", h.UpdateCollection)
 	r.Delete("/collections/{id}", h.DeleteCollection)
+	r.Get("/collections/{id}/recipes", h.GetCollectionRecipes)
 	r.Post("/collections/{id}/recipes", h.AddToCollection)
 	r.Delete("/collections/{id}/recipes/{recipe_id}", h.RemoveFromCollection)
 }
@@ -713,6 +714,30 @@ func (h *RecipeHandler) GetCollection(w http.ResponseWriter, r *http.Request) {
 	}
 
 	api.RespondJSON(w, http.StatusOK, collection)
+}
+
+// GetCollectionRecipes returns the recipes belonging to a collection.
+func (h *RecipeHandler) GetCollectionRecipes(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+
+	id, err := parseUUIDParam(r, "id")
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+
+	limit, offset := parsePagination(r)
+	recipes, err := h.service.ListCollectionRecipes(r.Context(), userID, id, limit, offset)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+
+	api.RespondJSON(w, http.StatusOK, recipes)
 }
 
 type updateCollectionRequest struct {

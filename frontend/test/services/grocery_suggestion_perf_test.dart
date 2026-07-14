@@ -1,17 +1,9 @@
 // ignore_for_file: prefer_single_quotes
-import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mitlist/services/grocery_seed_loader.dart';
 import 'package:mitlist/services/scan/grocery_suggestion_service.dart';
 import 'package:mitlist/storage/app_database.dart';
 
-AppDatabase _memoryDb() => AppDatabase(
-      DatabaseConnection(
-        NativeDatabase.memory(),
-        closeStreamsSynchronously: true,
-      ),
-    );
+import '../support/grocery_seed_test_helper.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -20,8 +12,12 @@ void main() {
     late AppDatabase db;
 
     setUp(() async {
-      db = _memoryDb();
-      await GrocerySeedLoader(db).loadIfNeeded();
+      db = memoryDb();
+      // Seed the real catalogue straight into the main DB under the global
+      // scope. Production now serves those rows from the read-only reference DB,
+      // but the main-DB queries keep the `__global__` disjunct so this in-DB
+      // seeding still exercises the same prefix/FTS paths without a ref DB.
+      await ingestRealSeed(db);
     });
 
     tearDown(() => db.close());
