@@ -1,6 +1,8 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import { legal } from "../data/legal";
+import SiteHeader from "./SiteHeader.astro";
+import SiteFooter from "./SiteFooter.astro";
 
 interface Props {
   title: string;
@@ -10,42 +12,17 @@ const { title, description } = Astro.props;
 ---
 
 <Layout title={`${title} — ${legal.siteName}`} description={description}>
-  <header class="legal-nav">
-    <div class="wrap legal-nav__inner">
-      <a class="legal-brand" href="/">✓✓ mitlist</a>
-      <nav aria-label="Rechtliches">
-        <a href="/impressum" aria-current={Astro.url.pathname === "/impressum" ? "page" : undefined}>Impressum</a>
-        <a href="/datenschutz" aria-current={Astro.url.pathname === "/datenschutz" ? "page" : undefined}>Datenschutz</a>
-      </nav>
-    </div>
-  </header>
+  <SiteHeader />
   <main class="legal-main">
     <article class="wrap legal-doc">
       <h1>{title}</h1>
       <slot />
     </article>
   </main>
-  <footer class="legal-foot">
-    <div class="wrap legal-foot__inner">
-      <a href="/">← Zurück zur Startseite</a>
-      <span>© {new Date().getFullYear()} {legal.siteName}</span>
-    </div>
-  </footer>
+  <SiteFooter />
 </Layout>
 
 <style>
-  .legal-nav { border-bottom: var(--border); background: var(--paper-2); }
-  .legal-nav__inner,
-  .legal-foot__inner {
-    min-height: 64px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-  }
-  .legal-brand { color: var(--ink); font-size: 1.2rem; font-weight: 700; text-decoration: none; }
-  .legal-nav nav { display: flex; gap: 1rem; font-weight: 600; }
-  .legal-nav [aria-current="page"] { color: var(--orange-700); }
   .legal-main { background: var(--paper); min-height: 70vh; padding-block: clamp(3rem, 8vw, 6rem); }
   .legal-doc { max-width: 48rem; margin-inline: auto; }
   .legal-doc h1 { font-size: clamp(2.4rem, 7vw, 4.8rem); margin-bottom: 2rem; }
@@ -55,10 +32,4 @@ const { title, description } = Astro.props;
   .legal-doc :global(p) { margin-bottom: 1rem; }
   .legal-doc :global(ul) { padding-left: 1.25rem; }
   .legal-doc :global(.legal-meta) { color: var(--ink-3); font-weight: 600; }
-  .legal-foot { background: var(--ink); color: var(--paper); }
-  .legal-foot a { color: var(--orange-300); }
-  @media (max-width: 560px) {
-    .legal-nav__inner,
-    .legal-foot__inner { align-items: flex-start; flex-direction: column; padding-block: 1rem; }
-  }
 </style>

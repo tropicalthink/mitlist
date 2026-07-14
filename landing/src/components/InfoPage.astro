@@ -1,5 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import SiteHeader from "./SiteHeader.astro";
+import SiteFooter from "./SiteFooter.astro";
 
 interface Props {
   title: string;
@@ -8,151 +10,71 @@ interface Props {
   heading: string;
   intro: string;
 }
-
 const { title, description, eyebrow, heading, intro } = Astro.props;
-const GITHUB = "https://github.com/whtvrboo/mitlist";
-const WEBAPP = "https://app.mitlist.me";
 ---
 
 <Layout title={title} description={description}>
-  <header class="info-nav">
-    <div class="wrap info-nav__inner">
-      <a class="info-brand" href="/" aria-label="mitlist home">
-        <span aria-hidden="true">✓✓</span> mitlist
-      </a>
-      <nav class="info-nav__links" aria-label="Primary">
-        <a href="/hosting">Hosting</a>
-        <a href="/transparency">Transparency</a>
-        <a href={GITHUB} rel="noopener">GitHub</a>
-      </nav>
-      <a class="btn btn--primary" href={WEBAPP}>Open the app</a>
-    </div>
-  </header>
-
+  <SiteHeader />
   <main>
     <section class="info-hero">
-      <div class="wrap info-hero__grid">
-        <div>
-          <span class="stamp">{eyebrow}</span>
-          <h1 class="display">{heading}</h1>
-        </div>
+      <div class="wrap info-hero__copy">
+        <span class="stamp">{eyebrow}</span>
+        <h1 class="display">{heading}</h1>
         <p class="lead">{intro}</p>
       </div>
     </section>
-    <div class="wrap info-body">
-      <slot />
-    </div>
+    <section class="section-pad">
+      <div class="wrap info-grid">
+        <slot />
+      </div>
+    </section>
   </main>
-
-  <footer class="info-foot">
-    <div class="wrap info-foot__inner">
-      <p>mitlist is AGPL-3.0 software. The complete product stays open.</p>
-      <nav aria-label="Footer">
-        <a href="/">Home</a>
-        <a href="/privacy">Privacy</a>
-        <a href="/datenschutz">Datenschutz</a>
-        <a href="/impressum">Impressum</a>
-        <a href={GITHUB} rel="noopener">Source</a>
-      </nav>
-    </div>
-  </footer>
+  <SiteFooter />
 </Layout>
 
 <style>
-  .info-nav {
-    position: sticky;
-    top: 0;
-    z-index: var(--z-nav);
-    background: var(--paper-2);
-    border-bottom: var(--border);
-  }
-  .info-nav__inner,
-  .info-foot__inner {
-    min-height: 64px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1.25rem;
-  }
-  .info-brand {
-    display: inline-flex;
-    gap: 0.55rem;
-    align-items: center;
-    color: var(--ink);
-    font-size: 1.25rem;
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    text-decoration: none;
-  }
-  .info-brand span { color: var(--orange-600); }
-  .info-nav__links,
-  .info-foot nav {
-    display: flex;
-    gap: 1.25rem;
-    font-size: 0.95rem;
-    font-weight: 600;
-  }
-  .info-nav__links a,
-  .info-foot a { text-underline-offset: 0.2em; }
   .info-hero {
-    background: var(--orange);
+    background: var(--paper-2);
+    padding-block: clamp(3.5rem, 2rem + 6vw, 7rem);
     border-bottom: var(--border);
-    padding-block: clamp(4rem, 10vw, 8rem);
   }
-  .info-hero__grid {
+  .info-hero__copy { max-width: 52rem; }
+  .info-hero .stamp { margin-bottom: 1.4rem; }
+  .info-hero .display { max-width: 14ch; margin-bottom: 1.3rem; }
+  .info-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(18rem, 0.6fr);
-    gap: clamp(2rem, 7vw, 7rem);
-    align-items: end;
-  }
-  .info-hero .display {
-    max-width: 12ch;
-    margin-top: 1.5rem;
-  }
-  .info-hero .lead { color: var(--ink-2); }
-  .info-body {
-    padding-block: clamp(4rem, 8vw, 7rem);
-    display: grid;
-    gap: 2px;
-  }
-  .info-body :global(.info-card) {
-    background: var(--paper);
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 0;
     border: var(--border);
-    padding: clamp(1.5rem, 4vw, 3rem);
-    display: grid;
-    grid-template-columns: minmax(12rem, 0.5fr) minmax(0, 1fr);
-    gap: clamp(1.5rem, 5vw, 5rem);
-  }
-  .info-body :global(.info-card h2) {
-    font-size: clamp(1.5rem, 2.5vw, 2.35rem);
-  }
-  .info-body :global(.info-card h3) { margin-bottom: 0.5rem; }
-  .info-body :global(.info-card p),
-  .info-body :global(.info-card li) { max-width: 65ch; }
-  .info-body :global(.info-card p + p),
-  .info-body :global(.info-card p + ul) { margin-top: 1rem; }
-  .info-body :global(.info-card ul) {
-    margin: 0;
-    padding-left: 1.2rem;
-  }
-  .info-body :global(.info-card li + li) { margin-top: 0.7rem; }
-  .info-body :global(.info-actions) {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-top: 1.5rem;
-  }
-  .info-foot {
+    box-shadow: var(--shadow-lg);
     background: var(--ink);
-    color: var(--paper);
-    border-top: var(--border);
   }
-  .info-foot p { font-size: 0.9rem; }
-  @media (max-width: 760px) {
-    .info-nav__links { display: none; }
-    .info-nav .btn { padding: 0.6rem 0.8rem; }
-    .info-hero__grid,
-    .info-body :global(.info-card) { grid-template-columns: 1fr; }
-    .info-foot__inner { align-items: flex-start; flex-direction: column; padding-block: 1.5rem; }
+  .info-grid :global(.info-card) {
+    background: var(--paper);
+    padding: clamp(1.5rem, 1rem + 2vw, 2.2rem);
+    border-right: var(--border);
+  }
+  .info-grid :global(.info-card:last-child) { border-right: none; }
+  .info-grid :global(.info-card h2) {
+    color: var(--orange-700);
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0.8rem;
+  }
+  .info-grid :global(.info-card h3) {
+    font-size: clamp(1.3rem, 1.05rem + 1vw, 1.6rem);
+    margin-bottom: 0.7rem;
+  }
+  .info-grid :global(.info-card p),
+  .info-grid :global(.info-card li) { color: var(--ink-3); max-width: 65ch; }
+  .info-grid :global(.info-card p + p),
+  .info-grid :global(.info-card p + ul) { margin-top: 1rem; }
+  .info-grid :global(.info-card ul) { margin: 0; padding-left: 1.2rem; }
+  .info-grid :global(.info-card li + li) { margin-top: 0.7rem; }
+  .info-grid :global(.info-actions) { margin-top: 1.5rem; }
+  @media (max-width: 720px) {
+    .info-grid :global(.info-card) { border-right: none; border-bottom: var(--border); }
+    .info-grid :global(.info-card:last-child) { border-bottom: none; }
   }
 </style>
