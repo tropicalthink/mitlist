@@ -2,6 +2,8 @@
 import Layout from "../layouts/Layout.astro";
 import Pinwall from "../components/Pinwall.astro";
 import StoreBadges from "../components/StoreBadges.astro";
+import SiteHeader from "../components/SiteHeader.astro";
+import SiteFooter from "../components/SiteFooter.astro";
 
 const GITHUB = "https://github.com/whtvrboo/mitlist";
 const WEBAPP = "https://app.mitlist.me";
@@ -42,26 +44,7 @@ const day = [
 ---
 
 <Layout>
-  <!-- ============ NAV ============ -->
-  <header class="nav">
-    <div class="wrap nav__inner">
-      <a class="brand" href="/" aria-label="mitlist home">
-        <span class="brand__mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M4 7.5l3 3 6-6.5" /><path d="M4 14.5l3 3 6-6.5" /><line x1="15" y1="6" x2="21" y2="6" /><line x1="15" y1="16" x2="21" y2="16" /></svg>
-        </span>
-        mitlist
-      </a>
-      <nav class="nav__links" aria-label="Primary">
-        <a href="#how">How it works</a>
-        <a href="/hosting">Hosting</a>
-        <a href="/transparency">Transparency</a>
-        <a href="#open">Open source</a>
-        <a href="#support">Support</a>
-        <a href={GITHUB} rel="noopener">GitHub</a>
-      </nav>
-      <a class="btn btn--primary nav__cta" href={WEBAPP}>Open the app</a>
-    </div>
-  </header>
+  <SiteHeader home />
 
   <!-- ============ HERO ============ -->
   <section class="hero">
@@ -245,113 +228,10 @@ const day = [
     </div>
   </section>
 
-  <!-- ============ FOOTER ============ -->
-  <footer class="foot">
-    <div class="wrap foot__inner">
-      <a class="brand brand--foot" href="/">
-        <span class="brand__mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M4 7.5l3 3 6-6.5" /><path d="M4 14.5l3 3 6-6.5" /><line x1="15" y1="6" x2="21" y2="6" /><line x1="15" y1="16" x2="21" y2="16" /></svg>
-        </span>
-        mitlist
-      </a>
-      <nav class="foot__links" aria-label="Footer">
-        <a href={WEBAPP}>Web app</a>
-        <a href="#features">Features</a>
-        <a href="#how">How it works</a>
-        <a href="#open">Open source</a>
-        <a href="#support">Support</a>
-        <a href="/hosting">Hosting</a>
-        <a href="/transparency">Transparency</a>
-        <a href={GITHUB} rel="noopener">GitHub</a>
-        <a href="/privacy">Privacy</a>
-        <a href="/datenschutz">Datenschutz</a>
-        <a href="/impressum">Impressum</a>
-      </nav>
-      <p class="foot__copy">The shared notebook that actually works. 
-        <br>
-        Built with <img src="/tt.svg" alt="" class="foot__tt" aria-hidden="true" /> by <a href="https://tropicalthink.com" target="_blank">tropicalthink</a>
-        <br>© 2026 mitlist.</p>
-    </div>
-  </footer>
+  <SiteFooter />
 </Layout>
 
 <style>
-  /* ---------- NAV ---------- */
-  .nav {
-    position: sticky;
-    top: 0;
-    z-index: var(--z-nav);
-    background: var(--paper-2);
-    border-bottom: var(--border);
-  }
-  .nav__inner {
-    display: flex;
-    align-items: center;
-    gap: 1.2rem;
-    height: 64px;
-  }
-  .brand {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
-    font-weight: 700;
-    font-size: 1.25rem;
-    letter-spacing: -0.03em;
-    text-decoration: none;
-    color: var(--ink);
-  }
-  .brand__mark {
-    width: 34px;
-    height: 34px;
-    display: grid;
-    place-items: center;
-    background: var(--orange);
-    border: var(--border);
-    box-shadow: var(--shadow-sm);
-  }
-  .brand__mark svg {
-    width: 20px;
-    height: 20px;
-    fill: none;
-    stroke: var(--ink);
-    stroke-width: 2.4;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-  .nav__links {
-    display: flex;
-    gap: 1.5rem;
-    margin-left: auto;
-    font-weight: 500;
-    font-size: 0.98rem;
-  }
-  .nav__links a {
-    text-decoration: none;
-    color: var(--ink-3);
-    padding-bottom: 2px;
-    border-bottom: 2px solid transparent;
-    transition: color 0.12s, border-color 0.12s;
-  }
-  .nav__links a:hover {
-    color: var(--ink);
-    border-color: var(--orange);
-  }
-  .nav__cta {
-    padding: 0.5rem 1rem;
-    font-size: 0.95rem;
-    box-shadow: var(--shadow-sm);
-  }
-  @media (max-width: 860px) {
-    .nav__links {
-      display: none;
-    }
-  }
-  @media (max-width: 460px) {
-    .nav__cta {
-      display: none;
-    }
-  }
-
   /* ---------- HERO ---------- */
   .hero {
     background: var(--paper-2);
@@ -746,47 +626,6 @@ const day = [
     border-color: var(--orange-300);
   }
 
-  /* ---------- FOOTER ---------- */
-  .foot {
-    background: var(--paper-2);
-    border-top: var(--border);
-    padding-block: 2.5rem;
-  }
-  .foot__inner {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 1.2rem 2rem;
-  }
-  .brand--foot {
-    font-size: 1.1rem;
-  }
-  .foot__links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.3rem;
-    font-weight: 500;
-    font-size: 0.95rem;
-  }
-  .foot__links a {
-    text-decoration: none;
-    color: var(--ink-3);
-  }
-  .foot__links a:hover {
-    color: var(--ink);
-  }
-  .foot__copy {
-    width: 100%;
-    color: var(--line-2);
-    font-size: 0.88rem;
-    font-weight: 500;
-  }
-  .foot__tt {
-    display: inline-block;
-    width: 1.1em;
-    height: 1.1em;
-    vertical-align: -0.15em;
-  }
 </style>
 
 <script>

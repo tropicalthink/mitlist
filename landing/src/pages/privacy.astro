@@ -2,12 +2,15 @@
 // Rendered from /PRIVACY.md (repo root) — keep the two in sync when the
 // privacy statement changes.
 import Layout from "../layouts/Layout.astro";
+import SiteHeader from "../components/SiteHeader.astro";
+import SiteFooter from "../components/SiteFooter.astro";
 ---
 
 <Layout
   title="Privacy — mitlist"
   description="What data mitlist handles, where it goes, and what controls exist — for operators and the people who use it."
 >
+  <SiteHeader />
   <main class="privacy">
     <div class="wrap">
       <a class="back" href="/">&larr; mitlist</a>
@@ -128,6 +131,7 @@ import Layout from "../layouts/Layout.astro";
       </p>
     </div>
   </main>
+  <SiteFooter />
 </Layout>
 
 <style>

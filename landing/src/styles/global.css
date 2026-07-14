@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("../../../frontend/assets/fonts/SpaceGrotesk.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+}
+
 /* ============================================================
    mitlist — design tokens, pulled 1:1 from the Flutter app
    (lib/theme/colors.dart). Neo-brutalist warm-paper desk:
@@ -48,7 +56,7 @@
   --cork-border: #8b5e3c;
 
   /* Type */
-  --font: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
 
   /* Flat offset shadows — the brand's only shadow language */
   --shadow-sm: 2px 2px 0 var(--ink);
