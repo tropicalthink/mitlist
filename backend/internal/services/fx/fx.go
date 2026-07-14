@@ -13,9 +13,8 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"sync"
 	"time"
-
-	"github.com/redis/go-redis/v9"
 )
 
 // validCurrency matches 3-letter ISO-4217-ish currency codes (uppercase A–Z only).
@@ -91,26 +90,33 @@ func (p *frankfurterProvider) FetchRate(ctx context.Context, from, to string) (f
 	return rate, true, nil
 }
 
-// RateService wraps the provider with Redis caching and feature-flag gating.
+type cachedRate struct {
+	rate      float64
+	expiresAt time.Time
+}
+
+// RateService wraps the provider with a small in-process cache and
+// feature-flag gating.
 type RateService struct {
 	provider Provider
-	redis    *redis.Client
-	enabled  bool // true iff FX_RATE_API_URL was set
+	enabled  bool
+	mu       sync.RWMutex
+	cache    map[string]cachedRate
 }
 
 // NewRateService constructs the service.
 // provider may be nil when enabled is false (disabled path never calls it).
-func NewRateService(provider Provider, redisClient *redis.Client, enabled bool) *RateService {
+func NewRateService(provider Provider, enabled bool) *RateService {
 	return &RateService{
 		provider: provider,
-		redis:    redisClient,
 		enabled:  enabled,
+		cache:    make(map[string]cachedRate),
 	}
 }
 
 // GetRate returns the exchange rate from → to.
 // Returns (rate, true, nil) on a hit, (0, false, nil) when unavailable or
-// disabled, and (0, false, err) only for Redis errors that are non-recoverable
+// disabled, and (0, false, err) only for non-recoverable provider errors
 // (callers must still degrade gracefully).
 func (s *RateService) GetRate(ctx context.Context, from, to string) (float64, bool, error) {
 	// Feature disabled — no outbound call ever.
@@ -128,16 +134,16 @@ func (s *RateService) GetRate(ctx context.Context, from, to string) (float64, bo
 		return 1, true, nil
 	}
 
-	// Redis cache key: fx:rate:<FROM>:<TO>:<YYYY-MM-DD>
+	// Daily cache key: fx:rate:<FROM>:<TO>:<YYYY-MM-DD>
 	today := time.Now().UTC().Format("2006-01-02")
 	cacheKey := fmt.Sprintf("fx:rate:%s:%s:%s", from, to, today)
 
-	// Cache lookup.
-	cached, err := s.redis.Get(ctx, cacheKey).Float64()
-	if err == nil && cached > 0 {
-		return cached, true, nil
+	s.mu.RLock()
+	cached, ok := s.cache[cacheKey]
+	s.mu.RUnlock()
+	if ok && cached.expiresAt.After(time.Now()) && cached.rate > 0 {
+		return cached.rate, true, nil
 	}
-	// redis.Nil means miss; any other error: fall through to provider (fail-soft).
 
 	// Provider fetch.
 	rate, available, err := s.provider.FetchRate(ctx, from, to)
@@ -145,8 +151,9 @@ func (s *RateService) GetRate(ctx context.Context, from, to string) (float64, bo
 		return 0, false, nil // fail-soft
 	}
 
-	// Cache the result for 24 h. Ignore cache-write errors — read path still works.
-	_ = s.redis.Set(ctx, cacheKey, rate, 24*time.Hour).Err()
+	s.mu.Lock()
+	s.cache[cacheKey] = cachedRate{rate: rate, expiresAt: time.Now().Add(24 * time.Hour)}
+	s.mu.Unlock()
 
 	return rate, true, nil
 }

@@ -6,7 +6,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/mitlist-app/mitlist/internal/config"
-	"github.com/mitlist-app/mitlist/internal/redis"
 	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/mitlist-app/mitlist/internal/services"
 	fxsvc "github.com/mitlist-app/mitlist/internal/services/fx"
@@ -24,7 +23,6 @@ import (
 type Container struct {
 	cfg    *config.Config
 	db     *pgxpool.Pool
-	redis  *redis.RedisClient
 	logger *logger.Logger
 
 	passwordOnce    sync.Once
@@ -166,11 +164,10 @@ type Container struct {
 }
 
 // New wires shared infrastructure into a dependency container.
-func New(cfg *config.Config, dbPool *pgxpool.Pool, redisClient *redis.RedisClient, log *logger.Logger) *Container {
+func New(cfg *config.Config, dbPool *pgxpool.Pool, log *logger.Logger) *Container {
 	return &Container{
 		cfg:    cfg,
 		db:     dbPool,
-		redis:  redisClient,
 		logger: log,
 	}
 }
@@ -183,11 +180,6 @@ func (c *Container) Config() *config.Config {
 // DB returns the PostgreSQL connection pool.
 func (c *Container) DB() *pgxpool.Pool {
 	return c.db
-}
-
-// Redis returns the Redis client wrapper.
-func (c *Container) Redis() *redis.RedisClient {
-	return c.redis
 }
 
 // Logger returns the application logger.
@@ -206,7 +198,7 @@ func (c *Container) Password() *passwordservice.Service {
 // JWT returns the singleton JWT service.
 func (c *Container) JWT() *jwtservice.Service {
 	c.jwtOnce.Do(func() {
-		c.jwtService = jwtservice.New(c.cfg, c.redis)
+		c.jwtService = jwtservice.New(c.cfg, c.db)
 	})
 	return c.jwtService
 }
@@ -363,7 +355,7 @@ func (c *Container) ListItemAttachmentRepo() *repositories.ListItemAttachmentRep
 // UserService returns the singleton user service.
 func (c *Container) UserService() *services.UserService {
 	c.userServiceOnce.Do(func() {
-		c.userService = services.NewUserService(c.UserRepo(), c.AuthRepo(), c.JWT(), c.Password(), c.Mail(), c.redis.Client())
+		c.userService = services.NewUserService(c.UserRepo(), c.AuthRepo(), c.JWT(), c.Password(), c.Mail())
 	})
 	return c.userService
 }
@@ -395,7 +387,7 @@ func (c *Container) AppleClient() *oauthclient.AppleClient {
 // GuestService returns the singleton guest service.
 func (c *Container) GuestService() *services.GuestService {
 	c.guestServiceOnce.Do(func() {
-		c.guestService = services.NewGuestService(c.UserRepo(), c.JWT(), c.Password(), c.redis.Client())
+		c.guestService = services.NewGuestService(c.UserRepo(), c.JWT(), c.Password())
 	})
 	return c.guestService
 }
@@ -593,7 +585,7 @@ func (c *Container) FxService() *fxsvc.RateService {
 		if enabled {
 			provider = fxsvc.NewFrankfurterProvider(c.cfg.FxRateAPIURL, c.cfg.FxRateAPIKey)
 		}
-		c.fxService = fxsvc.NewRateService(provider, c.redis.Client(), enabled)
+		c.fxService = fxsvc.NewRateService(provider, enabled)
 	})
 	return c.fxService
 }

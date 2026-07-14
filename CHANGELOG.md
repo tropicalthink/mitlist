@@ -24,8 +24,8 @@ follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-- Production docker-compose secured by default: DB and Redis credentials are
-  env-driven, ports are loopback-bound
+- Production docker-compose secured by default: database credentials are
+  env-driven and its port is loopback-bound
 - Backend integration availability (SMTP, Sentry) logged at startup via
   `LogIntegrationStatus`
 
