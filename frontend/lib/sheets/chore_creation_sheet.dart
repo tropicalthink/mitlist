@@ -17,6 +17,8 @@ import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
 import '../utils/friendly_error.dart';
 import '../widgets/chip.dart';
+import '../widgets/grocery_suggestion_field.dart';
+import '../widgets/app_icon.dart';
 import '../l10n/app_localizations.dart';
 
 enum _Recurrence { none, hourly, daily, weekly, monthly, yearly, adaptive }
@@ -73,6 +75,8 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _intervalController =
       TextEditingController(text: '1');
+  final TextEditingController _supplyController = TextEditingController();
+  final FocusNode _supplyFocusNode = FocusNode();
   _Recurrence _recurrence = _Recurrence.none;
   _AssignmentPolicy _assignmentPolicy = _AssignmentPolicy.roundRobin;
   final Set<String> _weekdays = {'monday'};
@@ -84,6 +88,8 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
   // forced open once a recurrence is chosen so it's never hidden.
   bool _showRecurrence = false;
   String? _category;
+  String? _groupId;
+  final List<String> _supplies = [];
 
   /// Household members for the who-picker. Loaded best-effort; the picker
   /// simply stays at "Everyone" if the lookup fails.
@@ -116,6 +122,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       final groupId =
           resolveActiveGroupId(groups, ref.read(currentGroupIdProvider));
       if (groupId == null) return;
+      if (mounted) setState(() => _groupId = groupId);
       final groupService = await ref.read(groupServiceProviderAsync.future);
       final members = await groupService.listMembers(groupId);
       if (!mounted) return;
@@ -189,6 +196,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           // Empty = whole household; one id = a fixed owner; several = the
           // rotation pool. The backend's rotation state honors this subset.
           assignmentConfig: _noOne ? const [] : _who.toList(),
+          supplies: List.unmodifiable(_supplies),
           category: _category,
         ),
       );
@@ -291,7 +299,28 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
     _nameController.dispose();
     _descriptionController.dispose();
     _intervalController.dispose();
+    _supplyController.dispose();
+    _supplyFocusNode.dispose();
     super.dispose();
+  }
+
+  void _addSupply([String? submitted]) {
+    final supply = (submitted ?? _supplyController.text).trim();
+    if (supply.isEmpty) return;
+    final alreadyAdded = _supplies.any(
+      (existing) => existing.toLowerCase() == supply.toLowerCase(),
+    );
+    setState(() {
+      if (!alreadyAdded) _supplies.add(supply);
+      _supplyController.clear();
+    });
+    if (!alreadyAdded) _markDirty();
+    _supplyFocusNode.requestFocus();
+  }
+
+  void _removeSupply(String supply) {
+    setState(() => _supplies.remove(supply));
+    _markDirty();
   }
 
   // ---- Plain-language descriptions of the current selection ----
@@ -661,6 +690,13 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
                     color: colorScheme.onSurfaceVariant,
                   ),
                 ),
+                if (_supplies.isNotEmpty)
+                  Text(
+                    ' · ${_supplies.length == 1 ? l10n.choreSupplySingular(1) : l10n.choreSupplyPlural(_supplies.length)}',
+                    style: textTheme.labelMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 const SizedBox(width: MitlistSpacing.xs),
                 AnimatedRotation(
                   turns: _showAdvanced ? 0.5 : 0,
@@ -704,6 +740,56 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
                         title: l10n.choreCreationRollOver,
                         helper: l10n.choreCreationRollOverHelper,
                       ),
+                      if (_groupId != null) ...[
+                        const SizedBox(height: MitlistSpacing.md),
+                        Text(
+                          l10n.choreDetailSupplies,
+                          style: textTheme.labelMedium,
+                        ),
+                        const SizedBox(height: MitlistSpacing.sm),
+                        if (_supplies.isNotEmpty) ...[
+                          Wrap(
+                            spacing: MitlistSpacing.xs,
+                            runSpacing: MitlistSpacing.xs,
+                            children: [
+                              for (final supply in _supplies)
+                                Semantics(
+                                  button: true,
+                                  label: '${l10n.commonRemove} $supply',
+                                  child: AppChip(
+                                    label: supply,
+                                    selected: true,
+                                    leading: const AppIcon(name: 'xMark'),
+                                    onSelected: (_) => _removeSupply(supply),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: MitlistSpacing.sm),
+                        ],
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: GrocerySuggestionField(
+                                controller: _supplyController,
+                                focusNode: _supplyFocusNode,
+                                groupId: _groupId!,
+                                label: l10n.choreDetailSupplies,
+                                onSubmitted: _addSupply,
+                                submitOnSelect: true,
+                              ),
+                            ),
+                            const SizedBox(width: MitlistSpacing.sm),
+                            AppButton(
+                              text: l10n.commonAdd,
+                              size: AppButtonSize.sm,
+                              variant: AppButtonVariant.outline,
+                              onPressed: () => _addSupply(),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 )
