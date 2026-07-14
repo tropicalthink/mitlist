@@ -24,14 +24,12 @@ final appDatabaseProvider = Provider<AppDatabase>((ref) {
   return db;
 });
 
-/// Installs the prebuilt global grocery reference DB (a version-gated file copy
-/// of a bundled asset — no row inserts) and attaches it to [AppDatabase] so the
-/// grocery read methods can merge global reference rows with household rows.
+/// Makes the bundled global grocery reference data available to [AppDatabase].
+/// Native installs the prebuilt read-only SQLite file; web ingests the same
+/// catalog, aliases, and aisle data into Drift's SQLite/WASM database.
 ///
 /// Named `grocerySeedProvider` for continuity with its existing watch sites.
-/// Completes in milliseconds–~1s, so awaiting it on a hot path (canonical
-/// linking) no longer stalls an add. Kept alive so its `AsyncData` state
-/// persists for the app's lifetime.
+/// Kept alive so its `AsyncData` state persists for the app's lifetime.
 final grocerySeedProvider = FutureProvider<void>((ref) async {
   ref.keepAlive();
   final db = ref.watch(appDatabaseProvider);

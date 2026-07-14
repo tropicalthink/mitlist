@@ -1,4 +1,5 @@
-import 'package:sqlite3/sqlite3.dart';
+import 'grocery_reference_sqlite_web.dart'
+    if (dart.library.io) 'package:sqlite3/sqlite3.dart';
 
 import 'app_database.dart'
     show CanonicalItemsTableData, ItemAliasesTableData, StoreAislesTableData;
@@ -19,6 +20,14 @@ class GroceryReferenceDatabase {
   final Database _db;
 
   GroceryReferenceDatabase._(this._db);
+
+  /// Empty reference used on web, where the bundled JSON data is loaded into
+  /// the main Drift/WASM database instead of opening a native SQLite file.
+  factory GroceryReferenceDatabase.empty() {
+    return GroceryReferenceDatabase._(
+      sqlite3.open('', mode: OpenMode.readOnly),
+    );
+  }
 
   /// Opens the prebuilt file read-only. The file already contains the full
   /// schema + data, so nothing is created or migrated.
@@ -127,8 +136,8 @@ class GroceryReferenceDatabase {
   }
 
   List<ItemAliasesTableData> getItemAliasesForFuzzy() {
-    final rs = _db
-        .select('SELECT * FROM item_aliases_table WHERE deleted_at IS NULL');
+    final rs =
+        _db.select('SELECT * FROM item_aliases_table WHERE deleted_at IS NULL');
     return rs.map(_alias).toList();
   }
 
@@ -144,7 +153,13 @@ class GroceryReferenceDatabase {
     final where = upper == null
         ? 'alias_text >= ?'
         : 'alias_text >= ? AND alias_text < ?';
-    final args = <Object?>[firstChar, if (upper != null) upper, lo, hi, maxCandidates];
+    final args = <Object?>[
+      firstChar,
+      if (upper != null) upper,
+      lo,
+      hi,
+      maxCandidates
+    ];
     final rs = _db.select(
       'SELECT * FROM item_aliases_table WHERE $where AND deleted_at IS NULL '
       'AND LENGTH(alias_text) BETWEEN ? AND ? ORDER BY weight DESC LIMIT ?',
@@ -159,8 +174,9 @@ class GroceryReferenceDatabase {
   }) {
     if (query.isEmpty) return const [];
     final upper = _prefixUpperBound(query);
-    final where =
-        upper == null ? 'alias_text >= ?' : 'alias_text >= ? AND alias_text < ?';
+    final where = upper == null
+        ? 'alias_text >= ?'
+        : 'alias_text >= ? AND alias_text < ?';
     final args = <Object?>[query, if (upper != null) upper, limit];
     final rs = _db.select(
       'SELECT * FROM item_aliases_table WHERE $where AND deleted_at IS NULL '
