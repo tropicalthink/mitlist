@@ -16,6 +16,7 @@ import '../../widgets/app_input.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/grocery_suggestion_field.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/skeleton.dart';
 
@@ -82,9 +83,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
   List<Product> get _filtered {
     final query = _search.trim().toLowerCase();
     if (query.isEmpty) return _items;
-    return _items
-        .where((p) => p.name.toLowerCase().contains(query))
-        .toList();
+    return _items.where((p) => p.name.toLowerCase().contains(query)).toList();
   }
 
   @override
@@ -425,9 +424,16 @@ class _CreateProductFormState extends State<_CreateProductForm> {
           ),
           const SizedBox(height: MitlistSpacing.sm),
         ],
-        AppInput(
+        GrocerySuggestionField(
           controller: _nameController,
+          groupId: widget.groupId,
           label: l10n.productsFieldName,
+          onSelected: (suggestion) {
+            if (_unitController.text.trim().isEmpty &&
+                suggestion.unit.isNotEmpty) {
+              _unitController.text = suggestion.unit;
+            }
+          },
         ),
         const SizedBox(height: MitlistSpacing.sm),
         AppInput(
