@@ -322,6 +322,32 @@ class GroceryVersionsTable extends Table {
   Set<Column<Object>>? get primaryKey => {groupId};
 }
 
+/// On-device tally of grocery words that were checked off but never resolved to
+/// a canonical item (resolver score < 0.85, so `canonical_item_id` was null).
+///
+/// Every such check-off increments the count for its household + normalised
+/// name. Once the count crosses the promotion threshold, a household-local
+/// canonical item + alias is minted so the word can finally surface in
+/// autocomplete/suggestions and feed the learning loop. This table stays
+/// strictly local — it is the pre-promotion scratchpad, never synced (unlike
+/// [CorrectionsTable]) so sub-threshold noise never leaves the device.
+class LocalItemSignalsTable extends Table {
+  TextColumn get groupId => text().named('group_id')();
+  TextColumn get normalizedName => text().named('normalized_name')();
+  TextColumn get displayName => text().named('display_name')();
+  IntColumn get count => integer().withDefault(const Constant(0))();
+
+  /// Set once the word crossed the threshold and a canonical was minted. Guards
+  /// against re-minting: later check-offs reinforce the existing alias instead.
+  TextColumn get promotedCanonicalItemId =>
+      text().named('promoted_canonical_item_id').nullable()();
+  DateTimeColumn get firstSeen => dateTime().named('first_seen')();
+  DateTimeColumn get lastSeen => dateTime().named('last_seen')();
+
+  @override
+  Set<Column<Object>>? get primaryKey => {groupId, normalizedName};
+}
+
 @DriftDatabase(
   tables: [
     ListsTable,
@@ -344,13 +370,14 @@ class GroceryVersionsTable extends Table {
     ItemCooccurrenceTable,
     ScanArtifactsTable,
     GroceryVersionsTable,
+    LocalItemSignalsTable,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   /// The prebuilt read-only global grocery brain (canonical items, seed/OFF
   /// aliases + FTS, store aisles). Attached by [GroceryReferenceInstaller] once
@@ -414,6 +441,10 @@ class AppDatabase extends _$AppDatabase {
     // queries also filter on item_b_id alone; add a covering index on group_id.
     await customStatement(
         'CREATE INDEX IF NOT EXISTS idx_item_cooccurrence_table_group_id ON item_cooccurrence_table(group_id);');
+    // local_item_signals_table — read by (group_id, normalized_name) on every
+    // unresolved check-off.
+    await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_local_item_signals_group_id ON local_item_signals_table(group_id);');
   }
 
   /// Creates the FTS5 virtual table that powers word-level prefix search over
@@ -636,6 +667,15 @@ FROM list_items_table;
             // Reclaim the freed pages (one-time, at the upgrade open, before the
             // app is interactive).
             await customStatement('VACUUM;');
+          }
+          if (from < 12) {
+            // Pre-promotion tally for checked-off words that never resolved to a
+            // canonical item. Purely local; lets a repeatedly-bought novel word
+            // ("fassi", a store brand, a family shorthand) earn its way into the
+            // household's suggestions once it crosses the promotion threshold.
+            await m.createTable(localItemSignalsTable);
+            await customStatement(
+                'CREATE INDEX IF NOT EXISTS idx_local_item_signals_group_id ON local_item_signals_table(group_id);');
           }
         },
         beforeOpen: (details) async {
@@ -1235,7 +1275,32 @@ FROM list_items_table;
             ..where((t) => t.isGlobal.equals(false)))
           .go();
       await (delete(groceryVersionsTable)).go();
+      await (delete(localItemSignalsTable)).go();
     });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Grocery graph — local (pre-promotion) novel-word signals
+  // ---------------------------------------------------------------------------
+
+  /// The pending signal for a household + normalised name, or null if this word
+  /// has never been checked off unresolved before.
+  Future<LocalItemSignalsTableData?> getLocalItemSignal({
+    required String groupId,
+    required String normalizedName,
+  }) {
+    return (select(localItemSignalsTable)
+          ..where((t) =>
+              t.groupId.equals(groupId) &
+              t.normalizedName.equals(normalizedName)))
+        .getSingleOrNull();
+  }
+
+  /// Upserts a pending novel-word signal (composite PK: group + normalised
+  /// name). Callers read the current row, compute the new count, and write the
+  /// full companion back.
+  Future<void> upsertLocalItemSignal(LocalItemSignalsTableCompanion row) {
+    return into(localItemSignalsTable).insertOnConflictUpdate(row);
   }
 
   // ---------------------------------------------------------------------------

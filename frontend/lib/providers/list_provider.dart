@@ -5,6 +5,7 @@ import '../services/grocery_reference_installer.dart';
 import '../services/list_service.dart';
 import '../services/sse_service.dart';
 import '../storage/app_database.dart';
+import 'grocery_provider.dart';
 
 /// Singleton SSE service. Disposed when the Riverpod container tears down.
 final sseServiceProvider = Provider<SseService>((ref) {
@@ -52,7 +53,8 @@ final listItemCountsProvider =
 final listRepositoryProvider = FutureProvider<ListRepository>((ref) async {
   final db = ref.watch(appDatabaseProvider);
   final service = await ref.read(listServiceProviderAsync.future);
-  return ListRepository(db: db, remote: service);
+  final groceryRepo = await ref.read(groceryRepositoryProvider.future);
+  return ListRepository(db: db, remote: service, groceryRepo: groceryRepo);
 });
 
 // ---------------------------------------------------------------------------
