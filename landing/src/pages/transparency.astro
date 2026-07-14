@@ -1,0 +1,42 @@
+---
+import InfoPage from "../components/InfoPage.astro";
+
+const GITHUB = "https://github.com/whtvrboo/mitlist";
+---
+
+<InfoPage
+  title="Transparency — mitlist"
+  description="How mitlist plans to keep official hosting free, what it costs, and which promises do not change."
+  eyebrow="Show the workings"
+  heading="Free should come with a plan."
+  intro="Official hosting is being built to stay modest, legible, and cheap to operate. This page is where the limits, costs, and funding model will be kept in public."
+>
+  <section class="info-card">
+    <h2>What does not change</h2>
+    <div>
+      <ul>
+        <li>The complete self-hosted product stays free and open source under the AGPL.</li>
+        <li>There will be no ads and no selling household data.</li>
+        <li>The official app will not deliberately cripple self-hosting.</li>
+        <li>Export and account deletion remain available; your data is not leverage.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="info-card">
+    <h2>How hosting stays small</h2>
+    <div>
+      <p>The planned hosted stack is a small Go service, managed PlanetScale Postgres, and Cloudflare R2 for attachments. The expensive path is bounded at the household level: 1 GB of file storage, atomic quota reservations, and cleanup of abandoned uploads.</p>
+      <p>Grocery text recognition runs on the device. It does not create a model bill every time someone scans a list.</p>
+    </div>
+  </section>
+
+  <section class="info-card">
+    <h2>Money, when there is some</h2>
+    <div>
+      <p>Voluntary contributions will pay infrastructure first. Once the official hosted service is live, this page will publish the monthly database, compute, storage, email, and monitoring totals rather than inventing numbers in advance.</p>
+      <p>If contributions cannot cover growth, the first response is tighter fair-use limits and clearer operator costs—not feature locks in the open-source app.</p>
+      <div class="info-actions"><a class="btn" href={GITHUB} rel="noopener">Follow the work on GitHub</a></div>
+    </div>
+  </section>
+</InfoPage>

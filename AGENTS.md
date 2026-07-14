@@ -7,7 +7,7 @@ Shared household coordination app (lists, money, chores, recipes). Flutter front
 
 ```
 frontend/     Flutter app (Dart, Riverpod, go_router, Drift)
-backend/      Go API server (chi, pgx, Redis, S3/R2)
+backend/      Go API server (chi, pgx, S3/R2)
 PRODUCT.md    Product and design context
 ```
 
@@ -38,7 +38,7 @@ CI runs the same command and fails if generated files are stale.
 cd backend
 go build ./...              # Compile
 go test ./...               # Run all tests
-docker compose up -d        # Start postgres + redis
+docker compose up -d        # Start postgres
 ```
 
 ## Architecture
@@ -64,7 +64,7 @@ docker compose up -d        # Start postgres + redis
 - **Services**: `backend/internal/services/`
 - **Migrations**: `backend/migrations/` — PostgreSQL (golang-migrate)
 - **Jobs**: `backend/internal/jobs/` — cron (chore scheduler, reminders, recurring expenses, weekly summary)
-- **Infrastructure**: `backend/docker-compose.yml` — postgres:16-alpine, redis:7-alpine
+- **Infrastructure**: `docker-compose.yml` — postgres:16-alpine
 
 ## Design System
 
@@ -237,9 +237,11 @@ showAppDialog<bool>(
 | 000002–000021 | Various schema additions (pinwall, attachments, meal plans, chore subtasks, etc.) |
 | **000022** | Added `linked_entity_type` + `linked_entity_id` to `pinwall_posts` |
 | 000023–000027 | Offline/outbox, canonical grocery graph, and intelligence sync support |
-| 000028–000032 | List item canonical ids, recurring expense splits, expense base amounts, chore zones, notification email preference |
+| 000028–000033 | List item canonical ids, finance additions, chore zones, notification preferences, pinwall positioning |
+| 000034 | Attachment storage accounting and quota reservations |
+| 000035 | PostgreSQL-backed refresh-token sessions |
 
-Latest migration: `000032_add_email_enabled_to_notification_preferences`.
+Latest migration: `000035_add_auth_sessions`.
 
 ## Key API Endpoints Added
 

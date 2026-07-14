@@ -9,7 +9,7 @@ import (
 )
 
 func TestHealthHandler(t *testing.T) {
-	h := NewHealthHandler(testDB, testRedis)
+	h := NewHealthHandler(testDB)
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/health", nil)

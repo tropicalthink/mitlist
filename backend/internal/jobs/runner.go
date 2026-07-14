@@ -101,6 +101,15 @@ func (r *Runner) RegisterAll() {
 	r.register("pinwall-reminder", "* * * * *", pr.Run, true)
 }
 
+// RegisterAttachmentCleanup adds the storage reservation sweeper. It is kept
+// separate from RegisterAll because it depends on the configured object store.
+func (r *Runner) RegisterAttachmentCleanup(fn func()) {
+	if fn == nil {
+		return
+	}
+	r.register("attachment-cleanup", "*/15 * * * *", fn, true)
+}
+
 func (r *Runner) register(name, spec string, fn func(), enabled bool) {
 	meta := jobMeta{
 		Name:     name,

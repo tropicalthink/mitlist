@@ -70,4 +70,13 @@ func TestAttachments_UploadIntent_HappyPath_ReturnsPresignedPutURL(t *testing.T)
 	require.True(t, ok)
 	require.NotEqual(t, uuid.Nil.String(), att["id"])
 	require.Equal(t, group.ID.String(), att["group_id"])
+
+	usageRec := execRequest(t, r, "GET", "/attachments/storage-usage?group_id="+group.ID.String(), nil, generateTestToken(user.ID))
+	requireStatus(t, usageRec, 200)
+	var usage map[string]any
+	parseJSONResponse(t, usageRec, &usage)
+	require.EqualValues(t, 0, usage["used_bytes"])
+	require.EqualValues(t, 12, usage["reserved_bytes"])
+	require.EqualValues(t, 10_000_000_000, usage["limit_bytes"])
+	require.Equal(t, false, usage["unlimited"])
 }

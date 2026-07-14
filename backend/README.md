@@ -6,12 +6,17 @@ Go API server for shared household coordination (lists, money, chores, recipes).
 
 - **Router**: chi (Go)
 - **Database**: PostgreSQL 16 (via pgx)
-- **Cache**: Redis 7 (session revocation, rate limiting)
+- **Sessions**: PostgreSQL-backed refresh-token sessions
 - **Storage**: S3-compatible (Cloudflare R2)
 - **Auth**: JWT (access + refresh tokens), OAuth (Google, Apple)
 - **Push**: Web push (VAPID)
-- **AI**: CrofAI (OpenAI-compatible, vision OCR)
+- **Scanner**: on-device ML Kit OCR in the Flutter app
 - **Jobs**: robfig/cron (chore scheduler, reminders, summaries)
+
+Refresh-token rotation and revocation are durable in PostgreSQL. Access-token
+revocation and API rate-limit buckets are intentionally process-local; access
+tokens therefore default to 15 minutes, and multi-replica deployments should
+enforce coarse abuse limits at their edge proxy as well.
 
 ## Setup
 
@@ -38,11 +43,11 @@ All config via environment variables (see `.env.example`):
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `DATABASE_URL` | Yes | — | PostgreSQL connection string |
-| `REDIS_URL` | No | `localhost:6379` | Redis address |
-| `JWT_SECRET` | Yes | — | Token signing key |
-| `CROFAI_API_KEY` | No | — | AI vision API key |
+| `SECRET_KEY` | Yes | — | Token signing key |
 | `S3_BUCKET_NAME` | No | — | R2 bucket for attachments |
 | `S3_ENDPOINT_URL` | No | — | R2 S3 endpoint |
+| `MAX_FILE_SIZE_BYTES` | No | `10485760` | Maximum attachment size (10 MiB) |
+| `MAX_STORAGE_PER_GROUP_GB` | No | `1` | Storage quota per household; `0` disables it for self-hosters |
 | `GLITCHTIP_DSN` | No | — | Error reporting DSN |
 
 ### Production credentials (docker compose --profile prod)
@@ -65,17 +70,30 @@ These have **no insecure fallback** — the stack refuses to start if
 | `POSTGRES_USER` | Yes | DB user for the bundled Postgres |
 | `POSTGRES_PASSWORD` | Yes | Generate with `openssl rand -base64 24` |
 | `POSTGRES_DB` | No | Defaults to `mitlist` |
-| `REDIS_PASSWORD` | No | Strongly recommended; set it and Redis enforces auth |
 | `DB_SSLMODE` | No | Defaults to `disable` (correct for same-host Postgres); set `require` if pointing at a remote Postgres over the public network |
 
 `backend/.env` remains the app's own runtime config (`SECRET_KEY`,
 `SESSION_SECRET_KEY`, OAuth, API keys). In the bundled prod profile,
-`DATABASE_URL` / `REDIS_URL` / `REDIS_PASSWORD` are assembled by compose from the
-root `.env`, so you do not set `DATABASE_URL` in `backend/.env` for that path.
+`DATABASE_URL` is assembled by compose from the root `.env`, so you do not set
+it in `backend/.env` for that path.
 
 The `dev` profile (`docker compose up`, no profile flag) uses the convenience
 defaults shipped in the root `.env.example` (`mitlist:mitlist`) — intentional
 for local development.
+
+### PlanetScale Postgres
+
+The hosted service can use PlanetScale Postgres without a database-specific
+code path. Create a Postgres database, copy its connection string into the
+backend's `DATABASE_URL` (the root `.env` for the prod Compose profile), and
+keep the TLS parameters supplied by PlanetScale. The Go API uses pgx and runs
+the existing PostgreSQL migrations normally.
+
+For this deployment, run only the API service; do not start the bundled
+Postgres container. Keep `RUN_MIGRATIONS_ON_STARTUP=true` for the first
+deployment, then verify `/health` before directing app traffic to the server.
+PlanetScale's managed backups cover the database; attachment objects remain in
+R2 and need their own lifecycle/retention policy.
 
 ## Enable error reporting (optional)
 
@@ -145,7 +163,7 @@ All routes under `/api/v1/`, registered in `cmd/api/main.go`.
 | `GET /calendar` | Calendar | Aggregated events |
 | `GET /pinwall/posts` | Pinwall posts | Household notes |
 | `GET /expenses/{id}/splits` | Expense splits | Per-user breakdown |
-| `POST /assistant/scan` | OCR scan | Process receipt/list photo |
+| `GET /attachments/storage-usage` | Storage usage | Household quota and remaining bytes |
 
 ### Aggregated Calendar (`GET /calendar`)
 
@@ -189,7 +207,6 @@ internal/
   jobs/                      # Cron jobs
   middleware/                # Auth, CORS, logging, rate limiting
   models/                    # Data structs
-  redis/                     # Redis client
   repositories/              # PostgreSQL queries
     mocks/                   # Test mocks (testify)
   server/                    # HTTP server setup
@@ -200,7 +217,6 @@ internal/
     push/                    # Web push (VAPID)
     storage/                 # S3/R2 object storage
     oauth/                   # Google/Apple OAuth
-    ai/                      # CrofAI vision client
     image/                   # Image resizing
 migrations/                  # golang-migrate SQL
 ```

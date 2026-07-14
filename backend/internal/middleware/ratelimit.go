@@ -4,136 +4,130 @@ import (
 	"context"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
-
-	"github.com/redis/go-redis/v9"
-	"github.com/rs/zerolog/log"
 )
 
 const (
-	ipCapacity   = 100
-	ipRefillRate = 100.0 / 60.0 // tokens per second
-
-	userCapacity   = 1000
-	userRefillRate = 1000.0 / 3600.0 // tokens per second
-
-	authIPCapacity   = 10
-	authIPRefillRate = 10.0 / 60.0 // 10 requests per minute per IP for auth endpoints
+	maxRateLimitBuckets = 10_000
+	ipCapacity          = 100
+	ipRefillRate        = 100.0 / 60.0
+	userCapacity        = 1000
+	userRefillRate      = 1000.0 / 3600.0
+	authIPCapacity      = 10
+	authIPRefillRate    = 10.0 / 60.0
 )
 
 type userContextKey struct{}
 
-// WithUserID injects a user ID into the request context for per-user rate limiting.
 func WithUserID(ctx context.Context, userID string) context.Context {
 	return context.WithValue(ctx, userContextKey{}, userID)
 }
 
-// UserIDFromContext retrieves the user ID from the request context.
 func UserIDFromContext(ctx context.Context) string {
-	if id, ok := ctx.Value(userContextKey{}).(string); ok {
-		return id
-	}
-	return ""
+	id, _ := ctx.Value(userContextKey{}).(string)
+	return id
 }
 
-var tokenBucketScript = redis.NewScript(`
-local key = KEYS[1]
-local capacity = tonumber(ARGV[1])
-local refillRate = tonumber(ARGV[2])
-local now = tonumber(ARGV[3])
-local cost = tonumber(ARGV[4])
+type bucketState struct {
+	tokens     float64
+	lastRefill float64
+	lastSeen   time.Time
+}
 
-local state = redis.call('HMGET', key, 'tokens', 'last_refill')
-local tokens = tonumber(state[1])
-local last_refill = tonumber(state[2])
+// Limiter is a bounded in-process token-bucket store. Cloudflare remains the
+// first line of IP abuse protection; this protects the Go process without an
+// additional datastore.
+type Limiter struct {
+	mu      sync.Mutex
+	buckets map[string]bucketState
+}
 
-if tokens == nil then
-	tokens = capacity
-	last_refill = now
-end
+func NewLimiter() *Limiter { return &Limiter{buckets: make(map[string]bucketState)} }
 
-local elapsed = now - last_refill
-local new_tokens = math.min(capacity, tokens + elapsed * refillRate)
+var defaultLimiter = NewLimiter()
 
-if new_tokens < cost then
-	redis.call('HMSET', key, 'tokens', new_tokens, 'last_refill', now)
-	redis.call('EXPIRE', key, math.ceil(capacity / refillRate) + 1)
-	return 0
-else
-	new_tokens = new_tokens - cost
-	redis.call('HMSET', key, 'tokens', new_tokens, 'last_refill', now)
-	redis.call('EXPIRE', key, math.ceil(capacity / refillRate) + 1)
-	return 1
-end
-`)
+func (l *Limiter) Allow(key string, capacity int, refillRate float64, now float64) bool {
+	if capacity <= 0 || refillRate <= 0 {
+		return true
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
 
-// RateLimit returns a chi-compatible HTTP middleware that enforces per-IP
-// rate limits using a Redis token bucket. Auth endpoints get a stricter limit.
-// Health-check routes (/healthz, /readyz, /internal/health) are excluded.
-func RateLimit(client *redis.Client, apiPrefix string) func(next http.Handler) http.Handler {
+	state, ok := l.buckets[key]
+	if !ok {
+		state = bucketState{tokens: float64(capacity), lastRefill: now}
+	}
+	elapsed := now - state.lastRefill
+	if elapsed < 0 {
+		elapsed = 0
+	}
+	state.tokens = min(float64(capacity), state.tokens+elapsed*refillRate)
+	state.lastRefill = now
+	state.lastSeen = time.Now()
+	if state.tokens < 1 {
+		l.buckets[key] = state
+		return false
+	}
+	state.tokens--
+	l.buckets[key] = state
+
+	if len(l.buckets) > maxRateLimitBuckets {
+		cutoff := time.Now().Add(-2 * time.Hour)
+		for bucketKey, bucket := range l.buckets {
+			if bucket.lastSeen.Before(cutoff) {
+				delete(l.buckets, bucketKey)
+			}
+		}
+		// Under a spray of unique identifiers, recent buckets can still exceed
+		// the cap. Evict arbitrary entries; rate limiting is best-effort state.
+		for bucketKey := range l.buckets {
+			if len(l.buckets) <= maxRateLimitBuckets {
+				break
+			}
+			delete(l.buckets, bucketKey)
+		}
+	}
+	return true
+}
+
+func (l *Limiter) Reset(key string) {
+	l.mu.Lock()
+	delete(l.buckets, key)
+	l.mu.Unlock()
+}
+
+func RateLimit(apiPrefix string) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if client == nil {
-				next.ServeHTTP(w, r)
-				return
-			}
-
 			if shouldSkip(r.URL.Path, apiPrefix) {
 				next.ServeHTTP(w, r)
 				return
 			}
-
 			ip := ExtractIP(r)
 			now := float64(time.Now().UnixNano()) / 1e9
-
+			key, capacity, refill := "ratelimit:ip:"+ip, ipCapacity, ipRefillRate
 			if isAuthEndpoint(r.URL.Path, apiPrefix) {
-				allowed, err := checkLimit(r.Context(), client, "ratelimit:auth:ip:"+ip, authIPCapacity, authIPRefillRate, now)
-				if err != nil {
-					log.Warn().Err(err).Str("ip", ip).Msg("auth rate limit check failed, allowing")
-				}
-				if !allowed {
-					http.Error(w, `{"error":"rate limit exceeded"}`, http.StatusTooManyRequests)
-					return
-				}
-				next.ServeHTTP(w, r)
+				key, capacity, refill = "ratelimit:auth:ip:"+ip, authIPCapacity, authIPRefillRate
+			}
+			if !defaultLimiter.Allow(key, capacity, refill, now) {
+				writeRateLimitError(w)
 				return
 			}
-
-			allowed, err := checkLimit(r.Context(), client, "ratelimit:ip:"+ip, ipCapacity, ipRefillRate, now)
-			if err != nil {
-				log.Warn().Err(err).Str("ip", ip).Msg("ip rate limit check failed, allowing")
-			}
-			if !allowed {
-				http.Error(w, `{"error":"rate limit exceeded"}`, http.StatusTooManyRequests)
-				return
-			}
-
 			next.ServeHTTP(w, r)
 		})
 	}
 }
 
-func UserRateLimit(client *redis.Client) func(next http.Handler) http.Handler {
+func UserRateLimit() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if client == nil {
-				next.ServeHTTP(w, r)
-				return
-			}
-
 			userID := UserIDFromContext(r.Context())
-			if userID == "" {
-				next.ServeHTTP(w, r)
-				return
-			}
-
-			now := float64(time.Now().UnixNano()) / 1e9
-			allowed, err := checkLimit(r.Context(), client, "ratelimit:user:"+userID, userCapacity, userRefillRate, now)
-			if err != nil {
-				log.Warn().Err(err).Str("user_id", userID).Msg("user rate limit check failed, allowing")
-			}
-			if !allowed {
-				http.Error(w, `{"error":"rate limit exceeded"}`, http.StatusTooManyRequests)
+			if userID != "" && !defaultLimiter.Allow(
+				"ratelimit:user:"+userID, userCapacity, userRefillRate,
+				float64(time.Now().UnixNano())/1e9,
+			) {
+				writeRateLimitError(w)
 				return
 			}
 			next.ServeHTTP(w, r)
@@ -141,15 +135,28 @@ func UserRateLimit(client *redis.Client) func(next http.Handler) http.Handler {
 	}
 }
 
-func isAuthEndpoint(path string, apiPrefix string) bool {
-	authPaths := []string{
-		apiPrefix + "/v1/auth/login",
-		apiPrefix + "/v1/auth/register",
-		apiPrefix + "/v1/auth/password-reset",
-		apiPrefix + "/v1/auth/guest",
-		apiPrefix + "/v1/auth/token/refresh",
+func CheckLimit(key string, capacity int, refillRate float64, now ...float64) bool {
+	t := float64(time.Now().UnixNano()) / 1e9
+	if len(now) > 0 {
+		t = now[0]
 	}
-	for _, p := range authPaths {
+	return defaultLimiter.Allow(key, capacity, refillRate, t)
+}
+
+func ResetLimit(key string) { defaultLimiter.Reset(key) }
+
+func writeRateLimitError(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusTooManyRequests)
+	_, _ = w.Write([]byte(`{"error":"rate limit exceeded"}`))
+}
+
+func isAuthEndpoint(path, apiPrefix string) bool {
+	for _, p := range []string{
+		apiPrefix + "/v1/auth/login", apiPrefix + "/v1/auth/register",
+		apiPrefix + "/v1/auth/password-reset", apiPrefix + "/v1/auth/guest",
+		apiPrefix + "/v1/auth/token/refresh",
+	} {
 		if strings.HasPrefix(path, p) {
 			return true
 		}
@@ -157,23 +164,6 @@ func isAuthEndpoint(path string, apiPrefix string) bool {
 	return false
 }
 
-func shouldSkip(path string, apiPrefix string) bool {
+func shouldSkip(path, apiPrefix string) bool {
 	return path == "/healthz" || path == "/readyz" || strings.HasPrefix(path, "/internal/health")
-}
-
-func CheckLimit(ctx context.Context, client *redis.Client, key string, capacity int, refillRate float64, now ...float64) (bool, error) {
-	t := float64(time.Now().UnixNano()) / 1e9
-	if len(now) > 0 {
-		t = now[0]
-	}
-	result, err := tokenBucketScript.Run(ctx, client, []string{key}, capacity, refillRate, t, 1).Result()
-	if err != nil {
-		return false, err
-	}
-	allowed, _ := result.(int64)
-	return allowed == 1, nil
-}
-
-func checkLimit(ctx context.Context, client *redis.Client, key string, capacity int, refillRate float64, now float64) (bool, error) {
-	return CheckLimit(ctx, client, key, capacity, refillRate, now)
 }

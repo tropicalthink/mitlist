@@ -39,7 +39,6 @@ func TestLogIntegrationStatus(t *testing.T) {
 			VapidPrivateKey:        "ExamplePrivateKey",
 			FirebaseProjectID:      "my-project",
 			FirebaseServiceAccount: `{"type":"service_account"}`,
-			OpenRouterAPIKey:       "sk-or-test",
 			S3BucketName:           "my-bucket",
 			GoogleClientID:         "google-client-id.apps.googleusercontent.com",
 			SentryDSN:              "https://abc@o123.ingest.sentry.io/456",

@@ -5,7 +5,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/redis/go-redis/v9"
 
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/config"
@@ -22,7 +21,6 @@ type AuthHandler struct {
 	guestService *services.GuestService
 	oauthService *services.OAuthService
 	jwtService   *jwtservice.Service
-	redisClient  *redis.Client
 }
 
 // NewAuthHandler creates an AuthHandler with explicit dependencies.
@@ -32,7 +30,6 @@ func NewAuthHandler(
 	guestService *services.GuestService,
 	oauthService *services.OAuthService,
 	jwtService *jwtservice.Service,
-	redisClient *redis.Client,
 ) *AuthHandler {
 	return &AuthHandler{
 		cfg:          cfg,
@@ -40,7 +37,6 @@ func NewAuthHandler(
 		guestService: guestService,
 		oauthService: oauthService,
 		jwtService:   jwtService,
-		redisClient:  redisClient,
 	}
 }
 
@@ -193,12 +189,10 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.redisClient != nil {
-		key := "ratelimit:failedlogin:" + req.Email
-		if allowed, _ := middleware.CheckLimit(r.Context(), h.redisClient, key, 5, 5.0/300.0); !allowed {
-			api.RespondError(w, &api.ValidationError{Message: "too many attempts, please wait and try again"})
-			return
-		}
+	key := "ratelimit:failedlogin:" + req.Email
+	if !middleware.CheckLimit(key, 5, 5.0/300.0) {
+		api.RespondError(w, &api.ValidationError{Message: "too many attempts, please wait and try again"})
+		return
 	}
 
 	user, access, refresh, err := h.userService.Login(r.Context(), req.Email, req.Password)
@@ -207,9 +201,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.redisClient != nil {
-		_ = h.redisClient.Del(r.Context(), "ratelimit:failedlogin:"+req.Email).Err()
-	}
+	middleware.ResetLimit(key)
 
 	api.RespondJSON(w, http.StatusOK, tokenPairResp{
 		User:         user,

@@ -59,7 +59,10 @@ class AttachmentService {
     try {
       await putClient.putUri(
         Uri.parse(uploadUrl),
-        data: Stream.fromIterable([bytes]),
+        // A byte buffer lets native and browser HTTP stacks supply the exact
+        // signed Content-Length themselves. Browsers forbid setting that
+        // header manually.
+        data: bytes,
         options: Options(
           contentType: contentType,
           headers: {
@@ -109,5 +112,14 @@ class AttachmentService {
       '/attachments/$attachmentId',
       queryParameters: {'group_id': groupId},
     );
+  }
+
+  Future<StorageUsage> getStorageUsage({required String groupId}) async {
+    ensureValidGroupId(groupId);
+    final r = await _dio.get(
+      '/attachments/storage-usage',
+      queryParameters: {'group_id': groupId},
+    );
+    return StorageUsage.fromJson((r.data as Map).cast<String, dynamic>());
   }
 }

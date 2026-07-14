@@ -4913,4 +4913,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String runningLowDaysAgo(num days) {
     return 'il y a ${days}j';
   }
+
+  @override
+  String get householdStorageTitle => 'Stockage du foyer';
+
+  @override
+  String householdStorageUsedOf(String used, String limit) {
+    return '$used utilisés sur $limit';
+  }
+
+  @override
+  String householdStorageUsedUnlimited(String used) {
+    return '$used utilisés · sans limite';
+  }
+
+  @override
+  String householdStoragePending(String pending) {
+    return '$pending sont réservés pour les envois en cours.';
+  }
+
+  @override
+  String get householdStorageProgressLabel => 'Stockage du foyer utilisé';
 }

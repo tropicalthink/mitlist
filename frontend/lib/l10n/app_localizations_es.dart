@@ -4887,4 +4887,25 @@ class AppLocalizationsEs extends AppLocalizations {
   String runningLowDaysAgo(num days) {
     return 'hace ${days}d';
   }
+
+  @override
+  String get householdStorageTitle => 'Almacenamiento del hogar';
+
+  @override
+  String householdStorageUsedOf(String used, String limit) {
+    return '$used de $limit usados';
+  }
+
+  @override
+  String householdStorageUsedUnlimited(String used) {
+    return '$used usados · sin límite';
+  }
+
+  @override
+  String householdStoragePending(String pending) {
+    return '$pending están reservados para cargas en curso.';
+  }
+
+  @override
+  String get householdStorageProgressLabel => 'Almacenamiento del hogar usado';
 }

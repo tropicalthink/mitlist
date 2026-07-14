@@ -5661,4 +5661,9 @@
   "@runningLowHeading": { "description": "Section header for the restock suggestion strip above the list" },
   "runningLowDaysAgo": "hace {days}d",
   "@runningLowDaysAgo": { "description": "Per-chip cadence hint showing how many days since last purchase", "placeholders": { "days": { "type": "num" } } }
+  ,"householdStorageTitle": "Almacenamiento del hogar",
+  "householdStorageUsedOf": "{used} de {limit} usados",
+  "householdStorageUsedUnlimited": "{used} usados · sin límite",
+  "householdStoragePending": "{pending} están reservados para cargas en curso.",
+  "householdStorageProgressLabel": "Almacenamiento del hogar usado"
 }
