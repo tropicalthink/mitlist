@@ -9,8 +9,10 @@ import '../models/list_models.dart';
 import '../utils/uuid_validation.dart';
 import '../services/list_service.dart';
 import '../services/error_reporter.dart';
+import '../services/scan/local_item_promotion_service.dart';
 import '../services/sse_service.dart';
 import '../storage/app_database.dart';
+import 'grocery_repository.dart';
 import 'outbox_drainer.dart';
 
 class ListRepository {
@@ -18,6 +20,16 @@ class ListRepository {
   final ListService _remote;
   final Uuid _uuid;
   final bool _autoSync;
+
+  /// Promotes repeatedly-checked-off words the resolver couldn't map into
+  /// household-local canonical items. Defaults to a db-backed instance so
+  /// direct constructions (tests) still learn; production injects the same.
+  final LocalItemPromotionService _promotionService;
+
+  /// Used to push a freshly-promoted alias to the household's other devices.
+  /// Optional: when absent (tests / offline construction) promotion still works
+  /// locally and the canonical still syncs via the recordPurchase op.
+  final GroceryRepository? _groceryRepo;
 
   bool _isDraining = false;
 
@@ -29,10 +41,15 @@ class ListRepository {
     required ListService remote,
     Uuid? uuid,
     bool autoSync = true,
+    LocalItemPromotionService? promotionService,
+    GroceryRepository? groceryRepo,
   })  : _db = db,
         _remote = remote,
         _uuid = uuid ?? const Uuid(),
-        _autoSync = autoSync;
+        _autoSync = autoSync,
+        _promotionService =
+            promotionService ?? LocalItemPromotionService(db),
+        _groceryRepo = groceryRepo;
 
   Stream<List<ItemList>> watchListsByGroup(String groupId) {
     return _db
@@ -1035,11 +1052,42 @@ class ListRepository {
     Set<String> excludedPeerItemIds = const {},
   }) async {
     try {
-      final canonicalId = row.canonicalItemId;
-      if (canonicalId == null) return;
+      final rawCanonicalId = row.canonicalItemId;
 
       final groupId = await _db.getListGroupId(listId);
       if (groupId == null) return;
+
+      // Kept final (not a reassigned var) so it promotes to non-null inside the
+      // nested transaction closure below.
+      final String canonicalId;
+      if (rawCanonicalId != null) {
+        canonicalId = rawCanonicalId;
+      } else {
+        // The resolver couldn't map this word to a canonical item. Instead of
+        // learning nothing, tally it; once the household has checked it off
+        // enough times it's promoted to a household-local canonical so it can
+        // finally surface in suggestions and feed the loop below.
+        final promoted = await _promotionService.recordUnresolvedCheckoff(
+          groupId: groupId,
+          rawName: row.name,
+        );
+        if (promoted == null) return; // still below the promotion threshold
+        canonicalId = promoted.canonicalItemId;
+        // Bind the list item to the minted canonical so future check-offs take
+        // the normal path and the purchase-history/co-occurrence rows below
+        // record against it.
+        await setCanonicalItemIdLocal(listId, itemId, canonicalId);
+        final groceryRepo = _groceryRepo;
+        if (promoted.justPromoted && groceryRepo != null) {
+          // One-time cross-device push of the alias (the canonical itself syncs
+          // via the recordPurchase op below). Best-effort; offline is swallowed.
+          unawaited(groceryRepo.uploadCorrection(
+            groupId: groupId,
+            rawText: promoted.normalizedName,
+            canonicalItemId: canonicalId,
+          ));
+        }
+      }
       final peers = await _db.getCheckedItemsWithCanonical(listId);
       final peerCanonicalIds = peers
           .where((p) =>

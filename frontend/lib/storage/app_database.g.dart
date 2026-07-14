@@ -8409,6 +8409,427 @@ class GroceryVersionsTableCompanion
   }
 }
 
+class $LocalItemSignalsTableTable extends LocalItemSignalsTable
+    with TableInfo<$LocalItemSignalsTableTable, LocalItemSignalsTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalItemSignalsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _groupIdMeta =
+      const VerificationMeta('groupId');
+  @override
+  late final GeneratedColumn<String> groupId = GeneratedColumn<String>(
+      'group_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _normalizedNameMeta =
+      const VerificationMeta('normalizedName');
+  @override
+  late final GeneratedColumn<String> normalizedName = GeneratedColumn<String>(
+      'normalized_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _displayNameMeta =
+      const VerificationMeta('displayName');
+  @override
+  late final GeneratedColumn<String> displayName = GeneratedColumn<String>(
+      'display_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _countMeta = const VerificationMeta('count');
+  @override
+  late final GeneratedColumn<int> count = GeneratedColumn<int>(
+      'count', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _promotedCanonicalItemIdMeta =
+      const VerificationMeta('promotedCanonicalItemId');
+  @override
+  late final GeneratedColumn<String> promotedCanonicalItemId =
+      GeneratedColumn<String>('promoted_canonical_item_id', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _firstSeenMeta =
+      const VerificationMeta('firstSeen');
+  @override
+  late final GeneratedColumn<DateTime> firstSeen = GeneratedColumn<DateTime>(
+      'first_seen', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _lastSeenMeta =
+      const VerificationMeta('lastSeen');
+  @override
+  late final GeneratedColumn<DateTime> lastSeen = GeneratedColumn<DateTime>(
+      'last_seen', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        groupId,
+        normalizedName,
+        displayName,
+        count,
+        promotedCanonicalItemId,
+        firstSeen,
+        lastSeen
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_item_signals_table';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<LocalItemSignalsTableData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('group_id')) {
+      context.handle(_groupIdMeta,
+          groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta));
+    } else if (isInserting) {
+      context.missing(_groupIdMeta);
+    }
+    if (data.containsKey('normalized_name')) {
+      context.handle(
+          _normalizedNameMeta,
+          normalizedName.isAcceptableOrUnknown(
+              data['normalized_name']!, _normalizedNameMeta));
+    } else if (isInserting) {
+      context.missing(_normalizedNameMeta);
+    }
+    if (data.containsKey('display_name')) {
+      context.handle(
+          _displayNameMeta,
+          displayName.isAcceptableOrUnknown(
+              data['display_name']!, _displayNameMeta));
+    } else if (isInserting) {
+      context.missing(_displayNameMeta);
+    }
+    if (data.containsKey('count')) {
+      context.handle(
+          _countMeta, count.isAcceptableOrUnknown(data['count']!, _countMeta));
+    }
+    if (data.containsKey('promoted_canonical_item_id')) {
+      context.handle(
+          _promotedCanonicalItemIdMeta,
+          promotedCanonicalItemId.isAcceptableOrUnknown(
+              data['promoted_canonical_item_id']!,
+              _promotedCanonicalItemIdMeta));
+    }
+    if (data.containsKey('first_seen')) {
+      context.handle(_firstSeenMeta,
+          firstSeen.isAcceptableOrUnknown(data['first_seen']!, _firstSeenMeta));
+    } else if (isInserting) {
+      context.missing(_firstSeenMeta);
+    }
+    if (data.containsKey('last_seen')) {
+      context.handle(_lastSeenMeta,
+          lastSeen.isAcceptableOrUnknown(data['last_seen']!, _lastSeenMeta));
+    } else if (isInserting) {
+      context.missing(_lastSeenMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {groupId, normalizedName};
+  @override
+  LocalItemSignalsTableData map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalItemSignalsTableData(
+      groupId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}group_id'])!,
+      normalizedName: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}normalized_name'])!,
+      displayName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}display_name'])!,
+      count: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}count'])!,
+      promotedCanonicalItemId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}promoted_canonical_item_id']),
+      firstSeen: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}first_seen'])!,
+      lastSeen: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}last_seen'])!,
+    );
+  }
+
+  @override
+  $LocalItemSignalsTableTable createAlias(String alias) {
+    return $LocalItemSignalsTableTable(attachedDatabase, alias);
+  }
+}
+
+class LocalItemSignalsTableData extends DataClass
+    implements Insertable<LocalItemSignalsTableData> {
+  final String groupId;
+  final String normalizedName;
+  final String displayName;
+  final int count;
+
+  /// Set once the word crossed the threshold and a canonical was minted. Guards
+  /// against re-minting: later check-offs reinforce the existing alias instead.
+  final String? promotedCanonicalItemId;
+  final DateTime firstSeen;
+  final DateTime lastSeen;
+  const LocalItemSignalsTableData(
+      {required this.groupId,
+      required this.normalizedName,
+      required this.displayName,
+      required this.count,
+      this.promotedCanonicalItemId,
+      required this.firstSeen,
+      required this.lastSeen});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['group_id'] = Variable<String>(groupId);
+    map['normalized_name'] = Variable<String>(normalizedName);
+    map['display_name'] = Variable<String>(displayName);
+    map['count'] = Variable<int>(count);
+    if (!nullToAbsent || promotedCanonicalItemId != null) {
+      map['promoted_canonical_item_id'] =
+          Variable<String>(promotedCanonicalItemId);
+    }
+    map['first_seen'] = Variable<DateTime>(firstSeen);
+    map['last_seen'] = Variable<DateTime>(lastSeen);
+    return map;
+  }
+
+  LocalItemSignalsTableCompanion toCompanion(bool nullToAbsent) {
+    return LocalItemSignalsTableCompanion(
+      groupId: Value(groupId),
+      normalizedName: Value(normalizedName),
+      displayName: Value(displayName),
+      count: Value(count),
+      promotedCanonicalItemId: promotedCanonicalItemId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(promotedCanonicalItemId),
+      firstSeen: Value(firstSeen),
+      lastSeen: Value(lastSeen),
+    );
+  }
+
+  factory LocalItemSignalsTableData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalItemSignalsTableData(
+      groupId: serializer.fromJson<String>(json['groupId']),
+      normalizedName: serializer.fromJson<String>(json['normalizedName']),
+      displayName: serializer.fromJson<String>(json['displayName']),
+      count: serializer.fromJson<int>(json['count']),
+      promotedCanonicalItemId:
+          serializer.fromJson<String?>(json['promotedCanonicalItemId']),
+      firstSeen: serializer.fromJson<DateTime>(json['firstSeen']),
+      lastSeen: serializer.fromJson<DateTime>(json['lastSeen']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'groupId': serializer.toJson<String>(groupId),
+      'normalizedName': serializer.toJson<String>(normalizedName),
+      'displayName': serializer.toJson<String>(displayName),
+      'count': serializer.toJson<int>(count),
+      'promotedCanonicalItemId':
+          serializer.toJson<String?>(promotedCanonicalItemId),
+      'firstSeen': serializer.toJson<DateTime>(firstSeen),
+      'lastSeen': serializer.toJson<DateTime>(lastSeen),
+    };
+  }
+
+  LocalItemSignalsTableData copyWith(
+          {String? groupId,
+          String? normalizedName,
+          String? displayName,
+          int? count,
+          Value<String?> promotedCanonicalItemId = const Value.absent(),
+          DateTime? firstSeen,
+          DateTime? lastSeen}) =>
+      LocalItemSignalsTableData(
+        groupId: groupId ?? this.groupId,
+        normalizedName: normalizedName ?? this.normalizedName,
+        displayName: displayName ?? this.displayName,
+        count: count ?? this.count,
+        promotedCanonicalItemId: promotedCanonicalItemId.present
+            ? promotedCanonicalItemId.value
+            : this.promotedCanonicalItemId,
+        firstSeen: firstSeen ?? this.firstSeen,
+        lastSeen: lastSeen ?? this.lastSeen,
+      );
+  LocalItemSignalsTableData copyWithCompanion(
+      LocalItemSignalsTableCompanion data) {
+    return LocalItemSignalsTableData(
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      normalizedName: data.normalizedName.present
+          ? data.normalizedName.value
+          : this.normalizedName,
+      displayName:
+          data.displayName.present ? data.displayName.value : this.displayName,
+      count: data.count.present ? data.count.value : this.count,
+      promotedCanonicalItemId: data.promotedCanonicalItemId.present
+          ? data.promotedCanonicalItemId.value
+          : this.promotedCanonicalItemId,
+      firstSeen: data.firstSeen.present ? data.firstSeen.value : this.firstSeen,
+      lastSeen: data.lastSeen.present ? data.lastSeen.value : this.lastSeen,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalItemSignalsTableData(')
+          ..write('groupId: $groupId, ')
+          ..write('normalizedName: $normalizedName, ')
+          ..write('displayName: $displayName, ')
+          ..write('count: $count, ')
+          ..write('promotedCanonicalItemId: $promotedCanonicalItemId, ')
+          ..write('firstSeen: $firstSeen, ')
+          ..write('lastSeen: $lastSeen')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(groupId, normalizedName, displayName, count,
+      promotedCanonicalItemId, firstSeen, lastSeen);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalItemSignalsTableData &&
+          other.groupId == this.groupId &&
+          other.normalizedName == this.normalizedName &&
+          other.displayName == this.displayName &&
+          other.count == this.count &&
+          other.promotedCanonicalItemId == this.promotedCanonicalItemId &&
+          other.firstSeen == this.firstSeen &&
+          other.lastSeen == this.lastSeen);
+}
+
+class LocalItemSignalsTableCompanion
+    extends UpdateCompanion<LocalItemSignalsTableData> {
+  final Value<String> groupId;
+  final Value<String> normalizedName;
+  final Value<String> displayName;
+  final Value<int> count;
+  final Value<String?> promotedCanonicalItemId;
+  final Value<DateTime> firstSeen;
+  final Value<DateTime> lastSeen;
+  final Value<int> rowid;
+  const LocalItemSignalsTableCompanion({
+    this.groupId = const Value.absent(),
+    this.normalizedName = const Value.absent(),
+    this.displayName = const Value.absent(),
+    this.count = const Value.absent(),
+    this.promotedCanonicalItemId = const Value.absent(),
+    this.firstSeen = const Value.absent(),
+    this.lastSeen = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalItemSignalsTableCompanion.insert({
+    required String groupId,
+    required String normalizedName,
+    required String displayName,
+    this.count = const Value.absent(),
+    this.promotedCanonicalItemId = const Value.absent(),
+    required DateTime firstSeen,
+    required DateTime lastSeen,
+    this.rowid = const Value.absent(),
+  })  : groupId = Value(groupId),
+        normalizedName = Value(normalizedName),
+        displayName = Value(displayName),
+        firstSeen = Value(firstSeen),
+        lastSeen = Value(lastSeen);
+  static Insertable<LocalItemSignalsTableData> custom({
+    Expression<String>? groupId,
+    Expression<String>? normalizedName,
+    Expression<String>? displayName,
+    Expression<int>? count,
+    Expression<String>? promotedCanonicalItemId,
+    Expression<DateTime>? firstSeen,
+    Expression<DateTime>? lastSeen,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (groupId != null) 'group_id': groupId,
+      if (normalizedName != null) 'normalized_name': normalizedName,
+      if (displayName != null) 'display_name': displayName,
+      if (count != null) 'count': count,
+      if (promotedCanonicalItemId != null)
+        'promoted_canonical_item_id': promotedCanonicalItemId,
+      if (firstSeen != null) 'first_seen': firstSeen,
+      if (lastSeen != null) 'last_seen': lastSeen,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalItemSignalsTableCompanion copyWith(
+      {Value<String>? groupId,
+      Value<String>? normalizedName,
+      Value<String>? displayName,
+      Value<int>? count,
+      Value<String?>? promotedCanonicalItemId,
+      Value<DateTime>? firstSeen,
+      Value<DateTime>? lastSeen,
+      Value<int>? rowid}) {
+    return LocalItemSignalsTableCompanion(
+      groupId: groupId ?? this.groupId,
+      normalizedName: normalizedName ?? this.normalizedName,
+      displayName: displayName ?? this.displayName,
+      count: count ?? this.count,
+      promotedCanonicalItemId:
+          promotedCanonicalItemId ?? this.promotedCanonicalItemId,
+      firstSeen: firstSeen ?? this.firstSeen,
+      lastSeen: lastSeen ?? this.lastSeen,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (groupId.present) {
+      map['group_id'] = Variable<String>(groupId.value);
+    }
+    if (normalizedName.present) {
+      map['normalized_name'] = Variable<String>(normalizedName.value);
+    }
+    if (displayName.present) {
+      map['display_name'] = Variable<String>(displayName.value);
+    }
+    if (count.present) {
+      map['count'] = Variable<int>(count.value);
+    }
+    if (promotedCanonicalItemId.present) {
+      map['promoted_canonical_item_id'] =
+          Variable<String>(promotedCanonicalItemId.value);
+    }
+    if (firstSeen.present) {
+      map['first_seen'] = Variable<DateTime>(firstSeen.value);
+    }
+    if (lastSeen.present) {
+      map['last_seen'] = Variable<DateTime>(lastSeen.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalItemSignalsTableCompanion(')
+          ..write('groupId: $groupId, ')
+          ..write('normalizedName: $normalizedName, ')
+          ..write('displayName: $displayName, ')
+          ..write('count: $count, ')
+          ..write('promotedCanonicalItemId: $promotedCanonicalItemId, ')
+          ..write('firstSeen: $firstSeen, ')
+          ..write('lastSeen: $lastSeen, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -8444,6 +8865,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $ScanArtifactsTableTable(this);
   late final $GroceryVersionsTableTable groceryVersionsTable =
       $GroceryVersionsTableTable(this);
+  late final $LocalItemSignalsTableTable localItemSignalsTable =
+      $LocalItemSignalsTableTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -8468,7 +8891,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         purchaseHistoryTable,
         itemCooccurrenceTable,
         scanArtifactsTable,
-        groceryVersionsTable
+        groceryVersionsTable,
+        localItemSignalsTable
       ];
 }
 
@@ -12770,6 +13194,220 @@ typedef $$GroceryVersionsTableTableProcessedTableManager
         ),
         GroceryVersionsTableData,
         PrefetchHooks Function()>;
+typedef $$LocalItemSignalsTableTableCreateCompanionBuilder
+    = LocalItemSignalsTableCompanion Function({
+  required String groupId,
+  required String normalizedName,
+  required String displayName,
+  Value<int> count,
+  Value<String?> promotedCanonicalItemId,
+  required DateTime firstSeen,
+  required DateTime lastSeen,
+  Value<int> rowid,
+});
+typedef $$LocalItemSignalsTableTableUpdateCompanionBuilder
+    = LocalItemSignalsTableCompanion Function({
+  Value<String> groupId,
+  Value<String> normalizedName,
+  Value<String> displayName,
+  Value<int> count,
+  Value<String?> promotedCanonicalItemId,
+  Value<DateTime> firstSeen,
+  Value<DateTime> lastSeen,
+  Value<int> rowid,
+});
+
+class $$LocalItemSignalsTableTableFilterComposer
+    extends Composer<_$AppDatabase, $LocalItemSignalsTableTable> {
+  $$LocalItemSignalsTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get normalizedName => $composableBuilder(
+      column: $table.normalizedName,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get displayName => $composableBuilder(
+      column: $table.displayName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get count => $composableBuilder(
+      column: $table.count, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get promotedCanonicalItemId => $composableBuilder(
+      column: $table.promotedCanonicalItemId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get firstSeen => $composableBuilder(
+      column: $table.firstSeen, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastSeen => $composableBuilder(
+      column: $table.lastSeen, builder: (column) => ColumnFilters(column));
+}
+
+class $$LocalItemSignalsTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $LocalItemSignalsTableTable> {
+  $$LocalItemSignalsTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get normalizedName => $composableBuilder(
+      column: $table.normalizedName,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get displayName => $composableBuilder(
+      column: $table.displayName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get count => $composableBuilder(
+      column: $table.count, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get promotedCanonicalItemId => $composableBuilder(
+      column: $table.promotedCanonicalItemId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get firstSeen => $composableBuilder(
+      column: $table.firstSeen, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get lastSeen => $composableBuilder(
+      column: $table.lastSeen, builder: (column) => ColumnOrderings(column));
+}
+
+class $$LocalItemSignalsTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LocalItemSignalsTableTable> {
+  $$LocalItemSignalsTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
+
+  GeneratedColumn<String> get normalizedName => $composableBuilder(
+      column: $table.normalizedName, builder: (column) => column);
+
+  GeneratedColumn<String> get displayName => $composableBuilder(
+      column: $table.displayName, builder: (column) => column);
+
+  GeneratedColumn<int> get count =>
+      $composableBuilder(column: $table.count, builder: (column) => column);
+
+  GeneratedColumn<String> get promotedCanonicalItemId => $composableBuilder(
+      column: $table.promotedCanonicalItemId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get firstSeen =>
+      $composableBuilder(column: $table.firstSeen, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastSeen =>
+      $composableBuilder(column: $table.lastSeen, builder: (column) => column);
+}
+
+class $$LocalItemSignalsTableTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $LocalItemSignalsTableTable,
+    LocalItemSignalsTableData,
+    $$LocalItemSignalsTableTableFilterComposer,
+    $$LocalItemSignalsTableTableOrderingComposer,
+    $$LocalItemSignalsTableTableAnnotationComposer,
+    $$LocalItemSignalsTableTableCreateCompanionBuilder,
+    $$LocalItemSignalsTableTableUpdateCompanionBuilder,
+    (
+      LocalItemSignalsTableData,
+      BaseReferences<_$AppDatabase, $LocalItemSignalsTableTable,
+          LocalItemSignalsTableData>
+    ),
+    LocalItemSignalsTableData,
+    PrefetchHooks Function()> {
+  $$LocalItemSignalsTableTableTableManager(
+      _$AppDatabase db, $LocalItemSignalsTableTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalItemSignalsTableTableFilterComposer(
+                  $db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalItemSignalsTableTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalItemSignalsTableTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> groupId = const Value.absent(),
+            Value<String> normalizedName = const Value.absent(),
+            Value<String> displayName = const Value.absent(),
+            Value<int> count = const Value.absent(),
+            Value<String?> promotedCanonicalItemId = const Value.absent(),
+            Value<DateTime> firstSeen = const Value.absent(),
+            Value<DateTime> lastSeen = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalItemSignalsTableCompanion(
+            groupId: groupId,
+            normalizedName: normalizedName,
+            displayName: displayName,
+            count: count,
+            promotedCanonicalItemId: promotedCanonicalItemId,
+            firstSeen: firstSeen,
+            lastSeen: lastSeen,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String groupId,
+            required String normalizedName,
+            required String displayName,
+            Value<int> count = const Value.absent(),
+            Value<String?> promotedCanonicalItemId = const Value.absent(),
+            required DateTime firstSeen,
+            required DateTime lastSeen,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalItemSignalsTableCompanion.insert(
+            groupId: groupId,
+            normalizedName: normalizedName,
+            displayName: displayName,
+            count: count,
+            promotedCanonicalItemId: promotedCanonicalItemId,
+            firstSeen: firstSeen,
+            lastSeen: lastSeen,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$LocalItemSignalsTableTableProcessedTableManager
+    = ProcessedTableManager<
+        _$AppDatabase,
+        $LocalItemSignalsTableTable,
+        LocalItemSignalsTableData,
+        $$LocalItemSignalsTableTableFilterComposer,
+        $$LocalItemSignalsTableTableOrderingComposer,
+        $$LocalItemSignalsTableTableAnnotationComposer,
+        $$LocalItemSignalsTableTableCreateCompanionBuilder,
+        $$LocalItemSignalsTableTableUpdateCompanionBuilder,
+        (
+          LocalItemSignalsTableData,
+          BaseReferences<_$AppDatabase, $LocalItemSignalsTableTable,
+              LocalItemSignalsTableData>
+        ),
+        LocalItemSignalsTableData,
+        PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -12814,4 +13452,6 @@ class $AppDatabaseManager {
       $$ScanArtifactsTableTableTableManager(_db, _db.scanArtifactsTable);
   $$GroceryVersionsTableTableTableManager get groceryVersionsTable =>
       $$GroceryVersionsTableTableTableManager(_db, _db.groceryVersionsTable);
+  $$LocalItemSignalsTableTableTableManager get localItemSignalsTable =>
+      $$LocalItemSignalsTableTableTableManager(_db, _db.localItemSignalsTable);
 }
