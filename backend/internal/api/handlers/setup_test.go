@@ -24,7 +24,6 @@ import (
 	"github.com/mitlist-app/mitlist/internal/config"
 	"github.com/mitlist-app/mitlist/internal/middleware"
 	"github.com/mitlist-app/mitlist/internal/models"
-	"github.com/mitlist-app/mitlist/internal/redis"
 	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/mitlist-app/mitlist/internal/services"
 	jwtservice "github.com/mitlist-app/mitlist/internal/services/jwt"
@@ -35,10 +34,9 @@ import (
 )
 
 var (
-	testDB    *pgxpool.Pool
-	testRedis *redis.RedisClient
-	testCfg   *config.Config
-	testJWT   *jwtservice.Service
+	testDB  *pgxpool.Pool
+	testCfg *config.Config
+	testJWT *jwtservice.Service
 )
 
 func TestMain(m *testing.M) {
@@ -56,19 +54,13 @@ func TestMain(m *testing.M) {
 	testDB = db
 	defer db.Close()
 
-	redisClient, _ := tryConnectRedis(testCfg.RedisURL, testCfg.RedisPassword)
-	testRedis = redisClient
-	if redisClient != nil {
-		defer redisClient.Close()
-	}
-
 	if err := runMigrations(testCfg.DatabaseURL); err != nil {
 		fmt.Fprintf(os.Stderr, "SKIP: migrations failed: %v\n", err)
 		code = 0
 		return
 	}
 
-	testJWT = jwtservice.New(testCfg, testRedis)
+	testJWT = jwtservice.New(testCfg, testDB)
 
 	code = m.Run()
 }
@@ -78,16 +70,10 @@ func mustLoadTestConfig() *config.Config {
 	if dbURL == "" {
 		dbURL = "postgres://mitlist:mitlist@localhost:5432/mitlist_test?sslmode=disable"
 	}
-	redisURL := os.Getenv("TEST_REDIS_URL")
-	if redisURL == "" {
-		redisURL = "redis://localhost:6379"
-	}
 	return &config.Config{
 		DatabaseURL:              dbURL,
 		SecretKey:                "test-secret-key-min-32-chars-long!!!",
 		SessionSecretKey:         "test-session-secret-key-min-32-chars!",
-		RedisURL:                 redisURL,
-		RedisPassword:            os.Getenv("TEST_REDIS_PASSWORD"),
 		Environment:              "test",
 		FrontendURL:              "http://localhost:5173",
 		APIPrefix:                "/api",
@@ -115,19 +101,6 @@ func tryConnectDB(databaseURL string) (*pgxpool.Pool, error) {
 		return nil, err
 	}
 	return pool, nil
-}
-
-func tryConnectRedis(redisURL, password string) (*redis.RedisClient, error) {
-	cfg := &config.Config{
-		RedisURL:      redisURL,
-		RedisPassword: password,
-		Environment:   "test",
-	}
-	client, err := redis.New(cfg)
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
 }
 
 func runMigrations(databaseURL string) error {
@@ -339,11 +312,11 @@ func newAuthRouter(t *testing.T) (chi.Router, *AuthHandler) {
 	ms := newTestMailService()
 	jwtSvc := testJWT
 
-	userSvc := services.NewUserService(userRepo, authRepo, jwtSvc, ps, ms, nil)
-	guestSvc := services.NewGuestService(userRepo, jwtSvc, ps, nil)
+	userSvc := services.NewUserService(userRepo, authRepo, jwtSvc, ps, ms)
+	guestSvc := services.NewGuestService(userRepo, jwtSvc, ps)
 	oauthSvc := services.NewOAuthService(userRepo, authRepo, jwtSvc, nil, nil)
 
-	h := NewAuthHandler(testCfg, userSvc, guestSvc, oauthSvc, jwtSvc, nil)
+	h := NewAuthHandler(testCfg, userSvc, guestSvc, oauthSvc, jwtSvc)
 
 	r := chi.NewRouter()
 	r.Route("/api/v1/auth", func(r chi.Router) {

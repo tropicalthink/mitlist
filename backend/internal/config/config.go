@@ -18,18 +18,14 @@ type Config struct {
 	DatabaseURL      string `env:"DATABASE_URL" required:"true"`
 	SecretKey        string `env:"SECRET_KEY" required:"true"`
 	SessionSecretKey string `env:"SESSION_SECRET_KEY" required:"true"`
-	RedisURL         string `env:"REDIS_URL" required:"true" default:"redis://localhost:6379"`
-	// Database & Cache
-	RedisPassword string `env:"REDIS_PASSWORD" default:""`
 
 	// Application
 	Environment              string `env:"ENVIRONMENT" default:"development"`
 	FrontendURL              string `env:"FRONTEND_URL" default:"http://localhost:5173"`
 	Port                     string `env:"PORT" default:"8000"`
 	APIPrefix                string `env:"API_PREFIX" default:"/api"`
-	AccessTokenExpireMinutes int    `env:"ACCESS_TOKEN_EXPIRE_MINUTES" default:"60"`
+	AccessTokenExpireMinutes int    `env:"ACCESS_TOKEN_EXPIRE_MINUTES" default:"15"`
 	RunMigrationsOnStartup   bool   `env:"RUN_MIGRATIONS_ON_STARTUP" default:"true"`
-	WarmCacheOnStartup       bool   `env:"WARM_CACHE_ON_STARTUP" default:"false"`
 	LogLevel                 string `env:"LOG_LEVEL" default:"WARNING"`
 
 	// OAuth — Google
@@ -213,7 +209,6 @@ func (c Config) MaskSecrets() Config {
 	masked.DatabaseURL = mask(masked.DatabaseURL)
 	masked.SecretKey = mask(masked.SecretKey)
 	masked.SessionSecretKey = mask(masked.SessionSecretKey)
-	masked.RedisPassword = mask(masked.RedisPassword)
 	masked.GoogleClientSecret = mask(masked.GoogleClientSecret)
 	masked.ApplePrivateKey = mask(masked.ApplePrivateKey)
 	masked.VapidPrivateKey = mask(masked.VapidPrivateKey)

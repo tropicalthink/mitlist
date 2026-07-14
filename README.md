@@ -77,32 +77,30 @@ You're already paying rent. Why pay another subscription just to split expenses 
 ```bash
 git clone https://git.vinylnostalgia.com/mo/mitlist.git
 cd mitlist
-cp .env.example .env                  # docker compose DB/Redis credentials
+cp .env.example .env                  # docker compose database credentials
 cp backend/.env.example backend/.env  # the app's own runtime config
 ```
 
 There are **two** env files, and they do different jobs:
 
-- **Root `.env`** feeds docker compose `${...}` interpolation — the Postgres and
-  Redis credentials and the generated `DATABASE_URL`. The prod profile reads
+- **Root `.env`** feeds docker compose `${...}` interpolation — the Postgres
+  credentials and the generated `DATABASE_URL`. The prod profile reads
   these and **refuses to start** if `POSTGRES_PASSWORD` is unset.
 - **`backend/.env`** is the application's own runtime config (`SECRET_KEY`,
   `SESSION_SECRET_KEY`, OAuth, API keys, …). It does **not** feed compose
-  interpolation, so DB/Redis passwords must go in the root `.env`.
+  interpolation, so the database password must go in the root `.env`.
 
 Open the **root `.env`** and set **strong, unique** credentials before starting:
 
 ```bash
 # Generate strong passwords (run these and paste the output into the root .env)
 openssl rand -base64 24   # use for POSTGRES_PASSWORD
-openssl rand -base64 24   # use for REDIS_PASSWORD
 ```
 
 Set in the root `.env`:
 
 ```
 POSTGRES_PASSWORD=<strong random value>   # REQUIRED — no default
-REDIS_PASSWORD=<strong random value>      # strongly recommended
 POSTGRES_USER=mitlist
 POSTGRES_DB=mitlist
 ```
@@ -114,11 +112,11 @@ Then fill in `SECRET_KEY`, `SESSION_SECRET_KEY`, and any OAuth/API keys in
 docker compose --profile prod up -d
 ```
 
-PostgreSQL, Redis, and the Go API start automatically. The database schema is
+PostgreSQL and the Go API start automatically. The database schema is
 created on first boot (`RUN_MIGRATIONS_ON_STARTUP=true` — idempotent, safe to
 leave on). Point the Flutter app at your server and you're done.
 
-> **Security note**: DB and Redis ports are bound to `127.0.0.1` only and are
+> **Security note**: The database port is bound to `127.0.0.1` only and is
 > not reachable from the public network. If you point `DATABASE_URL` at a remote
 > Postgres over a public network, set `DB_SSLMODE=require` in the root `.env`.
 
@@ -127,11 +125,11 @@ See [backend/README.md](backend/README.md) for full configuration reference, inc
 ### Hosted database: PlanetScale Postgres
 
 The planned official service uses PlanetScale Postgres instead of operating a
-Postgres container. The application needs no adapter: set the backend
-`DATABASE_URL` to the PlanetScale connection string, preserve its TLS
-parameters, and run the normal migrations. Redis and Cloudflare R2 remain
-separate services; R2 holds attachments while Postgres stores their metadata
-and household quota counters.
+Postgres container. The application needs no adapter: set `DATABASE_URL` in the
+deployment environment (or the root `.env` when using the prod Compose
+profile) to the PlanetScale connection string, preserve its TLS parameters,
+and run the normal migrations. Cloudflare R2 holds attachments while Postgres
+stores their metadata, household quota counters, and refresh sessions.
 
 ---
 
@@ -141,9 +139,8 @@ and household quota counters.
 |-------|------|
 | Mobile app | Flutter (iOS + Android) |
 | Web app | Flutter Web PWA |
-| Backend | Go (chi router, pgx, Redis) |
+| Backend | Go (chi router, pgx) |
 | Database | PostgreSQL 16 |
-| Cache | Redis 7 |
 | File storage | S3 / Cloudflare R2 |
 
 ---
@@ -234,8 +231,8 @@ flutter pub get
 flutter run
 
 # Backend
-cp .env.example .env    # root: docker compose DB/Redis creds (dev defaults are fine)
-docker compose up -d    # postgres + redis only (no profile)
+cp .env.example .env    # root: docker compose DB creds (dev defaults are fine)
+docker compose up -d    # postgres only (no profile)
 cd backend
 cp .env.example .env    # the app's own runtime config — see comments inside
 go run ./cmd/migrate up

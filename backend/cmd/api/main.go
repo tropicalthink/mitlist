@@ -15,7 +15,6 @@ import (
 	"github.com/mitlist-app/mitlist/internal/jobs"
 	"github.com/mitlist-app/mitlist/internal/middleware"
 	"github.com/mitlist-app/mitlist/internal/observability"
-	"github.com/mitlist-app/mitlist/internal/redis"
 	"github.com/mitlist-app/mitlist/internal/server"
 	"github.com/mitlist-app/mitlist/internal/services"
 	"github.com/mitlist-app/mitlist/pkg/logger"
@@ -61,13 +60,7 @@ func main() {
 		}
 	}
 
-	redisClient, err := redis.New(cfg)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to connect to redis")
-	}
-	defer redisClient.Close()
-
-	cnt := container.New(cfg, pool, redisClient, log)
+	cnt := container.New(cfg, pool, log)
 
 	runner := jobs.NewRunnerWithDispatcher(pool, cnt.NotificationService(), log)
 	runner.EnableSentryMonitoring(sentryOn)
@@ -88,7 +81,7 @@ func main() {
 
 	srv := server.New(cfg, cnt, runner)
 
-	healthHandler := handlers.NewHealthHandler(pool, redisClient)
+	healthHandler := handlers.NewHealthHandler(pool)
 	srv.Router().Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
@@ -98,10 +91,6 @@ func main() {
 		defer cancel()
 		if err := pool.Ping(ctx); err != nil {
 			http.Error(w, "db not ready", http.StatusServiceUnavailable)
-			return
-		}
-		if err := redisClient.Ping(ctx); err != nil {
-			http.Error(w, "redis not ready", http.StatusServiceUnavailable)
 			return
 		}
 		w.WriteHeader(http.StatusOK)
@@ -126,7 +115,7 @@ func main() {
 		http.Redirect(w, r, "mitlist:///join/"+code, http.StatusFound)
 	})
 
-	authHandler := handlers.NewAuthHandler(cfg, cnt.UserService(), cnt.GuestService(), cnt.OAuthService(), cnt.JWT(), cnt.Redis().Client())
+	authHandler := handlers.NewAuthHandler(cfg, cnt.UserService(), cnt.GuestService(), cnt.OAuthService(), cnt.JWT())
 	srv.Router().Route(cfg.APIPrefix+"/v1", func(r chi.Router) {
 		authHandler.RegisterRoutes(r)
 
@@ -150,7 +139,7 @@ func main() {
 		// Protected feature routes
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.Auth(cnt.JWT(), cnt.UserService()))
-			r.Use(middleware.UserRateLimit(cnt.Redis().Client()))
+			r.Use(middleware.UserRateLimit())
 
 			// Notifications
 			notificationHandler := handlers.NewNotificationHandler(cnt.NotificationService())

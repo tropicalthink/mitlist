@@ -1,8 +1,9 @@
 package jwt
 
 import (
+	"context"
 	"errors"
-	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/mitlist-app/mitlist/internal/config"
-	"github.com/mitlist-app/mitlist/internal/redis"
 )
 
 const testSecret = "test-secret-key-min-32-chars-long!!!"
@@ -96,30 +96,53 @@ func TestParse_AcceptsValidAccessToken(t *testing.T) {
 	}
 }
 
-func newServiceWithRedis(t *testing.T) *Service {
-	t.Helper()
-	url := os.Getenv("TEST_REDIS_URL")
-	if url == "" {
-		url = "redis://localhost:6379"
+type memorySessionStore struct {
+	mu       sync.Mutex
+	sessions map[string]RefreshSession
+	revoked  map[string]bool
+}
+
+func newMemorySessionStore() *memorySessionStore {
+	return &memorySessionStore{
+		sessions: make(map[string]RefreshSession),
+		revoked:  make(map[string]bool),
 	}
-	cfg := &config.Config{
+}
+
+func (s *memorySessionStore) Store(_ context.Context, session RefreshSession) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.sessions[session.JTI] = session
+	return nil
+}
+
+func (s *memorySessionStore) IsActive(_ context.Context, jti string) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	session, exists := s.sessions[jti]
+	return exists && !s.revoked[jti] && session.ExpiresAt.After(time.Now()), nil
+}
+
+func (s *memorySessionStore) Revoke(_ context.Context, jti string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.revoked[jti] = true
+	return nil
+}
+
+func newServiceWithSessions() *Service {
+	return NewWithStore(&config.Config{
 		SecretKey:                testSecret,
 		AccessTokenExpireMinutes: 60,
-		RedisURL:                 url,
-		RedisPassword:            os.Getenv("TEST_REDIS_PASSWORD"),
 		Environment:              "test",
-	}
-	rc, err := redis.New(cfg)
-	if err != nil {
-		t.Skipf("SKIP: redis unavailable: %v", err)
-	}
-	return New(cfg, rc)
+	}, newMemorySessionStore())
 }
 
 func TestGenerateAndValidate_RoundTrip(t *testing.T) {
-	svc := newServiceWithRedis(t)
+	svc := newServiceWithSessions()
+	userID := uuid.NewString()
 
-	access, refresh, err := svc.GenerateTokenPair("user-1", []string{"member"})
+	access, refresh, err := svc.GenerateTokenPair(userID, []string{"member"})
 	if err != nil {
 		t.Fatalf("GenerateTokenPair: %v", err)
 	}
@@ -142,9 +165,9 @@ func TestGenerateAndValidate_RoundTrip(t *testing.T) {
 }
 
 func TestRevokeAccessToken(t *testing.T) {
-	svc := newServiceWithRedis(t)
+	svc := newServiceWithSessions()
 
-	access, _, err := svc.GenerateTokenPair("user-1", []string{"member"})
+	access, _, err := svc.GenerateTokenPair(uuid.NewString(), []string{"member"})
 	if err != nil {
 		t.Fatalf("GenerateTokenPair: %v", err)
 	}
@@ -159,6 +182,25 @@ func TestRevokeAccessToken(t *testing.T) {
 	}
 
 	if _, err := svc.ValidateAccessToken(access); !errors.Is(err, ErrRevokedToken) {
+		t.Fatalf("expected ErrRevokedToken after revoke, got %v", err)
+	}
+}
+
+func TestRevokeRefreshToken(t *testing.T) {
+	svc := newServiceWithSessions()
+	_, refresh, err := svc.GenerateTokenPair(uuid.NewString(), []string{"member"})
+	if err != nil {
+		t.Fatalf("GenerateTokenPair: %v", err)
+	}
+
+	claims, err := svc.ValidateRefreshToken(refresh)
+	if err != nil {
+		t.Fatalf("ValidateRefreshToken before revoke: %v", err)
+	}
+	if err := svc.RevokeRefreshToken(claims.ID); err != nil {
+		t.Fatalf("RevokeRefreshToken: %v", err)
+	}
+	if _, err := svc.ValidateRefreshToken(refresh); !errors.Is(err, ErrRevokedToken) {
 		t.Fatalf("expected ErrRevokedToken after revoke, got %v", err)
 	}
 }

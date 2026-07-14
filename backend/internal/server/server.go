@@ -45,7 +45,7 @@ func New(cfg *config.Config, cnt *container.Container, runner *jobs.Runner) *Ser
 	r.Use(middleware.Recovery)
 	r.Use(middleware.SecurityHeaders)
 	r.Use(middleware.CorsMiddleware(cfg.FrontendURL, cfg.Environment))
-	r.Use(middleware.RateLimit(cnt.Redis().Client(), cfg.APIPrefix))
+	r.Use(middleware.RateLimit(cfg.APIPrefix))
 	r.Use(middleware.LoggingMiddleware())
 	r.Use(sentryhttp.New(sentryhttp.Options{Repanic: true}).Handle)
 

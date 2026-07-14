@@ -1,4 +1,4 @@
-# Production API image — configure DATABASE_URL, REDIS_URL, SECRET_KEY,
+# Production API image — configure DATABASE_URL, SECRET_KEY,
 # SESSION_SECRET_KEY (and other env from .env.example) at deploy time.
 FROM golang:1.25-alpine AS build
 RUN apk add --no-cache git ca-certificates

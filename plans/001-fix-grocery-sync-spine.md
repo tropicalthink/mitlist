@@ -90,7 +90,7 @@ The column is `current_version`; the queries use `version`. There is no later mi
 | Purpose | Command | Expected on success |
 |---------|---------|---------------------|
 | Compile | `cd backend && go build ./...` | exit 0 |
-| Start test DB | `cd backend && docker compose up -d` | postgres:16 + redis running |
+| Start test DB | `cd backend && docker compose up -d` | postgres:16 running |
 | Create test DB (first time) | `docker exec -i $(docker ps -qf name=postgres) psql -U mitlist -c "CREATE DATABASE mitlist_test"` | `CREATE DATABASE` (or "already exists" error — fine) |
 | Unit tests | `cd backend && go test ./internal/repositories/ -run TestGrocery -v` | PASS |
 | Integration tests | `cd backend && go test ./internal/api/handlers/ -run TestGrocery -v` | PASS (not skipped) |
