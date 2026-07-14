@@ -28,12 +28,13 @@ type chorePushPayload struct {
 
 // ChoreService provides business logic for chores and deterministic rotation.
 type ChoreService struct {
-	choreRepo  repositories.ChoreRepo
-	groupRepo  repositories.GroupRepo
-	listRepo   repositories.ListRepo
-	hub        *sse.Hub               // optional; nil disables SSE broadcasts
-	pushSvc    PushService            // optional; nil disables push broadcasts
-	dispatcher NotificationDispatcher // optional; nil disables persist+push dispatch
+	choreRepo        repositories.ChoreRepo
+	groupRepo        repositories.GroupRepo
+	listRepo         repositories.ListRepo
+	hub              *sse.Hub               // optional; nil disables SSE broadcasts
+	pushSvc          PushService            // optional; nil disables push broadcasts
+	dispatcher       NotificationDispatcher // optional; nil disables persist+push dispatch
+	resolveCanonical CanonicalNameResolver  // optional; nil keeps supplies unlinked
 }
 
 // NewChoreService creates a new ChoreService.
@@ -53,6 +54,12 @@ func (s *ChoreService) SetPush(p PushService) { s.pushSvc = p }
 
 // SetDispatcher injects the notification dispatcher for persist+push broadcasts.
 func (s *ChoreService) SetDispatcher(d NotificationDispatcher) { s.dispatcher = d }
+
+// SetCanonicalNameResolver enables immediate grocery linking when chore
+// supplies are copied into a shopping list.
+func (s *ChoreService) SetCanonicalNameResolver(resolve CanonicalNameResolver) {
+	s.resolveCanonical = resolve
+}
 
 // broadcastChorePush persists in-app feed rows and sends push to all group members
 // except the actor. Uses the dispatcher when available (persist+push); falls back
@@ -1130,6 +1137,11 @@ func (s *ChoreService) AddSuppliesToList(ctx context.Context, user *models.User,
 			ListID:  listID,
 			Name:    supply,
 			Checked: false,
+		}
+		if s.resolveCanonical != nil {
+			if canonicalID, resolveErr := s.resolveCanonical(ctx, chore.GroupID, supply); resolveErr == nil {
+				item.CanonicalItemID = canonicalID
+			}
 		}
 		if err := s.listRepo.CreateItem(ctx, item); err != nil {
 			return fmt.Errorf("failed to create list item for supply %s: %w", supply, err)

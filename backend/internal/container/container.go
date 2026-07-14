@@ -434,6 +434,7 @@ func (c *Container) ChoreService() *services.ChoreService {
 		c.choreService.SetHub(c.SSEHub())
 		c.choreService.SetPush(c.Push())
 		c.choreService.SetDispatcher(c.NotificationService())
+		c.choreService.SetCanonicalNameResolver(c.GroceryService().ResolveIngredientName)
 	})
 	return c.choreService
 }
@@ -459,6 +460,7 @@ func (c *Container) RecipeService() *services.RecipeService {
 func (c *Container) MealPlanService() *services.MealPlanService {
 	c.mealPlanServiceOnce.Do(func() {
 		c.mealPlanService = services.NewMealPlanService(c.MealPlanRepo(), c.GroupRepo(), c.RecipeRepo(), c.ListRepo())
+		c.mealPlanService.SetCanonicalNameResolver(c.GroceryService().ResolveIngredientName)
 	})
 	return c.mealPlanService
 }

@@ -16,10 +16,17 @@ import (
 
 // MealPlanService implements business logic for meal plans.
 type MealPlanService struct {
-	mealPlanRepo repositories.MealPlanRepoIface
-	groupRepo    repositories.GroupRepo
-	recipeRepo   repositories.RecipeRepoIface
-	listRepo     repositories.ListRepo
+	mealPlanRepo     repositories.MealPlanRepoIface
+	groupRepo        repositories.GroupRepo
+	recipeRepo       repositories.RecipeRepoIface
+	listRepo         repositories.ListRepo
+	resolveCanonical CanonicalNameResolver
+}
+
+// SetCanonicalNameResolver enables immediate grocery linking for ingredients
+// generated into a shopping list.
+func (s *MealPlanService) SetCanonicalNameResolver(resolve CanonicalNameResolver) {
+	s.resolveCanonical = resolve
 }
 
 // NewMealPlanService creates a new MealPlanService.
@@ -191,8 +198,12 @@ func (s *MealPlanService) GenerateShoppingList(ctx context.Context, user *models
 		return nil, nil, fmt.Errorf("failed to list existing items: %w", err)
 	}
 	existingNames := make(map[string]struct{}, len(existingItems))
+	existingCanonicalIDs := make(map[uuid.UUID]struct{}, len(existingItems))
 	for _, item := range existingItems {
 		existingNames[strings.ToLower(strings.TrimSpace(item.Name))] = struct{}{}
+		if item.CanonicalItemID != nil {
+			existingCanonicalIDs[*item.CanonicalItemID] = struct{}{}
+		}
 	}
 
 	// Add ingredients to list
@@ -201,12 +212,23 @@ func (s *MealPlanService) GenerateShoppingList(ctx context.Context, user *models
 		if _, exists := existingNames[strings.ToLower(strings.TrimSpace(key.name))]; exists {
 			continue
 		}
-		toCreate = append(toCreate, models.ListItem{
+		item := models.ListItem{
 			ListID:   targetList.ID,
 			Name:     key.name,
 			Quantity: qty,
 			Unit:     key.unit,
-		})
+		}
+		if s.resolveCanonical != nil {
+			if canonicalID, resolveErr := s.resolveCanonical(ctx, groupID, key.name); resolveErr == nil {
+				item.CanonicalItemID = canonicalID
+				if canonicalID != nil {
+					if _, exists := existingCanonicalIDs[*canonicalID]; exists {
+						continue
+					}
+				}
+			}
+		}
+		toCreate = append(toCreate, item)
 	}
 	if len(toCreate) > 0 {
 		if err := s.listRepo.CreateItems(ctx, toCreate); err != nil {
