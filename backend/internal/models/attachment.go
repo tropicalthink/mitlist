@@ -28,3 +28,10 @@ type Attachment struct {
 	CreatedAt            time.Time        `json:"created_at"`
 	ReservationExpiresAt *time.Time       `json:"-"`
 }
+
+// AttachmentStorageUsage is the household-level accounting snapshot used by
+// operators to enforce quotas and by members to see how much space remains.
+type AttachmentStorageUsage struct {
+	UsedBytes     int64 `json:"used_bytes"`
+	ReservedBytes int64 `json:"reserved_bytes"`
+}

@@ -37,7 +37,7 @@ You're already paying rent. Why pay another subscription just to split expenses 
 | **Shopping lists** | ✅ | ✅ | ✅ | ❌ | ❌ |
 | **Meal plans + recipes** | ✅ | ✅ | ✅ | ❌ | ❌ |
 | **Unified calendar** | ✅ | ❌ | ✅ | ❌ | ❌ |
-| **AI scanner (OCR)** | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **On-device scanner (OCR)** | ✅ | ❌ | ❌ | ❌ | ❌ |
 | **Offline-first** | ✅ | ❌ | ❌ | ❌ | ✅ |
 | **Native mobile app** | ✅ Flutter | ❌ PWA only | ❌ Web only | ❌ Web only | ❌ Desktop/web |
 | **Multi-household** | ✅ | ❌ | ✅ | ✅ | ❌ ¹ |
@@ -48,7 +48,7 @@ You're already paying rent. Why pay another subscription just to split expenses 
 
 ¹ Actual Budget is personal finance (envelope budgeting), not shared household expense splitting.
 
-**mitlist's bet: it's the only one of these that combines money, chores, shopping, and meals in a single offline-first mobile app — with an AI scanner and real-time sync — and self-hosts in one `docker compose`. The trade-off is that it's younger and you have to run it yourself (see [Where mitlist is still rough](#where-mitlist-is-still-rough)).**
+**mitlist's bet: it's the only one of these that combines money, chores, shopping, and meals in a single offline-first mobile app — with an on-device scanner and real-time sync — and self-hosts in one `docker compose`. The trade-off is that it's younger and you have to run it yourself (see [Where mitlist is still rough](#where-mitlist-is-still-rough)).**
 
 ### What each does better than us
 
@@ -124,6 +124,15 @@ leave on). Point the Flutter app at your server and you're done.
 
 See [backend/README.md](backend/README.md) for full configuration reference, including how to [enable optional crash reporting](backend/README.md#enable-error-reporting-optional) (off by default — set `SENTRY_DSN` for the backend and the `GLITCHTIP_DSN_WEB` CI secret for the web PWA).
 
+### Hosted database: PlanetScale Postgres
+
+The planned official service uses PlanetScale Postgres instead of operating a
+Postgres container. The application needs no adapter: set the backend
+`DATABASE_URL` to the PlanetScale connection string, preserve its TLS
+parameters, and run the normal migrations. Redis and Cloudflare R2 remain
+separate services; R2 holds attachments while Postgres stores their metadata
+and household quota counters.
+
 ---
 
 ## Tech stack
@@ -148,7 +157,7 @@ See [backend/README.md](backend/README.md) for full configuration reference, inc
 - **Pinwall** — Corkboard-style household notices with reminders and entity linking.
 - **Calendar** — Unified view of chores, meal plans, expenses, and reminders.
 - **Offline-first** — Works without internet. Edits queue in an outbox and sync when you're back online; live updates stream over SSE when connected.
-- **Scanner** — OCR recipes, receipts, and lists from photos, with an on-device grocery classifier.
+- **Scanner** — On-device ML Kit OCR for grocery lists, with an on-device classifier and review flow.
 - **Notifications** — Push to mobile (FCM) and web (VAPID), plus in-app notifications for chores, expenses, and reminders.
 - **Multi-currency** — Record expenses in any currency; balances settle in the group's base currency. Enter the FX rate by hand, or enable an opt-in live rate feed that prefills it.
 - **Multi-household** — Switch between households. One account, many groups.
@@ -198,10 +207,11 @@ If any of these are dealbreakers, one of the apps above will serve you better �
 
 ## Support mitlist
 
-mitlist exists because there was no free, pretty, self-hostable option — so it
-stays one. Everything works on the free app and on your own server, forever:
-no paid tier, no locked features, no ads. If mitlist ever takes money, it's to
-keep its own servers on.
+mitlist exists because there was no free, pretty, self-hostable option. The
+complete self-hosted product stays free and open source: no locked community
+edition, no ads, and no sale of household data. Official hosting is free for
+normal household use while it remains sustainable, with limits and operating
+costs explained publicly on the landing site's transparency page.
 
 Ways to help, in order of usefulness:
 

@@ -18,6 +18,7 @@ import (
 
 type fakeAttachmentRepo struct {
 	attachment        *models.Attachment
+	storageUsage      *models.AttachmentStorageUsage
 	updatedStatus     models.AttachmentStatus
 	updatedByteSize   int64
 	updateCalled      bool
@@ -26,6 +27,10 @@ type fakeAttachmentRepo struct {
 	reserveErr        error
 	finalizeErr       error
 	cleanupCandidates []models.Attachment
+}
+
+func (r *fakeAttachmentRepo) GetStorageUsage(ctx context.Context, groupID uuid.UUID) (*models.AttachmentStorageUsage, error) {
+	return r.storageUsage, nil
 }
 
 func (r *fakeAttachmentRepo) Reserve(ctx context.Context, a *models.Attachment, limitBytes int64) error {
@@ -219,6 +224,32 @@ func TestAttachmentService_CreateUploadIntentRejectsExhaustedQuota(t *testing.T)
 
 	require.Error(t, err)
 	require.IsType(t, &api.ValidationError{}, err)
+}
+
+func TestAttachmentService_GetStorageUsage(t *testing.T) {
+	ctx := context.Background()
+	user := &models.User{ID: uuid.New(), IsActive: true, IsVerified: true}
+	groupID := uuid.New()
+	groupRepo := new(mocks.MockGroupRepo)
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(
+		&models.GroupMembership{GroupID: groupID, UserID: user.ID, Role: "member"}, nil,
+	)
+	repo := &fakeAttachmentRepo{storageUsage: &models.AttachmentStorageUsage{
+		UsedBytes: 300_000_000, ReservedBytes: 50_000_000,
+	}}
+	svc := NewAttachmentServiceWithStorage(
+		&config.Config{MaxStoragePerGroupGB: 1}, repo, groupRepo, fakeAttachmentStorage{},
+	)
+
+	usage, err := svc.GetStorageUsage(ctx, user, groupID)
+
+	require.NoError(t, err)
+	require.EqualValues(t, 300_000_000, usage.UsedBytes)
+	require.EqualValues(t, 50_000_000, usage.ReservedBytes)
+	require.EqualValues(t, 1_000_000_000, usage.LimitBytes)
+	require.EqualValues(t, 650_000_000, usage.AvailableBytes)
+	require.False(t, usage.Unlimited)
+	groupRepo.AssertExpectations(t)
 }
 
 func TestAttachmentService_CleanupExpiredUploads(t *testing.T) {

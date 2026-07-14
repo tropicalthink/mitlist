@@ -3005,5 +3005,15 @@
   "runningLowHeading": "Running low",
   "@runningLowHeading": { "description": "Section header for the restock suggestion strip above the list" },
   "runningLowDaysAgo": "{days}d ago",
-  "@runningLowDaysAgo": { "description": "Per-chip cadence hint showing how many days since last purchase", "placeholders": { "days": { "type": "num" } } }
+  "@runningLowDaysAgo": { "description": "Per-chip cadence hint showing how many days since last purchase", "placeholders": { "days": { "type": "num" } } },
+  "householdStorageTitle": "Household storage",
+  "@householdStorageTitle": { "description": "Household settings storage section title" },
+  "householdStorageUsedOf": "{used} of {limit} used",
+  "@householdStorageUsedOf": { "description": "Household attachment storage usage", "placeholders": { "used": { "type": "String" }, "limit": { "type": "String" } } },
+  "householdStorageUsedUnlimited": "{used} used · no limit",
+  "@householdStorageUsedUnlimited": { "description": "Household attachment storage usage when quota is disabled", "placeholders": { "used": { "type": "String" } } },
+  "householdStoragePending": "{pending} is reserved by uploads in progress.",
+  "@householdStoragePending": { "description": "Pending household upload reservation", "placeholders": { "pending": { "type": "String" } } },
+  "householdStorageProgressLabel": "Household storage used",
+  "@householdStorageProgressLabel": { "description": "Accessibility label for storage usage progress" }
 }

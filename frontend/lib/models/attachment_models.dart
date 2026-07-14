@@ -56,3 +56,27 @@ class UploadIntent {
         expiresIn: (json['expires_in'] as num?)?.toInt() ?? 0,
       );
 }
+
+class StorageUsage {
+  final int usedBytes;
+  final int reservedBytes;
+  final int limitBytes;
+  final int availableBytes;
+  final bool unlimited;
+
+  const StorageUsage({
+    required this.usedBytes,
+    required this.reservedBytes,
+    required this.limitBytes,
+    required this.availableBytes,
+    required this.unlimited,
+  });
+
+  factory StorageUsage.fromJson(Map<String, dynamic> json) => StorageUsage(
+        usedBytes: (json['used_bytes'] as num?)?.toInt() ?? 0,
+        reservedBytes: (json['reserved_bytes'] as num?)?.toInt() ?? 0,
+        limitBytes: (json['limit_bytes'] as num?)?.toInt() ?? 0,
+        availableBytes: (json['available_bytes'] as num?)?.toInt() ?? 0,
+        unlimited: json['unlimited'] as bool? ?? false,
+      );
+}

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/attachment_models.dart';
 import '../models/group_models.dart';
 import '../models/notification_models.dart';
+import '../providers/attachment_provider.dart';
 import '../providers/group_provider.dart';
 import '../providers/notification_provider.dart';
 import '../theme/spacing.dart';
@@ -47,6 +49,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
   Group? _group;
   List<GroupMemberProfile> _members = [];
   NotificationPreferenceModel? _notificationPref;
+  StorageUsage? _storageUsage;
   final Map<String, bool> _savingKeys = {};
 
   late final TextEditingController _nameController;
@@ -85,15 +88,22 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
     try {
       final svc = await ref.read(groupServiceProviderAsync.future);
       final notifSvc = await ref.read(notificationServiceProviderAsync.future);
+      final attachmentSvc =
+          await ref.read(attachmentServiceProviderAsync.future);
       final results = await Future.wait([
         svc.getGroup(widget.groupId),
         svc.listMembers(widget.groupId),
         notifSvc.getGroupPreference(widget.groupId),
+        attachmentSvc
+            .getStorageUsage(groupId: widget.groupId)
+            .then<StorageUsage?>((value) => value)
+            .catchError((_) => null),
       ]);
       if (!mounted) return;
       final group = results[0] as Group;
       final members = results[1] as List<GroupMemberProfile>;
       final pref = results[2] as NotificationPreferenceModel;
+      final storageUsage = results[3] as StorageUsage?;
       _nameController.text = group.name;
       _descriptionController.text = group.description ?? '';
       setState(() {
@@ -102,6 +112,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         _choreZones = List<String>.from(group.choreZones);
         _members = members;
         _notificationPref = pref;
+        _storageUsage = storageUsage;
         _isLoading = false;
         _nameChanged = false;
         _descChanged = false;
@@ -333,6 +344,10 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildDetailsSection(),
+          if (_storageUsage != null) ...[
+            const SizedBox(height: MitlistSpacing.lg),
+            _buildStorageSection(),
+          ],
           const SizedBox(height: MitlistSpacing.lg),
           _buildChoreZonesSection(),
           const SizedBox(height: MitlistSpacing.lg),
@@ -344,6 +359,69 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         ],
       ),
     );
+  }
+
+  Widget _buildStorageSection() {
+    final usage = _storageUsage!;
+    final l10n = AppLocalizations.of(context)!;
+    final used = _formatBytes(usage.usedBytes);
+    final total = usage.usedBytes + usage.reservedBytes;
+    final progress = usage.unlimited || usage.limitBytes <= 0
+        ? 0.0
+        : (total / usage.limitBytes).clamp(0.0, 1.0);
+
+    return AppCard(
+      variant: AppCardVariant.outlined,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.householdStorageTitle,
+              style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: MitlistSpacing.xs),
+          Text(
+            usage.unlimited
+                ? l10n.householdStorageUsedUnlimited(used)
+                : l10n.householdStorageUsedOf(
+                    used, _formatBytes(usage.limitBytes)),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          if (!usage.unlimited) ...[
+            const SizedBox(height: MitlistSpacing.sm),
+            LinearProgressIndicator(
+              value: progress,
+              minHeight: MitlistSpacing.xs,
+              semanticsLabel: l10n.householdStorageProgressLabel,
+            ),
+          ],
+          if (usage.reservedBytes > 0) ...[
+            const SizedBox(height: MitlistSpacing.sm),
+            Text(
+              l10n.householdStoragePending(_formatBytes(usage.reservedBytes)),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes >= 1_000_000_000) {
+      return '${(bytes / 1_000_000_000).toStringAsFixed(bytes % 1_000_000_000 == 0 ? 0 : 1)} GB';
+    }
+    if (bytes >= 1_000_000) {
+      return '${(bytes / 1_000_000).toStringAsFixed(bytes % 1_000_000 == 0 ? 0 : 1)} MB';
+    }
+    if (bytes >= 1_000) {
+      return '${(bytes / 1_000).toStringAsFixed(0)} KB';
+    }
+    return '$bytes B';
   }
 
   Future<void> _toggleNotifPref(String field, bool value) async {

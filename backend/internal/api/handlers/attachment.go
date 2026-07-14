@@ -20,9 +20,30 @@ func NewAttachmentHandler(service *services.AttachmentService) *AttachmentHandle
 
 func (h *AttachmentHandler) RegisterRoutes(r chi.Router) {
 	r.Post("/attachments/upload-intent", h.CreateUploadIntent)
+	r.Get("/attachments/storage-usage", h.GetStorageUsage)
 	r.Post("/attachments/{id}/finalize", h.Finalize)
 	r.Get("/attachments/{id}/url", h.GetURL)
 	r.Delete("/attachments/{id}", h.Delete)
+}
+
+func (h *AttachmentHandler) GetStorageUsage(w http.ResponseWriter, r *http.Request) {
+	user, ok := userFromContext(r)
+	if !ok {
+		api.RespondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	groupID, err := uuid.Parse(r.URL.Query().Get("group_id"))
+	if err != nil {
+		api.RespondError(w, &api.ValidationError{Field: "group_id", Message: "valid group_id is required"})
+		return
+	}
+	usage, err := h.service.GetStorageUsage(r.Context(), user, groupID)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	api.RespondJSON(w, http.StatusOK, usage)
 }
 
 func (h *AttachmentHandler) CreateUploadIntent(w http.ResponseWriter, r *http.Request) {

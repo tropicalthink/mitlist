@@ -1,0 +1,23 @@
+---
+import LegalPage from "../components/LegalPage.astro";
+import { legal } from "../data/legal";
+const { operator } = legal;
+---
+
+<LegalPage title="Impressum" description="Impressum und Anbieterkennzeichnung für mitlist.">
+  <p class="legal-meta">Angaben gemäß § 5 DDG</p>
+  <h2>Anbieter</h2>
+  <p>{operator.name}<br />{operator.street}<br />{operator.postalCode} {operator.city}<br />{operator.country}</p>
+  <h2>Kontakt</h2>
+  <p>E-Mail: <a href={`mailto:${legal.email}`}>{legal.email}</a><br />Website: <a href={legal.siteUrl}>{legal.siteUrl.replace(/^https?:\/\//, "")}</a></p>
+  <h2>Umsatzsteuer-ID</h2>
+  <p>Umsatzsteuer-Identifikationsnummer gemäß § 27a Umsatzsteuergesetz:<br />{legal.vatId}</p>
+  <h2>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
+  <p>{legal.contentResponsible}<br />{operator.street}<br />{operator.postalCode} {operator.city}</p>
+  <h2>Verbraucherstreitbeilegung</h2>
+  <p>Wir sind nicht verpflichtet und nicht bereit, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen (§ 36 VSBG).</p>
+  <h2>Haftung für Inhalte und Links</h2>
+  <p>Als Diensteanbieter sind wir für eigene Inhalte nach den allgemeinen Gesetzen verantwortlich. Für Inhalte externer Websites, auf die wir verlinken, ist der jeweilige Anbieter verantwortlich. Bei Bekanntwerden konkreter Rechtsverletzungen entfernen wir betroffene Inhalte oder Links.</p>
+  <h2>Urheberrecht</h2>
+  <p>Die durch den Seitenbetreiber erstellten Inhalte unterliegen dem deutschen Urheberrecht. Inhalte Dritter werden als solche gekennzeichnet. Hinweise auf mögliche Rechtsverletzungen senden Sie bitte an die oben genannte Kontaktadresse.</p>
+</LegalPage>

@@ -74,8 +74,54 @@ type UploadIntent struct {
 	ExpiresIn  int                `json:"expires_in"`
 }
 
+type StorageUsage struct {
+	UsedBytes      int64 `json:"used_bytes"`
+	ReservedBytes  int64 `json:"reserved_bytes"`
+	LimitBytes     int64 `json:"limit_bytes"`
+	AvailableBytes int64 `json:"available_bytes"`
+	Unlimited      bool  `json:"unlimited"`
+}
+
 func (s *AttachmentService) requireMembership(ctx context.Context, userID, groupID uuid.UUID) error {
 	return requireGroupMember(ctx, s.groupRepo, groupID, userID)
+}
+
+func (s *AttachmentService) GetStorageUsage(ctx context.Context, user *models.User, groupID uuid.UUID) (*StorageUsage, error) {
+	if user == nil {
+		return nil, api.ErrUnauthorized
+	}
+	if !user.IsActive || !user.IsVerified {
+		return nil, &api.PermissionDeniedError{Message: "user is not active or verified"}
+	}
+	if groupID == uuid.Nil {
+		return nil, &api.ValidationError{Field: "group_id", Message: "group_id is required"}
+	}
+	if err := s.requireMembership(ctx, user.ID, groupID); err != nil {
+		return nil, err
+	}
+
+	usage, err := s.repo.GetStorageUsage(ctx, groupID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, &api.NotFoundError{Resource: "group", ID: groupID.String()}
+		}
+		return nil, err
+	}
+	limit := s.storageLimitBytes()
+	available := int64(0)
+	if limit > 0 {
+		available = limit - usage.UsedBytes - usage.ReservedBytes
+		if available < 0 {
+			available = 0
+		}
+	}
+	return &StorageUsage{
+		UsedBytes:      usage.UsedBytes,
+		ReservedBytes:  usage.ReservedBytes,
+		LimitBytes:     limit,
+		AvailableBytes: available,
+		Unlimited:      limit <= 0,
+	}, nil
 }
 
 func (s *AttachmentService) CreateUploadIntent(ctx context.Context, user *models.User, in CreateUploadIntentInput) (*UploadIntent, error) {

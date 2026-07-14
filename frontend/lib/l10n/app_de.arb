@@ -1800,4 +1800,9 @@
   "@runningLowHeading": { "description": "Section header for the restock suggestion strip above the list" },
   "runningLowDaysAgo": "vor {days}T",
   "@runningLowDaysAgo": { "description": "Per-chip cadence hint showing how many days since last purchase", "placeholders": { "days": { "type": "num" } } }
+  ,"householdStorageTitle": "Haushaltsspeicher",
+  "householdStorageUsedOf": "{used} von {limit} verwendet",
+  "householdStorageUsedUnlimited": "{used} verwendet · ohne Limit",
+  "householdStoragePending": "{pending} sind für laufende Uploads reserviert.",
+  "householdStorageProgressLabel": "Verwendeter Haushaltsspeicher"
 }
