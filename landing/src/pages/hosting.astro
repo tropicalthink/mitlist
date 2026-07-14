@@ -1,0 +1,43 @@
+---
+import InfoPage from "../components/InfoPage.astro";
+
+const GITHUB = "https://github.com/whtvrboo/mitlist";
+const WEBAPP = "https://app.mitlist.me";
+---
+
+<InfoPage
+  title="Hosting — mitlist"
+  description="Use mitlist on the official hosted service or run the complete app on your own server."
+  eyebrow="Two good doors"
+  heading="Hosted for ease. Self-hosted for control."
+  intro="The same household app either way. Official hosting removes server chores; self-hosting gives you the keys and lets you set your own limits."
+>
+  <section class="info-card">
+    <h2>Official hosting</h2>
+    <div>
+      <h3>Free for a normal household</h3>
+      <p>Each household gets 1 GB for photos, receipts, and other attachments. Lists, chores, recipes, money, and the rest of the product are not feature-gated.</p>
+      <ul>
+        <li>10 MB maximum per uploaded file</li>
+        <li>No ads and no sale of household data</li>
+        <li>On-device grocery OCR, so scans do not spend a hosted AI allowance</li>
+        <li>Limits may be adjusted if real usage makes the free service unsustainable; changes will be explained on the transparency page first</li>
+      </ul>
+      <div class="info-actions"><a class="btn btn--primary" href={WEBAPP}>Use official hosting</a></div>
+    </div>
+  </section>
+
+  <section class="info-card">
+    <h2>Your own server</h2>
+    <div>
+      <h3>The complete product, not a community edition</h3>
+      <p>Run mitlist with PostgreSQL and any S3-compatible object store. Storage quotas are configurable and can be disabled entirely.</p>
+      <ul>
+        <li>AGPL-3.0 source, including every product feature</li>
+        <li>Your database, object storage, domain, backups, and retention policy</li>
+        <li>Apps can point directly at your server</li>
+      </ul>
+      <div class="info-actions"><a class="btn" href={`${GITHUB}#self-host-in-5-minutes`} rel="noopener">Read the self-host guide</a></div>
+    </div>
+  </section>
+</InfoPage>

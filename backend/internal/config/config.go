@@ -18,18 +18,14 @@ type Config struct {
 	DatabaseURL      string `env:"DATABASE_URL" required:"true"`
 	SecretKey        string `env:"SECRET_KEY" required:"true"`
 	SessionSecretKey string `env:"SESSION_SECRET_KEY" required:"true"`
-	RedisURL         string `env:"REDIS_URL" required:"true" default:"redis://localhost:6379"`
-	// Database & Cache
-	RedisPassword string `env:"REDIS_PASSWORD" default:""`
 
 	// Application
 	Environment              string `env:"ENVIRONMENT" default:"development"`
 	FrontendURL              string `env:"FRONTEND_URL" default:"http://localhost:5173"`
 	Port                     string `env:"PORT" default:"8000"`
 	APIPrefix                string `env:"API_PREFIX" default:"/api"`
-	AccessTokenExpireMinutes int    `env:"ACCESS_TOKEN_EXPIRE_MINUTES" default:"60"`
+	AccessTokenExpireMinutes int    `env:"ACCESS_TOKEN_EXPIRE_MINUTES" default:"15"`
 	RunMigrationsOnStartup   bool   `env:"RUN_MIGRATIONS_ON_STARTUP" default:"true"`
-	WarmCacheOnStartup       bool   `env:"WARM_CACHE_ON_STARTUP" default:"false"`
 	LogLevel                 string `env:"LOG_LEVEL" default:"WARNING"`
 
 	// OAuth — Google
@@ -46,10 +42,6 @@ type Config struct {
 
 	// OAuth — Allowlist
 	OAuthRedirectAllowlist string `env:"OAUTH_REDIRECT_ALLOWLIST"`
-
-	// External APIs
-	OpenRouterAPIKey  string `env:"OPENROUTER_API_KEY"`
-	OpenRouterBaseURL string `env:"OPENROUTER_BASE_URL" default:"https://openrouter.ai/api/v1"`
 
 	// Web Push
 	VapidPrivateKey string `env:"VAPID_PRIVATE_KEY"`
@@ -98,8 +90,8 @@ type Config struct {
 	MaxActiveListsPerGroup int `env:"MAX_ACTIVE_LISTS_PER_GROUP" default:"100"`
 	MaxItemsPerList        int `env:"MAX_ITEMS_PER_LIST" default:"1000"`
 	MaxFileSizeMB          int `env:"MAX_FILE_SIZE_MB" default:"10"`
-	MaxFileSizeBytes       int `env:"MAX_FILE_SIZE_BYTES" default:"52428800"`
-	MaxStoragePerGroupGB   int `env:"MAX_STORAGE_PER_GROUP_GB" default:"10"`
+	MaxFileSizeBytes       int `env:"MAX_FILE_SIZE_BYTES" default:"10485760"`
+	MaxStoragePerGroupGB   int `env:"MAX_STORAGE_PER_GROUP_GB" default:"1"`
 
 	// Feature Flags
 	EnableVirusScanning   bool   `env:"ENABLE_VIRUS_SCANNING" default:"false"`
@@ -178,7 +170,6 @@ func (c *Config) LogIntegrationStatus() {
 	emailOn := c.ResendAPIKey != "" || c.SendGridSMTPUser != "" || c.BrevoSMTPUser != ""
 	webPushOn := c.VapidPublicKey != "" && c.VapidPrivateKey != ""
 	mobilePushOn := c.FirebaseProjectID != "" && c.FirebaseServiceAccount != ""
-	scannerOn := c.OpenRouterAPIKey != ""
 	storageOn := c.S3BucketName != ""
 	oauthOn := c.GoogleClientID != "" || c.AppleClientID != ""
 	errorReportingOn := c.SentryDSN != ""
@@ -189,7 +180,6 @@ func (c *Config) LogIntegrationStatus() {
 		Bool("email", emailOn).
 		Bool("web_push", webPushOn).
 		Bool("mobile_push", mobilePushOn).
-		Bool("ocr_scanner", scannerOn).
 		Bool("file_storage", storageOn).
 		Bool("oauth", oauthOn).
 		Bool("error_reporting", errorReportingOn).
@@ -207,9 +197,6 @@ func (c *Config) LogIntegrationStatus() {
 	if !storageOn {
 		disabled = append(disabled, "file_storage (set S3_BUCKET_NAME and AWS_* credentials)")
 	}
-	if !scannerOn {
-		disabled = append(disabled, "ocr_scanner (set OPENROUTER_API_KEY)")
-	}
 	if len(disabled) > 0 {
 		log.Warn().Strs("disabled_integrations", disabled).
 			Msg("some optional integrations are disabled; features depending on them will not work")
@@ -222,10 +209,8 @@ func (c Config) MaskSecrets() Config {
 	masked.DatabaseURL = mask(masked.DatabaseURL)
 	masked.SecretKey = mask(masked.SecretKey)
 	masked.SessionSecretKey = mask(masked.SessionSecretKey)
-	masked.RedisPassword = mask(masked.RedisPassword)
 	masked.GoogleClientSecret = mask(masked.GoogleClientSecret)
 	masked.ApplePrivateKey = mask(masked.ApplePrivateKey)
-	masked.OpenRouterAPIKey = mask(masked.OpenRouterAPIKey)
 	masked.VapidPrivateKey = mask(masked.VapidPrivateKey)
 	masked.FirebaseServiceAccount = mask(masked.FirebaseServiceAccount)
 	masked.ResendAPIKey = mask(masked.ResendAPIKey)

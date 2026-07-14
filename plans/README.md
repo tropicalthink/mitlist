@@ -174,7 +174,10 @@ traceability.
 
 ## Findings considered and rejected — Batch 2 (do not re-audit)
 
-- **JWT access-token revocation fails open on Redis error** (`jwt.go:92-96`) — not a bug: the code documents this as an intentional availability tradeoff (revoked tokens accepted until natural expiry, ≤1h, during a Redis outage). Whether to fail closed is a policy call for the maintainer, not a defect to fix. Access TTL shortening is the lever if they want to reduce the window.
+- **JWT access-token revocation is process-local** — refresh sessions are durably
+  revoked in PostgreSQL, while access-token revocations live in the API process
+  until the short token lifetime expires. Multi-replica deployments should keep
+  the 15-minute default or add a shared revocation strategy.
 - **`AuthInterceptor` default constructor uses a non-shared token store** (`api_client.dart:27-28`) — latent, not firing: production wires the shared store via `createApiClient` (`api_client.dart:165,180`). Worth a one-line default change if 020 touches the file, but not its own plan.
 - **God-screen rebuild scoping** — checked, clean: `pinwall_board_screen`, `expenses_screen`, `chores_screen` already push `ref.watch` into scoped consumer leaves (the good `list_detail` pattern). No top-level god-tree rebuild finding. (The god screens are still worth decomposing for *reviewability* — Plan 037 — but not for rebuild perf.)
 - **Finance settlement math untested** — false: `finance_service_test.go:528-690` characterizes mixed-fixture balances + reimbursement suggestions; the settlement path is in-memory (no N+1) and well covered.

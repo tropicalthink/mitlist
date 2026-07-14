@@ -1,0 +1,41 @@
+---
+import LegalPage from "../components/LegalPage.astro";
+import { legal } from "../data/legal";
+const { operator, hosting } = legal;
+const lastUpdated = "14. Juli 2026";
+---
+
+<LegalPage title="Datenschutz" description="Datenschutzerklärung für die mitlist-Website und den offiziellen mitlist-Dienst.">
+  <p class="legal-meta">Stand: {lastUpdated}</p>
+  <h2>1. Verantwortlicher</h2>
+  <p>{operator.name}<br />{operator.street}<br />{operator.postalCode} {operator.city}<br />{operator.country}<br />E-Mail: <a href={`mailto:${legal.email}`}>{legal.email}</a></p>
+
+  <h2>2. Allgemeines und Rechtsgrundlagen</h2>
+  <p>Wir verarbeiten personenbezogene Daten nur, soweit dies für die Bereitstellung der Website und des von Ihnen gewählten mitlist-Dienstes erforderlich ist. Rechtsgrundlagen sind insbesondere Art. 6 Abs. 1 lit. b DSGVO (Vertrag und vorvertragliche Maßnahmen), Art. 6 Abs. 1 lit. f DSGVO (sicherer und erreichbarer Betrieb) und, soweit eingeholt, Art. 6 Abs. 1 lit. a DSGVO (Einwilligung).</p>
+
+  <h2>3. Website: keine Analyse und keine Werbeprofile</h2>
+  <p>Die öffentliche Website verwendet keine Analyse- oder Werbetracker und bildet keine Nutzungsprofile. Schriftarten und Bilder werden von der Website selbst ausgeliefert; dafür wird keine Verbindung zu Google Fonts oder einem Bild-CDN aufgebaut.</p>
+
+  <h2>4. Hosting der Website</h2>
+  <p>Diese Website wird bei {hosting.provider} gehostet ({hosting.address}). Beim Abruf werden technisch erforderliche Daten wie IP-Adresse, Zeitpunkt, angeforderte URL und Browser-Typ in Server-Logs verarbeitet, um die Seite auszuliefern und abzusichern. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO. Weitere Informationen: <a href={hosting.url} target="_blank" rel="noopener noreferrer">Cloudflare Datenschutz</a>.</p>
+
+  <h2>5. Offiziell gehosteter mitlist-Dienst</h2>
+  <p>Wenn Sie die offizielle mitlist-Instanz nutzen, verarbeiten wir die von Ihnen eingegebenen Konto- und Haushaltsdaten. Dazu können E-Mail-Adresse, Anzeigename, Listen, Aufgaben, Ausgaben, Rezepte, Termine, Notizen, Mitgliedschaften und hochgeladene Dateien gehören. Die Verarbeitung ist erforderlich, um den gewählten Dienst bereitzustellen (Art. 6 Abs. 1 lit. b DSGVO).</p>
+  <p>Kontodaten und Haushaltsinhalte werden grundsätzlich bis zur Löschung des Kontos oder Haushalts gespeichert, soweit keine gesetzlichen Pflichten oder berechtigten Sicherheitsinteressen eine vorübergehende weitere Aufbewahrung verlangen. Abgebrochene Upload-Reservierungen werden automatisch bereinigt.</p>
+
+  <h2>6. Auftragsverarbeiter und technische Empfänger</h2>
+  <p>Für die offizielle Instanz können insbesondere PlanetScale (PostgreSQL-Datenbank), Cloudflare (Website, Netzwerk und R2-Objektspeicher) sowie ein Infrastruktur-Anbieter für den Go-API-Dienst eingesetzt werden. E-Mail- und Push-Anbieter werden nur genutzt, wenn die jeweilige Funktion aktiviert ist. Die aktuelle technische Aufstellung wird auf der <a href="/transparency">Transparenzseite</a> veröffentlicht.</p>
+  <p>Bei Übermittlungen in Drittländer werden geeignete Garantien wie Angemessenheitsbeschlüsse oder EU-Standardvertragsklauseln zugrunde gelegt, soweit erforderlich.</p>
+
+  <h2>7. Selbst gehostete Instanzen</h2>
+  <p>Bei einer selbst gehosteten Instanz ist deren Betreiber für die Datenverarbeitung verantwortlich. Das mitlist-Projekt erhält aus solchen Instanzen standardmäßig keine Haushaltsdaten, Analysewerte oder Telemetrie. Optionale Fehlerberichte werden nur an den vom Betreiber konfigurierten Endpunkt gesendet.</p>
+
+  <h2>8. Externe Links</h2>
+  <p>Beim Anklicken externer Links, etwa zu GitHub, gelten die Datenschutzbestimmungen des jeweiligen Anbieters.</p>
+
+  <h2>9. Ihre Rechte</h2>
+  <p>Sie haben insbesondere Rechte auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung (Art. 18), Datenübertragbarkeit (Art. 20), Widerspruch (Art. 21) und Widerruf einer Einwilligung (Art. 7 Abs. 3). Eine Nachricht an <a href={`mailto:${legal.email}`}>{legal.email}</a> genügt. Außerdem können Sie sich bei einer Datenschutz-Aufsichtsbehörde beschweren (Art. 77).</p>
+
+  <h2>10. Änderungen</h2>
+  <p>Wir passen diese Erklärung an, wenn sich Dienst, Rechtslage oder eingesetzte Anbieter ändern. Die aktuelle Fassung steht auf dieser Seite.</p>
+</LegalPage>

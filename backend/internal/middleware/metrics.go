@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/mitlist-app/mitlist/internal/redis"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -16,7 +15,6 @@ type Metrics struct {
 	requestsTotal   *prometheus.CounterVec
 	requestDuration *prometheus.HistogramVec
 	dbConnections   *prometheus.GaugeVec
-	redisPoolStats  *prometheus.GaugeVec
 }
 
 var (
@@ -41,19 +39,15 @@ func GetMetrics() *Metrics {
 				Name: "db_connections_active",
 				Help: "Active database connections.",
 			}, []string{"state"}),
-			redisPoolStats: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-				Name: "redis_pool_stats",
-				Help: "Redis pool statistics.",
-			}, []string{"stat"}),
 		}
-		prometheus.MustRegister(m.requestsTotal, m.requestDuration, m.dbConnections, m.redisPoolStats)
+		prometheus.MustRegister(m.requestsTotal, m.requestDuration, m.dbConnections)
 		metricsInst = m
 	})
 	return metricsInst
 }
 
 // MetricsMiddleware records request metrics and exposes infrastructure stats.
-func MetricsMiddleware(db *pgxpool.Pool, redisClient *redis.RedisClient) func(next http.Handler) http.Handler {
+func MetricsMiddleware(db *pgxpool.Pool) func(next http.Handler) http.Handler {
 	m := GetMetrics()
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -71,16 +65,6 @@ func MetricsMiddleware(db *pgxpool.Pool, redisClient *redis.RedisClient) func(ne
 				m.dbConnections.WithLabelValues("acquired").Set(float64(stats.AcquiredConns()))
 				m.dbConnections.WithLabelValues("idle").Set(float64(stats.IdleConns()))
 				m.dbConnections.WithLabelValues("total").Set(float64(stats.TotalConns()))
-			}
-
-			if redisClient != nil && redisClient.Client() != nil {
-				pool := redisClient.Client().PoolStats()
-				m.redisPoolStats.WithLabelValues("hits").Set(float64(pool.Hits))
-				m.redisPoolStats.WithLabelValues("misses").Set(float64(pool.Misses))
-				m.redisPoolStats.WithLabelValues("timeouts").Set(float64(pool.Timeouts))
-				m.redisPoolStats.WithLabelValues("total_conns").Set(float64(pool.TotalConns))
-				m.redisPoolStats.WithLabelValues("idle_conns").Set(float64(pool.IdleConns))
-				m.redisPoolStats.WithLabelValues("stale_conns").Set(float64(pool.StaleConns))
 			}
 		})
 	}

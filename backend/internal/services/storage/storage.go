@@ -97,7 +97,7 @@ func (s *Service) Upload(key string, data []byte) error {
 
 // GetUploadURL returns a presigned PUT URL for the given key.
 // The caller should upload bytes directly to the returned URL.
-func (s *Service) GetUploadURL(key string, contentType string, expires time.Duration) string {
+func (s *Service) GetUploadURL(key string, contentType string, contentLength int64, expires time.Duration) string {
 	if s.client == nil || s.bucket == "" {
 		return ""
 	}
@@ -113,9 +113,10 @@ func (s *Service) GetUploadURL(key string, contentType string, expires time.Dura
 
 	presignClient := s3.NewPresignClient(s.client)
 	req, err := presignClient.PresignPutObject(ctx, &s3.PutObjectInput{
-		Bucket:      aws.String(s.bucket),
-		Key:         aws.String(key),
-		ContentType: aws.String(contentType),
+		Bucket:        aws.String(s.bucket),
+		Key:           aws.String(key),
+		ContentType:   aws.String(contentType),
+		ContentLength: aws.Int64(contentLength),
 	}, s3.WithPresignExpires(expires))
 	if err != nil {
 		log.Error().Err(err).Str("key", key).Msg("failed to generate presigned upload URL")

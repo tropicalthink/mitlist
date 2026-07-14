@@ -20,7 +20,7 @@ func TestGuestService_CreateGuest(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
 		jwtSvc := new(mocks.MockJWTService)
-		svc := NewGuestService(userRepo, jwtSvc, nil, nil)
+		svc := NewGuestService(userRepo, jwtSvc, nil)
 
 		userRepo.On("Create", ctx, mock.AnythingOfType("*models.User")).Return(nil)
 		jwtSvc.On("GenerateTokenPair", mock.AnythingOfType("string"), mock.Anything).Return("access", "refresh", nil)
@@ -39,7 +39,7 @@ func TestGuestService_GetGuest(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
-		svc := NewGuestService(userRepo, nil, nil, nil)
+		svc := NewGuestService(userRepo, nil, nil)
 
 		userRepo.On("GetByID", ctx, userID).Return(&models.User{ID: userID, IsGuest: true}, nil)
 
@@ -50,7 +50,7 @@ func TestGuestService_GetGuest(t *testing.T) {
 
 	t.Run("not a guest", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
-		svc := NewGuestService(userRepo, nil, nil, nil)
+		svc := NewGuestService(userRepo, nil, nil)
 
 		userRepo.On("GetByID", ctx, userID).Return(&models.User{ID: userID, IsGuest: false}, nil)
 
@@ -68,7 +68,7 @@ func TestGuestService_ConvertGuest(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
 		jwtSvc := new(mocks.MockJWTService)
 		passSvc := new(mocks.MockPasswordService)
-		svc := NewGuestService(userRepo, jwtSvc, passSvc, nil)
+		svc := NewGuestService(userRepo, jwtSvc, passSvc)
 
 		userRepo.On("GetByID", ctx, guestID).Return(&models.User{ID: guestID, IsGuest: true}, nil)
 		passSvc.On("Hash", "password123").Return("hash", nil)
@@ -84,7 +84,7 @@ func TestGuestService_ConvertGuest(t *testing.T) {
 
 	t.Run("not a guest", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
-		svc := NewGuestService(userRepo, nil, nil, nil)
+		svc := NewGuestService(userRepo, nil, nil)
 
 		userRepo.On("GetByID", ctx, guestID).Return(&models.User{ID: guestID, IsGuest: false}, nil)
 

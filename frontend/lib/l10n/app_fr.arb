@@ -5661,4 +5661,9 @@
   "@runningLowHeading": { "description": "Section header for the restock suggestion strip above the list" },
   "runningLowDaysAgo": "il y a {days}j",
   "@runningLowDaysAgo": { "description": "Per-chip cadence hint showing how many days since last purchase", "placeholders": { "days": { "type": "num" } } }
+  ,"householdStorageTitle": "Stockage du foyer",
+  "householdStorageUsedOf": "{used} utilisés sur {limit}",
+  "householdStorageUsedUnlimited": "{used} utilisés · sans limite",
+  "householdStoragePending": "{pending} sont réservés pour les envois en cours.",
+  "householdStorageProgressLabel": "Stockage du foyer utilisé"
 }

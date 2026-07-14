@@ -51,7 +51,7 @@ func TestExtractToken(t *testing.T) {
 }
 
 // makeToken crafts a signed JWT directly so we can exercise the parse/reject
-// branches of ValidateAccessToken without any Redis dependency.
+// branches of ValidateAccessToken without a refresh-session store.
 func makeToken(t *testing.T, secret string, typ string, sub string, exp time.Time) string {
 	t.Helper()
 	claims := jwt.MapClaims{
@@ -73,7 +73,7 @@ func makeToken(t *testing.T, secret string, typ string, sub string, exp time.Tim
 func TestAuth_RejectsInvalidTokens(t *testing.T) {
 	const secret = "test-secret-key-min-32-chars-long!!!"
 	cfg := &config.Config{SecretKey: secret, AccessTokenExpireMinutes: 60}
-	jwtSvc := jwtservice.New(cfg, nil) // nil redis is safe for these reject-before-Redis paths
+	jwtSvc := jwtservice.New(cfg, nil) // nil DB is safe for access-token parsing tests
 
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
 	handler := Auth(jwtSvc, nil)(next) // nil userSvc is safe: these paths return before GetMe

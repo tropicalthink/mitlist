@@ -9,17 +9,7 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
-
-	"github.com/alicebob/miniredis/v2"
-	"github.com/redis/go-redis/v9"
 )
-
-// newTestRedis spins up an in-process Redis using miniredis.
-func newTestRedis(t *testing.T) *redis.Client {
-	t.Helper()
-	mr := miniredis.RunT(t)
-	return redis.NewClient(&redis.Options{Addr: mr.Addr()})
-}
 
 // frankfurterJSON returns a minimal Frankfurter JSON payload for the given rate.
 func frankfurterJSON(to string, rate float64) string {
@@ -41,8 +31,7 @@ func TestGetRate_HappyPath(t *testing.T) {
 	}))
 	defer stub.Close()
 
-	rc := newTestRedis(t)
-	svc := NewRateService(NewFrankfurterProvider(stub.URL, ""), rc, true)
+	svc := NewRateService(NewFrankfurterProvider(stub.URL, ""), true)
 
 	// First call — hits the stub.
 	rate, available, err := svc.GetRate(context.Background(), from, to)
@@ -60,7 +49,7 @@ func TestGetRate_HappyPath(t *testing.T) {
 	}
 }
 
-// TestGetRate_CacheHit verifies that the second call uses the Redis cache and
+// TestGetRate_CacheHit verifies that the second call uses the local cache and
 // does not make a second outbound call to the provider.
 func TestGetRate_CacheHit(t *testing.T) {
 	const from, to = "GBP", "JPY"
@@ -73,8 +62,7 @@ func TestGetRate_CacheHit(t *testing.T) {
 		fmt.Fprint(w, frankfurterJSON(to, wantRate))
 	}))
 
-	rc := newTestRedis(t)
-	svc := NewRateService(NewFrankfurterProvider(stub.URL, ""), rc, true)
+	svc := NewRateService(NewFrankfurterProvider(stub.URL, ""), true)
 
 	ctx := context.Background()
 
@@ -109,8 +97,7 @@ func TestGetRate_ProviderReturns500(t *testing.T) {
 	}))
 	defer stub.Close()
 
-	rc := newTestRedis(t)
-	svc := NewRateService(NewFrankfurterProvider(stub.URL, ""), rc, true)
+	svc := NewRateService(NewFrankfurterProvider(stub.URL, ""), true)
 
 	rate, available, err := svc.GetRate(context.Background(), "USD", "EUR")
 	if err != nil {
@@ -136,13 +123,12 @@ func TestGetRate_ProviderHangs(t *testing.T) {
 	}))
 	defer stub.Close()
 
-	rc := newTestRedis(t)
 	// Use a provider with a very short timeout so the test completes quickly.
 	p := &frankfurterProvider{
 		baseURL: stub.URL,
 		client:  &http.Client{Timeout: 100 * time.Millisecond},
 	}
-	svc := NewRateService(p, rc, true)
+	svc := NewRateService(p, true)
 
 	rate, available, err := svc.GetRate(context.Background(), "USD", "CHF")
 	if err != nil {
@@ -165,8 +151,7 @@ func TestGetRate_ProviderGarbage(t *testing.T) {
 	}))
 	defer stub.Close()
 
-	rc := newTestRedis(t)
-	svc := NewRateService(NewFrankfurterProvider(stub.URL, ""), rc, true)
+	svc := NewRateService(NewFrankfurterProvider(stub.URL, ""), true)
 
 	rate, available, err := svc.GetRate(context.Background(), "USD", "EUR")
 	if err != nil {
@@ -191,9 +176,8 @@ func TestGetRate_Disabled(t *testing.T) {
 	}))
 	defer stub.Close()
 
-	rc := newTestRedis(t)
 	// enabled=false — provider is nil (as it would be in production when URL is unset)
-	svc := NewRateService(nil, rc, false)
+	svc := NewRateService(nil, false)
 
 	rate, available, err := svc.GetRate(context.Background(), "USD", "EUR")
 	if err != nil {
@@ -220,8 +204,7 @@ func TestGetRate_InvalidCurrencyCode(t *testing.T) {
 	}))
 	defer stub.Close()
 
-	rc := newTestRedis(t)
-	svc := NewRateService(NewFrankfurterProvider(stub.URL, ""), rc, true)
+	svc := NewRateService(NewFrankfurterProvider(stub.URL, ""), true)
 
 	cases := []struct{ from, to string }{
 		{"usd", "EUR"},  // lowercase
@@ -249,9 +232,8 @@ func TestGetRate_InvalidCurrencyCode(t *testing.T) {
 
 // TestGetRate_SameCurrency confirms a trivial 1:1 rate for same-currency pairs.
 func TestGetRate_SameCurrency(t *testing.T) {
-	rc := newTestRedis(t)
 	// Provider should never be called for same-currency pairs.
-	svc := NewRateService(nil, rc, true)
+	svc := NewRateService(nil, true)
 
 	rate, available, err := svc.GetRate(context.Background(), "EUR", "EUR")
 	if err != nil {

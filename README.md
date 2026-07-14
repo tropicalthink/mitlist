@@ -37,7 +37,7 @@ You're already paying rent. Why pay another subscription just to split expenses 
 | **Shopping lists** | ✅ | ✅ | ✅ | ❌ | ❌ |
 | **Meal plans + recipes** | ✅ | ✅ | ✅ | ❌ | ❌ |
 | **Unified calendar** | ✅ | ❌ | ✅ | ❌ | ❌ |
-| **AI scanner (OCR)** | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **On-device scanner (OCR)** | ✅ | ❌ | ❌ | ❌ | ❌ |
 | **Offline-first** | ✅ | ❌ | ❌ | ❌ | ✅ |
 | **Native mobile app** | ✅ Flutter | ❌ PWA only | ❌ Web only | ❌ Web only | ❌ Desktop/web |
 | **Multi-household** | ✅ | ❌ | ✅ | ✅ | ❌ ¹ |
@@ -48,7 +48,7 @@ You're already paying rent. Why pay another subscription just to split expenses 
 
 ¹ Actual Budget is personal finance (envelope budgeting), not shared household expense splitting.
 
-**mitlist's bet: it's the only one of these that combines money, chores, shopping, and meals in a single offline-first mobile app — with an AI scanner and real-time sync — and self-hosts in one `docker compose`. The trade-off is that it's younger and you have to run it yourself (see [Where mitlist is still rough](#where-mitlist-is-still-rough)).**
+**mitlist's bet: it's the only one of these that combines money, chores, shopping, and meals in a single offline-first mobile app — with an on-device scanner and real-time sync — and self-hosts in one `docker compose`. The trade-off is that it's younger and you have to run it yourself (see [Where mitlist is still rough](#where-mitlist-is-still-rough)).**
 
 ### What each does better than us
 
@@ -77,32 +77,30 @@ You're already paying rent. Why pay another subscription just to split expenses 
 ```bash
 git clone https://git.vinylnostalgia.com/mo/mitlist.git
 cd mitlist
-cp .env.example .env                  # docker compose DB/Redis credentials
+cp .env.example .env                  # docker compose database credentials
 cp backend/.env.example backend/.env  # the app's own runtime config
 ```
 
 There are **two** env files, and they do different jobs:
 
-- **Root `.env`** feeds docker compose `${...}` interpolation — the Postgres and
-  Redis credentials and the generated `DATABASE_URL`. The prod profile reads
+- **Root `.env`** feeds docker compose `${...}` interpolation — the Postgres
+  credentials and the generated `DATABASE_URL`. The prod profile reads
   these and **refuses to start** if `POSTGRES_PASSWORD` is unset.
 - **`backend/.env`** is the application's own runtime config (`SECRET_KEY`,
   `SESSION_SECRET_KEY`, OAuth, API keys, …). It does **not** feed compose
-  interpolation, so DB/Redis passwords must go in the root `.env`.
+  interpolation, so the database password must go in the root `.env`.
 
 Open the **root `.env`** and set **strong, unique** credentials before starting:
 
 ```bash
 # Generate strong passwords (run these and paste the output into the root .env)
 openssl rand -base64 24   # use for POSTGRES_PASSWORD
-openssl rand -base64 24   # use for REDIS_PASSWORD
 ```
 
 Set in the root `.env`:
 
 ```
 POSTGRES_PASSWORD=<strong random value>   # REQUIRED — no default
-REDIS_PASSWORD=<strong random value>      # strongly recommended
 POSTGRES_USER=mitlist
 POSTGRES_DB=mitlist
 ```
@@ -114,15 +112,24 @@ Then fill in `SECRET_KEY`, `SESSION_SECRET_KEY`, and any OAuth/API keys in
 docker compose --profile prod up -d
 ```
 
-PostgreSQL, Redis, and the Go API start automatically. The database schema is
+PostgreSQL and the Go API start automatically. The database schema is
 created on first boot (`RUN_MIGRATIONS_ON_STARTUP=true` — idempotent, safe to
 leave on). Point the Flutter app at your server and you're done.
 
-> **Security note**: DB and Redis ports are bound to `127.0.0.1` only and are
+> **Security note**: The database port is bound to `127.0.0.1` only and is
 > not reachable from the public network. If you point `DATABASE_URL` at a remote
 > Postgres over a public network, set `DB_SSLMODE=require` in the root `.env`.
 
 See [backend/README.md](backend/README.md) for full configuration reference, including how to [enable optional crash reporting](backend/README.md#enable-error-reporting-optional) (off by default — set `SENTRY_DSN` for the backend and the `GLITCHTIP_DSN_WEB` CI secret for the web PWA).
+
+### Hosted database: PlanetScale Postgres
+
+The planned official service uses PlanetScale Postgres instead of operating a
+Postgres container. The application needs no adapter: set `DATABASE_URL` in the
+deployment environment (or the root `.env` when using the prod Compose
+profile) to the PlanetScale connection string, preserve its TLS parameters,
+and run the normal migrations. Cloudflare R2 holds attachments while Postgres
+stores their metadata, household quota counters, and refresh sessions.
 
 ---
 
@@ -132,9 +139,8 @@ See [backend/README.md](backend/README.md) for full configuration reference, inc
 |-------|------|
 | Mobile app | Flutter (iOS + Android) |
 | Web app | Flutter Web PWA |
-| Backend | Go (chi router, pgx, Redis) |
+| Backend | Go (chi router, pgx) |
 | Database | PostgreSQL 16 |
-| Cache | Redis 7 |
 | File storage | S3 / Cloudflare R2 |
 
 ---
@@ -148,7 +154,7 @@ See [backend/README.md](backend/README.md) for full configuration reference, inc
 - **Pinwall** — Corkboard-style household notices with reminders and entity linking.
 - **Calendar** — Unified view of chores, meal plans, expenses, and reminders.
 - **Offline-first** — Works without internet. Edits queue in an outbox and sync when you're back online; live updates stream over SSE when connected.
-- **Scanner** — OCR recipes, receipts, and lists from photos, with an on-device grocery classifier.
+- **Scanner** — On-device ML Kit OCR for grocery lists, with an on-device classifier and review flow.
 - **Notifications** — Push to mobile (FCM) and web (VAPID), plus in-app notifications for chores, expenses, and reminders.
 - **Multi-currency** — Record expenses in any currency; balances settle in the group's base currency. Enter the FX rate by hand, or enable an opt-in live rate feed that prefills it.
 - **Multi-household** — Switch between households. One account, many groups.
@@ -198,10 +204,11 @@ If any of these are dealbreakers, one of the apps above will serve you better �
 
 ## Support mitlist
 
-mitlist exists because there was no free, pretty, self-hostable option — so it
-stays one. Everything works on the free app and on your own server, forever:
-no paid tier, no locked features, no ads. If mitlist ever takes money, it's to
-keep its own servers on.
+mitlist exists because there was no free, pretty, self-hostable option. The
+complete self-hosted product stays free and open source: no locked community
+edition, no ads, and no sale of household data. Official hosting is free for
+normal household use while it remains sustainable, with limits and operating
+costs explained publicly on the landing site's transparency page.
 
 Ways to help, in order of usefulness:
 
@@ -224,8 +231,8 @@ flutter pub get
 flutter run
 
 # Backend
-cp .env.example .env    # root: docker compose DB/Redis creds (dev defaults are fine)
-docker compose up -d    # postgres + redis only (no profile)
+cp .env.example .env    # root: docker compose DB creds (dev defaults are fine)
+docker compose up -d    # postgres only (no profile)
 cd backend
 cp .env.example .env    # the app's own runtime config — see comments inside
 go run ./cmd/migrate up

@@ -1,0 +1,35 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { legal } from "../data/legal";
+import SiteHeader from "./SiteHeader.astro";
+import SiteFooter from "./SiteFooter.astro";
+
+interface Props {
+  title: string;
+  description: string;
+}
+const { title, description } = Astro.props;
+---
+
+<Layout title={`${title} — ${legal.siteName}`} description={description}>
+  <SiteHeader />
+  <main class="legal-main">
+    <article class="wrap legal-doc">
+      <h1>{title}</h1>
+      <slot />
+    </article>
+  </main>
+  <SiteFooter />
+</Layout>
+
+<style>
+  .legal-main { background: var(--paper); min-height: 70vh; padding-block: clamp(3rem, 8vw, 6rem); }
+  .legal-doc { max-width: 48rem; margin-inline: auto; }
+  .legal-doc h1 { font-size: clamp(2.4rem, 7vw, 4.8rem); margin-bottom: 2rem; }
+  .legal-doc :global(h2) { font-size: 1.45rem; margin: 2.5rem 0 0.75rem; padding-top: 1.25rem; border-top: 2px solid var(--line); }
+  .legal-doc :global(p),
+  .legal-doc :global(li) { line-height: 1.7; }
+  .legal-doc :global(p) { margin-bottom: 1rem; }
+  .legal-doc :global(ul) { padding-left: 1.25rem; }
+  .legal-doc :global(.legal-meta) { color: var(--ink-3); font-weight: 600; }
+</style>

@@ -1,0 +1,80 @@
+---
+import Layout from "../layouts/Layout.astro";
+import SiteHeader from "./SiteHeader.astro";
+import SiteFooter from "./SiteFooter.astro";
+
+interface Props {
+  title: string;
+  description: string;
+  eyebrow: string;
+  heading: string;
+  intro: string;
+}
+const { title, description, eyebrow, heading, intro } = Astro.props;
+---
+
+<Layout title={title} description={description}>
+  <SiteHeader />
+  <main>
+    <section class="info-hero">
+      <div class="wrap info-hero__copy">
+        <span class="stamp">{eyebrow}</span>
+        <h1 class="display">{heading}</h1>
+        <p class="lead">{intro}</p>
+      </div>
+    </section>
+    <section class="section-pad">
+      <div class="wrap info-grid">
+        <slot />
+      </div>
+    </section>
+  </main>
+  <SiteFooter />
+</Layout>
+
+<style>
+  .info-hero {
+    background: var(--paper-2);
+    padding-block: clamp(3.5rem, 2rem + 6vw, 7rem);
+    border-bottom: var(--border);
+  }
+  .info-hero__copy { max-width: 52rem; }
+  .info-hero .stamp { margin-bottom: 1.4rem; }
+  .info-hero .display { max-width: 14ch; margin-bottom: 1.3rem; }
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 0;
+    border: var(--border);
+    box-shadow: var(--shadow-lg);
+    background: var(--ink);
+  }
+  .info-grid :global(.info-card) {
+    background: var(--paper);
+    padding: clamp(1.5rem, 1rem + 2vw, 2.2rem);
+    border-right: var(--border);
+  }
+  .info-grid :global(.info-card:last-child) { border-right: none; }
+  .info-grid :global(.info-card h2) {
+    color: var(--orange-700);
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0.8rem;
+  }
+  .info-grid :global(.info-card h3) {
+    font-size: clamp(1.3rem, 1.05rem + 1vw, 1.6rem);
+    margin-bottom: 0.7rem;
+  }
+  .info-grid :global(.info-card p),
+  .info-grid :global(.info-card li) { color: var(--ink-3); max-width: 65ch; }
+  .info-grid :global(.info-card p + p),
+  .info-grid :global(.info-card p + ul) { margin-top: 1rem; }
+  .info-grid :global(.info-card ul) { margin: 0; padding-left: 1.2rem; }
+  .info-grid :global(.info-card li + li) { margin-top: 0.7rem; }
+  .info-grid :global(.info-actions) { margin-top: 1.5rem; }
+  @media (max-width: 720px) {
+    .info-grid :global(.info-card) { border-right: none; border-bottom: var(--border); }
+    .info-grid :global(.info-card:last-child) { border-bottom: none; }
+  }
+</style>

@@ -2,35 +2,37 @@
 // Rendered from /PRIVACY.md (repo root) — keep the two in sync when the
 // privacy statement changes.
 import Layout from "../layouts/Layout.astro";
+import SiteHeader from "../components/SiteHeader.astro";
+import SiteFooter from "../components/SiteFooter.astro";
 ---
 
 <Layout
   title="Privacy — mitlist"
   description="What data mitlist handles, where it goes, and what controls exist — for operators and the people who use it."
 >
+  <SiteHeader />
   <main class="privacy">
     <div class="wrap">
       <a class="back" href="/">&larr; mitlist</a>
       <h1>Privacy Statement</h1>
       <p>
-        <strong>mitlist</strong> is self-hosted, open-source software. This
-        document describes what data the software handles, where it goes, and
-        what controls exist — written for operators who deploy an instance and
-        for the people who use it.
+        <strong>mitlist</strong> is open-source software that can be used on
+        the official hosted service or on an independently operated server.
+        This document describes what the software handles in both cases.
       </p>
 
       <h2>Where your data lives</h2>
       <p>
-        All household data — shopping lists, expenses, chores, meal plans,
-        recipes, photos, and account information — is stored on the
-        <strong>operator's own server</strong> (a self-hosted PostgreSQL
-        database and optional S3-compatible object storage).
+        Household data — shopping lists, expenses, chores, meal plans,
+        recipes, photos, and account information — is stored by the operator
+        of the server selected in the app. The official service uses managed
+        PostgreSQL and S3-compatible object storage; a self-hoster chooses
+        their own database and storage.
       </p>
       <p>
-        The project authors (the mitlist contributors) operate no central
-        service. They receive no user data, no analytics, and no telemetry from
-        any self-hosted instance. The only network connections the app makes
-        are to the URL the operator configures.
+        The mitlist project receives hosted household data only when someone
+        chooses the official service. It receives no household content,
+        analytics, or telemetry from an independently self-hosted instance.
       </p>
 
       <h2>No first-party telemetry by default</h2>
@@ -101,8 +103,8 @@ import Layout from "../layouts/Layout.astro";
             <tr><th>Service</th><th>Purpose</th><th>Configured via</th></tr>
           </thead>
           <tbody>
-            <tr><td>CrofAI / OpenRouter</td><td>OCR for receipt scanning</td><td><code>OPENROUTER_API_KEY</code></td></tr>
             <tr><td>Resend</td><td>Transactional email</td><td><code>RESEND_API_KEY</code></td></tr>
+            <tr><td>PlanetScale</td><td>Managed PostgreSQL for the official service</td><td><code>DATABASE_URL</code></td></tr>
             <tr><td>SendGrid / Brevo SMTP</td><td>Transactional email (SMTP fallback)</td><td><code>SENDGRID_SMTP_*</code> / <code>BREVO_SMTP_*</code></td></tr>
             <tr><td>Firebase / FCM</td><td>Mobile push notifications</td><td><code>FIREBASE_PROJECT_ID</code> + <code>FIREBASE_SERVICE_ACCOUNT_JSON</code></td></tr>
             <tr><td>Web Push (VAPID)</td><td>Browser push notifications</td><td><code>VAPID_PRIVATE_KEY</code> + <code>VAPID_PUBLIC_KEY</code></td></tr>
@@ -111,25 +113,25 @@ import Layout from "../layouts/Layout.astro";
           </tbody>
         </table>
       </div>
-      <p>None of these services are enabled in a default deployment.</p>
+      <p>These integrations are disabled in a default self-hosted deployment unless its operator configures them. The official service publishes its active infrastructure on the transparency page.</p>
 
       <h2>Who is the data controller</h2>
       <p>
-        For a self-hosted instance, <strong>the operator is the data
-        controller</strong>. The people who use that instance are the
-        operator's responsibility. The mitlist project provides the software;
-        it has no visibility into, or control over, data stored on any
-        self-hosted instance.
+        For the official service, the provider named in the
+        <a href="/impressum">Impressum</a> is the data controller. For an
+        independently self-hosted instance, its operator is the controller and
+        is responsible for the people using it.
       </p>
 
       <h2>Contact</h2>
       <p>
-        For questions about a specific deployment, contact the operator of
-        that instance. For questions about the software itself, open an issue
-        at the project repository.
+        For the official service, email <a href="mailto:hi@tropicalthink.com">hi@tropicalthink.com</a>.
+        For another deployment, contact its operator. Software issues can be
+        filed in the public repository.
       </p>
     </div>
   </main>
+  <SiteFooter />
 </Layout>
 
 <style>
