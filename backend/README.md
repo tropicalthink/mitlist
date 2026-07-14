@@ -43,6 +43,8 @@ All config via environment variables (see `.env.example`):
 | `CROFAI_API_KEY` | No | — | AI vision API key |
 | `S3_BUCKET_NAME` | No | — | R2 bucket for attachments |
 | `S3_ENDPOINT_URL` | No | — | R2 S3 endpoint |
+| `MAX_FILE_SIZE_BYTES` | No | `10485760` | Maximum attachment size (10 MiB) |
+| `MAX_STORAGE_PER_GROUP_GB` | No | `1` | Storage quota per household; `0` disables it for self-hosters |
 | `GLITCHTIP_DSN` | No | — | Error reporting DSN |
 
 ### Production credentials (docker compose --profile prod)

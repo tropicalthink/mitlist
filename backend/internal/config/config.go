@@ -98,8 +98,8 @@ type Config struct {
 	MaxActiveListsPerGroup int `env:"MAX_ACTIVE_LISTS_PER_GROUP" default:"100"`
 	MaxItemsPerList        int `env:"MAX_ITEMS_PER_LIST" default:"1000"`
 	MaxFileSizeMB          int `env:"MAX_FILE_SIZE_MB" default:"10"`
-	MaxFileSizeBytes       int `env:"MAX_FILE_SIZE_BYTES" default:"52428800"`
-	MaxStoragePerGroupGB   int `env:"MAX_STORAGE_PER_GROUP_GB" default:"10"`
+	MaxFileSizeBytes       int `env:"MAX_FILE_SIZE_BYTES" default:"10485760"`
+	MaxStoragePerGroupGB   int `env:"MAX_STORAGE_PER_GROUP_GB" default:"1"`
 
 	// Feature Flags
 	EnableVirusScanning   bool   `env:"ENABLE_VIRUS_SCANNING" default:"false"`

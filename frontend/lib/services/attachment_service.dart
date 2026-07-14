@@ -59,7 +59,10 @@ class AttachmentService {
     try {
       await putClient.putUri(
         Uri.parse(uploadUrl),
-        data: Stream.fromIterable([bytes]),
+        // A byte buffer lets native and browser HTTP stacks supply the exact
+        // signed Content-Length themselves. Browsers forbid setting that
+        // header manually.
+        data: bytes,
         options: Options(
           contentType: contentType,
           headers: {

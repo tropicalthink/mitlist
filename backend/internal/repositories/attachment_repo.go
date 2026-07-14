@@ -2,13 +2,20 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/mitlist-app/mitlist/internal/models"
+)
+
+var (
+	ErrStorageQuotaExceeded = errors.New("storage quota exceeded")
+	ErrAttachmentNotPending = errors.New("attachment is not pending")
 )
 
 type AttachmentRepository struct {
@@ -19,28 +26,92 @@ func NewAttachmentRepository(db *pgxpool.Pool) *AttachmentRepository {
 	return &AttachmentRepository{db: db}
 }
 
-func (r *AttachmentRepository) Create(ctx context.Context, a *models.Attachment) error {
-	const q = `
-		INSERT INTO attachments (group_id, user_id, purpose, object_key, content_type, byte_size, status)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+// Reserve atomically accounts for the declared upload size and creates its
+// pending attachment. This prevents concurrent upload intents from exceeding
+// the household limit.
+func (r *AttachmentRepository) Reserve(ctx context.Context, a *models.Attachment, limitBytes int64) error {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin attachment reservation: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	const reserve = `
+		UPDATE groups
+		SET storage_reserved_bytes = storage_reserved_bytes + $1
+		WHERE id = $2
+		  AND ($3 <= 0 OR storage_used_bytes + storage_reserved_bytes + $1 <= $3)
+	`
+	ct, err := tx.Exec(ctx, reserve, a.ByteSize, a.GroupID, limitBytes)
+	if err != nil {
+		return fmt.Errorf("reserve group storage: %w", err)
+	}
+	if ct.RowsAffected() == 0 {
+		return ErrStorageQuotaExceeded
+	}
+
+	const insert = `
+		INSERT INTO attachments
+			(group_id, user_id, purpose, object_key, content_type, byte_size, status, reservation_expires_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, created_at
 	`
-	if err := r.db.QueryRow(ctx, q, a.GroupID, a.UserID, a.Purpose, a.ObjectKey, a.ContentType, a.ByteSize, a.Status).
-		Scan(&a.ID, &a.CreatedAt); err != nil {
+	if err := tx.QueryRow(ctx, insert, a.GroupID, a.UserID, a.Purpose, a.ObjectKey, a.ContentType,
+		a.ByteSize, a.Status, a.ReservationExpiresAt).Scan(&a.ID, &a.CreatedAt); err != nil {
+		return fmt.Errorf("create reserved attachment: %w", err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit attachment reservation: %w", err)
+	}
+	return nil
+}
+
+// Create inserts an already-materialized attachment while keeping accounting
+// consistent. Runtime upload flows should use Reserve and FinalizeReservation.
+func (r *AttachmentRepository) Create(ctx context.Context, a *models.Attachment) error {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin attachment create: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	column := ""
+	switch a.Status {
+	case models.AttachmentStatusReady:
+		column = "storage_used_bytes"
+	case models.AttachmentStatusPending:
+		column = "storage_reserved_bytes"
+	}
+	if column != "" {
+		if _, err := tx.Exec(ctx, `UPDATE groups SET `+column+` = `+column+` + $1 WHERE id = $2`, a.ByteSize, a.GroupID); err != nil {
+			return fmt.Errorf("account created attachment: %w", err)
+		}
+	}
+	const q = `
+		INSERT INTO attachments
+			(group_id, user_id, purpose, object_key, content_type, byte_size, status, reservation_expires_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		RETURNING id, created_at
+	`
+	if err := tx.QueryRow(ctx, q, a.GroupID, a.UserID, a.Purpose, a.ObjectKey, a.ContentType,
+		a.ByteSize, a.Status, a.ReservationExpiresAt).Scan(&a.ID, &a.CreatedAt); err != nil {
 		return fmt.Errorf("create attachment: %w", err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit attachment create: %w", err)
 	}
 	return nil
 }
 
 func (r *AttachmentRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.Attachment, error) {
 	const q = `
-		SELECT id, group_id, user_id, purpose, object_key, content_type, byte_size, status, created_at
+		SELECT id, group_id, user_id, purpose, object_key, content_type, byte_size, status, created_at,
+		       reservation_expires_at
 		FROM attachments
 		WHERE id = $1
 	`
 	var a models.Attachment
-	if err := r.db.QueryRow(ctx, q, id).
-		Scan(&a.ID, &a.GroupID, &a.UserID, &a.Purpose, &a.ObjectKey, &a.ContentType, &a.ByteSize, &a.Status, &a.CreatedAt); err != nil {
+	if err := r.db.QueryRow(ctx, q, id).Scan(&a.ID, &a.GroupID, &a.UserID, &a.Purpose, &a.ObjectKey,
+		&a.ContentType, &a.ByteSize, &a.Status, &a.CreatedAt, &a.ReservationExpiresAt); err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, err
 		}
@@ -61,51 +132,161 @@ func (r *AttachmentRepository) UpdateObjectKey(ctx context.Context, id uuid.UUID
 	return nil
 }
 
-func (r *AttachmentRepository) UpdateStatus(ctx context.Context, id uuid.UUID, status models.AttachmentStatus) error {
-	const q = `UPDATE attachments SET status = $1 WHERE id = $2`
-	ct, err := r.db.Exec(ctx, q, status, id)
+// FinalizeReservation atomically converts reserved bytes into used bytes.
+func (r *AttachmentRepository) FinalizeReservation(ctx context.Context, id uuid.UUID, byteSize, limitBytes int64) error {
+	tx, err := r.db.Begin(ctx)
 	if err != nil {
-		return fmt.Errorf("update attachment status: %w", err)
+		return fmt.Errorf("begin attachment finalization: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	var groupID uuid.UUID
+	var reservedBytes int64
+	var status models.AttachmentStatus
+	if err := tx.QueryRow(ctx, `SELECT group_id, byte_size, status FROM attachments WHERE id = $1 FOR UPDATE`, id).
+		Scan(&groupID, &reservedBytes, &status); err != nil {
+		return err
+	}
+	if status != models.AttachmentStatusPending {
+		return ErrAttachmentNotPending
+	}
+
+	const consume = `
+		UPDATE groups
+		SET storage_reserved_bytes = GREATEST(0, storage_reserved_bytes - $1),
+		    storage_used_bytes = storage_used_bytes + $2
+		WHERE id = $3
+		  AND ($4 <= 0 OR storage_used_bytes + storage_reserved_bytes - $1 + $2 <= $4)
+	`
+	ct, err := tx.Exec(ctx, consume, reservedBytes, byteSize, groupID, limitBytes)
+	if err != nil {
+		return fmt.Errorf("consume storage reservation: %w", err)
 	}
 	if ct.RowsAffected() == 0 {
-		return pgx.ErrNoRows
+		return ErrStorageQuotaExceeded
+	}
+
+	ct, err = tx.Exec(ctx, `
+		UPDATE attachments
+		SET status = 'ready', byte_size = $1, reservation_expires_at = NULL
+		WHERE id = $2 AND status = 'pending'
+	`, byteSize, id)
+	if err != nil {
+		return fmt.Errorf("finalize attachment: %w", err)
+	}
+	if ct.RowsAffected() == 0 {
+		return ErrAttachmentNotPending
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit attachment finalization: %w", err)
 	}
 	return nil
 }
 
-func (r *AttachmentRepository) UpdateStatusAndByteSize(ctx context.Context, id uuid.UUID, status models.AttachmentStatus, byteSize int64) error {
-	const q = `UPDATE attachments SET status = $1, byte_size = $2 WHERE id = $3`
-	ct, err := r.db.Exec(ctx, q, status, byteSize, id)
+// MarkFailed releases a pending attachment's reservation. It is idempotent for
+// attachments that have already left the pending state.
+func (r *AttachmentRepository) MarkFailed(ctx context.Context, id uuid.UUID) error {
+	tx, err := r.db.Begin(ctx)
 	if err != nil {
-		return fmt.Errorf("update attachment status and byte_size: %w", err)
+		return fmt.Errorf("begin failed attachment update: %w", err)
 	}
-	if ct.RowsAffected() == 0 {
-		return pgx.ErrNoRows
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	var groupID uuid.UUID
+	var reservedBytes int64
+	var status models.AttachmentStatus
+	if err := tx.QueryRow(ctx, `SELECT group_id, byte_size, status FROM attachments WHERE id = $1 FOR UPDATE`, id).
+		Scan(&groupID, &reservedBytes, &status); err != nil {
+		return err
+	}
+	if status == models.AttachmentStatusPending {
+		if _, err := tx.Exec(ctx, `
+			UPDATE groups
+			SET storage_reserved_bytes = GREATEST(0, storage_reserved_bytes - $1)
+			WHERE id = $2
+		`, reservedBytes, groupID); err != nil {
+			return fmt.Errorf("release failed attachment reservation: %w", err)
+		}
+		if _, err := tx.Exec(ctx, `
+			UPDATE attachments SET status = 'failed', reservation_expires_at = NULL WHERE id = $1
+		`, id); err != nil {
+			return fmt.Errorf("mark attachment failed: %w", err)
+		}
+	} else if status != models.AttachmentStatusFailed {
+		return ErrAttachmentNotPending
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit failed attachment update: %w", err)
 	}
 	return nil
 }
 
+func (r *AttachmentRepository) ListCleanupCandidates(ctx context.Context, expiredBefore time.Time, limit int) ([]models.Attachment, error) {
+	if limit <= 0 {
+		limit = 100
+	}
+	const q = `
+		SELECT id, group_id, user_id, purpose, object_key, content_type, byte_size, status, created_at,
+		       reservation_expires_at
+		FROM attachments
+		WHERE status = 'failed'
+		   OR (status = 'pending' AND reservation_expires_at <= $1)
+		ORDER BY created_at
+		LIMIT $2
+	`
+	rows, err := r.db.Query(ctx, q, expiredBefore, limit)
+	if err != nil {
+		return nil, fmt.Errorf("list attachment cleanup candidates: %w", err)
+	}
+	defer rows.Close()
+	var attachments []models.Attachment
+	for rows.Next() {
+		var a models.Attachment
+		if err := rows.Scan(&a.ID, &a.GroupID, &a.UserID, &a.Purpose, &a.ObjectKey, &a.ContentType,
+			&a.ByteSize, &a.Status, &a.CreatedAt, &a.ReservationExpiresAt); err != nil {
+			return nil, fmt.Errorf("scan attachment cleanup candidate: %w", err)
+		}
+		attachments = append(attachments, a)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate attachment cleanup candidates: %w", err)
+	}
+	return attachments, nil
+}
+
+// Delete removes an attachment and releases either its used or reserved bytes.
 func (r *AttachmentRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	const q = `DELETE FROM attachments WHERE id = $1`
-	ct, err := r.db.Exec(ctx, q, id)
+	tx, err := r.db.Begin(ctx)
 	if err != nil {
+		return fmt.Errorf("begin attachment delete: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	var groupID uuid.UUID
+	var byteSize int64
+	var status models.AttachmentStatus
+	if err := tx.QueryRow(ctx, `SELECT group_id, byte_size, status FROM attachments WHERE id = $1 FOR UPDATE`, id).
+		Scan(&groupID, &byteSize, &status); err != nil {
+		return err
+	}
+	if status == models.AttachmentStatusReady {
+		if _, err := tx.Exec(ctx, `
+			UPDATE groups SET storage_used_bytes = GREATEST(0, storage_used_bytes - $1) WHERE id = $2
+		`, byteSize, groupID); err != nil {
+			return fmt.Errorf("release used attachment storage: %w", err)
+		}
+	} else if status == models.AttachmentStatusPending {
+		if _, err := tx.Exec(ctx, `
+			UPDATE groups SET storage_reserved_bytes = GREATEST(0, storage_reserved_bytes - $1) WHERE id = $2
+		`, byteSize, groupID); err != nil {
+			return fmt.Errorf("release reserved attachment storage: %w", err)
+		}
+	}
+	if _, err := tx.Exec(ctx, `DELETE FROM attachments WHERE id = $1`, id); err != nil {
 		return fmt.Errorf("delete attachment: %w", err)
 	}
-	if ct.RowsAffected() == 0 {
-		return pgx.ErrNoRows
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit attachment delete: %w", err)
 	}
 	return nil
-}
-
-func (r *AttachmentRepository) SumReadyBytesByGroup(ctx context.Context, groupID uuid.UUID) (int64, error) {
-	const q = `
-		SELECT COALESCE(SUM(byte_size), 0)
-		FROM attachments
-		WHERE group_id = $1 AND status = 'ready'
-	`
-	var sum int64
-	if err := r.db.QueryRow(ctx, q, groupID).Scan(&sum); err != nil {
-		return 0, fmt.Errorf("sum attachment bytes: %w", err)
-	}
-	return sum, nil
 }
