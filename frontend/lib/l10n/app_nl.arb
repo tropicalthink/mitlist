@@ -5661,4 +5661,9 @@
   "@runningLowHeading": { "description": "Section header for the restock suggestion strip above the list" },
   "runningLowDaysAgo": "{days}d geleden",
   "@runningLowDaysAgo": { "description": "Per-chip cadence hint showing how many days since last purchase", "placeholders": { "days": { "type": "num" } } }
+  ,"householdStorageTitle": "Huishoudopslag",
+  "householdStorageUsedOf": "{used} van {limit} gebruikt",
+  "householdStorageUsedUnlimited": "{used} gebruikt · geen limiet",
+  "householdStoragePending": "{pending} is gereserveerd voor lopende uploads.",
+  "householdStorageProgressLabel": "Gebruikte huishoudopslag"
 }

@@ -113,4 +113,13 @@ class AttachmentService {
       queryParameters: {'group_id': groupId},
     );
   }
+
+  Future<StorageUsage> getStorageUsage({required String groupId}) async {
+    ensureValidGroupId(groupId);
+    final r = await _dio.get(
+      '/attachments/storage-usage',
+      queryParameters: {'group_id': groupId},
+    );
+    return StorageUsage.fromJson((r.data as Map).cast<String, dynamic>());
+  }
 }

@@ -26,6 +26,22 @@ func NewAttachmentRepository(db *pgxpool.Pool) *AttachmentRepository {
 	return &AttachmentRepository{db: db}
 }
 
+func (r *AttachmentRepository) GetStorageUsage(ctx context.Context, groupID uuid.UUID) (*models.AttachmentStorageUsage, error) {
+	const q = `
+		SELECT storage_used_bytes, storage_reserved_bytes
+		FROM groups
+		WHERE id = $1
+	`
+	var usage models.AttachmentStorageUsage
+	if err := r.db.QueryRow(ctx, q, groupID).Scan(&usage.UsedBytes, &usage.ReservedBytes); err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, err
+		}
+		return nil, fmt.Errorf("get attachment storage usage: %w", err)
+	}
+	return &usage, nil
+}
+
 // Reserve atomically accounts for the declared upload size and creates its
 // pending attachment. This prevents concurrent upload intents from exceeding
 // the household limit.

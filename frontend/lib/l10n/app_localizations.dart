@@ -8534,6 +8534,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{days}d ago'**
   String runningLowDaysAgo(num days);
+
+  /// Household settings storage section title
+  ///
+  /// In en, this message translates to:
+  /// **'Household storage'**
+  String get householdStorageTitle;
+
+  /// Household attachment storage usage
+  ///
+  /// In en, this message translates to:
+  /// **'{used} of {limit} used'**
+  String householdStorageUsedOf(String used, String limit);
+
+  /// Household attachment storage usage when quota is disabled
+  ///
+  /// In en, this message translates to:
+  /// **'{used} used · no limit'**
+  String householdStorageUsedUnlimited(String used);
+
+  /// Pending household upload reservation
+  ///
+  /// In en, this message translates to:
+  /// **'{pending} is reserved by uploads in progress.'**
+  String householdStoragePending(String pending);
+
+  /// Accessibility label for storage usage progress
+  ///
+  /// In en, this message translates to:
+  /// **'Household storage used'**
+  String get householdStorageProgressLabel;
 }
 
 class _AppLocalizationsDelegate

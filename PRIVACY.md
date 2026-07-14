@@ -1,14 +1,14 @@
 # Privacy Statement
 
-**mitlist** is self-hosted, open-source software. This document describes what data the software handles, where it goes, and what controls exist — written for operators who deploy an instance and for the people who use it.
+**mitlist** is open-source software that can be used on the official hosted service or on an independently operated server. This document describes what the software handles in both cases.
 
 ---
 
 ## Where your data lives
 
-All household data — shopping lists, expenses, chores, meal plans, recipes, photos, and account information — is stored on the **operator's own server** (a self-hosted PostgreSQL database and optional S3-compatible object storage).
+Household data — shopping lists, expenses, chores, meal plans, recipes, photos, and account information — is stored by the operator of the server selected in the app. The official service uses managed PostgreSQL and S3-compatible object storage; a self-hoster chooses their own database and storage.
 
-The project authors (the mitlist contributors) operate no central service. They receive no user data, no analytics, and no telemetry from any self-hosted instance. The only network connections the app makes are to the URL the operator configures.
+The mitlist project receives hosted household data only when someone chooses the official service. It receives no household content, analytics, or telemetry from an independently self-hosted instance.
 
 ---
 
@@ -45,24 +45,24 @@ Each of the following is optional and disabled unless the operator provides cred
 
 | Service | Purpose | Configured via |
 |---------|---------|----------------|
-| CrofAI / OpenRouter | OCR for receipt scanning | `OPENROUTER_API_KEY` |
 | Resend | Transactional email | `RESEND_API_KEY` |
+| PlanetScale | Managed PostgreSQL for the official service | `DATABASE_URL` |
 | SendGrid / Brevo SMTP | Transactional email (SMTP fallback) | `SENDGRID_SMTP_*` / `BREVO_SMTP_*` |
 | Firebase / FCM | Mobile push notifications | `FIREBASE_PROJECT_ID` + `FIREBASE_SERVICE_ACCOUNT_JSON` |
 | Web Push (VAPID) | Browser push notifications | `VAPID_PRIVATE_KEY` + `VAPID_PUBLIC_KEY` |
 | AWS S3 / Cloudflare R2 | File and photo storage | `AWS_ACCESS_KEY_ID` + `S3_BUCKET_NAME` |
 | FX rate feed | Live exchange rates for expenses | `FX_RATE_API_URL` |
 
-None of these services are enabled in a default deployment.
+These integrations are disabled in a default self-hosted deployment unless its operator configures them. The official service publishes its active infrastructure on the transparency page.
 
 ---
 
 ## Who is the data controller
 
-For a self-hosted instance, **the operator is the data controller**. The people who use that instance are the operator's responsibility. The mitlist project provides the software; it has no visibility into, or control over, data stored on any self-hosted instance.
+For the official service, the provider named in the landing site's Impressum is the data controller. For an independently self-hosted instance, its operator is the controller and is responsible for the people using it.
 
 ---
 
 ## Contact
 
-For questions about a specific deployment, contact the operator of that instance. For questions about the software itself, open an issue at the project repository.
+For the official service, email `hi@tropicalthink.com`. For another deployment, contact its operator. Software issues can be filed in the public repository.

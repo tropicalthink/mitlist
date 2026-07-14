@@ -4897,4 +4897,25 @@ class AppLocalizationsNl extends AppLocalizations {
   String runningLowDaysAgo(num days) {
     return '${days}d geleden';
   }
+
+  @override
+  String get householdStorageTitle => 'Huishoudopslag';
+
+  @override
+  String householdStorageUsedOf(String used, String limit) {
+    return '$used van $limit gebruikt';
+  }
+
+  @override
+  String householdStorageUsedUnlimited(String used) {
+    return '$used gebruikt · geen limiet';
+  }
+
+  @override
+  String householdStoragePending(String pending) {
+    return '$pending is gereserveerd voor lopende uploads.';
+  }
+
+  @override
+  String get householdStorageProgressLabel => 'Gebruikte huishoudopslag';
 }

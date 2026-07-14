@@ -254,6 +254,7 @@ type CalendarPinwallRepo interface {
 // AttachmentRepo is the interface for attachment repository operations.
 type AttachmentRepo interface {
 	Reserve(ctx context.Context, a *models.Attachment, limitBytes int64) error
+	GetStorageUsage(ctx context.Context, groupID uuid.UUID) (*models.AttachmentStorageUsage, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*models.Attachment, error)
 	UpdateObjectKey(ctx context.Context, id uuid.UUID, objectKey string) error
 	FinalizeReservation(ctx context.Context, id uuid.UUID, byteSize, limitBytes int64) error

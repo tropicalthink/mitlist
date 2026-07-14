@@ -47,10 +47,6 @@ type Config struct {
 	// OAuth — Allowlist
 	OAuthRedirectAllowlist string `env:"OAUTH_REDIRECT_ALLOWLIST"`
 
-	// External APIs
-	OpenRouterAPIKey  string `env:"OPENROUTER_API_KEY"`
-	OpenRouterBaseURL string `env:"OPENROUTER_BASE_URL" default:"https://openrouter.ai/api/v1"`
-
 	// Web Push
 	VapidPrivateKey string `env:"VAPID_PRIVATE_KEY"`
 	VapidPublicKey  string `env:"VAPID_PUBLIC_KEY"`
@@ -178,7 +174,6 @@ func (c *Config) LogIntegrationStatus() {
 	emailOn := c.ResendAPIKey != "" || c.SendGridSMTPUser != "" || c.BrevoSMTPUser != ""
 	webPushOn := c.VapidPublicKey != "" && c.VapidPrivateKey != ""
 	mobilePushOn := c.FirebaseProjectID != "" && c.FirebaseServiceAccount != ""
-	scannerOn := c.OpenRouterAPIKey != ""
 	storageOn := c.S3BucketName != ""
 	oauthOn := c.GoogleClientID != "" || c.AppleClientID != ""
 	errorReportingOn := c.SentryDSN != ""
@@ -189,7 +184,6 @@ func (c *Config) LogIntegrationStatus() {
 		Bool("email", emailOn).
 		Bool("web_push", webPushOn).
 		Bool("mobile_push", mobilePushOn).
-		Bool("ocr_scanner", scannerOn).
 		Bool("file_storage", storageOn).
 		Bool("oauth", oauthOn).
 		Bool("error_reporting", errorReportingOn).
@@ -207,9 +201,6 @@ func (c *Config) LogIntegrationStatus() {
 	if !storageOn {
 		disabled = append(disabled, "file_storage (set S3_BUCKET_NAME and AWS_* credentials)")
 	}
-	if !scannerOn {
-		disabled = append(disabled, "ocr_scanner (set OPENROUTER_API_KEY)")
-	}
 	if len(disabled) > 0 {
 		log.Warn().Strs("disabled_integrations", disabled).
 			Msg("some optional integrations are disabled; features depending on them will not work")
@@ -225,7 +216,6 @@ func (c Config) MaskSecrets() Config {
 	masked.RedisPassword = mask(masked.RedisPassword)
 	masked.GoogleClientSecret = mask(masked.GoogleClientSecret)
 	masked.ApplePrivateKey = mask(masked.ApplePrivateKey)
-	masked.OpenRouterAPIKey = mask(masked.OpenRouterAPIKey)
 	masked.VapidPrivateKey = mask(masked.VapidPrivateKey)
 	masked.FirebaseServiceAccount = mask(masked.FirebaseServiceAccount)
 	masked.ResendAPIKey = mask(masked.ResendAPIKey)
