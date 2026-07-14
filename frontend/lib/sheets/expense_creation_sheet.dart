@@ -13,6 +13,8 @@ import '../providers/attachment_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/finance_provider.dart';
 import '../providers/group_provider.dart';
+import '../providers/grocery_provider.dart';
+import '../providers/list_provider.dart' show grocerySeedProvider;
 import '../router.dart' show currentGroupIdProvider;
 import '../theme/spacing.dart';
 import '../utils/active_group_context.dart';
@@ -88,6 +90,11 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
   String _splitMode = 'equal';
   String _currency = 'USD';
   String _category = 'other';
+  String? _groupId;
+  bool _categoryWasChosen = false;
+  bool _categoryWasSuggested = false;
+  Timer? _categoryDebounce;
+  int _categorySuggestionGeneration = 0;
   String? _payerId;
 
   /// The current user's id, used to render "you" in the collapsed summary line.
@@ -165,6 +172,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       final members = await groupService.listMembers(groupId);
       if (!mounted) return;
       setState(() {
+        _groupId = groupId;
         _groupCurrency = group.currency;
         _currency = group.currency;
         _members = members;
@@ -182,6 +190,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
           );
         }
       });
+      _scheduleCategorySuggestion(_descriptionController.text);
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -197,6 +206,41 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       _membersFailed = false;
     });
     _loadGroupContext();
+  }
+
+  void _scheduleCategorySuggestion(String description) {
+    final generation = ++_categorySuggestionGeneration;
+    _categoryDebounce?.cancel();
+    if (_categoryWasChosen ||
+        _groupId == null ||
+        description.trim().length < 2) {
+      return;
+    }
+    _categoryDebounce = Timer(const Duration(milliseconds: 350), () async {
+      String? suggestion;
+      try {
+        await ref.read(grocerySeedProvider.future);
+        suggestion = await ref
+            .read(groceryExpenseCategoryServiceProvider)
+            .suggest(description, _groupId!);
+      } catch (_) {
+        return;
+      }
+      if (!mounted ||
+          generation != _categorySuggestionGeneration ||
+          _categoryWasChosen) {
+        return;
+      }
+      setState(() {
+        if (suggestion != null) {
+          _category = suggestion;
+          _categoryWasSuggested = true;
+        } else if (_categoryWasSuggested) {
+          _category = 'other';
+          _categoryWasSuggested = false;
+        }
+      });
+    });
   }
 
   /// Attempts to prefill the FX rate field from the live-rate advisory endpoint.
@@ -460,6 +504,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
 
   @override
   void dispose() {
+    _categoryDebounce?.cancel();
     _descriptionController.dispose();
     _amountController.dispose();
     _notesController.dispose();
@@ -580,6 +625,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
           onChanged: (_) {
             _markDirty();
             setState(() => _descriptionError = null);
+            _scheduleCategorySuggestion(_descriptionController.text);
           },
         ),
         // ── Category (horizontal chips) ───────────────────────────────
@@ -602,7 +648,12 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
                     label: expenseCategoryLabel(l10n, key),
                     selected: _category == key,
                     onSelected: (_) {
-                      setState(() => _category = key);
+                      setState(() {
+                        _category = key;
+                        _categoryWasChosen = true;
+                        _categoryWasSuggested = false;
+                      });
+                      _categoryDebounce?.cancel();
                       _markDirty();
                     },
                   ),
@@ -643,8 +694,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
             ),
             semanticLabel: l10n.expenseCreationEditSplitSemantic,
             expanded: splitEditorOpen,
-            onTap: () =>
-                setState(() => _showSplitEditor = !_showSplitEditor),
+            onTap: () => setState(() => _showSplitEditor = !_showSplitEditor),
           ),
           AnimatedSize(
             duration: const Duration(milliseconds: 200),

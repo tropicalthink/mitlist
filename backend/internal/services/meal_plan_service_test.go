@@ -213,6 +213,12 @@ func TestMealPlanService_GenerateShoppingList_BatchesRecipeAndIngredientQueries(
 	recipeRepo := new(mocks.MockRecipeRepo)
 	listRepo := new(mocks.MockListRepo)
 	svc := newMealPlanService(mpRepo, groupRepo, recipeRepo, listRepo)
+	canonicalID := uuid.New()
+	svc.SetCanonicalNameResolver(func(_ context.Context, gotGroupID uuid.UUID, name string) (*uuid.UUID, error) {
+		assert.Equal(t, groupID, gotGroupID)
+		assert.Equal(t, "Carrots", name)
+		return &canonicalID, nil
+	})
 
 	plans := []models.MealPlan{{ID: uuid.New(), GroupID: groupID, RecipeID: recipeID, Servings: 2, Date: from}}
 	groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
@@ -226,13 +232,18 @@ func TestMealPlanService_GenerateShoppingList_BatchesRecipeAndIngredientQueries(
 	listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
 	listRepo.On("ListItemsByList", ctx, listID, 0, 0).Return(nil, nil)
 	listRepo.On("CreateItems", ctx, mock.MatchedBy(func(items []models.ListItem) bool {
-		return len(items) == 1 && items[0].Name == "Carrots"
+		return len(items) == 1 &&
+			items[0].Name == "Carrots" &&
+			items[0].CanonicalItemID != nil &&
+			*items[0].CanonicalItemID == canonicalID
 	})).Return(nil)
 
 	targetID := listID
 	_, created, err := svc.GenerateShoppingList(ctx, user, groupID, from, to, &targetID)
 	require.NoError(t, err)
 	require.Len(t, created, 1)
+	require.NotNil(t, created[0].CanonicalItemID)
+	assert.Equal(t, canonicalID, *created[0].CanonicalItemID)
 	recipeRepo.AssertNotCalled(t, "GetRecipeByID", ctx, recipeID)
 	recipeRepo.AssertNotCalled(t, "ListIngredients", ctx, recipeID)
 	listRepo.AssertNotCalled(t, "CreateItem", ctx, mock.Anything)

@@ -106,6 +106,44 @@ func TestChoreService_GetChore(t *testing.T) {
 	})
 }
 
+func TestChoreService_AddSuppliesToListLinksCanonicalItems(t *testing.T) {
+	ctx := context.Background()
+	user := validUser()
+	groupID := uuid.New()
+	choreID := uuid.New()
+	listID := uuid.New()
+	canonicalID := uuid.New()
+
+	choreRepo := new(mocks.MockChoreRepo)
+	groupRepo := new(mocks.MockGroupRepo)
+	listRepo := new(mocks.MockListRepo)
+	svc := NewChoreService(choreRepo, groupRepo, listRepo)
+	svc.SetCanonicalNameResolver(func(_ context.Context, gotGroupID uuid.UUID, name string) (*uuid.UUID, error) {
+		assert.Equal(t, groupID, gotGroupID)
+		assert.Equal(t, "Dish soap", name)
+		return &canonicalID, nil
+	})
+
+	choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{
+		ID:       choreID,
+		GroupID:  groupID,
+		Supplies: []string{"Dish soap"},
+	}, nil)
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).
+		Return(&models.GroupMembership{Role: "member"}, nil)
+	listRepo.On("GetListByID", ctx, listID).
+		Return(&models.List{ID: listID, GroupID: groupID}, nil)
+	listRepo.On("CreateItem", ctx, mock.MatchedBy(func(item *models.ListItem) bool {
+		return item.Name == "Dish soap" &&
+			item.CanonicalItemID != nil &&
+			*item.CanonicalItemID == canonicalID
+	})).Return(nil)
+
+	err := svc.AddSuppliesToList(ctx, user, choreID, listID)
+	require.NoError(t, err)
+	listRepo.AssertExpectations(t)
+}
+
 func TestChoreService_GetChoreDetails(t *testing.T) {
 	ctx := context.Background()
 	user := validUser()

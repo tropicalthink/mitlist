@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../repositories/grocery_repository.dart';
+import '../services/grocery_expense_category_service.dart';
 import '../services/restock_service.dart';
 import '../services/scan/bundled_grocery_suggestion_service.dart';
 import '../services/scan/canonical_link_service.dart';
@@ -45,6 +46,11 @@ final canonicalResolverServiceProvider =
 
 final canonicalLinkServiceProvider = Provider<CanonicalLinkService>((ref) {
   return CanonicalLinkService(ref.watch(canonicalResolverServiceProvider));
+});
+
+final groceryExpenseCategoryServiceProvider =
+    Provider<GroceryExpenseCategoryService>((ref) {
+  return GroceryExpenseCategoryService(ref.watch(canonicalLinkServiceProvider));
 });
 
 /// Local, offline grocery autocomplete over the canonical seed (alias-powered).

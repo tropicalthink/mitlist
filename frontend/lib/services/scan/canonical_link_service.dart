@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import 'canonical_resolver_service.dart';
+import 'resolution/resolution_features.dart';
 
 /// Applies the conservative acceptance rule used when linking ordinary typed
 /// list text to the local canonical grocery graph.
@@ -13,17 +14,41 @@ class CanonicalLinkService {
 
   final CanonicalResolverService _resolver;
 
+  Future<ResolutionContext?> prepareContext(
+    String groupId, {
+    List<String> listContext = const [],
+  }) {
+    return _resolver.prepareContext(groupId, listContext: listContext);
+  }
+
   Future<String?> resolveHighConfidence(
     String itemName,
     String groupId, {
     List<String> listContext = const [],
+    ResolutionContext? context,
+  }) async {
+    final result = await resolveHighConfidenceResult(
+      itemName,
+      groupId,
+      listContext: listContext,
+      context: context,
+    );
+    return result?.canonicalItemId;
+  }
+
+  Future<ResolveResult?> resolveHighConfidenceResult(
+    String itemName,
+    String groupId, {
+    List<String> listContext = const [],
+    ResolutionContext? context,
   }) async {
     final result = await _resolver.resolve(
       itemName,
       groupId,
       listContext: listContext,
+      context: context,
     );
-    return acceptedCanonicalId(result);
+    return acceptedCanonicalId(result) == null ? null : result;
   }
 
   @visibleForTesting
