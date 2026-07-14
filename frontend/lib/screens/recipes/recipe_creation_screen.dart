@@ -10,16 +10,23 @@ import '../../l10n/app_localizations.dart';
 import '../../models/group_models.dart';
 import '../../models/recipe_models.dart';
 import '../../providers/group_provider.dart';
+import '../../providers/grocery_provider.dart';
+import '../../providers/list_provider.dart' show grocerySeedProvider;
 import '../../providers/recipe_provider.dart';
+import '../../router.dart' show currentGroupIdProvider;
+import '../../services/scan/grocery_suggestion_service.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/haptics.dart';
+import '../../utils/active_group_context.dart';
+import '../../utils/list_composer_parser.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
 import '../../widgets/app_switch.dart';
+import '../../widgets/chip.dart';
 import '../../widgets/mitlist_app_bar.dart';
 
 class RecipeCreationScreen extends ConsumerStatefulWidget {
@@ -262,6 +269,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
       final title = _titleController.text.trim().isEmpty
           ? _titleFromUrl(url, l10n)
           : _titleController.text.trim();
+      final ingredients = await _buildEnrichedIngredients();
 
       await recipeService.createRecipe(
         CreateRecipeRequest(
@@ -290,7 +298,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
                   .toList()
               : const [],
           isPublic: _isPublic,
-          ingredients: _buildIngredients(),
+          ingredients: ingredients,
           steps: _buildSteps(),
         ),
       );
@@ -407,8 +415,63 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
         .split('\n')
         .map(_stripPrefix)
         .where((line) => line.isNotEmpty)
-        .map((line) => CreateIngredientRequest(name: line, rawText: line))
-        .toList();
+        .map((line) {
+      final parsed = parseComposerItem(line);
+      return CreateIngredientRequest(
+        name: parsed.name,
+        quantity: parsed.quantity == 1
+            ? ''
+            : parsed.quantity
+                .toStringAsFixed(2)
+                .replaceAll(RegExp(r'0+$'), '')
+                .replaceAll(RegExp(r'\.$'), ''),
+        unit: parsed.unit,
+        rawText: line,
+      );
+    }).toList();
+  }
+
+  Future<List<CreateIngredientRequest>> _buildEnrichedIngredients() async {
+    final ingredients = _buildIngredients();
+    final groupId = resolveActiveGroupId(
+      _groups,
+      ref.read(currentGroupIdProvider),
+    );
+    if (groupId == null || ingredients.isEmpty) return ingredients;
+    try {
+      await ref.read(grocerySeedProvider.future);
+      final links = ref.read(canonicalLinkServiceProvider);
+      final context = <String>[];
+      final resolutionContext = await links.prepareContext(groupId);
+      final enriched = <CreateIngredientRequest>[];
+      for (final ingredient in ingredients) {
+        final result = await links.resolveHighConfidenceResult(
+          ingredient.name,
+          groupId,
+          listContext: context,
+          context: resolutionContext,
+        );
+        if (result?.canonicalItemId case final canonicalId?) {
+          context.add(canonicalId);
+        }
+        enriched.add(CreateIngredientRequest(
+          // Keep the original line in rawText, while giving recipe/list
+          // integrations the clean canonical label for matching and merging.
+          name: result == null
+              ? ingredient.name
+              : GrocerySuggestionService.labelForSelection(
+                  ingredient.name,
+                  result.displayName,
+                ),
+          quantity: ingredient.quantity,
+          unit: ingredient.unit,
+          rawText: ingredient.rawText,
+        ));
+      }
+      return enriched;
+    } catch (_) {
+      return ingredients;
+    }
   }
 
   List<CreateStepRequest> _buildSteps() {
@@ -933,6 +996,10 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
           emptyHint: l10n.recipeCreationIngredientHint,
           lines: _controllerLines(_ingredientsController),
           onChanged: _setIngredientLines,
+          groceryGroupId: resolveActiveGroupId(
+            _groups,
+            ref.watch(currentGroupIdProvider),
+          ),
         ),
         const SizedBox(height: MitlistSpacing.md),
         _RecipeLineEditor(
@@ -1007,7 +1074,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
   }
 }
 
-class _RecipeLineEditor extends StatefulWidget {
+class _RecipeLineEditor extends ConsumerStatefulWidget {
   final String title;
   final String helperText;
   final String addLabel;
@@ -1015,6 +1082,7 @@ class _RecipeLineEditor extends StatefulWidget {
   final bool numbered;
   final List<String> lines;
   final ValueChanged<List<String>> onChanged;
+  final String? groceryGroupId;
 
   const _RecipeLineEditor({
     required this.title,
@@ -1023,17 +1091,21 @@ class _RecipeLineEditor extends StatefulWidget {
     required this.emptyHint,
     required this.lines,
     required this.onChanged,
+    this.groceryGroupId,
     this.numbered = false,
   });
 
   @override
-  State<_RecipeLineEditor> createState() => _RecipeLineEditorState();
+  ConsumerState<_RecipeLineEditor> createState() => _RecipeLineEditorState();
 }
 
-class _RecipeLineEditorState extends State<_RecipeLineEditor> {
+class _RecipeLineEditorState extends ConsumerState<_RecipeLineEditor> {
   final TextEditingController _draftController = TextEditingController();
   final FocusNode _draftFocusNode = FocusNode();
   late List<TextEditingController> _controllers;
+  Timer? _suggestDebounce;
+  List<GrocerySuggestion> _suggestions = const [];
+  int _suggestGeneration = 0;
 
   @override
   void initState() {
@@ -1056,6 +1128,7 @@ class _RecipeLineEditorState extends State<_RecipeLineEditor> {
 
   @override
   void dispose() {
+    _suggestDebounce?.cancel();
     _draftController.removeListener(_handleDraftChanged);
     _draftFocusNode.dispose();
     _draftController.dispose();
@@ -1067,6 +1140,48 @@ class _RecipeLineEditorState extends State<_RecipeLineEditor> {
 
   void _handleDraftChanged() {
     if (mounted) setState(() {});
+    _scheduleSuggestions();
+  }
+
+  void _scheduleSuggestions() {
+    final groupId = widget.groceryGroupId;
+    final query = parseComposerItem(_draftController.text).name.trim();
+    final generation = ++_suggestGeneration;
+    _suggestDebounce?.cancel();
+    if (groupId == null || query.length < 2) {
+      if (_suggestions.isNotEmpty && mounted) {
+        setState(() => _suggestions = const []);
+      }
+      return;
+    }
+    _suggestDebounce = Timer(const Duration(milliseconds: 220), () async {
+      try {
+        await ref.read(grocerySeedProvider.future);
+        final suggestions = await ref
+            .read(grocerySuggestionServiceProvider)
+            .suggest(query, groupId, limit: 5);
+        if (!mounted || generation != _suggestGeneration) return;
+        setState(() => _suggestions = suggestions);
+      } catch (_) {}
+    });
+  }
+
+  void _selectSuggestion(GrocerySuggestion suggestion) {
+    final typed = _draftController.text.trim();
+    final parsed = parseComposerItem(typed);
+    final label = GrocerySuggestionService.labelForSelection(
+      parsed.name,
+      suggestion.name,
+    );
+    final nameOffset = typed.lastIndexOf(parsed.name);
+    final prefix = nameOffset <= 0 ? '' : typed.substring(0, nameOffset);
+    final replacement = '$prefix$label';
+    _draftController.value = TextEditingValue(
+      text: replacement,
+      selection: TextSelection.collapsed(offset: replacement.length),
+    );
+    setState(() => _suggestions = const []);
+    _draftFocusNode.requestFocus();
   }
 
   bool get _canAddDraft => _draftController.text.trim().isNotEmpty;
@@ -1231,6 +1346,20 @@ class _RecipeLineEditorState extends State<_RecipeLineEditor> {
               ),
             ],
           ),
+          if (_suggestions.isNotEmpty) ...[
+            const SizedBox(height: MitlistSpacing.sm),
+            Wrap(
+              spacing: MitlistSpacing.xs,
+              runSpacing: MitlistSpacing.xs,
+              children: [
+                for (final suggestion in _suggestions)
+                  AppChip(
+                    label: suggestion.name,
+                    onSelected: (_) => _selectSuggestion(suggestion),
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     );

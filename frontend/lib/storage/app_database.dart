@@ -6,8 +6,15 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path_provider/path_provider.dart';
 
 import '../models/list_models.dart';
+import 'grocery_reference_database.dart';
 
 part 'app_database.g.dart';
+
+/// The sentinel group id for the bundled global grocery reference rows. These
+/// no longer live in the main DB (they moved to [GroceryReferenceDatabase]);
+/// the constant is kept so aisle routing can distinguish a global lookup from a
+/// household one.
+const String kGlobalGroupId = '__global__';
 
 class ListsTable extends Table {
   TextColumn get id => text()();
@@ -315,6 +322,32 @@ class GroceryVersionsTable extends Table {
   Set<Column<Object>>? get primaryKey => {groupId};
 }
 
+/// On-device tally of grocery words that were checked off but never resolved to
+/// a canonical item (resolver score < 0.85, so `canonical_item_id` was null).
+///
+/// Every such check-off increments the count for its household + normalised
+/// name. Once the count crosses the promotion threshold, a household-local
+/// canonical item + alias is minted so the word can finally surface in
+/// autocomplete/suggestions and feed the learning loop. This table stays
+/// strictly local — it is the pre-promotion scratchpad, never synced (unlike
+/// [CorrectionsTable]) so sub-threshold noise never leaves the device.
+class LocalItemSignalsTable extends Table {
+  TextColumn get groupId => text().named('group_id')();
+  TextColumn get normalizedName => text().named('normalized_name')();
+  TextColumn get displayName => text().named('display_name')();
+  IntColumn get count => integer().withDefault(const Constant(0))();
+
+  /// Set once the word crossed the threshold and a canonical was minted. Guards
+  /// against re-minting: later check-offs reinforce the existing alias instead.
+  TextColumn get promotedCanonicalItemId =>
+      text().named('promoted_canonical_item_id').nullable()();
+  DateTimeColumn get firstSeen => dateTime().named('first_seen')();
+  DateTimeColumn get lastSeen => dateTime().named('last_seen')();
+
+  @override
+  Set<Column<Object>>? get primaryKey => {groupId, normalizedName};
+}
+
 @DriftDatabase(
   tables: [
     ListsTable,
@@ -337,13 +370,30 @@ class GroceryVersionsTable extends Table {
     ItemCooccurrenceTable,
     ScanArtifactsTable,
     GroceryVersionsTable,
+    LocalItemSignalsTable,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 12;
+
+  /// The prebuilt read-only global grocery brain (canonical items, seed/OFF
+  /// aliases + FTS, store aisles). Attached by [GroceryReferenceInstaller] once
+  /// the bundled asset is copied into place. Null during the brief first-install
+  /// window (and in tests that don't install it), in which case the grocery
+  /// read methods degrade to household-only rows — resolution returns nothing
+  /// (the caller's backfill links later) and autocomplete falls back to the
+  /// bundled index.
+  GroceryReferenceDatabase? _reference;
+
+  /// Wires in the reference DB. Idempotent; safe to call after each reinstall.
+  void attachReference(GroceryReferenceDatabase reference) {
+    _reference = reference;
+  }
+
+  bool get hasReference => _reference != null;
 
   /// Creates all hot-query indexes.  Called from both onCreate and the v4
   /// onUpgrade block so that fresh installs and upgrades both get the indexes.
@@ -391,6 +441,10 @@ class AppDatabase extends _$AppDatabase {
     // queries also filter on item_b_id alone; add a covering index on group_id.
     await customStatement(
         'CREATE INDEX IF NOT EXISTS idx_item_cooccurrence_table_group_id ON item_cooccurrence_table(group_id);');
+    // local_item_signals_table — read by (group_id, normalized_name) on every
+    // unresolved check-off.
+    await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_local_item_signals_group_id ON local_item_signals_table(group_id);');
   }
 
   /// Creates the FTS5 virtual table that powers word-level prefix search over
@@ -498,7 +552,12 @@ CREATE TRIGGER IF NOT EXISTS item_aliases_fts_au
         onCreate: (m) async {
           await m.createAll();
           await _createIndexes();
-          await createAliasFts();
+          // No item_aliases_fts on the main DB: the global seed/OFF aliases (the
+          // only rows worth a word-prefix FTS) now live in the read-only
+          // reference DB. Household correction aliases are few and exact —
+          // covered by the searchAliasPrefix range scan — so the main DB keeps
+          // no FTS and its insert/update/delete triggers, and correction writes
+          // stay cheap.
         },
         onUpgrade: (m, from, to) async {
           if (from < 2) {
@@ -589,6 +648,34 @@ FROM list_items_table;
             // index pass instead of a full ~280k-row scan per keystroke.
             await customStatement(
                 'CREATE INDEX IF NOT EXISTS idx_item_aliases_group_alias ON item_aliases_table(group_id, alias_text);');
+          }
+          if (from < 11) {
+            // The global grocery brain moved to a prebuilt read-only reference
+            // DB (GroceryReferenceDatabase). Evict the ~280k global rows this
+            // install seeded into the main DB so they aren't double-counted with
+            // the reference DB, and drop the now-unused main-DB FTS. Drop the
+            // FTS triggers first so the bulk delete doesn't pay a per-row FTS
+            // delete (the exact cost the whole change removes).
+            await dropAliasFtsTriggers();
+            await customStatement('DROP TABLE IF EXISTS item_aliases_fts;');
+            await customStatement(
+                "DELETE FROM item_aliases_table WHERE group_id = '__global__';");
+            await customStatement(
+                "DELETE FROM canonical_items_table WHERE is_global = 1 OR group_id = '__global__';");
+            await customStatement(
+                "DELETE FROM store_aisles_table WHERE group_id = '__global__';");
+            // Reclaim the freed pages (one-time, at the upgrade open, before the
+            // app is interactive).
+            await customStatement('VACUUM;');
+          }
+          if (from < 12) {
+            // Pre-promotion tally for checked-off words that never resolved to a
+            // canonical item. Purely local; lets a repeatedly-bought novel word
+            // ("fassi", a store brand, a family shorthand) earn its way into the
+            // household's suggestions once it crosses the promotion threshold.
+            await m.createTable(localItemSignalsTable);
+            await customStatement(
+                'CREATE INDEX IF NOT EXISTS idx_local_item_signals_group_id ON local_item_signals_table(group_id);');
           }
         },
         beforeOpen: (details) async {
@@ -896,10 +983,40 @@ FROM list_items_table;
     );
   }
 
+  /// Updates the canonical link carried by a queued list-item create/add.
+  /// Local grocery ids are deliberately kept out of the public list API when
+  /// they are not UUIDs, but retaining them in the durable outbox lets temp-id
+  /// reconciliation preserve the on-device intelligence link.
+  Future<void> updatePendingListItemCanonicalId({
+    required String entityId,
+    required String? canonicalItemId,
+  }) async {
+    final rows = await (select(outboxOps)
+          ..where((t) =>
+              t.entityId.equals(entityId) &
+              t.type.isIn(const ['createItem', 'addItemAmount'])))
+        .get();
+    for (final row in rows) {
+      final decoded = jsonDecode(row.payloadJson);
+      if (decoded is! Map<String, dynamic>) continue;
+      if (canonicalItemId == null) {
+        decoded.remove('canonicalItemId');
+      } else {
+        decoded['canonicalItemId'] = canonicalItemId;
+      }
+      await (update(outboxOps)..where((t) => t.id.equals(row.id))).write(
+        OutboxOpsCompanion(payloadJson: Value(jsonEncode(decoded))),
+      );
+    }
+  }
+
   Future<void> replaceTempItemId({
     required String tempId,
     required ListItem server,
   }) async {
+    final local = await (select(listItemsTable)
+          ..where((t) => t.id.equals(tempId)))
+        .getSingleOrNull();
     await (delete(listItemsTable)..where((t) => t.id.equals(tempId))).go();
     await upsertListItemsRows([
       ListItemsTableCompanion(
@@ -910,6 +1027,9 @@ FROM list_items_table;
         unit: Value(server.unit),
         checked: Value(server.checked),
         position: Value(server.position),
+        priceCents: Value(server.priceCents ?? local?.priceCents),
+        canonicalItemId:
+            Value(server.canonicalItemId ?? local?.canonicalItemId),
         createdAt: Value(server.createdAt),
         updatedAt: Value(server.updatedAt),
       )
@@ -1155,7 +1275,32 @@ FROM list_items_table;
             ..where((t) => t.isGlobal.equals(false)))
           .go();
       await (delete(groceryVersionsTable)).go();
+      await (delete(localItemSignalsTable)).go();
     });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Grocery graph — local (pre-promotion) novel-word signals
+  // ---------------------------------------------------------------------------
+
+  /// The pending signal for a household + normalised name, or null if this word
+  /// has never been checked off unresolved before.
+  Future<LocalItemSignalsTableData?> getLocalItemSignal({
+    required String groupId,
+    required String normalizedName,
+  }) {
+    return (select(localItemSignalsTable)
+          ..where((t) =>
+              t.groupId.equals(groupId) &
+              t.normalizedName.equals(normalizedName)))
+        .getSingleOrNull();
+  }
+
+  /// Upserts a pending novel-word signal (composite PK: group + normalised
+  /// name). Callers read the current row, compute the new count, and write the
+  /// full companion back.
+  Future<void> upsertLocalItemSignal(LocalItemSignalsTableCompanion row) {
+    return into(localItemSignalsTable).insertOnConflictUpdate(row);
   }
 
   // ---------------------------------------------------------------------------
@@ -1190,24 +1335,51 @@ FROM list_items_table;
     required String groupId,
     required String query,
     int limit = 40,
-  }) {
-    if (query.isEmpty) return Future.value(const []);
+  }) async {
+    if (query.isEmpty) return const [];
     final lower = query;
     final upper = _prefixUpperBound(lower);
-    return (select(itemAliasesTable)
+    final mainRows = await (select(itemAliasesTable)
           ..where((t) {
             final range = upper == null
                 ? t.aliasText.isBiggerOrEqualValue(lower)
                 : t.aliasText.isBiggerOrEqualValue(lower) &
                     t.aliasText.isSmallerThanValue(upper);
+            // The `__global__` disjunct is dead in production (the migration
+            // evicted those rows; they live in the reference DB now) but lets
+            // tests that seed global rows straight into the main DB keep working
+            // without attaching a reference DB.
             return (t.groupId.equals(groupId) |
-                    t.groupId.equals('__global__')) &
+                    t.groupId.equals(kGlobalGroupId)) &
                 t.deletedAt.isNull() &
                 range;
           })
           ..orderBy([(t) => OrderingTerm.desc(t.weight)])
           ..limit(limit))
         .get();
+    final refRows =
+        _reference?.searchAliasPrefix(query: query, limit: limit) ?? const [];
+    return _mergeAliasesByWeight(mainRows, refRows, limit);
+  }
+
+  /// Merges household (main) and global (ref) alias rows, household first on a
+  /// weight tie (household corrections carry >= the seed weight), then by weight
+  /// DESC, capped at [limit]. Household rows are passed first so the
+  /// insertion-order tiebreak keeps a corrected mapping ahead of the seed —
+  /// `List.sort` is not stable, so the index tiebreak is explicit.
+  List<ItemAliasesTableData> _mergeAliasesByWeight(
+    List<ItemAliasesTableData> household,
+    List<ItemAliasesTableData> global,
+    int limit,
+  ) {
+    final merged = [...household, ...global];
+    final order = List<int>.generate(merged.length, (i) => i);
+    order.sort((a, b) {
+      final w = merged[b].weight.compareTo(merged[a].weight);
+      return w != 0 ? w : a.compareTo(b);
+    });
+    final ordered = [for (final i in order) merged[i]];
+    return ordered.length > limit ? ordered.sublist(0, limit) : ordered;
   }
 
   /// Word-level prefix search via FTS5 over alias text.
@@ -1230,105 +1402,51 @@ FROM list_items_table;
     required String query,
     int limit = 80,
   }) async {
-    if (query.isEmpty) return const [];
-    // Build FTS5 match expression: each whitespace-delimited token becomes
-    // "token*" in the FTS query. SQLite FTS5 uses bare `token*` syntax for
-    // prefix matching on individual tokens.
-    final tokens =
-        query.trim().split(RegExp(r'\s+')).where((t) => t.isNotEmpty).toList();
-    if (tokens.isEmpty) return const [];
-    // Build FTS5 prefix expression: `token*` (no quotes) for each whitespace
-    // token. The unicode61 tokenizer on the FTS table handles hyphens and
-    // diacritics, so "red bull" → ["red", "bull"] in the index, and the query
-    // "red* bull*" matches both tokens as prefixes.
-    // FTS5 special characters that need escaping: double-quote literal phrases.
-    // Since we are using bare `token*` syntax (not phrase mode), the only
-    // character that needs escaping is `"` itself (which we strip from tokens).
-    final ftsMatch = tokens
-        .map((t) {
-          // Strip FTS5-special characters that cannot appear in bare token queries.
-          // The unicode61 tokenizer already handles hyphens as word separators;
-          // removing them here prevents FTS5 parse errors on queries like "coca-cola"
-          // while the index correctly stores "coca" and "cola" as separate tokens.
-          final safe = t
-              .replaceAll('"', '')
-              .replaceAll('(', '')
-              .replaceAll(')', '')
-              .trim();
-          if (safe.isEmpty) return null;
-          return '$safe*';
-        })
-        .whereType<String>()
-        .join(' ');
-    if (ftsMatch.isEmpty) return const [];
-
-    // FTS5 content table query: join back to the base table to get all columns
-    // and to filter by group_id / deleted_at (the FTS index itself has no
-    // group_id column).
-    final rows = await customSelect(
-      '''
-      SELECT a.id, a.group_id, a.canonical_item_id, a.alias_text, a.lang,
-             a.source, a.weight, a.version,
-             a.created_at, a.updated_at, a.deleted_at
-      FROM item_aliases_fts fts
-      JOIN item_aliases_table a ON a.rowid = fts.rowid
-      WHERE item_aliases_fts MATCH ?
-        AND (a.group_id = ? OR a.group_id = '__global__')
-        AND a.deleted_at IS NULL
-      ORDER BY a.weight DESC
-      LIMIT ?
-      ''',
-      variables: [
-        Variable<String>(ftsMatch),
-        Variable<String>(groupId),
-        Variable<int>(limit),
-      ],
-    ).get();
-
-    return rows.map((row) {
-      final data = row.data;
-      return ItemAliasesTableData(
-        id: data['id'] as String,
-        groupId: data['group_id'] as String,
-        canonicalItemId: data['canonical_item_id'] as String,
-        aliasText: data['alias_text'] as String,
-        lang: (data['lang'] as String?) ?? 'und',
-        source: (data['source'] as String?) ?? 'correction',
-        weight: (data['weight'] as int?) ?? 1,
-        version: (data['version'] as int?) ?? 0,
-        createdAt: DateTime.fromMillisecondsSinceEpoch(
-            ((data['created_at'] as int?) ?? 0) * 1000),
-        updatedAt: DateTime.fromMillisecondsSinceEpoch(
-            ((data['updated_at'] as int?) ?? 0) * 1000),
-        deletedAt: data['deleted_at'] == null
-            ? null
-            : DateTime.fromMillisecondsSinceEpoch(
-                (data['deleted_at'] as int) * 1000),
-      );
-    }).toList();
+    // The FTS5 word-prefix index lives only in the read-only reference DB (the
+    // global seed/OFF aliases). Household correction rows are few and exact, so
+    // they're covered by the whole-string [searchAliasPrefix] range scan on the
+    // main DB; no FTS is maintained there.
+    return _reference?.searchAliasWordPrefix(query: query, limit: limit) ??
+        const [];
   }
 
   Future<List<CanonicalItemsTableData>> getCanonicalItemsByIds(
-      Iterable<String> ids) {
+      Iterable<String> ids) async {
     final list = ids.toList(growable: false);
-    if (list.isEmpty) return Future.value(const []);
-    return (select(canonicalItemsTable)
+    if (list.isEmpty) return const [];
+    final mainRows = await (select(canonicalItemsTable)
           ..where((t) => t.id.isIn(list) & t.deletedAt.isNull()))
         .get();
+    final seen = {for (final r in mainRows) r.id};
+    final missing = list.where((id) => !seen.contains(id));
+    final refRows = _reference?.getCanonicalItemsByIds(missing) ?? const [];
+    return [...mainRows, ...refRows];
   }
 
-  Future<CanonicalItemsTableData?> getCanonicalItemById(String id) {
-    return (select(canonicalItemsTable)..where((t) => t.id.equals(id)))
+  Future<CanonicalItemsTableData?> getCanonicalItemById(String id) async {
+    final main = await (select(canonicalItemsTable)
+          ..where((t) => t.id.equals(id))
+          ..limit(1))
         .getSingleOrNull();
+    if (main != null) return main;
+    return _reference?.getCanonicalItemById(id);
   }
 
   Future<List<CanonicalItemsTableData>> getCanonicalItemsByGroup(
-      String groupId) {
-    return (select(canonicalItemsTable)
+      String groupId) async {
+    // Household + delta-synced canonical items from the main DB, unioned with
+    // the global reference; a household/delta row shadows a ref row of the same
+    // id. The `is_global` disjunct is dead in production (those rows moved to
+    // the reference DB) but keeps tests that seed global rows into the main DB
+    // working without a reference DB.
+    final mainRows = await (select(canonicalItemsTable)
           ..where((t) =>
               (t.groupId.equals(groupId) | t.isGlobal.equals(true)) &
               t.deletedAt.isNull()))
         .get();
+    final seen = {for (final r in mainRows) r.id};
+    final refRows = _reference?.getAllCanonicalGlobal() ?? const [];
+    return [...mainRows, ...refRows.where((r) => !seen.contains(r.id))];
   }
 
   Future<bool> hasCanonicalItemsByGroup(String groupId) async {
@@ -1339,7 +1457,8 @@ FROM list_items_table;
               canonicalItemsTable.deletedAt.isNull())
           ..limit(1))
         .getSingleOrNull();
-    return row != null;
+    if (row != null) return true;
+    return _reference?.hasCanonicalItems() ?? false;
   }
 
   Future<void> upsertCanonicalItems(
@@ -1381,17 +1500,21 @@ FROM list_items_table;
   Future<ItemAliasesTableData?> findAlias({
     required String groupId,
     required String aliasText,
-  }) {
-    return (select(itemAliasesTable)
+  }) async {
+    final main = await (select(itemAliasesTable)
           ..where((t) =>
-              (t.groupId.equals(groupId) | t.groupId.equals('__global__')) &
+              (t.groupId.equals(groupId) | t.groupId.equals(kGlobalGroupId)) &
               t.aliasText.equals(aliasText) &
               t.deletedAt.isNull())
-          ..orderBy([
-            (t) => OrderingTerm.desc(t.weight),
-          ])
+          ..orderBy([(t) => OrderingTerm.desc(t.weight)])
           ..limit(1))
         .getSingleOrNull();
+    final refList = _reference?.findAlias(aliasText) ?? const [];
+    final ref = refList.isEmpty ? null : refList.first;
+    if (main == null) return ref;
+    if (ref == null) return main;
+    // Household wins on a weight tie (a correction outranks the seed mapping).
+    return ref.weight > main.weight ? ref : main;
   }
 
   /// Batch form of [findAlias]: for each text in [aliasTexts], the top-weighted
@@ -1402,15 +1525,18 @@ FROM list_items_table;
     required Set<String> aliasTexts,
   }) async {
     if (aliasTexts.isEmpty) return const {};
-    final rows = await (select(itemAliasesTable)
+    final mainRows = await (select(itemAliasesTable)
           ..where((t) =>
-              (t.groupId.equals(groupId) | t.groupId.equals('__global__')) &
+              (t.groupId.equals(groupId) | t.groupId.equals(kGlobalGroupId)) &
               t.aliasText.isIn(aliasTexts.toList()) &
               t.deletedAt.isNull())
           ..orderBy([(t) => OrderingTerm.desc(t.weight)]))
         .get();
+    final refRows = _reference?.findAliasesByTexts(aliasTexts) ?? const [];
+    // Household rows first so putIfAbsent keeps a correction over the seed;
+    // within each source the query already ordered by weight DESC.
     final out = <String, ItemAliasesTableData>{};
-    for (final r in rows) {
+    for (final r in [...mainRows, ...refRows]) {
       out.putIfAbsent(r.aliasText, () => r);
     }
     return out;
@@ -1426,13 +1552,15 @@ FROM list_items_table;
   Future<List<ItemAliasesTableData>> findAliasesByText({
     required String groupId,
     required String aliasText,
-  }) {
-    return (select(itemAliasesTable)
+  }) async {
+    final mainRows = await (select(itemAliasesTable)
           ..where((t) =>
-              (t.groupId.equals(groupId) | t.groupId.equals('__global__')) &
+              (t.groupId.equals(groupId) | t.groupId.equals(kGlobalGroupId)) &
               t.aliasText.equals(aliasText) &
               t.deletedAt.isNull()))
         .get();
+    final refRows = _reference?.findAliasesByText(aliasText) ?? const [];
+    return [...mainRows, ...refRows];
   }
 
   /// Loads all non-deleted aliases for a household + global seed aliases.
@@ -1440,12 +1568,15 @@ FROM list_items_table;
   ///
   /// NOTE: with the full global seed this returns ~120k rows. Prefer
   /// [getAliasFuzzyCandidates] for the hot resolve path.
-  Future<List<ItemAliasesTableData>> getItemAliasesForFuzzy(String groupId) {
-    return (select(itemAliasesTable)
+  Future<List<ItemAliasesTableData>> getItemAliasesForFuzzy(
+      String groupId) async {
+    final mainRows = await (select(itemAliasesTable)
           ..where((t) =>
-              (t.groupId.equals(groupId) | t.groupId.equals('__global__')) &
+              (t.groupId.equals(groupId) | t.groupId.equals(kGlobalGroupId)) &
               t.deletedAt.isNull()))
         .get();
+    final refRows = _reference?.getItemAliasesForFuzzy() ?? const [];
+    return [...mainRows, ...refRows];
   }
 
   /// Indexed prefilter for fuzzy resolution: only aliases that share the query's
@@ -1456,22 +1587,22 @@ FROM list_items_table;
     required String groupId,
     required String query,
     int maxCandidates = 400,
-  }) {
-    if (query.isEmpty) return Future.value(const []);
+  }) async {
+    if (query.isEmpty) return const [];
     final lo = (query.length - 2).clamp(1, 1 << 30);
     final hi = query.length + 2;
     // First-character range scan (index-sargable) instead of `LIKE 'x%'`, which
     // can't use the BINARY `alias_text` index — see [searchAliasPrefix].
     final firstChar = query.substring(0, 1);
     final upper = _prefixUpperBound(firstChar);
-    return (select(itemAliasesTable)
+    final mainRows = await (select(itemAliasesTable)
           ..where((t) {
             final range = upper == null
                 ? t.aliasText.isBiggerOrEqualValue(firstChar)
                 : t.aliasText.isBiggerOrEqualValue(firstChar) &
                     t.aliasText.isSmallerThanValue(upper);
             return (t.groupId.equals(groupId) |
-                    t.groupId.equals('__global__')) &
+                    t.groupId.equals(kGlobalGroupId)) &
                 t.deletedAt.isNull() &
                 t.aliasText.length.isBetweenValues(lo, hi) &
                 range;
@@ -1479,6 +1610,10 @@ FROM list_items_table;
           ..orderBy([(t) => OrderingTerm.desc(t.weight)])
           ..limit(maxCandidates))
         .get();
+    final refRows = _reference?.getAliasFuzzyCandidates(
+            query: query, maxCandidates: maxCandidates) ??
+        const [];
+    return _mergeAliasesByWeight(mainRows, refRows, maxCandidates);
   }
 
   Future<void> upsertItemAliases(
@@ -1617,16 +1752,24 @@ INSERT INTO item_aliases_table
     required String groupId,
     required String storeId,
     required String canonicalItemId,
-  }) {
-    return (select(storeAislesTable)
+  }) async {
+    // A household aisle override (real group id in the main DB) wins over the
+    // shipped global layout. `ORDER BY group_id DESC` keeps a real group ahead
+    // of `__global__`; the `__global__` disjunct is dead in production (global
+    // layouts live in the reference DB) but lets tests that seed global aisles
+    // into the main DB resolve without a reference DB.
+    final main = await (select(storeAislesTable)
           ..where((t) =>
-              (t.groupId.equals(groupId) | t.groupId.equals('__global__')) &
+              (t.groupId.equals(groupId) | t.groupId.equals(kGlobalGroupId)) &
               t.storeId.equals(storeId) &
               t.canonicalItemId.equals(canonicalItemId) &
               t.deletedAt.isNull())
           ..orderBy([(t) => OrderingTerm.desc(t.groupId)])
           ..limit(1))
         .getSingleOrNull();
+    if (main != null) return main;
+    return _reference?.getStoreAisle(
+        storeId: storeId, canonicalItemId: canonicalItemId);
   }
 
   /// Hard-deletes the shipped global store layout so a newer version can be
@@ -1640,8 +1783,12 @@ INSERT INTO item_aliases_table
   Future<List<StoreAislesTableData>> getStoreAisles({
     required String groupId,
     String? storeId,
-  }) {
-    return (select(storeAislesTable)
+  }) async {
+    // Callers that need both global and household layouts (e.g. scan_review)
+    // query each group id separately and merge. A `__global__` request reads any
+    // global rows still in the main DB (test seeding) unioned with the shipped
+    // reference layout; a household request stays on the main DB.
+    final mainRows = await (select(storeAislesTable)
           ..where((t) =>
               t.groupId.equals(groupId) &
               (storeId == null
@@ -1650,6 +1797,11 @@ INSERT INTO item_aliases_table
               t.deletedAt.isNull())
           ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))
         .get();
+    if (groupId != kGlobalGroupId) return mainRows;
+    final refRows = _reference?.getStoreAisles(storeId: storeId) ?? const [];
+    final merged = [...mainRows, ...refRows];
+    merged.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    return merged;
   }
 
   Future<void> upsertStoreAisles(

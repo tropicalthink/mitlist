@@ -795,6 +795,12 @@ class _KitchenHeader extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: MitlistSpacing.sm),
+          IconButton(
+            icon: const AppIcon(name: 'squares2x2', size: 18),
+            tooltip: l10n.cookbooksButton,
+            onPressed: () => context.pushNamed('cookbooks'),
+          ),
+          const SizedBox(width: MitlistSpacing.space1),
           AppButton(
             text: l10n.recipePlanButton,
             size: AppButtonSize.sm,

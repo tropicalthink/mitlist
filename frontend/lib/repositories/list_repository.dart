@@ -9,8 +9,10 @@ import '../models/list_models.dart';
 import '../utils/uuid_validation.dart';
 import '../services/list_service.dart';
 import '../services/error_reporter.dart';
+import '../services/scan/local_item_promotion_service.dart';
 import '../services/sse_service.dart';
 import '../storage/app_database.dart';
+import 'grocery_repository.dart';
 import 'outbox_drainer.dart';
 
 class ListRepository {
@@ -18,6 +20,16 @@ class ListRepository {
   final ListService _remote;
   final Uuid _uuid;
   final bool _autoSync;
+
+  /// Promotes repeatedly-checked-off words the resolver couldn't map into
+  /// household-local canonical items. Defaults to a db-backed instance so
+  /// direct constructions (tests) still learn; production injects the same.
+  final LocalItemPromotionService _promotionService;
+
+  /// Used to push a freshly-promoted alias to the household's other devices.
+  /// Optional: when absent (tests / offline construction) promotion still works
+  /// locally and the canonical still syncs via the recordPurchase op.
+  final GroceryRepository? _groceryRepo;
 
   bool _isDraining = false;
 
@@ -29,10 +41,15 @@ class ListRepository {
     required ListService remote,
     Uuid? uuid,
     bool autoSync = true,
+    LocalItemPromotionService? promotionService,
+    GroceryRepository? groceryRepo,
   })  : _db = db,
         _remote = remote,
         _uuid = uuid ?? const Uuid(),
-        _autoSync = autoSync;
+        _autoSync = autoSync,
+        _promotionService =
+            promotionService ?? LocalItemPromotionService(db),
+        _groceryRepo = groceryRepo;
 
   Stream<List<ItemList>> watchListsByGroup(String groupId) {
     return _db
@@ -118,7 +135,21 @@ class ListRepository {
     String listId,
     List<ListItem> serverItems,
   ) async {
-    await _db.upsertListItemsRows(serverItems.map(_toListItemsRow));
+    // Canonical slugs are an on-device enrichment and are intentionally not
+    // sent to the list API unless they happen to be API UUIDs. Preserve that
+    // enrichment when an ordinary server refresh returns the same row without
+    // a canonical id.
+    final beforeRefresh = await _db.getItemsByListOnce(listId);
+    final localCanonicalById = {
+      for (final row in beforeRefresh)
+        if (row.canonicalItemId != null) row.id: row.canonicalItemId!,
+    };
+    final enrichedServerItems = serverItems
+        .map((item) => item.canonicalItemId != null
+            ? item
+            : _withCanonicalItemId(item, localCanonicalById[item.id]))
+        .toList(growable: false);
+    await _db.upsertListItemsRows(enrichedServerItems.map(_toListItemsRow));
 
     final serverIds = serverItems.map((i) => i.id).toSet();
     final localRows = await _db.getItemsByListOnce(listId);
@@ -180,7 +211,10 @@ class ListRepository {
   // ---------------------------------------------------------------------------
 
   Future<ListItem> createItemOfflineFirst(
-      String listId, CreateListItemRequest req) async {
+    String listId,
+    CreateListItemRequest req, {
+    bool deferImmediateSync = false,
+  }) async {
     final tempId = _uuid.v4();
     final now = DateTime.now();
 
@@ -240,7 +274,7 @@ class ListRepository {
     });
 
     // Best-effort immediate sync.
-    if (_autoSync) unawaited(drainOutboxOnce());
+    if (_autoSync && !deferImmediateSync) unawaited(drainOutboxOnce());
     return local;
   }
 
@@ -259,6 +293,7 @@ class ListRepository {
     String unit = '',
     String note = '',
     String? canonicalItemId,
+    bool deferImmediateSync = false,
   }) async {
     final now = DateTime.now();
     final existingRows = await _db.getItemsByListOnce(listId);
@@ -333,8 +368,39 @@ class ListRepository {
       );
     });
 
-    if (_autoSync) unawaited(drainOutboxOnce());
+    if (_autoSync && !deferImmediateSync) unawaited(drainOutboxOnce());
     return local;
+  }
+
+  /// Persists an on-device canonical enrichment without creating a server
+  /// update. If the item is still a temp row, its queued create/add payload is
+  /// patched in the same transaction so reconciliation retains the link.
+  Future<ListItem> setCanonicalItemIdLocal(
+    String listId,
+    String itemId,
+    String? canonicalItemId,
+  ) async {
+    final row = (await _db.getItemsByListOnce(listId))
+        .firstWhereOrNull((candidate) => candidate.id == itemId);
+    if (row == null) {
+      throw StateError('list item $itemId not found in local cache');
+    }
+    final item = _toListItem(row);
+    final patched = _withCanonicalItemId(item, canonicalItemId);
+    await _db.transaction(() async {
+      await _db.upsertListItemsRows([_toListItemsRow(patched)]);
+      await _db.updatePendingListItemCanonicalId(
+        entityId: itemId,
+        canonicalItemId: canonicalItemId,
+      );
+    });
+    return patched;
+  }
+
+  /// Restarts best-effort sync after a caller briefly deferred it to enrich a
+  /// durable optimistic row.
+  void triggerAutoSync() {
+    if (_autoSync) unawaited(drainOutboxOnce());
   }
 
   Future<ListItem> updateItemOfflineFirst(
@@ -359,7 +425,11 @@ class ListRepository {
       checked: req.checked ?? existing.checked,
       position: req.position ?? existing.position,
       priceCents: req.priceCents ?? existing.priceCents,
-      canonicalItemId: existing.canonicalItemId,
+      canonicalItemId: req.name != null &&
+              req.name!.trim().toLowerCase() !=
+                  existing.name.trim().toLowerCase()
+          ? null
+          : existing.canonicalItemId,
       createdAt: existing.createdAt,
       updatedAt: DateTime.now(),
     );
@@ -937,6 +1007,24 @@ class ListRepository {
     );
   }
 
+  ListItem _withCanonicalItemId(ListItem item, String? canonicalItemId) {
+    return ListItem(
+      id: item.id,
+      listId: item.listId,
+      name: item.name,
+      quantity: item.quantity,
+      unit: item.unit,
+      note: item.note,
+      priceCents: item.priceCents,
+      canonicalItemId: canonicalItemId,
+      checked: item.checked,
+      position: item.position,
+      claimedBy: item.claimedBy,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // Phase 6: purchase signal on item check-off
   // ---------------------------------------------------------------------------
@@ -964,11 +1052,42 @@ class ListRepository {
     Set<String> excludedPeerItemIds = const {},
   }) async {
     try {
-      final canonicalId = row.canonicalItemId;
-      if (canonicalId == null) return;
+      final rawCanonicalId = row.canonicalItemId;
 
       final groupId = await _db.getListGroupId(listId);
       if (groupId == null) return;
+
+      // Kept final (not a reassigned var) so it promotes to non-null inside the
+      // nested transaction closure below.
+      final String canonicalId;
+      if (rawCanonicalId != null) {
+        canonicalId = rawCanonicalId;
+      } else {
+        // The resolver couldn't map this word to a canonical item. Instead of
+        // learning nothing, tally it; once the household has checked it off
+        // enough times it's promoted to a household-local canonical so it can
+        // finally surface in suggestions and feed the loop below.
+        final promoted = await _promotionService.recordUnresolvedCheckoff(
+          groupId: groupId,
+          rawName: row.name,
+        );
+        if (promoted == null) return; // still below the promotion threshold
+        canonicalId = promoted.canonicalItemId;
+        // Bind the list item to the minted canonical so future check-offs take
+        // the normal path and the purchase-history/co-occurrence rows below
+        // record against it.
+        await setCanonicalItemIdLocal(listId, itemId, canonicalId);
+        final groceryRepo = _groceryRepo;
+        if (promoted.justPromoted && groceryRepo != null) {
+          // One-time cross-device push of the alias (the canonical itself syncs
+          // via the recordPurchase op below). Best-effort; offline is swallowed.
+          unawaited(groceryRepo.uploadCorrection(
+            groupId: groupId,
+            rawText: promoted.normalizedName,
+            canonicalItemId: canonicalId,
+          ));
+        }
+      }
       final peers = await _db.getCheckedItemsWithCanonical(listId);
       final peerCanonicalIds = peers
           .where((p) =>

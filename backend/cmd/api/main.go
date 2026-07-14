@@ -96,6 +96,13 @@ func main() {
 	})
 	srv.Router().Mount("/internal/health", healthHandler)
 
+	// Operational endpoints, admin-guarded (IP allowlist via DEBUG_ALLOWLIST or
+	// HTTP Basic via ADMIN_USER/ADMIN_PASS). pprof and debug wrap AdminGuard
+	// internally; metrics is wrapped here.
+	srv.Router().Handle("/metrics", handlers.AdminGuard(handlers.NewMetricsHandler()))
+	srv.Router().Mount("/debug/pprof", handlers.NewPprofHandler())
+	srv.Router().Mount("/internal/debug", handlers.NewDebugHandler(cfg, srv.Router()).Routes())
+
 	// Web → app redirect: browsers open this URL, server redirects to the deep link.
 	// Shared links use https://mitlist.me/join/<code>; this makes them tappable.
 	srv.Router().Get("/join/{code}", func(w http.ResponseWriter, r *http.Request) {

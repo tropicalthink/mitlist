@@ -35,6 +35,10 @@ import 'screens/recipes/recipes_screen.dart';
 import 'screens/recipes/recipe_creation_screen.dart';
 import 'screens/recipes/recipe_detail_screen.dart';
 import 'screens/recipes/cook_mode_screen.dart';
+import 'screens/recipes/cookbooks_screen.dart';
+import 'screens/recipes/cookbook_detail_screen.dart';
+import 'screens/lists/products_screen.dart';
+import 'screens/lists/shopping_locations_screen.dart';
 import 'models/recipe_models.dart';
 import 'screens/meal_plans/meal_plan_screen.dart';
 import 'screens/shopping/shopping_trip_screen.dart';
@@ -252,6 +256,23 @@ final routerProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) => const MealPlanScreen(),
                   ),
                   GoRoute(
+                    path: 'cookbooks',
+                    name: 'cookbooks',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (context, state) => const CookbooksScreen(),
+                    routes: [
+                      GoRoute(
+                        path: ':collectionId',
+                        name: 'cookbookDetail',
+                        parentNavigatorKey: _rootNavigatorKey,
+                        builder: (context, state) => CookbookDetailScreen(
+                          collectionId: state.pathParameters['collectionId']!,
+                          initialName: state.extra as String?,
+                        ),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
                     path: ':recipeId',
                     name: 'recipeDetail',
                     parentNavigatorKey: _rootNavigatorKey,
@@ -355,12 +376,32 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: 'notificationPreferences',
             builder: (context, state) => const NotificationPreferencesScreen(),
           ),
+          GoRoute(
+            path: 'products',
+            name: 'products',
+            builder: (context, state) => const ProductsScreen(),
+          ),
+          GoRoute(
+            path: 'shopping-locations',
+            name: 'shoppingLocations',
+            builder: (context, state) => const ShoppingLocationsScreen(),
+          ),
         ],
       ),
       GoRoute(
         path: '/scanner',
         name: 'scanner',
-        builder: (context, state) => const ScannerScreen(),
+        builder: (context, state) => Consumer(
+          builder: (context, routeRef, _) {
+            final preferred = routeRef.watch(currentGroupIdProvider);
+            final groups = routeRef.watch(cachedGroupsProvider).asData?.value;
+            return ScannerScreen(
+              groupId: groups == null
+                  ? preferred
+                  : resolveActiveGroupId(groups, preferred),
+            );
+          },
+        ),
       ),
     ],
   );
