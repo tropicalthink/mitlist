@@ -122,6 +122,10 @@ leave on). Point the Flutter app at your server and you're done.
 
 See [backend/README.md](backend/README.md) for full configuration reference, including how to [enable optional crash reporting](backend/README.md#enable-error-reporting-optional) (off by default — set `SENTRY_DSN` for the backend and the `GLITCHTIP_DSN_WEB` CI secret for the web PWA).
 
+For production releases, follow the [deployment checklist](docs/DEPLOYMENT.md).
+It includes PlanetScale migration checks, the Redis-free cutover, rollback
+guidance, and the automated post-deploy smoke command.
+
 ### Hosted database: PlanetScale Postgres
 
 The planned official service uses PlanetScale Postgres instead of operating a
