@@ -92,7 +92,8 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
           ),
         ),
       );
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('grocery scan failed: $e\n$stack');
       if (!mounted) return;
       setState(() {
         _error = l10n.scanCouldNotProcess;

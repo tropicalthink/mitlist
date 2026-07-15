@@ -265,6 +265,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get choreAppBarTitle => 'Aufgaben';
 
   @override
+  String get choreManageZones => 'Bereiche verwalten';
+
+  @override
   String get choreAddChore => 'Aufgabe hinzufügen';
 
   @override

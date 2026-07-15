@@ -118,7 +118,9 @@ Future<int?> launchListScan(
         ),
       ),
     );
-  } catch (_) {
+  } catch (e, stack) {
+    // Keep the user-facing copy generic, but never lose the real cause.
+    debugPrint('list scan failed: $e\n$stack');
     if (!context.mounted) return null;
     Navigator.of(context).pop(); // dismiss loading
     ScaffoldMessenger.of(context).showSnackBar(

@@ -17,6 +17,7 @@ import '../../services/group_id_validator.dart';
 import '../../sheets/chore_creation_sheet.dart';
 import '../../sheets/chore_detail_sheet.dart';
 import '../../sheets/chore_load_sheet.dart';
+import '../../sheets/chore_zones_sheet.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/shell_tab_load.dart';
@@ -38,6 +39,8 @@ import '../../widgets/list_entrance.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/odometer.dart';
 import '../../l10n/app_localizations.dart';
+
+enum _ChoreMenuAction { manageZones }
 
 class ChoresScreen extends ConsumerStatefulWidget {
   const ChoresScreen({super.key});
@@ -835,7 +838,37 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         MediaQuery.textScalerOf(context).scale(_labelMediumLineHeight);
 
     return Scaffold(
-      appBar: MitlistAppBar.titleText(l10n.choreAppBarTitle),
+      appBar: MitlistAppBar.titleText(
+        l10n.choreAppBarTitle,
+        actions: [
+          if (_hasHousehold && _groupId != null)
+            PopupMenuButton<_ChoreMenuAction>(
+              icon: const AppIcon(name: 'ellipsisVertical'),
+              tooltip: l10n.commonOptions,
+              onSelected: (action) {
+                switch (action) {
+                  case _ChoreMenuAction.manageZones:
+                    ChoreZonesSheet.show(context, groupId: _groupId!);
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: _ChoreMenuAction.manageZones,
+                  child: Row(
+                    children: [
+                      AppIcon(
+                          name: 'squares2x2',
+                          size: 18,
+                          color: Theme.of(context).colorScheme.onSurface),
+                      const SizedBox(width: MitlistSpacing.sm),
+                      Text(l10n.choreManageZones),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
       floatingActionButton: AppButton(
         size: AppButtonSize.lg,
         onPressed:

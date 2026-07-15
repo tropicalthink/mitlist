@@ -67,36 +67,6 @@ func TestGroupRepository_GetGroupByID_NotFound(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestGroupRepository_ClaimInvite(t *testing.T) {
-	mock := newMockDB(t)
-	repo := NewGroupRepository(mock)
-	inviteID := fixedUUID()
-	userID := uuid.New()
-
-	mock.ExpectQuery("UPDATE group_invites").
-		WithArgs(userID, pgxmock.AnyArg(), inviteID).
-		WillReturnRows(pgxmock.NewRows([]string{"id"}).AddRow(inviteID))
-
-	err := repo.ClaimInvite(context.Background(), inviteID, userID)
-	require.NoError(t, err)
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestGroupRepository_ClaimInviteAlreadyUsed(t *testing.T) {
-	mock := newMockDB(t)
-	repo := NewGroupRepository(mock)
-	inviteID := fixedUUID()
-	userID := uuid.New()
-
-	mock.ExpectQuery("UPDATE group_invites").
-		WithArgs(userID, pgxmock.AnyArg(), inviteID).
-		WillReturnError(pgx.ErrNoRows)
-
-	err := repo.ClaimInvite(context.Background(), inviteID, userID)
-	require.ErrorIs(t, err, pgx.ErrNoRows)
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
 func TestGroupRepository_ListGroupsByUser(t *testing.T) {
 	mock := newMockDB(t)
 	repo := NewGroupRepository(mock)

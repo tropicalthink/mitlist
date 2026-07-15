@@ -35,8 +35,7 @@ Future<SmartCaptureResult?> pickSmartCapture(
 
   final originalBytes =
       Uint8List.fromList(await File(picked.path).readAsBytes());
-  final processed =
-      const CapturePreprocessorService().preprocess(originalBytes);
+  final processed = await preprocessCaptureInBackground(originalBytes);
   if (!context.mounted) return null;
 
   return Navigator.of(context).push<SmartCaptureResult>(

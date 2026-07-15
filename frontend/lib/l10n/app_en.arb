@@ -157,6 +157,8 @@
 
   "choreAppBarTitle": "Chores",
   "@choreAppBarTitle": { "description": "AppBar title for chores screen" },
+  "choreManageZones": "Manage zones",
+  "@choreManageZones": { "description": "Menu item / button that opens the chore zones editor" },
   "choreAddChore": "Add chore",
   "@choreAddChore": { "description": "FAB text and tooltip to add a chore" },
   "choreAddHouseholds": "Households",

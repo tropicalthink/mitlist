@@ -21,6 +21,7 @@ import '../widgets/app_switch.dart';
 import '../widgets/chip.dart';
 import '../utils/friendly_error.dart';
 import '../l10n/app_localizations.dart';
+import 'chore_zones_sheet.dart';
 import 'invite_household_sheet.dart';
 
 class GroupSettingsSheet extends ConsumerStatefulWidget {
@@ -59,10 +60,6 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
   bool _descChanged = false;
   String _groupCurrency = 'USD';
   bool _currencyChanged = false;
-  List<String> _choreZones = [];
-  bool _zonesChanged = false;
-  final TextEditingController _zoneInputController = TextEditingController();
-  bool _isSavingZones = false;
 
   @override
   void initState() {
@@ -76,7 +73,6 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
-    _zoneInputController.dispose();
     super.dispose();
   }
 
@@ -109,7 +105,6 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       setState(() {
         _group = group;
         _groupCurrency = group.currency;
-        _choreZones = List<String>.from(group.choreZones);
         _members = members;
         _notificationPref = pref;
         _storageUsage = storageUsage;
@@ -117,7 +112,6 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         _nameChanged = false;
         _descChanged = false;
         _currencyChanged = false;
-        _zonesChanged = false;
       });
     } catch (e) {
       if (!mounted) return;
@@ -126,59 +120,6 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         _isLoading = false;
       });
     }
-  }
-
-  Future<void> _saveZones() async {
-    if (_isSavingZones) return;
-    setState(() => _isSavingZones = true);
-    try {
-      final svc = await ref.read(groupServiceProviderAsync.future);
-      final updated = await svc.updateGroup(
-        widget.groupId,
-        UpdateGroupRequest(choreZones: _choreZones),
-      );
-      if (!mounted) return;
-      ref.invalidate(cachedGroupsProvider);
-      setState(() {
-        _group = updated;
-        _choreZones = List<String>.from(updated.choreZones);
-        _isSavingZones = false;
-        _zonesChanged = false;
-      });
-      final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.sheetGroupSettingsChoreZonesUpdated)),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isSavingZones = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-      );
-    }
-  }
-
-  void _addZone() {
-    final zone = _zoneInputController.text.trim();
-    if (zone.isEmpty) return;
-    if (_choreZones.any((z) => z.toLowerCase() == zone.toLowerCase())) {
-      _zoneInputController.clear();
-      return;
-    }
-    setState(() {
-      _choreZones = [..._choreZones, zone];
-      _zonesChanged = true;
-      _zoneInputController.clear();
-    });
-  }
-
-  void _removeZone(String zone) {
-    setState(() {
-      _choreZones = _choreZones.where((z) => z != zone).toList();
-      _zonesChanged = true;
-    });
   }
 
   Future<void> _saveDetails() async {
@@ -588,6 +529,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
   Widget _buildChoreZonesSection() {
     final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
+    final zones = _group?.choreZones ?? const <String>[];
 
     return AppCard(
       variant: AppCardVariant.outlined,
@@ -603,54 +545,26 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
-          if (_choreZones.isNotEmpty) ...[
+          if (zones.isNotEmpty) ...[
             const SizedBox(height: MitlistSpacing.sm),
             Wrap(
               spacing: MitlistSpacing.sm,
               runSpacing: MitlistSpacing.sm,
               children: [
-                for (final zone in _choreZones)
-                  AppChip(
-                    label: zone,
-                    onSelected: (_) => _removeZone(zone),
-                  ),
+                for (final zone in zones) AppChip(label: zone),
               ],
             ),
           ],
           const SizedBox(height: MitlistSpacing.md),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: AppInput(
-                  label: l10n.sheetGroupSettingsAddZone,
-                  hint: l10n.sheetGroupSettingsZoneHint,
-                  controller: _zoneInputController,
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => _addZone(),
-                ),
-              ),
-              const SizedBox(width: MitlistSpacing.sm),
-              AppButton(
-                text: l10n.commonAdd,
-                size: AppButtonSize.sm,
-                onPressed: _addZone,
-              ),
-            ],
+          AppButton(
+            text: l10n.choreManageZones,
+            size: AppButtonSize.sm,
+            variant: AppButtonVariant.outline,
+            onPressed: () async {
+              await ChoreZonesSheet.show(context, groupId: widget.groupId);
+              if (mounted) await _loadData();
+            },
           ),
-          if (_zonesChanged) ...[
-            const SizedBox(height: MitlistSpacing.md),
-            SizedBox(
-              width: double.infinity,
-              child: AppButton(
-                text: _isSavingZones
-                    ? l10n.commonSaving
-                    : l10n.sheetGroupSettingsSaveZones,
-                isLoading: _isSavingZones,
-                onPressed: _isSavingZones ? null : _saveZones,
-              ),
-            ),
-          ],
         ],
       ),
     );
