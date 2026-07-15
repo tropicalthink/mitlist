@@ -51,7 +51,6 @@ type GroupRepo interface {
 	CreateInvite(ctx context.Context, invite *models.GroupInvite) error
 	GetInviteByCode(ctx context.Context, code string) (*models.GroupInvite, error)
 	ConsumeInvite(ctx context.Context, inviteID, userID uuid.UUID) error
-	ClaimInvite(ctx context.Context, inviteID, userID uuid.UUID) error
 	CreatePendingClaim(ctx context.Context, claim *models.PendingClaim) error
 	GetPendingClaimByCode(ctx context.Context, code string) (*models.PendingClaim, error)
 	GetPendingClaimByID(ctx context.Context, id uuid.UUID) (*models.PendingClaim, error)

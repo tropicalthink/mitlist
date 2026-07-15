@@ -94,11 +94,6 @@ func (m *MockGroupRepo) ConsumeInvite(ctx context.Context, inviteID, userID uuid
 	return args.Error(0)
 }
 
-func (m *MockGroupRepo) ClaimInvite(ctx context.Context, inviteID, userID uuid.UUID) error {
-	args := m.Called(ctx, inviteID, userID)
-	return args.Error(0)
-}
-
 func (m *MockGroupRepo) CreatePendingClaim(ctx context.Context, claim *models.PendingClaim) error {
 	args := m.Called(ctx, claim)
 	return args.Error(0)

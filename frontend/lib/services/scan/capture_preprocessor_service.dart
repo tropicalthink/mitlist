@@ -1,11 +1,22 @@
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show compute;
 import 'package:image/image.dart' as img;
 
 import 'capture_preprocessor_cv_native.dart'
     if (dart.library.html) 'capture_preprocessor_cv_stub.dart';
 import 'capture_quality_service.dart';
+
+/// Runs [CapturePreprocessorService.preprocess] on a background isolate so
+/// the heavy CV work (decode, adaptive threshold, Hough deskew) never blocks
+/// the UI thread. On web, [compute] degrades to running in place.
+Future<CapturePreprocessResult> preprocessCaptureInBackground(
+        Uint8List bytes) =>
+    compute(_preprocessEntry, bytes);
+
+CapturePreprocessResult _preprocessEntry(Uint8List bytes) =>
+    const CapturePreprocessorService().preprocess(bytes);
 
 class CapturePreprocessResult {
   const CapturePreprocessResult({

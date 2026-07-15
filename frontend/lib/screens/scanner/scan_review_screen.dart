@@ -14,6 +14,7 @@ import '../../services/scan/canonical_resolver_service.dart';
 import '../../services/scan/scan_models.dart';
 import '../../services/scan/suggestion_service.dart';
 import '../../theme/colors.dart';
+import '../../utils/friendly_error.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../widgets/app_bottom_sheet.dart';
@@ -316,37 +317,48 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
 
     final targetListId = listId;
 
-    final correctionSvc = ref.read(correctionMemoryProvider);
-    final groceryRepo = await ref.read(groceryRepositoryProvider.future);
-    final repo = await ref.read(listRepositoryProvider.future);
+    try {
+      final correctionSvc = ref.read(correctionMemoryProvider);
+      final groceryRepo = await ref.read(groceryRepositoryProvider.future);
+      final repo = await ref.read(listRepositoryProvider.future);
 
-    for (final item in _items) {
-      if (item.userConfirmed &&
-          item.canonicalItemId != null &&
-          item.rawText.toLowerCase() != item.displayName.toLowerCase()) {
-        await correctionSvc.recordAlias(
-          groupId: widget.groupId,
-          userId: widget.userId,
-          rawText: item.rawText,
-          canonicalItemId: item.canonicalItemId!,
-        );
-        unawaited(groceryRepo.uploadCorrection(
-          groupId: widget.groupId,
-          rawText: item.rawText,
-          canonicalItemId: item.canonicalItemId!,
-        ));
+      for (final item in _items) {
+        if (item.userConfirmed &&
+            item.canonicalItemId != null &&
+            item.rawText.toLowerCase() != item.displayName.toLowerCase()) {
+          await correctionSvc.recordAlias(
+            groupId: widget.groupId,
+            userId: widget.userId,
+            rawText: item.rawText,
+            canonicalItemId: item.canonicalItemId!,
+          );
+          unawaited(groceryRepo.uploadCorrection(
+            groupId: widget.groupId,
+            rawText: item.rawText,
+            canonicalItemId: item.canonicalItemId!,
+          ));
+        }
       }
-    }
 
-    await Future.wait(_items.map((p) => repo.createItemOfflineFirst(
-          targetListId,
-          CreateListItemRequest(
-            name: p.displayName,
-            quantity: p.quantity,
-            unit: p.unit,
-            canonicalItemId: p.canonicalItemId,
-          ),
-        )));
+      await Future.wait(_items.map((p) => repo.createItemOfflineFirst(
+            targetListId,
+            CreateListItemRequest(
+              name: p.displayName,
+              quantity: p.quantity,
+              unit: p.unit,
+              canonicalItemId: p.canonicalItemId,
+            ),
+          )));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isAdding = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content:
+                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
+      );
+      return;
+    }
 
     if (mounted) {
       setState(() => _isAdding = false);

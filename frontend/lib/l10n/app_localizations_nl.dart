@@ -262,6 +262,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get choreAppBarTitle => 'Klusjes';
 
   @override
+  String get choreManageZones => 'Zones beheren';
+
+  @override
   String get choreAddChore => 'Klus toevoegen';
 
   @override

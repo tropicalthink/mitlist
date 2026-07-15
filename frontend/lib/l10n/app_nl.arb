@@ -309,6 +309,10 @@
   "@groupsCreateHousehold": {
     "description": "Button to create first household"
   },
+  "choreManageZones": "Zones beheren",
+  "@choreManageZones": {
+    "description": "Menu item / button that opens the chore zones editor"
+  },
   "choreAppBarTitle": "Klusjes",
   "@choreAppBarTitle": {
     "description": "AppBar title for chores screen"

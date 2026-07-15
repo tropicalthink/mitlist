@@ -217,9 +217,6 @@ func (s *GroupService) JoinGroup(ctx context.Context, userID uuid.UUID, code str
 		return nil, err
 	}
 
-	if invite.UsedBy != nil {
-		return nil, &api.ValidationError{Message: "invite already used"}
-	}
 	if time.Now().UTC().After(invite.ExpiresAt) {
 		return nil, &api.ValidationError{Message: "invite expired"}
 	}
@@ -235,10 +232,8 @@ func (s *GroupService) JoinGroup(ctx context.Context, userID uuid.UUID, code str
 		Role:    "member",
 	}
 	if err := s.groupRepo.WithTx(ctx, func(txRepo repositories.GroupRepo) error {
-		if err := txRepo.ClaimInvite(ctx, invite.ID, userID); err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
-				return &api.ValidationError{Message: "invite already used"}
-			}
+		// Invites are reusable until they expire; record the latest redemption.
+		if err := txRepo.ConsumeInvite(ctx, invite.ID, userID); err != nil {
 			return err
 		}
 		return txRepo.CreateMembership(ctx, membership)

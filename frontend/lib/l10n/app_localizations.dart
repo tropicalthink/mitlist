@@ -560,6 +560,12 @@ abstract class AppLocalizations {
   /// **'Chores'**
   String get choreAppBarTitle;
 
+  /// Menu item / button that opens the chore zones editor
+  ///
+  /// In en, this message translates to:
+  /// **'Manage zones'**
+  String get choreManageZones;
+
   /// FAB text and tooltip to add a chore
   ///
   /// In en, this message translates to:
