@@ -5665,5 +5665,17 @@
   "householdStorageUsedOf": "{used} de {limit} usados",
   "householdStorageUsedUnlimited": "{used} usados · sin límite",
   "householdStoragePending": "{pending} están reservados para cargas en curso.",
-  "householdStorageProgressLabel": "Almacenamiento del hogar usado"
+  "householdStorageProgressLabel": "Almacenamiento del hogar usado",
+  "accountSendFeedback": "Enviar comentarios",
+  "feedbackCardTitle": "Ayuda a mejorar mitlist",
+  "feedbackCardBody": "Pide una función, informa de un error o comparte una idea — llega directo al equipo.",
+  "feedbackSheetTitle": "Enviar comentarios",
+  "feedbackSheetIntro": "Pide una función, informa de un error o dinos qué podría funcionar mejor — leemos todos los mensajes.",
+  "feedbackFieldLabel": "Tu mensaje",
+  "feedbackFieldHint": "Me gustaría que mitlist pudiera…",
+  "feedbackSend": "Enviar",
+  "feedbackSending": "Enviando…",
+  "feedbackSent": "¡Gracias! Tu solicitud ha sido enviada.",
+  "feedbackEmpty": "Escribe primero un mensaje breve.",
+  "feedbackFailed": "No se pudo enviar tu solicitud ahora mismo. Inténtalo de nuevo más tarde."
 }
