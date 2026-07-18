@@ -4918,4 +4918,43 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get householdStorageProgressLabel => 'Gebruikte huishoudopslag';
+
+  @override
+  String get accountSendFeedback => 'Feedback sturen';
+
+  @override
+  String get feedbackCardTitle => 'Help mitlist vormgeven';
+
+  @override
+  String get feedbackCardBody =>
+      'Vraag een functie aan, meld een bug of deel een idee — het gaat direct naar het team.';
+
+  @override
+  String get feedbackSheetTitle => 'Feedback sturen';
+
+  @override
+  String get feedbackSheetIntro =>
+      'Vraag een functie aan, meld een bug of vertel ons wat beter kan — we lezen elk bericht.';
+
+  @override
+  String get feedbackFieldLabel => 'Je bericht';
+
+  @override
+  String get feedbackFieldHint => 'Ik zou willen dat mitlist…';
+
+  @override
+  String get feedbackSend => 'Versturen';
+
+  @override
+  String get feedbackSending => 'Wordt verstuurd…';
+
+  @override
+  String get feedbackSent => 'Bedankt — je verzoek is verstuurd!';
+
+  @override
+  String get feedbackEmpty => 'Schrijf eerst een kort bericht.';
+
+  @override
+  String get feedbackFailed =>
+      'Je verzoek kon nu niet worden verstuurd. Probeer het later opnieuw.';
 }

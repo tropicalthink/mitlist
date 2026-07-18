@@ -8564,6 +8564,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Household storage used'**
   String get householdStorageProgressLabel;
+
+  /// Account screen row that opens the feedback sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Send feedback'**
+  String get accountSendFeedback;
+
+  /// Title of the promoted feedback card on the account screen
+  ///
+  /// In en, this message translates to:
+  /// **'Help shape mitlist'**
+  String get feedbackCardTitle;
+
+  /// Body of the promoted feedback card on the account screen
+  ///
+  /// In en, this message translates to:
+  /// **'Request a feature, report a bug, or share an idea — it goes straight to the team.'**
+  String get feedbackCardBody;
+
+  /// Title of the feedback bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Send feedback'**
+  String get feedbackSheetTitle;
+
+  /// Intro text of the feedback bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Request a feature, report a bug, or tell us what could work better — we read every message.'**
+  String get feedbackSheetIntro;
+
+  /// Label of the feedback message field
+  ///
+  /// In en, this message translates to:
+  /// **'Your message'**
+  String get feedbackFieldLabel;
+
+  /// Hint of the feedback message field
+  ///
+  /// In en, this message translates to:
+  /// **'I wish mitlist could…'**
+  String get feedbackFieldHint;
+
+  /// Feedback sheet submit button
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get feedbackSend;
+
+  /// Feedback sheet submit button while sending
+  ///
+  /// In en, this message translates to:
+  /// **'Sending…'**
+  String get feedbackSending;
+
+  /// Snackbar after a feedback submission succeeded
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks — your request was sent!'**
+  String get feedbackSent;
+
+  /// Validation error when the feedback field is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Please write a short message first.'**
+  String get feedbackEmpty;
+
+  /// Error when the feedback submission failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t send your request right now. Please try again later.'**
+  String get feedbackFailed;
 }
 
 class _AppLocalizationsDelegate

@@ -4873,4 +4873,43 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get householdStorageProgressLabel => 'Household storage used';
+
+  @override
+  String get accountSendFeedback => 'Send feedback';
+
+  @override
+  String get feedbackCardTitle => 'Help shape mitlist';
+
+  @override
+  String get feedbackCardBody =>
+      'Request a feature, report a bug, or share an idea — it goes straight to the team.';
+
+  @override
+  String get feedbackSheetTitle => 'Send feedback';
+
+  @override
+  String get feedbackSheetIntro =>
+      'Request a feature, report a bug, or tell us what could work better — we read every message.';
+
+  @override
+  String get feedbackFieldLabel => 'Your message';
+
+  @override
+  String get feedbackFieldHint => 'I wish mitlist could…';
+
+  @override
+  String get feedbackSend => 'Send';
+
+  @override
+  String get feedbackSending => 'Sending…';
+
+  @override
+  String get feedbackSent => 'Thanks — your request was sent!';
+
+  @override
+  String get feedbackEmpty => 'Please write a short message first.';
+
+  @override
+  String get feedbackFailed =>
+      'Couldn\'t send your request right now. Please try again later.';
 }

@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 
 import '../../config/api_config.dart';
+import '../../config/feedback_config.dart';
 import '../../models/auth_models.dart';
 import '../../models/group_models.dart';
 import '../../providers/auth_provider.dart'
@@ -23,6 +24,7 @@ import '../../providers/list_provider.dart' show appDatabaseProvider;
 import '../../providers/finance_provider.dart';
 import '../../providers/calendar_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
+import '../../sheets/feedback_sheet.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
@@ -624,6 +626,56 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     );
   }
 
+  Widget _buildFeedbackCard() {
+    final l10n = AppLocalizations.of(context)!;
+    if (!FeedbackConfig.isConfigured) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
+      child: AppCard(
+        variant: AppCardVariant.filled,
+        padding: AppCardPadding.md,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                AppIcon(
+                  name: 'chatBubbleLeftRight',
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: MitlistSpacing.sm),
+                Expanded(
+                  child: Text(
+                    l10n.feedbackCardTitle,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: MitlistSpacing.sm),
+            Text(
+              l10n.feedbackCardBody,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: MitlistSpacing.md),
+            SizedBox(
+              width: double.infinity,
+              child: AppButton(
+                text: l10n.accountSendFeedback,
+                variant: AppButtonVariant.solid,
+                color: AppButtonColor.primary,
+                onPressed: () => showFeedbackSheet(context, ref),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _openSupportPage() async {
     await launchUrl(
       Uri.parse('https://mitlist.me/#support'),
@@ -1028,6 +1080,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             _buildGuestUpgradeCard(),
             _buildPreferencesCard(),
             const SizedBox(height: MitlistSpacing.md),
+            _buildFeedbackCard(),
             if (!_isGuest) ...[
               _buildSecurityCard(),
               const SizedBox(height: MitlistSpacing.md),

@@ -4934,4 +4934,43 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get householdStorageProgressLabel => 'Stockage du foyer utilisé';
+
+  @override
+  String get accountSendFeedback => 'Envoyer un avis';
+
+  @override
+  String get feedbackCardTitle => 'Aidez à façonner mitlist';
+
+  @override
+  String get feedbackCardBody =>
+      'Proposez une fonctionnalité, signalez un bug ou partagez une idée — ça arrive directement à l\'équipe.';
+
+  @override
+  String get feedbackSheetTitle => 'Envoyer un avis';
+
+  @override
+  String get feedbackSheetIntro =>
+      'Proposez une fonctionnalité, signalez un bug ou dites-nous ce qui pourrait mieux fonctionner — nous lisons chaque message.';
+
+  @override
+  String get feedbackFieldLabel => 'Votre message';
+
+  @override
+  String get feedbackFieldHint => 'J\'aimerais que mitlist puisse…';
+
+  @override
+  String get feedbackSend => 'Envoyer';
+
+  @override
+  String get feedbackSending => 'Envoi…';
+
+  @override
+  String get feedbackSent => 'Merci — votre demande a été envoyée !';
+
+  @override
+  String get feedbackEmpty => 'Veuillez d\'abord écrire un court message.';
+
+  @override
+  String get feedbackFailed =>
+      'Impossible d\'envoyer votre demande pour le moment. Veuillez réessayer plus tard.';
 }
