@@ -14,10 +14,21 @@ class FeedbackConfig {
   static const String appKey =
       String.fromEnvironment('REQTRACK_APP_KEY', defaultValue: '');
 
-  static const String baseUrl = String.fromEnvironment(
-    'REQTRACK_URL',
-    defaultValue: 'https://reqtrack.tropicalthink.com',
-  );
+  /// Where the tracker lives when no override is supplied.
+  static const String defaultBaseUrl = 'https://reqtrack.tropicalthink.com';
+
+  // Deliberately defaults to '' rather than [defaultBaseUrl]: the release build
+  // always passes `--dart-define=REQTRACK_URL=...`, so an unset CI secret
+  // arrives as an empty (but *defined*) value, which would shadow a non-empty
+  // default. Resolve the fallback in [baseUrl] instead.
+  static const String _baseUrlOverride =
+      String.fromEnvironment('REQTRACK_URL', defaultValue: '');
+
+  /// Tracker origin, without a trailing slash so [intakePath] appends cleanly.
+  static String get baseUrl {
+    final trimmed = _baseUrlOverride.trim().replaceAll(RegExp(r'/+$'), '');
+    return trimmed.isEmpty ? defaultBaseUrl : trimmed;
+  }
 
   static const String intakePath = '/api/v1/intake/requests';
 
