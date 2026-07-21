@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -36,6 +38,18 @@ class _Banner extends ConsumerWidget {
   final OutboxState state;
 
   const _Banner({required this.state});
+
+  /// Tapping the banner is an explicit "check again" gesture, so honour it with
+  /// a fresh probe instead of letting the cached verdict stand until its TTL
+  /// expires. Fire-and-forget: the banner repaints when the re-run state lands.
+  void _recheck(WidgetRef ref) {
+    unawaited(
+      ref
+          .read(connectivityServiceProvider)
+          .isOnline(forceProbe: true)
+          .then((_) => ref.invalidate(outboxStateProvider)),
+    );
+  }
 
   void _showDetails(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -150,11 +164,16 @@ class _Banner extends ConsumerWidget {
     return Material(
       color: color,
       child: InkWell(
-        onTap: () => state.hasConflicts
-            ? showConflictResolutionSheet(context)
-            : state.hasErrors
-                ? showFailedChangesSheet(context)
-                : _showDetails(context),
+        onTap: () {
+          if (state.hasConflicts) {
+            showConflictResolutionSheet(context);
+          } else if (state.hasErrors) {
+            showFailedChangesSheet(context);
+          } else {
+            if (state.isOffline) _recheck(ref);
+            _showDetails(context);
+          }
+        },
         child: Padding(
           padding: EdgeInsets.only(top: topInset),
           child: Container(
