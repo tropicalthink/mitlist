@@ -28,6 +28,25 @@ import '../pinwall/pinwall_note_card.dart';
 import '../pinwall/pinwall_stat_rows.dart';
 import 'pinned_memo_card.dart';
 
+/// Column count and card width for the hub pinwall at [availableWidth].
+///
+/// The cards are sized so a whole number of columns exactly fills the row. A
+/// fixed card width cannot do that: as soon as the viewport is narrower than
+/// two cards plus spacing — which happens on ordinary phones once the system
+/// display-size setting is raised — the wrap breaks to a single card per row
+/// and leaves the rest of the row empty.
+@visibleForTesting
+({int columns, double cardWidth}) pinwallHubLayout(double availableWidth) {
+  const spacing = MitlistSpacing.md;
+  // Two per row on phones. Wider surfaces (tablets, landscape) take more
+  // columns so notes keep a readable size instead of stretching.
+  final columns = (availableWidth / 200).floor().clamp(2, 4);
+  return (
+    columns: columns,
+    cardWidth: (availableWidth - spacing * (columns - 1)) / columns,
+  );
+}
+
 class PinwallSection extends ConsumerStatefulWidget {
   const PinwallSection({super.key, required this.groupId, required this.me});
 
@@ -586,21 +605,28 @@ class _PinwallPostsList extends ConsumerWidget {
           );
         }
         final show = rows.take(10).toList();
-        return Wrap(
-          spacing: MitlistSpacing.md,
-          runSpacing: MitlistSpacing.lg,
-          children: [
-            for (var i = 0; i < show.length; i++)
-              PinwallNoteCard(
-                variant: PinwallNoteCardVariant.hub,
-                index: i,
-                groupId: groupId,
-                me: me,
-                post: show[i],
-                onOpenLinkedEntity: (ctx) =>
-                    _navigateToLinkedEntity(ctx, show[i]),
-              ),
-          ],
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final layout = pinwallHubLayout(constraints.maxWidth);
+
+            return Wrap(
+              spacing: MitlistSpacing.md,
+              runSpacing: MitlistSpacing.lg,
+              children: [
+                for (var i = 0; i < show.length; i++)
+                  PinwallNoteCard(
+                    variant: PinwallNoteCardVariant.hub,
+                    index: i,
+                    groupId: groupId,
+                    me: me,
+                    post: show[i],
+                    width: layout.cardWidth,
+                    onOpenLinkedEntity: (ctx) =>
+                        _navigateToLinkedEntity(ctx, show[i]),
+                  ),
+              ],
+            );
+          },
         );
       },
     );

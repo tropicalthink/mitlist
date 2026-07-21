@@ -57,6 +57,7 @@ Future<void> _pumpCard(
   required PinwallPost post,
   List<PinwallMediaItem> media = const [],
   void Function(BuildContext)? onOpenLinkedEntity,
+  double? width,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -74,6 +75,7 @@ Future<void> _pumpCard(
             groupId: _groupId,
             me: _me,
             post: post,
+            width: width,
             onOpenLinkedEntity: onOpenLinkedEntity ?? (_) {},
           ),
         ),
@@ -90,6 +92,42 @@ Future<void> _pumpCard(
 
 void main() {
   group('PinwallNoteCard (hub variant)', () {
+    testWidgets('lays out at the width the hub gives it', (tester) async {
+      await _pumpCard(
+        tester,
+        variant: PinwallNoteCardVariant.hub,
+        post: _post(),
+        width: 142,
+      );
+
+      // The hub derives this width so its columns fill the row exactly; if the
+      // card ignored it and kept its fixed 160dp, the wrap would go one-up.
+      final card = find
+          .descendant(
+            of: find.byType(PinwallNoteCard),
+            matching: find.byType(Container),
+          )
+          .first;
+      expect(tester.getSize(card).width, 142);
+    });
+
+    testWidgets('falls back to its fixed width when none is given',
+        (tester) async {
+      await _pumpCard(
+        tester,
+        variant: PinwallNoteCardVariant.hub,
+        post: _post(),
+      );
+
+      final card = find
+          .descendant(
+            of: find.byType(PinwallNoteCard),
+            matching: find.byType(Container),
+          )
+          .first;
+      expect(tester.getSize(card).width, 160);
+    });
+
     testWidgets('renders content and "You" for the post author',
         (tester) async {
       await _pumpCard(
