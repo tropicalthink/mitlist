@@ -282,7 +282,10 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     } catch (_) {}
     try {
       final pinRepo = await ref.read(pinwallRepositoryProvider.future);
-      await pinRepo.refreshPosts(_resolvedGroupId!, limit: 20, offset: 0);
+      // Deliberately the default limit: the hub only renders the first handful
+      // of notes, but it shares one cache blob with the board, so refreshing a
+      // short page here would drop the board's remaining notes.
+      await pinRepo.refreshPosts(_resolvedGroupId!);
     } catch (_) {}
   }
 

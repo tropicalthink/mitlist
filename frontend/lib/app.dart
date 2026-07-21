@@ -127,11 +127,18 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      // Whatever the connectivity service believes right now was learned before
+      // we lost the foreground, when the OS may have been holding our network
+      // down. Clear it first so the drain below decides on a fresh probe.
+      ref.read(connectivityServiceProvider).reset();
       final coordinator = ref.read(outboxCoordinatorProvider).valueOrNull;
       coordinator?.drain();
       // Force-reconnect SSE — the OS may have silently killed the connection
       // while the app was backgrounded.
       ref.read(sseServiceProvider).reconnect();
+      // Re-run the banner state now rather than waiting out the poll interval,
+      // so a stale offline bar never survives into the first visible frame.
+      ref.invalidate(outboxStateProvider);
     }
   }
 

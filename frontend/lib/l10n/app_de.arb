@@ -1805,5 +1805,17 @@
   "householdStorageUsedOf": "{used} von {limit} verwendet",
   "householdStorageUsedUnlimited": "{used} verwendet · ohne Limit",
   "householdStoragePending": "{pending} sind für laufende Uploads reserviert.",
-  "householdStorageProgressLabel": "Verwendeter Haushaltsspeicher"
+  "householdStorageProgressLabel": "Verwendeter Haushaltsspeicher",
+  "accountSendFeedback": "Feedback senden",
+  "feedbackCardTitle": "Gestalte mitlist mit",
+  "feedbackCardBody": "Wünsch dir eine Funktion, melde einen Fehler oder teile eine Idee — es geht direkt ans Team.",
+  "feedbackSheetTitle": "Feedback senden",
+  "feedbackSheetIntro": "Wünsch dir eine Funktion, melde einen Fehler oder sag uns, was besser laufen könnte — wir lesen jede Nachricht.",
+  "feedbackFieldLabel": "Deine Nachricht",
+  "feedbackFieldHint": "Ich wünsche mir, dass mitlist…",
+  "feedbackSend": "Senden",
+  "feedbackSending": "Wird gesendet…",
+  "feedbackSent": "Danke — deine Anfrage wurde gesendet!",
+  "feedbackEmpty": "Bitte schreibe zuerst eine kurze Nachricht.",
+  "feedbackFailed": "Deine Anfrage konnte gerade nicht gesendet werden. Bitte versuche es später erneut."
 }
