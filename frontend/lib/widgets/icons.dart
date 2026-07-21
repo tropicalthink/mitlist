@@ -119,6 +119,7 @@ class AppIcons {
   static const IconData dragHandle = Icons.drag_handle;
   static const IconData heart = Icons.favorite_border;
   static const IconData server = Icons.dns_outlined;
+  static const IconData chatBubbleLeftRight = Icons.forum_outlined;
 
   /// Resolves a semantic [name] to its placeholder [IconData].
   ///
@@ -232,6 +233,7 @@ class AppIcons {
       'editOutline' => editOutline,
       'removeDoneOutline' => removeDoneOutline,
       'dragHandle' => dragHandle,
+      'chatBubbleLeftRight' => chatBubbleLeftRight,
       _ => null,
     };
   }

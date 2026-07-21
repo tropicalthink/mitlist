@@ -5669,5 +5669,17 @@
   "householdStorageUsedOf": "{used} van {limit} gebruikt",
   "householdStorageUsedUnlimited": "{used} gebruikt · geen limiet",
   "householdStoragePending": "{pending} is gereserveerd voor lopende uploads.",
-  "householdStorageProgressLabel": "Gebruikte huishoudopslag"
+  "householdStorageProgressLabel": "Gebruikte huishoudopslag",
+  "accountSendFeedback": "Feedback sturen",
+  "feedbackCardTitle": "Help mitlist vormgeven",
+  "feedbackCardBody": "Vraag een functie aan, meld een bug of deel een idee — het gaat direct naar het team.",
+  "feedbackSheetTitle": "Feedback sturen",
+  "feedbackSheetIntro": "Vraag een functie aan, meld een bug of vertel ons wat beter kan — we lezen elk bericht.",
+  "feedbackFieldLabel": "Je bericht",
+  "feedbackFieldHint": "Ik zou willen dat mitlist…",
+  "feedbackSend": "Versturen",
+  "feedbackSending": "Wordt verstuurd…",
+  "feedbackSent": "Bedankt — je verzoek is verstuurd!",
+  "feedbackEmpty": "Schrijf eerst een kort bericht.",
+  "feedbackFailed": "Je verzoek kon nu niet worden verstuurd. Probeer het later opnieuw."
 }

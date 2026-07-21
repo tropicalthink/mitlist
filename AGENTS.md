@@ -206,6 +206,21 @@ func (m *MockListRepo) ClaimItem(ctx context.Context, itemID uuid.UUID, userID u
 ### Lint
 - `dart analyze lib/` and `go build ./...` before every commit
 
+## In-App Feature Requests (reqtrack)
+
+Users can submit feature requests from the You screen ("Send feedback" row) to the
+studio's request tracker (the `reqtrack` repo, Cloudflare Worker at
+`reqtrack.tropicalthink.com`). Not routed through the Go backend.
+
+- Config: `frontend/lib/config/feedback_config.dart` — build with
+  `--dart-define=REQTRACK_APP_KEY=...` (and optionally `REQTRACK_URL=...`);
+  the entry point is hidden when no key is baked in.
+- Service: `frontend/lib/services/feedback_service.dart` — own Dio instance
+  (different host; sends `X-App-Key`, never the user's Bearer token).
+- Sheet: `frontend/lib/sheets/feedback_sheet.dart` — captures the current route
+  as `sourcePage` (plus the prior route as `metadata.previousPage` via
+  `utils/route_history.dart`) so the team can replicate the submitter's context.
+
 ## Error Handling
 
 - `ErrorReporter` singleton in `lib/services/error_reporter.dart` — init with GlitchTip/Sentry DSN

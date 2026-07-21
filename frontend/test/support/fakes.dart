@@ -39,6 +39,11 @@ class FakeConnectivityService implements ConnectivityService {
   @override
   Future<bool> isOnline({bool forceProbe = false}) async => _online;
 
+  /// No-op: the fake has no cache or failure streak to clear, and tests drive
+  /// the state directly through [setOnline].
+  @override
+  void reset() {}
+
   @override
   void dispose() {
     _controller.close();

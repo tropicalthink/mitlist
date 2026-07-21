@@ -1,6 +1,8 @@
 # Production deploy: build and push Flutter web + Go API images.
 # Merge a PR into `prod` to run. Requires secrets: ME_USERNAME, ME_PASSWORD.
-# Optional: PRODUCTION_API_BASE_URL (baked into the web build via dart-define).
+# Optional (baked into the web build via dart-define): PRODUCTION_API_BASE_URL,
+# GLITCHTIP_DSN_WEB, REQTRACK_APP_KEY (reqtrack intake key; enables the in-app
+# "Send feedback" card), REQTRACK_URL (override tracker host).
 name: Deploy to production (Gitea registry)
 
 on:
@@ -50,6 +52,8 @@ jobs:
         env:
           API_BASE_URL: ${{ secrets.PRODUCTION_API_BASE_URL }}
           GLITCHTIP_DSN: ${{ secrets.GLITCHTIP_DSN_WEB }}
+          REQTRACK_APP_KEY: ${{ secrets.REQTRACK_APP_KEY }}
+          REQTRACK_URL: ${{ secrets.REQTRACK_URL }}
         run: |
           ACTOR="${{ steps.vars.outputs.actor }}"
           REPO_NAME="${{ steps.vars.outputs.repo_name }}"
@@ -63,6 +67,8 @@ jobs:
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --build-arg API_BASE_URL="${API_BASE_URL}" \
             --build-arg GLITCHTIP_DSN="${GLITCHTIP_DSN}" \
+            --build-arg REQTRACK_APP_KEY="${REQTRACK_APP_KEY}" \
+            --build-arg REQTRACK_URL="${REQTRACK_URL}" \
             --build-arg ENVIRONMENT="production" \
             -t "git.vinylnostalgia.com/$ACTOR/$REPO_NAME-frontend:latest" \
             -t "git.vinylnostalgia.com/$ACTOR/$REPO_NAME-frontend:$VERSION" \

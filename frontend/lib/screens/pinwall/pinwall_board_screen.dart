@@ -327,6 +327,12 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
         pos.dx,
         pos.dy,
       );
+      // Sync now, the way creates and deletes already do. Nothing else arms a
+      // drain after an enqueue — the coordinator only schedules a retry once a
+      // drain has already run and found work left over — so without this the
+      // move sits in the outbox, and on the sync banner, until connectivity
+      // flips or the app is resumed.
+      unawaited(repo.drainOutboxOnce().catchError((_) {}));
     } catch (_) {
       // Best-effort: the move stays on screen and the outbox retries the sync.
     }

@@ -10,6 +10,7 @@ import 'widgets/app_icon.dart';
 import 'providers/nav_badge_provider.dart';
 import 'providers/grocery_provider.dart' show groceryGraphSyncProvider;
 import 'utils/active_group_context.dart';
+import 'utils/route_history.dart';
 import 'utils/shell_tab_load.dart';
 
 import 'screens/home/groups_list_screen.dart';
@@ -128,7 +129,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   });
   final refreshListenable = _RouterRefreshListenable(ref);
 
-  return GoRouter(
+  final router = GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: _sessionBootstrapPath,
     refreshListenable: refreshListenable,
@@ -405,6 +406,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+
+  // Feed the feedback sheet's page attribution: record every location change
+  // so submissions can report the screen the user was on (and came from).
+  router.routerDelegate.addListener(() {
+    RouteHistory.record(
+        router.routerDelegate.currentConfiguration.uri.toString());
+  });
+
+  return router;
 });
 
 class BottomNavScaffold extends ConsumerStatefulWidget {

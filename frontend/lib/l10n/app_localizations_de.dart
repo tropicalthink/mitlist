@@ -4949,4 +4949,43 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get householdStorageProgressLabel => 'Verwendeter Haushaltsspeicher';
+
+  @override
+  String get accountSendFeedback => 'Feedback senden';
+
+  @override
+  String get feedbackCardTitle => 'Gestalte mitlist mit';
+
+  @override
+  String get feedbackCardBody =>
+      'Wünsch dir eine Funktion, melde einen Fehler oder teile eine Idee — es geht direkt ans Team.';
+
+  @override
+  String get feedbackSheetTitle => 'Feedback senden';
+
+  @override
+  String get feedbackSheetIntro =>
+      'Wünsch dir eine Funktion, melde einen Fehler oder sag uns, was besser laufen könnte — wir lesen jede Nachricht.';
+
+  @override
+  String get feedbackFieldLabel => 'Deine Nachricht';
+
+  @override
+  String get feedbackFieldHint => 'Ich wünsche mir, dass mitlist…';
+
+  @override
+  String get feedbackSend => 'Senden';
+
+  @override
+  String get feedbackSending => 'Wird gesendet…';
+
+  @override
+  String get feedbackSent => 'Danke — deine Anfrage wurde gesendet!';
+
+  @override
+  String get feedbackEmpty => 'Bitte schreibe zuerst eine kurze Nachricht.';
+
+  @override
+  String get feedbackFailed =>
+      'Deine Anfrage konnte gerade nicht gesendet werden. Bitte versuche es später erneut.';
 }
