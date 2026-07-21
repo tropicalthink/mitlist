@@ -49,6 +49,7 @@ class PinwallNoteCard extends ConsumerWidget {
     required this.me,
     required this.post,
     required this.onOpenLinkedEntity,
+    this.width,
   });
 
   final PinwallNoteCardVariant variant;
@@ -56,6 +57,15 @@ class PinwallNoteCard extends ConsumerWidget {
   final String groupId;
   final User? me;
   final PinwallPost post;
+
+  /// Overrides the variant's default card width.
+  ///
+  /// The hub computes this from the width actually available so a whole number
+  /// of cards fills each row. A fixed width can't do that: once the viewport is
+  /// narrower than two cards plus spacing — which happens on ordinary phones
+  /// once the system display-size setting is raised — the wrap breaks to one
+  /// card per row and leaves the rest of the row empty.
+  final double? width;
 
   /// Navigates to the entity this post is linked to. Each surface owns its
   /// own navigation (the hub and the board route slightly differently), so
@@ -274,8 +284,10 @@ class PinwallNoteCard extends ConsumerWidget {
         : DateFormat('MMM d · h:mm a').format(remindAt.toLocal());
 
     // ── Variant-tuned card dimensions/chrome ──────────────────────────────
-    final double cardWidth = _isHub ? 160 : 180;
-    final BoxConstraints? cardConstraints = _isHub
+    final double cardWidth = width ?? (_isHub ? 160 : 180);
+    // The screen-relative clamp only guards the fixed fallback width; an
+    // explicit width is already derived from the available space.
+    final BoxConstraints? cardConstraints = (_isHub && width == null)
         ? BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7)
         : null;
     final double borderRadius = _isHub ? 6 : MitlistTheme.radiusSm;
