@@ -4960,4 +4960,41 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get feedbackFailed =>
       'Je verzoek kon nu niet worden verstuurd. Probeer het later opnieuw.';
+
+  @override
+  String get accountOcrTrainingTitle => 'Offline handschrift-OCR verbeteren';
+
+  @override
+  String get accountOcrTrainingDescription =>
+      'Handmatig gecontroleerde regeluitsneden blijven op dit apparaat totdat je ze exporteert of verwijdert. Er wordt niets geüpload.';
+
+  @override
+  String get accountOcrTrainingExport => 'OCR-trainingsgegevens exporteren';
+
+  @override
+  String accountOcrTrainingSamples(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count gecorrigeerde regels',
+      one: '1 gecorrigeerde regel',
+      zero: 'Geen gecorrigeerde regels',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get accountOcrTrainingClear => 'OCR-trainingsgegevens verwijderen';
+
+  @override
+  String get accountOcrTrainingExportEmpty =>
+      'Er zijn nog geen gecorrigeerde OCR-regels om te exporteren.';
+
+  @override
+  String get accountOcrTrainingClearTitle =>
+      'OCR-trainingsgegevens verwijderen?';
+
+  @override
+  String get accountOcrTrainingClearBody =>
+      'Hiermee worden alle opgeslagen regeluitsneden permanent van dit apparaat verwijderd.';
 }

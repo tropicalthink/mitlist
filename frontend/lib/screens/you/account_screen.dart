@@ -24,6 +24,7 @@ import '../../providers/list_provider.dart' show appDatabaseProvider;
 import '../../providers/finance_provider.dart';
 import '../../providers/calendar_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
+import '../../services/scan/ocr_training_data_service.dart';
 import '../../sheets/feedback_sheet.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
@@ -50,15 +51,20 @@ class AccountScreen extends ConsumerStatefulWidget {
 }
 
 class _AccountScreenState extends ConsumerState<AccountScreen> {
+  final OcrTrainingDataService _ocrTrainingData = OcrTrainingDataService();
   bool _isLoading = true;
   bool _isSaving = false;
   String? _error;
 
   String _name = '';
   String _email = '';
+  String? _userId;
   bool _isGuest = false;
   bool _isEditingName = false;
   bool _isExporting = false;
+  bool _ocrTrainingEnabled = false;
+  bool _isOcrTrainingBusy = false;
+  int _ocrTrainingSamples = 0;
   List<Group> _households = [];
 
   /// The household this screen's actions apply to — exports, the danger zone,
@@ -123,14 +129,26 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     // .first and shows the wrong household as selected.
     await ref.read(currentGroupIdProvider.notifier).ensureLoaded();
 
+    var ocrTrainingEnabled = false;
+    var ocrTrainingSamples = 0;
+    try {
+      ocrTrainingEnabled = await _ocrTrainingData.isEnabled(user.id);
+      ocrTrainingSamples = await _ocrTrainingData.sampleCount(user.id);
+    } catch (_) {
+      // Local training collection is optional and must not block the profile.
+    }
+
     if (!mounted) return;
     setState(() {
       _name = user!.fullName;
       _email = user.email;
+      _userId = user.id;
       _isGuest = user.isGuest;
       _households = households;
       _isLoading = false;
       _error = null;
+      _ocrTrainingEnabled = ocrTrainingEnabled;
+      _ocrTrainingSamples = ocrTrainingSamples;
     });
   }
 
@@ -300,6 +318,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     if (_isSaving) return;
     _isSaving = true;
     try {
+      if (_userId != null) await _ocrTrainingData.clear(_userId!);
+    } catch (_) {}
+    try {
       final authService = await ref.read(authServiceProviderAsync.future);
       await authService.logout();
       await ref.read(appDatabaseProvider).clearAllUserData();
@@ -338,6 +359,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       _isSaving = false;
       return;
     }
+    try {
+      if (_userId != null) await _ocrTrainingData.clear(_userId!);
+    } catch (_) {}
     try {
       final authService = await ref.read(authServiceProviderAsync.future);
       await authService.deleteMe();
@@ -724,6 +748,99 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     );
   }
 
+  Future<void> _setOcrTrainingEnabled(bool enabled) async {
+    final userId = _userId;
+    if (userId == null || _isOcrTrainingBusy) return;
+    setState(() => _isOcrTrainingBusy = true);
+    try {
+      await _ocrTrainingData.setEnabled(userId, enabled);
+      if (mounted) setState(() => _ocrTrainingEnabled = enabled);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            friendlyErrorMessage(e, AppLocalizations.of(context)!),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isOcrTrainingBusy = false);
+    }
+  }
+
+  Future<void> _exportOcrTrainingData() async {
+    final userId = _userId;
+    if (userId == null || _isOcrTrainingBusy) return;
+    setState(() => _isOcrTrainingBusy = true);
+    try {
+      final archive = await _ocrTrainingData.exportArchive(userId);
+      if (!mounted) return;
+      if (archive == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.accountOcrTrainingExportEmpty,
+            ),
+          ),
+        );
+        return;
+      }
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(archive.path, mimeType: 'application/zip')],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            friendlyErrorMessage(e, AppLocalizations.of(context)!),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isOcrTrainingBusy = false);
+    }
+  }
+
+  Future<void> _clearOcrTrainingData() async {
+    final userId = _userId;
+    if (userId == null || _isOcrTrainingBusy) return;
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showAppDialog<bool>(
+      context: context,
+      title: l10n.accountOcrTrainingClearTitle,
+      body: Text(l10n.accountOcrTrainingClearBody),
+      actions: [
+        AppButton(
+          text: l10n.commonCancel,
+          variant: AppButtonVariant.outline,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        const SizedBox(width: MitlistSpacing.sm),
+        AppButton(
+          text: l10n.commonDelete,
+          color: AppButtonColor.error,
+          onPressed: () => Navigator.of(context).pop(true),
+        ),
+      ],
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _isOcrTrainingBusy = true);
+    try {
+      await _ocrTrainingData.clear(userId);
+      if (!mounted) return;
+      setState(() {
+        _ocrTrainingEnabled = false;
+        _ocrTrainingSamples = 0;
+      });
+    } finally {
+      if (mounted) setState(() => _isOcrTrainingBusy = false);
+    }
+  }
+
   Future<void> _exportExpenses(String format) async {
     if (_isExporting || _activeHouseholdId == null) return;
     setState(() => _isExporting = true);
@@ -1035,6 +1152,47 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     );
   }
 
+  Widget _buildOcrTrainingCard() {
+    final l10n = AppLocalizations.of(context)!;
+    return AppCard(
+      child: Column(
+        children: [
+          _MenuRow(
+            icon: const AppIcon(name: 'documentScanner'),
+            label: l10n.accountOcrTrainingTitle,
+            value: l10n.accountOcrTrainingDescription,
+            onTap: _userId == null || _isOcrTrainingBusy
+                ? null
+                : () => _setOcrTrainingEnabled(!_ocrTrainingEnabled),
+            trailing: Switch.adaptive(
+              value: _ocrTrainingEnabled,
+              onChanged: _userId == null || _isOcrTrainingBusy
+                  ? null
+                  : _setOcrTrainingEnabled,
+            ),
+          ),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          _MenuRow(
+            icon: const AppIcon(name: 'arrowDownTray'),
+            label: l10n.accountOcrTrainingExport,
+            value: l10n.accountOcrTrainingSamples(_ocrTrainingSamples),
+            onTap: _isOcrTrainingBusy || _ocrTrainingSamples == 0
+                ? null
+                : _exportOcrTrainingData,
+          ),
+          if (_ocrTrainingSamples > 0) ...[
+            Divider(color: Theme.of(context).colorScheme.outlineVariant),
+            _MenuRow(
+              icon: const AppIcon(name: 'trashOutline'),
+              label: l10n.accountOcrTrainingClear,
+              onTap: _isOcrTrainingBusy ? null : _clearOcrTrainingData,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildDangerZone() {
     final l10n = AppLocalizations.of(context)!;
     return Column(
@@ -1109,6 +1267,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             _buildAboutCard(),
             const SizedBox(height: MitlistSpacing.md),
             _buildDataCard(),
+            const SizedBox(height: MitlistSpacing.md),
+            _buildOcrTrainingCard(),
             const SizedBox(height: MitlistSpacing.md),
             _buildDangerZone(),
           ],

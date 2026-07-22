@@ -8642,6 +8642,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t send your request right now. Please try again later.'**
   String get feedbackFailed;
+
+  /// Opt-in local OCR training-data collection title
+  ///
+  /// In en, this message translates to:
+  /// **'Improve offline handwriting OCR'**
+  String get accountOcrTrainingTitle;
+
+  /// Privacy explanation for OCR training-data collection
+  ///
+  /// In en, this message translates to:
+  /// **'Manually reviewed line crops stay on this device until you export or delete them. Nothing is uploaded.'**
+  String get accountOcrTrainingDescription;
+
+  /// Exports local corrected OCR line crops
+  ///
+  /// In en, this message translates to:
+  /// **'Export OCR training data'**
+  String get accountOcrTrainingExport;
+
+  /// Number of locally collected OCR training lines
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No corrected lines} =1{1 corrected line} other{{count} corrected lines}}'**
+  String accountOcrTrainingSamples(int count);
+
+  /// Deletes locally collected OCR training data
+  ///
+  /// In en, this message translates to:
+  /// **'Delete OCR training data'**
+  String get accountOcrTrainingClear;
+
+  /// Shown when OCR training export is empty
+  ///
+  /// In en, this message translates to:
+  /// **'There are no corrected OCR lines to export yet.'**
+  String get accountOcrTrainingExportEmpty;
+
+  /// OCR training data deletion dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Delete OCR training data?'**
+  String get accountOcrTrainingClearTitle;
+
+  /// OCR training data deletion dialog body
+  ///
+  /// In en, this message translates to:
+  /// **'This permanently removes every saved line crop from this device.'**
+  String get accountOcrTrainingClearBody;
 }
 
 class _AppLocalizationsDelegate

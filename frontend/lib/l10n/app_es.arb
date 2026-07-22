@@ -5681,5 +5681,13 @@
   "feedbackSending": "Enviando…",
   "feedbackSent": "¡Gracias! Tu solicitud ha sido enviada.",
   "feedbackEmpty": "Escribe primero un mensaje breve.",
-  "feedbackFailed": "No se pudo enviar tu solicitud ahora mismo. Inténtalo de nuevo más tarde."
+  "feedbackFailed": "No se pudo enviar tu solicitud ahora mismo. Inténtalo de nuevo más tarde.",
+  "accountOcrTrainingTitle": "Mejorar el OCR manuscrito sin conexión",
+  "accountOcrTrainingDescription": "Los recortes de líneas revisados manualmente permanecen en este dispositivo hasta que los exportes o elimines. No se sube nada.",
+  "accountOcrTrainingExport": "Exportar datos de entrenamiento OCR",
+  "accountOcrTrainingSamples": "{count, plural, =0{Ninguna línea corregida} =1{1 línea corregida} other{{count} líneas corregidas}}",
+  "accountOcrTrainingClear": "Eliminar datos de entrenamiento OCR",
+  "accountOcrTrainingExportEmpty": "Todavía no hay líneas OCR corregidas para exportar.",
+  "accountOcrTrainingClearTitle": "¿Eliminar los datos de entrenamiento OCR?",
+  "accountOcrTrainingClearBody": "Esto elimina permanentemente todos los recortes de líneas guardados en este dispositivo."
 }

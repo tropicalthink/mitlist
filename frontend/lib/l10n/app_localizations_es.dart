@@ -4950,4 +4950,42 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get feedbackFailed =>
       'No se pudo enviar tu solicitud ahora mismo. Inténtalo de nuevo más tarde.';
+
+  @override
+  String get accountOcrTrainingTitle =>
+      'Mejorar el OCR manuscrito sin conexión';
+
+  @override
+  String get accountOcrTrainingDescription =>
+      'Los recortes de líneas revisados manualmente permanecen en este dispositivo hasta que los exportes o elimines. No se sube nada.';
+
+  @override
+  String get accountOcrTrainingExport => 'Exportar datos de entrenamiento OCR';
+
+  @override
+  String accountOcrTrainingSamples(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count líneas corregidas',
+      one: '1 línea corregida',
+      zero: 'Ninguna línea corregida',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get accountOcrTrainingClear => 'Eliminar datos de entrenamiento OCR';
+
+  @override
+  String get accountOcrTrainingExportEmpty =>
+      'Todavía no hay líneas OCR corregidas para exportar.';
+
+  @override
+  String get accountOcrTrainingClearTitle =>
+      '¿Eliminar los datos de entrenamiento OCR?';
+
+  @override
+  String get accountOcrTrainingClearBody =>
+      'Esto elimina permanentemente todos los recortes de líneas guardados en este dispositivo.';
 }

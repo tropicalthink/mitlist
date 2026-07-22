@@ -1817,5 +1817,13 @@
   "feedbackSending": "Wird gesendet…",
   "feedbackSent": "Danke — deine Anfrage wurde gesendet!",
   "feedbackEmpty": "Bitte schreibe zuerst eine kurze Nachricht.",
-  "feedbackFailed": "Deine Anfrage konnte gerade nicht gesendet werden. Bitte versuche es später erneut."
+  "feedbackFailed": "Deine Anfrage konnte gerade nicht gesendet werden. Bitte versuche es später erneut.",
+  "accountOcrTrainingTitle": "Offline-Handschrifterkennung verbessern",
+  "accountOcrTrainingDescription": "Manuell geprüfte Zeilenausschnitte bleiben auf diesem Gerät, bis du sie exportierst oder löschst. Es wird nichts hochgeladen.",
+  "accountOcrTrainingExport": "OCR-Trainingsdaten exportieren",
+  "accountOcrTrainingSamples": "{count, plural, =0{Keine korrigierten Zeilen} =1{1 korrigierte Zeile} other{{count} korrigierte Zeilen}}",
+  "accountOcrTrainingClear": "OCR-Trainingsdaten löschen",
+  "accountOcrTrainingExportEmpty": "Es gibt noch keine korrigierten OCR-Zeilen zum Exportieren.",
+  "accountOcrTrainingClearTitle": "OCR-Trainingsdaten löschen?",
+  "accountOcrTrainingClearBody": "Dadurch werden alle gespeicherten Zeilenausschnitte dauerhaft von diesem Gerät entfernt."
 }

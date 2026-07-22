@@ -1,0 +1,32 @@
+group 'me.mitlist.onnxruntime'
+version '1.4.1-ort1.20.0'
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.9.1'
+    }
+}
+
+rootProject.allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+apply plugin: 'com.android.library'
+
+android {
+    namespace 'me.mitlist.onnxruntime'
+    compileSdk 35
+
+    defaultConfig {
+        minSdk 21
+    }
+}
+

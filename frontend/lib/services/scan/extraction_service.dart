@@ -33,7 +33,7 @@ class ExtractionService {
 
     // Crossed-out detection.
     final crossMatch = _crossedOutPattern.firstMatch(text);
-    MarkStatus markStatus = MarkStatus.normal;
+    MarkStatus markStatus = line.markStatus;
     if (crossMatch != null) {
       text = (crossMatch.group(1) ?? crossMatch.group(2) ?? text).trim();
       markStatus = MarkStatus.crossedOut;
@@ -93,10 +93,21 @@ class ExtractionService {
     return ParsedItem(
       rawText: line.text.trim(),
       itemName: itemName,
+      bbox: line.bbox,
       quantity: quantity,
       unit: unit,
       priceCents: priceCents,
       markStatus: markStatus,
+      alternatives: [
+        for (final alternative in line.alternatives)
+          OcrAlternative(
+            text: extract(OcrLine(
+              text: alternative.text,
+              markStatus: line.markStatus,
+            )).itemName,
+            relativeScore: alternative.relativeScore,
+          ),
+      ],
     );
   }
 

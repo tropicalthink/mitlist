@@ -4915,4 +4915,40 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get feedbackFailed =>
       'Couldn\'t send your request right now. Please try again later.';
+
+  @override
+  String get accountOcrTrainingTitle => 'Improve offline handwriting OCR';
+
+  @override
+  String get accountOcrTrainingDescription =>
+      'Manually reviewed line crops stay on this device until you export or delete them. Nothing is uploaded.';
+
+  @override
+  String get accountOcrTrainingExport => 'Export OCR training data';
+
+  @override
+  String accountOcrTrainingSamples(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count corrected lines',
+      one: '1 corrected line',
+      zero: 'No corrected lines',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get accountOcrTrainingClear => 'Delete OCR training data';
+
+  @override
+  String get accountOcrTrainingExportEmpty =>
+      'There are no corrected OCR lines to export yet.';
+
+  @override
+  String get accountOcrTrainingClearTitle => 'Delete OCR training data?';
+
+  @override
+  String get accountOcrTrainingClearBody =>
+      'This permanently removes every saved line crop from this device.';
 }

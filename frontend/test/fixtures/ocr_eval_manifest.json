@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "locale": "de-DE,en",
+  "samples": [
+    {
+      "id": "001",
+      "filename": "001.jpg",
+      "input_type": "handwriting",
+      "lines": [
+        {"text": "Rapsöl", "status": "active"},
+        {"text": "Olivenöl", "status": "active"},
+        {"text": "Mayo", "status": "crossed_out"},
+        {"text": "Ketchup", "status": "crossed_out"},
+        {"text": "Restmülltüten", "status": "active"},
+        {"text": "Keramikeld-reiniger", "status": "active"},
+        {"text": "Kaffeefilter", "status": "active"}
+      ]
+    },
+    {
+      "id": "002",
+      "filename": "002.jpg",
+      "input_type": "handwriting",
+      "lines": [
+        {"text": "Some frucht", "status": "active"},
+        {"text": "banana", "status": "active"},
+        {"text": "fries", "status": "active"},
+        {"text": "cibatta", "status": "active"},
+        {"text": "Pringles", "status": "active"},
+        {"text": "Yildiz sauce", "status": "active"},
+        {"text": "milk x2", "status": "active"},
+        {"text": "eintopf", "status": "active"},
+        {"text": "dip hummus", "status": "active"},
+        {"text": "cornflakes", "status": "active"}
+      ],
+      "note": "Numbered list; leading numbers are layout markers, not transcript text."
+    },
+    {
+      "id": "003",
+      "filename": "003.jpg",
+      "input_type": "handwriting",
+      "lines": [
+        {"text": "Reis", "status": "active"},
+        {"text": "Flour", "status": "crossed_out"},
+        {"text": "dunklen Balsamico-essig", "status": "active"},
+        {"text": "Lorbeerblätter", "status": "active"},
+        {"text": "WC-Ente", "status": "crossed_out"},
+        {"text": "Kartoffeln", "status": "crossed_out"},
+        {"text": "Biomüll Folienbe", "status": "active"}
+      ]
+    },
+    {
+      "id": "004",
+      "filename": "004.jpg",
+      "input_type": "handwriting",
+      "lines": [
+        {"text": "milk", "status": "active"},
+        {"text": "onion", "status": "active"},
+        {"text": "rice", "status": "active"},
+        {"text": "Olive oil", "status": "active"},
+        {"text": "eggs", "status": "active"},
+        {"text": "aubergine", "status": "active"},
+        {"text": "cumin", "status": "active"},
+        {"text": "Peppers", "status": "active"},
+        {"text": "tomates", "status": "active"}
+      ]
+    },
+    {
+      "id": "005",
+      "filename": "005.jpg",
+      "input_type": "handwriting",
+      "lines": [
+        {"text": "chicken thighs", "status": "active"},
+        {"text": "onion", "status": "active"},
+        {"text": "olive oil", "status": "active"},
+        {"text": "rice", "status": "active"},
+        {"text": "tomatoes", "status": "active"},
+        {"text": "cumin", "status": "active"},
+        {"text": "aubergine", "status": "active"},
+        {"text": "milk", "status": "active"},
+        {"text": "cocoa", "status": "active"},
+        {"text": "eggs", "status": "active"}
+      ]
+    },
+    {
+      "id": "006",
+      "filename": "006.jpg",
+      "input_type": "handwriting",
+      "lines": [
+        {"text": "Olivenöl", "status": "active"},
+        {"text": "Kaffee", "status": "crossed_out"},
+        {"text": null, "status": "illegible"},
+        {"text": null, "status": "illegible"}
+      ],
+      "note": "Illegible regions are excluded from transcript accuracy and retained as hallucination guards."
+    }
+  ]
+}
