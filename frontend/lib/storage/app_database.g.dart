@@ -7692,7 +7692,7 @@ class $ScanArtifactsTableTable extends ScanArtifactsTable
       'engine', aliasedName, false,
       type: DriftSqlType.string,
       requiredDuringInsert: false,
-      defaultValue: const Constant('mlkit'));
+      defaultValue: const Constant('ppocrv6-small-det-medium-rec-onnx'));
   static const VerificationMeta _rawJsonMeta =
       const VerificationMeta('rawJson');
   @override

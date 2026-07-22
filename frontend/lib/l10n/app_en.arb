@@ -3041,5 +3041,21 @@
   "feedbackEmpty": "Please write a short message first.",
   "@feedbackEmpty": { "description": "Validation error when the feedback field is empty" },
   "feedbackFailed": "Couldn't send your request right now. Please try again later.",
-  "@feedbackFailed": { "description": "Error when the feedback submission failed" }
+  "@feedbackFailed": { "description": "Error when the feedback submission failed" },
+  "accountOcrTrainingTitle": "Improve offline handwriting OCR",
+  "@accountOcrTrainingTitle": { "description": "Opt-in local OCR training-data collection title" },
+  "accountOcrTrainingDescription": "Manually reviewed line crops stay on this device until you export or delete them. Nothing is uploaded.",
+  "@accountOcrTrainingDescription": { "description": "Privacy explanation for OCR training-data collection" },
+  "accountOcrTrainingExport": "Export OCR training data",
+  "@accountOcrTrainingExport": { "description": "Exports local corrected OCR line crops" },
+  "accountOcrTrainingSamples": "{count, plural, =0{No corrected lines} =1{1 corrected line} other{{count} corrected lines}}",
+  "@accountOcrTrainingSamples": { "description": "Number of locally collected OCR training lines", "placeholders": { "count": { "type": "int" } } },
+  "accountOcrTrainingClear": "Delete OCR training data",
+  "@accountOcrTrainingClear": { "description": "Deletes locally collected OCR training data" },
+  "accountOcrTrainingExportEmpty": "There are no corrected OCR lines to export yet.",
+  "@accountOcrTrainingExportEmpty": { "description": "Shown when OCR training export is empty" },
+  "accountOcrTrainingClearTitle": "Delete OCR training data?",
+  "@accountOcrTrainingClearTitle": { "description": "OCR training data deletion dialog title" },
+  "accountOcrTrainingClearBody": "This permanently removes every saved line crop from this device.",
+  "@accountOcrTrainingClearBody": { "description": "OCR training data deletion dialog body" }
 }

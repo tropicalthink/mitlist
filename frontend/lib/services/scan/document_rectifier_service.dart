@@ -3,15 +3,12 @@ import 'dart:typed_data';
 
 import 'package:image/image.dart' as img;
 
-import 'document_rectifier_cv_native.dart'
-    if (dart.library.html) 'document_rectifier_cv_stub.dart';
-
 /// Whether the boundary-crop fallback is active.
 ///
-/// Defaults to FALSE — this flag stays off until Step-7 device verification
-/// confirms the [sensorOrientation] rotation mapping is correct on the target
-/// device. With this false, [DocumentRectifierService.rectifyWithHint] returns
-/// exactly what [rectify()] returns: zero change to production scan behaviour.
+/// Defaults to false until the sensor-orientation mapping has been verified on
+/// both Android and iOS. With this false,
+/// [DocumentRectifierService.rectifyWithHint] returns exactly what [rectify()]
+/// returns: zero change to production scan behaviour.
 const bool kEnableBoundaryCrop = false;
 
 /// An isolate-sendable value type carrying the live-detected capture boundary.
@@ -101,7 +98,7 @@ Uint8List? cropToNormalizedRect(
   }
 }
 
-/// Result of document quad detection and perspective rectification.
+/// Result of portable capture-boundary cropping.
 class DocumentRectifyResult {
   const DocumentRectifyResult({
     required this.bytes,
@@ -111,44 +108,30 @@ class DocumentRectifyResult {
   /// Rectified (perspective-corrected) JPEG bytes, or original bytes on failure.
   final Uint8List bytes;
 
-  /// True when the CV pipeline ran successfully and produced a warped crop.
+  /// True when the portable boundary crop produced a cropped image.
   final bool rectified;
 }
 
-/// Detects the largest near-rectangular contour in an image and applies a
-/// perspective warp to produce a flat, axis-aligned crop.
-///
-/// All errors are caught and trigger fail-soft: the original bytes are
-/// returned with [DocumentRectifyResult.rectified] == false.
-///
-/// On web, OpenCV is unavailable; this always returns the original bytes with
-/// [DocumentRectifyResult.rectified] == false.
+/// Perspective detection previously relied on a native CV bundle. The common
+/// path now preserves the original image, which performed best in the sample
+/// benchmark. The optional live-boundary crop below is pure Dart and shared by
+/// every platform.
 class DocumentRectifierService {
   const DocumentRectifierService();
 
-  DocumentRectifyResult rectify(Uint8List jpegBytes) {
-    try {
-      final warped = rectifyDocumentCv(jpegBytes);
-      if (warped == null) {
-        return DocumentRectifyResult(bytes: jpegBytes, rectified: false);
-      }
-      return DocumentRectifyResult(bytes: warped, rectified: true);
-    } catch (_) {
-      return DocumentRectifyResult(bytes: jpegBytes, rectified: false);
-    }
-  }
+  DocumentRectifyResult rectify(Uint8List jpegBytes) =>
+      DocumentRectifyResult(bytes: jpegBytes, rectified: false);
 
-  /// Runs [rectify], and when it finds no document quad AND a [hint] is
-  /// provided AND [kEnableBoundaryCrop] is true, falls back to cropping the
+  /// When a [hint] is provided and [kEnableBoundaryCrop] is true, crops the
   /// image to the live-detected boundary.
   ///
   /// With [kEnableBoundaryCrop] == false (the shipped default), this method
   /// returns exactly what [rectify()] returns — zero change to production
-  /// scan behaviour. Enable only after Step-7 device verification confirms
-  /// the sensorOrientation mapping.
+  /// scan behaviour. Enable only after device verification confirms the
+  /// sensor-orientation mapping on both platforms.
   DocumentRectifyResult rectifyWithHint(
       Uint8List jpegBytes, CaptureCropHint? hint) {
-    final result = rectify(jpegBytes); // existing quad path, unchanged
+    final result = rectify(jpegBytes);
     if (!kEnableBoundaryCrop || result.rectified || hint == null) return result;
     final m = mapStreamRectToImage(hint);
     final cropped =

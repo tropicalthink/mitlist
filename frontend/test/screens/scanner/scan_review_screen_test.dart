@@ -14,6 +14,7 @@ import 'package:mitlist/services/list_service.dart';
 import 'package:mitlist/services/scan/canonical_resolver_service.dart';
 import 'package:mitlist/services/scan/scan_models.dart';
 import 'package:mitlist/storage/app_database.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -25,6 +26,7 @@ void main() {
   late _FakeListRepository listRepository;
 
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
     db = AppDatabase(
       DatabaseConnection(
         NativeDatabase.memory(),
@@ -209,6 +211,38 @@ void main() {
     );
 
     expect(find.text('Milk'), findsOneWidget);
+  });
+
+  testWidgets('opt-in collector lets users confirm high-confidence lines',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'ocr_training_capture_enabled_22222222-2222-2222-2222-222222222222': true,
+    });
+    await _setLargeSurface(tester);
+    await _pumpReview(
+      tester,
+      db: db,
+      listService: listService,
+      listRepository: listRepository,
+      scanResult: const GroceryScanResult(
+        items: [
+          GroceryPrediction(
+            id: 'p1',
+            rawText: 'Milch',
+            displayName: 'Milch',
+            confidenceLevel: ConfidenceLevel.autoAccept,
+            confidenceScore: 1,
+          ),
+        ],
+      ),
+      targetListId: 'list-existing',
+      targetListName: 'Groceries',
+    );
+
+    await tester.tap(find.text('Milch'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edit item'), findsOneWidget);
   });
 }
 

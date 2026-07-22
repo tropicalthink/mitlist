@@ -4988,4 +4988,41 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get feedbackFailed =>
       'Deine Anfrage konnte gerade nicht gesendet werden. Bitte versuche es später erneut.';
+
+  @override
+  String get accountOcrTrainingTitle =>
+      'Offline-Handschrifterkennung verbessern';
+
+  @override
+  String get accountOcrTrainingDescription =>
+      'Manuell geprüfte Zeilenausschnitte bleiben auf diesem Gerät, bis du sie exportierst oder löschst. Es wird nichts hochgeladen.';
+
+  @override
+  String get accountOcrTrainingExport => 'OCR-Trainingsdaten exportieren';
+
+  @override
+  String accountOcrTrainingSamples(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count korrigierte Zeilen',
+      one: '1 korrigierte Zeile',
+      zero: 'Keine korrigierten Zeilen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get accountOcrTrainingClear => 'OCR-Trainingsdaten löschen';
+
+  @override
+  String get accountOcrTrainingExportEmpty =>
+      'Es gibt noch keine korrigierten OCR-Zeilen zum Exportieren.';
+
+  @override
+  String get accountOcrTrainingClearTitle => 'OCR-Trainingsdaten löschen?';
+
+  @override
+  String get accountOcrTrainingClearBody =>
+      'Dadurch werden alle gespeicherten Zeilenausschnitte dauerhaft von diesem Gerät entfernt.';
 }

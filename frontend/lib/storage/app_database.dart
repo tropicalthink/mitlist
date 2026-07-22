@@ -301,7 +301,8 @@ class ScanArtifactsTable extends Table {
   TextColumn get userId => text().named('user_id').nullable()();
   TextColumn get imageRef =>
       text().named('image_ref').withDefault(const Constant(''))();
-  TextColumn get engine => text().withDefault(const Constant('mlkit'))();
+  TextColumn get engine =>
+      text().withDefault(const Constant('ppocrv6-small-det-medium-rec-onnx'))();
   TextColumn get rawJson => text().named('raw_json').nullable()();
   TextColumn get resolvedJson => text().named('resolved_json').nullable()();
   IntColumn get version => integer().withDefault(const Constant(0))();

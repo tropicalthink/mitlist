@@ -4,13 +4,10 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show compute;
 import 'package:image/image.dart' as img;
 
-import 'capture_preprocessor_cv_native.dart'
-    if (dart.library.html) 'capture_preprocessor_cv_stub.dart';
 import 'capture_quality_service.dart';
 
 /// Runs [CapturePreprocessorService.preprocess] on a background isolate so
-/// the heavy CV work (decode, adaptive threshold, Hough deskew) never blocks
-/// the UI thread. On web, [compute] degrades to running in place.
+/// image decoding and preview enhancement never block the UI thread.
 Future<CapturePreprocessResult> preprocessCaptureInBackground(
         Uint8List bytes) =>
     compute(_preprocessEntry, bytes);
@@ -29,16 +26,13 @@ class CapturePreprocessResult {
 
   final Uint8List originalBytes;
 
-  /// Binarized + deskewed image — used for the human-facing enhanced preview.
+  /// Portable grayscale enhancement used for the human-facing preview.
   final Uint8List processedBytes;
 
   /// Natural (non-binarized) image for OCR — the rectified/original image.
   ///
-  /// Modern neural OCR engines (ML Kit, etc.) are trained on natural
-  /// photographs; feeding them a hard binary image is out-of-distribution and
-  /// degrades recognition quality. This field carries the non-binarized form
-  /// so [ScanPipelineService] can pass a natural image to OCR while the
-  /// preview still uses the binarized [processedBytes].
+  /// PP-OCRv6 is trained on natural photographs. This is therefore kept as the
+  /// original color image while [processedBytes] is preview-only.
   final Uint8List ocrBytes;
 
   final CaptureQualityResult quality;
@@ -47,23 +41,15 @@ class CapturePreprocessResult {
 
 /// Preprocesses a captured image frame before OCR.
 ///
-/// Pipeline (each step is fail-soft; any CV exception falls back to the
-/// previous result rather than crashing):
+/// Portable pipeline (each step is fail-soft):
 ///
 /// 1. Quality assessment (always runs, never throws to caller).
 /// 2. Downscale if >2200 px on the long edge.
-/// 3. Grayscale conversion.
-/// 4. Illumination normalisation — divide by a heavily blurred version to
-///    suppress shadow gradients.
-/// 5. Adaptive threshold (Gaussian, 11-pixel block, C=4) → binary image.
-/// 6. Deskew — estimate dominant text angle via HoughLinesP on the binary
-///    image and rotate to correct it (limited to ±10°).
+/// 3. Grayscale, contrast, and a small unsharp mask for the preview.
 ///
-/// If any CV step throws, the last successfully processed image is used.
-/// If even grayscale fails, the original JPEG bytes are returned.
-///
-/// On web, OpenCV is unavailable; the legacy pure-Dart path (grayscale /
-/// contrast / unsharp mask) is used instead.
+/// OCR always receives the original color bytes and performs its own model-
+/// specific normalization. No native or platform image-recognition API is
+/// used.
 class CapturePreprocessorService {
   const CapturePreprocessorService({
     this.qualityService = const CaptureQualityService(),
@@ -76,26 +62,6 @@ class CapturePreprocessorService {
   CapturePreprocessResult preprocess(Uint8List bytes) {
     final quality = qualityService.assess(bytes);
 
-    Uint8List? cvResult;
-    try {
-      cvResult = enhanceCv(bytes); // opencv on native, null on web/failure
-    } catch (_) {
-      // Native library unavailable or CV failed — fall through to legacy path.
-    }
-    if (cvResult != null) {
-      // ocrBytes: feed OCR the original (non-binarized) bytes so the neural
-      // OCR engine sees a natural image rather than a hard binary threshold.
-      // processedBytes: keep the binarized result for the enhanced preview.
-      return CapturePreprocessResult(
-        originalBytes: bytes,
-        processedBytes: cvResult,
-        ocrBytes: bytes,
-        quality: quality,
-        enhanced: true,
-      );
-    }
-
-    // Legacy pure-Dart fallback (also the web path).
     try {
       final decoded = img.decodeImage(bytes);
       if (decoded == null) {
@@ -109,12 +75,10 @@ class CapturePreprocessorService {
       }
       final out = Uint8List.fromList(
           img.encodeJpg(_enhanceLegacy(decoded), quality: 92));
-      // In the legacy path the enhanced image is a natural grayscale (no binary
-      // threshold), so it is safe to use directly for OCR.
       return CapturePreprocessResult(
         originalBytes: bytes,
         processedBytes: out,
-        ocrBytes: out,
+        ocrBytes: bytes,
         quality: quality,
         enhanced: true,
       );
@@ -130,7 +94,7 @@ class CapturePreprocessorService {
   }
 
   // ---------------------------------------------------------------------------
-  // Legacy fallback pipeline (image package — no OpenCV)
+  // Preview pipeline (package:image only)
   // ---------------------------------------------------------------------------
 
   img.Image _enhanceLegacy(img.Image source) {

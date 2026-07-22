@@ -1,51 +1,23 @@
-import 'dart:io';
 import 'dart:typed_data';
-import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
-import 'package:path_provider/path_provider.dart';
+
+import 'ppocr_inference_native.dart'
+    if (dart.library.html) 'ppocr_inference_stub.dart';
 import 'scan_models.dart';
 
-/// Wraps ML Kit text recognition and produces a list of [OcrLine]s with
-/// bounding box metadata. Uses the Latin script bundle (covers DE + EN).
+/// Cross-platform, fully offline PP-OCRv6 service.
+///
+/// Android and iOS use the same bundled detector, recognizer, ONNX Runtime CPU
+/// execution, and Dart pre/post-processing implementation.
 class OcrService {
-  final TextRecognizer _recognizer =
-      TextRecognizer(script: TextRecognitionScript.latin);
+  OcrService() : _inference = PpOcrInference();
 
-  /// Recognise text in [imageBytes] (JPEG or PNG).
-  /// Writes a temp file so ML Kit can use its file-path API.
-  Future<List<OcrLine>> recognise(Uint8List imageBytes) async {
-    final tmpDir = await getTemporaryDirectory();
-    final tmpFile = File(
-        '${tmpDir.path}/scan_input_${DateTime.now().millisecondsSinceEpoch}.jpg');
-    await tmpFile.writeAsBytes(imageBytes);
-    try {
-      return await recogniseFromPath(tmpFile.path);
-    } finally {
-      tmpFile.deleteSync();
-    }
-  }
+  final PpOcrInference _inference;
 
-  Future<List<OcrLine>> recogniseFromPath(String path) async {
-    final input = InputImage.fromFilePath(path);
-    final result = await _recognizer.processImage(input);
-    return result.blocks
-        .expand((block) => block.lines)
-        .map((line) {
-          final bb = line.boundingBox;
-          return OcrLine(
-            text: line.text,
-            bbox: OcrBBox(
-              bb.left.toDouble(),
-              bb.top.toDouble(),
-              bb.width.toDouble(),
-              bb.height.toDouble(),
-            ),
-          );
-        })
-        .where((l) => l.text.trim().isNotEmpty)
-        .toList();
-  }
+  Future<List<OcrLine>> recognise(Uint8List imageBytes) =>
+      _inference.recognise(imageBytes);
 
-  Future<void> dispose() async {
-    await _recognizer.close();
-  }
+  Future<List<OcrLine>> recogniseFromPath(String path) =>
+      _inference.recogniseFromPath(path);
+
+  Future<void> dispose() => _inference.dispose();
 }

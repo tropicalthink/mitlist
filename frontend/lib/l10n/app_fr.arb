@@ -5681,5 +5681,13 @@
   "feedbackSending": "Envoi…",
   "feedbackSent": "Merci — votre demande a été envoyée !",
   "feedbackEmpty": "Veuillez d'abord écrire un court message.",
-  "feedbackFailed": "Impossible d'envoyer votre demande pour le moment. Veuillez réessayer plus tard."
+  "feedbackFailed": "Impossible d'envoyer votre demande pour le moment. Veuillez réessayer plus tard.",
+  "accountOcrTrainingTitle": "Améliorer l’OCR manuscrit hors ligne",
+  "accountOcrTrainingDescription": "Les lignes vérifiées manuellement restent sur cet appareil jusqu’à leur exportation ou suppression. Rien n’est envoyé.",
+  "accountOcrTrainingExport": "Exporter les données d’entraînement OCR",
+  "accountOcrTrainingSamples": "{count, plural, =0{Aucune ligne corrigée} =1{1 ligne corrigée} other{{count} lignes corrigées}}",
+  "accountOcrTrainingClear": "Supprimer les données d’entraînement OCR",
+  "accountOcrTrainingExportEmpty": "Il n’y a pas encore de lignes OCR corrigées à exporter.",
+  "accountOcrTrainingClearTitle": "Supprimer les données d’entraînement OCR ?",
+  "accountOcrTrainingClearBody": "Cette action supprime définitivement toutes les lignes enregistrées sur cet appareil."
 }
