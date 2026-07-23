@@ -474,17 +474,23 @@ class PinwallNoteCard extends ConsumerWidget {
                   context: context,
                   title: l10n.pinwallDeletePin,
                   body: Text(l10n.pinwallDeletePinBody),
+                  // The dialog is pushed on the root navigator, but the hub
+                  // sits inside a shell branch with its own — popping the
+                  // nearest one would tear the hub off its branch and leave
+                  // the dialog stranded instead of answering it.
                   actions: [
                     AppButton(
                       text: l10n.commonCancel,
                       variant: AppButtonVariant.outline,
-                      onPressed: () => Navigator.of(context).pop(false),
+                      onPressed: () =>
+                          Navigator.of(context, rootNavigator: true).pop(false),
                     ),
                     const SizedBox(width: MitlistSpacing.sm),
                     AppButton(
                       text: l10n.commonDelete,
                       color: AppButtonColor.error,
-                      onPressed: () => Navigator.of(context).pop(true),
+                      onPressed: () =>
+                          Navigator.of(context, rootNavigator: true).pop(true),
                     ),
                   ],
                 );
