@@ -33,14 +33,38 @@ type Split struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// Settlement represents a payment between two users.
+// SettlementStatus is the approval state of a settlement. Only confirmed
+// settlements count toward balances.
+type SettlementStatus string
+
+const (
+	SettlementStatusPending   SettlementStatus = "pending"
+	SettlementStatusConfirmed SettlementStatus = "confirmed"
+	SettlementStatusDeclined  SettlementStatus = "declined"
+)
+
+// Settlement represents a payment between two users. It is recorded by one
+// participant (CreatedBy) and must be confirmed by the other before it affects
+// balances.
 type Settlement struct {
-	ID         uuid.UUID `json:"id"`
-	GroupID    uuid.UUID `json:"group_id"`
-	FromUserID uuid.UUID `json:"from_user_id"`
-	ToUserID   uuid.UUID `json:"to_user_id"`
-	Amount     int64     `json:"amount"`
-	CreatedAt  time.Time `json:"created_at"`
+	ID          uuid.UUID        `json:"id"`
+	GroupID     uuid.UUID        `json:"group_id"`
+	FromUserID  uuid.UUID        `json:"from_user_id"`
+	ToUserID    uuid.UUID        `json:"to_user_id"`
+	Amount      int64            `json:"amount"`
+	Status      SettlementStatus `json:"status"`
+	CreatedBy   uuid.UUID        `json:"created_by"`
+	RespondedAt *time.Time       `json:"responded_at,omitempty"`
+	CreatedAt   time.Time        `json:"created_at"`
+}
+
+// Counterparty returns the participant who must approve the settlement — the
+// one who did not record it.
+func (s *Settlement) Counterparty() uuid.UUID {
+	if s.CreatedBy == s.FromUserID {
+		return s.ToUserID
+	}
+	return s.FromUserID
 }
 
 // BalanceEntry summarizes how much a user has paid, owes, and is net owed.

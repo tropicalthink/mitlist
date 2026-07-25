@@ -1933,11 +1933,22 @@
   "@expenseDeleteBody": {
     "description": "Dialog body for expense deletion"
   },
-  "expenseSettlementRecorded": "Règlement enregistré",
+  "expenseSettlementRecorded": "Règlement enregistré – en attente de confirmation",
   "@expenseSettlementRecorded": {
     "description": "Snackbar when settlement is saved"
   },
   "expenseSettlementFailed": "Impossible d'enregistrer le règlement.",
+  "expenseSettlementNeedsYou": "Nécessite ta confirmation",
+  "expenseSettlementWaiting": "En attente de confirmation",
+  "expenseSettlementHistory": "Règlements récents",
+  "expenseSettlementRow": "{from} a payé {to}",
+  "expenseSettlementConfirmAction": "Confirmer",
+  "expenseSettlementDeclineAction": "Refuser",
+  "expenseSettlementCancelAction": "Annuler la demande",
+  "expenseSettlementStatusConfirmed": "Confirmé",
+  "expenseSettlementStatusDeclined": "Refusé",
+  "expenseSettlementResponseFailed": "Impossible de mettre à jour le règlement.",
+  "expenseSettlementCancelFailed": "Impossible d'annuler le règlement.",
   "@expenseSettlementFailed": {
     "description": "Snackbar when settlement fails"
   },

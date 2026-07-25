@@ -1669,11 +1669,49 @@ class AppLocalizationsDe extends AppLocalizations {
       'Dies löscht die Ausgabe und alle zugehörigen Belege dauerhaft. Dies kann nicht rückgängig gemacht werden.';
 
   @override
-  String get expenseSettlementRecorded => 'Ausgleich aufgezeichnet';
+  String get expenseSettlementRecorded =>
+      'Ausgleich erfasst – wartet auf Bestätigung';
 
   @override
   String get expenseSettlementFailed =>
       'Ausgleich konnte nicht aufgezeichnet werden.';
+
+  @override
+  String get expenseSettlementNeedsYou => 'Braucht deine Bestätigung';
+
+  @override
+  String get expenseSettlementWaiting => 'Wartet auf Bestätigung';
+
+  @override
+  String get expenseSettlementHistory => 'Letzte Ausgleiche';
+
+  @override
+  String expenseSettlementRow(String from, String to) {
+    return '$from hat $to bezahlt';
+  }
+
+  @override
+  String get expenseSettlementConfirmAction => 'Bestätigen';
+
+  @override
+  String get expenseSettlementDeclineAction => 'Ablehnen';
+
+  @override
+  String get expenseSettlementCancelAction => 'Anfrage zurückziehen';
+
+  @override
+  String get expenseSettlementStatusConfirmed => 'Bestätigt';
+
+  @override
+  String get expenseSettlementStatusDeclined => 'Abgelehnt';
+
+  @override
+  String get expenseSettlementResponseFailed =>
+      'Ausgleich konnte nicht aktualisiert werden.';
+
+  @override
+  String get expenseSettlementCancelFailed =>
+      'Ausgleich konnte nicht zurückgezogen werden.';
 
   @override
   String get expenseSuggestedPaymentsTitle => 'Vorgeschlagene Zahlungen';

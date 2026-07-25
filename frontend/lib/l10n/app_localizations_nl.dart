@@ -1663,10 +1663,48 @@ class AppLocalizationsNl extends AppLocalizations {
       'Dit verwijdert deze uitgave en alle bijbehorende bonnen permanent. Dit kan niet ongedaan worden gemaakt.';
 
   @override
-  String get expenseSettlementRecorded => 'Vereffening vastgelegd';
+  String get expenseSettlementRecorded =>
+      'Vereffening vastgelegd – wacht op bevestiging';
 
   @override
   String get expenseSettlementFailed => 'Kon vereffening niet vastleggen.';
+
+  @override
+  String get expenseSettlementNeedsYou => 'Wacht op jouw bevestiging';
+
+  @override
+  String get expenseSettlementWaiting => 'Wacht op bevestiging';
+
+  @override
+  String get expenseSettlementHistory => 'Recente vereffeningen';
+
+  @override
+  String expenseSettlementRow(String from, String to) {
+    return '$from heeft $to betaald';
+  }
+
+  @override
+  String get expenseSettlementConfirmAction => 'Bevestigen';
+
+  @override
+  String get expenseSettlementDeclineAction => 'Afwijzen';
+
+  @override
+  String get expenseSettlementCancelAction => 'Verzoek intrekken';
+
+  @override
+  String get expenseSettlementStatusConfirmed => 'Bevestigd';
+
+  @override
+  String get expenseSettlementStatusDeclined => 'Afgewezen';
+
+  @override
+  String get expenseSettlementResponseFailed =>
+      'Vereffening kon niet worden bijgewerkt.';
+
+  @override
+  String get expenseSettlementCancelFailed =>
+      'Vereffening kon niet worden ingetrokken.';
 
   @override
   String get expenseSuggestedPaymentsTitle => 'Voorgestelde betalingen';

@@ -1649,10 +1649,48 @@ class AppLocalizationsEn extends AppLocalizations {
       'This will permanently delete this expense and all associated receipts. This cannot be undone.';
 
   @override
-  String get expenseSettlementRecorded => 'Settlement recorded';
+  String get expenseSettlementRecorded =>
+      'Settlement recorded — awaiting confirmation';
 
   @override
   String get expenseSettlementFailed => 'Couldn\'t record settlement.';
+
+  @override
+  String get expenseSettlementNeedsYou => 'Needs your confirmation';
+
+  @override
+  String get expenseSettlementWaiting => 'Waiting for confirmation';
+
+  @override
+  String get expenseSettlementHistory => 'Recent settlements';
+
+  @override
+  String expenseSettlementRow(String from, String to) {
+    return '$from paid $to';
+  }
+
+  @override
+  String get expenseSettlementConfirmAction => 'Confirm';
+
+  @override
+  String get expenseSettlementDeclineAction => 'Decline';
+
+  @override
+  String get expenseSettlementCancelAction => 'Cancel request';
+
+  @override
+  String get expenseSettlementStatusConfirmed => 'Confirmed';
+
+  @override
+  String get expenseSettlementStatusDeclined => 'Declined';
+
+  @override
+  String get expenseSettlementResponseFailed =>
+      'Couldn\'t update the settlement.';
+
+  @override
+  String get expenseSettlementCancelFailed =>
+      'Couldn\'t cancel the settlement.';
 
   @override
   String get expenseSuggestedPaymentsTitle => 'Suggested payments';

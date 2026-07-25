@@ -216,6 +216,38 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     }
   }
 
+  Future<void> _respondToSettlement(
+      SettlementDisplay settlement, bool approve) async {
+    if (_controller.isRespondingToSettlement) return;
+    unawaited(Haptics.light());
+    try {
+      await _controller.respondToSettlement(
+          settlement.id, approve, AppLocalizations.of(context)!);
+      if (!mounted) return;
+      if (approve) unawaited(Haptics.success());
+    } catch (e) {
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.expenseSettlementResponseFailed)),
+      );
+    }
+  }
+
+  Future<void> _cancelSettlement(SettlementDisplay settlement) async {
+    unawaited(Haptics.light());
+    try {
+      await _controller.cancelSettlement(
+          settlement.id, AppLocalizations.of(context)!);
+    } catch (e) {
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.expenseSettlementCancelFailed)),
+      );
+    }
+  }
+
   void _maybePlayConfetti() {
     if (_selectedTab == 1 &&
         _controller.hasHousehold &&
@@ -319,13 +351,23 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                               )
                             : ExpenseSettlementsBody(
                                 suggestions: _controller.suggestions,
+                                needsMyResponse:
+                                    _controller.settlementsNeedingMyResponse,
+                                awaitingOthers:
+                                    _controller.settlementsAwaitingOthers,
+                                recentSettlements:
+                                    _controller.recentSettlements,
                                 balances: _controller.balances,
                                 currency: _controller.groupCurrency,
                                 isSettling: _controller.isSettling,
+                                isResponding:
+                                    _controller.isRespondingToSettlement,
                                 confettiController: _confettiController,
                                 onRefresh: () => _controller
                                     .load(AppLocalizations.of(context)!),
                                 onRecordSettlement: _recordSettlement,
+                                onRespondSettlement: _respondToSettlement,
+                                onCancelSettlement: _cancelSettlement,
                               ),
           ),
         ],

@@ -78,6 +78,34 @@ class SettlementSuggestionDisplay {
   });
 }
 
+/// A settlement mapped for display: labels resolved, amount in major units.
+class SettlementDisplay {
+  final String id;
+  final String fromLabel;
+  final String toLabel;
+  final double amount;
+  final SettlementStatus status;
+
+  /// True when the current user must confirm/decline this settlement.
+  final bool needsMyResponse;
+
+  /// True when the current user recorded it and is waiting on the other party.
+  final bool isMine;
+
+  final DateTime createdAt;
+
+  const SettlementDisplay({
+    required this.id,
+    required this.fromLabel,
+    required this.toLabel,
+    required this.amount,
+    required this.status,
+    required this.needsMyResponse,
+    required this.isMine,
+    required this.createdAt,
+  });
+}
+
 class BalanceDisplayEntry {
   final String userId;
   final String name;
@@ -141,6 +169,8 @@ class ExpensesController extends ChangeNotifier {
   List<ExpenseGroupDisplay> _timelineGroups = [];
   List<SettlementSuggestionDisplay> _suggestions = [];
   List<BalanceDisplayEntry> _balances = [];
+  List<Settlement> _settlements = [];
+  bool _isRespondingToSettlement = false;
 
   bool _listenersSetUp = false;
   String? _currentUserId;
@@ -162,8 +192,55 @@ class ExpensesController extends ChangeNotifier {
   String get groupCurrency => _groupCurrency;
   Map<String, String> get userLabels => _userLabels;
   List<ExpenseGroupDisplay> get timelineGroups => _timelineGroups;
-  List<SettlementSuggestionDisplay> get suggestions => _suggestions;
   List<BalanceDisplayEntry> get balances => _balances;
+  bool get isRespondingToSettlement => _isRespondingToSettlement;
+
+  /// Suggestions, minus pairs that already have a pending settlement recorded
+  /// in the same direction — prevents double-settling while one awaits
+  /// confirmation.
+  List<SettlementSuggestionDisplay> get suggestions {
+    final pendingPairs = {
+      for (final s in _settlements)
+        if (s.status == SettlementStatus.pending) '${s.fromUserId}>${s.toUserId}',
+    };
+    return _suggestions
+        .where((sug) => !pendingPairs.contains('${sug.from}>${sug.to}'))
+        .toList();
+  }
+
+  /// Pending settlements the current user must confirm or decline.
+  List<SettlementDisplay> get settlementsNeedingMyResponse =>
+      _settlementDisplays()
+          .where((s) =>
+              s.status == SettlementStatus.pending && s.needsMyResponse)
+          .toList();
+
+  /// Pending settlements the current user recorded, awaiting the other party.
+  List<SettlementDisplay> get settlementsAwaitingOthers => _settlementDisplays()
+      .where((s) => s.status == SettlementStatus.pending && s.isMine)
+      .toList();
+
+  /// Recently resolved settlements (confirmed or declined), newest first.
+  List<SettlementDisplay> get recentSettlements => _settlementDisplays()
+      .where((s) => s.status != SettlementStatus.pending)
+      .take(10)
+      .toList();
+
+  List<SettlementDisplay> _settlementDisplays() {
+    final me = _currentUserId;
+    return _settlements
+        .map((s) => SettlementDisplay(
+              id: s.id,
+              fromLabel: _userLabels[s.fromUserId] ?? s.fromUserId,
+              toLabel: _userLabels[s.toUserId] ?? s.toUserId,
+              amount: s.amount / 100.0,
+              status: s.status,
+              needsMyResponse: me != null && s.counterpartyId == me,
+              isMine: me != null && s.createdBy == me,
+              createdAt: s.createdAt,
+            ))
+        .toList();
+  }
 
   @override
   void dispose() {
@@ -225,6 +302,19 @@ class ExpensesController extends ChangeNotifier {
       final summary = validGroupId == null
           ? null
           : await repo.watchSummaryByGroup(validGroupId).first;
+
+      if (validGroupId != null) {
+        // Settlement list is online-only; keep the last known list on failure.
+        try {
+          final financeService =
+              await ref.read(financeServiceProviderAsync.future);
+          _settlements = await financeService.listSettlements(validGroupId);
+        } catch (e) {
+          _logger.w('Settlement list refresh failed', error: e);
+        }
+      } else {
+        _settlements = [];
+      }
 
       if (_disposed) return;
 
@@ -493,6 +583,39 @@ class ExpensesController extends ChangeNotifier {
   Future<void> deleteExpense(String expenseId, AppLocalizations l10n) async {
     final service = await ref.read(financeServiceProviderAsync.future);
     await service.deleteExpense(expenseId);
+    await load(l10n);
+  }
+
+  /// Confirms or declines a settlement awaiting the current user's response.
+  Future<void> respondToSettlement(
+    String settlementId,
+    bool approve,
+    AppLocalizations l10n,
+  ) async {
+    if (_isRespondingToSettlement) return;
+    _isRespondingToSettlement = true;
+    _notify();
+    try {
+      final service = await ref.read(financeServiceProviderAsync.future);
+      if (approve) {
+        await service.confirmSettlement(settlementId);
+      } else {
+        await service.declineSettlement(settlementId);
+      }
+      await load(l10n);
+    } finally {
+      if (!_disposed) {
+        _isRespondingToSettlement = false;
+        _notify();
+      }
+    }
+  }
+
+  /// Cancels the current user's own pending settlement.
+  Future<void> cancelSettlement(
+      String settlementId, AppLocalizations l10n) async {
+    final service = await ref.read(financeServiceProviderAsync.future);
+    await service.cancelSettlement(settlementId);
     await load(l10n);
   }
 }
