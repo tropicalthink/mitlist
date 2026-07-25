@@ -62,12 +62,27 @@ class Expense {
       };
 }
 
+enum SettlementStatus {
+  pending,
+  confirmed,
+  declined;
+
+  static SettlementStatus fromApi(String? value) => switch (value) {
+        'confirmed' => SettlementStatus.confirmed,
+        'declined' => SettlementStatus.declined,
+        _ => SettlementStatus.pending,
+      };
+}
+
 class Settlement {
   final String id;
   final String groupId;
   final String fromUserId;
   final String toUserId;
   final int amount;
+  final SettlementStatus status;
+  final String createdBy;
+  final DateTime? respondedAt;
   final DateTime createdAt;
 
   const Settlement({
@@ -76,8 +91,14 @@ class Settlement {
     required this.fromUserId,
     required this.toUserId,
     required this.amount,
+    required this.status,
+    required this.createdBy,
+    this.respondedAt,
     required this.createdAt,
   });
+
+  /// The participant who must approve — the one who didn't record it.
+  String get counterpartyId => createdBy == fromUserId ? toUserId : fromUserId;
 
   factory Settlement.fromJson(Map<String, dynamic> json) => Settlement(
         id: json['id'] as String,
@@ -85,6 +106,11 @@ class Settlement {
         fromUserId: json['from_user_id'] as String,
         toUserId: json['to_user_id'] as String,
         amount: parseJsonInt64(json['amount'], fieldName: 'amount'),
+        status: SettlementStatus.fromApi(json['status'] as String?),
+        createdBy: (json['created_by'] as String?) ?? '',
+        respondedAt: json['responded_at'] == null
+            ? null
+            : DateTime.parse(json['responded_at'] as String),
         createdAt: DateTime.parse(json['created_at'] as String),
       );
 }

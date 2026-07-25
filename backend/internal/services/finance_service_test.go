@@ -290,7 +290,24 @@ func TestFinanceService_CreateSettlement(t *testing.T) {
 	userID := uuid.New()
 	groupID := uuid.New()
 
-	t.Run("success", func(t *testing.T) {
+	t.Run("success records pending settlement by participant", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+		toUserID := uuid.New()
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, toUserID).Return(&models.GroupMembership{Role: "member"}, nil)
+		financeRepo.On("CreateSettlement", ctx, mock.AnythingOfType("*models.Settlement")).Return(nil)
+
+		settlement := &models.Settlement{GroupID: groupID, FromUserID: userID, ToUserID: toUserID, Amount: 100}
+		err := svc.CreateSettlement(ctx, userID, settlement)
+		require.NoError(t, err)
+		assert.Equal(t, models.SettlementStatusPending, settlement.Status)
+		assert.Equal(t, userID, settlement.CreatedBy)
+	})
+
+	t.Run("rejects non-participant recorder", func(t *testing.T) {
 		financeRepo := new(mocks.MockFinanceRepo)
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := NewFinanceService(financeRepo, groupRepo)
@@ -298,13 +315,11 @@ func TestFinanceService_CreateSettlement(t *testing.T) {
 		toUserID := uuid.New()
 
 		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
-		groupRepo.On("GetMembership", ctx, groupID, fromUserID).Return(&models.GroupMembership{Role: "member"}, nil)
-		groupRepo.On("GetMembership", ctx, groupID, toUserID).Return(&models.GroupMembership{Role: "member"}, nil)
-		financeRepo.On("CreateSettlement", ctx, mock.AnythingOfType("*models.Settlement")).Return(nil)
 
 		settlement := &models.Settlement{GroupID: groupID, FromUserID: fromUserID, ToUserID: toUserID, Amount: 100}
 		err := svc.CreateSettlement(ctx, userID, settlement)
-		require.NoError(t, err)
+		require.Error(t, err)
+		financeRepo.AssertNotCalled(t, "CreateSettlement", mock.Anything, mock.Anything)
 	})
 
 	t.Run("invalid amount", func(t *testing.T) {
@@ -317,6 +332,107 @@ func TestFinanceService_CreateSettlement(t *testing.T) {
 		require.Error(t, err)
 		assert.Equal(t, api.ErrValidation, err)
 	})
+}
+
+func TestFinanceService_RespondToSettlement(t *testing.T) {
+	ctx := context.Background()
+	groupID := uuid.New()
+	creatorID := uuid.New()
+	counterpartyID := uuid.New()
+	settlementID := uuid.New()
+
+	pending := func() *models.Settlement {
+		return &models.Settlement{
+			ID:         settlementID,
+			GroupID:    groupID,
+			FromUserID: creatorID,
+			ToUserID:   counterpartyID,
+			Amount:     250,
+			Status:     models.SettlementStatusPending,
+			CreatedBy:  creatorID,
+		}
+	}
+
+	t.Run("counterparty confirms", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		financeRepo.On("GetSettlementByID", ctx, settlementID).Return(pending(), nil)
+		groupRepo.On("GetMembership", ctx, groupID, counterpartyID).Return(&models.GroupMembership{Role: "member"}, nil)
+		financeRepo.On("UpdateSettlementStatus", ctx, settlementID, models.SettlementStatusConfirmed, mock.AnythingOfType("time.Time")).Return(nil)
+
+		settlement, err := svc.RespondToSettlement(ctx, counterpartyID, settlementID, true)
+		require.NoError(t, err)
+		assert.Equal(t, models.SettlementStatusConfirmed, settlement.Status)
+		require.NotNil(t, settlement.RespondedAt)
+	})
+
+	t.Run("counterparty declines", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		financeRepo.On("GetSettlementByID", ctx, settlementID).Return(pending(), nil)
+		groupRepo.On("GetMembership", ctx, groupID, counterpartyID).Return(&models.GroupMembership{Role: "member"}, nil)
+		financeRepo.On("UpdateSettlementStatus", ctx, settlementID, models.SettlementStatusDeclined, mock.AnythingOfType("time.Time")).Return(nil)
+
+		settlement, err := svc.RespondToSettlement(ctx, counterpartyID, settlementID, false)
+		require.NoError(t, err)
+		assert.Equal(t, models.SettlementStatusDeclined, settlement.Status)
+	})
+
+	t.Run("creator cannot respond to own settlement", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		financeRepo.On("GetSettlementByID", ctx, settlementID).Return(pending(), nil)
+		groupRepo.On("GetMembership", ctx, groupID, creatorID).Return(&models.GroupMembership{Role: "member"}, nil)
+
+		_, err := svc.RespondToSettlement(ctx, creatorID, settlementID, true)
+		require.Error(t, err)
+		financeRepo.AssertNotCalled(t, "UpdateSettlementStatus", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+	})
+
+	t.Run("already responded conflicts", func(t *testing.T) {
+		financeRepo := new(mocks.MockFinanceRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewFinanceService(financeRepo, groupRepo)
+
+		confirmed := pending()
+		confirmed.Status = models.SettlementStatusConfirmed
+		financeRepo.On("GetSettlementByID", ctx, settlementID).Return(confirmed, nil)
+		groupRepo.On("GetMembership", ctx, groupID, counterpartyID).Return(&models.GroupMembership{Role: "member"}, nil)
+
+		_, err := svc.RespondToSettlement(ctx, counterpartyID, settlementID, true)
+		require.Error(t, err)
+		assert.Equal(t, api.ErrConflict, err)
+	})
+}
+
+func TestFinanceService_DeleteSettlement_CreatorCancelsPending(t *testing.T) {
+	ctx := context.Background()
+	groupID := uuid.New()
+	creatorID := uuid.New()
+	settlementID := uuid.New()
+
+	financeRepo := new(mocks.MockFinanceRepo)
+	groupRepo := new(mocks.MockGroupRepo)
+	svc := NewFinanceService(financeRepo, groupRepo)
+
+	financeRepo.On("GetSettlementByID", ctx, settlementID).Return(&models.Settlement{
+		ID:        settlementID,
+		GroupID:   groupID,
+		Status:    models.SettlementStatusPending,
+		CreatedBy: creatorID,
+	}, nil)
+	financeRepo.On("DeleteSettlement", ctx, settlementID).Return(nil)
+
+	err := svc.DeleteSettlement(ctx, creatorID, settlementID)
+	require.NoError(t, err)
+	// No admin check needed for own pending settlement.
+	groupRepo.AssertNotCalled(t, "GetMembership", mock.Anything, mock.Anything, mock.Anything)
 }
 
 func TestFinanceService_GetFinanceSummary(t *testing.T) {
@@ -574,7 +690,7 @@ func TestCalculateBalances(t *testing.T) {
 			{ExpenseID: expenseID, UserID: secondID, Amount: 50},
 		}
 		settlements := []models.Settlement{
-			{FromUserID: secondID, ToUserID: payerID, Amount: 50},
+			{FromUserID: secondID, ToUserID: payerID, Amount: 50, Status: models.SettlementStatusConfirmed},
 		}
 		balances := calculateBalances(expenses, splits, settlements)
 
@@ -728,8 +844,8 @@ func TestBalancesEquivalence(t *testing.T) {
 		{ExpenseID: expE2, UserID: userC, Amount: 2500},
 	}
 	settlements := []models.Settlement{
-		{FromUserID: userB, ToUserID: userA, Amount: 2000},
-		{FromUserID: userC, ToUserID: userA, Amount: 1500},
+		{FromUserID: userB, ToUserID: userA, Amount: 2000, Status: models.SettlementStatusConfirmed},
+		{FromUserID: userC, ToUserID: userA, Amount: 1500, Status: models.SettlementStatusConfirmed},
 	}
 	wantBalances := calculateBalances(expenses, splits, settlements)
 

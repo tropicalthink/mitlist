@@ -102,8 +102,10 @@ func (r *PinwallReminder) sendForPost(ctx context.Context, post models.PinwallPo
 	}
 
 	if r.dispatcher != nil {
-		// Dispatcher handles persist+push preference-filtered for group minus author.
-		if err := r.dispatcher.DispatchToGroup(ctx, post.GroupID, post.UserID, "pinwall_reminder",
+		// Dispatcher handles persist+push preference-filtered for the whole group.
+		// uuid.Nil actor: reminders have no "actor" to exclude — the author set the
+		// reminder and must receive it too (same idiom as weekly_summary/recurring_expense).
+		if err := r.dispatcher.DispatchToGroup(ctx, post.GroupID, uuid.Nil, "pinwall_reminder",
 			"Reminder", post.Content, notifPayload); err != nil {
 			return fmt.Errorf("dispatch pinwall reminder: %w", err)
 		}
@@ -129,9 +131,6 @@ func (r *PinwallReminder) sendForPost(ctx context.Context, post models.PinwallPo
 
 	toDeliver := make([]models.Notification, 0, len(cache.members))
 	for _, userID := range cache.members {
-		if userID == post.UserID {
-			continue
-		}
 		pref := cache.prefs[userID]
 		if pref == nil {
 			pref = defaultPref(userID)

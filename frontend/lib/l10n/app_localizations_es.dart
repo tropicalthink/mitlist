@@ -1655,10 +1655,48 @@ class AppLocalizationsEs extends AppLocalizations {
       'Esto eliminará permanentemente este gasto y todos los recibos asociados. No se puede deshacer.';
 
   @override
-  String get expenseSettlementRecorded => 'Liquidación registrada';
+  String get expenseSettlementRecorded =>
+      'Liquidación registrada: esperando confirmación';
 
   @override
   String get expenseSettlementFailed => 'No se pudo registrar la liquidación.';
+
+  @override
+  String get expenseSettlementNeedsYou => 'Necesita tu confirmación';
+
+  @override
+  String get expenseSettlementWaiting => 'Esperando confirmación';
+
+  @override
+  String get expenseSettlementHistory => 'Liquidaciones recientes';
+
+  @override
+  String expenseSettlementRow(String from, String to) {
+    return '$from pagó a $to';
+  }
+
+  @override
+  String get expenseSettlementConfirmAction => 'Confirmar';
+
+  @override
+  String get expenseSettlementDeclineAction => 'Rechazar';
+
+  @override
+  String get expenseSettlementCancelAction => 'Cancelar solicitud';
+
+  @override
+  String get expenseSettlementStatusConfirmed => 'Confirmada';
+
+  @override
+  String get expenseSettlementStatusDeclined => 'Rechazada';
+
+  @override
+  String get expenseSettlementResponseFailed =>
+      'No se pudo actualizar la liquidación.';
+
+  @override
+  String get expenseSettlementCancelFailed =>
+      'No se pudo cancelar la liquidación.';
 
   @override
   String get expenseSuggestedPaymentsTitle => 'Pagos sugeridos';
