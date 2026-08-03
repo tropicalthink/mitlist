@@ -1933,11 +1933,22 @@
   "@expenseDeleteBody": {
     "description": "Dialog body for expense deletion"
   },
-  "expenseSettlementRecorded": "Vereffening vastgelegd",
+  "expenseSettlementRecorded": "Vereffening vastgelegd – wacht op bevestiging",
   "@expenseSettlementRecorded": {
     "description": "Snackbar when settlement is saved"
   },
   "expenseSettlementFailed": "Kon vereffening niet vastleggen.",
+  "expenseSettlementNeedsYou": "Wacht op jouw bevestiging",
+  "expenseSettlementWaiting": "Wacht op bevestiging",
+  "expenseSettlementHistory": "Recente vereffeningen",
+  "expenseSettlementRow": "{from} heeft {to} betaald",
+  "expenseSettlementConfirmAction": "Bevestigen",
+  "expenseSettlementDeclineAction": "Afwijzen",
+  "expenseSettlementCancelAction": "Verzoek intrekken",
+  "expenseSettlementStatusConfirmed": "Bevestigd",
+  "expenseSettlementStatusDeclined": "Afgewezen",
+  "expenseSettlementResponseFailed": "Vereffening kon niet worden bijgewerkt.",
+  "expenseSettlementCancelFailed": "Vereffening kon niet worden ingetrokken.",
   "@expenseSettlementFailed": {
     "description": "Snackbar when settlement fails"
   },

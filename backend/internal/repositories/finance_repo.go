@@ -303,10 +303,13 @@ func (r *FinanceRepo) CreateSettlement(ctx context.Context, s *models.Settlement
 		return err
 	}
 
+	if s.Status == "" {
+		s.Status = models.SettlementStatusPending
+	}
 	_, err = tx.Exec(ctx, `
-		INSERT INTO settlements (id, group_id, from_user_id, to_user_id, amount, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
-	`, s.ID, s.GroupID, s.FromUserID, s.ToUserID, s.Amount, s.CreatedAt)
+		INSERT INTO settlements (id, group_id, from_user_id, to_user_id, amount, status, created_by, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	`, s.ID, s.GroupID, s.FromUserID, s.ToUserID, s.Amount, s.Status, s.CreatedBy, s.CreatedAt)
 	if err != nil {
 		return err
 	}
@@ -319,7 +322,7 @@ func (r *FinanceRepo) ListSettlementsByGroup(ctx context.Context, groupID uuid.U
 	limit = clampLimit(limit)
 
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, group_id, from_user_id, to_user_id, amount, created_at
+		SELECT id, group_id, from_user_id, to_user_id, amount, status, created_by, responded_at, created_at
 		FROM settlements
 		WHERE group_id = $1
 		ORDER BY created_at DESC
@@ -336,7 +339,7 @@ func (r *FinanceRepo) ListSettlementsByGroup(ctx context.Context, groupID uuid.U
 // ListAllSettlementsByGroup returns every settlement for group-level financial projections.
 func (r *FinanceRepo) ListAllSettlementsByGroup(ctx context.Context, groupID uuid.UUID) ([]models.Settlement, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, group_id, from_user_id, to_user_id, amount, created_at
+		SELECT id, group_id, from_user_id, to_user_id, amount, status, created_by, responded_at, created_at
 		FROM settlements
 		WHERE group_id = $1
 		ORDER BY created_at DESC
@@ -347,6 +350,24 @@ func (r *FinanceRepo) ListAllSettlementsByGroup(ctx context.Context, groupID uui
 	defer rows.Close()
 
 	return pgx.CollectRows(rows, pgx.RowToStructByName[models.Settlement])
+}
+
+// UpdateSettlementStatus transitions a pending settlement to confirmed or
+// declined. Returns pgx.ErrNoRows (wrapped) if the settlement does not exist
+// or is no longer pending, making concurrent responses idempotent-safe.
+func (r *FinanceRepo) UpdateSettlementStatus(ctx context.Context, id uuid.UUID, status models.SettlementStatus, respondedAt time.Time) error {
+	cmd, err := r.pool.Exec(ctx, `
+		UPDATE settlements
+		SET status = $2, responded_at = $3
+		WHERE id = $1 AND status = 'pending'
+	`, id, status, respondedAt)
+	if err != nil {
+		return err
+	}
+	if cmd.RowsAffected() == 0 {
+		return fmt.Errorf("pending settlement not found: %w", pgx.ErrNoRows)
+	}
+	return nil
 }
 
 // DeleteSettlement removes a settlement by ID.
@@ -546,10 +567,10 @@ func (r *FinanceRepo) GetGroupBalanceAggregates(ctx context.Context, groupID uui
 			JOIN expenses e ON e.id = s.expense_id
 			WHERE e.group_id = $1
 			UNION
-			-- Users who appear in settlements (either side)
-			SELECT from_user_id AS user_id FROM settlements WHERE group_id = $1
+			-- Users who appear in confirmed settlements (either side)
+			SELECT from_user_id AS user_id FROM settlements WHERE group_id = $1 AND status = 'confirmed'
 			UNION
-			SELECT to_user_id   AS user_id FROM settlements WHERE group_id = $1
+			SELECT to_user_id   AS user_id FROM settlements WHERE group_id = $1 AND status = 'confirmed'
 		),
 		expense_paid AS (
 			SELECT payer_id AS user_id, COALESCE(SUM(base_amount), 0) AS total
@@ -567,13 +588,13 @@ func (r *FinanceRepo) GetGroupBalanceAggregates(ctx context.Context, groupID uui
 		settled_out AS (
 			SELECT from_user_id AS user_id, COALESCE(SUM(amount), 0) AS total
 			FROM settlements
-			WHERE group_id = $1
+			WHERE group_id = $1 AND status = 'confirmed'
 			GROUP BY from_user_id
 		),
 		settled_in AS (
 			SELECT to_user_id AS user_id, COALESCE(SUM(amount), 0) AS total
 			FROM settlements
-			WHERE group_id = $1
+			WHERE group_id = $1 AND status = 'confirmed'
 			GROUP BY to_user_id
 		)
 		SELECT
@@ -628,12 +649,12 @@ func (r *FinanceRepo) GetSplitByID(ctx context.Context, id uuid.UUID) (*models.S
 // GetSettlementByID retrieves a settlement by its ID.
 func (r *FinanceRepo) GetSettlementByID(ctx context.Context, id uuid.UUID) (*models.Settlement, error) {
 	row := r.pool.QueryRow(ctx, `
-		SELECT id, group_id, from_user_id, to_user_id, amount, created_at
+		SELECT id, group_id, from_user_id, to_user_id, amount, status, created_by, responded_at, created_at
 		FROM settlements
 		WHERE id = $1
 	`, id)
 	var s models.Settlement
-	err := row.Scan(&s.ID, &s.GroupID, &s.FromUserID, &s.ToUserID, &s.Amount, &s.CreatedAt)
+	err := row.Scan(&s.ID, &s.GroupID, &s.FromUserID, &s.ToUserID, &s.Amount, &s.Status, &s.CreatedBy, &s.RespondedAt, &s.CreatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, fmt.Errorf("settlement not found: %w", pgx.ErrNoRows)

@@ -1933,11 +1933,22 @@
   "@expenseDeleteBody": {
     "description": "Dialog body for expense deletion"
   },
-  "expenseSettlementRecorded": "Liquidación registrada",
+  "expenseSettlementRecorded": "Liquidación registrada: esperando confirmación",
   "@expenseSettlementRecorded": {
     "description": "Snackbar when settlement is saved"
   },
   "expenseSettlementFailed": "No se pudo registrar la liquidación.",
+  "expenseSettlementNeedsYou": "Necesita tu confirmación",
+  "expenseSettlementWaiting": "Esperando confirmación",
+  "expenseSettlementHistory": "Liquidaciones recientes",
+  "expenseSettlementRow": "{from} pagó a {to}",
+  "expenseSettlementConfirmAction": "Confirmar",
+  "expenseSettlementDeclineAction": "Rechazar",
+  "expenseSettlementCancelAction": "Cancelar solicitud",
+  "expenseSettlementStatusConfirmed": "Confirmada",
+  "expenseSettlementStatusDeclined": "Rechazada",
+  "expenseSettlementResponseFailed": "No se pudo actualizar la liquidación.",
+  "expenseSettlementCancelFailed": "No se pudo cancelar la liquidación.",
   "@expenseSettlementFailed": {
     "description": "Snackbar when settlement fails"
   },

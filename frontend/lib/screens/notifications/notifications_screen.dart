@@ -278,6 +278,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         }
       case 'recurringExpenses':
         context.pushNamed('recurringExpenses');
+      case 'settlements':
+        // Settlement approvals live in the Settlements tab of the money screen.
+        context.pushNamed('money');
     }
   }
 
