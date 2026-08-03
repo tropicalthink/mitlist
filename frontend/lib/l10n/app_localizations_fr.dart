@@ -1664,11 +1664,49 @@ class AppLocalizationsFr extends AppLocalizations {
       'Cela supprimera définitivement cette dépense et tous les reçus associés. Cette action est irréversible.';
 
   @override
-  String get expenseSettlementRecorded => 'Règlement enregistré';
+  String get expenseSettlementRecorded =>
+      'Règlement enregistré – en attente de confirmation';
 
   @override
   String get expenseSettlementFailed =>
       'Impossible d\'enregistrer le règlement.';
+
+  @override
+  String get expenseSettlementNeedsYou => 'Nécessite ta confirmation';
+
+  @override
+  String get expenseSettlementWaiting => 'En attente de confirmation';
+
+  @override
+  String get expenseSettlementHistory => 'Règlements récents';
+
+  @override
+  String expenseSettlementRow(String from, String to) {
+    return '$from a payé $to';
+  }
+
+  @override
+  String get expenseSettlementConfirmAction => 'Confirmer';
+
+  @override
+  String get expenseSettlementDeclineAction => 'Refuser';
+
+  @override
+  String get expenseSettlementCancelAction => 'Annuler la demande';
+
+  @override
+  String get expenseSettlementStatusConfirmed => 'Confirmé';
+
+  @override
+  String get expenseSettlementStatusDeclined => 'Refusé';
+
+  @override
+  String get expenseSettlementResponseFailed =>
+      'Impossible de mettre à jour le règlement.';
+
+  @override
+  String get expenseSettlementCancelFailed =>
+      'Impossible d\'annuler le règlement.';
 
   @override
   String get expenseSuggestedPaymentsTitle => 'Paiements suggérés';

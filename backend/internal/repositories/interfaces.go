@@ -183,6 +183,7 @@ type FinanceRepoIface interface {
 	CreateSettlement(ctx context.Context, s *models.Settlement) error
 	ListSettlementsByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.Settlement, error)
 	ListAllSettlementsByGroup(ctx context.Context, groupID uuid.UUID) ([]models.Settlement, error)
+	UpdateSettlementStatus(ctx context.Context, id uuid.UUID, status models.SettlementStatus, respondedAt time.Time) error
 	DeleteSettlement(ctx context.Context, id uuid.UUID) error
 	ListSplitsByGroup(ctx context.Context, groupID uuid.UUID) ([]models.Split, error)
 	CreateRecurringExpense(ctx context.Context, re *models.RecurringExpense) error

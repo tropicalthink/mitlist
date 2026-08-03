@@ -233,12 +233,53 @@ class FinanceService {
     }
   }
 
-  Future<void> createSettlement(
-      String expenseId, CreateSettlementRequest req) async {
+  Future<List<Settlement>> listSettlements(String groupId,
+      {int limit = 50, int offset = 0}) async {
+    ensureValidGroupId(groupId);
     try {
-      await _dio.post('/expenses/$expenseId/settle', data: req.toJson());
+      final r = await _dio.get('/finance/settlements', queryParameters: {
+        'group_id': groupId,
+        'limit': limit,
+        'offset': offset,
+      });
+      final data = r.data;
+      if (data is! List) throw ApiException('Unexpected response format');
+      return data
+          .whereType<Map>()
+          .map((e) => Settlement.fromJson(e.cast<String, dynamic>()))
+          .toList();
     } on DioException catch (e) {
-      _logger.e('Create settlement failed: ${e.response?.data}');
+      _logger.e('List settlements failed: ${e.response?.data}');
+      throw apiException(e);
+    }
+  }
+
+  Future<Settlement> confirmSettlement(String settlementId) =>
+      _respondToSettlement(settlementId, 'confirm');
+
+  Future<Settlement> declineSettlement(String settlementId) =>
+      _respondToSettlement(settlementId, 'decline');
+
+  Future<Settlement> _respondToSettlement(
+      String settlementId, String action) async {
+    try {
+      final r = await _dio.post('/finance/settlements/$settlementId/$action');
+      final data = r.data;
+      if (data is! Map) throw ApiException('Unexpected response format');
+      return Settlement.fromJson(data.cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Settlement $action failed: ${e.response?.data}');
+      throw apiException(e);
+    }
+  }
+
+  /// Cancels (deletes) a settlement — the creator's own pending one,
+  /// or any settlement when called by a group admin.
+  Future<void> cancelSettlement(String settlementId) async {
+    try {
+      await _dio.delete('/finance/settlements/$settlementId');
+    } on DioException catch (e) {
+      _logger.e('Cancel settlement failed: ${e.response?.data}');
       throw apiException(e);
     }
   }
@@ -261,29 +302,6 @@ class FinanceService {
       return Settlement.fromJson(data.cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Create group settlement failed: ${e.response?.data}');
-      throw apiException(e);
-    }
-  }
-
-  Future<Settlement> createSettlementReturn(
-      String expenseId, CreateSettlementRequest req) async {
-    try {
-      final r =
-          await _dio.post('/expenses/$expenseId/settle', data: req.toJson());
-      final data = r.data;
-      if (data is! Map) throw ApiException('Unexpected response format');
-      return Settlement.fromJson(data.cast<String, dynamic>());
-    } on DioException catch (e) {
-      _logger.e('Create settlement failed: ${e.response?.data}');
-      throw apiException(e);
-    }
-  }
-
-  Future<void> deleteSettlement(String expenseId, String settlementId) async {
-    try {
-      await _dio.delete('/expenses/$expenseId/settle/$settlementId');
-    } on DioException catch (e) {
-      _logger.e('Delete settlement failed: ${e.response?.data}');
       throw apiException(e);
     }
   }

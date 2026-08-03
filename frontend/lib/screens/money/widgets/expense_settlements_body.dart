@@ -2,6 +2,7 @@ import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
+import '../../../models/finance_models.dart';
 import '../../../theme/spacing.dart';
 import '../../../theme/typography.dart';
 import '../../../widgets/app_button.dart';
@@ -11,26 +12,40 @@ import '../../../widgets/empty_state.dart';
 import '../expense_format.dart';
 import '../expenses_controller.dart';
 
-/// The Settlements tab: suggested payments to close open balances, plus the
-/// full per-member balance breakdown.
+/// The Settlements tab: settlements awaiting the user's confirmation,
+/// suggested payments to close open balances, the user's own pending
+/// settlements, recent history, and the full per-member balance breakdown.
 class ExpenseSettlementsBody extends StatelessWidget {
   final List<SettlementSuggestionDisplay> suggestions;
+  final List<SettlementDisplay> needsMyResponse;
+  final List<SettlementDisplay> awaitingOthers;
+  final List<SettlementDisplay> recentSettlements;
   final List<BalanceDisplayEntry> balances;
   final String currency;
   final bool isSettling;
+  final bool isResponding;
   final ConfettiController confettiController;
   final Future<void> Function() onRefresh;
   final ValueChanged<SettlementSuggestionDisplay> onRecordSettlement;
+  final void Function(SettlementDisplay settlement, bool approve)
+      onRespondSettlement;
+  final ValueChanged<SettlementDisplay> onCancelSettlement;
 
   const ExpenseSettlementsBody({
     super.key,
     required this.suggestions,
+    required this.needsMyResponse,
+    required this.awaitingOthers,
+    required this.recentSettlements,
     required this.balances,
     required this.currency,
     required this.isSettling,
+    required this.isResponding,
     required this.confettiController,
     required this.onRefresh,
     required this.onRecordSettlement,
+    required this.onRespondSettlement,
+    required this.onCancelSettlement,
   });
 
   @override
@@ -45,6 +60,26 @@ class ExpenseSettlementsBody extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (needsMyResponse.isNotEmpty) ...[
+              Text(
+                l10n.expenseSettlementNeedsYou,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: MitlistSpacing.sm),
+              ...needsMyResponse.map(
+                (s) => Padding(
+                  padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+                  child: _PendingApprovalCard(
+                    settlement: s,
+                    currency: currency,
+                    isResponding: isResponding,
+                    onConfirm: () => onRespondSettlement(s, true),
+                    onDecline: () => onRespondSettlement(s, false),
+                  ),
+                ),
+              ),
+              const SizedBox(height: MitlistSpacing.md),
+            ],
             Text(
               l10n.expenseSuggestedPaymentsTitle,
               style: Theme.of(context).textTheme.titleMedium,
@@ -87,6 +122,41 @@ class ExpenseSettlementsBody extends StatelessWidget {
                   ),
                 ],
               ),
+            if (awaitingOthers.isNotEmpty) ...[
+              const SizedBox(height: MitlistSpacing.md),
+              Text(
+                l10n.expenseSettlementWaiting,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: MitlistSpacing.sm),
+              ...awaitingOthers.map(
+                (s) => Padding(
+                  padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+                  child: _WaitingSettlementRow(
+                    settlement: s,
+                    currency: currency,
+                    onCancel: () => onCancelSettlement(s),
+                  ),
+                ),
+              ),
+            ],
+            if (recentSettlements.isNotEmpty) ...[
+              const SizedBox(height: MitlistSpacing.md),
+              Text(
+                l10n.expenseSettlementHistory,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: MitlistSpacing.sm),
+              AppCard(
+                variant: AppCardVariant.outlined,
+                child: Column(
+                  children: [
+                    for (final s in recentSettlements)
+                      _ResolvedSettlementRow(settlement: s, currency: currency),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: MitlistSpacing.md),
             _BalancesSection(balances: balances, currency: currency),
             const SizedBox(height: MitlistSpacing.space12),
@@ -240,6 +310,193 @@ class _SettlementParty extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.titleSmall,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A pending settlement the current user must confirm or decline.
+class _PendingApprovalCard extends StatelessWidget {
+  final SettlementDisplay settlement;
+  final String currency;
+  final bool isResponding;
+  final VoidCallback onConfirm;
+  final VoidCallback onDecline;
+
+  const _PendingApprovalCard({
+    required this.settlement,
+    required this.currency,
+    required this.isResponding,
+    required this.onConfirm,
+    required this.onDecline,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return AppCard(
+      variant: AppCardVariant.elevated,
+      animated: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l10n.expenseSettlementRow(
+                      settlement.fromLabel, settlement.toLabel),
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+              const SizedBox(width: MitlistSpacing.sm),
+              Text(
+                formatExpenseCurrency(settlement.amount, currency: currency),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: MitlistTypography.monoBody(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: MitlistSpacing.md),
+          Row(
+            children: [
+              Expanded(
+                child: AppButton(
+                  variant: AppButtonVariant.outline,
+                  color: AppButtonColor.error,
+                  text: l10n.expenseSettlementDeclineAction,
+                  onPressed: isResponding ? null : onDecline,
+                ),
+              ),
+              const SizedBox(width: MitlistSpacing.sm),
+              Expanded(
+                child: AppButton(
+                  variant: AppButtonVariant.solid,
+                  color: AppButtonColor.success,
+                  text: l10n.expenseSettlementConfirmAction,
+                  isLoading: isResponding,
+                  onPressed: isResponding ? null : onConfirm,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The current user's own pending settlement, cancellable while unanswered.
+class _WaitingSettlementRow extends StatelessWidget {
+  final SettlementDisplay settlement;
+  final String currency;
+  final VoidCallback onCancel;
+
+  const _WaitingSettlementRow({
+    required this.settlement,
+    required this.currency,
+    required this.onCancel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return AppCard(
+      variant: AppCardVariant.outlined,
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.expenseSettlementRow(
+                      settlement.fromLabel, settlement.toLabel),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: MitlistSpacing.xs),
+                Text(
+                  formatExpenseCurrency(settlement.amount, currency: currency),
+                  style: MitlistTypography.monoBody(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: MitlistSpacing.sm),
+          AppButton(
+            variant: AppButtonVariant.ghost,
+            color: AppButtonColor.error,
+            text: l10n.expenseSettlementCancelAction,
+            onPressed: onCancel,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A resolved settlement (confirmed or declined) in the history list.
+class _ResolvedSettlementRow extends StatelessWidget {
+  final SettlementDisplay settlement;
+  final String currency;
+
+  const _ResolvedSettlementRow({
+    required this.settlement,
+    required this.currency,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = settlement.status == SettlementStatus.confirmed;
+    final statusColor = confirmed
+        ? Theme.of(context).colorScheme.tertiary
+        : Theme.of(context).colorScheme.error;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.expenseSettlementRow(
+                      settlement.fromLabel, settlement.toLabel),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                Text(
+                  confirmed
+                      ? l10n.expenseSettlementStatusConfirmed
+                      : l10n.expenseSettlementStatusDeclined,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: statusColor,
+                      ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: MitlistSpacing.md),
+          Text(
+            formatExpenseCurrency(settlement.amount, currency: currency),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: MitlistTypography.monoBody(
+              color: confirmed
+                  ? Theme.of(context).colorScheme.onSurface
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),

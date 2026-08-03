@@ -488,6 +488,7 @@ func (c *Container) FinanceService() *services.FinanceService {
 	c.financeServiceOnce.Do(func() {
 		c.financeService = services.NewFinanceService(c.FinanceRepo(), c.GroupRepo())
 		c.financeService.SetDispatcher(c.NotificationService())
+		c.financeService.SetHub(c.SSEHub())
 	})
 	return c.financeService
 }

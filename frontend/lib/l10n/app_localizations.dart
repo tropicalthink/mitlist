@@ -2919,10 +2919,10 @@ abstract class AppLocalizations {
   /// **'This will permanently delete this expense and all associated receipts. This cannot be undone.'**
   String get expenseDeleteBody;
 
-  /// Snackbar when settlement is saved
+  /// Snackbar when settlement is saved and pending counterparty approval
   ///
   /// In en, this message translates to:
-  /// **'Settlement recorded'**
+  /// **'Settlement recorded — awaiting confirmation'**
   String get expenseSettlementRecorded;
 
   /// Snackbar when settlement fails
@@ -2930,6 +2930,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t record settlement.'**
   String get expenseSettlementFailed;
+
+  /// Section title for settlements awaiting the current user's response
+  ///
+  /// In en, this message translates to:
+  /// **'Needs your confirmation'**
+  String get expenseSettlementNeedsYou;
+
+  /// Section title for the user's own pending settlements
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for confirmation'**
+  String get expenseSettlementWaiting;
+
+  /// Section title for resolved settlements
+  ///
+  /// In en, this message translates to:
+  /// **'Recent settlements'**
+  String get expenseSettlementHistory;
+
+  /// Settlement row label
+  ///
+  /// In en, this message translates to:
+  /// **'{from} paid {to}'**
+  String expenseSettlementRow(String from, String to);
+
+  /// Button to confirm a settlement
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get expenseSettlementConfirmAction;
+
+  /// Button to decline a settlement
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get expenseSettlementDeclineAction;
+
+  /// Button to cancel own pending settlement
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel request'**
+  String get expenseSettlementCancelAction;
+
+  /// Status label: confirmed settlement
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed'**
+  String get expenseSettlementStatusConfirmed;
+
+  /// Status label: declined settlement
+  ///
+  /// In en, this message translates to:
+  /// **'Declined'**
+  String get expenseSettlementStatusDeclined;
+
+  /// Snackbar when confirm/decline fails
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update the settlement.'**
+  String get expenseSettlementResponseFailed;
+
+  /// Snackbar when cancelling a settlement fails
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t cancel the settlement.'**
+  String get expenseSettlementCancelFailed;
 
   /// Section title for suggested settlements
   ///
