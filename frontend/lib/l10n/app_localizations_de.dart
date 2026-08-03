@@ -5025,4 +5025,112 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get accountOcrTrainingClearBody =>
       'Dadurch werden alle gespeicherten Zeilenausschnitte dauerhaft von diesem Gerät entfernt.';
+
+  @override
+  String get billingPremiumTitle => 'mitlist Premium';
+
+  @override
+  String get billingLimitReachedTitle => 'Dieser Haushalt ist voll';
+
+  @override
+  String billingLimitReachedBody(num limit, num next) {
+    return 'Haushalte mit bis zu $limit Personen sind kostenlos. Für ein $next. Mitglied braucht eine Person Premium – und das gilt dann für alle hier.';
+  }
+
+  @override
+  String get billingCoversOneHousehold =>
+      'Premium gilt für einen Haushalt zur Zeit. Du wählst welchen und kannst jederzeit wechseln.';
+
+  @override
+  String billingCoveredBy(String name) {
+    return 'Premium für diesen Haushalt, bezahlt von $name.';
+  }
+
+  @override
+  String get billingPremiumActive => 'Premium ist hier aktiv';
+
+  @override
+  String get billingMoveHereTitle => 'Premium hierher verschieben';
+
+  @override
+  String get billingMoveHereBody =>
+      'Du hast bereits Premium für einen anderen Haushalt. Verschiebe es hierher, statt doppelt zu zahlen – der andere Haushalt behält alle bisherigen Mitglieder, kann aber keine neuen aufnehmen.';
+
+  @override
+  String get billingMoveHereAction => 'Premium hierher verschieben';
+
+  @override
+  String get billingMoved => 'Premium gilt jetzt für diesen Haushalt.';
+
+  @override
+  String get billingMoveFailed =>
+      'Premium konnte nicht verschoben werden. Bitte versuche es erneut.';
+
+  @override
+  String get billingChooseHousehold => 'Wähle deinen Premium-Haushalt';
+
+  @override
+  String get billingMonthly => 'Monatlich';
+
+  @override
+  String get billingYearly => 'Jährlich';
+
+  @override
+  String get billingYearlyBadge => 'Bestes Angebot';
+
+  @override
+  String get billingSubscribe => 'Premium holen';
+
+  @override
+  String get billingOpeningCheckout => 'Kasse wird geöffnet …';
+
+  @override
+  String get billingCheckoutFailed =>
+      'Bezahlvorgang konnte nicht gestartet werden. Bitte versuche es erneut.';
+
+  @override
+  String get billingManage => 'Abo verwalten';
+
+  @override
+  String get billingPortalFailed =>
+      'Das Abo-Portal konnte nicht geöffnet werden.';
+
+  @override
+  String get billingReturnHint =>
+      'Schließe den Vorgang im Browser ab und komm zurück – Premium wird automatisch aktiviert.';
+
+  @override
+  String get billingAccountCardTitle => 'Premium';
+
+  @override
+  String billingAccountCardFree(num limit) {
+    return 'Du nutzt den kostenlosen Tarif. Haushalte mit bis zu $limit Personen sind kostenlos.';
+  }
+
+  @override
+  String billingAccountCardActive(String household) {
+    return 'Premium ist für $household aktiv.';
+  }
+
+  @override
+  String get billingAccountCardUnassigned =>
+      'Premium ist aktiv, aber noch keinem Haushalt zugeordnet.';
+
+  @override
+  String billingRenewsOn(String date) {
+    return 'Verlängert sich am $date';
+  }
+
+  @override
+  String billingEndsOn(String date) {
+    return 'Endet am $date';
+  }
+
+  @override
+  String billingMemberUsage(num count, num limit) {
+    return '$count von $limit kostenlosen Plätzen belegt';
+  }
+
+  @override
+  String get billingUnlimitedMembers => 'Unbegrenzte Mitglieder';
 }

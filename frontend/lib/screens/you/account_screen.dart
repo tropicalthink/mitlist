@@ -25,7 +25,9 @@ import '../../providers/finance_provider.dart';
 import '../../providers/calendar_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../services/scan/ocr_training_data_service.dart';
+import '../../providers/billing_provider.dart';
 import '../../sheets/feedback_sheet.dart';
+import '../../sheets/premium_sheet.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
@@ -671,6 +673,114 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     );
   }
 
+  /// Premium status and its entry points.
+  ///
+  /// Hidden entirely when the server has no payment provider configured — a
+  /// self-hosted instance never shows billing, mirroring the feedback card.
+  Widget _buildPremiumCard() {
+    final l10n = AppLocalizations.of(context)!;
+    final status = ref.watch(billingStatusProvider).valueOrNull;
+    if (status == null || !status.enabled) return const SizedBox.shrink();
+
+    final sub = status.subscription;
+    final theme = Theme.of(context);
+
+    // Name the covered household when we can resolve it; a subscription can
+    // also be live with no household chosen yet.
+    String body;
+    if (sub == null) {
+      body = l10n.billingAccountCardFree(status.freeLimit);
+    } else if (sub.primaryGroupId == null) {
+      body = l10n.billingAccountCardUnassigned;
+    } else {
+      final household = _households
+          .where((h) => h.id == sub.primaryGroupId)
+          .map((h) => h.name)
+          .firstOrNull;
+      body = household == null
+          ? l10n.billingAccountCardUnassigned
+          : l10n.billingAccountCardActive(household);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
+      child: AppCard(
+        variant: AppCardVariant.filled,
+        padding: AppCardPadding.md,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                AppIcon(name: 'star', color: theme.colorScheme.primary),
+                const SizedBox(width: MitlistSpacing.sm),
+                Expanded(
+                  child: Text(
+                    l10n.billingAccountCardTitle,
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: MitlistSpacing.sm),
+            Text(
+              body,
+              style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            if (sub?.currentPeriodEnd != null) ...[
+              const SizedBox(height: MitlistSpacing.xs),
+              Text(
+                sub!.cancelAtPeriodEnd
+                    ? l10n.billingEndsOn(_formatDate(sub.currentPeriodEnd!))
+                    : l10n.billingRenewsOn(_formatDate(sub.currentPeriodEnd!)),
+                style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+              ),
+            ],
+            const SizedBox(height: MitlistSpacing.md),
+            SizedBox(
+              width: double.infinity,
+              child: AppButton(
+                text: sub == null ? l10n.billingSubscribe : l10n.billingManage,
+                variant: AppButtonVariant.solid,
+                color: AppButtonColor.primary,
+                onPressed: sub == null ? _openPremiumSheet : _openBillingPortal,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) =>
+      MaterialLocalizations.of(context).formatMediumDate(date.toLocal());
+
+  /// Opens the premium sheet for the active household. Without one there is
+  /// nothing to make premium, so the sheet is skipped.
+  void _openPremiumSheet() {
+    final groupId = _activeHouseholdId;
+    if (groupId == null) return;
+    showPremiumSheet(context, ref, groupId: groupId);
+  }
+
+  Future<void> _openBillingPortal() async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final service = await ref.read(billingServiceProvider.future);
+      final url = await service.openPortal();
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.billingPortalFailed)),
+      );
+    }
+  }
+
   Widget _buildFeedbackCard() {
     final l10n = AppLocalizations.of(context)!;
     if (!FeedbackConfig.isConfigured) return const SizedBox.shrink();
@@ -1259,6 +1369,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             _buildGuestUpgradeCard(),
             _buildPreferencesCard(),
             const SizedBox(height: MitlistSpacing.md),
+            _buildPremiumCard(),
             _buildFeedbackCard(),
             if (!_isGuest) ...[
               _buildSecurityCard(),

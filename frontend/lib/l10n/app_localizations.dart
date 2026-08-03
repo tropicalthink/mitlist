@@ -8690,6 +8690,180 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This permanently removes every saved line crop from this device.'**
   String get accountOcrTrainingClearBody;
+
+  /// Title of the premium paywall sheet
+  ///
+  /// In en, this message translates to:
+  /// **'mitlist premium'**
+  String get billingPremiumTitle;
+
+  /// Paywall title when a household hit the free member limit
+  ///
+  /// In en, this message translates to:
+  /// **'This household is full'**
+  String get billingLimitReachedTitle;
+
+  /// Paywall explanation of the free member limit
+  ///
+  /// In en, this message translates to:
+  /// **'Households of up to {limit} people are free. To add a {next}th member, one person needs premium — and it covers everyone here.'**
+  String billingLimitReachedBody(num limit, num next);
+
+  /// Explains the single-household (primary) model
+  ///
+  /// In en, this message translates to:
+  /// **'Premium applies to one household at a time. You choose which, and you can move it whenever you like.'**
+  String get billingCoversOneHousehold;
+
+  /// Shown when another member's subscription covers this household
+  ///
+  /// In en, this message translates to:
+  /// **'Premium on this household, paid by {name}.'**
+  String billingCoveredBy(String name);
+
+  /// Status line when the current household is premium
+  ///
+  /// In en, this message translates to:
+  /// **'Premium is active here'**
+  String get billingPremiumActive;
+
+  /// Title of the move-premium action
+  ///
+  /// In en, this message translates to:
+  /// **'Move your premium here'**
+  String get billingMoveHereTitle;
+
+  /// Explains moving premium between households
+  ///
+  /// In en, this message translates to:
+  /// **'You already have premium on another household. Move it here instead of paying twice — the other household keeps everyone it already has, it just can\'t add more.'**
+  String get billingMoveHereBody;
+
+  /// Button that reassigns the subscription to this household
+  ///
+  /// In en, this message translates to:
+  /// **'Move premium here'**
+  String get billingMoveHereAction;
+
+  /// Confirmation after moving premium
+  ///
+  /// In en, this message translates to:
+  /// **'Premium now covers this household.'**
+  String get billingMoved;
+
+  /// Error after a failed premium move
+  ///
+  /// In en, this message translates to:
+  /// **'Could not move your premium. Please try again.'**
+  String get billingMoveFailed;
+
+  /// Prompt when a subscriber has not picked a household yet
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your premium household'**
+  String get billingChooseHousehold;
+
+  /// Monthly billing interval option
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get billingMonthly;
+
+  /// Yearly billing interval option
+  ///
+  /// In en, this message translates to:
+  /// **'Yearly'**
+  String get billingYearly;
+
+  /// Badge highlighting the yearly plan
+  ///
+  /// In en, this message translates to:
+  /// **'Best value'**
+  String get billingYearlyBadge;
+
+  /// Button that starts checkout
+  ///
+  /// In en, this message translates to:
+  /// **'Get premium'**
+  String get billingSubscribe;
+
+  /// Loading label while the checkout URL is fetched
+  ///
+  /// In en, this message translates to:
+  /// **'Opening checkout...'**
+  String get billingOpeningCheckout;
+
+  /// Error when checkout cannot be started
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start checkout. Please try again.'**
+  String get billingCheckoutFailed;
+
+  /// Opens the provider's billing portal
+  ///
+  /// In en, this message translates to:
+  /// **'Manage subscription'**
+  String get billingManage;
+
+  /// Error when the billing portal cannot be opened
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the billing portal.'**
+  String get billingPortalFailed;
+
+  /// Tells the user checkout continues in a browser
+  ///
+  /// In en, this message translates to:
+  /// **'Finish in your browser, then come back — premium activates automatically.'**
+  String get billingReturnHint;
+
+  /// Title of the billing card on the account screen
+  ///
+  /// In en, this message translates to:
+  /// **'Premium'**
+  String get billingAccountCardTitle;
+
+  /// Account card body for a non-subscriber
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re on the free plan. Households of up to {limit} people are free.'**
+  String billingAccountCardFree(num limit);
+
+  /// Account card body naming the covered household
+  ///
+  /// In en, this message translates to:
+  /// **'Premium is active on {household}.'**
+  String billingAccountCardActive(String household);
+
+  /// Account card body when no household is chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Premium is active but not assigned to a household yet.'**
+  String get billingAccountCardUnassigned;
+
+  /// Next renewal date
+  ///
+  /// In en, this message translates to:
+  /// **'Renews {date}'**
+  String billingRenewsOn(String date);
+
+  /// End date for a subscription set to cancel
+  ///
+  /// In en, this message translates to:
+  /// **'Ends {date}'**
+  String billingEndsOn(String date);
+
+  /// Member count against the free limit
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of {limit} free places used'**
+  String billingMemberUsage(num count, num limit);
+
+  /// Member allowance for a premium household
+  ///
+  /// In en, this message translates to:
+  /// **'Unlimited members'**
+  String get billingUnlimitedMembers;
 }
 
 class _AppLocalizationsDelegate
