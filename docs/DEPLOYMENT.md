@@ -36,7 +36,12 @@ DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
 
 The expected pre-release version is `33`, clean. Version 33 is pinwall
 positioning. Migration 34 adds attachment quota accounting; migration 35 adds
-PostgreSQL refresh sessions.
+PostgreSQL refresh sessions; migration 36 adds household premium billing.
+
+Migration 36 only creates new tables (`billing_subscriptions`,
+`billing_webhook_events`) and touches nothing existing, so the currently
+deployed backend keeps running against a database that has it applied. Billing
+stays dormant until `POLAR_ACCESS_TOKEN` is set.
 
 If the database reports `dirty: true`, stop. Take a backup and inspect the
 failed migration before using `force`; never force a production version merely
@@ -49,9 +54,10 @@ DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate up
 DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
 ```
 
-- [ ] The resulting version is `35`, `dirty: false`.
+- [ ] The resulting version is `36`, `dirty: false`.
 - [ ] `groups.storage_used_bytes` and `groups.storage_reserved_bytes` exist.
 - [ ] `auth_sessions` exists.
+- [ ] `billing_subscriptions` and `billing_webhook_events` exist.
 
 ## 3. Cut over the API
 

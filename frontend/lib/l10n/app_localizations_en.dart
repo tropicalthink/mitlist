@@ -4951,4 +4951,111 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get accountOcrTrainingClearBody =>
       'This permanently removes every saved line crop from this device.';
+
+  @override
+  String get billingPremiumTitle => 'mitlist premium';
+
+  @override
+  String get billingLimitReachedTitle => 'This household is full';
+
+  @override
+  String billingLimitReachedBody(num limit, num next) {
+    return 'Households of up to $limit people are free. To add a ${next}th member, one person needs premium — and it covers everyone here.';
+  }
+
+  @override
+  String get billingCoversOneHousehold =>
+      'Premium applies to one household at a time. You choose which, and you can move it whenever you like.';
+
+  @override
+  String billingCoveredBy(String name) {
+    return 'Premium on this household, paid by $name.';
+  }
+
+  @override
+  String get billingPremiumActive => 'Premium is active here';
+
+  @override
+  String get billingMoveHereTitle => 'Move your premium here';
+
+  @override
+  String get billingMoveHereBody =>
+      'You already have premium on another household. Move it here instead of paying twice — the other household keeps everyone it already has, it just can\'t add more.';
+
+  @override
+  String get billingMoveHereAction => 'Move premium here';
+
+  @override
+  String get billingMoved => 'Premium now covers this household.';
+
+  @override
+  String get billingMoveFailed =>
+      'Could not move your premium. Please try again.';
+
+  @override
+  String get billingChooseHousehold => 'Choose your premium household';
+
+  @override
+  String get billingMonthly => 'Monthly';
+
+  @override
+  String get billingYearly => 'Yearly';
+
+  @override
+  String get billingYearlyBadge => 'Best value';
+
+  @override
+  String get billingSubscribe => 'Get premium';
+
+  @override
+  String get billingOpeningCheckout => 'Opening checkout...';
+
+  @override
+  String get billingCheckoutFailed =>
+      'Could not start checkout. Please try again.';
+
+  @override
+  String get billingManage => 'Manage subscription';
+
+  @override
+  String get billingPortalFailed => 'Could not open the billing portal.';
+
+  @override
+  String get billingReturnHint =>
+      'Finish in your browser, then come back — premium activates automatically.';
+
+  @override
+  String get billingAccountCardTitle => 'Premium';
+
+  @override
+  String billingAccountCardFree(num limit) {
+    return 'You\'re on the free plan. Households of up to $limit people are free.';
+  }
+
+  @override
+  String billingAccountCardActive(String household) {
+    return 'Premium is active on $household.';
+  }
+
+  @override
+  String get billingAccountCardUnassigned =>
+      'Premium is active but not assigned to a household yet.';
+
+  @override
+  String billingRenewsOn(String date) {
+    return 'Renews $date';
+  }
+
+  @override
+  String billingEndsOn(String date) {
+    return 'Ends $date';
+  }
+
+  @override
+  String billingMemberUsage(num count, num limit) {
+    return '$count of $limit free places used';
+  }
+
+  @override
+  String get billingUnlimitedMembers => 'Unlimited members';
 }

@@ -5015,4 +5015,112 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get accountOcrTrainingClearBody =>
       'Cette action supprime définitivement toutes les lignes enregistrées sur cet appareil.';
+
+  @override
+  String get billingPremiumTitle => 'mitlist premium';
+
+  @override
+  String get billingLimitReachedTitle => 'Ce foyer est complet';
+
+  @override
+  String billingLimitReachedBody(num limit, num next) {
+    return 'Les foyers jusqu’à $limit personnes sont gratuits. Pour ajouter un ${next}e membre, une personne doit prendre premium — et cela couvre tout le monde ici.';
+  }
+
+  @override
+  String get billingCoversOneHousehold =>
+      'Premium s’applique à un seul foyer à la fois. Vous choisissez lequel et pouvez en changer quand vous voulez.';
+
+  @override
+  String billingCoveredBy(String name) {
+    return 'Premium sur ce foyer, payé par $name.';
+  }
+
+  @override
+  String get billingPremiumActive => 'Premium est actif ici';
+
+  @override
+  String get billingMoveHereTitle => 'Déplacer votre premium ici';
+
+  @override
+  String get billingMoveHereBody =>
+      'Vous avez déjà premium sur un autre foyer. Déplacez-le ici au lieu de payer deux fois : l’autre foyer garde tous ses membres, mais ne pourra plus en ajouter.';
+
+  @override
+  String get billingMoveHereAction => 'Déplacer premium ici';
+
+  @override
+  String get billingMoved => 'Premium couvre maintenant ce foyer.';
+
+  @override
+  String get billingMoveFailed =>
+      'Impossible de déplacer votre premium. Veuillez réessayer.';
+
+  @override
+  String get billingChooseHousehold => 'Choisissez votre foyer premium';
+
+  @override
+  String get billingMonthly => 'Mensuel';
+
+  @override
+  String get billingYearly => 'Annuel';
+
+  @override
+  String get billingYearlyBadge => 'Meilleure offre';
+
+  @override
+  String get billingSubscribe => 'Obtenir premium';
+
+  @override
+  String get billingOpeningCheckout => 'Ouverture du paiement...';
+
+  @override
+  String get billingCheckoutFailed =>
+      'Impossible de démarrer le paiement. Veuillez réessayer.';
+
+  @override
+  String get billingManage => 'Gérer l’abonnement';
+
+  @override
+  String get billingPortalFailed =>
+      'Impossible d’ouvrir le portail de facturation.';
+
+  @override
+  String get billingReturnHint =>
+      'Terminez dans votre navigateur, puis revenez — premium s’active automatiquement.';
+
+  @override
+  String get billingAccountCardTitle => 'Premium';
+
+  @override
+  String billingAccountCardFree(num limit) {
+    return 'Vous êtes sur l’offre gratuite. Les foyers jusqu’à $limit personnes sont gratuits.';
+  }
+
+  @override
+  String billingAccountCardActive(String household) {
+    return 'Premium est actif sur $household.';
+  }
+
+  @override
+  String get billingAccountCardUnassigned =>
+      'Premium est actif mais n’est encore attribué à aucun foyer.';
+
+  @override
+  String billingRenewsOn(String date) {
+    return 'Renouvellement le $date';
+  }
+
+  @override
+  String billingEndsOn(String date) {
+    return 'Se termine le $date';
+  }
+
+  @override
+  String billingMemberUsage(num count, num limit) {
+    return '$count place(s) gratuite(s) sur $limit utilisée(s)';
+  }
+
+  @override
+  String get billingUnlimitedMembers => 'Membres illimités';
 }

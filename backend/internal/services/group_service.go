@@ -17,10 +17,18 @@ import (
 	"github.com/mitlist-app/mitlist/pkg/validation"
 )
 
+// memberGate decides whether a household may grow past the free member limit.
+// Implemented by BillingService; left nil on servers with billing switched off,
+// where every household grows without limit.
+type memberGate interface {
+	EnsureCanAddMember(ctx context.Context, groupID uuid.UUID) error
+}
+
 // GroupService provides business logic for group and membership management.
 type GroupService struct {
 	groupRepo repositories.GroupRepo
 	userRepo  repositories.UserRepo
+	billing   memberGate
 }
 
 // NewGroupService creates a new GroupService.
@@ -29,6 +37,21 @@ func NewGroupService(groupRepo repositories.GroupRepo, userRepo repositories.Use
 		groupRepo: groupRepo,
 		userRepo:  userRepo,
 	}
+}
+
+// SetMemberGate installs the premium gate applied before a household grows.
+// Without it, household size is unlimited — which is what a self-hosted
+// instance with no billing configured should do.
+func (s *GroupService) SetMemberGate(gate memberGate) {
+	s.billing = gate
+}
+
+// ensureCanAddMember applies the premium gate, if one is installed.
+func (s *GroupService) ensureCanAddMember(ctx context.Context, groupID uuid.UUID) error {
+	if s.billing == nil {
+		return nil
+	}
+	return s.billing.EnsureCanAddMember(ctx, groupID)
 }
 
 // CreateGroupInput holds fields for creating a group.
@@ -226,6 +249,10 @@ func (s *GroupService) JoinGroup(ctx context.Context, userID uuid.UUID, code str
 		return nil, &api.ConflictError{Message: "already a member of this group"}
 	}
 
+	if err := s.ensureCanAddMember(ctx, invite.GroupID); err != nil {
+		return nil, err
+	}
+
 	membership := &models.GroupMembership{
 		GroupID: invite.GroupID,
 		UserID:  userID,
@@ -357,6 +384,10 @@ func (s *GroupService) ApproveClaim(ctx context.Context, userID, groupID, claimI
 	existing, _ := s.groupRepo.GetMembership(ctx, groupID, *claim.ClaimedBy)
 	if existing != nil {
 		return s.groupRepo.DeletePendingClaim(ctx, claimID)
+	}
+
+	if err := s.ensureCanAddMember(ctx, groupID); err != nil {
+		return err
 	}
 
 	membership := &models.GroupMembership{
