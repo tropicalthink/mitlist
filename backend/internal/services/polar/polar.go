@@ -148,6 +148,70 @@ func (c *Client) CreateCustomerSession(ctx context.Context, externalCustomerID s
 	return &out, nil
 }
 
+// ProductPrice is one price attached to a product. Polar models several kinds
+// (fixed, free, custom, seat-based); only AmountTypeFixed carries a usable
+// number in PriceAmount.
+type ProductPrice struct {
+	ID         string `json:"id"`
+	AmountType string `json:"amount_type"`
+	// PriceAmount is in minor units (cents), and is meaningless unless
+	// AmountType is AmountTypeFixed.
+	PriceAmount       int     `json:"price_amount"`
+	PriceCurrency     string  `json:"price_currency"`
+	IsArchived        bool    `json:"is_archived"`
+	Type              string  `json:"type"`
+	RecurringInterval *string `json:"recurring_interval"`
+}
+
+// AmountTypeFixed is the only amount type mitlist sells.
+const AmountTypeFixed = "fixed"
+
+// Product is the subset of a Polar product mitlist reads, which is only ever
+// to display what a plan costs before the customer commits.
+type Product struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	IsRecurring bool   `json:"is_recurring"`
+	// RecurringInterval is "month" or "year" for subscription products.
+	RecurringInterval *string        `json:"recurring_interval"`
+	Prices            []ProductPrice `json:"prices"`
+	IsArchived        bool           `json:"is_archived"`
+}
+
+// ListedPrice returns the product's sellable fixed price — the one a customer
+// would actually be charged — or nil when the product has none (archived,
+// free, or priced in a model mitlist does not sell).
+func (p *Product) ListedPrice() *ProductPrice {
+	if p == nil {
+		return nil
+	}
+	for i := range p.Prices {
+		price := &p.Prices[i]
+		if price.IsArchived || price.AmountType != AmountTypeFixed {
+			continue
+		}
+		return price
+	}
+	return nil
+}
+
+// GetProduct fetches one product, used to show the customer what a plan costs
+// before sending them to checkout.
+func (c *Client) GetProduct(ctx context.Context, productID string) (*Product, error) {
+	if !c.Enabled() {
+		return nil, ErrDisabled
+	}
+	if productID == "" {
+		return nil, errors.New("polar: product id is required")
+	}
+
+	var out Product
+	if err := c.do(ctx, http.MethodGet, "/v1/products/"+productID, nil, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 // APIError is a non-2xx response from Polar.
 type APIError struct {
 	StatusCode int

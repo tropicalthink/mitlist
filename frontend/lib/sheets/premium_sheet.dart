@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
@@ -80,6 +81,18 @@ class _PremiumSheetBodyState extends ConsumerState<_PremiumSheetBody> {
         _error = l10n.billingCheckoutFailed;
       });
     }
+  }
+
+  /// Formats a plan for display, in the viewer's locale and the provider's
+  /// currency. Null when no price was reported, which the selector renders as
+  /// a tile with no price rather than a wrong one.
+  String? _priceLabel(BillingPlan? plan) {
+    if (plan == null) return null;
+    final locale = Localizations.localeOf(context).toString();
+    return NumberFormat.simpleCurrency(
+      locale: locale,
+      name: plan.currency,
+    ).format(plan.amountCents / 100);
   }
 
   Future<void> _movePremiumHere() async {
@@ -170,6 +183,10 @@ class _PremiumSheetBodyState extends ConsumerState<_PremiumSheetBody> {
   }
 
   List<Widget> _buildCheckoutBody(AppLocalizations l10n, ThemeData theme) {
+    // Prices come from the provider's catalog via /billing/status. When it is
+    // unreachable the selector simply renders without them.
+    final status = ref.watch(billingStatusProvider).valueOrNull;
+
     return [
       Text(
         l10n.billingCoversOneHousehold,
@@ -180,6 +197,8 @@ class _PremiumSheetBodyState extends ConsumerState<_PremiumSheetBody> {
       _IntervalSelector(
         selected: _interval,
         enabled: !_busy,
+        yearlyPrice: _priceLabel(status?.planFor(BillingInterval.yearly)),
+        monthlyPrice: _priceLabel(status?.planFor(BillingInterval.monthly)),
         onChanged: (value) => setState(() => _interval = value),
       ),
       const SizedBox(height: MitlistSpacing.lg),
@@ -297,21 +316,29 @@ class _IntervalSelector extends StatelessWidget {
     required this.selected,
     required this.enabled,
     required this.onChanged,
+    this.yearlyPrice,
+    this.monthlyPrice,
   });
 
   final BillingInterval selected;
   final bool enabled;
   final ValueChanged<BillingInterval> onChanged;
 
+  /// Preformatted prices, or null when the provider reported none.
+  final String? yearlyPrice;
+  final String? monthlyPrice;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(
           child: _IntervalTile(
             label: l10n.billingYearly,
+            price: yearlyPrice,
             badge: l10n.billingYearlyBadge,
             isSelected: selected == BillingInterval.yearly,
             enabled: enabled,
@@ -322,6 +349,7 @@ class _IntervalSelector extends StatelessWidget {
         Expanded(
           child: _IntervalTile(
             label: l10n.billingMonthly,
+            price: monthlyPrice,
             isSelected: selected == BillingInterval.monthly,
             enabled: enabled,
             onTap: () => onChanged(BillingInterval.monthly),
@@ -338,10 +366,15 @@ class _IntervalTile extends StatelessWidget {
     required this.isSelected,
     required this.enabled,
     required this.onTap,
+    this.price,
     this.badge,
   });
 
   final String label;
+
+  /// Preformatted price. Absent when the provider could not be reached; the
+  /// tile then shows only the interval, never a guessed or stale amount.
+  final String? price;
   final String? badge;
   final bool isSelected;
   final bool enabled;
@@ -374,6 +407,14 @@ class _IntervalTile extends StatelessWidget {
           child: Column(
             children: [
               Text(label, style: theme.textTheme.titleSmall),
+              if (price != null) ...[
+                const SizedBox(height: MitlistSpacing.xs),
+                Text(
+                  price!,
+                  style: theme.textTheme.titleMedium
+                      ?.copyWith(color: scheme.onSurface),
+                ),
+              ],
               if (badge != null) ...[
                 const SizedBox(height: MitlistSpacing.xs),
                 Text(

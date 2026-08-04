@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -44,6 +45,22 @@ type BillingConfig struct {
 	CheckoutSuccessURL string
 }
 
+// Plan is what one of the two premium products costs, read from the payment
+// provider rather than hardcoded so the app can never advertise a price the
+// customer will not actually be charged.
+type Plan struct {
+	Interval    PlanInterval `json:"interval"`
+	ProductID   string       `json:"product_id"`
+	AmountCents int          `json:"amount_cents"`
+	// Currency is upper-case ISO 4217 ("EUR"), normalised for client formatting.
+	Currency string `json:"currency"`
+}
+
+// planCacheTTL is how long product prices are reused before being re-read from
+// the provider. Prices change rarely and /billing/status is called on every app
+// open, so this trades a little staleness for not hitting Polar constantly.
+const planCacheTTL = time.Hour
+
 // BillingService owns premium entitlement: who has paid, which household that
 // covers, and how a household starts paying.
 //
@@ -59,6 +76,10 @@ type BillingService struct {
 	userRepo  repositories.UserRepo
 	client    *polar.Client
 	cfg       BillingConfig
+
+	planMu      sync.RWMutex
+	planCache   []Plan
+	planFetched time.Time
 }
 
 // NewBillingService creates a BillingService. A nil or disabled client leaves
@@ -91,6 +112,64 @@ func (s *BillingService) Enabled() bool {
 // FreeMemberLimit exposes the configured free household size.
 func (s *BillingService) FreeMemberLimit() int {
 	return s.cfg.FreeMemberLimit
+}
+
+// GetPlans returns what each premium interval costs, read from the payment
+// provider's product catalog.
+//
+// Results are cached for planCacheTTL. A provider that is unreachable, or a
+// product that carries no sellable price, yields an empty slice rather than an
+// error: the price is decoration on a paywall that still works without it, and
+// failing the whole status call over it would be worse than showing no price.
+func (s *BillingService) GetPlans(ctx context.Context) []Plan {
+	if !s.Enabled() {
+		return nil
+	}
+
+	s.planMu.RLock()
+	if s.planCache != nil && time.Since(s.planFetched) < planCacheTTL {
+		cached := s.planCache
+		s.planMu.RUnlock()
+		return cached
+	}
+	s.planMu.RUnlock()
+
+	plans := make([]Plan, 0, 2)
+	for _, candidate := range []struct {
+		interval  PlanInterval
+		productID string
+	}{
+		{PlanYearly, s.cfg.ProductIDYearly},
+		{PlanMonthly, s.cfg.ProductIDMonthly},
+	} {
+		if candidate.productID == "" {
+			continue
+		}
+		product, err := s.client.GetProduct(ctx, candidate.productID)
+		if err != nil {
+			continue
+		}
+		price := product.ListedPrice()
+		if price == nil {
+			continue
+		}
+		plans = append(plans, Plan{
+			Interval:    candidate.interval,
+			ProductID:   candidate.productID,
+			AmountCents: price.PriceAmount,
+			Currency:    strings.ToUpper(price.PriceCurrency),
+		})
+	}
+
+	// Only cache a complete-looking answer. Caching an empty result would hide
+	// prices for a full hour after one transient provider failure.
+	if len(plans) > 0 {
+		s.planMu.Lock()
+		s.planCache = plans
+		s.planFetched = time.Now()
+		s.planMu.Unlock()
+	}
+	return plans
 }
 
 // GetHouseholdEntitlement reports whether a household is premium and whether it
