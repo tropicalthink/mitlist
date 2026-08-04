@@ -34,8 +34,12 @@ func (h *BillingHandler) RegisterRoutes(r chi.Router) {
 type billingStatusResponse struct {
 	// Enabled is false on servers with no payment provider configured — a
 	// self-hosted instance, typically. Clients should hide billing UI entirely.
-	Enabled      bool                        `json:"enabled"`
-	FreeLimit    int                         `json:"free_limit"`
+	Enabled   bool `json:"enabled"`
+	FreeLimit int  `json:"free_limit"`
+	// Plans is what each interval costs, read live from the payment provider so
+	// the client never advertises a stale price. Empty when the provider could
+	// not be reached — the paywall still works, it just shows no price.
+	Plans        []services.Plan             `json:"plans"`
 	Subscription *models.BillingSubscription `json:"subscription,omitempty"`
 }
 
@@ -55,6 +59,7 @@ func (h *BillingHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
 	api.RespondJSON(w, http.StatusOK, billingStatusResponse{
 		Enabled:      h.svc.Enabled(),
 		FreeLimit:    h.svc.FreeMemberLimit(),
+		Plans:        h.svc.GetPlans(r.Context()),
 		Subscription: sub,
 	})
 }

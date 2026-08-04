@@ -5,6 +5,8 @@
 /// move it to another household they belong to at any time.
 library;
 
+import 'package:collection/collection.dart';
+
 /// A premium subscription held by the signed-in user.
 class BillingSubscription {
   final String id;
@@ -57,6 +59,39 @@ class BillingSubscription {
   bool coversGroup(String groupId) => primaryGroupId == groupId;
 }
 
+/// What one premium interval costs.
+///
+/// Read live from the payment provider rather than hardcoded, so the app can
+/// never advertise a price the customer will not actually be charged.
+class BillingPlan {
+  final BillingInterval interval;
+  final int amountCents;
+
+  /// Upper-case ISO 4217 code, e.g. 'EUR'.
+  final String currency;
+
+  const BillingPlan({
+    required this.interval,
+    required this.amountCents,
+    required this.currency,
+  });
+
+  /// Returns null for an interval the backend did not report, which happens
+  /// when the provider was unreachable or the product has no sellable price.
+  static BillingPlan? fromJson(Map<String, dynamic> json) {
+    final wire = json['interval'] as String?;
+    final interval = BillingInterval.values
+        .where((i) => i.wire == wire)
+        .firstOrNull;
+    if (interval == null) return null;
+    return BillingPlan(
+      interval: interval,
+      amountCents: json['amount_cents'] as int? ?? 0,
+      currency: (json['currency'] as String? ?? 'EUR').toUpperCase(),
+    );
+  }
+}
+
 /// The caller's own billing position, independent of any household.
 class BillingStatus {
   /// False on servers with no payment provider configured — a self-hosted
@@ -66,12 +101,17 @@ class BillingStatus {
   /// Largest household size that stays free.
   final int freeLimit;
 
+  /// What each interval costs. Empty when the payment provider could not be
+  /// reached — the paywall still works, it just shows no price.
+  final List<BillingPlan> plans;
+
   /// The caller's live subscription, or null when they hold none.
   final BillingSubscription? subscription;
 
   const BillingStatus({
     required this.enabled,
     required this.freeLimit,
+    this.plans = const [],
     this.subscription,
   });
 
@@ -81,9 +121,17 @@ class BillingStatus {
 
   factory BillingStatus.fromJson(Map<String, dynamic> json) {
     final sub = json['subscription'];
+    final rawPlans = json['plans'];
     return BillingStatus(
       enabled: json['enabled'] as bool? ?? false,
       freeLimit: json['free_limit'] as int? ?? 0,
+      plans: rawPlans is List
+          ? rawPlans
+              .whereType<Map<String, dynamic>>()
+              .map(BillingPlan.fromJson)
+              .whereType<BillingPlan>()
+              .toList()
+          : const [],
       subscription: sub is Map<String, dynamic>
           ? BillingSubscription.fromJson(sub)
           : null,
@@ -91,6 +139,10 @@ class BillingStatus {
   }
 
   bool get isSubscribed => subscription != null;
+
+  /// The plan for [interval], or null when the provider reported none.
+  BillingPlan? planFor(BillingInterval interval) =>
+      plans.where((p) => p.interval == interval).firstOrNull;
 }
 
 /// One household's premium position — what the paywall is rendered from.
