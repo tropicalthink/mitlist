@@ -56,10 +56,11 @@ DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate up
 DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
 ```
 
-- [ ] The resulting version is `36`, `dirty: false`.
+- [ ] The resulting version is `38`, `dirty: false`.
 - [ ] `groups.storage_used_bytes` and `groups.storage_reserved_bytes` exist.
 - [ ] `auth_sessions` exists.
 - [ ] `billing_subscriptions` and `billing_webhook_events` exist.
+- [ ] `billing_subscriptions.primary_group_id` exists and is nullable.
 
 ## 3. Cut over the API
 
@@ -68,7 +69,7 @@ DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
       runtime configuration. They are no longer read.
 - [ ] Start one API replica first.
 - [ ] Confirm startup logs show a successful database connection and migration
-      version 35, with no panic or repeated connection retries.
+      version 38, with no panic or repeated connection retries.
 - [ ] Keep coarse IP abuse protection enabled at the edge. Fine-grained API
       rate-limit buckets are process-local, so replicas do not share them.
 
