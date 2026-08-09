@@ -4400,6 +4400,16 @@
   "@authOnboardingHaveCode": {
     "description": "Invite code prompt"
   },
+  "welcomePillarsSemantic": "Listes, argent, tâches et cuisine partagés. Tout au même endroit.",
+  "authOnboardingNameTitle": "Donne un nom à ton foyer",
+  "authOnboardingNameBody": "Écris-le sur la note. Tu pourras le changer plus tard.",
+  "authOnboardingPinIt": "Épingle-le au tableau",
+  "authOnboardingInviteTitle": "Fais venir tes colocs",
+  "authOnboardingInviteBody": "Partage ce code. Qui le saisit rejoint ton foyer.",
+  "authOnboardingGoToBoard": "Aller à ton tableau",
+  "hubChecklistTitle": "Mets la maison en route",
+  "hubChecklistDone": "Fait",
+  "hubChecklistProgress": "{done} sur {total} faits",
   "authOnboardingHomeIconSemantic": "Icône d'accueil du foyer",
   "@authOnboardingHomeIconSemantic": {
     "description": "Semantic label for home icon"

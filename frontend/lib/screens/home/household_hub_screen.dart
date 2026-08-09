@@ -28,8 +28,10 @@ import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_icon.dart';
+import '../../providers/onboarding_provider.dart';
 import '../../widgets/hub/activity_wall.dart';
 import '../../widgets/hub/hub_skeleton.dart';
+import '../../widgets/hub/onboarding_card.dart';
 import '../../widgets/hub/pinwall_section.dart';
 import '../../widgets/hub/quick_add_sheet.dart';
 import '../../providers/meal_plan_provider.dart';
@@ -398,7 +400,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                       label: AppLocalizations.of(context)!
                           .hubSwitchToHousehold(h.name),
                       child: Padding(
-                        padding: const EdgeInsets.only(bottom: MitlistSpacing.xs),
+                        padding:
+                            const EdgeInsets.only(bottom: MitlistSpacing.xs),
                         child: Material(
                           color: isActive
                               ? cs.surfaceContainerHighest
@@ -799,6 +802,18 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                                     const EdgeInsets.all(MitlistSpacing.md),
                                 sliver: SliverList(
                                   delegate: SliverChildListDelegate([
+                                    if (!(ref
+                                            .watch(
+                                                hubQuickStartDismissedProvider)
+                                            .valueOrNull ??
+                                        true)) ...[
+                                      HubQuickStart(
+                                        groupId: _resolvedGroupId!,
+                                        onDismiss: () => ref.invalidate(
+                                            hubQuickStartDismissedProvider),
+                                      ),
+                                      const SizedBox(height: MitlistSpacing.lg),
+                                    ],
                                     PinwallSection(
                                         groupId: _resolvedGroupId!, me: _me),
                                     const SizedBox(height: MitlistSpacing.lg),

@@ -3999,6 +3999,41 @@ class AppLocalizationsNl extends AppLocalizations {
   String get authOnboardingHomeIconSemantic => 'Huishouden-startpictogram';
 
   @override
+  String get welcomePillarsSemantic =>
+      'Gedeelde lijsten, geld, klusjes en keuken. Alles op één plek.';
+
+  @override
+  String get authOnboardingNameTitle => 'Geef je huishouden een naam';
+
+  @override
+  String get authOnboardingNameBody =>
+      'Schrijf hem op het briefje. Je kunt hem later aanpassen.';
+
+  @override
+  String get authOnboardingPinIt => 'Prik hem op het prikbord';
+
+  @override
+  String get authOnboardingInviteTitle => 'Haal je huisgenoten erbij';
+
+  @override
+  String get authOnboardingInviteBody =>
+      'Deel deze code. Wie hem invoert, komt bij je huishouden.';
+
+  @override
+  String get authOnboardingGoToBoard => 'Naar je prikbord';
+
+  @override
+  String get hubChecklistTitle => 'Breng het huis op gang';
+
+  @override
+  String get hubChecklistDone => 'Klaar';
+
+  @override
+  String hubChecklistProgress(int done, int total) {
+    return '$done van $total klaar';
+  }
+
+  @override
   String get hubStatsChores => 'Klussen';
 
   @override

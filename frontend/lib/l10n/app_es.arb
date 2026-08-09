@@ -4401,6 +4401,16 @@
     "description": "Invite code prompt"
   },
   "authOnboardingHomeIconSemantic": "Icono de inicio del hogar",
+  "welcomePillarsSemantic": "Listas, dinero, tareas y cocina compartidos. Todo en un solo lugar.",
+  "authOnboardingNameTitle": "Ponle nombre a tu hogar",
+  "authOnboardingNameBody": "Escríbelo en la nota. Puedes cambiarlo más tarde.",
+  "authOnboardingPinIt": "Fíjalo en el tablero",
+  "authOnboardingInviteTitle": "Trae a tus compañeros",
+  "authOnboardingInviteBody": "Comparte este código. Quien lo introduzca se unirá a tu hogar.",
+  "authOnboardingGoToBoard": "Ir a tu tablero",
+  "hubChecklistTitle": "Pon la casa en marcha",
+  "hubChecklistDone": "Hecho",
+  "hubChecklistProgress": "{done} de {total} hechos",
   "@authOnboardingHomeIconSemantic": {
     "description": "Semantic label for home icon"
   },

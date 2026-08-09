@@ -3967,6 +3967,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authOnboardingHomeIconSemantic => 'Household home icon';
 
   @override
+  String get welcomePillarsSemantic =>
+      'Shared lists, money, chores, and kitchen. All in one place.';
+
+  @override
+  String get authOnboardingNameTitle => 'Name your household';
+
+  @override
+  String get authOnboardingNameBody =>
+      'Write it on the note. You can change it later.';
+
+  @override
+  String get authOnboardingPinIt => 'Pin it to the board';
+
+  @override
+  String get authOnboardingInviteTitle => 'Bring in your flatmates';
+
+  @override
+  String get authOnboardingInviteBody =>
+      'Share this code. Anyone who enters it joins your household.';
+
+  @override
+  String get authOnboardingGoToBoard => 'Go to your board';
+
+  @override
+  String get hubChecklistTitle => 'Get the house going';
+
+  @override
+  String get hubChecklistDone => 'Done';
+
+  @override
+  String hubChecklistProgress(int done, int total) {
+    return '$done of $total done';
+  }
+
+  @override
   String get hubStatsChores => 'Chores';
 
   @override

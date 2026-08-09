@@ -4026,6 +4026,41 @@ class AppLocalizationsDe extends AppLocalizations {
   String get authOnboardingHomeIconSemantic => 'Haushaltssymbol';
 
   @override
+  String get welcomePillarsSemantic =>
+      'Geteilte Listen, Geld, Aufgaben und Küche. Alles an einem Ort.';
+
+  @override
+  String get authOnboardingNameTitle => 'Gib deinem Haushalt einen Namen';
+
+  @override
+  String get authOnboardingNameBody =>
+      'Schreib ihn auf den Zettel. Du kannst ihn später ändern.';
+
+  @override
+  String get authOnboardingPinIt => 'An die Pinnwand heften';
+
+  @override
+  String get authOnboardingInviteTitle => 'Hol deine Mitbewohner dazu';
+
+  @override
+  String get authOnboardingInviteBody =>
+      'Teile diesen Code. Wer ihn eingibt, tritt deinem Haushalt bei.';
+
+  @override
+  String get authOnboardingGoToBoard => 'Zu deiner Pinnwand';
+
+  @override
+  String get hubChecklistTitle => 'So kommt der Haushalt in Gang';
+
+  @override
+  String get hubChecklistDone => 'Erledigt';
+
+  @override
+  String hubChecklistProgress(int done, int total) {
+    return '$done von $total erledigt';
+  }
+
+  @override
   String get hubStatsChores => 'Aufgaben';
 
   @override

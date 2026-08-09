@@ -9,6 +9,7 @@ import 'providers/group_provider.dart' show cachedGroupsProvider;
 import 'widgets/app_icon.dart';
 import 'providers/nav_badge_provider.dart';
 import 'providers/grocery_provider.dart' show groceryGraphSyncProvider;
+import 'theme/animations.dart';
 import 'utils/active_group_context.dart';
 import 'utils/route_history.dart';
 import 'utils/shell_tab_load.dart';
@@ -118,6 +119,26 @@ Future<void> _reconcileActiveGroupAfterAuth(Ref ref) async {
   } catch (_) {}
 }
 
+/// Auth flow pages crossfade instead of sliding: every one of them paints the
+/// same deterministic cork board, so a fade reads as papers changing on a wall
+/// that never moves — the whole first run happens on one continuous surface.
+CustomTransitionPage<void> _boardPage(GoRouterState state, Widget child) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: MitlistAnimations.page,
+    reverseTransitionDuration: MitlistAnimations.page,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      if (MediaQuery.of(context).disableAnimations) return child;
+      return FadeTransition(
+        opacity:
+            CurveTween(curve: MitlistAnimations.easeEnter).animate(animation),
+        child: child,
+      );
+    },
+  );
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   ref.watch(authBootstrapListenerProvider);
   ref.listen<bool>(authStateProvider, (previous, next) {
@@ -161,22 +182,25 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/welcome',
         name: 'welcome',
-        builder: (context, state) => const WelcomeScreen(),
+        pageBuilder: (context, state) =>
+            _boardPage(state, const WelcomeScreen()),
       ),
       GoRoute(
         path: '/login',
         name: 'login',
-        builder: (context, state) => const LoginScreen(),
+        pageBuilder: (context, state) => _boardPage(state, const LoginScreen()),
       ),
       GoRoute(
         path: '/signup',
         name: 'signup',
-        builder: (context, state) => const SignupScreen(),
+        pageBuilder: (context, state) =>
+            _boardPage(state, const SignupScreen()),
       ),
       GoRoute(
         path: '/onboarding',
         name: 'onboarding',
-        builder: (context, state) => const OnboardingScreen(),
+        pageBuilder: (context, state) =>
+            _boardPage(state, const OnboardingScreen()),
       ),
       GoRoute(
         path: '/auth/callback',
