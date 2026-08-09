@@ -18,7 +18,7 @@ follow [Semantic Versioning](https://semver.org/).
 - Multi-household support; users may belong to multiple households
 - Multi-currency support with unified currency formatting
 - Grocery intelligence pipeline: on-device OCR ensemble + household-specific item prior
-- Five languages (i18n): English, German, French, Spanish, Arabic
+- Five languages (i18n): English, German, French, Spanish, Dutch
 - Backend crash reporting via Sentry/GlitchTip (opt-in, env-driven)
 - Frontend crash reporting via sentry_flutter (opt-in)
 

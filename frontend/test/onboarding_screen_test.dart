@@ -8,7 +8,43 @@ import 'package:mitlist/l10n/app_localizations.dart';
 import 'package:mitlist/models/group_models.dart';
 import 'package:mitlist/providers/group_provider.dart';
 import 'package:mitlist/screens/auth/onboarding_screen.dart';
+import 'package:mitlist/services/group_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+class _FakeGroupService implements GroupService {
+  Group? created;
+
+  @override
+  Future<Group> createGroup(CreateGroupRequest request) async {
+    created = Group(
+      id: '33333333-3333-3333-3333-333333333333',
+      name: request.name,
+      isPersonal: false,
+      memberCount: 1,
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
+    );
+    return created!;
+  }
+
+  @override
+  Future<GroupInvite> inviteMember(
+    String groupId,
+    InviteMemberRequest request,
+  ) async {
+    return GroupInvite(
+      id: 'invite-1',
+      groupId: groupId,
+      code: 'SUNNY-TACO',
+      expiresAt: DateTime.utc(2027, 1, 1),
+      usedBy: null,
+      usedAt: null,
+    );
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -92,6 +128,47 @@ void main() {
 
       expect(find.text('HOME_MARKER'), findsOneWidget);
       expect(find.text('Create a household'), findsNothing);
+    });
+
+    testWidgets('create flow stays on the board: name stage, then invite slip',
+        (tester) async {
+      final service = _FakeGroupService();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            cachedGroupsProvider.overrideWith((ref) async => const []),
+            groupServiceProviderAsync.overrideWith((ref) async => service),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const OnboardingScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Beat 1 → tapping the sticky note opens the inline name stage,
+      // not a bottom sheet.
+      await tester.tap(find.text('Create a household'));
+      await tester.pumpAndSettle();
+      expect(find.text('Name your household'), findsOneWidget);
+      expect(find.text('HOUSEHOLD NAME'), findsOneWidget);
+      expect(find.text('PIN IT TO THE BOARD'), findsOneWidget);
+
+      // Beat 2 → writing the name on the note and pinning it creates the
+      // household and tears off the invite slip.
+      await tester.enterText(find.byType(TextField).first, 'Flat 4B');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('PIN IT TO THE BOARD'));
+      await tester.pumpAndSettle();
+
+      expect(service.created?.name, 'Flat 4B');
+      expect(find.text('Bring in your flatmates'), findsOneWidget);
+      expect(find.text('SUNNY'), findsOneWidget);
+      expect(find.text('TACO'), findsOneWidget);
+      expect(find.text('GO TO YOUR BOARD'), findsOneWidget);
     });
   });
 }

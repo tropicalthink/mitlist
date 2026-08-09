@@ -4012,6 +4012,41 @@ class AppLocalizationsFr extends AppLocalizations {
   String get authOnboardingHomeIconSemantic => 'Icône d\'accueil du foyer';
 
   @override
+  String get welcomePillarsSemantic =>
+      'Listes, argent, tâches et cuisine partagés. Tout au même endroit.';
+
+  @override
+  String get authOnboardingNameTitle => 'Donne un nom à ton foyer';
+
+  @override
+  String get authOnboardingNameBody =>
+      'Écris-le sur la note. Tu pourras le changer plus tard.';
+
+  @override
+  String get authOnboardingPinIt => 'Épingle-le au tableau';
+
+  @override
+  String get authOnboardingInviteTitle => 'Fais venir tes colocs';
+
+  @override
+  String get authOnboardingInviteBody =>
+      'Partage ce code. Qui le saisit rejoint ton foyer.';
+
+  @override
+  String get authOnboardingGoToBoard => 'Aller à ton tableau';
+
+  @override
+  String get hubChecklistTitle => 'Mets la maison en route';
+
+  @override
+  String get hubChecklistDone => 'Fait';
+
+  @override
+  String hubChecklistProgress(int done, int total) {
+    return '$done sur $total faits';
+  }
+
+  @override
   String get hubStatsChores => 'Tâches';
 
   @override

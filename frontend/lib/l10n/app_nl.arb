@@ -4401,6 +4401,16 @@
     "description": "Invite code prompt"
   },
   "authOnboardingHomeIconSemantic": "Huishouden-startpictogram",
+  "welcomePillarsSemantic": "Gedeelde lijsten, geld, klusjes en keuken. Alles op één plek.",
+  "authOnboardingNameTitle": "Geef je huishouden een naam",
+  "authOnboardingNameBody": "Schrijf hem op het briefje. Je kunt hem later aanpassen.",
+  "authOnboardingPinIt": "Prik hem op het prikbord",
+  "authOnboardingInviteTitle": "Haal je huisgenoten erbij",
+  "authOnboardingInviteBody": "Deel deze code. Wie hem invoert, komt bij je huishouden.",
+  "authOnboardingGoToBoard": "Naar je prikbord",
+  "hubChecklistTitle": "Breng het huis op gang",
+  "hubChecklistDone": "Klaar",
+  "hubChecklistProgress": "{done} van {total} klaar",
   "@authOnboardingHomeIconSemantic": {
     "description": "Semantic label for home icon"
   },

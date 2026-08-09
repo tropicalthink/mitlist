@@ -7023,6 +7023,66 @@ abstract class AppLocalizations {
   /// **'Household home icon'**
   String get authOnboardingHomeIconSemantic;
 
+  /// Semantic label for the welcome screen collage of pillar scraps
+  ///
+  /// In en, this message translates to:
+  /// **'Shared lists, money, chores, and kitchen. All in one place.'**
+  String get welcomePillarsSemantic;
+
+  /// Inline create stage title on the sticky note
+  ///
+  /// In en, this message translates to:
+  /// **'Name your household'**
+  String get authOnboardingNameTitle;
+
+  /// Inline create stage helper text
+  ///
+  /// In en, this message translates to:
+  /// **'Write it on the note. You can change it later.'**
+  String get authOnboardingNameBody;
+
+  /// Create household submit button on the sticky note
+  ///
+  /// In en, this message translates to:
+  /// **'Pin it to the board'**
+  String get authOnboardingPinIt;
+
+  /// Invite stage title on the torn slip
+  ///
+  /// In en, this message translates to:
+  /// **'Bring in your flatmates'**
+  String get authOnboardingInviteTitle;
+
+  /// Invite stage body on the torn slip
+  ///
+  /// In en, this message translates to:
+  /// **'Share this code. Anyone who enters it joins your household.'**
+  String get authOnboardingInviteBody;
+
+  /// CTA leaving onboarding for the hub
+  ///
+  /// In en, this message translates to:
+  /// **'Go to your board'**
+  String get authOnboardingGoToBoard;
+
+  /// Hub first-run checklist heading
+  ///
+  /// In en, this message translates to:
+  /// **'Get the house going'**
+  String get hubChecklistTitle;
+
+  /// Stamp on completed checklist notes
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get hubChecklistDone;
+
+  /// Checklist progress summary
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} done'**
+  String hubChecklistProgress(int done, int total);
+
   /// Stats grid: chores label
   ///
   /// In en, this message translates to:
