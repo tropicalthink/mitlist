@@ -5070,4 +5070,112 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get accountOcrTrainingClearBody =>
       'Hiermee worden alle opgeslagen regeluitsneden permanent van dit apparaat verwijderd.';
+
+  @override
+  String get billingPremiumTitle => 'mitlist premium';
+
+  @override
+  String get billingLimitReachedTitle => 'Dit huishouden is vol';
+
+  @override
+  String billingLimitReachedBody(num limit, num next) {
+    return 'Huishoudens tot $limit personen zijn gratis. Om een ${next}e lid toe te voegen heeft één persoon premium nodig — en dat geldt voor iedereen hier.';
+  }
+
+  @override
+  String get billingCoversOneHousehold =>
+      'Premium geldt voor één huishouden tegelijk. Jij kiest welke en kunt altijd wisselen.';
+
+  @override
+  String billingCoveredBy(String name) {
+    return 'Premium op dit huishouden, betaald door $name.';
+  }
+
+  @override
+  String get billingPremiumActive => 'Premium is hier actief';
+
+  @override
+  String get billingMoveHereTitle => 'Verplaats je premium hierheen';
+
+  @override
+  String get billingMoveHereBody =>
+      'Je hebt al premium op een ander huishouden. Verplaats het hierheen in plaats van dubbel te betalen — het andere huishouden houdt iedereen die er al is, maar kan er niemand meer bij nemen.';
+
+  @override
+  String get billingMoveHereAction => 'Premium hierheen verplaatsen';
+
+  @override
+  String get billingMoved => 'Premium geldt nu voor dit huishouden.';
+
+  @override
+  String get billingMoveFailed =>
+      'Je premium kon niet worden verplaatst. Probeer het opnieuw.';
+
+  @override
+  String get billingChooseHousehold => 'Kies je premium-huishouden';
+
+  @override
+  String get billingMonthly => 'Maandelijks';
+
+  @override
+  String get billingYearly => 'Jaarlijks';
+
+  @override
+  String get billingYearlyBadge => 'Beste prijs';
+
+  @override
+  String get billingSubscribe => 'Premium nemen';
+
+  @override
+  String get billingOpeningCheckout => 'Afrekenen wordt geopend...';
+
+  @override
+  String get billingCheckoutFailed =>
+      'Afrekenen kon niet worden gestart. Probeer het opnieuw.';
+
+  @override
+  String get billingManage => 'Abonnement beheren';
+
+  @override
+  String get billingPortalFailed =>
+      'Het facturatieportaal kon niet worden geopend.';
+
+  @override
+  String get billingReturnHint =>
+      'Rond het af in je browser en kom terug — premium wordt automatisch geactiveerd.';
+
+  @override
+  String get billingAccountCardTitle => 'Premium';
+
+  @override
+  String billingAccountCardFree(num limit) {
+    return 'Je gebruikt het gratis abonnement. Huishoudens tot $limit personen zijn gratis.';
+  }
+
+  @override
+  String billingAccountCardActive(String household) {
+    return 'Premium is actief op $household.';
+  }
+
+  @override
+  String get billingAccountCardUnassigned =>
+      'Premium is actief maar nog niet aan een huishouden toegewezen.';
+
+  @override
+  String billingRenewsOn(String date) {
+    return 'Verlengt op $date';
+  }
+
+  @override
+  String billingEndsOn(String date) {
+    return 'Eindigt op $date';
+  }
+
+  @override
+  String billingMemberUsage(num count, num limit) {
+    return '$count van $limit gratis plekken gebruikt';
+  }
+
+  @override
+  String get billingUnlimitedMembers => 'Onbeperkt aantal leden';
 }

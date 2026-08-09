@@ -43,6 +43,8 @@ func TestLogIntegrationStatus(t *testing.T) {
 			GoogleClientID:         "google-client-id.apps.googleusercontent.com",
 			SentryDSN:              "https://abc@o123.ingest.sentry.io/456",
 			FxRateAPIURL:           "https://api.frankfurter.dev",
+			PolarAccessToken:       "polar_at_test",
+			PolarWebhookSecret:     "whsec_test",
 		}
 		out := captureLog(cfg.LogIntegrationStatus)
 		if !strings.Contains(out, `"email":true`) {

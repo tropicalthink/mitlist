@@ -36,7 +36,14 @@ DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
 
 The expected pre-release version is `33`, clean. Version 33 is pinwall
 positioning. Migration 34 adds attachment quota accounting; migration 35 adds
-PostgreSQL refresh sessions.
+PostgreSQL refresh sessions; migration 36 adds settlement approval; migrations
+37 and 38 add household premium billing.
+
+Migration 37 only creates new tables (`billing_subscriptions`,
+`billing_webhook_events`) and touches nothing existing, and migration 38 only
+adds a nullable `primary_group_id` column to the first of those, so the
+currently deployed backend keeps running against a database that has them
+applied. Billing stays dormant until `POLAR_ACCESS_TOKEN` is set.
 
 If the database reports `dirty: true`, stop. Take a backup and inspect the
 failed migration before using `force`; never force a production version merely
@@ -49,9 +56,11 @@ DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate up
 DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
 ```
 
-- [ ] The resulting version is `35`, `dirty: false`.
+- [ ] The resulting version is `38`, `dirty: false`.
 - [ ] `groups.storage_used_bytes` and `groups.storage_reserved_bytes` exist.
 - [ ] `auth_sessions` exists.
+- [ ] `billing_subscriptions` and `billing_webhook_events` exist.
+- [ ] `billing_subscriptions.primary_group_id` exists and is nullable.
 
 ## 3. Cut over the API
 
@@ -60,7 +69,7 @@ DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
       runtime configuration. They are no longer read.
 - [ ] Start one API replica first.
 - [ ] Confirm startup logs show a successful database connection and migration
-      version 35, with no panic or repeated connection retries.
+      version 38, with no panic or repeated connection retries.
 - [ ] Keep coarse IP abuse protection enabled at the edge. Fine-grained API
       rate-limit buckets are process-local, so replicas do not share them.
 

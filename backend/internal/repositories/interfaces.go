@@ -36,6 +36,19 @@ type AuthRepo interface {
 	DeleteDeviceToken(ctx context.Context, userID, id uuid.UUID) error
 }
 
+// BillingRepo is the interface for premium subscription operations.
+type BillingRepo interface {
+	UpsertSubscription(ctx context.Context, s *models.BillingSubscription) (*models.BillingSubscription, error)
+	GetSubscriptionByProviderID(ctx context.Context, provider, providerSubscriptionID string) (*models.BillingSubscription, error)
+	ListSubscriptionsByUser(ctx context.Context, userID uuid.UUID) ([]models.BillingSubscription, error)
+	GetLiveSubscriptionForUser(ctx context.Context, userID uuid.UUID) (*models.BillingSubscription, error)
+	SetPrimaryGroupForUser(ctx context.Context, userID, groupID uuid.UUID) (*models.BillingSubscription, error)
+	GetGroupCoverage(ctx context.Context, groupID uuid.UUID) (bool, *string, error)
+	CountGroupMembers(ctx context.Context, groupID uuid.UUID) (int, error)
+	MarkWebhookEventProcessed(ctx context.Context, id, provider, eventType string) (bool, error)
+	DeleteWebhookEventsBefore(ctx context.Context, cutoff time.Time) (int64, error)
+}
+
 // GroupRepo is the interface for group repository operations.
 type GroupRepo interface {
 	WithTx(ctx context.Context, fn func(txRepo GroupRepo) error) error
