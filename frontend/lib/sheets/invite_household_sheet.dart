@@ -18,6 +18,7 @@ import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/app_icon.dart';
+import '../widgets/premium_banner.dart';
 
 class InviteHouseholdSheet extends ConsumerStatefulWidget {
   const InviteHouseholdSheet({super.key, required this.groupId});
@@ -158,6 +159,11 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
             AppAlert(type: AppAlertType.error, message: _error!),
             const SizedBox(height: MitlistSpacing.md),
           ],
+
+          // The household may already be full. Say so here, where a member who
+          // can actually pay is standing — the join itself fails for the
+          // invitee, who has no way to resolve it.
+          PremiumBanner(groupId: widget.groupId),
 
           // Animated code segments
           if (_codeParts.isNotEmpty) ...[

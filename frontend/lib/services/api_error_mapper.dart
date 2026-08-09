@@ -13,6 +13,11 @@ class ApiException implements Exception {
   final DioException? cause;
 
   const ApiException(this.message, {this.serverMessage, this.cause});
+
+  /// True when the backend refused because the household needs premium
+  /// (HTTP 402). Callers show the premium sheet instead of a plain error.
+  bool get isPaymentRequired => cause?.response?.statusCode == 402;
+
   @override
   String toString() => message;
 }
@@ -65,6 +70,8 @@ class ApiErrorMapper {
         return 'Invalid request';
       case 401:
         return 'Your session expired. Please sign in again.';
+      case 402:
+        return 'This household needs premium to add more members.';
       case 403:
         return 'You don\'t have permission to do that.';
       case 404:
