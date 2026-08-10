@@ -2467,7 +2467,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get accountPasswordMinLength =>
-      'Das neue Passwort muss mindestens 6 Zeichen haben.';
+      'Das neue Passwort muss mindestens 12 Zeichen haben.';
 
   @override
   String get accountPasswordsMismatch =>
@@ -3864,7 +3864,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get authSignupPassword => 'Passwort';
 
   @override
-  String get authSignupPasswordHint => 'Mindestens 6 Zeichen';
+  String get authSignupPasswordHint => 'Mindestens 12 Zeichen';
 
   @override
   String get authSignupCreateAccount => 'Konto erstellen';
@@ -3883,7 +3883,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get authSignupPasswordMinLength =>
-      'Passwort muss mindestens 6 Zeichen lang sein.';
+      'Passwort muss mindestens 12 Zeichen lang sein.';
 
   @override
   String get authSignupJoinTitle => 'Haushalt beitreten';

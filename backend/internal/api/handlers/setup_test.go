@@ -47,7 +47,11 @@ func TestMain(m *testing.M) {
 
 	db, err := tryConnectDB(testCfg.DatabaseURL)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "SKIP: test database unavailable: %v\n", err)
+		if os.Getenv("CI") != "" {
+			fmt.Fprintf(os.Stderr, "ERROR: test database unavailable in CI: %v\n", err)
+			return
+		}
+		fmt.Fprintf(os.Stderr, "SKIP: local test database unavailable: %v\n", err)
 		code = 0
 		return
 	}
@@ -55,7 +59,11 @@ func TestMain(m *testing.M) {
 	defer db.Close()
 
 	if err := runMigrations(testCfg.DatabaseURL); err != nil {
-		fmt.Fprintf(os.Stderr, "SKIP: migrations failed: %v\n", err)
+		if os.Getenv("CI") != "" {
+			fmt.Fprintf(os.Stderr, "ERROR: migrations failed in CI: %v\n", err)
+			return
+		}
+		fmt.Fprintf(os.Stderr, "SKIP: local migrations unavailable: %v\n", err)
 		code = 0
 		return
 	}
@@ -140,6 +148,7 @@ func clearTables(t *testing.T) {
 		"activity_logs", "notifications", "notification_preferences",
 		"chat_messages", "chat_sessions",
 		"pending_claims", "group_invites", "group_memberships", "groups",
+		"auth_access_revocations", "auth_login_limits", "oauth_handoffs", "email_verification_tokens", "auth_sessions",
 		"push_subscriptions", "oauth_accounts", "password_reset_tokens",
 		"users",
 	}

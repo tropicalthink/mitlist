@@ -24,12 +24,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _verificationController = TextEditingController();
   final _nameFocus = FocusNode();
   final _emailFocus = FocusNode();
   final _passwordFocus = FocusNode();
+  final _verificationFocus = FocusNode();
 
   bool _isLoading = false;
   bool _isSuccess = false;
+  bool _awaitingVerification = false;
   String? _errorMessage;
   String? _nameError;
   String? _emailError;
@@ -54,13 +57,19 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _verificationController.dispose();
     _nameFocus.dispose();
     _emailFocus.dispose();
     _passwordFocus.dispose();
+    _verificationFocus.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
+    if (_awaitingVerification) {
+      await _verifyEmail();
+      return;
+    }
     setState(() {
       _errorMessage = null;
       _nameError = null;
@@ -79,6 +88,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         if (email.isEmpty) _emailError = l10n.authSignupEmailRequired;
         if (password.isEmpty) _passwordError = l10n.authSignupPasswordRequired;
       });
+      return;
+    }
+
+    if (password.length < 12) {
+      setState(() => _passwordError = 'Use at least 12 characters.');
       return;
     }
 
@@ -102,23 +116,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         lastName: lastName,
       );
       await authService.register(request);
-
-      // Defer auth flip until after success animation; router redirect sends
-      // new users to onboarding.
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _isSuccess = true;
+          _awaitingVerification = true;
+          _errorMessage = null;
         });
-        await Future.delayed(const Duration(milliseconds: 650));
-        if (mounted) {
-          final invite = _inviteCode;
-          ref.read(pendingAuthNavigationProvider.notifier).state =
-              (invite != null && invite.isNotEmpty)
-                  ? '/join/${Uri.encodeComponent(invite)}'
-                  : '/onboarding';
-          ref.read(authStateProvider.notifier).state = true;
-        }
+        _verificationFocus.requestFocus();
       }
       return;
     } catch (e) {
@@ -127,6 +131,56 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       });
     } finally {
       if (mounted && !_isSuccess) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _verifyEmail() async {
+    final code = _verificationController.text.trim();
+    if (code.isEmpty) {
+      setState(
+          () => _errorMessage = 'Enter the verification code from your email.');
+      return;
+    }
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final authService = await ref.read(authServiceProviderAsync.future);
+      await authService.verifyEmail(code);
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _isSuccess = true;
+      });
+      await Future.delayed(const Duration(milliseconds: 650));
+      if (!mounted) return;
+      final invite = _inviteCode;
+      ref.read(pendingAuthNavigationProvider.notifier).state =
+          (invite != null && invite.isNotEmpty)
+              ? '/join/${Uri.encodeComponent(invite)}'
+              : '/onboarding';
+      ref.read(authStateProvider.notifier).state = true;
+    } catch (_) {
+      if (mounted) {
+        setState(() =>
+            _errorMessage = 'That verification code is invalid or expired.');
+      }
+    } finally {
+      if (mounted && !_isSuccess) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _resendVerification() async {
+    setState(() => _errorMessage = null);
+    try {
+      final authService = await ref.read(authServiceProviderAsync.future);
+      await authService.resendEmailVerification(_emailController.text.trim());
+      if (mounted) {
+        setState(() => _errorMessage = 'A new verification code was sent.');
+      }
+    } catch (_) {
+      if (mounted) setState(() => _errorMessage = l10n.authSignupGenericError);
     }
   }
 
@@ -181,45 +235,76 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            AppInput(
-                              label: l10n.commonName,
-                              hint: l10n.authSignupNameHint,
-                              controller: _nameController,
-                              focusNode: _nameFocus,
-                              textInputAction: TextInputAction.next,
-                              autofillHints: const [AutofillHints.name],
-                              onSubmitted: (_) => _emailFocus.requestFocus(),
-                              errorText: _nameError,
-                            ),
-                            const SizedBox(height: MitlistSpacing.space3),
-                            AppInput(
-                              label: l10n.authSignupEmail,
-                              hint: l10n.authSignupEmailHint,
-                              controller: _emailController,
-                              focusNode: _emailFocus,
-                              keyboardType: TextInputType.emailAddress,
-                              textInputAction: TextInputAction.next,
-                              autofillHints: const [AutofillHints.email],
-                              onSubmitted: (_) => _passwordFocus.requestFocus(),
-                              errorText: _emailError,
-                            ),
-                            const SizedBox(height: MitlistSpacing.space3),
-                            AppInput(
-                              label: l10n.authSignupPassword,
-                              hint: '••••••••',
-                              controller: _passwordController,
-                              focusNode: _passwordFocus,
-                              obscureText: true,
-                              textInputAction: TextInputAction.done,
-                              autofillHints: const [AutofillHints.newPassword],
-                              onSubmitted: (_) => _submit(),
-                              errorText: _passwordError,
-                            ),
-                            const SizedBox(height: MitlistSpacing.space2),
-                            PasswordStrengthBar(
-                              password: _passwordController.text,
-                            ),
-                            const SizedBox(height: MitlistSpacing.space3),
+                            if (!_awaitingVerification) ...[
+                              AppInput(
+                                label: l10n.commonName,
+                                hint: l10n.authSignupNameHint,
+                                controller: _nameController,
+                                focusNode: _nameFocus,
+                                textInputAction: TextInputAction.next,
+                                autofillHints: const [AutofillHints.name],
+                                onSubmitted: (_) => _emailFocus.requestFocus(),
+                                errorText: _nameError,
+                              ),
+                              const SizedBox(height: MitlistSpacing.space3),
+                              AppInput(
+                                label: l10n.authSignupEmail,
+                                hint: l10n.authSignupEmailHint,
+                                controller: _emailController,
+                                focusNode: _emailFocus,
+                                keyboardType: TextInputType.emailAddress,
+                                textInputAction: TextInputAction.next,
+                                autofillHints: const [AutofillHints.email],
+                                onSubmitted: (_) =>
+                                    _passwordFocus.requestFocus(),
+                                errorText: _emailError,
+                              ),
+                              const SizedBox(height: MitlistSpacing.space3),
+                              AppInput(
+                                label: l10n.authSignupPassword,
+                                hint: '••••••••',
+                                controller: _passwordController,
+                                focusNode: _passwordFocus,
+                                obscureText: true,
+                                textInputAction: TextInputAction.done,
+                                autofillHints: const [
+                                  AutofillHints.newPassword
+                                ],
+                                onSubmitted: (_) => _submit(),
+                                errorText: _passwordError,
+                              ),
+                              const SizedBox(height: MitlistSpacing.space2),
+                              PasswordStrengthBar(
+                                password: _passwordController.text,
+                              ),
+                              const SizedBox(height: MitlistSpacing.space3),
+                            ] else ...[
+                              Text(
+                                'Check ${_emailController.text.trim()} for your verification code.',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                              const SizedBox(height: MitlistSpacing.space3),
+                              AppInput(
+                                label: 'Verification code',
+                                hint: 'Paste the code from your email',
+                                controller: _verificationController,
+                                focusNode: _verificationFocus,
+                                textInputAction: TextInputAction.done,
+                                autofillHints: const [
+                                  AutofillHints.oneTimeCode
+                                ],
+                                onSubmitted: (_) => _submit(),
+                              ),
+                              const SizedBox(height: MitlistSpacing.space2),
+                              AppButton(
+                                text: 'Send a new code',
+                                variant: AppButtonVariant.ghost,
+                                color: AppButtonColor.primary,
+                                onPressed:
+                                    _isLoading ? null : _resendVerification,
+                              ),
+                              const SizedBox(height: MitlistSpacing.space3),
+                            ],
                             if (_errorMessage != null) ...[
                               AppAlert(
                                 type: AppAlertType.error,
@@ -230,7 +315,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                             SizedBox(
                               width: double.infinity,
                               child: AppButton(
-                                text: l10n.authSignupCreateAccount,
+                                text: _awaitingVerification
+                                    ? 'Verify email'
+                                    : l10n.authSignupCreateAccount,
                                 variant: AppButtonVariant.solid,
                                 color: AppButtonColor.primary,
                                 size: AppButtonSize.lg,

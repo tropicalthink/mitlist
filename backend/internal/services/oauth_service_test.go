@@ -26,12 +26,10 @@ func TestOAuthService_processOAuthUser(t *testing.T) {
 		userID := uuid.New()
 		authRepo.On("GetOAuthByProviderID", ctx, "google", "google123").Return(&models.OAuthAccount{UserID: userID}, nil)
 		userRepo.On("GetByID", ctx, userID).Return(&models.User{ID: userID, IsActive: true, IsVerified: true}, nil)
-		jwtSvc.On("GenerateTokenPair", userID.String(), mock.Anything).Return("access", "refresh", nil)
 
-		user, access, _, err := svc.processOAuthUser(ctx, "google", "google123", "", "", "", "", nil)
+		user, err := svc.processOAuthUser(ctx, "google", "google123", "", "", "", "")
 		require.NoError(t, err)
 		assert.Equal(t, userID, user.ID)
-		assert.Equal(t, "access", access)
 	})
 
 	t.Run("success new user", func(t *testing.T) {
@@ -40,16 +38,14 @@ func TestOAuthService_processOAuthUser(t *testing.T) {
 		jwtSvc := new(mocks.MockJWTService)
 		svc := NewOAuthService(userRepo, authRepo, jwtSvc, nil, nil)
 
-		authRepo.On("GetOAuthByProviderID", ctx, "google", "google123").Return(nil, errors.New("not found"))
-		userRepo.On("GetByEmail", ctx, "test@gmail.com").Return(nil, errors.New("not found"))
+		authRepo.On("GetOAuthByProviderID", ctx, "google", "google123").Return(nil, errors.New("oauth account not found"))
+		userRepo.On("GetByEmail", ctx, "test@gmail.com").Return(nil, errors.New("user not found"))
 		userRepo.On("Create", ctx, mock.AnythingOfType("*models.User")).Return(nil)
 		authRepo.On("CreateOAuthAccount", ctx, mock.AnythingOfType("*models.OAuthAccount")).Return(nil)
-		jwtSvc.On("GenerateTokenPair", mock.AnythingOfType("string"), mock.Anything).Return("access", "refresh", nil)
 
-		user, access, _, err := svc.processOAuthUser(ctx, "google", "google123", "test@gmail.com", "Test", "User", "", nil)
+		user, err := svc.processOAuthUser(ctx, "google", "google123", "test@gmail.com", "Test", "User", "")
 		require.NoError(t, err)
 		assert.Equal(t, "test@gmail.com", user.Email)
-		assert.Equal(t, "access", access)
 	})
 
 	t.Run("success link existing user by email", func(t *testing.T) {
@@ -59,14 +55,12 @@ func TestOAuthService_processOAuthUser(t *testing.T) {
 		svc := NewOAuthService(userRepo, authRepo, jwtSvc, nil, nil)
 
 		userID := uuid.New()
-		authRepo.On("GetOAuthByProviderID", ctx, "apple", "apple123").Return(nil, errors.New("not found"))
+		authRepo.On("GetOAuthByProviderID", ctx, "apple", "apple123").Return(nil, errors.New("oauth account not found"))
 		userRepo.On("GetByEmail", ctx, "test@icloud.com").Return(&models.User{ID: userID, Email: "test@icloud.com"}, nil)
 		authRepo.On("CreateOAuthAccount", ctx, mock.AnythingOfType("*models.OAuthAccount")).Return(nil)
-		jwtSvc.On("GenerateTokenPair", userID.String(), mock.Anything).Return("access", "refresh", nil)
 
-		user, access, _, err := svc.processOAuthUser(ctx, "apple", "apple123", "test@icloud.com", "Test", "User", "", nil)
+		user, err := svc.processOAuthUser(ctx, "apple", "apple123", "test@icloud.com", "Test", "User", "")
 		require.NoError(t, err)
 		assert.Equal(t, userID, user.ID)
-		assert.Equal(t, "access", access)
 	})
 }

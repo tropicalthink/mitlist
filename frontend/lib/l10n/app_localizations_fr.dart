@@ -2457,7 +2457,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get accountPasswordMinLength =>
-      'Le nouveau mot de passe doit contenir au moins 6 caractères.';
+      'Le nouveau mot de passe doit contenir au moins 12 caractères.';
 
   @override
   String get accountPasswordsMismatch =>
@@ -3851,7 +3851,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get authSignupPassword => 'Mot de passe';
 
   @override
-  String get authSignupPasswordHint => 'Au moins 6 caractères';
+  String get authSignupPasswordHint => 'Au moins 12 caractères';
 
   @override
   String get authSignupCreateAccount => 'Créer un compte';
@@ -3870,7 +3870,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get authSignupPasswordMinLength =>
-      'Le mot de passe doit contenir au moins 6 caractères.';
+      'Le mot de passe doit contenir au moins 12 caractères.';
 
   @override
   String get authSignupJoinTitle => 'Rejoindre un foyer';

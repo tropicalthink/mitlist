@@ -44,6 +44,7 @@ import '../../utils/friendly_error.dart';
 import '../../utils/active_group_context.dart';
 
 import '../../widgets/app_toast.dart';
+
 const String _appVersion = '1.0.0';
 
 class AccountScreen extends ConsumerStatefulWidget {
@@ -218,7 +219,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               setSheetState(() => error = l10n.accountFillPasswordFields);
               return;
             }
-            if (newPassword.length < 6) {
+            if (newPassword.length < 12) {
               setSheetState(() => error = l10n.accountPasswordMinLength);
               return;
             }
@@ -375,7 +376,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       context.goNamed('welcome');
     } catch (e) {
       if (!mounted) return;
-      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
+      AppToast.error(
+          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     } finally {
       _isSaving = false;
     }
@@ -721,8 +723,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             Text(
               body,
               style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
             if (sub?.currentPeriodEnd != null) ...[
               const SizedBox(height: MitlistSpacing.xs),
@@ -731,8 +733,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                     ? l10n.billingEndsOn(_formatDate(sub.currentPeriodEnd!))
                     : l10n.billingRenewsOn(_formatDate(sub.currentPeriodEnd!)),
                 style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
             const SizedBox(height: MitlistSpacing.md),
@@ -860,7 +862,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       if (mounted) setState(() => _ocrTrainingEnabled = enabled);
     } catch (e) {
       if (!mounted) return;
-      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
+      AppToast.error(
+          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     } finally {
       if (mounted) setState(() => _isOcrTrainingBusy = false);
     }
@@ -874,7 +877,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       final archive = await _ocrTrainingData.exportArchive(userId);
       if (!mounted) return;
       if (archive == null) {
-        AppToast.info(context, AppLocalizations.of(context)!.accountOcrTrainingExportEmpty);
+        AppToast.info(context,
+            AppLocalizations.of(context)!.accountOcrTrainingExportEmpty);
         return;
       }
       await SharePlus.instance.share(
@@ -884,7 +888,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
+      AppToast.error(
+          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     } finally {
       if (mounted) setState(() => _isOcrTrainingBusy = false);
     }
@@ -960,7 +965,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
+      AppToast.error(
+          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     } finally {
       if (mounted) setState(() => _isExporting = false);
     }
@@ -989,7 +995,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
+      AppToast.error(
+          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     } finally {
       if (mounted) setState(() => _isExporting = false);
     }
@@ -1011,7 +1018,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       AppToast.success(context, l10n.accountJSONCopied);
     } catch (e) {
       if (!mounted) return;
-      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
+      AppToast.error(
+          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     }
   }
 

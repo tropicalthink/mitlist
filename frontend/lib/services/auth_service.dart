@@ -9,8 +9,9 @@ import '../models/auth_models.dart';
 import 'api_client.dart';
 import 'api_error_mapper.dart';
 import 'fcm_service.dart';
-import 'push_subscription_service.dart';
 import 'token_store.dart';
+import 'dio_platform.dart';
+import 'token_refresh_coordinator.dart';
 
 /// Authentication service for managing user authentication.
 ///
@@ -26,6 +27,12 @@ class AuthService {
   final Logger _logger = Logger();
   final SharedPreferences _prefs;
   final TokenStore _tokenStore;
+
+  void _logFailure(String operation, DioException error) {
+    if (!kDebugMode) return;
+    _logger.e(
+        '$operation failed (status: ${error.response?.statusCode}, type: ${error.type})');
+  }
 
   /// Optional callback invoked during logout to wipe the local Drift database.
   /// Wrapped in try/catch so a wipe failure never blocks token clearance.
@@ -66,8 +73,8 @@ class AuthService {
 
   /// Registers a new user.
   ///
-  /// Returns a [TokenPair] with access and refresh tokens.
-  Future<TokenPair> register(
+  /// Registration does not create a session until email ownership is proven.
+  Future<RegistrationResult> register(
     RegisterRequest request, {
     bool rememberMe = true,
   }) async {
@@ -77,11 +84,39 @@ class AuthService {
         data: request.toJson(),
       );
 
+      return RegistrationResult.fromJson(response.data);
+    } on DioException catch (e) {
+      _logFailure('Registration', e);
+      throw apiException(e);
+    }
+  }
+
+  Future<TokenPair> verifyEmail(
+    String token, {
+    bool rememberMe = true,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/auth/verify-email',
+        data: {'token': token},
+      );
       final tokenPair = TokenPair.fromJson(response.data);
       await _saveTokens(tokenPair, persistSession: rememberMe);
       return tokenPair;
     } on DioException catch (e) {
-      _logger.e('Registration failed: ${e.response?.data}');
+      _logFailure('Email verification', e);
+      throw apiException(e);
+    }
+  }
+
+  Future<void> resendEmailVerification(String email) async {
+    try {
+      await _dio.post(
+        '/auth/verify-email/resend',
+        data: {'email': email},
+      );
+    } on DioException catch (e) {
+      _logFailure('Email verification resend', e);
       throw apiException(e);
     }
   }
@@ -103,7 +138,7 @@ class AuthService {
       await _saveTokens(tokenPair, persistSession: rememberMe);
       return tokenPair;
     } on DioException catch (e) {
-      _logger.e('Login failed: ${e.response?.data}');
+      _logFailure('Login', e);
       throw apiException(e);
     }
   }
@@ -125,7 +160,7 @@ class AuthService {
       );
       return tokenPair;
     } on DioException catch (e) {
-      _logger.e('Token refresh failed: ${e.response?.data}');
+      _logFailure('Token refresh', e);
       throw apiException(e);
     }
   }
@@ -134,32 +169,54 @@ class AuthService {
   ///
   /// Clears all stored tokens and user data.
   Future<void> logout() async {
-    // Remove the FCM device token so push stops after logout.
-    await FcmService.unregisterToken(_dio);
-    // Cancel FCM stream listeners to prevent duplicate handlers on re-login.
-    await FcmService.reset();
-
+    final accessToken = await _tokenStore.getAccessToken();
+    final refreshToken = await _tokenStore.getRefreshToken();
+    await clearLocalSession();
     try {
-      final refreshToken = await _tokenStore.getRefreshToken();
-      if (refreshToken != null) {
-        await _dio.post(
-          '/auth/logout',
-          data: {'refresh_token': refreshToken},
-        );
-      }
-    } on DioException catch (e) {
-      _logger.e('Logout failed: ${e.response?.data}');
-      // Continue to clear tokens even if logout API call fails
+      await FcmService.reset().timeout(const Duration(seconds: 2));
+    } catch (e) {
+      if (kDebugMode) _logger.e('FCM reset failed (${e.runtimeType})');
     }
 
-    await _clearTokens();
+    final cleanupDio = Dio(BaseOptions(
+      baseUrl: '${ApiConfig.baseUrl}${ApiConfig.apiPrefix}',
+      connectTimeout: const Duration(seconds: 3),
+      receiveTimeout: const Duration(seconds: 3),
+      sendTimeout: const Duration(seconds: 3),
+      headers: {
+        'Content-Type': 'application/json',
+        if (kIsWeb) 'X-Mitlist-Client': 'web',
+        if (accessToken != null)
+          ApiConfig.authorizationHeader:
+              '${ApiConfig.authorizationPrefix}$accessToken',
+      },
+    ));
+    configureDioForPlatform(cleanupDio);
+    try {
+      await Future.wait<void>([
+        FcmService.unregisterToken(cleanupDio),
+        if (refreshToken != null || kIsWeb)
+          cleanupDio.post<void>('/auth/logout',
+              data: {'refresh_token': refreshToken ?? ''}),
+      ]).timeout(const Duration(seconds: 4));
+    } on DioException catch (e) {
+      _logFailure('Logout cleanup', e);
+    } catch (e) {
+      if (kDebugMode) _logger.e('Logout cleanup failed (${e.runtimeType})');
+    } finally {
+      cleanupDio.close(force: true);
+    }
+  }
 
+  Future<void> clearLocalSession() async {
+    await _clearTokens();
     if (_wipeLocalData != null) {
       try {
         await _wipeLocalData();
       } catch (e) {
-        _logger.e('Failed to wipe local database on logout: $e');
-        // Non-fatal — tokens are already cleared; wipe failure must not block logout.
+        if (kDebugMode) {
+          _logger.e('Failed to wipe local database (${e.runtimeType})');
+        }
       }
     }
   }
@@ -172,7 +229,7 @@ class AuthService {
         data: {'email': email},
       );
     } on DioException catch (e) {
-      _logger.e('Password reset request failed: ${e.response?.data}');
+      _logFailure('Password reset request', e);
       throw apiException(e);
     }
   }
@@ -188,7 +245,7 @@ class AuthService {
         },
       );
     } on DioException catch (e) {
-      _logger.e('Password reset confirmation failed: ${e.response?.data}');
+      _logFailure('Password reset confirmation', e);
       throw apiException(e);
     }
   }
@@ -216,7 +273,7 @@ class AuthService {
       await _saveTokens(tokenPair, persistSession: rememberMe);
       return tokenPair;
     } on DioException catch (e) {
-      _logger.e('OAuth callback failed: ${e.response?.data}');
+      _logFailure('OAuth callback', e);
       throw apiException(e);
     }
   }
@@ -227,6 +284,22 @@ class AuthService {
     required bool rememberMe,
   }) async {
     await _saveTokens(tokenPair, persistSession: rememberMe);
+  }
+
+  Future<TokenPair> exchangeOAuthHandoff(
+    String code, {
+    required bool rememberMe,
+  }) async {
+    try {
+      final response =
+          await _dio.post('/oauth/handoff/exchange', data: {'code': code});
+      final pair = TokenPair.fromJson(response.data);
+      await _saveTokens(pair, persistSession: rememberMe);
+      return pair;
+    } on DioException catch (e) {
+      _logFailure('OAuth handoff exchange', e);
+      throw apiException(e);
+    }
   }
 
   /// Persists the remember-me choice before handing off to a browser OAuth flow.
@@ -253,7 +326,7 @@ class AuthService {
       await _saveTokens(tokenPair, persistSession: rememberMe);
       return tokenPair;
     } on DioException catch (e) {
-      _logger.e('Guest account creation failed: ${e.response?.data}');
+      _logFailure('Guest account creation', e);
       throw apiException(e);
     }
   }
@@ -264,7 +337,7 @@ class AuthService {
       final response = await _dio.get('/auth/me');
       return User.fromJson(response.data);
     } on DioException catch (e) {
-      _logger.e('Get user failed: ${e.response?.data}');
+      _logFailure('Get user', e);
       throw apiException(e);
     }
   }
@@ -278,7 +351,7 @@ class AuthService {
       );
       return User.fromJson(response.data);
     } on DioException catch (e) {
-      _logger.e('Update user failed: ${e.response?.data}');
+      _logFailure('Update user', e);
       throw apiException(e);
     }
   }
@@ -289,7 +362,7 @@ class AuthService {
       await _dio.delete('/auth/me');
       await _clearTokens();
     } on DioException catch (e) {
-      _logger.e('Delete user failed: ${e.response?.data}');
+      _logFailure('Delete user', e);
       throw apiException(e);
     }
   }
@@ -297,12 +370,17 @@ class AuthService {
   /// Changes the current user's password.
   Future<void> changePassword(ChangePasswordRequest request) async {
     try {
-      await _dio.post(
+      final response = await _dio.post(
         '/auth/change-password',
         data: request.toJson(),
       );
+      final tokenPair = TokenPair.fromJson(response.data);
+      await _saveTokens(
+        tokenPair,
+        persistSession: _prefs.getBool(ApiConfig.persistSessionKey) ?? true,
+      );
     } on DioException catch (e) {
-      _logger.e('Change password failed: ${e.response?.data}');
+      _logFailure('Change password', e);
       throw apiException(e);
     }
   }
@@ -322,7 +400,7 @@ class AuthService {
       await _saveTokens(tokenPair, persistSession: rememberMe);
       return tokenPair;
     } on DioException catch (e) {
-      _logger.e('Convert guest failed: ${e.response?.data}');
+      _logFailure('Convert guest', e);
       throw apiException(e);
     }
   }
@@ -342,7 +420,7 @@ class AuthService {
       await _saveTokens(tokenPair, persistSession: rememberMe);
       return tokenPair;
     } on DioException catch (e) {
-      _logger.e('Claim account failed: ${e.response?.data}');
+      _logFailure('Claim account', e);
       throw apiException(e);
     }
   }
@@ -357,6 +435,13 @@ class AuthService {
   Future<bool> bootstrapSession() async {
     final token = await _tokenStore.getAccessToken();
     if (token == null) {
+      if (kIsWeb) {
+        final outcome = await TokenRefreshCoordinator(
+          _tokenStore,
+          _dio,
+        ).refreshDetailed();
+        return outcome.type == TokenRefreshOutcomeType.success;
+      }
       return false;
     }
 
@@ -378,10 +463,17 @@ class AuthService {
     TokenPair tokenPair, {
     required bool persistSession,
   }) async {
-    await _tokenStore.save(
-      accessToken: tokenPair.accessToken,
-      refreshToken: tokenPair.refreshToken,
-    );
+    if ((kIsWeb || !persistSession) && _tokenStore is SecureTokenStore) {
+      await _tokenStore.saveEphemeral(
+        accessToken: tokenPair.accessToken,
+        refreshToken: tokenPair.refreshToken,
+      );
+    } else {
+      await _tokenStore.save(
+        accessToken: tokenPair.accessToken,
+        refreshToken: tokenPair.refreshToken,
+      );
+    }
     await _prefs.setBool(ApiConfig.persistSessionKey, persistSession);
     if (tokenPair.user != null) {
       await _prefs.setString(
@@ -393,7 +485,6 @@ class AuthService {
 
   /// Clears all stored tokens, user data, and user-specific UI preferences.
   Future<void> _clearTokens() async {
-    await PushSubscriptionService(_tokenStore).unsubscribe();
     await _tokenStore.clear();
     await _prefs.remove(ApiConfig.userDataKey);
     await _prefs.remove(ApiConfig.persistSessionKey);

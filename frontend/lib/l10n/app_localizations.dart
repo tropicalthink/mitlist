@@ -4326,7 +4326,7 @@ abstract class AppLocalizations {
   /// Validation: password too short
   ///
   /// In en, this message translates to:
-  /// **'New password must be at least 6 characters.'**
+  /// **'New password must be at least 12 characters.'**
   String get accountPasswordMinLength;
 
   /// Validation: passwords don't match
@@ -6744,7 +6744,7 @@ abstract class AppLocalizations {
   /// Password hint text
   ///
   /// In en, this message translates to:
-  /// **'At least 6 characters'**
+  /// **'At least 12 characters'**
   String get authSignupPasswordHint;
 
   /// Submit button for signup
@@ -6780,7 +6780,7 @@ abstract class AppLocalizations {
   /// Password too short validation
   ///
   /// In en, this message translates to:
-  /// **'Password must be at least 6 characters.'**
+  /// **'Password must be at least 12 characters.'**
   String get authSignupPasswordMinLength;
 
   /// Signup screen title when joining via invite

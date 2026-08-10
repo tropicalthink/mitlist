@@ -16,7 +16,7 @@ import (
 func TestShare_CreateListFromShare(t *testing.T) {
 	clearTables(t)
 	router, _ := newShareRouter(t)
-	user := createTestUser(t, "share@example.com", "password123")
+	user := createTestUser(t, "share@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -45,7 +45,7 @@ func TestShare_CreateListFromShare(t *testing.T) {
 func TestShare_CreateRecipeFromShare(t *testing.T) {
 	clearTables(t)
 	router, _ := newShareRouter(t)
-	user := createTestUser(t, "sharerec@example.com", "password123")
+	user := createTestUser(t, "sharerec@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	body := map[string]any{"text": "Pasta recipe from https://example.com/pasta"}

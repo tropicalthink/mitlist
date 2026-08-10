@@ -170,14 +170,17 @@ func (r *ListRepository) HardDeleteList(ctx context.Context, id uuid.UUID) error
 }
 
 // SetListArchived sets or clears the archived_at timestamp for a list.
-func (r *ListRepository) SetListArchived(ctx context.Context, id uuid.UUID, archived bool) error {
+func (r *ListRepository) SetListArchived(ctx context.Context, id, actorID uuid.UUID, archived bool) error {
 	var query string
 	if archived {
-		query = `UPDATE lists SET archived_at = NOW(), updated_at = NOW() WHERE id = $1`
+		query = `UPDATE lists l SET archived_at = NOW(), updated_at = NOW() WHERE l.id = $1 AND EXISTS (SELECT 1 FROM group_memberships gm WHERE gm.group_id = l.group_id AND gm.user_id = $2)`
 	} else {
-		query = `UPDATE lists SET archived_at = NULL, updated_at = NOW() WHERE id = $1`
+		query = `UPDATE lists l SET archived_at = NULL, updated_at = NOW() WHERE l.id = $1 AND EXISTS (SELECT 1 FROM group_memberships gm WHERE gm.group_id = l.group_id AND gm.user_id = $2)`
 	}
-	_, err := r.pool.Exec(ctx, query, id)
+	res, err := r.pool.Exec(ctx, query, id, actorID)
+	if err == nil && res.RowsAffected() == 0 {
+		return fmt.Errorf("list not found or access denied")
+	}
 	return err
 }
 
@@ -425,8 +428,15 @@ func (r *ListRepository) BatchUpdateItemPositions(ctx context.Context, items []m
 }
 
 // ClaimItem sets the claimed_by user on an unchecked list item.
-func (r *ListRepository) ClaimItem(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {
-	res, err := r.pool.Exec(ctx, `UPDATE list_items SET claimed_by = $1, claimed_at = NOW(), updated_at = NOW() WHERE id = $2 AND deleted_at IS NULL AND checked = false`, userID, id)
+func (r *ListRepository) ClaimItem(ctx context.Context, listID, id, userID uuid.UUID) error {
+	res, err := r.pool.Exec(ctx, `
+		UPDATE list_items li SET claimed_by = $1, claimed_at = NOW(), updated_at = NOW()
+		WHERE li.id = $2 AND li.list_id = $3 AND li.deleted_at IS NULL AND li.checked = false
+		AND EXISTS (
+			SELECT 1 FROM lists l JOIN group_memberships gm ON gm.group_id = l.group_id
+			WHERE l.id = li.list_id AND gm.user_id = $1
+		)
+	`, userID, id, listID)
 	if err != nil {
 		return err
 	}
@@ -437,8 +447,18 @@ func (r *ListRepository) ClaimItem(ctx context.Context, id uuid.UUID, userID uui
 }
 
 // UnclaimItem clears the claimed_by on a list item.
-func (r *ListRepository) UnclaimItem(ctx context.Context, id uuid.UUID) error {
-	_, err := r.pool.Exec(ctx, `UPDATE list_items SET claimed_by = NULL, claimed_at = NULL, updated_at = NOW() WHERE id = $1 AND deleted_at IS NULL`, id)
+func (r *ListRepository) UnclaimItem(ctx context.Context, listID, id, actorID uuid.UUID) error {
+	res, err := r.pool.Exec(ctx, `
+		UPDATE list_items li SET claimed_by = NULL, claimed_at = NULL, updated_at = NOW()
+		WHERE li.id = $1 AND li.list_id = $2 AND li.deleted_at IS NULL
+		AND EXISTS (
+			SELECT 1 FROM lists l JOIN group_memberships gm ON gm.group_id = l.group_id
+			WHERE l.id = li.list_id AND gm.user_id = $3
+		)
+	`, id, listID, actorID)
+	if err == nil && res.RowsAffected() == 0 {
+		return fmt.Errorf("item not found or access denied")
+	}
 	return err
 }
 

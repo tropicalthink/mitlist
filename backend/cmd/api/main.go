@@ -139,6 +139,7 @@ func main() {
 		r.Get("/oauth/apple", oauthHandler.GetApple)
 		r.Get("/oauth/apple/callback", oauthHandler.GetAppleCallback)
 		r.Post("/oauth/apple/callback", oauthHandler.PostAppleCallback)
+		r.Post("/oauth/handoff/exchange", oauthHandler.ExchangeHandoff)
 
 		// SSE (Server-Sent Events) — auth handled inside the handler to skip UserRateLimit
 		sseHandler := handlers.NewSSEHandler(cnt.SSEHub(), cnt.JWT(), cnt.UserService(), cnt.GroupRepo())

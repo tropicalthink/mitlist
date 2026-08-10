@@ -21,7 +21,7 @@ func TestCoreJourney_HouseholdWorkflow(t *testing.T) {
 
 	registerBody := map[string]any{
 		"email":      "journey@example.com",
-		"password":   "password123",
+		"password":   "password123!",
 		"first_name": "Journey",
 		"last_name":  "Tester",
 	}

@@ -35,6 +35,13 @@ func (r *GroupRepository) WithTx(ctx context.Context, fn func(txRepo GroupRepo) 
 	return tx.Commit(ctx)
 }
 
+// LockGroup serializes membership invariant checks for a group. It must be
+// called from a transaction-scoped repository.
+func (r *GroupRepository) LockGroup(ctx context.Context, groupID uuid.UUID) error {
+	var id uuid.UUID
+	return r.pool.QueryRow(ctx, `SELECT id FROM groups WHERE id = $1 FOR UPDATE`, groupID).Scan(&id)
+}
+
 // CreateGroup inserts a new group.
 func (r *GroupRepository) CreateGroup(ctx context.Context, group *models.Group) error {
 	if group.ID == uuid.Nil {

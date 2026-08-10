@@ -47,6 +47,27 @@ func (r *stubAuthRepo) GetPasswordResetToken(_ context.Context, _ string) (*mode
 	panic("not impl")
 }
 func (r *stubAuthRepo) ConsumeToken(_ context.Context, _ uuid.UUID) error { panic("not impl") }
+func (r *stubAuthRepo) ConsumePasswordReset(_ context.Context, _, _ string) (uuid.UUID, error) {
+	panic("not impl")
+}
+func (r *stubAuthRepo) UpdatePasswordAndRevokeSessions(_ context.Context, _ uuid.UUID, _ string) error {
+	panic("not impl")
+}
+func (r *stubAuthRepo) CreateUnverifiedUser(_ context.Context, _ *models.User, _ string, _ time.Time) error {
+	panic("not impl")
+}
+func (r *stubAuthRepo) CreateEmailVerification(_ context.Context, _ uuid.UUID, _ string, _ time.Time) error {
+	panic("not impl")
+}
+func (r *stubAuthRepo) ConsumeEmailVerification(_ context.Context, _ string) (uuid.UUID, error) {
+	panic("not impl")
+}
+func (r *stubAuthRepo) ReserveLoginAttempt(_ context.Context, _ string, _ int, _ time.Duration) (bool, error) {
+	panic("not impl")
+}
+func (r *stubAuthRepo) ClearLoginAttempts(_ context.Context, _ string) error {
+	panic("not impl")
+}
 func (r *stubAuthRepo) CreatePushSubscription(_ context.Context, _ *models.PushSubscription) error {
 	panic("not impl")
 }
@@ -66,6 +87,12 @@ func (r *stubAuthRepo) ListDeviceTokensByUserIDs(_ context.Context, _ []uuid.UUI
 	panic("not impl")
 }
 func (r *stubAuthRepo) DeleteDeviceToken(_ context.Context, _, _ uuid.UUID) error {
+	panic("not impl")
+}
+func (r *stubAuthRepo) CreateOAuthHandoff(_ context.Context, _ string, _ uuid.UUID, _ time.Time) error {
+	panic("not impl")
+}
+func (r *stubAuthRepo) ConsumeOAuthHandoff(_ context.Context, _ string) (uuid.UUID, error) {
 	panic("not impl")
 }
 

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -178,7 +179,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               setSheetState(() => error = l10n.authLoginResetFillAllFields);
               return;
             }
-            if (newPassword.length < 6) {
+            if (newPassword.length < 12) {
               setSheetState(
                 () => error = l10n.authSignupPasswordMinLength,
               );
@@ -294,6 +295,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         builder: (context, setSheetState) {
           Future<void> apply(String? url) async {
             final navigator = Navigator.of(context);
+            final authService = await ref.read(authServiceProviderAsync.future);
+            await authService.clearLocalSession();
+            ref.read(authStateProvider.notifier).state = false;
             final prefs = await SharedPreferences.getInstance();
             if (url == null) {
               await prefs.remove(ApiConfig.serverUrlKey);
@@ -326,6 +330,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             if (uri == null ||
                 !(uri.scheme == 'http' || uri.scheme == 'https') ||
                 uri.host.isEmpty) {
+              setSheetState(() => error = l10n.authServerUrlInvalid);
+              return;
+            }
+            if (uri.scheme != 'https' &&
+                !(kDebugMode &&
+                    (uri.host == 'localhost' ||
+                        uri.host == '127.0.0.1' ||
+                        uri.host == '10.0.2.2'))) {
               setSheetState(() => error = l10n.authServerUrlInvalid);
               return;
             }

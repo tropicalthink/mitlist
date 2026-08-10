@@ -83,18 +83,18 @@ func (c *AppleClient) AllowRedirect(redirectURI string) bool {
 // response_mode=form_post is required by Apple whenever the "name" or "email"
 // scope is requested. Apple then delivers the callback as a cross-site form
 // POST to RedirectURI rather than a GET redirect (see PostAppleCallback).
-func (c *AppleClient) AuthURL(state string) string {
+func (c *AppleClient) AuthURL(state string, verifier ...string) string {
 	conf := &oauth2.Config{
 		ClientID:    c.clientID,
 		Endpoint:    appleEndpoint,
 		RedirectURL: c.redirectURI,
 		Scopes:      []string{"name", "email"},
 	}
-	return conf.AuthCodeURL(
-		state,
-		oauth2.AccessTypeOnline,
-		oauth2.SetAuthURLParam("response_mode", "form_post"),
-	)
+	options := []oauth2.AuthCodeOption{oauth2.AccessTypeOnline, oauth2.SetAuthURLParam("response_mode", "form_post")}
+	if len(verifier) > 0 && verifier[0] != "" {
+		options = append(options, oauth2.S256ChallengeOption(verifier[0]))
+	}
+	return conf.AuthCodeURL(state, options...)
 }
 
 // RedirectURI returns the configured provider callback URI used for server-side exchanges.
@@ -108,7 +108,7 @@ func (c *AppleClient) Configured() bool {
 }
 
 // ExchangeCode exchanges an authorization code for an OAuth2 token.
-func (c *AppleClient) ExchangeCode(code string) (*oauth2.Token, error) {
+func (c *AppleClient) ExchangeCode(code string, verifier ...string) (*oauth2.Token, error) {
 	if c.clientID == "" || c.teamID == "" || c.keyID == "" || c.privateKey == "" {
 		return nil, fmt.Errorf("apple oauth not fully configured")
 	}
@@ -130,7 +130,11 @@ func (c *AppleClient) ExchangeCode(code string) (*oauth2.Token, error) {
 		RedirectURL:  redirectURI,
 	}
 
-	return conf.Exchange(context.Background(), code)
+	options := []oauth2.AuthCodeOption{}
+	if len(verifier) > 0 && verifier[0] != "" {
+		options = append(options, oauth2.VerifierOption(verifier[0]))
+	}
+	return conf.Exchange(context.Background(), code, options...)
 }
 
 // ValidateIdentityToken verifies an Apple ID token (JWT) and returns the user.

@@ -40,9 +40,26 @@ func (s *MealPlanService) requireMembership(ctx context.Context, userID, groupID
 	return requireGroupMember(ctx, s.groupRepo, groupID, userID)
 }
 
+func (s *MealPlanService) requireRecipeAccess(ctx context.Context, userID, recipeID uuid.UUID) error {
+	recipe, err := s.recipeRepo.GetRecipeByID(ctx, recipeID)
+	if err != nil {
+		return err
+	}
+	if recipe.UserID == userID || recipe.IsPublic {
+		return nil
+	}
+	if _, err := s.recipeRepo.GetRecipeShareByUser(ctx, recipeID, userID); err == nil {
+		return nil
+	}
+	return &api.PermissionDeniedError{Action: "use recipe"}
+}
+
 // CreateMealPlan creates a new meal plan.
 func (s *MealPlanService) CreateMealPlan(ctx context.Context, user *models.User, mp *models.MealPlan) error {
 	if err := s.requireMembership(ctx, user.ID, mp.GroupID); err != nil {
+		return err
+	}
+	if err := s.requireRecipeAccess(ctx, user.ID, mp.RecipeID); err != nil {
 		return err
 	}
 	if mp.Slot == "" {
@@ -89,6 +106,12 @@ func (s *MealPlanService) UpdateMealPlan(ctx context.Context, user *models.User,
 	if err := s.requireMembership(ctx, user.ID, existing.GroupID); err != nil {
 		return err
 	}
+	if mp.GroupID != existing.GroupID {
+		return &api.ValidationError{Field: "group_id", Message: "group cannot be changed"}
+	}
+	if err := s.requireRecipeAccess(ctx, user.ID, mp.RecipeID); err != nil {
+		return err
+	}
 	return s.mealPlanRepo.UpdateMealPlan(ctx, mp)
 }
 
@@ -131,6 +154,9 @@ func (s *MealPlanService) GenerateShoppingList(ctx context.Context, user *models
 	recipeIDs := make([]uuid.UUID, 0, len(plans))
 	seenRecipes := make(map[uuid.UUID]struct{}, len(plans))
 	for _, plan := range plans {
+		if err := s.requireRecipeAccess(ctx, user.ID, plan.RecipeID); err != nil {
+			return nil, nil, err
+		}
 		if _, ok := seenRecipes[plan.RecipeID]; !ok {
 			seenRecipes[plan.RecipeID] = struct{}{}
 			recipeIDs = append(recipeIDs, plan.RecipeID)
