@@ -295,7 +295,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     await Haptics.light();
     var groups = _households;
     try {
-      ref.invalidate(cachedGroupsProvider);
+      await refreshCachedGroups(ref);
       groups = await ref.read(cachedGroupsProvider.future);
       if (mounted) setState(() => _households = groups);
     } catch (_) {}
@@ -311,7 +311,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     Future<void> onCreateResult(Group? group) async {
       if (group == null || !mounted) return;
       try {
-        ref.invalidate(cachedGroupsProvider);
+        await refreshCachedGroups(ref, ensure: group);
         final after = await ref.read(cachedGroupsProvider.future);
         if (!mounted) return;
         setState(() => _households = after);
@@ -324,7 +324,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     Future<void> onJoinResult(Group? group) async {
       if (group == null || !mounted) return;
       try {
-        ref.invalidate(cachedGroupsProvider);
+        await refreshCachedGroups(ref, ensure: group);
         final after = await ref.read(cachedGroupsProvider.future);
         if (!mounted) return;
         setState(() => _households = after);
@@ -570,7 +570,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     final group = await JoinHouseholdSheet.show(context);
     if (group == null || !mounted) return;
     try {
-      ref.invalidate(cachedGroupsProvider);
+      await refreshCachedGroups(ref, ensure: group);
       final groups = await ref.read(cachedGroupsProvider.future);
       if (!mounted) return;
       setState(() => _households = groups);
@@ -583,7 +583,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
   Future<void> _onHouseholdResult(Group? group) async {
     if (group == null || !mounted) return;
     try {
-      ref.invalidate(cachedGroupsProvider);
+      await refreshCachedGroups(ref, ensure: group);
       final groups = await ref.read(cachedGroupsProvider.future);
       if (!mounted) return;
       setState(() => _households = groups);

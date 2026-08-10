@@ -207,6 +207,58 @@ not render as "nothing is scheduled".
 Tests: +29 (593 pass / 2 skip). Highest-value ones are the refresh-wipe guards
 for chores and settlements, and the queued-complete id retarget.
 
+## Follow-up pass: expense conflicts + true cache-first resolve
+
+### Expenses are no longer last-write-wins
+
+Everything except list items silently clobbered on concurrent edit: two people
+edit the same expense, both drain, second wins, no conflict and no trace. Same
+family as the offline dead-lettering — data lost while the app reports success —
+except here it costs somebody money.
+
+The client **discarded `updated_at` for expenses entirely** (absent from the
+model *and* the Drift table), so there was no base to send. Schema **v13 → v14**
+adds a nullable `expenses_table.updated_at`, deliberately un-backfilled: a row
+with no known server version falls back to last-write-wins rather than
+conflicting falsely.
+
+- Backend: `UpdateExpense` gained `expected_updated_at` → 409 with `current`,
+  mirroring `list.go` including the second-granularity truncation (Drift stores
+  DateTime as unix seconds, so an untruncated compare 409s on *every* edit).
+  Omitting the field stays last-write-wins, so other clients are unaffected.
+- Client: `updateExpenseOfflineFirst` captures the base, skipping it for a
+  chained edit on an already-queued change (that chain is ours — the
+  locally-bumped value would self-conflict). The drainer's generic 409 →
+  `conflict` disposition already routed it to the `Conflicts` table.
+- `conflict_resolution_sheet` was entirely list-item-shaped — title, field
+  summary, and both buttons hardcoded `listRepositoryProvider`. Now routed by
+  `conflict.entityType`, with per-entity field sets.
+
+### loadGroups is genuinely cache-first
+
+Previously it awaited the network and only fell back on failure, so all 21
+screens that resolve their active group waited a full round-trip. Now it returns
+the cache immediately and refreshes behind, with `forceRefresh` for the paths
+that need certainty. No cache → network is awaited (nothing to be first with).
+
+The create/join sites could not simply keep calling `ref.invalidate`, which
+would now hand back the stale list without the new household. New
+`refreshCachedGroups(ref, {ensure})`:
+
+- `ensure` writes the household the server just returned straight into the
+  cache, so it is present even when the follow-up refetch fails — which is
+  exactly when it matters. An earlier draft threw on refresh failure instead;
+  that surfaced an error for a household the server had already accepted, which
+  is a worse lie than a slightly stale list. The refresh is best-effort and
+  never throws.
+- Logout sites keep a bare `invalidate` — the list is emptied anyway.
+
+Migration-test note: the grocery migration fixtures build a *partial* older
+schema, so they broke on `ALTER TABLE expenses_table`. Fixed by adding the table
+to the fixtures — a real v11 database has it, and the fixture was simply not
+faithful. Any future migration touching a table absent from those fixtures will
+fail the same way.
+
 ## Still not offline
 
 - Chore **update/delete** (create was the reported gap).

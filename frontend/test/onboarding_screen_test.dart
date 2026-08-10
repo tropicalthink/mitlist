@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:drift/drift.dart' as drift;
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,6 +9,8 @@ import 'package:go_router/go_router.dart';
 import 'package:mitlist/l10n/app_localizations.dart';
 import 'package:mitlist/models/group_models.dart';
 import 'package:mitlist/providers/group_provider.dart';
+import 'package:mitlist/providers/list_provider.dart' show appDatabaseProvider;
+import 'package:mitlist/storage/app_database.dart';
 import 'package:mitlist/screens/auth/onboarding_screen.dart';
 import 'package:mitlist/services/group_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -139,6 +143,14 @@ void main() {
           overrides: [
             cachedGroupsProvider.overrideWith((ref) async => const []),
             groupServiceProviderAsync.overrideWith((ref) async => service),
+            // Creating a household now seeds the Drift household cache, so
+            // this screen needs a database. In-memory keeps it hermetic.
+            appDatabaseProvider.overrideWithValue(
+              AppDatabase(drift.DatabaseConnection(
+                NativeDatabase.memory(),
+                closeStreamsSynchronously: true,
+              )),
+            ),
           ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,

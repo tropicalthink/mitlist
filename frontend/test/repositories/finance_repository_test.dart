@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/native.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter_test/flutter_test.dart';
@@ -305,6 +307,184 @@ void main() {
       expect(deleteOps.length, equals(1));
       expect(deleteOps.first.attemptCount, equals(1));
       expect(deleteOps.first.lastError, isNotNull);
+    });
+  });
+
+  // Plan 006 part 1. Expenses were last-write-wins: an offline edit draining
+  // after someone else's edit silently overwrote it, with no conflict and no
+  // trace — and unlike a list item, a clobbered expense costs somebody money.
+  group('FinanceRepository expense conflicts —', () {
+    late AppDatabase db;
+    late FakeFinanceService remote;
+    late FinanceRepository repo;
+    const expenseId = 'exp-1';
+    final base = DateTime.utc(2026, 1, 10, 12);
+
+    setUp(() async {
+      db = _memoryDb();
+      remote = FakeFinanceService();
+      repo = FinanceRepository(db: db, remote: remote, autoSync: false);
+      await db.upsertExpensesRows([
+        ExpensesTableCompanion.insert(
+          id: expenseId,
+          groupId: 'group-1',
+          payerId: 'payer-1',
+          amount: 2500,
+          description: 'Groceries',
+          category: 'food',
+          currency: 'USD',
+          notes: '',
+          date: DateTime.utc(2026, 1, 10),
+          createdAt: DateTime.utc(2026, 1, 10),
+          updatedAt: drift.Value(base),
+        )
+      ]);
+    });
+
+    tearDown(() => db.close());
+
+    test('an offline edit carries the server base it was made against',
+        () async {
+      await repo.updateExpenseOfflineFirst(
+          expenseId, const UpdateExpenseRequest(amount: 3000));
+
+      final op = (await db.getOutboxOpsByType('updateExpense')).single;
+      final payload = jsonDecode(op.payloadJson) as Map<String, dynamic>;
+      expect(DateTime.parse(payload['expectedUpdatedAt'] as String),
+          base.toUtc());
+    });
+
+    test('a chained edit sends no base', () async {
+      await repo.updateExpenseOfflineFirst(
+          expenseId, const UpdateExpenseRequest(amount: 3000));
+      await repo.updateExpenseOfflineFirst(
+          expenseId, const UpdateExpenseRequest(amount: 3100));
+
+      final ops = await db.getOutboxOpsByType('updateExpense');
+      final second = jsonDecode(ops.last.payloadJson) as Map<String, dynamic>;
+      expect(second['expectedUpdatedAt'], isNull,
+          reason: 'the chain is all ours — the local base would self-conflict');
+    });
+
+    test('a row with no known server version falls back to last-write-wins',
+        () async {
+      await db.upsertExpensesRows([
+        ExpensesTableCompanion.insert(
+          id: 'exp-local',
+          groupId: 'group-1',
+          payerId: 'payer-1',
+          amount: 100,
+          description: 'Local only',
+          category: 'food',
+          currency: 'USD',
+          notes: '',
+          date: DateTime.utc(2026, 1, 10),
+          createdAt: DateTime.utc(2026, 1, 10),
+        )
+      ]);
+
+      await repo.updateExpenseOfflineFirst(
+          'exp-local', const UpdateExpenseRequest(amount: 200));
+
+      final op = (await db.getOutboxOpsByType('updateExpense')).single;
+      final payload = jsonDecode(op.payloadJson) as Map<String, dynamic>;
+      expect(payload['expectedUpdatedAt'], isNull,
+          reason: 'no server version means nothing to conflict against');
+    });
+
+    test('a 409 becomes a resolvable conflict instead of a silent clobber',
+        () async {
+      await repo.updateExpenseOfflineFirst(
+          expenseId, const UpdateExpenseRequest(amount: 3000));
+
+      remote.throwOnUpdate = fakeDioException(statusCode: 409, data: {
+        'error': 'conflict',
+        'current': {
+          'id': expenseId,
+          'group_id': 'group-1',
+          'payer_id': 'payer-1',
+          'amount': 4200,
+          'description': 'Groceries (theirs)',
+          'category': 'food',
+          'currency': 'USD',
+          'notes': '',
+          'date': '2026-01-10T00:00:00Z',
+          'created_at': '2026-01-10T00:00:00Z',
+          'updated_at': '2026-01-11T00:00:00Z',
+        },
+      });
+
+      await repo.drainOutboxOnce();
+
+      expect(await db.conflictCount(), 1);
+      final conflict = (await db.getConflicts()).single;
+      expect(conflict.entityType, 'updateExpense');
+      expect(conflict.serverPayloadJson, contains('theirs'));
+      expect(await db.getOutboxOpById(conflict.id), isNull,
+          reason: 'the conflicting op stops retrying');
+    });
+
+    test('"use theirs" replaces the local row with the server version',
+        () async {
+      await repo.updateExpenseOfflineFirst(
+          expenseId, const UpdateExpenseRequest(amount: 3000));
+      remote.throwOnUpdate = fakeDioException(statusCode: 409, data: {
+        'error': 'conflict',
+        'current': {
+          'id': expenseId,
+          'group_id': 'group-1',
+          'payer_id': 'payer-1',
+          'amount': 4200,
+          'description': 'Theirs',
+          'category': 'food',
+          'currency': 'USD',
+          'notes': '',
+          'date': '2026-01-10T00:00:00Z',
+          'created_at': '2026-01-10T00:00:00Z',
+          'updated_at': '2026-01-11T00:00:00Z',
+        },
+      });
+      await repo.drainOutboxOnce();
+
+      await repo.resolveConflictAcceptServer((await db.getConflicts()).single);
+
+      final expenses = await repo.getExpensesByGroupOnce('group-1');
+      final row = expenses.firstWhere((e) => e.id == expenseId);
+      expect(row.amount, 4200);
+      expect(row.description, 'Theirs');
+      expect(await db.conflictCount(), 0);
+    });
+
+    test('"keep mine" re-queues the edit rebased on the server version',
+        () async {
+      await repo.updateExpenseOfflineFirst(
+          expenseId, const UpdateExpenseRequest(amount: 3000));
+      remote.throwOnUpdate = fakeDioException(statusCode: 409, data: {
+        'error': 'conflict',
+        'current': {
+          'id': expenseId,
+          'group_id': 'group-1',
+          'payer_id': 'payer-1',
+          'amount': 4200,
+          'description': 'Theirs',
+          'category': 'food',
+          'currency': 'USD',
+          'notes': '',
+          'date': '2026-01-10T00:00:00Z',
+          'created_at': '2026-01-10T00:00:00Z',
+          'updated_at': '2026-01-11T00:00:00Z',
+        },
+      });
+      await repo.drainOutboxOnce();
+
+      await repo.resolveConflictKeepLocal((await db.getConflicts()).single);
+
+      final requeued = (await db.getOutboxOpsByType('updateExpense')).single;
+      final payload = jsonDecode(requeued.payloadJson) as Map<String, dynamic>;
+      expect(payload['patch']['amount'], 3000, reason: 'my edit survives');
+      expect(payload['expectedUpdatedAt'], '2026-01-11T00:00:00Z',
+          reason: 'rebased on their version so it no longer conflicts');
+      expect(await db.conflictCount(), 0);
     });
   });
 

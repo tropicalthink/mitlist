@@ -10,6 +10,17 @@ import 'package:sqlite3/sqlite3.dart' as s3;
 /// FTS index + triggers it drops. Mirrors what an on-device DB looked like
 /// before the global grocery brain moved to the reference DB.
 const _v10Schema = '''
+-- Not exercised by this test, but a real database of this vintage has it, and
+-- later migrations legitimately ALTER it. Without it the fixture is not a
+-- faithful older schema and every future expense migration breaks here.
+CREATE TABLE "expenses_table" (
+  "id" TEXT NOT NULL, "group_id" TEXT NOT NULL, "payer_id" TEXT NOT NULL,
+  "amount" INTEGER NOT NULL, "base_amount" INTEGER NOT NULL DEFAULT 0,
+  "fx_rate" REAL NOT NULL DEFAULT 1.0,
+  "description" TEXT NOT NULL, "category" TEXT NOT NULL,
+  "currency" TEXT NOT NULL, "notes" TEXT NOT NULL,
+  "date" INTEGER NOT NULL, "created_at" INTEGER NOT NULL,
+  PRIMARY KEY ("id"));
 CREATE TABLE "canonical_items_table" (
   "id" TEXT NOT NULL, "group_id" TEXT NOT NULL,
   "name_de" TEXT NOT NULL DEFAULT '', "name_en" TEXT NOT NULL DEFAULT '',

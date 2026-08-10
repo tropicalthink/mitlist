@@ -223,6 +223,13 @@ func (h *FinanceHandler) UpdateExpense(w http.ResponseWriter, r *http.Request) {
 		Currency    *string    `json:"currency,omitempty"`
 		Notes       *string    `json:"notes,omitempty"`
 		Date        *time.Time `json:"date,omitempty"`
+		// ExpectedUpdatedAt enables optimistic concurrency: the client sends the
+		// updated_at it based its edit on. If the server's row has moved on since
+		// (another member edited it), we return 409 with the current expense
+		// instead of silently clobbering their change. Mirrors the list-item
+		// contract in list.go — an expense is the one entity where a silent
+		// last-write-wins clobber costs somebody money.
+		ExpectedUpdatedAt *time.Time `json:"expected_updated_at,omitempty"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
@@ -232,6 +239,21 @@ func (h *FinanceHandler) UpdateExpense(w http.ResponseWriter, r *http.Request) {
 	existing, err := h.service.GetExpense(r.Context(), userID, id)
 	if err != nil {
 		api.RespondError(w, err)
+		return
+	}
+
+	// Compared at second granularity: the client stores updated_at in Drift,
+	// whose default DateTime storage is unix SECONDS, so the round-tripped base
+	// loses sub-second precision. Truncating both sides avoids a false conflict
+	// on every edit while still catching genuine concurrent ones.
+	if req.ExpectedUpdatedAt != nil &&
+		existing.UpdatedAt.Truncate(time.Second).
+			After(req.ExpectedUpdatedAt.Truncate(time.Second)) {
+		api.RespondJSON(w, http.StatusConflict, map[string]any{
+			"error":   "conflict",
+			"message": "This expense was changed by someone else.",
+			"current": existing,
+		})
 		return
 	}
 

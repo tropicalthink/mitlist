@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../providers/finance_provider.dart';
 import '../providers/list_provider.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/outbox_provider.dart';
@@ -72,8 +73,10 @@ class _ConflictCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final mine = _summarize(_patchFields(conflict.localPayloadJson));
-    final theirs = _summarize(_fields(conflict.serverPayloadJson));
+    final keys =
+        conflict.entityType == 'updateExpense' ? _expenseKeys : _itemKeys;
+    final mine = _summarize(_patchFields(conflict.localPayloadJson), keys);
+    final theirs = _summarize(_fields(conflict.serverPayloadJson), keys);
 
     return AppCard(
       variant: AppCardVariant.soft,
@@ -95,10 +98,7 @@ class _ConflictCard extends ConsumerWidget {
                   text: l10n.sheetConflictKeepLocal,
                   size: AppButtonSize.sm,
                   variant: AppButtonVariant.outline,
-                  onPressed: () async {
-                    final repo = await ref.read(listRepositoryProvider.future);
-                    await repo.resolveConflictKeepLocal(conflict);
-                  },
+                  onPressed: () => _resolve(ref, keepLocal: true),
                 ),
               ),
               const SizedBox(width: MitlistSpacing.sm),
@@ -107,10 +107,7 @@ class _ConflictCard extends ConsumerWidget {
                   text: l10n.sheetConflictKeepServer,
                   size: AppButtonSize.sm,
                   variant: AppButtonVariant.soft,
-                  onPressed: () async {
-                    final repo = await ref.read(listRepositoryProvider.future);
-                    await repo.resolveConflictAcceptServer(conflict);
-                  },
+                  onPressed: () => _resolve(ref, keepLocal: false),
                 ),
               ),
             ],
@@ -118,6 +115,23 @@ class _ConflictCard extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// Conflicts are keyed by the op type that produced them, so the owning
+  /// repository is chosen from that rather than assumed to be lists.
+  Future<void> _resolve(WidgetRef ref, {required bool keepLocal}) async {
+    switch (conflict.entityType) {
+      case 'updateExpense':
+        final repo = await ref.read(financeRepositoryProvider.future);
+        await (keepLocal
+            ? repo.resolveConflictKeepLocal(conflict)
+            : repo.resolveConflictAcceptServer(conflict));
+      default:
+        final repo = await ref.read(listRepositoryProvider.future);
+        await (keepLocal
+            ? repo.resolveConflictKeepLocal(conflict)
+            : repo.resolveConflictAcceptServer(conflict));
+    }
   }
 
   Widget _versionRow(BuildContext context, String label, String value) {
@@ -138,9 +152,34 @@ class _ConflictCard extends ConsumerWidget {
 
   static String _title(Conflict c) {
     final fields = _fields(c.serverPayloadJson);
+    if (c.entityType == 'updateExpense') {
+      final desc = fields['description'];
+      return desc is String && desc.isNotEmpty
+          ? 'Expense: $desc'
+          : 'Expense changed';
+    }
     final name = fields['name'];
     return name is String && name.isNotEmpty ? 'Item: $name' : 'Item changed';
   }
+
+  /// Fields worth showing per entity — enough to tell two versions apart
+  /// without dumping the whole payload.
+  static const _itemKeys = [
+    'name',
+    'quantity',
+    'unit',
+    'note',
+    'checked',
+    'price_cents'
+  ];
+  static const _expenseKeys = [
+    'description',
+    'amount',
+    'currency',
+    'category',
+    'notes',
+    'date'
+  ];
 
   static Map<String, dynamic> _fields(String json) {
     try {
@@ -158,8 +197,7 @@ class _ConflictCard extends ConsumerWidget {
     return map;
   }
 
-  static String _summarize(Map<String, dynamic> fields) {
-    const keys = ['name', 'quantity', 'unit', 'note', 'checked', 'price_cents'];
+  static String _summarize(Map<String, dynamic> fields, List<String> keys) {
     final parts = <String>[];
     for (final k in keys) {
       final v = fields[k] ?? fields[_camel(k)];

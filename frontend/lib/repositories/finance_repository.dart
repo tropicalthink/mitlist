@@ -261,6 +261,17 @@ class FinanceRepository {
     final existingRows = await (_db.select(_db.expensesTable)
           ..where((t) => t.id.equals(expenseId)))
         .get();
+
+    // Optimistic-concurrency base: the server updated_at this edit was based
+    // on. Skipped when an edit is already queued for this expense — that chain
+    // is all ours, so there is no foreign server base to guard against — and
+    // when the row has no known server version (created locally, or cached
+    // before the column existed), where the edit falls back to last-write-wins.
+    final hasPendingEdit =
+        await _db.pendingOpCountForEntity('updateExpense', expenseId) > 0;
+    final base = existingRows.isEmpty ? null : existingRows.first.updatedAt;
+    final expectedUpdatedAt = hasPendingEdit ? null : base;
+
     if (existingRows.isNotEmpty) {
       final e = _toExpense(existingRows.first);
       final patched = api.Expense(
@@ -286,6 +297,8 @@ class FinanceRepository {
       payload: {
         'expenseId': expenseId,
         'patch': req.toJson(),
+        if (expectedUpdatedAt != null)
+          'expectedUpdatedAt': expectedUpdatedAt.toUtc().toIso8601String(),
       },
       idempotencyKey:
           'updateExpense:$expenseId:${DateTime.now().toIso8601String()}',
@@ -443,11 +456,58 @@ class FinanceRepository {
       date: patch['date'] == null
           ? null
           : DateTime.parse(patch['date'] as String),
+      // Carried on the op, not in the patch: the base belongs to the queued
+      // edit, and "keep mine" rewrites it to the server's current value.
+      expectedUpdatedAt: payload['expectedUpdatedAt'] == null
+          ? null
+          : DateTime.parse(payload['expectedUpdatedAt'] as String),
     );
 
     final updated = await _remote.updateExpense(expenseId, req);
     await _db.upsertExpensesRows([_toExpensesRow(updated)]);
     await _db.deleteOutboxOp(opId);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Conflict resolution (mirrors ListRepository)
+  // ---------------------------------------------------------------------------
+
+  /// "Use theirs": overwrite the local row with the server's version.
+  Future<void> resolveConflictAcceptServer(Conflict conflict) async {
+    try {
+      final server = (jsonDecode(conflict.serverPayloadJson) as Map)
+          .cast<String, dynamic>();
+      await _db.upsertExpensesRows([_toExpensesRow(api.Expense.fromJson(server))]);
+    } catch (_) {
+      // If the server payload can't be parsed, still clear the conflict.
+    }
+    await _db.resolveConflict(conflict.id);
+  }
+
+  /// "Keep mine": re-apply the local edit on top of the server's version by
+  /// re-enqueueing the op with the server's current updated_at as the base, so
+  /// it no longer conflicts.
+  Future<void> resolveConflictKeepLocal(Conflict conflict) async {
+    try {
+      if (conflict.entityType == 'updateExpense') {
+        final local = (jsonDecode(conflict.localPayloadJson) as Map)
+            .cast<String, dynamic>();
+        final server = (jsonDecode(conflict.serverPayloadJson) as Map)
+            .cast<String, dynamic>();
+        local['expectedUpdatedAt'] = server['updated_at'];
+        await _db.enqueueOutbox(
+          id: _uuid.v4(),
+          type: 'updateExpense',
+          payload: local,
+          entityType: 'expense',
+          entityId: local['expenseId'] as String?,
+        );
+      }
+    } catch (_) {
+      // Best-effort; the conflict is cleared regardless so it doesn't linger.
+    }
+    await _db.resolveConflict(conflict.id);
+    if (_autoSync) unawaited(drainOutboxOnce());
   }
 
   Future<void> _syncDeleteExpense(
@@ -479,6 +539,7 @@ class FinanceRepository {
       notes: Value(e.notes),
       date: Value(e.date),
       createdAt: Value(e.createdAt),
+      updatedAt: Value(e.updatedAt),
     );
   }
 
@@ -496,6 +557,7 @@ class FinanceRepository {
       notes: row.notes,
       date: row.date,
       createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
     );
   }
 }
