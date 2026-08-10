@@ -12,6 +12,7 @@ import '../widgets/app_input.dart';
 import '../widgets/chip.dart';
 import '../l10n/app_localizations.dart';
 
+import '../widgets/app_toast.dart';
 /// Editor for a household's chore zones (kitchen, bathroom, ...).
 ///
 /// Reachable from both the chores screen overflow menu and household
@@ -108,24 +109,19 @@ class _ChoreZonesSheetState extends ConsumerState<ChoreZonesSheet> {
         UpdateGroupRequest(choreZones: _zones),
       );
       if (!mounted) return;
-      ref.invalidate(cachedGroupsProvider);
+      await refreshCachedGroups(ref);
+      if (!mounted) return;
       setState(() {
         _zones = List<String>.from(updated.choreZones);
         _isSaving = false;
         _zonesChanged = false;
       });
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.sheetGroupSettingsChoreZonesUpdated)),
-      );
+      AppToast.success(context, l10n.sheetGroupSettingsChoreZonesUpdated);
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-      );
+      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     }
   }
 

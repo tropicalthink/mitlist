@@ -228,7 +228,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       // The cached household list must be refetched before any screen
       // resolves its active group against it — without this the new group is
       // missing from the cache and the hub lands on "no household".
-      ref.invalidate(cachedGroupsProvider);
+      // Seed the cache with the household the server just handed us, then
+      // refresh. Seeding first means the new household is present even if the
+      // refetch fails — no screen should land on "no household" for one that
+      // demonstrably exists.
+      await refreshCachedGroups(ref, ensure: group);
       if (!mounted) return;
       unawaited(ref.read(currentGroupIdProvider.notifier).set(group.id));
       unawaited(Haptics.success());

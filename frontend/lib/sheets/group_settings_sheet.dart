@@ -24,6 +24,7 @@ import '../l10n/app_localizations.dart';
 import 'chore_zones_sheet.dart';
 import 'invite_household_sheet.dart';
 
+import '../widgets/app_toast.dart';
 class GroupSettingsSheet extends ConsumerStatefulWidget {
   const GroupSettingsSheet({super.key, required this.groupId});
 
@@ -153,18 +154,13 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         _descChanged = false;
         _currencyChanged = false;
       });
-      ref.invalidate(cachedGroupsProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.sheetGroupSettingsSaved)),
-      );
+      await refreshCachedGroups(ref);
+      if (!mounted) return;
+      AppToast.success(context, l10n.sheetGroupSettingsSaved);
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-      );
+      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     }
   }
 
@@ -196,18 +192,10 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       setState(() {
         _members = _members.where((m) => m.userId != member.userId).toList();
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text(l10n.sheetGroupSettingsMemberRemoved(member.displayName))),
-      );
+      AppToast.success(context, l10n.sheetGroupSettingsMemberRemoved(member.displayName));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-      );
+      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     }
   }
 
@@ -240,17 +228,11 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       Navigator.of(context)
         ..pop()
         ..pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.sheetGroupSettingsHouseholdDeleted)),
-      );
+      AppToast.success(context, l10n.sheetGroupSettingsHouseholdDeleted);
     } catch (e) {
       if (!mounted) return;
       setState(() => _isDeleting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-      );
+      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     }
   }
 
@@ -398,11 +380,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
     } catch (e) {
       if (mounted) {
         setState(() => _savingKeys.remove(key));
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content:
-                  Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-        );
+        AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
       }
     }
   }

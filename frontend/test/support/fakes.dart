@@ -403,9 +403,15 @@ class FakeGroupService implements GroupService {
   /// The list returned by [listGroups] when not throwing.
   List<Group> listResult = const [];
 
+  /// Full override of [listGroups]'s result, for tests that need to control
+  /// *timing* rather than content — e.g. a request that never completes, which
+  /// is how a cache-first read proves it is not waiting on the network.
+  Future<List<Group>> Function()? listOverride;
+
   @override
   Future<List<Group>> listGroups({int limit = 50, int offset = 0}) async {
     listCalls++;
+    if (listOverride != null) return listOverride!();
     if (throwOnList != null) throw throwOnList!;
     return listResult;
   }

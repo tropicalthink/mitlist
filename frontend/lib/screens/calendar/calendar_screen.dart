@@ -31,6 +31,7 @@ import '../../sheets/chore_creation_sheet.dart';
 import '../../sheets/chore_detail_sheet.dart';
 import '../../sheets/create_household_sheet.dart';
 
+import '../../widgets/app_toast.dart';
 enum _CalendarView { week, month, agenda }
 
 /// Single source of truth for how each event type is drawn (icon + accent).
@@ -162,9 +163,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     _lastErrorShown = err;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(err, l10n))),
-      );
+      AppToast.error(context, friendlyErrorMessage(err, l10n));
     });
   }
 
@@ -414,7 +413,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             variant: AppButtonVariant.outline,
             text: l10n.commonRetry,
             onPressed: () {
-              ref.invalidate(cachedGroupsProvider);
+              // An explicit Retry means the user wants a real network attempt,
+              // not the cache we already failed with.
+              unawaited(refreshCachedGroups(ref).catchError((_) {}));
               ref.invalidate(calendarEventsProvider);
             },
           ),
@@ -1004,11 +1005,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     } catch (e) {
       if (!mounted) return;
       unawaited(Haptics.failure());
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-      );
+      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     } finally {
       _isSaving = false;
     }

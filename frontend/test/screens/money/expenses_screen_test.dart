@@ -273,6 +273,14 @@ class FakeFinanceRepository implements FinanceRepository {
     settlements.removeWhere((s) => s.id == settlementId);
   }
 
+  // Conflict resolution is exercised in finance_repository_test; these screen
+  // flows never reach it.
+  @override
+  Future<void> resolveConflictAcceptServer(Conflict conflict) async {}
+
+  @override
+  Future<void> resolveConflictKeepLocal(Conflict conflict) async {}
+
   @override
   Future<int> refreshGroup(String groupId,
       {int limit = 50, int offset = 0}) async {

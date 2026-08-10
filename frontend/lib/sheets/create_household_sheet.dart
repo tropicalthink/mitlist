@@ -11,6 +11,7 @@ import '../utils/friendly_error.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/app_input.dart';
 
+import '../widgets/app_toast.dart';
 class CreateHouseholdSheet extends ConsumerStatefulWidget {
   const CreateHouseholdSheet({super.key});
 
@@ -54,21 +55,19 @@ class _CreateHouseholdSheetState extends ConsumerState<CreateHouseholdSheet> {
       // resolves its active group against it — without this the new group is
       // missing from the cache and the home screen lands on "no household"
       // until an app restart.
-      ref.invalidate(cachedGroupsProvider);
+      // Seed the cache with the household the server just handed us, then
+      // refresh. Seeding first means the new household is present even if the
+      // refetch fails — no screen should land on "no household" for one that
+      // demonstrably exists.
+      await refreshCachedGroups(ref, ensure: group);
       if (!mounted) return;
       Navigator.of(context).pop(group);
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.createHouseholdCreated)),
-      );
+      AppToast.success(context, l10n.createHouseholdCreated);
     } catch (e) {
       if (!mounted) return;
       setState(() => _isCreating = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-      );
+      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     }
   }
 

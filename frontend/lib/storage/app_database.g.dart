@@ -1066,6 +1066,12 @@ class $ExpensesTableTable extends ExpensesTable
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
       'created_at', aliasedName, false,
       type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -1079,7 +1085,8 @@ class $ExpensesTableTable extends ExpensesTable
         currency,
         notes,
         date,
-        createdAt
+        createdAt,
+        updatedAt
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1162,6 +1169,10 @@ class $ExpensesTableTable extends ExpensesTable
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
     return context;
   }
 
@@ -1195,6 +1206,8 @@ class $ExpensesTableTable extends ExpensesTable
           .read(DriftSqlType.dateTime, data['${effectivePrefix}date'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
     );
   }
 
@@ -1218,6 +1231,11 @@ class ExpensesTableData extends DataClass
   final String notes;
   final DateTime date;
   final DateTime createdAt;
+
+  /// Server last-modified stamp, kept as the optimistic-concurrency base for
+  /// offline edits. Nullable: rows created locally have no server version yet,
+  /// and rows cached before this column existed have none either.
+  final DateTime? updatedAt;
   const ExpensesTableData(
       {required this.id,
       required this.groupId,
@@ -1230,7 +1248,8 @@ class ExpensesTableData extends DataClass
       required this.currency,
       required this.notes,
       required this.date,
-      required this.createdAt});
+      required this.createdAt,
+      this.updatedAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1246,6 +1265,9 @@ class ExpensesTableData extends DataClass
     map['notes'] = Variable<String>(notes);
     map['date'] = Variable<DateTime>(date);
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
     return map;
   }
 
@@ -1263,6 +1285,9 @@ class ExpensesTableData extends DataClass
       notes: Value(notes),
       date: Value(date),
       createdAt: Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
     );
   }
 
@@ -1282,6 +1307,7 @@ class ExpensesTableData extends DataClass
       notes: serializer.fromJson<String>(json['notes']),
       date: serializer.fromJson<DateTime>(json['date']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
   }
   @override
@@ -1300,6 +1326,7 @@ class ExpensesTableData extends DataClass
       'notes': serializer.toJson<String>(notes),
       'date': serializer.toJson<DateTime>(date),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
   }
 
@@ -1315,7 +1342,8 @@ class ExpensesTableData extends DataClass
           String? currency,
           String? notes,
           DateTime? date,
-          DateTime? createdAt}) =>
+          DateTime? createdAt,
+          Value<DateTime?> updatedAt = const Value.absent()}) =>
       ExpensesTableData(
         id: id ?? this.id,
         groupId: groupId ?? this.groupId,
@@ -1329,6 +1357,7 @@ class ExpensesTableData extends DataClass
         notes: notes ?? this.notes,
         date: date ?? this.date,
         createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
       );
   ExpensesTableData copyWithCompanion(ExpensesTableCompanion data) {
     return ExpensesTableData(
@@ -1346,6 +1375,7 @@ class ExpensesTableData extends DataClass
       notes: data.notes.present ? data.notes.value : this.notes,
       date: data.date.present ? data.date.value : this.date,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -1363,14 +1393,27 @@ class ExpensesTableData extends DataClass
           ..write('currency: $currency, ')
           ..write('notes: $notes, ')
           ..write('date: $date, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, groupId, payerId, amount, baseAmount,
-      fxRate, description, category, currency, notes, date, createdAt);
+  int get hashCode => Object.hash(
+      id,
+      groupId,
+      payerId,
+      amount,
+      baseAmount,
+      fxRate,
+      description,
+      category,
+      currency,
+      notes,
+      date,
+      createdAt,
+      updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1386,7 +1429,8 @@ class ExpensesTableData extends DataClass
           other.currency == this.currency &&
           other.notes == this.notes &&
           other.date == this.date &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
 }
 
 class ExpensesTableCompanion extends UpdateCompanion<ExpensesTableData> {
@@ -1402,6 +1446,7 @@ class ExpensesTableCompanion extends UpdateCompanion<ExpensesTableData> {
   final Value<String> notes;
   final Value<DateTime> date;
   final Value<DateTime> createdAt;
+  final Value<DateTime?> updatedAt;
   final Value<int> rowid;
   const ExpensesTableCompanion({
     this.id = const Value.absent(),
@@ -1416,6 +1461,7 @@ class ExpensesTableCompanion extends UpdateCompanion<ExpensesTableData> {
     this.notes = const Value.absent(),
     this.date = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ExpensesTableCompanion.insert({
@@ -1431,6 +1477,7 @@ class ExpensesTableCompanion extends UpdateCompanion<ExpensesTableData> {
     required String notes,
     required DateTime date,
     required DateTime createdAt,
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         groupId = Value(groupId),
@@ -1455,6 +1502,7 @@ class ExpensesTableCompanion extends UpdateCompanion<ExpensesTableData> {
     Expression<String>? notes,
     Expression<DateTime>? date,
     Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1470,6 +1518,7 @@ class ExpensesTableCompanion extends UpdateCompanion<ExpensesTableData> {
       if (notes != null) 'notes': notes,
       if (date != null) 'date': date,
       if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1487,6 +1536,7 @@ class ExpensesTableCompanion extends UpdateCompanion<ExpensesTableData> {
       Value<String>? notes,
       Value<DateTime>? date,
       Value<DateTime>? createdAt,
+      Value<DateTime?>? updatedAt,
       Value<int>? rowid}) {
     return ExpensesTableCompanion(
       id: id ?? this.id,
@@ -1501,6 +1551,7 @@ class ExpensesTableCompanion extends UpdateCompanion<ExpensesTableData> {
       notes: notes ?? this.notes,
       date: date ?? this.date,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1544,6 +1595,9 @@ class ExpensesTableCompanion extends UpdateCompanion<ExpensesTableData> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1565,6 +1619,7 @@ class ExpensesTableCompanion extends UpdateCompanion<ExpensesTableData> {
           ..write('notes: $notes, ')
           ..write('date: $date, ')
           ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -10191,6 +10246,7 @@ typedef $$ExpensesTableTableCreateCompanionBuilder = ExpensesTableCompanion
   required String notes,
   required DateTime date,
   required DateTime createdAt,
+  Value<DateTime?> updatedAt,
   Value<int> rowid,
 });
 typedef $$ExpensesTableTableUpdateCompanionBuilder = ExpensesTableCompanion
@@ -10207,6 +10263,7 @@ typedef $$ExpensesTableTableUpdateCompanionBuilder = ExpensesTableCompanion
   Value<String> notes,
   Value<DateTime> date,
   Value<DateTime> createdAt,
+  Value<DateTime?> updatedAt,
   Value<int> rowid,
 });
 
@@ -10254,6 +10311,9 @@ class $$ExpensesTableTableFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
 }
 
 class $$ExpensesTableTableOrderingComposer
@@ -10300,6 +10360,9 @@ class $$ExpensesTableTableOrderingComposer
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
 }
 
 class $$ExpensesTableTableAnnotationComposer
@@ -10346,6 +10409,9 @@ class $$ExpensesTableTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $$ExpensesTableTableTableManager extends RootTableManager<
@@ -10386,6 +10452,7 @@ class $$ExpensesTableTableTableManager extends RootTableManager<
             Value<String> notes = const Value.absent(),
             Value<DateTime> date = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               ExpensesTableCompanion(
@@ -10401,6 +10468,7 @@ class $$ExpensesTableTableTableManager extends RootTableManager<
             notes: notes,
             date: date,
             createdAt: createdAt,
+            updatedAt: updatedAt,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -10416,6 +10484,7 @@ class $$ExpensesTableTableTableManager extends RootTableManager<
             required String notes,
             required DateTime date,
             required DateTime createdAt,
+            Value<DateTime?> updatedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               ExpensesTableCompanion.insert(
@@ -10431,6 +10500,7 @@ class $$ExpensesTableTableTableManager extends RootTableManager<
             notes: notes,
             date: date,
             createdAt: createdAt,
+            updatedAt: updatedAt,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0

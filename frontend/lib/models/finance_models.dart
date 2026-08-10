@@ -14,6 +14,13 @@ class Expense {
   final DateTime date;
   final DateTime createdAt;
 
+  /// Server's last-modified stamp, kept so an offline edit can send the base it
+  /// was made against (`expected_updated_at`) and the server can reject a
+  /// clobber instead of silently accepting it. Null for a row created locally
+  /// that the server has not confirmed yet — there is no server version to
+  /// conflict with.
+  final DateTime? updatedAt;
+
   const Expense({
     required this.id,
     required this.groupId,
@@ -27,6 +34,7 @@ class Expense {
     this.notes = '',
     required this.date,
     required this.createdAt,
+    this.updatedAt,
   });
 
   factory Expense.fromJson(Map<String, dynamic> json) => Expense(
@@ -44,6 +52,9 @@ class Expense {
         notes: json['notes'] as String? ?? '',
         date: DateTime.parse(json['date'] as String),
         createdAt: DateTime.parse(json['created_at'] as String),
+        updatedAt: json['updated_at'] == null
+            ? null
+            : DateTime.parse(json['updated_at'] as String),
       );
 
   Map<String, dynamic> toJson() => {
@@ -59,6 +70,7 @@ class Expense {
         'notes': notes,
         'date': date.toIso8601String(),
         'created_at': createdAt.toIso8601String(),
+        if (updatedAt != null) 'updated_at': updatedAt!.toIso8601String(),
       };
 }
 
@@ -306,6 +318,12 @@ class UpdateExpenseRequest {
   final String? notes;
   final DateTime? date;
 
+  /// The server `updated_at` this edit was based on. When present the server
+  /// returns 409 (with its current row) rather than overwriting a change made
+  /// by someone else while this edit sat in the outbox. Omitted for a chained
+  /// edit on an already-queued change — that chain is all ours.
+  final DateTime? expectedUpdatedAt;
+
   const UpdateExpenseRequest({
     this.payerId,
     this.amount,
@@ -316,6 +334,7 @@ class UpdateExpenseRequest {
     this.currency,
     this.notes,
     this.date,
+    this.expectedUpdatedAt,
   });
 
   Map<String, dynamic> toJson() {
@@ -329,6 +348,9 @@ class UpdateExpenseRequest {
     if (currency != null) m['currency'] = currency;
     if (notes != null) m['notes'] = notes;
     if (date != null) m['date'] = date!.toIso8601String();
+    if (expectedUpdatedAt != null) {
+      m['expected_updated_at'] = expectedUpdatedAt!.toUtc().toIso8601String();
+    }
     return m;
   }
 }

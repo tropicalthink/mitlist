@@ -11,6 +11,17 @@ import 'package:sqlite3/sqlite3.dart' as s3;
 /// this test proves the new table + index appear and existing household grocery
 /// data is untouched.
 const _v11Schema = '''
+-- Not exercised by this test, but a real database of this vintage has it, and
+-- later migrations legitimately ALTER it. Without it the fixture is not a
+-- faithful older schema and every future expense migration breaks here.
+CREATE TABLE "expenses_table" (
+  "id" TEXT NOT NULL, "group_id" TEXT NOT NULL, "payer_id" TEXT NOT NULL,
+  "amount" INTEGER NOT NULL, "base_amount" INTEGER NOT NULL DEFAULT 0,
+  "fx_rate" REAL NOT NULL DEFAULT 1.0,
+  "description" TEXT NOT NULL, "category" TEXT NOT NULL,
+  "currency" TEXT NOT NULL, "notes" TEXT NOT NULL,
+  "date" INTEGER NOT NULL, "created_at" INTEGER NOT NULL,
+  PRIMARY KEY ("id"));
 CREATE TABLE "canonical_items_table" (
   "id" TEXT NOT NULL, "group_id" TEXT NOT NULL,
   "name_de" TEXT NOT NULL DEFAULT '', "name_en" TEXT NOT NULL DEFAULT '',

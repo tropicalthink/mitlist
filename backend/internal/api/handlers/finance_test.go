@@ -332,6 +332,71 @@ func TestFinance_DeleteExpense(t *testing.T) {
 	requireStatus(t, rec, http.StatusNoContent)
 }
 
+// Optimistic concurrency on expense update. Without this an offline edit that
+// drains after somebody else's edit silently overwrites it — and unlike a list
+// item, a clobbered expense costs somebody money.
+func TestFinance_UpdateExpense_OptimisticConcurrency(t *testing.T) {
+	clearTables(t)
+	router, _ := newFinanceRouter(t)
+	user := createTestUser(t, "occfin@example.com", "password123")
+	token := generateTestToken(user.ID)
+
+	groupRepo := newTestGroupRepo()
+	group := &models.Group{
+		ID:        uuid.New(),
+		Name:      "G",
+		CreatedBy: user.ID,
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+	}
+	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
+
+	financeRepo := newTestFinanceRepo()
+	updatedAt := time.Now().UTC()
+	expense := &models.Expense{
+		ID:          uuid.New(),
+		GroupID:     group.ID,
+		PayerID:     user.ID,
+		Amount:      5000,
+		Description: "Groceries",
+		Category:    "Food",
+		Currency:    "USD",
+		Date:        time.Now().UTC(),
+		CreatedAt:   updatedAt,
+		UpdatedAt:   updatedAt,
+	}
+	require.NoError(t, financeRepo.CreateExpense(context.Background(), expense))
+
+	url := "/api/v1/expenses/" + expense.ID.String()
+
+	// Stale base (someone else edited since) -> 409 carrying the server's row,
+	// which is what the client's conflict sheet renders as "theirs".
+	rec := execRequest(t, router, "PATCH", url, map[string]any{
+		"amount":              9900,
+		"expected_updated_at": updatedAt.Add(-time.Hour),
+	}, token)
+	requireStatus(t, rec, http.StatusConflict)
+	var conflict map[string]any
+	parseJSONResponse(t, rec, &conflict)
+	assert.Equal(t, "conflict", conflict["error"])
+	assert.NotNil(t, conflict["current"], "409 must carry the current expense")
+
+	// Correct base truncated to the second -> succeeds. Same regression guard as
+	// the list-item case: Drift stores DateTime as unix SECONDS, so the base the
+	// client sends back has lost its sub-second component and must not 409.
+	rec = execRequest(t, router, "PATCH", url, map[string]any{
+		"amount":              9900,
+		"expected_updated_at": updatedAt.Truncate(time.Second),
+	}, token)
+	requireStatus(t, rec, http.StatusOK)
+
+	// Omitting the base entirely stays last-write-wins, so existing clients and
+	// non-offline callers are unaffected.
+	rec = execRequest(t, router, "PATCH", url, map[string]any{"amount": 12300}, token)
+	requireStatus(t, rec, http.StatusOK)
+}
+
 func TestFinance_CreateSplit(t *testing.T) {
 	clearTables(t)
 	router, _ := newFinanceRouter(t)

@@ -102,6 +102,12 @@ class ExpensesTable extends Table {
   DateTimeColumn get date => dateTime()();
   DateTimeColumn get createdAt => dateTime().named('created_at')();
 
+  /// Server last-modified stamp, kept as the optimistic-concurrency base for
+  /// offline edits. Nullable: rows created locally have no server version yet,
+  /// and rows cached before this column existed have none either.
+  DateTimeColumn get updatedAt =>
+      dateTime().named('updated_at').nullable()();
+
   @override
   Set<Column<Object>>? get primaryKey => {id};
 }
@@ -420,7 +426,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   /// The prebuilt read-only global grocery brain (canonical items, seed/OFF
   /// aliases + FTS, store aisles). Attached by [GroceryReferenceInstaller] once
@@ -728,6 +734,13 @@ FROM list_items_table;
             await m.createTable(settlementsCaches);
             await m.createTable(calendarCaches);
             await m.createTable(mealPlanCaches);
+          }
+          if (from < 14) {
+            // Expense optimistic concurrency needs the server's updated_at as a
+            // base. Nullable with no backfill: existing cached rows genuinely
+            // have no known server version, and a null base means the edit
+            // falls back to last-write-wins rather than conflicting falsely.
+            await m.addColumn(expensesTable, expensesTable.updatedAt);
           }
         },
         beforeOpen: (details) async {
