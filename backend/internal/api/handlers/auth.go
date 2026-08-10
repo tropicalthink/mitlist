@@ -315,7 +315,21 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
-	access, refresh, err := h.jwtService.RotateRefreshToken(refreshCredential(r, req.RefreshToken))
+	credential := refreshCredential(r, req.RefreshToken)
+	claims, err := h.jwtService.ValidateRefreshToken(credential)
+	if err != nil {
+		api.RespondError(w, api.ErrUnauthorized)
+		return
+	}
+	// A locked guest may return only by presenting a still-valid refresh
+	// session. Normal inactive accounts are not reactivated here.
+	if userID, parseErr := uuid.Parse(claims.Subject); parseErr == nil {
+		if err := h.userService.ReactivateGuestForRefresh(r.Context(), userID); err != nil {
+			api.RespondError(w, api.ErrUnauthorized)
+			return
+		}
+	}
+	access, refresh, err := h.jwtService.RotateRefreshToken(credential)
 	if err != nil {
 		api.RespondError(w, api.ErrUnauthorized)
 		return

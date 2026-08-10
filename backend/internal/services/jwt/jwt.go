@@ -21,6 +21,7 @@ const (
 	TokenTypeRefresh = "refresh"
 
 	refreshTokenLifetime = 7 * 24 * time.Hour
+	guestRefreshLifetime = 365 * 24 * time.Hour
 	sessionTimeout       = 5 * time.Second
 )
 
@@ -204,7 +205,7 @@ func (s *Service) GenerateTokenPair(userID string, roles []string) (access, refr
 	now := time.Now().UTC()
 	accessTTL := s.accessTokenLifetime()
 	accessClaims := s.newClaims(userID, roles, TokenTypeAccess, now, now.Add(accessTTL))
-	refreshClaims := s.newClaims(userID, roles, TokenTypeRefresh, now, now.Add(refreshTokenLifetime))
+	refreshClaims := s.newClaims(userID, roles, TokenTypeRefresh, now, now.Add(refreshLifetime(roles)))
 
 	access, err = s.sign(accessClaims)
 	if err != nil {
@@ -229,7 +230,7 @@ func (s *Service) RotateRefreshToken(token string) (access, refresh string, err 
 	}
 	now := time.Now().UTC()
 	accessClaims := s.newClaims(claims.Subject, claims.Roles, TokenTypeAccess, now, now.Add(s.accessTokenLifetime()))
-	refreshClaims := s.newClaims(claims.Subject, claims.Roles, TokenTypeRefresh, now, now.Add(refreshTokenLifetime))
+	refreshClaims := s.newClaims(claims.Subject, claims.Roles, TokenTypeRefresh, now, now.Add(refreshLifetime(claims.Roles)))
 	access, err = s.sign(accessClaims)
 	if err != nil {
 		return "", "", err
@@ -255,6 +256,15 @@ func (s *Service) RotateRefreshToken(token string) (access, refresh string, err 
 		return "", "", err
 	}
 	return access, refresh, nil
+}
+
+func refreshLifetime(roles []string) time.Duration {
+	for _, role := range roles {
+		if role == "guest" {
+			return guestRefreshLifetime
+		}
+	}
+	return refreshTokenLifetime
 }
 
 func (s *Service) ValidateAccessToken(token string) (*Claims, error) {

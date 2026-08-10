@@ -243,6 +243,41 @@ func (r *UserRepository) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
+// TouchGuestActivity records authenticated use at most once per hour without
+// rewriting the guest's profile on every API request. The WHERE clause
+// prevents an expired, converted, or locked guest from being revived by a
+// stale request.
+func (r *UserRepository) TouchGuestActivity(ctx context.Context, id uuid.UUID) error {
+	_, err := r.db.Exec(ctx, `
+		UPDATE users
+		SET guest_last_seen_at = NOW()
+		WHERE id = $1 AND is_guest AND is_active AND deleted_at IS NULL
+		  AND (guest_last_seen_at IS NULL OR guest_last_seen_at < NOW() - INTERVAL '1 hour')
+	`, id)
+	return err
+}
+
+// ReactivateGuest unlocks a guest only during the recovery grace period. The
+// caller must already possess a valid refresh session; this method is not
+// exposed as a standalone unauthenticated recovery operation.
+func (r *UserRepository) ReactivateGuest(ctx context.Context, id uuid.UUID) error {
+	cmd, err := r.db.Exec(ctx, `
+		UPDATE users
+		SET is_active = TRUE, guest_locked_at = NULL,
+		    guest_last_seen_at = NOW(), updated_at = NOW()
+		WHERE id = $1 AND is_guest AND NOT is_active AND deleted_at IS NULL
+		  AND guest_locked_at IS NOT NULL
+		  AND guest_locked_at > NOW() - INTERVAL '180 days'
+	`, id)
+	if err != nil {
+		return err
+	}
+	if cmd.RowsAffected() == 0 {
+		return fmt.Errorf("guest is not eligible for reactivation")
+	}
+	return nil
+}
+
 // List returns a paginated list of users, excluding soft-deleted records.
 func (r *UserRepository) List(ctx context.Context, limit, offset int) ([]models.User, error) {
 	if limit <= 0 {

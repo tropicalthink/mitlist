@@ -120,6 +120,47 @@ func TestUserRepository_GetByID_NotFound(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestUserRepository_TouchGuestActivity(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewUserRepository(mock)
+	id := fixedUUID()
+
+	mock.ExpectExec(`UPDATE users SET guest_last_seen_at = NOW\(\)`).
+		WithArgs(id).
+		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+
+	require.NoError(t, repo.TouchGuestActivity(context.Background(), id))
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestUserRepository_ReactivateGuest(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewUserRepository(mock)
+	id := fixedUUID()
+
+	mock.ExpectExec(`UPDATE users SET is_active = TRUE, guest_locked_at = NULL`).
+		WithArgs(id).
+		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+
+	require.NoError(t, repo.ReactivateGuest(context.Background(), id))
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestUserRepository_ReactivateGuest_OutsideGrace(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewUserRepository(mock)
+	id := fixedUUID()
+
+	mock.ExpectExec(`UPDATE users SET is_active = TRUE, guest_locked_at = NULL`).
+		WithArgs(id).
+		WillReturnResult(pgxmock.NewResult("UPDATE", 0))
+
+	err := repo.ReactivateGuest(context.Background(), id)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not eligible")
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestUserRepository_GetByEmail(t *testing.T) {
 	mock := newMockDB(t)
 	repo := NewUserRepository(mock)

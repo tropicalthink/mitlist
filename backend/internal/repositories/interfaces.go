@@ -16,6 +16,8 @@ type UserRepo interface {
 	GetByOAuth(ctx context.Context, provider, providerUserID string) (*models.User, error)
 	Update(ctx context.Context, user *models.User) error
 	SoftDelete(ctx context.Context, id uuid.UUID) error
+	TouchGuestActivity(ctx context.Context, id uuid.UUID) error
+	ReactivateGuest(ctx context.Context, id uuid.UUID) error
 	List(ctx context.Context, limit, offset int) ([]models.User, error)
 }
 

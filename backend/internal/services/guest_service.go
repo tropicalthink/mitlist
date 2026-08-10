@@ -121,7 +121,7 @@ func (s *GuestService) createGuest(ctx context.Context) (*models.User, string, s
 		return nil, "", "", fmt.Errorf("create guest: %w", err)
 	}
 
-	access, refresh, err := s.jwtService.GenerateTokenPair(user.ID.String(), nil)
+	access, refresh, err := s.jwtService.GenerateTokenPair(user.ID.String(), []string{"guest"})
 	if err != nil {
 		return nil, "", "", fmt.Errorf("generate tokens: %w", err)
 	}
@@ -143,9 +143,8 @@ func (s *GuestService) GetGuest(ctx context.Context, userID uuid.UUID) (*models.
 	if !user.IsGuest {
 		return nil, &api.ValidationError{Field: "user", Message: "user is not a guest"}
 	}
-	if guestExpired(user, time.Now().UTC()) {
-		_ = s.userRepo.SoftDelete(ctx, userID)
-		return nil, &api.NotFoundError{Resource: "guest user", ID: userID.String()}
+	if !user.IsActive {
+		return nil, &api.ValidationError{Message: "guest account is locked; refresh the app session to reactivate it"}
 	}
 	return user, nil
 }
@@ -174,9 +173,8 @@ func (s *GuestService) ConvertGuest(ctx context.Context, guestID uuid.UUID, emai
 	if !user.IsGuest {
 		return nil, "", "", &api.ValidationError{Field: "user", Message: "user is not a guest"}
 	}
-	if guestExpired(user, time.Now().UTC()) {
-		_ = s.userRepo.SoftDelete(ctx, guestID)
-		return nil, "", "", &api.NotFoundError{Resource: "guest user", ID: guestID.String()}
+	if !user.IsActive {
+		return nil, "", "", &api.ValidationError{Message: "guest account is locked; refresh the app session to reactivate it"}
 	}
 	if s.authRepo == nil || s.mailService == nil {
 		return nil, "", "", fmt.Errorf("guest conversion verification is not configured")
@@ -216,7 +214,7 @@ func (s *GuestService) ConvertGuest(ctx context.Context, guestID uuid.UUID, emai
 		return nil, "", "", fmt.Errorf("revoke guest sessions: %w", err)
 	}
 
-	access, refresh, err := s.jwtService.GenerateTokenPair(user.ID.String(), nil)
+	access, refresh, err := s.jwtService.GenerateTokenPair(user.ID.String(), []string{"guest"})
 	if err != nil {
 		return nil, "", "", fmt.Errorf("generate tokens: %w", err)
 	}
