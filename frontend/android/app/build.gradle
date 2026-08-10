@@ -14,6 +14,15 @@ def keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
+def isReleaseBuild = gradle.startParameter.taskNames.any {
+    it.toLowerCase().contains("release")
+}
+if (isReleaseBuild && !keystorePropertiesFile.exists()) {
+    throw new GradleException("Release signing is not configured. Create android/key.properties from key.properties.example.")
+}
+if (isReleaseBuild && !file("google-services.json").exists()) {
+    throw new GradleException("Release Firebase configuration is missing at android/app/google-services.json.")
+}
 
 android {
     namespace = "me.mitlist"
@@ -52,9 +61,7 @@ android {
 
     buildTypes {
         release {
-            // Use the real release keystore when key.properties is present;
-            // otherwise fall back to debug keys so local `--release` runs work.
-            signingConfig = keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug
+            signingConfig = signingConfigs.release
             minifyEnabled = true
             shrinkResources = true
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"

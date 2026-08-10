@@ -1,7 +1,8 @@
 # Production deploy: build and push Flutter web + Go API images.
 # Merge a PR into `prod` to run. Requires secrets: ME_USERNAME, ME_PASSWORD.
 # Optional (baked into the web build via dart-define): PRODUCTION_API_BASE_URL,
-# GLITCHTIP_DSN_WEB, REQTRACK_APP_KEY (reqtrack intake key; enables the in-app
+# GLITCHTIP_DSN_WEB, ANDROID_APP_LINK_SHA256, APPLE_TEAM_ID,
+# REQTRACK_APP_KEY (reqtrack intake key; enables the in-app
 # "Send feedback" card), REQTRACK_URL (override tracker host).
 name: Deploy to production (Gitea registry)
 
@@ -54,7 +55,18 @@ jobs:
           GLITCHTIP_DSN: ${{ secrets.GLITCHTIP_DSN_WEB }}
           REQTRACK_APP_KEY: ${{ secrets.REQTRACK_APP_KEY }}
           REQTRACK_URL: ${{ secrets.REQTRACK_URL }}
+          ANDROID_APP_LINK_SHA256: ${{ secrets.ANDROID_APP_LINK_SHA256 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
+          set -eu
+          test -n "$ANDROID_APP_LINK_SHA256"
+          test -n "$APPLE_TEAM_ID"
+          sed -i "s/__PLAY_APP_SIGNING_SHA256__/$ANDROID_APP_LINK_SHA256/g" frontend/web/.well-known/assetlinks.json
+          sed -i "s/__APPLE_TEAM_ID__/$APPLE_TEAM_ID/g" frontend/web/.well-known/apple-app-site-association
+          if grep -R '__[A-Z0-9_]*__' frontend/web/.well-known; then
+            echo "Unresolved app-link association placeholder"
+            exit 1
+          fi
           ACTOR="${{ steps.vars.outputs.actor }}"
           REPO_NAME="${{ steps.vars.outputs.repo_name }}"
           VERSION="${{ steps.version.outputs.version }}"
