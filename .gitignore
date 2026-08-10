@@ -4,3 +4,10 @@
 .env.*
 !.env.example
 !.env.*.example
+
+# Firebase mobile client configuration is injected by release CI. Keep local
+# copies out of every repository level, including accidental root-level files.
+google-services.json
+GoogleService-Info.plist
+**/google-services.json
+**/GoogleService-Info.plist

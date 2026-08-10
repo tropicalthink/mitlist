@@ -34,7 +34,43 @@ jobs:
             printf 'storeFile=release.jks\n'
           } > frontend/android/key.properties
       - name: Build signed Android App Bundle
-        run: cd frontend && flutter pub get && flutter build appbundle --release
+        env:
+          API_BASE_URL: ${{ secrets.BETA_API_BASE_URL }}
+          GLITCHTIP_DSN: ${{ secrets.GLITCHTIP_DSN_BETA }}
+          BETA_ENVIRONMENT: ${{ secrets.BETA_ENVIRONMENT }}
+          BUILD_NUMBER: ${{ gitea.run_number }}
+        run: |
+          set -eu
+
+          # A release binary without an API endpoint cannot complete login or
+          # recovery. Keep this check before Flutter starts so a misconfigured
+          # beta never produces an apparently valid artifact.
+          test -n "$API_BASE_URL"
+          case "$API_BASE_URL" in
+            https://*) ;;
+            *) echo "BETA_API_BASE_URL must be an https URL" >&2; exit 1 ;;
+          esac
+          case "$API_BASE_URL" in
+            *" "*|*$'\n'*|*$'\r'*) echo "BETA_API_BASE_URL contains whitespace" >&2; exit 1 ;;
+          esac
+
+          case "$BUILD_NUMBER" in
+            ''|*[!0-9]*) echo "Gitea did not provide a numeric run number" >&2; exit 1 ;;
+          esac
+          test "$BUILD_NUMBER" -gt 0
+
+          ENVIRONMENT="${BETA_ENVIRONMENT:-beta}"
+          case "$ENVIRONMENT" in
+            ''|*[!A-Za-z0-9._-]*) echo "BETA_ENVIRONMENT contains invalid characters" >&2; exit 1 ;;
+          esac
+
+          cd frontend
+          flutter pub get
+          flutter build appbundle --release \
+            --build-number="$BUILD_NUMBER" \
+            --dart-define="API_BASE_URL=$API_BASE_URL" \
+            --dart-define="GLITCHTIP_DSN=$GLITCHTIP_DSN" \
+            --dart-define="ENVIRONMENT=$ENVIRONMENT"
       - uses: actions/upload-artifact@v4
         with:
           name: mitlist-android-beta
@@ -69,7 +105,43 @@ jobs:
           printf '%s' "$IOS_EXPORT_OPTIONS_PLIST_B64" | base64 -d > frontend/ios/ExportOptions.plist
           printf '\nDEVELOPMENT_TEAM=%s\nCODE_SIGN_IDENTITY=Apple Distribution\n' "$IOS_DEVELOPMENT_TEAM" >> frontend/ios/Flutter/Release.xcconfig
       - name: Build iOS archive
-        run: cd frontend && flutter pub get && flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
+        env:
+          API_BASE_URL: ${{ secrets.BETA_API_BASE_URL }}
+          GLITCHTIP_DSN: ${{ secrets.GLITCHTIP_DSN_BETA }}
+          BETA_ENVIRONMENT: ${{ secrets.BETA_ENVIRONMENT }}
+          BUILD_NUMBER: ${{ gitea.run_number }}
+        run: |
+          set -eu
+
+          # Keep Android and iOS on the same server and release number. The
+          # endpoint is intentionally required for a usable store build.
+          test -n "$API_BASE_URL"
+          case "$API_BASE_URL" in
+            https://*) ;;
+            *) echo "BETA_API_BASE_URL must be an https URL" >&2; exit 1 ;;
+          esac
+          case "$API_BASE_URL" in
+            *" "*|*$'\n'*|*$'\r'*) echo "BETA_API_BASE_URL contains whitespace" >&2; exit 1 ;;
+          esac
+
+          case "$BUILD_NUMBER" in
+            ''|*[!0-9]*) echo "Gitea did not provide a numeric run number" >&2; exit 1 ;;
+          esac
+          test "$BUILD_NUMBER" -gt 0
+
+          ENVIRONMENT="${BETA_ENVIRONMENT:-beta}"
+          case "$ENVIRONMENT" in
+            ''|*[!A-Za-z0-9._-]*) echo "BETA_ENVIRONMENT contains invalid characters" >&2; exit 1 ;;
+          esac
+
+          cd frontend
+          flutter pub get
+          flutter build ipa --release \
+            --build-number="$BUILD_NUMBER" \
+            --dart-define="API_BASE_URL=$API_BASE_URL" \
+            --dart-define="GLITCHTIP_DSN=$GLITCHTIP_DSN" \
+            --dart-define="ENVIRONMENT=$ENVIRONMENT" \
+            --export-options-plist=ios/ExportOptions.plist
       - uses: actions/upload-artifact@v4
         with:
           name: mitlist-ios-beta

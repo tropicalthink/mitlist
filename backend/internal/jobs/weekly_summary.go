@@ -24,6 +24,12 @@ type WeeklySummary struct {
 	log        *logger.Logger
 }
 
+const weeklySummaryAdvisoryLockKey int64 = 0x6d69746c697374
+
+type weeklySummaryClaimer interface {
+	TryClaim(context.Context) (release func() error, acquired bool, err error)
+}
+
 // NewWeeklySummary creates a new WeeklySummary job.
 func NewWeeklySummary(db repositories.DBTX, push Pusher, log *logger.Logger) *WeeklySummary {
 	return &WeeklySummary{repo: &weeklySummaryRepoImpl{db: db}, push: push, log: log}
@@ -42,6 +48,22 @@ func newWeeklySummary(repo weeklySummaryRepo, push Pusher, log *logger.Logger) *
 func (s *WeeklySummary) Run() {
 	ctx := context.Background()
 	s.log.Info().Msg("weekly summary job started")
+	if claimer, ok := s.repo.(weeklySummaryClaimer); ok {
+		release, acquired, err := claimer.TryClaim(ctx)
+		if err != nil {
+			s.log.Error().Err(err).Msg("failed to claim weekly summary job")
+			return
+		}
+		if !acquired {
+			s.log.Info().Msg("weekly summary already running on another replica")
+			return
+		}
+		defer func() {
+			if err := release(); err != nil && !errors.Is(err, pgx.ErrTxClosed) {
+				s.log.Error().Err(err).Msg("failed to release weekly summary claim")
+			}
+		}()
+	}
 
 	since := time.Now().UTC().Add(-7 * 24 * time.Hour)
 
@@ -118,6 +140,25 @@ func (s *WeeklySummary) notifyMembers(ctx context.Context, groupID uuid.UUID, co
 
 type weeklySummaryRepoImpl struct {
 	db repositories.DBTX
+}
+
+// TryClaim holds a transaction-scoped PostgreSQL advisory lock for the whole
+// run. Only one API replica can produce the weekly digest at a time.
+func (r *weeklySummaryRepoImpl) TryClaim(ctx context.Context) (func() error, bool, error) {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return nil, false, fmt.Errorf("begin weekly summary claim: %w", err)
+	}
+	var acquired bool
+	if err := tx.QueryRow(ctx, `SELECT pg_try_advisory_xact_lock($1)`, weeklySummaryAdvisoryLockKey).Scan(&acquired); err != nil {
+		_ = tx.Rollback(ctx)
+		return nil, false, fmt.Errorf("acquire weekly summary claim: %w", err)
+	}
+	if !acquired {
+		_ = tx.Rollback(ctx)
+		return func() error { return nil }, false, nil
+	}
+	return func() error { return tx.Rollback(ctx) }, true, nil
 }
 
 func (r *weeklySummaryRepoImpl) ListWeeklyActivity(ctx context.Context, since time.Time) ([]groupActivity, error) {

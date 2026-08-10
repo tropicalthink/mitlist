@@ -59,6 +59,7 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           set -eu
+          test -n "$API_BASE_URL"
           test -n "$ANDROID_APP_LINK_SHA256"
           test -n "$APPLE_TEAM_ID"
           sed -i "s/__PLAY_APP_SIGNING_SHA256__/$ANDROID_APP_LINK_SHA256/g" frontend/web/.well-known/assetlinks.json
@@ -100,6 +101,7 @@ jobs:
             --compress \
             --no-cache \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --build-arg VERSION="$VERSION" \
             -t "git.vinylnostalgia.com/$ACTOR/$REPO_NAME-backend:latest" \
             -t "git.vinylnostalgia.com/$ACTOR/$REPO_NAME-backend:$VERSION" \
             ./backend -f ./backend/Dockerfile.prod

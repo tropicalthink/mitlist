@@ -135,3 +135,33 @@ func TestValidateRejectsSharedTokenSigningKey(t *testing.T) {
 		t.Fatal("expected identical access and refresh signing keys to be rejected")
 	}
 }
+
+func TestValidateProductionFrontendURL(t *testing.T) {
+	tests := []struct {
+		name        string
+		frontendURL string
+		wantErr     bool
+	}{
+		{name: "public https origin", frontendURL: "https://app.mitlist.me"},
+		{name: "missing scheme", frontendURL: "app.mitlist.me", wantErr: true},
+		{name: "default localhost", frontendURL: "http://localhost:5173", wantErr: true},
+		{name: "loopback ip", frontendURL: "http://127.0.0.1:5173", wantErr: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := &Config{
+				Environment:      "production",
+				FrontendURL:      tc.frontendURL,
+				SecretKey:        "production-access-secret",
+				SessionSecretKey: "production-refresh-secret",
+			}
+			err := cfg.Validate()
+			if tc.wantErr && err == nil {
+				t.Fatal("expected validation error")
+			}
+			if !tc.wantErr && err != nil {
+				t.Fatalf("unexpected validation error: %v", err)
+			}
+		})
+	}
+}

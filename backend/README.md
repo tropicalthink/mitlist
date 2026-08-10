@@ -91,7 +91,8 @@ the existing PostgreSQL migrations normally.
 
 For this deployment, run only the API service; do not start the bundled
 Postgres container. Keep `RUN_MIGRATIONS_ON_STARTUP=true` for the first
-deployment, then verify `/health` before directing app traffic to the server.
+deployment, then verify `/healthz` and `/readyz` before directing app traffic to
+the server.
 PlanetScale's managed backups cover the database; attachment objects remain in
 R2 and need their own lifecycle/retention policy.
 

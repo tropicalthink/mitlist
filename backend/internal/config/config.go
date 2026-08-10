@@ -2,6 +2,8 @@ package config
 
 import (
 	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"reflect"
 	"strconv"
@@ -262,6 +264,19 @@ func (c *Config) Validate() error {
 	}
 	if c.Environment == "production" && (c.SecretKey == "dev-only-insecure-key-do-not-use-in-prod" || c.SessionSecretKey == "dev-only-insecure-key-do-not-use-in-prod") {
 		return fmt.Errorf("refusing to start in production with default dev secret keys — set SECRET_KEY and SESSION_SECRET_KEY in environment")
+	}
+	if c.Environment == "production" {
+		frontendURL, err := url.Parse(c.FrontendURL)
+		if err != nil || frontendURL.Host == "" || (frontendURL.Scheme != "http" && frontendURL.Scheme != "https") {
+			return fmt.Errorf("FRONTEND_URL must be an absolute http(s) origin in production")
+		}
+		host := strings.ToLower(frontendURL.Hostname())
+		if host == "localhost" || strings.HasSuffix(host, ".localhost") {
+			return fmt.Errorf("FRONTEND_URL must not use localhost in production")
+		}
+		if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
+			return fmt.Errorf("FRONTEND_URL must not use a loopback address in production")
+		}
 	}
 	if c.SecretKey != "" && c.SecretKey == c.SessionSecretKey {
 		return fmt.Errorf("SECRET_KEY and SESSION_SECRET_KEY must be different")
