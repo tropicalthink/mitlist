@@ -107,8 +107,8 @@ func (r *Runner) RegisterAll() {
 		r.register("list-notification-digest", "* * * * *", ld.Run, true)
 	}
 
-	// Guest cleanup — daily at 03:15. Guest accounts are disposable and are
-	// anonymized after thirty days without activity.
+	// Guest lifecycle — daily at 03:15. Guests are locked after 30 days without
+	// activity and retained for a 180-day recovery grace period before cleanup.
 	gc := NewGuestCleanup(r.db, r.log)
 	r.register("guest-cleanup", "15 3 * * *", gc.Run, true)
 }

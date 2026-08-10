@@ -50,13 +50,14 @@ DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate up
 DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
 ```
 
-- [ ] The resulting version is `53`, `dirty: false`.
+- [ ] The resulting version is `54`, `dirty: false`.
 - [ ] `groups.storage_used_bytes` and `groups.storage_reserved_bytes` exist.
 - [ ] `auth_sessions` exists.
 - [ ] `billing_subscriptions` and `billing_webhook_events` exist.
 - [ ] `billing_subscriptions.primary_group_id` exists and is nullable.
 - [ ] `request_idempotency` exists.
 - [ ] `idx_notifications_scheduled_dedupe` exists.
+- [ ] `users.guest_last_seen_at` and `users.guest_locked_at` exist.
 
 ## 3. Cut over the API
 
@@ -65,7 +66,7 @@ DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
       runtime configuration. They are no longer read.
 - [ ] Start one API replica first.
 - [ ] Confirm startup logs show a successful database connection and migration
-      version 53, with no panic or repeated connection retries.
+      version 54, with no panic or repeated connection retries.
 - [ ] Keep coarse IP abuse protection enabled at the edge. Fine-grained API
       rate-limit buckets are process-local, so replicas do not share them.
 
@@ -118,7 +119,7 @@ The application, tests, CI, and Compose stack no longer require Redis.
 ## Rollback
 
 Prefer an application rollback without rolling the database down. Before
-rollback, verify that the previous image tolerates schema version 53; migrations
+rollback, verify that the previous image tolerates schema version 54; migrations
 40, 45, and 47 include destructive security cleanup and cannot be reversed into
 the deleted credentials or duplicate device ownership records.
 

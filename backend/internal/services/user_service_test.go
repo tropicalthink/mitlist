@@ -147,6 +147,33 @@ func TestUserService_Login(t *testing.T) {
 		assert.IsType(t, &api.ValidationError{}, err)
 		assert.Equal(t, "account is not verified", err.Error())
 	})
+
+}
+
+func TestUserService_ReactivateGuestForRefresh(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+
+	t.Run("locked guest", func(t *testing.T) {
+		userRepo := new(mocks.MockUserRepo)
+		svc := NewUserService(userRepo, nil, nil, nil, nil)
+		userRepo.On("GetByID", ctx, userID).Return(&models.User{ID: userID, IsGuest: true, IsActive: false}, nil)
+		userRepo.On("ReactivateGuest", ctx, userID).Return(nil)
+
+		require.NoError(t, svc.ReactivateGuestForRefresh(ctx, userID))
+		userRepo.AssertExpectations(t)
+	})
+
+	t.Run("inactive registered account remains locked", func(t *testing.T) {
+		userRepo := new(mocks.MockUserRepo)
+		svc := NewUserService(userRepo, nil, nil, nil, nil)
+		userRepo.On("GetByID", ctx, userID).Return(&models.User{ID: userID, IsActive: false}, nil)
+
+		err := svc.ReactivateGuestForRefresh(ctx, userID)
+		require.Error(t, err)
+		assert.IsType(t, &api.ValidationError{}, err)
+		userRepo.AssertNotCalled(t, "ReactivateGuest", mock.Anything, mock.Anything)
+	})
 }
 
 func TestUserService_VerifyEmail(t *testing.T) {
@@ -215,6 +242,20 @@ func TestUserService_GetMe(t *testing.T) {
 		require.Error(t, err)
 		assert.IsType(t, &api.ValidationError{}, err)
 		assert.Equal(t, "account is not verified", err.Error())
+	})
+
+	t.Run("active guest refreshes last-seen activity", func(t *testing.T) {
+		userRepo := new(mocks.MockUserRepo)
+		svc := NewUserService(userRepo, nil, nil, nil, nil)
+
+		user := &models.User{ID: userID, IsActive: true, IsVerified: true, IsGuest: true}
+		userRepo.On("GetByID", ctx, userID).Return(user, nil)
+		userRepo.On("TouchGuestActivity", ctx, userID).Return(nil)
+
+		u, err := svc.GetMe(ctx, userID)
+		require.NoError(t, err)
+		assert.Equal(t, userID, u.ID)
+		userRepo.AssertExpectations(t)
 	})
 }
 

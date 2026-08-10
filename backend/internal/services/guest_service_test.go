@@ -43,24 +43,23 @@ func TestGuestService_GetGuest(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
 		svc := NewGuestService(userRepo, nil, nil)
 
-		userRepo.On("GetByID", ctx, userID).Return(&models.User{ID: userID, IsGuest: true}, nil)
+		userRepo.On("GetByID", ctx, userID).Return(&models.User{ID: userID, IsGuest: true, IsActive: true}, nil)
 
 		user, err := svc.GetGuest(ctx, userID)
 		require.NoError(t, err)
 		assert.True(t, user.IsGuest)
 	})
 
-	t.Run("expired guest is retired", func(t *testing.T) {
+	t.Run("locked guest is retained and rejected", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
 		svc := NewGuestService(userRepo, nil, nil)
 		userRepo.On("GetByID", ctx, userID).Return(&models.User{
-			ID: userID, IsGuest: true, CreatedAt: time.Now().UTC().Add(-guestLifetime - time.Hour),
+			ID: userID, IsGuest: true, IsActive: false,
 		}, nil)
-		userRepo.On("SoftDelete", ctx, userID).Return(nil)
 
 		_, err := svc.GetGuest(ctx, userID)
 		require.Error(t, err)
-		assert.IsType(t, &api.NotFoundError{}, err)
+		assert.IsType(t, &api.ValidationError{}, err)
 		userRepo.AssertExpectations(t)
 	})
 
@@ -88,7 +87,7 @@ func TestGuestService_ConvertGuest(t *testing.T) {
 		mailSvc := new(mocks.MockMailService)
 		svc := NewGuestServiceWithAuth(userRepo, jwtSvc, passSvc, authRepo, mailSvc)
 
-		userRepo.On("GetByID", ctx, guestID).Return(&models.User{ID: guestID, IsGuest: true}, nil)
+		userRepo.On("GetByID", ctx, guestID).Return(&models.User{ID: guestID, IsGuest: true, IsActive: true}, nil)
 		userRepo.On("GetByEmail", ctx, "new@example.com").Return(nil, fmt.Errorf("user not found"))
 		passSvc.On("Hash", "password123!").Return("hash", nil)
 		userRepo.On("Update", ctx, mock.AnythingOfType("*models.User")).Return(nil)

@@ -46,12 +46,6 @@ func verificationMessage(raw, frontendURL string) string {
 	return message
 }
 
-const guestLifetime = 30 * 24 * time.Hour
-
-func guestExpired(user *models.User, now time.Time) bool {
-	return user != nil && user.IsGuest && !user.CreatedAt.IsZero() && user.CreatedAt.Before(now.Add(-guestLifetime))
-}
-
 // A fixed bcrypt hash ensures unknown-email logins perform the same expensive
 // password comparison as known accounts, reducing account-enumeration timing.
 const dummyPasswordHash = "$2b$12$gJZj6I3Qm7va1CXdAY2VHe5QWxOlueQEP0li/hhhjIy.HF9LJhLF."
@@ -249,11 +243,12 @@ func (s *UserService) GetMe(ctx context.Context, userID uuid.UUID) (*models.User
 	if !user.IsActive {
 		return nil, &api.ValidationError{Message: "account is inactive"}
 	}
-	if guestExpired(user, time.Now().UTC()) {
-		// Guest data is disposable. Mark expired guests inactive on first access;
-		// the scheduled cleanup performs the same operation in bulk.
-		_ = s.userRepo.SoftDelete(ctx, userID)
-		return nil, &api.NotFoundError{Resource: "user"}
+	if user.IsGuest {
+		// Activity is deliberately refreshed only after the account has passed
+		// the active checks above. A stale token cannot revive a locked guest.
+		if err := s.userRepo.TouchGuestActivity(ctx, userID); err != nil {
+			return nil, err
+		}
 	}
 	// A guest that has supplied an email but has not completed verification may
 	// continue the guest session long enough to enter the emailed code. It does
@@ -263,6 +258,28 @@ func (s *UserService) GetMe(ctx context.Context, userID uuid.UUID) (*models.User
 	}
 
 	return user, nil
+}
+
+// ReactivateGuestForRefresh unlocks an inactive guest after the JWT layer has
+// confirmed possession of a live, unrevoked refresh session. The refresh
+// endpoint calls this before rotating that session, so a locked guest can
+// return without an email-based account-recovery flow while an expired guest
+// remains permanently unavailable after cleanup.
+func (s *UserService) ReactivateGuestForRefresh(ctx context.Context, userID uuid.UUID) error {
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if !user.IsGuest {
+		if !user.IsActive {
+			return &api.ValidationError{Message: "account is inactive"}
+		}
+		return nil
+	}
+	if user.IsActive {
+		return nil
+	}
+	return s.userRepo.ReactivateGuest(ctx, userID)
 }
 
 // UpdateMeInput holds optional fields for updating the current user.
