@@ -62,14 +62,97 @@ class FinanceRepository {
     api.FinanceSummary? summary;
     if (offset == 0) {
       summary = await _remote.getFinanceSummary(groupId);
-      await _db.clearExpensesForGroup(groupId);
+      // A server snapshot must not erase optimistic rows while their outbox
+      // operations are still pending. Keep the pre-refresh rows long enough
+      // to re-apply queued edits, then replace the snapshot atomically.
+      final previous = await _db.getExpensesByGroupOnce(groupId);
+      final pending = await _pendingExpenses(
+        groupId,
+        previous.map(_toExpense).toList(growable: false),
+      );
+      await _db.transaction(() async {
+        await _db.clearExpensesForGroup(groupId);
+        await _db.upsertExpensesRows(expenses.map(_toExpensesRow));
+        await _db.upsertExpensesRows(pending.map(_toExpensesRow));
+      });
+    } else {
+      await _db.upsertExpensesRows(expenses.map(_toExpensesRow));
     }
-    await _db.upsertExpensesRows(expenses.map(_toExpensesRow));
     if (summary != null) {
       await _db.upsertFinanceSummary(
           groupId: groupId, summaryJson: summary.toJson());
     }
     return expenses.length;
+  }
+
+  Future<List<api.Expense>> _pendingExpenses(
+    String groupId,
+    List<api.Expense> previous,
+  ) async {
+    final byId = {for (final expense in previous) expense.id: expense};
+    final deleted = <String>{};
+    final ops = await _db.getOutboxOpsByType('deleteExpense');
+    for (final op in ops) {
+      final payload = jsonDecode(op.payloadJson);
+      if (payload is Map && payload['expenseId'] is String) {
+        deleted.add(payload['expenseId'] as String);
+      }
+    }
+    for (final op in await _db.getOutboxOpsByType('createExpense')) {
+      try {
+        final payload =
+            (jsonDecode(op.payloadJson) as Map).cast<String, dynamic>();
+        final request = (payload['request'] as Map).cast<String, dynamic>();
+        if (request['group_id'] != groupId) continue;
+        final id = payload['tempId'] as String;
+        byId[id] = api.Expense(
+          id: id,
+          groupId: groupId,
+          payerId: request['payer_id'] as String,
+          amount: request['amount'] as int,
+          baseAmount:
+              request['base_amount'] as int? ?? request['amount'] as int,
+          fxRate: (request['fx_rate'] as num?)?.toDouble() ?? 1.0,
+          description: request['description'] as String,
+          category: request['category'] as String? ?? 'other',
+          currency: request['currency'] as String? ?? 'USD',
+          notes: request['notes'] as String? ?? '',
+          date: DateTime.parse(request['date'] as String),
+          createdAt: DateTime.now(),
+        );
+      } catch (_) {}
+    }
+    for (final op in await _db.getOutboxOpsByType('updateExpense')) {
+      try {
+        final payload =
+            (jsonDecode(op.payloadJson) as Map).cast<String, dynamic>();
+        final id = payload['expenseId'] as String;
+        final old = byId[id];
+        if (old == null || old.groupId != groupId) continue;
+        final patch = (payload['patch'] as Map).cast<String, dynamic>();
+        byId[id] = api.Expense(
+          id: old.id,
+          groupId: old.groupId,
+          payerId: patch['payer_id'] as String? ?? old.payerId,
+          amount: patch['amount'] as int? ?? old.amount,
+          baseAmount: patch['base_amount'] as int? ?? old.baseAmount,
+          fxRate: (patch['fx_rate'] as num?)?.toDouble() ?? old.fxRate,
+          description: patch['description'] as String? ?? old.description,
+          category: patch['category'] as String? ?? old.category,
+          currency: patch['currency'] as String? ?? old.currency,
+          notes: patch['notes'] as String? ?? old.notes,
+          date: patch['date'] == null
+              ? old.date
+              : DateTime.parse(patch['date'] as String),
+          createdAt: old.createdAt,
+          updatedAt: old.updatedAt,
+        );
+      } catch (_) {}
+    }
+    return byId.values
+        .where((expense) =>
+            expense.groupId == groupId && !deleted.contains(expense.id))
+        .toList(growable: false);
   }
 
   // ---------------------------------------------------------------------------
@@ -238,18 +321,17 @@ class FinanceRepository {
       createdAt: now,
     );
 
-    await _db.upsertExpensesRows([_toExpensesRow(local)]);
-    await _db.enqueueOutbox(
-      id: _uuid.v4(),
-      type: 'createExpense',
-      payload: {
-        'tempId': tempId,
-        'request': req.toJson(),
-      },
-      idempotencyKey: 'createExpense:$tempId',
-      entityType: 'expense',
-      entityId: tempId,
-    );
+    await _db.transaction(() async {
+      await _db.upsertExpensesRows([_toExpensesRow(local)]);
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'createExpense',
+        payload: {'tempId': tempId, 'request': req.toJson()},
+        idempotencyKey: 'createExpense:$tempId',
+        entityType: 'expense',
+        entityId: tempId,
+      );
+    });
 
     if (_autoSync) unawaited(drainOutboxOnce());
     return local;
@@ -288,23 +370,39 @@ class FinanceRepository {
         date: req.date ?? e.date,
         createdAt: e.createdAt,
       );
-      await _db.upsertExpensesRows([_toExpensesRow(patched)]);
+      await _db.transaction(() async {
+        await _db.upsertExpensesRows([_toExpensesRow(patched)]);
+        await _db.enqueueOutbox(
+          id: _uuid.v4(),
+          type: 'updateExpense',
+          payload: {
+            'expenseId': expenseId,
+            'patch': req.toJson(),
+            if (expectedUpdatedAt != null)
+              'expectedUpdatedAt': expectedUpdatedAt.toUtc().toIso8601String(),
+          },
+          idempotencyKey:
+              'updateExpense:$expenseId:${DateTime.now().toIso8601String()}',
+          entityType: 'expense',
+          entityId: expenseId,
+        );
+      });
+    } else {
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'updateExpense',
+        payload: {
+          'expenseId': expenseId,
+          'patch': req.toJson(),
+          if (expectedUpdatedAt != null)
+            'expectedUpdatedAt': expectedUpdatedAt.toUtc().toIso8601String(),
+        },
+        idempotencyKey:
+            'updateExpense:$expenseId:${DateTime.now().toIso8601String()}',
+        entityType: 'expense',
+        entityId: expenseId,
+      );
     }
-
-    await _db.enqueueOutbox(
-      id: _uuid.v4(),
-      type: 'updateExpense',
-      payload: {
-        'expenseId': expenseId,
-        'patch': req.toJson(),
-        if (expectedUpdatedAt != null)
-          'expectedUpdatedAt': expectedUpdatedAt.toUtc().toIso8601String(),
-      },
-      idempotencyKey:
-          'updateExpense:$expenseId:${DateTime.now().toIso8601String()}',
-      entityType: 'expense',
-      entityId: expenseId,
-    );
 
     if (_autoSync) unawaited(drainOutboxOnce());
 
@@ -317,17 +415,19 @@ class FinanceRepository {
   }
 
   Future<void> deleteExpenseOfflineFirst(String expenseId) async {
-    await (_db.delete(_db.expensesTable)..where((t) => t.id.equals(expenseId)))
-        .go();
-
-    await _db.enqueueOutbox(
-      id: _uuid.v4(),
-      type: 'deleteExpense',
-      payload: {'expenseId': expenseId},
-      idempotencyKey: 'deleteExpense:$expenseId',
-      entityType: 'expense',
-      entityId: expenseId,
-    );
+    await _db.transaction(() async {
+      await (_db.delete(_db.expensesTable)
+            ..where((t) => t.id.equals(expenseId)))
+          .go();
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'deleteExpense',
+        payload: {'expenseId': expenseId},
+        idempotencyKey: 'deleteExpense:$expenseId',
+        entityType: 'expense',
+        entityId: expenseId,
+      );
+    });
 
     if (_autoSync) unawaited(drainOutboxOnce());
   }
@@ -344,11 +444,14 @@ class FinanceRepository {
           'createSettlement',
         ],
         handlers: {
-          'createExpense': (op, payload) => _syncCreateExpense(op.id, payload),
-          'updateExpense': (op, payload) => _syncUpdateExpense(op.id, payload),
-          'deleteExpense': (op, payload) => _syncDeleteExpense(op.id, payload),
+          'createExpense': (op, payload) =>
+              _syncCreateExpense(op.id, payload, op.idempotencyKey),
+          'updateExpense': (op, payload) =>
+              _syncUpdateExpense(op.id, payload, op.idempotencyKey),
+          'deleteExpense': (op, payload) =>
+              _syncDeleteExpense(op.id, payload, op.idempotencyKey),
           'createSettlement': (op, payload) =>
-              _syncCreateSettlement(op.id, payload),
+              _syncCreateSettlement(op.id, payload, op.idempotencyKey),
         },
       );
     } finally {
@@ -363,7 +466,7 @@ class FinanceRepository {
   /// makes the counterparty's confirm/decline reachable, since those act on a
   /// server id.
   Future<void> _syncCreateSettlement(
-      String opId, Map<String, dynamic> payload) async {
+      String opId, Map<String, dynamic> payload, String? idempotencyKey) async {
     final groupId = payload['groupId'] as String?;
     final requestRaw = payload['request'];
     final localRaw = payload['settlement'];
@@ -382,6 +485,7 @@ class FinanceRepository {
         toUserId: json['to_user_id'] as String,
         amount: (json['amount'] as num).toInt(),
       ),
+      idempotencyKey: idempotencyKey,
     );
 
     final updated = [
@@ -397,7 +501,7 @@ class FinanceRepository {
   }
 
   Future<void> _syncCreateExpense(
-      String opId, Map<String, dynamic> payload) async {
+      String opId, Map<String, dynamic> payload, String? idempotencyKey) async {
     final tempId = payload['tempId'] as String?;
     final requestRaw = payload['request'];
     if (tempId == null || requestRaw is! Map) {
@@ -427,7 +531,8 @@ class FinanceRepository {
       splits: const [],
     );
 
-    final created = await _remote.createExpense(req);
+    final created =
+        await _remote.createExpense(req, idempotencyKey: idempotencyKey);
     await (_db.delete(_db.expensesTable)..where((t) => t.id.equals(tempId)))
         .go();
     await _db.upsertExpensesRows([_toExpensesRow(created)]);
@@ -436,7 +541,7 @@ class FinanceRepository {
   }
 
   Future<void> _syncUpdateExpense(
-      String opId, Map<String, dynamic> payload) async {
+      String opId, Map<String, dynamic> payload, String? idempotencyKey) async {
     final expenseId = payload['expenseId'] as String?;
     final patch = payload['patch'];
     if (expenseId == null || patch is! Map) {
@@ -463,7 +568,8 @@ class FinanceRepository {
           : DateTime.parse(payload['expectedUpdatedAt'] as String),
     );
 
-    final updated = await _remote.updateExpense(expenseId, req);
+    final updated = await _remote.updateExpense(expenseId, req,
+        idempotencyKey: idempotencyKey);
     await _db.upsertExpensesRows([_toExpensesRow(updated)]);
     await _db.deleteOutboxOp(opId);
   }
@@ -512,13 +618,13 @@ class FinanceRepository {
   }
 
   Future<void> _syncDeleteExpense(
-      String opId, Map<String, dynamic> payload) async {
+      String opId, Map<String, dynamic> payload, String? idempotencyKey) async {
     final expenseId = payload['expenseId'] as String?;
     if (expenseId == null) {
       await _db.deleteOutboxOp(opId);
       return;
     }
-    await _remote.deleteExpense(expenseId);
+    await _remote.deleteExpense(expenseId, idempotencyKey: idempotencyKey);
     await _db.deleteOutboxOp(opId);
   }
 

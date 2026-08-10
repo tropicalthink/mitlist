@@ -112,19 +112,21 @@ class ChoreRepository {
     Duration syncWindow = Duration.zero,
   }) async {
     final localId = 'local-${_uuid.v4()}';
-    await _db.enqueueOutbox(
-      id: _uuid.v4(),
-      type: 'createChore',
-      payload: {
-        'localId': localId,
-        'groupId': req.groupId,
-        'request': req.toJson(),
-      },
-      idempotencyKey: 'createChore:$localId',
-      entityType: 'chore',
-      entityId: localId,
-    );
-    await _spliceLocalChore(req.groupId, localId, req);
+    await _db.transaction(() async {
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'createChore',
+        payload: {
+          'localId': localId,
+          'groupId': req.groupId,
+          'request': req.toJson(),
+        },
+        idempotencyKey: 'createChore:$localId',
+        entityType: 'chore',
+        entityId: localId,
+      );
+      await _spliceLocalChore(req.groupId, localId, req);
+    });
 
     final local = _localChore(localId, req).chore;
     if (syncWindow == Duration.zero) {
@@ -234,73 +236,121 @@ class ChoreRepository {
   }
 
   Future<void> completeOfflineFirst(String choreId, {String? groupId}) async {
-    await _db.enqueueOutbox(
-      id: _uuid.v4(),
-      type: 'completeChore',
-      payload: {'choreId': choreId},
-      idempotencyKey: 'completeChore:$choreId',
-      entityType: 'chore',
-      entityId: choreId,
-    );
     if (groupId != null) {
       // Optimistic local patch so the Drift stream reflects the completion
       // immediately; the post-drain refresh reconciles with the server.
-      await _patchCachedAssignmentStatus(groupId, choreId, 'completed');
+      await _db.transaction(() async {
+        await _patchCachedAssignmentStatus(groupId, choreId, 'completed');
+        await _db.enqueueOutbox(
+          id: _uuid.v4(),
+          type: 'completeChore',
+          payload: {'choreId': choreId},
+          idempotencyKey: 'completeChore:$choreId',
+          entityType: 'chore',
+          entityId: choreId,
+        );
+      });
       unawaited(_drainAndRefresh(groupId));
+    } else {
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'completeChore',
+        payload: {'choreId': choreId},
+        idempotencyKey: 'completeChore:$choreId',
+        entityType: 'chore',
+        entityId: choreId,
+      );
     }
   }
 
   Future<void> skipOfflineFirst(String choreId,
       {String? reason, String? groupId}) async {
-    await _db.enqueueOutbox(
-      id: _uuid.v4(),
-      type: 'skipChore',
-      payload: {'choreId': choreId, if (reason != null) 'reason': reason},
-      idempotencyKey: 'skipChore:$choreId',
-      entityType: 'chore',
-      entityId: choreId,
-    );
     if (groupId != null) {
       // Optimistic local patch so the Drift stream resolves the chore
       // immediately; the post-drain refresh reconciles with the server.
-      await _patchCachedAssignmentStatus(groupId, choreId, 'skipped');
+      await _db.transaction(() async {
+        await _patchCachedAssignmentStatus(groupId, choreId, 'skipped');
+        await _db.enqueueOutbox(
+          id: _uuid.v4(),
+          type: 'skipChore',
+          payload: {'choreId': choreId, if (reason != null) 'reason': reason},
+          idempotencyKey: 'skipChore:$choreId',
+          entityType: 'chore',
+          entityId: choreId,
+        );
+      });
       unawaited(_drainAndRefresh(groupId));
+    } else {
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'skipChore',
+        payload: {'choreId': choreId, if (reason != null) 'reason': reason},
+        idempotencyKey: 'skipChore:$choreId',
+        entityType: 'chore',
+        entityId: choreId,
+      );
     }
   }
 
   Future<void> rescheduleOfflineFirst(String choreId, DateTime dueDate,
       {String? groupId}) async {
-    await _db.enqueueOutbox(
-      id: _uuid.v4(),
-      type: 'rescheduleChore',
-      payload: {
-        'choreId': choreId,
-        'dueDate': dueDate.toUtc().toIso8601String(),
-      },
-      idempotencyKey: 'rescheduleChore:$choreId:${dueDate.toIso8601String()}',
-      entityType: 'chore',
-      entityId: choreId,
-    );
     if (groupId != null) {
       // Optimistic local patch so the new due date (and derived due-status)
       // shows immediately; the post-drain refresh reconciles with the server.
-      await _patchCachedAssignmentDueDate(groupId, choreId, dueDate);
+      await _db.transaction(() async {
+        await _patchCachedAssignmentDueDate(groupId, choreId, dueDate);
+        await _db.enqueueOutbox(
+          id: _uuid.v4(),
+          type: 'rescheduleChore',
+          payload: {
+            'choreId': choreId,
+            'dueDate': dueDate.toUtc().toIso8601String(),
+          },
+          idempotencyKey:
+              'rescheduleChore:$choreId:${dueDate.toIso8601String()}',
+          entityType: 'chore',
+          entityId: choreId,
+        );
+      });
       unawaited(_drainAndRefresh(groupId));
+    } else {
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'rescheduleChore',
+        payload: {
+          'choreId': choreId,
+          'dueDate': dueDate.toUtc().toIso8601String(),
+        },
+        idempotencyKey: 'rescheduleChore:$choreId:${dueDate.toIso8601String()}',
+        entityType: 'chore',
+        entityId: choreId,
+      );
     }
   }
 
   Future<void> undoOfflineFirst(String choreId, {String? groupId}) async {
-    await _db.enqueueOutbox(
-      id: _uuid.v4(),
-      type: 'undoChore',
-      payload: {'choreId': choreId},
-      idempotencyKey: 'undoChore:$choreId',
-      entityType: 'chore',
-      entityId: choreId,
-    );
     if (groupId != null) {
-      await _patchCachedAssignmentStatus(groupId, choreId, 'pending');
+      await _db.transaction(() async {
+        await _patchCachedAssignmentStatus(groupId, choreId, 'pending');
+        await _db.enqueueOutbox(
+          id: _uuid.v4(),
+          type: 'undoChore',
+          payload: {'choreId': choreId},
+          idempotencyKey: 'undoChore:$choreId',
+          entityType: 'chore',
+          entityId: choreId,
+        );
+      });
       unawaited(_drainAndRefresh(groupId));
+    } else {
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'undoChore',
+        payload: {'choreId': choreId},
+        idempotencyKey: 'undoChore:$choreId',
+        entityType: 'chore',
+        entityId: choreId,
+      );
     }
   }
 
@@ -427,6 +477,7 @@ class ChoreRepository {
           }
           final created = await _remote.createChore(
             CreateChoreRequest.fromJson(rawReq.cast<String, dynamic>()),
+            idempotencyKey: op.idempotencyKey,
           );
           await _db.rewriteOutboxPayloadIds(oldId: localId, newId: created.id);
           await _db.deleteOutboxOp(op.id);
@@ -435,13 +486,15 @@ class ChoreRepository {
           }
         },
         'completeChore': (op, payload) async {
-          await _remote.completeChore(payload['choreId'] as String);
+          await _remote.completeChore(payload['choreId'] as String,
+              idempotencyKey: op.idempotencyKey);
           await _db.deleteOutboxOp(op.id);
         },
         'skipChore': (op, payload) async {
           await _remote.skipChore(
             payload['choreId'] as String,
             skipReason: payload['reason'] as String?,
+            idempotencyKey: op.idempotencyKey,
           );
           await _db.deleteOutboxOp(op.id);
         },
@@ -449,11 +502,13 @@ class ChoreRepository {
           await _remote.rescheduleChore(
             payload['choreId'] as String,
             dueDate: DateTime.parse(payload['dueDate'] as String),
+            idempotencyKey: op.idempotencyKey,
           );
           await _db.deleteOutboxOp(op.id);
         },
         'undoChore': (op, payload) async {
-          await _remote.undoLastChoreExecution(payload['choreId'] as String);
+          await _remote.undoLastChoreExecution(payload['choreId'] as String,
+              idempotencyKey: op.idempotencyKey);
           await _db.deleteOutboxOp(op.id);
         },
       },
@@ -486,7 +541,7 @@ class ChoreRepository {
   }
 
   Future<void> _handleSseEvent(SseEvent event) async {
-    if (_sseGroupId == null) return;
+    if (_sseGroupId == null || event.groupId != _sseGroupId) return;
     switch (event.type) {
       case 'chore:completed':
       case 'chore:skipped':

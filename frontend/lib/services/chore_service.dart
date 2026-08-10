@@ -4,6 +4,7 @@ import '../models/chore_models.dart';
 import 'api_client.dart';
 import 'api_error_mapper.dart';
 import 'group_id_validator.dart';
+import 'outbox_request.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class ChoreService {
@@ -15,9 +16,11 @@ class ChoreService {
     return ChoreService._(dio);
   }
 
-  Future<Chore> createChore(CreateChoreRequest req) async {
+  Future<Chore> createChore(CreateChoreRequest req,
+      {String? idempotencyKey}) async {
     try {
-      final r = await _dio.post('/chores', data: req.toJson());
+      final r = await _dio.post('/chores',
+          data: req.toJson(), options: outboxOptions(idempotencyKey));
       return Chore.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Create chore failed: ${e.response?.data}');
@@ -206,10 +209,12 @@ class ChoreService {
     }
   }
 
-  Future<void> completeChore(String id, {String? notes}) async {
+  Future<void> completeChore(String id,
+      {String? notes, String? idempotencyKey}) async {
     try {
       await _dio.post('/chores/$id/complete',
-          data: CompleteChoreRequest(notes: notes).toJson());
+          data: CompleteChoreRequest(notes: notes).toJson(),
+          options: outboxOptions(idempotencyKey));
     } on DioException catch (e) {
       _logger.e('Complete chore failed: ${e.response?.data}');
       throw apiException(e);
@@ -225,10 +230,12 @@ class ChoreService {
     }
   }
 
-  Future<void> skipChore(String id, {String? skipReason}) async {
+  Future<void> skipChore(String id,
+      {String? skipReason, String? idempotencyKey}) async {
     try {
       await _dio.post('/chores/$id/skip',
-          data: SkipChoreRequest(skipReason: skipReason).toJson());
+          data: SkipChoreRequest(skipReason: skipReason).toJson(),
+          options: outboxOptions(idempotencyKey));
     } on DioException catch (e) {
       _logger.e('Skip chore failed: ${e.response?.data}');
       throw apiException(e);
@@ -239,6 +246,7 @@ class ChoreService {
     String id, {
     DateTime? dueDate,
     String? assigneeId,
+    String? idempotencyKey,
   }) async {
     try {
       await _dio.patch(
@@ -247,6 +255,7 @@ class ChoreService {
           dueDate: dueDate,
           assigneeId: assigneeId,
         ).toJson(),
+        options: outboxOptions(idempotencyKey),
       );
     } on DioException catch (e) {
       _logger.e('Reschedule chore failed: ${e.response?.data}');
@@ -254,9 +263,11 @@ class ChoreService {
     }
   }
 
-  Future<void> undoLastChoreExecution(String id) async {
+  Future<void> undoLastChoreExecution(String id,
+      {String? idempotencyKey}) async {
     try {
-      await _dio.post('/chores/$id/undo');
+      await _dio.post('/chores/$id/undo',
+          options: outboxOptions(idempotencyKey));
     } on DioException catch (e) {
       _logger.e('Undo chore execution failed: ${e.response?.data}');
       throw apiException(e);

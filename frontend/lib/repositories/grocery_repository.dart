@@ -56,7 +56,7 @@ class GroceryRepository {
   }
 
   Future<void> _handleSseEvent(SseEvent event) async {
-    if (_sseGroupId == null) return;
+    if (_sseGroupId == null || event.groupId != _sseGroupId) return;
     if (event.type == 'grocery:graph_updated') {
       await pullDelta(_sseGroupId!);
     }

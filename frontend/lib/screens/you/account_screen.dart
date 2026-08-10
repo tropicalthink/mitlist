@@ -320,6 +320,17 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     if (_isSaving) return;
     _isSaving = true;
     try {
+      final pending = await ref.read(appDatabaseProvider).outboxCount();
+      if (pending > 0) {
+        if (mounted) {
+          AppToast.error(
+            context,
+            AppLocalizations.of(context)!.offlineBannerStatusPending,
+          );
+        }
+        _isSaving = false;
+        return;
+      }
       if (_userId != null) await _ocrTrainingData.clear(_userId!);
     } catch (_) {}
     try {
@@ -362,6 +373,16 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       return;
     }
     try {
+      if (await ref.read(appDatabaseProvider).outboxCount() > 0) {
+        if (mounted) {
+          AppToast.error(
+            context,
+            AppLocalizations.of(context)!.offlineBannerStatusPending,
+          );
+        }
+        _isSaving = false;
+        return;
+      }
       if (_userId != null) await _ocrTrainingData.clear(_userId!);
     } catch (_) {}
     try {
