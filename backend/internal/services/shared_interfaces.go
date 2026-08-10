@@ -27,6 +27,7 @@ type JWTService interface {
 	ValidateAccessToken(token string) (*jwt.Claims, error)
 	ValidateRefreshToken(token string) (*jwt.Claims, error)
 	RevokeRefreshToken(jti string) error
+	RevokeUserSessions(userID uuid.UUID) error
 }
 
 // PasswordService defines the interface for password hashing.

@@ -71,11 +71,12 @@ func TestGuestService_ConvertGuest(t *testing.T) {
 		svc := NewGuestService(userRepo, jwtSvc, passSvc)
 
 		userRepo.On("GetByID", ctx, guestID).Return(&models.User{ID: guestID, IsGuest: true}, nil)
-		passSvc.On("Hash", "password123").Return("hash", nil)
+		passSvc.On("Hash", "password123!").Return("hash", nil)
 		userRepo.On("Update", ctx, mock.AnythingOfType("*models.User")).Return(nil)
+		jwtSvc.On("RevokeUserSessions", guestID).Return(nil)
 		jwtSvc.On("GenerateTokenPair", guestID.String(), mock.Anything).Return("access", "refresh", nil)
 
-		user, access, _, err := svc.ConvertGuest(ctx, guestID, "new@example.com", "password123", "Test", "User")
+		user, access, _, err := svc.ConvertGuest(ctx, guestID, "new@example.com", "password123!", "Test", "User")
 		require.NoError(t, err)
 		assert.False(t, user.IsGuest)
 		assert.Equal(t, "new@example.com", user.Email)

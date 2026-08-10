@@ -256,6 +256,8 @@ func TestGroupService_LeaveGroup(t *testing.T) {
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := NewGroupService(groupRepo, nil)
 
+		groupRepo.On("WithTx", ctx, mock.Anything).Return(nil)
+		groupRepo.On("LockGroup", ctx, groupID).Return(nil)
 		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{ID: uuid.New(), Role: "member"}, nil)
 		groupRepo.On("DeleteMembership", ctx, mock.AnythingOfType("uuid.UUID")).Return(nil)
 
@@ -267,6 +269,8 @@ func TestGroupService_LeaveGroup(t *testing.T) {
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := NewGroupService(groupRepo, nil)
 
+		groupRepo.On("WithTx", ctx, mock.Anything).Return(nil)
+		groupRepo.On("LockGroup", ctx, groupID).Return(nil)
 		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{ID: uuid.New(), Role: "admin"}, nil)
 		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return([]models.GroupMembership{{UserID: userID, Role: "admin"}}, nil)
 
@@ -286,6 +290,8 @@ func TestGroupService_UpdateMemberRole(t *testing.T) {
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := NewGroupService(groupRepo, nil)
 
+		groupRepo.On("WithTx", ctx, mock.Anything).Return(nil)
+		groupRepo.On("LockGroup", ctx, groupID).Return(nil)
 		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "admin"}, nil)
 		groupRepo.On("GetMembership", ctx, groupID, targetID).Return(&models.GroupMembership{ID: uuid.New(), Role: "member"}, nil)
 		groupRepo.On("UpdateMembership", ctx, mock.AnythingOfType("*models.GroupMembership")).Return(nil)
@@ -298,6 +304,8 @@ func TestGroupService_UpdateMemberRole(t *testing.T) {
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := NewGroupService(groupRepo, nil)
 
+		groupRepo.On("WithTx", ctx, mock.Anything).Return(nil)
+		groupRepo.On("LockGroup", ctx, groupID).Return(nil)
 		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "admin"}, nil)
 		groupRepo.On("GetMembership", ctx, groupID, targetID).Return(&models.GroupMembership{ID: uuid.New(), Role: "admin"}, nil)
 		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return([]models.GroupMembership{{UserID: targetID, Role: "admin"}}, nil)
@@ -318,6 +326,8 @@ func TestGroupService_RemoveMember(t *testing.T) {
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := NewGroupService(groupRepo, nil)
 
+		groupRepo.On("WithTx", ctx, mock.Anything).Return(nil)
+		groupRepo.On("LockGroup", ctx, groupID).Return(nil)
 		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "admin"}, nil)
 		groupRepo.On("GetMembership", ctx, groupID, targetID).Return(&models.GroupMembership{ID: uuid.New(), Role: "member"}, nil)
 		groupRepo.On("DeleteMembership", ctx, mock.AnythingOfType("uuid.UUID")).Return(nil)

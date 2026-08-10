@@ -2924,7 +2924,7 @@
   "@accountFillPasswordFields": {
     "description": "Validation: all password fields required"
   },
-  "accountPasswordMinLength": "Le nouveau mot de passe doit contenir au moins 6 caractères.",
+  "accountPasswordMinLength": "Le nouveau mot de passe doit contenir au moins 12 caractères.",
   "@accountPasswordMinLength": {
     "description": "Validation: password too short"
   },
@@ -4506,11 +4506,11 @@
   "@authSignupPassword": {
     "description": "Password input label"
   },
-  "authSignupPasswordHint": "Au moins 6 caractères",
+  "authSignupPasswordHint": "Au moins 12 caractères",
   "@authSignupPasswordHint": {
     "description": "Password hint text"
   },
-  "authSignupPasswordMinLength": "Le mot de passe doit contenir au moins 6 caractères.",
+  "authSignupPasswordMinLength": "Le mot de passe doit contenir au moins 12 caractères.",
   "@authSignupPasswordMinLength": {
     "description": "Password too short validation"
   },

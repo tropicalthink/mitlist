@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/config"
@@ -44,6 +45,8 @@ func NewAuthHandler(
 func (h *AuthHandler) RegisterRoutes(r chi.Router) {
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/register", h.Register)
+		r.Post("/verify-email", h.VerifyEmail)
+		r.Post("/verify-email/resend", h.ResendEmailVerification)
 		r.Post("/login", h.Login)
 		r.Post("/token/refresh", h.Refresh)
 		r.Post("/logout", h.Logout)
@@ -97,6 +100,14 @@ type passwordResetReq struct {
 	Email string `json:"email"`
 }
 
+type verifyEmailReq struct {
+	Token string `json:"token"`
+}
+
+type resendVerificationReq struct {
+	Email string `json:"email"`
+}
+
 type passwordResetConfirmReq struct {
 	Token       string `json:"token"`
 	NewPassword string `json:"new_password"`
@@ -129,7 +140,63 @@ type claimAccountReq struct {
 type tokenPairResp struct {
 	User         *models.User `json:"user,omitempty"`
 	AccessToken  string       `json:"access_token"`
-	RefreshToken string       `json:"refresh_token"`
+	RefreshToken string       `json:"refresh_token,omitempty"`
+}
+
+const refreshCookieName = "mitlist_refresh"
+
+func isWebClient(r *http.Request) bool { return r.Header.Get("X-Mitlist-Client") == "web" }
+
+func setBrowserRefreshCookie(w http.ResponseWriter, r *http.Request, refresh string) {
+	if !isWebClient(r) {
+		return
+	}
+	secure := r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
+	sameSite := http.SameSiteLaxMode
+	if secure {
+		sameSite = http.SameSiteNoneMode
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name: refreshCookieName, Value: refresh, Path: "/", HttpOnly: true,
+		Secure: secure, SameSite: sameSite,
+	})
+}
+
+func clearBrowserRefreshCookie(w http.ResponseWriter, r *http.Request) {
+	if !isWebClient(r) {
+		return
+	}
+	secure := r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
+	sameSite := http.SameSiteLaxMode
+	if secure {
+		sameSite = http.SameSiteNoneMode
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name: refreshCookieName, Value: "", Path: "/", HttpOnly: true,
+		Secure: secure, SameSite: sameSite, MaxAge: -1,
+	})
+}
+
+func refreshCredential(r *http.Request, bodyToken string) string {
+	if bodyToken != "" {
+		return bodyToken
+	}
+	if isWebClient(r) {
+		cookie, err := r.Cookie(refreshCookieName)
+		if err != nil {
+			return ""
+		}
+		return cookie.Value
+	}
+	return ""
+}
+
+func tokenResponse(w http.ResponseWriter, r *http.Request, status int, user *models.User, access, refresh string) {
+	setBrowserRefreshCookie(w, r, refresh)
+	if isWebClient(r) {
+		refresh = ""
+	}
+	api.RespondJSON(w, status, tokenPairResp{User: user, AccessToken: access, RefreshToken: refresh})
 }
 
 type pushSubscriptionReq struct {
@@ -170,16 +237,42 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, err)
 		return
 	}
+	api.RespondJSON(w, http.StatusCreated, map[string]any{
+		"user":                  user,
+		"verification_required": true,
+	})
+}
+
+func (h *AuthHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
+	var req verifyEmailReq
+	if err := decodeJSON(r, &req); err != nil {
+		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
+		return
+	}
+	user, err := h.userService.VerifyEmail(r.Context(), req.Token)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
 	access, refresh, err := h.jwtService.GenerateTokenPair(user.ID.String(), nil)
 	if err != nil {
 		api.RespondError(w, err)
 		return
 	}
-	api.RespondJSON(w, http.StatusCreated, tokenPairResp{
-		User:         user,
-		AccessToken:  access,
-		RefreshToken: refresh,
-	})
+	tokenResponse(w, r, http.StatusOK, user, access, refresh)
+}
+
+func (h *AuthHandler) ResendEmailVerification(w http.ResponseWriter, r *http.Request) {
+	var req resendVerificationReq
+	if err := decodeJSON(r, &req); err != nil {
+		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
+		return
+	}
+	// Deliberately return the same response for every address.
+	if err := h.userService.ResendEmailVerification(r.Context(), req.Email); err != nil {
+		log.Error().Err(err).Msg("email verification resend failed")
+	}
+	api.RespondJSON(w, http.StatusOK, map[string]string{"message": "if the account is pending verification, a new code has been sent"})
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -189,25 +282,13 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key := "ratelimit:failedlogin:" + req.Email
-	if !middleware.CheckLimit(key, 5, 5.0/300.0) {
-		api.RespondError(w, &api.ValidationError{Message: "too many attempts, please wait and try again"})
-		return
-	}
-
 	user, access, refresh, err := h.userService.Login(r.Context(), req.Email, req.Password)
 	if err != nil {
 		api.RespondError(w, err)
 		return
 	}
 
-	middleware.ResetLimit(key)
-
-	api.RespondJSON(w, http.StatusOK, tokenPairResp{
-		User:         user,
-		AccessToken:  access,
-		RefreshToken: refresh,
-	})
+	tokenResponse(w, r, http.StatusOK, user, access, refresh)
 }
 
 func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
@@ -216,24 +297,12 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
-	claims, err := h.jwtService.ValidateRefreshToken(req.RefreshToken)
+	access, refresh, err := h.jwtService.RotateRefreshToken(refreshCredential(r, req.RefreshToken))
 	if err != nil {
 		api.RespondError(w, api.ErrUnauthorized)
 		return
 	}
-	if err := h.jwtService.RevokeRefreshToken(claims.ID); err != nil {
-		api.RespondError(w, err)
-		return
-	}
-	access, refresh, err := h.jwtService.GenerateTokenPair(claims.Subject, nil)
-	if err != nil {
-		api.RespondError(w, err)
-		return
-	}
-	api.RespondJSON(w, http.StatusOK, tokenPairResp{
-		AccessToken:  access,
-		RefreshToken: refresh,
-	})
+	tokenResponse(w, r, http.StatusOK, nil, access, refresh)
 }
 
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
@@ -244,7 +313,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Revoke the refresh token first.
-	claims, err := h.jwtService.ValidateRefreshToken(req.RefreshToken)
+	claims, err := h.jwtService.ValidateRefreshToken(refreshCredential(r, req.RefreshToken))
 	if err == nil {
 		_ = h.jwtService.RevokeRefreshToken(claims.ID)
 	}
@@ -256,6 +325,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	clearBrowserRefreshCookie(w, r)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -265,7 +335,9 @@ func (h *AuthHandler) PasswordReset(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
-	_ = h.userService.RequestPasswordReset(r.Context(), req.Email)
+	if err := h.userService.RequestPasswordReset(r.Context(), req.Email); err != nil {
+		log.Error().Err(err).Msg("password reset delivery failed")
+	}
 	api.RespondJSON(w, http.StatusAccepted, map[string]string{"message": "if the email exists, a reset link has been sent"})
 }
 
@@ -347,7 +419,12 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, err)
 		return
 	}
-	api.RespondJSON(w, http.StatusOK, map[string]string{"message": "password changed"})
+	access, refresh, err := h.jwtService.GenerateTokenPair(userID.String(), nil)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	tokenResponse(w, r, http.StatusOK, nil, access, refresh)
 }
 
 func (h *AuthHandler) CreateGuest(w http.ResponseWriter, r *http.Request) {
@@ -356,11 +433,7 @@ func (h *AuthHandler) CreateGuest(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, err)
 		return
 	}
-	api.RespondJSON(w, http.StatusCreated, tokenPairResp{
-		User:         user,
-		AccessToken:  access,
-		RefreshToken: refresh,
-	})
+	tokenResponse(w, r, http.StatusCreated, user, access, refresh)
 }
 
 func (h *AuthHandler) ConvertGuest(w http.ResponseWriter, r *http.Request) {
@@ -379,11 +452,7 @@ func (h *AuthHandler) ConvertGuest(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, err)
 		return
 	}
-	api.RespondJSON(w, http.StatusOK, tokenPairResp{
-		User:         user,
-		AccessToken:  access,
-		RefreshToken: refresh,
-	})
+	tokenResponse(w, r, http.StatusOK, user, access, refresh)
 }
 
 func (h *AuthHandler) ClaimAccount(w http.ResponseWriter, r *http.Request) {
@@ -411,11 +480,7 @@ func (h *AuthHandler) ClaimAccount(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, err)
 		return
 	}
-	api.RespondJSON(w, http.StatusOK, tokenPairResp{
-		User:         user,
-		AccessToken:  access,
-		RefreshToken: refresh,
-	})
+	tokenResponse(w, r, http.StatusOK, user, access, refresh)
 }
 
 // ---------------------------------------------------------------------------

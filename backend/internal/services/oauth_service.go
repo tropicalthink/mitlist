@@ -2,15 +2,20 @@ package services
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
-	"golang.org/x/oauth2"
 
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/repositories"
 	oauthclient "github.com/mitlist-app/mitlist/internal/services/oauth"
+	"github.com/mitlist-app/mitlist/pkg/validation"
 )
 
 // OAuthService handles OAuth login flows.
@@ -41,38 +46,50 @@ func NewOAuthService(
 
 // GoogleLogin validates the redirect URI, exchanges the code, fetches user info,
 // creates or links the user, and issues a token pair.
-func (s *OAuthService) GoogleLogin(ctx context.Context, code, redirectURI string) (*models.User, string, string, error) {
+func (s *OAuthService) GoogleIdentity(ctx context.Context, code, redirectURI string, pkceVerifier ...string) (*models.User, error) {
 	if redirectURI != "" {
 		if !s.googleClient.AllowRedirect(redirectURI) {
-			return nil, "", "", &api.ValidationError{Field: "redirect_uri", Message: "redirect URI not allowed"}
+			return nil, &api.ValidationError{Field: "redirect_uri", Message: "redirect URI not allowed"}
 		}
 	}
 
-	token, err := s.googleClient.ExchangeCode(code)
+	token, err := s.googleClient.ExchangeCode(code, pkceVerifier...)
 	if err != nil {
-		return nil, "", "", fmt.Errorf("exchange code: %w", err)
+		return nil, fmt.Errorf("exchange code: %w", err)
 	}
 
 	googleUser, err := s.googleClient.GetUserInfo(token)
 	if err != nil {
-		return nil, "", "", fmt.Errorf("get user info: %w", err)
+		return nil, fmt.Errorf("get user info: %w", err)
 	}
 
-	return s.processOAuthUser(ctx, "google", googleUser.ID, googleUser.Email, googleUser.GivenName, googleUser.FamilyName, googleUser.Picture, token)
+	if !googleUser.VerifiedEmail {
+		return nil, &api.ValidationError{Field: "email", Message: "provider email is not verified"}
+	}
+	return s.processOAuthUser(ctx, "google", googleUser.ID, googleUser.Email, googleUser.GivenName, googleUser.FamilyName, googleUser.Picture)
+}
+
+func (s *OAuthService) GoogleLogin(ctx context.Context, code, redirectURI string, pkceVerifier ...string) (*models.User, string, string, error) {
+	user, err := s.GoogleIdentity(ctx, code, redirectURI, pkceVerifier...)
+	if err != nil {
+		return nil, "", "", err
+	}
+	access, refresh, err := s.jwtService.GenerateTokenPair(user.ID.String(), nil)
+	return user, access, refresh, err
 }
 
 // AppleLogin validates the redirect URI, exchanges the code, validates the identity token,
 // creates or links the user, and issues a token pair.
-func (s *OAuthService) AppleLogin(ctx context.Context, code, redirectURI, idToken string) (*models.User, string, string, error) {
+func (s *OAuthService) AppleIdentity(ctx context.Context, code, redirectURI, idToken string, pkceVerifier ...string) (*models.User, error) {
 	if redirectURI != "" {
 		if !s.appleClient.AllowRedirect(redirectURI) {
-			return nil, "", "", &api.ValidationError{Field: "redirect_uri", Message: "redirect URI not allowed"}
+			return nil, &api.ValidationError{Field: "redirect_uri", Message: "redirect URI not allowed"}
 		}
 	}
 
-	token, err := s.appleClient.ExchangeCode(code)
+	token, err := s.appleClient.ExchangeCode(code, pkceVerifier...)
 	if err != nil {
-		return nil, "", "", fmt.Errorf("exchange code: %w", err)
+		return nil, fmt.Errorf("exchange code: %w", err)
 	}
 
 	if idToken == "" && token != nil {
@@ -81,40 +98,54 @@ func (s *OAuthService) AppleLogin(ctx context.Context, code, redirectURI, idToke
 		}
 	}
 	if idToken == "" {
-		return nil, "", "", &api.ValidationError{Field: "id_token", Message: "identity token is required"}
+		return nil, &api.ValidationError{Field: "id_token", Message: "identity token is required"}
 	}
 
 	appleUser, err := s.appleClient.ValidateIdentityToken(idToken)
 	if err != nil {
-		return nil, "", "", fmt.Errorf("validate identity token: %w", err)
+		return nil, fmt.Errorf("validate identity token: %w", err)
 	}
+	if !appleUser.EmailVerified {
+		return nil, &api.ValidationError{Field: "email", Message: "provider email is not verified"}
+	}
+	return s.processOAuthUser(ctx, "apple", appleUser.ID, appleUser.Email, appleUser.GivenName, appleUser.FamilyName, "")
+}
 
-	return s.processOAuthUser(ctx, "apple", appleUser.ID, appleUser.Email, appleUser.GivenName, appleUser.FamilyName, "", token)
+func (s *OAuthService) AppleLogin(ctx context.Context, code, redirectURI, idToken string, pkceVerifier ...string) (*models.User, string, string, error) {
+	user, err := s.AppleIdentity(ctx, code, redirectURI, idToken, pkceVerifier...)
+	if err != nil {
+		return nil, "", "", err
+	}
+	access, refresh, err := s.jwtService.GenerateTokenPair(user.ID.String(), nil)
+	return user, access, refresh, err
 }
 
 func (s *OAuthService) processOAuthUser(
 	ctx context.Context,
 	provider, providerUserID, email, firstName, lastName, avatarURL string,
-	token *oauth2.Token,
-) (*models.User, string, string, error) {
+) (*models.User, error) {
 	// Try existing OAuth link.
 	oauthAccount, err := s.authRepo.GetOAuthByProviderID(ctx, provider, providerUserID)
 	if err == nil {
 		user, err := s.userRepo.GetByID(ctx, oauthAccount.UserID)
 		if err != nil {
-			return nil, "", "", fmt.Errorf("get linked user: %w", err)
+			return nil, fmt.Errorf("get linked user: %w", err)
 		}
-		access, refresh, err := s.jwtService.GenerateTokenPair(user.ID.String(), nil)
-		if err != nil {
-			return nil, "", "", fmt.Errorf("generate tokens: %w", err)
-		}
-		return user, access, refresh, nil
+		return user, nil
+	}
+	if !isNotFound(err) {
+		return nil, fmt.Errorf("get oauth account: %w", err)
 	}
 
 	// Try to find user by email.
 	var user *models.User
+	createdUser := false
 	if email != "" {
-		user, _ = s.userRepo.GetByEmail(ctx, email)
+		email = validation.NormalizeEmail(email)
+		user, err = s.userRepo.GetByEmail(ctx, email)
+		if err != nil && !isNotFound(err) {
+			return nil, fmt.Errorf("get user by email: %w", err)
+		}
 	}
 
 	if user == nil {
@@ -130,8 +161,9 @@ func (s *OAuthService) processOAuthUser(
 			user.AvatarURL = &avatarURL
 		}
 		if err := s.userRepo.Create(ctx, user); err != nil {
-			return nil, "", "", fmt.Errorf("create user: %w", err)
+			return nil, fmt.Errorf("create user: %w", err)
 		}
+		createdUser = true
 	}
 
 	// Link OAuth account.
@@ -140,24 +172,40 @@ func (s *OAuthService) processOAuthUser(
 		Provider:       provider,
 		ProviderUserID: providerUserID,
 	}
-	if token != nil {
-		access := token.AccessToken
-		refresh := token.RefreshToken
-		account.AccessToken = &access
-		account.RefreshToken = &refresh
-		if !token.Expiry.IsZero() {
-			expiry := token.Expiry
-			account.ExpiresAt = &expiry
-		}
-	}
+	// Provider bearer tokens are intentionally not persisted. mitlist uses the
+	// provider only to establish identity and has no post-login provider API use.
 	if err := s.authRepo.CreateOAuthAccount(ctx, account); err != nil {
-		return nil, "", "", fmt.Errorf("link oauth account: %w", err)
+		if createdUser {
+			_ = s.userRepo.SoftDelete(ctx, user.ID)
+		}
+		return nil, fmt.Errorf("link oauth account: %w", err)
 	}
+	return user, nil
+}
 
-	access, refresh, err := s.jwtService.GenerateTokenPair(user.ID.String(), nil)
+func (s *OAuthService) CreateHandoff(ctx context.Context, userID uuid.UUID) (string, error) {
+	raw := make([]byte, 32)
+	if _, err := rand.Read(raw); err != nil {
+		return "", err
+	}
+	code := base64.RawURLEncoding.EncodeToString(raw)
+	digest := sha256.Sum256([]byte(code))
+	if err := s.authRepo.CreateOAuthHandoff(ctx, hex.EncodeToString(digest[:]), userID, time.Now().UTC().Add(2*time.Minute)); err != nil {
+		return "", err
+	}
+	return code, nil
+}
+
+func (s *OAuthService) ExchangeHandoff(ctx context.Context, code string) (*models.User, string, string, error) {
+	digest := sha256.Sum256([]byte(code))
+	userID, err := s.authRepo.ConsumeOAuthHandoff(ctx, hex.EncodeToString(digest[:]))
 	if err != nil {
-		return nil, "", "", fmt.Errorf("generate tokens: %w", err)
+		return nil, "", "", &api.ValidationError{Message: "invalid or expired oauth handoff"}
 	}
-
-	return user, access, refresh, nil
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil || !user.IsActive || !user.IsVerified {
+		return nil, "", "", api.ErrUnauthorized
+	}
+	access, refresh, err := s.jwtService.GenerateTokenPair(user.ID.String(), nil)
+	return user, access, refresh, err
 }

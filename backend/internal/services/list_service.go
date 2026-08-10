@@ -858,8 +858,39 @@ func (s *ListService) BulkCompleteItems(ctx context.Context, user *models.User, 
 }
 
 // SetListArchived archives or unarchives a list.
-func (s *ListService) SetListArchived(ctx context.Context, listID uuid.UUID, archived bool) error {
-	return s.listRepo.SetListArchived(ctx, listID, archived)
+func (s *ListService) SetListArchived(ctx context.Context, user *models.User, listID uuid.UUID, archived bool) error {
+	if _, err := s.GetList(ctx, user, listID); err != nil {
+		return err
+	}
+	return s.listRepo.SetListArchived(ctx, listID, user.ID, archived)
+}
+
+func (s *ListService) ClaimItem(ctx context.Context, user *models.User, listID, itemID uuid.UUID) error {
+	if _, err := s.GetList(ctx, user, listID); err != nil {
+		return err
+	}
+	item, err := s.listRepo.GetItemByID(ctx, itemID)
+	if err != nil {
+		return err
+	}
+	if item.ListID != listID {
+		return &api.NotFoundError{Resource: "list item", ID: itemID.String()}
+	}
+	return s.listRepo.ClaimItem(ctx, listID, itemID, user.ID)
+}
+
+func (s *ListService) UnclaimItem(ctx context.Context, user *models.User, listID, itemID uuid.UUID) error {
+	if _, err := s.GetList(ctx, user, listID); err != nil {
+		return err
+	}
+	item, err := s.listRepo.GetItemByID(ctx, itemID)
+	if err != nil {
+		return err
+	}
+	if item.ListID != listID {
+		return &api.NotFoundError{Resource: "list item", ID: itemID.String()}
+	}
+	return s.listRepo.UnclaimItem(ctx, listID, itemID, user.ID)
 }
 
 func (s *ListService) ListRepo() repositories.ListRepo {

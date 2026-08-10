@@ -124,3 +124,14 @@ func TestSetFieldFloat64(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateRejectsSharedTokenSigningKey(t *testing.T) {
+	cfg := &Config{
+		Environment:      "development",
+		SecretKey:        "same-key-value",
+		SessionSecretKey: "same-key-value",
+	}
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected identical access and refresh signing keys to be rejected")
+	}
+}

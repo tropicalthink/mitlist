@@ -28,6 +28,8 @@ func makeToken(t *testing.T, secret, tokenType, subject string, exp time.Time) s
 		RegisteredClaims: golangjwt.RegisteredClaims{
 			ID:        uuid.NewString(),
 			Subject:   subject,
+			Issuer:    "mitlist",
+			Audience:  golangjwt.ClaimStrings{"mitlist-api"},
 			IssuedAt:  golangjwt.NewNumericDate(now.Add(-time.Minute)),
 			NotBefore: golangjwt.NewNumericDate(now.Add(-time.Minute)),
 			ExpiresAt: golangjwt.NewNumericDate(exp),
@@ -87,7 +89,7 @@ func TestParse_AcceptsValidAccessToken(t *testing.T) {
 	svc := newService()
 	tok := makeToken(t, testSecret, TokenTypeAccess, "user-1", time.Now().UTC().Add(time.Hour))
 
-	claims, err := svc.parse(tok)
+	claims, err := svc.parse(tok, TokenTypeAccess)
 	if err != nil {
 		t.Fatalf("parse returned error: %v", err)
 	}
@@ -97,9 +99,26 @@ func TestParse_AcceptsValidAccessToken(t *testing.T) {
 }
 
 type memorySessionStore struct {
-	mu       sync.Mutex
-	sessions map[string]RefreshSession
-	revoked  map[string]bool
+	mu            sync.Mutex
+	sessions      map[string]RefreshSession
+	revoked       map[string]bool
+	accessRevoked map[string]bool
+}
+
+func (m *memorySessionStore) RevokeAccess(_ context.Context, jti string, _ time.Time) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.accessRevoked == nil {
+		m.accessRevoked = make(map[string]bool)
+	}
+	m.accessRevoked[jti] = true
+	return nil
+}
+
+func (m *memorySessionStore) IsAccessActive(_ context.Context, jti string, _ uuid.UUID, _ time.Time) (bool, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return !m.accessRevoked[jti], nil
 }
 
 func newMemorySessionStore() *memorySessionStore {
@@ -127,6 +146,37 @@ func (s *memorySessionStore) Revoke(_ context.Context, jti string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.revoked[jti] = true
+	return nil
+}
+
+func (s *memorySessionStore) Rotate(_ context.Context, oldJTI string, replacement RefreshSession) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	old, exists := s.sessions[oldJTI]
+	if !exists || s.revoked[oldJTI] || !old.ExpiresAt.After(time.Now()) {
+		if exists {
+			for jti, session := range s.sessions {
+				if session.FamilyID == old.FamilyID {
+					s.revoked[jti] = true
+				}
+			}
+		}
+		return ErrRevokedToken
+	}
+	s.revoked[oldJTI] = true
+	replacement.FamilyID = old.FamilyID
+	s.sessions[replacement.JTI] = replacement
+	return nil
+}
+
+func (s *memorySessionStore) RevokeUser(_ context.Context, userID uuid.UUID) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for jti, session := range s.sessions {
+		if session.UserID == userID {
+			s.revoked[jti] = true
+		}
+	}
 	return nil
 }
 
@@ -202,5 +252,46 @@ func TestRevokeRefreshToken(t *testing.T) {
 	}
 	if _, err := svc.ValidateRefreshToken(refresh); !errors.Is(err, ErrRevokedToken) {
 		t.Fatalf("expected ErrRevokedToken after revoke, got %v", err)
+	}
+}
+
+func TestRotateRefreshToken_ConcurrentReplayHasOneWinner(t *testing.T) {
+	svc := newServiceWithSessions()
+	_, refresh, err := svc.GenerateTokenPair(uuid.NewString(), []string{"member"})
+	if err != nil {
+		t.Fatalf("GenerateTokenPair: %v", err)
+	}
+
+	type result struct {
+		refresh string
+		err     error
+	}
+	start := make(chan struct{})
+	results := make(chan result, 2)
+	for range 2 {
+		go func() {
+			<-start
+			_, rotated, rotateErr := svc.RotateRefreshToken(refresh)
+			results <- result{refresh: rotated, err: rotateErr}
+		}()
+	}
+	close(start)
+
+	successes := 0
+	var winner string
+	for range 2 {
+		got := <-results
+		if got.err == nil {
+			successes++
+			winner = got.refresh
+		}
+	}
+	if successes != 1 {
+		t.Fatalf("successful rotations = %d, want exactly 1", successes)
+	}
+	// The losing replay revokes the entire family, including the token minted by
+	// the winner, so a stolen token cannot establish a surviving branch.
+	if _, err := svc.ValidateRefreshToken(winner); !errors.Is(err, ErrRevokedToken) {
+		t.Fatalf("winner family should be revoked after replay, got %v", err)
 	}
 }

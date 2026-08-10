@@ -25,6 +25,8 @@ type Config struct {
 	Port                     string `env:"PORT" default:"8000"`
 	APIPrefix                string `env:"API_PREFIX" default:"/api"`
 	AccessTokenExpireMinutes int    `env:"ACCESS_TOKEN_EXPIRE_MINUTES" default:"15"`
+	TokenIssuer              string `env:"TOKEN_ISSUER" default:"mitlist"`
+	TokenAudience            string `env:"TOKEN_AUDIENCE" default:"mitlist-api"`
 	RunMigrationsOnStartup   bool   `env:"RUN_MIGRATIONS_ON_STARTUP" default:"true"`
 	LogLevel                 string `env:"LOG_LEVEL" default:"WARNING"`
 
@@ -260,6 +262,9 @@ func (c *Config) Validate() error {
 	}
 	if c.Environment == "production" && (c.SecretKey == "dev-only-insecure-key-do-not-use-in-prod" || c.SessionSecretKey == "dev-only-insecure-key-do-not-use-in-prod") {
 		return fmt.Errorf("refusing to start in production with default dev secret keys — set SECRET_KEY and SESSION_SECRET_KEY in environment")
+	}
+	if c.SecretKey != "" && c.SecretKey == c.SessionSecretKey {
+		return fmt.Errorf("SECRET_KEY and SESSION_SECRET_KEY must be different")
 	}
 	return nil
 }

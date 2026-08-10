@@ -178,11 +178,26 @@ func TestRecipeService_CollectionOperations(t *testing.T) {
 		svc := NewRecipeService(recipeRepo)
 
 		recipeRepo.On("GetCollectionByID", ctx, collectionID).Return(&models.Collection{ID: collectionID, UserID: userID}, nil)
-		recipeRepo.On("GetRecipeByID", ctx, recipeID).Return(&models.Recipe{ID: recipeID}, nil)
+		recipeRepo.On("GetRecipeByID", ctx, recipeID).Return(&models.Recipe{ID: recipeID, UserID: userID}, nil)
 		recipeRepo.On("CreateCollectionRecipe", ctx, mock.AnythingOfType("*models.CollectionRecipe")).Return(nil)
 
 		err := svc.AddToCollection(ctx, userID, collectionID, recipeID)
 		require.NoError(t, err)
+	})
+
+	t.Run("foreign private recipe cannot be added", func(t *testing.T) {
+		recipeRepo := new(mocks.MockRecipeRepo)
+		svc := NewRecipeService(recipeRepo)
+		otherUserID := uuid.New()
+
+		recipeRepo.On("GetCollectionByID", ctx, collectionID).Return(&models.Collection{ID: collectionID, UserID: userID}, nil)
+		recipeRepo.On("GetRecipeByID", ctx, recipeID).Return(&models.Recipe{ID: recipeID, UserID: otherUserID}, nil)
+		recipeRepo.On("GetRecipeShareByUser", ctx, recipeID, userID).Return(nil, errors.New("recipe share not found"))
+
+		err := svc.AddToCollection(ctx, userID, collectionID, recipeID)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, api.ErrPermissionDenied)
+		recipeRepo.AssertNotCalled(t, "CreateCollectionRecipe", mock.Anything, mock.Anything)
 	})
 
 	t.Run("remove from collection", func(t *testing.T) {

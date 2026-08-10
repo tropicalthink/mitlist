@@ -8,13 +8,10 @@ import (
 
 // OAuthAccount links a user to an external OAuth provider.
 type OAuthAccount struct {
-	ID             uuid.UUID  `json:"id"`
-	UserID         uuid.UUID  `json:"user_id"`
-	Provider       string     `json:"provider"`
-	ProviderUserID string     `json:"provider_user_id"`
-	AccessToken    *string    `json:"access_token,omitempty"`
-	RefreshToken   *string    `json:"refresh_token,omitempty"`
-	ExpiresAt      *time.Time `json:"expires_at,omitempty"`
+	ID             uuid.UUID `json:"id"`
+	UserID         uuid.UUID `json:"user_id"`
+	Provider       string    `json:"provider"`
+	ProviderUserID string    `json:"provider_user_id"`
 }
 
 // PasswordResetToken stores tokens for password reset flows.

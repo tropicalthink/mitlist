@@ -2435,7 +2435,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountPasswordMinLength =>
-      'New password must be at least 6 characters.';
+      'New password must be at least 12 characters.';
 
   @override
   String get accountPasswordsMismatch => 'New passwords do not match.';
@@ -3808,7 +3808,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authSignupPassword => 'Password';
 
   @override
-  String get authSignupPasswordHint => 'At least 6 characters';
+  String get authSignupPasswordHint => 'At least 12 characters';
 
   @override
   String get authSignupCreateAccount => 'Create account';
@@ -3827,7 +3827,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authSignupPasswordMinLength =>
-      'Password must be at least 6 characters.';
+      'Password must be at least 12 characters.';
 
   @override
   String get authSignupJoinTitle => 'Join household';

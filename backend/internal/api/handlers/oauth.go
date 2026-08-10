@@ -10,6 +10,7 @@ import (
 
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/config"
+	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/services"
 	oauthclient "github.com/mitlist-app/mitlist/internal/services/oauth"
 )
@@ -25,6 +26,7 @@ type OAuthHandler struct {
 const (
 	oauthStateCookieName    = "oauth_state"
 	oauthRedirectCookieName = "oauth_redirect_uri"
+	oauthPKCECookieName     = "oauth_pkce_verifier"
 )
 
 // NewOAuthHandler creates a new OAuthHandler.
@@ -63,10 +65,16 @@ func (h *OAuthHandler) GetGoogle(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, err)
 		return
 	}
-	authURL := h.googleClient.AuthURL(state)
+	verifier, err := generateState()
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	authURL := h.googleClient.AuthURL(state, verifier)
 
 	h.setOAuthCookie(w, oauthStateCookieName, state, 600, r)
 	h.setOAuthCookie(w, oauthRedirectCookieName, base64.URLEncoding.EncodeToString([]byte(redirectURI)), 600, r)
+	h.setOAuthCookie(w, oauthPKCECookieName, verifier, 600, r)
 	http.Redirect(w, r, authURL, http.StatusFound)
 }
 
@@ -150,33 +158,40 @@ func (h *OAuthHandler) PostGoogleCallback(w http.ResponseWriter, r *http.Request
 	cookie, err := r.Cookie(oauthStateCookieName)
 	if err != nil || cookie.Value == "" || cookie.Value != req.State {
 		h.clearOAuthCookie(w, oauthStateCookieName, r)
+		h.clearOAuthCookie(w, oauthPKCECookieName, r)
 		api.RespondError(w, &api.ValidationError{Message: "invalid oauth state"})
 		return
 	}
 	h.clearOAuthCookie(w, oauthStateCookieName, r)
-
-	user, access, refresh, err := h.service.GoogleLogin(r.Context(), req.Code, req.RedirectURI)
+	verifier, err := h.pkceVerifier(r)
+	h.clearOAuthCookie(w, oauthPKCECookieName, r)
 	if err != nil {
 		api.RespondError(w, err)
 		return
 	}
 
-	api.RespondJSON(w, http.StatusOK, map[string]any{
-		"user":          user,
-		"access_token":  access,
-		"refresh_token": refresh,
-	})
+	user, access, refresh, err := h.service.GoogleLogin(r.Context(), req.Code, req.RedirectURI, verifier)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+
+	tokenResponse(w, r, http.StatusOK, user, access, refresh)
 }
 
 // GetGoogleCallback handles a provider redirect, completes login server-side,
 // and redirects back to the client callback URL with issued tokens.
 func (h *OAuthHandler) GetGoogleCallback(w http.ResponseWriter, r *http.Request) {
 	h.completeRedirectFlow(w, r, "google", func() (*servicesOAuthResult, error) {
-		user, access, refresh, err := h.service.GoogleLogin(r.Context(), r.URL.Query().Get("code"), "")
+		verifier, verifierErr := h.pkceVerifier(r)
+		if verifierErr != nil {
+			return nil, verifierErr
+		}
+		user, err := h.service.GoogleIdentity(r.Context(), r.URL.Query().Get("code"), "", verifier)
 		if err != nil {
 			return nil, err
 		}
-		return &servicesOAuthResult{user: user, access: access, refresh: refresh}, nil
+		return &servicesOAuthResult{user: user}, nil
 	})
 }
 
@@ -197,10 +212,16 @@ func (h *OAuthHandler) GetApple(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, err)
 		return
 	}
-	authURL := h.appleClient.AuthURL(state)
+	verifier, err := generateState()
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	authURL := h.appleClient.AuthURL(state, verifier)
 
 	h.setOAuthCookie(w, oauthStateCookieName, state, 600, r)
 	h.setOAuthCookie(w, oauthRedirectCookieName, base64.URLEncoding.EncodeToString([]byte(redirectURI)), 600, r)
+	h.setOAuthCookie(w, oauthPKCECookieName, verifier, 600, r)
 	http.Redirect(w, r, authURL, http.StatusFound)
 }
 
@@ -214,16 +235,21 @@ func (h *OAuthHandler) GetApple(w http.ResponseWriter, r *http.Request) {
 func (h *OAuthHandler) PostAppleCallback(w http.ResponseWriter, r *http.Request) {
 	if isFormPost(r) {
 		h.completeRedirectFlow(w, r, "apple", func() (*servicesOAuthResult, error) {
-			user, access, refresh, err := h.service.AppleLogin(
+			verifier, verifierErr := h.pkceVerifier(r)
+			if verifierErr != nil {
+				return nil, verifierErr
+			}
+			user, err := h.service.AppleIdentity(
 				r.Context(),
 				r.FormValue("code"),
 				"",
 				r.FormValue("id_token"),
+				verifier,
 			)
 			if err != nil {
 				return nil, err
 			}
-			return &servicesOAuthResult{user: user, access: access, refresh: refresh}, nil
+			return &servicesOAuthResult{user: user}, nil
 		})
 		return
 	}
@@ -242,45 +268,59 @@ func (h *OAuthHandler) PostAppleCallback(w http.ResponseWriter, r *http.Request)
 	cookie, err := r.Cookie(oauthStateCookieName)
 	if err != nil || cookie.Value == "" || cookie.Value != req.State {
 		h.clearOAuthCookie(w, oauthStateCookieName, r)
+		h.clearOAuthCookie(w, oauthPKCECookieName, r)
 		api.RespondError(w, &api.ValidationError{Message: "invalid oauth state"})
 		return
 	}
 	h.clearOAuthCookie(w, oauthStateCookieName, r)
-
-	user, access, refresh, err := h.service.AppleLogin(r.Context(), req.Code, req.RedirectURI, req.IDToken)
+	verifier, err := h.pkceVerifier(r)
+	h.clearOAuthCookie(w, oauthPKCECookieName, r)
 	if err != nil {
 		api.RespondError(w, err)
 		return
 	}
 
-	api.RespondJSON(w, http.StatusOK, map[string]any{
-		"user":          user,
-		"access_token":  access,
-		"refresh_token": refresh,
-	})
+	user, access, refresh, err := h.service.AppleLogin(r.Context(), req.Code, req.RedirectURI, req.IDToken, verifier)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+
+	tokenResponse(w, r, http.StatusOK, user, access, refresh)
 }
 
 // GetAppleCallback handles a provider redirect, completes login server-side,
 // and redirects back to the client callback URL with issued tokens.
 func (h *OAuthHandler) GetAppleCallback(w http.ResponseWriter, r *http.Request) {
 	h.completeRedirectFlow(w, r, "apple", func() (*servicesOAuthResult, error) {
-		user, access, refresh, err := h.service.AppleLogin(
+		verifier, verifierErr := h.pkceVerifier(r)
+		if verifierErr != nil {
+			return nil, verifierErr
+		}
+		user, err := h.service.AppleIdentity(
 			r.Context(),
 			r.URL.Query().Get("code"),
 			"",
 			r.URL.Query().Get("id_token"),
+			verifier,
 		)
 		if err != nil {
 			return nil, err
 		}
-		return &servicesOAuthResult{user: user, access: access, refresh: refresh}, nil
+		return &servicesOAuthResult{user: user}, nil
 	})
 }
 
+func (h *OAuthHandler) pkceVerifier(r *http.Request) (string, error) {
+	cookie, err := r.Cookie(oauthPKCECookieName)
+	if err != nil || cookie.Value == "" {
+		return "", &api.ValidationError{Message: "missing oauth PKCE verifier"}
+	}
+	return cookie.Value, nil
+}
+
 type servicesOAuthResult struct {
-	user    any
-	access  string
-	refresh string
+	user *models.User
 }
 
 func (h *OAuthHandler) completeRedirectFlow(
@@ -293,6 +333,7 @@ func (h *OAuthHandler) completeRedirectFlow(
 	if err != nil {
 		h.clearOAuthCookie(w, oauthStateCookieName, r)
 		h.clearOAuthCookie(w, oauthRedirectCookieName, r)
+		h.clearOAuthCookie(w, oauthPKCECookieName, r)
 		api.RespondError(w, err)
 		return
 	}
@@ -302,12 +343,14 @@ func (h *OAuthHandler) completeRedirectFlow(
 	if err != nil || cookie.Value == "" || cookie.Value != requestState {
 		h.clearOAuthCookie(w, oauthStateCookieName, r)
 		h.clearOAuthCookie(w, oauthRedirectCookieName, r)
+		h.clearOAuthCookie(w, oauthPKCECookieName, r)
 		http.Redirect(w, r, h.redirectWithError(finalRedirectURI, provider, "invalid oauth state"), http.StatusFound)
 		return
 	}
 
 	h.clearOAuthCookie(w, oauthStateCookieName, r)
 	h.clearOAuthCookie(w, oauthRedirectCookieName, r)
+	h.clearOAuthCookie(w, oauthPKCECookieName, r)
 
 	if providerError := r.FormValue("error"); providerError != "" {
 		http.Redirect(w, r, h.redirectWithError(finalRedirectURI, provider, providerError), http.StatusFound)
@@ -320,10 +363,15 @@ func (h *OAuthHandler) completeRedirectFlow(
 		return
 	}
 
+	handoff, err := h.service.CreateHandoff(r.Context(), result.user.ID)
+	if err != nil {
+		http.Redirect(w, r, h.redirectWithError(finalRedirectURI, provider, "oauth handoff failed"), http.StatusFound)
+		return
+	}
 	http.Redirect(
 		w,
 		r,
-		h.redirectWithTokens(finalRedirectURI, provider, result.access, result.refresh),
+		h.redirectWithHandoff(finalRedirectURI, provider, handoff),
 		http.StatusFound,
 	)
 }
@@ -341,15 +389,14 @@ func (h *OAuthHandler) finalRedirectURI(r *http.Request) (string, error) {
 	return string(raw), nil
 }
 
-func (h *OAuthHandler) redirectWithTokens(finalRedirectURI, provider, access, refresh string) string {
+func (h *OAuthHandler) redirectWithHandoff(finalRedirectURI, provider, handoff string) string {
 	redirectURL, err := url.Parse(finalRedirectURI)
 	if err != nil {
 		return finalRedirectURI
 	}
 	tokens := url.Values{}
 	tokens.Set("provider", provider)
-	tokens.Set("access_token", access)
-	tokens.Set("refresh_token", refresh)
+	tokens.Set("handoff", handoff)
 	redirectURL.RawQuery = ""
 	redirectURL.Fragment = ""
 	// Custom-scheme deep links (mitlist://) must use the query string: mobile
@@ -360,6 +407,22 @@ func (h *OAuthHandler) redirectWithTokens(finalRedirectURI, provider, access, re
 		redirectURL.Fragment = tokens.Encode()
 	}
 	return redirectURL.String()
+}
+
+func (h *OAuthHandler) ExchangeHandoff(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Code string `json:"code"`
+	}
+	if err := decodeJSON(r, &req); err != nil || req.Code == "" {
+		api.RespondError(w, &api.ValidationError{Field: "code", Message: "handoff code is required"})
+		return
+	}
+	user, access, refresh, err := h.service.ExchangeHandoff(r.Context(), req.Code)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	tokenResponse(w, r, http.StatusOK, user, access, refresh)
 }
 
 func (h *OAuthHandler) redirectWithError(finalRedirectURI, provider, message string) string {

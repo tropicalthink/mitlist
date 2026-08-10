@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -29,15 +28,16 @@ func TestUserService_Register(t *testing.T) {
 		svc := NewUserService(userRepo, authRepo, jwtSvc, passSvc, mailSvc)
 
 		userRepo.On("GetByEmail", ctx, "new@example.com").Return(nil, errors.New("user not found"))
-		passSvc.On("Hash", "password123").Return("hashed", nil)
-		userRepo.On("Create", ctx, mock.AnythingOfType("*models.User")).Return(nil)
+		passSvc.On("Hash", "password123!").Return("hashed", nil)
+		authRepo.On("CreateUnverifiedUser", ctx, mock.AnythingOfType("*models.User"), mock.AnythingOfType("string"), mock.AnythingOfType("time.Time")).Return(nil)
+		mailSvc.On("Send", "new@example.com", "Verify your mitlist account", mock.AnythingOfType("string"), false).Return(nil)
 
-		user, err := svc.Register(ctx, RegisterInput{Email: "new@example.com", Password: "password123", FirstName: "New", LastName: "User"})
+		user, err := svc.Register(ctx, RegisterInput{Email: "new@example.com", Password: "password123!", FirstName: "New", LastName: "User"})
 		require.NoError(t, err)
 		assert.Equal(t, "new@example.com", user.Email)
 		assert.Equal(t, "hashed", user.PasswordHash)
 		assert.True(t, user.IsActive)
-		assert.True(t, user.IsVerified)
+		assert.False(t, user.IsVerified)
 	})
 
 	t.Run("missing email or password", func(t *testing.T) {
@@ -61,7 +61,7 @@ func TestUserService_Register(t *testing.T) {
 		existing := &models.User{Email: "existing@example.com"}
 		userRepo.On("GetByEmail", ctx, "existing@example.com").Return(existing, nil)
 
-		_, err := svc.Register(ctx, RegisterInput{Email: "existing@example.com", Password: "password123"})
+		_, err := svc.Register(ctx, RegisterInput{Email: "existing@example.com", Password: "password123!"})
 		require.Error(t, err)
 		assert.IsType(t, &api.ConflictError{}, err)
 	})
@@ -79,10 +79,10 @@ func TestUserService_Login(t *testing.T) {
 
 		user := &models.User{ID: userID, Email: "test@example.com", PasswordHash: "hash", IsActive: true, IsVerified: true}
 		userRepo.On("GetByEmail", ctx, "test@example.com").Return(user, nil)
-		passSvc.On("Compare", "hash", "password123").Return(true)
+		passSvc.On("Compare", "hash", "password123!").Return(true)
 		jwtSvc.On("GenerateTokenPair", userID.String(), []string{}).Return("access", "refresh", nil)
 
-		u, access, refresh, err := svc.Login(ctx, "test@example.com", "password123")
+		u, access, refresh, err := svc.Login(ctx, "test@example.com", "password123!")
 		require.NoError(t, err)
 		assert.Equal(t, userID, u.ID)
 		assert.Equal(t, "access", access)
@@ -91,11 +91,13 @@ func TestUserService_Login(t *testing.T) {
 
 	t.Run("invalid credentials", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
-		svc := NewUserService(userRepo, nil, nil, nil, nil)
+		passSvc := new(mocks.MockPasswordService)
+		svc := NewUserService(userRepo, nil, nil, passSvc, nil)
 
 		userRepo.On("GetByEmail", ctx, "test@example.com").Return(nil, errors.New("user not found"))
+		passSvc.On("Compare", dummyPasswordHash, "password123!").Return(false)
 
-		_, _, _, err := svc.Login(ctx, "test@example.com", "password123")
+		_, _, _, err := svc.Login(ctx, "test@example.com", "password123!")
 		require.Error(t, err)
 		assert.IsType(t, &api.ValidationError{}, err)
 		assert.Equal(t, "invalid email or password", err.Error())
@@ -123,9 +125,9 @@ func TestUserService_Login(t *testing.T) {
 
 		user := &models.User{ID: userID, Email: "test@example.com", PasswordHash: "hash", IsActive: false, IsVerified: true}
 		userRepo.On("GetByEmail", ctx, "test@example.com").Return(user, nil)
-		passSvc.On("Compare", "hash", "password123").Return(true)
+		passSvc.On("Compare", "hash", "password123!").Return(true)
 
-		_, _, _, err := svc.Login(ctx, "test@example.com", "password123")
+		_, _, _, err := svc.Login(ctx, "test@example.com", "password123!")
 		require.Error(t, err)
 		assert.IsType(t, &api.ValidationError{}, err)
 		assert.Equal(t, "account is inactive", err.Error())
@@ -138,13 +140,28 @@ func TestUserService_Login(t *testing.T) {
 
 		user := &models.User{ID: userID, Email: "test@example.com", PasswordHash: "hash", IsActive: true, IsVerified: false}
 		userRepo.On("GetByEmail", ctx, "test@example.com").Return(user, nil)
-		passSvc.On("Compare", "hash", "password123").Return(true)
+		passSvc.On("Compare", "hash", "password123!").Return(true)
 
-		_, _, _, err := svc.Login(ctx, "test@example.com", "password123")
+		_, _, _, err := svc.Login(ctx, "test@example.com", "password123!")
 		require.Error(t, err)
 		assert.IsType(t, &api.ValidationError{}, err)
 		assert.Equal(t, "account is not verified", err.Error())
 	})
+}
+
+func TestUserService_VerifyEmail(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+	authRepo := new(mocks.MockAuthRepo)
+	userRepo := new(mocks.MockUserRepo)
+	svc := NewUserService(userRepo, authRepo, nil, nil, nil)
+
+	authRepo.On("ConsumeEmailVerification", ctx, resetTokenHash("verification-code")).Return(userID, nil)
+	userRepo.On("GetByID", ctx, userID).Return(&models.User{ID: userID, Email: "verified@example.com", IsVerified: true}, nil)
+
+	user, err := svc.VerifyEmail(ctx, "verification-code")
+	require.NoError(t, err)
+	assert.True(t, user.IsVerified)
 }
 
 func TestUserService_GetMe(t *testing.T) {
@@ -243,16 +260,17 @@ func TestUserService_ChangePassword(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
+		authRepo := new(mocks.MockAuthRepo)
 		passSvc := new(mocks.MockPasswordService)
-		svc := NewUserService(userRepo, nil, nil, passSvc, nil)
+		svc := NewUserService(userRepo, authRepo, nil, passSvc, nil)
 
 		user := &models.User{ID: userID, PasswordHash: "oldhash", IsActive: true, IsVerified: true}
 		userRepo.On("GetByID", ctx, userID).Return(user, nil)
-		passSvc.On("Compare", "oldhash", "oldpassword").Return(true)
-		passSvc.On("Hash", "newpassword").Return("newhash", nil)
-		userRepo.On("Update", ctx, user).Return(nil)
+		passSvc.On("Compare", "oldhash", "oldpassword12!").Return(true)
+		passSvc.On("Hash", "newpassword12!").Return("newhash", nil)
+		authRepo.On("UpdatePasswordAndRevokeSessions", ctx, userID, "newhash").Return(nil)
 
-		err := svc.ChangePassword(ctx, userID, "oldpassword", "newpassword")
+		err := svc.ChangePassword(ctx, userID, "oldpassword12!", "newpassword12!")
 		require.NoError(t, err)
 	})
 
@@ -265,7 +283,7 @@ func TestUserService_ChangePassword(t *testing.T) {
 		userRepo.On("GetByID", ctx, userID).Return(user, nil)
 		passSvc.On("Compare", "oldhash", "wrong").Return(false)
 
-		err := svc.ChangePassword(ctx, userID, "wrong", "newpassword")
+		err := svc.ChangePassword(ctx, userID, "wrong", "newpassword12!")
 		require.Error(t, err)
 		assert.IsType(t, &api.ValidationError{}, err)
 	})
@@ -303,7 +321,6 @@ func TestUserService_RequestPasswordReset(t *testing.T) {
 func TestUserService_ConfirmPasswordReset(t *testing.T) {
 	ctx := context.Background()
 	userID := uuid.New()
-	tokenID := uuid.New()
 
 	t.Run("success", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
@@ -311,39 +328,35 @@ func TestUserService_ConfirmPasswordReset(t *testing.T) {
 		passSvc := new(mocks.MockPasswordService)
 		svc := NewUserService(userRepo, authRepo, nil, passSvc, nil)
 
-		resetToken := &models.PasswordResetToken{ID: tokenID, UserID: userID, Token: "abc", ExpiresAt: time.Now().UTC().Add(time.Hour)}
-		authRepo.On("GetPasswordResetToken", ctx, "abc").Return(resetToken, nil)
-		user := &models.User{ID: userID, IsActive: true, IsVerified: true}
-		userRepo.On("GetByID", ctx, userID).Return(user, nil)
-		passSvc.On("Hash", "newpassword").Return("newhash", nil)
-		userRepo.On("Update", ctx, user).Return(nil)
-		authRepo.On("ConsumeToken", ctx, tokenID).Return(nil)
+		passSvc.On("Hash", "newpassword12!").Return("newhash", nil)
+		authRepo.On("ConsumePasswordReset", ctx, resetTokenHash("abc"), "newhash").Return(userID, nil)
 
-		err := svc.ConfirmPasswordReset(ctx, "abc", "newpassword")
+		err := svc.ConfirmPasswordReset(ctx, "abc", "newpassword12!")
 		require.NoError(t, err)
 	})
 
 	t.Run("token already used", func(t *testing.T) {
 		authRepo := new(mocks.MockAuthRepo)
-		svc := NewUserService(nil, authRepo, nil, nil, nil)
+		passSvc := new(mocks.MockPasswordService)
+		svc := NewUserService(nil, authRepo, nil, passSvc, nil)
 
-		now := time.Now().UTC()
-		resetToken := &models.PasswordResetToken{ID: tokenID, UsedAt: &now}
-		authRepo.On("GetPasswordResetToken", ctx, "used").Return(resetToken, nil)
+		passSvc.On("Hash", "newpassword12!").Return("newhash", nil)
+		authRepo.On("ConsumePasswordReset", ctx, resetTokenHash("used"), "newhash").Return(uuid.Nil, pgx.ErrNoRows)
 
-		err := svc.ConfirmPasswordReset(ctx, "used", "newpassword")
+		err := svc.ConfirmPasswordReset(ctx, "used", "newpassword12!")
 		require.Error(t, err)
 		assert.IsType(t, &api.ValidationError{}, err)
 	})
 
 	t.Run("token expired", func(t *testing.T) {
 		authRepo := new(mocks.MockAuthRepo)
-		svc := NewUserService(nil, authRepo, nil, nil, nil)
+		passSvc := new(mocks.MockPasswordService)
+		svc := NewUserService(nil, authRepo, nil, passSvc, nil)
 
-		resetToken := &models.PasswordResetToken{ID: tokenID, ExpiresAt: time.Now().UTC().Add(-time.Hour)}
-		authRepo.On("GetPasswordResetToken", ctx, "expired").Return(resetToken, nil)
+		passSvc.On("Hash", "newpassword12!").Return("newhash", nil)
+		authRepo.On("ConsumePasswordReset", ctx, resetTokenHash("expired"), "newhash").Return(uuid.Nil, pgx.ErrNoRows)
 
-		err := svc.ConfirmPasswordReset(ctx, "expired", "newpassword")
+		err := svc.ConfirmPasswordReset(ctx, "expired", "newpassword12!")
 		require.Error(t, err)
 		assert.IsType(t, &api.ValidationError{}, err)
 	})
@@ -355,15 +368,17 @@ func TestUserService_ClaimAccount(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
+		jwtSvc := new(mocks.MockJWTService)
 		passSvc := new(mocks.MockPasswordService)
-		svc := NewUserService(userRepo, nil, nil, passSvc, nil)
+		svc := NewUserService(userRepo, nil, jwtSvc, passSvc, nil)
 
 		user := &models.User{ID: userID, IsGuest: true}
 		userRepo.On("GetByID", ctx, userID).Return(user, nil)
-		passSvc.On("Hash", "password123").Return("hash", nil)
+		passSvc.On("Hash", "password123!").Return("hash", nil)
 		userRepo.On("Update", ctx, user).Return(nil)
+		jwtSvc.On("RevokeUserSessions", userID).Return(nil)
 
-		u, err := svc.ClaimAccount(ctx, userID, ClaimAccountInput{Password: "password123", FirstName: "Test", LastName: "User"})
+		u, err := svc.ClaimAccount(ctx, userID, ClaimAccountInput{Password: "password123!", FirstName: "Test", LastName: "User"})
 		require.NoError(t, err)
 		assert.False(t, u.IsGuest)
 		assert.True(t, u.IsActive)
@@ -377,7 +392,7 @@ func TestUserService_ClaimAccount(t *testing.T) {
 		user := &models.User{ID: userID, IsActive: true, IsVerified: true, PasswordHash: "hash", IsGuest: false}
 		userRepo.On("GetByID", ctx, userID).Return(user, nil)
 
-		_, err := svc.ClaimAccount(ctx, userID, ClaimAccountInput{Password: "password123"})
+		_, err := svc.ClaimAccount(ctx, userID, ClaimAccountInput{Password: "password123!"})
 		require.Error(t, err)
 		assert.IsType(t, &api.ConflictError{}, err)
 	})

@@ -7,8 +7,21 @@ import '../config/api_config.dart';
 import '../providers/auth_provider.dart';
 import 'token_refresh_coordinator.dart';
 import 'token_store.dart';
+import 'dio_platform.dart';
 
 const _retryKey = 'has_retried';
+
+bool _isPublicAuthPath(String path) {
+  final normalized = Uri.tryParse(path)?.path ?? path;
+  return normalized.endsWith('/auth/login') ||
+      normalized.endsWith('/auth/register') ||
+      normalized.endsWith('/auth/verify-email') ||
+      normalized.endsWith('/auth/verify-email/resend') ||
+      normalized.endsWith('/auth/password-reset') ||
+      normalized.endsWith('/auth/password-reset/confirm') ||
+      normalized.endsWith('/auth/guest') ||
+      normalized.contains('/oauth/');
+}
 
 String _redactedDioError(Object error) {
   if (error is DioException) {
@@ -30,6 +43,11 @@ class AuthInterceptor extends Interceptor {
   @override
   void onRequest(
       RequestOptions options, RequestInterceptorHandler handler) async {
+    if (_isPublicAuthPath(options.path)) {
+      options.headers.remove(ApiConfig.authorizationHeader);
+      handler.next(options);
+      return;
+    }
     final token = await _tokenStore.getAccessToken();
 
     if (token != null) {
@@ -88,6 +106,10 @@ class TokenRefreshInterceptor extends Interceptor {
       handler.next(err);
       return;
     }
+    if (_isPublicAuthPath(err.requestOptions.path)) {
+      handler.next(err);
+      return;
+    }
 
     if (err.requestOptions.path.contains('/auth/token/refresh')) {
       handler.next(err);
@@ -124,10 +146,20 @@ class TokenRefreshInterceptor extends Interceptor {
       final retryResponse = await dio.fetch(options);
       handler.resolve(retryResponse);
       return;
+    } on DioException catch (retryErr) {
+      if (kDebugMode) {
+        _logger.e('Retry failed: ${_redactedDioError(retryErr)}');
+      }
+      if (retryErr.response?.statusCode != 401) {
+        handler.reject(retryErr);
+        return;
+      }
     } catch (retryErr) {
       if (kDebugMode) {
         _logger.e('Retry failed: ${_redactedDioError(retryErr)}');
       }
+      handler.next(err);
+      return;
     }
 
     await _onRefreshFailure(attemptedRefreshToken);
@@ -143,9 +175,14 @@ class TokenRefreshInterceptor extends Interceptor {
         current != attemptedRefreshToken) {
       return;
     }
-    await _tokenStore.clear();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(ApiConfig.userDataKey);
+    if (_ref != null) {
+      final authService = await _ref.read(authServiceProviderAsync.future);
+      await authService.clearLocalSession();
+    } else {
+      await _tokenStore.clear();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(ApiConfig.userDataKey);
+    }
     _ref?.read(authStateProvider.notifier).state = false;
   }
 }
@@ -177,9 +214,12 @@ Dio createApiClient([Ref? ref, TokenStore? tokenStore]) {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        if (kIsWeb) 'X-Mitlist-Client': 'web',
       },
     ),
   );
+
+  configureDioForPlatform(dio);
 
   dio.interceptors.add(TokenRefreshInterceptor(dio, ref, store));
   dio.interceptors.add(AuthInterceptor(store));

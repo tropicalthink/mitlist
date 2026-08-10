@@ -18,6 +18,10 @@ import (
 )
 
 func newMealPlanService(mpRepo *mocks.MockMealPlanRepo, groupRepo *mocks.MockGroupRepo, recipeRepo *mocks.MockRecipeRepo, listRepo *mocks.MockListRepo) *MealPlanService {
+	if recipeRepo == nil {
+		recipeRepo = new(mocks.MockRecipeRepo)
+		recipeRepo.On("GetRecipeByID", mock.Anything, mock.Anything).Return(&models.Recipe{IsPublic: true}, nil).Maybe()
+	}
 	return NewMealPlanService(mpRepo, groupRepo, recipeRepo, listRepo)
 }
 
@@ -223,6 +227,7 @@ func TestMealPlanService_GenerateShoppingList_BatchesRecipeAndIngredientQueries(
 	plans := []models.MealPlan{{ID: uuid.New(), GroupID: groupID, RecipeID: recipeID, Servings: 2, Date: from}}
 	groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
 	mpRepo.On("ListMealPlansByGroup", ctx, groupID, from, to).Return(plans, nil)
+	recipeRepo.On("GetRecipeByID", ctx, recipeID).Return(&models.Recipe{ID: recipeID, UserID: userID}, nil)
 	recipeRepo.On("GetRecipesByIDs", ctx, []uuid.UUID{recipeID}).Return(map[uuid.UUID]*models.Recipe{
 		recipeID: {ID: recipeID, Title: "Soup", Servings: 4},
 	}, nil)
@@ -244,7 +249,7 @@ func TestMealPlanService_GenerateShoppingList_BatchesRecipeAndIngredientQueries(
 	require.Len(t, created, 1)
 	require.NotNil(t, created[0].CanonicalItemID)
 	assert.Equal(t, canonicalID, *created[0].CanonicalItemID)
-	recipeRepo.AssertNotCalled(t, "GetRecipeByID", ctx, recipeID)
+	recipeRepo.AssertNumberOfCalls(t, "GetRecipeByID", 1)
 	recipeRepo.AssertNotCalled(t, "ListIngredients", ctx, recipeID)
 	listRepo.AssertNotCalled(t, "CreateItem", ctx, mock.Anything)
 }
