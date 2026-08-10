@@ -1607,6 +1607,10 @@
   "@notifPrefPushNotifications": { "description": "Toggle label for push notifications" },
   "notifPrefPushNotificationsDesc": "Receive notifications on this device",
   "@notifPrefPushNotificationsDesc": { "description": "Toggle subtitle for push notifications" },
+  "notifPrefEmailNotifications": "Email notifications",
+  "@notifPrefEmailNotifications": { "description": "Toggle label for email notifications" },
+  "notifPrefEmailNotificationsDesc": "Receive important reminders by email",
+  "@notifPrefEmailNotificationsDesc": { "description": "Toggle subtitle for email notifications" },
 
   "shoppingTripAppBarTitle": "Shopping Trip",
   "@shoppingTripAppBarTitle": { "description": "AppBar title for shopping trip" },

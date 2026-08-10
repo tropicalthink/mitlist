@@ -3,8 +3,8 @@ self.addEventListener('push', function(event) {
   try { data = event.data ? event.data.json() : {}; } catch (_) { data = {}; }
   const options = {
     body: data.body || '',
-    icon: '/icon.png',
-    badge: '/badge.png',
+    icon: '/icons/Icon-192.png',
+    badge: '/icons/Icon-192.png',
     data: data.data || {},
   };
   event.waitUntil(self.registration.showNotification(data.title || 'mitlist', options));
@@ -22,6 +22,7 @@ function urlForPayload(d) {
     case 'mealPlan':          return '/recipes/meal-plan';
     case 'recurringExpenses': return '/money/recurring';
     case 'householdHub':      return '/home';
+    case 'settlements':       return '/money';
     default:                  return '/';
   }
 }
@@ -29,5 +30,14 @@ function urlForPayload(d) {
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
   const url = urlForPayload(event.notification.data);
-  event.waitUntil(clients.openWindow(url));
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(openClients) {
+      for (const client of openClients) {
+        if ('navigate' in client) {
+          return client.navigate(url).then(function(navigated) { return navigated.focus(); });
+        }
+      }
+      return clients.openWindow(url);
+    })
+  );
 });

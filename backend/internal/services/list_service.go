@@ -403,7 +403,6 @@ func (s *ListService) ClearItems(ctx context.Context, user *models.User, listID 
 	}
 	if n > 0 {
 		s.publishListEvent("list:items_cleared", list.GroupID, listID)
-		s.broadcastListPush(ctx, list, user.ID, "List cleared", list.Name+" was cleared")
 	}
 	return n, nil
 }

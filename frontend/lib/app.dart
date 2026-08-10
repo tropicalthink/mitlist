@@ -13,6 +13,7 @@ import 'services/canonical_display.dart' show setGroceryDisplayLang;
 import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
 import 'providers/auth_provider.dart';
+import 'providers/notification_provider.dart';
 import 'services/error_reporter.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'services/fcm_service.dart';
@@ -20,6 +21,7 @@ import 'services/push_subscription_service.dart';
 import 'widgets/offline_banner.dart';
 
 import 'widgets/app_toast.dart';
+import 'utils/notification_navigation.dart';
 
 class MitlistApp extends ConsumerStatefulWidget {
   const MitlistApp({super.key});
@@ -63,10 +65,12 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
 
   void _initPushSubscriptions() {
     PushSubscriptionService().init();
+    final viewLabel = AppLocalizations.of(context)?.commonView;
     FcmService.init(ref.read(dioProvider)).then((ready) {
       if (!ready || !mounted) return;
 
       _fcmSub = FcmService.onForegroundMessage.listen((message) {
+        ref.invalidate(unreadNotificationCountProvider);
         final title = message.notification?.title;
         final body = message.notification?.body;
         if (title == null && body == null) return;
@@ -78,6 +82,8 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
           // title becomes the body rather than being printed twice.
           title: body == null ? null : title,
           body: body ?? title!,
+          actionLabel: viewLabel,
+          onAction: () => unawaited(_handleNotificationTap(message)),
         );
       });
 
@@ -93,20 +99,20 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
     });
   }
 
-  void _handleNotificationTap(RemoteMessage message) {
+  Future<void> _handleNotificationTap(RemoteMessage message) async {
     final bootstrap = ref.read(authBootstrapProvider);
     if (bootstrap.isLoading || !ref.read(authStateProvider)) {
       return;
     }
     final data = message.data;
-    final screen = data['screen'] as String?;
-    final id = data['id'] as String?;
     final router = ref.read(routerProvider);
-    if (screen == 'choreDetail') {
-      router.goNamed('chores');
-    } else if (screen == 'listDetail' && id != null) {
-      router.goNamed('listDetail', pathParameters: {'listId': id});
-    }
+    await navigateNotificationPayload(
+      router,
+      data,
+      preserveInbox: false,
+      switchGroup: (groupId) =>
+          ref.read(currentGroupIdProvider.notifier).set(groupId),
+    );
   }
 
   @override
@@ -132,11 +138,23 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
       // Re-run the banner state now rather than waiting out the poll interval,
       // so a stale offline bar never survives into the first visible frame.
       ref.invalidate(outboxStateProvider);
+      ref.invalidate(unreadNotificationCountProvider);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<bool>(authStateProvider, (previous, authenticated) {
+      if (!authenticated) {
+        _deferredInitDone = false;
+        unawaited(_fcmSub?.cancel());
+        unawaited(_fcmTapSub?.cancel());
+        _fcmSub = null;
+        _fcmTapSub = null;
+      } else if (previous == false) {
+        _ensureDeferredInit();
+      }
+    });
     ref.listen(authBootstrapProvider, (prev, next) {
       next.whenData((authenticated) {
         if (authenticated) _ensureDeferredInit();

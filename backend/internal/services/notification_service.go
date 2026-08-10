@@ -14,6 +14,7 @@ import (
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/mitlist-app/mitlist/internal/sse"
+	"github.com/mitlist-app/mitlist/pkg/logger"
 )
 
 // NotificationService provides business logic for notifications.
@@ -24,12 +25,17 @@ type NotificationService struct {
 	pushService      PushService
 	mailService      MailService // optional; nil means email channel is disabled
 	hub              *sse.Hub    // optional; nil disables SSE broadcasts
+	log              *logger.Logger
 }
 
 // SetHub injects the SSE hub so newly persisted notifications broadcast to the
 // household in real time. Without a hub, the in-app feed only updates on manual
 // refresh.
 func (s *NotificationService) SetHub(h *sse.Hub) { s.hub = h }
+
+// SetLogger enables structured delivery-failure logging. Tests and lightweight
+// consumers can omit it without changing dispatch behavior.
+func (s *NotificationService) SetLogger(log *logger.Logger) { s.log = log }
 
 // publishNotificationCreated emits a `notification:created` event for the
 // group. The payload is intentionally empty: notification rows are per-user, so
@@ -105,12 +111,16 @@ func (s *NotificationService) DispatchToGroup(ctx context.Context, groupID, acto
 	if err != nil {
 		return fmt.Errorf("dispatch: list members: %w", err)
 	}
-	prefs, _ := s.notificationRepo.GetPreferencesByGroup(ctx, groupID)
+	prefs, err := s.notificationRepo.GetPreferencesByGroup(ctx, groupID)
+	if err != nil {
+		return fmt.Errorf("dispatch: load preferences: %w", err)
+	}
 
 	data, _ := json.Marshal(payload)
 	now := time.Now().UTC()
 	var rows []models.Notification
 	var pushTargets []uuid.UUID
+	var emailTargets []uuid.UUID
 	for _, m := range members {
 		if m.UserID == actorID {
 			continue
@@ -119,7 +129,7 @@ func (s *NotificationService) DispatchToGroup(ctx context.Context, groupID, acto
 		if pref == nil {
 			pref = models.DefaultNotificationPreference(m.UserID, groupID)
 		}
-		if !pref.PushEnabled || !preferenceForType(pref, nType) {
+		if !preferenceForType(pref, nType) {
 			continue
 		}
 		rows = append(rows, models.Notification{
@@ -132,7 +142,12 @@ func (s *NotificationService) DispatchToGroup(ctx context.Context, groupID, acto
 			Data:      data,
 			CreatedAt: now,
 		})
-		pushTargets = append(pushTargets, m.UserID)
+		if pref.PushEnabled {
+			pushTargets = append(pushTargets, m.UserID)
+		}
+		if pref.EmailEnabled && emailEligibleTypes[nType] {
+			emailTargets = append(emailTargets, m.UserID)
+		}
 	}
 	if len(rows) == 0 {
 		return nil
@@ -141,39 +156,8 @@ func (s *NotificationService) DispatchToGroup(ctx context.Context, groupID, acto
 		return fmt.Errorf("dispatch: persist: %w", err)
 	}
 	s.publishNotificationCreated(groupID)
-	if s.pushService != nil {
-		pushPayload, _ := json.Marshal(map[string]any{"title": title, "body": body, "data": payload})
-		go func(ids []uuid.UUID, p string) {
-			for _, id := range ids {
-				_ = s.pushService.SendToUser(id, p)
-			}
-		}(pushTargets, string(pushPayload))
-	}
-	// Email channel: fire-and-forget for opt-in users, only for email-eligible types.
-	// We gate on type first to avoid the member-email lookup on every dispatch.
-	if s.mailService != nil && emailEligibleTypes[nType] {
-		go func(ids []uuid.UUID, prefMap map[uuid.UUID]*models.NotificationPreference, gID uuid.UUID, subj, msg string) {
-			emailCtx := context.Background()
-			memberEmails, err := s.groupRepo.ListMemberEmailsByGroup(emailCtx, gID)
-			if err != nil {
-				return
-			}
-			for _, id := range ids {
-				pref := prefMap[id]
-				if pref == nil {
-					pref = models.DefaultNotificationPreference(id, gID)
-				}
-				if !pref.EmailEnabled {
-					continue
-				}
-				email, ok := memberEmails[id]
-				if !ok || email == "" {
-					continue
-				}
-				_ = s.mailService.Send(email, subj, msg, false)
-			}
-		}(pushTargets, prefs, groupID, title, body)
-	}
+	s.deliverPushAsync(pushTargets, title, body, payload, groupID, nType)
+	s.deliverEmailAsync(emailTargets, groupID, title, body, nType)
 	return nil
 }
 
@@ -184,18 +168,22 @@ func (s *NotificationService) DispatchToUsers(ctx context.Context, userIDs []uui
 	if len(userIDs) == 0 {
 		return nil
 	}
-	prefs, _ := s.notificationRepo.GetPreferencesByGroup(ctx, groupID)
+	prefs, err := s.notificationRepo.GetPreferencesByGroup(ctx, groupID)
+	if err != nil {
+		return fmt.Errorf("dispatch: load preferences: %w", err)
+	}
 
 	data, _ := json.Marshal(payload)
 	now := time.Now().UTC()
 	var rows []models.Notification
 	var pushTargets []uuid.UUID
+	var emailTargets []uuid.UUID
 	for _, userID := range userIDs {
 		pref := prefs[userID]
 		if pref == nil {
 			pref = models.DefaultNotificationPreference(userID, groupID)
 		}
-		if !pref.PushEnabled || !preferenceForType(pref, nType) {
+		if !preferenceForType(pref, nType) {
 			continue
 		}
 		rows = append(rows, models.Notification{
@@ -208,7 +196,12 @@ func (s *NotificationService) DispatchToUsers(ctx context.Context, userIDs []uui
 			Data:      data,
 			CreatedAt: now,
 		})
-		pushTargets = append(pushTargets, userID)
+		if pref.PushEnabled {
+			pushTargets = append(pushTargets, userID)
+		}
+		if pref.EmailEnabled && emailEligibleTypes[nType] {
+			emailTargets = append(emailTargets, userID)
+		}
 	}
 	if len(rows) == 0 {
 		return nil
@@ -217,15 +210,60 @@ func (s *NotificationService) DispatchToUsers(ctx context.Context, userIDs []uui
 		return fmt.Errorf("dispatch: persist: %w", err)
 	}
 	s.publishNotificationCreated(groupID)
-	if s.pushService != nil {
-		pushPayload, _ := json.Marshal(map[string]any{"title": title, "body": body, "data": payload})
-		go func(ids []uuid.UUID, p string) {
-			for _, id := range ids {
-				_ = s.pushService.SendToUser(id, p)
-			}
-		}(pushTargets, string(pushPayload))
-	}
+	s.deliverPushAsync(pushTargets, title, body, payload, groupID, nType)
+	s.deliverEmailAsync(emailTargets, groupID, title, body, nType)
 	return nil
+}
+
+func (s *NotificationService) deliverPushAsync(userIDs []uuid.UUID, title, body string, payload models.NotificationPayload, groupID uuid.UUID, nType string) {
+	if s.pushService == nil || len(userIDs) == 0 {
+		return
+	}
+	pushPayload, _ := json.Marshal(map[string]any{"title": title, "body": body, "data": payload})
+	go func(ids []uuid.UUID, p string) {
+		for _, id := range ids {
+			if err := s.pushService.SendToUser(id, p); err != nil && s.log != nil {
+				s.log.Error().Err(err).
+					Str("user_id", id.String()).
+					Str("group_id", groupID.String()).
+					Str("notification_type", nType).
+					Msg("notification push delivery failed")
+			}
+		}
+	}(append([]uuid.UUID(nil), userIDs...), string(pushPayload))
+}
+
+func (s *NotificationService) deliverEmailAsync(userIDs []uuid.UUID, groupID uuid.UUID, subject, body, nType string) {
+	if s.mailService == nil || len(userIDs) == 0 {
+		return
+	}
+	go func(ids []uuid.UUID) {
+		emailCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		memberEmails, err := s.groupRepo.ListMemberEmailsByGroup(emailCtx, groupID)
+		if err != nil {
+			if s.log != nil {
+				s.log.Error().Err(err).
+					Str("group_id", groupID.String()).
+					Str("notification_type", nType).
+					Msg("notification email recipient lookup failed")
+			}
+			return
+		}
+		for _, id := range ids {
+			email := memberEmails[id]
+			if email == "" {
+				continue
+			}
+			if err := s.mailService.Send(email, subject, body, false); err != nil && s.log != nil {
+				s.log.Error().Err(err).
+					Str("user_id", id.String()).
+					Str("group_id", groupID.String()).
+					Str("notification_type", nType).
+					Msg("notification email delivery failed")
+			}
+		}
+	}(append([]uuid.UUID(nil), userIDs...))
 }
 
 // preferenceForType maps a notification type to the corresponding preference flag.
@@ -246,7 +284,7 @@ func preferenceForType(pref *models.NotificationPreference, nType string) bool {
 	case "pinwall_reminder":
 		return pref.PinwallReminder
 	default:
-		return pref.PushEnabled // default to global push toggle for unknown types
+		return true
 	}
 }
 
@@ -268,8 +306,17 @@ func (s *NotificationService) CreateNotification(ctx context.Context, n *models.
 	if n.GroupID != uuid.Nil && s.pushService != nil {
 		pref, err := s.notificationRepo.GetPreference(ctx, n.UserID, n.GroupID)
 		if err != nil {
-			// Silently skip push on preference lookup failure.
-			return nil
+			if errors.Is(err, pgx.ErrNoRows) {
+				pref = models.DefaultNotificationPreference(n.UserID, n.GroupID)
+			} else {
+				if s.log != nil {
+					s.log.Error().Err(err).
+						Str("user_id", n.UserID.String()).
+						Str("group_id", n.GroupID.String()).
+						Msg("notification preference lookup failed; push suppressed")
+				}
+				return nil
+			}
 		}
 		if !pref.PushEnabled || !preferenceForType(pref, n.Type) {
 			return nil
@@ -285,7 +332,13 @@ func (s *NotificationService) CreateNotification(ctx context.Context, n *models.
 			}
 		}
 		payloadBytes, _ := json.Marshal(payloadMap)
-		_ = s.pushService.SendToUser(n.UserID, string(payloadBytes))
+		if err := s.pushService.SendToUser(n.UserID, string(payloadBytes)); err != nil && s.log != nil {
+			s.log.Error().Err(err).
+				Str("user_id", n.UserID.String()).
+				Str("group_id", n.GroupID.String()).
+				Str("notification_type", n.Type).
+				Msg("notification push delivery failed")
+		}
 	}
 
 	return nil
@@ -309,6 +362,16 @@ func (s *NotificationService) GetNotification(ctx context.Context, userID, notif
 // ListNotifications lists notifications for a user.
 func (s *NotificationService) ListNotifications(ctx context.Context, userID uuid.UUID, limit, offset int) ([]models.Notification, error) {
 	return s.notificationRepo.ListNotificationsByUser(ctx, userID, limit, offset)
+}
+
+// ListNotificationsBefore lists an older page using a stable cursor.
+func (s *NotificationService) ListNotificationsBefore(ctx context.Context, userID uuid.UUID, before time.Time, beforeID uuid.UUID, limit int) ([]models.Notification, error) {
+	return s.notificationRepo.ListNotificationsByUserBefore(ctx, userID, before, beforeID, limit)
+}
+
+// CountUnreadNotifications returns the user's unread inbox count.
+func (s *NotificationService) CountUnreadNotifications(ctx context.Context, userID uuid.UUID) (int, error) {
+	return s.notificationRepo.CountUnreadNotifications(ctx, userID)
 }
 
 // MarkAsRead marks a single notification as read.
@@ -348,11 +411,34 @@ func (s *NotificationService) DeleteNotification(ctx context.Context, userID, no
 
 // GetPreferences retrieves notification preferences for a user across all groups.
 func (s *NotificationService) GetPreferences(ctx context.Context, userID uuid.UUID) ([]models.NotificationPreference, error) {
-	return s.notificationRepo.GetPreferencesByUser(ctx, userID)
+	prefs, err := s.notificationRepo.GetPreferencesByUser(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	groups, err := s.groupRepo.ListGroupsByUser(ctx, userID, 500, 0)
+	if err != nil {
+		return nil, fmt.Errorf("list preference groups: %w", err)
+	}
+	byGroup := make(map[uuid.UUID]models.NotificationPreference, len(prefs))
+	for _, pref := range prefs {
+		byGroup[pref.GroupID] = pref
+	}
+	result := make([]models.NotificationPreference, 0, len(groups))
+	for _, group := range groups {
+		if pref, ok := byGroup[group.ID]; ok {
+			result = append(result, pref)
+		} else {
+			result = append(result, *models.DefaultNotificationPreference(userID, group.ID))
+		}
+	}
+	return result, nil
 }
 
 // GetGroupPreference retrieves notification preferences for a user in a specific group.
 func (s *NotificationService) GetGroupPreference(ctx context.Context, userID, groupID uuid.UUID) (*models.NotificationPreference, error) {
+	if err := requireGroupMember(ctx, s.groupRepo, groupID, userID); err != nil {
+		return nil, err
+	}
 	pref, err := s.notificationRepo.GetPreference(ctx, userID, groupID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -370,6 +456,9 @@ func (s *NotificationService) UpdatePreferences(ctx context.Context, userID uuid
 		return &api.PermissionDeniedError{Action: "update notification preference"}
 	}
 	pref.UserID = userID
+	if err := requireGroupMember(ctx, s.groupRepo, pref.GroupID, userID); err != nil {
+		return err
+	}
 	return s.notificationRepo.UpsertPreference(ctx, pref)
 }
 

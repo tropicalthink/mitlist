@@ -1,6 +1,7 @@
 class NotificationModel {
   final String id;
   final String userId;
+  final String? groupId;
   final String type;
   final String title;
   final String body;
@@ -12,6 +13,7 @@ class NotificationModel {
   const NotificationModel({
     required this.id,
     required this.userId,
+    this.groupId,
     required this.type,
     required this.title,
     required this.body,
@@ -25,6 +27,7 @@ class NotificationModel {
     return NotificationModel(
       id: json['id'] as String,
       userId: json['user_id'] as String,
+      groupId: json['group_id'] as String?,
       type: json['type'] as String,
       title: json['title'] as String,
       body: json['body'] as String,
@@ -50,6 +53,7 @@ class NotificationPreferenceModel {
   final bool weeklyDigest;
   final bool pinwallReminder;
   final bool pushEnabled;
+  final bool emailEnabled;
 
   const NotificationPreferenceModel({
     required this.id,
@@ -63,6 +67,7 @@ class NotificationPreferenceModel {
     this.weeklyDigest = true,
     this.pinwallReminder = true,
     this.pushEnabled = true,
+    this.emailEnabled = false,
   });
 
   factory NotificationPreferenceModel.fromJson(Map<String, dynamic> json) {
@@ -78,6 +83,7 @@ class NotificationPreferenceModel {
       weeklyDigest: json['weekly_digest'] as bool? ?? true,
       pinwallReminder: json['pinwall_reminder'] as bool? ?? true,
       pushEnabled: json['push_enabled'] as bool? ?? true,
+      emailEnabled: json['email_enabled'] as bool? ?? false,
     );
   }
 
@@ -93,5 +99,6 @@ class NotificationPreferenceModel {
         'weekly_digest': weeklyDigest,
         'pinwall_reminder': pinwallReminder,
         'push_enabled': pushEnabled,
+        'email_enabled': emailEnabled,
       };
 }

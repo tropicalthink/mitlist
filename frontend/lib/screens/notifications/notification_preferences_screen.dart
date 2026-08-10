@@ -37,7 +37,9 @@ class _NotificationPreferencesScreenState
   @override
   void initState() {
     super.initState();
-    _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _load();
+    });
   }
 
   Future<void> _load() async {
@@ -108,6 +110,7 @@ class _NotificationPreferencesScreenState
         pinwallReminder:
             field == 'pinwall_reminder' ? value : pref.pinwallReminder,
         pushEnabled: field == 'push_enabled' ? value : pref.pushEnabled,
+        emailEnabled: field == 'email_enabled' ? value : pref.emailEnabled,
       );
 
       await service.updatePreference(updated);
@@ -126,6 +129,8 @@ class _NotificationPreferencesScreenState
   Widget _buildPreferenceCard(NotificationPreferenceModel pref) {
     final l10n = AppLocalizations.of(context)!;
     final groupName = _groupNames[pref.groupId] ?? l10n.notifPrefGroupName;
+    final cardSaving =
+        _savingKeys.keys.any((key) => key.startsWith('${pref.id}:'));
 
     return Padding(
       padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
@@ -149,7 +154,8 @@ class _NotificationPreferencesScreenState
               subtitle: l10n.notifPrefChoreDueRemindersDesc,
               value: pref.choreDue,
               saving: _savingKeys['${pref.id}:chore_due'] == true,
-              onChanged: (v) => _toggle(pref.id, 'chore_due', v),
+              onChanged:
+                  cardSaving ? null : (v) => _toggle(pref.id, 'chore_due', v),
             ),
             _ToggleRow(
               icon: 'calendarDays',
@@ -157,7 +163,9 @@ class _NotificationPreferencesScreenState
               subtitle: l10n.notifPrefChoreDueDayOfDesc,
               value: pref.choreDueDayOf,
               saving: _savingKeys['${pref.id}:chore_due_day_of'] == true,
-              onChanged: (v) => _toggle(pref.id, 'chore_due_day_of', v),
+              onChanged: cardSaving
+                  ? null
+                  : (v) => _toggle(pref.id, 'chore_due_day_of', v),
             ),
             _ToggleRow(
               icon: 'clipboardDocumentList',
@@ -165,7 +173,9 @@ class _NotificationPreferencesScreenState
               subtitle: l10n.notifPrefListItemAddedDesc,
               value: pref.listItemAdded,
               saving: _savingKeys['${pref.id}:list_item_added'] == true,
-              onChanged: (v) => _toggle(pref.id, 'list_item_added', v),
+              onChanged: cardSaving
+                  ? null
+                  : (v) => _toggle(pref.id, 'list_item_added', v),
             ),
             _ToggleRow(
               icon: 'banknotes',
@@ -173,7 +183,9 @@ class _NotificationPreferencesScreenState
               subtitle: l10n.notifPrefExpenseCreatedDesc,
               value: pref.expenseCreated,
               saving: _savingKeys['${pref.id}:expense_created'] == true,
-              onChanged: (v) => _toggle(pref.id, 'expense_created', v),
+              onChanged: cardSaving
+                  ? null
+                  : (v) => _toggle(pref.id, 'expense_created', v),
             ),
             _ToggleRow(
               icon: 'calendarDays',
@@ -181,7 +193,9 @@ class _NotificationPreferencesScreenState
               subtitle: l10n.notifPrefMealPlanChangedDesc,
               value: pref.mealPlanChanged,
               saving: _savingKeys['${pref.id}:meal_plan_changed'] == true,
-              onChanged: (v) => _toggle(pref.id, 'meal_plan_changed', v),
+              onChanged: cardSaving
+                  ? null
+                  : (v) => _toggle(pref.id, 'meal_plan_changed', v),
             ),
             _ToggleRow(
               icon: 'chartBar',
@@ -189,7 +203,9 @@ class _NotificationPreferencesScreenState
               subtitle: l10n.notifPrefWeeklyDigestDesc,
               value: pref.weeklyDigest,
               saving: _savingKeys['${pref.id}:weekly_digest'] == true,
-              onChanged: (v) => _toggle(pref.id, 'weekly_digest', v),
+              onChanged: cardSaving
+                  ? null
+                  : (v) => _toggle(pref.id, 'weekly_digest', v),
             ),
             _ToggleRow(
               icon: 'bell',
@@ -197,7 +213,9 @@ class _NotificationPreferencesScreenState
               subtitle: l10n.notifPrefPinwallRemindersDesc,
               value: pref.pinwallReminder,
               saving: _savingKeys['${pref.id}:pinwall_reminder'] == true,
-              onChanged: (v) => _toggle(pref.id, 'pinwall_reminder', v),
+              onChanged: cardSaving
+                  ? null
+                  : (v) => _toggle(pref.id, 'pinwall_reminder', v),
             ),
             Divider(color: Theme.of(context).colorScheme.outlineVariant),
             _ToggleRow(
@@ -206,7 +224,19 @@ class _NotificationPreferencesScreenState
               subtitle: l10n.notifPrefPushNotificationsDesc,
               value: pref.pushEnabled,
               saving: _savingKeys['${pref.id}:push_enabled'] == true,
-              onChanged: (v) => _toggle(pref.id, 'push_enabled', v),
+              onChanged: cardSaving
+                  ? null
+                  : (v) => _toggle(pref.id, 'push_enabled', v),
+            ),
+            _ToggleRow(
+              icon: 'inbox',
+              label: l10n.notifPrefEmailNotifications,
+              subtitle: l10n.notifPrefEmailNotificationsDesc,
+              value: pref.emailEnabled,
+              saving: _savingKeys['${pref.id}:email_enabled'] == true,
+              onChanged: cardSaving
+                  ? null
+                  : (v) => _toggle(pref.id, 'email_enabled', v),
             ),
           ],
         ),
@@ -306,7 +336,7 @@ class _ToggleRow extends StatelessWidget {
   final String subtitle;
   final bool value;
   final bool saving;
-  final ValueChanged<bool> onChanged;
+  final ValueChanged<bool>? onChanged;
 
   const _ToggleRow({
     required this.icon,

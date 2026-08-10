@@ -787,6 +787,8 @@
   "notifPrefPinwallRemindersDesc": "Wenn jemand eine Erinnerung für später anpinnt",
   "notifPrefPushNotifications": "Push-Benachrichtigungen",
   "notifPrefPushNotificationsDesc": "Benachrichtigungen auf diesem Gerät empfangen",
+  "notifPrefEmailNotifications": "E-Mail-Benachrichtigungen",
+  "notifPrefEmailNotificationsDesc": "Wichtige Erinnerungen per E-Mail erhalten",
   "shoppingTripAppBarTitle": "Einkaufstour",
   "shoppingTripChooseStore": "Geschäft wählen",
   "shoppingTripNoLists": "Noch keine Listen",

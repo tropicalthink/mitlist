@@ -78,6 +78,18 @@ func TestNotificationService_MarkAsRead(t *testing.T) {
 	})
 }
 
+func TestNotificationService_CountUnreadNotifications(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+	notificationRepo := new(mocks.MockNotificationRepo)
+	svc := NewNotificationService(notificationRepo, nil, nil, nil)
+
+	notificationRepo.On("CountUnreadNotifications", ctx, userID).Return(4, nil)
+	count, err := svc.CountUnreadNotifications(ctx, userID)
+	require.NoError(t, err)
+	assert.Equal(t, 4, count)
+}
+
 func TestNotificationService_DeleteNotification(t *testing.T) {
 	ctx := context.Background()
 	userID := uuid.New()
@@ -152,10 +164,11 @@ func TestNotificationService_DispatchToGroup(t *testing.T) {
 		notifRepo.AssertCalled(t, "CreateNotificationsBatch", ctx, mock.Anything)
 	})
 
-	t.Run("skips members with PushEnabled=false", func(t *testing.T) {
+	t.Run("persists in-app rows with PushEnabled=false", func(t *testing.T) {
 		notifRepo := new(mocks.MockNotificationRepo)
 		groupRepo := new(mocks.MockGroupRepo)
-		svc := NewNotificationService(notifRepo, nil, groupRepo, nil)
+		pushSvc := new(mocks.MockPushService)
+		svc := NewNotificationService(notifRepo, nil, groupRepo, pushSvc)
 
 		disabledPref := &models.NotificationPreference{
 			UserID: member1, GroupID: groupID, PushEnabled: false, ListItemAdded: true,
@@ -167,10 +180,27 @@ func TestNotificationService_DispatchToGroup(t *testing.T) {
 		notifRepo.On("GetPreferencesByGroup", ctx, groupID).Return(map[uuid.UUID]*models.NotificationPreference{
 			member1: disabledPref,
 		}, nil)
+		notifRepo.On("CreateNotificationsBatch", ctx, mock.MatchedBy(func(rows []models.Notification) bool {
+			return len(rows) == 1 && rows[0].UserID == member1
+		})).Return(nil)
 
 		payload := models.NotificationPayload{}
 		err := svc.DispatchToGroup(ctx, groupID, actorID, "list_item_added", "T", "B", payload)
 		require.NoError(t, err)
+		notifRepo.AssertCalled(t, "CreateNotificationsBatch", ctx, mock.Anything)
+		pushSvc.AssertNotCalled(t, "SendToUser")
+	})
+
+	t.Run("fails closed when preferences cannot be loaded", func(t *testing.T) {
+		notifRepo := new(mocks.MockNotificationRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewNotificationService(notifRepo, nil, groupRepo, nil)
+
+		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return(memberships, nil)
+		notifRepo.On("GetPreferencesByGroup", ctx, groupID).Return(nil, assert.AnError)
+
+		err := svc.DispatchToGroup(ctx, groupID, actorID, "list_item_added", "T", "B", models.NotificationPayload{})
+		require.ErrorIs(t, err, assert.AnError)
 		notifRepo.AssertNotCalled(t, "CreateNotificationsBatch")
 	})
 
@@ -279,9 +309,15 @@ func TestNotificationService_UpdatePreferences(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		notificationRepo := new(mocks.MockNotificationRepo)
-		svc := NewNotificationService(notificationRepo, nil, nil, nil)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewNotificationService(notificationRepo, nil, groupRepo, nil)
 
 		notificationRepo.On("UpsertPreference", ctx, mock.AnythingOfType("*models.NotificationPreference")).Return(nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{
+			GroupID: groupID,
+			UserID:  userID,
+			Role:    "member",
+		}, nil)
 
 		pref := &models.NotificationPreference{UserID: userID, GroupID: groupID, ChoreDue: false}
 		err := svc.UpdatePreferences(ctx, userID, pref)
@@ -297,6 +333,25 @@ func TestNotificationService_UpdatePreferences(t *testing.T) {
 		require.Error(t, err)
 		assert.IsType(t, &api.PermissionDeniedError{}, err)
 	})
+}
+
+func TestNotificationService_GetPreferencesIncludesUnsavedDefaults(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+	groupID := uuid.New()
+	notifRepo := new(mocks.MockNotificationRepo)
+	groupRepo := new(mocks.MockGroupRepo)
+	svc := NewNotificationService(notifRepo, nil, groupRepo, nil)
+
+	notifRepo.On("GetPreferencesByUser", ctx, userID).Return([]models.NotificationPreference{}, nil)
+	groupRepo.On("ListGroupsByUser", ctx, userID, 500, 0).Return([]models.Group{{ID: groupID}}, nil)
+
+	prefs, err := svc.GetPreferences(ctx, userID)
+	require.NoError(t, err)
+	require.Len(t, prefs, 1)
+	assert.Equal(t, groupID, prefs[0].GroupID)
+	assert.True(t, prefs[0].PushEnabled)
+	assert.False(t, prefs[0].EmailEnabled)
 }
 
 func TestDispatchToGroup_PublishesSSE(t *testing.T) {

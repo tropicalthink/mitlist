@@ -3237,6 +3237,8 @@
   "@notifPrefPushNotificationsDesc": {
     "description": "Toggle subtitle for push notifications"
   },
+  "notifPrefEmailNotifications": "E-mailmeldingen",
+  "notifPrefEmailNotificationsDesc": "Belangrijke herinneringen per e-mail ontvangen",
   "shoppingTripAppBarTitle": "Boodschappentocht",
   "@shoppingTripAppBarTitle": {
     "description": "AppBar title for shopping trip"

@@ -75,12 +75,26 @@ func (r *ChoreReminder) remindAssignment(ctx context.Context, a models.ChoreAssi
 		// Conservative: skip push if we can't verify preferences.
 		return nil
 	}
-	if !pref.PushEnabled || !pref.ChoreDue {
+	nType := "chore_due"
+	title := "Chore due soon"
+	bodySuffix := " is due soon"
+	enabled := pref.ChoreDue
+	if a.DueDate != nil {
+		now := time.Now().UTC()
+		tomorrow := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, time.UTC)
+		if a.DueDate.Before(tomorrow) {
+			nType = "chore_due_day_of"
+			title = "Chore due today"
+			bodySuffix = " is due today"
+			enabled = pref.ChoreDueDayOf
+		}
+	}
+	if !enabled {
 		r.log.Debug().
 			Str("user_id", a.UserID.String()).
 			Str("chore_id", a.ChoreID.String()).
 			Msg("skipping chore reminder: user opted out")
-		return nil
+		return r.repo.MarkReminderSent(ctx, a.ID, time.Now().UTC())
 	}
 
 	choreName, err := r.repo.GetChoreName(ctx, a.ChoreID)
@@ -96,18 +110,24 @@ func (r *ChoreReminder) remindAssignment(ctx context.Context, a models.ChoreAssi
 	}
 
 	if r.dispatcher != nil {
-		if err := r.dispatcher.DispatchToUsers(ctx, []uuid.UUID{a.UserID}, groupID, "chore_due",
-			"Chore Reminder", choreName+" is due soon", notifPayload); err != nil {
+		if err := r.dispatcher.DispatchToUsers(ctx, []uuid.UUID{a.UserID}, groupID, nType,
+			title, choreName+bodySuffix, notifPayload); err != nil {
 			r.log.Warn().Err(err).Str("assignment_id", a.ID.String()).Msg("failed to dispatch chore reminder")
-		} else {
-			r.log.Info().Str("assignment_id", a.ID.String()).Str("user_id", a.UserID.String()).Msg("chore reminder dispatched")
+			return nil
 		}
+		if err := r.repo.MarkReminderSent(ctx, a.ID, time.Now().UTC()); err != nil {
+			return fmt.Errorf("mark reminder sent: %w", err)
+		}
+		r.log.Info().Str("assignment_id", a.ID.String()).Str("user_id", a.UserID.String()).Msg("chore reminder dispatched")
 		return nil
+	}
+	if !pref.PushEnabled {
+		return r.repo.MarkReminderSent(ctx, a.ID, time.Now().UTC())
 	}
 
 	pushPayload := pushPayload{
-		Title: "Chore Reminder",
-		Body:  choreName + " is due soon",
+		Title: title,
+		Body:  choreName + bodySuffix,
 		Data:  notifPayload,
 	}
 	data, _ := json.Marshal(pushPayload)
@@ -115,6 +135,9 @@ func (r *ChoreReminder) remindAssignment(ctx context.Context, a models.ChoreAssi
 	if pushErr != nil {
 		r.log.Warn().Err(pushErr).Str("assignment_id", a.ID.String()).Msg("failed to send chore reminder push")
 	} else {
+		if err := r.repo.MarkReminderSent(ctx, a.ID, time.Now().UTC()); err != nil {
+			return fmt.Errorf("mark reminder sent: %w", err)
+		}
 		r.log.Info().Str("assignment_id", a.ID.String()).Str("user_id", a.UserID.String()).Msg("chore reminder sent")
 	}
 	return nil
@@ -126,9 +149,27 @@ type choreReminderRepoImpl struct {
 
 func (r *choreReminderRepoImpl) ListPendingAssignmentsDueSoon(ctx context.Context, cutoff time.Time) ([]models.ChoreAssignment, error) {
 	query := `
-		SELECT id, chore_id, user_id, status, due_date, assigned_at, completed_at
-		FROM chore_assignments
-		WHERE status = 'pending' AND (due_date IS NULL OR due_date <= $1)
+		WITH due AS (
+			SELECT id
+			FROM chore_assignments
+			WHERE status = 'pending'
+			  AND due_date IS NOT NULL
+			  AND due_date <= $1
+			  AND reminder_sent_at IS NULL
+			  AND (reminder_claimed_at IS NULL OR reminder_claimed_at < NOW() - INTERVAL '5 minutes')
+			ORDER BY due_date ASC
+			FOR UPDATE SKIP LOCKED
+		), claimed AS (
+			UPDATE chore_assignments AS assignment
+			SET reminder_claimed_at = NOW()
+			FROM due
+			WHERE assignment.id = due.id
+			RETURNING assignment.id, assignment.chore_id, assignment.user_id,
+				assignment.status, assignment.due_date, assignment.assigned_at,
+				assignment.completed_at, assignment.reminder_sent_at
+		)
+		SELECT id, chore_id, user_id, status, due_date, assigned_at, completed_at, reminder_sent_at
+		FROM claimed
 	`
 	rows, err := r.db.Query(ctx, query, cutoff)
 	if err != nil {
@@ -141,7 +182,7 @@ func (r *choreReminderRepoImpl) ListPendingAssignmentsDueSoon(ctx context.Contex
 		var a models.ChoreAssignment
 		if err := rows.Scan(
 			&a.ID, &a.ChoreID, &a.UserID, &a.Status,
-			&a.DueDate, &a.AssignedAt, &a.CompletedAt,
+			&a.DueDate, &a.AssignedAt, &a.CompletedAt, &a.ReminderSentAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan assignment: %w", err)
 		}
@@ -151,6 +192,15 @@ func (r *choreReminderRepoImpl) ListPendingAssignmentsDueSoon(ctx context.Contex
 		return nil, fmt.Errorf("rows error: %w", err)
 	}
 	return assignments, nil
+}
+
+func (r *choreReminderRepoImpl) MarkReminderSent(ctx context.Context, assignmentID uuid.UUID, sentAt time.Time) error {
+	_, err := r.db.Exec(ctx, `
+		UPDATE chore_assignments
+		SET reminder_sent_at = $2, reminder_claimed_at = NULL
+		WHERE id = $1 AND reminder_sent_at IS NULL
+	`, assignmentID, sentAt)
+	return err
 }
 
 func (r *choreReminderRepoImpl) GetChoreName(ctx context.Context, choreID uuid.UUID) (string, error) {

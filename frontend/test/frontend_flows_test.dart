@@ -1524,6 +1524,9 @@ class FakeNotificationService implements NotificationService {
   final List<NotificationPreferenceModel> _preferences;
 
   @override
+  Future<int> countUnreadNotifications() async => 0;
+
+  @override
   Future<List<NotificationPreferenceModel>> getPreferences() async =>
       List<NotificationPreferenceModel>.from(_preferences);
 

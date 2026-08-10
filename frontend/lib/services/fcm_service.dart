@@ -154,16 +154,12 @@ class FcmService {
     if (!Platform.isAndroid && !Platform.isIOS) return;
     final prefs = await SharedPreferences.getInstance();
     final id = prefs.getString(_prefDeviceTokenId);
-    if (id == null) return;
     try {
-      final accessToken = await _tokenStore.getAccessToken();
-      if (accessToken == null) return;
-      // The shared Dio's baseUrl already ends in the API prefix; prefixing
-      // again produced /api/v1/api/v1/... and a silent 404.
-      await dio.delete(
-        '/auth/device-tokens/$id',
-        options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
-      );
+      if (id != null) {
+        // The caller supplies an authenticated cleanup client so logout can
+        // unregister even after the normal auth interceptor is detached.
+        await dio.delete('/auth/device-tokens/$id');
+      }
     } catch (e) {
       _log.w('FCM token unregister failed: $e');
     } finally {

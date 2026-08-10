@@ -39,6 +39,11 @@ func (m *mockChoreReminderRepo) GetUserPreference(ctx context.Context, userID, g
 	return nil, args.Error(1)
 }
 
+func (m *mockChoreReminderRepo) MarkReminderSent(ctx context.Context, assignmentID uuid.UUID, sentAt time.Time) error {
+	args := m.Called(ctx, assignmentID, sentAt)
+	return args.Error(0)
+}
+
 type mockPusher struct {
 	mock.Mock
 }
@@ -69,18 +74,20 @@ func TestChoreReminder_Run(t *testing.T) {
 	groupID := uuid.New()
 
 	assignments := []models.ChoreAssignment{
-		{ID: assignmentID, ChoreID: choreID, UserID: userID},
+		{ID: assignmentID, ChoreID: choreID, UserID: userID, DueDate: pointerToTime(time.Now().UTC().Add(12 * time.Hour))},
 	}
 
 	repo.On("ListPendingAssignmentsDueSoon", mock.Anything, mock.AnythingOfType("time.Time")).Return(assignments, nil)
 	repo.On("GetChoreGroupID", mock.Anything, choreID).Return(groupID, nil)
 	repo.On("GetUserPreference", mock.Anything, userID, groupID).Return(&models.NotificationPreference{
-		UserID:      userID,
-		GroupID:     groupID,
-		ChoreDue:    true,
-		PushEnabled: true,
+		UserID:        userID,
+		GroupID:       groupID,
+		ChoreDue:      true,
+		ChoreDueDayOf: true,
+		PushEnabled:   true,
 	}, nil)
 	repo.On("GetChoreName", mock.Anything, choreID).Return("Dishes", nil)
+	repo.On("MarkReminderSent", mock.Anything, assignmentID, mock.AnythingOfType("time.Time")).Return(nil)
 	pusher.On("SendToUser", userID, mock.AnythingOfType("string")).Return(nil)
 
 	reminder := newChoreReminder(repo, pusher, log)
@@ -115,17 +122,19 @@ func TestChoreReminder_Run_RespectsChoreDueOptOut(t *testing.T) {
 	groupID := uuid.New()
 
 	assignments := []models.ChoreAssignment{
-		{ID: assignmentID, ChoreID: choreID, UserID: userID},
+		{ID: assignmentID, ChoreID: choreID, UserID: userID, DueDate: pointerToTime(time.Now().UTC().Add(12 * time.Hour))},
 	}
 
 	repo.On("ListPendingAssignmentsDueSoon", mock.Anything, mock.AnythingOfType("time.Time")).Return(assignments, nil)
 	repo.On("GetChoreGroupID", mock.Anything, choreID).Return(groupID, nil)
 	repo.On("GetUserPreference", mock.Anything, userID, groupID).Return(&models.NotificationPreference{
-		UserID:      userID,
-		GroupID:     groupID,
-		ChoreDue:    false,
-		PushEnabled: true,
+		UserID:        userID,
+		GroupID:       groupID,
+		ChoreDue:      false,
+		ChoreDueDayOf: false,
+		PushEnabled:   true,
 	}, nil)
+	repo.On("MarkReminderSent", mock.Anything, assignmentID, mock.AnythingOfType("time.Time")).Return(nil)
 
 	reminder := newChoreReminder(repo, pusher, log)
 	reminder.Run()
@@ -145,17 +154,20 @@ func TestChoreReminder_Run_RespectsPushDisabled(t *testing.T) {
 	groupID := uuid.New()
 
 	assignments := []models.ChoreAssignment{
-		{ID: assignmentID, ChoreID: choreID, UserID: userID},
+		{ID: assignmentID, ChoreID: choreID, UserID: userID, DueDate: pointerToTime(time.Now().UTC().Add(12 * time.Hour))},
 	}
 
 	repo.On("ListPendingAssignmentsDueSoon", mock.Anything, mock.AnythingOfType("time.Time")).Return(assignments, nil)
 	repo.On("GetChoreGroupID", mock.Anything, choreID).Return(groupID, nil)
 	repo.On("GetUserPreference", mock.Anything, userID, groupID).Return(&models.NotificationPreference{
-		UserID:      userID,
-		GroupID:     groupID,
-		ChoreDue:    true,
-		PushEnabled: false,
+		UserID:        userID,
+		GroupID:       groupID,
+		ChoreDue:      true,
+		ChoreDueDayOf: true,
+		PushEnabled:   false,
 	}, nil)
+	repo.On("GetChoreName", mock.Anything, choreID).Return("Dishes", nil)
+	repo.On("MarkReminderSent", mock.Anything, assignmentID, mock.AnythingOfType("time.Time")).Return(nil)
 
 	reminder := newChoreReminder(repo, pusher, log)
 	reminder.Run()
@@ -163,3 +175,5 @@ func TestChoreReminder_Run_RespectsPushDisabled(t *testing.T) {
 	repo.AssertExpectations(t)
 	pusher.AssertNotCalled(t, "SendToUser")
 }
+
+func pointerToTime(value time.Time) *time.Time { return &value }

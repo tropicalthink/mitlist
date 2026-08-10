@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/mitlist-app/mitlist/internal/models"
@@ -11,6 +12,14 @@ import (
 // MockNotificationRepo is a mock implementation of repositories.NotificationRepo.
 type MockNotificationRepo struct {
 	mock.Mock
+}
+
+func (m *MockNotificationRepo) ListNotificationsByUserBefore(ctx context.Context, userID uuid.UUID, before time.Time, beforeID uuid.UUID, limit int) ([]models.Notification, error) {
+	args := m.Called(ctx, userID, before, beforeID, limit)
+	if n := args.Get(0); n != nil {
+		return n.([]models.Notification), args.Error(1)
+	}
+	return nil, args.Error(1)
 }
 
 func (m *MockNotificationRepo) CreateNotification(ctx context.Context, n *models.Notification) error {
@@ -32,6 +41,11 @@ func (m *MockNotificationRepo) ListNotificationsByUser(ctx context.Context, user
 		return n.([]models.Notification), args.Error(1)
 	}
 	return nil, args.Error(1)
+}
+
+func (m *MockNotificationRepo) CountUnreadNotifications(ctx context.Context, userID uuid.UUID) (int, error) {
+	args := m.Called(ctx, userID)
+	return args.Int(0), args.Error(1)
 }
 
 func (m *MockNotificationRepo) MarkAsRead(ctx context.Context, id uuid.UUID) error {

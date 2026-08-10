@@ -2762,6 +2762,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Benachrichtigungen auf diesem Gerät empfangen';
 
   @override
+  String get notifPrefEmailNotifications => 'E-Mail-Benachrichtigungen';
+
+  @override
+  String get notifPrefEmailNotificationsDesc =>
+      'Wichtige Erinnerungen per E-Mail erhalten';
+
+  @override
   String get shoppingTripAppBarTitle => 'Einkaufstour';
 
   @override
