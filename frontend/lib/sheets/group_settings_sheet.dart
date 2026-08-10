@@ -25,6 +25,7 @@ import 'chore_zones_sheet.dart';
 import 'invite_household_sheet.dart';
 
 import '../widgets/app_toast.dart';
+
 class GroupSettingsSheet extends ConsumerStatefulWidget {
   const GroupSettingsSheet({super.key, required this.groupId});
 
@@ -160,7 +161,8 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
-      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
+      AppToast.error(
+          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     }
   }
 
@@ -192,10 +194,12 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       setState(() {
         _members = _members.where((m) => m.userId != member.userId).toList();
       });
-      AppToast.success(context, l10n.sheetGroupSettingsMemberRemoved(member.displayName));
+      AppToast.success(
+          context, l10n.sheetGroupSettingsMemberRemoved(member.displayName));
     } catch (e) {
       if (!mounted) return;
-      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
+      AppToast.error(
+          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     }
   }
 
@@ -232,7 +236,8 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isDeleting = false);
-      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
+      AppToast.error(
+          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     }
   }
 
@@ -380,7 +385,8 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
     } catch (e) {
       if (mounted) {
         setState(() => _savingKeys.remove(key));
-        AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
+        AppToast.error(
+            context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
       }
     }
   }

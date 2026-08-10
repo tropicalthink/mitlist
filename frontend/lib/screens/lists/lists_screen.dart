@@ -34,6 +34,7 @@ import '../../widgets/mitlist_app_bar.dart';
 import 'list_detail_screen.dart';
 
 import '../../widgets/app_toast.dart';
+
 enum _SortOption { newest, oldest, az, mostItems }
 
 enum _FilterOption { all, shopping, todo, custom }
@@ -1060,8 +1061,7 @@ class _ListCard extends ConsumerWidget {
   /// Opens the list detail; with [composer] set it lands with the item
   /// composer focused. This replaced a cramped one-shot quick-add dialog that
   /// duplicated (a worse, online-only version of) the detail composer.
-  Future<void> _openList(BuildContext context,
-      {bool composer = false}) async {
+  Future<void> _openList(BuildContext context, {bool composer = false}) async {
     final changed = await context.pushNamed<bool>(
       'listDetail',
       pathParameters: {'listId': list.id},

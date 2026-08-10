@@ -22,6 +22,7 @@ import '../widgets/app_icon.dart';
 import '../l10n/app_localizations.dart';
 
 import '../widgets/app_toast.dart';
+
 enum _Recurrence { none, hourly, daily, weekly, monthly, yearly, adaptive }
 
 /// How the turn rotates when more than one person shares the chore. "No one"
@@ -237,14 +238,17 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       if (!mounted) return;
       widget.dirtyNotifier?.value = false;
       Navigator.of(context).pop(true);
-      AppToast.success(context, assignee == null
-                ? _l10n.choreCreationChoreAdded
-                : _l10n.choreCreationChoreAddedNextUp(assignee));
+      AppToast.success(
+          context,
+          assignee == null
+              ? _l10n.choreCreationChoreAdded
+              : _l10n.choreCreationChoreAddedNextUp(assignee));
       unawaited(Haptics.success());
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
-      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
+      AppToast.error(
+          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     }
   }
 

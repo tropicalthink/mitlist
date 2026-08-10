@@ -19,8 +19,8 @@ class OutboxDrainer {
     int limit = 25,
     Duration minBackoff = const Duration(seconds: 5),
   }) async {
-    final batch = await _db
-        .getOutboxBatchByTypes(types, limit: limit, minBackoff: minBackoff);
+    final batch = await _db.getOutboxBatchByTypes(types,
+        limit: limit, minBackoff: minBackoff);
     if (batch.isEmpty) return;
     for (final op in batch) {
       final fresh = await _db.getOutboxOpById(op.id);

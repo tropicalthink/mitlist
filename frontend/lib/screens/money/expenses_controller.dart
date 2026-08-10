@@ -208,7 +208,8 @@ class ExpensesController extends ChangeNotifier {
   List<SettlementSuggestionDisplay> get suggestions {
     final pendingPairs = {
       for (final s in _settlements)
-        if (s.status == SettlementStatus.pending) '${s.fromUserId}>${s.toUserId}',
+        if (s.status == SettlementStatus.pending)
+          '${s.fromUserId}>${s.toUserId}',
     };
     return _suggestions
         .where((sug) => !pendingPairs.contains('${sug.from}>${sug.to}'))
@@ -218,8 +219,8 @@ class ExpensesController extends ChangeNotifier {
   /// Pending settlements the current user must confirm or decline.
   List<SettlementDisplay> get settlementsNeedingMyResponse =>
       _settlementDisplays()
-          .where((s) =>
-              s.status == SettlementStatus.pending && s.needsMyResponse)
+          .where(
+              (s) => s.status == SettlementStatus.pending && s.needsMyResponse)
           .toList();
 
   /// Pending settlements the current user recorded, awaiting the other party.

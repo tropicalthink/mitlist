@@ -14,6 +14,7 @@ import '../utils/friendly_error.dart';
 import '../widgets/app_input.dart';
 
 import '../widgets/app_toast.dart';
+
 class RecipeCreationSheet extends ConsumerStatefulWidget {
   final String? initialTitle;
   final String? initialIngredients;
@@ -95,7 +96,8 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
-      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
+      AppToast.error(
+          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     }
   }
 

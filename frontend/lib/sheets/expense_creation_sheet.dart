@@ -32,6 +32,7 @@ import '../widgets/chip.dart';
 import '../widgets/skeleton.dart';
 
 import '../widgets/app_toast.dart';
+
 class ExpenseCreationSheet extends ConsumerStatefulWidget {
   final String? initialDescription;
   final String? initialAmount;
@@ -449,7 +450,8 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
-      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
+      AppToast.error(
+          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     }
   }
 
