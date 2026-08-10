@@ -142,6 +142,10 @@ class _ActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Older call sites inserted SizedBox children to space a horizontal Row.
+    // The action bar now owns responsive spacing, so discard those legacy
+    // spacers before wrapping actions on narrow screens or at large text scale.
+    final responsiveActions = actions.where((action) => action is! SizedBox);
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         MitlistSpacing.lg,
@@ -149,9 +153,11 @@ class _ActionBar extends StatelessWidget {
         MitlistSpacing.lg,
         MitlistSpacing.lg,
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: actions,
+      child: Wrap(
+        alignment: WrapAlignment.end,
+        spacing: MitlistSpacing.sm,
+        runSpacing: MitlistSpacing.sm,
+        children: responsiveActions.toList(growable: false),
       ),
     );
   }

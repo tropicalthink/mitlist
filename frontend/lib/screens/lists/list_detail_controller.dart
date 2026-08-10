@@ -46,9 +46,12 @@ class ListDetailController extends ChangeNotifier {
   final String listId;
 
   bool _disposed = false;
+  Future<void>? _loadFuture;
 
   bool _isLoading = true;
   bool _hasError = false;
+  bool _hasLocalSnapshot = false;
+  bool _refreshFailed = false;
   String _listName;
   final List<ListItem> _items = [];
   final Map<String, ListItem> _pendingCreates = {};
@@ -101,6 +104,7 @@ class ListDetailController extends ChangeNotifier {
 
   bool get isLoading => _isLoading;
   bool get hasError => _hasError;
+  bool get refreshFailed => _refreshFailed;
   String get listName => _listName;
   List<ListItem> get items => List.unmodifiable(_items);
   String get searchQuery => _searchQuery;
@@ -143,9 +147,24 @@ class ListDetailController extends ChangeNotifier {
 
   // ---- Load & live data -----------------------------------------------------
 
-  Future<void> load() async {
-    _isLoading = true;
+  Future<void> load() {
+    final active = _loadFuture;
+    if (active != null) return active;
+
+    late final Future<void> operation;
+    operation = _performLoad().whenComplete(() {
+      if (identical(_loadFuture, operation)) _loadFuture = null;
+    });
+    _loadFuture = operation;
+    return operation;
+  }
+
+  Future<void> _performLoad() async {
+    // A refresh must never blank a usable local snapshot. The refresh
+    // indicator already communicates activity when content is on screen.
+    _isLoading = !_hasLocalSnapshot && _items.isEmpty;
     _hasError = false;
+    _refreshFailed = false;
     _notify();
 
     // Composer suggestions match against the on-device canonical grocery/alias
@@ -187,11 +206,12 @@ class ListDetailController extends ChangeNotifier {
       if (_disposed) return;
       final cachedGroupId = await repo.getGroupId(listId);
       if (_disposed) return;
+      _hasLocalSnapshot = _hasLocalSnapshot || cachedGroupId != null;
       _sectionsDirty = true;
       _items
         ..clear()
         ..addAll(cached);
-      _isLoading = cached.isEmpty;
+      _isLoading = cached.isEmpty && !_hasLocalSnapshot;
       if (cachedGroupId != null) _groupId = cachedGroupId;
       _notify();
 
@@ -201,6 +221,7 @@ class ListDetailController extends ChangeNotifier {
 
       if (_disposed) return;
       _isLoading = false;
+      _hasLocalSnapshot = true;
       _listName = list.name;
       _groupId = list.groupId;
       _notify();
@@ -238,9 +259,19 @@ class ListDetailController extends ChangeNotifier {
     } catch (e) {
       if (_disposed) return;
       _isLoading = false;
-      _hasError = true;
+      final hasUsableContent = _hasLocalSnapshot || _items.isNotEmpty;
+      _hasError = !hasUsableContent;
+      _refreshFailed = hasUsableContent;
       _notify();
     }
+  }
+
+  /// Returns and clears the fail-soft refresh signal so the screen can explain
+  /// that cached content remains available without replacing it with an error.
+  bool consumeRefreshFailure() {
+    final failed = _refreshFailed;
+    _refreshFailed = false;
+    return failed;
   }
 
   Future<void> _loadPhotosForItems(List<ListItem> items) async {
@@ -361,11 +392,6 @@ class ListDetailController extends ChangeNotifier {
 
   void toggleDoneSection() {
     _doneSectionExpanded = !_doneSectionExpanded;
-    _notify();
-  }
-
-  void dismissError() {
-    _hasError = false;
     _notify();
   }
 
@@ -575,12 +601,28 @@ class ListDetailController extends ChangeNotifier {
     // Optimistic removal so the row disappears instantly; the offline-first
     // delete + background sync follow. On failure the screen surfaces the error
     // and the next stream emit restores the row from the unchanged DB.
+    final removedIndex =
+        _items.indexWhere((candidate) => candidate.id == item.id);
+    final removedItem = removedIndex < 0 ? null : _items[removedIndex];
+    final wasDirty = _dirty;
     _sectionsDirty = true;
-    _items.remove(item);
+    if (removedIndex >= 0) _items.removeAt(removedIndex);
     _dirty = true;
     _notify();
-    final repo = await ref.read(listRepositoryProvider.future);
-    await repo.deleteItemOfflineFirst(listId, item.id);
+    try {
+      final repo = await ref.read(listRepositoryProvider.future);
+      await repo.deleteItemOfflineFirst(listId, item.id);
+    } catch (_) {
+      if (!_disposed &&
+          removedItem != null &&
+          !_items.any((candidate) => candidate.id == item.id)) {
+        _items.insert(removedIndex.clamp(0, _items.length), removedItem);
+        _sectionsDirty = true;
+        _dirty = wasDirty;
+        _notify();
+      }
+      rethrow;
+    }
   }
 
   Future<void> restoreDeletedItem(ListItem item) async {
@@ -838,6 +880,10 @@ class ListDetailController extends ChangeNotifier {
 
     final open = openItemsSorted;
     final done = doneItemsSorted;
+    final originalPositions = {
+      for (final item in _items) item.id: item.position,
+    };
+    final wasDirty = _dirty;
     final reorderedOpen = List<ListItem>.from(open);
     final moved = reorderedOpen.removeAt(oldIndex);
     reorderedOpen.insert(newIndex, moved);
@@ -872,9 +918,41 @@ class ListDetailController extends ChangeNotifier {
     _dirty = true;
     _notify();
 
-    final repo = await ref.read(listRepositoryProvider.future);
-    await repo.reorderItemsOfflineFirst(listId, itemIdsInOrder);
+    try {
+      final repo = await ref.read(listRepositoryProvider.future);
+      await repo.reorderItemsOfflineFirst(listId, itemIdsInOrder);
+    } catch (_) {
+      if (!_disposed) {
+        for (var index = 0; index < _items.length; index++) {
+          final item = _items[index];
+          final originalPosition = originalPositions[item.id];
+          if (originalPosition != null) {
+            _items[index] = _withPosition(item, originalPosition);
+          }
+        }
+        _sectionsDirty = true;
+        _dirty = wasDirty;
+        _notify();
+      }
+      rethrow;
+    }
   }
+
+  ListItem _withPosition(ListItem item, int position) => ListItem(
+        id: item.id,
+        listId: item.listId,
+        name: item.name,
+        quantity: item.quantity,
+        unit: item.unit,
+        note: item.note,
+        checked: item.checked,
+        position: position,
+        priceCents: item.priceCents,
+        canonicalItemId: item.canonicalItemId,
+        claimedBy: item.claimedBy,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+      );
 
   // ---- Scan helper ----------------------------------------------------------
 
