@@ -13,6 +13,7 @@ import (
 
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/mitlist-app/mitlist/internal/repositories/mocks"
 )
 
@@ -187,7 +188,7 @@ func TestGroupService_JoinGroup(t *testing.T) {
 		assert.Equal(t, groupID, g.ID)
 	})
 
-	t.Run("previously used invite is reusable until expiry", func(t *testing.T) {
+	t.Run("previously used invite cannot be reused", func(t *testing.T) {
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := NewGroupService(groupRepo, nil)
 
@@ -195,15 +196,10 @@ func TestGroupService_JoinGroup(t *testing.T) {
 		usedAt := time.Now().UTC().Add(-time.Hour)
 		invite := &models.GroupInvite{ID: uuid.New(), GroupID: groupID, Code: "USED", ExpiresAt: time.Now().UTC().Add(time.Hour), UsedBy: &usedBy, UsedAt: &usedAt}
 		groupRepo.On("GetInviteByCode", ctx, "USED").Return(invite, nil)
-		groupRepo.On("GetMembership", ctx, groupID, userID).Return(nil, pgx.ErrNoRows)
-		groupRepo.On("WithTx", ctx, mock.Anything).Return(nil)
-		groupRepo.On("ConsumeInvite", ctx, invite.ID, userID).Return(nil)
-		groupRepo.On("CreateMembership", ctx, mock.AnythingOfType("*models.GroupMembership")).Return(nil)
-		groupRepo.On("GetGroupByID", ctx, groupID).Return(&models.Group{ID: groupID}, nil)
 
-		g, err := svc.JoinGroup(ctx, userID, "USED")
-		require.NoError(t, err)
-		assert.Equal(t, groupID, g.ID)
+		_, err := svc.JoinGroup(ctx, userID, "USED")
+		require.Error(t, err)
+		assert.IsType(t, &api.ValidationError{}, err)
 	})
 
 	t.Run("invite expired", func(t *testing.T) {
@@ -243,6 +239,22 @@ func TestGroupService_JoinGroup(t *testing.T) {
 
 		_, err := svc.JoinGroup(ctx, userID, "RACE")
 		require.Error(t, err)
+		groupRepo.AssertNotCalled(t, "CreateMembership", mock.Anything, mock.Anything)
+	})
+
+	t.Run("concurrent redemption reports a used invite", func(t *testing.T) {
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewGroupService(groupRepo, nil)
+
+		invite := &models.GroupInvite{ID: uuid.New(), GroupID: groupID, Code: "RACE-USED", ExpiresAt: time.Now().UTC().Add(time.Hour)}
+		groupRepo.On("GetInviteByCode", ctx, "RACE-USED").Return(invite, nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(nil, pgx.ErrNoRows)
+		groupRepo.On("WithTx", ctx, mock.Anything).Return(nil)
+		groupRepo.On("ConsumeInvite", ctx, invite.ID, userID).Return(repositories.ErrInviteAlreadyUsed)
+
+		_, err := svc.JoinGroup(ctx, userID, "RACE-USED")
+		require.Error(t, err)
+		assert.IsType(t, &api.ValidationError{}, err)
 		groupRepo.AssertNotCalled(t, "CreateMembership", mock.Anything, mock.Anything)
 	})
 }

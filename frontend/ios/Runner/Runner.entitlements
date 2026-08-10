@@ -6,7 +6,7 @@
 	<string>$(APS_ENVIRONMENT)</string>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
-		<string>applinks:mitlist.me</string>
+		<string>applinks:app.mitlist.me</string>
 	</array>
 </dict>
 </plist>

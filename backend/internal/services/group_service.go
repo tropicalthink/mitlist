@@ -190,7 +190,7 @@ func (s *GroupService) DeleteGroup(ctx context.Context, userID, groupID uuid.UUI
 	return s.groupRepo.DeleteGroup(ctx, groupID)
 }
 
-// InviteMember creates a reusable invite code for the group.
+// InviteMember creates a one-use invite code for the group.
 func (s *GroupService) InviteMember(ctx context.Context, userID, groupID uuid.UUID, role string) (*models.GroupInvite, error) {
 	if err := s.requireAdmin(ctx, userID, groupID); err != nil {
 		return nil, err
@@ -243,6 +243,9 @@ func (s *GroupService) JoinGroup(ctx context.Context, userID uuid.UUID, code str
 	if time.Now().UTC().After(invite.ExpiresAt) {
 		return nil, &api.ValidationError{Message: "invite expired"}
 	}
+	if invite.UsedAt != nil {
+		return nil, &api.ValidationError{Message: "invite already used"}
+	}
 
 	existing, _ := s.groupRepo.GetMembership(ctx, invite.GroupID, userID)
 	if existing != nil {
@@ -259,8 +262,10 @@ func (s *GroupService) JoinGroup(ctx context.Context, userID uuid.UUID, code str
 		Role:    "member",
 	}
 	if err := s.groupRepo.WithTx(ctx, func(txRepo repositories.GroupRepo) error {
-		// Invites are reusable until they expire; record the latest redemption.
 		if err := txRepo.ConsumeInvite(ctx, invite.ID, userID); err != nil {
+			if errors.Is(err, repositories.ErrInviteAlreadyUsed) {
+				return &api.ValidationError{Message: "invite already used"}
+			}
 			return err
 		}
 		return txRepo.CreateMembership(ctx, membership)
