@@ -57,6 +57,7 @@ import 'package:mitlist/services/notification_service.dart';
 import 'package:mitlist/services/recipe_service.dart';
 import 'package:mitlist/storage/app_database.dart' hide FinanceSummary;
 import 'package:mitlist/widgets/app_button.dart';
+import 'package:mitlist/widgets/mitlist_bottom_nav.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -630,19 +631,19 @@ void main() {
     expect(find.text('My Households'), findsOneWidget);
     expect(find.text('Test Household'), findsOneWidget);
 
-    await tester.tap(find.text('Lists'));
+    await tester.tap(_navTab('Lists'));
     await _pumpUi(tester);
     expect(find.text('Lists'), findsAtLeast(1));
 
-    await tester.tap(find.text('Chores'));
+    await tester.tap(_navTab('Chores'));
     await _pumpUi(tester);
     expect(find.text('Chores'), findsAtLeast(1));
 
-    await tester.tap(find.text('Money'));
+    await tester.tap(_navTab('Money'));
     await _pumpUi(tester);
     expect(find.text('Money'), findsAtLeast(1));
 
-    await tester.tap(find.text('Home'));
+    await tester.tap(_navTab('Home'));
     await _pumpUi(tester);
 
     expect(find.text('My Households'), findsOneWidget);
@@ -1169,6 +1170,16 @@ Future<void> _setLargeSurface(WidgetTester tester) async {
   await tester.binding.setSurfaceSize(const Size(1200, 1800));
   addTearDown(() => tester.binding.setSurfaceSize(null));
 }
+
+/// A tab in the bottom nav, scoped so it never collides with the same word on
+/// the page behind it. MitlistBottomNav draws its row twice — once muted, once
+/// in ink clipped to the selection slab — so a bare find.text is ambiguous.
+Finder _navTab(String label) => find
+    .descendant(
+      of: find.byType(MitlistBottomNav),
+      matching: find.text(label),
+    )
+    .first;
 
 Future<void> _pumpUi(WidgetTester tester) async {
   await tester.pump();
