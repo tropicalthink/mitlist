@@ -157,6 +157,26 @@ plan was written.
 
 ## 3. Build & CI Recommendation
 
+The on-demand closed-beta workflow requires these Gitea secrets:
+
+- `BETA_API_BASE_URL` — required, HTTPS API origin (the workflow fails before
+  building if it is missing or malformed).
+- `ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_PASSWORD`,
+  `ANDROID_KEY_ALIAS`, and `GOOGLE_SERVICES_JSON_B64` — Android signing/Firebase
+  inputs.
+- `IOS_DISTRIBUTION_CERTIFICATE_B64`, `IOS_DISTRIBUTION_CERTIFICATE_PASSWORD`,
+  `IOS_PROVISIONING_PROFILE_B64`, `IOS_EXPORT_OPTIONS_PLIST_B64`,
+  `IOS_DEVELOPMENT_TEAM`, and `GOOGLE_SERVICE_INFO_PLIST_B64` — iOS
+  signing/Firebase inputs.
+- `GLITCHTIP_DSN_BETA` — optional crash-reporting DSN. `BETA_ENVIRONMENT` is
+  also optional and defaults to `beta`.
+
+Both artifacts receive the same numeric `${{ gitea.run_number }}` as their
+Flutter build number, so successive workflow runs produce increasing Android
+version codes and iOS bundle versions. The URL, DSN, and signing material are
+only passed through protected workflow environment variables; they are never
+written to artifacts or repository files.
+
 ### Android (no macOS required)
 
 Trigger: `workflow_dispatch` or push of a `v*` tag.
@@ -294,7 +314,7 @@ Mobile release is done when ALL of the following hold:
 | `frontend/android/.gitignore` | `key.properties`, `**/*.keystore`, `**/*.jks` all ignored |
 | `frontend/android/app/proguard-rules.pro` | Flutter + TFLite + Play Core rules present |
 | `frontend/ios/Runner.xcodeproj/project.pbxproj` | Bundle ID `me.mitlist`, `CODE_SIGN_STYLE=Automatic`, no `DEVELOPMENT_TEAM` |
-| `frontend/ios/Runner/Runner.entitlements` | `applinks:mitlist.me` associated domain only |
+| `frontend/ios/Runner/Runner.entitlements` | `applinks:app.mitlist.me` associated domain only |
 | `frontend/pubspec.yaml` | `version: 1.0.0+1`, `firebase_messaging: ^15.2.5`, `sentry_flutter: ^8.14.2` |
 | `frontend/lib/main.dart` | Sentry opt-in via `GLITCHTIP_DSN` dart-define; Firebase init without `firebase_options.dart` |
 | `frontend/lib/services/fcm_service.dart` | FCM init wrapped in try/catch; documents `google-services.json` requirement |

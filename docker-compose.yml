@@ -54,6 +54,7 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-mitlist}?sslmode=${DB_SSLMODE:-disable}}
       ENVIRONMENT: production
+      FRONTEND_URL: ${FRONTEND_URL:?set FRONTEND_URL to the public web app origin}
       RUN_MIGRATIONS_ON_STARTUP: "true"
       LOG_LEVEL: WARNING
       SCRAPER_FLARESOLVER_URL: http://flaresolverr:8191
@@ -101,8 +102,8 @@ services:
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: mitlist-flaresolverr
-    ports:
-      - "8191:8191"
+    expose:
+      - "8191"
     restart: unless-stopped
 
 volumes:

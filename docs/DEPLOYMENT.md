@@ -34,10 +34,11 @@ DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
 ```
 
 The release artifact and database must agree on their migration head. This
-checkout's head is `53`. Migrations 39–47 harden authentication and push-device
+checkout's head is `54`. Migrations 39–47 harden authentication and push-device
 ownership; 48–51 add reminder delivery state, notification group scoping and
 list notification batching; 52 adds authenticated request replay protection;
-53 deduplicates scheduled notification retries.
+53 deduplicates scheduled notification retries; 54 adds recoverable guest
+account locking and retirement timestamps.
 
 If the database reports `dirty: true`, stop. Take a backup and inspect the
 failed migration before using `force`; never force a production version merely
