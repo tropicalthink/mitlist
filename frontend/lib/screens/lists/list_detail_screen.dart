@@ -76,13 +76,23 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   bool _showProductSuggestions = false;
   String? _pendingCanonicalId;
 
-  /// Re-entrancy guard spanning a full user gesture (dialog input included), so
-  /// the controller stays UI-agnostic. Mirrors the original screen's behavior.
-  bool _isSaving = false;
+  /// Operation-scoped re-entrancy guards. Unrelated work (for example adding
+  /// an item while another row's photo uploads) must not silently block the
+  /// entire screen.
+  final Set<String> _activeOperations = {};
+  int _operationGeneration = 0;
 
   /// Guards the one-shot early composer focus for the quick-add entry so it
   /// fires once, as soon as the composer exists.
   bool _autoFocusDone = false;
+
+  String _operationKey(String key) => '$_operationGeneration:$key';
+
+  bool _beginOperation(String key) => _activeOperations.add(key);
+
+  void _finishOperation(String key) => _activeOperations.remove(key);
+
+  bool _isOperationActive(String key) => _activeOperations.contains(key);
 
   @override
   void initState() {
@@ -123,8 +133,15 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   /// (the next step is clearly typing). On a populated list it would cover the
   /// items people came to read.
   Future<void> _runLoad() async {
-    await _controller.load();
-    if (!mounted) return;
+    final controller = _controller;
+    await controller.load();
+    if (!mounted || !identical(_controller, controller)) return;
+    if (controller.consumeRefreshFailure()) {
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.listDetailCouldNotLoad)),
+      );
+    }
     // A populated cached list can expose the composer before the remote list
     // metadata (and therefore group id) has arrived. If the user focused the
     // field in that window, the first suggestion request was intentionally a
@@ -192,6 +209,19 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   void didUpdateWidget(covariant ListDetailScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.listId != widget.listId) {
+      // Cancel every transient interaction before swapping controllers. The
+      // State object may be reused by the router, but none of the old list's
+      // draft, focus, or operation state may follow it to the new list.
+      _editingTitle = false;
+      _showProductSuggestions = false;
+      _pendingCanonicalId = null;
+      _autoFocusDone = false;
+      _operationGeneration++;
+      _activeOperations.clear();
+      _titleFocusNode.unfocus();
+      _composerFocusNode.unfocus();
+      _newItemController.clear();
+      _titleController.clear();
       _controller
         ..removeListener(_onControllerChanged)
         ..dispose();
@@ -202,6 +232,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         listId: widget.listId,
         initialListName: widget.initialListName,
       )..addListener(_onControllerChanged);
+      if (widget.autoFocusTitle) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _startEditingTitle();
+        });
+      }
       _runLoad();
       return;
     }
@@ -229,8 +264,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Future<void> _addItemPhoto(ListItem item) async {
-    if (_isSaving) return;
-    _isSaving = true;
+    final operation = _operationKey('item:${item.id}');
+    if (!_beginOperation(operation)) return;
     try {
       await _controller.addItemPhoto(item);
     } catch (e) {
@@ -241,13 +276,13 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         );
       }
     } finally {
-      _isSaving = false;
+      _finishOperation(operation);
     }
   }
 
   Future<void> _removeItemPhoto(ListItem item) async {
-    if (_isSaving) return;
-    _isSaving = true;
+    final operation = _operationKey('item:${item.id}');
+    if (!_beginOperation(operation)) return;
     try {
       await _controller.removeItemPhoto(item);
     } catch (e) {
@@ -258,11 +293,13 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         );
       }
     } finally {
-      _isSaving = false;
+      _finishOperation(operation);
     }
   }
 
   Future<void> _toggleItem(ListItem item, bool value) async {
+    final operation = _operationKey('toggle:${item.id}');
+    if (!_beginOperation(operation)) return;
     final disableAnimations = MediaQuery.of(context).disableAnimations;
     try {
       await _controller.toggleItem(item, value,
@@ -273,12 +310,14 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.listDetailCouldNotUpdate)),
       );
+    } finally {
+      _finishOperation(operation);
     }
   }
 
   Future<void> _completeAll() async {
-    if (_isSaving) return;
-    _isSaving = true;
+    final operation = _operationKey('bulk');
+    if (!_beginOperation(operation)) return;
     try {
       await _controller.completeAll();
     } catch (_) {
@@ -289,13 +328,13 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         );
       }
     } finally {
-      _isSaving = false;
+      _finishOperation(operation);
     }
   }
 
   Future<void> _uncheckAll() async {
-    if (_isSaving) return;
-    _isSaving = true;
+    final operation = _operationKey('bulk');
+    if (!_beginOperation(operation)) return;
     try {
       await _controller.uncheckAll();
     } catch (_) {
@@ -306,17 +345,20 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         );
       }
     } finally {
-      _isSaving = false;
+      _finishOperation(operation);
     }
   }
 
   Future<void> _addItem() async {
-    if (_isSaving) return;
+    final operation = _operationKey('composer');
+    if (!_beginOperation(operation)) return;
     final text = _newItemController.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty) {
+      _finishOperation(operation);
+      return;
+    }
     final canonicalId = _pendingCanonicalId;
     _pendingCanonicalId = null;
-    _isSaving = true;
     unawaited(Haptics.light());
     // addItem publishes a pending row synchronously before its first database
     // await, so by the time this returns the future the row is already visible.
@@ -332,11 +374,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     // do NOT hold it across `addFuture`: the local persistence can take many
     // seconds when a large background write (e.g. the first-run grocery seed's
     // FTS rebuild) is holding the shared DB connection, and blocking the
-    // composer (and every other gesture that shares `_isSaving`) on it is what
-    // made adds feel serialized. The row is optimistic and the write is durable
-    // via the outbox, so nothing is lost by letting it settle in the
-    // background.
-    _isSaving = false;
+    // composer on it is what made adds feel serialized. The row is optimistic
+    // and the write is durable via the outbox, so nothing is lost by letting it
+    // settle in the background.
+    _finishOperation(operation);
     try {
       await addFuture;
     } catch (e) {
@@ -357,8 +398,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Future<void> _addRestockSuggestion(RestockSuggestion suggestion) async {
-    if (_isSaving) return;
-    _isSaving = true;
+    final operation = _operationKey('restock:${suggestion.canonicalItemId}');
+    if (!_beginOperation(operation)) return;
     try {
       await _controller.addRestockSuggestion(suggestion);
       if (!mounted) return;
@@ -370,12 +411,13 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         SnackBar(content: Text(l10n.listDetailCouldNotAddItem)),
       );
     } finally {
-      _isSaving = false;
+      _finishOperation(operation);
     }
   }
 
   Future<void> _clearItems({required bool onlyChecked}) async {
-    if (_isSaving) return;
+    final operation = _operationKey('bulk');
+    if (!_beginOperation(operation)) return;
     if (!onlyChecked) {
       final count = _controller.items.length;
       final l10n = AppLocalizations.of(context)!;
@@ -399,9 +441,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           ),
         ],
       );
-      if (confirmed != true || !mounted) return;
+      if (confirmed != true || !mounted) {
+        _finishOperation(operation);
+        return;
+      }
     }
-    _isSaving = true;
     try {
       await _controller.clearItems(onlyChecked: onlyChecked);
     } catch (e) {
@@ -412,13 +456,13 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         );
       }
     } finally {
-      _isSaving = false;
+      _finishOperation(operation);
     }
   }
 
   Future<void> _deleteItem(ListItem item) async {
-    if (_isSaving) return;
-    _isSaving = true;
+    final operation = _operationKey('item:${item.id}');
+    if (!_beginOperation(operation)) return;
     var deleted = false;
     try {
       await _controller.deleteItem(item);
@@ -433,7 +477,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         );
       }
     } finally {
-      _isSaving = false;
+      _finishOperation(operation);
     }
     if (!deleted || !mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -466,8 +510,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Future<void> _setItemPrice(ListItem item) async {
-    if (_isSaving) return;
-    _isSaving = true;
+    final operation = _operationKey('item:${item.id}');
+    if (!_beginOperation(operation)) return;
     final l10n = AppLocalizations.of(context)!;
     final priceController = TextEditingController(
       text: item.priceCents != null
@@ -503,12 +547,12 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     );
     priceController.dispose();
     if (priceStr == null || priceStr.isEmpty) {
-      _isSaving = false;
+      _finishOperation(operation);
       return;
     }
     final price = double.tryParse(priceStr.replaceAll(',', '.'));
     if (price == null || price < 0) {
-      _isSaving = false;
+      _finishOperation(operation);
       // Silent discard read as "the price didn't save" with no clue why.
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -528,7 +572,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         );
       }
     } finally {
-      _isSaving = false;
+      _finishOperation(operation);
     }
   }
 
@@ -559,7 +603,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Future<void> _archiveList() async {
-    if (_isSaving) return;
+    final operation = _operationKey('list-lifecycle');
+    if (!_beginOperation(operation)) return;
     final l10n = AppLocalizations.of(context)!;
     final confirmed = await showAppDialog<bool>(
       context: context,
@@ -578,8 +623,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         ),
       ],
     );
-    if (confirmed != true || !mounted) return;
-    _isSaving = true;
+    if (confirmed != true || !mounted) {
+      _finishOperation(operation);
+      return;
+    }
     try {
       final ok = await _controller.archiveList();
       if (!mounted) return;
@@ -591,13 +638,13 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         );
       }
     } finally {
-      _isSaving = false;
+      _finishOperation(operation);
     }
   }
 
   Future<void> _deleteList() async {
-    if (_isSaving) return;
-    _isSaving = true;
+    final operation = _operationKey('list-lifecycle');
+    if (!_beginOperation(operation)) return;
     final l10n = AppLocalizations.of(context)!;
     final confirmed = await showAppDialog<bool>(
       context: context,
@@ -618,7 +665,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       ],
     );
     if (confirmed != true || !mounted) {
-      _isSaving = false;
+      _finishOperation(operation);
       return;
     }
     try {
@@ -632,7 +679,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         );
       }
     } finally {
-      _isSaving = false;
+      _finishOperation(operation);
     }
   }
 
@@ -656,8 +703,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         currencyCode: _controller.groupCurrency,
         onGenerateExpense: totalCents > 0
             ? () async {
-                if (_isSaving) return;
-                _isSaving = true;
+                final operation = _operationKey('generate-expense');
+                if (!_beginOperation(operation)) return;
                 try {
                   await _controller.generateExpense();
                   if (mounted) {
@@ -674,7 +721,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     );
                   }
                 } finally {
-                  _isSaving = false;
+                  _finishOperation(operation);
                 }
               }
             : null,
@@ -766,8 +813,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Future<void> _renameItem(ListItem item) async {
-    if (_isSaving) return;
-    _isSaving = true;
+    final operation = _operationKey('item:${item.id}');
+    if (!_beginOperation(operation)) return;
     final l10n = AppLocalizations.of(context)!;
     final nameController = TextEditingController(text: item.name);
     final newName = await showAppDialog<String>(
@@ -797,7 +844,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     );
     nameController.dispose();
     if (newName == null || newName.isEmpty || newName == item.name) {
-      _isSaving = false;
+      _finishOperation(operation);
       return;
     }
     try {
@@ -809,13 +856,13 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         );
       }
     } finally {
-      _isSaving = false;
+      _finishOperation(operation);
     }
   }
 
   Future<void> _setItemQuantity(ListItem item) async {
-    if (_isSaving) return;
-    _isSaving = true;
+    final operation = _operationKey('item:${item.id}');
+    if (!_beginOperation(operation)) return;
     final l10n = AppLocalizations.of(context)!;
     final amountController = TextEditingController(
       text: item.quantity == item.quantity.roundToDouble()
@@ -864,7 +911,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     amountController.dispose();
     unitController.dispose();
     if (confirmed != true || amount == null || amount <= 0) {
-      _isSaving = false;
+      _finishOperation(operation);
       return;
     }
     try {
@@ -876,13 +923,13 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         );
       }
     } finally {
-      _isSaving = false;
+      _finishOperation(operation);
     }
   }
 
   Future<void> _editItemNote(ListItem item) async {
-    if (_isSaving) return;
-    _isSaving = true;
+    final operation = _operationKey('item:${item.id}');
+    if (!_beginOperation(operation)) return;
     final l10n = AppLocalizations.of(context)!;
     final noteController = TextEditingController(text: item.note);
     final confirmed = await showAppDialog<bool>(
@@ -912,7 +959,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     final note = noteController.text.trim();
     noteController.dispose();
     if (confirmed != true || note == item.note) {
-      _isSaving = false;
+      _finishOperation(operation);
       return;
     }
     try {
@@ -924,7 +971,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         );
       }
     } finally {
-      _isSaving = false;
+      _finishOperation(operation);
     }
   }
 
@@ -1161,7 +1208,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       return _wrapForRefresh(ListDetailErrorView(
         message: AppLocalizations.of(context)!.listDetailCouldNotLoad,
         onRetry: _runLoad,
-        onDismiss: _controller.dismissError,
+        // With no usable local snapshot, dismissing into an empty composer
+        // produces a screen whose actions cannot succeed. Leave the detail
+        // instead; cached lists never enter this full-screen error state.
+        onDismiss: () => Navigator.of(context).maybePop(),
       ));
     }
 
@@ -1262,7 +1312,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       // If another gesture holds the save lock, refuse the dismissal instead
       // of letting the row disappear while _deleteItem no-ops — that mismatch
       // crashes with "a dismissed Dismissible is still part of the tree".
-      confirmDismiss: (_) async => !_isSaving,
+      confirmDismiss: (_) async =>
+          !_isOperationActive(_operationKey('item:${item.id}')),
       background: Container(
         color: Theme.of(context).colorScheme.error,
         alignment: Alignment.centerRight,

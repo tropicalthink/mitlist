@@ -32,15 +32,16 @@ class ListDetailErrorView extends StatelessWidget {
           children: [
             AppAlert(type: AppAlertType.error, message: message),
             const SizedBox(height: MitlistSpacing.md),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: MitlistSpacing.md,
+              runSpacing: MitlistSpacing.sm,
               children: [
                 AppButton(
                   text: l10n.commonRetry,
                   variant: AppButtonVariant.outline,
                   onPressed: onRetry,
                 ),
-                const SizedBox(width: MitlistSpacing.md),
                 AppButton(
                   text: l10n.commonDismiss,
                   variant: AppButtonVariant.ghost,

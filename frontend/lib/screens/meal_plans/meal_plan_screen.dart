@@ -18,6 +18,7 @@ import '../../l10n/app_localizations.dart';
 import '../../utils/active_group_context.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
+import '../../utils/latest_request_guard.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
@@ -38,10 +39,11 @@ class MealPlanScreen extends ConsumerStatefulWidget {
 class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
   late DateTime _weekStart;
   bool _isLoading = true;
-  bool _isMutating = false;
   String? _error;
   final List<MealPlan> _plans = [];
   final Map<String, Recipe> _recipeCache = {};
+  final Set<String> _activeOperations = {};
+  final LatestRequestGuard _loadGuard = LatestRequestGuard();
   String? _resolvedGroupId;
 
   @override
@@ -49,6 +51,25 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
     super.initState();
     _weekStart = _startOfWeek(DateTime.now());
     _resolveAndLoad();
+  }
+
+  @override
+  void didUpdateWidget(covariant MealPlanScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.groupId == widget.groupId) return;
+    _loadGuard.invalidate();
+    _resolvedGroupId = null;
+    _plans.clear();
+    _recipeCache.clear();
+    _error = null;
+    _isLoading = true;
+    _resolveAndLoad();
+  }
+
+  @override
+  void dispose() {
+    _loadGuard.dispose();
+    super.dispose();
   }
 
   Future<void> _resolveAndLoad() async {
@@ -90,42 +111,71 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
   }
 
   Future<void> _load() async {
+    final request = _loadGuard.begin();
+    final hadContent = _plans.isNotEmpty;
+    final groupId = _resolvedGroupId;
+    final weekStart = _weekStart;
+    if (groupId == null || groupId.isEmpty) return;
     setState(() {
-      _isLoading = true;
+      _isLoading = !hadContent;
       _error = null;
     });
     try {
       final svc = await ref.read(mealPlanServiceProviderAsync.future);
-      final from = _formatDate(_weekStart);
-      final to = _formatDate(_weekStart.add(const Duration(days: 6)));
-      final plans =
-          await svc.listMealPlans(_resolvedGroupId!, from: from, to: to);
+      final from = _formatDate(weekStart);
+      final to = _formatDate(weekStart.add(const Duration(days: 6)));
+      final plans = await svc.listMealPlans(groupId, from: from, to: to);
+      if (!mounted || !_loadGuard.isCurrent(request)) return;
       setState(() {
         _plans.clear();
         _plans.addAll(plans);
+        _isLoading = false;
       });
-      await _preloadRecipes(plans);
+      await _preloadRecipes(plans, request);
     } catch (e) {
-      setState(() =>
-          _error = friendlyErrorMessage(e, AppLocalizations.of(context)!));
-    } finally {
-      setState(() => _isLoading = false);
+      if (!mounted || !_loadGuard.isCurrent(request)) return;
+      final message = friendlyErrorMessage(e, AppLocalizations.of(context)!);
+      if (hadContent) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(message)));
+      } else {
+        setState(() {
+          _error = message;
+          _isLoading = false;
+        });
+      }
     }
   }
 
-  Future<void> _preloadRecipes(List<MealPlan> plans) async {
+  Future<void> _preloadRecipes(List<MealPlan> plans, int request) async {
     final recipeIds = plans.map((p) => p.recipeId).toSet();
     if (recipeIds.isEmpty) return;
     try {
       final svc = await ref.read(recipeServiceProviderAsync.future);
+      final loaded = <String, Recipe>{};
       for (final id in recipeIds) {
         if (_recipeCache.containsKey(id)) continue;
-        final r = await svc.getRecipe(id);
-        if (mounted) setState(() => _recipeCache[id] = r);
+        loaded[id] = await svc.getRecipe(id);
+        if (!mounted || !_loadGuard.isCurrent(request)) return;
+      }
+      if (loaded.isNotEmpty && mounted && _loadGuard.isCurrent(request)) {
+        setState(() => _recipeCache.addAll(loaded));
       }
     } catch (_) {
       // best effort
     }
+  }
+
+  bool _beginOperation(String key) {
+    if (_activeOperations.contains(key)) return false;
+    setState(() => _activeOperations.add(key));
+    return true;
+  }
+
+  void _finishOperation(String key) {
+    if (!mounted) return;
+    setState(() => _activeOperations.remove(key));
   }
 
   String _formatDate(DateTime d) => DateFormat('yyyy-MM-dd').format(d);
@@ -141,22 +191,16 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
   }
 
   Future<void> _showRecipePicker(DateTime date, String slot) async {
-    if (_isMutating) return;
-    _isMutating = true;
-    final recipe = await _RecipePickerSheet.show(context);
-    if (recipe == null || !mounted) {
-      _isMutating = false;
-      return;
-    }
-
-    final servings = await _ServingsPickerSheet.show(context,
-        defaultServings: recipe.servings);
-    if (servings == null || !mounted) {
-      _isMutating = false;
-      return;
-    }
-
+    final operation = 'slot:${_formatDate(date)}:$slot';
+    if (!_beginOperation(operation)) return;
     try {
+      final recipe = await _RecipePickerSheet.show(context);
+      if (recipe == null || !mounted) return;
+
+      final servings = await _ServingsPickerSheet.show(context,
+          defaultServings: recipe.servings);
+      if (servings == null || !mounted) return;
+
       final svc = await ref.read(mealPlanServiceProviderAsync.future);
       await svc.createMealPlan(CreateMealPlanRequest(
         groupId: _resolvedGroupId!,
@@ -174,13 +218,13 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
         );
       }
     } finally {
-      _isMutating = false;
+      _finishOperation(operation);
     }
   }
 
   Future<void> _removePlan(String planId) async {
-    if (_isMutating) return;
-    _isMutating = true;
+    final operation = 'plan:$planId';
+    if (!_beginOperation(operation)) return;
     try {
       final svc = await ref.read(mealPlanServiceProviderAsync.future);
       await svc.deleteMealPlan(planId);
@@ -194,33 +238,26 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
         );
       }
     } finally {
-      _isMutating = false;
+      _finishOperation(operation);
     }
   }
 
   Future<void> _editPlan(String planId) async {
-    if (_isMutating) return;
-    _isMutating = true;
-    final plan = _plans.firstWhere(
-      (p) => p.id == planId,
-      orElse: () => throw const NotFoundException('Meal plan not found'),
-    );
-
-    final recipe =
-        await _RecipePickerSheet.show(context, selectedRecipeId: plan.recipeId);
-    if (recipe == null || !mounted) {
-      _isMutating = false;
-      return;
-    }
-
-    final servings = await _ServingsPickerSheet.show(context,
-        defaultServings: recipe.servings);
-    if (servings == null || !mounted) {
-      _isMutating = false;
-      return;
-    }
-
+    final operation = 'plan:$planId';
+    if (!_beginOperation(operation)) return;
     try {
+      final plan = _plans.firstWhere(
+        (p) => p.id == planId,
+        orElse: () => throw const NotFoundException('Meal plan not found'),
+      );
+      final recipe = await _RecipePickerSheet.show(context,
+          selectedRecipeId: plan.recipeId);
+      if (recipe == null || !mounted) return;
+
+      final servings = await _ServingsPickerSheet.show(context,
+          defaultServings: recipe.servings);
+      if (servings == null || !mounted) return;
+
       final svc = await ref.read(mealPlanServiceProviderAsync.future);
       await svc.updateMealPlan(
           planId,
@@ -238,13 +275,13 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
         );
       }
     } finally {
-      _isMutating = false;
+      _finishOperation(operation);
     }
   }
 
   Future<void> _generateShoppingList() async {
-    if (_isMutating) return;
-    _isMutating = true;
+    const operation = 'generate';
+    if (!_beginOperation(operation)) return;
     unawaited(Haptics.light());
     try {
       final svc = await ref.read(mealPlanServiceProviderAsync.future);
@@ -282,7 +319,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
         );
       }
     } finally {
-      _isMutating = false;
+      _finishOperation(operation);
     }
   }
 
@@ -309,7 +346,9 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
           IconButton(
             icon: const AppIcon(name: 'shoppingCart'),
             tooltip: l10n.mealPlanGenerateShoppingList,
-            onPressed: _generateShoppingList,
+            onPressed: _activeOperations.contains('generate')
+                ? null
+                : _generateShoppingList,
           ),
         ],
       ),

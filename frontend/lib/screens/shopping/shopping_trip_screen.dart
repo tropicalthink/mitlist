@@ -21,6 +21,7 @@ import '../../theme/typography.dart';
 import '../../theme/theme.dart';
 import '../../utils/active_group_context.dart';
 import '../../utils/friendly_error.dart';
+import '../../utils/latest_request_guard.dart';
 import '../../widgets/animated_check_toggle.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
@@ -63,6 +64,8 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
   final Map<String, List<ListItem>> _itemsByList = {};
   final Set<String> _checkedItemIds = {};
   bool _isSubmitting = false;
+  final LatestRequestGuard _loadGuard = LatestRequestGuard();
+  final LatestRequestGuard _aisleGuard = LatestRequestGuard();
 
   /// Resolved aisle per item id for the selected store. Empty when no store is
   /// chosen (the trip then groups by list). Recomputed when items or store
@@ -76,15 +79,27 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
     _load();
   }
 
+  @override
+  void dispose() {
+    _loadGuard.dispose();
+    _aisleGuard.dispose();
+    super.dispose();
+  }
+
   Future<void> _load() async {
+    final request = _loadGuard.begin();
+    final hadContent = _lists.isNotEmpty || _itemsByList.isNotEmpty;
     setState(() {
-      _isLoading = true;
+      _isLoading = !hadContent;
       _error = null;
     });
     try {
       final groupId = await _resolveGroupId();
+      if (!mounted || !_loadGuard.isCurrent(request)) return;
       if (groupId == null) {
         setState(() {
+          _lists.clear();
+          _itemsByList.clear();
           _hasHousehold = false;
           _isLoading = false;
         });
@@ -99,7 +114,11 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
           .toList();
 
       if (shoppingLists.isEmpty) {
+        if (!mounted || !_loadGuard.isCurrent(request)) return;
         setState(() {
+          _lists.clear();
+          _itemsByList.clear();
+          _hasHousehold = true;
           _isLoading = false;
         });
         return;
@@ -107,6 +126,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
 
       final listIds = shoppingLists.map((l) => l.id).toList();
       final result = await listSvc.getShoppingTrip(listIds, groupId: groupId);
+      if (!mounted || !_loadGuard.isCurrent(request)) return;
 
       final itemsByList = <String, List<ListItem>>{};
       final rawLists = result['lists'] as List<dynamic>? ?? [];
@@ -130,12 +150,22 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
         _lists.addAll(shoppingLists);
         _itemsByList.clear();
         _itemsByList.addAll(itemsByList);
+        _hasHousehold = true;
         _isLoading = false;
       });
       unawaited(_recomputeAisles());
     } catch (e) {
+      if (!mounted || !_loadGuard.isCurrent(request)) return;
+      final message = friendlyErrorMessage(e, AppLocalizations.of(context)!);
+      if (hadContent) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+        return;
+      }
       setState(() {
-        _error = friendlyErrorMessage(e, AppLocalizations.of(context)!);
+        _error = message;
         _isLoading = false;
       });
     }
@@ -154,17 +184,20 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
   /// be walked in shopping-path order. Runs off the canonical graph + global
   /// store layout; items that don't resolve fall into an "Other" bucket.
   Future<void> _recomputeAisles() async {
+    final request = _aisleGuard.begin();
     final storeId = ref.read(selectedStoreIdProvider);
     final groupId = _groupId;
     if (storeId == null || groupId == null) {
-      if (_aisleByItemId.isNotEmpty) {
+      if (mounted &&
+          _aisleGuard.isCurrent(request) &&
+          _aisleByItemId.isNotEmpty) {
         setState(() => _aisleByItemId = {});
       }
       return;
     }
 
     await ref.read(grocerySeedProvider.future);
-    if (!mounted) return;
+    if (!mounted || !_aisleGuard.isCurrent(request)) return;
     final db = ref.read(appDatabaseProvider);
     final resolver = ref.read(canonicalResolverServiceProvider);
     final linkedIds = [
@@ -196,7 +229,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
       }
     }
 
-    if (!mounted) return;
+    if (!mounted || !_aisleGuard.isCurrent(request)) return;
     setState(() => _aisleByItemId = result);
   }
 
