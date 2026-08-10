@@ -2467,7 +2467,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountDeleteAccountBody =>
-      'This will permanently delete your account and all associated data. This cannot be undone.';
+      'This permanently removes your account, revokes all sessions, deletes credentials, and anonymizes your shared household history. This cannot be undone.';
 
   @override
   String get accountLogOut => 'Log out';

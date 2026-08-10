@@ -199,20 +199,46 @@ func (r *UserRepository) Update(ctx context.Context, user *models.User) error {
 	return tx.Commit(ctx)
 }
 
-// SoftDelete marks a user as deleted.
+// SoftDelete removes account credentials and personal profile data while
+// retaining the user row as an anonymized tombstone for shared-household
+// foreign keys. It also advances auth_valid_after so already-issued access
+// tokens stop working immediately, and revokes refresh sessions and recovery
+// credentials in the same transaction.
 func (r *UserRepository) SoftDelete(ctx context.Context, id uuid.UUID) error {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
 	now := time.Now().UTC()
-	query := `
+	cmd, err := tx.Exec(ctx, `
 		UPDATE users
-		SET deleted_at = $1, updated_at = $2
-		WHERE id = $3 AND deleted_at IS NULL
-	`
-	cmd, err := r.db.Exec(ctx, query, now, now, id)
+		SET email = 'deleted+' || id::text || '@deleted.invalid',
+		    password_hash = '', first_name = '', last_name = '', avatar_url = NULL,
+		    is_active = FALSE, is_verified = FALSE, is_guest = FALSE,
+		    auth_valid_after = $1, deleted_at = $1, updated_at = $1
+		WHERE id = $2 AND deleted_at IS NULL
+	`, now, id)
 	if err != nil {
 		return err
 	}
 	if cmd.RowsAffected() == 0 {
 		return fmt.Errorf("user not found")
+	}
+	for _, query := range []string{
+		`DELETE FROM auth_sessions WHERE user_id = $1`,
+		`DELETE FROM password_reset_tokens WHERE user_id = $1`,
+		`DELETE FROM email_verification_tokens WHERE user_id = $1`,
+		`DELETE FROM push_subscriptions WHERE user_id = $1`,
+		`DELETE FROM device_tokens WHERE user_id = $1`,
+		`DELETE FROM oauth_accounts WHERE user_id = $1`,
+	} {
+		if _, err := tx.Exec(ctx, query, id); err != nil {
+			return err
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return err
 	}
 	return nil
 }

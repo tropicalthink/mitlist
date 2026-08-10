@@ -223,7 +223,9 @@ func (r *AuthRepository) ConsumeEmailVerification(ctx context.Context, tokenHash
 	`, tokenHash).Scan(&userID); err != nil {
 		return uuid.Nil, err
 	}
-	cmd, err := tx.Exec(ctx, `UPDATE users SET is_verified = TRUE, updated_at = NOW() WHERE id = $1 AND is_active AND deleted_at IS NULL`, userID)
+	// Verification is also the point at which a converted guest becomes a
+	// durable account. Ordinary registrations already have is_guest = FALSE.
+	cmd, err := tx.Exec(ctx, `UPDATE users SET is_verified = TRUE, is_guest = FALSE, updated_at = NOW() WHERE id = $1 AND is_active AND deleted_at IS NULL`, userID)
 	if err != nil || cmd.RowsAffected() != 1 {
 		if err != nil {
 			return uuid.Nil, err

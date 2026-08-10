@@ -366,13 +366,25 @@ func TestUserService_ClaimAccount(t *testing.T) {
 	ctx := context.Background()
 	userID := uuid.New()
 
-	t.Run("success", func(t *testing.T) {
+	t.Run("guest must use verified conversion", func(t *testing.T) {
+		userRepo := new(mocks.MockUserRepo)
+		svc := NewUserService(userRepo, nil, nil, nil, nil)
+
+		user := &models.User{ID: userID, IsGuest: true}
+		userRepo.On("GetByID", ctx, userID).Return(user, nil)
+
+		_, err := svc.ClaimAccount(ctx, userID, ClaimAccountInput{Password: "password123!", FirstName: "Test", LastName: "User"})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "converted")
+	})
+
+	t.Run("verified precreated account can be claimed", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
 		jwtSvc := new(mocks.MockJWTService)
 		passSvc := new(mocks.MockPasswordService)
 		svc := NewUserService(userRepo, nil, jwtSvc, passSvc, nil)
 
-		user := &models.User{ID: userID, IsGuest: true}
+		user := &models.User{ID: userID, IsActive: true, IsVerified: true}
 		userRepo.On("GetByID", ctx, userID).Return(user, nil)
 		passSvc.On("Hash", "password123!").Return("hash", nil)
 		userRepo.On("Update", ctx, user).Return(nil)

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -227,19 +228,36 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
-	user, err := h.userService.Register(r.Context(), services.RegisterInput{
+	_, err := h.userService.Register(r.Context(), services.RegisterInput{
 		Email:     req.Email,
 		Password:  req.Password,
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
 	})
 	if err != nil {
+		// Do not turn registration into an account-enumeration oracle. The
+		// address may already belong to an active account, a pending account,
+		// or a deleted tombstone; callers receive the same acknowledgement.
+		if errors.Is(err, api.ErrConflict) {
+			// A previous provider failure may have left a legitimate pending
+			// registration without its code. Retry delivery without exposing
+			// whether the address exists or is already verified.
+			if resendErr := h.userService.ResendEmailVerification(r.Context(), req.Email); resendErr != nil {
+				api.RespondError(w, resendErr)
+				return
+			}
+			api.RespondJSON(w, http.StatusAccepted, map[string]any{
+				"verification_required": true,
+				"message":               "if the address can be registered, a verification code has been sent",
+			})
+			return
+		}
 		api.RespondError(w, err)
 		return
 	}
-	api.RespondJSON(w, http.StatusCreated, map[string]any{
-		"user":                  user,
+	api.RespondJSON(w, http.StatusAccepted, map[string]any{
 		"verification_required": true,
+		"message":               "if the address can be registered, a verification code has been sent",
 	})
 }
 
@@ -428,8 +446,17 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) CreateGuest(w http.ResponseWriter, r *http.Request) {
-	user, access, refresh, err := h.guestService.CreateGuest(r.Context())
+	user, access, refresh, err := h.guestService.CreateGuestForIdentity(
+		r.Context(), middleware.ExtractIP(r), r.Header.Get("X-Mitlist-Install-ID"),
+	)
 	if err != nil {
+		if errors.Is(err, services.ErrGuestCreationLimit) {
+			w.Header().Set("Retry-After", "3600")
+			api.RespondJSON(w, http.StatusTooManyRequests, map[string]string{
+				"error": "guest creation limit reached; sign in or try again later",
+			})
+			return
+		}
 		api.RespondError(w, err)
 		return
 	}

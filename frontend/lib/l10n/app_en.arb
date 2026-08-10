@@ -1451,7 +1451,7 @@
   "@accountTermsBody": { "description": "Terms of service body text" },
   "accountDeleteAccount": "Delete account",
   "@accountDeleteAccount": { "description": "Dialog title for account deletion" },
-  "accountDeleteAccountBody": "This will permanently delete your account and all associated data. This cannot be undone.",
+  "accountDeleteAccountBody": "This permanently removes your account, revokes all sessions, deletes credentials, and anonymizes your shared household history. This cannot be undone.",
   "@accountDeleteAccountBody": { "description": "Dialog body for account deletion" },
   "accountLogOut": "Log out",
   "@accountLogOut": { "description": "Button to log out" },
