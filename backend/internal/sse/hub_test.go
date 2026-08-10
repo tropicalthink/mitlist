@@ -191,6 +191,31 @@ func TestOnlineUserIDsDedupAndExcludesAnonymous(t *testing.T) {
 	assert.Equal(t, toSet([]string{"u1", "u2"}), toSet(ids))
 }
 
+func TestTrySubscribeEnforcesUserAndIPLimitsAndCleanup(t *testing.T) {
+	h := NewWithLimits(2, 2)
+	user := "u1"
+	ip := "192.0.2.10"
+
+	ch1, ok := h.TrySubscribe("g1", user, ip)
+	require.True(t, ok)
+	ch2, ok := h.TrySubscribe("g2", user, ip)
+	require.True(t, ok)
+	if _, ok := h.TrySubscribe("g3", user, "192.0.2.11"); ok {
+		t.Fatal("third connection for a user should be rejected")
+	}
+	if _, ok := h.TrySubscribe("g3", "u2", ip); ok {
+		t.Fatal("third connection for an IP should be rejected")
+	}
+
+	// Cleanup must release both counters, and a repeated cleanup must be safe.
+	h.Unsubscribe("g1", ch1)
+	h.Unsubscribe("g1", ch1)
+	ch3, ok := h.TrySubscribe("g3", user, ip)
+	require.True(t, ok)
+	h.Unsubscribe("g2", ch2)
+	h.Unsubscribe("g3", ch3)
+}
+
 // TestBroadcastPresenceShape verifies that BroadcastPresence emits an event
 // with Type=="presence:state" and a Payload decodable as {"user_ids":[...]}.
 func TestBroadcastPresenceShape(t *testing.T) {

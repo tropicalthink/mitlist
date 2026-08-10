@@ -157,12 +157,46 @@ func TestAuthRepository_CreatePushSubscription(t *testing.T) {
 	}
 
 	createdAt := fixedTime()
+	mock.ExpectBegin()
+	mock.ExpectQuery("SELECT id FROM users").
+		WithArgs(sub.UserID).
+		WillReturnRows(pgxmock.NewRows([]string{"id"}).AddRow(sub.UserID))
 	mock.ExpectQuery("INSERT INTO push_subscriptions").
 		WithArgs(pgxmock.AnyArg(), sub.UserID, sub.Endpoint, sub.P256dh, sub.Auth, pgxmock.AnyArg()).
 		WillReturnRows(pgxmock.NewRows([]string{"id", "created_at"}).AddRow(fixedUUID(), createdAt))
+	mock.ExpectExec("DELETE FROM push_subscriptions").
+		WithArgs(sub.UserID, MaxPushSubscriptionsPerUser).
+		WillReturnResult(pgxmock.NewResult("DELETE", 0))
+	mock.ExpectCommit()
 
 	err := repo.CreatePushSubscription(context.Background(), sub)
 	require.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestAuthRepository_SaveDeviceTokenPrunesOldRegistrations(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewAuthRepository(mock)
+	userID := fixedUUID()
+	createdAt := fixedTime()
+
+	mock.ExpectBegin()
+	mock.ExpectQuery("SELECT id FROM users").
+		WithArgs(userID).
+		WillReturnRows(pgxmock.NewRows([]string{"id"}).AddRow(userID))
+	mock.ExpectQuery("INSERT INTO device_tokens").
+		WithArgs(userID, "android", "fcm-token").
+		WillReturnRows(pgxmock.NewRows([]string{"id", "user_id", "platform", "token", "created_at"}).
+			AddRow(fixedUUID(), userID, "android", "fcm-token", createdAt))
+	mock.ExpectExec("DELETE FROM device_tokens").
+		WithArgs(userID, MaxDeviceTokensPerUser).
+		WillReturnResult(pgxmock.NewResult("DELETE", 1))
+	mock.ExpectCommit()
+
+	dt, err := repo.SaveDeviceToken(context.Background(), userID, "android", "fcm-token")
+	require.NoError(t, err)
+	require.NotNil(t, dt)
+	assert.Equal(t, "fcm-token", dt.Token)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
