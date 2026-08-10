@@ -107,6 +107,7 @@ func (r *ChoreReminder) remindAssignment(ctx context.Context, a models.ChoreAssi
 		EntityType: models.EntityTypeChore,
 		ID:         a.ChoreID.String(),
 		GroupID:    groupID.String(),
+		DedupeKey:  "chore-reminder:" + a.ID.String(),
 	}
 	template := models.NotificationTemplateChoreDueSoon
 	if nType == models.NotificationTypeChoreDueDayOf {
@@ -117,10 +118,18 @@ func (r *ChoreReminder) remindAssignment(ctx context.Context, a models.ChoreAssi
 	})
 
 	if r.dispatcher != nil {
-		if err := r.dispatcher.DispatchToUsers(ctx, []uuid.UUID{a.UserID}, groupID, nType,
-			title, choreName+bodySuffix, notifPayload); err != nil {
+		var dispatchErr error
+		if reliable, ok := r.dispatcher.(ReliableNotificationDispatcher); ok {
+			dispatchErr = reliable.DispatchToUsersAndWait(ctx, []uuid.UUID{a.UserID}, groupID, nType,
+				title, choreName+bodySuffix, notifPayload)
+		} else {
+			dispatchErr = r.dispatcher.DispatchToUsers(ctx, []uuid.UUID{a.UserID}, groupID, nType,
+				title, choreName+bodySuffix, notifPayload)
+		}
+		if dispatchErr != nil {
+			err := fmt.Errorf("dispatch chore reminder: %w", dispatchErr)
 			r.log.Warn().Err(err).Str("assignment_id", a.ID.String()).Msg("failed to dispatch chore reminder")
-			return nil
+			return err
 		}
 		if err := r.repo.MarkReminderSent(ctx, a.ID, time.Now().UTC()); err != nil {
 			return fmt.Errorf("mark reminder sent: %w", err)

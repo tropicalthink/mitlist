@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 
@@ -366,6 +367,20 @@ func TestNotificationService_DispatchToUsers(t *testing.T) {
 		require.NoError(t, err)
 		notifRepo.AssertNotCalled(t, "GetPreferencesByGroup")
 		notifRepo.AssertNotCalled(t, "CreateNotificationsBatch")
+	})
+
+	t.Run("blocking delivery returns push failure", func(t *testing.T) {
+		notifRepo := new(mocks.MockNotificationRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		pushSvc := new(mocks.MockPushService)
+		svc := NewNotificationService(notifRepo, nil, groupRepo, pushSvc)
+
+		notifRepo.On("GetPreferencesByGroup", ctx, groupID).Return(map[uuid.UUID]*models.NotificationPreference{}, nil)
+		notifRepo.On("CreateNotificationsBatch", ctx, mock.Anything).Return(nil)
+		pushSvc.On("SendToUser", userID, mock.AnythingOfType("string")).Return(errors.New("provider unavailable"))
+
+		err := svc.DispatchToUsersAndWait(ctx, []uuid.UUID{userID}, groupID, "chore_due", "T", "B", models.NotificationPayload{})
+		require.ErrorContains(t, err, "provider unavailable")
 	})
 }
 

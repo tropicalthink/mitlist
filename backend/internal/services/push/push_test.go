@@ -23,8 +23,9 @@ import (
 // stubAuthRepo satisfies repositories.AuthRepo minimally for push tests.
 // Only DeletePushSubscription is exercised; all others panic.
 type stubAuthRepo struct {
-	mu      sync.Mutex
-	deleted []uuid.UUID
+	mu            sync.Mutex
+	deleted       []uuid.UUID
+	subscriptions []models.PushSubscription
 }
 
 func (r *stubAuthRepo) DeletePushSubscription(_ context.Context, id uuid.UUID) error {
@@ -72,7 +73,7 @@ func (r *stubAuthRepo) CreatePushSubscription(_ context.Context, _ *models.PushS
 	panic("not impl")
 }
 func (r *stubAuthRepo) ListPushSubscriptionsByUser(_ context.Context, _ uuid.UUID) ([]models.PushSubscription, error) {
-	panic("not impl")
+	return r.subscriptions, nil
 }
 func (r *stubAuthRepo) ListPushSubscriptionsByUserIDs(_ context.Context, _ []uuid.UUID) (map[uuid.UUID][]models.PushSubscription, error) {
 	panic("not impl")
@@ -81,7 +82,7 @@ func (r *stubAuthRepo) SaveDeviceToken(_ context.Context, _ uuid.UUID, _, _ stri
 	panic("not impl")
 }
 func (r *stubAuthRepo) ListDeviceTokensByUser(_ context.Context, _ uuid.UUID) ([]models.DeviceToken, error) {
-	panic("not impl")
+	return nil, nil
 }
 func (r *stubAuthRepo) ListDeviceTokensByUserIDs(_ context.Context, _ []uuid.UUID) (map[uuid.UUID][]models.DeviceToken, error) {
 	panic("not impl")
@@ -233,6 +234,16 @@ func TestSendWebPush_500_NoPrune(t *testing.T) {
 	defer stub.mu.Unlock()
 	if len(stub.deleted) != 0 {
 		t.Errorf("expected no deletions on 500, got %v", stub.deleted)
+	}
+}
+
+func TestSendToUser_ReturnsProviderFailure(t *testing.T) {
+	sub := validSub()
+	stub := &stubAuthRepo{subscriptions: []models.PushSubscription{sub}}
+	svc := newTestService(t, stub, &stubHTTPClient{status: http.StatusInternalServerError})
+
+	if err := svc.SendToUser(sub.UserID, `{"title":"hi"}`); err == nil {
+		t.Fatal("expected provider failure to be returned")
 	}
 }
 

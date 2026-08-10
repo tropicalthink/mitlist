@@ -114,6 +114,17 @@ type notificationPushTarget struct {
 // synchronous (the feed must be reliable); push is fired in the background so it
 // never blocks the caller. Best-effort: push errors are logged, not returned.
 func (s *NotificationService) DispatchToGroup(ctx context.Context, groupID, actorID uuid.UUID, nType, title, body string, payload models.NotificationPayload) error {
+	return s.dispatchToGroup(ctx, groupID, actorID, nType, title, body, payload, false)
+}
+
+// DispatchToGroupAndWait is used by scheduled reminders. Unlike interactive
+// notifications it waits for push delivery, allowing the job to retry instead
+// of permanently acknowledging a provider failure.
+func (s *NotificationService) DispatchToGroupAndWait(ctx context.Context, groupID, actorID uuid.UUID, nType, title, body string, payload models.NotificationPayload) error {
+	return s.dispatchToGroup(ctx, groupID, actorID, nType, title, body, payload, true)
+}
+
+func (s *NotificationService) dispatchToGroup(ctx context.Context, groupID, actorID uuid.UUID, nType, title, body string, payload models.NotificationPayload, waitForPush bool) error {
 	if nType == models.NotificationTypeListItemAdded && payload.ID != "" && payload.ActorName != "" && payload.EntityName != "" && payload.ItemName != "" {
 		listID, err := uuid.Parse(payload.ID)
 		if err != nil {
@@ -177,12 +188,19 @@ func (s *NotificationService) DispatchToGroup(ctx context.Context, groupID, acto
 	if len(rows) == 0 {
 		return nil
 	}
-	if err := s.notificationRepo.CreateNotificationsBatch(ctx, rows); err != nil {
+	if err := s.persistNotificationRows(ctx, rows, payload.DedupeKey); err != nil {
 		s.logDispatchFailure(err, groupID, nType, "persist notification inbox rows")
 		return fmt.Errorf("dispatch: persist: %w", err)
 	}
+	canonicalizePushTargetIDs(pushTargets, rows)
 	s.publishNotificationCreated(groupID)
-	s.deliverPushAsync(pushTargets, title, body, payload, groupID, nType)
+	if waitForPush {
+		if err := s.deliverPush(pushTargets, title, body, payload, groupID, nType); err != nil {
+			return err
+		}
+	} else {
+		s.deliverPushAsync(pushTargets, title, body, payload, groupID, nType)
+	}
 	s.deliverEmailAsync(emailTargets, groupID, title, body, nType)
 	return nil
 }
@@ -191,6 +209,15 @@ func (s *NotificationService) DispatchToGroup(ctx context.Context, groupID, acto
 // users (e.g. a single assignee for a chore reminder). Preference-checked per user.
 // Persist is synchronous; push is background best-effort.
 func (s *NotificationService) DispatchToUsers(ctx context.Context, userIDs []uuid.UUID, groupID uuid.UUID, nType, title, body string, payload models.NotificationPayload) error {
+	return s.dispatchToUsers(ctx, userIDs, groupID, nType, title, body, payload, false)
+}
+
+// DispatchToUsersAndWait is the scheduled-job variant of DispatchToUsers.
+func (s *NotificationService) DispatchToUsersAndWait(ctx context.Context, userIDs []uuid.UUID, groupID uuid.UUID, nType, title, body string, payload models.NotificationPayload) error {
+	return s.dispatchToUsers(ctx, userIDs, groupID, nType, title, body, payload, true)
+}
+
+func (s *NotificationService) dispatchToUsers(ctx context.Context, userIDs []uuid.UUID, groupID uuid.UUID, nType, title, body string, payload models.NotificationPayload, waitForPush bool) error {
 	if len(userIDs) == 0 {
 		return nil
 	}
@@ -236,14 +263,48 @@ func (s *NotificationService) DispatchToUsers(ctx context.Context, userIDs []uui
 	if len(rows) == 0 {
 		return nil
 	}
-	if err := s.notificationRepo.CreateNotificationsBatch(ctx, rows); err != nil {
+	if err := s.persistNotificationRows(ctx, rows, payload.DedupeKey); err != nil {
 		s.logDispatchFailure(err, groupID, nType, "persist notification inbox rows")
 		return fmt.Errorf("dispatch: persist: %w", err)
 	}
+	canonicalizePushTargetIDs(pushTargets, rows)
 	s.publishNotificationCreated(groupID)
-	s.deliverPushAsync(pushTargets, title, body, payload, groupID, nType)
+	if waitForPush {
+		if err := s.deliverPush(pushTargets, title, body, payload, groupID, nType); err != nil {
+			return err
+		}
+	} else {
+		s.deliverPushAsync(pushTargets, title, body, payload, groupID, nType)
+	}
 	s.deliverEmailAsync(emailTargets, groupID, title, body, nType)
 	return nil
+}
+
+func (s *NotificationService) persistNotificationRows(ctx context.Context, rows []models.Notification, dedupeKey string) error {
+	if dedupeKey == "" {
+		return s.notificationRepo.CreateNotificationsBatch(ctx, rows)
+	}
+	idempotent, ok := s.notificationRepo.(interface {
+		CreateNotificationsBatchIdempotent(context.Context, []models.Notification) error
+	})
+	if !ok {
+		// Keep lightweight/test implementations compatible; production uses the
+		// repository implementation above and therefore gets database idempotency.
+		return s.notificationRepo.CreateNotificationsBatch(ctx, rows)
+	}
+	return idempotent.CreateNotificationsBatchIdempotent(ctx, rows)
+}
+
+func canonicalizePushTargetIDs(targets []notificationPushTarget, rows []models.Notification) {
+	ids := make(map[uuid.UUID]uuid.UUID, len(rows))
+	for _, row := range rows {
+		ids[row.UserID] = row.ID
+	}
+	for i := range targets {
+		if id, ok := ids[targets[i].userID]; ok {
+			targets[i].notificationID = id
+		}
+	}
 }
 
 func (s *NotificationService) logDispatchFailure(err error, groupID uuid.UUID, nType, operation string) {
@@ -262,25 +323,36 @@ func (s *NotificationService) deliverPushAsync(targets []notificationPushTarget,
 		return
 	}
 	go func(deliveries []notificationPushTarget) {
-		for _, target := range deliveries {
-			pushData := map[string]string{
-				"screen":          payload.Screen,
-				"entity_type":     payload.EntityType,
-				"id":              payload.ID,
-				"group_id":        payload.GroupID,
-				"notification_id": target.notificationID.String(),
+		_ = s.deliverPush(deliveries, title, body, payload, groupID, nType)
+	}(append([]notificationPushTarget(nil), targets...))
+}
+
+func (s *NotificationService) deliverPush(targets []notificationPushTarget, title, body string, payload models.NotificationPayload, groupID uuid.UUID, nType string) error {
+	if s.pushService == nil || len(targets) == 0 {
+		return nil
+	}
+	var deliveryErrors []error
+	for _, target := range targets {
+		pushData := map[string]string{
+			"screen":          payload.Screen,
+			"entity_type":     payload.EntityType,
+			"id":              payload.ID,
+			"group_id":        payload.GroupID,
+			"notification_id": target.notificationID.String(),
+		}
+		if payload.Copy != nil {
+			if copyJSON, err := json.Marshal(payload.Copy); err == nil {
+				pushData["copy"] = string(copyJSON)
 			}
-			if payload.Copy != nil {
-				if copyJSON, err := json.Marshal(payload.Copy); err == nil {
-					pushData["copy"] = string(copyJSON)
-				}
-			}
-			pushPayload, _ := json.Marshal(map[string]any{
-				"title": title,
-				"body":  body,
-				"data":  pushData,
-			})
-			if err := s.pushService.SendToUser(target.userID, string(pushPayload)); err != nil && s.log != nil {
+		}
+		pushPayload, _ := json.Marshal(map[string]any{
+			"title": title,
+			"body":  body,
+			"data":  pushData,
+		})
+		if err := s.pushService.SendToUser(target.userID, string(pushPayload)); err != nil {
+			deliveryErrors = append(deliveryErrors, fmt.Errorf("user %s: %w", target.userID, err))
+			if s.log != nil {
 				s.log.Error().Err(err).
 					Str("user_id", target.userID.String()).
 					Str("notification_id", target.notificationID.String()).
@@ -289,7 +361,8 @@ func (s *NotificationService) deliverPushAsync(targets []notificationPushTarget,
 					Msg("notification push delivery failed")
 			}
 		}
-	}(append([]notificationPushTarget(nil), targets...))
+	}
+	return errors.Join(deliveryErrors...)
 }
 
 func (s *NotificationService) deliverEmailAsync(userIDs []uuid.UUID, groupID uuid.UUID, subject, body, nType string) {

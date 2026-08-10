@@ -2,14 +2,18 @@ package models
 
 // NotificationPayload is a typed deep-link schema stored in Notification.Data.
 type NotificationPayload struct {
-	Screen     string            `json:"screen"`      // e.g. choreDetail, expenseDetail, listDetail, recipeDetail, mealPlan, householdHub, recurringExpense
-	EntityType string            `json:"entity_type"` // e.g. chore, expense, list, recipe, meal_plan, recurring_expense
-	ID         string            `json:"id"`          // primary entity UUID
-	GroupID    string            `json:"group_id,omitempty"`
-	ActorName  string            `json:"actor_name,omitempty"`
-	EntityName string            `json:"entity_name,omitempty"`
-	ItemName   string            `json:"item_name,omitempty"`
-	Copy       *NotificationCopy `json:"copy,omitempty"`
+	Screen     string `json:"screen"`      // e.g. choreDetail, expenseDetail, listDetail, recipeDetail, mealPlan, householdHub, recurringExpense
+	EntityType string `json:"entity_type"` // e.g. chore, expense, list, recipe, meal_plan, recurring_expense
+	ID         string `json:"id"`          // primary entity UUID
+	GroupID    string `json:"group_id,omitempty"`
+	ActorName  string `json:"actor_name,omitempty"`
+	EntityName string `json:"entity_name,omitempty"`
+	ItemName   string `json:"item_name,omitempty"`
+	// DedupeKey is an optional server-side idempotency key. Scheduled reminders
+	// set it so a provider retry cannot create another inbox row for the same
+	// reminder. It is not used for interactive notifications.
+	DedupeKey string            `json:"dedupe_key,omitempty"`
+	Copy      *NotificationCopy `json:"copy,omitempty"`
 }
 
 // NotificationCopy is a versioned, language-neutral instruction for clients.

@@ -99,6 +99,7 @@ func (r *PinwallReminder) sendForPost(ctx context.Context, post models.PinwallPo
 		EntityType: models.EntityTypePinwallPost,
 		ID:         post.ID.String(),
 		GroupID:    post.GroupID.String(),
+		DedupeKey:  "pinwall-reminder:" + post.ID.String(),
 		Copy: models.NewNotificationCopy(models.NotificationTemplatePinwallReminder, map[string]string{
 			"content": post.Content,
 		}),
@@ -108,9 +109,16 @@ func (r *PinwallReminder) sendForPost(ctx context.Context, post models.PinwallPo
 		// Dispatcher handles persist+push preference-filtered for the whole group.
 		// uuid.Nil actor: reminders have no "actor" to exclude — the author set the
 		// reminder and must receive it too (same idiom as weekly_summary/recurring_expense).
-		if err := r.dispatcher.DispatchToGroup(ctx, post.GroupID, uuid.Nil, models.NotificationTypePinwallReminder,
-			"Reminder", post.Content, notifPayload); err != nil {
-			return fmt.Errorf("dispatch pinwall reminder: %w", err)
+		var dispatchErr error
+		if reliable, ok := r.dispatcher.(ReliableNotificationDispatcher); ok {
+			dispatchErr = reliable.DispatchToGroupAndWait(ctx, post.GroupID, uuid.Nil, models.NotificationTypePinwallReminder,
+				"Reminder", post.Content, notifPayload)
+		} else {
+			dispatchErr = r.dispatcher.DispatchToGroup(ctx, post.GroupID, uuid.Nil, models.NotificationTypePinwallReminder,
+				"Reminder", post.Content, notifPayload)
+		}
+		if dispatchErr != nil {
+			return fmt.Errorf("dispatch pinwall reminder: %w", dispatchErr)
 		}
 		ok, err := r.repo.MarkReminderSent(ctx, post.ID, sentAt)
 		if err != nil {
@@ -157,7 +165,7 @@ func (r *PinwallReminder) sendForPost(ctx context.Context, post models.PinwallPo
 		return nil
 	}
 
-	if err := r.repo.CreateNotificationsBatch(ctx, toDeliver); err != nil {
+	if err := r.createNotificationBatch(ctx, toDeliver); err != nil {
 		return fmt.Errorf("create notifications batch: %w", err)
 	}
 
@@ -200,6 +208,18 @@ func (r *PinwallReminder) sendForPost(ctx context.Context, post models.PinwallPo
 		Time("remind_at", post.RemindAt.UTC()).
 		Msg("pinwall reminder delivered")
 	return nil
+}
+
+// createNotificationBatch uses the repository's deduplicating path when it is
+// available. This keeps the legacy push-only fallback safe on a provider retry
+// too; lightweight test repositories can continue using the original method.
+func (r *PinwallReminder) createNotificationBatch(ctx context.Context, notifications []models.Notification) error {
+	if idempotent, ok := r.repo.(interface {
+		CreateNotificationsBatchIdempotent(context.Context, []models.Notification) error
+	}); ok {
+		return idempotent.CreateNotificationsBatchIdempotent(ctx, notifications)
+	}
+	return r.repo.CreateNotificationsBatch(ctx, notifications)
 }
 
 type pinwallReminderRepoImpl struct {
@@ -296,6 +316,11 @@ func (r *pinwallReminderRepoImpl) GetPreferencesByGroup(ctx context.Context, gro
 func (r *pinwallReminderRepoImpl) CreateNotificationsBatch(ctx context.Context, notifications []models.Notification) error {
 	repo := repositories.NewNotificationRepository(r.db)
 	return repo.CreateNotificationsBatch(ctx, notifications)
+}
+
+func (r *pinwallReminderRepoImpl) CreateNotificationsBatchIdempotent(ctx context.Context, notifications []models.Notification) error {
+	repo := repositories.NewNotificationRepository(r.db)
+	return repo.CreateNotificationsBatchIdempotent(ctx, notifications)
 }
 
 func (r *pinwallReminderRepoImpl) MarkReminderSent(ctx context.Context, postID uuid.UUID, sentAt time.Time) (bool, error) {

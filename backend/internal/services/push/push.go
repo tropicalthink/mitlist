@@ -56,6 +56,8 @@ func New(cfg *config.Config, log *logger.Logger, authRepo repositories.AuthRepo,
 // SendToUser sends a push notification to all subscriptions/devices for a user.
 func (s *Service) SendToUser(userID uuid.UUID, payload string) error {
 	ctx := context.Background()
+	var deliveryErrors []error
+	delivered := 0
 
 	// Web push (VAPID)
 	subs, err := s.authRepo.ListPushSubscriptionsByUser(ctx, userID)
@@ -64,7 +66,11 @@ func (s *Service) SendToUser(userID uuid.UUID, payload string) error {
 		return err
 	}
 	for _, sub := range subs {
-		s.sendWebPush(ctx, sub, payload)
+		if err := s.sendWebPush(ctx, sub, payload); err != nil {
+			deliveryErrors = append(deliveryErrors, err)
+		} else {
+			delivered++
+		}
 	}
 
 	// FCM (mobile)
@@ -72,9 +78,11 @@ func (s *Service) SendToUser(userID uuid.UUID, payload string) error {
 		tokens, err := s.authRepo.ListDeviceTokensByUser(ctx, userID)
 		if err != nil {
 			s.log.Error().Err(err).Str("user_id", userID.String()).Msg("failed to list device tokens")
+			deliveryErrors = append(deliveryErrors, err)
 		} else {
 			for _, dt := range tokens {
 				if err := s.sendFCMWithRetry(ctx, dt.Token, payload); err != nil {
+					deliveryErrors = append(deliveryErrors, err)
 					s.log.Warn().Err(err).Str("user_id", userID.String()).Str("token", dt.Token[:min(8, len(dt.Token))]).Msg("FCM send failed")
 					var permanent *permanentFCMError
 					if errors.As(err, &permanent) {
@@ -82,12 +90,17 @@ func (s *Service) SendToUser(userID uuid.UUID, payload string) error {
 							s.log.Warn().Err(delErr).Str("token_id", dt.ID.String()).Msg("failed to prune invalid FCM token")
 						}
 					}
+				} else {
+					delivered++
 				}
 			}
 		}
 	}
 
-	return nil
+	if delivered > 0 || len(deliveryErrors) == 0 {
+		return nil
+	}
+	return errors.Join(deliveryErrors...)
 }
 
 // BroadcastToGroup broadcasts a push notification to all members of a group.
@@ -149,7 +162,9 @@ func (s *Service) broadcastExcluding(groupID, excludeUserID uuid.UUID, payload s
 
 	for _, userID := range targetUserIDs {
 		for _, sub := range subsByUser[userID] {
-			s.sendWebPush(ctx, sub, payload)
+			if err := s.sendWebPush(ctx, sub, payload); err != nil {
+				s.log.Warn().Err(err).Str("user_id", userID.String()).Msg("web push delivery failed")
+			}
 		}
 		for _, dt := range tokensByUser[userID] {
 			if err := s.sendFCMWithRetry(ctx, dt.Token, payload); err != nil {
@@ -167,10 +182,10 @@ func (s *Service) broadcastExcluding(groupID, excludeUserID uuid.UUID, payload s
 }
 
 // sendWebPush sends a single web-push notification and prunes the subscription on 404/410.
-func (s *Service) sendWebPush(ctx context.Context, sub models.PushSubscription, payload string) {
+func (s *Service) sendWebPush(ctx context.Context, sub models.PushSubscription, payload string) error {
 	if err := ValidatePushEndpoint(sub.Endpoint); err != nil {
 		s.log.Warn().Err(err).Str("sub_id", sub.ID.String()).Msg("web push endpoint failed send-time validation")
-		return
+		return err
 	}
 	for attempt := 0; attempt < 2; attempt++ {
 		resp, err := webpush.SendNotificationWithContext(
@@ -196,7 +211,7 @@ func (s *Service) sendWebPush(ctx context.Context, sub models.PushSubscription, 
 			if resp != nil {
 				_ = resp.Body.Close()
 			}
-			return
+			return fmt.Errorf("web push %s: %w", sub.ID, err)
 		}
 		status := resp.StatusCode
 		_ = resp.Body.Close()
@@ -210,13 +225,15 @@ func (s *Service) sendWebPush(ctx context.Context, sub models.PushSubscription, 
 			} else {
 				s.log.Info().Str("sub_id", sub.ID.String()).Msg("pruned expired push subscription")
 			}
-			return
+			return nil
 		}
 		if status >= 400 {
 			s.log.Warn().Int("status", status).Str("sub_id", sub.ID.String()).Msg("web push non-2xx")
+			return fmt.Errorf("web push %s returned HTTP %d", sub.ID, status)
 		}
-		return
+		return nil
 	}
+	return fmt.Errorf("web push %s exhausted retries", sub.ID)
 }
 
 // fcmTokenSource lazily initialises the Google credential from the service account JSON.

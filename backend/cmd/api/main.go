@@ -149,6 +149,7 @@ func main() {
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.Auth(cnt.JWT(), cnt.UserService()))
 			r.Use(middleware.UserRateLimit())
+			r.Use(middleware.Idempotency(cnt.DB()))
 
 			// Notifications
 			notificationHandler := handlers.NewNotificationHandler(cnt.NotificationService())
