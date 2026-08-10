@@ -23,6 +23,7 @@ import '../mitlist_app_bar.dart';
 import '../pinwall_link_chip.dart';
 import '../hub/pinned_memo_card.dart';
 
+import '../app_toast.dart';
 const _kNotePalette = MitlistColors.notePalette;
 const _kNotePaletteDark = MitlistColors.notePaletteDark;
 
@@ -75,14 +76,7 @@ class PinwallNoteCard extends ConsumerWidget {
   bool get _isHub => variant == PinwallNoteCardVariant.hub;
 
   void _showErrorSnack(BuildContext context, String message) {
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    AppToast.error(context, message);
   }
 
   void _openMediaViewer(BuildContext context, PinwallMediaItem m) {

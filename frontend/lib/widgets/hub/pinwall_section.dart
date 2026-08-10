@@ -28,6 +28,7 @@ import '../pinwall/pinwall_note_card.dart';
 import '../pinwall/pinwall_stat_rows.dart';
 import 'pinned_memo_card.dart';
 
+import '../app_toast.dart';
 /// Column count and card width for the hub pinwall at [availableWidth].
 ///
 /// The cards are sized so a whole number of columns exactly fills the row. A
@@ -119,9 +120,7 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
       pickedTime.minute,
     );
     if (combined.isBefore(DateTime.now().add(const Duration(minutes: 1)))) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.pinwallPickFutureTime)),
-      );
+      AppToast.info(context, l10n.pinwallPickFutureTime);
       return;
     }
     setState(() => _remindAt = combined);
@@ -253,9 +252,7 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
       });
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.pinwallCouldNotLoadEntities)),
-      );
+      AppToast.error(context, l10n.pinwallCouldNotLoadEntities);
     }
   }
 
@@ -294,9 +291,7 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
         unawaited(repo.drainOutboxOnce().catchError((_) {}));
         if (!mounted) return;
         unawaited(Haptics.light());
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.pinwallPinned)),
-        );
+        AppToast.success(context, l10n.pinwallPinned);
         return;
       }
 
@@ -351,9 +346,7 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
       ref.invalidate(pinwallPostsByGroupProvider(widget.groupId));
       if (!mounted) return;
       unawaited(Haptics.light());
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.pinwallPinned)),
-      );
+      AppToast.success(context, l10n.pinwallPinned);
     } finally {
       if (mounted) setState(() => _isPosting = false);
     }

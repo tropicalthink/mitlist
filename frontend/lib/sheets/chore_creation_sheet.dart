@@ -21,6 +21,7 @@ import '../widgets/grocery_suggestion_field.dart';
 import '../widgets/app_icon.dart';
 import '../l10n/app_localizations.dart';
 
+import '../widgets/app_toast.dart';
 enum _Recurrence { none, hourly, daily, weekly, monthly, yearly, adaptive }
 
 /// How the turn rotates when more than one person shares the chore. "No one"
@@ -164,9 +165,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       if (!mounted) return;
       if (groups.isEmpty) {
         setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_l10n.choreCreationJoinFirst)),
-        );
+        AppToast.info(context, _l10n.choreCreationJoinFirst);
         return;
       }
 
@@ -238,24 +237,14 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       if (!mounted) return;
       widget.dirtyNotifier?.value = false;
       Navigator.of(context).pop(true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            assignee == null
+      AppToast.success(context, assignee == null
                 ? _l10n.choreCreationChoreAdded
-                : _l10n.choreCreationChoreAddedNextUp(assignee),
-          ),
-        ),
-      );
+                : _l10n.choreCreationChoreAddedNextUp(assignee));
       unawaited(Haptics.success());
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-      );
+      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     }
   }
 

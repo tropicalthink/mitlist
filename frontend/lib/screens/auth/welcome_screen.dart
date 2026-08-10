@@ -16,6 +16,7 @@ import '../../utils/friendly_error.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/board/cork_board.dart';
 
+import '../../widgets/app_toast.dart';
 /// The first thing a new user sees: the cork board itself, with the app's name
 /// taped to it and four pinned scraps — a shopping list, a receipt, a chore
 /// note, a recipe card — that say what mitlist is before a single word of
@@ -120,11 +121,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     } catch (e) {
       if (!mounted) return;
       setState(() => _isGuestLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-      );
+      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     }
   }
 

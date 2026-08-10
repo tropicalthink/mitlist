@@ -11,6 +11,7 @@ import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
 
+import '../widgets/app_toast.dart';
 /// Opens the "Send feedback" bottom sheet.
 ///
 /// The current route is captured at open time (before the sheet itself shows)
@@ -56,9 +57,7 @@ Future<void> showFeedbackSheet(BuildContext context, WidgetRef ref) {
             if (!sheetContext.mounted) return;
             Navigator.of(sheetContext).pop();
             if (!context.mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(l10n.feedbackSent)),
-            );
+            AppToast.success(context, l10n.feedbackSent);
           } catch (_) {
             setSheetState(() {
               isSending = false;

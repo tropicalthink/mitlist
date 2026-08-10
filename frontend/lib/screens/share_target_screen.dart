@@ -16,6 +16,7 @@ import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/mitlist_app_bar.dart';
+import '../widgets/app_toast.dart';
 // ShareTargetService is provided via `shareTargetServiceProviderAsync`.
 
 class _DestinationOption {
@@ -189,9 +190,7 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
 
       if (!mounted) return;
       setState(() => _isSaving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.shareTargetSaved)),
-      );
+      AppToast.success(context, l10n.shareTargetSaved);
       Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;

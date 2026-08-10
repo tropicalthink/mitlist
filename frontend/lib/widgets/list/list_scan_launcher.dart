@@ -16,6 +16,7 @@ import '../app_bottom_sheet.dart';
 import '../app_icon.dart';
 import '../spinner.dart';
 
+import '../app_toast.dart';
 /// Picks an image, runs the on-device grocery scan pipeline, and opens
 /// [ScanReviewScreen] with [listId] as the target list (skips list picker).
 ///
@@ -119,11 +120,7 @@ Future<int?> launchListScan(
     debugPrint('list scan failed: $e\n$stack');
     if (!context.mounted) return null;
     Navigator.of(context).pop(); // dismiss loading
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.scanCouldNotProcess),
-      ),
-    );
+    AppToast.error(context, l10n.scanCouldNotProcess);
     return null;
   }
 }

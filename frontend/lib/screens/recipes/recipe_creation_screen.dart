@@ -29,6 +29,7 @@ import '../../widgets/app_switch.dart';
 import '../../widgets/chip.dart';
 import '../../widgets/mitlist_app_bar.dart';
 
+import '../../widgets/app_toast.dart';
 class RecipeCreationScreen extends ConsumerStatefulWidget {
   final String? initialTitle;
   final String? initialIngredients;
@@ -242,18 +243,12 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
         if (stepCount > 0) '$stepCount step${stepCount == 1 ? '' : 's'}',
       ];
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.recipeCreationImported(parts.join(', '))),
-        ),
-      );
+      AppToast.success(context, l10n.recipeCreationImported(parts.join(', ')));
     } catch (e) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
       setState(() => _isScraping = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.recipeCreationCouldNotFetch)),
-      );
+      AppToast.error(context, l10n.recipeCreationCouldNotFetch);
     }
   }
 
@@ -305,17 +300,13 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
 
       if (!mounted) return;
       if (context.mounted) context.pop(true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.recipeCreationCreated)),
-      );
+      AppToast.success(context, l10n.recipeCreationCreated);
       unawaited(Haptics.success());
     } catch (e) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
       setState(() => _isSaving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.recipeCreationCouldNotCreate)),
-      );
+      AppToast.error(context, l10n.recipeCreationCouldNotCreate);
     }
   }
 

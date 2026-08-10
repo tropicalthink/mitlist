@@ -27,6 +27,7 @@ import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
 import '../../widgets/mitlist_app_bar.dart';
 
+import '../../widgets/app_toast.dart';
 const _uuid = Uuid();
 const _newListSentinel = '__new__';
 
@@ -375,11 +376,7 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isAdding = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-      );
+      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
       return;
     }
 
