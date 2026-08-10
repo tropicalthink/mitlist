@@ -14,6 +14,7 @@ import '../widgets/app_card.dart';
 import '../widgets/app_icon.dart';
 
 import '../widgets/app_toast.dart';
+
 /// Opens the premium sheet for [groupId].
 ///
 /// It renders one of three states, decided by the household's entitlement:

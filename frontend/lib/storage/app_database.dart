@@ -105,8 +105,7 @@ class ExpensesTable extends Table {
   /// Server last-modified stamp, kept as the optimistic-concurrency base for
   /// offline edits. Nullable: rows created locally have no server version yet,
   /// and rows cached before this column existed have none either.
-  DateTimeColumn get updatedAt =>
-      dateTime().named('updated_at').nullable()();
+  DateTimeColumn get updatedAt => dateTime().named('updated_at').nullable()();
 
   @override
   Set<Column<Object>>? get primaryKey => {id};
@@ -988,9 +987,8 @@ FROM list_items_table;
       try {
         final decoded = jsonDecode(row.choresJson);
         if (decoded is! List) continue;
-        final kept = decoded
-            .where((e) => !(e is Map && idOf(e) == entityId))
-            .toList();
+        final kept =
+            decoded.where((e) => !(e is Map && idOf(e) == entityId)).toList();
         if (kept.length == decoded.length) continue;
         await upsertCurrentChores(
           groupId: row.groupId,
@@ -1008,9 +1006,8 @@ FROM list_items_table;
       try {
         final decoded = jsonDecode(row.settlementsJson);
         if (decoded is! List) continue;
-        final kept = decoded
-            .where((e) => !(e is Map && e['id'] == entityId))
-            .toList();
+        final kept =
+            decoded.where((e) => !(e is Map && e['id'] == entityId)).toList();
         if (kept.length == decoded.length) continue;
         await upsertSettlements(
           groupId: row.groupId,
@@ -1300,7 +1297,8 @@ FROM list_items_table;
 
   Future<CalendarCache?> getCalendarRange(String groupId, String rangeKey) {
     return (select(calendarCaches)
-          ..where((t) => t.groupId.equals(groupId) & t.rangeKey.equals(rangeKey)))
+          ..where(
+              (t) => t.groupId.equals(groupId) & t.rangeKey.equals(rangeKey)))
         .getSingleOrNull();
   }
 
@@ -1323,7 +1321,8 @@ FROM list_items_table;
 
   Future<MealPlanCache?> getMealPlanRange(String groupId, String rangeKey) {
     return (select(mealPlanCaches)
-          ..where((t) => t.groupId.equals(groupId) & t.rangeKey.equals(rangeKey)))
+          ..where(
+              (t) => t.groupId.equals(groupId) & t.rangeKey.equals(rangeKey)))
         .getSingleOrNull();
   }
 

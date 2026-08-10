@@ -29,6 +29,7 @@ import '../pinwall/pinwall_stat_rows.dart';
 import 'pinned_memo_card.dart';
 
 import '../app_toast.dart';
+
 /// Column count and card width for the hub pinwall at [availableWidth].
 ///
 /// The cards are sized so a whole number of columns exactly fills the row. A

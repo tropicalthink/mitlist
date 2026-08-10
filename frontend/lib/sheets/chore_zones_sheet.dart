@@ -13,6 +13,7 @@ import '../widgets/chip.dart';
 import '../l10n/app_localizations.dart';
 
 import '../widgets/app_toast.dart';
+
 /// Editor for a household's chore zones (kitchen, bathroom, ...).
 ///
 /// Reachable from both the chores screen overflow menu and household
@@ -121,7 +122,8 @@ class _ChoreZonesSheetState extends ConsumerState<ChoreZonesSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
-      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
+      AppToast.error(
+          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     }
   }
 
@@ -201,7 +203,9 @@ class _ChoreZonesSheetState extends ConsumerState<ChoreZonesSheet> {
           if (_zonesChanged) ...[
             const SizedBox(height: MitlistSpacing.md),
             AppButton(
-              text: _isSaving ? l10n.commonSaving : l10n.sheetGroupSettingsSaveZones,
+              text: _isSaving
+                  ? l10n.commonSaving
+                  : l10n.sheetGroupSettingsSaveZones,
               isLoading: _isSaving,
               onPressed: _isSaving ? null : _saveZones,
             ),

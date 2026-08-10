@@ -32,6 +32,7 @@ import '../../sheets/chore_detail_sheet.dart';
 import '../../sheets/create_household_sheet.dart';
 
 import '../../widgets/app_toast.dart';
+
 enum _CalendarView { week, month, agenda }
 
 /// Single source of truth for how each event type is drawn (icon + accent).
@@ -1005,7 +1006,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     } catch (e) {
       if (!mounted) return;
       unawaited(Haptics.failure());
-      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
+      AppToast.error(
+          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     } finally {
       _isSaving = false;
     }

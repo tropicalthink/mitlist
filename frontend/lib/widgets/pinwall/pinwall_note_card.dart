@@ -24,6 +24,7 @@ import '../pinwall_link_chip.dart';
 import '../hub/pinned_memo_card.dart';
 
 import '../app_toast.dart';
+
 const _kNotePalette = MitlistColors.notePalette;
 const _kNotePaletteDark = MitlistColors.notePaletteDark;
 

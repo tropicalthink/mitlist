@@ -12,6 +12,7 @@ import '../l10n/app_localizations.dart';
 import '../widgets/app_input.dart';
 
 import '../widgets/app_toast.dart';
+
 class CreateHouseholdSheet extends ConsumerStatefulWidget {
   const CreateHouseholdSheet({super.key});
 
@@ -67,7 +68,8 @@ class _CreateHouseholdSheetState extends ConsumerState<CreateHouseholdSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isCreating = false);
-      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
+      AppToast.error(
+          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     }
   }
 

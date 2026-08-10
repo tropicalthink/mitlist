@@ -80,9 +80,8 @@ class BillingPlan {
   /// when the provider was unreachable or the product has no sellable price.
   static BillingPlan? fromJson(Map<String, dynamic> json) {
     final wire = json['interval'] as String?;
-    final interval = BillingInterval.values
-        .where((i) => i.wire == wire)
-        .firstOrNull;
+    final interval =
+        BillingInterval.values.where((i) => i.wire == wire).firstOrNull;
     if (interval == null) return null;
     return BillingPlan(
       interval: interval,

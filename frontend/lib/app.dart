@@ -20,6 +20,7 @@ import 'services/push_subscription_service.dart';
 import 'widgets/offline_banner.dart';
 
 import 'widgets/app_toast.dart';
+
 class MitlistApp extends ConsumerStatefulWidget {
   const MitlistApp({super.key});
 

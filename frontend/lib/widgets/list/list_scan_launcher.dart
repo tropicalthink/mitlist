@@ -17,6 +17,7 @@ import '../app_icon.dart';
 import '../spinner.dart';
 
 import '../app_toast.dart';
+
 /// Picks an image, runs the on-device grocery scan pipeline, and opens
 /// [ScanReviewScreen] with [listId] as the target list (skips list picker).
 ///

@@ -30,8 +30,7 @@ class MealPlanService {
     required String from,
     required String to,
   }) async {
-    return parseMealPlans(
-        await listMealPlansRaw(groupId, from: from, to: to));
+    return parseMealPlans(await listMealPlansRaw(groupId, from: from, to: to));
   }
 
   /// The server's raw meal-plan array, undecoded — see

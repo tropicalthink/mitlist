@@ -41,6 +41,7 @@ import '../../widgets/odometer.dart';
 import '../../l10n/app_localizations.dart';
 
 import '../../widgets/app_toast.dart';
+
 enum _ChoreMenuAction { manageZones }
 
 class ChoresScreen extends ConsumerStatefulWidget {

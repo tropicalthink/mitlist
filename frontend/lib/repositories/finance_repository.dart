@@ -105,8 +105,7 @@ class FinanceRepository {
       final merged = await _withPendingSettlements(groupId, fresh);
       await _db.upsertSettlements(
         groupId: groupId,
-        settlementsJson:
-            jsonEncode(merged.map((s) => s.toJson()).toList()),
+        settlementsJson: jsonEncode(merged.map((s) => s.toJson()).toList()),
       );
       return merged;
     } catch (_) {
@@ -187,7 +186,8 @@ class FinanceRepository {
   ///
   /// Cancelling an unsynced settlement must never POST — there is nothing on
   /// the server to cancel — so this removes the op and the optimistic row.
-  Future<void> cancelLocalSettlement(String groupId, String settlementId) async {
+  Future<void> cancelLocalSettlement(
+      String groupId, String settlementId) async {
     for (final op in await _db.getOutboxOpsByType('createSettlement')) {
       if (op.entityId == settlementId) await _db.deleteOutboxOp(op.id);
     }
@@ -477,7 +477,8 @@ class FinanceRepository {
     try {
       final server = (jsonDecode(conflict.serverPayloadJson) as Map)
           .cast<String, dynamic>();
-      await _db.upsertExpensesRows([_toExpensesRow(api.Expense.fromJson(server))]);
+      await _db
+          .upsertExpensesRows([_toExpensesRow(api.Expense.fromJson(server))]);
     } catch (_) {
       // If the server payload can't be parsed, still clear the conflict.
     }

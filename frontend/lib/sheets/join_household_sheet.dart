@@ -22,6 +22,7 @@ import '../l10n/app_localizations.dart';
 import '../widgets/app_input.dart';
 
 import '../widgets/app_toast.dart';
+
 enum _Phase { entry, joining, success }
 
 class JoinHouseholdSheet extends ConsumerStatefulWidget {
