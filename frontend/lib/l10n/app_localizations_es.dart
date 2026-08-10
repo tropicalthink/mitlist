@@ -2444,7 +2444,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get accountPasswordMinLength =>
-      'La nueva contraseña debe tener al menos 12 caracteres.';
+      'La nueva contraseña debe tener al menos 8 caracteres.';
 
   @override
   String get accountPasswordsMismatch => 'Las nuevas contraseñas no coinciden.';
@@ -2666,6 +2666,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Error al cargar las preferencias de notificaciones.';
 
   @override
+  String get notifPrefFailedSave =>
+      'No se pudo guardar esta preferencia. Comprueba tu conexión e inténtalo de nuevo.';
+
+  @override
   String get notifPrefNoHouseholdDesc =>
       'Únete o crea un hogar para configurar las preferencias de notificaciones.';
 
@@ -2700,10 +2704,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'Cuando alguien añade algo a una lista compartida';
 
   @override
-  String get notifPrefExpenseCreated => 'Gasto creado';
+  String get notifPrefExpenseCreated => 'Actividad de dinero';
 
   @override
-  String get notifPrefExpenseCreatedDesc => 'Cuando se registra un nuevo gasto';
+  String get notifPrefExpenseCreatedDesc =>
+      'Gastos, cargos recurrentes y liquidaciones';
 
   @override
   String get notifPrefMealPlanChanged => 'Plan de comidas modificado';
@@ -3835,7 +3840,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get authSignupPassword => 'Contraseña';
 
   @override
-  String get authSignupPasswordHint => 'Al menos 12 caracteres';
+  String get authSignupPasswordHint => 'Al menos 8 caracteres';
 
   @override
   String get authSignupCreateAccount => 'Crear cuenta';
@@ -3854,7 +3859,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get authSignupPasswordMinLength =>
-      'La contraseña debe tener al menos 12 caracteres.';
+      'La contraseña debe tener al menos 8 caracteres.';
 
   @override
   String get authSignupJoinTitle => 'Unirse al hogar';
@@ -4740,6 +4745,130 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get commonView => 'Ver';
+
+  @override
+  String get notificationsOpenList => 'Abrir lista';
+
+  @override
+  String get notificationsOpenChore => 'Abrir tarea';
+
+  @override
+  String get notificationsOpenMoney => 'Abrir finanzas';
+
+  @override
+  String get notificationsOpenRecipes => 'Abrir recetas';
+
+  @override
+  String get notificationsOpenHousehold => 'Abrir hogar';
+
+  @override
+  String get notificationChoreDueSoonTitle => 'Tarea próxima';
+
+  @override
+  String notificationChoreDueSoonBody(String choreName) {
+    return '$choreName vence pronto';
+  }
+
+  @override
+  String get notificationChoreDueTodayTitle => 'Tarea para hoy';
+
+  @override
+  String notificationChoreDueTodayBody(String choreName) {
+    return '$choreName vence hoy';
+  }
+
+  @override
+  String notificationListUpdatedTitle(String listName) {
+    return '$listName actualizada';
+  }
+
+  @override
+  String notificationListUpdatedOneBody(
+      String actorName, String itemName, String listName, String groupName) {
+    return '$actorName añadió $itemName a $listName en $groupName.';
+  }
+
+  @override
+  String notificationListUpdatedManyBody(
+      String actorName, num count, String listName, String groupName) {
+    return '$actorName añadió $count artículos a $listName en $groupName.';
+  }
+
+  @override
+  String get notificationExpenseCreatedTitle => 'Gasto añadido';
+
+  @override
+  String notificationExpenseCreatedBody(
+      String actorName, String expenseName, String groupName) {
+    return '$actorName añadió $expenseName en $groupName.';
+  }
+
+  @override
+  String get notificationRecurringExpenseTitle => 'Gasto recurrente añadido';
+
+  @override
+  String notificationRecurringExpenseBody(String expenseName) {
+    return 'Se añadió $expenseName.';
+  }
+
+  @override
+  String get notificationSettlementRequestTitle => 'Pago por confirmar';
+
+  @override
+  String notificationSettlementPaidYouBody(
+      String actorName, String amount, String groupName) {
+    return '$actorName dice que te pagó $amount en $groupName. Confirma para actualizar los saldos.';
+  }
+
+  @override
+  String notificationSettlementYouPaidBody(
+      String actorName, String amount, String groupName) {
+    return '$actorName dice que le pagaste $amount en $groupName. Confirma para actualizar los saldos.';
+  }
+
+  @override
+  String get notificationSettlementConfirmedTitle => 'Pago confirmado';
+
+  @override
+  String notificationSettlementConfirmedBody(
+      String actorName, String amount, String groupName) {
+    return '$actorName confirmó tu pago de $amount en $groupName.';
+  }
+
+  @override
+  String get notificationSettlementDeclinedTitle => 'Pago rechazado';
+
+  @override
+  String notificationSettlementDeclinedBody(
+      String actorName, String amount, String groupName) {
+    return '$actorName rechazó tu pago de $amount en $groupName.';
+  }
+
+  @override
+  String get notificationMealPlanTitle => 'Plan de comidas actualizado';
+
+  @override
+  String notificationMealPlanBody(String actorName, String groupName) {
+    return '$actorName actualizó el plan de comidas en $groupName.';
+  }
+
+  @override
+  String get notificationWeeklyDigestTitle => 'Resumen semanal';
+
+  @override
+  String notificationWeeklyDigestBody(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Tu hogar tuvo $count actividades esta semana',
+      one: 'Tu hogar tuvo 1 actividad esta semana',
+      zero: 'No hubo actividad en el hogar esta semana',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notificationPinwallReminderTitle => 'Recordatorio';
 
   @override
   String get commonPhoto => 'Foto';

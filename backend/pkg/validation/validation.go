@@ -18,7 +18,7 @@ const (
 	MaxListNameLength    = 100
 	MaxItemNameLength    = 200
 	MaxGroupNameLength   = 100
-	MinPasswordLength    = 12
+	MinPasswordLength    = 8
 )
 
 // NewFieldError creates a validation error for a specific field.
@@ -60,7 +60,7 @@ func NormalizeEmail(s string) string {
 // Password validates password length constraints.
 func Password(s string) error {
 	if len(s) < MinPasswordLength {
-		return NewFieldError("password", "password must be at least 12 characters")
+		return NewFieldError("password", "password must be at least 8 characters")
 	}
 	if len(s) > MaxPasswordLength {
 		return NewFieldError("password", "password too long")

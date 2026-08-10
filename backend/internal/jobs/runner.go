@@ -99,6 +99,13 @@ func (r *Runner) RegisterAll() {
 		pr = NewPinwallReminder(r.db, r.push, r.log)
 	}
 	r.register("pinwall-reminder", "* * * * *", pr.Run, true)
+
+	// List item digests — every minute. This requires the durable notification
+	// dispatcher, so legacy push-only runners do not consume the queue.
+	if r.dispatcher != nil {
+		ld := NewListNotificationDigest(r.db, r.dispatcher, r.log)
+		r.register("list-notification-digest", "* * * * *", ld.Run, true)
+	}
 }
 
 // RegisterAttachmentCleanup adds the storage reservation sweeper. It is kept

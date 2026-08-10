@@ -74,7 +74,7 @@ func (s *Service) SendToUser(userID uuid.UUID, payload string) error {
 			s.log.Error().Err(err).Str("user_id", userID.String()).Msg("failed to list device tokens")
 		} else {
 			for _, dt := range tokens {
-				if err := s.sendFCM(ctx, dt.Token, payload); err != nil {
+				if err := s.sendFCMWithRetry(ctx, dt.Token, payload); err != nil {
 					s.log.Warn().Err(err).Str("user_id", userID.String()).Str("token", dt.Token[:min(8, len(dt.Token))]).Msg("FCM send failed")
 					var permanent *permanentFCMError
 					if errors.As(err, &permanent) {
@@ -152,7 +152,7 @@ func (s *Service) broadcastExcluding(groupID, excludeUserID uuid.UUID, payload s
 			s.sendWebPush(ctx, sub, payload)
 		}
 		for _, dt := range tokensByUser[userID] {
-			if err := s.sendFCM(ctx, dt.Token, payload); err != nil {
+			if err := s.sendFCMWithRetry(ctx, dt.Token, payload); err != nil {
 				s.log.Warn().Err(err).Str("user_id", userID.String()).Str("token", dt.Token[:min(8, len(dt.Token))]).Msg("FCM send failed")
 				var permanent *permanentFCMError
 				if errors.As(err, &permanent) {
@@ -172,42 +172,50 @@ func (s *Service) sendWebPush(ctx context.Context, sub models.PushSubscription, 
 		s.log.Warn().Err(err).Str("sub_id", sub.ID.String()).Msg("web push endpoint failed send-time validation")
 		return
 	}
-	resp, err := webpush.SendNotificationWithContext(
-		ctx,
-		[]byte(payload),
-		&webpush.Subscription{
-			Endpoint: sub.Endpoint,
-			Keys: webpush.Keys{
-				P256dh: sub.P256dh,
-				Auth:   sub.Auth,
+	for attempt := 0; attempt < 2; attempt++ {
+		resp, err := webpush.SendNotificationWithContext(
+			ctx,
+			[]byte(payload),
+			&webpush.Subscription{
+				Endpoint: sub.Endpoint,
+				Keys: webpush.Keys{
+					P256dh: sub.P256dh,
+					Auth:   sub.Auth,
+				},
 			},
-		},
-		&webpush.Options{
-			Subscriber:      s.cfg.VapidSubject,
-			VAPIDPublicKey:  s.cfg.VapidPublicKey,
-			VAPIDPrivateKey: s.cfg.VapidPrivateKey,
-			TTL:             86400,
-			HTTPClient:      s.webpushClient,
-		},
-	)
-	if err != nil {
-		s.log.Warn().Err(err).Str("sub_id", sub.ID.String()).Msg("web push failed")
-		if resp != nil {
-			_ = resp.Body.Close()
+			&webpush.Options{
+				Subscriber:      s.cfg.VapidSubject,
+				VAPIDPublicKey:  s.cfg.VapidPublicKey,
+				VAPIDPrivateKey: s.cfg.VapidPrivateKey,
+				TTL:             86400,
+				HTTPClient:      s.webpushClient,
+			},
+		)
+		if err != nil {
+			s.log.Warn().Err(err).Str("sub_id", sub.ID.String()).Msg("web push failed")
+			if resp != nil {
+				_ = resp.Body.Close()
+			}
+			return
+		}
+		status := resp.StatusCode
+		_ = resp.Body.Close()
+		if (status == http.StatusTooManyRequests || status >= 500) && attempt == 0 {
+			s.log.Warn().Int("status", status).Str("sub_id", sub.ID.String()).Msg("web push transient failure; retrying")
+			continue
+		}
+		if status == http.StatusNotFound || status == http.StatusGone {
+			if delErr := s.authRepo.DeletePushSubscription(ctx, sub.ID); delErr != nil {
+				s.log.Warn().Err(delErr).Str("sub_id", sub.ID.String()).Msg("failed to prune dead push subscription")
+			} else {
+				s.log.Info().Str("sub_id", sub.ID.String()).Msg("pruned expired push subscription")
+			}
+			return
+		}
+		if status >= 400 {
+			s.log.Warn().Int("status", status).Str("sub_id", sub.ID.String()).Msg("web push non-2xx")
 		}
 		return
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusGone {
-		if delErr := s.authRepo.DeletePushSubscription(ctx, sub.ID); delErr != nil {
-			s.log.Warn().Err(delErr).Str("sub_id", sub.ID.String()).Msg("failed to prune dead push subscription")
-		} else {
-			s.log.Info().Str("sub_id", sub.ID.String()).Msg("pruned expired push subscription")
-		}
-		return
-	}
-	if resp.StatusCode >= 400 {
-		s.log.Warn().Int("status", resp.StatusCode).Str("sub_id", sub.ID.String()).Msg("web push non-2xx")
 	}
 }
 
@@ -230,6 +238,8 @@ type fcmMessage struct {
 		Token        string            `json:"token"`
 		Notification *fcmNotification  `json:"notification,omitempty"`
 		Data         map[string]string `json:"data,omitempty"`
+		Android      *fcmAndroidConfig `json:"android,omitempty"`
+		APNS         *fcmAPNSConfig    `json:"apns,omitempty"`
 	} `json:"message"`
 }
 
@@ -238,8 +248,47 @@ type fcmNotification struct {
 	Body  string `json:"body"`
 }
 
+type fcmAndroidConfig struct {
+	CollapseKey string `json:"collapse_key"`
+}
+
+type fcmAPNSConfig struct {
+	Headers map[string]string `json:"headers"`
+}
+
+func notificationCollapseKey(data map[string]string) string {
+	entityType := data["entity_type"]
+	entityID := data["id"]
+	if entityType == "" || entityID == "" {
+		return ""
+	}
+	key := entityType + ":" + entityID
+	if len(key) > 64 {
+		return key[:64]
+	}
+	return key
+}
+
 type permanentFCMError struct {
 	status int
+}
+
+type transientFCMError struct {
+	status int
+}
+
+func (e *transientFCMError) Error() string {
+	return fmt.Sprintf("FCM HTTP %d (transient provider failure)", e.status)
+}
+
+func (s *Service) sendFCMWithRetry(ctx context.Context, deviceToken, rawPayload string) error {
+	err := s.sendFCM(ctx, deviceToken, rawPayload)
+	var transient *transientFCMError
+	if errors.As(err, &transient) {
+		s.log.Warn().Int("status", transient.status).Msg("FCM transient failure; retrying")
+		return s.sendFCM(ctx, deviceToken, rawPayload)
+	}
+	return err
 }
 
 func (e *permanentFCMError) Error() string {
@@ -274,14 +323,31 @@ func (s *Service) sendFCM(ctx context.Context, deviceToken, rawPayload string) e
 		}
 	}
 	if len(parsed.Data) > 0 {
-		var dataMap map[string]string
-		if err := json.Unmarshal(parsed.Data, &dataMap); err == nil {
-			msg.Message.Data = dataMap
+		var rawData map[string]any
+		if err := json.Unmarshal(parsed.Data, &rawData); err == nil {
+			msg.Message.Data = make(map[string]string, len(rawData))
+			for key, value := range rawData {
+				switch typed := value.(type) {
+				case string:
+					msg.Message.Data[key] = typed
+				default:
+					encoded, marshalErr := json.Marshal(typed)
+					if marshalErr == nil {
+						msg.Message.Data[key] = string(encoded)
+					}
+				}
+			}
 		}
 	}
 	// Always include the raw payload so the app can handle it.
 	if msg.Message.Data == nil {
 		msg.Message.Data = map[string]string{}
+	}
+	if collapseKey := notificationCollapseKey(msg.Message.Data); collapseKey != "" {
+		msg.Message.Android = &fcmAndroidConfig{CollapseKey: collapseKey}
+		msg.Message.APNS = &fcmAPNSConfig{Headers: map[string]string{
+			"apns-collapse-id": collapseKey,
+		}}
 	}
 	msg.Message.Data["payload"] = rawPayload
 
@@ -320,6 +386,9 @@ func (s *Service) sendFCM(ctx context.Context, deviceToken, rawPayload string) e
 			if detail.ErrorCode == "UNREGISTERED" {
 				return &permanentFCMError{status: resp.StatusCode}
 			}
+		}
+		if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500 {
+			return &transientFCMError{status: resp.StatusCode}
 		}
 		return fmt.Errorf("FCM HTTP %d", resp.StatusCode)
 	}

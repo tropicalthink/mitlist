@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -55,6 +56,7 @@ import 'package:mitlist/services/group_service.dart';
 import 'package:mitlist/services/list_service.dart';
 import 'package:mitlist/services/notification_service.dart';
 import 'package:mitlist/services/recipe_service.dart';
+import 'package:mitlist/services/token_store.dart';
 import 'package:mitlist/storage/app_database.dart' hide FinanceSummary;
 import 'package:mitlist/widgets/app_button.dart';
 import 'package:mitlist/widgets/mitlist_bottom_nav.dart';
@@ -915,6 +917,12 @@ void main() {
       tester,
       child: const RecipesScreen(),
       overrides: [
+        groupServiceProviderAsync.overrideWith(
+          (ref) async => FakeGroupService(
+            groups: [group],
+            groupDetail: group,
+          ),
+        ),
         recipeServiceProviderAsync.overrideWith((ref) async => recipeService),
       ],
     );
@@ -1090,7 +1098,11 @@ void main() {
     expect(await db.select(db.listsTable).get(), hasLength(1));
 
     // Create AuthService with the wipe callback (no Ref needed in unit tests).
-    final authService = await AuthService.createWithWipe(
+    final prefs = await SharedPreferences.getInstance();
+    final authService = AuthService.forTest(
+      Dio(),
+      prefs,
+      _MemoryTokenStore(),
       wipeLocalData: db.clearAllUserData,
     );
 
@@ -1105,6 +1117,23 @@ void main() {
     expect(await db.select(db.expensesTable).get(), isEmpty);
     expect(await db.select(db.listsTable).get(), isEmpty);
   });
+}
+
+class _MemoryTokenStore implements TokenStore {
+  @override
+  Future<void> clear() async {}
+
+  @override
+  Future<String?> getAccessToken() async => null;
+
+  @override
+  Future<String?> getRefreshToken() async => null;
+
+  @override
+  Future<void> save({
+    required String accessToken,
+    required String refreshToken,
+  }) async {}
 }
 
 Future<AppDatabase> _pumpScreen(

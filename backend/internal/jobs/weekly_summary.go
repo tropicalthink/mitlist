@@ -74,10 +74,13 @@ func (s *WeeklySummary) notifyMembers(ctx context.Context, groupID uuid.UUID, co
 	notifPayload := models.NotificationPayload{
 		Screen:  models.ScreenHouseholdHub,
 		GroupID: groupID.String(),
+		Copy: models.NewNotificationCopy(models.NotificationTemplateWeeklyDigest, map[string]string{
+			"activity_count": fmt.Sprintf("%d", count),
+		}),
 	}
 
 	if s.dispatcher != nil {
-		if err := s.dispatcher.DispatchToGroup(ctx, groupID, uuid.Nil, "weekly_digest",
+		if err := s.dispatcher.DispatchToGroup(ctx, groupID, uuid.Nil, models.NotificationTypeWeeklyDigest,
 			title, body, notifPayload); err != nil {
 			s.log.Warn().Err(err).Str("group_id", groupID.String()).Msg("failed to dispatch weekly summary")
 		}

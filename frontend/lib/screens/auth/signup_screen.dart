@@ -91,8 +91,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       return;
     }
 
-    if (password.length < 12) {
-      setState(() => _passwordError = 'Use at least 12 characters.');
+    if (password.length < 8) {
+      setState(() => _passwordError = l10n.authSignupPasswordMinLength);
       return;
     }
 

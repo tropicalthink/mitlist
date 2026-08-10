@@ -32,3 +32,20 @@ func TestRunner_RegisterAll(t *testing.T) {
 		assert.Equal(t, exp.enabled, j.Enabled, "job %s enabled mismatch", j.Name)
 	}
 }
+
+func TestRunner_RegisterAll_WithDispatcherRegistersListDigest(t *testing.T) {
+	log := logger.New("test")
+	r := NewRunnerWithDispatcher(nil, &capturedDispatch{}, log)
+	r.RegisterAll()
+
+	assert.Len(t, r.jobs, 6)
+	found := false
+	for _, job := range r.jobs {
+		if job.Name == "list-notification-digest" {
+			found = true
+			assert.Equal(t, "* * * * *", job.Schedule)
+			assert.True(t, job.Enabled)
+		}
+	}
+	assert.True(t, found)
+}

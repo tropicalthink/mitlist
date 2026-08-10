@@ -22,6 +22,7 @@ import 'widgets/offline_banner.dart';
 
 import 'widgets/app_toast.dart';
 import 'utils/notification_navigation.dart';
+import 'utils/notification_copy.dart';
 
 class MitlistApp extends ConsumerStatefulWidget {
   const MitlistApp({super.key});
@@ -65,7 +66,6 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
 
   void _initPushSubscriptions() {
     PushSubscriptionService().init();
-    final viewLabel = AppLocalizations.of(context)?.commonView;
     FcmService.init(ref.read(dioProvider)).then((ready) {
       if (!ready || !mounted) return;
 
@@ -75,14 +75,25 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
         final body = message.notification?.body;
         if (title == null && body == null) return;
         final messenger = _scaffoldMessengerKey.currentState;
-        if (messenger == null) return;
+        if (messenger == null || !messenger.mounted) return;
+        final l10n = AppLocalizations.of(messenger.context);
+        final text = l10n == null
+            ? null
+            : resolveNotificationText(
+                l10n: l10n,
+                fallbackTitle: title ?? '',
+                fallbackBody: body ?? title ?? '',
+                data: message.data,
+              );
         AppToast.notification(
           messenger,
           // A push with only a title has nothing to put underneath it, so the
           // title becomes the body rather than being printed twice.
-          title: body == null ? null : title,
-          body: body ?? title!,
-          actionLabel: viewLabel,
+          title: text == null || text.title.isEmpty ? null : text.title,
+          body: text?.body ?? body ?? title!,
+          actionLabel: l10n == null
+              ? null
+              : _notificationActionLabel(message.data['screen'], l10n),
           onAction: () => unawaited(_handleNotificationTap(message)),
         );
       });
@@ -99,12 +110,33 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
     });
   }
 
+  String _notificationActionLabel(
+    String? screen,
+    AppLocalizations l10n,
+  ) {
+    return switch (screen) {
+      'listDetail' => l10n.notificationsOpenList,
+      'choreDetail' => l10n.notificationsOpenChore,
+      'expenseDetail' ||
+      'settlements' ||
+      'recurringExpenses' =>
+        l10n.notificationsOpenMoney,
+      'mealPlan' || 'recipeDetail' => l10n.notificationsOpenRecipes,
+      'householdHub' => l10n.notificationsOpenHousehold,
+      _ => l10n.commonView,
+    };
+  }
+
   Future<void> _handleNotificationTap(RemoteMessage message) async {
     final bootstrap = ref.read(authBootstrapProvider);
     if (bootstrap.isLoading || !ref.read(authStateProvider)) {
       return;
     }
     final data = message.data;
+    final notificationId = data['notification_id'];
+    if (notificationId != null && notificationId.isNotEmpty) {
+      unawaited(_markPushNotificationRead(notificationId));
+    }
     final router = ref.read(routerProvider);
     await navigateNotificationPayload(
       router,
@@ -113,6 +145,16 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
       switchGroup: (groupId) =>
           ref.read(currentGroupIdProvider.notifier).set(groupId),
     );
+  }
+
+  Future<void> _markPushNotificationRead(String notificationId) async {
+    try {
+      final service = await ref.read(notificationServiceProviderAsync.future);
+      await service.markAsRead(notificationId);
+      ref.invalidate(unreadNotificationCountProvider);
+    } catch (_) {
+      // Navigation should still succeed offline; the inbox remains canonical.
+    }
   }
 
   @override
@@ -147,6 +189,7 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
     ref.listen<bool>(authStateProvider, (previous, authenticated) {
       if (!authenticated) {
         _deferredInitDone = false;
+        ref.invalidate(unreadNotificationCountProvider);
         unawaited(_fcmSub?.cancel());
         unawaited(_fcmTapSub?.cancel());
         _fcmSub = null;

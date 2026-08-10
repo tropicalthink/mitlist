@@ -16,6 +16,19 @@ type NotificationHandler struct {
 	service *services.NotificationService
 }
 
+type updateNotificationPreferencesRequest struct {
+	GroupID         *uuid.UUID `json:"group_id"`
+	ChoreDue        *bool      `json:"chore_due"`
+	ChoreDueDayOf   *bool      `json:"chore_due_day_of"`
+	ListItemAdded   *bool      `json:"list_item_added"`
+	ExpenseCreated  *bool      `json:"expense_created"`
+	MealPlanChanged *bool      `json:"meal_plan_changed"`
+	WeeklyDigest    *bool      `json:"weekly_digest"`
+	PinwallReminder *bool      `json:"pinwall_reminder"`
+	PushEnabled     *bool      `json:"push_enabled"`
+	EmailEnabled    *bool      `json:"email_enabled"`
+}
+
 // NewNotificationHandler creates a new NotificationHandler.
 func NewNotificationHandler(service *services.NotificationService) *NotificationHandler {
 	return &NotificationHandler{service: service}
@@ -204,13 +217,37 @@ func (h *NotificationHandler) UpdatePreferences(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	var pref models.NotificationPreference
-	if err := decodeJSON(r, &pref); err != nil {
+	var req updateNotificationPreferencesRequest
+	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, err)
 		return
 	}
+	if req.GroupID == nil || *req.GroupID == uuid.Nil {
+		api.RespondError(w, &api.ValidationError{Field: "group_id", Message: "group_id is required"})
+		return
+	}
 
-	if err := h.service.UpdatePreferences(r.Context(), userID, &pref); err != nil {
+	pref, err := h.service.GetGroupPreference(r.Context(), userID, *req.GroupID)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	applyBool := func(value *bool, target *bool) {
+		if value != nil {
+			*target = *value
+		}
+	}
+	applyBool(req.ChoreDue, &pref.ChoreDue)
+	applyBool(req.ChoreDueDayOf, &pref.ChoreDueDayOf)
+	applyBool(req.ListItemAdded, &pref.ListItemAdded)
+	applyBool(req.ExpenseCreated, &pref.ExpenseCreated)
+	applyBool(req.MealPlanChanged, &pref.MealPlanChanged)
+	applyBool(req.WeeklyDigest, &pref.WeeklyDigest)
+	applyBool(req.PinwallReminder, &pref.PinwallReminder)
+	applyBool(req.PushEnabled, &pref.PushEnabled)
+	applyBool(req.EmailEnabled, &pref.EmailEnabled)
+
+	if err := h.service.UpdatePreferences(r.Context(), userID, pref); err != nil {
 		api.RespondError(w, err)
 		return
 	}

@@ -43,6 +43,20 @@ func TestNotificationRepository_CreateNotification(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestNotificationRepository_QueueListItemNotification(t *testing.T) {
+	mockDB := newMockDB(t)
+	repo := NewNotificationRepository(mockDB)
+	groupID, actorID, listID := uuid.New(), uuid.New(), uuid.New()
+
+	mockDB.ExpectExec("INSERT INTO list_notification_batches").
+		WithArgs(groupID, actorID, listID, "Mina", "Groceries", "Milk").
+		WillReturnResult(pgxmock.NewResult("INSERT", 1))
+
+	err := repo.QueueListItemNotification(context.Background(), groupID, actorID, listID, "Mina", "Groceries", "Milk")
+	require.NoError(t, err)
+	assert.NoError(t, mockDB.ExpectationsWereMet())
+}
+
 func TestNotificationRepository_GetNotificationByID(t *testing.T) {
 	mock := newMockDB(t)
 	repo := NewNotificationRepository(mock)

@@ -2924,7 +2924,7 @@
   "@accountFillPasswordFields": {
     "description": "Validation: all password fields required"
   },
-  "accountPasswordMinLength": "La nueva contraseña debe tener al menos 12 caracteres.",
+  "accountPasswordMinLength": "La nueva contraseña debe tener al menos 8 caracteres.",
   "@accountPasswordMinLength": {
     "description": "Validation: password too short"
   },
@@ -3157,6 +3157,10 @@
   "@notifPrefFailedLoad": {
     "description": "Error when preferences fail to load"
   },
+  "notifPrefFailedSave": "No se pudo guardar esta preferencia. Comprueba tu conexión e inténtalo de nuevo.",
+  "@notifPrefFailedSave": {
+    "description": "Error when a notification preference save fails"
+  },
   "notifPrefNoHouseholdDesc": "Únete o crea un hogar para configurar las preferencias de notificaciones.",
   "@notifPrefNoHouseholdDesc": {
     "description": "No-household description for preferences"
@@ -3197,11 +3201,11 @@
   "@notifPrefListItemAddedDesc": {
     "description": "Toggle subtitle for list item notifications"
   },
-  "notifPrefExpenseCreated": "Gasto creado",
+  "notifPrefExpenseCreated": "Actividad de dinero",
   "@notifPrefExpenseCreated": {
     "description": "Toggle label for expense notifications"
   },
-  "notifPrefExpenseCreatedDesc": "Cuando se registra un nuevo gasto",
+  "notifPrefExpenseCreatedDesc": "Gastos, cargos recurrentes y liquidaciones",
   "@notifPrefExpenseCreatedDesc": {
     "description": "Toggle subtitle for expense notifications"
   },
@@ -4508,11 +4512,11 @@
   "@authSignupPassword": {
     "description": "Password input label"
   },
-  "authSignupPasswordHint": "Al menos 12 caracteres",
+  "authSignupPasswordHint": "Al menos 8 caracteres",
   "@authSignupPasswordHint": {
     "description": "Password hint text"
   },
-  "authSignupPasswordMinLength": "La contraseña debe tener al menos 12 caracteres.",
+  "authSignupPasswordMinLength": "La contraseña debe tener al menos 8 caracteres.",
   "@authSignupPasswordMinLength": {
     "description": "Password too short validation"
   },
@@ -4569,6 +4573,34 @@
     "description": "Generic photo label"
   },
   "commonView": "Ver",
+  "notificationsOpenList": "Abrir lista",
+  "notificationsOpenChore": "Abrir tarea",
+  "notificationsOpenMoney": "Abrir finanzas",
+  "notificationsOpenRecipes": "Abrir recetas",
+  "notificationsOpenHousehold": "Abrir hogar",
+  "notificationChoreDueSoonTitle": "Tarea próxima",
+  "notificationChoreDueSoonBody": "{choreName} vence pronto",
+  "notificationChoreDueTodayTitle": "Tarea para hoy",
+  "notificationChoreDueTodayBody": "{choreName} vence hoy",
+  "notificationListUpdatedTitle": "{listName} actualizada",
+  "notificationListUpdatedOneBody": "{actorName} añadió {itemName} a {listName} en {groupName}.",
+  "notificationListUpdatedManyBody": "{actorName} añadió {count} artículos a {listName} en {groupName}.",
+  "notificationExpenseCreatedTitle": "Gasto añadido",
+  "notificationExpenseCreatedBody": "{actorName} añadió {expenseName} en {groupName}.",
+  "notificationRecurringExpenseTitle": "Gasto recurrente añadido",
+  "notificationRecurringExpenseBody": "Se añadió {expenseName}.",
+  "notificationSettlementRequestTitle": "Pago por confirmar",
+  "notificationSettlementPaidYouBody": "{actorName} dice que te pagó {amount} en {groupName}. Confirma para actualizar los saldos.",
+  "notificationSettlementYouPaidBody": "{actorName} dice que le pagaste {amount} en {groupName}. Confirma para actualizar los saldos.",
+  "notificationSettlementConfirmedTitle": "Pago confirmado",
+  "notificationSettlementConfirmedBody": "{actorName} confirmó tu pago de {amount} en {groupName}.",
+  "notificationSettlementDeclinedTitle": "Pago rechazado",
+  "notificationSettlementDeclinedBody": "{actorName} rechazó tu pago de {amount} en {groupName}.",
+  "notificationMealPlanTitle": "Plan de comidas actualizado",
+  "notificationMealPlanBody": "{actorName} actualizó el plan de comidas en {groupName}.",
+  "notificationWeeklyDigestTitle": "Resumen semanal",
+  "notificationWeeklyDigestBody": "{count, plural, =0{No hubo actividad en el hogar esta semana} =1{Tu hogar tuvo 1 actividad esta semana} other{Tu hogar tuvo {count} actividades esta semana}}",
+  "notificationPinwallReminderTitle": "Recordatorio",
   "@commonView": {
     "description": "Generic view button"
   },
