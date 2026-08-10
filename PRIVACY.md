@@ -35,7 +35,9 @@ Reports are sent to whatever endpoint the operator configures in the DSN. We rec
 
 - **Guest mode** — you can use mitlist without providing an email address.
 - **Data export** — download your expenses as CSV or JSON at any time from within the app.
-- **Account deletion** — deleting your account removes your data from the operator's server. Export first if you want a copy.
+- **Account deletion** — deleting your account revokes every session, removes
+  credentials and personal profile data, and anonymizes authorship that must
+  remain in shared household history. Export first if you want a copy.
 
 ---
 

@@ -366,6 +366,7 @@ func (c *Container) ListItemAttachmentRepo() *repositories.ListItemAttachmentRep
 func (c *Container) UserService() *services.UserService {
 	c.userServiceOnce.Do(func() {
 		c.userService = services.NewUserService(c.UserRepo(), c.AuthRepo(), c.JWT(), c.Password(), c.Mail())
+		c.userService.SetFrontendURL(c.cfg.FrontendURL)
 	})
 	return c.userService
 }
@@ -439,7 +440,8 @@ func (c *Container) AppleClient() *oauthclient.AppleClient {
 // GuestService returns the singleton guest service.
 func (c *Container) GuestService() *services.GuestService {
 	c.guestServiceOnce.Do(func() {
-		c.guestService = services.NewGuestService(c.UserRepo(), c.JWT(), c.Password())
+		c.guestService = services.NewGuestServiceWithAuth(c.UserRepo(), c.JWT(), c.Password(), c.AuthRepo(), c.Mail())
+		c.guestService.SetFrontendURL(c.cfg.FrontendURL)
 	})
 	return c.guestService
 }

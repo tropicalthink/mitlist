@@ -322,7 +322,7 @@ func newAuthRouter(t *testing.T) (chi.Router, *AuthHandler) {
 	jwtSvc := testJWT
 
 	userSvc := services.NewUserService(userRepo, authRepo, jwtSvc, ps, ms)
-	guestSvc := services.NewGuestService(userRepo, jwtSvc, ps)
+	guestSvc := services.NewGuestServiceWithAuth(userRepo, jwtSvc, ps, authRepo, ms)
 	oauthSvc := services.NewOAuthService(userRepo, authRepo, jwtSvc, nil, nil)
 
 	h := NewAuthHandler(testCfg, userSvc, guestSvc, oauthSvc, jwtSvc)

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logger/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 import '../config/api_config.dart';
 import '../models/auth_models.dart';
 import 'api_client.dart';
@@ -24,6 +25,7 @@ import 'token_refresh_coordinator.dart';
 /// - Password reset
 /// - User profile management
 class AuthService {
+  static const _installIdKey = 'mitlist_install_id';
   final Dio _dio;
   final Logger _logger = Logger();
   final SharedPreferences _prefs;
@@ -57,6 +59,7 @@ class AuthService {
     final dio = resolveDio(ref);
     final store = SecureTokenStore.shared;
     await store.migrateFromPrefs(prefs);
+    await _attachInstallIdentity(dio, prefs);
     return AuthService._(dio, prefs, store);
   }
 
@@ -69,7 +72,18 @@ class AuthService {
     final dio = resolveDio(ref);
     final store = SecureTokenStore.shared;
     await store.migrateFromPrefs(prefs);
+    await _attachInstallIdentity(dio, prefs);
     return AuthService._(dio, prefs, store, wipeLocalData: wipeLocalData);
+  }
+
+  static Future<void> _attachInstallIdentity(
+      Dio dio, SharedPreferences prefs) async {
+    var installId = prefs.getString(_installIdKey);
+    if (installId == null || installId.isEmpty) {
+      installId = const Uuid().v4();
+      await prefs.setString(_installIdKey, installId);
+    }
+    dio.options.headers['X-Mitlist-Install-ID'] = installId;
   }
 
   /// Registers a new user.

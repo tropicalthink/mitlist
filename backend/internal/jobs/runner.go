@@ -106,6 +106,11 @@ func (r *Runner) RegisterAll() {
 		ld := NewListNotificationDigest(r.db, r.dispatcher, r.log)
 		r.register("list-notification-digest", "* * * * *", ld.Run, true)
 	}
+
+	// Guest cleanup — daily at 03:15. Guest accounts are disposable and are
+	// anonymized after thirty days without activity.
+	gc := NewGuestCleanup(r.db, r.log)
+	r.register("guest-cleanup", "15 3 * * *", gc.Run, true)
 }
 
 // RegisterAttachmentCleanup adds the storage reservation sweeper. It is kept

@@ -19,7 +19,7 @@ func TestAuth_Register(t *testing.T) {
 		"last_name":  "Test",
 	}
 	rec := execRequest(t, router, "POST", "/api/v1/auth/register", body, "")
-	requireStatus(t, rec, http.StatusCreated)
+	requireStatus(t, rec, http.StatusAccepted)
 
 	var resp map[string]any
 	parseJSONResponse(t, rec, &resp)
@@ -39,10 +39,12 @@ func TestAuth_Register_DuplicateEmail(t *testing.T) {
 		"last_name":  "Test",
 	}
 	rec := execRequest(t, router, "POST", "/api/v1/auth/register", body, "")
-	requireStatus(t, rec, http.StatusCreated)
+	requireStatus(t, rec, http.StatusAccepted)
 
 	rec = execRequest(t, router, "POST", "/api/v1/auth/register", body, "")
-	requireStatus(t, rec, http.StatusConflict)
+	// Duplicate registration does not reveal whether the address is already
+	// active; it receives the same generic acknowledgement as other requests.
+	requireStatus(t, rec, http.StatusAccepted)
 }
 
 func TestAuth_Login(t *testing.T) {

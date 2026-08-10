@@ -199,7 +199,7 @@ stores their metadata, household quota counters, and refresh sessions.
 
 - **Your server, your data** — Connect the app directly to your instance. Guest mode means you can start without handing over an email.
 - **Export everything** — Download expenses as CSV or JSON anytime from the app.
-- **No lock-in** — Delete your account and your data is gone from the server. Export first if you want it.
+- **No lock-in** — Delete your account to revoke every session, remove credentials and personal profile data, and anonymize your shared household history. Export first if you want a copy.
 - **Scans stay on the device** — OCR runs entirely on your phone; list photos are never uploaded for recognition. Correcting a scan can optionally save the corrected line crops locally to improve handwriting recognition — that's off by default, stores no account, household, or list identifiers, and the samples only leave the device if you export them yourself.
 - **No telemetry by default** — mitlist collects no usage data or analytics and never phones home. Crash reporting is **opt-in**: an operator can enable it by configuring a Sentry/GlitchTip DSN (off unless set; point it at a self-hosted GlitchTip to keep crash data on your own infrastructure). See [PRIVACY.md](PRIVACY.md).
 
