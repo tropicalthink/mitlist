@@ -1,9 +1,8 @@
 # Mobile App-Store Release Readiness
 
-> Spike deliverable for plan 014. Investigated at commit `e8c991f3`, 2026-06-24.
-> Every claim in "What Already Exists" is grounded in a real file read during the
-> investigation. Do not update this doc in-place — replace it with an execution plan
-> once the maintainer answers the open questions.
+> Updated 2026-08-10. Mobile beta builds are now defined in
+> `.gitea/workflows/mobile-beta.yml`; protected signing and Firebase files are
+> injected at build time and are never committed.
 
 ---
 
@@ -26,7 +25,7 @@ plan was written.
 |------|--------|--------|
 | `applicationId` | `me.mitlist` | `frontend/android/app/build.gradle` line 34 |
 | `namespace` | `me.mitlist` | `frontend/android/app/build.gradle` line 18 |
-| Release signing wired | Yes — loads `android/key.properties`; falls back to debug if absent | `build.gradle` lines 11–56 |
+| Release signing wired | Yes — loads `android/key.properties` and fails release builds if signing is absent | `build.gradle` |
 | `minifyEnabled` | `true` | `build.gradle` line 57 |
 | `shrinkResources` | `true` | `build.gradle` line 58 |
 | ProGuard | `proguard-android-optimize.txt` + `proguard-rules.pro` | `build.gradle` line 59; rules file present |
@@ -36,7 +35,7 @@ plan was written.
 | Keystore file (`.jks`) | Gitignored, not present | `frontend/android/.gitignore` |
 | App label | `mitlist` | `frontend/android/app/src/main/AndroidManifest.xml` |
 | `google-services.json` | Not tracked, not present on disk | `git ls-files` confirmed absent |
-| Google Services Gradle plugin (`com.google.gms`) | **Not declared** in `build.gradle` or `settings.gradle` | Grep confirmed absent |
+| Google Services Gradle plugin (`com.google.gms`) | Declared | `build.gradle` |
 | App version | `1.0.0+1` (versionName=1.0.0, versionCode=1) | `frontend/pubspec.yaml` |
 | App icon | `frontend/assets/icon/icon.png`, 1024×1024 PNG (16-bit sRGB) | `file` + `identify` |
 | Foreground icon | `frontend/assets/icon/icon_foreground.png` | present |
@@ -55,9 +54,9 @@ plan was written.
 | CODE_SIGN_IDENTITY (device) | `iPhone Developer` (not `iPhone Distribution`) | `project.pbxproj` lines 335, 456, 513 |
 | DEVELOPMENT_TEAM | **Not set** — no `DEVELOPMENT_TEAM` key in pbxproj | Grep confirmed absent |
 | PROVISIONING_PROFILE | **Not set** | Grep confirmed absent |
-| Entitlements | `Runner/Runner.entitlements` — declares `com.apple.developer.associated-domains: applinks:mitlist.me` | file present |
+| Entitlements | Associated domains and production APNs are declared | `Runner/Runner.entitlements` |
 | `GoogleService-Info.plist` | Not tracked, not present on disk | `git ls-files` confirmed absent |
-| APNs configuration | None in project | Not present |
+| APNs configuration | Push entitlement and remote-notification background mode are declared; credentials remain protected CI inputs | entitlements + `Info.plist` |
 | Podfile | Standard Flutter Podfile; no explicit `platform :ios` line (inherits from Flutter) | `frontend/ios/Podfile` |
 
 ### Push notifications (FCM)
@@ -65,7 +64,8 @@ plan was written.
 - `firebase_messaging: ^15.2.5` and `firebase_core: ^3.13.1` are declared in `pubspec.yaml`.
 - `FcmService.init()` calls `Firebase.initializeApp()` wrapped in a try/catch; if it fails (missing config) it logs a warning and returns — the app does not crash.
 - FCM is **not available without `google-services.json` (Android) and `GoogleService-Info.plist` (iOS)**; push notifications simply won't work.
-- The `google-services` Gradle plugin (`com.google.gms.google-services`) is **missing from `android/app/build.gradle`**. This plugin is required for Firebase to work on Android. Without it the build will compile but Firebase will throw a runtime error even if `google-services.json` is added.
+- The Google Services Gradle plugin is enabled. Release builds fail fast when
+  the native Firebase configuration is missing.
 - No `firebase_options.dart` exists — Firebase is initialised without explicit `FirebaseOptions`, relying solely on the native config files.
 
 ### Crash reporting (Sentry/GlitchTip)
@@ -92,7 +92,8 @@ plan was written.
 
 ### CI / Deploy workflows
 
-- `.gitea/workflows/deploy-prod.yml` — builds Flutter **web** (Docker image) and Go backend. No mobile targets.
+- `.gitea/workflows/deploy-prod.yml` builds Flutter web and Go backend.
+- `.gitea/workflows/mobile-beta.yml` builds signed Android and iOS beta artifacts on demand.
 - `.gitea/workflows/ci.yml` — runs `dart analyze` + `flutter test` on an `ubuntu-latest` runner. No mobile build. No signing. No `workflow_dispatch`.
 
 ### In-app account deletion
