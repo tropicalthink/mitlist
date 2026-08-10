@@ -22,7 +22,7 @@ class FeedbackService {
             Dio(
               BaseOptions(
                 baseUrl: FeedbackConfig.baseUrl,
-                connectTimeout: ApiConfig.requestTimeout,
+                connectTimeout: ApiConfig.connectTimeout,
                 receiveTimeout: ApiConfig.requestTimeout,
                 sendTimeout: ApiConfig.requestTimeout,
                 headers: {

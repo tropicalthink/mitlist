@@ -1645,6 +1645,15 @@ class FakeChoreRepository implements ChoreRepository {
   }
 
   @override
+  Future<ChoreCreateResult> createOfflineFirst(
+    CreateChoreRequest req, {
+    Duration syncWindow = Duration.zero,
+  }) async {
+    final created = await _service.createChore(req);
+    return ChoreCreateResult(chore: created, synced: true);
+  }
+
+  @override
   Future<List<CurrentChore>> getCurrentChoresOnce(String groupId) async {
     final chores = await _service.listChores(groupId);
     return _toCurrent(chores);
@@ -1865,6 +1874,48 @@ class FakeFinanceRepository implements FinanceRepository {
   Stream<FinanceSummary?> watchSummaryByGroup(String groupId) => Stream.value(
         FinanceSummary(balances: const [], reimbursements: const []),
       ).asBroadcastStream();
+
+  // Settlements are cache-backed on the real repository; these flows don't
+  // exercise them, so an in-memory list is enough to satisfy the interface.
+  final List<Settlement> _settlements = [];
+
+  @override
+  Stream<List<Settlement>> watchSettlements(String groupId) =>
+      Stream.value(_settlements);
+
+  @override
+  Future<List<Settlement>> getSettlementsOnce(String groupId) async =>
+      _settlements;
+
+  @override
+  Future<List<Settlement>> loadSettlements(String groupId) async =>
+      _settlements;
+
+  @override
+  Future<Settlement> recordSettlementOfflineFirst({
+    required String groupId,
+    required CreateSettlementRequest req,
+    required String createdBy,
+  }) async {
+    final local = Settlement(
+      id: 'local-flows-${_settlements.length}',
+      groupId: groupId,
+      fromUserId: req.fromUserId,
+      toUserId: req.toUserId,
+      amount: req.amount,
+      status: SettlementStatus.pending,
+      createdBy: createdBy,
+      createdAt: DateTime.now(),
+    );
+    _settlements.add(local);
+    return local;
+  }
+
+  @override
+  Future<void> cancelLocalSettlement(
+      String groupId, String settlementId) async {
+    _settlements.removeWhere((s) => s.id == settlementId);
+  }
 
   @override
   Future<int> refreshGroup(String groupId,

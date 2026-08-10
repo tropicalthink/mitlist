@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/calendar_models.dart';
+import '../repositories/calendar_repository.dart';
 import '../services/calendar_service.dart';
+import 'list_provider.dart' show appDatabaseProvider;
 
 final calendarServiceProviderAsync =
     FutureProvider<CalendarService>((ref) async {
@@ -19,6 +21,13 @@ typedef CalendarRange = ({String groupId, DateTime from, DateTime to});
 /// Cached, keep-alive calendar events for a (group, from, to) window. Kept
 /// alive so paging back and forth is instant; a stale range self-disposes
 /// after a few minutes to bound memory.
+final calendarRepositoryProvider =
+    FutureProvider<CalendarRepository>((ref) async {
+  final db = ref.watch(appDatabaseProvider);
+  final service = await ref.read(calendarServiceProviderAsync.future);
+  return CalendarRepository(db: db, remote: service);
+});
+
 final calendarEventsProvider =
     FutureProvider.family<List<CalendarEvent>, CalendarRange>(
         (ref, range) async {
@@ -26,6 +35,9 @@ final calendarEventsProvider =
   final expiry = Timer(const Duration(minutes: 5), link.close);
   ref.onDispose(expiry.cancel);
 
-  final service = await ref.read(calendarServiceProviderAsync.future);
-  return service.getCalendar(range.groupId, range.from, range.to);
+  // Cache-backed: persists each window and falls back to it when the network
+  // fails, so the calendar shows the last known month offline instead of an
+  // error. The in-memory keepAlive above still handles same-session paging.
+  final repo = await ref.read(calendarRepositoryProvider.future);
+  return repo.load(range.groupId, range.from, range.to);
 });

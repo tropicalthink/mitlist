@@ -22,6 +22,21 @@ class CalendarService {
     DateTime from,
     DateTime to,
   ) async {
+    return parseCalendarEvents(await getCalendarRaw(groupId, from, to));
+  }
+
+  /// The server's raw `events` array, undecoded.
+  ///
+  /// The offline cache stores this rather than re-serialised models:
+  /// [CalendarEvent] has five optional nested payloads and no `toJson`, so a
+  /// hand-written one would be a second, drifting definition of the wire
+  /// format. Keeping the server's own JSON means the cache cannot disagree
+  /// with it, and [parseCalendarEvents] is the single decode path for both.
+  Future<List<dynamic>> getCalendarRaw(
+    String groupId,
+    DateTime from,
+    DateTime to,
+  ) async {
     try {
       final r = await _dio.get('/calendar', queryParameters: {
         'group_id': groupId,
@@ -29,15 +44,18 @@ class CalendarService {
         'to': _formatDate(to),
       });
       final data = r.data as Map<String, dynamic>;
-      final rawEvents = data['events'] as List<dynamic>? ?? [];
-      return rawEvents
-          .map(
-              (e) => CalendarEvent.fromJson((e as Map).cast<String, dynamic>()))
-          .toList();
+      return data['events'] as List<dynamic>? ?? [];
     } on DioException catch (e) {
       _logger.e('Get calendar failed: ${e.response?.data}');
       throw apiException(e);
     }
+  }
+
+  static List<CalendarEvent> parseCalendarEvents(List<dynamic> raw) {
+    return raw
+        .whereType<Map>()
+        .map((e) => CalendarEvent.fromJson(e.cast<String, dynamic>()))
+        .toList();
   }
 
   /// Fetches the household calendar as an iCalendar (.ics) document over

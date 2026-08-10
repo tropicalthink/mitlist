@@ -73,6 +73,148 @@ class FinanceRepository {
   }
 
   // ---------------------------------------------------------------------------
+  // Settlements
+  //
+  // Split deliberately by semantics. *Recording* a settlement is a claim about
+  // something that already happened in the real world, so it queues like any
+  // other write. *Approving* one is not — see `respondToSettlement` on the
+  // service, which stays online-only on purpose.
+  //
+  // A recorded settlement is `pending` until the counterparty confirms, and
+  // pending settlements do not move any balance. The optimistic row therefore
+  // appears in the settlements list and nowhere else.
+  // ---------------------------------------------------------------------------
+
+  Stream<List<api.Settlement>> watchSettlements(String groupId) {
+    return _db
+        .watchSettlements(groupId)
+        .map((row) => _decodeSettlements(row?.settlementsJson));
+  }
+
+  Future<List<api.Settlement>> getSettlementsOnce(String groupId) async {
+    final row = await _db.getSettlementsOnce(groupId);
+    return _decodeSettlements(row?.settlementsJson);
+  }
+
+  /// Fetches settlements and persists them, re-splicing any still-queued local
+  /// ones. Returns the cache instead of throwing when the network fails, so the
+  /// tab keeps rendering offline.
+  Future<List<api.Settlement>> loadSettlements(String groupId) async {
+    try {
+      final fresh = await _remote.listSettlements(groupId);
+      final merged = await _withPendingSettlements(groupId, fresh);
+      await _db.upsertSettlements(
+        groupId: groupId,
+        settlementsJson:
+            jsonEncode(merged.map((s) => s.toJson()).toList()),
+      );
+      return merged;
+    } catch (_) {
+      return getSettlementsOnce(groupId);
+    }
+  }
+
+  /// Re-adds queued local settlements onto a server snapshot. Same reasoning as
+  /// the chore cache: the blob is overwritten wholesale, so without this a
+  /// refresh landing before the drain would erase a settlement the user just
+  /// recorded while its op is still in the outbox.
+  Future<List<api.Settlement>> _withPendingSettlements(
+    String groupId,
+    List<api.Settlement> server,
+  ) async {
+    final ops = await _db.getOutboxOpsByType('createSettlement');
+    if (ops.isEmpty) return server;
+
+    final merged = [...server];
+    for (final op in ops) {
+      try {
+        final payload =
+            (jsonDecode(op.payloadJson) as Map).cast<String, dynamic>();
+        if (payload['groupId'] != groupId) continue;
+        final local = api.Settlement.fromJson(
+          (payload['settlement'] as Map).cast<String, dynamic>(),
+        );
+        if (merged.any((s) => s.id == local.id)) continue;
+        merged.add(local);
+      } catch (_) {
+        // Malformed ops are the drainer's problem.
+      }
+    }
+    return merged;
+  }
+
+  /// Queues a settlement and shows it immediately as pending.
+  Future<api.Settlement> recordSettlementOfflineFirst({
+    required String groupId,
+    required api.CreateSettlementRequest req,
+    required String createdBy,
+  }) async {
+    final local = api.Settlement(
+      id: 'local-${_uuid.v4()}',
+      groupId: groupId,
+      fromUserId: req.fromUserId,
+      toUserId: req.toUserId,
+      amount: req.amount,
+      status: api.SettlementStatus.pending,
+      createdBy: createdBy,
+      createdAt: DateTime.now(),
+    );
+
+    await _db.enqueueOutbox(
+      id: _uuid.v4(),
+      type: 'createSettlement',
+      payload: {
+        'groupId': groupId,
+        'request': req.toJson(),
+        'settlement': local.toJson(),
+      },
+      idempotencyKey: 'createSettlement:${local.id}',
+      entityType: 'settlement',
+      entityId: local.id,
+    );
+
+    final current = await getSettlementsOnce(groupId);
+    await _db.upsertSettlements(
+      groupId: groupId,
+      settlementsJson:
+          jsonEncode([...current, local].map((s) => s.toJson()).toList()),
+    );
+    if (_autoSync) unawaited(drainOutboxOnce());
+    return local;
+  }
+
+  /// Drops a queued settlement that has not synced yet (the offline "cancel").
+  ///
+  /// Cancelling an unsynced settlement must never POST — there is nothing on
+  /// the server to cancel — so this removes the op and the optimistic row.
+  Future<void> cancelLocalSettlement(String groupId, String settlementId) async {
+    for (final op in await _db.getOutboxOpsByType('createSettlement')) {
+      if (op.entityId == settlementId) await _db.deleteOutboxOp(op.id);
+    }
+    final remaining = (await getSettlementsOnce(groupId))
+        .where((s) => s.id != settlementId)
+        .toList();
+    await _db.upsertSettlements(
+      groupId: groupId,
+      settlementsJson: jsonEncode(remaining.map((s) => s.toJson()).toList()),
+    );
+  }
+
+  List<api.Settlement> _decodeSettlements(String? raw) {
+    if (raw == null || raw.isEmpty) return const [];
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return const [];
+      return decoded
+          .whereType<Map>()
+          .map((m) => api.Settlement.fromJson(m.cast<String, dynamic>()))
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Writes (offline-first with outbox)
   // ---------------------------------------------------------------------------
 
@@ -182,16 +324,63 @@ class FinanceRepository {
     _isDraining = true;
     try {
       await OutboxDrainer(_db).drain(
-        types: const ['createExpense', 'updateExpense', 'deleteExpense'],
+        types: const [
+          'createExpense',
+          'updateExpense',
+          'deleteExpense',
+          'createSettlement',
+        ],
         handlers: {
           'createExpense': (op, payload) => _syncCreateExpense(op.id, payload),
           'updateExpense': (op, payload) => _syncUpdateExpense(op.id, payload),
           'deleteExpense': (op, payload) => _syncDeleteExpense(op.id, payload),
+          'createSettlement': (op, payload) =>
+              _syncCreateSettlement(op.id, payload),
         },
       );
     } finally {
       _isDraining = false;
     }
+  }
+
+  /// Sends a queued settlement, then swaps the optimistic row for the server's.
+  ///
+  /// The server assigns the real id and is the authority on status, so the
+  /// local `local-` row is replaced rather than merged — that is also what
+  /// makes the counterparty's confirm/decline reachable, since those act on a
+  /// server id.
+  Future<void> _syncCreateSettlement(
+      String opId, Map<String, dynamic> payload) async {
+    final groupId = payload['groupId'] as String?;
+    final requestRaw = payload['request'];
+    final localRaw = payload['settlement'];
+    if (groupId == null || requestRaw is! Map || localRaw is! Map) {
+      await _db.deleteOutboxOp(opId);
+      return;
+    }
+    final localId = localRaw['id'] as String?;
+    final json = requestRaw.cast<String, dynamic>();
+
+    final created = await _remote.createGroupSettlement(
+      groupId,
+      api.CreateSettlementRequest(
+        groupId: groupId,
+        fromUserId: json['from_user_id'] as String,
+        toUserId: json['to_user_id'] as String,
+        amount: (json['amount'] as num).toInt(),
+      ),
+    );
+
+    final updated = [
+      for (final s in await getSettlementsOnce(groupId))
+        if (s.id != localId) s,
+      created,
+    ];
+    await _db.upsertSettlements(
+      groupId: groupId,
+      settlementsJson: jsonEncode(updated.map((s) => s.toJson()).toList()),
+    );
+    await _db.deleteOutboxOp(opId);
   }
 
   Future<void> _syncCreateExpense(

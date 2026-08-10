@@ -3546,6 +3546,796 @@ class GroupsCachesCompanion extends UpdateCompanion<GroupsCache> {
   }
 }
 
+class $SettlementsCachesTable extends SettlementsCaches
+    with TableInfo<$SettlementsCachesTable, SettlementsCache> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SettlementsCachesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _groupIdMeta =
+      const VerificationMeta('groupId');
+  @override
+  late final GeneratedColumn<String> groupId = GeneratedColumn<String>(
+      'group_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _settlementsJsonMeta =
+      const VerificationMeta('settlementsJson');
+  @override
+  late final GeneratedColumn<String> settlementsJson = GeneratedColumn<String>(
+      'settlements_json', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [groupId, settlementsJson, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'settlements_caches';
+  @override
+  VerificationContext validateIntegrity(Insertable<SettlementsCache> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('group_id')) {
+      context.handle(_groupIdMeta,
+          groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta));
+    } else if (isInserting) {
+      context.missing(_groupIdMeta);
+    }
+    if (data.containsKey('settlements_json')) {
+      context.handle(
+          _settlementsJsonMeta,
+          settlementsJson.isAcceptableOrUnknown(
+              data['settlements_json']!, _settlementsJsonMeta));
+    } else if (isInserting) {
+      context.missing(_settlementsJsonMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {groupId};
+  @override
+  SettlementsCache map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SettlementsCache(
+      groupId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}group_id'])!,
+      settlementsJson: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}settlements_json'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $SettlementsCachesTable createAlias(String alias) {
+    return $SettlementsCachesTable(attachedDatabase, alias);
+  }
+}
+
+class SettlementsCache extends DataClass
+    implements Insertable<SettlementsCache> {
+  final String groupId;
+  final String settlementsJson;
+  final DateTime updatedAt;
+  const SettlementsCache(
+      {required this.groupId,
+      required this.settlementsJson,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['group_id'] = Variable<String>(groupId);
+    map['settlements_json'] = Variable<String>(settlementsJson);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  SettlementsCachesCompanion toCompanion(bool nullToAbsent) {
+    return SettlementsCachesCompanion(
+      groupId: Value(groupId),
+      settlementsJson: Value(settlementsJson),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory SettlementsCache.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SettlementsCache(
+      groupId: serializer.fromJson<String>(json['groupId']),
+      settlementsJson: serializer.fromJson<String>(json['settlementsJson']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'groupId': serializer.toJson<String>(groupId),
+      'settlementsJson': serializer.toJson<String>(settlementsJson),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  SettlementsCache copyWith(
+          {String? groupId, String? settlementsJson, DateTime? updatedAt}) =>
+      SettlementsCache(
+        groupId: groupId ?? this.groupId,
+        settlementsJson: settlementsJson ?? this.settlementsJson,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  SettlementsCache copyWithCompanion(SettlementsCachesCompanion data) {
+    return SettlementsCache(
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      settlementsJson: data.settlementsJson.present
+          ? data.settlementsJson.value
+          : this.settlementsJson,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SettlementsCache(')
+          ..write('groupId: $groupId, ')
+          ..write('settlementsJson: $settlementsJson, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(groupId, settlementsJson, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SettlementsCache &&
+          other.groupId == this.groupId &&
+          other.settlementsJson == this.settlementsJson &&
+          other.updatedAt == this.updatedAt);
+}
+
+class SettlementsCachesCompanion extends UpdateCompanion<SettlementsCache> {
+  final Value<String> groupId;
+  final Value<String> settlementsJson;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const SettlementsCachesCompanion({
+    this.groupId = const Value.absent(),
+    this.settlementsJson = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SettlementsCachesCompanion.insert({
+    required String groupId,
+    required String settlementsJson,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  })  : groupId = Value(groupId),
+        settlementsJson = Value(settlementsJson),
+        updatedAt = Value(updatedAt);
+  static Insertable<SettlementsCache> custom({
+    Expression<String>? groupId,
+    Expression<String>? settlementsJson,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (groupId != null) 'group_id': groupId,
+      if (settlementsJson != null) 'settlements_json': settlementsJson,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SettlementsCachesCompanion copyWith(
+      {Value<String>? groupId,
+      Value<String>? settlementsJson,
+      Value<DateTime>? updatedAt,
+      Value<int>? rowid}) {
+    return SettlementsCachesCompanion(
+      groupId: groupId ?? this.groupId,
+      settlementsJson: settlementsJson ?? this.settlementsJson,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (groupId.present) {
+      map['group_id'] = Variable<String>(groupId.value);
+    }
+    if (settlementsJson.present) {
+      map['settlements_json'] = Variable<String>(settlementsJson.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SettlementsCachesCompanion(')
+          ..write('groupId: $groupId, ')
+          ..write('settlementsJson: $settlementsJson, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CalendarCachesTable extends CalendarCaches
+    with TableInfo<$CalendarCachesTable, CalendarCache> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CalendarCachesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _groupIdMeta =
+      const VerificationMeta('groupId');
+  @override
+  late final GeneratedColumn<String> groupId = GeneratedColumn<String>(
+      'group_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _rangeKeyMeta =
+      const VerificationMeta('rangeKey');
+  @override
+  late final GeneratedColumn<String> rangeKey = GeneratedColumn<String>(
+      'range_key', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _eventsJsonMeta =
+      const VerificationMeta('eventsJson');
+  @override
+  late final GeneratedColumn<String> eventsJson = GeneratedColumn<String>(
+      'events_json', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [groupId, rangeKey, eventsJson, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'calendar_caches';
+  @override
+  VerificationContext validateIntegrity(Insertable<CalendarCache> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('group_id')) {
+      context.handle(_groupIdMeta,
+          groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta));
+    } else if (isInserting) {
+      context.missing(_groupIdMeta);
+    }
+    if (data.containsKey('range_key')) {
+      context.handle(_rangeKeyMeta,
+          rangeKey.isAcceptableOrUnknown(data['range_key']!, _rangeKeyMeta));
+    } else if (isInserting) {
+      context.missing(_rangeKeyMeta);
+    }
+    if (data.containsKey('events_json')) {
+      context.handle(
+          _eventsJsonMeta,
+          eventsJson.isAcceptableOrUnknown(
+              data['events_json']!, _eventsJsonMeta));
+    } else if (isInserting) {
+      context.missing(_eventsJsonMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {groupId, rangeKey};
+  @override
+  CalendarCache map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CalendarCache(
+      groupId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}group_id'])!,
+      rangeKey: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}range_key'])!,
+      eventsJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}events_json'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $CalendarCachesTable createAlias(String alias) {
+    return $CalendarCachesTable(attachedDatabase, alias);
+  }
+}
+
+class CalendarCache extends DataClass implements Insertable<CalendarCache> {
+  final String groupId;
+  final String rangeKey;
+  final String eventsJson;
+  final DateTime updatedAt;
+  const CalendarCache(
+      {required this.groupId,
+      required this.rangeKey,
+      required this.eventsJson,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['group_id'] = Variable<String>(groupId);
+    map['range_key'] = Variable<String>(rangeKey);
+    map['events_json'] = Variable<String>(eventsJson);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  CalendarCachesCompanion toCompanion(bool nullToAbsent) {
+    return CalendarCachesCompanion(
+      groupId: Value(groupId),
+      rangeKey: Value(rangeKey),
+      eventsJson: Value(eventsJson),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory CalendarCache.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CalendarCache(
+      groupId: serializer.fromJson<String>(json['groupId']),
+      rangeKey: serializer.fromJson<String>(json['rangeKey']),
+      eventsJson: serializer.fromJson<String>(json['eventsJson']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'groupId': serializer.toJson<String>(groupId),
+      'rangeKey': serializer.toJson<String>(rangeKey),
+      'eventsJson': serializer.toJson<String>(eventsJson),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  CalendarCache copyWith(
+          {String? groupId,
+          String? rangeKey,
+          String? eventsJson,
+          DateTime? updatedAt}) =>
+      CalendarCache(
+        groupId: groupId ?? this.groupId,
+        rangeKey: rangeKey ?? this.rangeKey,
+        eventsJson: eventsJson ?? this.eventsJson,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  CalendarCache copyWithCompanion(CalendarCachesCompanion data) {
+    return CalendarCache(
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      rangeKey: data.rangeKey.present ? data.rangeKey.value : this.rangeKey,
+      eventsJson:
+          data.eventsJson.present ? data.eventsJson.value : this.eventsJson,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CalendarCache(')
+          ..write('groupId: $groupId, ')
+          ..write('rangeKey: $rangeKey, ')
+          ..write('eventsJson: $eventsJson, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(groupId, rangeKey, eventsJson, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CalendarCache &&
+          other.groupId == this.groupId &&
+          other.rangeKey == this.rangeKey &&
+          other.eventsJson == this.eventsJson &&
+          other.updatedAt == this.updatedAt);
+}
+
+class CalendarCachesCompanion extends UpdateCompanion<CalendarCache> {
+  final Value<String> groupId;
+  final Value<String> rangeKey;
+  final Value<String> eventsJson;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const CalendarCachesCompanion({
+    this.groupId = const Value.absent(),
+    this.rangeKey = const Value.absent(),
+    this.eventsJson = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CalendarCachesCompanion.insert({
+    required String groupId,
+    required String rangeKey,
+    required String eventsJson,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  })  : groupId = Value(groupId),
+        rangeKey = Value(rangeKey),
+        eventsJson = Value(eventsJson),
+        updatedAt = Value(updatedAt);
+  static Insertable<CalendarCache> custom({
+    Expression<String>? groupId,
+    Expression<String>? rangeKey,
+    Expression<String>? eventsJson,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (groupId != null) 'group_id': groupId,
+      if (rangeKey != null) 'range_key': rangeKey,
+      if (eventsJson != null) 'events_json': eventsJson,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CalendarCachesCompanion copyWith(
+      {Value<String>? groupId,
+      Value<String>? rangeKey,
+      Value<String>? eventsJson,
+      Value<DateTime>? updatedAt,
+      Value<int>? rowid}) {
+    return CalendarCachesCompanion(
+      groupId: groupId ?? this.groupId,
+      rangeKey: rangeKey ?? this.rangeKey,
+      eventsJson: eventsJson ?? this.eventsJson,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (groupId.present) {
+      map['group_id'] = Variable<String>(groupId.value);
+    }
+    if (rangeKey.present) {
+      map['range_key'] = Variable<String>(rangeKey.value);
+    }
+    if (eventsJson.present) {
+      map['events_json'] = Variable<String>(eventsJson.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CalendarCachesCompanion(')
+          ..write('groupId: $groupId, ')
+          ..write('rangeKey: $rangeKey, ')
+          ..write('eventsJson: $eventsJson, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MealPlanCachesTable extends MealPlanCaches
+    with TableInfo<$MealPlanCachesTable, MealPlanCache> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MealPlanCachesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _groupIdMeta =
+      const VerificationMeta('groupId');
+  @override
+  late final GeneratedColumn<String> groupId = GeneratedColumn<String>(
+      'group_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _rangeKeyMeta =
+      const VerificationMeta('rangeKey');
+  @override
+  late final GeneratedColumn<String> rangeKey = GeneratedColumn<String>(
+      'range_key', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _plansJsonMeta =
+      const VerificationMeta('plansJson');
+  @override
+  late final GeneratedColumn<String> plansJson = GeneratedColumn<String>(
+      'plans_json', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [groupId, rangeKey, plansJson, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'meal_plan_caches';
+  @override
+  VerificationContext validateIntegrity(Insertable<MealPlanCache> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('group_id')) {
+      context.handle(_groupIdMeta,
+          groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta));
+    } else if (isInserting) {
+      context.missing(_groupIdMeta);
+    }
+    if (data.containsKey('range_key')) {
+      context.handle(_rangeKeyMeta,
+          rangeKey.isAcceptableOrUnknown(data['range_key']!, _rangeKeyMeta));
+    } else if (isInserting) {
+      context.missing(_rangeKeyMeta);
+    }
+    if (data.containsKey('plans_json')) {
+      context.handle(_plansJsonMeta,
+          plansJson.isAcceptableOrUnknown(data['plans_json']!, _plansJsonMeta));
+    } else if (isInserting) {
+      context.missing(_plansJsonMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {groupId, rangeKey};
+  @override
+  MealPlanCache map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MealPlanCache(
+      groupId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}group_id'])!,
+      rangeKey: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}range_key'])!,
+      plansJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}plans_json'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $MealPlanCachesTable createAlias(String alias) {
+    return $MealPlanCachesTable(attachedDatabase, alias);
+  }
+}
+
+class MealPlanCache extends DataClass implements Insertable<MealPlanCache> {
+  final String groupId;
+  final String rangeKey;
+  final String plansJson;
+  final DateTime updatedAt;
+  const MealPlanCache(
+      {required this.groupId,
+      required this.rangeKey,
+      required this.plansJson,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['group_id'] = Variable<String>(groupId);
+    map['range_key'] = Variable<String>(rangeKey);
+    map['plans_json'] = Variable<String>(plansJson);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  MealPlanCachesCompanion toCompanion(bool nullToAbsent) {
+    return MealPlanCachesCompanion(
+      groupId: Value(groupId),
+      rangeKey: Value(rangeKey),
+      plansJson: Value(plansJson),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory MealPlanCache.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MealPlanCache(
+      groupId: serializer.fromJson<String>(json['groupId']),
+      rangeKey: serializer.fromJson<String>(json['rangeKey']),
+      plansJson: serializer.fromJson<String>(json['plansJson']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'groupId': serializer.toJson<String>(groupId),
+      'rangeKey': serializer.toJson<String>(rangeKey),
+      'plansJson': serializer.toJson<String>(plansJson),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  MealPlanCache copyWith(
+          {String? groupId,
+          String? rangeKey,
+          String? plansJson,
+          DateTime? updatedAt}) =>
+      MealPlanCache(
+        groupId: groupId ?? this.groupId,
+        rangeKey: rangeKey ?? this.rangeKey,
+        plansJson: plansJson ?? this.plansJson,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  MealPlanCache copyWithCompanion(MealPlanCachesCompanion data) {
+    return MealPlanCache(
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      rangeKey: data.rangeKey.present ? data.rangeKey.value : this.rangeKey,
+      plansJson: data.plansJson.present ? data.plansJson.value : this.plansJson,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MealPlanCache(')
+          ..write('groupId: $groupId, ')
+          ..write('rangeKey: $rangeKey, ')
+          ..write('plansJson: $plansJson, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(groupId, rangeKey, plansJson, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MealPlanCache &&
+          other.groupId == this.groupId &&
+          other.rangeKey == this.rangeKey &&
+          other.plansJson == this.plansJson &&
+          other.updatedAt == this.updatedAt);
+}
+
+class MealPlanCachesCompanion extends UpdateCompanion<MealPlanCache> {
+  final Value<String> groupId;
+  final Value<String> rangeKey;
+  final Value<String> plansJson;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const MealPlanCachesCompanion({
+    this.groupId = const Value.absent(),
+    this.rangeKey = const Value.absent(),
+    this.plansJson = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MealPlanCachesCompanion.insert({
+    required String groupId,
+    required String rangeKey,
+    required String plansJson,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  })  : groupId = Value(groupId),
+        rangeKey = Value(rangeKey),
+        plansJson = Value(plansJson),
+        updatedAt = Value(updatedAt);
+  static Insertable<MealPlanCache> custom({
+    Expression<String>? groupId,
+    Expression<String>? rangeKey,
+    Expression<String>? plansJson,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (groupId != null) 'group_id': groupId,
+      if (rangeKey != null) 'range_key': rangeKey,
+      if (plansJson != null) 'plans_json': plansJson,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MealPlanCachesCompanion copyWith(
+      {Value<String>? groupId,
+      Value<String>? rangeKey,
+      Value<String>? plansJson,
+      Value<DateTime>? updatedAt,
+      Value<int>? rowid}) {
+    return MealPlanCachesCompanion(
+      groupId: groupId ?? this.groupId,
+      rangeKey: rangeKey ?? this.rangeKey,
+      plansJson: plansJson ?? this.plansJson,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (groupId.present) {
+      map['group_id'] = Variable<String>(groupId.value);
+    }
+    if (rangeKey.present) {
+      map['range_key'] = Variable<String>(rangeKey.value);
+    }
+    if (plansJson.present) {
+      map['plans_json'] = Variable<String>(plansJson.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MealPlanCachesCompanion(')
+          ..write('groupId: $groupId, ')
+          ..write('rangeKey: $rangeKey, ')
+          ..write('plansJson: $plansJson, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $OutboxOpsTable extends OutboxOps
     with TableInfo<$OutboxOpsTable, OutboxOp> {
   @override
@@ -8847,6 +9637,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $HubActivityCachesTable hubActivityCaches =
       $HubActivityCachesTable(this);
   late final $GroupsCachesTable groupsCaches = $GroupsCachesTable(this);
+  late final $SettlementsCachesTable settlementsCaches =
+      $SettlementsCachesTable(this);
+  late final $CalendarCachesTable calendarCaches = $CalendarCachesTable(this);
+  late final $MealPlanCachesTable mealPlanCaches = $MealPlanCachesTable(this);
   late final $OutboxOpsTable outboxOps = $OutboxOpsTable(this);
   late final $ConflictsTable conflicts = $ConflictsTable(this);
   late final $CanonicalItemsTableTable canonicalItemsTable =
@@ -8882,6 +9676,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         hubGroupCaches,
         hubActivityCaches,
         groupsCaches,
+        settlementsCaches,
+        calendarCaches,
+        mealPlanCaches,
         outboxOps,
         conflicts,
         canonicalItemsTable,
@@ -10791,6 +11588,471 @@ typedef $$GroupsCachesTableProcessedTableManager = ProcessedTableManager<
       BaseReferences<_$AppDatabase, $GroupsCachesTable, GroupsCache>
     ),
     GroupsCache,
+    PrefetchHooks Function()>;
+typedef $$SettlementsCachesTableCreateCompanionBuilder
+    = SettlementsCachesCompanion Function({
+  required String groupId,
+  required String settlementsJson,
+  required DateTime updatedAt,
+  Value<int> rowid,
+});
+typedef $$SettlementsCachesTableUpdateCompanionBuilder
+    = SettlementsCachesCompanion Function({
+  Value<String> groupId,
+  Value<String> settlementsJson,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+
+class $$SettlementsCachesTableFilterComposer
+    extends Composer<_$AppDatabase, $SettlementsCachesTable> {
+  $$SettlementsCachesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get settlementsJson => $composableBuilder(
+      column: $table.settlementsJson,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$SettlementsCachesTableOrderingComposer
+    extends Composer<_$AppDatabase, $SettlementsCachesTable> {
+  $$SettlementsCachesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get settlementsJson => $composableBuilder(
+      column: $table.settlementsJson,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$SettlementsCachesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SettlementsCachesTable> {
+  $$SettlementsCachesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
+
+  GeneratedColumn<String> get settlementsJson => $composableBuilder(
+      column: $table.settlementsJson, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$SettlementsCachesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $SettlementsCachesTable,
+    SettlementsCache,
+    $$SettlementsCachesTableFilterComposer,
+    $$SettlementsCachesTableOrderingComposer,
+    $$SettlementsCachesTableAnnotationComposer,
+    $$SettlementsCachesTableCreateCompanionBuilder,
+    $$SettlementsCachesTableUpdateCompanionBuilder,
+    (
+      SettlementsCache,
+      BaseReferences<_$AppDatabase, $SettlementsCachesTable, SettlementsCache>
+    ),
+    SettlementsCache,
+    PrefetchHooks Function()> {
+  $$SettlementsCachesTableTableManager(
+      _$AppDatabase db, $SettlementsCachesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SettlementsCachesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SettlementsCachesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SettlementsCachesTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> groupId = const Value.absent(),
+            Value<String> settlementsJson = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              SettlementsCachesCompanion(
+            groupId: groupId,
+            settlementsJson: settlementsJson,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String groupId,
+            required String settlementsJson,
+            required DateTime updatedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              SettlementsCachesCompanion.insert(
+            groupId: groupId,
+            settlementsJson: settlementsJson,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$SettlementsCachesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $SettlementsCachesTable,
+    SettlementsCache,
+    $$SettlementsCachesTableFilterComposer,
+    $$SettlementsCachesTableOrderingComposer,
+    $$SettlementsCachesTableAnnotationComposer,
+    $$SettlementsCachesTableCreateCompanionBuilder,
+    $$SettlementsCachesTableUpdateCompanionBuilder,
+    (
+      SettlementsCache,
+      BaseReferences<_$AppDatabase, $SettlementsCachesTable, SettlementsCache>
+    ),
+    SettlementsCache,
+    PrefetchHooks Function()>;
+typedef $$CalendarCachesTableCreateCompanionBuilder = CalendarCachesCompanion
+    Function({
+  required String groupId,
+  required String rangeKey,
+  required String eventsJson,
+  required DateTime updatedAt,
+  Value<int> rowid,
+});
+typedef $$CalendarCachesTableUpdateCompanionBuilder = CalendarCachesCompanion
+    Function({
+  Value<String> groupId,
+  Value<String> rangeKey,
+  Value<String> eventsJson,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+
+class $$CalendarCachesTableFilterComposer
+    extends Composer<_$AppDatabase, $CalendarCachesTable> {
+  $$CalendarCachesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get rangeKey => $composableBuilder(
+      column: $table.rangeKey, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get eventsJson => $composableBuilder(
+      column: $table.eventsJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$CalendarCachesTableOrderingComposer
+    extends Composer<_$AppDatabase, $CalendarCachesTable> {
+  $$CalendarCachesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get rangeKey => $composableBuilder(
+      column: $table.rangeKey, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get eventsJson => $composableBuilder(
+      column: $table.eventsJson, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$CalendarCachesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CalendarCachesTable> {
+  $$CalendarCachesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
+
+  GeneratedColumn<String> get rangeKey =>
+      $composableBuilder(column: $table.rangeKey, builder: (column) => column);
+
+  GeneratedColumn<String> get eventsJson => $composableBuilder(
+      column: $table.eventsJson, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$CalendarCachesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $CalendarCachesTable,
+    CalendarCache,
+    $$CalendarCachesTableFilterComposer,
+    $$CalendarCachesTableOrderingComposer,
+    $$CalendarCachesTableAnnotationComposer,
+    $$CalendarCachesTableCreateCompanionBuilder,
+    $$CalendarCachesTableUpdateCompanionBuilder,
+    (
+      CalendarCache,
+      BaseReferences<_$AppDatabase, $CalendarCachesTable, CalendarCache>
+    ),
+    CalendarCache,
+    PrefetchHooks Function()> {
+  $$CalendarCachesTableTableManager(
+      _$AppDatabase db, $CalendarCachesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CalendarCachesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CalendarCachesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CalendarCachesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> groupId = const Value.absent(),
+            Value<String> rangeKey = const Value.absent(),
+            Value<String> eventsJson = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              CalendarCachesCompanion(
+            groupId: groupId,
+            rangeKey: rangeKey,
+            eventsJson: eventsJson,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String groupId,
+            required String rangeKey,
+            required String eventsJson,
+            required DateTime updatedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              CalendarCachesCompanion.insert(
+            groupId: groupId,
+            rangeKey: rangeKey,
+            eventsJson: eventsJson,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$CalendarCachesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $CalendarCachesTable,
+    CalendarCache,
+    $$CalendarCachesTableFilterComposer,
+    $$CalendarCachesTableOrderingComposer,
+    $$CalendarCachesTableAnnotationComposer,
+    $$CalendarCachesTableCreateCompanionBuilder,
+    $$CalendarCachesTableUpdateCompanionBuilder,
+    (
+      CalendarCache,
+      BaseReferences<_$AppDatabase, $CalendarCachesTable, CalendarCache>
+    ),
+    CalendarCache,
+    PrefetchHooks Function()>;
+typedef $$MealPlanCachesTableCreateCompanionBuilder = MealPlanCachesCompanion
+    Function({
+  required String groupId,
+  required String rangeKey,
+  required String plansJson,
+  required DateTime updatedAt,
+  Value<int> rowid,
+});
+typedef $$MealPlanCachesTableUpdateCompanionBuilder = MealPlanCachesCompanion
+    Function({
+  Value<String> groupId,
+  Value<String> rangeKey,
+  Value<String> plansJson,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+
+class $$MealPlanCachesTableFilterComposer
+    extends Composer<_$AppDatabase, $MealPlanCachesTable> {
+  $$MealPlanCachesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get rangeKey => $composableBuilder(
+      column: $table.rangeKey, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get plansJson => $composableBuilder(
+      column: $table.plansJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$MealPlanCachesTableOrderingComposer
+    extends Composer<_$AppDatabase, $MealPlanCachesTable> {
+  $$MealPlanCachesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get rangeKey => $composableBuilder(
+      column: $table.rangeKey, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get plansJson => $composableBuilder(
+      column: $table.plansJson, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$MealPlanCachesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MealPlanCachesTable> {
+  $$MealPlanCachesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
+
+  GeneratedColumn<String> get rangeKey =>
+      $composableBuilder(column: $table.rangeKey, builder: (column) => column);
+
+  GeneratedColumn<String> get plansJson =>
+      $composableBuilder(column: $table.plansJson, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$MealPlanCachesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $MealPlanCachesTable,
+    MealPlanCache,
+    $$MealPlanCachesTableFilterComposer,
+    $$MealPlanCachesTableOrderingComposer,
+    $$MealPlanCachesTableAnnotationComposer,
+    $$MealPlanCachesTableCreateCompanionBuilder,
+    $$MealPlanCachesTableUpdateCompanionBuilder,
+    (
+      MealPlanCache,
+      BaseReferences<_$AppDatabase, $MealPlanCachesTable, MealPlanCache>
+    ),
+    MealPlanCache,
+    PrefetchHooks Function()> {
+  $$MealPlanCachesTableTableManager(
+      _$AppDatabase db, $MealPlanCachesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MealPlanCachesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MealPlanCachesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MealPlanCachesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> groupId = const Value.absent(),
+            Value<String> rangeKey = const Value.absent(),
+            Value<String> plansJson = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              MealPlanCachesCompanion(
+            groupId: groupId,
+            rangeKey: rangeKey,
+            plansJson: plansJson,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String groupId,
+            required String rangeKey,
+            required String plansJson,
+            required DateTime updatedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              MealPlanCachesCompanion.insert(
+            groupId: groupId,
+            rangeKey: rangeKey,
+            plansJson: plansJson,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$MealPlanCachesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $MealPlanCachesTable,
+    MealPlanCache,
+    $$MealPlanCachesTableFilterComposer,
+    $$MealPlanCachesTableOrderingComposer,
+    $$MealPlanCachesTableAnnotationComposer,
+    $$MealPlanCachesTableCreateCompanionBuilder,
+    $$MealPlanCachesTableUpdateCompanionBuilder,
+    (
+      MealPlanCache,
+      BaseReferences<_$AppDatabase, $MealPlanCachesTable, MealPlanCache>
+    ),
+    MealPlanCache,
     PrefetchHooks Function()>;
 typedef $$OutboxOpsTableCreateCompanionBuilder = OutboxOpsCompanion Function({
   required String id,
@@ -13432,6 +14694,12 @@ class $AppDatabaseManager {
       $$HubActivityCachesTableTableManager(_db, _db.hubActivityCaches);
   $$GroupsCachesTableTableManager get groupsCaches =>
       $$GroupsCachesTableTableManager(_db, _db.groupsCaches);
+  $$SettlementsCachesTableTableManager get settlementsCaches =>
+      $$SettlementsCachesTableTableManager(_db, _db.settlementsCaches);
+  $$CalendarCachesTableTableManager get calendarCaches =>
+      $$CalendarCachesTableTableManager(_db, _db.calendarCaches);
+  $$MealPlanCachesTableTableManager get mealPlanCaches =>
+      $$MealPlanCachesTableTableManager(_db, _db.mealPlanCaches);
   $$OutboxOpsTableTableManager get outboxOps =>
       $$OutboxOpsTableTableManager(_db, _db.outboxOps);
   $$ConflictsTableTableManager get conflicts =>

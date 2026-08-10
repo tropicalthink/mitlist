@@ -179,7 +179,11 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
         return;
       }
 
-      final chore = await choreService.createChore(
+      // Offline-first: the chore is queued and visible immediately. We wait a
+      // moment for it to reach the server, purely so an online create can still
+      // name the assignee below; expiring just means the outbox finishes it.
+      final choreRepo = await ref.read(choreRepositoryProvider.future);
+      final result = await choreRepo.createOfflineFirst(
         CreateChoreRequest(
           groupId: groupId,
           name: _nameController.text.trim(),
@@ -199,30 +203,36 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           supplies: List.unmodifiable(_supplies),
           category: _category,
         ),
+        syncWindow: const Duration(milliseconds: 1500),
       );
 
       // Best-effort: surface who the chore landed on so a new chore reads as
       // part of the household rotation, not an isolated entry. Never blocks the
-      // success path if the lookup fails.
+      // success path if the lookup fails. Skipped entirely when the create is
+      // still queued — the server assigns the rotation, so until it has the
+      // chore there is no assignee to name, and asking would just stall on a
+      // connection we already know is not answering.
       String? assignee;
-      try {
-        final details = await choreService.getChoreDetails(chore.id);
-        if (details.assignedToMe) {
-          assignee = 'you';
-        } else {
-          final assigneeId = details.pendingAssignment?.userId;
-          if (assigneeId != null) {
-            final members = await groupService.listMembers(groupId);
-            for (final m in members) {
-              if (m.userId == assigneeId) {
-                assignee = m.displayName;
-                break;
+      if (result.synced) {
+        try {
+          final details = await choreService.getChoreDetails(result.chore.id);
+          if (details.assignedToMe) {
+            assignee = 'you';
+          } else {
+            final assigneeId = details.pendingAssignment?.userId;
+            if (assigneeId != null) {
+              final members = await groupService.listMembers(groupId);
+              for (final m in members) {
+                if (m.userId == assigneeId) {
+                  assignee = m.displayName;
+                  break;
+                }
               }
             }
           }
+        } catch (_) {
+          // Confirmation is a nicety; fall back to the plain message.
         }
-      } catch (_) {
-        // Confirmation is a nicety; fall back to the plain message.
       }
 
       if (!mounted) return;

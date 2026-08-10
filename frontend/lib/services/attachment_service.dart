@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 
+import '../config/api_config.dart';
 import '../models/attachment_models.dart';
 import 'api_client.dart';
 import 'group_id_validator.dart';
@@ -50,9 +51,11 @@ class AttachmentService {
         headers: {
           'Content-Type': contentType,
         },
+        // Generous transfer budget (uploads are large), but establishing the
+        // connection is the same cheap handshake as anywhere else.
         sendTimeout: const Duration(minutes: 2),
         receiveTimeout: const Duration(minutes: 2),
-        connectTimeout: const Duration(seconds: 30),
+        connectTimeout: ApiConfig.connectTimeout,
       ),
     );
 
