@@ -523,6 +523,16 @@ func (s *UserService) CreatePushSubscription(ctx context.Context, sub *models.Pu
 	if sub.Endpoint == "" || sub.P256dh == "" || sub.Auth == "" {
 		return &api.ValidationError{Message: "endpoint, p256dh, and auth are required"}
 	}
+	// Browser-provided key material is short base64url data. Bound each field
+	// before it reaches storage so a malicious registration cannot consume
+	// oversized rows or memory in downstream push code.
+	const maxPushKeyLength = 512
+	if len(sub.P256dh) > maxPushKeyLength {
+		return &api.ValidationError{Field: "p256dh", Message: "p256dh exceeds maximum length of 512 bytes"}
+	}
+	if len(sub.Auth) > maxPushKeyLength {
+		return &api.ValidationError{Field: "auth", Message: "auth exceeds maximum length of 512 bytes"}
+	}
 	if err := pushvalidate.ValidatePushEndpoint(sub.Endpoint); err != nil {
 		return err
 	}
@@ -569,11 +579,18 @@ func (s *UserService) DeletePushSubscription(ctx context.Context, userID, subID 
 
 // SaveDeviceToken upserts an FCM device token for the current user.
 func (s *UserService) SaveDeviceToken(ctx context.Context, userID uuid.UUID, platform, token string) (*models.DeviceToken, error) {
+	if userID == uuid.Nil {
+		return nil, &api.ValidationError{Field: "user_id", Message: "user_id is required"}
+	}
 	if platform != "android" && platform != "ios" {
 		return nil, &api.ValidationError{Field: "platform", Message: "platform must be android or ios"}
 	}
 	if token == "" {
 		return nil, &api.ValidationError{Field: "token", Message: "token is required"}
+	}
+	const maxDeviceTokenLength = 4096
+	if len(token) > maxDeviceTokenLength {
+		return nil, &api.ValidationError{Field: "token", Message: "token exceeds maximum length of 4096 bytes"}
 	}
 	return s.authRepo.SaveDeviceToken(ctx, userID, platform, token)
 }

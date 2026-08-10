@@ -74,6 +74,19 @@ func (h *SSEHandler) Events(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Reserve the stream before writing any bytes. The hub tracks both the
+	// authenticated user and the client address, so reconnect storms and a
+	// single browser opening many tabs cannot consume unbounded goroutines.
+	ch, accepted := h.hub.TrySubscribe(groupID, user.ID.String(), middleware.ExtractIP(r))
+	if !accepted {
+		w.Header().Set("Retry-After", "30")
+		api.RespondJSON(w, http.StatusTooManyRequests, map[string]string{
+			"error":   "too many active event streams",
+			"message": "close another live connection and try again shortly",
+		})
+		return
+	}
+
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
@@ -99,7 +112,6 @@ func (h *SSEHandler) Events(w http.ResponseWriter, r *http.Request) {
 		return true
 	}
 
-	ch := h.hub.Subscribe(groupID, user.ID.String())
 	defer func() {
 		h.hub.Unsubscribe(groupID, ch)
 		// Tell everyone still on the board that this viewer left.

@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -457,4 +458,27 @@ func TestIsNotFound(t *testing.T) {
 	assert.True(t, isNotFound(errors.New("oauth account not found")))
 	assert.False(t, isNotFound(nil))
 	assert.False(t, isNotFound(errors.New("some other error")))
+}
+
+func TestUserServicePushRegistrationInputCaps(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+	authRepo := new(mocks.MockAuthRepo)
+	svc := NewUserService(nil, authRepo, nil, nil, nil)
+
+	tooLongKey := strings.Repeat("k", 513)
+	err := svc.CreatePushSubscription(ctx, &models.PushSubscription{
+		UserID: userID, Endpoint: "https://push.example.com/endpoint",
+		P256dh: tooLongKey, Auth: "auth",
+	})
+	var validationErr *api.ValidationError
+	require.ErrorAs(t, err, &validationErr)
+	assert.Equal(t, "p256dh", validationErr.Field)
+	authRepo.AssertNotCalled(t, "CreatePushSubscription", mock.Anything, mock.Anything)
+
+	tooLongToken := strings.Repeat("t", 4097)
+	_, err = svc.SaveDeviceToken(ctx, userID, "android", tooLongToken)
+	require.ErrorAs(t, err, &validationErr)
+	assert.Equal(t, "token", validationErr.Field)
+	authRepo.AssertNotCalled(t, "SaveDeviceToken", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 }
