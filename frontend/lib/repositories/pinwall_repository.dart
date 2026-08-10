@@ -16,6 +16,7 @@ class PinwallRepository {
 
   SseService? _sseService;
   StreamSubscription<SseEvent>? _sseSub;
+  String? _sseGroupId;
 
   PinwallRepository({
     required AppDatabase db,
@@ -30,9 +31,10 @@ class PinwallRepository {
   /// against the server (refetch on create) or the cache (remove on delete),
   /// which fires the existing [watchPosts] Drift stream.
   void attachSse(SseService sseService, String groupId) {
-    if (_sseService == sseService) return;
+    if (_sseService == sseService && _sseGroupId == groupId) return;
     _sseSub?.cancel();
     _sseService = sseService;
+    _sseGroupId = groupId;
     sseService.connect(groupId);
     _sseSub = sseService.events.listen(_handleSseEvent);
   }
@@ -42,9 +44,11 @@ class PinwallRepository {
     _sseSub?.cancel();
     _sseSub = null;
     _sseService = null;
+    _sseGroupId = null;
   }
 
   Future<void> _handleSseEvent(SseEvent event) async {
+    if (_sseGroupId == null || event.groupId != _sseGroupId) return;
     switch (event.type) {
       case 'pinwall:post_created':
       case 'pinwall:post_moved':
@@ -96,41 +100,45 @@ class PinwallRepository {
     DateTime? remindAt,
   }) async {
     final tempId = 'local-${_uuid.v4()}';
-    await _db.enqueueOutbox(
-      id: _uuid.v4(),
-      type: 'createPinwallPost',
-      payload: {
-        'groupId': groupId,
-        'content': content,
-        'tempId': tempId,
-        if (remindAt != null) 'remindAt': remindAt.toUtc().toIso8601String(),
-      },
-      idempotencyKey: 'createPinwallPost:$groupId:$tempId',
-      entityType: 'pinwallPost',
-      entityId: tempId,
-    );
-    await _insertCachedPost(PinwallPost(
-      id: tempId,
-      groupId: groupId,
-      userId: userId,
-      content: content,
-      createdAt: DateTime.now(),
-      remindAt: remindAt,
-    ));
+    await _db.transaction(() async {
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'createPinwallPost',
+        payload: {
+          'groupId': groupId,
+          'content': content,
+          'tempId': tempId,
+          if (remindAt != null) 'remindAt': remindAt.toUtc().toIso8601String(),
+        },
+        idempotencyKey: 'createPinwallPost:$groupId:$tempId',
+        entityType: 'pinwallPost',
+        entityId: tempId,
+      );
+      await _insertCachedPost(PinwallPost(
+        id: tempId,
+        groupId: groupId,
+        userId: userId,
+        content: content,
+        createdAt: DateTime.now(),
+        remindAt: remindAt,
+      ));
+    });
     return tempId;
   }
 
   Future<void> deletePostOfflineFirst(String groupId, String postId) async {
-    await _db.enqueueOutbox(
-      id: _uuid.v4(),
-      type: 'deletePinwallPost',
-      payload: {'groupId': groupId, 'postId': postId},
-      idempotencyKey: 'deletePinwallPost:$postId',
-      entityType: 'pinwallPost',
-      entityId: postId,
-    );
-    // Optimistic removal so the note disappears immediately offline.
-    await _removeCachedPost(groupId, postId);
+    await _db.transaction(() async {
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'deletePinwallPost',
+        payload: {'groupId': groupId, 'postId': postId},
+        idempotencyKey: 'deletePinwallPost:$postId',
+        entityType: 'pinwallPost',
+        entityId: postId,
+      );
+      // Optimistic removal so the note disappears immediately offline.
+      await _removeCachedPost(groupId, postId);
+    });
   }
 
   /// Persists a note's placement on the shared cork board. Patches the cached
@@ -144,16 +152,18 @@ class PinwallRepository {
     double x,
     double y,
   ) async {
-    await _patchCachedPostPosition(groupId, postId, x, y);
-    if (postId.startsWith('local-')) return;
-    await _db.enqueueOutbox(
-      id: _uuid.v4(),
-      type: 'updatePinwallPostPosition',
-      payload: {'groupId': groupId, 'postId': postId, 'x': x, 'y': y},
-      idempotencyKey: 'updatePinwallPostPosition:$postId',
-      entityType: 'pinwallPost',
-      entityId: postId,
-    );
+    await _db.transaction(() async {
+      await _patchCachedPostPosition(groupId, postId, x, y);
+      if (postId.startsWith('local-')) return;
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'updatePinwallPostPosition',
+        payload: {'groupId': groupId, 'postId': postId, 'x': x, 'y': y},
+        idempotencyKey: 'updatePinwallPostPosition:$postId',
+        entityType: 'pinwallPost',
+        entityId: postId,
+      );
+    });
   }
 
   Future<void> _patchCachedPostPosition(
@@ -232,6 +242,7 @@ class PinwallRepository {
             payload['groupId'] as String,
             content: payload['content'] as String,
             remindAt: remindRaw != null ? DateTime.parse(remindRaw) : null,
+            idempotencyKey: op.idempotencyKey,
           );
           await refreshPosts(payload['groupId'] as String);
           await _db.deleteOutboxOp(op.id);
@@ -240,6 +251,7 @@ class PinwallRepository {
           await _remote.deletePost(
             payload['groupId'] as String,
             payload['postId'] as String,
+            idempotencyKey: op.idempotencyKey,
           );
           await refreshPosts(payload['groupId'] as String);
           await _db.deleteOutboxOp(op.id);
@@ -253,6 +265,7 @@ class PinwallRepository {
             payload['postId'] as String,
             x: (payload['x'] as num).toDouble(),
             y: (payload['y'] as num).toDouble(),
+            idempotencyKey: op.idempotencyKey,
           );
           await _db.deleteOutboxOp(op.id);
         },

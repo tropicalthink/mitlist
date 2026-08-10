@@ -59,15 +59,17 @@ class RecipeRepository {
       updatedAt: now,
     );
 
-    await _db.upsertRecipesRows([_toRow(local)]);
-    await _db.enqueueOutbox(
-      id: _uuid.v4(),
-      type: 'createRecipe',
-      payload: {'tempId': tempId, 'request': req.toJson()},
-      idempotencyKey: 'createRecipe:$tempId',
-      entityType: 'recipe',
-      entityId: tempId,
-    );
+    await _db.transaction(() async {
+      await _db.upsertRecipesRows([_toRow(local)]);
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'createRecipe',
+        payload: {'tempId': tempId, 'request': req.toJson()},
+        idempotencyKey: 'createRecipe:$tempId',
+        entityType: 'recipe',
+        entityId: tempId,
+      );
+    });
 
     if (_autoSync) unawaited(drainOutboxOnce());
     return local;
@@ -95,18 +97,29 @@ class RecipeRepository {
         createdAt: e.createdAt,
         updatedAt: DateTime.now(),
       );
-      await _db.upsertRecipesRows([_toRow(patched)]);
+      await _db.transaction(() async {
+        await _db.upsertRecipesRows([_toRow(patched)]);
+        await _db.enqueueOutbox(
+          id: _uuid.v4(),
+          type: 'updateRecipe',
+          payload: {'recipeId': recipeId, 'patch': req.toJson()},
+          idempotencyKey:
+              'updateRecipe:$recipeId:${DateTime.now().toIso8601String()}',
+          entityType: 'recipe',
+          entityId: recipeId,
+        );
+      });
+    } else {
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'updateRecipe',
+        payload: {'recipeId': recipeId, 'patch': req.toJson()},
+        idempotencyKey:
+            'updateRecipe:$recipeId:${DateTime.now().toIso8601String()}',
+        entityType: 'recipe',
+        entityId: recipeId,
+      );
     }
-
-    await _db.enqueueOutbox(
-      id: _uuid.v4(),
-      type: 'updateRecipe',
-      payload: {'recipeId': recipeId, 'patch': req.toJson()},
-      idempotencyKey:
-          'updateRecipe:$recipeId:${DateTime.now().toIso8601String()}',
-      entityType: 'recipe',
-      entityId: recipeId,
-    );
 
     if (_autoSync) unawaited(drainOutboxOnce());
 
@@ -119,17 +132,18 @@ class RecipeRepository {
   }
 
   Future<void> deleteRecipeOfflineFirst(String recipeId) async {
-    await (_db.delete(_db.recipesTable)..where((t) => t.id.equals(recipeId)))
-        .go();
-
-    await _db.enqueueOutbox(
-      id: _uuid.v4(),
-      type: 'deleteRecipe',
-      payload: {'recipeId': recipeId},
-      idempotencyKey: 'deleteRecipe:$recipeId',
-      entityType: 'recipe',
-      entityId: recipeId,
-    );
+    await _db.transaction(() async {
+      await (_db.delete(_db.recipesTable)..where((t) => t.id.equals(recipeId)))
+          .go();
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'deleteRecipe',
+        payload: {'recipeId': recipeId},
+        idempotencyKey: 'deleteRecipe:$recipeId',
+        entityType: 'recipe',
+        entityId: recipeId,
+      );
+    });
 
     if (_autoSync) unawaited(drainOutboxOnce());
   }
@@ -141,9 +155,12 @@ class RecipeRepository {
       await OutboxDrainer(_db).drain(
         types: const ['createRecipe', 'updateRecipe', 'deleteRecipe'],
         handlers: {
-          'createRecipe': (op, payload) => _syncCreate(op.id, payload),
-          'updateRecipe': (op, payload) => _syncUpdate(op.id, payload),
-          'deleteRecipe': (op, payload) => _syncDelete(op.id, payload),
+          'createRecipe': (op, payload) =>
+              _syncCreate(op.id, payload, op.idempotencyKey),
+          'updateRecipe': (op, payload) =>
+              _syncUpdate(op.id, payload, op.idempotencyKey),
+          'deleteRecipe': (op, payload) =>
+              _syncDelete(op.id, payload, op.idempotencyKey),
         },
       );
     } finally {
@@ -151,7 +168,8 @@ class RecipeRepository {
     }
   }
 
-  Future<void> _syncCreate(String opId, Map<String, dynamic> payload) async {
+  Future<void> _syncCreate(
+      String opId, Map<String, dynamic> payload, String? idempotencyKey) async {
     final tempId = payload['tempId'] as String?;
     final requestRaw = payload['request'];
     if (tempId == null || requestRaw is! Map) {
@@ -169,7 +187,8 @@ class RecipeRepository {
       isPublic: requestRaw['is_public'] as bool? ?? false,
     );
 
-    final created = await _remote.createRecipe(req);
+    final created =
+        await _remote.createRecipe(req, idempotencyKey: idempotencyKey);
     await (_db.delete(_db.recipesTable)..where((t) => t.id.equals(tempId)))
         .go();
     await _db.upsertRecipesRows([_toRow(created)]);
@@ -177,7 +196,8 @@ class RecipeRepository {
     await _db.deleteOutboxOp(opId);
   }
 
-  Future<void> _syncUpdate(String opId, Map<String, dynamic> payload) async {
+  Future<void> _syncUpdate(
+      String opId, Map<String, dynamic> payload, String? idempotencyKey) async {
     final recipeId = payload['recipeId'] as String?;
     final patch = payload['patch'];
     if (recipeId == null || patch is! Map) {
@@ -195,18 +215,20 @@ class RecipeRepository {
       isPublic: patch['is_public'] as bool?,
     );
 
-    final updated = await _remote.updateRecipe(recipeId, req);
+    final updated = await _remote.updateRecipe(recipeId, req,
+        idempotencyKey: idempotencyKey);
     await _db.upsertRecipesRows([_toRow(updated)]);
     await _db.deleteOutboxOp(opId);
   }
 
-  Future<void> _syncDelete(String opId, Map<String, dynamic> payload) async {
+  Future<void> _syncDelete(
+      String opId, Map<String, dynamic> payload, String? idempotencyKey) async {
     final recipeId = payload['recipeId'] as String?;
     if (recipeId == null) {
       await _db.deleteOutboxOp(opId);
       return;
     }
-    await _remote.deleteRecipe(recipeId);
+    await _remote.deleteRecipe(recipeId, idempotencyKey: idempotencyKey);
     await _db.deleteOutboxOp(opId);
   }
 

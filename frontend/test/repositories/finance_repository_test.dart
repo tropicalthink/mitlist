@@ -350,8 +350,8 @@ void main() {
 
       final op = (await db.getOutboxOpsByType('updateExpense')).single;
       final payload = jsonDecode(op.payloadJson) as Map<String, dynamic>;
-      expect(DateTime.parse(payload['expectedUpdatedAt'] as String),
-          base.toUtc());
+      expect(
+          DateTime.parse(payload['expectedUpdatedAt'] as String), base.toUtc());
     });
 
     test('a chained edit sends no base', () async {
@@ -586,7 +586,7 @@ void main() {
 // ---------------------------------------------------------------------------
 class _ThrowingDeleteFinanceService extends FakeFinanceService {
   @override
-  Future<void> deleteExpense(String id) async {
+  Future<void> deleteExpense(String id, {String? idempotencyKey}) async {
     throw fakeDioException(statusCode: 503);
   }
 }

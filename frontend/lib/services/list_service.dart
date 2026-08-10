@@ -5,6 +5,7 @@ import '../models/list_item_photo_models.dart';
 import 'api_client.dart';
 import 'api_error_mapper.dart';
 import 'group_id_validator.dart';
+import 'outbox_request.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class ListService {
@@ -105,14 +106,14 @@ class ListService {
   }
 
   Future<void> recordGroceryPurchases(
-    String groupId,
-    List<Map<String, dynamic>> events,
-  ) async {
+      String groupId, List<Map<String, dynamic>> events,
+      {String? idempotencyKey}) async {
     ensureValidGroupId(groupId);
     try {
       await _dio.post(
         '/groups/$groupId/grocery/purchases',
         data: {'events': events},
+        options: outboxOptions(idempotencyKey),
       );
     } on DioException catch (e) {
       _logger.e('Record grocery purchases failed: ${e.response?.data}');
@@ -167,9 +168,11 @@ class ListService {
     }
   }
 
-  Future<ListItem> createItem(String listId, CreateListItemRequest req) async {
+  Future<ListItem> createItem(String listId, CreateListItemRequest req,
+      {String? idempotencyKey}) async {
     try {
-      final r = await _dio.post('/lists/$listId/items', data: req.toJson());
+      final r = await _dio.post('/lists/$listId/items',
+          data: req.toJson(), options: outboxOptions(idempotencyKey));
       return ListItem.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Create item failed: ${e.response?.data}');
@@ -190,10 +193,11 @@ class ListService {
   }
 
   Future<ListItem> updateItem(
-      String listId, String itemId, UpdateListItemRequest req) async {
+      String listId, String itemId, UpdateListItemRequest req,
+      {String? idempotencyKey}) async {
     try {
-      final r =
-          await _dio.patch('/lists/$listId/items/$itemId', data: req.toJson());
+      final r = await _dio.patch('/lists/$listId/items/$itemId',
+          data: req.toJson(), options: outboxOptions(idempotencyKey));
       return ListItem.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Update item failed: ${e.response?.data}');
@@ -201,9 +205,11 @@ class ListService {
     }
   }
 
-  Future<void> deleteItem(String listId, String itemId) async {
+  Future<void> deleteItem(String listId, String itemId,
+      {String? idempotencyKey}) async {
     try {
-      await _dio.delete('/lists/$listId/items/$itemId');
+      await _dio.delete('/lists/$listId/items/$itemId',
+          options: outboxOptions(idempotencyKey));
     } on DioException catch (e) {
       _logger.e('Delete item failed: ${e.response?.data}');
       throw apiException(e);
@@ -228,9 +234,11 @@ class ListService {
     }
   }
 
-  Future<void> reorderItems(String listId, ReorderItemsRequest req) async {
+  Future<void> reorderItems(String listId, ReorderItemsRequest req,
+      {String? idempotencyKey}) async {
     try {
-      await _dio.post('/lists/$listId/reorder', data: req.toJson());
+      await _dio.post('/lists/$listId/reorder',
+          data: req.toJson(), options: outboxOptions(idempotencyKey));
     } on DioException catch (e) {
       _logger.e('Reorder items failed: ${e.response?.data}');
       throw apiException(e);
@@ -292,11 +300,13 @@ class ListService {
   Future<Map<String, dynamic>> clearItems(
     String listId, {
     bool onlyChecked = false,
+    String? idempotencyKey,
   }) async {
     try {
       final r = await _dio.post(
         '/lists/$listId/items/clear',
         data: {'only_checked': onlyChecked},
+        options: outboxOptions(idempotencyKey),
       );
       return Map<String, dynamic>.from(r.data as Map);
     } on DioException catch (e) {
@@ -305,12 +315,11 @@ class ListService {
     }
   }
 
-  Future<ListItem> addItemAmount(
-    String listId,
-    AddListItemAmountRequest req,
-  ) async {
+  Future<ListItem> addItemAmount(String listId, AddListItemAmountRequest req,
+      {String? idempotencyKey}) async {
     try {
-      final r = await _dio.post('/lists/$listId/items/add', data: req.toJson());
+      final r = await _dio.post('/lists/$listId/items/add',
+          data: req.toJson(), options: outboxOptions(idempotencyKey));
       return ListItem.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Add item amount failed: ${e.response?.data}');

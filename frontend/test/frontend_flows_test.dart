@@ -1270,7 +1270,8 @@ class FakeChoreService implements ChoreService {
   }
 
   @override
-  Future<Chore> createChore(CreateChoreRequest req) async {
+  Future<Chore> createChore(CreateChoreRequest req,
+      {String? idempotencyKey}) async {
     lastCreateRequest = req;
     final chore = Chore(
       id: '55555555-5555-5555-5555-555555555555',
@@ -1311,7 +1312,8 @@ class FakeChoreService implements ChoreService {
   }
 
   @override
-  Future<void> completeChore(String id, {String? notes}) async {
+  Future<void> completeChore(String id,
+      {String? notes, String? idempotencyKey}) async {
     completedIds.add(id);
     final index = _chores.indexWhere((chore) => chore.id == id);
     if (index >= 0) {
@@ -1350,7 +1352,8 @@ class FakeFinanceService implements FinanceService {
   }
 
   @override
-  Future<Expense> createExpense(CreateExpenseRequest req) async {
+  Future<Expense> createExpense(CreateExpenseRequest req,
+      {String? idempotencyKey}) async {
     lastCreateRequest = req;
     final expense = Expense(
       id: '66666666-6666-6666-6666-666666666666',
@@ -1493,7 +1496,8 @@ class FakeRecipeService implements RecipeService {
   }
 
   @override
-  Future<Recipe> createRecipe(CreateRecipeRequest req) async {
+  Future<Recipe> createRecipe(CreateRecipeRequest req,
+      {String? idempotencyKey}) async {
     lastCreateRequest = req;
     final recipe = Recipe(
       id: '77777777-7777-7777-7777-777777777777',
@@ -1626,12 +1630,14 @@ class FakePinwallService implements PinwallService {
       {required String content,
       DateTime? remindAt,
       String? linkedEntityType,
-      String? linkedEntityId}) async {
+      String? linkedEntityId,
+      String? idempotencyKey}) async {
     throw UnimplementedError();
   }
 
   @override
-  Future<void> deletePost(String groupId, String postId) async {}
+  Future<void> deletePost(String groupId, String postId,
+      {String? idempotencyKey}) async {}
 
   @override
   Future<PinwallPost> updatePostPosition(
@@ -1639,6 +1645,7 @@ class FakePinwallService implements PinwallService {
     String postId, {
     required double x,
     required double y,
+    String? idempotencyKey,
   }) async {
     throw UnimplementedError();
   }

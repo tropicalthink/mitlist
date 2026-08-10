@@ -82,7 +82,8 @@ class FakeFinanceService implements FinanceService {
 
   @override
   Future<finance.Settlement> createGroupSettlement(
-      String groupId, finance.CreateSettlementRequest req) async {
+      String groupId, finance.CreateSettlementRequest req,
+      {String? idempotencyKey}) async {
     settlementCreateCalls.add(req);
     return finance.Settlement(
       id: serverSettlementId,
@@ -106,8 +107,8 @@ class FakeFinanceService implements FinanceService {
   String serverExpenseId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 
   @override
-  Future<finance.Expense> createExpense(
-      finance.CreateExpenseRequest req) async {
+  Future<finance.Expense> createExpense(finance.CreateExpenseRequest req,
+      {String? idempotencyKey}) async {
     createCalls.add(req);
     if (throwOnCreate != null) {
       final err = throwOnCreate!;
@@ -132,7 +133,8 @@ class FakeFinanceService implements FinanceService {
 
   @override
   Future<finance.Expense> updateExpense(
-      String id, finance.UpdateExpenseRequest req) async {
+      String id, finance.UpdateExpenseRequest req,
+      {String? idempotencyKey}) async {
     updateCalls.add(UpdateExpenseCall(id, req));
     if (throwOnUpdate != null) {
       final err = throwOnUpdate!;
@@ -156,7 +158,7 @@ class FakeFinanceService implements FinanceService {
   }
 
   @override
-  Future<void> deleteExpense(String id) async {
+  Future<void> deleteExpense(String id, {String? idempotencyKey}) async {
     deleteCalls.add(id);
   }
 
@@ -204,7 +206,8 @@ class FakeListService implements ListService {
   List<ListItem> itemsToReturn = const [];
 
   @override
-  Future<ListItem> createItem(String listId, CreateListItemRequest req) async {
+  Future<ListItem> createItem(String listId, CreateListItemRequest req,
+      {String? idempotencyKey}) async {
     createItemCalls.add(CreateItemCall(listId, req));
     if (throwOnCreateItem != null) {
       final err = throwOnCreateItem!;
@@ -230,7 +233,8 @@ class FakeListService implements ListService {
 
   @override
   Future<ListItem> updateItem(
-      String listId, String itemId, UpdateListItemRequest req) async {
+      String listId, String itemId, UpdateListItemRequest req,
+      {String? idempotencyKey}) async {
     updateItemCalls.add(UpdateItemCall(listId, itemId, req));
     final now = DateTime.utc(2026, 1, 1);
     return ListItem(
@@ -247,8 +251,8 @@ class FakeListService implements ListService {
   }
 
   @override
-  Future<ListItem> addItemAmount(
-      String listId, AddListItemAmountRequest req) async {
+  Future<ListItem> addItemAmount(String listId, AddListItemAmountRequest req,
+      {String? idempotencyKey}) async {
     addItemAmountCalls.add(AddItemAmountCall(listId, req));
     final key = '$listId|${req.name}|${req.unit}';
     final total = (_amountByKey[key] ?? 0) + req.amount;
@@ -270,12 +274,14 @@ class FakeListService implements ListService {
   }
 
   @override
-  Future<void> deleteItem(String listId, String itemId) async {
+  Future<void> deleteItem(String listId, String itemId,
+      {String? idempotencyKey}) async {
     deleteItemCalls.add(itemId);
   }
 
   @override
-  Future<void> reorderItems(String listId, ReorderItemsRequest req) async {
+  Future<void> reorderItems(String listId, ReorderItemsRequest req,
+      {String? idempotencyKey}) async {
     reorderItemsCalls.add(ReorderItemsCall(listId, req.itemIds));
     if (throwOnReorderItems != null) {
       final err = throwOnReorderItems!;
@@ -288,6 +294,7 @@ class FakeListService implements ListService {
   Future<Map<String, dynamic>> clearItems(
     String listId, {
     bool onlyChecked = false,
+    String? idempotencyKey,
   }) async {
     clearItemsCalls.add(ClearItemsCall(listId, onlyChecked));
     return {'cleared': true};
@@ -301,9 +308,8 @@ class FakeListService implements ListService {
 
   @override
   Future<void> recordGroceryPurchases(
-    String groupId,
-    List<Map<String, dynamic>> events,
-  ) async {
+      String groupId, List<Map<String, dynamic>> events,
+      {String? idempotencyKey}) async {
     groceryPurchaseCalls.add((groupId: groupId, events: events));
   }
 
@@ -463,7 +469,8 @@ class FakeChoreService implements ChoreService {
   }
 
   @override
-  Future<Chore> createChore(CreateChoreRequest req) async {
+  Future<Chore> createChore(CreateChoreRequest req,
+      {String? idempotencyKey}) async {
     final id = createdChoreId;
     if (id == null) throw StateError('offline: createChore');
     createCalls.add(req);
