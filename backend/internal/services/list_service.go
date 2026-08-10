@@ -52,15 +52,18 @@ func (s *ListService) SetDispatcher(d NotificationDispatcher) { s.dispatcher = d
 // broadcastListPush persists in-app feed rows and sends push to all group members
 // except the actor. Uses the dispatcher when available (persist+push); falls back
 // to push-only when only pushSvc is set.
-func (s *ListService) broadcastListPush(ctx context.Context, list *models.List, actorID uuid.UUID, title, body string) {
+func (s *ListService) broadcastListPush(ctx context.Context, list *models.List, actorID uuid.UUID, actorName, itemName, title, body string) {
 	if s.dispatcher != nil {
 		notifPayload := models.NotificationPayload{
 			Screen:     models.ScreenListDetail,
 			EntityType: models.EntityTypeList,
 			ID:         list.ID.String(),
 			GroupID:    list.GroupID.String(),
+			ActorName:  actorName,
+			EntityName: list.Name,
+			ItemName:   itemName,
 		}
-		_ = s.dispatcher.DispatchToGroup(ctx, list.GroupID, actorID, "list_item_added", title, body, notifPayload)
+		_ = s.dispatcher.DispatchToGroup(ctx, list.GroupID, actorID, models.NotificationTypeListItemAdded, title, body, notifPayload)
 		return
 	}
 	if s.pushSvc == nil {
@@ -74,6 +77,9 @@ func (s *ListService) broadcastListPush(ctx context.Context, list *models.List, 
 			EntityType: models.EntityTypeList,
 			ID:         list.ID.String(),
 			GroupID:    list.GroupID.String(),
+			ActorName:  actorName,
+			EntityName: list.Name,
+			ItemName:   itemName,
 		},
 	}
 	data, _ := json.Marshal(payload)
@@ -270,7 +276,8 @@ func (s *ListService) CreateItem(ctx context.Context, user *models.User, item *m
 		return err
 	}
 	s.publishItem("list:item_created", list.GroupID, item)
-	s.broadcastListPush(ctx, list, user.ID, "New item added", displayName(user)+" added "+item.Name+" to "+list.Name)
+	actorName := displayName(user)
+	s.broadcastListPush(ctx, list, user.ID, actorName, item.Name, list.Name+" updated", actorName+" added "+item.Name+" to "+list.Name)
 	return nil
 }
 

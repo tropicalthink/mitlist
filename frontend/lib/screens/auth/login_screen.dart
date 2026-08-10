@@ -179,7 +179,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               setSheetState(() => error = l10n.authLoginResetFillAllFields);
               return;
             }
-            if (newPassword.length < 12) {
+            if (newPassword.length < 8) {
               setSheetState(
                 () => error = l10n.authSignupPasswordMinLength,
               );

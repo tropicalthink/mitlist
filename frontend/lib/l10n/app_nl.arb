@@ -2924,7 +2924,7 @@
   "@accountFillPasswordFields": {
     "description": "Validation: all password fields required"
   },
-  "accountPasswordMinLength": "Nieuw wachtwoord moet minstens 6 tekens bevatten.",
+  "accountPasswordMinLength": "Nieuw wachtwoord moet minstens 8 tekens bevatten.",
   "@accountPasswordMinLength": {
     "description": "Validation: password too short"
   },
@@ -3157,6 +3157,10 @@
   "@notifPrefFailedLoad": {
     "description": "Error when preferences fail to load"
   },
+  "notifPrefFailedSave": "Kan deze voorkeur niet opslaan. Controleer je verbinding en probeer het opnieuw.",
+  "@notifPrefFailedSave": {
+    "description": "Error when a notification preference save fails"
+  },
   "notifPrefNoHouseholdDesc": "Word lid of maak een huishouden om notificatievoorkeuren te configureren.",
   "@notifPrefNoHouseholdDesc": {
     "description": "No-household description for preferences"
@@ -3197,11 +3201,11 @@
   "@notifPrefListItemAddedDesc": {
     "description": "Toggle subtitle for list item notifications"
   },
-  "notifPrefExpenseCreated": "Uitgave aangemaakt",
+  "notifPrefExpenseCreated": "Geldactiviteit",
   "@notifPrefExpenseCreated": {
     "description": "Toggle label for expense notifications"
   },
-  "notifPrefExpenseCreatedDesc": "Wanneer een nieuwe uitgave wordt geregistreerd",
+  "notifPrefExpenseCreatedDesc": "Uitgaven, terugkerende kosten en verrekeningen",
   "@notifPrefExpenseCreatedDesc": {
     "description": "Toggle subtitle for expense notifications"
   },
@@ -4508,11 +4512,11 @@
   "@authSignupPassword": {
     "description": "Password input label"
   },
-  "authSignupPasswordHint": "Minstens 6 tekens",
+  "authSignupPasswordHint": "Minstens 8 tekens",
   "@authSignupPasswordHint": {
     "description": "Password hint text"
   },
-  "authSignupPasswordMinLength": "Wachtwoord moet minstens 6 tekens lang zijn.",
+  "authSignupPasswordMinLength": "Wachtwoord moet minstens 8 tekens lang zijn.",
   "@authSignupPasswordMinLength": {
     "description": "Password too short validation"
   },
@@ -4569,6 +4573,34 @@
     "description": "Generic photo label"
   },
   "commonView": "Bekijken",
+  "notificationsOpenList": "Lijst openen",
+  "notificationsOpenChore": "Taak openen",
+  "notificationsOpenMoney": "Geldzaken openen",
+  "notificationsOpenRecipes": "Recepten openen",
+  "notificationsOpenHousehold": "Huishouden openen",
+  "notificationChoreDueSoonTitle": "Taak binnenkort verwacht",
+  "notificationChoreDueSoonBody": "{choreName} moet binnenkort gebeuren",
+  "notificationChoreDueTodayTitle": "Taak voor vandaag",
+  "notificationChoreDueTodayBody": "{choreName} moet vandaag gebeuren",
+  "notificationListUpdatedTitle": "{listName} bijgewerkt",
+  "notificationListUpdatedOneBody": "{actorName} voegde {itemName} toe aan {listName} in {groupName}.",
+  "notificationListUpdatedManyBody": "{actorName} voegde {count} items toe aan {listName} in {groupName}.",
+  "notificationExpenseCreatedTitle": "Uitgave toegevoegd",
+  "notificationExpenseCreatedBody": "{actorName} voegde {expenseName} toe in {groupName}.",
+  "notificationRecurringExpenseTitle": "Terugkerende uitgave toegevoegd",
+  "notificationRecurringExpenseBody": "{expenseName} is toegevoegd.",
+  "notificationSettlementRequestTitle": "Betaling bevestigen",
+  "notificationSettlementPaidYouBody": "{actorName} zegt je {amount} te hebben betaald in {groupName}. Bevestig om de saldi bij te werken.",
+  "notificationSettlementYouPaidBody": "{actorName} zegt dat jij {amount} betaalde in {groupName}. Bevestig om de saldi bij te werken.",
+  "notificationSettlementConfirmedTitle": "Betaling bevestigd",
+  "notificationSettlementConfirmedBody": "{actorName} bevestigde je betaling van {amount} in {groupName}.",
+  "notificationSettlementDeclinedTitle": "Betaling afgewezen",
+  "notificationSettlementDeclinedBody": "{actorName} wees je betaling van {amount} in {groupName} af.",
+  "notificationMealPlanTitle": "Maaltijdplan bijgewerkt",
+  "notificationMealPlanBody": "{actorName} werkte het maaltijdplan bij in {groupName}.",
+  "notificationWeeklyDigestTitle": "Weekoverzicht",
+  "notificationWeeklyDigestBody": "{count, plural, =0{Deze week was er geen huishoudactiviteit} =1{Je huishouden had deze week 1 activiteit} other{Je huishouden had deze week {count} activiteiten}}",
+  "notificationPinwallReminderTitle": "Herinnering",
   "@commonView": {
     "description": "Generic view button"
   },

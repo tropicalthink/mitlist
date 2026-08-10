@@ -2924,7 +2924,7 @@
   "@accountFillPasswordFields": {
     "description": "Validation: all password fields required"
   },
-  "accountPasswordMinLength": "Le nouveau mot de passe doit contenir au moins 12 caractères.",
+  "accountPasswordMinLength": "Le nouveau mot de passe doit contenir au moins 8 caractères.",
   "@accountPasswordMinLength": {
     "description": "Validation: password too short"
   },
@@ -3157,6 +3157,10 @@
   "@notifPrefFailedLoad": {
     "description": "Error when preferences fail to load"
   },
+  "notifPrefFailedSave": "Impossible d’enregistrer cette préférence. Vérifiez votre connexion et réessayez.",
+  "@notifPrefFailedSave": {
+    "description": "Error when a notification preference save fails"
+  },
   "notifPrefNoHouseholdDesc": "Rejoins ou crée un foyer pour configurer les préférences de notifications.",
   "@notifPrefNoHouseholdDesc": {
     "description": "No-household description for preferences"
@@ -3197,11 +3201,11 @@
   "@notifPrefListItemAddedDesc": {
     "description": "Toggle subtitle for list item notifications"
   },
-  "notifPrefExpenseCreated": "Dépense créée",
+  "notifPrefExpenseCreated": "Activité financière",
   "@notifPrefExpenseCreated": {
     "description": "Toggle label for expense notifications"
   },
-  "notifPrefExpenseCreatedDesc": "Quand une nouvelle dépense est enregistrée",
+  "notifPrefExpenseCreatedDesc": "Dépenses, frais récurrents et règlements",
   "@notifPrefExpenseCreatedDesc": {
     "description": "Toggle subtitle for expense notifications"
   },
@@ -4508,11 +4512,11 @@
   "@authSignupPassword": {
     "description": "Password input label"
   },
-  "authSignupPasswordHint": "Au moins 12 caractères",
+  "authSignupPasswordHint": "Au moins 8 caractères",
   "@authSignupPasswordHint": {
     "description": "Password hint text"
   },
-  "authSignupPasswordMinLength": "Le mot de passe doit contenir au moins 12 caractères.",
+  "authSignupPasswordMinLength": "Le mot de passe doit contenir au moins 8 caractères.",
   "@authSignupPasswordMinLength": {
     "description": "Password too short validation"
   },
@@ -4569,6 +4573,34 @@
     "description": "Generic photo label"
   },
   "commonView": "Voir",
+  "notificationsOpenList": "Ouvrir la liste",
+  "notificationsOpenChore": "Ouvrir la tâche",
+  "notificationsOpenMoney": "Ouvrir les finances",
+  "notificationsOpenRecipes": "Ouvrir les recettes",
+  "notificationsOpenHousehold": "Ouvrir le foyer",
+  "notificationChoreDueSoonTitle": "Tâche bientôt due",
+  "notificationChoreDueSoonBody": "{choreName} arrive bientôt à échéance",
+  "notificationChoreDueTodayTitle": "Tâche due aujourd’hui",
+  "notificationChoreDueTodayBody": "{choreName} est à faire aujourd’hui",
+  "notificationListUpdatedTitle": "{listName} mise à jour",
+  "notificationListUpdatedOneBody": "{actorName} a ajouté {itemName} à {listName} dans {groupName}.",
+  "notificationListUpdatedManyBody": "{actorName} a ajouté {count} éléments à {listName} dans {groupName}.",
+  "notificationExpenseCreatedTitle": "Dépense ajoutée",
+  "notificationExpenseCreatedBody": "{actorName} a ajouté {expenseName} dans {groupName}.",
+  "notificationRecurringExpenseTitle": "Dépense récurrente ajoutée",
+  "notificationRecurringExpenseBody": "{expenseName} a été ajoutée.",
+  "notificationSettlementRequestTitle": "Règlement à confirmer",
+  "notificationSettlementPaidYouBody": "{actorName} indique vous avoir payé {amount} dans {groupName}. Confirmez pour actualiser les soldes.",
+  "notificationSettlementYouPaidBody": "{actorName} indique que vous lui avez payé {amount} dans {groupName}. Confirmez pour actualiser les soldes.",
+  "notificationSettlementConfirmedTitle": "Règlement confirmé",
+  "notificationSettlementConfirmedBody": "{actorName} a confirmé votre règlement de {amount} dans {groupName}.",
+  "notificationSettlementDeclinedTitle": "Règlement refusé",
+  "notificationSettlementDeclinedBody": "{actorName} a refusé votre règlement de {amount} dans {groupName}.",
+  "notificationMealPlanTitle": "Menu mis à jour",
+  "notificationMealPlanBody": "{actorName} a mis à jour le menu dans {groupName}.",
+  "notificationWeeklyDigestTitle": "Résumé de la semaine",
+  "notificationWeeklyDigestBody": "{count, plural, =0{Aucune activité du foyer cette semaine} =1{Votre foyer a eu 1 activité cette semaine} other{Votre foyer a eu {count} activités cette semaine}}",
+  "notificationPinwallReminderTitle": "Rappel",
   "@commonView": {
     "description": "Generic view button"
   },

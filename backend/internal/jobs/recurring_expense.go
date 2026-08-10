@@ -104,10 +104,13 @@ func (j *RecurringExpenseJob) processRecurringExpense(ctx context.Context, re mo
 		EntityType: models.EntityTypeRecurringExpense,
 		ID:         re.ID.String(),
 		GroupID:    re.GroupID.String(),
+		Copy: models.NewNotificationCopy(models.NotificationTemplateRecurringExpenseCreated, map[string]string{
+			"expense_name": re.Description,
+		}),
 	}
 
 	if j.dispatcher != nil {
-		if err := j.dispatcher.DispatchToGroup(ctx, re.GroupID, uuid.Nil, "expense_created",
+		if err := j.dispatcher.DispatchToGroup(ctx, re.GroupID, uuid.Nil, models.NotificationTypeRecurringExpenseCreated,
 			"New Recurring Expense", re.Description+" has been added", notifPayload); err != nil {
 			j.log.Warn().Err(err).Str("group_id", re.GroupID.String()).Msg("failed to dispatch recurring expense notification")
 		}

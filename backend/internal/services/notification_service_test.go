@@ -124,6 +124,30 @@ func TestDefaultNotificationPreference(t *testing.T) {
 	assert.True(t, pref.PushEnabled, "PushEnabled should be true")
 }
 
+func TestPreferenceForType_MoneyActivity(t *testing.T) {
+	pref := &models.NotificationPreference{ExpenseCreated: false}
+	for _, nType := range []string{
+		models.NotificationTypeExpenseCreated,
+		models.NotificationTypeRecurringExpenseCreated,
+		models.NotificationTypeSettlementRequested,
+		models.NotificationTypeSettlementConfirmed,
+		models.NotificationTypeSettlementDeclined,
+	} {
+		assert.False(t, preferenceForType(pref, nType), nType)
+	}
+
+	pref.ExpenseCreated = true
+	for _, nType := range []string{
+		models.NotificationTypeExpenseCreated,
+		models.NotificationTypeRecurringExpenseCreated,
+		models.NotificationTypeSettlementRequested,
+		models.NotificationTypeSettlementConfirmed,
+		models.NotificationTypeSettlementDeclined,
+	} {
+		assert.True(t, preferenceForType(pref, nType), nType)
+	}
+}
+
 func TestNotificationService_DispatchToGroup(t *testing.T) {
 	ctx := context.Background()
 	groupID := uuid.New()
@@ -136,6 +160,25 @@ func TestNotificationService_DispatchToGroup(t *testing.T) {
 		{UserID: member1},
 		{UserID: member2},
 	}
+
+	t.Run("queues complete list item events for a digest", func(t *testing.T) {
+		notifRepo := new(mocks.MockNotificationRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewNotificationService(notifRepo, nil, groupRepo, nil)
+		listID := uuid.New()
+		payload := models.NotificationPayload{
+			Screen: models.ScreenListDetail, EntityType: models.EntityTypeList,
+			ID: listID.String(), GroupID: groupID.String(), ActorName: "Mina",
+			EntityName: "Groceries", ItemName: "Milk",
+		}
+		notifRepo.On("QueueListItemNotification", ctx, groupID, actorID, listID, "Mina", "Groceries", "Milk").Return(nil)
+
+		err := svc.DispatchToGroup(ctx, groupID, actorID, models.NotificationTypeListItemAdded, "T", "B", payload)
+
+		require.NoError(t, err)
+		notifRepo.AssertNotCalled(t, "CreateNotificationsBatch", mock.Anything, mock.Anything)
+		groupRepo.AssertNotCalled(t, "ListMembershipsByGroup", mock.Anything, mock.Anything)
+	})
 
 	t.Run("persists rows and pushes for eligible members, excludes actor", func(t *testing.T) {
 		notifRepo := new(mocks.MockNotificationRepo)
@@ -254,15 +297,39 @@ func TestNotificationService_DispatchToGroup(t *testing.T) {
 			{UserID: member1},
 		}, nil)
 		notifRepo.On("GetPreferencesByGroup", ctx, groupID).Return(map[uuid.UUID]*models.NotificationPreference{}, nil)
-		notifRepo.On("CreateNotificationsBatch", ctx, mock.Anything).Return(nil)
-		pushSvc.On("SendToUser", member1, mock.AnythingOfType("string")).Return(nil)
+		var persistedID uuid.UUID
+		notifRepo.On("CreateNotificationsBatch", ctx, mock.MatchedBy(func(rows []models.Notification) bool {
+			if len(rows) != 1 {
+				return false
+			}
+			persistedID = rows[0].ID
+			return persistedID != uuid.Nil
+		})).Return(nil)
+		sent := make(chan string, 1)
+		pushSvc.On("SendToUser", member1, mock.AnythingOfType("string")).
+			Run(func(args mock.Arguments) { sent <- args.String(1) }).
+			Return(nil)
 
-		payload := models.NotificationPayload{}
+		payload := models.NotificationPayload{Copy: models.NewNotificationCopy(
+			models.NotificationTemplateChoreDueSoon,
+			map[string]string{"chore_name": "Dishes"},
+		)}
 		err := svc.DispatchToGroup(ctx, groupID, actorID, "list_item_added", "T", "B", payload)
 		require.NoError(t, err)
-		// Push is async; wait a tiny moment and assert.
-		// We just verify batch was persisted.
 		notifRepo.AssertCalled(t, "CreateNotificationsBatch", ctx, mock.Anything)
+		select {
+		case raw := <-sent:
+			var pushPayload struct {
+				Data map[string]string `json:"data"`
+			}
+			require.NoError(t, json.Unmarshal([]byte(raw), &pushPayload))
+			assert.Equal(t, persistedID.String(), pushPayload.Data["notification_id"])
+			var copy models.NotificationCopy
+			require.NoError(t, json.Unmarshal([]byte(pushPayload.Data["copy"]), &copy))
+			assert.Equal(t, models.NotificationTemplateChoreDueSoon, copy.Template)
+		case <-time.After(time.Second):
+			t.Fatal("timed out waiting for async push")
+		}
 	})
 }
 

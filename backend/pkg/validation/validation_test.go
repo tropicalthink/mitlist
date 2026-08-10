@@ -34,8 +34,8 @@ func TestPassword(t *testing.T) {
 		input   string
 		wantErr bool
 	}{
-		{"valid", "123456", false},
-		{"too short", "12345", true},
+		{"valid", "12345678", false},
+		{"too short", "1234567", true},
 		{"too long", strings.Repeat("a", 129), true},
 	}
 	for _, tt := range tests {

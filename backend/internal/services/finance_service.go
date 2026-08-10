@@ -112,14 +112,23 @@ func (s *FinanceService) CreateExpenseWithSplitMode(ctx context.Context, userID 
 		return err
 	}
 	if s.dispatcher != nil && expense.ID != uuid.Nil {
+		actorName := s.memberDisplayName(ctx, expense.GroupID, userID)
+		householdName := s.householdName(ctx, expense.GroupID)
 		notifPayload := models.NotificationPayload{
 			Screen:     models.ScreenExpenseDetail,
 			EntityType: models.EntityTypeExpense,
 			ID:         expense.ID.String(),
 			GroupID:    expense.GroupID.String(),
+			ActorName:  actorName,
+			EntityName: expense.Description,
+			Copy: models.NewNotificationCopy(models.NotificationTemplateExpenseCreated, map[string]string{
+				"actor_name":   actorName,
+				"expense_name": expense.Description,
+				"group_name":   householdName,
+			}),
 		}
-		_ = s.dispatcher.DispatchToGroup(ctx, expense.GroupID, userID, "expense_created",
-			"New expense", expense.Description+" was added", notifPayload)
+		_ = s.dispatcher.DispatchToGroup(ctx, expense.GroupID, userID, models.NotificationTypeExpenseCreated,
+			"Expense added", actorName+" added "+expense.Description+" in "+householdName+".", notifPayload)
 	}
 	return nil
 }
@@ -449,15 +458,25 @@ func (s *FinanceService) CreateSettlement(ctx context.Context, userID uuid.UUID,
 
 	if s.dispatcher != nil {
 		creatorName := s.memberDisplayName(ctx, settlement.GroupID, settlement.CreatedBy)
+		householdName := s.householdName(ctx, settlement.GroupID)
 		amount := s.formatGroupAmount(ctx, settlement.GroupID, settlement.Amount)
 		var body string
+		var template string
 		if settlement.CreatedBy == settlement.FromUserID {
-			body = creatorName + " says they paid you " + amount + " — confirm to update balances"
+			body = creatorName + " says they paid you " + amount + " in " + householdName + ". Confirm to update balances."
+			template = models.NotificationTemplateSettlementPaidYou
 		} else {
-			body = creatorName + " says you paid them " + amount + " — confirm to update balances"
+			body = creatorName + " says you paid them " + amount + " in " + householdName + ". Confirm to update balances."
+			template = models.NotificationTemplateSettlementYouPaid
 		}
+		payload := s.settlementPayload(settlement)
+		payload.Copy = models.NewNotificationCopy(template, map[string]string{
+			"actor_name": creatorName,
+			"amount":     amount,
+			"group_name": householdName,
+		})
 		_ = s.dispatcher.DispatchToUsers(ctx, []uuid.UUID{settlement.Counterparty()}, settlement.GroupID,
-			"settlement_requested", "Settlement to confirm", body, s.settlementPayload(settlement))
+			models.NotificationTypeSettlementRequested, "Settlement to confirm", body, payload)
 	}
 	s.publishSettlement("settlement:created", settlement.GroupID, settlement.ID)
 	return nil
@@ -508,14 +527,25 @@ func (s *FinanceService) RespondToSettlement(ctx context.Context, userID, settle
 
 	if s.dispatcher != nil {
 		responderName := s.memberDisplayName(ctx, settlement.GroupID, userID)
+		householdName := s.householdName(ctx, settlement.GroupID)
 		amount := s.formatGroupAmount(ctx, settlement.GroupID, settlement.Amount)
-		nType, title, verb := "settlement_confirmed", "Settlement confirmed", "confirmed"
+		nType, title, verb := models.NotificationTypeSettlementConfirmed, "Settlement confirmed", "confirmed"
 		if !approve {
-			nType, title, verb = "settlement_declined", "Settlement declined", "declined"
+			nType, title, verb = models.NotificationTypeSettlementDeclined, "Settlement declined", "declined"
 		}
-		body := responderName + " " + verb + " your settlement of " + amount
+		body := responderName + " " + verb + " your settlement of " + amount + " in " + householdName + "."
+		payload := s.settlementPayload(settlement)
+		template := models.NotificationTemplateSettlementConfirmed
+		if !approve {
+			template = models.NotificationTemplateSettlementDeclined
+		}
+		payload.Copy = models.NewNotificationCopy(template, map[string]string{
+			"actor_name": responderName,
+			"amount":     amount,
+			"group_name": householdName,
+		})
 		_ = s.dispatcher.DispatchToUsers(ctx, []uuid.UUID{settlement.CreatedBy}, settlement.GroupID,
-			nType, title, body, s.settlementPayload(settlement))
+			nType, title, body, payload)
 	}
 	s.publishSettlement("settlement:updated", settlement.GroupID, settlement.ID)
 	return settlement, nil
@@ -566,6 +596,14 @@ func (s *FinanceService) memberDisplayName(ctx context.Context, groupID, userID 
 		}
 	}
 	return "A group member"
+}
+
+func (s *FinanceService) householdName(ctx context.Context, groupID uuid.UUID) string {
+	group, err := s.groupRepo.GetGroupByID(ctx, groupID)
+	if err == nil && strings.TrimSpace(group.Name) != "" {
+		return group.Name
+	}
+	return "your household"
 }
 
 // formatGroupAmount renders an integer minor-unit amount in the group currency.

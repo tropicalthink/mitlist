@@ -4326,7 +4326,7 @@ abstract class AppLocalizations {
   /// Validation: password too short
   ///
   /// In en, this message translates to:
-  /// **'New password must be at least 12 characters.'**
+  /// **'New password must be at least 8 characters.'**
   String get accountPasswordMinLength;
 
   /// Validation: passwords don't match
@@ -4725,6 +4725,12 @@ abstract class AppLocalizations {
   /// **'Failed to load notification preferences.'**
   String get notifPrefFailedLoad;
 
+  /// Error when a notification preference save fails
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t save that preference. Check your connection and try again.'**
+  String get notifPrefFailedSave;
+
   /// No-household description for preferences
   ///
   /// In en, this message translates to:
@@ -4785,16 +4791,16 @@ abstract class AppLocalizations {
   /// **'When someone adds to a shared list'**
   String get notifPrefListItemAddedDesc;
 
-  /// Toggle label for expense notifications
+  /// Toggle label for money notifications
   ///
   /// In en, this message translates to:
-  /// **'Expense created'**
+  /// **'Money activity'**
   String get notifPrefExpenseCreated;
 
-  /// Toggle subtitle for expense notifications
+  /// Toggle subtitle for money notifications
   ///
   /// In en, this message translates to:
-  /// **'When a new expense is logged'**
+  /// **'Expenses, recurring charges, and settlements'**
   String get notifPrefExpenseCreatedDesc;
 
   /// Toggle label for meal plan notifications
@@ -6756,7 +6762,7 @@ abstract class AppLocalizations {
   /// Password hint text
   ///
   /// In en, this message translates to:
-  /// **'At least 12 characters'**
+  /// **'At least 8 characters'**
   String get authSignupPasswordHint;
 
   /// Submit button for signup
@@ -6792,7 +6798,7 @@ abstract class AppLocalizations {
   /// Password too short validation
   ///
   /// In en, this message translates to:
-  /// **'Password must be at least 12 characters.'**
+  /// **'Password must be at least 8 characters.'**
   String get authSignupPasswordMinLength;
 
   /// Signup screen title when joining via invite
@@ -8330,6 +8336,181 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View'**
   String get commonView;
+
+  /// No description provided for @notificationsOpenList.
+  ///
+  /// In en, this message translates to:
+  /// **'Open list'**
+  String get notificationsOpenList;
+
+  /// No description provided for @notificationsOpenChore.
+  ///
+  /// In en, this message translates to:
+  /// **'Open chore'**
+  String get notificationsOpenChore;
+
+  /// No description provided for @notificationsOpenMoney.
+  ///
+  /// In en, this message translates to:
+  /// **'Open money'**
+  String get notificationsOpenMoney;
+
+  /// No description provided for @notificationsOpenRecipes.
+  ///
+  /// In en, this message translates to:
+  /// **'Open recipes'**
+  String get notificationsOpenRecipes;
+
+  /// No description provided for @notificationsOpenHousehold.
+  ///
+  /// In en, this message translates to:
+  /// **'Open household'**
+  String get notificationsOpenHousehold;
+
+  /// No description provided for @notificationChoreDueSoonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chore due soon'**
+  String get notificationChoreDueSoonTitle;
+
+  /// No description provided for @notificationChoreDueSoonBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{choreName} is due soon'**
+  String notificationChoreDueSoonBody(String choreName);
+
+  /// No description provided for @notificationChoreDueTodayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chore due today'**
+  String get notificationChoreDueTodayTitle;
+
+  /// No description provided for @notificationChoreDueTodayBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{choreName} is due today'**
+  String notificationChoreDueTodayBody(String choreName);
+
+  /// No description provided for @notificationListUpdatedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{listName} updated'**
+  String notificationListUpdatedTitle(String listName);
+
+  /// No description provided for @notificationListUpdatedOneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} added {itemName} to {listName} in {groupName}.'**
+  String notificationListUpdatedOneBody(
+      String actorName, String itemName, String listName, String groupName);
+
+  /// No description provided for @notificationListUpdatedManyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} added {count} items to {listName} in {groupName}.'**
+  String notificationListUpdatedManyBody(
+      String actorName, num count, String listName, String groupName);
+
+  /// No description provided for @notificationExpenseCreatedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Expense added'**
+  String get notificationExpenseCreatedTitle;
+
+  /// No description provided for @notificationExpenseCreatedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} added {expenseName} in {groupName}.'**
+  String notificationExpenseCreatedBody(
+      String actorName, String expenseName, String groupName);
+
+  /// No description provided for @notificationRecurringExpenseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring expense added'**
+  String get notificationRecurringExpenseTitle;
+
+  /// No description provided for @notificationRecurringExpenseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{expenseName} was added.'**
+  String notificationRecurringExpenseBody(String expenseName);
+
+  /// No description provided for @notificationSettlementRequestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlement to confirm'**
+  String get notificationSettlementRequestTitle;
+
+  /// No description provided for @notificationSettlementPaidYouBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} says they paid you {amount} in {groupName}. Confirm to update balances.'**
+  String notificationSettlementPaidYouBody(
+      String actorName, String amount, String groupName);
+
+  /// No description provided for @notificationSettlementYouPaidBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} says you paid them {amount} in {groupName}. Confirm to update balances.'**
+  String notificationSettlementYouPaidBody(
+      String actorName, String amount, String groupName);
+
+  /// No description provided for @notificationSettlementConfirmedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlement confirmed'**
+  String get notificationSettlementConfirmedTitle;
+
+  /// No description provided for @notificationSettlementConfirmedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} confirmed your settlement of {amount} in {groupName}.'**
+  String notificationSettlementConfirmedBody(
+      String actorName, String amount, String groupName);
+
+  /// No description provided for @notificationSettlementDeclinedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlement declined'**
+  String get notificationSettlementDeclinedTitle;
+
+  /// No description provided for @notificationSettlementDeclinedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} declined your settlement of {amount} in {groupName}.'**
+  String notificationSettlementDeclinedBody(
+      String actorName, String amount, String groupName);
+
+  /// No description provided for @notificationMealPlanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Meal plan updated'**
+  String get notificationMealPlanTitle;
+
+  /// No description provided for @notificationMealPlanBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} updated the meal plan in {groupName}.'**
+  String notificationMealPlanBody(String actorName, String groupName);
+
+  /// No description provided for @notificationWeeklyDigestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly summary'**
+  String get notificationWeeklyDigestTitle;
+
+  /// No description provided for @notificationWeeklyDigestBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No household activity this week} =1{Your household had 1 activity this week} other{Your household had {count} activities this week}}'**
+  String notificationWeeklyDigestBody(num count);
+
+  /// No description provided for @notificationPinwallReminderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder'**
+  String get notificationPinwallReminderTitle;
 
   /// Generic photo label
   ///

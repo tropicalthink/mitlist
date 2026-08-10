@@ -45,13 +45,32 @@ func (s *MealPlanService) notifyChanged(ctx context.Context, userID uuid.UUID, m
 		ID:         mp.ID.String(),
 		GroupID:    mp.GroupID.String(),
 	}
+	actorName := "A household member"
+	if profiles, err := s.groupRepo.ListMemberProfilesByGroup(ctx, mp.GroupID); err == nil {
+		for _, profile := range profiles {
+			if profile.UserID == userID && strings.TrimSpace(profile.DisplayName) != "" {
+				actorName = profile.DisplayName
+				break
+			}
+		}
+	}
+	householdName := "your household"
+	if group, err := s.groupRepo.GetGroupByID(ctx, mp.GroupID); err == nil && strings.TrimSpace(group.Name) != "" {
+		householdName = group.Name
+	}
+	payload.ActorName = actorName
+	payload.EntityName = "Meal plan"
+	payload.Copy = models.NewNotificationCopy(models.NotificationTemplateMealPlanChanged, map[string]string{
+		"actor_name": actorName,
+		"group_name": householdName,
+	})
 	_ = s.dispatcher.DispatchToGroup(
 		ctx,
 		mp.GroupID,
 		userID,
-		"meal_plan_changed",
+		models.NotificationTypeMealPlanChanged,
 		"Meal plan updated",
-		"Your household meal plan changed",
+		actorName+" updated the meal plan in "+householdName+".",
 		payload,
 	)
 }

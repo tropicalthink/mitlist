@@ -99,13 +99,16 @@ func (r *PinwallReminder) sendForPost(ctx context.Context, post models.PinwallPo
 		EntityType: models.EntityTypePinwallPost,
 		ID:         post.ID.String(),
 		GroupID:    post.GroupID.String(),
+		Copy: models.NewNotificationCopy(models.NotificationTemplatePinwallReminder, map[string]string{
+			"content": post.Content,
+		}),
 	}
 
 	if r.dispatcher != nil {
 		// Dispatcher handles persist+push preference-filtered for the whole group.
 		// uuid.Nil actor: reminders have no "actor" to exclude — the author set the
 		// reminder and must receive it too (same idiom as weekly_summary/recurring_expense).
-		if err := r.dispatcher.DispatchToGroup(ctx, post.GroupID, uuid.Nil, "pinwall_reminder",
+		if err := r.dispatcher.DispatchToGroup(ctx, post.GroupID, uuid.Nil, models.NotificationTypePinwallReminder,
 			"Reminder", post.Content, notifPayload); err != nil {
 			return fmt.Errorf("dispatch pinwall reminder: %w", err)
 		}
@@ -142,7 +145,7 @@ func (r *PinwallReminder) sendForPost(ctx context.Context, post models.PinwallPo
 			ID:        uuid.New(),
 			UserID:    userID,
 			GroupID:   post.GroupID,
-			Type:      "pinwall_reminder",
+			Type:      models.NotificationTypePinwallReminder,
 			Title:     "Reminder",
 			Body:      post.Content,
 			Data:      data,

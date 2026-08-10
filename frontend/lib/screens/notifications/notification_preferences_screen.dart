@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +10,7 @@ import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
+import '../../widgets/app_toast.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/skeleton.dart';
@@ -85,13 +84,14 @@ class _NotificationPreferencesScreenState
     }
   }
 
-  Future<void> _toggle(String preferenceId, String field, bool value) async {
-    final key = '$preferenceId:$field';
+  Future<void> _toggle(String groupId, String field, bool value) async {
+    final l10n = AppLocalizations.of(context)!;
+    final key = '$groupId:$field';
     setState(() => _savingKeys[key] = true);
 
     try {
       final service = await ref.read(notificationServiceProviderAsync.future);
-      final idx = _preferences.indexWhere((p) => p.id == preferenceId);
+      final idx = _preferences.indexWhere((p) => p.groupId == groupId);
       if (idx < 0) return;
 
       final pref = _preferences[idx];
@@ -122,7 +122,7 @@ class _NotificationPreferencesScreenState
     } catch (e) {
       if (!mounted) return;
       setState(() => _savingKeys.remove(key));
-      unawaited(_load());
+      AppToast.error(context, l10n.notifPrefFailedSave);
     }
   }
 
@@ -130,7 +130,7 @@ class _NotificationPreferencesScreenState
     final l10n = AppLocalizations.of(context)!;
     final groupName = _groupNames[pref.groupId] ?? l10n.notifPrefGroupName;
     final cardSaving =
-        _savingKeys.keys.any((key) => key.startsWith('${pref.id}:'));
+        _savingKeys.keys.any((key) => key.startsWith('${pref.groupId}:'));
 
     return Padding(
       padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
@@ -153,69 +153,70 @@ class _NotificationPreferencesScreenState
               label: l10n.notifPrefChoreDueReminders,
               subtitle: l10n.notifPrefChoreDueRemindersDesc,
               value: pref.choreDue,
-              saving: _savingKeys['${pref.id}:chore_due'] == true,
-              onChanged:
-                  cardSaving ? null : (v) => _toggle(pref.id, 'chore_due', v),
+              saving: _savingKeys['${pref.groupId}:chore_due'] == true,
+              onChanged: cardSaving
+                  ? null
+                  : (v) => _toggle(pref.groupId, 'chore_due', v),
             ),
             _ToggleRow(
               icon: 'calendarDays',
               label: l10n.notifPrefChoreDueDayOf,
               subtitle: l10n.notifPrefChoreDueDayOfDesc,
               value: pref.choreDueDayOf,
-              saving: _savingKeys['${pref.id}:chore_due_day_of'] == true,
+              saving: _savingKeys['${pref.groupId}:chore_due_day_of'] == true,
               onChanged: cardSaving
                   ? null
-                  : (v) => _toggle(pref.id, 'chore_due_day_of', v),
+                  : (v) => _toggle(pref.groupId, 'chore_due_day_of', v),
             ),
             _ToggleRow(
               icon: 'clipboardDocumentList',
               label: l10n.notifPrefListItemAdded,
               subtitle: l10n.notifPrefListItemAddedDesc,
               value: pref.listItemAdded,
-              saving: _savingKeys['${pref.id}:list_item_added'] == true,
+              saving: _savingKeys['${pref.groupId}:list_item_added'] == true,
               onChanged: cardSaving
                   ? null
-                  : (v) => _toggle(pref.id, 'list_item_added', v),
+                  : (v) => _toggle(pref.groupId, 'list_item_added', v),
             ),
             _ToggleRow(
               icon: 'banknotes',
               label: l10n.notifPrefExpenseCreated,
               subtitle: l10n.notifPrefExpenseCreatedDesc,
               value: pref.expenseCreated,
-              saving: _savingKeys['${pref.id}:expense_created'] == true,
+              saving: _savingKeys['${pref.groupId}:expense_created'] == true,
               onChanged: cardSaving
                   ? null
-                  : (v) => _toggle(pref.id, 'expense_created', v),
+                  : (v) => _toggle(pref.groupId, 'expense_created', v),
             ),
             _ToggleRow(
               icon: 'calendarDays',
               label: l10n.notifPrefMealPlanChanged,
               subtitle: l10n.notifPrefMealPlanChangedDesc,
               value: pref.mealPlanChanged,
-              saving: _savingKeys['${pref.id}:meal_plan_changed'] == true,
+              saving: _savingKeys['${pref.groupId}:meal_plan_changed'] == true,
               onChanged: cardSaving
                   ? null
-                  : (v) => _toggle(pref.id, 'meal_plan_changed', v),
+                  : (v) => _toggle(pref.groupId, 'meal_plan_changed', v),
             ),
             _ToggleRow(
               icon: 'chartBar',
               label: l10n.notifPrefWeeklyDigest,
               subtitle: l10n.notifPrefWeeklyDigestDesc,
               value: pref.weeklyDigest,
-              saving: _savingKeys['${pref.id}:weekly_digest'] == true,
+              saving: _savingKeys['${pref.groupId}:weekly_digest'] == true,
               onChanged: cardSaving
                   ? null
-                  : (v) => _toggle(pref.id, 'weekly_digest', v),
+                  : (v) => _toggle(pref.groupId, 'weekly_digest', v),
             ),
             _ToggleRow(
               icon: 'bell',
               label: l10n.notifPrefPinwallReminders,
               subtitle: l10n.notifPrefPinwallRemindersDesc,
               value: pref.pinwallReminder,
-              saving: _savingKeys['${pref.id}:pinwall_reminder'] == true,
+              saving: _savingKeys['${pref.groupId}:pinwall_reminder'] == true,
               onChanged: cardSaving
                   ? null
-                  : (v) => _toggle(pref.id, 'pinwall_reminder', v),
+                  : (v) => _toggle(pref.groupId, 'pinwall_reminder', v),
             ),
             Divider(color: Theme.of(context).colorScheme.outlineVariant),
             _ToggleRow(
@@ -223,20 +224,20 @@ class _NotificationPreferencesScreenState
               label: l10n.notifPrefPushNotifications,
               subtitle: l10n.notifPrefPushNotificationsDesc,
               value: pref.pushEnabled,
-              saving: _savingKeys['${pref.id}:push_enabled'] == true,
+              saving: _savingKeys['${pref.groupId}:push_enabled'] == true,
               onChanged: cardSaving
                   ? null
-                  : (v) => _toggle(pref.id, 'push_enabled', v),
+                  : (v) => _toggle(pref.groupId, 'push_enabled', v),
             ),
             _ToggleRow(
               icon: 'inbox',
               label: l10n.notifPrefEmailNotifications,
               subtitle: l10n.notifPrefEmailNotificationsDesc,
               value: pref.emailEnabled,
-              saving: _savingKeys['${pref.id}:email_enabled'] == true,
+              saving: _savingKeys['${pref.groupId}:email_enabled'] == true,
               onChanged: cardSaving
                   ? null
-                  : (v) => _toggle(pref.id, 'email_enabled', v),
+                  : (v) => _toggle(pref.groupId, 'email_enabled', v),
             ),
           ],
         ),

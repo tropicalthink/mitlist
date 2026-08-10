@@ -309,6 +309,42 @@ func (r *NotificationRepository) CreateNotificationsBatch(ctx context.Context, n
 	return nil
 }
 
+// QueueListItemNotification coalesces rapid additions by the same person to the
+// same list. A busy stream is capped at two minutes so a digest cannot be
+// postponed indefinitely.
+func (r *NotificationRepository) QueueListItemNotification(ctx context.Context, groupID, actorID, listID uuid.UUID, actorName, listName, itemName string) error {
+	_, err := r.db.Exec(ctx, `
+		INSERT INTO list_notification_batches (
+			group_id, actor_id, list_id, actor_name, list_name, last_item_name
+		) VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT (group_id, actor_id, list_id) DO UPDATE SET
+			actor_name = EXCLUDED.actor_name,
+			list_name = EXCLUDED.list_name,
+			last_item_name = EXCLUDED.last_item_name,
+			item_count = CASE
+				WHEN list_notification_batches.claimed_at IS NULL THEN list_notification_batches.item_count + 1
+				ELSE 1
+			END,
+			first_at = CASE
+				WHEN list_notification_batches.claimed_at IS NULL THEN list_notification_batches.first_at
+				ELSE NOW()
+			END,
+			updated_at = NOW(),
+			deliver_after = CASE
+				WHEN list_notification_batches.claimed_at IS NULL THEN LEAST(
+					list_notification_batches.first_at + INTERVAL '2 minutes',
+					NOW() + INTERVAL '45 seconds'
+				)
+				ELSE NOW() + INTERVAL '45 seconds'
+			END,
+			claimed_at = NULL
+	`, groupID, actorID, listID, actorName, listName, itemName)
+	if err != nil {
+		return fmt.Errorf("queue list notification: %w", err)
+	}
+	return nil
+}
+
 // UpsertPreference inserts or updates notification preferences for a user/group.
 func (r *NotificationRepository) UpsertPreference(ctx context.Context, pref *models.NotificationPreference) error {
 	query := `

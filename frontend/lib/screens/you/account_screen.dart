@@ -219,7 +219,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               setSheetState(() => error = l10n.accountFillPasswordFields);
               return;
             }
-            if (newPassword.length < 12) {
+            if (newPassword.length < 8) {
               setSheetState(() => error = l10n.accountPasswordMinLength);
               return;
             }

@@ -2467,7 +2467,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get accountPasswordMinLength =>
-      'Das neue Passwort muss mindestens 12 Zeichen haben.';
+      'Das neue Passwort muss mindestens 8 Zeichen haben.';
 
   @override
   String get accountPasswordsMismatch =>
@@ -2692,6 +2692,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Benachrichtigungseinstellungen konnten nicht geladen werden.';
 
   @override
+  String get notifPrefFailedSave =>
+      'Diese Einstellung konnte nicht gespeichert werden. Prüfe deine Verbindung und versuche es erneut.';
+
+  @override
   String get notifPrefNoHouseholdDesc =>
       'Tritt einem Haushalt bei oder erstelle einen, um Benachrichtigungseinstellungen zu konfigurieren.';
 
@@ -2727,11 +2731,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wenn jemand etwas zu einer geteilten Liste hinzufügt';
 
   @override
-  String get notifPrefExpenseCreated => 'Ausgabe erstellt';
+  String get notifPrefExpenseCreated => 'Geldaktivitäten';
 
   @override
   String get notifPrefExpenseCreatedDesc =>
-      'Wenn eine neue Ausgabe eingetragen wird';
+      'Ausgaben, wiederkehrende Kosten und Abrechnungen';
 
   @override
   String get notifPrefMealPlanChanged => 'Essensplan geändert';
@@ -3871,7 +3875,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get authSignupPassword => 'Passwort';
 
   @override
-  String get authSignupPasswordHint => 'Mindestens 12 Zeichen';
+  String get authSignupPasswordHint => 'Mindestens 8 Zeichen';
 
   @override
   String get authSignupCreateAccount => 'Konto erstellen';
@@ -3890,7 +3894,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get authSignupPasswordMinLength =>
-      'Passwort muss mindestens 12 Zeichen lang sein.';
+      'Passwort muss mindestens 8 Zeichen lang sein.';
 
   @override
   String get authSignupJoinTitle => 'Haushalt beitreten';
@@ -4776,6 +4780,131 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get commonView => 'Ansehen';
+
+  @override
+  String get notificationsOpenList => 'Liste öffnen';
+
+  @override
+  String get notificationsOpenChore => 'Aufgabe öffnen';
+
+  @override
+  String get notificationsOpenMoney => 'Finanzen öffnen';
+
+  @override
+  String get notificationsOpenRecipes => 'Rezepte öffnen';
+
+  @override
+  String get notificationsOpenHousehold => 'Haushalt öffnen';
+
+  @override
+  String get notificationChoreDueSoonTitle => 'Aufgabe bald fällig';
+
+  @override
+  String notificationChoreDueSoonBody(String choreName) {
+    return '$choreName ist bald fällig';
+  }
+
+  @override
+  String get notificationChoreDueTodayTitle => 'Aufgabe heute fällig';
+
+  @override
+  String notificationChoreDueTodayBody(String choreName) {
+    return '$choreName ist heute fällig';
+  }
+
+  @override
+  String notificationListUpdatedTitle(String listName) {
+    return '$listName aktualisiert';
+  }
+
+  @override
+  String notificationListUpdatedOneBody(
+      String actorName, String itemName, String listName, String groupName) {
+    return '$actorName hat $itemName zu $listName in $groupName hinzugefügt.';
+  }
+
+  @override
+  String notificationListUpdatedManyBody(
+      String actorName, num count, String listName, String groupName) {
+    return '$actorName hat $count Einträge zu $listName in $groupName hinzugefügt.';
+  }
+
+  @override
+  String get notificationExpenseCreatedTitle => 'Ausgabe hinzugefügt';
+
+  @override
+  String notificationExpenseCreatedBody(
+      String actorName, String expenseName, String groupName) {
+    return '$actorName hat $expenseName in $groupName hinzugefügt.';
+  }
+
+  @override
+  String get notificationRecurringExpenseTitle =>
+      'Wiederkehrende Ausgabe hinzugefügt';
+
+  @override
+  String notificationRecurringExpenseBody(String expenseName) {
+    return '$expenseName wurde hinzugefügt.';
+  }
+
+  @override
+  String get notificationSettlementRequestTitle => 'Ausgleich bestätigen';
+
+  @override
+  String notificationSettlementPaidYouBody(
+      String actorName, String amount, String groupName) {
+    return '$actorName sagt, dir $amount in $groupName gezahlt zu haben. Bestätige, um die Salden zu aktualisieren.';
+  }
+
+  @override
+  String notificationSettlementYouPaidBody(
+      String actorName, String amount, String groupName) {
+    return '$actorName sagt, du hättest $amount in $groupName gezahlt. Bestätige, um die Salden zu aktualisieren.';
+  }
+
+  @override
+  String get notificationSettlementConfirmedTitle => 'Ausgleich bestätigt';
+
+  @override
+  String notificationSettlementConfirmedBody(
+      String actorName, String amount, String groupName) {
+    return '$actorName hat deinen Ausgleich über $amount in $groupName bestätigt.';
+  }
+
+  @override
+  String get notificationSettlementDeclinedTitle => 'Ausgleich abgelehnt';
+
+  @override
+  String notificationSettlementDeclinedBody(
+      String actorName, String amount, String groupName) {
+    return '$actorName hat deinen Ausgleich über $amount in $groupName abgelehnt.';
+  }
+
+  @override
+  String get notificationMealPlanTitle => 'Essensplan aktualisiert';
+
+  @override
+  String notificationMealPlanBody(String actorName, String groupName) {
+    return '$actorName hat den Essensplan in $groupName aktualisiert.';
+  }
+
+  @override
+  String get notificationWeeklyDigestTitle => 'Wochenübersicht';
+
+  @override
+  String notificationWeeklyDigestBody(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Dein Haushalt hatte diese Woche $count Aktivitäten',
+      one: 'Dein Haushalt hatte diese Woche 1 Aktivität',
+      zero: 'Diese Woche gab es keine Haushaltsaktivität',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notificationPinwallReminderTitle => 'Erinnerung';
 
   @override
   String get commonPhoto => 'Foto';

@@ -19,6 +19,7 @@ import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
 import '../../utils/latest_request_guard.dart';
 import '../../utils/notification_navigation.dart';
+import '../../utils/notification_copy.dart';
 import '../../providers/group_provider.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
@@ -496,6 +497,12 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             );
           }
           final n = entry.notification!;
+          final text = resolveNotificationText(
+            l10n: l10n,
+            fallbackTitle: n.title,
+            fallbackBody: n.body,
+            data: n.data,
+          );
           return Padding(
             padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
             child: Dismissible(
@@ -517,9 +524,12 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               onDismissed: (_) => _delete(n),
               child: _NotificationTile(
                 notification: n,
+                title: text.title,
+                body: text.body,
                 timeLabel: _relativeTime(n.createdAt, l10n),
-                semanticLabel:
-                    n.isRead ? n.title : l10n.notificationsUnreadLabel(n.title),
+                semanticLabel: n.isRead
+                    ? text.title
+                    : l10n.notificationsUnreadLabel(text.title),
                 onTap: () => _handleNotificationTap(n),
               ),
             ),
@@ -553,8 +563,17 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         foreground: light ? MitlistColors.primary700 : MitlistColors.primary300,
       );
     case 'expense_created':
+    case 'recurring_expense_created':
       return (
         icon: 'banknotes',
+        background: light ? MitlistColors.warning100 : MitlistColors.warning900,
+        foreground: light ? MitlistColors.warning700 : MitlistColors.warning300,
+      );
+    case 'settlement_requested':
+    case 'settlement_confirmed':
+    case 'settlement_declined':
+      return (
+        icon: 'receiptPercent',
         background: light ? MitlistColors.warning100 : MitlistColors.warning900,
         foreground: light ? MitlistColors.warning700 : MitlistColors.warning300,
       );
@@ -592,12 +611,16 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 class _NotificationTile extends StatelessWidget {
   const _NotificationTile({
     required this.notification,
+    required this.title,
+    required this.body,
     required this.timeLabel,
     required this.semanticLabel,
     required this.onTap,
   });
 
   final NotificationModel notification;
+  final String title;
+  final String body;
   final String timeLabel;
   final String semanticLabel;
   final VoidCallback onTap;
@@ -608,7 +631,7 @@ class _NotificationTile extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final visual = _typeVisual(n.type, theme.brightness);
-    final subtitle = n.body.isNotEmpty ? n.body : n.type;
+    final subtitle = body.isNotEmpty ? body : n.type;
 
     return AppCard(
       interactive: true,
@@ -640,7 +663,7 @@ class _NotificationTile extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          n.title,
+                          title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.titleSmall?.copyWith(

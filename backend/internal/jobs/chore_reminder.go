@@ -75,7 +75,7 @@ func (r *ChoreReminder) remindAssignment(ctx context.Context, a models.ChoreAssi
 		// Conservative: skip push if we can't verify preferences.
 		return nil
 	}
-	nType := "chore_due"
+	nType := models.NotificationTypeChoreDue
 	title := "Chore due soon"
 	bodySuffix := " is due soon"
 	enabled := pref.ChoreDue
@@ -83,7 +83,7 @@ func (r *ChoreReminder) remindAssignment(ctx context.Context, a models.ChoreAssi
 		now := time.Now().UTC()
 		tomorrow := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, time.UTC)
 		if a.DueDate.Before(tomorrow) {
-			nType = "chore_due_day_of"
+			nType = models.NotificationTypeChoreDueDayOf
 			title = "Chore due today"
 			bodySuffix = " is due today"
 			enabled = pref.ChoreDueDayOf
@@ -108,6 +108,13 @@ func (r *ChoreReminder) remindAssignment(ctx context.Context, a models.ChoreAssi
 		ID:         a.ChoreID.String(),
 		GroupID:    groupID.String(),
 	}
+	template := models.NotificationTemplateChoreDueSoon
+	if nType == models.NotificationTypeChoreDueDayOf {
+		template = models.NotificationTemplateChoreDueToday
+	}
+	notifPayload.Copy = models.NewNotificationCopy(template, map[string]string{
+		"chore_name": choreName,
+	})
 
 	if r.dispatcher != nil {
 		if err := r.dispatcher.DispatchToUsers(ctx, []uuid.UUID{a.UserID}, groupID, nType,

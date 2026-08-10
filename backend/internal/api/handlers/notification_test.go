@@ -187,4 +187,25 @@ func TestNotification_UpdatePreferences(t *testing.T) {
 	}
 	rec := execRequest(t, router, "PATCH", "/notifications/preferences", body, token)
 	requireStatus(t, rec, http.StatusNoContent)
+
+	pref, err := newTestNotificationRepo().GetPreference(context.Background(), user.ID, group.ID)
+	require.NoError(t, err)
+	assert.True(t, pref.ChoreDue)
+	assert.True(t, pref.ChoreDueDayOf, "omitted fields must retain their default")
+	assert.True(t, pref.ListItemAdded, "omitted fields must retain their default")
+	assert.True(t, pref.ExpenseCreated, "omitted fields must retain their default")
+	assert.True(t, pref.PushEnabled)
+	assert.False(t, pref.EmailEnabled)
+}
+
+func TestNotification_UpdatePreferencesRequiresGroup(t *testing.T) {
+	clearTables(t)
+	router, _ := newNotificationRouter(t)
+	user := createTestUser(t, "missingprefgroup@example.com", "password123!")
+	token := generateTestToken(user.ID)
+
+	rec := execRequest(t, router, "PATCH", "/notifications/preferences", map[string]any{
+		"push_enabled": false,
+	}, token)
+	requireStatus(t, rec, http.StatusBadRequest)
 }

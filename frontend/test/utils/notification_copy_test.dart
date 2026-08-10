@@ -1,0 +1,119 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mitlist/l10n/app_localizations.dart';
+import 'package:mitlist/l10n/app_localizations_de.dart';
+import 'package:mitlist/l10n/app_localizations_en.dart';
+import 'package:mitlist/l10n/app_localizations_es.dart';
+import 'package:mitlist/l10n/app_localizations_fr.dart';
+import 'package:mitlist/l10n/app_localizations_nl.dart';
+import 'package:mitlist/utils/notification_copy.dart';
+
+void main() {
+  test('renders structured expense copy in every supported locale', () {
+    final locales = <AppLocalizations, String>{
+      AppLocalizationsEn(): 'Expense added',
+      AppLocalizationsDe(): 'Ausgabe hinzugefügt',
+      AppLocalizationsEs(): 'Gasto añadido',
+      AppLocalizationsFr(): 'Dépense ajoutée',
+      AppLocalizationsNl(): 'Uitgave toegevoegd',
+    };
+    final data = {
+      'copy': {
+        'version': 1,
+        'template': 'expense_created',
+        'params': {
+          'actor_name': 'Mina',
+          'expense_name': 'Coffee',
+          'group_name': 'Flatmates',
+        },
+      },
+    };
+
+    for (final entry in locales.entries) {
+      final result = resolveNotificationText(
+        l10n: entry.key,
+        fallbackTitle: 'server title',
+        fallbackBody: 'server body',
+        data: data,
+      );
+      expect(result.title, entry.value);
+      expect(result.body, contains('Mina'));
+      expect(result.body, isNot('server body'));
+    }
+  });
+
+  test('renders singular and plural list batches', () {
+    final l10n = AppLocalizationsEn();
+    Map<String, dynamic> data(int count) => {
+          'copy': {
+            'version': 1,
+            'template': 'list_items_added',
+            'params': {
+              'actor_name': 'Mina',
+              'item_count': '$count',
+              'last_item_name': 'Milk',
+              'list_name': 'Groceries',
+              'group_name': 'Flatmates',
+            },
+          },
+        };
+
+    expect(
+      resolveNotificationText(
+        l10n: l10n,
+        fallbackTitle: '',
+        fallbackBody: '',
+        data: data(1),
+      ).body,
+      'Mina added Milk to Groceries in Flatmates.',
+    );
+    expect(
+      resolveNotificationText(
+        l10n: l10n,
+        fallbackTitle: '',
+        fallbackBody: '',
+        data: data(4),
+      ).body,
+      'Mina added 4 items to Groceries in Flatmates.',
+    );
+  });
+
+  test('supports string-encoded push copy and legacy fallback', () {
+    final l10n = AppLocalizationsEn();
+    final structured = resolveNotificationText(
+      l10n: l10n,
+      fallbackTitle: 'Reminder',
+      fallbackBody: 'fallback',
+      data: {
+        'copy':
+            '{"version":1,"template":"pinwall_reminder","params":{"content":"Take out recycling"}}',
+      },
+    );
+    expect(structured.body, 'Take out recycling');
+
+    final legacy = resolveNotificationText(
+      l10n: l10n,
+      fallbackTitle: 'Legacy title',
+      fallbackBody: 'Legacy body',
+      data: {'screen': 'householdHub'},
+    );
+    expect(legacy.title, 'Legacy title');
+    expect(legacy.body, 'Legacy body');
+  });
+
+  test('malformed or incomplete structured copy fails safely', () {
+    final result = resolveNotificationText(
+      l10n: AppLocalizationsEn(),
+      fallbackTitle: 'Safe title',
+      fallbackBody: 'Safe body',
+      data: {
+        'copy': {
+          'version': 1,
+          'template': 'expense_created',
+          'params': {'actor_name': 'Mina'},
+        },
+      },
+    );
+    expect(result.title, 'Safe title');
+    expect(result.body, 'Safe body');
+  });
+}

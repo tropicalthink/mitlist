@@ -2454,7 +2454,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get accountPasswordMinLength =>
-      'Nieuw wachtwoord moet minstens 6 tekens bevatten.';
+      'Nieuw wachtwoord moet minstens 8 tekens bevatten.';
 
   @override
   String get accountPasswordsMismatch =>
@@ -2675,6 +2675,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get notifPrefFailedLoad => 'Notificatievoorkeuren laden mislukt.';
 
   @override
+  String get notifPrefFailedSave =>
+      'Kan deze voorkeur niet opslaan. Controleer je verbinding en probeer het opnieuw.';
+
+  @override
   String get notifPrefNoHouseholdDesc =>
       'Word lid of maak een huishouden om notificatievoorkeuren te configureren.';
 
@@ -2709,11 +2713,11 @@ class AppLocalizationsNl extends AppLocalizations {
       'Wanneer iemand iets aan een gedeelde lijst toevoegt';
 
   @override
-  String get notifPrefExpenseCreated => 'Uitgave aangemaakt';
+  String get notifPrefExpenseCreated => 'Geldactiviteit';
 
   @override
   String get notifPrefExpenseCreatedDesc =>
-      'Wanneer een nieuwe uitgave wordt geregistreerd';
+      'Uitgaven, terugkerende kosten en verrekeningen';
 
   @override
   String get notifPrefMealPlanChanged => 'Maaltijdplanning gewijzigd';
@@ -3844,7 +3848,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get authSignupPassword => 'Wachtwoord';
 
   @override
-  String get authSignupPasswordHint => 'Minstens 6 tekens';
+  String get authSignupPasswordHint => 'Minstens 8 tekens';
 
   @override
   String get authSignupCreateAccount => 'Account aanmaken';
@@ -3863,7 +3867,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get authSignupPasswordMinLength =>
-      'Wachtwoord moet minstens 6 tekens lang zijn.';
+      'Wachtwoord moet minstens 8 tekens lang zijn.';
 
   @override
   String get authSignupJoinTitle => 'Deelnemen aan huishouden';
@@ -4750,6 +4754,131 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get commonView => 'Bekijken';
+
+  @override
+  String get notificationsOpenList => 'Lijst openen';
+
+  @override
+  String get notificationsOpenChore => 'Taak openen';
+
+  @override
+  String get notificationsOpenMoney => 'Geldzaken openen';
+
+  @override
+  String get notificationsOpenRecipes => 'Recepten openen';
+
+  @override
+  String get notificationsOpenHousehold => 'Huishouden openen';
+
+  @override
+  String get notificationChoreDueSoonTitle => 'Taak binnenkort verwacht';
+
+  @override
+  String notificationChoreDueSoonBody(String choreName) {
+    return '$choreName moet binnenkort gebeuren';
+  }
+
+  @override
+  String get notificationChoreDueTodayTitle => 'Taak voor vandaag';
+
+  @override
+  String notificationChoreDueTodayBody(String choreName) {
+    return '$choreName moet vandaag gebeuren';
+  }
+
+  @override
+  String notificationListUpdatedTitle(String listName) {
+    return '$listName bijgewerkt';
+  }
+
+  @override
+  String notificationListUpdatedOneBody(
+      String actorName, String itemName, String listName, String groupName) {
+    return '$actorName voegde $itemName toe aan $listName in $groupName.';
+  }
+
+  @override
+  String notificationListUpdatedManyBody(
+      String actorName, num count, String listName, String groupName) {
+    return '$actorName voegde $count items toe aan $listName in $groupName.';
+  }
+
+  @override
+  String get notificationExpenseCreatedTitle => 'Uitgave toegevoegd';
+
+  @override
+  String notificationExpenseCreatedBody(
+      String actorName, String expenseName, String groupName) {
+    return '$actorName voegde $expenseName toe in $groupName.';
+  }
+
+  @override
+  String get notificationRecurringExpenseTitle =>
+      'Terugkerende uitgave toegevoegd';
+
+  @override
+  String notificationRecurringExpenseBody(String expenseName) {
+    return '$expenseName is toegevoegd.';
+  }
+
+  @override
+  String get notificationSettlementRequestTitle => 'Betaling bevestigen';
+
+  @override
+  String notificationSettlementPaidYouBody(
+      String actorName, String amount, String groupName) {
+    return '$actorName zegt je $amount te hebben betaald in $groupName. Bevestig om de saldi bij te werken.';
+  }
+
+  @override
+  String notificationSettlementYouPaidBody(
+      String actorName, String amount, String groupName) {
+    return '$actorName zegt dat jij $amount betaalde in $groupName. Bevestig om de saldi bij te werken.';
+  }
+
+  @override
+  String get notificationSettlementConfirmedTitle => 'Betaling bevestigd';
+
+  @override
+  String notificationSettlementConfirmedBody(
+      String actorName, String amount, String groupName) {
+    return '$actorName bevestigde je betaling van $amount in $groupName.';
+  }
+
+  @override
+  String get notificationSettlementDeclinedTitle => 'Betaling afgewezen';
+
+  @override
+  String notificationSettlementDeclinedBody(
+      String actorName, String amount, String groupName) {
+    return '$actorName wees je betaling van $amount in $groupName af.';
+  }
+
+  @override
+  String get notificationMealPlanTitle => 'Maaltijdplan bijgewerkt';
+
+  @override
+  String notificationMealPlanBody(String actorName, String groupName) {
+    return '$actorName werkte het maaltijdplan bij in $groupName.';
+  }
+
+  @override
+  String get notificationWeeklyDigestTitle => 'Weekoverzicht';
+
+  @override
+  String notificationWeeklyDigestBody(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Je huishouden had deze week $count activiteiten',
+      one: 'Je huishouden had deze week 1 activiteit',
+      zero: 'Deze week was er geen huishoudactiviteit',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notificationPinwallReminderTitle => 'Herinnering';
 
   @override
   String get commonPhoto => 'Foto';
