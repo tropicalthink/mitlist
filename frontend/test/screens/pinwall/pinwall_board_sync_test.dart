@@ -33,6 +33,7 @@ class _RecordingPinwallService implements PinwallService {
     String postId, {
     required double x,
     required double y,
+    String? idempotencyKey,
   }) async {
     positionSyncs.add((postId: postId, x: x, y: y));
     return PinwallPost(
